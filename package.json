@@ -1,0 +1,22 @@
+{
+  "devDependencies": {
+    "@wix/cli": "^1.0.0",
+    "@wix/eslint-plugin-cli": "^1.0.0",
+    "eslint": "^8.25.0",
+    "react": "16.14.0"
+  },
+  "dependencies": {
+    "stripe": "16.2.0",
+    "uuid": "10.0.0",
+    "pdf-generator-api": "1.1.0",
+    "twilio": "5.2.2",
+    "axios": "1.7.3",
+    "nodemailer": "6.9.14",
+    "lodash": "4.17.21"
+  },
+  "scripts": {
+    "postinstall": "wix sync-types",
+    "dev": "wix dev",
+    "lint": "eslint ."
+  }
+}

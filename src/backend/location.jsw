@@ -1,0 +1,35 @@
+/*********
+ .jsw file
+ *********
+
+ Backend .jsw files contain functions that run on the server side but can be called from page code and frontend files.
+ Use backend functions to keep code private and hidden from a user's browser. More info:
+
+ https://support.wix.com/en/article/velo-web-modules-calling-backend-code-from-the-frontend
+
+// location.jsw - Backend file to store user location data
+import wixData from 'wix-data';
+import { currentMember } from 'wix-members-backend';
+
+// Function to save user location
+export async function saveUserLocation(latitude, longitude) {
+  try {
+    const user = await currentMember.getMember();
+    const userId = user._id; // Get current user's ID
+
+    const toInsert = {
+      userId: userId,
+      latitude: latitude,
+      longitude: longitude,
+      timestamp: new Date()
+    };
+
+    await wixData.insert("UserLocations", toInsert);
+    return { success: true, message: "Location saved successfully." };
+  } catch (error) {
+    console.error("Error saving location:", error);
+    return { success: false, message: error.message };
+  }
+}
+
+ 

@@ -1,0 +1,12 @@
+{
+    "staticIpRequest": {
+        "baseURL": "Add third-party url here",
+        "proxy": {
+            "host": "Add host number here",
+            "port": 1000
+        }
+    }
+}
+
+
+

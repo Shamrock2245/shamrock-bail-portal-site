@@ -1,0 +1,67 @@
+/*********
+ .jsw file
+ *********
+
+ Backend .jsw files contain functions that run on the server side but can be called from page code and frontend files.
+ Use backend functions to keep code private and hidden from a user's browser. More info:
+
+ https://support.wix.com/en/article/velo-web-modules-calling-backend-code-from-the-frontend
+
+**********/
+
+// Backend file: signnow-integration.jsw
+
+import { fetch } from 'wix-fetch';
+import wixSecretsBackend from 'wix-secrets-backend';
+
+const API_ENDPOINT = 'https://api.signnow.com/api';
+const TOKEN_ENDPOINT = 'https://api.signnow.com/oauth2/token';
+
+let accessToken = null;
+let tokenExpiration = 0;
+
+async function getAccessToken() {
+    if (accessToken && Date.now() < tokenExpiration) {
+        return accessToken;
+    }
+
+    const clientId = await wixSecretsBackend.getSecret('SIGNNOW_CLIENT_ID');
+    const clientSecret = await wixSecretsBackend.getSecret('SIGNNOW_CLIENT_SECRET');
+
+    const response = await fetch(TOKEN_ENDPOINT, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to obtain access token: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    accessToken = data.access_token;
+    tokenExpiration = Date.now() + (data.expires_in * 1000);
+    return accessToken;
+}
+
+export async function makeSignNowRequest(endpoint, method = 'GET', body = null) {
+    const token = await getAccessToken();
+    const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    };
+
+    const options = {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+    };
+
+    const response = await fetch(`${API_ENDPOINT}${endpoint}`, options);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+}
