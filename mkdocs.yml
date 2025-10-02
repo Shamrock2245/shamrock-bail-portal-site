@@ -1,0 +1,77 @@
+site_name: Shamrock Bail Bonds Portal Docs
+site_description: "Developer & operations documentation for Shamrock Bail Bonds (Wix + Velo frontend, External API, automated PDFs, e-signatures, payments, GPS check-ins) serving Lee, Charlotte, Collier, and all Florida counties."
+site_url: https://shamrock2245.github.io/shamrock-bail-portal
+repo_url: https://github.com/shamrock2245/shamrock-bail-portal
+copyright: "© Shamrock Bail Bonds"
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.top
+    - navigation.sections
+    - navigation.expand
+    - navigation.instant
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/shamrock2245
+      name: "GitHub: shamrock2245"
+  meta:
+    keywords: "bail bonds, lee county bail bonds, charlotte county bail bonds, collier county bail bonds, florida bail bonds, defendant check-in, indemnitor, cosignor, shamrock bail bonds, paperwork automation"
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - meta
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.emoji
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.superfences
+  - pymdownx.tilde
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - README: README.md
+      - FLOW (User Journeys): FLOW.md
+      - CONFIG (Business Rules): CONFIG.md
+      - MANUS (AI Build Guide): MANUS.md
+  - API & Data:
+      - API Spec: API_SPEC.md
+      - Schemas: SCHEMAS.md
+      - PDF Templates: PDF_TEMPLATES.md
+  - Build & Ops:
+      - Deployment: DEPLOYMENT.md
+      - Ops Runbook: OPS.md
+      - Security: SECURITY.md
+      - Testing: TESTING.md
+      - Road Rules (Plain English): ROADRULES.md
+  - Process & Governance:
+      - Style Guide: STYLEGUIDE.md
+      - Contributing: CONTRIBUTING.md
+      - Tasks: TASKS.md
+      - Agents: AGENTS.md
+  - Roadmap & Metrics:
+      - Roadmap: ROADMAP.md
+      - Metrics: METRICS.md
+      - Changelog: CHANGELOG.md
+  - Reference:
+      - Glossary: GLOSSARY.md
