@@ -1,0 +1,279 @@
+// Backend module for document uploads
+// Filename: backend/documentUpload.jsw
+// Handles ID and supporting document uploads, saves to Google Drive via GAS
+
+import wixData from 'wix-data';
+import { getSecret } from 'wix-secrets-backend';
+import { fetch } from 'wix-fetch';
+import { mediaManager } from 'wix-media-backend';
+
+/**
+ * Upload an ID document (front or back)
+ * Saves to Wix Media, records in database, and syncs to Google Drive
+ * 
+ * @param {Object} uploadData
+ * @param {Object} uploadData.file - The file object from upload button
+ * @param {string} uploadData.side - 'front' or 'back'
+ * @param {Object} uploadData.metadata - GPS, timestamp, user info
+ * @returns {Promise<{success: boolean, documentId: string, message: string}>}
+ */
+export async function uploadIdDocument(uploadData) {
+    try {
+        const { file, side, metadata } = uploadData;
+        
+        // Generate unique filename
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const fileName = `ID_${side}_${metadata.memberEmail.replace('@', '_at_')}_${timestamp}`;
+        
+        // Upload to Wix Media Manager
+        const uploadResult = await mediaManager.upload(
+            '/member-documents/ids/',
+            file,
+            fileName,
+            {
+                mediaOptions: {
+                    mimeType: file.type || 'image/jpeg',
+                    mediaType: 'image'
+                },
+                metadataOptions: {
+                    isPrivate: true,
+                    isVisitorUpload: false,
+                    context: {
+                        memberEmail: metadata.memberEmail,
+                        documentType: 'government_id',
+                        side: side
+                    }
+                }
+            }
+        );
+        
+        // Save record to MemberDocuments collection
+        const documentRecord = {
+            memberEmail: metadata.memberEmail,
+            memberName: metadata.memberName || '',
+            memberPhone: metadata.memberPhone || '',
+            documentType: 'government_id',
+            documentSide: side,
+            fileName: fileName,
+            fileUrl: uploadResult.fileUrl,
+            mediaId: uploadResult.mediaId || uploadResult._id,
+            status: 'pending_review',
+            metadata: JSON.stringify({
+                gps: metadata.gps,
+                uploadedAt: metadata.uploadedAt,
+                userAgent: metadata.userAgent,
+                ipAddress: metadata.ipAddress
+            })
+        };
+        
+        const insertResult = await wixData.insert('MemberDocuments', documentRecord);
+        
+        // Sync to Google Drive via GAS webhook
+        await syncToGoogleDrive(insertResult, uploadResult.fileUrl);
+        
+        return {
+            success: true,
+            documentId: insertResult._id,
+            message: 'ID uploaded successfully'
+        };
+        
+    } catch (error) {
+        console.error('Error uploading ID document:', error);
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+}
+
+/**
+ * Upload a supporting document
+ * 
+ * @param {Object} uploadData
+ * @param {Object} uploadData.file - The file object
+ * @param {string} uploadData.requirementId - The requirement record ID
+ * @param {Object} uploadData.metadata - GPS, timestamp, etc.
+ * @returns {Promise<{success: boolean, documentId: string, message: string}>}
+ */
+export async function uploadSupportingDocument(uploadData) {
+    try {
+        const { file, requirementId, metadata } = uploadData;
+        
+        // Get the requirement details
+        const requirement = await wixData.get('RequiredDocuments', requirementId);
+        
+        if (!requirement) {
+            return { success: false, message: 'Requirement not found' };
+        }
+        
+        // Generate unique filename
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const fileName = `${requirement.documentType || 'doc'}_${metadata.memberEmail.replace('@', '_at_')}_${timestamp}`;
+        
+        // Upload to Wix Media Manager
+        const uploadResult = await mediaManager.upload(
+            '/member-documents/supporting/',
+            file,
+            fileName,
+            {
+                mediaOptions: {
+                    mimeType: file.type || 'application/pdf'
+                },
+                metadataOptions: {
+                    isPrivate: true,
+                    isVisitorUpload: false
+                }
+            }
+        );
+        
+        // Save record to MemberDocuments collection
+        const documentRecord = {
+            memberEmail: metadata.memberEmail,
+            documentType: requirement.documentType || 'supporting',
+            documentName: requirement.documentName || 'Supporting Document',
+            fileName: fileName,
+            fileUrl: uploadResult.fileUrl,
+            mediaId: uploadResult.mediaId || uploadResult._id,
+            requirementId: requirementId,
+            status: 'pending_review',
+            metadata: JSON.stringify({
+                gps: metadata.gps,
+                uploadedAt: metadata.uploadedAt
+            })
+        };
+        
+        const insertResult = await wixData.insert('MemberDocuments', documentRecord);
+        
+        // Update the requirement status
+        requirement.status = 'uploaded';
+        requirement.uploadedDocumentId = insertResult._id;
+        await wixData.update('RequiredDocuments', requirement);
+        
+        // Sync to Google Drive
+        await syncToGoogleDrive(insertResult, uploadResult.fileUrl);
+        
+        return {
+            success: true,
+            documentId: insertResult._id,
+            message: 'Document uploaded successfully'
+        };
+        
+    } catch (error) {
+        console.error('Error uploading supporting document:', error);
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+}
+
+/**
+ * Sync uploaded document to Google Drive via GAS
+ * 
+ * @param {Object} documentRecord - The document record from database
+ * @param {string} fileUrl - The Wix media URL
+ */
+async function syncToGoogleDrive(documentRecord, fileUrl) {
+    try {
+        const gasWebhookUrl = await getSecret('GAS_WEBHOOK_URL');
+        
+        if (!gasWebhookUrl) {
+            console.log('GAS webhook URL not configured, skipping Drive sync');
+            return;
+        }
+        
+        const payload = {
+            action: 'saveDocumentToDrive',
+            document: {
+                memberEmail: documentRecord.memberEmail,
+                memberName: documentRecord.memberName || '',
+                documentType: documentRecord.documentType,
+                documentName: documentRecord.documentName || documentRecord.fileName,
+                fileUrl: fileUrl,
+                metadata: documentRecord.metadata
+            }
+        };
+        
+        const response = await fetch(gasWebhookUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (response.ok) {
+            // Update document record with Drive sync status
+            documentRecord.driveSynced = true;
+            documentRecord.driveSyncedAt = new Date();
+            await wixData.update('MemberDocuments', documentRecord);
+        }
+        
+    } catch (error) {
+        console.error('Error syncing to Google Drive:', error);
+        // Don't throw - Drive sync is secondary to the upload
+    }
+}
+
+/**
+ * Get all documents for a member
+ * 
+ * @param {string} memberEmail - The member's email
+ * @returns {Promise<{success: boolean, documents: Array}>}
+ */
+export async function getMemberDocuments(memberEmail) {
+    try {
+        const results = await wixData.query('MemberDocuments')
+            .eq('memberEmail', memberEmail)
+            .descending('_createdDate')
+            .find();
+        
+        return {
+            success: true,
+            documents: results.items
+        };
+        
+    } catch (error) {
+        console.error('Error getting member documents:', error);
+        return {
+            success: false,
+            documents: []
+        };
+    }
+}
+
+/**
+ * Verify a document (admin function)
+ * 
+ * @param {string} documentId - The document ID
+ * @param {boolean} verified - Whether the document is verified
+ * @param {string} notes - Admin notes
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+export async function verifyDocument(documentId, verified, notes) {
+    try {
+        const document = await wixData.get('MemberDocuments', documentId);
+        
+        if (!document) {
+            return { success: false, message: 'Document not found' };
+        }
+        
+        document.status = verified ? 'verified' : 'rejected';
+        document.verifiedAt = new Date();
+        document.verificationNotes = notes || '';
+        
+        await wixData.update('MemberDocuments', document);
+        
+        return {
+            success: true,
+            message: `Document ${verified ? 'verified' : 'rejected'} successfully`
+        };
+        
+    } catch (error) {
+        console.error('Error verifying document:', error);
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+}
