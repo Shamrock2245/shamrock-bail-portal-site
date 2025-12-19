@@ -1,0 +1,617 @@
+{
+  "counties": [
+    {
+      "county_name": "Alachua",
+      "sheriff_url": "https://acso.us/inmate-search/",
+      "clerk_url": "",
+      "jail_roster_url": "https://acso.us/inmate-search/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Baker",
+      "sheriff_url": "http://smartweb.bakercountysheriffsoffice.com/smartwebclient/jail.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "http://smartweb.bakercountysheriffsoffice.com/smartwebclient/jail.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Bay",
+      "sheriff_url": "https://www.baysomobile.org/is/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.baysomobile.org/is/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Bradford",
+      "sheriff_url": "http://smartweb.bradfordsheriff.org/smartwebclient/Jail.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "http://smartweb.bradfordsheriff.org/smartwebclient/Jail.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Brevard",
+      "sheriff_url": "https://www.brevardsheriff.com/bookings/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.brevardsheriff.com/bookings/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Broward",
+      "sheriff_url": "https://www.sheriff.org/DOD/Pages/ArrestSearch.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.sheriff.org/DOD/Pages/ArrestSearch.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Calhoun",
+      "sheriff_url": "https://mws-hrs.com/calhounsheriff/calhounsheriff/JailRosterReport.pdf",
+      "clerk_url": "",
+      "jail_roster_url": "https://mws-hrs.com/calhounsheriff/calhounsheriff/JailRosterReport.pdf",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Charlotte",
+      "sheriff_url": "https://www.ccso.org/forms/arrestdb.cfm",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.ccso.org/forms/arrestdb.cfm",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Active"
+    },
+    {
+      "county_name": "Citrus",
+      "sheriff_url": "https://www.sheriffcitrus.org/public_info/recent_arrest.php",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.sheriffcitrus.org/public_info/recent_arrest.php",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Clay",
+      "sheriff_url": "https://claysheriff.policetocitizen.com/DailyBulletin",
+      "clerk_url": "",
+      "jail_roster_url": "https://claysheriff.policetocitizen.com/DailyBulletin",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Collier",
+      "sheriff_url": "https://www2.colliersheriff.org/arrestsearch/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www2.colliersheriff.org/arrestsearch/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Columbia",
+      "sheriff_url": "http://50.204.15.10/smartwebclient/jail.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "http://50.204.15.10/smartwebclient/jail.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "DeSoto",
+      "sheriff_url": "https://jail.desotosheriff.org/DCN/",
+      "clerk_url": "",
+      "jail_roster_url": "https://jail.desotosheriff.org/DCN/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Active"
+    },
+    {
+      "county_name": "Dixie",
+      "sheriff_url": "https://smartcop.dixiecountysheriff.com/SmartWEBClient/jail.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "https://smartcop.dixiecountysheriff.com/SmartWEBClient/jail.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Duval",
+      "sheriff_url": "https://inmatesearch.jaxsheriff.org/login",
+      "clerk_url": "",
+      "jail_roster_url": "https://inmatesearch.jaxsheriff.org/login",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Escambia",
+      "sheriff_url": "https://inmatelookup.myescambia.com/smartwebclient/jail.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "https://inmatelookup.myescambia.com/smartwebclient/jail.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Flagler",
+      "sheriff_url": "https://nwwebcad.fcpsn.org/NewWorld.InmateInquiry/FL0180000",
+      "clerk_url": "",
+      "jail_roster_url": "https://nwwebcad.fcpsn.org/NewWorld.InmateInquiry/FL0180000",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Franklin",
+      "sheriff_url": "https://www.franklinsheriff.com/arrest-log/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.franklinsheriff.com/arrest-log/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Gadsden",
+      "sheriff_url": "https://gadsdensheriff.com/inmate-lookup/",
+      "clerk_url": "",
+      "jail_roster_url": "https://gadsdensheriff.com/inmate-lookup/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Gilchrist",
+      "sheriff_url": "https://www.gcso.us/contact-us/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.gcso.us/contact-us/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Glades",
+      "sheriff_url": "https://smartweb.gladessheriff.org/smartwebclient/Jail.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "https://smartweb.gladessheriff.org/smartwebclient/Jail.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Gulf",
+      "sheriff_url": "http://www.gulfsheriff.com/arrest-log.cfm",
+      "clerk_url": "",
+      "jail_roster_url": "http://www.gulfsheriff.com/arrest-log.cfm",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Hamilton",
+      "sheriff_url": "http://inmate.hamiltonsheriff.com/smartwebclient/jail.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "http://inmate.hamiltonsheriff.com/smartwebclient/jail.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Hardee",
+      "sheriff_url": "https://www.hardeeso.com/bureaus/inmate_search.php",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.hardeeso.com/bureaus/inmate_search.php",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Hendry",
+      "sheriff_url": "http://www.hendrysheriff.org/arrests_and_jail_info/arrest_and_inmate_search.php",
+      "clerk_url": "",
+      "jail_roster_url": "http://www.hendrysheriff.org/arrests_and_jail_info/arrest_and_inmate_search.php",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Active"
+    },
+    {
+      "county_name": "Hernando",
+      "sheriff_url": "https://www.hernandosheriff.org/applications/records/default.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.hernandosheriff.org/applications/records/default.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Highlands",
+      "sheriff_url": "https://www.highlandssheriff.org/inmateSearch",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.highlandssheriff.org/inmateSearch",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Hillsborough",
+      "sheriff_url": "https://webapps.hcso.tampa.fl.us/ArrestInquiry",
+      "clerk_url": "",
+      "jail_roster_url": "https://webapps.hcso.tampa.fl.us/ArrestInquiry",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Holmes",
+      "sheriff_url": "https://holmescosheriff.org/jail-division.html",
+      "clerk_url": "",
+      "jail_roster_url": "https://holmescosheriff.org/jail-division.html",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Indian River",
+      "sheriff_url": "https://www.ircsheriff.org/inmate-search",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.ircsheriff.org/inmate-search",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Jackson",
+      "sheriff_url": "https://jacksoncountyfl.gov/services/correctional-facility/",
+      "clerk_url": "",
+      "jail_roster_url": "https://jacksoncountyfl.gov/services/correctional-facility/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Jefferson",
+      "sheriff_url": "https://www.jcso-fl.org/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.jcso-fl.org/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Lafayette",
+      "sheriff_url": "https://www.lafayetteso.org/index.html",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.lafayetteso.org/index.html",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Lake",
+      "sheriff_url": "https://www.lcso.org/inmates/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.lcso.org/inmates/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Lee",
+      "sheriff_url": "https://www.sheriffleefl.org/booking-search/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.sheriffleefl.org/booking-search/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Active"
+    },
+    {
+      "county_name": "Leon",
+      "sheriff_url": "https://www.leoncountyso.com/departments/detention-facility/inmate-search",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.leoncountyso.com/departments/detention-facility/inmate-search",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Levy",
+      "sheriff_url": "https://levyso.com/detention-bureau/",
+      "clerk_url": "",
+      "jail_roster_url": "https://levyso.com/detention-bureau/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Liberty",
+      "sheriff_url": "https://libertycountysheriff.org/jail/",
+      "clerk_url": "",
+      "jail_roster_url": "https://libertycountysheriff.org/jail/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Madison",
+      "sheriff_url": "https://madisonjail.org/",
+      "clerk_url": "",
+      "jail_roster_url": "https://madisonjail.org/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Manatee",
+      "sheriff_url": "https://www.manateesheriff.com/arrest_inquiries/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.manateesheriff.com/arrest_inquiries/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Active"
+    },
+    {
+      "county_name": "Marion",
+      "sheriff_url": "http://jail.marionso.com/",
+      "clerk_url": "",
+      "jail_roster_url": "http://jail.marionso.com/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Martin",
+      "sheriff_url": "https://www.mcsofl.org/224/Recent-Bookings",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.mcsofl.org/224/Recent-Bookings",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Miami-Dade",
+      "sheriff_url": "https://www.miamidade.gov/Apps/mdcr/inmateSearch/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.miamidade.gov/Apps/mdcr/inmateSearch/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Monroe",
+      "sheriff_url": "https://www.keysso.net/arrests",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.keysso.net/arrests",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Nassau",
+      "sheriff_url": "https://dssinmate.nassauso.com/NewWorld.InmateInquiry/nassau",
+      "clerk_url": "",
+      "jail_roster_url": "https://dssinmate.nassauso.com/NewWorld.InmateInquiry/nassau",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Okaloosa",
+      "sheriff_url": "https://www.sheriff-okaloosa.org/news/arrest-information/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.sheriff-okaloosa.org/news/arrest-information/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Okeechobee",
+      "sheriff_url": "https://www.okeesheriff.org/inmate-search",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.okeesheriff.org/inmate-search",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Orange",
+      "sheriff_url": "https://netapps.ocfl.net/BestJail/Home/Inmates",
+      "clerk_url": "",
+      "jail_roster_url": "https://netapps.ocfl.net/BestJail/Home/Inmates",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Osceola",
+      "sheriff_url": "https://www.osceola.org/agencies-departments/corrections/corrections-reports.stml",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.osceola.org/agencies-departments/corrections/corrections-reports.stml",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Palm Beach",
+      "sheriff_url": "https://www.pbso.org/arrest-jail_menu",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.pbso.org/arrest-jail_menu",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Active"
+    },
+    {
+      "county_name": "Pasco",
+      "sheriff_url": "https://jailinfo.pascocorrections.net/JMC/#/inCustody",
+      "clerk_url": "",
+      "jail_roster_url": "https://jailinfo.pascocorrections.net/JMC/#/inCustody",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Pinellas",
+      "sheriff_url": "https://pcsoweb.com/InmateBooking",
+      "clerk_url": "",
+      "jail_roster_url": "https://pcsoweb.com/InmateBooking",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Polk",
+      "sheriff_url": "https://www.polksheriff.org/detention/jail-inquiry",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.polksheriff.org/detention/jail-inquiry",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Putnam",
+      "sheriff_url": "http://smartweb.pcso.us/smartwebclient/jail.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "http://smartweb.pcso.us/smartwebclient/jail.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Santa Rosa",
+      "sheriff_url": "https://santarosasheriff.org/jail-view/",
+      "clerk_url": "",
+      "jail_roster_url": "https://santarosasheriff.org/jail-view/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Sarasota",
+      "sheriff_url": "https://www.sarasotasheriff.org/arrest-reports/index.php",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.sarasotasheriff.org/arrest-reports/index.php",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Active"
+    },
+    {
+      "county_name": "Seminole",
+      "sheriff_url": "https://www.seminolesheriff.org/WebBond/Inmates.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.seminolesheriff.org/WebBond/Inmates.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "St. Johns",
+      "sheriff_url": "https://www.sjso.org/detention-center/sj-inmate-search/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.sjso.org/detention-center/sj-inmate-search/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "St. Lucie",
+      "sheriff_url": "https://www.stluciesheriff.com/215/Inmate-Lookup",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.stluciesheriff.com/215/Inmate-Lookup",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Sumter",
+      "sheriff_url": "https://portal.sumtercountysheriff.org/smartwebclient/jail.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "https://portal.sumtercountysheriff.org/smartwebclient/jail.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Suwannee",
+      "sheriff_url": "https://smartcop.suwanneesheriff.com/smartwebclient/jail.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "https://smartcop.suwanneesheriff.com/smartwebclient/jail.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Taylor",
+      "sheriff_url": "http://smartcop.taylorsheriff.org:8989/SmartWEBClient/Jail.aspx",
+      "clerk_url": "",
+      "jail_roster_url": "http://smartcop.taylorsheriff.org:8989/SmartWEBClient/Jail.aspx",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Union",
+      "sheriff_url": "http://www.unionsheriff.us/county-jail.php",
+      "clerk_url": "",
+      "jail_roster_url": "http://www.unionsheriff.us/county-jail.php",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Volusia",
+      "sheriff_url": "https://volusiamug.vcgov.org/",
+      "clerk_url": "",
+      "jail_roster_url": "https://volusiamug.vcgov.org/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Wakulla",
+      "sheriff_url": "https://www.wcso.org/",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.wcso.org/",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Walton",
+      "sheriff_url": "https://nwscorrections.waltonso.org/NewWorld.InMateInquiry/WaltonCounty",
+      "clerk_url": "",
+      "jail_roster_url": "https://nwscorrections.waltonso.org/NewWorld.InMateInquiry/WaltonCounty",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "Washington",
+      "sheriff_url": "https://www.wcso.us/inmateRoster",
+      "clerk_url": "",
+      "jail_roster_url": "https://www.wcso.us/inmateRoster",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    },
+    {
+      "county_name": "countyName",
+      "sheriff_url": "Website Link (Verified)",
+      "clerk_url": "",
+      "jail_roster_url": "Website Link (Verified)",
+      "phone_sheriff": "",
+      "phone_clerk": "",
+      "status": "Planned"
+    }
+  ],
+  "total": 68
+}

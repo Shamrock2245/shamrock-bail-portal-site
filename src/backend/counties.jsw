@@ -1,0 +1,108 @@
+import { fetch } from 'wix-fetch';
+
+/**
+ * Counties Backend Module
+ * Provides secure access to Florida county data for the front-end
+ */
+
+// Import the county data
+const countiesData = require('./data/florida-sheriff-clerk-directory.json');
+
+/**
+ * Get all Florida counties with sheriff and clerk information
+ * @returns {Promise<Object>} County data object with counties array and total count
+ */
+export async function getCounties() {
+  try {
+    return {
+      success: true,
+      data: countiesData
+    };
+  } catch (error) {
+    console.error('Error fetching counties:', error);
+    return {
+      success: false,
+      error: 'Failed to load county data'
+    };
+  }
+}
+
+/**
+ * Get a single county by name
+ * @param {string} countyName - The name of the county (e.g., "Lee")
+ * @returns {Promise<Object>} Single county object or null if not found
+ */
+export async function getCountyByName(countyName) {
+  try {
+    const normalizedName = countyName.trim().toLowerCase();
+    const county = countiesData.counties.find(
+      c => c.county_name.toLowerCase() === normalizedName
+    );
+    
+    return {
+      success: true,
+      data: county || null
+    };
+  } catch (error) {
+    console.error('Error fetching county:', error);
+    return {
+      success: false,
+      error: 'Failed to load county data'
+    };
+  }
+}
+
+/**
+ * Get counties filtered by status
+ * @param {string} status - Status to filter by ("Active" or "Planned")
+ * @returns {Promise<Object>} Filtered counties array
+ */
+export async function getCountiesByStatus(status) {
+  try {
+    const filtered = countiesData.counties.filter(
+      c => c.status === status
+    );
+    
+    return {
+      success: true,
+      data: {
+        counties: filtered,
+        total: filtered.length
+      }
+    };
+  } catch (error) {
+    console.error('Error filtering counties:', error);
+    return {
+      success: false,
+      error: 'Failed to filter county data'
+    };
+  }
+}
+
+/**
+ * Search counties by name (partial match)
+ * @param {string} searchTerm - Search term to match against county names
+ * @returns {Promise<Object>} Matching counties array
+ */
+export async function searchCounties(searchTerm) {
+  try {
+    const normalizedTerm = searchTerm.trim().toLowerCase();
+    const results = countiesData.counties.filter(
+      c => c.county_name.toLowerCase().includes(normalizedTerm)
+    );
+    
+    return {
+      success: true,
+      data: {
+        counties: results,
+        total: results.length
+      }
+    };
+  } catch (error) {
+    console.error('Error searching counties:', error);
+    return {
+      success: false,
+      error: 'Failed to search county data'
+    };
+  }
+}
