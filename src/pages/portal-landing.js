@@ -1,10 +1,6 @@
-/**
- * Page: portal-landing
- * Role-aware landing with login/signup prompts, magic link handling, and role-based CTAs.
- */
-
 import wixUsers from "wix-users";
 import wixLocation from "wix-location";
+import wixAnimations from "wix-animations";
 import { getUserRole, ROLES, onMagicLinkLogin } from "backend/portal-auth";
 
 $w.onReady(async function () {
@@ -18,19 +14,18 @@ $w.onReady(async function () {
     const { token } = wixLocation.query || {};
     if (token) {
       try {
-        const linkResult = await onMagicLinkLogin(token);
-        if (linkResult?.role) {
-          // Optionally show a toast/notice
-          // $w('#toast').text = "Link verified — welcome!"; $w('#toast').show();
+        const res = await onMagicLinkLogin(token);
+        if (!res.ok) {
+          try {
+            $w("#errorText").text = res.message || "Link validation failed.";
+            $w("#errorText").expand();
+          } catch (_) { }
         }
       } catch (e) {
-        // Soft-fail: continue, but show message
-        console.warn("Magic link validation failed:", e?.message);
-        // $w('#errorText').text = 'Your secure link is invalid or expired.'; $w('#errorText').show();
+        console.warn("Magic link validation error:", e?.message);
       } finally {
-        // Clean token out of URL (avoid reprocessing on refresh)
         wixLocation.to(`${wixLocation.baseUrl}${wixLocation.path}`);
-        return; // Let the page reload without the token
+        return;
       }
     }
 
@@ -70,12 +65,12 @@ function initSafeUI() {
   ].forEach((sel) => {
     try {
       $w(sel).collapse();
-    } catch (_) {}
+    } catch (_) { }
   });
   // Expand immediately-hidden elements we actually want initially:
   try {
     $w("#loadingStrip").expand();
-  } catch (_) {}
+  } catch (_) { }
 }
 
 function showLogin() {
@@ -137,12 +132,17 @@ function expandOnly(
   all.forEach((id) => {
     try {
       $w(id).collapse();
-    } catch (_) {}
+    } catch (_) { }
   });
   idsToShow.forEach((id) => {
     try {
       $w(id).expand();
-    } catch (_) {}
+      // Premium Touch: Fade in animation
+      wixAnimations.timeline()
+        .add($w(id), { opacity: 0, y: 10, duration: 0 })
+        .add($w(id), { opacity: 1, y: 0, duration: 800, easing: "easeOutCubic" })
+        .play();
+    } catch (_) { }
   });
 }
 

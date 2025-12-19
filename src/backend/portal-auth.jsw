@@ -198,39 +198,48 @@ export async function useMagicLink(token) {
  * - Returns { ok, role, caseId, goto }
  */
 export async function onMagicLinkLogin(token) {
-  if (!token || typeof token !== "string") throw new Error("MISSING_TOKEN");
+  if (!token || typeof token !== "string") return { ok: false, error: "MISSING_TOKEN", message: "No secure token provided." };
 
-  const link = await validateMagicLink(token);
-  if (!link) throw new Error("INVALID_OR_EXPIRED");
+  try {
+    const link = await validateMagicLink(token);
+    if (!link) {
+      return { ok: false, error: "INVALID_OR_EXPIRED", message: "This secure link has expired or has already been used. Please request a new one." };
+    }
 
-  const user = await wixUsersBackend.getCurrentUser();
-  if (!user) throw new Error("LOGIN_REQUIRED");
+    const user = await wixUsersBackend.getCurrentUser();
+    if (!user) {
+      return { ok: false, error: "LOGIN_REQUIRED", message: "Please log in or sign up to activate your portal access." };
+    }
 
-  // Upsert PortalUsers profile with role, personId, caseIds[]
-  const profile = await getUserProfile();
-  const caseIds = Array.isArray(profile?.caseIds) ? profile.caseIds : [];
-  if (link.caseId && !caseIds.includes(link.caseId)) caseIds.push(link.caseId);
+    // Upsert PortalUsers profile with role, personId, caseIds[]
+    const profile = await getUserProfile();
+    const caseIds = Array.isArray(profile?.caseIds) ? profile.caseIds : [];
+    if (link.caseId && !caseIds.includes(link.caseId)) caseIds.push(link.caseId);
 
-  const updated = {
-    ...(profile || {}),
-    userId: user.id,
-    personId: link.personId || profile?.personId,
-    role: (link.role || profile?.role || "").toLowerCase(),
-    caseIds,
-    updatedAt: new Date().toISOString(),
-    createdAt: profile?.createdAt || new Date().toISOString(),
-  };
-  await saveUserProfile(updated);
+    const updated = {
+      ...(profile || {}),
+      userId: user.id,
+      personId: link.personId || profile?.personId,
+      role: (link.role || profile?.role || "").toLowerCase(),
+      caseIds,
+      updatedAt: new Date().toISOString(),
+      createdAt: profile?.createdAt || new Date().toISOString(),
+    };
+    await saveUserProfile(updated);
 
-  await useMagicLink(token);
+    await useMagicLink(token);
 
-  const role = updated.role || null;
-  const caseId = link.caseId || null;
-  const goto = role
-    ? PORTAL_PATHS[role] || "/portal-landing"
-    : "/portal-landing";
+    const role = updated.role || null;
+    const caseId = link.caseId || null;
+    const goto = role
+      ? PORTAL_PATHS[role] || "/portal-landing"
+      : "/portal-landing";
 
-  return { ok: true, role, caseId, goto };
+    return { ok: true, role, caseId, goto, message: "Access granted! Welcome to your dashboard." };
+  } catch (err) {
+    console.error("onMagicLinkLogin error:", err);
+    return { ok: false, error: "SERVER_ERROR", message: "Something went wrong on our end. Please try again in a few minutes." };
+  }
 }
 
 /***** EMAIL SENDER (stub) *****/
