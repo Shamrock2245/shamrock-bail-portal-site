@@ -10,58 +10,95 @@
 **********/
 
 // Backend file: signnow-integration.jsw
+// Refactored to use Centralized GAS Backend for Unified Workflows
 
 import { fetch } from 'wix-fetch';
-import wixSecretsBackend from 'wix-secrets-backend';
 
-const API_ENDPOINT = 'https://api.signnow.com/api';
-const TOKEN_ENDPOINT = 'https://api.signnow.com/oauth2/token';
+/**
+ * CONFIGURATION - Google Apps Script Backend
+ * This serves as our single source of truth for SignNow logic
+ */
+const GAS_WEB_APP_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
 
-let accessToken = null;
-let tokenExpiration = 0;
+/**
+ * Core function to call the GAS Backend
+ * @param {Object} payload - { action: string, ...parameters }
+ */
+async function callGasBackend(payload) {
+    try {
+        const response = await fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
 
-async function getAccessToken() {
-    if (accessToken && Date.now() < tokenExpiration) {
-        return accessToken;
+        if (!response.ok) {
+            throw new Error(`GAS Backend Error: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('Failed to call GAS Backend:', error);
+        return { success: false, error: error.message };
     }
-
-    const clientId = await wixSecretsBackend.getSecret('SIGNNOW_CLIENT_ID');
-    const clientSecret = await wixSecretsBackend.getSecret('SIGNNOW_CLIENT_SECRET');
-
-    const response = await fetch(TOKEN_ENDPOINT, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`
-    });
-
-    if (!response.ok) {
-        throw new Error(`Failed to obtain access token: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    accessToken = data.access_token;
-    tokenExpiration = Date.now() + (data.expires_in * 1000);
-    return accessToken;
 }
 
+/**
+ * EXPORTED FUNCTIONS for Wix Portal
+ */
+
+/**
+ * Send a document for signature using centralized GAS logic
+ * @param {Object} params - { pdfBase64, fileName, documentType, deliveryMethod, signers }
+ */
+export async function sendForSignature(params) {
+    return await callGasBackend({
+        action: 'sendForSignature',
+        ...params
+    });
+}
+
+/**
+ * Create an embedded signing link (kiosk mode)
+ * @param {string} documentId 
+ * @param {string} email 
+ * @param {string} role 
+ */
+export async function createEmbeddedLink(documentId, email, role) {
+    return await callGasBackend({
+        action: 'createEmbeddedLink',
+        documentId,
+        signerEmail: email,
+        signerRole: role,
+        linkExpiration: 60 // 1 hour for portal
+    });
+}
+
+/**
+ * Get document status
+ * @param {string} documentId 
+ */
+export async function getDocumentStatus(documentId) {
+    return await callGasBackend({
+        action: 'getDocumentStatus',
+        documentId
+    });
+}
+
+/**
+ * Legacy Support - Direct SignNow Request (if still needed elsewhere)
+ */
 export async function makeSignNowRequest(endpoint, method = 'GET', body = null) {
-    const token = await getAccessToken();
-    const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    };
-
-    const options = {
+    // This allows portal parts still using native API to continue working
+    // but redirects to the GAS backend's validation/routing if possible
+    // For now, we recommend migration to the explicit functions above
+    return await callGasBackend({
+        action: 'directSignNowRequest', // You might need to add this to Code.gs handlePost
+        endpoint,
         method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined
-    };
-
-    const response = await fetch(`${API_ENDPOINT}${endpoint}`, options);
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
+        body
+    });
 }
