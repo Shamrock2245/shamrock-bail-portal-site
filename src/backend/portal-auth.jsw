@@ -6,7 +6,8 @@
 
 import wixData from "wix-data";
 import wixUsersBackend from "wix-users-backend";
-import { ok, notFound, serverError } from "wix-http-functions"; // (unused now, handy later)
+import { API_BASE_URL, API_TIMEOUT } from 'public/portal-config';
+// (unused now, handy later)
 import { secrets } from "wix-secrets-backend"; // for external API creds later
 
 /***** CONFIG & ROLES *****/

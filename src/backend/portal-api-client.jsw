@@ -8,7 +8,7 @@
  */
 
 import { fetch } from 'wix-fetch';
-import { API_BASE_URL, API_TIMEOUT, ERROR_MESSAGES } from './portal-config';
+import { API_BASE_URL, API_TIMEOUT, ERROR_MESSAGES } from 'public/portal-config';
 
 // ============================================================================
 // Core API Functions
@@ -27,74 +27,74 @@ import { API_BASE_URL, API_TIMEOUT, ERROR_MESSAGES } from './portal-config';
  */
 export async function apiCall(endpoint, method = 'GET', data = null, token = null, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   };
-  
+
   // Add authorization header if token provided
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   // Add idempotency key for critical operations
   if (options.idempotencyKey) {
     headers['Idempotency-Key'] = options.idempotencyKey;
   }
-  
+
   const requestOptions = {
     method,
     headers
   };
-  
+
   // Add body for POST, PATCH, PUT requests
   if (data && ['POST', 'PATCH', 'PUT'].includes(method)) {
     requestOptions.body = JSON.stringify(data);
   }
-  
+
   try {
     const response = await fetch(url, requestOptions);
-    
+
     // Handle different response status codes
     if (response.status === 401) {
       throw new Error(ERROR_MESSAGES.AUTH_ERROR);
     }
-    
+
     if (response.status === 403) {
       throw new Error(ERROR_MESSAGES.PERMISSION_ERROR);
     }
-    
+
     if (response.status === 404) {
       throw new Error(ERROR_MESSAGES.NOT_FOUND);
     }
-    
+
     if (response.status >= 500) {
       throw new Error(ERROR_MESSAGES.SERVER_ERROR);
     }
-    
+
     // Parse JSON response
     const responseData = await response.json();
-    
+
     // Check if response indicates an error
     if (!response.ok) {
       throw new Error(responseData.message || ERROR_MESSAGES.SERVER_ERROR);
     }
-    
+
     return responseData;
-    
+
   } catch (error) {
     console.error('API call failed:', {
       endpoint,
       method,
       error: error.message
     });
-    
+
     // Re-throw with more context
     if (error.message.includes('fetch')) {
       throw new Error(ERROR_MESSAGES.NETWORK_ERROR);
     }
-    
+
     throw error;
   }
 }
@@ -402,26 +402,26 @@ export async function uploadFile(file, fileType, token) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('type', fileType);
-  
+
   const url = `${API_BASE_URL}/upload`;
-  
+
   const headers = {
     'Authorization': `Bearer ${token}`
   };
-  
+
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers,
       body: formData
     });
-    
+
     if (!response.ok) {
       throw new Error('File upload failed');
     }
-    
+
     return await response.json();
-    
+
   } catch (error) {
     console.error('File upload failed:', error);
     throw new Error(ERROR_MESSAGES.SERVER_ERROR);
@@ -463,41 +463,41 @@ export async function checkAPIHealth() {
 export default {
   // Core
   apiCall,
-  
+
   // Persons
   createPerson,
   updatePerson,
   getPerson,
-  
+
   // Cases
   createCase,
   updateCase,
   getCase,
   listCases,
-  
+
   // Documents
   createDocument,
   updateDocument,
   getDocument,
   renderDocumentPDF,
-  
+
   // Signatures
   createSignature,
   getSignature,
   listDocumentSignatures,
-  
+
   // Payments
   authorizePayment,
   capturePayment,
   getPayment,
   getPaymentReceipt,
   listCasePayments,
-  
+
   // Check-ins
   createCheckin,
   getCheckin,
   listCaseCheckins,
-  
+
   // Utilities
   uploadFile,
   generateIdempotencyKey,

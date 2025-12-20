@@ -1,3 +1,4 @@
+/* global React, ReactDOM, BailBondDashboard, wixWindow */
 // Filename: public/bailBondDashboard.js
 
 // Code written in public files is shared by your site's

@@ -11,7 +11,7 @@ export async function getBailData(url) {
   try {
     // Fetch the HTML content from the provided URL
     const response = await fetch(url, { method: 'get' });
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch the booking sheet.');
     }
@@ -32,7 +32,7 @@ function extractChargesAndBailAmounts(htmlText) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlText, 'text/html');
   let bailAmounts = [];
-  
+
   // Extract charges and bail amounts using DOM methods or regex
   const charges = doc.querySelectorAll("#charges-content > div");
 
@@ -43,4 +43,8 @@ function extractChargesAndBailAmounts(htmlText) {
   });
 
   return { bailAmounts };
+}
+
+export async function processBookingSheet(url) {
+  return await getBailData(url);
 }

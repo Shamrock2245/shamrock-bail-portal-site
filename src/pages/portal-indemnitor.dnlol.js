@@ -11,8 +11,8 @@ import wixUsers from 'wix-users';
 import wixLocation from 'wix-location';
 import { getPersonId, isIndemnitor, requireAuth } from 'backend/portal-auth';
 import { getDocument, createDocument, updateDocument, authorizePayment, capturePayment } from 'backend/portal-api-client';
-import { validateForm } from 'backend/portal-validators';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from 'backend/portal-config';
+import { validateForm } from 'public/portal-validators';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from 'public/portal-config';
 
 let currentPersonId;
 let currentCaseId;

@@ -11,7 +11,7 @@ import wixUsers from 'wix-users';
 import wixLocation from 'wix-location';
 import { isStaff, requireStaff } from 'backend/portal-auth';
 import { listCases, getCase, renderDocumentPDF } from 'backend/portal-api-client';
-import { ERROR_MESSAGES } from 'backend/portal-config';
+import { ERROR_MESSAGES } from 'public/portal-config';
 
 $w.onReady(function () {
   initStaffConsole();

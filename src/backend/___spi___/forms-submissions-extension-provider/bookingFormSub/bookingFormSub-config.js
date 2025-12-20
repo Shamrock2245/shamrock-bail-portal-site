@@ -1,6 +1,7 @@
 // bookingFormSub-config.js
+import { customFormHandler } from './bookingFormSub';
 
-import * as formsSubmissionsExtensionProvider from 'interfaces-forms-v4-submission-extension';
+// import * as formsSubmissionsExtensionProvider from 'interfaces-forms-v4-submission-extension';
 
 /** @returns {import('interfaces-forms-v4-submission-extension').FormSubmissionSpiExtensionConfig} */
 export function getConfig() {
@@ -13,4 +14,3 @@ export function getConfig() {
 }
 
 // Import the custom form handler function from bookingFormSub.js
-import { customFormHandler } from 'backend/bookingFormSub';

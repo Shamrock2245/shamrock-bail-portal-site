@@ -21,12 +21,12 @@ const SHARED_DEFS = {
     type: 'string',
     pattern: '^(A[EKLRZ]|C[AOT]|D[CE]|FL|GA|HI|I[ADLN]|K[SY]|LA|M[ADEHINOPST]|N[CDEHJMVY]|O[HKR]|P[A]|RI|S[CD]|T[NX]|UT|V[AIT]|W[AIVY])$'
   },
-  
+
   Phone: {
     type: 'string',
     pattern: '^\\+?1?[ .-]?\\(?\\d{3}\\)?[ .-]?\\d{3}[ .-]?\\d{4}$'
   },
-  
+
   Address: {
     type: 'object',
     properties: {
@@ -39,7 +39,7 @@ const SHARED_DEFS = {
     required: ['line1', 'city', 'state', 'zip'],
     additionalProperties: false
   },
-  
+
   Money: {
     type: 'number',
     minimum: 0
@@ -116,7 +116,7 @@ export const CASE_SCHEMA = {
  */
 function validateAgainstSchema(schema, data) {
   const errors = [];
-  
+
   // Check required fields
   if (schema.required) {
     for (const field of schema.required) {
@@ -128,13 +128,13 @@ function validateAgainstSchema(schema, data) {
       }
     }
   }
-  
+
   // Check field types and patterns
   if (schema.properties) {
     for (const [field, fieldSchema] of Object.entries(schema.properties)) {
       if (field in data && data[field] !== null && data[field] !== undefined) {
         const value = data[field];
-        
+
         // Type validation
         if (fieldSchema.type) {
           const actualType = Array.isArray(value) ? 'array' : typeof value;
@@ -145,7 +145,7 @@ function validateAgainstSchema(schema, data) {
             });
           }
         }
-        
+
         // Pattern validation
         if (fieldSchema.pattern && typeof value === 'string') {
           const regex = new RegExp(fieldSchema.pattern);
@@ -156,7 +156,7 @@ function validateAgainstSchema(schema, data) {
             });
           }
         }
-        
+
         // Min length validation
         if (fieldSchema.minLength && typeof value === 'string') {
           if (value.length < fieldSchema.minLength) {
@@ -166,7 +166,7 @@ function validateAgainstSchema(schema, data) {
             });
           }
         }
-        
+
         // Enum validation
         if (fieldSchema.enum && !fieldSchema.enum.includes(value)) {
           errors.push({
@@ -174,13 +174,13 @@ function validateAgainstSchema(schema, data) {
             message: `${field} must be one of: ${fieldSchema.enum.join(', ')}`
           });
         }
-        
+
         // Nested object validation (Address)
         if (fieldSchema.$ref === '#/$defs/Address') {
           const addressErrors = validateAddress(value);
           errors.push(...addressErrors);
         }
-        
+
         // Phone validation
         if (fieldSchema.$ref === '#/$defs/Phone') {
           if (!VALIDATION_PATTERNS.PHONE.test(value)) {
@@ -193,7 +193,7 @@ function validateAgainstSchema(schema, data) {
       }
     }
   }
-  
+
   return {
     valid: errors.length === 0,
     errors
@@ -208,23 +208,23 @@ function validateAgainstSchema(schema, data) {
  */
 function validateAddress(address) {
   const errors = [];
-  
+
   if (!address.line1 || address.line1.trim() === '') {
     errors.push({ field: 'address.line1', message: 'Street address is required' });
   }
-  
+
   if (!address.city || address.city.trim() === '') {
     errors.push({ field: 'address.city', message: 'City is required' });
   }
-  
+
   if (!address.state || !VALIDATION_PATTERNS.ZIP.test(address.zip)) {
     errors.push({ field: 'address.state', message: 'Valid state is required' });
   }
-  
+
   if (!address.zip || !VALIDATION_PATTERNS.ZIP.test(address.zip)) {
     errors.push({ field: 'address.zip', message: 'Valid ZIP code is required' });
   }
-  
+
   return errors;
 }
 
@@ -242,11 +242,11 @@ export function validateEmail(email) {
   if (!email || email.trim() === '') {
     return { valid: false, message: 'Email is required' };
   }
-  
+
   if (!VALIDATION_PATTERNS.EMAIL.test(email)) {
     return { valid: false, message: 'Invalid email format' };
   }
-  
+
   return { valid: true, message: '' };
 }
 
@@ -260,11 +260,11 @@ export function validatePhone(phone) {
   if (!phone || phone.trim() === '') {
     return { valid: false, message: 'Phone number is required' };
   }
-  
+
   if (!VALIDATION_PATTERNS.PHONE.test(phone)) {
     return { valid: false, message: 'Invalid phone number format. Use (XXX) XXX-XXXX' };
   }
-  
+
   return { valid: true, message: '' };
 }
 
@@ -278,11 +278,11 @@ export function validateSSN(ssn) {
   if (!ssn || ssn.trim() === '') {
     return { valid: false, message: 'SSN is required' };
   }
-  
+
   if (!VALIDATION_PATTERNS.SSN.test(ssn)) {
     return { valid: false, message: 'Invalid SSN format. Use XXX-XX-XXXX' };
   }
-  
+
   return { valid: true, message: '' };
 }
 
@@ -296,11 +296,11 @@ export function validateZip(zip) {
   if (!zip || zip.trim() === '') {
     return { valid: false, message: 'ZIP code is required' };
   }
-  
+
   if (!VALIDATION_PATTERNS.ZIP.test(zip)) {
     return { valid: false, message: 'Invalid ZIP code format. Use XXXXX or XXXXX-XXXX' };
   }
-  
+
   return { valid: true, message: '' };
 }
 
@@ -314,17 +314,17 @@ export function validateDate(date) {
   if (!date || date.trim() === '') {
     return { valid: false, message: 'Date is required' };
   }
-  
+
   if (!VALIDATION_PATTERNS.DATE.test(date)) {
     return { valid: false, message: 'Invalid date format. Use YYYY-MM-DD' };
   }
-  
+
   // Check if date is valid
   const dateObj = new Date(date);
   if (isNaN(dateObj.getTime())) {
     return { valid: false, message: 'Invalid date' };
   }
-  
+
   return { valid: true, message: '' };
 }
 
@@ -339,24 +339,24 @@ export function validateDOB(dob) {
   if (!dateValidation.valid) {
     return dateValidation;
   }
-  
+
   const birthDate = new Date(dob);
   const today = new Date();
-  const age = today.getFullYear() - birthDate.getFullYear();
+  let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
-  
+
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
-  
+
   if (age < 18) {
     return { valid: false, message: 'Must be at least 18 years old' };
   }
-  
+
   if (age > 120) {
     return { valid: false, message: 'Invalid date of birth' };
   }
-  
+
   return { valid: true, message: '' };
 }
 
@@ -371,11 +371,11 @@ export function validateRequired(value, fieldName = 'This field') {
   if (value === null || value === undefined || value === '') {
     return { valid: false, message: `${fieldName} is required` };
   }
-  
+
   if (typeof value === 'string' && value.trim() === '') {
     return { valid: false, message: `${fieldName} is required` };
   }
-  
+
   return { valid: true, message: '' };
 }
 
@@ -391,7 +391,7 @@ export function validateMinLength(value, minLength, fieldName = 'This field') {
   if (!value || value.length < minLength) {
     return { valid: false, message: `${fieldName} must be at least ${minLength} characters` };
   }
-  
+
   return { valid: true, message: '' };
 }
 
@@ -406,15 +406,15 @@ export function validateAmount(amount, fieldName = 'Amount') {
   if (amount === null || amount === undefined) {
     return { valid: false, message: `${fieldName} is required` };
   }
-  
+
   if (typeof amount !== 'number' || isNaN(amount)) {
     return { valid: false, message: `${fieldName} must be a valid number` };
   }
-  
+
   if (amount < 0) {
     return { valid: false, message: `${fieldName} must be positive` };
   }
-  
+
   return { valid: true, message: '' };
 }
 
@@ -450,19 +450,19 @@ export function validateCase(caseData) {
  */
 export function validateDefendantApplication(formData) {
   const errors = [];
-  
+
   // Required fields
   const requiredFields = [
     'first_name', 'last_name', 'dob', 'address',
     'phone_primary', 'email'
   ];
-  
+
   for (const field of requiredFields) {
     if (!formData[field]) {
       errors.push({ field, message: `${field} is required` });
     }
   }
-  
+
   // Validate DOB
   if (formData.dob) {
     const dobValidation = validateDOB(formData.dob);
@@ -470,7 +470,7 @@ export function validateDefendantApplication(formData) {
       errors.push({ field: 'dob', message: dobValidation.message });
     }
   }
-  
+
   // Validate email
   if (formData.email) {
     const emailValidation = validateEmail(formData.email);
@@ -478,7 +478,7 @@ export function validateDefendantApplication(formData) {
       errors.push({ field: 'email', message: emailValidation.message });
     }
   }
-  
+
   // Validate phone
   if (formData.phone_primary) {
     const phoneValidation = validatePhone(formData.phone_primary);
@@ -486,7 +486,7 @@ export function validateDefendantApplication(formData) {
       errors.push({ field: 'phone_primary', message: phoneValidation.message });
     }
   }
-  
+
   return {
     valid: errors.length === 0,
     errors
@@ -501,19 +501,19 @@ export function validateDefendantApplication(formData) {
  */
 export function validateIndemnitorFinancial(formData) {
   const errors = [];
-  
+
   // Required fields
   const requiredFields = [
     'first_name', 'last_name', 'dob', 'ssn', 'address',
     'phone_primary', 'email', 'employer_name'
   ];
-  
+
   for (const field of requiredFields) {
     if (!formData[field]) {
       errors.push({ field, message: `${field} is required` });
     }
   }
-  
+
   // Validate SSN
   if (formData.ssn) {
     const ssnValidation = validateSSN(formData.ssn);
@@ -521,7 +521,7 @@ export function validateIndemnitorFinancial(formData) {
       errors.push({ field: 'ssn', message: ssnValidation.message });
     }
   }
-  
+
   // Validate DOB
   if (formData.dob) {
     const dobValidation = validateDOB(formData.dob);
@@ -529,7 +529,7 @@ export function validateIndemnitorFinancial(formData) {
       errors.push({ field: 'dob', message: dobValidation.message });
     }
   }
-  
+
   return {
     valid: errors.length === 0,
     errors
@@ -549,7 +549,7 @@ export function validateIndemnitorFinancial(formData) {
  */
 export function validateForm(formData, formType) {
   let result;
-  
+
   switch (formType) {
     case 'defendant':
       result = validateDefendantApplication(formData);
@@ -570,13 +570,13 @@ export function validateForm(formData, formType) {
         errorMessage: 'Unknown form type'
       };
   }
-  
+
   // Convert errors array to object keyed by field name
   const errorsObj = {};
   for (const error of result.errors) {
     errorsObj[error.field] = error.message;
   }
-  
+
   return {
     valid: result.valid,
     errors: errorsObj,
@@ -592,7 +592,7 @@ export default {
   // Schemas
   PERSON_SCHEMA,
   CASE_SCHEMA,
-  
+
   // Field validators
   validateEmail,
   validatePhone,
@@ -603,13 +603,13 @@ export default {
   validateRequired,
   validateMinLength,
   validateAmount,
-  
+
   // Document validators
   validatePerson,
   validateCase,
   validateDefendantApplication,
   validateIndemnitorFinancial,
-  
+
   // Form validator
   validateForm
 };

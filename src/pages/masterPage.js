@@ -11,6 +11,7 @@ import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { initHeader } from 'public/siteHeader.js';
 import { initFooter } from 'public/siteFooter.js';
+import { processBookingSheet } from 'public/bookingSheetHandler';
 
 // Phone number for CTAs
 const PHONE_TEL = 'tel:+12393322245';
@@ -19,19 +20,19 @@ $w.onReady(function () {
     // Initialize global components
     initHeader();
     initFooter();
-    
+
     // Set up mobile sticky CTA
     setupMobileStickyCTA();
-    
+
     // Set up scroll behavior
     setupScrollBehavior();
-    
+
     // Initialize analytics
     initAnalytics();
-    
+
     // Check for URL parameters
     handleUrlParameters();
-    
+
     // Set up global error handling
     setupErrorHandling();
 });
@@ -43,17 +44,17 @@ function setupMobileStickyCTA() {
     wixWindow.getBoundingRect()
         .then((windowSize) => {
             const isMobile = windowSize.window.width < 768;
-            
+
             if (isMobile) {
                 // Show sticky CTA on mobile
                 $w('#stickyMobileCTA').show();
-                
+
                 // Call button
                 $w('#stickyCallBtn').onClick(() => {
                     trackEvent('Sticky_CTA_Click', { button: 'call' });
                     wixLocation.to(PHONE_TEL);
                 });
-                
+
                 // Start Bail button
                 $w('#stickyStartBtn').onClick(() => {
                     trackEvent('Sticky_CTA_Click', { button: 'start_bail' });
@@ -72,17 +73,17 @@ function setupMobileStickyCTA() {
 function setupScrollBehavior() {
     // Header shadow on scroll
     let lastScrollTop = 0;
-    
+
     // Note: Wix doesn't have a direct scroll event on $w
     // This would typically be handled with custom code or Wix animations
-    
+
     // Back to top button
     if ($w('#backToTopBtn').valid) {
         $w('#backToTopBtn').hide();
-        
+
         // Show after scrolling down
         // This would need to be implemented with viewport detection
-        
+
         $w('#backToTopBtn').onClick(() => {
             $w('#header').scrollTo();
             trackEvent('Back_To_Top_Click');
@@ -101,12 +102,12 @@ function initAnalytics() {
         referrer: document.referrer || 'direct',
         timestamp: new Date().toISOString()
     };
-    
+
     trackEvent('Page_Load', pageData);
-    
+
     // Track time on page
     const startTime = Date.now();
-    
+
     // Note: Wix doesn't have a beforeunload equivalent
     // Time tracking would need to be done differently
 }
@@ -116,7 +117,7 @@ function initAnalytics() {
  */
 function handleUrlParameters() {
     const params = wixLocation.query;
-    
+
     // UTM tracking
     if (params.utm_source || params.utm_medium || params.utm_campaign) {
         const utmData = {
@@ -126,20 +127,20 @@ function handleUrlParameters() {
             term: params.utm_term || '',
             content: params.utm_content || ''
         };
-        
+
         // Store in session for attribution
         import('wix-storage').then((wixStorage) => {
             wixStorage.session.setItem('utm_data', JSON.stringify(utmData));
         });
-        
+
         trackEvent('UTM_Visit', utmData);
     }
-    
+
     // Referral tracking
     if (params.ref) {
         trackEvent('Referral_Visit', { referrer: params.ref });
     }
-    
+
     // Show specific content based on params
     if (params.county) {
         // Highlight county in navigation or show county-specific messaging
@@ -164,9 +165,9 @@ function trackEvent(eventName, eventData = {}) {
         page: wixLocation.path.join('/'),
         timestamp: new Date().toISOString()
     };
-    
+
     wixWindow.trackEvent(eventName, enrichedData);
-    
+
     // Also log to console in development
     console.log(`[Analytics] ${eventName}:`, enrichedData);
 }
@@ -211,7 +212,7 @@ export function showToast(message, type = 'info') {
     if ($w('#toastNotification').valid) {
         $w('#toastMessage').text = message;
         $w('#toastNotification').show('fade', { duration: 300 });
-        
+
         // Auto-hide after 3 seconds
         setTimeout(() => {
             $w('#toastNotification').hide('fade', { duration: 300 });
