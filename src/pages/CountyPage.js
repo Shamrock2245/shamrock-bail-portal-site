@@ -1,208 +1,326 @@
 /**
- * Shamrock Bail Bonds - Dynamic County Page
- * Displays county-specific bail bond information
+ * Shamrock Bail Bonds - County Page Template
+ * 
+ * Dynamic page template for individual county bail bond pages.
+ * Each county page provides localized information, resources, and SEO optimization.
+ * 
+ * URL Pattern: /bail-bonds/{county-slug}-county
+ * Example: /bail-bonds/lee-county
+ * 
+ * Page Elements (Wix Editor IDs):
+ * - #countyName: County name display
+ * - #heroSection: County-specific hero
+ * - #quickLinks: Sheriff, Clerk, Court links
+ * - #localInfo: Local jail and court information
+ * - #bailProcess: County-specific bail process
+ * - #ctaSection: Call to action
+ * - #nearbyCounties: Links to adjacent counties
  */
 
-import { get_countyBySlug } from 'backend/counties-api.web';
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
+import wixData from 'wix-data';
+import { getCountyData, getNearbyCounties } from 'public/countyUtils.js';
+
+// Phone number for CTAs
+const PHONE_NUMBER = '239-332-2245';
+const PHONE_TEL = 'tel:+12393322245';
 
 let currentCounty = null;
 
 $w.onReady(function () {
-  // Get county slug from URL or lightbox context
-  const slug = getCountySlug();
-  
-  if (slug) {
-    loadCountyData(slug);
-  } else {
-    showError('County not specified');
-  }
-  
-  // Set up button handlers
-  setupButtons();
+    initializePage();
 });
 
 /**
- * Get county slug from URL or lightbox
- * @returns {string|null} County slug
+ * Initialize the county page
  */
-function getCountySlug() {
-  // Try to get from URL first (for dynamic pages)
-  const urlSlug = wixLocation.path[0];
-  if (urlSlug) {
-    return urlSlug;
-  }
-  
-  // Try to get from lightbox context
-  if (wixWindow.lightbox && wixWindow.lightbox.getContext) {
-    const context = wixWindow.lightbox.getContext();
-    if (context && context.slug) {
-      return context.slug;
+async function initializePage() {
+    // Get county from URL
+    const countySlug = getCountySlugFromUrl();
+    
+    if (!countySlug) {
+        // Redirect to county directory if no county specified
+        wixLocation.to('/bail-bonds');
+        return;
     }
-  }
-  
-  return null;
-}
-
-/**
- * Load county data and populate page
- * @param {string} slug - County slug
- */
-async function loadCountyData(slug) {
-  try {
-    // Show loading state
-    showLoading();
     
-    const response = await get_countyBySlug(slug);
+    // Load county data
+    currentCounty = await loadCountyData(countySlug);
     
-    if (response.success && response.county) {
-      currentCounty = response.county;
-      populateCountyInfo(currentCounty);
-      hideLoading();
-    } else {
-      showError('County not found');
+    if (!currentCounty) {
+        // County not found - show error or redirect
+        showCountyNotFound();
+        return;
     }
-  } catch (error) {
-    console.error('Error loading county:', error);
-    showError('Failed to load county information');
-  }
-}
-
-/**
- * Populate page with county information
- * @param {Object} county - County data object
- */
-function populateCountyInfo(county) {
-  // Set page title
-  $w('#countyNameTitle').text = `${county.countyName} County Bail Bonds`;
-  
-  // Set meta title for SEO
-  wixWindow.setTitle(`${county.countyName} County Bail Bonds | Shamrock Bail Bonds`);
-  
-  // Set subheading
-  $w('#countySubheading').text = `24/7 Bail Bond Services in ${county.countyName} County, Florida`;
-  
-  // Populate quick info
-  if (county.bookingPhoneNumber) {
-    $w('#sheriffPhoneText').text = county.bookingPhoneNumber;
-    $w('#sheriffPhoneSection').show();
-  } else {
-    $w('#sheriffPhoneSection').hide();
-  }
-  
-  if (county.clerkPhoneNumber) {
-    $w('#clerkPhoneText').text = county.clerkPhoneNumber;
-    $w('#clerkPhoneSection').show();
-  } else {
-    $w('#clerkPhoneSection').hide();
-  }
-  
-  // Set up inmate search button
-  if (county.bookingWebsiteLink) {
-    $w('#inmateSearchButton').link = county.bookingWebsiteLink;
-    $w('#inmateSearchButton').target = '_blank';
-    $w('#inmateSearchButton').show();
-  } else {
-    $w('#inmateSearchButton').hide();
-  }
-  
-  // Set up court records button
-  if (county.recordsSearchLink) {
-    $w('#courtRecordsButton').link = county.recordsSearchLink;
-    $w('#courtRecordsButton').target = '_blank';
-    $w('#courtRecordsButton').show();
-  } else {
-    $w('#courtRecordsButton').hide();
-  }
-  
-  // Populate county-specific content
-  $w('#countyContentText').html = generateCountyContent(county);
-}
-
-/**
- * Generate county-specific content
- * @param {Object} county - County data
- * @returns {string} HTML content
- */
-function generateCountyContent(county) {
-  return `
-    <h2>Fast Bail Bonds in ${county.countyName} County</h2>
-    <p>When someone you care about is arrested in ${county.countyName} County, time is critical. Shamrock Bail Bonds provides fast, professional, and confidential bail bond services 24 hours a day, 7 days a week.</p>
     
-    <h3>Why Choose Shamrock for ${county.countyName} County Bail Bonds?</h3>
-    <ul>
-      <li><strong>Local Expertise:</strong> We know the ${county.countyName} County jail system and court processes inside and out.</li>
-      <li><strong>Fast Release:</strong> We work quickly to post bail and secure release as soon as possible.</li>
-      <li><strong>Payment Plans:</strong> Flexible payment options to fit your budget.</li>
-      <li><strong>24/7 Availability:</strong> Call us anytime, day or night.</li>
-      <li><strong>Bilingual Service:</strong> English and Spanish-speaking agents available.</li>
-    </ul>
+    // Populate page with county data
+    populateCountyPage(currentCounty);
     
-    <h3>How to Get Started</h3>
-    <p>Call us immediately at <strong>(239) 332-2245</strong>. Our experienced agents will guide you through the bail bond process step by step. We'll need basic information about the person in custody, and we can start the paperwork right away.</p>
+    // Set up event listeners
+    setupEventListeners();
     
-    <p>For Spanish-speaking assistance, call <strong>(239) 955-0301</strong>.</p>
-  `;
-}
-
-/**
- * Set up button click handlers
- */
-function setupButtons() {
-  // Call now button
-  $w('#callNowButton').onClick(() => {
-    window.location.href = 'tel:+12393322245';
-  });
-  
-  // Start bail paperwork button
-  $w('#startBailButton').onClick(() => {
-    wixWindow.openLightbox('MemberLogin');
-  });
-  
-  // Back to counties button
-  if ($w('#backToCountiesButton')) {
-    $w('#backToCountiesButton').onClick(() => {
-      wixWindow.openPage('/counties');
+    // Set SEO metadata
+    setCountySEO(currentCounty);
+    
+    // Track page view
+    trackEvent('PageView', { 
+        page: 'CountyPage', 
+        county: currentCounty.name 
     });
-  }
 }
 
 /**
- * Show loading state
+ * Extract county slug from URL
  */
-function showLoading() {
-  if ($w('#loadingSpinner')) {
-    $w('#loadingSpinner').show();
-  }
-  if ($w('#countyContent')) {
-    $w('#countyContent').hide();
-  }
+function getCountySlugFromUrl() {
+    const path = wixLocation.path;
+    // URL pattern: /bail-bonds/{county-slug}-county
+    if (path.length >= 2 && path[0] === 'bail-bonds') {
+        const countyPart = path[1];
+        // Remove '-county' suffix if present
+        return countyPart.replace(/-county$/, '');
+    }
+    return null;
 }
 
 /**
- * Hide loading state
+ * Load county data from database or JSON
  */
-function hideLoading() {
-  if ($w('#loadingSpinner')) {
-    $w('#loadingSpinner').hide();
-  }
-  if ($w('#countyContent')) {
-    $w('#countyContent').show();
-  }
+async function loadCountyData(countySlug) {
+    try {
+        // Try to load from Wix Data collection first
+        const results = await wixData.query('FloridaCounties')
+            .eq('slug', countySlug)
+            .find();
+        
+        if (results.items.length > 0) {
+            return results.items[0];
+        }
+        
+        // Fallback to static data
+        return getCountyData(countySlug);
+    } catch (error) {
+        console.error('Error loading county data:', error);
+        return getCountyData(countySlug);
+    }
 }
 
 /**
- * Show error message
- * @param {string} message - Error message
+ * Populate page elements with county data
  */
-function showError(message) {
-  console.error('County page error:', message);
-  
-  if ($w('#errorMessage')) {
-    $w('#errorMessage').text = message;
-    $w('#errorMessage').show();
-  }
-  
-  hideLoading();
+function populateCountyPage(county) {
+    // County name in hero
+    $w('#countyName').text = `${county.name} County`;
+    $w('#heroTitle').text = `${county.name} County Bail Bonds`;
+    $w('#heroSubtitle').text = `Fast, professional bail bond services in ${county.name} County, Florida. Available 24/7.`;
+    
+    // Quick links section
+    populateQuickLinks(county);
+    
+    // Local information
+    populateLocalInfo(county);
+    
+    // Nearby counties
+    populateNearbyCounties(county);
+    
+    // Update breadcrumb
+    $w('#breadcrumbCounty').text = `${county.name} County`;
 }
+
+/**
+ * Populate quick links (Sheriff, Clerk, Records)
+ */
+function populateQuickLinks(county) {
+    // Sheriff/Booking link
+    if ($w('#sheriffLink').valid) {
+        $w('#sheriffLink').link = county.bookingUrl;
+        $w('#sheriffLink').target = '_blank';
+        $w('#sheriffPhone').text = county.bookingPhone;
+    }
+    
+    // Clerk of Court link
+    if ($w('#clerkLink').valid) {
+        $w('#clerkLink').link = county.clerkUrl;
+        $w('#clerkLink').target = '_blank';
+        $w('#clerkPhone').text = county.clerkPhone;
+    }
+    
+    // Records search link
+    if ($w('#recordsLink').valid) {
+        $w('#recordsLink').link = county.recordsUrl;
+        $w('#recordsLink').target = '_blank';
+    }
+}
+
+/**
+ * Populate local jail and court information
+ */
+function populateLocalInfo(county) {
+    // This would be populated with county-specific content
+    // For now, we'll use template content
+    
+    const localContent = `
+        <h3>Bail Bonds in ${county.name} County</h3>
+        <p>Shamrock Bail Bonds provides fast, professional bail bond services throughout ${county.name} County, Florida. Our experienced agents are available 24 hours a day, 7 days a week to help you or your loved one get out of jail quickly.</p>
+        
+        <h4>Why Choose Shamrock for ${county.name} County Bail?</h4>
+        <ul>
+            <li>Local expertise with ${county.name} County jail procedures</li>
+            <li>Fast processing - typically 2-4 hours from start to release</li>
+            <li>Flexible payment plans available</li>
+            <li>Confidential, professional service</li>
+            <li>Licensed and insured</li>
+        </ul>
+        
+        <h4>${county.name} County Jail Information</h4>
+        <p>For inmate information and booking details, contact the ${county.name} County Sheriff's Office at ${county.bookingPhone} or visit their <a href="${county.bookingUrl}" target="_blank">online booking search</a>.</p>
+    `;
+    
+    if ($w('#localInfoContent').valid) {
+        $w('#localInfoContent').html = localContent;
+    }
+}
+
+/**
+ * Populate nearby counties section
+ */
+async function populateNearbyCounties(county) {
+    const nearbyCounties = await getNearbyCounties(county.slug);
+    
+    if ($w('#nearbyCountiesRepeater').valid && nearbyCounties.length > 0) {
+        $w('#nearbyCountiesRepeater').data = nearbyCounties;
+        $w('#nearbyCountiesRepeater').onItemReady(($item, itemData) => {
+            $item('#nearbyCountyName').text = `${itemData.name} County`;
+            $item('#nearbyCountyLink').link = `/bail-bonds/${itemData.slug}-county`;
+        });
+    }
+}
+
+/**
+ * Set up event listeners
+ */
+function setupEventListeners() {
+    // Call Now CTA
+    $w('#callNowBtn').onClick(() => {
+        trackEvent('CTA_Click', { 
+            button: 'call_now', 
+            page: 'county_page',
+            county: currentCounty?.name 
+        });
+        wixLocation.to(PHONE_TEL);
+    });
+    
+    // Start Bail CTA
+    $w('#startBailBtn').onClick(() => {
+        trackEvent('CTA_Click', { 
+            button: 'start_bail', 
+            page: 'county_page',
+            county: currentCounty?.name 
+        });
+        wixLocation.to('/members/start-bail');
+    });
+    
+    // Mobile Sticky CTAs
+    $w('#mobileCallBtn').onClick(() => {
+        trackEvent('CTA_Click', { 
+            button: 'call_now', 
+            location: 'sticky_mobile',
+            county: currentCounty?.name 
+        });
+        wixLocation.to(PHONE_TEL);
+    });
+    
+    $w('#mobileStartBtn').onClick(() => {
+        trackEvent('CTA_Click', { 
+            button: 'start_bail', 
+            location: 'sticky_mobile',
+            county: currentCounty?.name 
+        });
+        wixLocation.to('/members/start-bail');
+    });
+    
+    // External links tracking
+    $w('#sheriffLink').onClick(() => {
+        trackEvent('External_Link', { 
+            type: 'sheriff',
+            county: currentCounty?.name 
+        });
+    });
+    
+    $w('#clerkLink').onClick(() => {
+        trackEvent('External_Link', { 
+            type: 'clerk',
+            county: currentCounty?.name 
+        });
+    });
+    
+    $w('#recordsLink').onClick(() => {
+        trackEvent('External_Link', { 
+            type: 'records',
+            county: currentCounty?.name 
+        });
+    });
+}
+
+/**
+ * Set SEO metadata for the county page
+ */
+function setCountySEO(county) {
+    import('wix-seo').then((wixSEO) => {
+        wixSEO.title = `${county.name} County Bail Bonds | 24/7 Service | Shamrock Bail Bonds`;
+        
+        wixSEO.metaTags = [
+            { 
+                name: "description", 
+                content: `Need bail bonds in ${county.name} County, Florida? Shamrock Bail Bonds offers 24/7 professional bail bond services. Fast release, flexible payments. Call ${PHONE_NUMBER}.`
+            },
+            { 
+                name: "keywords", 
+                content: `${county.name} County bail bonds, bail bondsman ${county.name} County FL, ${county.name} jail bail, Florida bail bonds`
+            }
+        ];
+        
+        // Structured data for local business
+        const structuredData = {
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            "name": "Shamrock Bail Bonds",
+            "description": `Bail bond services in ${county.name} County, Florida`,
+            "telephone": PHONE_NUMBER,
+            "areaServed": {
+                "@type": "AdministrativeArea",
+                "name": `${county.name} County, Florida`
+            },
+            "openingHours": "Mo-Su 00:00-24:00",
+            "priceRange": "$$"
+        };
+        
+        wixSEO.structuredData = [structuredData];
+    });
+}
+
+/**
+ * Show county not found message
+ */
+function showCountyNotFound() {
+    $w('#pageContent').hide();
+    $w('#notFoundMessage').show();
+    $w('#notFoundMessage').text = "County not found. Please select a county from our directory.";
+    
+    // Redirect after delay
+    setTimeout(() => {
+        wixLocation.to('/bail-bonds');
+    }, 3000);
+}
+
+/**
+ * Track custom events
+ */
+function trackEvent(eventName, eventData) {
+    import('wix-window').then((wixWindow) => {
+        wixWindow.trackEvent(eventName, eventData);
+    });
+}
+
+export { initializePage, loadCountyData, populateCountyPage };
