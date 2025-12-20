@@ -99,7 +99,7 @@ function initAnalytics() {
     const pageData = {
         path: wixLocation.path.join('/'),
         url: wixLocation.url,
-        referrer: document.referrer || 'direct',
+        referrer: 'direct', // document.referrer is not available in Wix Velo
         timestamp: new Date().toISOString()
     };
 
