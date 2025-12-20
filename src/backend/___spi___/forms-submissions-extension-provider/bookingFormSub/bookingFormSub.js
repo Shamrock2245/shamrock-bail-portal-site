@@ -1,8 +1,7 @@
 /* global console */
 // bookingFormSub.js
 import { fetch } from 'wix-fetch';
-
-const GAS_WEB_APP_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
+import { getSecret } from 'wix-secrets-backend';
 
 /**
  * Custom form submission handler for Velo SPI
@@ -16,8 +15,14 @@ export async function customFormHandler(submissionData) {
     try {
         console.log(`Processing form submission for Form ID: ${formId}`);
 
+        // Get GAS URL from secrets
+        const gasUrl = await getSecret('GAS_WEB_APP_URL');
+        if (!gasUrl) {
+            throw new Error('GAS_WEB_APP_URL secret is not configured');
+        }
+
         // Call the GAS Backend to ingest the form data as a lead
-        const response = await fetch(GAS_WEB_APP_URL, {
+        const response = await fetch(gasUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

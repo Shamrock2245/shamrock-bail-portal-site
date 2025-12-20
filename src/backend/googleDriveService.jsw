@@ -15,8 +15,7 @@ import wixData from 'wix-data';
  * The GAS backend handles OAuth and has direct Drive access
  */
 const getGasUrl = async () => {
-    return await getSecret('GAS_WEBHOOK_URL') || 
-           'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
+    return await getSecret('GAS_WEB_APP_URL');
 };
 
 /**
@@ -31,7 +30,7 @@ const getGasUrl = async () => {
 export async function createCaseFolder(caseData) {
     try {
         const gasUrl = await getGasUrl();
-        
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -43,13 +42,13 @@ export async function createCaseFolder(caseData) {
                 createdAt: new Date().toISOString()
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`Failed to create case folder: ${response.statusText}`);
         }
-        
+
         const result = await response.json();
-        
+
         // Store folder reference in database
         if (result.success && result.folderId) {
             await wixData.insert('CaseFolders', {
@@ -61,9 +60,9 @@ export async function createCaseFolder(caseData) {
                 createdAt: new Date()
             });
         }
-        
+
         return result;
-        
+
     } catch (error) {
         console.error('Error creating case folder:', error);
         return { success: false, error: error.message };
@@ -84,7 +83,7 @@ export async function createCaseFolder(caseData) {
 export async function saveDocumentToCase(documentData) {
     try {
         const gasUrl = await getGasUrl();
-        
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -97,13 +96,13 @@ export async function saveDocumentToCase(documentData) {
                 metadata: documentData.metadata || {}
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`Failed to save document: ${response.statusText}`);
         }
-        
+
         const result = await response.json();
-        
+
         // Log document save
         if (result.success) {
             await wixData.insert('DocumentSaves', {
@@ -114,9 +113,9 @@ export async function saveDocumentToCase(documentData) {
                 savedAt: new Date()
             });
         }
-        
+
         return result;
-        
+
     } catch (error) {
         console.error('Error saving document to case:', error);
         return { success: false, error: error.message };
@@ -137,10 +136,10 @@ export async function saveDocumentToCase(documentData) {
 export async function saveMemberIdDocument(idData) {
     try {
         const gasUrl = await getGasUrl();
-        
+
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `ID_${idData.idType}_${idData.memberName.replace(/\s+/g, '_')}_${timestamp}`;
-        
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -158,13 +157,13 @@ export async function saveMemberIdDocument(idData) {
                 }
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`Failed to save ID document: ${response.statusText}`);
         }
-        
+
         return await response.json();
-        
+
     } catch (error) {
         console.error('Error saving member ID document:', error);
         return { success: false, error: error.message };
@@ -185,10 +184,10 @@ export async function saveMemberIdDocument(idData) {
 export async function saveSignedPaperwork(paperworkData) {
     try {
         const gasUrl = await getGasUrl();
-        
+
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `Signed_${paperworkData.documentName || 'BailPaperwork'}_${timestamp}.pdf`;
-        
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -201,13 +200,13 @@ export async function saveSignedPaperwork(paperworkData) {
                 signingMetadata: paperworkData.signingMetadata || {}
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`Failed to save signed paperwork: ${response.statusText}`);
         }
-        
+
         const result = await response.json();
-        
+
         // Update signing session with Drive info
         if (result.success && paperworkData.sessionId) {
             const session = await wixData.get('SigningSessions', paperworkData.sessionId);
@@ -218,9 +217,9 @@ export async function saveSignedPaperwork(paperworkData) {
                 await wixData.update('SigningSessions', session);
             }
         }
-        
+
         return result;
-        
+
     } catch (error) {
         console.error('Error saving signed paperwork:', error);
         return { success: false, error: error.message };
@@ -236,7 +235,7 @@ export async function saveSignedPaperwork(paperworkData) {
 export async function getCaseDocuments(caseNumber) {
     try {
         const gasUrl = await getGasUrl();
-        
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -245,13 +244,13 @@ export async function getCaseDocuments(caseNumber) {
                 caseNumber: caseNumber
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`Failed to get case documents: ${response.statusText}`);
         }
-        
+
         return await response.json();
-        
+
     } catch (error) {
         console.error('Error getting case documents:', error);
         return { success: false, documents: [] };
@@ -267,7 +266,7 @@ export async function getCaseDocuments(caseNumber) {
 export async function getDocumentDownloadUrl(fileId) {
     try {
         const gasUrl = await getGasUrl();
-        
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -276,13 +275,13 @@ export async function getDocumentDownloadUrl(fileId) {
                 fileId: fileId
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`Failed to get download URL: ${response.statusText}`);
         }
-        
+
         return await response.json();
-        
+
     } catch (error) {
         console.error('Error getting download URL:', error);
         return { success: false, error: error.message };
@@ -298,7 +297,7 @@ export async function getDocumentDownloadUrl(fileId) {
 export async function deleteDocument(fileId) {
     try {
         const gasUrl = await getGasUrl();
-        
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -307,13 +306,13 @@ export async function deleteDocument(fileId) {
                 fileId: fileId
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`Failed to delete document: ${response.statusText}`);
         }
-        
+
         return await response.json();
-        
+
     } catch (error) {
         console.error('Error deleting document:', error);
         return { success: false, error: error.message };
