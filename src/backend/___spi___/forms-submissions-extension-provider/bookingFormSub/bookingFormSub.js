@@ -1,3 +1,4 @@
+/* global console */
 // bookingFormSub.js
 import { fetch } from 'wix-fetch';
 
