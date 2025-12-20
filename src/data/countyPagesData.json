@@ -1,0 +1,501 @@
+{
+  "counties": [
+    {
+      "name": "Alachua",
+      "slug": "alachua-county",
+      "region": "North Central",
+      "population": "269000",
+      "countySeat": "Gainesville",
+      "sheriff": {
+        "name": "Alachua County Sheriff's Office",
+        "phone": "(352) 367-4000",
+        "bookingUrl": "https://acso.us/inmate-search/"
+      },
+      "clerk": {
+        "name": "Alachua County Clerk of Court",
+        "phone": "(352) 374-3636",
+        "website": "https://www.alachuacounty.us/Depts/Clerk/Pages/Clerk.aspx",
+        "recordsUrl": "https://www.alachuaclerk.org/court_records/index.cfm?section=login&r=331568"
+      },
+      "seo": {
+        "title": "Alachua County Bail Bonds | Gainesville FL | 24/7 Service",
+        "description": "Need bail bonds in Alachua County? Shamrock Bail Bonds provides fast, professional bail bond services in Gainesville and all of Alachua County. Call 239-332-2245.",
+        "keywords": "Alachua County bail bonds, Gainesville bail bonds, bail bondsman Alachua, jail release Gainesville"
+      }
+    },
+    {
+      "name": "Baker",
+      "slug": "baker-county",
+      "region": "Northeast",
+      "population": "29000",
+      "countySeat": "Macclenny",
+      "sheriff": {
+        "name": "Baker County Sheriff's Office",
+        "phone": "(904) 259-2231",
+        "bookingUrl": "https://www.bakercountysheriffsoffice.com/"
+      },
+      "clerk": {
+        "name": "Baker County Clerk of Court",
+        "phone": "(904) 259-8113",
+        "website": "http://www.bakerclerk.com/",
+        "recordsUrl": "https://www.civitekflorida.com/ocrs/app/search.xhtml"
+      },
+      "seo": {
+        "title": "Baker County Bail Bonds | Macclenny FL | 24/7 Service",
+        "description": "Professional bail bond services in Baker County, Florida. Fast jail release in Macclenny. Call Shamrock Bail Bonds 24/7 at 239-332-2245.",
+        "keywords": "Baker County bail bonds, Macclenny bail bonds, bail bondsman Baker County"
+      }
+    },
+    {
+      "name": "Bay",
+      "slug": "bay-county",
+      "region": "Northwest",
+      "population": "175000",
+      "countySeat": "Panama City",
+      "sheriff": {
+        "name": "Bay County Sheriff's Office",
+        "phone": "(850) 785-5245",
+        "bookingUrl": "https://www.baysomobile.org/is/"
+      },
+      "clerk": {
+        "name": "Bay County Clerk of Court",
+        "phone": "(850) 763-9061",
+        "website": "https://www.baycoclerk.com/",
+        "recordsUrl": "https://records2.baycoclerk.com/"
+      },
+      "seo": {
+        "title": "Bay County Bail Bonds | Panama City FL | 24/7 Service",
+        "description": "Bail bonds in Bay County and Panama City Beach. Shamrock Bail Bonds offers fast, reliable service. Available 24/7. Call 239-332-2245.",
+        "keywords": "Bay County bail bonds, Panama City bail bonds, Panama City Beach bail bondsman"
+      }
+    },
+    {
+      "name": "Bradford",
+      "slug": "bradford-county",
+      "region": "North Central",
+      "population": "28000",
+      "countySeat": "Starke",
+      "sheriff": {
+        "name": "Bradford County Sheriff's Office",
+        "phone": "(904) 966-2276",
+        "bookingUrl": "http://smartweb.bradfordsheriff.org/smartwebclient/Jail.aspx"
+      },
+      "clerk": {
+        "name": "Bradford County Clerk of Court",
+        "phone": "(904) 966-6280",
+        "website": "https://www.bradfordcountyclerk.com/",
+        "recordsUrl": "https://www.bradfordcountyclerk.com/search.aspx"
+      },
+      "seo": {
+        "title": "Bradford County Bail Bonds | Starke FL | 24/7 Service",
+        "description": "Need bail bonds in Bradford County? Shamrock Bail Bonds serves Starke and surrounding areas. Fast jail release. Call 239-332-2245.",
+        "keywords": "Bradford County bail bonds, Starke bail bonds, bail bondsman Bradford County"
+      }
+    },
+    {
+      "name": "Brevard",
+      "slug": "brevard-county",
+      "region": "East Central",
+      "population": "606000",
+      "countySeat": "Titusville",
+      "sheriff": {
+        "name": "Brevard County Sheriff's Office",
+        "phone": "(321) 690-1500",
+        "bookingUrl": "https://www.brevardsheriff.com/bookings/"
+      },
+      "clerk": {
+        "name": "Brevard County Clerk of Court",
+        "phone": "(321) 637-5413",
+        "website": "https://www.brevardclerk.us/",
+        "recordsUrl": "https://vweb1.brevardclerk.us/"
+      },
+      "seo": {
+        "title": "Brevard County Bail Bonds | Melbourne & Cocoa FL | 24/7",
+        "description": "Bail bonds in Brevard County - Melbourne, Cocoa, Titusville, Palm Bay. Shamrock Bail Bonds available 24/7. Call 239-332-2245.",
+        "keywords": "Brevard County bail bonds, Melbourne bail bonds, Cocoa bail bonds, Space Coast bail bondsman"
+      }
+    },
+    {
+      "name": "Broward",
+      "slug": "broward-county",
+      "region": "Southeast",
+      "population": "1950000",
+      "countySeat": "Fort Lauderdale",
+      "sheriff": {
+        "name": "Broward County Sheriff's Office",
+        "phone": "(954) 831-5900",
+        "bookingUrl": "https://www.sheriff.org/DOD/Pages/ArrestSearch.aspx"
+      },
+      "clerk": {
+        "name": "Broward County Clerk of Court",
+        "phone": "(954) 831-6565",
+        "website": "https://www.browardclerk.org/",
+        "recordsUrl": "https://www.browardclerk.org/Web2"
+      },
+      "seo": {
+        "title": "Broward County Bail Bonds | Fort Lauderdale FL | 24/7",
+        "description": "Fast bail bonds in Broward County and Fort Lauderdale. Shamrock Bail Bonds provides professional service 24/7. Call 239-332-2245.",
+        "keywords": "Broward County bail bonds, Fort Lauderdale bail bonds, Hollywood FL bail bondsman"
+      }
+    },
+    {
+      "name": "Charlotte",
+      "slug": "charlotte-county",
+      "region": "Southwest",
+      "population": "186000",
+      "countySeat": "Punta Gorda",
+      "sheriff": {
+        "name": "Charlotte County Sheriff's Office",
+        "phone": "(941) 833-6356",
+        "bookingUrl": "https://www.ccso.org/forms/arrestdb.cfm"
+      },
+      "clerk": {
+        "name": "Charlotte County Clerk of Court",
+        "phone": "(941) 637-2199",
+        "website": "https://www.charlotteclerk.com/",
+        "recordsUrl": "https://records.charlotteclerk.com/records/"
+      },
+      "seo": {
+        "title": "Charlotte County Bail Bonds | Punta Gorda FL | 24/7",
+        "description": "Bail bonds in Charlotte County and Punta Gorda. Local service, fast release. Shamrock Bail Bonds - Call 239-332-2245.",
+        "keywords": "Charlotte County bail bonds, Punta Gorda bail bonds, Port Charlotte bail bondsman"
+      }
+    },
+    {
+      "name": "Collier",
+      "slug": "collier-county",
+      "region": "Southwest",
+      "population": "384000",
+      "countySeat": "Naples",
+      "sheriff": {
+        "name": "Collier County Sheriff's Office",
+        "phone": "(239) 252-9543",
+        "bookingUrl": "https://www2.colliersheriff.org/arrestsearch/"
+      },
+      "clerk": {
+        "name": "Collier County Clerk of Court",
+        "phone": "(239) 252-2646",
+        "website": "https://www.collierclerk.com/",
+        "recordsUrl": "https://collierclerk.com/records-search/"
+      },
+      "seo": {
+        "title": "Collier County Bail Bonds | Naples FL | 24/7 Service",
+        "description": "Professional bail bonds in Collier County and Naples. Shamrock Bail Bonds offers fast, discreet service. Call 239-332-2245 anytime.",
+        "keywords": "Collier County bail bonds, Naples bail bonds, Marco Island bail bondsman, Immokalee bail bonds"
+      }
+    },
+    {
+      "name": "Duval",
+      "slug": "duval-county",
+      "region": "Northeast",
+      "population": "995000",
+      "countySeat": "Jacksonville",
+      "sheriff": {
+        "name": "Jacksonville Sheriff's Office",
+        "phone": "(904) 630-5760",
+        "bookingUrl": "https://inmatesearch.jaxsheriff.org/login"
+      },
+      "clerk": {
+        "name": "Duval County Clerk of Court",
+        "phone": "(904) 255-2000",
+        "website": "https://www.duvalclerk.com/",
+        "recordsUrl": "https://core.duvalclerk.com/"
+      },
+      "seo": {
+        "title": "Duval County Bail Bonds | Jacksonville FL | 24/7",
+        "description": "Bail bonds in Duval County and Jacksonville. Fast jail release, professional service. Shamrock Bail Bonds - Call 239-332-2245.",
+        "keywords": "Duval County bail bonds, Jacksonville bail bonds, Jax bail bondsman"
+      }
+    },
+    {
+      "name": "Hendry",
+      "slug": "hendry-county",
+      "region": "Southwest",
+      "population": "42000",
+      "countySeat": "LaBelle",
+      "sheriff": {
+        "name": "Hendry County Sheriff's Office",
+        "phone": "(863) 674-5600",
+        "bookingUrl": "http://www.hendrysheriff.org/arrests_and_jail_info/arrest_and_inmate_search.php"
+      },
+      "clerk": {
+        "name": "Hendry County Clerk of Court",
+        "phone": "(863) 675-5217",
+        "website": "https://www.hendryclerk.org/",
+        "recordsUrl": "https://officialrecords.hendryclerk.org/"
+      },
+      "seo": {
+        "title": "Hendry County Bail Bonds | LaBelle & Clewiston FL | 24/7",
+        "description": "Bail bonds in Hendry County - LaBelle and Clewiston. Shamrock Bail Bonds provides fast, local service. Call 239-332-2245.",
+        "keywords": "Hendry County bail bonds, LaBelle bail bonds, Clewiston bail bondsman"
+      }
+    },
+    {
+      "name": "Hillsborough",
+      "slug": "hillsborough-county",
+      "region": "West Central",
+      "population": "1470000",
+      "countySeat": "Tampa",
+      "sheriff": {
+        "name": "Hillsborough County Sheriff's Office",
+        "phone": "(813) 247-8300",
+        "bookingUrl": "https://webapps.hcso.tampa.fl.us/ArrestInquiry"
+      },
+      "clerk": {
+        "name": "Hillsborough County Clerk of Court",
+        "phone": "(813) 276-8100",
+        "website": "https://www.hillsclerk.com/",
+        "recordsUrl": "https://hover.hillsclerk.com/"
+      },
+      "seo": {
+        "title": "Hillsborough County Bail Bonds | Tampa FL | 24/7 Service",
+        "description": "Bail bonds in Hillsborough County and Tampa Bay area. Fast jail release. Shamrock Bail Bonds available 24/7. Call 239-332-2245.",
+        "keywords": "Hillsborough County bail bonds, Tampa bail bonds, Brandon bail bondsman"
+      }
+    },
+    {
+      "name": "Lee",
+      "slug": "lee-county",
+      "region": "Southwest",
+      "population": "770000",
+      "countySeat": "Fort Myers",
+      "sheriff": {
+        "name": "Lee County Sheriff's Office",
+        "phone": "(239) 477-1500",
+        "bookingUrl": "https://www.sheriffleefl.org/booking-search/"
+      },
+      "clerk": {
+        "name": "Lee County Clerk of Court",
+        "phone": "(239) 533-5000",
+        "website": "https://www.leeclerk.org/",
+        "recordsUrl": "https://matrix.leeclerk.org/"
+      },
+      "seo": {
+        "title": "Lee County Bail Bonds | Fort Myers FL | 24/7 Service",
+        "description": "Your local bail bondsman in Lee County. Shamrock Bail Bonds serves Fort Myers, Cape Coral, and all of Lee County. Call 239-332-2245.",
+        "keywords": "Lee County bail bonds, Fort Myers bail bonds, Cape Coral bail bondsman, Lehigh Acres bail bonds"
+      }
+    },
+    {
+      "name": "Manatee",
+      "slug": "manatee-county",
+      "region": "West Central",
+      "population": "403000",
+      "countySeat": "Bradenton",
+      "sheriff": {
+        "name": "Manatee County Sheriff's Office",
+        "phone": "(941) 723-5132",
+        "bookingUrl": "https://www.manateesheriff.com/arrest_inquiries/"
+      },
+      "clerk": {
+        "name": "Manatee County Clerk of Court",
+        "phone": "(941) 749-1800",
+        "website": "https://www.manateeclerk.com/",
+        "recordsUrl": "https://records.manateeclerk.com/"
+      },
+      "seo": {
+        "title": "Manatee County Bail Bonds | Bradenton FL | 24/7 Service",
+        "description": "Bail bonds in Manatee County and Bradenton. Professional, fast service. Shamrock Bail Bonds - Call 239-332-2245.",
+        "keywords": "Manatee County bail bonds, Bradenton bail bonds, Palmetto bail bondsman"
+      }
+    },
+    {
+      "name": "Miami-Dade",
+      "slug": "miami-dade-county",
+      "region": "Southeast",
+      "population": "2700000",
+      "countySeat": "Miami",
+      "sheriff": {
+        "name": "Miami-Dade Corrections",
+        "phone": "(786) 263-7000",
+        "bookingUrl": "https://www.miamidade.gov/Apps/mdcr/inmateSearch/"
+      },
+      "clerk": {
+        "name": "Miami-Dade County Clerk of Court",
+        "phone": "(305) 275-1155",
+        "website": "https://www.miami-dadeclerk.com/",
+        "recordsUrl": "https://www2.miami-dadeclerk.com/public-records/"
+      },
+      "seo": {
+        "title": "Miami-Dade County Bail Bonds | Miami FL | 24/7 Service",
+        "description": "Bail bonds in Miami-Dade County. Serving Miami, Hialeah, Miami Beach, and all of Dade County. Call Shamrock Bail Bonds 239-332-2245.",
+        "keywords": "Miami-Dade bail bonds, Miami bail bonds, Hialeah bail bondsman, Miami Beach bail bonds"
+      }
+    },
+    {
+      "name": "Orange",
+      "slug": "orange-county",
+      "region": "Central",
+      "population": "1430000",
+      "countySeat": "Orlando",
+      "sheriff": {
+        "name": "Orange County Sheriff's Office",
+        "phone": "(407) 836-3400",
+        "bookingUrl": "https://netapps.ocfl.net/BestJail/Home/Inmates"
+      },
+      "clerk": {
+        "name": "Orange County Clerk of Court",
+        "phone": "(407) 836-2000",
+        "website": "https://www.myorangeclerk.com/",
+        "recordsUrl": "https://myeclerk.myorangeclerk.com/"
+      },
+      "seo": {
+        "title": "Orange County Bail Bonds | Orlando FL | 24/7 Service",
+        "description": "Bail bonds in Orange County and Orlando. Fast jail release, professional service. Shamrock Bail Bonds - Call 239-332-2245.",
+        "keywords": "Orange County bail bonds, Orlando bail bonds, Kissimmee bail bondsman"
+      }
+    },
+    {
+      "name": "Palm Beach",
+      "slug": "palm-beach-county",
+      "region": "Southeast",
+      "population": "1500000",
+      "countySeat": "West Palm Beach",
+      "sheriff": {
+        "name": "Palm Beach County Sheriff's Office",
+        "phone": "(561) 688-3000",
+        "bookingUrl": "https://www.pbso.org/arrest-jail_menu"
+      },
+      "clerk": {
+        "name": "Palm Beach County Clerk of Court",
+        "phone": "(561) 355-2996",
+        "website": "https://www.mypalmbeachclerk.com/",
+        "recordsUrl": "https://appsgp.mypalmbeachclerk.com/eCaseView/"
+      },
+      "seo": {
+        "title": "Palm Beach County Bail Bonds | West Palm Beach FL | 24/7",
+        "description": "Bail bonds in Palm Beach County. Serving West Palm Beach, Boca Raton, Delray Beach. Shamrock Bail Bonds - Call 239-332-2245.",
+        "keywords": "Palm Beach County bail bonds, West Palm Beach bail bonds, Boca Raton bail bondsman"
+      }
+    },
+    {
+      "name": "Pinellas",
+      "slug": "pinellas-county",
+      "region": "West Central",
+      "population": "980000",
+      "countySeat": "Clearwater",
+      "sheriff": {
+        "name": "Pinellas County Sheriff's Office",
+        "phone": "(727) 464-6415",
+        "bookingUrl": "https://pcsoweb.com/InmateBooking"
+      },
+      "clerk": {
+        "name": "Pinellas County Clerk of Court",
+        "phone": "(727) 464-7000",
+        "website": "https://www.mypinellasclerk.gov/",
+        "recordsUrl": "https://ccmspa.pinellascounty.org/PublicAccess/default.aspx"
+      },
+      "seo": {
+        "title": "Pinellas County Bail Bonds | St. Petersburg & Clearwater | 24/7",
+        "description": "Bail bonds in Pinellas County - St. Petersburg, Clearwater, Largo. Shamrock Bail Bonds available 24/7. Call 239-332-2245.",
+        "keywords": "Pinellas County bail bonds, St Petersburg bail bonds, Clearwater bail bondsman"
+      }
+    },
+    {
+      "name": "Polk",
+      "slug": "polk-county",
+      "region": "Central",
+      "population": "725000",
+      "countySeat": "Bartow",
+      "sheriff": {
+        "name": "Polk County Sheriff's Office",
+        "phone": "(863) 292-3400",
+        "bookingUrl": "https://www.polksheriff.org/detention/jail-inquiry"
+      },
+      "clerk": {
+        "name": "Polk County Clerk of Court",
+        "phone": "(863) 534-4000",
+        "website": "https://www.polkcountyclerk.net/",
+        "recordsUrl": "https://pro.polkcountyclerk.net/PRO"
+      },
+      "seo": {
+        "title": "Polk County Bail Bonds | Lakeland & Winter Haven FL | 24/7",
+        "description": "Bail bonds in Polk County - Lakeland, Winter Haven, Bartow. Fast jail release. Shamrock Bail Bonds - Call 239-332-2245.",
+        "keywords": "Polk County bail bonds, Lakeland bail bonds, Winter Haven bail bondsman"
+      }
+    },
+    {
+      "name": "Sarasota",
+      "slug": "sarasota-county",
+      "region": "Southwest",
+      "population": "434000",
+      "countySeat": "Sarasota",
+      "sheriff": {
+        "name": "Sarasota County Sheriff's Office",
+        "phone": "(941) 861-4601",
+        "bookingUrl": "https://www.sarasotasheriff.org/arrest-reports/index.php"
+      },
+      "clerk": {
+        "name": "Sarasota County Clerk of Court",
+        "phone": "(941) 861-7400",
+        "website": "https://www.sarasotaclerk.com/",
+        "recordsUrl": "https://secure.sarasotaclerk.com/Login.aspx?session=0"
+      },
+      "seo": {
+        "title": "Sarasota County Bail Bonds | Sarasota FL | 24/7 Service",
+        "description": "Bail bonds in Sarasota County. Professional, discreet service. Shamrock Bail Bonds available 24/7. Call 239-332-2245.",
+        "keywords": "Sarasota County bail bonds, Sarasota bail bonds, Venice bail bondsman"
+      }
+    },
+    {
+      "name": "Seminole",
+      "slug": "seminole-county",
+      "region": "Central",
+      "population": "475000",
+      "countySeat": "Sanford",
+      "sheriff": {
+        "name": "Seminole County Sheriff's Office",
+        "phone": "(407) 665-1200",
+        "bookingUrl": "https://www.seminolesheriff.org/WebBond/Inmates.aspx"
+      },
+      "clerk": {
+        "name": "Seminole County Clerk of Court",
+        "phone": "(407) 665-4300",
+        "website": "https://www.seminoleclerk.org/",
+        "recordsUrl": "https://courtrecords.seminoleclerk.org/criminal/default.aspx"
+      },
+      "seo": {
+        "title": "Seminole County Bail Bonds | Sanford FL | 24/7 Service",
+        "description": "Bail bonds in Seminole County - Sanford, Altamonte Springs, Lake Mary. Shamrock Bail Bonds - Call 239-332-2245.",
+        "keywords": "Seminole County bail bonds, Sanford bail bonds, Altamonte Springs bail bondsman"
+      }
+    },
+    {
+      "name": "Volusia",
+      "slug": "volusia-county",
+      "region": "East Central",
+      "population": "553000",
+      "countySeat": "DeLand",
+      "sheriff": {
+        "name": "Volusia County Sheriff's Office",
+        "phone": "(386) 254-1555",
+        "bookingUrl": "https://volusiamug.vcgov.org/"
+      },
+      "clerk": {
+        "name": "Volusia County Clerk of Court",
+        "phone": "(386) 736-5915",
+        "website": "https://www.clerk.org/",
+        "recordsUrl": "https://ccms.clerk.org/"
+      },
+      "seo": {
+        "title": "Volusia County Bail Bonds | Daytona Beach FL | 24/7",
+        "description": "Bail bonds in Volusia County - Daytona Beach, DeLand, Deltona. Fast service. Shamrock Bail Bonds - Call 239-332-2245.",
+        "keywords": "Volusia County bail bonds, Daytona Beach bail bonds, DeLand bail bondsman"
+      }
+    }
+  ],
+  "additionalCounties": [
+    "Calhoun", "Citrus", "Clay", "Columbia", "DeSoto", "Dixie", "Escambia", 
+    "Flagler", "Franklin", "Gadsden", "Gilchrist", "Glades", "Gulf", "Hamilton",
+    "Hardee", "Hernando", "Highlands", "Holmes", "Indian River", "Jackson",
+    "Jefferson", "Lafayette", "Lake", "Leon", "Levy", "Liberty", "Madison",
+    "Marion", "Martin", "Monroe", "Nassau", "Okaloosa", "Okeechobee", "Osceola",
+    "Pasco", "Putnam", "Santa Rosa", "St. Johns", "St. Lucie", "Sumter",
+    "Suwannee", "Taylor", "Union", "Wakulla", "Walton", "Washington"
+  ],
+  "metadata": {
+    "totalCounties": 67,
+    "lastUpdated": "2024-12-19",
+    "dataSource": "Florida Sheriffs and Clerks Directory"
+  }
+}

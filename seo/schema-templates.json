@@ -1,0 +1,200 @@
+{
+  "organization": {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Shamrock Bail Bonds",
+    "url": "https://www.shamrockbailbonds.biz",
+    "logo": "https://www.shamrockbailbonds.biz/logo.png",
+    "description": "Professional bail bond services serving all 67 Florida counties. Available 24/7 for fast jail release.",
+    "telephone": "+1-239-332-2245",
+    "email": "admin@shamrockbailbonds.biz",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Fort Myers",
+      "addressRegion": "FL",
+      "addressCountry": "US"
+    },
+    "sameAs": [
+      "https://www.facebook.com/shamrockbailbonds",
+      "https://www.instagram.com/shamrockbailbonds"
+    ],
+    "areaServed": {
+      "@type": "State",
+      "name": "Florida"
+    }
+  },
+  
+  "localBusiness": {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Shamrock Bail Bonds",
+    "image": "https://www.shamrockbailbonds.biz/office-exterior.jpg",
+    "description": "Licensed bail bond agency serving all 67 Florida counties. Fast, professional bail bond services available 24/7.",
+    "@id": "https://www.shamrockbailbonds.biz",
+    "url": "https://www.shamrockbailbonds.biz",
+    "telephone": "+1-239-332-2245",
+    "priceRange": "$$",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "",
+      "addressLocality": "Fort Myers",
+      "addressRegion": "FL",
+      "postalCode": "",
+      "addressCountry": "US"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 26.6406,
+      "longitude": -81.8723
+    },
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "opens": "00:00",
+        "closes": "23:59"
+      }
+    ],
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "reviewCount": "150"
+    }
+  },
+  
+  "service": {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "serviceType": "Bail Bond Services",
+    "provider": {
+      "@type": "LocalBusiness",
+      "name": "Shamrock Bail Bonds"
+    },
+    "areaServed": {
+      "@type": "State",
+      "name": "Florida"
+    },
+    "description": "Professional bail bond services including surety bonds, payment plans, and 24/7 availability for all Florida counties.",
+    "offers": {
+      "@type": "Offer",
+      "description": "Bail bond premium at 10% of bail amount (Florida regulated rate)",
+      "priceCurrency": "USD"
+    }
+  },
+  
+  "breadcrumbTemplate": {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.shamrockbailbonds.biz"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "{{PAGE_NAME}}",
+        "item": "https://www.shamrockbailbonds.biz/{{PAGE_SLUG}}"
+      }
+    ]
+  },
+  
+  "countyPageTemplate": {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Shamrock Bail Bonds - {{COUNTY_NAME}} County",
+    "description": "Bail bond services in {{COUNTY_NAME}} County, Florida. Fast jail release in {{COUNTY_SEAT}} and surrounding areas. Call 239-332-2245.",
+    "url": "https://www.shamrockbailbonds.biz/bail-bonds/{{COUNTY_SLUG}}-county",
+    "telephone": "+1-239-332-2245",
+    "areaServed": {
+      "@type": "AdministrativeArea",
+      "name": "{{COUNTY_NAME}} County, Florida"
+    },
+    "openingHoursSpecification": {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "opens": "00:00",
+      "closes": "23:59"
+    }
+  },
+  
+  "faqPageTemplate": {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": []
+  },
+  
+  "articleTemplate": {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "{{TITLE}}",
+    "description": "{{DESCRIPTION}}",
+    "author": {
+      "@type": "Organization",
+      "name": "Shamrock Bail Bonds"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Shamrock Bail Bonds",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.shamrockbailbonds.biz/logo.png"
+      }
+    },
+    "datePublished": "{{DATE_PUBLISHED}}",
+    "dateModified": "{{DATE_MODIFIED}}"
+  },
+  
+  "howToTemplate": {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to Post Bail in Florida",
+    "description": "Step-by-step guide to posting bail and getting someone released from jail in Florida.",
+    "totalTime": "PT2H",
+    "estimatedCost": {
+      "@type": "MonetaryAmount",
+      "currency": "USD",
+      "value": "Varies (10% of bail amount)"
+    },
+    "step": [
+      {
+        "@type": "HowToStep",
+        "name": "Contact a Bail Bondsman",
+        "text": "Call Shamrock Bail Bonds at 239-332-2245 or start online.",
+        "url": "https://www.shamrockbailbonds.biz/how-bail-works#step-1"
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Provide Defendant Information",
+        "text": "Share the defendant's name, booking number, charges, and bail amount.",
+        "url": "https://www.shamrockbailbonds.biz/how-bail-works#step-2"
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Complete Paperwork",
+        "text": "Sign the bail bond agreement and indemnity forms.",
+        "url": "https://www.shamrockbailbonds.biz/how-bail-works#step-3"
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Pay the Premium",
+        "text": "Pay the 10% premium (Florida regulated rate).",
+        "url": "https://www.shamrockbailbonds.biz/how-bail-works#step-4"
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Bond is Posted",
+        "text": "We post the bond at the jail for the defendant's release.",
+        "url": "https://www.shamrockbailbonds.biz/how-bail-works#step-5"
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Defendant Released",
+        "text": "The defendant is processed and released from custody.",
+        "url": "https://www.shamrockbailbonds.biz/how-bail-works#step-6"
+      }
+    ]
+  }
+}

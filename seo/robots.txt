@@ -1,0 +1,51 @@
+# Robots.txt for Shamrock Bail Bonds
+# https://www.shamrockbailbonds.biz
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://www.shamrockbailbonds.biz/sitemap.xml
+
+# Disallow admin and member-only areas from indexing
+Disallow: /members/account
+Disallow: /members/documents
+Disallow: /members/signing
+Disallow: /_api/
+Disallow: /_functions/
+Disallow: /admin/
+
+# Allow important pages
+Allow: /members/start-bail
+Allow: /how-bail-works
+Allow: /county-directory
+Allow: /bail-bonds/
+Allow: /blog/
+Allow: /faq
+Allow: /contact
+Allow: /about
+Allow: /become-a-bondsman
+Allow: /sheriffs-directory
+
+# Crawl delay (optional, be respectful)
+Crawl-delay: 1
+
+# Specific bot rules
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /

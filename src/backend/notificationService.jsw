@@ -1,0 +1,339 @@
+/**
+ * Notification Service
+ * Filename: backend/notificationService.jsw
+ * 
+ * Handles all notifications: email, Slack, and in-app.
+ * Routes through GAS backend for Slack integration.
+ */
+
+import { fetch } from 'wix-fetch';
+import { getSecret } from 'wix-secrets-backend';
+import { triggeredEmails } from 'wix-crm-backend';
+import wixData from 'wix-data';
+
+/**
+ * Notification types
+ */
+const NOTIFICATION_TYPES = {
+    // Member notifications
+    WELCOME: 'welcome',
+    ID_UPLOADED: 'id_uploaded',
+    ID_VERIFIED: 'id_verified',
+    ID_REJECTED: 'id_rejected',
+    PAPERWORK_READY: 'paperwork_ready',
+    PAPERWORK_SENT: 'paperwork_sent',
+    PAPERWORK_SIGNED: 'paperwork_signed',
+    PAPERWORK_COMPLETE: 'paperwork_complete',
+    PAPERWORK_DECLINED: 'paperwork_declined',
+    PAPERWORK_EXPIRED: 'paperwork_expired',
+    
+    // Admin notifications
+    NEW_MEMBER: 'new_member',
+    NEW_CASE: 'new_case',
+    DOCUMENT_NEEDS_REVIEW: 'document_needs_review',
+    SIGNING_DECLINED: 'signing_declined',
+    URGENT_CASE: 'urgent_case'
+};
+
+/**
+ * Send notification to a member
+ * 
+ * @param {string} type - Notification type from NOTIFICATION_TYPES
+ * @param {Object} data - Notification data
+ * @param {string} data.memberId - Wix member ID
+ * @param {string} data.memberEmail - Member's email
+ * @param {string} data.memberName - Member's name
+ * @param {Object} data.variables - Template variables
+ * @returns {Promise<{success: boolean}>}
+ */
+export async function sendMemberNotification(type, data) {
+    try {
+        const { memberId, memberEmail, memberName, variables } = data;
+        
+        // Map notification type to Wix triggered email ID
+        const emailTemplateMap = {
+            [NOTIFICATION_TYPES.WELCOME]: 'welcomeNewMember',
+            [NOTIFICATION_TYPES.ID_UPLOADED]: 'idUploadConfirmation',
+            [NOTIFICATION_TYPES.ID_VERIFIED]: 'idVerificationApproved',
+            [NOTIFICATION_TYPES.ID_REJECTED]: 'idVerificationRejected',
+            [NOTIFICATION_TYPES.PAPERWORK_READY]: 'paperworkReadyToSign',
+            [NOTIFICATION_TYPES.PAPERWORK_SENT]: 'paperworkSentForSignature',
+            [NOTIFICATION_TYPES.PAPERWORK_SIGNED]: 'paperworkSignedConfirmation',
+            [NOTIFICATION_TYPES.PAPERWORK_COMPLETE]: 'bailPaperworkComplete',
+            [NOTIFICATION_TYPES.PAPERWORK_DECLINED]: 'paperworkDeclined',
+            [NOTIFICATION_TYPES.PAPERWORK_EXPIRED]: 'bailPaperworkExpired'
+        };
+        
+        const templateId = emailTemplateMap[type];
+        
+        if (!templateId) {
+            console.log(`No email template for notification type: ${type}`);
+            return { success: false, error: 'Unknown notification type' };
+        }
+        
+        // Send triggered email
+        if (memberId) {
+            await triggeredEmails.emailMember(templateId, memberId, {
+                variables: {
+                    memberName: memberName || 'Valued Customer',
+                    ...variables
+                }
+            });
+        }
+        
+        // Log notification
+        await logNotification(type, 'email', memberEmail, variables);
+        
+        return { success: true };
+        
+    } catch (error) {
+        console.error('Error sending member notification:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Send notification to admin (via Slack and/or email)
+ * 
+ * @param {string} type - Notification type
+ * @param {Object} data - Notification data
+ * @returns {Promise<{success: boolean}>}
+ */
+export async function sendAdminNotification(type, data) {
+    try {
+        // Send to Slack via GAS
+        await sendSlackNotification(type, data);
+        
+        // Also send email for critical notifications
+        const criticalTypes = [
+            NOTIFICATION_TYPES.SIGNING_DECLINED,
+            NOTIFICATION_TYPES.URGENT_CASE
+        ];
+        
+        if (criticalTypes.includes(type)) {
+            await sendAdminEmail(type, data);
+        }
+        
+        // Log notification
+        await logNotification(type, 'admin', 'admin@shamrockbailbonds.biz', data);
+        
+        return { success: true };
+        
+    } catch (error) {
+        console.error('Error sending admin notification:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Send Slack notification via GAS backend
+ * 
+ * @param {string} type - Notification type
+ * @param {Object} data - Notification data
+ */
+async function sendSlackNotification(type, data) {
+    try {
+        const gasUrl = await getSecret('GAS_WEBHOOK_URL');
+        
+        if (!gasUrl) {
+            console.log('GAS URL not configured, skipping Slack notification');
+            return;
+        }
+        
+        // Format message based on type
+        const message = formatSlackMessage(type, data);
+        
+        await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'sendSlackNotification',
+                channel: getSlackChannel(type),
+                message: message,
+                type: type,
+                data: data
+            })
+        });
+        
+    } catch (error) {
+        console.error('Error sending Slack notification:', error);
+    }
+}
+
+/**
+ * Format Slack message based on notification type
+ */
+function formatSlackMessage(type, data) {
+    const messages = {
+        [NOTIFICATION_TYPES.NEW_MEMBER]: 
+            `:wave: *New Member Registered*\nName: ${data.memberName}\nEmail: ${data.memberEmail}\nPhone: ${data.memberPhone || 'Not provided'}`,
+        
+        [NOTIFICATION_TYPES.NEW_CASE]: 
+            `:briefcase: *New Bail Case Started*\nMember: ${data.memberName}\nCounty: ${data.county}\nCase #: ${data.caseNumber || 'Pending'}`,
+        
+        [NOTIFICATION_TYPES.DOCUMENT_NEEDS_REVIEW]: 
+            `:page_facing_up: *Document Needs Review*\nMember: ${data.memberName}\nDocument: ${data.documentType}\nUploaded: ${new Date().toLocaleString()}`,
+        
+        [NOTIFICATION_TYPES.SIGNING_DECLINED]: 
+            `:x: *Signing Declined*\nMember: ${data.memberName}\nDocument: ${data.documentName}\nReason: ${data.declineReason || 'Not provided'}\n*Requires immediate attention*`,
+        
+        [NOTIFICATION_TYPES.URGENT_CASE]: 
+            `:rotating_light: *URGENT CASE*\nMember: ${data.memberName}\nCounty: ${data.county}\nDetails: ${data.details || 'See portal for details'}`
+    };
+    
+    return messages[type] || `:bell: Notification: ${type}\n${JSON.stringify(data, null, 2)}`;
+}
+
+/**
+ * Get appropriate Slack channel for notification type
+ */
+function getSlackChannel(type) {
+    const channelMap = {
+        [NOTIFICATION_TYPES.NEW_MEMBER]: '#new-members',
+        [NOTIFICATION_TYPES.NEW_CASE]: '#cases',
+        [NOTIFICATION_TYPES.DOCUMENT_NEEDS_REVIEW]: '#documents',
+        [NOTIFICATION_TYPES.SIGNING_DECLINED]: '#urgent',
+        [NOTIFICATION_TYPES.URGENT_CASE]: '#urgent'
+    };
+    
+    return channelMap[type] || '#general';
+}
+
+/**
+ * Send admin email for critical notifications
+ */
+async function sendAdminEmail(type, data) {
+    try {
+        const gasUrl = await getSecret('GAS_WEBHOOK_URL');
+        
+        if (!gasUrl) return;
+        
+        await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'sendAdminEmail',
+                to: 'admin@shamrockbailbonds.biz',
+                subject: `[Shamrock Bail] ${type.replace(/_/g, ' ').toUpperCase()}`,
+                body: formatEmailBody(type, data)
+            })
+        });
+        
+    } catch (error) {
+        console.error('Error sending admin email:', error);
+    }
+}
+
+/**
+ * Format email body for admin notifications
+ */
+function formatEmailBody(type, data) {
+    return `
+        <h2>Shamrock Bail Bonds - ${type.replace(/_/g, ' ')}</h2>
+        <p>A notification requires your attention:</p>
+        <ul>
+            ${Object.entries(data).map(([key, value]) => 
+                `<li><strong>${key}:</strong> ${value}</li>`
+            ).join('')}
+        </ul>
+        <p>Time: ${new Date().toLocaleString()}</p>
+        <p><a href="https://www.shamrockbailbonds.biz/admin">Go to Admin Portal</a></p>
+    `;
+}
+
+/**
+ * Send in-app notification (stored in database for display)
+ * 
+ * @param {string} memberId - Member ID
+ * @param {string} title - Notification title
+ * @param {string} message - Notification message
+ * @param {string} type - Notification type
+ * @param {string} link - Optional link
+ */
+export async function sendInAppNotification(memberId, title, message, type, link = null) {
+    try {
+        await wixData.insert('InAppNotifications', {
+            memberId: memberId,
+            title: title,
+            message: message,
+            type: type,
+            link: link,
+            read: false,
+            createdAt: new Date()
+        });
+        
+        return { success: true };
+        
+    } catch (error) {
+        console.error('Error sending in-app notification:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get unread notifications for a member
+ * 
+ * @param {string} memberId - Member ID
+ * @returns {Promise<{success: boolean, notifications: Array}>}
+ */
+export async function getUnreadNotifications(memberId) {
+    try {
+        const results = await wixData.query('InAppNotifications')
+            .eq('memberId', memberId)
+            .eq('read', false)
+            .descending('createdAt')
+            .limit(20)
+            .find();
+        
+        return {
+            success: true,
+            notifications: results.items
+        };
+        
+    } catch (error) {
+        console.error('Error getting notifications:', error);
+        return { success: false, notifications: [] };
+    }
+}
+
+/**
+ * Mark notification as read
+ * 
+ * @param {string} notificationId - Notification ID
+ */
+export async function markNotificationRead(notificationId) {
+    try {
+        const notification = await wixData.get('InAppNotifications', notificationId);
+        
+        if (notification) {
+            notification.read = true;
+            notification.readAt = new Date();
+            await wixData.update('InAppNotifications', notification);
+        }
+        
+        return { success: true };
+        
+    } catch (error) {
+        console.error('Error marking notification read:', error);
+        return { success: false };
+    }
+}
+
+/**
+ * Log notification for audit trail
+ */
+async function logNotification(type, channel, recipient, data) {
+    try {
+        await wixData.insert('NotificationLogs', {
+            type: type,
+            channel: channel,
+            recipient: recipient,
+            data: JSON.stringify(data),
+            sentAt: new Date()
+        });
+    } catch (error) {
+        console.error('Error logging notification:', error);
+    }
+}
+
+export { NOTIFICATION_TYPES };

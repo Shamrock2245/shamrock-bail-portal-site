@@ -1,0 +1,321 @@
+/**
+ * Google Drive Service
+ * Filename: backend/googleDriveService.jsw
+ * 
+ * Enhanced Google Drive integration for document storage.
+ * Routes through GAS backend for OAuth handling.
+ */
+
+import { fetch } from 'wix-fetch';
+import { getSecret } from 'wix-secrets-backend';
+import wixData from 'wix-data';
+
+/**
+ * GAS Backend URL for Google Drive operations
+ * The GAS backend handles OAuth and has direct Drive access
+ */
+const getGasUrl = async () => {
+    return await getSecret('GAS_WEBHOOK_URL') || 
+           'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
+};
+
+/**
+ * Create a case folder in Google Drive
+ * 
+ * @param {Object} caseData
+ * @param {string} caseData.caseNumber - Unique case identifier
+ * @param {string} caseData.defendantName - Defendant's name
+ * @param {string} caseData.county - County name
+ * @returns {Promise<{success: boolean, folderId: string, folderUrl: string}>}
+ */
+export async function createCaseFolder(caseData) {
+    try {
+        const gasUrl = await getGasUrl();
+        
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'createCaseFolder',
+                caseNumber: caseData.caseNumber,
+                defendantName: caseData.defendantName,
+                county: caseData.county,
+                createdAt: new Date().toISOString()
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to create case folder: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        // Store folder reference in database
+        if (result.success && result.folderId) {
+            await wixData.insert('CaseFolders', {
+                caseNumber: caseData.caseNumber,
+                defendantName: caseData.defendantName,
+                county: caseData.county,
+                driveFolderId: result.folderId,
+                driveFolderUrl: result.folderUrl,
+                createdAt: new Date()
+            });
+        }
+        
+        return result;
+        
+    } catch (error) {
+        console.error('Error creating case folder:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Save a document to a case folder
+ * 
+ * @param {Object} documentData
+ * @param {string} documentData.caseNumber - Case identifier
+ * @param {string} documentData.fileName - Name for the file
+ * @param {string} documentData.fileContent - Base64 encoded file content
+ * @param {string} documentData.mimeType - File MIME type
+ * @param {Object} documentData.metadata - Additional metadata
+ * @returns {Promise<{success: boolean, fileId: string, fileUrl: string}>}
+ */
+export async function saveDocumentToCase(documentData) {
+    try {
+        const gasUrl = await getGasUrl();
+        
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'saveDocumentToCase',
+                caseNumber: documentData.caseNumber,
+                fileName: documentData.fileName,
+                fileContent: documentData.fileContent,
+                mimeType: documentData.mimeType || 'application/pdf',
+                metadata: documentData.metadata || {}
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to save document: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        // Log document save
+        if (result.success) {
+            await wixData.insert('DocumentSaves', {
+                caseNumber: documentData.caseNumber,
+                fileName: documentData.fileName,
+                driveFileId: result.fileId,
+                driveFileUrl: result.fileUrl,
+                savedAt: new Date()
+            });
+        }
+        
+        return result;
+        
+    } catch (error) {
+        console.error('Error saving document to case:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Save member ID document to their folder
+ * 
+ * @param {Object} idData
+ * @param {string} idData.memberEmail - Member's email
+ * @param {string} idData.memberName - Member's name
+ * @param {string} idData.idType - 'front' or 'back'
+ * @param {string} idData.fileContent - Base64 encoded image
+ * @param {Object} idData.metadata - GPS, timestamp, etc.
+ * @returns {Promise<{success: boolean, fileId: string}>}
+ */
+export async function saveMemberIdDocument(idData) {
+    try {
+        const gasUrl = await getGasUrl();
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const fileName = `ID_${idData.idType}_${idData.memberName.replace(/\s+/g, '_')}_${timestamp}`;
+        
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'saveMemberIdDocument',
+                memberEmail: idData.memberEmail,
+                memberName: idData.memberName,
+                fileName: fileName,
+                fileContent: idData.fileContent,
+                idType: idData.idType,
+                metadata: {
+                    gps: idData.metadata?.gps,
+                    uploadedAt: idData.metadata?.uploadedAt || new Date().toISOString(),
+                    userAgent: idData.metadata?.userAgent
+                }
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to save ID document: ${response.statusText}`);
+        }
+        
+        return await response.json();
+        
+    } catch (error) {
+        console.error('Error saving member ID document:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Save signed bail paperwork to Google Drive
+ * 
+ * @param {Object} paperworkData
+ * @param {string} paperworkData.caseNumber - Case identifier
+ * @param {string} paperworkData.memberEmail - Member's email
+ * @param {string} paperworkData.documentName - Document name
+ * @param {string} paperworkData.signedPdfBase64 - Base64 encoded signed PDF
+ * @param {Object} paperworkData.signingMetadata - Signing session metadata
+ * @returns {Promise<{success: boolean, fileId: string, fileUrl: string}>}
+ */
+export async function saveSignedPaperwork(paperworkData) {
+    try {
+        const gasUrl = await getGasUrl();
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const fileName = `Signed_${paperworkData.documentName || 'BailPaperwork'}_${timestamp}.pdf`;
+        
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'saveSignedPaperwork',
+                caseNumber: paperworkData.caseNumber,
+                memberEmail: paperworkData.memberEmail,
+                fileName: fileName,
+                fileContent: paperworkData.signedPdfBase64,
+                signingMetadata: paperworkData.signingMetadata || {}
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to save signed paperwork: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        // Update signing session with Drive info
+        if (result.success && paperworkData.sessionId) {
+            const session = await wixData.get('SigningSessions', paperworkData.sessionId);
+            if (session) {
+                session.driveFileId = result.fileId;
+                session.driveFileUrl = result.fileUrl;
+                session.savedToDriveAt = new Date();
+                await wixData.update('SigningSessions', session);
+            }
+        }
+        
+        return result;
+        
+    } catch (error) {
+        console.error('Error saving signed paperwork:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get list of documents in a case folder
+ * 
+ * @param {string} caseNumber - Case identifier
+ * @returns {Promise<{success: boolean, documents: Array}>}
+ */
+export async function getCaseDocuments(caseNumber) {
+    try {
+        const gasUrl = await getGasUrl();
+        
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'getCaseDocuments',
+                caseNumber: caseNumber
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get case documents: ${response.statusText}`);
+        }
+        
+        return await response.json();
+        
+    } catch (error) {
+        console.error('Error getting case documents:', error);
+        return { success: false, documents: [] };
+    }
+}
+
+/**
+ * Get download URL for a document
+ * 
+ * @param {string} fileId - Google Drive file ID
+ * @returns {Promise<{success: boolean, downloadUrl: string}>}
+ */
+export async function getDocumentDownloadUrl(fileId) {
+    try {
+        const gasUrl = await getGasUrl();
+        
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'getDocumentDownloadUrl',
+                fileId: fileId
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get download URL: ${response.statusText}`);
+        }
+        
+        return await response.json();
+        
+    } catch (error) {
+        console.error('Error getting download URL:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Delete a document from Google Drive
+ * 
+ * @param {string} fileId - Google Drive file ID
+ * @returns {Promise<{success: boolean}>}
+ */
+export async function deleteDocument(fileId) {
+    try {
+        const gasUrl = await getGasUrl();
+        
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'deleteDocument',
+                fileId: fileId
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to delete document: ${response.statusText}`);
+        }
+        
+        return await response.json();
+        
+    } catch (error) {
+        console.error('Error deleting document:', error);
+        return { success: false, error: error.message };
+    }
+}
