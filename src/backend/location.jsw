@@ -3,9 +3,11 @@
 
 import wixData from 'wix-data';
 import { currentMember } from 'wix-members-backend';
+import { fetch } from 'wix-fetch';
+import { getSecret } from 'wix-secrets-backend';
 
 /**
- * Save user location to the database
+ * Save user location to the database and sync to Google Sheets
  * @param {number} latitude - GPS latitude
  * @param {number} longitude - GPS longitude
  * @returns {Promise<{success: boolean, message: string}>}
@@ -13,25 +15,89 @@ import { currentMember } from 'wix-members-backend';
 export async function saveUserLocation(latitude, longitude) {
     try {
         const member = await currentMember.getMember();
-        
+
         if (!member) {
             return { success: false, message: 'User not logged in' };
         }
-        
+
+        // 1. Check daily ping limit (max 3 times a day)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const dailyResults = await wixData.query('UserLocations')
+            .eq('memberId', member._id)
+            .ge('timestamp', today)
+            .count();
+
+        if (dailyResults >= 3) {
+            return { success: false, message: 'Daily location ping limit reached' };
+        }
+
+        // 2. Reverse Geocoding via Google Maps
+        let address = 'Unknown';
+        let intersection = 'Unknown';
+
+        try {
+            const apiKey = await getSecret('GOOGLE_MAPS_API_KEY');
+            if (apiKey) {
+                const geoResponse = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`);
+                if (geoResponse.ok) {
+                    const geoData = await geoResponse.json();
+                    if (geoData.status === 'OK' && geoData.results.length > 0) {
+                        address = geoData.results[0].formatted_address;
+
+                        // Look for closest intersection
+                        const intersectionResult = geoData.results.find(r => r.types.includes('intersection'));
+                        if (intersectionResult) {
+                            intersection = intersectionResult.formatted_address;
+                        } else {
+                            // Fallback: look for route/street
+                            const route = geoData.results[0].address_components.find(c => c.types.includes('route'));
+                            if (route) intersection = `Near ${route.long_name}`;
+                        }
+                    }
+                }
+            }
+        } catch (geoError) {
+            console.error('Reverse geocoding failed:', geoError);
+        }
+
         const locationData = {
             memberId: member._id,
             memberEmail: member.loginEmail,
             latitude: latitude,
             longitude: longitude,
+            address: address,
+            intersection: intersection,
             timestamp: new Date(),
             userAgent: 'Wix Member Portal'
         };
-        
-        // Save to UserLocations collection
+
+        // 3. Save to UserLocations collection
         await wixData.insert('UserLocations', locationData);
-        
-        return { success: true, message: 'Location saved successfully' };
-        
+
+        // 4. Sync to Google Sheets via GAS
+        try {
+            const gasUrl = await getSecret('GAS_WEB_APP_URL');
+            if (gasUrl) {
+                await fetch(gasUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'logDefendantLocation',
+                        data: {
+                            ...locationData,
+                            timestamp: locationData.timestamp.toISOString()
+                        }
+                    })
+                });
+            }
+        } catch (gasError) {
+            console.error('GAS sync failed:', gasError);
+        }
+
+        return { success: true, message: 'Location saved and synced successfully', address, intersection };
+
     } catch (error) {
         console.error('Error saving user location:', error);
         return { success: false, message: error.message };
@@ -50,9 +116,9 @@ export async function getLastLocation(memberId) {
             .descending('timestamp')
             .limit(1)
             .find();
-        
+
         return results.items.length > 0 ? results.items[0] : null;
-        
+
     } catch (error) {
         console.error('Error getting last location:', error);
         return null;
