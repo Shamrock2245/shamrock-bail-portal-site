@@ -1,0 +1,265 @@
+/**
+ * Shamrock Bail Bonds - Enhanced Location Service
+ * Backend module for saving and managing user locations
+ * 
+ * This is an enhanced version of the original location.jsw
+ * Integrates with the new geocoding service
+ */
+
+import wixData from 'wix-data';
+import { currentMember } from 'wix-members-backend';
+import { detectCounty } from 'backend/geocoding';
+
+/**
+ * Save user location to the database (Enhanced)
+ * @param {number} latitude - GPS latitude
+ * @param {number} longitude - GPS longitude
+ * @param {Object} options - Additional options
+ * @returns {Promise<Object>} - { success, message, county, locationId }
+ */
+export async function saveUserLocation(latitude, longitude, options = {}) {
+  try {
+    // Get current member (if logged in)
+    let member = null;
+    let memberId = null;
+    let memberEmail = null;
+    
+    try {
+      member = await currentMember.getMember();
+      if (member) {
+        memberId = member._id;
+        memberEmail = member.loginEmail;
+      }
+    } catch (error) {
+      // User not logged in, continue without member info
+      console.log('User not logged in, saving anonymous location');
+    }
+    
+    // Detect county from coordinates
+    const countyResult = await detectCounty(latitude, longitude);
+    
+    if (!countyResult.success) {
+      console.warn('Could not detect county:', countyResult.error);
+    }
+    
+    // Prepare location data
+    const locationData = {
+      memberId: memberId || null,
+      memberEmail: memberEmail || null,
+      sessionId: options.sessionId || generateSessionId(),
+      latitude: latitude,
+      longitude: longitude,
+      accuracy: options.accuracy || null,
+      county: countyResult.county || null,
+      state: countyResult.state || 'FL',
+      confidence: countyResult.confidence || 0,
+      detectionMethod: countyResult.method || 'unknown',
+      consentGiven: options.consentGiven !== false, // Default to true
+      timestamp: new Date(),
+      userAgent: options.userAgent || 'Wix Member Portal',
+      device: options.device || 'Unknown',
+      page: options.page || null
+    };
+    
+    // Save to UserLocations collection
+    const result = await wixData.insert('UserLocations', locationData);
+    
+    return {
+      success: true,
+      message: 'Location saved successfully',
+      county: countyResult.county,
+      state: countyResult.state,
+      locationId: result._id,
+      confidence: countyResult.confidence
+    };
+    
+  } catch (error) {
+    console.error('Error saving user location:', error);
+    return {
+      success: false,
+      message: error.message,
+      county: null,
+      locationId: null
+    };
+  }
+}
+
+/**
+ * Get the last known location for a member
+ * @param {string} memberId - The member ID
+ * @returns {Promise<Object|null>}
+ */
+export async function getLastLocation(memberId) {
+  try {
+    const results = await wixData.query('UserLocations')
+      .eq('memberId', memberId)
+      .descending('timestamp')
+      .limit(1)
+      .find();
+    
+    return results.items.length > 0 ? results.items[0] : null;
+    
+  } catch (error) {
+    console.error('Error getting last location:', error);
+    return null;
+  }
+}
+
+/**
+ * Get location by session ID
+ * @param {string} sessionId - Session ID
+ * @returns {Promise<Object|null>}
+ */
+export async function getLocationBySession(sessionId) {
+  try {
+    const results = await wixData.query('UserLocations')
+      .eq('sessionId', sessionId)
+      .descending('timestamp')
+      .limit(1)
+      .find();
+    
+    return results.items.length > 0 ? results.items[0] : null;
+    
+  } catch (error) {
+    console.error('Error getting location by session:', error);
+    return null;
+  }
+}
+
+/**
+ * Get all locations for a county (for analytics)
+ * @param {string} county - County slug
+ * @param {number} daysBack - Number of days to look back
+ * @returns {Promise<Array>}
+ */
+export async function getLocationsByCounty(county, daysBack = 7) {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+    
+    const results = await wixData.query('UserLocations')
+      .eq('county', county)
+      .ge('timestamp', cutoffDate)
+      .descending('timestamp')
+      .find();
+    
+    return results.items;
+    
+  } catch (error) {
+    console.error('Error getting locations by county:', error);
+    return [];
+  }
+}
+
+/**
+ * Get location statistics by county
+ * @param {number} daysBack - Number of days to analyze
+ * @returns {Promise<Object>} - County-level statistics
+ */
+export async function getLocationStats(daysBack = 30) {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+    
+    const results = await wixData.query('UserLocations')
+      .ge('timestamp', cutoffDate)
+      .find();
+    
+    // Aggregate by county
+    const stats = {};
+    
+    for (const location of results.items) {
+      const county = location.county || 'unknown';
+      
+      if (!stats[county]) {
+        stats[county] = {
+          count: 0,
+          members: new Set(),
+          avgConfidence: 0,
+          methods: {}
+        };
+      }
+      
+      stats[county].count++;
+      
+      if (location.memberId) {
+        stats[county].members.add(location.memberId);
+      }
+      
+      stats[county].avgConfidence += location.confidence || 0;
+      
+      const method = location.detectionMethod || 'unknown';
+      stats[county].methods[method] = (stats[county].methods[method] || 0) + 1;
+    }
+    
+    // Calculate averages
+    for (const county in stats) {
+      stats[county].avgConfidence = stats[county].avgConfidence / stats[county].count;
+      stats[county].uniqueMembers = stats[county].members.size;
+      delete stats[county].members; // Remove Set object
+    }
+    
+    return {
+      success: true,
+      stats,
+      totalLocations: results.totalCount,
+      daysAnalyzed: daysBack
+    };
+    
+  } catch (error) {
+    console.error('Error getting location stats:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Delete old location records (privacy compliance)
+ * @param {number} daysOld - Delete records older than this many days
+ * @returns {Promise<Object>} - { success, deletedCount }
+ */
+export async function cleanupOldLocations(daysOld = 90) {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    
+    const results = await wixData.query('UserLocations')
+      .lt('timestamp', cutoffDate)
+      .find();
+    
+    let deletedCount = 0;
+    
+    for (const location of results.items) {
+      await wixData.remove('UserLocations', location._id);
+      deletedCount++;
+    }
+    
+    return {
+      success: true,
+      deletedCount,
+      message: `Deleted ${deletedCount} old location records`
+    };
+    
+  } catch (error) {
+    console.error('Error cleaning up old locations:', error);
+    return {
+      success: false,
+      error: error.message,
+      deletedCount: 0
+    };
+  }
+}
+
+/**
+ * Generate a unique session ID
+ * @returns {string} - UUID v4
+ */
+function generateSessionId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}

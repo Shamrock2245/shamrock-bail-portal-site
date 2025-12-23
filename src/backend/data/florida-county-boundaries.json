@@ -1,0 +1,166 @@
+{
+  "comment": "Florida county boundary data for fast geolocation matching",
+  "version": "1.0",
+  "counties": {
+    "lee": {
+      "name": "Lee",
+      "bounds": {
+        "north": 26.7619,
+        "south": 26.3619,
+        "east": -81.5619,
+        "west": -82.0619
+      },
+      "centroid": { "lat": 26.5619, "lng": -81.8119 }
+    },
+    "collier": {
+      "name": "Collier",
+      "bounds": {
+        "north": 26.3619,
+        "south": 25.8619,
+        "east": -81.0619,
+        "west": -81.7619
+      },
+      "centroid": { "lat": 26.1119, "lng": -81.4119 }
+    },
+    "charlotte": {
+      "name": "Charlotte",
+      "bounds": {
+        "north": 27.0619,
+        "south": 26.7619,
+        "east": -81.7619,
+        "west": -82.2619
+      },
+      "centroid": { "lat": 26.9119, "lng": -82.0119 }
+    },
+    "hendry": {
+      "name": "Hendry",
+      "bounds": {
+        "north": 26.9619,
+        "south": 26.3619,
+        "east": -80.8619,
+        "west": -81.4619
+      },
+      "centroid": { "lat": 26.6619, "lng": -81.1619 }
+    },
+    "desoto": {
+      "name": "DeSoto",
+      "bounds": {
+        "north": 27.3619,
+        "south": 26.9619,
+        "east": -81.6619,
+        "west": -82.0619
+      },
+      "centroid": { "lat": 27.1619, "lng": -81.8619 }
+    },
+    "sarasota": {
+      "name": "Sarasota",
+      "bounds": {
+        "north": 27.4619,
+        "south": 26.9619,
+        "east": -82.2619,
+        "west": -82.5619
+      },
+      "centroid": { "lat": 27.2119, "lng": -82.4119 }
+    },
+    "manatee": {
+      "name": "Manatee",
+      "bounds": {
+        "north": 27.6619,
+        "south": 27.3619,
+        "east": -82.2619,
+        "west": -82.5619
+      },
+      "centroid": { "lat": 27.5119, "lng": -82.4119 }
+    },
+    "glades": {
+      "name": "Glades",
+      "bounds": {
+        "north": 27.0619,
+        "south": 26.6619,
+        "east": -80.7619,
+        "west": -81.1619
+      },
+      "centroid": { "lat": 26.8619, "lng": -80.9619 }
+    },
+    "highlands": {
+      "name": "Highlands",
+      "bounds": {
+        "north": 27.6619,
+        "south": 27.0619,
+        "east": -81.0619,
+        "west": -81.5619
+      },
+      "centroid": { "lat": 27.3619, "lng": -81.2819 }
+    },
+    "hardee": {
+      "name": "Hardee",
+      "bounds": {
+        "north": 27.6619,
+        "south": 27.2619,
+        "east": -81.6619,
+        "west": -82.0619
+      },
+      "centroid": { "lat": 27.4619, "lng": -81.8319 }
+    },
+    "miami-dade": {
+      "name": "Miami-Dade",
+      "bounds": {
+        "north": 25.9619,
+        "south": 25.1619,
+        "east": -80.1619,
+        "west": -80.8619
+      },
+      "centroid": { "lat": 25.5619, "lng": -80.5119 }
+    },
+    "broward": {
+      "name": "Broward",
+      "bounds": {
+        "north": 26.4619,
+        "south": 25.9619,
+        "east": -80.0619,
+        "west": -80.5619
+      },
+      "centroid": { "lat": 26.2119, "lng": -80.3119 }
+    },
+    "palm-beach": {
+      "name": "Palm Beach",
+      "bounds": {
+        "north": 27.0619,
+        "south": 26.3619,
+        "east": -80.0619,
+        "west": -80.5619
+      },
+      "centroid": { "lat": 26.7119, "lng": -80.2819 }
+    },
+    "hillsborough": {
+      "name": "Hillsborough",
+      "bounds": {
+        "north": 28.2619,
+        "south": 27.6619,
+        "east": -82.1619,
+        "west": -82.6619
+      },
+      "centroid": { "lat": 27.9619, "lng": -82.4119 }
+    },
+    "pinellas": {
+      "name": "Pinellas",
+      "bounds": {
+        "north": 28.2619,
+        "south": 27.6619,
+        "east": -82.6619,
+        "west": -82.8619
+      },
+      "centroid": { "lat": 27.9619, "lng": -82.7619 }
+    },
+    "orange": {
+      "name": "Orange",
+      "bounds": {
+        "north": 28.8619,
+        "south": 28.3619,
+        "east": -81.1619,
+        "west": -81.6619
+      },
+      "centroid": { "lat": 28.6119, "lng": -81.4119 }
+    }
+  }
+}

@@ -5,48 +5,26 @@ import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import { authentication } from 'wix-members';
 import { silentPingLocation } from 'public/location-tracker';
+import { initializePhoneInjection } from 'public/phone-injector';
+import { initHeader } from 'public/siteHeader';
+import { initFooter } from 'public/siteFooter';
 
 $w.onReady(function () {
+    // 1. Initialize Site Components (Public Modules)
     initHeader();
     initFooter();
+
+    // 2. Handle Responsive View
     checkMobileView();
 
-    // Proactive tracking for defendants
+    // 3. Proactive tracking
     silentPingLocation();
+
+    // 4. Global Phone Injection (Dynamic Routing)
+    initializePhoneInjection();
 });
 
-function initHeader() {
-    // Handle navigation based on login state
-    const isLoggedIn = authentication.loggedIn();
-
-    if (isLoggedIn) {
-        $w('#loginBtn').label = "My Account";
-        $w('#loginBtn').onClick(() => {
-            wixLocation.to('/members/account');
-        });
-    } else {
-        $w('#loginBtn').label = "Log In";
-        $w('#loginBtn').onClick(() => {
-            wixLocation.to('/login');
-        });
-    }
-
-    // Mobile menu toggle
-    $w('#mobileMenuBtn').onClick(() => {
-        const menuBox = $w('#mobileMenuBox');
-        if (menuBox.collapsed) {
-            menuBox.expand();
-        } else {
-            menuBox.collapse();
-        }
-    });
-}
-
-function initFooter() {
-    // Dynamic copyright year
-    const currentYear = new Date().getFullYear();
-    $w('#copyrightText').text = `© ${currentYear} Shamrock Bail Bonds. All Rights Reserved.`;
-}
+// Note: Local initHeader and initFooter are removed in favor of robust public/siteHeader and public/siteFooter components.
 
 function checkMobileView() {
     const formFactor = wixWindow.formFactor; // "Desktop", "Mobile", "Tablet"

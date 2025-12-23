@@ -1,0 +1,263 @@
+/**
+ * Shamrock Bail Bonds - Phone Routing Service
+ * Dynamically assigns phone numbers based on county, time, language, and context
+ * 
+ * Features:
+ * - County-based routing
+ * - Time-based routing (business hours)
+ * - Language preference routing
+ * - Call tracking integration
+ */
+
+import phoneRegistry from 'backend/data/phone-registry.json';
+import wixData from 'wix-data';
+import { reportSystemError } from 'backend/notificationService';
+
+/**
+ * Get optimal phone number for user context
+ * @param {Object} context - { county, language, time, device, page }
+ * @returns {Promise<Object>} - { number, display, trackingId, source }
+ */
+export async function getPhoneNumber(context = {}) {
+  try {
+    const {
+      county = null,
+      language = 'en',
+      time = new Date(),
+      device = 'Desktop',
+      page = null,
+      sessionId = null
+    } = context;
+
+    // Step 1: Check for language preference (Spanish)
+    if (language === 'es' || language === 'spanish') {
+      const spanishNumber = phoneRegistry.numbers.spanish;
+
+      return {
+        success: true,
+        number: spanishNumber.number,
+        display: spanishNumber.display,
+        displayFormatted: spanishNumber.displayFormatted,
+        trackingId: await generateTrackingId('spanish', county),
+        source: 'language_match',
+        type: 'spanish'
+      };
+    }
+
+    // Step 2: County-based routing
+    if (county) {
+      const countyNumber = findNumberByCounty(county);
+
+      if (countyNumber) {
+        return {
+          success: true,
+          number: countyNumber.number,
+          display: countyNumber.display,
+          displayFormatted: countyNumber.displayFormatted,
+          trackingId: await generateTrackingId('county', county),
+          source: 'county_match',
+          type: 'primary'
+        };
+      }
+    }
+
+    // Step 3: Time-based routing (future enhancement)
+    // Currently all numbers are 24/7, but this allows for after-hours routing
+
+    // Step 4: Fallback to primary number
+    const primaryNumber = phoneRegistry.numbers.primary;
+
+    return {
+      success: true,
+      number: primaryNumber.number,
+      display: primaryNumber.display,
+      displayFormatted: primaryNumber.displayFormatted,
+      trackingId: await generateTrackingId('fallback', county),
+      source: 'fallback',
+      type: 'primary'
+    };
+
+  } catch (error) {
+    console.error('Error in getPhoneNumber:', error);
+
+    // Centralized error reporting
+    await reportSystemError('routing', error.message, { context });
+
+    // Emergency fallback to the core Lee County line (+1-239-332-2245)
+    return {
+      success: false,
+      number: '+12393322245',
+      display: '(239) 332-2245',
+      displayFormatted: '239-332-2245',
+      trackingId: `ERR-${Date.now()}`,
+      source: 'emergency_fallback',
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Find phone number by county
+ * @param {string} county - County slug
+ * @returns {Object|null} - Phone number object or null
+ */
+function findNumberByCounty(county) {
+  const numbers = phoneRegistry.numbers;
+
+  for (const [id, numberData] of Object.entries(numbers)) {
+    // Skip language-specific numbers
+    if (numberData.type === 'language') {
+      continue;
+    }
+
+    // Check if county is in the list
+    if (numberData.counties.includes(county) || numberData.counties.includes('all')) {
+      return numberData;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Generate unique tracking ID for call
+ * @param {string} source - Routing source
+ * @param {string} county - County slug
+ * @returns {Promise<string>} - Tracking ID
+ */
+async function generateTrackingId(source, county) {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  const countyCode = county ? county.substring(0, 3).toUpperCase() : 'UNK';
+
+  return `CALL-${countyCode}-${timestamp}-${random}`;
+}
+
+/**
+ * Get all available phone numbers
+ * @returns {Array} - Array of phone number objects
+ */
+export function getAllPhoneNumbers() {
+  const numbers = phoneRegistry.numbers;
+
+  return Object.entries(numbers).map(([id, data]) => ({
+    id,
+    number: data.number,
+    display: data.display,
+    type: data.type,
+    language: data.language,
+    counties: data.counties,
+    description: data.description
+  }));
+}
+
+/**
+ * Get phone number by type
+ * @param {string} type - Phone number type ('primary', 'spanish', 'fallback')
+ * @returns {Object|null} - Phone number object or null
+ */
+export function getPhoneNumberByType(type) {
+  const numbers = phoneRegistry.numbers;
+
+  for (const [id, data] of Object.entries(numbers)) {
+    if (data.type === type) {
+      return {
+        id,
+        number: data.number,
+        display: data.display,
+        displayFormatted: data.displayFormatted
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Validate phone number format
+ * @param {string} phoneNumber - Phone number to validate
+ * @returns {boolean} - True if valid
+ */
+export function validatePhoneNumber(phoneNumber) {
+  // E.164 format validation
+  const e164Regex = /^\+1[0-9]{10}$/;
+  return e164Regex.test(phoneNumber);
+}
+
+/**
+ * Format phone number for display
+ * @param {string} phoneNumber - Phone number in E.164 format
+ * @param {string} format - Format type ('display', 'formatted', 'e164')
+ * @returns {string} - Formatted phone number
+ */
+export function formatPhoneNumber(phoneNumber, format = 'display') {
+  if (!phoneNumber || !phoneNumber.startsWith('+1')) {
+    return phoneNumber;
+  }
+
+  const digits = phoneNumber.substring(2); // Remove +1
+
+  if (format === 'display') {
+    return `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
+  } else if (format === 'formatted') {
+    return `${digits.substring(0, 3)}-${digits.substring(3, 6)}-${digits.substring(6)}`;
+  } else {
+    return phoneNumber; // Return E.164 format
+  }
+}
+
+/**
+ * Get routing statistics
+ * @param {number} daysBack - Number of days to analyze
+ * @returns {Promise<Object>} - Routing statistics
+ */
+export async function getRoutingStats(daysBack = 30) {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+
+    const results = await wixData.query('CallLogs')
+      .ge('timestamp', cutoffDate)
+      .find();
+
+    // Aggregate statistics
+    const stats = {
+      totalCalls: results.totalCount,
+      byCounty: {},
+      bySource: {},
+      byDevice: {},
+      byPhoneNumber: {}
+    };
+
+    for (const call of results.items) {
+      // By county
+      const county = call.county || 'unknown';
+      stats.byCounty[county] = (stats.byCounty[county] || 0) + 1;
+
+      // By source
+      const source = call.source || 'unknown';
+      stats.bySource[source] = (stats.bySource[source] || 0) + 1;
+
+      // By device
+      const device = call.device || 'unknown';
+      stats.byDevice[device] = (stats.byDevice[device] || 0) + 1;
+
+      // By phone number
+      const phoneNumber = call.phoneNumber || 'unknown';
+      stats.byPhoneNumber[phoneNumber] = (stats.byPhoneNumber[phoneNumber] || 0) + 1;
+    }
+
+    return {
+      success: true,
+      stats,
+      daysAnalyzed: daysBack
+    };
+
+  } catch (error) {
+    console.error('Error getting routing stats:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}

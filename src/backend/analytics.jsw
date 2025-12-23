@@ -1,0 +1,459 @@
+/**
+ * Shamrock Bail Bonds - Analytics Service
+ * Comprehensive event tracking and analytics
+ * 
+ * Features:
+ * - Event tracking with rich context
+ * - Session management
+ * - Conversion funnel tracking
+ * - Real-time alerts for high-value events
+ */
+
+import wixData from 'wix-data';
+import { currentMember } from 'wix-members-backend';
+
+/**
+ * Track user event
+ * @param {string} eventType - Event type
+ * @param {Object} properties - Event properties
+ * @returns {Promise<Object>} - { success, eventId }
+ */
+export async function trackEvent(eventType, properties = {}) {
+  try {
+    // Get current member (if logged in)
+    let member = null;
+    let memberId = null;
+    let memberEmail = null;
+    
+    try {
+      member = await currentMember.getMember();
+      if (member) {
+        memberId = member._id;
+        memberEmail = member.loginEmail;
+      }
+    } catch (error) {
+      // User not logged in
+    }
+    
+    // Prepare event data
+    const eventData = {
+      eventType,
+      timestamp: new Date(),
+      sessionId: properties.sessionId || generateSessionId(),
+      memberId: memberId || null,
+      memberEmail: memberEmail || null,
+      county: properties.county || null,
+      page: properties.page || null,
+      device: properties.device || 'Unknown',
+      userAgent: properties.userAgent || null,
+      properties: JSON.stringify(properties)
+    };
+    
+    // Save to AnalyticsEvents collection
+    const result = await wixData.insert('AnalyticsEvents', eventData);
+    
+    // Check if this is a high-value event
+    if (isHighValueEvent(eventType, properties)) {
+      await triggerHighValueAlert(eventType, properties);
+    }
+    
+    return {
+      success: true,
+      eventId: result._id,
+      message: 'Event tracked successfully'
+    };
+    
+  } catch (error) {
+    console.error('Error tracking event:', error);
+    return {
+      success: false,
+      error: error.message,
+      eventId: null
+    };
+  }
+}
+
+/**
+ * Track page view
+ * @param {Object} pageData - { page, county, device, sessionId }
+ * @returns {Promise<Object>} - Tracking result
+ */
+export async function trackPageView(pageData) {
+  return await trackEvent('page_view', pageData);
+}
+
+/**
+ * Track conversion event
+ * @param {string} conversionType - Type of conversion
+ * @param {Object} data - Conversion data
+ * @returns {Promise<Object>} - Tracking result
+ */
+export async function trackConversion(conversionType, data) {
+  return await trackEvent(`conversion_${conversionType}`, {
+    ...data,
+    conversionType
+  });
+}
+
+/**
+ * Get events by type
+ * @param {string} eventType - Event type
+ * @param {number} daysBack - Number of days to look back
+ * @returns {Promise<Array>} - Array of events
+ */
+export async function getEventsByType(eventType, daysBack = 7) {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+    
+    const results = await wixData.query('AnalyticsEvents')
+      .eq('eventType', eventType)
+      .ge('timestamp', cutoffDate)
+      .descending('timestamp')
+      .find();
+    
+    return results.items;
+    
+  } catch (error) {
+    console.error('Error getting events by type:', error);
+    return [];
+  }
+}
+
+/**
+ * Get analytics summary
+ * @param {number} daysBack - Number of days to analyze
+ * @returns {Promise<Object>} - Analytics summary
+ */
+export async function getAnalyticsSummary(daysBack = 30) {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+    
+    const results = await wixData.query('AnalyticsEvents')
+      .ge('timestamp', cutoffDate)
+      .find();
+    
+    // Aggregate statistics
+    const summary = {
+      totalEvents: results.totalCount,
+      byEventType: {},
+      byCounty: {},
+      byDevice: {},
+      byPage: {},
+      uniqueSessions: new Set(),
+      uniqueMembers: new Set(),
+      conversions: 0
+    };
+    
+    for (const event of results.items) {
+      // By event type
+      const eventType = event.eventType || 'unknown';
+      summary.byEventType[eventType] = (summary.byEventType[eventType] || 0) + 1;
+      
+      // By county
+      const county = event.county || 'unknown';
+      summary.byCounty[county] = (summary.byCounty[county] || 0) + 1;
+      
+      // By device
+      const device = event.device || 'unknown';
+      summary.byDevice[device] = (summary.byDevice[device] || 0) + 1;
+      
+      // By page
+      const page = event.page || 'unknown';
+      summary.byPage[page] = (summary.byPage[page] || 0) + 1;
+      
+      // Unique sessions
+      if (event.sessionId) {
+        summary.uniqueSessions.add(event.sessionId);
+      }
+      
+      // Unique members
+      if (event.memberId) {
+        summary.uniqueMembers.add(event.memberId);
+      }
+      
+      // Conversions
+      if (eventType.startsWith('conversion_')) {
+        summary.conversions++;
+      }
+    }
+    
+    // Convert Sets to counts
+    summary.uniqueSessions = summary.uniqueSessions.size;
+    summary.uniqueMembers = summary.uniqueMembers.size;
+    
+    return {
+      success: true,
+      summary,
+      daysAnalyzed: daysBack
+    };
+    
+  } catch (error) {
+    console.error('Error getting analytics summary:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Get conversion funnel data
+ * @param {number} daysBack - Number of days to analyze
+ * @returns {Promise<Object>} - Funnel data
+ */
+export async function getConversionFunnel(daysBack = 30) {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+    
+    const results = await wixData.query('AnalyticsEvents')
+      .ge('timestamp', cutoffDate)
+      .find();
+    
+    // Track funnel stages
+    const funnel = {
+      page_view: 0,
+      county_selected: 0,
+      phone_clicked: 0,
+      form_submitted: 0,
+      member_login: 0,
+      bail_started: 0
+    };
+    
+    const sessionStages = {};
+    
+    for (const event of results.items) {
+      const eventType = event.eventType;
+      const sessionId = event.sessionId;
+      
+      // Count total events by type
+      if (funnel.hasOwnProperty(eventType)) {
+        funnel[eventType]++;
+      }
+      
+      // Track session progression
+      if (sessionId) {
+        if (!sessionStages[sessionId]) {
+          sessionStages[sessionId] = new Set();
+        }
+        sessionStages[sessionId].add(eventType);
+      }
+    }
+    
+    // Calculate conversion rates
+    const totalSessions = Object.keys(sessionStages).length;
+    
+    const conversionRates = {
+      page_view_to_county: funnel.county_selected / funnel.page_view,
+      county_to_phone: funnel.phone_clicked / funnel.county_selected,
+      phone_to_form: funnel.form_submitted / funnel.phone_clicked,
+      form_to_login: funnel.member_login / funnel.form_submitted,
+      login_to_bail: funnel.bail_started / funnel.member_login
+    };
+    
+    return {
+      success: true,
+      funnel,
+      conversionRates,
+      totalSessions,
+      daysAnalyzed: daysBack
+    };
+    
+  } catch (error) {
+    console.error('Error getting conversion funnel:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Get top performing pages
+ * @param {number} daysBack - Number of days to analyze
+ * @param {number} limit - Number of top pages to return
+ * @returns {Promise<Array>} - Array of top pages
+ */
+export async function getTopPages(daysBack = 30, limit = 10) {
+  try {
+    const summary = await getAnalyticsSummary(daysBack);
+    
+    if (!summary.success) {
+      return [];
+    }
+    
+    // Convert to array and sort
+    const pages = Object.entries(summary.summary.byPage)
+      .map(([page, count]) => ({ page, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+    
+    return pages;
+    
+  } catch (error) {
+    console.error('Error getting top pages:', error);
+    return [];
+  }
+}
+
+/**
+ * Get county performance metrics
+ * @param {string} county - County slug
+ * @param {number} daysBack - Number of days to analyze
+ * @returns {Promise<Object>} - County metrics
+ */
+export async function getCountyMetrics(county, daysBack = 30) {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+    
+    const results = await wixData.query('AnalyticsEvents')
+      .eq('county', county)
+      .ge('timestamp', cutoffDate)
+      .find();
+    
+    const metrics = {
+      totalEvents: results.totalCount,
+      pageViews: 0,
+      phoneClicks: 0,
+      formSubmissions: 0,
+      bailsStarted: 0,
+      uniqueSessions: new Set()
+    };
+    
+    for (const event of results.items) {
+      const eventType = event.eventType;
+      
+      if (eventType === 'page_view') metrics.pageViews++;
+      if (eventType === 'phone_clicked') metrics.phoneClicks++;
+      if (eventType === 'form_submitted') metrics.formSubmissions++;
+      if (eventType === 'bail_started') metrics.bailsStarted++;
+      
+      if (event.sessionId) {
+        metrics.uniqueSessions.add(event.sessionId);
+      }
+    }
+    
+    metrics.uniqueSessions = metrics.uniqueSessions.size;
+    metrics.conversionRate = metrics.uniqueSessions > 0 
+      ? metrics.phoneClicks / metrics.uniqueSessions 
+      : 0;
+    
+    return {
+      success: true,
+      county,
+      metrics,
+      daysAnalyzed: daysBack
+    };
+    
+  } catch (error) {
+    console.error('Error getting county metrics:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Determine if event is high-value
+ * @param {string} eventType - Event type
+ * @param {Object} properties - Event properties
+ * @returns {boolean} - True if high-value
+ */
+function isHighValueEvent(eventType, properties) {
+  const highValueEvents = [
+    'bail_started',
+    'form_submitted',
+    'member_signup',
+    'phone_clicked'
+  ];
+  
+  const tier1Counties = ['lee', 'collier', 'charlotte', 'hendry', 'desoto', 'sarasota', 'manatee'];
+  
+  // High-value if it's a conversion event
+  if (highValueEvents.includes(eventType)) {
+    return true;
+  }
+  
+  // High-value if from Tier 1 county
+  if (properties.county && tier1Counties.includes(properties.county)) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Trigger high-value alert
+ * @param {string} eventType - Event type
+ * @param {Object} properties - Event properties
+ * @returns {Promise<void>}
+ */
+async function triggerHighValueAlert(eventType, properties) {
+  try {
+    console.log('🔥 HIGH-VALUE EVENT:', {
+      eventType,
+      county: properties.county,
+      page: properties.page,
+      device: properties.device
+    });
+    
+    // TODO: Integrate with Slack webhook
+    // Future implementation for real-time notifications
+    
+  } catch (error) {
+    console.error('Error triggering high-value alert:', error);
+  }
+}
+
+/**
+ * Generate session ID
+ * @returns {string} - UUID v4
+ */
+function generateSessionId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+/**
+ * Clean up old analytics events (privacy compliance)
+ * @param {number} daysOld - Delete events older than this many days
+ * @returns {Promise<Object>} - { success, deletedCount }
+ */
+export async function cleanupOldEvents(daysOld = 90) {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    
+    const results = await wixData.query('AnalyticsEvents')
+      .lt('timestamp', cutoffDate)
+      .find();
+    
+    let deletedCount = 0;
+    
+    for (const event of results.items) {
+      await wixData.remove('AnalyticsEvents', event._id);
+      deletedCount++;
+    }
+    
+    return {
+      success: true,
+      deletedCount,
+      message: `Deleted ${deletedCount} old analytics events`
+    };
+    
+  } catch (error) {
+    console.error('Error cleaning up old events:', error);
+    return {
+      success: false,
+      error: error.message,
+      deletedCount: 0
+    };
+  }
+}

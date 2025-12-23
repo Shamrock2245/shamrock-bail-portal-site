@@ -1,0 +1,336 @@
+/**
+ * Shamrock Bail Bonds - County Page Generator
+ * Generates county page data from templates and existing data
+ * 
+ * Features:
+ * - Merges template with county-specific data
+ * - Generates SEO metadata
+ * - Integrates with scraper schema
+ * - Supports all 67 Florida counties
+ */
+
+import wixData from 'wix-data';
+import countyTemplate from 'backend/data/county-template.json';
+import countyBoundaries from 'backend/data/florida-county-boundaries.json';
+
+/**
+ * Generate complete county page data
+ * @param {string} countySlug - County slug (e.g., "lee")
+ * @returns {Promise<Object>} - Complete county page data
+ */
+export async function generateCountyPage(countySlug) {
+  try {
+    // Load existing county data from database
+    const existingData = await getCountyFromDatabase(countySlug);
+    
+    // Load county data from JSON files
+    const boundaryData = countyBoundaries.counties[countySlug];
+    
+    // Merge with template
+    const countyData = mergeCountyData(countySlug, existingData, boundaryData);
+    
+    // Generate dynamic content
+    countyData.content = generateCountyContent(countyData);
+    
+    // Generate SEO metadata
+    countyData.seo = generateSEOMetadata(countyData);
+    
+    return {
+      success: true,
+      data: countyData
+    };
+    
+  } catch (error) {
+    console.error('Error generating county page:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
+  }
+}
+
+/**
+ * Get county data from Wix database
+ * @param {string} countySlug - County slug
+ * @returns {Promise<Object|null>} - County data or null
+ */
+async function getCountyFromDatabase(countySlug) {
+  try {
+    const results = await wixData.query('FloridaCounties')
+      .eq('countySlug', countySlug)
+      .find();
+    
+    if (results.items.length > 0) {
+      return results.items[0];
+    }
+    
+    return null;
+    
+  } catch (error) {
+    console.error('Error getting county from database:', error);
+    return null;
+  }
+}
+
+/**
+ * Merge county data from multiple sources
+ * @param {string} countySlug - County slug
+ * @param {Object} existingData - Existing database data
+ * @param {Object} boundaryData - Boundary data
+ * @returns {Object} - Merged county data
+ */
+function mergeCountyData(countySlug, existingData, boundaryData) {
+  const template = countyTemplate.template;
+  
+  // Start with template as base
+  const merged = JSON.parse(JSON.stringify(template));
+  
+  // Update basic info
+  merged.county_slug = countySlug;
+  merged.county_name = boundaryData ? boundaryData.name : capitalizeCountyName(countySlug);
+  merged.county_name_full = `${merged.county_name} County`;
+  
+  // Merge location data
+  if (boundaryData) {
+    merged.location.centroid = boundaryData.centroid;
+    merged.location.bounds = boundaryData.bounds;
+  }
+  
+  // Merge existing database data
+  if (existingData) {
+    // Override with database values
+    if (existingData.active !== undefined) merged.active = existingData.active;
+    if (existingData.featured !== undefined) merged.featured = existingData.featured;
+    if (existingData.tier !== undefined) merged.tier = existingData.tier;
+    if (existingData.population) merged.population = existingData.population;
+    if (existingData.countySeat) merged.county_seat = existingData.countySeat;
+    if (existingData.region) merged.region = existingData.region;
+    
+    // Merge contact info
+    if (existingData.primaryPhone) {
+      merged.contact.primary_phone = existingData.primaryPhone;
+      merged.contact.primary_phone_display = formatPhoneForDisplay(existingData.primaryPhone);
+    }
+    
+    // Merge jail info
+    if (existingData.sheriff) {
+      merged.jail.name = existingData.sheriff.name || merged.jail.name;
+      merged.jail.booking_url = existingData.sheriff.bookingUrl || merged.jail.booking_url;
+      merged.jail.booking_phone = existingData.sheriff.phone || merged.jail.booking_phone;
+    }
+    
+    // Merge clerk info
+    if (existingData.clerk) {
+      merged.clerk.name = existingData.clerk.name || merged.clerk.name;
+      merged.clerk.website = existingData.clerk.website || merged.clerk.website;
+      merged.clerk.records_url = existingData.clerk.recordsUrl || merged.clerk.records_url;
+      merged.clerk.phone = existingData.clerk.phone || merged.clerk.phone;
+    }
+    
+    // Merge SEO
+    if (existingData.seo) {
+      merged.seo.meta_title = existingData.seo.title || merged.seo.meta_title;
+      merged.seo.meta_description = existingData.seo.description || merged.seo.meta_description;
+      if (existingData.seo.keywords) {
+        merged.seo.keywords = existingData.seo.keywords.split(',').map(k => k.trim());
+      }
+    }
+  }
+  
+  return merged;
+}
+
+/**
+ * Generate dynamic county content
+ * @param {Object} countyData - County data
+ * @returns {Object} - Generated content
+ */
+function generateCountyContent(countyData) {
+  const countyName = countyData.county_name;
+  const countySeat = countyData.county_seat || countyName;
+  const phone = countyData.contact.primary_phone_display;
+  
+  return {
+    hero_headline: `${countyName} County Bail Bonds - 24/7 Fast Release`,
+    hero_subheadline: `Licensed, trusted, and ready to help. Get your loved one home fast from ${countyName} County Jail.`,
+    hero_cta_primary: `Call Now: ${phone}`,
+    hero_cta_secondary: 'Start Bail Process Online',
+    
+    about_county: `${countyName} County is located in ${countyData.region} Florida with a population of approximately ${formatPopulation(countyData.population)}. The county seat is ${countySeat}. Shamrock Bail Bonds has been serving ${countyName} County families for years, providing fast, professional bail bond services 24 hours a day, 7 days a week.`,
+    
+    why_choose_us: `Shamrock Bail Bonds has deep roots in ${countyName} County. We understand the local jail system, court procedures, and how to get your loved one released quickly. Our licensed bail bondsmen are available around the clock to answer your questions and start the bail process immediately. We treat every client with dignity and respect during this difficult time.`,
+    
+    how_it_works: `When someone is arrested in ${countyName} County, they are typically taken to the ${countyData.jail.name} for booking. Once booking is complete and bail is set, we can begin the release process. Our bail bondsmen will meet with you, explain the process, and handle all the paperwork. In most cases, your loved one can be released within hours of posting bail.`,
+    
+    service_areas: countyData.major_cities 
+      ? `We serve all of ${countyName} County including ${countyData.major_cities.join(', ')}, and surrounding communities.`
+      : `We serve all of ${countyName} County and surrounding communities.`,
+    
+    faq: [
+      {
+        question: `How long does it take to get someone out of ${countyName} County Jail?`,
+        answer: 'Release times vary depending on how busy the jail is, but typically range from 2-8 hours after bail is posted. We start the process immediately when you call.'
+      },
+      {
+        question: `What is the bail amount in ${countyName} County?`,
+        answer: `Bail amounts are set by the judge based on the charges and the defendant's criminal history. You can check bail amounts on the ${countyData.sheriff.name} booking search website or call us for assistance.`
+      },
+      {
+        question: 'Do you offer payment plans?',
+        answer: 'Yes, we offer flexible payment plans for qualified clients. Call us to discuss your options.'
+      },
+      {
+        question: `What areas of ${countyName} County do you serve?`,
+        answer: `We serve all areas of ${countyName} County. No matter where your loved one is being held, we can help.`
+      }
+    ]
+  };
+}
+
+/**
+ * Generate SEO metadata for county
+ * @param {Object} countyData - County data
+ * @returns {Object} - SEO metadata
+ */
+function generateSEOMetadata(countyData) {
+  const countyName = countyData.county_name;
+  const countySeat = countyData.county_seat || countyName;
+  const phone = countyData.contact.primary_phone_display;
+  
+  return {
+    meta_title: `${countyName} County Bail Bonds - 24/7 Fast Release | ${countySeat} | Shamrock Bail Bonds`,
+    meta_description: `Need bail in ${countyName} County? Shamrock Bail Bonds provides 24/7 fast release service in ${countySeat} and all of ${countyName} County. Licensed, trusted, and ready to help. Call ${phone} now.`,
+    keywords: [
+      `${countyName.toLowerCase()} county bail bonds`,
+      `${countySeat.toLowerCase()} bail bonds`,
+      `${countyName.toLowerCase()} county bail bondsman`,
+      `${countySeat.toLowerCase()} bail bondsman`,
+      `${countyName.toLowerCase()} county jail release`,
+      `24/7 bail bonds ${countyName.toLowerCase()} county`
+    ],
+    schema_type: 'LocalBusiness',
+    og_title: `${countyName} County Bail Bonds | Shamrock Bail Bonds`,
+    og_description: `Fast, professional bail bond services in ${countyName} County, Florida. Available 24/7. Call ${phone}.`,
+    og_image: `/images/counties/${countyData.county_slug}-bail-bonds.jpg`,
+    canonical_url: `/bail-bonds/${countyData.county_slug}`
+  };
+}
+
+/**
+ * Get all counties with their tier classification
+ * @returns {Promise<Object>} - Counties grouped by tier
+ */
+export async function getAllCountiesByTier() {
+  try {
+    const results = await wixData.query('FloridaCounties')
+      .ascending('countyName')
+      .find();
+    
+    const tiers = {
+      tier1: [],
+      tier2: [],
+      tier3: []
+    };
+    
+    for (const county of results.items) {
+      const tier = county.tier || 3;
+      const tierKey = `tier${tier}`;
+      
+      tiers[tierKey].push({
+        slug: county.countySlug,
+        name: county.countyName,
+        active: county.active,
+        featured: county.featured
+      });
+    }
+    
+    return {
+      success: true,
+      tiers
+    };
+    
+  } catch (error) {
+    console.error('Error getting counties by tier:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Bulk generate county pages for all counties
+ * @param {Array} countySlugs - Array of county slugs
+ * @returns {Promise<Object>} - Generation results
+ */
+export async function bulkGenerateCountyPages(countySlugs) {
+  try {
+    const results = {
+      success: [],
+      failed: []
+    };
+    
+    for (const slug of countySlugs) {
+      const result = await generateCountyPage(slug);
+      
+      if (result.success) {
+        results.success.push(slug);
+      } else {
+        results.failed.push({ slug, error: result.error });
+      }
+    }
+    
+    return {
+      success: true,
+      generated: results.success.length,
+      failed: results.failed.length,
+      results
+    };
+    
+  } catch (error) {
+    console.error('Error in bulk generation:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Helper: Capitalize county name from slug
+ * @param {string} slug - County slug
+ * @returns {string} - Capitalized county name
+ */
+function capitalizeCountyName(slug) {
+  return slug
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
+ * Helper: Format phone number for display
+ * @param {string} phone - Phone number
+ * @returns {string} - Formatted phone
+ */
+function formatPhoneForDisplay(phone) {
+  if (!phone || !phone.startsWith('+1')) {
+    return phone;
+  }
+  
+  const digits = phone.substring(2);
+  return `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
+}
+
+/**
+ * Helper: Format population with commas
+ * @param {string|number} population - Population
+ * @returns {string} - Formatted population
+ */
+function formatPopulation(population) {
+  if (!population) return 'N/A';
+  
+  const num = typeof population === 'string' ? parseInt(population) : population;
+  return num.toLocaleString();
+}
