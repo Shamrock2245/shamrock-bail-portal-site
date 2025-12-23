@@ -1,0 +1,134 @@
+{
+  "comment": "Enhanced county data template with full integration support",
+  "version": "2.0",
+  "template": {
+    "county_slug": "lee",
+    "county_name": "Lee",
+    "county_name_full": "Lee County",
+    "active": true,
+    "featured": true,
+    "tier": 1,
+    "region": "Southwest",
+    "population": "770000",
+    "county_seat": "Fort Myers",
+    "major_cities": ["Fort Myers", "Cape Coral", "Bonita Springs", "Estero", "Lehigh Acres"],
+    
+    "contact": {
+      "primary_phone": "+12393322245",
+      "primary_phone_display": "(239) 332-2245",
+      "spanish_phone": "+12995503010",
+      "spanish_phone_display": "(299) 550-3010",
+      "email": "info@shamrockbailbonds.biz",
+      "hours": "24/7/365"
+    },
+    
+    "location": {
+      "centroid": {
+        "lat": 26.5619,
+        "lng": -81.8119
+      },
+      "bounds": {
+        "north": 26.7619,
+        "south": 26.3619,
+        "east": -81.5619,
+        "west": -82.0619
+      },
+      "timezone": "America/New_York"
+    },
+    
+    "jail": {
+      "name": "Lee County Jail",
+      "address": "4700 Justice Way, Fort Myers, FL 33916",
+      "booking_url": "https://www.sheriffleefl.org/booking-search/",
+      "booking_phone": "(239) 477-1500",
+      "visiting_hours": "See website for details",
+      "inmate_info_phone": "(239) 477-1600"
+    },
+    
+    "sheriff": {
+      "name": "Lee County Sheriff's Office",
+      "phone": "(239) 477-1500",
+      "website": "https://www.sheriffleefl.org/",
+      "non_emergency": "(239) 477-1000"
+    },
+    
+    "clerk": {
+      "name": "Lee County Clerk of Courts",
+      "website": "https://www.leeclerk.org/",
+      "records_url": "https://matrix.leeclerk.org/",
+      "phone": "(239) 533-5000",
+      "address": "1700 Monroe St, Fort Myers, FL 33901"
+    },
+    
+    "seo": {
+      "meta_title": "Lee County Bail Bonds - 24/7 Fast Release | Fort Myers | Shamrock Bail Bonds",
+      "meta_description": "Need bail in Lee County? Shamrock Bail Bonds provides 24/7 fast release service in Fort Myers, Cape Coral, and all of Lee County. Licensed, trusted, and ready to help. Call (239) 332-2245 now.",
+      "keywords": [
+        "lee county bail bonds",
+        "fort myers bail bonds",
+        "cape coral bail bondsman",
+        "bonita springs bail bonds",
+        "lee county jail release",
+        "24/7 bail bonds lee county"
+      ],
+      "schema_type": "LocalBusiness",
+      "og_image": "/images/counties/lee-county-bail-bonds.jpg"
+    },
+    
+    "content": {
+      "hero_headline": "Lee County Bail Bonds - 24/7 Fast Release",
+      "hero_subheadline": "Licensed, trusted, and ready to help. Get your loved one home fast from Lee County Jail.",
+      "hero_cta_primary": "Call Now: (239) 332-2245",
+      "hero_cta_secondary": "Start Bail Process Online",
+      
+      "about_county": "Lee County is home to Fort Myers, Cape Coral, and surrounding communities in Southwest Florida. With a population of over 770,000 residents, Lee County is one of the fastest-growing areas in the state. Shamrock Bail Bonds has been serving Lee County families for years, providing fast, professional bail bond services 24 hours a day, 7 days a week.",
+      
+      "why_choose_us": "Shamrock Bail Bonds has deep roots in Lee County. We understand the local jail system, court procedures, and how to get your loved one released quickly. Our licensed bail bondsmen are available around the clock to answer your questions and start the bail process immediately. We treat every client with dignity and respect during this difficult time.",
+      
+      "how_it_works": "When someone is arrested in Lee County, they are typically taken to the Lee County Jail for booking. Once booking is complete and bail is set, we can begin the release process. Our bail bondsmen will meet with you, explain the process, and handle all the paperwork. In most cases, your loved one can be released within hours of posting bail.",
+      
+      "service_areas": "We serve all of Lee County including Fort Myers, Cape Coral, Bonita Springs, Estero, Lehigh Acres, San Carlos Park, Fort Myers Beach, and surrounding communities.",
+      
+      "faq": [
+        {
+          "question": "How long does it take to get someone out of Lee County Jail?",
+          "answer": "Release times vary depending on how busy the jail is, but typically range from 2-8 hours after bail is posted. We start the process immediately when you call."
+        },
+        {
+          "question": "What is the bail amount in Lee County?",
+          "answer": "Bail amounts are set by the judge based on the charges and the defendant's criminal history. You can check bail amounts on the Lee County Sheriff's booking search website or call us for assistance."
+        },
+        {
+          "question": "Do you offer payment plans?",
+          "answer": "Yes, we offer flexible payment plans for qualified clients. Call us to discuss your options."
+        }
+      ]
+    },
+    
+    "scraper_integration": {
+      "enabled": true,
+      "scraper_county_code": "LEE",
+      "sheet_name": "Lee",
+      "lead_score_threshold": 70,
+      "auto_notify": true,
+      "notification_channels": ["slack", "email"],
+      "scraper_url": "https://www.sheriffleefl.org/booking-search/"
+    },
+    
+    "business_rules": {
+      "min_bond_amount": 500,
+      "max_bond_amount": 100000,
+      "premium_rate": 0.10,
+      "payment_plans_available": true,
+      "collateral_accepted": ["real_estate", "vehicle", "cash"],
+      "service_radius_miles": 50
+    },
+    
+    "analytics": {
+      "conversion_priority": "high",
+      "ad_spend_tier": "tier_1",
+      "target_cpc": 5.00,
+      "target_conversion_rate": 0.15
+    }
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "comment": "Phone number registry for dynamic routing",
+  "version": "1.0",
+  "numbers": {
+    "primary": {
+      "id": "primary",
+      "number": "+12393322245",
+      "display": "(239) 332-2245",
+      "displayFormatted": "239-332-2245",
+      "counties": ["lee", "collier", "charlotte", "hendry", "desoto", "sarasota", "manatee", "glades", "highlands", "hardee"],
+      "hours": {
+        "start": "00:00",
+        "end": "23:59",
+        "timezone": "America/New_York"
+      },
+      "priority": 1,
+      "type": "primary",
+      "language": "en",
+      "description": "Primary 24/7 line for SWFL counties"
+    },
+    "spanish": {
+      "id": "spanish",
+      "number": "+12995503010",
+      "display": "(299) 550-3010",
+      "displayFormatted": "299-550-3010",
+      "counties": ["all"],
+      "hours": {
+        "start": "00:00",
+        "end": "23:59",
+        "timezone": "America/New_York"
+      },
+      "priority": 2,
+      "type": "language",
+      "language": "es",
+      "description": "Spanish-speaking line (all counties)"
+    },
+    "statewide": {
+      "id": "statewide",
+      "number": "+12393322245",
+      "display": "(239) 332-2245",
+      "displayFormatted": "239-332-2245",
+      "counties": ["all"],
+      "hours": {
+        "start": "00:00",
+        "end": "23:59",
+        "timezone": "America/New_York"
+      },
+      "priority": 3,
+      "type": "fallback",
+      "language": "en",
+      "description": "Statewide fallback number"
+    }
+  },
+  "routing_rules": {
+    "priority_order": [
+      "county_match",
+      "language_match",
+      "time_match",
+      "fallback"
+    ],
+    "default_number": "primary",
+    "after_hours_number": "primary",
+    "emergency_number": "primary"
+  }
+}

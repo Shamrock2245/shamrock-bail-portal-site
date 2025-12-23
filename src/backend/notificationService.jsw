@@ -26,13 +26,14 @@ const NOTIFICATION_TYPES = {
     PAPERWORK_COMPLETE: 'paperwork_complete',
     PAPERWORK_DECLINED: 'paperwork_declined',
     PAPERWORK_EXPIRED: 'paperwork_expired',
-    
+
     // Admin notifications
     NEW_MEMBER: 'new_member',
     NEW_CASE: 'new_case',
     DOCUMENT_NEEDS_REVIEW: 'document_needs_review',
     SIGNING_DECLINED: 'signing_declined',
-    URGENT_CASE: 'urgent_case'
+    URGENT_CASE: 'urgent_case',
+    SYSTEM_ERROR: 'system_error'
 };
 
 /**
@@ -49,7 +50,7 @@ const NOTIFICATION_TYPES = {
 export async function sendMemberNotification(type, data) {
     try {
         const { memberId, memberEmail, memberName, variables } = data;
-        
+
         // Map notification type to Wix triggered email ID
         const emailTemplateMap = {
             [NOTIFICATION_TYPES.WELCOME]: 'welcomeNewMember',
@@ -63,14 +64,14 @@ export async function sendMemberNotification(type, data) {
             [NOTIFICATION_TYPES.PAPERWORK_DECLINED]: 'paperworkDeclined',
             [NOTIFICATION_TYPES.PAPERWORK_EXPIRED]: 'bailPaperworkExpired'
         };
-        
+
         const templateId = emailTemplateMap[type];
-        
+
         if (!templateId) {
             console.log(`No email template for notification type: ${type}`);
             return { success: false, error: 'Unknown notification type' };
         }
-        
+
         // Send triggered email
         if (memberId) {
             await triggeredEmails.emailMember(templateId, memberId, {
@@ -80,12 +81,12 @@ export async function sendMemberNotification(type, data) {
                 }
             });
         }
-        
+
         // Log notification
         await logNotification(type, 'email', memberEmail, variables);
-        
+
         return { success: true };
-        
+
     } catch (error) {
         console.error('Error sending member notification:', error);
         return { success: false, error: error.message };
@@ -103,22 +104,22 @@ export async function sendAdminNotification(type, data) {
     try {
         // Send to Slack via GAS
         await sendSlackNotification(type, data);
-        
+
         // Also send email for critical notifications
         const criticalTypes = [
             NOTIFICATION_TYPES.SIGNING_DECLINED,
             NOTIFICATION_TYPES.URGENT_CASE
         ];
-        
+
         if (criticalTypes.includes(type)) {
             await sendAdminEmail(type, data);
         }
-        
+
         // Log notification
         await logNotification(type, 'admin', 'admin@shamrockbailbonds.biz', data);
-        
+
         return { success: true };
-        
+
     } catch (error) {
         console.error('Error sending admin notification:', error);
         return { success: false, error: error.message };
@@ -134,15 +135,15 @@ export async function sendAdminNotification(type, data) {
 async function sendSlackNotification(type, data) {
     try {
         const gasUrl = await getSecret('GAS_WEBHOOK_URL');
-        
+
         if (!gasUrl) {
             console.log('GAS URL not configured, skipping Slack notification');
             return;
         }
-        
+
         // Format message based on type
         const message = formatSlackMessage(type, data);
-        
+
         await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -154,7 +155,7 @@ async function sendSlackNotification(type, data) {
                 data: data
             })
         });
-        
+
     } catch (error) {
         console.error('Error sending Slack notification:', error);
     }
@@ -165,22 +166,25 @@ async function sendSlackNotification(type, data) {
  */
 function formatSlackMessage(type, data) {
     const messages = {
-        [NOTIFICATION_TYPES.NEW_MEMBER]: 
+        [NOTIFICATION_TYPES.NEW_MEMBER]:
             `:wave: *New Member Registered*\nName: ${data.memberName}\nEmail: ${data.memberEmail}\nPhone: ${data.memberPhone || 'Not provided'}`,
-        
-        [NOTIFICATION_TYPES.NEW_CASE]: 
+
+        [NOTIFICATION_TYPES.NEW_CASE]:
             `:briefcase: *New Bail Case Started*\nMember: ${data.memberName}\nCounty: ${data.county}\nCase #: ${data.caseNumber || 'Pending'}`,
-        
-        [NOTIFICATION_TYPES.DOCUMENT_NEEDS_REVIEW]: 
+
+        [NOTIFICATION_TYPES.DOCUMENT_NEEDS_REVIEW]:
             `:page_facing_up: *Document Needs Review*\nMember: ${data.memberName}\nDocument: ${data.documentType}\nUploaded: ${new Date().toLocaleString()}`,
-        
-        [NOTIFICATION_TYPES.SIGNING_DECLINED]: 
+
+        [NOTIFICATION_TYPES.SIGNING_DECLINED]:
             `:x: *Signing Declined*\nMember: ${data.memberName}\nDocument: ${data.documentName}\nReason: ${data.declineReason || 'Not provided'}\n*Requires immediate attention*`,
-        
-        [NOTIFICATION_TYPES.URGENT_CASE]: 
-            `:rotating_light: *URGENT CASE*\nMember: ${data.memberName}\nCounty: ${data.county}\nDetails: ${data.details || 'See portal for details'}`
+
+        [NOTIFICATION_TYPES.URGENT_CASE]:
+            `:rotating_light: *URGENT CASE*\nMember: ${data.memberName}\nCounty: ${data.county}\nDetails: ${data.details || 'See portal for details'}`,
+
+        [NOTIFICATION_TYPES.SYSTEM_ERROR]:
+            `:warning: *SYSTEM ERROR ALERT*\nService: ${data.service}\nError: ${data.error}\nSeverity: ${data.severity || 'High'}\nContext: ${data.context || 'None'}`
     };
-    
+
     return messages[type] || `:bell: Notification: ${type}\n${JSON.stringify(data, null, 2)}`;
 }
 
@@ -193,9 +197,10 @@ function getSlackChannel(type) {
         [NOTIFICATION_TYPES.NEW_CASE]: '#cases',
         [NOTIFICATION_TYPES.DOCUMENT_NEEDS_REVIEW]: '#documents',
         [NOTIFICATION_TYPES.SIGNING_DECLINED]: '#urgent',
-        [NOTIFICATION_TYPES.URGENT_CASE]: '#urgent'
+        [NOTIFICATION_TYPES.URGENT_CASE]: '#urgent',
+        [NOTIFICATION_TYPES.SYSTEM_ERROR]: '#system-logs'
     };
-    
+
     return channelMap[type] || '#general';
 }
 
@@ -205,9 +210,9 @@ function getSlackChannel(type) {
 async function sendAdminEmail(type, data) {
     try {
         const gasUrl = await getSecret('GAS_WEBHOOK_URL');
-        
+
         if (!gasUrl) return;
-        
+
         await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -218,7 +223,7 @@ async function sendAdminEmail(type, data) {
                 body: formatEmailBody(type, data)
             })
         });
-        
+
     } catch (error) {
         console.error('Error sending admin email:', error);
     }
@@ -232,9 +237,9 @@ function formatEmailBody(type, data) {
         <h2>Shamrock Bail Bonds - ${type.replace(/_/g, ' ')}</h2>
         <p>A notification requires your attention:</p>
         <ul>
-            ${Object.entries(data).map(([key, value]) => 
-                `<li><strong>${key}:</strong> ${value}</li>`
-            ).join('')}
+            ${Object.entries(data).map(([key, value]) =>
+        `<li><strong>${key}:</strong> ${value}</li>`
+    ).join('')}
         </ul>
         <p>Time: ${new Date().toLocaleString()}</p>
         <p><a href="https://www.shamrockbailbonds.biz/admin">Go to Admin Portal</a></p>
@@ -261,9 +266,9 @@ export async function sendInAppNotification(memberId, title, message, type, link
             read: false,
             createdAt: new Date()
         });
-        
+
         return { success: true };
-        
+
     } catch (error) {
         console.error('Error sending in-app notification:', error);
         return { success: false, error: error.message };
@@ -284,12 +289,12 @@ export async function getUnreadNotifications(memberId) {
             .descending('createdAt')
             .limit(20)
             .find();
-        
+
         return {
             success: true,
             notifications: results.items
         };
-        
+
     } catch (error) {
         console.error('Error getting notifications:', error);
         return { success: false, notifications: [] };
@@ -304,15 +309,15 @@ export async function getUnreadNotifications(memberId) {
 export async function markNotificationRead(notificationId) {
     try {
         const notification = await wixData.get('InAppNotifications', notificationId);
-        
+
         if (notification) {
             notification.read = true;
             notification.readAt = new Date();
             await wixData.update('InAppNotifications', notification);
         }
-        
+
         return { success: true };
-        
+
     } catch (error) {
         console.error('Error marking notification read:', error);
         return { success: false };
@@ -333,6 +338,25 @@ async function logNotification(type, channel, recipient, data) {
         });
     } catch (error) {
         console.error('Error logging notification:', error);
+    }
+}
+
+/**
+ * Report a system error to Slack and logs
+ * @param {string} service - Service name (e.g., 'geocoding')
+ * @param {string} error - Error message
+ * @param {Object} context - Optional context
+ */
+export async function reportSystemError(service, error, context = {}) {
+    try {
+        await sendAdminNotification(NOTIFICATION_TYPES.SYSTEM_ERROR, {
+            service,
+            error,
+            severity: 'Critical',
+            context: JSON.stringify(context)
+        });
+    } catch (err) {
+        console.error('Double failure in reportSystemError:', err);
     }
 }
 

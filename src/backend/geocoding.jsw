@@ -1,0 +1,359 @@
+/**
+ * Shamrock Bail Bonds - Geocoding Service
+ * Converts GPS coordinates to Florida county names
+ * 
+ * Features:
+ * - Fast bounding-box matching (no API calls needed for most cases)
+ * - Google Geocoding API fallback for edge cases
+ * - Caching to reduce API costs
+ * - IP-based geolocation fallback
+ */
+
+import { fetch } from 'wix-fetch';
+import wixData from 'wix-data';
+import { getSecret } from 'wix-secrets-backend';
+import { reportSystemError } from 'backend/notificationService';
+import countyBoundaries from 'backend/data/florida-county-boundaries.json';
+
+/**
+ * Main function: Detect county from coordinates
+ * @param {number} latitude - GPS latitude
+ * @param {number} longitude - GPS longitude
+ * @returns {Promise<Object>} - { county, state, confidence, method }
+ */
+export async function detectCounty(latitude, longitude) {
+  try {
+    // Input validation
+    if (!latitude || !longitude) {
+      throw new Error('Invalid coordinates');
+    }
+
+    if (latitude < 24.5 || latitude > 31 || longitude < -87.5 || longitude > -80) {
+      return {
+        success: false,
+        error: 'Coordinates outside Florida',
+        county: null,
+        state: null,
+        confidence: 0
+      };
+    }
+
+    // Step 1: Try fast bounding-box match
+    const boundingBoxMatch = matchCountyByBoundingBox(latitude, longitude);
+
+    if (boundingBoxMatch) {
+      // Log successful match
+      await logGeolocationEvent('bounding_box_match', {
+        county: boundingBoxMatch,
+        latitude,
+        longitude
+      });
+
+      return {
+        success: true,
+        county: boundingBoxMatch,
+        state: 'FL',
+        confidence: 0.85,
+        method: 'bounding_box'
+      };
+    }
+
+    // Step 2: Check cache for recent lookups
+    const cachedResult = await getCachedGeolocation(latitude, longitude);
+
+    if (cachedResult) {
+      return {
+        success: true,
+        county: cachedResult.county,
+        state: cachedResult.state,
+        confidence: 0.95,
+        method: 'cache'
+      };
+    }
+
+    // Step 3: Use Google Geocoding API (fallback)
+    const apiResult = await geocodeWithGoogle(latitude, longitude);
+
+    if (apiResult.success) {
+      // Cache the result
+      await cacheGeolocation(latitude, longitude, apiResult.county, apiResult.state);
+
+      return {
+        success: true,
+        county: apiResult.county,
+        state: apiResult.state,
+        confidence: 0.95,
+        method: 'google_api'
+      };
+    }
+
+    // Step 4: Fallback to nearest county centroid
+    const nearestCounty = findNearestCounty(latitude, longitude);
+
+    return {
+      success: true,
+      county: nearestCounty,
+      state: 'FL',
+      confidence: 0.60,
+      method: 'nearest_centroid'
+    };
+
+  } catch (error) {
+    console.error('Error in detectCounty:', error);
+
+    // Report failure to Slack
+    await reportSystemError('geocoding', error.message, { latitude, longitude });
+
+    return {
+      success: false,
+      error: error.message,
+      county: 'lee', // Default to Lee on error
+      state: 'FL',
+      confidence: 0,
+      method: 'error_fallback'
+    };
+  }
+}
+
+/**
+ * Match county using bounding box (fast, no API calls)
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {string|null} - County slug or null
+ */
+function matchCountyByBoundingBox(lat, lng) {
+  const counties = countyBoundaries.counties;
+
+  for (const [slug, data] of Object.entries(counties)) {
+    const { bounds } = data;
+
+    if (lat >= bounds.south &&
+      lat <= bounds.north &&
+      lng >= bounds.west &&
+      lng <= bounds.east) {
+      return slug;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Find nearest county by centroid distance
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {string} - County slug
+ */
+function findNearestCounty(lat, lng) {
+  const counties = countyBoundaries.counties;
+  let nearestCounty = 'lee'; // Default fallback
+  let minDistance = Infinity;
+
+  for (const [slug, data] of Object.entries(counties)) {
+    const { centroid } = data;
+    const distance = calculateDistance(lat, lng, centroid.lat, centroid.lng);
+
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearestCounty = slug;
+    }
+  }
+
+  return nearestCounty;
+}
+
+/**
+ * Calculate distance between two points (Haversine formula)
+ * @param {number} lat1 - Latitude 1
+ * @param {number} lng1 - Longitude 1
+ * @param {number} lat2 - Latitude 2
+ * @param {number} lng2 - Longitude 2
+ * @returns {number} - Distance in kilometers
+ */
+function calculateDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+/**
+ * Geocode using Google Geocoding API
+ * @param {number} latitude - Latitude
+ * @param {number} longitude - Longitude
+ * @returns {Promise<Object>} - { success, county, state }
+ */
+async function geocodeWithGoogle(latitude, longitude) {
+  try {
+    // Note: In production, use Wix Secrets to store API key
+    // For now, we'll use a placeholder approach
+
+    // Construct Google Geocoding API URL
+    const apiKey = 'YOUR_GOOGLE_API_KEY'; // Replace with Wix Secret
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status !== 'OK' || !data.results || data.results.length === 0) {
+      return { success: false };
+    }
+
+    // Extract county from address components
+    const result = data.results[0];
+    let county = null;
+    let state = null;
+
+    for (const component of result.address_components) {
+      if (component.types.includes('administrative_area_level_2')) {
+        // Remove " County" suffix and convert to slug
+        county = component.long_name
+          .replace(' County', '')
+          .toLowerCase()
+          .replace(/\s+/g, '-');
+      }
+
+      if (component.types.includes('administrative_area_level_1')) {
+        state = component.short_name;
+      }
+    }
+
+    if (county && state === 'FL') {
+      return { success: true, county, state };
+    }
+
+    return { success: false };
+
+  } catch (error) {
+    console.error('Google Geocoding API error:', error);
+    return { success: false };
+  }
+}
+
+/**
+ * Get cached geolocation result
+ * @param {number} latitude - Latitude
+ * @param {number} longitude - Longitude
+ * @returns {Promise<Object|null>} - Cached result or null
+ */
+async function getCachedGeolocation(latitude, longitude) {
+  try {
+    // Round coordinates to 3 decimal places for cache key
+    const latRounded = Math.round(latitude * 1000) / 1000;
+    const lngRounded = Math.round(longitude * 1000) / 1000;
+    const cacheKey = `${latRounded},${lngRounded}`;
+
+    const results = await wixData.query('GeolocationCache')
+      .eq('cacheKey', cacheKey)
+      .find();
+
+    if (results.items.length === 0) {
+      return null;
+    }
+
+    // If multiple entries (shouldn't happen with unique key), use the most recent
+    const cached = results.items[0];
+
+    // Check if cache is still valid (24 hours)
+    const cacheAge = Date.now() - new Date(cached._createdDate).getTime();
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+    if (cacheAge > maxAge) {
+      // Cache expired, delete it
+      await wixData.remove('GeolocationCache', cached._id);
+      return null;
+    }
+
+    return {
+      county: cached.county,
+      state: cached.state
+    };
+
+  } catch (error) {
+    console.error('Error getting cached geolocation:', error);
+    return null;
+  }
+}
+
+/**
+ * Cache geolocation result
+ * @param {number} latitude - Latitude
+ * @param {number} longitude - Longitude
+ * @param {string} county - County slug
+ * @param {string} state - State code
+ * @returns {Promise<void>}
+ */
+async function cacheGeolocation(latitude, longitude, county, state) {
+  try {
+    const latRounded = Math.round(latitude * 1000) / 1000;
+    const lngRounded = Math.round(longitude * 1000) / 1000;
+    const cacheKey = `${latRounded},${lngRounded}`;
+
+    await wixData.insert('GeolocationCache', {
+      cacheKey,
+      latitude: latRounded,
+      longitude: lngRounded,
+      county,
+      state
+    });
+
+  } catch (error) {
+    console.error('Error caching geolocation:', error);
+  }
+}
+
+/**
+ * Log geolocation event for analytics
+ * @param {string} eventType - Event type
+ * @param {Object} data - Event data
+ * @returns {Promise<void>}
+ */
+async function logGeolocationEvent(eventType, data) {
+  try {
+    await wixData.insert('GeolocationEvents', {
+      eventType,
+      county: data.county,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('Error logging geolocation event:', error);
+  }
+}
+
+/**
+ * Get county name from slug
+ * @param {string} slug - County slug
+ * @returns {string} - County name
+ */
+export function getCountyName(slug) {
+  const counties = countyBoundaries.counties;
+
+  if (counties[slug]) {
+    return counties[slug].name;
+  }
+
+  return slug.charAt(0).toUpperCase() + slug.slice(1);
+}
+
+/**
+ * Get all available counties
+ * @returns {Array} - Array of county objects
+ */
+export function getAllCounties() {
+  const counties = countyBoundaries.counties;
+
+  return Object.entries(counties).map(([slug, data]) => ({
+    slug,
+    name: data.name,
+    centroid: data.centroid
+  }));
+}
