@@ -105,6 +105,56 @@ export async function saveUserLocation(latitude, longitude) {
 }
 
 /**
+ * Get the current location for the logged-in member
+ * Returns the most recent location record or triggers a new location request
+ * @returns {Promise<{success: boolean, location?: Object, message?: string}>}
+ */
+export async function getCurrentLocation() {
+    try {
+        const member = await currentMember.getMember();
+
+        if (!member) {
+            return { success: false, message: 'User not logged in' };
+        }
+
+        // Get the most recent location
+        const results = await wixData.query('UserLocations')
+            .eq('memberId', member._id)
+            .descending('timestamp')
+            .limit(1)
+            .find();
+
+        if (results.items.length > 0) {
+            const location = results.items[0];
+            const locationAge = Date.now() - new Date(location.timestamp).getTime();
+            const isRecent = locationAge < 30 * 60 * 1000; // Less than 30 minutes old
+
+            return {
+                success: true,
+                location: {
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                    address: location.address,
+                    intersection: location.intersection,
+                    timestamp: location.timestamp,
+                    isRecent: isRecent
+                },
+                message: isRecent ? 'Recent location found' : 'Location may be outdated'
+            };
+        }
+
+        return {
+            success: false,
+            message: 'No location data available. Please enable location services.'
+        };
+
+    } catch (error) {
+        console.error('Error getting current location:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
  * Get the last known location for a member
  * @param {string} memberId - The member ID
  * @returns {Promise<Object|null>}

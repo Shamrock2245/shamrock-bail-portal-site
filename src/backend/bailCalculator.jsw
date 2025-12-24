@@ -1,0 +1,373 @@
+/**
+ * bailCalculator.jsw - Backend Module for Bail Bond Calculations
+ * 
+ * This module provides functions to calculate bail bond fees,
+ * fetch booking data, and estimate costs based on Florida state
+ * regulations.
+ * 
+ * Florida Bail Bond Fee Structure:
+ * - 10% of face value OR $100 per charge, whichever is greater
+ * - Transfer fees for out-of-area counties
+ * 
+ * @module bailCalculator
+ */
+
+import { fetch } from 'wix-fetch';
+import wixData from 'wix-data';
+import { getSecret } from 'wix-secrets-backend';
+import { PRIMARY_COUNTIES, TRANSFER_FEE_BASE, BOND_FEE_PERCENTAGE, BOND_FEE_MINIMUM } from 'public/portal-config';
+
+// ============================================================================
+// Configuration
+// ============================================================================
+
+const BOOKING_API_TIMEOUT = 15000; // 15 seconds
+
+// ============================================================================
+// Booking Data Functions
+// ============================================================================
+
+/**
+ * Fetch booking data from county jail systems
+ * Attempts to retrieve current booking information for a defendant
+ * 
+ * @param {Object} searchParams - Search parameters
+ * @param {string} searchParams.firstName - Defendant's first name
+ * @param {string} searchParams.lastName - Defendant's last name
+ * @param {string} searchParams.county - Florida county name
+ * @param {string} searchParams.bookingNumber - Optional booking number
+ * @param {string} searchParams.dateOfBirth - Optional DOB (YYYY-MM-DD)
+ * @returns {Promise<{success: boolean, data?: Object, message?: string}>}
+ */
+export async function fetchBookingData(searchParams) {
+    try {
+        // Validate required parameters
+        if (!searchParams.lastName) {
+            return { success: false, message: 'Last name is required' };
+        }
+
+        // Get the GAS endpoint URL from secrets
+        let gasEndpoint;
+        try {
+            gasEndpoint = await getSecret('GAS_BOOKING_ENDPOINT');
+        } catch (e) {
+            // Fallback to default endpoint if secret not configured
+            gasEndpoint = null;
+        }
+
+        // If we have a GAS endpoint configured, use it
+        if (gasEndpoint) {
+            const response = await fetch(gasEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'fetchBooking',
+                    params: searchParams
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data) {
+                    return {
+                        success: true,
+                        data: normalizeBookingData(result.data),
+                        source: 'gas'
+                    };
+                }
+            }
+        }
+
+        // Check local cache for recent booking data
+        const cachedData = await checkLocalBookingCache(searchParams);
+        if (cachedData) {
+            return {
+                success: true,
+                data: cachedData,
+                source: 'cache'
+            };
+        }
+
+        // Return mock data for development/demo purposes
+        // In production, this would return an error if no data found
+        return {
+            success: true,
+            data: generateMockBookingData(searchParams),
+            source: 'mock',
+            message: 'Using estimated data - verify with county records'
+        };
+
+    } catch (error) {
+        console.error('Error fetching booking data:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Check local cache for booking data
+ * @private
+ */
+async function checkLocalBookingCache(searchParams) {
+    try {
+        const query = wixData.query('BookingCache')
+            .eq('lastName', searchParams.lastName.toLowerCase())
+            .gt('cachedAt', new Date(Date.now() - 24 * 60 * 60 * 1000)); // Last 24 hours
+
+        if (searchParams.firstName) {
+            query.eq('firstName', searchParams.firstName.toLowerCase());
+        }
+
+        if (searchParams.county) {
+            query.eq('county', searchParams.county);
+        }
+
+        const results = await query.find();
+        
+        if (results.items.length > 0) {
+            return results.items[0].bookingData;
+        }
+
+        return null;
+    } catch (error) {
+        // Cache check failed, continue without cache
+        return null;
+    }
+}
+
+/**
+ * Generate mock booking data for demo/development
+ * @private
+ */
+function generateMockBookingData(searchParams) {
+    return {
+        defendantName: `${searchParams.firstName || 'John'} ${searchParams.lastName}`,
+        county: searchParams.county || 'Lee',
+        bookingNumber: searchParams.bookingNumber || `BK-${Date.now().toString(36).toUpperCase()}`,
+        bookingDate: new Date().toISOString().split('T')[0],
+        charges: [
+            {
+                chargeDescription: 'Sample Charge',
+                bondAmount: 5000,
+                bondType: 'Surety'
+            }
+        ],
+        totalBondAmount: 5000,
+        facility: `${searchParams.county || 'Lee'} County Jail`,
+        isEstimate: true
+    };
+}
+
+/**
+ * Normalize booking data from various sources
+ * @private
+ */
+function normalizeBookingData(rawData) {
+    return {
+        defendantName: rawData.defendant_name || rawData.defendantName || '',
+        county: rawData.county || '',
+        bookingNumber: rawData.booking_number || rawData.bookingNumber || '',
+        bookingDate: rawData.booking_date || rawData.bookingDate || '',
+        charges: (rawData.charges || []).map(charge => ({
+            chargeDescription: charge.charge_description || charge.chargeDescription || charge.description || '',
+            bondAmount: parseFloat(charge.bond_amount || charge.bondAmount || 0),
+            bondType: charge.bond_type || charge.bondType || 'Surety',
+            chargeLevel: charge.charge_level || charge.chargeLevel || ''
+        })),
+        totalBondAmount: parseFloat(rawData.total_bond_amount || rawData.totalBondAmount || 0),
+        facility: rawData.facility || '',
+        mugshot: rawData.mugshot_url || rawData.mugshot || null,
+        isEstimate: false
+    };
+}
+
+// ============================================================================
+// Fee Calculation Functions
+// ============================================================================
+
+/**
+ * Calculate bail bond premium based on Florida regulations
+ * 
+ * @param {number} bondAmount - Total bond amount
+ * @param {number} chargeCount - Number of charges (default 1)
+ * @returns {Object} Fee breakdown
+ */
+export function calculateBondFee(bondAmount, chargeCount = 1) {
+    const percentageFee = bondAmount * BOND_FEE_PERCENTAGE;
+    const minimumFee = BOND_FEE_MINIMUM * chargeCount;
+    const premium = Math.max(percentageFee, minimumFee);
+
+    return {
+        bondAmount: bondAmount,
+        chargeCount: chargeCount,
+        percentageFee: percentageFee,
+        minimumFee: minimumFee,
+        premium: premium,
+        feeType: percentageFee >= minimumFee ? 'percentage' : 'minimum'
+    };
+}
+
+/**
+ * Calculate transfer fee for out-of-area counties
+ * 
+ * @param {string} county - County name
+ * @returns {Object} Transfer fee information
+ */
+export function calculateTransferFee(county) {
+    const isPrimaryCounty = PRIMARY_COUNTIES.includes(county);
+    
+    return {
+        county: county,
+        isPrimaryCounty: isPrimaryCounty,
+        transferFee: isPrimaryCounty ? 0 : TRANSFER_FEE_BASE,
+        message: isPrimaryCounty 
+            ? 'No transfer fee - primary service area' 
+            : `Transfer fee applies for ${county} County`
+    };
+}
+
+/**
+ * Calculate total estimated cost for a bail bond
+ * 
+ * @param {Object} params - Calculation parameters
+ * @param {number} params.bondAmount - Total bond amount
+ * @param {number} params.chargeCount - Number of charges
+ * @param {string} params.county - County name
+ * @returns {Object} Complete cost breakdown
+ */
+export function calculateTotalCost(params) {
+    const { bondAmount, chargeCount = 1, county = 'Lee' } = params;
+
+    const bondFee = calculateBondFee(bondAmount, chargeCount);
+    const transferFee = calculateTransferFee(county);
+
+    const totalCost = bondFee.premium + transferFee.transferFee;
+
+    return {
+        bondAmount: bondAmount,
+        chargeCount: chargeCount,
+        county: county,
+        premium: bondFee.premium,
+        premiumBreakdown: bondFee,
+        transferFee: transferFee.transferFee,
+        transferFeeInfo: transferFee,
+        totalCost: totalCost,
+        paymentOptions: generatePaymentOptions(totalCost),
+        disclaimer: 'This is an estimate. Final costs may vary based on case specifics.'
+    };
+}
+
+/**
+ * Generate payment options for a given total
+ * @private
+ */
+function generatePaymentOptions(totalCost) {
+    return {
+        fullPayment: {
+            amount: totalCost,
+            description: 'Pay in full'
+        },
+        splitPayment: {
+            downPayment: Math.ceil(totalCost * 0.5),
+            remainingBalance: Math.floor(totalCost * 0.5),
+            description: '50% down, 50% within 30 days'
+        },
+        paymentPlan: {
+            downPayment: Math.ceil(totalCost * 0.35),
+            monthlyPayment: Math.ceil((totalCost * 0.65) / 3),
+            months: 3,
+            description: '35% down, balance over 3 months'
+        }
+    };
+}
+
+// ============================================================================
+// Collateral Functions
+// ============================================================================
+
+/**
+ * Determine if collateral is required based on bond amount
+ * 
+ * @param {number} bondAmount - Total bond amount
+ * @returns {Object} Collateral requirements
+ */
+export function getCollateralRequirements(bondAmount) {
+    const COLLATERAL_THRESHOLD = 50000;
+    const requiresCollateral = bondAmount >= COLLATERAL_THRESHOLD;
+
+    return {
+        bondAmount: bondAmount,
+        requiresCollateral: requiresCollateral,
+        threshold: COLLATERAL_THRESHOLD,
+        acceptedTypes: requiresCollateral ? [
+            { type: 'real_estate', description: 'Real Estate (property deed)' },
+            { type: 'vehicle', description: 'Vehicle (title)' },
+            { type: 'cash', description: 'Cash or Cash Equivalent' },
+            { type: 'other', description: 'Other valuable assets' }
+        ] : [],
+        message: requiresCollateral 
+            ? `Collateral required for bonds over $${COLLATERAL_THRESHOLD.toLocaleString()}`
+            : 'No collateral required - signature bond available'
+    };
+}
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Format currency for display
+ * 
+ * @param {number} amount - Amount to format
+ * @returns {string} Formatted currency string
+ */
+export function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount);
+}
+
+/**
+ * Get bail bond information for a specific county
+ * 
+ * @param {string} county - County name
+ * @returns {Promise<Object>} County-specific bail information
+ */
+export async function getCountyBailInfo(county) {
+    try {
+        // Try to get county-specific info from CMS
+        const results = await wixData.query('Counties')
+            .eq('name', county)
+            .find();
+
+        if (results.items.length > 0) {
+            const countyData = results.items[0];
+            return {
+                success: true,
+                county: county,
+                jailPhone: countyData.jailPhone || '',
+                clerkPhone: countyData.clerkPhone || '',
+                jailAddress: countyData.jailAddress || '',
+                bondScheduleUrl: countyData.bondScheduleUrl || '',
+                isPrimaryCounty: PRIMARY_COUNTIES.includes(county),
+                notes: countyData.notes || ''
+            };
+        }
+
+        // Return basic info if county not in CMS
+        return {
+            success: true,
+            county: county,
+            isPrimaryCounty: PRIMARY_COUNTIES.includes(county),
+            message: 'Contact us for county-specific information'
+        };
+
+    } catch (error) {
+        console.error('Error getting county bail info:', error);
+        return { success: false, message: error.message };
+    }
+}
