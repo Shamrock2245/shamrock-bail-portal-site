@@ -1,0 +1,2 @@
+person_id,role,first_name,middle_name,last_name,dob,ssn,email,phone_primary,address_street,address_city,address_state,address_zip,employer_name,height,weight,driver_license_number,driver_license_state
+P-98765,defendant,John,Quincy,Doe,1990-01-01,XXX-XX-XXXX,john.doe@email.com,+1234567890,123 Main St,Fort Myers,FL,33901,Self-Employed,6-0,180,DL-12345,FL

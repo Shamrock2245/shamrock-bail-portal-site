@@ -1,0 +1,2 @@
+memberId,email,phone,defendantName,caseNumber,documentName,signingLink,status,createdAt,expiresAt
+member-123,client@example.com,+1234567890,John Doe,CASE-999,Bail Bond Packet - John Doe,https://signnow.com/s/link,pending,2025-12-23T13:21:00Z,2025-12-30T13:21:00Z

@@ -1,0 +1,3 @@
+userId,personId,role,caseIds,createdAt,updatedAt
+user_id_123,person_id_456,defendant,"[""case_id_789""]",2025-12-23T10:00:00Z,2025-12-23T10:00:00Z
+user_id_987,person_id_654,indemnitor,"[""case_id_789"",""case_id_000""]",2025-12-23T11:00:00Z,2025-12-23T11:00:00Z

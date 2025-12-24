@@ -1,0 +1,2 @@
+case_number,court_name,county,charge_description,bond_amount,power_of_attorney_numbers,execution_datetime,agent_name,defendant_person_id,indemnitors
+CASE-2025-001,Lee County Court,lee,Battery,1500,POA-55555,2025-12-23T10:00:00Z,Shamrock Agent,P-98765,"['Indemnitor 1', 'Indemnitor 2']"

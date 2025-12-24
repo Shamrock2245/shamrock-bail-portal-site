@@ -1,0 +1,3 @@
+bookingNumber,county,fullName,bondAmount,chargeDescription,arrestDate,leadScore,leadStatus,contacted
+BK123456,lee,John Doe,5000,BATTERY ON LEO,2025-12-23,85,Hot,FALSE
+BK789012,collier,Jane Smith,1500,DUI WITH PROPERTY DAMAGE,2025-12-22,75,Hot,FALSE

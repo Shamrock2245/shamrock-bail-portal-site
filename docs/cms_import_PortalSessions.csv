@@ -1,0 +1,3 @@
+userId,key,value,timestamp
+user_id_123,current_case_id,"""case_id_789""",2025-12-23T10:05:00Z
+user_id_456,recent_search,"""lee county""",2025-12-23T11:20:00Z

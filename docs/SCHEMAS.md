@@ -19,18 +19,12 @@ The primary data object used by scrapers.
 | 34 | Lead_Status | Enum | Hot, Warm, Cold, Disqualified |
 
 ## 2. Wix Data Collections
-The frontend uses the following synced structures:
+The Wix CMS serve as the operational database for the frontend and portals.
 
-### `FloridaCounties`
-- `countySlug`: Primary Key (e.g., `lee`)
-- `primaryPhone`: E.164 format
-- `active`: Boolean toggle for page visibility
-- `centroid`: {lat, lng} for geocoding
-
-### `UserLocations`
-- `sessionId`: Tracking UUID
-- `county`: Detected county via geocoding
-- `timestamp`: Capturing location events
+*   **Core Operational:** `FloridaCounties`, `ArrestLeads`, `Persons`, `Cases`, `MagicLinks`, `PortalUsers`, `PortalSessions`, `SigningSessions`, `PendingDocuments`.
+*   **Member Management:** `MemberProfiles`, `MemberContacts`, `RequiredDocuments`, `CaseFolders`.
+*   **Analytics & Logging:** `AnalyticsEvents`, `CallLogs`, `BailStartLogs`, `GeolocationCache`, `GeolocationEvents`, `NotificationLogs`, `InAppNotifications`, `SignatureEvents`, `WebhookLogs`, `DocumentSaves`.
+*   **Content:** `FAQ`, `Testimonials`, `BailBondSignups`.
 
 ## 3. API Response Schemas
 
