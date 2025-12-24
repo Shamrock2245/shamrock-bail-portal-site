@@ -1,0 +1,384 @@
+/**
+ * wixApi.jsw - Backend API Module for Wix CMS Integration
+ * 
+ * This module handles all interactions with Wix CMS collections for the
+ * SignNow integration workflow. It provides functions to manage pending
+ * documents, update document statuses, and sync with the GAS backend.
+ * 
+ * Collections Used:
+ * - PendingDocuments: Stores signing links for client portal
+ * - MemberDocuments: Stores uploaded IDs with GPS metadata
+ * - RequiredDocuments: Tracks required document uploads per member
+ * 
+ * @module wixApi
+ */
+
+import wixData from 'wix-data';
+import { getSecret } from 'wix-secrets-backend';
+
+// ============================================================================
+// Configuration
+// ============================================================================
+
+const COLLECTION_PENDING_DOCUMENTS = 'PendingDocuments';
+const COLLECTION_MEMBER_DOCUMENTS = 'MemberDocuments';
+const COLLECTION_REQUIRED_DOCUMENTS = 'RequiredDocuments';
+
+/**
+ * Validate API key against stored secret
+ * @param {string} apiKey - The API key to validate
+ * @returns {Promise<boolean>} True if valid
+ */
+async function validateApiKey(apiKey) {
+    try {
+        const storedKey = await getSecret('GAS_API_KEY');
+        return apiKey === storedKey;
+    } catch (error) {
+        console.error('Error validating API key:', error);
+        return false;
+    }
+}
+
+// ============================================================================
+// Pending Documents Functions
+// ============================================================================
+
+/**
+ * Add a single pending document to the CMS
+ * Called from GAS via HTTP functions when a signing link is generated
+ * 
+ * @param {Object} document - The document data
+ * @param {string} document.memberEmail - Signer's email
+ * @param {string} document.memberPhone - Signer's phone
+ * @param {string} document.defendantName - Defendant's full name
+ * @param {string} document.caseNumber - Case number
+ * @param {string} document.documentName - Name of the document packet
+ * @param {string} document.signingLink - The SignNow signing link
+ * @param {string} document.signerRole - Role: defendant, indemnitor, agent
+ * @param {string} document.signNowDocumentId - SignNow document ID
+ * @param {string} document.expiresAt - ISO date string when link expires
+ * @param {string} apiKey - API key for authentication
+ * @returns {Promise<{success: boolean, documentId?: string, message?: string}>}
+ */
+export async function addPendingDocument(document, apiKey) {
+    try {
+        // Validate API key
+        const isValid = await validateApiKey(apiKey);
+        if (!isValid) {
+            return { success: false, message: 'Invalid API key' };
+        }
+
+        // Validate required fields
+        if (!document.signingLink) {
+            return { success: false, message: 'Missing required field: signingLink' };
+        }
+
+        // Prepare document record
+        const record = {
+            memberEmail: document.memberEmail || '',
+            memberPhone: document.memberPhone || '',
+            defendantName: document.defendantName || '',
+            caseNumber: document.caseNumber || '',
+            documentName: document.documentName || 'Bail Bond Document',
+            signingLink: document.signingLink,
+            signerRole: document.signerRole || 'signer',
+            signNowDocumentId: document.signNowDocumentId || '',
+            status: 'pending',
+            expiresAt: document.expiresAt ? new Date(document.expiresAt) : null,
+            createdAt: new Date()
+        };
+
+        // Insert into collection
+        const result = await wixData.insert(COLLECTION_PENDING_DOCUMENTS, record);
+
+        return {
+            success: true,
+            documentId: result._id,
+            message: 'Document added successfully'
+        };
+
+    } catch (error) {
+        console.error('Error adding pending document:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Add multiple pending documents in batch
+ * Called from GAS via HTTP functions when multiple signing links are generated
+ * 
+ * @param {Array<Object>} documents - Array of document objects
+ * @param {string} apiKey - API key for authentication
+ * @returns {Promise<{success: boolean, results?: Array, message?: string}>}
+ */
+export async function addPendingDocumentsBatch(documents, apiKey) {
+    try {
+        // Validate API key
+        const isValid = await validateApiKey(apiKey);
+        if (!isValid) {
+            return { success: false, message: 'Invalid API key' };
+        }
+
+        if (!Array.isArray(documents) || documents.length === 0) {
+            return { success: false, message: 'Documents array is required' };
+        }
+
+        // Prepare all records
+        const records = documents.map(doc => ({
+            memberEmail: doc.memberEmail || '',
+            memberPhone: doc.memberPhone || '',
+            defendantName: doc.defendantName || '',
+            caseNumber: doc.caseNumber || '',
+            documentName: doc.documentName || 'Bail Bond Document',
+            signingLink: doc.signingLink,
+            signerRole: doc.signerRole || 'signer',
+            signNowDocumentId: doc.signNowDocumentId || '',
+            status: 'pending',
+            expiresAt: doc.expiresAt ? new Date(doc.expiresAt) : null,
+            createdAt: new Date()
+        }));
+
+        // Bulk insert
+        const results = await wixData.bulkInsert(COLLECTION_PENDING_DOCUMENTS, records);
+
+        return {
+            success: true,
+            results: results.insertedItemIds,
+            message: `${results.insertedItemIds.length} documents added successfully`
+        };
+
+    } catch (error) {
+        console.error('Error adding pending documents batch:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Update document status
+ * Called when a document is signed (via SignNow webhook) or expires
+ * 
+ * @param {string} signNowDocumentId - The SignNow document ID
+ * @param {string} status - New status: signed, expired, cancelled
+ * @param {string} apiKey - API key for authentication
+ * @returns {Promise<{success: boolean, message?: string}>}
+ */
+export async function updateDocumentStatus(signNowDocumentId, status, apiKey) {
+    try {
+        // Validate API key (allow internal webhook calls)
+        if (apiKey !== 'webhook-internal') {
+            const isValid = await validateApiKey(apiKey);
+            if (!isValid) {
+                return { success: false, message: 'Invalid API key' };
+            }
+        }
+
+        // Find the document by SignNow ID
+        const results = await wixData.query(COLLECTION_PENDING_DOCUMENTS)
+            .eq('signNowDocumentId', signNowDocumentId)
+            .find();
+
+        if (results.items.length === 0) {
+            return { success: false, message: 'Document not found' };
+        }
+
+        // Update all matching documents (there could be multiple signers)
+        const updatePromises = results.items.map(async (doc) => {
+            doc.status = status;
+            doc.statusUpdatedAt = new Date();
+            if (status === 'signed') {
+                doc.signedAt = new Date();
+            }
+            return wixData.update(COLLECTION_PENDING_DOCUMENTS, doc);
+        });
+
+        await Promise.all(updatePromises);
+
+        return {
+            success: true,
+            message: `${results.items.length} document(s) updated to status: ${status}`
+        };
+
+    } catch (error) {
+        console.error('Error updating document status:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+// ============================================================================
+// Member Document Functions (for portal use)
+// ============================================================================
+
+/**
+ * Get pending documents for a member by email
+ * Called from the member portal to show documents awaiting signature
+ * 
+ * @param {string} memberEmail - The member's email
+ * @returns {Promise<{success: boolean, documents?: Array}>}
+ */
+export async function getPendingDocumentsForMember(memberEmail) {
+    try {
+        const results = await wixData.query(COLLECTION_PENDING_DOCUMENTS)
+            .eq('memberEmail', memberEmail)
+            .eq('status', 'pending')
+            .descending('createdAt')
+            .find();
+
+        return {
+            success: true,
+            documents: results.items
+        };
+
+    } catch (error) {
+        console.error('Error getting pending documents:', error);
+        return { success: false, documents: [] };
+    }
+}
+
+/**
+ * Get all documents for a member (any status)
+ * 
+ * @param {string} memberEmail - The member's email
+ * @returns {Promise<{success: boolean, documents?: Array}>}
+ */
+export async function getAllDocumentsForMember(memberEmail) {
+    try {
+        const results = await wixData.query(COLLECTION_PENDING_DOCUMENTS)
+            .eq('memberEmail', memberEmail)
+            .descending('createdAt')
+            .find();
+
+        return {
+            success: true,
+            documents: results.items
+        };
+
+    } catch (error) {
+        console.error('Error getting all documents:', error);
+        return { success: false, documents: [] };
+    }
+}
+
+/**
+ * Get document by ID
+ * 
+ * @param {string} documentId - The document ID
+ * @returns {Promise<{success: boolean, document?: Object}>}
+ */
+export async function getDocumentById(documentId) {
+    try {
+        const document = await wixData.get(COLLECTION_PENDING_DOCUMENTS, documentId);
+        
+        if (!document) {
+            return { success: false, message: 'Document not found' };
+        }
+
+        return {
+            success: true,
+            document: document
+        };
+
+    } catch (error) {
+        console.error('Error getting document:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+// ============================================================================
+// Required Documents Functions
+// ============================================================================
+
+/**
+ * Add a required document for a member
+ * 
+ * @param {Object} requirement - The requirement data
+ * @param {string} requirement.memberEmail - Member's email
+ * @param {string} requirement.documentType - Type of document required
+ * @param {string} requirement.documentName - Display name
+ * @param {string} requirement.caseId - Associated case ID
+ * @returns {Promise<{success: boolean, requirementId?: string}>}
+ */
+export async function addRequiredDocument(requirement) {
+    try {
+        const record = {
+            memberEmail: requirement.memberEmail,
+            documentType: requirement.documentType,
+            documentName: requirement.documentName,
+            caseId: requirement.caseId || '',
+            status: 'required',
+            createdAt: new Date()
+        };
+
+        const result = await wixData.insert(COLLECTION_REQUIRED_DOCUMENTS, record);
+
+        return {
+            success: true,
+            requirementId: result._id
+        };
+
+    } catch (error) {
+        console.error('Error adding required document:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Get required documents for a member
+ * 
+ * @param {string} memberEmail - The member's email
+ * @returns {Promise<{success: boolean, requirements?: Array}>}
+ */
+export async function getRequiredDocuments(memberEmail) {
+    try {
+        const results = await wixData.query(COLLECTION_REQUIRED_DOCUMENTS)
+            .eq('memberEmail', memberEmail)
+            .eq('status', 'required')
+            .find();
+
+        return {
+            success: true,
+            requirements: results.items
+        };
+
+    } catch (error) {
+        console.error('Error getting required documents:', error);
+        return { success: false, requirements: [] };
+    }
+}
+
+// ============================================================================
+// Cleanup Functions
+// ============================================================================
+
+/**
+ * Clean up expired documents
+ * Should be called periodically via scheduled job
+ * 
+ * @returns {Promise<{success: boolean, cleaned?: number}>}
+ */
+export async function cleanupExpiredDocuments() {
+    try {
+        const now = new Date();
+        
+        const results = await wixData.query(COLLECTION_PENDING_DOCUMENTS)
+            .eq('status', 'pending')
+            .lt('expiresAt', now)
+            .find();
+
+        const updatePromises = results.items.map(async (doc) => {
+            doc.status = 'expired';
+            doc.statusUpdatedAt = now;
+            return wixData.update(COLLECTION_PENDING_DOCUMENTS, doc);
+        });
+
+        await Promise.all(updatePromises);
+
+        return {
+            success: true,
+            cleaned: results.items.length
+        };
+
+    } catch (error) {
+        console.error('Error cleaning up expired documents:', error);
+        return { success: false, message: error.message };
+    }
+}
