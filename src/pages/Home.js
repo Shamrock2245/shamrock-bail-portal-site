@@ -3,8 +3,6 @@ import wixLocation from 'wix-location';
 import wixAnimations from 'wix-animations';
 import wixData from 'wix-data';
 import { getUserRole, ROLES } from 'backend/portal-auth';
-import { getBailData } from 'public/bookingSheetHandler';
-import { getCurrentLocation } from 'backend/location';
 
 /**
  * HOME Page Code
@@ -19,7 +17,7 @@ $w.onReady(function () {
 
     // 2. Wire up Primary Call to Action
     wireHeroCTA();
-    
+
     // 3. Load and wire county selector
     loadCountySelector();
 });
@@ -125,39 +123,39 @@ async function loadCountySelector() {
     const DROPDOWN_ID = '#countyDropdown';
     const GET_STARTED_ID = '#getStartedButton';
     const ERROR_TEXT_ID = '#countyErrorText';
-    
+
     try {
         // Check if county selector elements exist
         const dropdown = $w(DROPDOWN_ID);
         const getStartedBtn = $w(GET_STARTED_ID);
-        
+
         if (!dropdown || !getStartedBtn) {
             console.debug('County selector elements not found on this page');
             return;
         }
-        
+
         // Load all active counties from database
-        const results = await wixData.query('Import1')
-            .eq('active', true)
-            .ascending('countyName')
+        const results = await wixData.query('Counties')
+            .eq('isActive', true)
+            .ascending('title')
             .find();
-        
+
         if (results.items.length > 0) {
             // Populate dropdown with county options
             const options = results.items.map(county => ({
-                label: `${county.countyName} County`,
-                value: county.countySlug
+                label: county.title,
+                value: county.slug
             }));
-            
+
             dropdown.options = options;
-            
+
             // Set placeholder
             dropdown.placeholder = 'Select a county...';
-            
+
             // Wire up "Get Started" button
             getStartedBtn.onClick(() => {
                 const selectedSlug = dropdown.value;
-                
+
                 if (selectedSlug) {
                     // Navigate to county page
                     wixLocation.to(`/county/${selectedSlug}`);
@@ -168,32 +166,36 @@ async function loadCountySelector() {
                         if (errorText) {
                             errorText.text = 'Please select a county first';
                             errorText.show();
-                            
+
                             // Hide error after 3 seconds
                             setTimeout(() => {
                                 errorText.hide();
+                                dropdown.updateValidityIndication();
                             }, 3000);
+                        } else {
+                            dropdown.updateValidityIndication();
                         }
                     } catch (err) {
                         console.debug('Error text element not found');
+                        dropdown.updateValidityIndication();
                     }
                 }
             });
-            
+
             // Add hover animation to Get Started button
             getStartedBtn.onMouseIn(() => {
                 wixAnimations.timeline()
                     .add(getStartedBtn, { scale: 1.05, duration: 200, easing: 'easeOutQuad' })
                     .play();
             });
-            
+
             getStartedBtn.onMouseOut(() => {
                 wixAnimations.timeline()
                     .add(getStartedBtn, { scale: 1.0, duration: 200, easing: 'easeInQuad' })
                     .play();
             });
         }
-        
+
     } catch (error) {
         console.error('Error loading county selector:', error);
     }

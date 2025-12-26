@@ -1,32 +1,42 @@
-# AI Agent Instructions & Guardrails - Shamrock Bail Suite
+# Shamrock Bail Suite - AI Agent Handbook
 
-Welcome, Agent. You are part of the Shamrock Bail Suite ecosystem. Your mission is to assist in building, maintaining, and optimizing the "Arrest to Bail" pipeline for Shamrock Bail Bonds.
+Welcome, Agent. This is your master source of truth for all operational guidelines, technical constraints, and mission-critical rules.
 
-## Core Mission
-Automate the pipeline from **Arrest Scraped** -> **Lead Qualified** -> **Bail Agent Notified**.
+## 1. Core Mission
+Automate the "Arrest to Bail" pipeline: **Arrest Scraped** -> **Lead Qualified** -> **Bail Agent Notified**.
 
-## Agent Personas
-Depending on your current focus, you should adopt the relevant persona:
-- **Scraper Agent:** Focused on data extraction using Node.js/Puppeteer for Florida county sites.
-- **Architect Agent:** Focused on Google Apps Script (GAS) backend, Sheets integration, and Wix Velo frontend logic.
-- **Automation Agent:** Focused on SignNow integrations, Slack notifications, and lead scoring logic.
+## 2. Technical Stack
+- **Node.js (v18+)**: County scrapers and data processing.
+- **Google Apps Script (GAS)**: Master database (Google Sheets) and document automation.
+- **Wix Velo/CMS**: Frontend portal, customer-facing site, and operational database.
+- **SignNow API**: Digital signature workflow.
 
-## Sacred Guardrails (NEVER VIOLATE)
-1. **The 34-Column Schema:** Every scraper and data ingestor MUST output exactly 34 columns. No more, no less. (See [SCHEMAS.md](file:///Users/brendan/Desktop/shamrock-bail-portal-site/docs/SCHEMAS.md)).
-2. **Idempotency:** Never append duplicate records. Always check `Booking_Number` + `County` before writing to the Master Sheet.
-3. **Error Resilience:** A single county scrape failure must NEVER stop the process. Log the error and move to the next county/record.
-4. **Timezones:** All timestamps must be `America/New_York` (EST/EDT).
-5. **No Placeholders:** Never use placeholder images or text in production code. Use the `generate_image` tool for visual demos and actual project data for logic.
+## 3. The Sacred Guardrails
+1.  **34-Column Schema**: Every lead MUST match the 34-column structure. No exceptions. (See [SCHEMAS.md](file:///Users/brendan/Desktop/shamrock-bail-portal-site/docs/SCHEMAS.md)).
+2.  **Idempotency**: Always verify `Booking_Number` + `County` before inserting unique records.
+3.  **Resilience**: Scraper failures in one county should NOT stop the entire pipeline.
+4.  **Security**: NEVER hardcode API keys. Use **Wix Secrets Manager** or Environment Variables.
+5.  **Visual Excellence**: Use high-fidelity designs and real data. No placeholders.
 
-## Operational Protocol
-- **Research First:** Before writing code, use `list_dir` and `grep` to understand existing county adapters or backend services.
-- **Plan Second:** Always create or update an `implementation_plan.md` for non-trivial changes.
-- **Verify Third:** Use the `run_command` tool to test scrapers locally and provide proof of functionality in a `walkthrough.md`.
+## 4. The "Secret Sauce" (Lead Scoring)
+Leads are qualified based on a score of **≥ 70** (Hot).
+- **Bond Amount**: $500+ (+30), $1500+ (+50 total).
+- **Recency**: Arrest < 1 day (+10), < 2 days (+20).
+- **Charges**: Serious keywords (Battery, DUI, Theft, Domestic) (+20 points).
+- **Disqualifiers**: Status = "Released" or Bond = $0 results in **Disqualified**.
 
-## Critical Context
-- **Master Sheet ID:** `121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E`
-- **Primary Tech Stack:** Node.js (v18+), Google Apps Script, Wix Velo, SignNow API.
-- **Target Counties:** Southwest Florida (Lee, Collier, Hendry, Charlotte, etc.) and expanding statewide.
+## 5. Operational Handbooks
+### Adding a New County Scraper
+1.  **Research**: Check [COUNTY_STATUS.md](file:///Users/brendan/Desktop/shamrock-bail-portal-site/docs/COUNTY_STATUS.md).
+2.  **Code**: Follow the [COUNTY_ADAPTER_TEMPLATE.md](file:///Users/brendan/Desktop/shamrock-bail-portal-site/docs/COUNTY_ADAPTER_TEMPLATE.md).
+3.  **Validate**: Use the `data-validator.js` to ensure schema compliance.
 
-> [!IMPORTANT]
-> Failure to follow the 34-column schema or idempotency rules will result in database corruption. Be precise.
+### Updating Wix Backend
+1.  Check `WIRING-ANALYSIS-REPORT.md` for dependencies.
+2.  Use `.jsw` for backend modules and `.web.js` for exposed functions.
+3.  Always import `wixData` for CMS operations.
+
+## 6. Ground Truth References
+- [Action Plan](file:///Users/brendan/Desktop/shamrock-bail-portal-site/ATLAS-ACTION-PLAN.md)
+- [Schema Guide](file:///Users/brendan/Desktop/shamrock-bail-portal-site/docs/SCHEMAS.md)
+- [Frontend Reference](file:///Users/brendan/Desktop/shamrock-bail-portal-site/docs/FrontendCodeReferenceforChatGPTAtlas.md)
