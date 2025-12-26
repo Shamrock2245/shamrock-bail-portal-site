@@ -1,0 +1,39 @@
+import wixCrmBackend from 'wix-crm-backend';
+import { trackEvent } from 'backend/analytics';
+
+/**
+ * Submits bail school interest by creating/updating a Wix Contact and tracking the event.
+ * @param {string} email - The email address to register.
+ * @returns {Promise<Object>} - Success status and contact ID.
+ */
+export async function submitBailSchoolInterest(email) {
+    const normalized = (email || '').trim().toLowerCase();
+
+    // Basic validation
+    if (!normalized || !normalized.includes('@')) {
+        throw new Error('Invalid email format');
+    }
+
+    try {
+        // 1. Create or update contact
+        const contactId = await wixCrmBackend.contacts.appendOrCreateContact({
+            emails: [normalized],
+            labels: ['Bail School Interest']
+        });
+
+        // 2. Track Event (Robustness feature)
+        await trackEvent('bail_school_signup', {
+            email: normalized,
+            contactId,
+            page: 'How to Become a Bondsman'
+        });
+
+        return {
+            ok: true,
+            contactId
+        };
+    } catch (error) {
+        console.error('submitBailSchoolInterest error:', error);
+        throw error;
+    }
+}

@@ -1,55 +1,59 @@
-import wixCrm from 'wix-crm';
-import { trackEvent } from 'backend/analytics';
+import { submitBailSchoolInterest } from 'backend/bailSchoolInterest';
 
-$w.onReady(function () {
+$w.onReady(() => {
+    const successText = $w('#bailSchoolSuccessText');
+    const errorText = $w('#bailSchoolErrorText');
     const submitBtn = $w('#bailSchoolSubmitButton');
     const emailInput = $w('#bailSchoolEmailInput');
 
-    submitBtn.onClick(async () => {
-        const email = emailInput.value;
+    // Hide messages on load
+    if (successText) successText.hide();
+    if (errorText) errorText.hide();
 
-        // 1. Robust Validation
+    submitBtn.onClick(async () => {
+        // Reset messages
+        if (successText) successText.hide();
+        if (errorText) errorText.hide();
+
+        const email = (emailInput.value || '').trim();
+
+        // Let Wix show built-in validation UI if possible
         if (!email || !validateEmail(email)) {
             emailInput.updateValidityIndication();
+            if (errorText) errorText.show();
             return;
         }
 
-        // 2. Loading State (Prevent double clicks)
+        // Lock UI to prevent double-click spam
         const originalLabel = submitBtn.label;
         submitBtn.disable();
-        submitBtn.label = 'Sending...';
+        submitBtn.label = 'Submitting...';
 
         try {
-            // 3. Create/Update Contact
-            await wixCrm.contacts.appendOrCreateContact({
-                emails: [email],
-                labels: ['Bail School Interest']
-            });
+            await submitBailSchoolInterest(email);
 
-            // 4. Analytics Tracking
-            await trackEvent('bail_school_signup', {
-                email,
-                page: 'How to Become a Bondsman'
-            });
-
-            // 5. Success Feedback
+            // Success UX
             emailInput.value = '';
+            if (successText) successText.show();
             submitBtn.label = 'You’re on the list ✅';
-            submitBtn.style.backgroundColor = '#4CAF50'; // Green success color
+
+            // Feedback colors
+            submitBtn.style.backgroundColor = '#4CAF50';
             submitBtn.style.color = '#FFFFFF';
 
-            // Optional: Re-enable after 5 seconds
+            // Re-enable button after a moment
             setTimeout(() => {
-                submitBtn.label = originalLabel;
                 submitBtn.enable();
+                submitBtn.label = originalLabel;
                 submitBtn.style.backgroundColor = '';
                 submitBtn.style.color = '';
             }, 5000);
 
-        } catch (error) {
-            console.error('Bail School Signup Error:', error);
-            submitBtn.label = 'Try again';
+        } catch (err) {
+            console.error('Bail school signup failed:', err);
+            if (errorText) errorText.show();
             submitBtn.enable();
+            submitBtn.label = 'Try again';
         }
     });
 });
