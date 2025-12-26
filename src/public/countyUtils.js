@@ -14,7 +14,7 @@ export async function getCounties() {
     }
 
     try {
-        const results = await wixData.query("FloridaCounties")
+        const results = await wixData.query("Import1")
             .ascending("name")
             .limit(100)
             .find();
@@ -34,7 +34,7 @@ export async function getCounties() {
  */
 export async function getCountyBySlug(slug) {
     try {
-        const results = await wixData.query("FloridaCounties")
+        const results = await wixData.query("Import1")
             .eq("slug", slug)
             .limit(1)
             .find();
@@ -57,7 +57,7 @@ export async function getCountyBySlug(slug) {
  */
 export async function getNearbyCounties(region, currentId) {
     try {
-        const results = await wixData.query("FloridaCounties")
+        const results = await wixData.query("Import1")
             .eq("region", region)
             .ne("_id", currentId)
             .limit(4)

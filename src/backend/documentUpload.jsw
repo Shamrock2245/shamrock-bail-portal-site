@@ -66,7 +66,7 @@ export async function uploadIdDocument(uploadData) {
             })
         };
         
-        const insertResult = await wixData.insert('MemberDocuments', documentRecord);
+        const insertResult = await wixData.insert('Import3', documentRecord);
         
         // Sync to Google Drive via GAS webhook
         await syncToGoogleDrive(insertResult, uploadResult.fileUrl);
@@ -142,7 +142,7 @@ export async function uploadSupportingDocument(uploadData) {
             })
         };
         
-        const insertResult = await wixData.insert('MemberDocuments', documentRecord);
+        const insertResult = await wixData.insert('Import3', documentRecord);
         
         // Update the requirement status
         requirement.status = 'uploaded';
@@ -206,7 +206,7 @@ async function syncToGoogleDrive(documentRecord, fileUrl) {
             // Update document record with Drive sync status
             documentRecord.driveSynced = true;
             documentRecord.driveSyncedAt = new Date();
-            await wixData.update('MemberDocuments', documentRecord);
+            await wixData.update('Import3', documentRecord);
         }
         
     } catch (error) {
@@ -223,7 +223,7 @@ async function syncToGoogleDrive(documentRecord, fileUrl) {
  */
 export async function getMemberDocuments(memberEmail) {
     try {
-        const results = await wixData.query('MemberDocuments')
+        const results = await wixData.query('Import3')
             .eq('memberEmail', memberEmail)
             .descending('_createdDate')
             .find();
@@ -252,7 +252,7 @@ export async function getMemberDocuments(memberEmail) {
  */
 export async function verifyDocument(documentId, verified, notes) {
     try {
-        const document = await wixData.get('MemberDocuments', documentId);
+        const document = await wixData.get('Import3', documentId);
         
         if (!document) {
             return { success: false, message: 'Document not found' };
@@ -262,7 +262,7 @@ export async function verifyDocument(documentId, verified, notes) {
         document.verifiedAt = new Date();
         document.verificationNotes = notes || '';
         
-        await wixData.update('MemberDocuments', document);
+        await wixData.update('Import3', document);
         
         return {
             success: true,

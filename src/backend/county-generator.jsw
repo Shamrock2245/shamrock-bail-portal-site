@@ -57,7 +57,7 @@ export async function generateCountyPage(countySlug) {
  */
 async function getCountyFromDatabase(countySlug) {
   try {
-    const results = await wixData.query('FloridaCounties')
+    const results = await wixData.query('Import1')
       .eq('countySlug', countySlug)
       .find();
     
@@ -223,7 +223,7 @@ function generateSEOMetadata(countyData) {
  */
 export async function getAllCountiesByTier() {
   try {
-    const results = await wixData.query('FloridaCounties')
+    const results = await wixData.query('Import1')
       .ascending('countyName')
       .find();
     

@@ -97,7 +97,7 @@ async function initIndemnitorPortal() {
 async function loadCaseInformation() {
     try {
         // Query the Cases collection to find cases where this person is an indemnitor
-        const results = await wixData.query('Cases')
+        const results = await wixData.query('Import2')
             .eq('indemnitorPersonId', currentPersonId)
             .eq('status', 'active')
             .descending('_createdDate')
@@ -149,7 +149,7 @@ async function loadUploadedDocuments() {
             return;
         }
         
-        const results = await wixData.query('MemberDocuments')
+        const results = await wixData.query('Import3')
             .eq('personId', currentPersonId)
             .descending('_createdDate')
             .find();
@@ -190,7 +190,7 @@ async function loadFinancialObligations() {
             return;
         }
         
-        const results = await wixData.query('FinancialObligations')
+        const results = await wixData.query('Import5')
             .eq('indemnitorPersonId', currentPersonId)
             .descending('_createdDate')
             .find();
@@ -446,7 +446,7 @@ function wireViewCaseDetailsButton() {
  */
 async function logFinancialPaperworkStartEvent() {
     try {
-        await wixData.insert('BailStartLogs', {
+        await wixData.insert('Import6', {
             personId: currentPersonId,
             caseId: currentCaseId,
             timestamp: new Date(),

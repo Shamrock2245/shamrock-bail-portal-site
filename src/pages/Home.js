@@ -137,7 +137,7 @@ async function loadCountySelector() {
         }
         
         // Load all active counties from database
-        const results = await wixData.query('FloridaCounties')
+        const results = await wixData.query('Import1')
             .eq('active', true)
             .ascending('countyName')
             .find();

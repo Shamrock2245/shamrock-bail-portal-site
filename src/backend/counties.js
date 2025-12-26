@@ -11,7 +11,7 @@ import wixData from 'wix-data';
  */
 export async function getAllCounties() {
   try {
-    const results = await wixData.query('FloridaCounties')
+    const results = await wixData.query('Import1')
       .ascending('countyName')
       .find();
     
@@ -28,7 +28,7 @@ export async function getAllCounties() {
  */
 export async function getFeaturedCounties() {
   try {
-    const results = await wixData.query('FloridaCounties')
+    const results = await wixData.query('Import1')
       .eq('featured', true)
       .ascending('countyName')
       .find();
@@ -47,7 +47,7 @@ export async function getFeaturedCounties() {
  */
 export async function getCountyBySlug(slug) {
   try {
-    const results = await wixData.query('FloridaCounties')
+    const results = await wixData.query('Import1')
       .eq('countySlug', slug)
       .find();
     
@@ -69,7 +69,7 @@ export async function getCountyBySlug(slug) {
  */
 export async function searchCounties(searchTerm) {
   try {
-    const results = await wixData.query('FloridaCounties')
+    const results = await wixData.query('Import1')
       .contains('countyName', searchTerm)
       .ascending('countyName')
       .find();
@@ -87,8 +87,8 @@ export async function searchCounties(searchTerm) {
  */
 export async function getCountyStats() {
   try {
-    const allCounties = await wixData.query('FloridaCounties').find();
-    const featuredCounties = await wixData.query('FloridaCounties')
+    const allCounties = await wixData.query('Import1').find();
+    const featuredCounties = await wixData.query('Import1')
       .eq('featured', true)
       .find();
     

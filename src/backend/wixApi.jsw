@@ -21,7 +21,7 @@ import { getSecret } from 'wix-secrets-backend';
 // ============================================================================
 
 const COLLECTION_PENDING_DOCUMENTS = 'PendingDocuments';
-const COLLECTION_MEMBER_DOCUMENTS = 'MemberDocuments';
+const COLLECTION_MEMBER_DOCUMENTS = 'Import3';
 const COLLECTION_REQUIRED_DOCUMENTS = 'RequiredDocuments';
 
 /**

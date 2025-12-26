@@ -39,7 +39,7 @@ function setupDocumentUpload(memberId) {
                 const uploadedFile = await $w('#idUploadBtn').startUpload();
                 
                 // Save reference to database
-                await wixData.insert("MemberDocuments", {
+                await wixData.insert("Import3", {
                     memberId: memberId,
                     fileName: uploadedFile.originalFileName,
                     fileUrl: uploadedFile.url,
@@ -61,7 +61,7 @@ function setupDocumentUpload(memberId) {
 }
 
 async function refreshDocumentList(memberId) {
-    const results = await wixData.query("MemberDocuments")
+    const results = await wixData.query("Import3")
         .eq("memberId", memberId)
         .descending("uploadDate")
         .find();

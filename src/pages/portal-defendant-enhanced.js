@@ -97,7 +97,7 @@ async function initDefendantPortal() {
 async function loadCaseInformation() {
     try {
         // Query the Cases collection to find active case for this defendant
-        const results = await wixData.query('Cases')
+        const results = await wixData.query('Import2')
             .eq('defendantPersonId', currentPersonId)
             .eq('status', 'active')
             .descending('_createdDate')
@@ -147,7 +147,7 @@ async function loadUploadedDocuments() {
             return;
         }
         
-        const results = await wixData.query('MemberDocuments')
+        const results = await wixData.query('Import3')
             .eq('personId', currentPersonId)
             .descending('_createdDate')
             .find();
@@ -188,7 +188,7 @@ async function loadCheckInHistory() {
             return;
         }
         
-        const results = await wixData.query('CheckInRecords')
+        const results = await wixData.query('Import4')
             .eq('personId', currentPersonId)
             .descending('checkInDate')
             .limit(10)
@@ -419,7 +419,7 @@ function wireCheckInButton() {
                 // For now, we'll just record the GPS location
                 
                 // Save check-in to database
-                await wixData.insert('CheckInRecords', {
+                await wixData.insert('Import4', {
                     personId: currentPersonId,
                     caseId: currentCaseId,
                     checkInDate: new Date(),
@@ -470,7 +470,7 @@ function wireViewPaymentButton() {
  */
 async function logBailStartEvent() {
     try {
-        await wixData.insert('BailStartLogs', {
+        await wixData.insert('Import6', {
             personId: currentPersonId,
             caseId: currentCaseId,
             timestamp: new Date(),
