@@ -1,0 +1,624 @@
+/*********
+ .jsw file - Document Upload V2
+ *********
+ 
+ Enhanced document upload functionality with:
+ - Comprehensive file validation (type, size, format)
+ - GPS coordinate capture and logging
+ - Device metadata collection
+ - Wix Media Manager integration
+ - Google Drive sync via GAS backend
+ - Detailed error handling and logging
+ - Support for all required document types
+ 
+ **********/
+
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'backend/collectionIds';
+import { getSecret } from 'wix-secrets-backend';
+import { fetch } from 'wix-fetch';
+import { mediaManager } from 'wix-media-backend';
+
+/**
+ * CONFIGURATION
+ */
+const GAS_BACKEND_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
+
+// File size limits (in bytes)
+const MAX_FILE_SIZE = {
+  image: 25 * 1024 * 1024,      // 25 MB
+  document: 25 * 1024 * 1024,   // 25 MB
+  video: 100 * 1024 * 1024      // 100 MB (limited for portal uploads)
+};
+
+// Allowed MIME types by document type
+const ALLOWED_MIME_TYPES = {
+  'government-id': [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/heic',
+    'application/pdf'
+  ],
+  'proof-of-residence': [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'application/pdf'
+  ],
+  'proof-of-income': [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'application/pdf'
+  ],
+  'court-documents': [
+    'application/pdf',
+    'image/jpeg',
+    'image/jpg',
+    'image/png'
+  ],
+  'collateral-documents': [
+    'application/pdf',
+    'image/jpeg',
+    'image/jpg',
+    'image/png'
+  ],
+  'other': [
+    'application/pdf',
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+};
+
+/**
+ * Validate file before upload
+ * 
+ * @param {Object} file - File object from upload button
+ * @param {string} documentType - Type of document being uploaded
+ * @returns {Object} Validation result { valid: boolean, error: string }
+ */
+function validateFile(file, documentType) {
+  // Check if file exists
+  if (!file || !file.name) {
+    return { valid: false, error: 'No file provided' };
+  }
+
+  // Check file size
+  const fileSize = file.size || 0;
+  const mediaType = getMediaType(file.type);
+  const maxSize = MAX_FILE_SIZE[mediaType] || MAX_FILE_SIZE.document;
+
+  if (fileSize > maxSize) {
+    const maxSizeMB = Math.round(maxSize / (1024 * 1024));
+    return { valid: false, error: `File too large. Maximum size is ${maxSizeMB}MB` };
+  }
+
+  if (fileSize === 0) {
+    return { valid: false, error: 'File is empty' };
+  }
+
+  // Check MIME type
+  const allowedTypes = ALLOWED_MIME_TYPES[documentType] || ALLOWED_MIME_TYPES.other;
+  if (!allowedTypes.includes(file.type)) {
+    return { valid: false, error: `File type not allowed. Allowed types: ${allowedTypes.join(', ')}` };
+  }
+
+  // Check file extension
+  const fileName = file.name.toLowerCase();
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf', '.heic', '.doc', '.docx'];
+  const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+  
+  if (!hasValidExtension) {
+    return { valid: false, error: 'Invalid file extension' };
+  }
+
+  return { valid: true, error: null };
+}
+
+/**
+ * Determine media type from MIME type
+ */
+function getMediaType(mimeType) {
+  if (!mimeType) return 'document';
+  if (mimeType.startsWith('image/')) return 'image';
+  if (mimeType.startsWith('video/')) return 'video';
+  if (mimeType.startsWith('audio/')) return 'audio';
+  return 'document';
+}
+
+/**
+ * Sanitize filename for safe storage
+ */
+function sanitizeFileName(fileName) {
+  return fileName
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/_{2,}/g, '_')
+    .substring(0, 200); // Limit length
+}
+
+/**
+ * Generate unique filename with metadata
+ */
+function generateUniqueFileName(originalName, documentType, memberEmail) {
+  const timestamp = Date.now();
+  const sanitizedEmail = memberEmail.replace(/[@.]/g, '-').substring(0, 30);
+  const extension = originalName.substring(originalName.lastIndexOf('.'));
+  const baseName = originalName.substring(0, originalName.lastIndexOf('.')).substring(0, 30);
+  
+  return `${documentType}_${sanitizedEmail}_${baseName}_${timestamp}${extension}`;
+}
+
+/**
+ * Upload document to Wix Media Manager and save metadata
+ * 
+ * @param {Object} uploadData - Upload parameters
+ * @param {Buffer} uploadData.fileContent - File buffer from upload button
+ * @param {string} uploadData.fileName - Original file name
+ * @param {string} uploadData.mimeType - MIME type
+ * @param {string} uploadData.fileSize - File size in bytes
+ * @param {string} uploadData.documentType - Type of document
+ * @param {string} uploadData.memberEmail - Member email
+ * @param {string} uploadData.caseId - Case ID (optional)
+ * @param {Object} uploadData.metadata - Additional metadata
+ * @returns {Promise<Object>} Upload result
+ */
+export async function uploadDocument(uploadData) {
+  try {
+    const {
+      fileContent,
+      fileName,
+      mimeType,
+      fileSize,
+      documentType,
+      memberEmail,
+      caseId,
+      metadata = {}
+    } = uploadData;
+
+    // Validate inputs
+    if (!fileContent || !fileName || !documentType || !memberEmail) {
+      throw new Error('Missing required upload parameters');
+    }
+
+    // Validate file
+    const validation = validateFile(
+      { name: fileName, type: mimeType, size: fileSize },
+      documentType
+    );
+
+    if (!validation.valid) {
+      return {
+        success: false,
+        error: validation.error
+      };
+    }
+
+    // Generate unique file name
+    const uniqueFileName = generateUniqueFileName(fileName, documentType, memberEmail);
+
+    // Determine upload path
+    const uploadPath = caseId 
+      ? `/bail-documents/${caseId}/${documentType}`
+      : `/bail-documents/pending/${documentType}`;
+
+    // Determine media type
+    const mediaType = getMediaType(mimeType);
+
+    // Upload to Media Manager
+    const uploadResult = await mediaManager.upload(
+      uploadPath,
+      fileContent,
+      uniqueFileName,
+      {
+        mediaOptions: {
+          mimeType: mimeType,
+          mediaType: mediaType,
+        },
+        metadataOptions: {
+          isPrivate: true,
+          isVisitorUpload: false,
+          context: {
+            caseId: caseId || 'pending',
+            memberEmail: memberEmail,
+            documentType: documentType,
+            uploadedAt: new Date().toISOString(),
+            gpsCoordinates: metadata.gpsCoordinates || 'not-provided',
+            deviceInfo: metadata.deviceInfo || 'unknown',
+            uploadSource: 'member-portal'
+          }
+        }
+      }
+    );
+
+    // Save metadata to MemberDocuments collection
+    const documentRecord = {
+      memberEmail: memberEmail,
+      caseId: caseId || null,
+      documentType: documentType,
+      fileName: fileName,
+      uniqueFileName: uniqueFileName,
+      fileUrl: uploadResult.fileUrl,
+      mimeType: mimeType,
+      sizeInBytes: uploadResult.sizeInBytes || fileSize,
+      uploadedAt: new Date(),
+      status: 'pending-review',
+      metadata: {
+        hash: uploadResult.hash,
+        mediaPath: uploadPath,
+        gpsCoordinates: metadata.gpsCoordinates || 'not-provided',
+        deviceInfo: metadata.deviceInfo || 'unknown',
+        ipAddress: metadata.ipAddress || 'unknown',
+        userAgent: metadata.userAgent || 'unknown',
+        uploadSource: 'member-portal'
+      }
+    };
+
+    const savedDoc = await wixData.insert(COLLECTIONS.MEMBER_DOCUMENTS, documentRecord);
+
+    // Sync to Google Drive (async, don't block on failure)
+    syncToGoogleDrive(savedDoc, uploadResult.fileUrl).catch(error => {
+      console.error('Google Drive sync failed (non-blocking):', error);
+    });
+
+    // Log upload event
+    await logUploadEvent('document_uploaded', {
+      documentId: savedDoc._id,
+      documentType: documentType,
+      memberEmail: memberEmail,
+      caseId: caseId,
+      fileSize: uploadResult.sizeInBytes || fileSize
+    });
+
+    return {
+      success: true,
+      fileUrl: uploadResult.fileUrl,
+      documentId: savedDoc._id,
+      fileName: uniqueFileName,
+      sizeInBytes: uploadResult.sizeInBytes || fileSize,
+      message: 'Document uploaded successfully'
+    };
+
+  } catch (error) {
+    console.error('Document upload error:', error);
+    
+    await logUploadEvent('document_upload_error', {
+      documentType: uploadData.documentType,
+      memberEmail: uploadData.memberEmail,
+      error: error.message
+    });
+
+    return {
+      success: false,
+      error: `Upload failed: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Upload government ID (front or back)
+ * Specialized function with additional validation for ID documents
+ * 
+ * @param {Object} uploadData - Upload parameters
+ * @param {Buffer} uploadData.fileContent - File buffer
+ * @param {string} uploadData.fileName - Original file name
+ * @param {string} uploadData.mimeType - MIME type
+ * @param {string} uploadData.fileSize - File size in bytes
+ * @param {string} uploadData.side - 'front' or 'back'
+ * @param {string} uploadData.memberEmail - Member email
+ * @param {string} uploadData.caseId - Case ID (optional)
+ * @param {Object} uploadData.metadata - GPS, device info, etc.
+ * @returns {Promise<Object>} Upload result
+ */
+export async function uploadGovernmentId(uploadData) {
+  try {
+    const { side, ...restData } = uploadData;
+
+    // Validate side parameter
+    if (!side || !['front', 'back'].includes(side)) {
+      return {
+        success: false,
+        error: 'Invalid side parameter. Must be "front" or "back"'
+      };
+    }
+
+    // Add side to metadata
+    const enhancedMetadata = {
+      ...restData.metadata,
+      idSide: side
+    };
+
+    // Call main upload function with government-id type
+    const result = await uploadDocument({
+      ...restData,
+      documentType: `government-id-${side}`,
+      metadata: enhancedMetadata
+    });
+
+    return result;
+
+  } catch (error) {
+    console.error('Government ID upload error:', error);
+    return {
+      success: false,
+      error: `ID upload failed: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Get all documents for a member
+ * 
+ * @param {string} memberEmail - Member email
+ * @param {string} caseId - Case ID (optional filter)
+ * @returns {Promise<Object>} Documents list
+ */
+export async function getMemberDocuments(memberEmail, caseId = null) {
+  try {
+    let query = wixData.query(COLLECTIONS.MEMBER_DOCUMENTS)
+      .eq('memberEmail', memberEmail);
+
+    if (caseId) {
+      query = query.eq('caseId', caseId);
+    }
+
+    const results = await query
+      .descending('_createdDate')
+      .find();
+
+    return {
+      success: true,
+      documents: results.items,
+      totalCount: results.totalCount
+    };
+
+  } catch (error) {
+    console.error('Error getting member documents:', error);
+    return {
+      success: false,
+      documents: [],
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Get documents by case ID
+ * 
+ * @param {string} caseId - Case ID
+ * @returns {Promise<Object>} Documents list
+ */
+export async function getCaseDocuments(caseId) {
+  try {
+    const results = await wixData.query(COLLECTIONS.MEMBER_DOCUMENTS)
+      .eq('caseId', caseId)
+      .descending('_createdDate')
+      .find();
+
+    return {
+      success: true,
+      documents: results.items,
+      totalCount: results.totalCount
+    };
+
+  } catch (error) {
+    console.error('Error getting case documents:', error);
+    return {
+      success: false,
+      documents: [],
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Verify document (admin/staff function)
+ * 
+ * @param {string} documentId - Document ID
+ * @param {boolean} verified - Verification status
+ * @param {string} notes - Admin notes
+ * @param {string} verifiedBy - Staff member email
+ * @returns {Promise<Object>} Verification result
+ */
+export async function verifyDocument(documentId, verified, notes, verifiedBy) {
+  try {
+    const document = await wixData.get(COLLECTIONS.MEMBER_DOCUMENTS, documentId);
+
+    if (!document) {
+      return {
+        success: false,
+        error: 'Document not found'
+      };
+    }
+
+    // Update document status
+    const updatedDocument = {
+      ...document,
+      status: verified ? 'verified' : 'rejected',
+      verifiedAt: new Date(),
+      verifiedBy: verifiedBy,
+      verificationNotes: notes || ''
+    };
+
+    await wixData.update(COLLECTIONS.MEMBER_DOCUMENTS, updatedDocument);
+
+    await logUploadEvent('document_verified', {
+      documentId: documentId,
+      verified: verified,
+      verifiedBy: verifiedBy
+    });
+
+    return {
+      success: true,
+      message: `Document ${verified ? 'verified' : 'rejected'} successfully`
+    };
+
+  } catch (error) {
+    console.error('Error verifying document:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Delete document (soft delete)
+ * 
+ * @param {string} documentId - Document ID
+ * @param {string} deletedBy - User email
+ * @param {string} reason - Deletion reason
+ * @returns {Promise<Object>} Deletion result
+ */
+export async function deleteDocument(documentId, deletedBy, reason) {
+  try {
+    const document = await wixData.get(COLLECTIONS.MEMBER_DOCUMENTS, documentId);
+
+    if (!document) {
+      return {
+        success: false,
+        error: 'Document not found'
+      };
+    }
+
+    // Soft delete - mark as deleted but keep record
+    const updatedDocument = {
+      ...document,
+      status: 'deleted',
+      deletedAt: new Date(),
+      deletedBy: deletedBy,
+      deletionReason: reason || ''
+    };
+
+    await wixData.update(COLLECTIONS.MEMBER_DOCUMENTS, updatedDocument);
+
+    await logUploadEvent('document_deleted', {
+      documentId: documentId,
+      deletedBy: deletedBy,
+      reason: reason
+    });
+
+    return {
+      success: true,
+      message: 'Document deleted successfully'
+    };
+
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Sync document to Google Drive via GAS backend
+ * This is async and non-blocking
+ */
+async function syncToGoogleDrive(documentRecord, fileUrl) {
+  try {
+    const payload = {
+      action: 'saveDocumentToDrive',
+      document: {
+        documentId: documentRecord._id,
+        memberEmail: documentRecord.memberEmail,
+        caseId: documentRecord.caseId,
+        documentType: documentRecord.documentType,
+        fileName: documentRecord.fileName,
+        fileUrl: fileUrl,
+        uploadedAt: documentRecord.uploadedAt.toISOString(),
+        metadata: documentRecord.metadata
+      }
+    };
+
+    const response = await fetch(GAS_BACKEND_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      
+      // Update document record with Drive sync status
+      if (result.success) {
+        await wixData.update(COLLECTIONS.MEMBER_DOCUMENTS, {
+          _id: documentRecord._id,
+          driveSynced: true,
+          driveSyncedAt: new Date(),
+          driveFileId: result.fileId || null
+        });
+      }
+    }
+
+  } catch (error) {
+    console.error('Google Drive sync error:', error);
+    // Don't throw - this is a non-critical background operation
+  }
+}
+
+/**
+ * Log upload events for audit trail
+ */
+async function logUploadEvent(eventType, eventData) {
+  try {
+    await wixData.insert('DocumentUploadLog', {
+      eventType,
+      eventData,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    // Don't fail the main operation if logging fails
+    console.error('Failed to log upload event:', error);
+  }
+}
+
+/**
+ * Get upload statistics for a member
+ * 
+ * @param {string} memberEmail - Member email
+ * @returns {Promise<Object>} Upload statistics
+ */
+export async function getUploadStatistics(memberEmail) {
+  try {
+    const documents = await wixData.query(COLLECTIONS.MEMBER_DOCUMENTS)
+      .eq('memberEmail', memberEmail)
+      .find();
+
+    const stats = {
+      totalUploads: documents.items.length,
+      byType: {},
+      byStatus: {},
+      totalSize: 0
+    };
+
+    documents.items.forEach(doc => {
+      // Count by type
+      stats.byType[doc.documentType] = (stats.byType[doc.documentType] || 0) + 1;
+      
+      // Count by status
+      stats.byStatus[doc.status] = (stats.byStatus[doc.status] || 0) + 1;
+      
+      // Sum total size
+      stats.totalSize += doc.sizeInBytes || 0;
+    });
+
+    return {
+      success: true,
+      statistics: stats
+    };
+
+  } catch (error) {
+    console.error('Error getting upload statistics:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}

@@ -1,0 +1,408 @@
+/*********
+ .jsw file - Payment Processing
+ *********
+ 
+ Handles bail bond premium payments with:
+ - Secure payment creation in backend
+ - Integration with Wix Pay API
+ - Payment status tracking
+ - Case linkage and updates
+ - Payment authorization for indemnitors
+ - Comprehensive logging and audit trail
+ 
+ **********/
+
+import { Permissions, webMethod } from 'wix-web-module';
+import wixPay from 'wix-pay-backend';
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'backend/collectionIds';
+
+/**
+ * Create payment for bail bond premium (defendant)
+ * This function is called from the frontend payment page
+ * 
+ * @param {Object} paymentData - Payment information
+ * @param {string} paymentData.caseId - Case ID
+ * @param {string} paymentData.memberEmail - Defendant email
+ * @returns {Promise<Object>} Payment object with paymentId
+ */
+export const createBondPremiumPayment = webMethod(
+  Permissions.SiteMember,
+  async (paymentData) => {
+    try {
+      const { caseId, memberEmail } = paymentData;
+
+      // Validate inputs
+      if (!caseId || !memberEmail) {
+        throw new Error('Missing required payment data');
+      }
+
+      // Get case details from database
+      const caseRecord = await wixData.get(COLLECTIONS.CASES, caseId);
+
+      if (!caseRecord) {
+        throw new Error('Case not found');
+      }
+
+      // Verify member owns this case
+      if (caseRecord.defendantEmail !== memberEmail) {
+        throw new Error('Unauthorized: Case does not belong to this member');
+      }
+
+      // Check if payment already exists
+      if (caseRecord.paymentStatus === 'paid') {
+        throw new Error('Payment already completed for this case');
+      }
+
+      // Calculate payment amount (stored in case record)
+      const bondAmount = caseRecord.bondAmount || 0;
+      const premiumRate = caseRecord.premiumRate || 0.10; // Default 10%
+      const premiumAmount = bondAmount * premiumRate;
+      const processingFee = 2.50; // Fixed processing fee
+      const totalAmount = premiumAmount + processingFee;
+
+      // Create payment info object (MUST be created in backend for security)
+      const paymentInfo = {
+        items: [
+          {
+            name: `Bail Bond Premium - Case ${caseRecord.caseNumber || caseId}`,
+            price: premiumAmount,
+            quantity: 1,
+            description: `${premiumRate * 100}% premium on $${bondAmount} bond`
+          },
+          {
+            name: 'Processing Fee',
+            price: processingFee,
+            quantity: 1
+          }
+        ],
+        amount: totalAmount,
+        description: `Bail bond premium payment for ${caseRecord.defendantName || 'defendant'}`,
+        userInfo: {
+          email: memberEmail,
+          name: caseRecord.defendantName || ''
+        }
+      };
+
+      // Create payment using Wix Pay API
+      const payment = await wixPay.createPayment(paymentInfo);
+
+      // Log payment creation
+      await logPaymentEvent('payment_created', {
+        paymentId: payment.id,
+        caseId: caseId,
+        memberEmail: memberEmail,
+        amount: totalAmount,
+        status: 'pending'
+      });
+
+      // Update case with payment info
+      await wixData.update(COLLECTIONS.CASES, {
+        _id: caseId,
+        paymentId: payment.id,
+        paymentAmount: totalAmount,
+        paymentStatus: 'pending',
+        paymentCreatedAt: new Date()
+      });
+
+      return {
+        success: true,
+        payment: payment,
+        amount: totalAmount,
+        breakdown: {
+          premium: premiumAmount,
+          processingFee: processingFee,
+          total: totalAmount
+        }
+      };
+
+    } catch (error) {
+      console.error('Error creating bond premium payment:', error);
+      
+      await logPaymentEvent('payment_creation_error', {
+        caseId: paymentData.caseId,
+        memberEmail: paymentData.memberEmail,
+        error: error.message
+      });
+
+      throw new Error(`Payment creation failed: ${error.message}`);
+    }
+  }
+);
+
+/**
+ * Create payment authorization record (indemnitor)
+ * Indemnitors authorize payment responsibility without making immediate payment
+ * 
+ * @param {Object} authData - Authorization information
+ * @param {string} authData.caseId - Case ID
+ * @param {string} authData.indemnitorEmail - Indemnitor email
+ * @param {Object} authData.paymentMethod - Payment method details
+ * @returns {Promise<Object>} Authorization result
+ */
+export const createPaymentAuthorization = webMethod(
+  Permissions.SiteMember,
+  async (authData) => {
+    try {
+      const { caseId, indemnitorEmail, paymentMethod } = authData;
+
+      // Validate inputs
+      if (!caseId || !indemnitorEmail) {
+        throw new Error('Missing required authorization data');
+      }
+
+      // Get case details
+      const caseRecord = await wixData.get(COLLECTIONS.CASES, caseId);
+
+      if (!caseRecord) {
+        throw new Error('Case not found');
+      }
+
+      // Verify indemnitor is associated with this case
+      const isAuthorizedIndemnitor = caseRecord.indemnitorEmails?.includes(indemnitorEmail);
+      
+      if (!isAuthorizedIndemnitor) {
+        throw new Error('Unauthorized: Not an indemnitor for this case');
+      }
+
+      // Create authorization record
+      const authRecord = {
+        caseId: caseId,
+        indemnitorEmail: indemnitorEmail,
+        indemnitorName: paymentMethod.name || '',
+        authorizationType: 'payment-responsibility',
+        authorizedAmount: caseRecord.bondAmount || 0,
+        paymentMethodType: paymentMethod.type || 'unknown',
+        paymentMethodLast4: paymentMethod.last4 || '',
+        status: 'active',
+        authorizedAt: new Date(),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        metadata: {
+          ipAddress: paymentMethod.ipAddress || 'unknown',
+          userAgent: paymentMethod.userAgent || 'unknown',
+          gpsCoordinates: paymentMethod.gpsCoordinates || 'not-provided'
+        }
+      };
+
+      const savedAuth = await wixData.insert('PaymentAuthorizations', authRecord);
+
+      // Update case record
+      await wixData.update(COLLECTIONS.CASES, {
+        _id: caseId,
+        paymentAuthorizationId: savedAuth._id,
+        paymentAuthorizationStatus: 'authorized',
+        paymentAuthorizedAt: new Date()
+      });
+
+      await logPaymentEvent('payment_authorization_created', {
+        authorizationId: savedAuth._id,
+        caseId: caseId,
+        indemnitorEmail: indemnitorEmail,
+        amount: authRecord.authorizedAmount
+      });
+
+      return {
+        success: true,
+        authorizationId: savedAuth._id,
+        message: 'Payment authorization recorded successfully'
+      };
+
+    } catch (error) {
+      console.error('Error creating payment authorization:', error);
+      
+      await logPaymentEvent('payment_authorization_error', {
+        caseId: authData.caseId,
+        indemnitorEmail: authData.indemnitorEmail,
+        error: error.message
+      });
+
+      throw new Error(`Authorization failed: ${error.message}`);
+    }
+  }
+);
+
+/**
+ * Get payment status for a case
+ * 
+ * @param {string} caseId - Case ID
+ * @returns {Promise<Object>} Payment status
+ */
+export const getPaymentStatus = webMethod(
+  Permissions.SiteMember,
+  async (caseId) => {
+    try {
+      if (!caseId) {
+        throw new Error('Case ID required');
+      }
+
+      const caseRecord = await wixData.get(COLLECTIONS.CASES, caseId);
+
+      if (!caseRecord) {
+        throw new Error('Case not found');
+      }
+
+      return {
+        success: true,
+        paymentStatus: caseRecord.paymentStatus || 'not-started',
+        paymentAmount: caseRecord.paymentAmount || 0,
+        paymentId: caseRecord.paymentId || null,
+        paymentCreatedAt: caseRecord.paymentCreatedAt || null,
+        authorizationStatus: caseRecord.paymentAuthorizationStatus || 'not-authorized'
+      };
+
+    } catch (error) {
+      console.error('Error getting payment status:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+);
+
+/**
+ * Calculate payment amount for a case
+ * 
+ * @param {string} caseId - Case ID
+ * @returns {Promise<Object>} Payment calculation
+ */
+export const calculatePaymentAmount = webMethod(
+  Permissions.SiteMember,
+  async (caseId) => {
+    try {
+      if (!caseId) {
+        throw new Error('Case ID required');
+      }
+
+      const caseRecord = await wixData.get(COLLECTIONS.CASES, caseId);
+
+      if (!caseRecord) {
+        throw new Error('Case not found');
+      }
+
+      const bondAmount = caseRecord.bondAmount || 0;
+      const premiumRate = caseRecord.premiumRate || 0.10;
+      const premiumAmount = bondAmount * premiumRate;
+      const processingFee = 2.50;
+      const totalAmount = premiumAmount + processingFee;
+
+      return {
+        success: true,
+        bondAmount: bondAmount,
+        premiumRate: premiumRate,
+        premiumAmount: premiumAmount,
+        processingFee: processingFee,
+        totalAmount: totalAmount
+      };
+
+    } catch (error) {
+      console.error('Error calculating payment amount:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+);
+
+/**
+ * Get payment history for a member
+ * 
+ * @param {string} memberEmail - Member email
+ * @returns {Promise<Object>} Payment history
+ */
+export const getPaymentHistory = webMethod(
+  Permissions.SiteMember,
+  async (memberEmail) => {
+    try {
+      if (!memberEmail) {
+        throw new Error('Member email required');
+      }
+
+      // Get all cases for this member
+      const cases = await wixData.query(COLLECTIONS.CASES)
+        .eq('defendantEmail', memberEmail)
+        .descending('_createdDate')
+        .find();
+
+      // Filter cases with payments
+      const paymentsHistory = cases.items
+        .filter(c => c.paymentId)
+        .map(c => ({
+          caseId: c._id,
+          caseNumber: c.caseNumber,
+          paymentId: c.paymentId,
+          amount: c.paymentAmount,
+          status: c.paymentStatus,
+          createdAt: c.paymentCreatedAt,
+          bondAmount: c.bondAmount
+        }));
+
+      return {
+        success: true,
+        payments: paymentsHistory,
+        totalCount: paymentsHistory.length
+      };
+
+    } catch (error) {
+      console.error('Error getting payment history:', error);
+      return {
+        success: false,
+        payments: [],
+        error: error.message
+      };
+    }
+  }
+);
+
+/**
+ * Log payment events for audit trail
+ */
+async function logPaymentEvent(eventType, eventData) {
+  try {
+    await wixData.insert('PaymentEventLog', {
+      eventType,
+      eventData,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('Failed to log payment event:', error);
+  }
+}
+
+/**
+ * Handle payment status updates (called by Wix Pay webhook)
+ * This is triggered automatically when payment status changes
+ */
+export function wixPay_onPaymentUpdate(event) {
+  const paymentId = event.payment.id;
+  const newStatus = event.status;
+  const userInfo = event.userInfo;
+
+  // Update case record with new payment status
+  wixData.query(COLLECTIONS.CASES)
+    .eq('paymentId', paymentId)
+    .find()
+    .then(results => {
+      if (results.items.length > 0) {
+        const caseRecord = results.items[0];
+        
+        return wixData.update(COLLECTIONS.CASES, {
+          _id: caseRecord._id,
+          paymentStatus: newStatus.toLowerCase(),
+          paymentUpdatedAt: new Date()
+        });
+      }
+    })
+    .then(() => {
+      // Log the status update
+      return logPaymentEvent('payment_status_updated', {
+        paymentId: paymentId,
+        newStatus: newStatus,
+        userEmail: userInfo?.email
+      });
+    })
+    .catch(error => {
+      console.error('Error handling payment update:', error);
+    });
+}
