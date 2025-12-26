@@ -10,6 +10,7 @@
  */
 
 import wixData from 'wix-data';
+import { COLLECTIONS } from 'backend/collectionIds';
 import countyTemplate from 'backend/data/county-template.json';
 import countyBoundaries from 'backend/data/florida-county-boundaries.json';
 
@@ -57,7 +58,7 @@ export async function generateCountyPage(countySlug) {
  */
 async function getCountyFromDatabase(countySlug) {
   try {
-    const results = await wixData.query('Import1')
+    const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
       .eq('countySlug', countySlug)
       .find();
     
@@ -223,7 +224,7 @@ function generateSEOMetadata(countyData) {
  */
 export async function getAllCountiesByTier() {
   try {
-    const results = await wixData.query('Import1')
+    const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
       .ascending('countyName')
       .find();
     

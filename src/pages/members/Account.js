@@ -1,5 +1,6 @@
 // Account.js (Members Only)
 import wixData from 'wix-data';
+import { COLLECTIONS } from 'backend/collectionIds';
 import { currentMember } from 'wix-members';
 
 $w.onReady(async function () {
@@ -39,7 +40,7 @@ function setupDocumentUpload(memberId) {
                 const uploadedFile = await $w('#idUploadBtn').startUpload();
                 
                 // Save reference to database
-                await wixData.insert("Import3", {
+                await wixData.insert(COLLECTIONS.MEMBER_DOCUMENTS, {
                     memberId: memberId,
                     fileName: uploadedFile.originalFileName,
                     fileUrl: uploadedFile.url,
@@ -61,7 +62,7 @@ function setupDocumentUpload(memberId) {
 }
 
 async function refreshDocumentList(memberId) {
-    const results = await wixData.query("Import3")
+    const results = await wixData.query(COLLECTIONS.MEMBER_DOCUMENTS)
         .eq("memberId", memberId)
         .descending("uploadDate")
         .find();

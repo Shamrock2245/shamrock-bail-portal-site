@@ -2,7 +2,7 @@
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import { authentication, currentMember } from 'wix-members';
-import { initiateSignNowHandoff } from 'backend/signNowIntegration';
+import { initiateSignNowHandoff } from 'backend/signnow-integration';
 
 $w.onReady(async function () {
     // 1. Verify Login

@@ -1,3 +1,17 @@
+/**
+ * ⚠️ DEPRECATED - DO NOT USE
+ * 
+ * This file has been replaced by: src/backend/signnow-integration.jsw
+ * 
+ * Reason: Migrated to centralized GAS backend pattern for better
+ * workflow protection and maintainability. The new implementation
+ * uses Google Apps Script as a proxy to keep SignNow logic centralized
+ * and aligned with existing operational workflows.
+ * 
+ * Deprecated on: December 26, 2025
+ * Safe to delete after: January 26, 2026
+ */
+
 // signNowIntegration.jsw
 import { currentMember } from 'wix-members-backend';
 import wixSecretsBackend from 'wix-secrets-backend';

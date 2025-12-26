@@ -3,6 +3,7 @@
 // Handles ID and supporting document uploads, saves to Google Drive via GAS
 
 import wixData from 'wix-data';
+import { COLLECTIONS } from 'backend/collectionIds';
 import { getSecret } from 'wix-secrets-backend';
 import { fetch } from 'wix-fetch';
 import { mediaManager } from 'wix-media-backend';
@@ -66,7 +67,7 @@ export async function uploadIdDocument(uploadData) {
             })
         };
         
-        const insertResult = await wixData.insert('Import3', documentRecord);
+        const insertResult = await wixData.insert(COLLECTIONS.MEMBER_DOCUMENTS, documentRecord);
         
         // Sync to Google Drive via GAS webhook
         await syncToGoogleDrive(insertResult, uploadResult.fileUrl);
@@ -142,7 +143,7 @@ export async function uploadSupportingDocument(uploadData) {
             })
         };
         
-        const insertResult = await wixData.insert('Import3', documentRecord);
+        const insertResult = await wixData.insert(COLLECTIONS.MEMBER_DOCUMENTS, documentRecord);
         
         // Update the requirement status
         requirement.status = 'uploaded';
@@ -206,7 +207,7 @@ async function syncToGoogleDrive(documentRecord, fileUrl) {
             // Update document record with Drive sync status
             documentRecord.driveSynced = true;
             documentRecord.driveSyncedAt = new Date();
-            await wixData.update('Import3', documentRecord);
+            await wixData.update(COLLECTIONS.MEMBER_DOCUMENTS, documentRecord);
         }
         
     } catch (error) {
@@ -223,7 +224,7 @@ async function syncToGoogleDrive(documentRecord, fileUrl) {
  */
 export async function getMemberDocuments(memberEmail) {
     try {
-        const results = await wixData.query('Import3')
+        const results = await wixData.query(COLLECTIONS.MEMBER_DOCUMENTS)
             .eq('memberEmail', memberEmail)
             .descending('_createdDate')
             .find();
@@ -252,7 +253,7 @@ export async function getMemberDocuments(memberEmail) {
  */
 export async function verifyDocument(documentId, verified, notes) {
     try {
-        const document = await wixData.get('Import3', documentId);
+        const document = await wixData.get(COLLECTIONS.MEMBER_DOCUMENTS, documentId);
         
         if (!document) {
             return { success: false, message: 'Document not found' };
@@ -262,7 +263,7 @@ export async function verifyDocument(documentId, verified, notes) {
         document.verifiedAt = new Date();
         document.verificationNotes = notes || '';
         
-        await wixData.update('Import3', document);
+        await wixData.update(COLLECTIONS.MEMBER_DOCUMENTS, document);
         
         return {
             success: true,

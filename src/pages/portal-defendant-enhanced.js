@@ -31,8 +31,9 @@ import wixUsers from 'wix-users';
 import wixLocation from 'wix-location';
 import wixData from 'wix-data';
 import wixAnimations from 'wix-animations';
+import { COLLECTIONS } from 'backend/collectionIds';
 import { getUserRole, ROLES, getPersonId } from 'backend/portal-auth';
-import { initiateSignNowHandoff } from 'backend/signNowIntegration';
+import { initiateSignNowHandoff } from 'backend/signnow-integration';
 import { uploadDocument } from 'backend/documentUpload';
 
 let currentUser;
@@ -97,7 +98,7 @@ async function initDefendantPortal() {
 async function loadCaseInformation() {
     try {
         // Query the Cases collection to find active case for this defendant
-        const results = await wixData.query('Import2')
+        const results = await wixData.query(COLLECTIONS.CASES)
             .eq('defendantPersonId', currentPersonId)
             .eq('status', 'active')
             .descending('_createdDate')
@@ -147,7 +148,7 @@ async function loadUploadedDocuments() {
             return;
         }
         
-        const results = await wixData.query('Import3')
+        const results = await wixData.query(COLLECTIONS.MEMBER_DOCUMENTS)
             .eq('personId', currentPersonId)
             .descending('_createdDate')
             .find();
@@ -188,7 +189,7 @@ async function loadCheckInHistory() {
             return;
         }
         
-        const results = await wixData.query('Import4')
+        const results = await wixData.query(COLLECTIONS.CHECK_IN_RECORDS)
             .eq('personId', currentPersonId)
             .descending('checkInDate')
             .limit(10)
@@ -419,7 +420,7 @@ function wireCheckInButton() {
                 // For now, we'll just record the GPS location
                 
                 // Save check-in to database
-                await wixData.insert('Import4', {
+                await wixData.insert(COLLECTIONS.CHECK_IN_RECORDS, {
                     personId: currentPersonId,
                     caseId: currentCaseId,
                     checkInDate: new Date(),
@@ -470,7 +471,7 @@ function wireViewPaymentButton() {
  */
 async function logBailStartEvent() {
     try {
-        await wixData.insert('Import6', {
+        await wixData.insert(COLLECTIONS.BAIL_START_LOGS, {
             personId: currentPersonId,
             caseId: currentCaseId,
             timestamp: new Date(),
