@@ -10,7 +10,7 @@ $w.onReady(function () {
 
     // 2. Setup Spanish Speaking Phone Button
     // Using onClick for better usability than onDblClick
-    const spanishPhoneBtn = $w("#spanishSpeakingPhone");
+    const spanishPhoneBtn = $w("#callNowSpanishBtn");
     if (spanishPhoneBtn) {
         spanishPhoneBtn.onClick(() => {
             wixLocation.to("tel:12399550301");
