@@ -100,26 +100,34 @@ function populateCountyPage(data) {
 /**
  * Populate FAQ repeater with questions and answers
  */
+/**
+ * Populate FAQ repeater with questions and answers
+ */
 function populateFAQ(faqItems) {
     try {
-        if (!$w('#faqRepeater')) {
+        const repeater = $w('#faqRepeater');
+        if (!repeater) {
             console.warn('FAQ repeater not found');
             return;
         }
-        $w('#faqRepeater').data = faqItems;
-        $w('#faqRepeater').onItemReady(($item, itemData, index) => {
+        repeater.data = faqItems;
+        repeater.onItemReady(($item, itemData, index) => {
             $item('#faqQuestion').text = itemData.question;
             $item('#faqAnswer').text = itemData.answer;
             // Optional: Add expand/collapse functionality
-            $item('#faqAnswer').collapse();
-            $item('#faqQuestion').onClick(() => {
-                $item('#faqAnswer').expanded ? $item('#faqAnswer').collapse() : $item('#faqAnswer').expand();
-            });
+            // Check if collapse exists before calling
+            if (typeof $item('#faqAnswer').collapse === 'function') {
+                $item('#faqAnswer').collapse();
+                $item('#faqQuestion').onClick(() => {
+                    $item('#faqAnswer').collapsed ? $item('#faqAnswer').expand() : $item('#faqAnswer').collapse();
+                });
+            }
         });
     } catch (error) {
         console.warn('Error populating FAQ:', error);
     }
 }
+
 /**
  * Set SEO metadata for the page
  */
@@ -140,6 +148,7 @@ function setSEOMetadata(seo) {
         console.warn('Error setting SEO metadata:', error);
     }
 }
+
 /**
  * Wire up interactive elements (buttons, links)
  */
@@ -148,9 +157,10 @@ function wireInteractiveElements(data) {
     const phoneDisplay = data.contact.primary_phone_display;
     // Call button
     try {
-        if ($w('#countyCallButton')) {
-            $w('#countyCallButton').link = `tel:${phone}`;
-            $w('#countyCallButton').onClick(() => {
+        const callBtn = $w('#countyCallButton');
+        if (callBtn) {
+            callBtn.link = `tel:${phone}`;
+            callBtn.onClick(() => {
                 // Track call click
                 console.log('Call button clicked:', phone);
             });
@@ -160,8 +170,9 @@ function wireInteractiveElements(data) {
     }
     // Start Bail button
     try {
-        if ($w('#countyStartBailButton')) {
-            $w('#countyStartBailButton').onClick(() => {
+        const startBtn = $w('#countyStartBailButton');
+        if (startBtn) {
+            startBtn.onClick(() => {
                 wixLocation.to('/portal-landing');
             });
         }
@@ -170,21 +181,24 @@ function wireInteractiveElements(data) {
     }
     // Jail phone link
     try {
-        if ($w('#jailPhoneText')) {
-            $w('#jailPhoneText').link = `tel:${data.jail.booking_phone}`;
+        const jailPhone = $w('#jailPhoneText');
+        if (jailPhone) {
+            jailPhone.link = `tel:${data.jail.booking_phone}`;
         }
     } catch (error) {
         console.warn('Error wiring jail phone:', error);
     }
     // Clerk phone link
     try {
-        if ($w('#clerkPhoneText')) {
-            $w('#clerkPhoneText').link = `tel:${data.clerk.phone}`;
+        const clerkPhone = $w('#clerkPhoneText');
+        if (clerkPhone) {
+            clerkPhone.link = `tel:${data.clerk.phone}`;
         }
     } catch (error) {
         console.warn('Error wiring clerk phone:', error);
     }
 }
+
 /**
  * Animate page entrance for premium feel
  */
@@ -198,7 +212,15 @@ function animatePageEntrance() {
     elementsToAnimate.forEach((selector, index) => {
         try {
             const element = $w(selector);
-            if (element && typeof element.show === 'function') {
+            // Check if element exists before accessing properties or methods
+            if (element) {
+                // Check if it's a valid WiX element that can be animated (usually has 'id' property)
+                // and supports the show/hide methods implicitly handled by wixAnimations
+                // Note: wixAnimations handles elements, we just need to make sure selector matches something.
+
+                // However, the error might be from us trying to do something else.
+                // Let's just wrap animation creation in try-catch properly.
+
                 wixAnimations.timeline()
                     .add(element, { opacity: 0, y: 20, duration: 0 })
                     .add(element, {
@@ -211,7 +233,7 @@ function animatePageEntrance() {
                     .play();
             }
         } catch (error) {
-            // Silently skip if element doesn't exist
+            console.warn(`Error animating ${selector}:`, error);
         }
     });
 }
