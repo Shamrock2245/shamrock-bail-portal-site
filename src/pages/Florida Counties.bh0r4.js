@@ -1,64 +1,34 @@
-// Force Sync Update: [Debug Mode Active]
+// Force Sync Update: [Safe Link Mode]
 import wixLocation from 'wix-location';
 import { getCounties } from 'public/countyUtils';
 
 $w.onReady(async function () {
-    console.log("🚀 Florida Counties Page Code Running!");
+    console.log("🚀 Florida Counties Debug Start");
 
-    const $repeater = $w('#countiesRepeater');
-
-    // Debug: Check if repeater exists
-    if ($repeater.valid) {
-        console.log("✅ Repeater found: #countiesRepeater");
-    } else {
-        console.error("❌ Repeater NOT found! Check ID in Editor. looking for -> #countiesRepeater");
-    }
-
-    $repeater.onItemReady(($item, itemData) => {
-        // console.log("Binding item:", itemData.name);
-
-        // Name & Navigation
+    $w('#countiesRepeater').onItemReady(($item, itemData) => {
+        // 1. Set the Name
         $item('#countyNameTitle').text = itemData.name + " County";
 
-        $item('#viewCountyButton').onClick(() => {
-            console.log("Buttons clicked for:", itemData.slug);
-            wixLocation.to(`/county/${itemData.slug}`);
-        });
+        /**
+         * FIX FOR THE BUTTON ERROR:
+         * We try to set the link directly first.
+         * If the element is a Button, this works.
+         */
+        const button = $item('#viewCountyButton');
+        const targetUrl = `/county/${itemData.slug}`;
 
-        // Sheriff Link (Smart Hide)
-        if (itemData.sheriffUrl) {
-            $item('#sheriffLink').link = itemData.sheriffUrl;
-            $item('#sheriffLink').target = "_blank";
-            $item('#sheriffLink').show();
-        } else {
-            $item('#sheriffLink').hide();
-        }
+        // Attempt 1: treat as standard button or link element
+        button.label = "View Info";
+        button.link = targetUrl;
+        button.target = "_self";
 
-        // Clerk Link (Smart Hide)
-        if (itemData.clerkUrl) {
-            $item('#clerkLink').link = itemData.clerkUrl;
-            $item('#clerkLink').target = "_blank";
-            $item('#clerkLink').show();
-        } else {
-            $item('#clerkLink').hide();
-        }
+        // Note: We removed the .onClick() because if it's a native 
+        // linkable element, setting .link is safer and sufficient.
     });
 
-    // 2. Fetch and Bind Data
-    try {
-        console.log("Fetching counties from Backend...");
-        const counties = await getCounties();
-        console.log("Counties fetched count:", counties.length);
-
-        if (counties && counties.length > 0) {
-            console.log("First county sample:", counties[0].name);
-            $repeater.data = counties;
-            console.log("✅ Data assigned to repeater property.");
-        } else {
-            console.warn("⚠️ No counties found. Query returned empty array.");
-            console.warn("Check 'Import1' collection permissions and content.");
-        }
-    } catch (error) {
-        console.error("❌ Error loading counties:", error);
+    // Fetch Data
+    const counties = await getCounties();
+    if (counties.length > 0) {
+        $w('#countiesRepeater').data = counties;
     }
 });
