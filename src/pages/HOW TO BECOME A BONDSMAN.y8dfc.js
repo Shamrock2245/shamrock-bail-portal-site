@@ -1,67 +1,88 @@
-import { submitBailSchoolInterest } from 'backend/bailSchoolInterest';
+import { submitBailSchoolInterest } from 'backend/bailSchoolInterest.jsw';
 
-$w.onReady(() => {
-    const successText = $w('#bailSchoolSuccessText');
-    const errorText = $w('#bailSchoolErrorText');
-    const submitBtn = $w('#bailSchoolSubmitButton');
-    const emailInput = $w('#bailSchoolEmailInput');
+$w.onReady(function () {
+    // 1. Setup the Top Form
+    setupForm(
+        '#bailSchoolEmailInput',
+        '#bailSchoolSubmitButton',
+        '#bailSchoolSuccessMsg',
+        '#bailSchoolErrorText'
+    );
 
-    // Hide messages on load
-    if (successText) successText.hide();
-    if (errorText) errorText.hide();
-
-    submitBtn.onClick(async () => {
-        // Reset messages
-        if (successText) successText.hide();
-        if (errorText) errorText.hide();
-
-        const email = (emailInput.value || '').trim();
-
-        // Let Wix show built-in validation UI if possible
-        if (!email || !validateEmail(email)) {
-            emailInput.updateValidityIndication();
-            if (errorText) errorText.show();
-            return;
-        }
-
-        // Lock UI to prevent double-click spam
-        const originalLabel = submitBtn.label;
-        submitBtn.disable();
-        submitBtn.label = 'Submitting...';
-
-        try {
-            await submitBailSchoolInterest(email);
-
-            // Success UX
-            emailInput.value = '';
-            if (successText) successText.show();
-            submitBtn.label = 'You’re on the list ✅';
-
-            // Feedback colors
-            submitBtn.style.backgroundColor = '#4CAF50';
-            submitBtn.style.color = '#FFFFFF';
-
-            // Re-enable button after a moment
-            setTimeout(() => {
-                submitBtn.enable();
-                submitBtn.label = originalLabel;
-                submitBtn.style.backgroundColor = '';
-                submitBtn.style.color = '';
-            }, 5000);
-
-        } catch (err) {
-            console.error('Bail school signup failed:', err);
-            if (errorText) errorText.show();
-            submitBtn.enable();
-            submitBtn.label = 'Try again';
-        }
-    });
+    // 2. Setup the Bottom Form
+    setupForm(
+        '#bailSchoolEmailInputBottom',
+        '#bailSchoolSubmitButtonBottom',
+        '#bailSchoolSuccessMsgBottom',
+        '#bailSchoolErrorTextBottom'
+    );
 });
 
 /**
- * Basic email regex validation
+ * Reusable function to wire up any bail interest form with separate success/error messages
+ * @param {string} inputId - ID of the email input
+ * @param {string} buttonId - ID of the submit button
+ * @param {string} successId - ID of the success message text (hidden by default)
+ * @param {string} errorId - ID of the error message text (hidden by default)
  */
-function validateEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
+function setupForm(inputId, buttonId, successId, errorId) {
+    const $input = $w(inputId);
+    const $btn = $w(buttonId);
+    const $success = $w(successId);
+    const $error = $w(errorId);
+
+    // Check if critical elements exist
+    if (!$input.valid || !$btn.valid) {
+        // console.warn(`Form elements missing: ${inputId} or ${buttonId}`);
+        return;
+    }
+
+    $btn.onClick(async () => {
+        const email = $input.value;
+
+        // Reset messages
+        if ($success.valid) $success.hide();
+        if ($error.valid) $error.hide();
+
+        // 1. Basic Client-Side Validation
+        if (!email || !email.includes('@')) {
+            if ($error.valid) {
+                $error.text = "Please enter a valid email address.";
+                $error.show();
+            }
+            return;
+        }
+
+        // 2. UI Loading State
+        $btn.disable();
+        const originalLabel = $btn.label;
+        $btn.label = "Submitting...";
+
+        try {
+            // 3. Backend Call
+            await submitBailSchoolInterest(email);
+
+            // 4. Success State
+            $btn.label = "Success!";
+            if ($success.valid) {
+                $success.text = "Thanks! We'll keep you updated.";
+                $success.show();
+            }
+            // Optional: Clear input
+            $input.value = "";
+
+        } catch (error) {
+            console.error("Bail School Submission Error:", error);
+
+            // 5. Error State
+            $btn.label = "Try Again";
+            $btn.enable(); // Re-enable so they can retry
+
+            if ($error.valid) {
+                // Show a friendly message to the user
+                $error.text = "Something went wrong. Please try again.";
+                $error.show();
+            }
+        }
+    });
 }
