@@ -29,92 +29,74 @@
  * - #errorContainer - Error message container
  * - #loadingSpinner - Loading indicator
  */
-
 import { generateCountyPage } from 'backend/county-generator';
 import wixLocation from 'wix-location';
 import wixSeoFrontend from 'wix-seo-frontend';
 import wixAnimations from 'wix-animations';
-
 $w.onReady(async function () {
     // Show loading state
     showLoading();
-    
     try {
-        // Get the county slug from the URL path
+        // Get the county slug from the URL path (usually the last segment)
         const path = wixLocation.path;
-        const countySlug = path.length > 0 ? path[0] : null;
-        
+        console.log('Current path segments:', path);
+        const countySlug = path.length > 0 ? path[path.length - 1] : null;
+        console.log('Extracted county slug:', countySlug);
         if (!countySlug) {
             showError('Invalid county URL. Please select a county from our directory.');
             return;
         }
-        
         // Fetch county data from backend
         const result = await generateCountyPage(countySlug);
-        
         if (!result.success) {
             showError(`Unable to load information for this county. Please call us at (239) 332-2245 for assistance.`);
             console.error('County page generation failed:', result.error);
             return;
         }
-        
         const countyData = result.data;
-        
         // Populate the page with county data
         populateCountyPage(countyData);
-        
         // Set SEO metadata
         setSEOMetadata(countyData.seo);
-        
         // Wire up interactive elements
         wireInteractiveElements(countyData);
-        
         // Hide loading, show content with animation
         hideLoading();
         animatePageEntrance();
-        
     } catch (error) {
         console.error('Error loading county page:', error);
         showError('An unexpected error occurred. Please call us at (239) 332-2245 for assistance.');
     }
 });
-
 /**
  * Populate all page elements with county data
  */
 function populateCountyPage(data) {
     const content = data.content;
-    
     // Hero Section
     safeSetText('#countyHeroTitle', content.hero_headline);
     safeSetText('#countyHeroSubtitle', content.hero_subheadline);
     safeSetText('#countyCallButton', content.hero_cta_primary);
     safeSetText('#countyStartBailButton', content.hero_cta_secondary);
-    
     // About Section
     safeSetText('#aboutCountyText', content.about_county);
     safeSetText('#whyChooseUsText', content.why_choose_us);
     safeSetText('#howItWorksText', content.how_it_works);
     safeSetText('#serviceAreasText', content.service_areas);
-    
     // Jail Information
     safeSetText('#jailNameText', data.jail.name);
     safeSetText('#jailPhoneText', data.jail.booking_phone);
     safeSetLink('#jailBookingLink', data.jail.booking_url, 'Search Jail Roster');
-    
     // Clerk of Court Information
     safeSetText('#clerkNameText', data.clerk.name);
     safeSetText('#clerkPhoneText', data.clerk.phone);
     safeSetLink('#clerkWebsiteLink', data.clerk.website, 'Visit Clerk Website');
-    
     // Sheriff's Office Information
     safeSetText('#sheriffNameText', data.sheriff.name);
     safeSetLink('#sheriffWebsiteLink', data.sheriff.website, 'Visit Sheriff Website');
-    
     // FAQ Section
     populateFAQ(content.faq);
 }
-
 /**
  * Populate FAQ repeater with questions and answers
  */
@@ -124,13 +106,10 @@ function populateFAQ(faqItems) {
             console.warn('FAQ repeater not found');
             return;
         }
-        
         $w('#faqRepeater').data = faqItems;
-        
         $w('#faqRepeater').onItemReady(($item, itemData, index) => {
             $item('#faqQuestion').text = itemData.question;
             $item('#faqAnswer').text = itemData.answer;
-            
             // Optional: Add expand/collapse functionality
             $item('#faqAnswer').collapse();
             $item('#faqQuestion').onClick(() => {
@@ -141,7 +120,6 @@ function populateFAQ(faqItems) {
         console.warn('Error populating FAQ:', error);
     }
 }
-
 /**
  * Set SEO metadata for the page
  */
@@ -150,7 +128,6 @@ function setSEOMetadata(seo) {
         wixSeoFrontend.setTitle(seo.meta_title);
         wixSeoFrontend.setDescription(seo.meta_description);
         wixSeoFrontend.setKeywords(seo.keywords);
-        
         // Set structured data for local business
         wixSeoFrontend.setStructuredData([{
             "@context": "https://schema.org",
@@ -163,14 +140,12 @@ function setSEOMetadata(seo) {
         console.warn('Error setting SEO metadata:', error);
     }
 }
-
 /**
  * Wire up interactive elements (buttons, links)
  */
 function wireInteractiveElements(data) {
     const phone = data.contact.primary_phone;
     const phoneDisplay = data.contact.primary_phone_display;
-    
     // Call button
     try {
         if ($w('#countyCallButton')) {
@@ -183,7 +158,6 @@ function wireInteractiveElements(data) {
     } catch (error) {
         console.warn('Error wiring call button:', error);
     }
-    
     // Start Bail button
     try {
         if ($w('#countyStartBailButton')) {
@@ -194,7 +168,6 @@ function wireInteractiveElements(data) {
     } catch (error) {
         console.warn('Error wiring start bail button:', error);
     }
-    
     // Jail phone link
     try {
         if ($w('#jailPhoneText')) {
@@ -203,7 +176,6 @@ function wireInteractiveElements(data) {
     } catch (error) {
         console.warn('Error wiring jail phone:', error);
     }
-    
     // Clerk phone link
     try {
         if ($w('#clerkPhoneText')) {
@@ -213,7 +185,6 @@ function wireInteractiveElements(data) {
         console.warn('Error wiring clerk phone:', error);
     }
 }
-
 /**
  * Animate page entrance for premium feel
  */
@@ -224,7 +195,6 @@ function animatePageEntrance() {
         '#countyCallButton',
         '#countyStartBailButton'
     ];
-    
     elementsToAnimate.forEach((selector, index) => {
         try {
             const element = $w(selector);
@@ -245,7 +215,6 @@ function animatePageEntrance() {
         }
     });
 }
-
 /**
  * Show loading state
  */
@@ -261,7 +230,6 @@ function showLoading() {
         console.warn('Error showing loading state:', error);
     }
 }
-
 /**
  * Hide loading state
  */
@@ -274,13 +242,11 @@ function hideLoading() {
         console.warn('Error hiding loading state:', error);
     }
 }
-
 /**
  * Show error message
  */
 function showError(message) {
     hideLoading();
-    
     try {
         if ($w('#errorContainer')) {
             $w('#errorContainer').show();
@@ -292,7 +258,6 @@ function showError(message) {
         console.error('Error showing error message:', error);
     }
 }
-
 /**
  * Safely set text on an element (defensive programming)
  */
@@ -306,7 +271,6 @@ function safeSetText(selector, text) {
         console.warn(`Element ${selector} not found or error setting text:`, error);
     }
 }
-
 /**
  * Safely set link on an element
  */
