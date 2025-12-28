@@ -33,7 +33,61 @@ import { generateCountyPage } from 'backend/county-generator';
 import wixLocation from 'wix-location';
 import wixSeoFrontend from 'wix-seo-frontend';
 import wixAnimations from 'wix-animations';
+/**
+ * Check for required elements and log missing ones to help user
+ */
+function checkRequiredElements() {
+    const requiredElements = [
+        // Hero
+        { id: '#countyHeroTitle', type: 'Text' },
+        { id: '#countyHeroSubtitle', type: 'Text' },
+        { id: '#countyCallButton', type: 'Button' },
+        { id: '#countyStartBailButton', type: 'Button' },
+
+        // About & Content
+        { id: '#aboutCountyText', type: 'Text' },
+        { id: '#whyChooseUsText', type: 'Text' },
+        { id: '#howItWorksText', type: 'Text' },
+        { id: '#serviceAreasText', type: 'Text' },
+
+        // Jail
+        { id: '#jailNameText', type: 'Text' },
+        { id: '#jailPhoneText', type: 'Text' },
+        { id: '#jailBookingLink', type: 'Button/Text' },
+
+        // Clerk
+        { id: '#clerkNameText', type: 'Text' },
+        { id: '#clerkPhoneText', type: 'Text' },
+        { id: '#clerkWebsiteLink', type: 'Button/Text' },
+
+        // Sheriff
+        { id: '#sheriffNameText', type: 'Text' },
+        { id: '#sheriffWebsiteLink', type: 'Button/Text' },
+
+        // System
+        { id: '#faqRepeater', type: 'Repeater' },
+        { id: '#errorContainer', type: 'Box/Container' },
+        { id: '#loadingSpinner', type: 'Image/Box' }
+    ];
+
+    const missing = requiredElements.filter(el => !$w(el.id).valid);
+
+    if (missing.length > 0) {
+        console.group('⚠️ Missing UI Elements detected');
+        console.warn(`Found ${missing.length} missing elements. Please add them to the Wix Editor:`);
+        missing.forEach(el => {
+            console.warn(`- ${el.id} (${el.type})`);
+        });
+        console.groupEnd();
+    } else {
+        console.info('✅ All required UI elements found.');
+    }
+}
+
 $w.onReady(async function () {
+    // 1. Check for UI completeness first
+    checkRequiredElements();
+
     // Show loading state
     showLoading();
     try {
@@ -106,7 +160,7 @@ function populateCountyPage(data) {
 function populateFAQ(faqItems) {
     try {
         const repeater = $w('#faqRepeater');
-        if (!repeater) {
+        if (!repeater.valid) {
             console.warn('FAQ repeater not found');
             return;
         }
@@ -117,10 +171,7 @@ function populateFAQ(faqItems) {
             // Optional: Add expand/collapse functionality
             // Check if collapse exists before calling
             if (typeof $item('#faqAnswer').collapse === 'function') {
-                $item('#faqAnswer').collapse();
-                $item('#faqQuestion').onClick(() => {
-                    $item('#faqAnswer').collapsed ? $item('#faqAnswer').expand() : $item('#faqAnswer').collapse();
-                });
+                $item('#faqAnswer').collapsed ? $item('#faqAnswer').expand() : $item('#faqAnswer').collapse();
             }
         });
     } catch (error) {
@@ -158,7 +209,7 @@ function wireInteractiveElements(data) {
     // Call button
     try {
         const callBtn = $w('#countyCallButton');
-        if (callBtn) {
+        if (callBtn.valid) {
             callBtn.link = `tel:${phone}`;
             callBtn.onClick(() => {
                 // Track call click
@@ -171,7 +222,7 @@ function wireInteractiveElements(data) {
     // Start Bail button
     try {
         const startBtn = $w('#countyStartBailButton');
-        if (startBtn) {
+        if (startBtn.valid) {
             startBtn.onClick(() => {
                 wixLocation.to('/portal-landing');
             });
@@ -182,7 +233,7 @@ function wireInteractiveElements(data) {
     // Jail phone link
     try {
         const jailPhone = $w('#jailPhoneText');
-        if (jailPhone) {
+        if (jailPhone.valid) {
             jailPhone.link = `tel:${data.jail.booking_phone}`;
         }
     } catch (error) {
@@ -191,7 +242,7 @@ function wireInteractiveElements(data) {
     // Clerk phone link
     try {
         const clerkPhone = $w('#clerkPhoneText');
-        if (clerkPhone) {
+        if (clerkPhone.valid) {
             clerkPhone.link = `tel:${data.clerk.phone}`;
         }
     } catch (error) {
@@ -213,7 +264,7 @@ function animatePageEntrance() {
         try {
             const element = $w(selector);
             // Check if element exists before accessing properties or methods
-            if (element) {
+            if (element.valid) {
                 // Check if it's a valid WiX element that can be animated (usually has 'id' property)
                 // and supports the show/hide methods implicitly handled by wixAnimations
                 // Note: wixAnimations handles elements, we just need to make sure selector matches something.
@@ -242,10 +293,10 @@ function animatePageEntrance() {
  */
 function showLoading() {
     try {
-        if ($w('#loadingSpinner')) {
+        if ($w('#loadingSpinner').valid) {
             $w('#loadingSpinner').show();
         }
-        if ($w('#errorContainer')) {
+        if ($w('#errorContainer').valid) {
             $w('#errorContainer').hide();
         }
     } catch (error) {
@@ -257,7 +308,7 @@ function showLoading() {
  */
 function hideLoading() {
     try {
-        if ($w('#loadingSpinner')) {
+        if ($w('#loadingSpinner').valid) {
             $w('#loadingSpinner').hide();
         }
     } catch (error) {
@@ -270,10 +321,10 @@ function hideLoading() {
 function showError(message) {
     hideLoading();
     try {
-        if ($w('#errorContainer')) {
+        if ($w('#errorContainer').valid) {
             $w('#errorContainer').show();
         }
-        if ($w('#errorMessage')) {
+        if ($w('#errorMessage').valid) {
             $w('#errorMessage').text = message;
         }
     } catch (error) {
@@ -286,7 +337,7 @@ function showError(message) {
 function safeSetText(selector, text) {
     try {
         const element = $w(selector);
-        if (element && text) {
+        if (element.valid && text) {
             element.text = text;
         }
     } catch (error) {
@@ -299,7 +350,7 @@ function safeSetText(selector, text) {
 function safeSetLink(selector, url, text) {
     try {
         const element = $w(selector);
-        if (element && url) {
+        if (element.valid && url) {
             element.link = url;
             if (text) {
                 element.text = text;
