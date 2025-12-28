@@ -1,57 +1,29 @@
 import wixWindow from 'wix-window';
+import wixLocation from 'wix-location';
+import { getCounties } from 'public/countyUtils';
+
 // Velo API Reference: https://www.wix.com/velo/reference/api-overview/introduction
 
-import { processBookingSheet } from 'public/bookingSheetHandler.js';
-import { makeSignNowRequest } from 'backend/signnow-integration.jsw';
-import { saveUserLocation } from 'backend/location';
-import wixLocation from 'wix-location'; // Assuming wix-location is a valid import for navigation
+$w.onReady(function () {
+    // 1. Initialize County Dropdown
+    initCountyDropdown();
 
-// Initialize County Dropdown
-initCountyDropdown();
-
-// Event handler for double-clicking the Spanish speaking phone element
-$w("#spanishSpeakingPhone").onDblClick(() => {
-    const phoneNumber = "tel:+12393322245";
-    wixLocation.to(phoneNumber);
-});
-
-// Geolocation logic to save user location
-if (wixWindow.formFactor === "Mobile" || wixWindow.formFactor === "Tablet" || wixWindow.formFactor === "Desktop") {
-    // Note: navigator.geolocation is not available in Velo. We must use wix-window-frontend or a custom element.
-    // However, the existing code uses navigator.geolocation which implies this might be running in a context where it's allowed (e.g. custom element)
-    // OR it's incorrect Velo code. Velo uses wix-window.getCurrentGeolocation()
-    // We will leave existing geolocation logic for now but might need to refactor later.
-}
-
-// Bail Calculator HTML component interaction logic
-const bailCalculatorComponent = $w("#bailCalculator");
-
-function sendDataToHtmlComponent(data) {
-    if (bailCalculatorComponent) {
-        bailCalculatorComponent.postMessage(data);
+    // 2. Setup Spanish Speaking Phone Button
+    // Using onClick for better usability than onDblClick
+    const spanishPhoneBtn = $w("#spanishSpeakingPhone");
+    if (spanishPhoneBtn) {
+        spanishPhoneBtn.onClick(() => {
+            wixLocation.to("tel:12399550301");
+        });
+        // Also keep double click if users are used to it, or just for safety
+        spanishPhoneBtn.onDblClick(() => {
+            wixLocation.to("tel:12399550301");
+        });
     }
-}
 
-if ($w("#submitButton")) {
-    $w("#submitButton").onClick(() => {
-        const url = $w("#bookingSheetURLInput").value;
-        sendDataToHtmlComponent({ url: url });
-        processBookingSheet(url);
-    });
-}
-
-if (bailCalculatorComponent) {
-    bailCalculatorComponent.onMessage((event) => {
-        const data = event.data;
-        console.log("Data received from HTML component:", data);
-        if ($w("#bookingDataDisplay")) {
-            $w("#bookingDataDisplay").text = data;
-        }
-    });
-}
+    // 3. Geolocation (Placeholder for future implementation)
+    // Note: Navigator API is not available in Velo. Use wix-window.getCurrentGeolocation() in the future.
 });
-
-import { getCounties } from 'public/countyUtils';
 
 /**
  * Initialize the county selector dropdown
@@ -61,7 +33,7 @@ async function initCountyDropdown() {
         const dropdown = $w('#countySelector');
 
         // 1. Check if dropdown exists
-        if (!dropdown) {
+        if (!dropdown.valid) {
             console.warn('County selector dropdown (#countySelector) not found on page.');
             return;
         }
@@ -94,33 +66,17 @@ async function initCountyDropdown() {
     }
 }
 
+// Export functions for Wix Editor wiring (optional, but good to keep if linked in UI)
 
-/**
-*\tAdds an event handler that runs when the element is clicked.
-*\t[Read more](https://www.wix.com/corvid/reference/$w.ClickableMixin.html#onClick )
-*\t @param {$w.MouseEvent} event
-*/
 export function beginProcessButton_click(event) {
-    // This function was added from the Properties & Events panel. To learn more, visit http://wix.to/UcBnC-4
-    // Add your code for this event here: 
+    // Deprecated functionality
 }
 
-/**
-*\tAdds an event handler that runs when the element is clicked.
-*\t[Read more](https://www.wix.com/corvid/reference/$w.ClickableMixin.html#onClick )
-*\t @param {$w.MouseEvent} event
-*/
 export function spanishSpeakingPhone_click(event) {
-    // This function was added from the Properties & Events panel. To learn more, visit http://wix.to/UcBnC-4
-    // Add your code for this event here: 
+    wixLocation.to("tel:12399550301");
 }
 
-/**
-*\tAdds an event handler that runs when the element is double-clicked.
-*\t[Read more](https://www.wix.com/corvid/reference/$w.ClickableMixin.html#onDblClick )
-*\t @param {$w.MouseEvent} event
-*/
 export function spanishSpeakingPhone_dblClick(event) {
-    // This function was added from the Properties & Events panel. To learn more, visit http://wix.to/UcBnC-4
-    // Add your code for this event here: 
+    wixLocation.to("tel:12399550301");
 }
+
