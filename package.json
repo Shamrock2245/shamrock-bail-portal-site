@@ -12,7 +12,10 @@
     "twilio": "5.2.2",
     "axios": "1.7.3",
     "nodemailer": "6.9.14",
-    "lodash": "4.17.21"
+    "nodemailer": "6.9.14",
+    "lodash": "4.17.21",
+    "react": "16.14.0",
+    "react-dom": "16.14.0"
   },
   "scripts": {
     "postinstall": "wix sync-types",
