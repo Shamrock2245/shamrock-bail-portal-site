@@ -5,7 +5,11 @@ import { getCounties } from 'public/countyUtils';
 $w.onReady(async function () {
     console.log("🚀 Florida Counties Debug Start");
 
-    $w('#countiesRepeater').onItemReady(($item, itemData) => {
+    // Use standard selector string
+    const repeaterId = '#countiesRepeater';
+    const repeater = $w(repeaterId);
+
+    repeater.onItemReady(($item, itemData) => {
         // 1. Set the Name
         $item('#countyNameTitle').text = itemData.name + " County";
 
@@ -29,6 +33,6 @@ $w.onReady(async function () {
     // Fetch Data
     const counties = await getCounties();
     if (counties.length > 0) {
-        $w('#countiesRepeater').data = counties;
+        $w(repeaterId).data = counties;
     }
 });
