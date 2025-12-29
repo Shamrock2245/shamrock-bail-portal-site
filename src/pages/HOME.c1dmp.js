@@ -1,68 +1,89 @@
-// HOME.c1dmp.js - DEBUG MODE
+// HOME.c1dmp.js
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-// import { getCounties } from 'public/countyUtils'; // COMMENTED OUT TO ISOLATE CRASH
+import { getCounties } from 'public/countyUtils';
 
 $w.onReady(function () {
-    console.log("🚀 HOME PAGE ALIVE - DEBUG MODE: " + new Date().toISOString());
+    console.log("🚀 HOME PAGE LOADED - PRODUCTION MODE");
 
-    // HARDCODED DIRECT TEST
-    initDropdownSimple();
+    // 1. Initialize County Dropdown
+    initCountyDropdown();
 
-    // Setup Spanish Speaking Phone Button (Defensive)
+    // 2. Setup Spanish Speaking Phone Button (Defensive)
     const spanishBtn = $w("#callNowSpanishBtn");
-    if (spanishBtn.valid) { // Check .valid property!
+    if (spanishBtn) {
         spanishBtn.onClick(() => wixLocation.to("tel:12399550301"));
         spanishBtn.onDblClick(() => wixLocation.to("tel:12399550301"));
     }
 });
 
-function initDropdownSimple() {
+/**
+ * Initialize the county selector dropdown
+ * FETCHES from Database with Fallback
+ */
+async function initCountyDropdown() {
     try {
-        console.log("DEBUG: Selecting Dropdown...");
+        console.log("DEBUG: Attempting to select dropdown...");
+
+        // DIRECT SELECTOR
         let dropdown = $w('#countySelector');
+
+        // Fallback attempts
         if (!dropdown) dropdown = $w('#dropdown1');
 
         if (!dropdown) {
-            console.error("CRITICAL: Dropdown element missing even in Debug Mode.");
+            console.error('CRITICAL: Dropdown not found. Checked: #countySelector, #dropdown1');
             return;
         }
 
-        const options = [
-            { label: "✅ SYSTEM WORKING", value: "/portal" },
-            { label: "Lee County", value: "/county/lee" },
-            { label: "Collier County", value: "/county/collier" },
-            { label: "Charlotte County", value: "/county/charlotte" },
-            { label: "Sarasota County", value: "/county/sarasota" }
-        ];
+        // 2. Fetch counties
+        let counties = await getCounties();
 
-        console.log("DEBUG: Setting " + options.length + " options directly.");
-        dropdown.options = options;
-        dropdown.placeholder = "Select Your County";
-
-        dropdown.onChange((event) => {
-            wixLocation.to('/portal');
+        // 2a. HARDCODED FALLBACK (If DB fails/empty)
+        if (!counties || counties.length === 0) {
+            console.warn("DEBUG: Fetch failed. Using Hardcoded Fallback.");
+            counties = [
+                { name: "Alachua", slug: "alachua" },
+                { name: "Charlotte", slug: "charlotte" },
+                { name: "Collier", slug: "collier" },
+                { name: "Hendry", slug: "hendry" },
+                { name: "Lee", slug: "lee" },
+                { name: "Sarasota", slug: "sarasota" }
+            ];
         }
-    });
 
-    console.log('County dropdown initialized with ' + options.length + ' counties.');
+        // 3. Map to dropdown options format { label, value }
+        const options = counties.map(county => ({
+            label: county.name + ' County',
+            value: `/county/${county.slug}`
+        }));
 
-} catch (error) {
-    console.error('Error initializing county dropdown:', error);
+        // 4. Set options
+        console.log("Loading Dropdown with " + options.length + " counties.");
+        dropdown.options = options;
+        dropdown.placeholder = "Select a County";
+
+        // 5. Setup Change Handler
+        dropdown.onChange((event) => {
+            const dest = event.target.value;
+            if (dest) wixLocation.to(dest);
+        });
+
+    } catch (err) {
+        console.error("CRITICAL ERROR in initCountyDropdown:", err);
+    }
 }
-}
 
-// Export functions for Wix Editor wiring (optional, but good to keep if linked in UI)
-
+// Export functions for Wix Editor wiring
 export function beginProcessButton_click(event) {
     const dropdown = $w('#countySelector');
-    if (dropdown.valid && dropdown.value) {
+    // Simple existence check
+    if (dropdown && dropdown.value) {
         console.log("Button Clicked - Navigating to:", dropdown.value);
         wixLocation.to(dropdown.value);
     } else {
         console.warn("Button Clicked - No county selected");
-        // Optional: Show error highlighting
-        if (dropdown.valid) dropdown.style.borderColor = "red";
+        wixLocation.to('/portal');
     }
 }
 
@@ -73,4 +94,3 @@ export function spanishSpeakingPhone_click(event) {
 export function spanishSpeakingPhone_dblClick(event) {
     wixLocation.to("tel:12399550301");
 }
-
