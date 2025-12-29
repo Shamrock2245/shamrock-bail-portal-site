@@ -189,9 +189,15 @@ function openMobileMenu() {
  */
 function closeMobileMenu() {
     isMobileMenuOpen = false;
-    $w('#mobileMenu').hide('slide', { duration: 300, direction: 'right' });
-    $w('#mobileMenuOverlay').hide('fade', { duration: 200 });
-    $w('#mobileMenuBtn').label = '☰';
+
+    // Check elements before hiding
+    const mobMenu = $w('#mobileMenu');
+    const mobOverlay = $w('#mobileMenuOverlay');
+    const mobMenuBtn = $w('#mobileMenuBtn');
+
+    if (mobMenu.valid) mobMenu.hide('slide', { duration: 300, direction: 'right' });
+    if (mobOverlay.valid) mobOverlay.hide('fade', { duration: 200 });
+    if (mobMenuBtn.valid) mobMenuBtn.label = '☰';
 
     trackEvent('Mobile_Menu_Close');
 }

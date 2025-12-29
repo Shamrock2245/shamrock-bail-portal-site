@@ -134,7 +134,7 @@ export async function sendAdminNotification(type, data) {
  */
 async function sendSlackNotification(type, data) {
     try {
-        const gasUrl = await getSecret('GAS_WEBHOOK_URL');
+        const gasUrl = await getSecret('GAS_WEB_APP_URL');
 
         if (!gasUrl) {
             console.log('GAS URL not configured, skipping Slack notification');
@@ -209,7 +209,7 @@ function getSlackChannel(type) {
  */
 async function sendAdminEmail(type, data) {
     try {
-        const gasUrl = await getSecret('GAS_WEBHOOK_URL');
+        const gasUrl = await getSecret('GAS_WEB_APP_URL');
 
         if (!gasUrl) return;
 

@@ -34,38 +34,38 @@ const SIGNNOW_EVENTS = {
 export async function processSignNowWebhook(webhookData) {
     try {
         const { event, data, timestamp } = webhookData;
-        
+
         console.log(`Processing SignNow webhook: ${event}`, { documentId: data?.document_id });
-        
+
         // Log webhook for debugging
         await logWebhook(event, webhookData);
-        
+
         // Route to appropriate handler
         switch (event) {
             case SIGNNOW_EVENTS.DOCUMENT_COMPLETE:
                 return await handleDocumentComplete(data);
-            
+
             case SIGNNOW_EVENTS.DOCUMENT_SIGNED:
                 return await handleDocumentSigned(data);
-            
+
             case SIGNNOW_EVENTS.DOCUMENT_DECLINED:
                 return await handleDocumentDeclined(data);
-            
+
             case SIGNNOW_EVENTS.DOCUMENT_EXPIRED:
                 return await handleDocumentExpired(data);
-            
+
             case SIGNNOW_EVENTS.DOCUMENT_VIEWED:
                 return await handleDocumentViewed(data);
-            
+
             case SIGNNOW_EVENTS.INVITE_SENT:
             case SIGNNOW_EVENTS.INVITE_VIEWED:
                 return await handleInviteEvent(event, data);
-            
+
             default:
                 console.log(`Unhandled SignNow event: ${event}`);
                 return { success: true, message: 'Event acknowledged but not processed' };
         }
-        
+
     } catch (error) {
         console.error('Error processing SignNow webhook:', error);
         return { success: false, message: error.message };
@@ -78,31 +78,31 @@ export async function processSignNowWebhook(webhookData) {
 async function handleDocumentComplete(data) {
     try {
         const { document_id, document_name } = data;
-        
+
         // Find the signing session in our database
         const session = await findSigningSession(document_id);
-        
+
         if (!session) {
             console.log(`No session found for document: ${document_id}`);
             return { success: true, message: 'Document not tracked in system' };
         }
-        
+
         // Update session status
         session.status = 'completed';
         session.completedAt = new Date();
         await wixData.update('SigningSessions', session);
-        
+
         // Download the signed document
         const signedDocument = await downloadSignedDocument(document_id);
-        
+
         // Save to Google Drive
         if (signedDocument) {
             await saveToGoogleDrive(session, signedDocument);
         }
-        
+
         // Send completion notification
         await sendCompletionNotification(session);
-        
+
         // Notify GAS backend for any additional processing
         await notifyGasBackend('documentComplete', {
             documentId: document_id,
@@ -110,9 +110,9 @@ async function handleDocumentComplete(data) {
             memberEmail: session.memberEmail,
             completedAt: session.completedAt
         });
-        
+
         return { success: true, message: 'Document completion processed' };
-        
+
     } catch (error) {
         console.error('Error handling document complete:', error);
         return { success: false, message: error.message };
@@ -125,24 +125,24 @@ async function handleDocumentComplete(data) {
 async function handleDocumentSigned(data) {
     try {
         const { document_id, signer_email, signer_role } = data;
-        
+
         const session = await findSigningSession(document_id);
-        
+
         if (!session) {
             return { success: true, message: 'Document not tracked' };
         }
-        
+
         // Update signer status in session
         const signers = JSON.parse(session.signers || '[]');
         const signerIndex = signers.findIndex(s => s.email === signer_email);
-        
+
         if (signerIndex >= 0) {
             signers[signerIndex].status = 'signed';
             signers[signerIndex].signedAt = new Date();
             session.signers = JSON.stringify(signers);
             await wixData.update('SigningSessions', session);
         }
-        
+
         // Log the signature event
         await wixData.insert('SignatureEvents', {
             sessionId: session._id,
@@ -152,9 +152,9 @@ async function handleDocumentSigned(data) {
             eventType: 'signed',
             eventTime: new Date()
         });
-        
+
         return { success: true, message: 'Signature recorded' };
-        
+
     } catch (error) {
         console.error('Error handling document signed:', error);
         return { success: false, message: error.message };
@@ -167,25 +167,25 @@ async function handleDocumentSigned(data) {
 async function handleDocumentDeclined(data) {
     try {
         const { document_id, signer_email, decline_reason } = data;
-        
+
         const session = await findSigningSession(document_id);
-        
+
         if (!session) {
             return { success: true, message: 'Document not tracked' };
         }
-        
+
         // Update session status
         session.status = 'declined';
         session.declinedBy = signer_email;
         session.declineReason = decline_reason || 'No reason provided';
         session.declinedAt = new Date();
         await wixData.update('SigningSessions', session);
-        
+
         // Send notification to admin
         await sendDeclineNotification(session);
-        
+
         return { success: true, message: 'Decline processed' };
-        
+
     } catch (error) {
         console.error('Error handling document declined:', error);
         return { success: false, message: error.message };
@@ -198,22 +198,22 @@ async function handleDocumentDeclined(data) {
 async function handleDocumentExpired(data) {
     try {
         const { document_id } = data;
-        
+
         const session = await findSigningSession(document_id);
-        
+
         if (!session) {
             return { success: true, message: 'Document not tracked' };
         }
-        
+
         session.status = 'expired';
         session.expiredAt = new Date();
         await wixData.update('SigningSessions', session);
-        
+
         // Send expiration notification
         await sendExpirationNotification(session);
-        
+
         return { success: true, message: 'Expiration processed' };
-        
+
     } catch (error) {
         console.error('Error handling document expired:', error);
         return { success: false, message: error.message };
@@ -226,20 +226,20 @@ async function handleDocumentExpired(data) {
 async function handleDocumentViewed(data) {
     try {
         const { document_id, viewer_email } = data;
-        
+
         const session = await findSigningSession(document_id);
-        
+
         if (!session) {
             return { success: true, message: 'Document not tracked' };
         }
-        
+
         // Update first viewed timestamp if not set
         if (!session.firstViewedAt) {
             session.firstViewedAt = new Date();
             session.firstViewedBy = viewer_email;
             await wixData.update('SigningSessions', session);
         }
-        
+
         // Log view event
         await wixData.insert('SignatureEvents', {
             sessionId: session._id,
@@ -248,9 +248,9 @@ async function handleDocumentViewed(data) {
             eventType: 'viewed',
             eventTime: new Date()
         });
-        
+
         return { success: true, message: 'View recorded' };
-        
+
     } catch (error) {
         console.error('Error handling document viewed:', error);
         return { success: false, message: error.message };
@@ -263,15 +263,15 @@ async function handleDocumentViewed(data) {
 async function handleInviteEvent(event, data) {
     try {
         const { document_id, invite_email } = data;
-        
+
         const session = await findSigningSession(document_id);
-        
+
         if (!session) {
             return { success: true, message: 'Document not tracked' };
         }
-        
+
         const eventType = event === SIGNNOW_EVENTS.INVITE_SENT ? 'invite_sent' : 'invite_viewed';
-        
+
         await wixData.insert('SignatureEvents', {
             sessionId: session._id,
             documentId: document_id,
@@ -279,9 +279,9 @@ async function handleInviteEvent(event, data) {
             eventType: eventType,
             eventTime: new Date()
         });
-        
+
         return { success: true, message: `${eventType} recorded` };
-        
+
     } catch (error) {
         console.error('Error handling invite event:', error);
         return { success: false, message: error.message };
@@ -296,7 +296,7 @@ async function findSigningSession(documentId) {
         const results = await wixData.query('SigningSessions')
             .eq('signNowDocumentId', documentId)
             .find();
-        
+
         return results.items.length > 0 ? results.items[0] : null;
     } catch (error) {
         console.error('Error finding signing session:', error);
@@ -310,19 +310,19 @@ async function findSigningSession(documentId) {
 async function downloadSignedDocument(documentId) {
     try {
         const apiToken = await getSecret('SIGNNOW_API_TOKEN');
-        
+
         const response = await fetch(`https://api.signnow.com/document/${documentId}/download?type=collapsed`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${apiToken}`
             }
         });
-        
+
         if (response.ok) {
             const arrayBuffer = await response.arrayBuffer();
             return Buffer.from(arrayBuffer).toString('base64');
         }
-        
+
         return null;
     } catch (error) {
         console.error('Error downloading signed document:', error);
@@ -335,13 +335,13 @@ async function downloadSignedDocument(documentId) {
  */
 async function saveToGoogleDrive(session, documentBase64) {
     try {
-        const gasUrl = await getSecret('GAS_WEBHOOK_URL');
-        
+        const gasUrl = await getSecret('GAS_WEB_APP_URL');
+
         if (!gasUrl) {
             console.log('GAS URL not configured');
             return;
         }
-        
+
         await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -357,7 +357,7 @@ async function saveToGoogleDrive(session, documentBase64) {
                 }
             })
         });
-        
+
     } catch (error) {
         console.error('Error saving to Google Drive:', error);
     }
@@ -390,8 +390,8 @@ async function sendCompletionNotification(session) {
 async function sendDeclineNotification(session) {
     try {
         // Notify via GAS which can send to Slack/email
-        const gasUrl = await getSecret('GAS_WEBHOOK_URL');
-        
+        const gasUrl = await getSecret('GAS_WEB_APP_URL');
+
         if (gasUrl) {
             await fetch(gasUrl, {
                 method: 'POST',
@@ -438,8 +438,8 @@ async function sendExpirationNotification(session) {
  */
 async function notifyGasBackend(action, data) {
     try {
-        const gasUrl = await getSecret('GAS_WEBHOOK_URL');
-        
+        const gasUrl = await getSecret('GAS_WEB_APP_URL');
+
         if (gasUrl) {
             await fetch(gasUrl, {
                 method: 'POST',
@@ -478,21 +478,21 @@ async function logWebhook(event, payload) {
 export async function verifyWebhookSignature(signature, body) {
     try {
         const webhookSecret = await getSecret('SIGNNOW_WEBHOOK_SECRET');
-        
+
         if (!webhookSecret) {
             console.log('Webhook secret not configured, skipping verification');
             return true;
         }
-        
+
         // SignNow uses HMAC-SHA256
         const crypto = require('crypto');
         const expectedSignature = crypto
             .createHmac('sha256', webhookSecret)
             .update(body)
             .digest('hex');
-        
+
         return signature === expectedSignature;
-        
+
     } catch (error) {
         console.error('Error verifying webhook signature:', error);
         return false;
