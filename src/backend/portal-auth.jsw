@@ -317,6 +317,28 @@ export async function canAccessCase(caseId) {
   return cases.includes(caseId);
 }
 
+// Helper to let a user self-select a role (e.g. during onboarding)
+export async function assignRoleToCurrentUser(roleName) {
+  const user = await wixUsersBackend.getCurrentUser();
+  if (!user) throw new Error("Must be logged in");
+
+  const validRoles = [ROLES.DEFENDANT, ROLES.INDEMNITOR]; // Only allow public selection of these
+  if (!validRoles.includes(roleName)) throw new Error("Invalid role selection");
+
+  const profile = await getUserProfile(user.id) || {};
+
+  // Update/Create profile
+  const updated = {
+    ...profile,
+    userId: user.id,
+    role: roleName,
+    updatedAt: new Date().toISOString()
+  };
+
+  await saveUserProfile(updated);
+  return true;
+}
+
 export async function requireAuth() {
   if (!(await isLoggedIn())) throw new Error("Authentication required");
 }

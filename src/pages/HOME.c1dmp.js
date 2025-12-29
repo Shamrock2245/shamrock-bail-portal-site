@@ -40,7 +40,21 @@ async function initCountyDropdown() {
         }
 
         // 2. Fetch counties
-        const counties = await getCounties();
+        // 2. Fetch counties
+        let counties = await getCounties();
+
+        // 2a. HARDCODED FALLBACK (If DB fails/empty)
+        if (!counties || counties.length === 0) {
+            console.warn("DEBUG: Fetch failed. Using Hardcoded Fallback.");
+            counties = [
+                { name: "Alachua", slug: "alachua" },
+                { name: "Charlotte", slug: "charlotte" },
+                { name: "Collier", slug: "collier" },
+                { name: "Hendry", slug: "hendry" },
+                { name: "Lee", slug: "lee" },
+                { name: "Sarasota", slug: "sarasota" }
+            ];
+        }
 
         // 3. Map to dropdown options format { label, value }
         const options = counties.map(county => ({
@@ -49,19 +63,28 @@ async function initCountyDropdown() {
         }));
 
         // 4. Set options
+        console.log("Loading Dropdown with " + options.length + " counties.");
         dropdown.options = options;
         dropdown.placeholder = "Select a County";
-
-        // Debug: Print the first few options to verify values
-        console.log("Dropdown Options Sample:", options.slice(0, 3));
-        console.log("Searching for Lee County option:", options.find(o => o.label.includes("Lee")));
 
         // 5. Add onChange handler
         dropdown.onChange((event) => {
             const selectedPath = event.target.value;
-            console.log("User Selected Value:", selectedPath); // Log what was actually clicked
+            console.log("User Selected Value:", selectedPath);
             if (selectedPath) {
                 wixLocation.to(selectedPath);
+            }
+        });
+
+        // 6. Explicit Button Handler (Redundant backup)
+        // If the user clicks the button, it obeys the dropdown. 
+        // If dropdown is empty/invalid, it goes to the generic portal.
+        $w('#beginProcessButton').onClick(() => {
+            if (dropdown.valid && dropdown.value) {
+                wixLocation.to(dropdown.value);
+            } else {
+                console.log("No county selected, going to generic portal.");
+                wixLocation.to('/portal');
             }
         });
 
@@ -75,7 +98,15 @@ async function initCountyDropdown() {
 // Export functions for Wix Editor wiring (optional, but good to keep if linked in UI)
 
 export function beginProcessButton_click(event) {
-    // Deprecated functionality
+    const dropdown = $w('#countySelector');
+    if (dropdown.valid && dropdown.value) {
+        console.log("Button Clicked - Navigating to:", dropdown.value);
+        wixLocation.to(dropdown.value);
+    } else {
+        console.warn("Button Clicked - No county selected");
+        // Optional: Show error highlighting
+        if (dropdown.valid) dropdown.style.borderColor = "red";
+    }
 }
 
 export function spanishSpeakingPhone_click(event) {

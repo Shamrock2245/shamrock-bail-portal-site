@@ -24,10 +24,12 @@ export async function portal_Router(request) {
     // Check if user is logged in
     // Note: 'isLoggedIn' verifies if the Wix User is authenticated
     if (!isLoggedIn()) {
-      // Redirect to login page. 
-      // Standard Wix naming convention for "Custom Login" is "custom-login" or "login"
-      // We use "custom-login" to match standard behavior, but fallback to root if needed.
-      return redirect('/custom-login');
+      // User is NOT logged in.
+      // Instead of sending them to the default Wix Login ('/custom-login'),
+      // we send them to our custom Portal Landing page where they can:
+      // 1. Enter a Magic Link
+      // 2. Click "Start Bond" (which triggers login)
+      return ok('portal-landing');
     }
 
     const userRole = await getUserRole();

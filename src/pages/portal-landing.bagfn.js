@@ -7,21 +7,37 @@ import { currentMember } from 'wix-members';
 import { onMagicLinkLogin } from 'backend/portal-auth';
 
 $w.onReady(async function () {
-    // 1. Check for Magic Token in URL (e.g. ?token=abc)
+    // 1. Check for Magic Token in URL (Priority)
     const query = wixLocation.query;
     if (query.token) {
         $w('#statusText').text = "Verifying your access link...";
         $w('#statusText').expand();
         $w('#tokenInputGroup').collapse();
-
+        $w('#roleSelectionGroup').collapse(); // Ensure this is hidden
         await handleToken(query.token);
-    } else {
-        // Standard view: Show "Enter Token" form
-        if ($w('#tokenInputGroup').collapsed) $w('#tokenInputGroup').expand();
-        if (!$w('#statusText').collapsed) $w('#statusText').collapse();
+        return;
     }
 
-    // 2. Setup Manual Token Entry
+    // 2. Check if User is Logged In
+    const member = await currentMember.getMember();
+    if (member) {
+        // User is logged in -> Show Role Selection
+        $w('#tokenInputGroup').collapse();
+        $w('#roleSelectionGroup').expand(); // New Group for Buttons
+        $w('#welcomeText').text = "Welcome! Please select your role to continue.";
+        $w('#welcomeText').expand();
+    } else {
+        // User is Guest -> Show Magic Link Input
+        if ($w('#tokenInputGroup').collapsed) $w('#tokenInputGroup').expand();
+        $w('#roleSelectionGroup').collapse();
+    }
+
+    // 3. Setup Logic
+    setupEventHandlers();
+});
+
+function setupEventHandlers() {
+    // Magic Link
     $w('#submitTokenBtn').onClick(async () => {
         const token = $w('#tokenInput').value;
         if (!token) {
@@ -29,14 +45,37 @@ $w.onReady(async function () {
             $w('#errorText').expand();
             return;
         }
-
         $w('#submitTokenBtn').disable();
         $w('#submitTokenBtn').label = "Verifying...";
-        $w('#errorText').collapse();
-
         await handleToken(token);
     });
-});
+
+    // Role Selection (New)
+    const { assignRoleToCurrentUser } = require('backend/portal-auth');
+
+    $w('#selectDefendantBtn').onClick(async () => {
+        await handleRoleSelection('defendant');
+    });
+
+    $w('#selectIndemnitorBtn').onClick(async () => {
+        await handleRoleSelection('indemnitor');
+    });
+
+    async function handleRoleSelection(role) {
+        $w('#statusText').text = "Setting up your dashboard...";
+        $w('#statusText').expand();
+        $w('#roleSelectionGroup').collapse();
+
+        try {
+            await assignRoleToCurrentUser(role);
+            wixLocation.to('/portal'); // Router will now redirect correctly
+        } catch (e) {
+            console.error(e);
+            $w('#statusText').text = "Error setting role. Please try again.";
+            $w('#roleSelectionGroup').expand();
+        }
+    }
+}
 
 async function handleToken(token) {
     try {

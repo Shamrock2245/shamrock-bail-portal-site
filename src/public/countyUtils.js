@@ -23,10 +23,20 @@ export async function getCounties() {
 
     try {
         console.log("DEBUG: Executing wixData.query...");
-        const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
+
+        // Strategy: Try the config ID first ('Import1'), if empty, try 'FloridaCounties'
+        let results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
             .ascending("countyName")
             .limit(100)
             .find();
+
+        if (results.totalCount === 0) {
+            console.warn(`DEBUG: Collection '${COLLECTIONS.FLORIDA_COUNTIES}' is empty or not found. Trying fallback ID 'FloridaCounties'...`);
+            results = await wixData.query("FloridaCounties")
+                .ascending("countyName")
+                .limit(100)
+                .find();
+        }
 
         console.log("DEBUG: Query successful. Total items found:", results.totalCount);
         console.log("DEBUG: Raw items (first 3):", results.items.slice(0, 3));
