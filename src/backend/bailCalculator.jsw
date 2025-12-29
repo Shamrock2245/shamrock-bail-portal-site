@@ -49,7 +49,7 @@ export async function fetchBookingData(searchParams) {
         // Get the GAS endpoint URL from secrets
         let gasEndpoint;
         try {
-            gasEndpoint = await getSecret('GAS_BOOKING_ENDPOINT');
+            gasEndpoint = await getSecret('GAS_WEB_APP_URL');
         } catch (e) {
             // Fallback to default endpoint if secret not configured
             gasEndpoint = null;
@@ -124,7 +124,7 @@ async function checkLocalBookingCache(searchParams) {
         }
 
         const results = await query.find();
-        
+
         if (results.items.length > 0) {
             return results.items[0].bookingData;
         }
@@ -216,13 +216,13 @@ export function calculateBondFee(bondAmount, chargeCount = 1) {
  */
 export function calculateTransferFee(county) {
     const isPrimaryCounty = PRIMARY_COUNTIES.includes(county);
-    
+
     return {
         county: county,
         isPrimaryCounty: isPrimaryCounty,
         transferFee: isPrimaryCounty ? 0 : TRANSFER_FEE_BASE,
-        message: isPrimaryCounty 
-            ? 'No transfer fee - primary service area' 
+        message: isPrimaryCounty
+            ? 'No transfer fee - primary service area'
             : `Transfer fee applies for ${county} County`
     };
 }
@@ -306,7 +306,7 @@ export function getCollateralRequirements(bondAmount) {
             { type: 'cash', description: 'Cash or Cash Equivalent' },
             { type: 'other', description: 'Other valuable assets' }
         ] : [],
-        message: requiresCollateral 
+        message: requiresCollateral
             ? `Collateral required for bonds over $${COLLATERAL_THRESHOLD.toLocaleString()}`
             : 'No collateral required - signature bond available'
     };

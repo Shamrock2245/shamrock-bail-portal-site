@@ -1,0 +1,72 @@
+import { getSecret } from 'wix-secrets-backend';
+
+// Known High-Risk Zones (e.g., Airports, Ports)
+// In a real app, these might come from a database collection
+const RISK_ZONES = [
+    { name: 'SWFL Intl Airport', lat: 26.5362, lng: -81.7552, radiusMiles: 2 },
+    { name: 'Miami Intl Airport', lat: 25.7959, lng: -80.2870, radiusMiles: 3 },
+    { name: 'Port of Miami', lat: 25.7744, lng: -80.1703, radiusMiles: 2 }
+];
+
+const MILES_TO_KM = 1.60934;
+
+/**
+ * Calculate distance between two points in miles (Haversine formula)
+ */
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    if ((lat1 == lat2) && (lon1 == lon2)) {
+        return 0;
+    }
+    const radlat1 = Math.PI * lat1 / 180;
+    const radlat2 = Math.PI * lat2 / 180;
+    const theta = lon1 - lon2;
+    const radtheta = Math.PI * theta / 180;
+    let dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+    if (dist > 1) {
+        dist = 1;
+    }
+    dist = Math.acos(dist);
+    dist = dist * 180 / Math.PI;
+    dist = dist * 60 * 1.1515; // Miles
+    return dist;
+}
+
+/**
+ * Analyze location for risks
+ * @param {number} lat 
+ * @param {number} lng 
+ * @param {Object} lastLocation - The previous location record (optional)
+ * @returns {Object} { riskLevel: 'LOW'|'MEDIUM'|'HIGH', riskFactors: [] }
+ */
+export function analyzeLocationRisk(lat, lng, lastLocation) {
+    const riskFactors = [];
+    let riskLevel = 'LOW';
+
+    // 1. Geofence Check (Airports/Ports)
+    for (const zone of RISK_ZONES) {
+        const distance = calculateDistance(lat, lng, zone.lat, zone.lng);
+        if (distance <= zone.radiusMiles) {
+            riskFactors.push(`Near Restricted Zone: ${zone.name} (${distance.toFixed(1)} miles)`);
+            riskLevel = 'HIGH';
+        }
+    }
+
+    // 2. Velocity Check (Impossible Travel)
+    if (lastLocation) {
+        const milesDiff = calculateDistance(lat, lng, lastLocation.latitude, lastLocation.longitude);
+        const timeDiffHours = (new Date().getTime() - new Date(lastLocation.timestamp).getTime()) / (1000 * 60 * 60);
+
+        if (timeDiffHours > 0) {
+            const mph = milesDiff / timeDiffHours;
+            if (mph > 150) { // Impossible/Plane speed
+                riskFactors.push(`Impossible Velocity Detected: ${mph.toFixed(0)} mph`);
+                riskLevel = 'HIGH';
+            } else if (mph > 85) {
+                riskFactors.push(`High Speed Detected: ${mph.toFixed(0)} mph`);
+                if (riskLevel === 'LOW') riskLevel = 'MEDIUM';
+            }
+        }
+    }
+
+    return { riskLevel, riskFactors };
+}

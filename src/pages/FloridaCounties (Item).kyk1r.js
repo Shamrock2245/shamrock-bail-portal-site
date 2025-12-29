@@ -32,10 +32,17 @@ $w.onReady(async function () {
         console.log("✅ County Data Loaded:", county.name);
 
         // 3. Populate Page Elements
-        $w('#countyName').text = county.name + " County";
+        const nameElement = $w('#countyName');
+        console.log(`DEBUG: Element #countyName valid: ${nameElement.valid}`);
+        if (nameElement.valid) {
+            nameElement.text = county.name + " County";
+        } else {
+            console.error("CRITICAL: #countyName TEXT element missing on Dynamic Page!");
+        }
 
         // Dynamic Header (if exists)
-        const headerText = $w('#dynamicHeader'); // Check if this ID matches user's new page
+        const headerText = $w('#dynamicHeader');
+        console.log(`DEBUG: Element #dynamicHeader valid: ${headerText.valid}`);
         if (headerText.valid) headerText.text = `Bail Bonds in ${county.name} County`;
 
         // 4. Update SEO Tags

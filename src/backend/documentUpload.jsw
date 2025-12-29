@@ -21,11 +21,11 @@ import { mediaManager } from 'wix-media-backend';
 export async function uploadIdDocument(uploadData) {
     try {
         const { file, side, metadata } = uploadData;
-        
+
         // Generate unique filename
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `ID_${side}_${metadata.memberEmail.replace('@', '_at_')}_${timestamp}`;
-        
+
         // Upload to Wix Media Manager
         const uploadResult = await mediaManager.upload(
             '/member-documents/ids/',
@@ -47,7 +47,7 @@ export async function uploadIdDocument(uploadData) {
                 }
             }
         );
-        
+
         // Save record to MemberDocuments collection
         const documentRecord = {
             memberEmail: metadata.memberEmail,
@@ -66,18 +66,18 @@ export async function uploadIdDocument(uploadData) {
                 ipAddress: metadata.ipAddress
             })
         };
-        
+
         const insertResult = await wixData.insert(COLLECTIONS.MEMBER_DOCUMENTS, documentRecord);
-        
+
         // Sync to Google Drive via GAS webhook
         await syncToGoogleDrive(insertResult, uploadResult.fileUrl);
-        
+
         return {
             success: true,
             documentId: insertResult._id,
             message: 'ID uploaded successfully'
         };
-        
+
     } catch (error) {
         console.error('Error uploading ID document:', error);
         return {
@@ -99,18 +99,18 @@ export async function uploadIdDocument(uploadData) {
 export async function uploadSupportingDocument(uploadData) {
     try {
         const { file, requirementId, metadata } = uploadData;
-        
+
         // Get the requirement details
         const requirement = await wixData.get('RequiredDocuments', requirementId);
-        
+
         if (!requirement) {
             return { success: false, message: 'Requirement not found' };
         }
-        
+
         // Generate unique filename
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `${requirement.documentType || 'doc'}_${metadata.memberEmail.replace('@', '_at_')}_${timestamp}`;
-        
+
         // Upload to Wix Media Manager
         const uploadResult = await mediaManager.upload(
             '/member-documents/supporting/',
@@ -126,7 +126,7 @@ export async function uploadSupportingDocument(uploadData) {
                 }
             }
         );
-        
+
         // Save record to MemberDocuments collection
         const documentRecord = {
             memberEmail: metadata.memberEmail,
@@ -142,23 +142,23 @@ export async function uploadSupportingDocument(uploadData) {
                 uploadedAt: metadata.uploadedAt
             })
         };
-        
+
         const insertResult = await wixData.insert(COLLECTIONS.MEMBER_DOCUMENTS, documentRecord);
-        
+
         // Update the requirement status
         requirement.status = 'uploaded';
         requirement.uploadedDocumentId = insertResult._id;
         await wixData.update('RequiredDocuments', requirement);
-        
+
         // Sync to Google Drive
         await syncToGoogleDrive(insertResult, uploadResult.fileUrl);
-        
+
         return {
             success: true,
             documentId: insertResult._id,
             message: 'Document uploaded successfully'
         };
-        
+
     } catch (error) {
         console.error('Error uploading supporting document:', error);
         return {
@@ -176,13 +176,13 @@ export async function uploadSupportingDocument(uploadData) {
  */
 async function syncToGoogleDrive(documentRecord, fileUrl) {
     try {
-        const gasWebhookUrl = await getSecret('GAS_WEBHOOK_URL');
-        
+        const gasWebhookUrl = await getSecret('GAS_WEB_APP_URL');
+
         if (!gasWebhookUrl) {
             console.log('GAS webhook URL not configured, skipping Drive sync');
             return;
         }
-        
+
         const payload = {
             action: 'saveDocumentToDrive',
             document: {
@@ -194,7 +194,7 @@ async function syncToGoogleDrive(documentRecord, fileUrl) {
                 metadata: documentRecord.metadata
             }
         };
-        
+
         const response = await fetch(gasWebhookUrl, {
             method: 'POST',
             headers: {
@@ -202,14 +202,14 @@ async function syncToGoogleDrive(documentRecord, fileUrl) {
             },
             body: JSON.stringify(payload)
         });
-        
+
         if (response.ok) {
             // Update document record with Drive sync status
             documentRecord.driveSynced = true;
             documentRecord.driveSyncedAt = new Date();
             await wixData.update(COLLECTIONS.MEMBER_DOCUMENTS, documentRecord);
         }
-        
+
     } catch (error) {
         console.error('Error syncing to Google Drive:', error);
         // Don't throw - Drive sync is secondary to the upload
@@ -228,12 +228,12 @@ export async function getMemberDocuments(memberEmail) {
             .eq('memberEmail', memberEmail)
             .descending('_createdDate')
             .find();
-        
+
         return {
             success: true,
             documents: results.items
         };
-        
+
     } catch (error) {
         console.error('Error getting member documents:', error);
         return {
@@ -254,22 +254,22 @@ export async function getMemberDocuments(memberEmail) {
 export async function verifyDocument(documentId, verified, notes) {
     try {
         const document = await wixData.get(COLLECTIONS.MEMBER_DOCUMENTS, documentId);
-        
+
         if (!document) {
             return { success: false, message: 'Document not found' };
         }
-        
+
         document.status = verified ? 'verified' : 'rejected';
         document.verifiedAt = new Date();
         document.verificationNotes = notes || '';
-        
+
         await wixData.update(COLLECTIONS.MEMBER_DOCUMENTS, document);
-        
+
         return {
             success: true,
             message: `Document ${verified ? 'verified' : 'rejected'} successfully`
         };
-        
+
     } catch (error) {
         console.error('Error verifying document:', error);
         return {
