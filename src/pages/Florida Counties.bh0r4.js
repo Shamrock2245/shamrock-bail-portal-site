@@ -1,38 +1,65 @@
-// Force Sync Update: [Safe Link Mode]
+// Florida Counties Page - Updated with correct field names
 import wixLocation from 'wix-location';
 import { getCounties } from 'public/countyUtils';
 
 $w.onReady(async function () {
-    console.log("🚀 Florida Counties Debug Start");
+    console.log("🚀 Florida Counties Page Loading...");
 
-    // Use standard selector string
-    const repeaterId = '#countiesRepeater';
-    const repeater = $w(repeaterId);
+    try {
+        // Get the repeater element
+        const repeaterId = '#countiesRepeater';
+        const repeater = $w(repeaterId);
 
-    repeater.onItemReady(($item, itemData) => {
-        // 1. Set the Name
-        $item('#countyNameTitle').text = itemData.name + " County";
+        if (!repeater.valid) {
+            console.error('Counties repeater not found on page');
+            return;
+        }
 
-        /**
-         * FIX FOR THE BUTTON ERROR:
-         * We try to set the link directly first.
-         * If the element is a Button, this works.
-         */
-        const button = $item('#viewCountyButton');
-        const targetUrl = `/county/${itemData.slug}`;
+        // Setup repeater item handler
+        repeater.onItemReady(($item, itemData) => {
+            console.log('Repeater item data:', itemData);
+            
+            // Set county name (using normalized 'name' field)
+            const countyNameEl = $item('#countyNameTitle');
+            if (countyNameEl.valid) {
+                countyNameEl.text = itemData.name + " County";
+            }
 
-        // Attempt 1: treat as standard button or link element
-        button.label = "View Info";
-        button.link = targetUrl;
-        button.target = "_self";
+            // Set up the view button
+            const button = $item('#viewCountyButton');
+            if (button.valid) {
+                const targetUrl = `/county/${itemData.slug}`;
+                
+                // Set button properties
+                button.label = "View Info";
+                
+                // Try to set link property (for link-enabled buttons)
+                try {
+                    button.link = targetUrl;
+                    button.target = "_self";
+                } catch (e) {
+                    // If link property doesn't work, use onClick
+                    button.onClick(() => {
+                        wixLocation.to(targetUrl);
+                    });
+                }
+            }
+        });
 
-        // Note: We removed the .onClick() because if it's a native 
-        // linkable element, setting .link is safer and sufficient.
-    });
+        // Fetch counties data
+        console.log('Fetching counties data...');
+        const counties = await getCounties();
+        console.log(`Loaded ${counties.length} counties`);
 
-    // Fetch Data
-    const counties = await getCounties();
-    if (counties.length > 0) {
-        $w(repeaterId).data = counties;
+        if (counties.length > 0) {
+            // Set repeater data
+            repeater.data = counties;
+            console.log('✅ Counties repeater populated successfully');
+        } else {
+            console.warn('⚠️ No counties data returned');
+        }
+
+    } catch (error) {
+        console.error('❌ Error loading Florida Counties page:', error);
     }
 });
