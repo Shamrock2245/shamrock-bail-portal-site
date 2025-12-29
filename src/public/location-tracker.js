@@ -6,6 +6,7 @@
 import wixWindow from 'wix-window';
 import { saveUserLocation } from 'backend/location.jsw';
 import { authentication } from 'wix-members';
+import { local } from 'wix-storage';
 
 const PING_STORAGE_KEY = 'last_location_ping_dates';
 
@@ -23,7 +24,7 @@ export async function silentPingLocation() {
         let pingDates = [];
 
         try {
-            const raw = wixWindow.localStorage.getItem(PING_STORAGE_KEY);
+            const raw = local.getItem(PING_STORAGE_KEY);
             pingDates = raw ? JSON.parse(raw) : [];
         } catch (e) {
             pingDates = [];
@@ -53,7 +54,7 @@ export async function silentPingLocation() {
             if (result.success) {
                 // Update local storage tracking
                 pingDates.push(todayStr);
-                wixWindow.localStorage.setItem(PING_STORAGE_KEY, JSON.stringify(pingDates));
+                local.setItem(PING_STORAGE_KEY, JSON.stringify(pingDates));
                 console.log('Location tracker: Silent ping successful', { address: result.address });
             } else {
                 console.warn('Location tracker: Backend rejected ping', result.message);

@@ -23,19 +23,20 @@ $w.onReady(function () {
  */
 async function initCountyDropdown() {
     try {
-        // DEFENSIVE SELECTOR: Try common names/misspellings
-        let dropdown = $w('#countySelector');
-        if (!dropdown.valid) dropdown = $w('#countyselector'); // Lowercase
-        if (!dropdown.valid) dropdown = $w('#CountySelector'); // Titlecase
-        if (!dropdown.valid) dropdown = $w('#dropdown1'); // Default Wix
+        console.log("DEBUG: Attempting to select dropdown...");
 
-        // 1. Check if dropdown exists
-        if (!dropdown.valid) {
-            console.error('CRITICAL: Dropdown not found. Checked: #countySelector, #countyselector, #dropdown1');
+        // DIRECT SELECTOR (No "valid" check - it was a false flag)
+        let dropdown = $w('#countySelector');
+
+        // Fallback attempts just in case
+        if (!dropdown) dropdown = $w('#dropdown1');
+
+        // If dropdown is still not found, log an error and return
+        if (!dropdown) {
+            console.error('CRITICAL: Dropdown not found after all attempts. Checked: #countySelector, #dropdown1');
             return;
         }
 
-        // 2. Fetch counties
         // 2. Fetch counties
         let counties = await getCounties();
 
@@ -63,32 +64,29 @@ async function initCountyDropdown() {
         dropdown.options = options;
         dropdown.placeholder = "Select a County";
 
-        // 5. Add onChange handler
+        // 5. Setup Change Handler
         dropdown.onChange((event) => {
-            const selectedPath = event.target.value;
-            console.log("User Selected Value:", selectedPath);
-            if (selectedPath) {
-                wixLocation.to(selectedPath);
-            }
+            wixLocation.to(selectedPath);
+        }
         });
 
-        // 6. Explicit Button Handler (Redundant backup)
-        // If the user clicks the button, it obeys the dropdown. 
-        // If dropdown is empty/invalid, it goes to the generic portal.
-        $w('#beginProcessButton').onClick(() => {
-            if (dropdown.valid && dropdown.value) {
-                wixLocation.to(dropdown.value);
-            } else {
-                console.log("No county selected, going to generic portal.");
-                wixLocation.to('/portal');
-            }
-        });
+    // 6. Explicit Button Handler (Redundant backup)
+    // If the user clicks the button, it obeys the dropdown. 
+    // If dropdown is empty/invalid, it goes to the generic portal.
+    $w('#beginProcessButton').onClick(() => {
+        if (dropdown.valid && dropdown.value) {
+            wixLocation.to(dropdown.value);
+        } else {
+            console.log("No county selected, going to generic portal.");
+            wixLocation.to('/portal');
+        }
+    });
 
-        console.log('County dropdown initialized with ' + options.length + ' counties.');
+    console.log('County dropdown initialized with ' + options.length + ' counties.');
 
-    } catch (error) {
-        console.error('Error initializing county dropdown:', error);
-    }
+} catch (error) {
+    console.error('Error initializing county dropdown:', error);
+}
 }
 
 // Export functions for Wix Editor wiring (optional, but good to keep if linked in UI)
