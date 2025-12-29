@@ -169,7 +169,7 @@ async function handleFieldInvite(webhookData) {
  */
 async function downloadSignedDocument(documentId) {
   try {
-    const signNowToken = await wixSecretsBackend.getSecret('SIGNNOW_ACCESS_TOKEN');
+    const signNowToken = await wixSecretsBackend.getSecret('SIGNNOW_API_TOKEN');
 
     if (!signNowToken) {
       throw new Error('SignNow access token not configured');
@@ -291,7 +291,7 @@ export async function get_signnowStatus(request) {
       };
     }
 
-    const signNowToken = await wixSecretsBackend.getSecret('SIGNNOW_ACCESS_TOKEN');
+    const signNowToken = await wixSecretsBackend.getSecret('SIGNNOW_API_TOKEN');
 
     if (!signNowToken) {
       return {
