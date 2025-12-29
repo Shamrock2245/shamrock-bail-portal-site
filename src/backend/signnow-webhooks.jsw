@@ -309,7 +309,7 @@ async function findSigningSession(documentId) {
  */
 async function downloadSignedDocument(documentId) {
     try {
-        const apiToken = await getSecret('SIGNNOW_API_TOKEN');
+        const apiToken = await getSecret('SIGNNOW_ACCESS_TOKEN');
         
         const response = await fetch(`https://api.signnow.com/document/${documentId}/download?type=collapsed`, {
             method: 'GET',
