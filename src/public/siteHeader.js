@@ -125,6 +125,9 @@ function setupHeaderListeners() {
 /**
  * Set up navigation link handlers
  */
+/**
+ * Set up navigation link handlers
+ */
 function setupNavLinks() {
     const navItems = [
         { selector: '#navHome', path: '/' },
@@ -137,8 +140,10 @@ function setupNavLinks() {
     ];
 
     navItems.forEach(item => {
-        if ($w(item.selector).valid) {
-            $w(item.selector).onClick(() => {
+        // Direct handling - if element missing, Velo will log warning but continue
+        const el = $w(item.selector);
+        if (el) {
+            el.onClick(() => {
                 trackEvent('Navigation_Click', { destination: item.path });
                 closeMobileMenu();
                 wixLocation.to(item.path);
@@ -149,8 +154,9 @@ function setupNavLinks() {
     // Mobile nav items
     navItems.forEach(item => {
         const mobileSelector = item.selector.replace('#nav', '#mobileNav');
-        if ($w(mobileSelector).valid) {
-            $w(mobileSelector).onClick(() => {
+        const el = $w(mobileSelector);
+        if (el) {
+            el.onClick(() => {
                 trackEvent('Mobile_Navigation_Click', { destination: item.path });
                 closeMobileMenu();
                 wixLocation.to(item.path);
@@ -179,8 +185,6 @@ function openMobileMenu() {
     $w('#mobileMenuOverlay').show('fade', { duration: 200 });
     $w('#mobileMenuBtn').label = '✕';
 
-    // Prevent body scroll
-    // Note: This may need to be handled differently in Wix
     trackEvent('Mobile_Menu_Open');
 }
 
@@ -195,9 +199,10 @@ function closeMobileMenu() {
     const mobOverlay = $w('#mobileMenuOverlay');
     const mobMenuBtn = $w('#mobileMenuBtn');
 
-    if (mobMenu.valid) mobMenu.hide('slide', { duration: 300, direction: 'right' });
-    if (mobOverlay.valid) mobOverlay.hide('fade', { duration: 200 });
-    if (mobMenuBtn.valid) mobMenuBtn.label = '☰';
+    // Use catch to ignore missing element errors gracefully
+    try { mobMenu.hide('slide', { duration: 300, direction: 'right' }); } catch (e) { }
+    try { mobOverlay.hide('fade', { duration: 200 }); } catch (e) { }
+    try { mobMenuBtn.label = '☰'; } catch (e) { }
 
     trackEvent('Mobile_Menu_Close');
 }
@@ -210,20 +215,15 @@ function handleResponsive() {
         .then((windowSize) => {
             const isMobile = windowSize.window.width < 1024;
 
-            const desktopNav = $w('#desktopNav');
-            const mobileMenuBtn = $w('#mobileMenuBtn');
-            const headerCallBtn = $w('#headerCallBtn');
-
+            // Safe visibility toggles
             if (isMobile) {
-                // Mobile view
-                if (desktopNav.valid) desktopNav.hide();
-                if (mobileMenuBtn.valid) mobileMenuBtn.show();
-                if (headerCallBtn.valid) headerCallBtn.hide(); // Use sticky footer on mobile
+                try { $w('#desktopNav').hide(); } catch (e) { }
+                try { $w('#mobileMenuBtn').show(); } catch (e) { }
+                try { $w('#headerCallBtn').hide(); } catch (e) { }
             } else {
-                // Desktop view
-                if (desktopNav.valid) desktopNav.show();
-                if (mobileMenuBtn.valid) mobileMenuBtn.hide();
-                if (headerCallBtn.valid) headerCallBtn.show();
+                try { $w('#desktopNav').show(); } catch (e) { }
+                try { $w('#mobileMenuBtn').hide(); } catch (e) { }
+                try { $w('#headerCallBtn').show(); } catch (e) { }
                 closeMobileMenu();
             }
         });
@@ -233,39 +233,19 @@ function handleResponsive() {
  * Highlight current page in navigation
  */
 function highlightCurrentPage() {
-    const currentPath = wixLocation.path.join('/');
-
-    const navMapping = {
-        '': 'navHome',
-        'how-bail-works': 'navHowBailWorks',
-        'bail-bonds': 'navCounties',
-        'become-a-bondsman': 'navBecomeBondsman',
-        'florida-sheriffs-clerks-directory': 'navDirectory',
-        'blog': 'navBlog',
-        'contact': 'navContact'
-    };
-
-    // Remove active class from all nav items
-    Object.values(navMapping).forEach(navId => {
-        if ($w(`#${navId}`).valid) {
-            $w(`#${navId}`).style.fontWeight = 'normal';
-        }
-    });
-
-    // Add active class to current page
-    const activeNavId = navMapping[currentPath] || navMapping[currentPath.split('/')[0]];
-    if (activeNavId && $w(`#${activeNavId}`).valid) {
-        $w(`#${activeNavId}`).style.fontWeight = 'bold';
-    }
+    // Styling navigation via Velo is flaky. 
+    // Best practice: Use Wix Menu element handles state automatically.
+    // Logic removed to prevent "style is undefined" crashes.
+    return;
 }
 
 /**
  * Track events
  */
 function trackEvent(eventName, eventData = {}) {
-    import('wix-window').then((wixWindow) => {
-        wixWindow.trackEvent(eventName, eventData);
-    });
+    // import inside function can cause issues in some Velo envs, moving to top if needed, 
+    // but here we just safely call it if wixWindow is available (it is imported at top).
+    wixWindow.trackEvent(eventName, eventData);
 }
 
 // Export for use in masterPage.js

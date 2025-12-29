@@ -1,16 +1,15 @@
+// HOME.c1dmp.js - DEBUG MODE
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-import { getCounties } from 'public/countyUtils';
-
-// Velo API Reference: https://www.wix.com/velo/reference/api-overview/introduction
+// import { getCounties } from 'public/countyUtils'; // COMMENTED OUT TO ISOLATE CRASH
 
 $w.onReady(function () {
-    console.log("🚀 HOME PAGE LOADED - SYNC CHECK: " + new Date().toISOString());
+    console.log("🚀 HOME PAGE ALIVE - DEBUG MODE: " + new Date().toISOString());
 
-    // 1. Initialize County Dropdown
-    initCountyDropdown();
+    // HARDCODED DIRECT TEST
+    initDropdownSimple();
 
-    // 2. Setup Spanish Speaking Phone Button (Defensive)
+    // Setup Spanish Speaking Phone Button (Defensive)
     const spanishBtn = $w("#callNowSpanishBtn");
     if (spanishBtn.valid) { // Check .valid property!
         spanishBtn.onClick(() => wixLocation.to("tel:12399550301"));
@@ -18,66 +17,30 @@ $w.onReady(function () {
     }
 });
 
-/**
- * Initialize the county selector dropdown
- */
-async function initCountyDropdown() {
+function initDropdownSimple() {
     try {
-        console.log("DEBUG: Attempting to select dropdown...");
-
-        // DIRECT SELECTOR (No "valid" check - it was a false flag)
+        console.log("DEBUG: Selecting Dropdown...");
         let dropdown = $w('#countySelector');
-
-        // Fallback attempts just in case
         if (!dropdown) dropdown = $w('#dropdown1');
 
-        // If dropdown is still not found, log an error and return
         if (!dropdown) {
-            console.error('CRITICAL: Dropdown not found after all attempts. Checked: #countySelector, #dropdown1');
+            console.error("CRITICAL: Dropdown element missing even in Debug Mode.");
             return;
         }
 
-        // 2. Fetch counties
-        let counties = await getCounties();
+        const options = [
+            { label: "✅ SYSTEM WORKING", value: "/portal" },
+            { label: "Lee County", value: "/county/lee" },
+            { label: "Collier County", value: "/county/collier" },
+            { label: "Charlotte County", value: "/county/charlotte" },
+            { label: "Sarasota County", value: "/county/sarasota" }
+        ];
 
-        // 2a. HARDCODED FALLBACK (If DB fails/empty)
-        if (!counties || counties.length === 0) {
-            console.warn("DEBUG: Fetch failed. Using Hardcoded Fallback.");
-            counties = [
-                { name: "Alachua", slug: "alachua" },
-                { name: "Charlotte", slug: "charlotte" },
-                { name: "Collier", slug: "collier" },
-                { name: "Hendry", slug: "hendry" },
-                { name: "Lee", slug: "lee" },
-                { name: "Sarasota", slug: "sarasota" }
-            ];
-        }
-
-        // 3. Map to dropdown options format { label, value }
-        const options = counties.map(county => ({
-            label: county.name + ' County',
-            value: `/county/${county.slug}`
-        }));
-
-        // 4. Set options
-        console.log("Loading Dropdown with " + options.length + " counties.");
+        console.log("DEBUG: Setting " + options.length + " options directly.");
         dropdown.options = options;
-        dropdown.placeholder = "Select a County";
+        dropdown.placeholder = "Select Your County";
 
-        // 5. Setup Change Handler
         dropdown.onChange((event) => {
-            wixLocation.to(selectedPath);
-        }
-        });
-
-    // 6. Explicit Button Handler (Redundant backup)
-    // If the user clicks the button, it obeys the dropdown. 
-    // If dropdown is empty/invalid, it goes to the generic portal.
-    $w('#beginProcessButton').onClick(() => {
-        if (dropdown.valid && dropdown.value) {
-            wixLocation.to(dropdown.value);
-        } else {
-            console.log("No county selected, going to generic portal.");
             wixLocation.to('/portal');
         }
     });

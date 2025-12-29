@@ -41,11 +41,13 @@ function checkMobileView() {
     const formFactor = wixWindow.formFactor; // "Desktop", "Mobile", "Tablet"
     const mobileCTA = $w('#stickyMobileCTA');
 
-    if (mobileCTA.valid) {
+    try {
         if (formFactor === "Mobile") {
             mobileCTA.expand();
         } else {
             mobileCTA.collapse();
         }
+    } catch (err) {
+        // Ignore if element missing
     }
 }
