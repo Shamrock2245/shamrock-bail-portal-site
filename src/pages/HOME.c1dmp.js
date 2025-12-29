@@ -6,24 +6,16 @@ import { getCounties } from 'public/countyUtils';
 
 $w.onReady(function () {
     console.log("🚀 HOME PAGE LOADED - SYNC CHECK: " + new Date().toISOString());
+
     // 1. Initialize County Dropdown
     initCountyDropdown();
 
-    // 2. Setup Spanish Speaking Phone Button
-    // Using onClick for better usability than onDblClick
-    const spanishPhoneBtn = $w("#callNowSpanishBtn");
-    if (spanishPhoneBtn) {
-        spanishPhoneBtn.onClick(() => {
-            wixLocation.to("tel:12399550301");
-        });
-        // Also keep double click if users are used to it, or just for safety
-        spanishPhoneBtn.onDblClick(() => {
-            wixLocation.to("tel:12399550301");
-        });
+    // 2. Setup Spanish Speaking Phone Button (Defensive)
+    const spanishBtn = $w("#callNowSpanishBtn");
+    if (spanishBtn.valid) { // Check .valid property!
+        spanishBtn.onClick(() => wixLocation.to("tel:12399550301"));
+        spanishBtn.onDblClick(() => wixLocation.to("tel:12399550301"));
     }
-
-    // 3. Geolocation (Placeholder for future implementation)
-    // Note: Navigator API is not available in Velo. Use wix-window.getCurrentGeolocation() in the future.
 });
 
 /**
@@ -31,11 +23,15 @@ $w.onReady(function () {
  */
 async function initCountyDropdown() {
     try {
-        const dropdown = $w('#countySelector');
+        // DEFENSIVE SELECTOR: Try common names/misspellings
+        let dropdown = $w('#countySelector');
+        if (!dropdown.valid) dropdown = $w('#countyselector'); // Lowercase
+        if (!dropdown.valid) dropdown = $w('#CountySelector'); // Titlecase
+        if (!dropdown.valid) dropdown = $w('#dropdown1'); // Default Wix
 
         // 1. Check if dropdown exists
         if (!dropdown.valid) {
-            console.warn('County selector dropdown (#countySelector) not found on page.');
+            console.error('CRITICAL: Dropdown not found. Checked: #countySelector, #countyselector, #dropdown1');
             return;
         }
 
