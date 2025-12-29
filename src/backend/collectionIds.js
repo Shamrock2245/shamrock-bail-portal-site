@@ -15,19 +15,19 @@
 
 export const COLLECTIONS = {
   // Core Collections
-  FLORIDA_COUNTIES: 'Import1',        // County data for all 67 Florida counties
+  FLORIDA_COUNTIES: 'Import21',       // County data (Updated: was Import1)
   CASES: 'Import2',                   // Bail bond cases
   MEMBER_DOCUMENTS: 'Import3',        // Uploaded IDs and documents
   CHECK_IN_RECORDS: 'Import4',        // GPS check-in records
   FINANCIAL_OBLIGATIONS: 'Import5',   // Indemnitor financial tracking
   BAIL_START_LOGS: 'Import6',         // Audit logs for bail paperwork initiation
   FAQ: 'Import10',                    // Frequently asked questions
-  
+
   // Supporting Collections
   TESTIMONIALS: 'Testimonials',       // Client testimonials
   CONTACT_SUBMISSIONS: 'ContactSubmissions', // Contact form submissions
   BAIL_SCHOOL_SIGNUPS: 'BailSchoolSignups',  // Bail school interest signups
-  
+
   // System Collections (Wix-managed)
   BLOG_POSTS: 'Blog/Posts',
   BLOG_CATEGORIES: 'Blog/Categories',
@@ -47,7 +47,7 @@ export function getCollectionId(collectionName) {
  * Collection display names for reference
  */
 export const COLLECTION_DISPLAY_NAMES = {
-  [COLLECTIONS.FLORIDA_COUNTIES]: 'Import1',
+  [COLLECTIONS.FLORIDA_COUNTIES]: 'Import21 (Counties)',
   [COLLECTIONS.CASES]: 'Import2',
   [COLLECTIONS.MEMBER_DOCUMENTS]: 'Import3',
   [COLLECTIONS.CHECK_IN_RECORDS]: 'Import4',
