@@ -1,10 +1,67 @@
-// API Reference: https://www.wix.com/velo/reference/api-overview/introduction
-// “Hello, World!” Example: https://learn-code.wix.com/en/article/hello-world
+// Page: portal-landing.bagfn.js
+// Function: Handles initial access logic (Login/Magic Link)
 
-$w.onReady(function () {
-    // Write your JavaScript here
+import wixLocation from 'wix-location';
+import wixWindow from 'wix-window';
+import { currentMember } from 'wix-members';
+import { onMagicLinkLogin } from 'backend/portal-auth';
 
-    // To select an element by ID use: $w('#elementID')
+$w.onReady(async function () {
+    // 1. Check for Magic Token in URL (e.g. ?token=abc)
+    const query = wixLocation.query;
+    if (query.token) {
+        $w('#statusText').text = "Verifying your access link...";
+        $w('#statusText').expand();
+        $w('#tokenInputGroup').collapse();
 
-    // Click 'Preview' to run your code
+        await handleToken(query.token);
+    } else {
+        // Standard view: Show "Enter Token" form
+        if ($w('#tokenInputGroup').collapsed) $w('#tokenInputGroup').expand();
+        if (!$w('#statusText').collapsed) $w('#statusText').collapse();
+    }
+
+    // 2. Setup Manual Token Entry
+    $w('#submitTokenBtn').onClick(async () => {
+        const token = $w('#tokenInput').value;
+        if (!token) {
+            $w('#errorText').text = "Please enter a valid token.";
+            $w('#errorText').expand();
+            return;
+        }
+
+        $w('#submitTokenBtn').disable();
+        $w('#submitTokenBtn').label = "Verifying...";
+        $w('#errorText').collapse();
+
+        await handleToken(token);
+    });
 });
+
+async function handleToken(token) {
+    try {
+        const result = await onMagicLinkLogin(token);
+
+        if (result.ok) {
+            $w('#statusText').text = "Success! Redirecting...";
+            $w('#statusText').expand();
+
+            wixLocation.to(result.goto || '/portal');
+        } else {
+            console.error("Token error:", result);
+            $w('#errorText').text = result.message || "Invalid or expired link.";
+            $w('#errorText').expand();
+
+            $w('#submitTokenBtn').enable();
+            $w('#submitTokenBtn').label = "Try Again";
+            $w('#tokenInputGroup').expand();
+        }
+    } catch (error) {
+        console.error("Link error:", error);
+        $w('#errorText').text = "System error. Please call us.";
+        $w('#errorText').expand();
+
+        $w('#submitTokenBtn').enable();
+        $w('#submitTokenBtn').label = "Try Again";
+    }
+}
