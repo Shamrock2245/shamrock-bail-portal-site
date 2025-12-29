@@ -15,7 +15,7 @@ const CONTACT = {
     phone: '239-332-2245',
     phoneTel: 'tel:+12393322245',
     email: 'info@shamrockbailbonds.biz',
-    address: '2245 Main Street, Fort Myers, FL 33901'
+    address: '1528 Broadway, Fort Myers, FL 33901'
 };
 
 /**
@@ -24,16 +24,16 @@ const CONTACT = {
 export function initFooter() {
     // Set up contact information
     setupContactInfo();
-    
+
     // Set up navigation links
     setupFooterNav();
-    
+
     // Set up social links
     setupSocialLinks();
-    
+
     // Set copyright year
     setCopyrightYear();
-    
+
     // Set up newsletter signup (if present)
     setupNewsletter();
 }
@@ -52,7 +52,7 @@ function setupContactInfo() {
             trackEvent('Footer_Phone_Click');
         });
     }
-    
+
     // Email
     if ($w('#footerEmail').valid) {
         $w('#footerEmail').text = CONTACT.email;
@@ -63,12 +63,12 @@ function setupContactInfo() {
             trackEvent('Footer_Email_Click');
         });
     }
-    
+
     // Address
     if ($w('#footerAddress').valid) {
         $w('#footerAddress').text = CONTACT.address;
     }
-    
+
     // 24/7 badge
     if ($w('#footer247Badge').valid) {
         $w('#footer247Badge').text = 'Available 24/7';
@@ -86,7 +86,7 @@ function setupFooterNav() {
         { selector: '#footerLinkCounties', path: '/bail-bonds', label: 'Counties We Serve' },
         { selector: '#footerLinkContact', path: '/contact', label: 'Contact Us' }
     ];
-    
+
     quickLinks.forEach(link => {
         if ($w(link.selector).valid) {
             $w(link.selector).link = link.path;
@@ -95,7 +95,7 @@ function setupFooterNav() {
             });
         }
     });
-    
+
     // Resources
     const resourceLinks = [
         { selector: '#footerLinkDirectory', path: '/florida-sheriffs-clerks-directory', label: 'Sheriffs & Clerks Directory' },
@@ -103,7 +103,7 @@ function setupFooterNav() {
         { selector: '#footerLinkBlog', path: '/blog', label: 'Blog' },
         { selector: '#footerLinkFAQ', path: '/how-bail-works#faq', label: 'FAQ' }
     ];
-    
+
     resourceLinks.forEach(link => {
         if ($w(link.selector).valid) {
             $w(link.selector).link = link.path;
@@ -112,14 +112,14 @@ function setupFooterNav() {
             });
         }
     });
-    
+
     // Legal Links
     const legalLinks = [
         { selector: '#footerLinkPrivacy', path: '/privacy-policy', label: 'Privacy Policy' },
         { selector: '#footerLinkTerms', path: '/terms-of-service', label: 'Terms of Service' },
         { selector: '#footerLinkDisclaimer', path: '/disclaimer', label: 'Disclaimer' }
     ];
-    
+
     legalLinks.forEach(link => {
         if ($w(link.selector).valid) {
             $w(link.selector).link = link.path;
@@ -128,7 +128,7 @@ function setupFooterNav() {
             });
         }
     });
-    
+
     // Popular Counties
     const popularCounties = [
         { selector: '#footerLinkLee', path: '/bail-bonds/lee-county', label: 'Lee County' },
@@ -137,7 +137,7 @@ function setupFooterNav() {
         { selector: '#footerLinkHillsborough', path: '/bail-bonds/hillsborough-county', label: 'Hillsborough County' },
         { selector: '#footerLinkMiamiDade', path: '/bail-bonds/miami-dade-county', label: 'Miami-Dade County' }
     ];
-    
+
     popularCounties.forEach(link => {
         if ($w(link.selector).valid) {
             $w(link.selector).link = link.path;
@@ -158,7 +158,7 @@ function setupSocialLinks() {
         { selector: '#footerInstagram', url: 'https://instagram.com/shamrockbailbonds', platform: 'instagram' },
         { selector: '#footerLinkedIn', url: 'https://linkedin.com/company/shamrockbailbonds', platform: 'linkedin' }
     ];
-    
+
     socialLinks.forEach(social => {
         if ($w(social.selector).valid) {
             $w(social.selector).link = social.url;
@@ -175,11 +175,11 @@ function setupSocialLinks() {
  */
 function setCopyrightYear() {
     const currentYear = new Date().getFullYear();
-    
+
     if ($w('#copyrightText').valid) {
         $w('#copyrightText').text = `© ${currentYear} Shamrock Bail Bonds. All rights reserved.`;
     }
-    
+
     // License info
     if ($w('#licenseText').valid) {
         $w('#licenseText').text = 'Licensed Bail Bond Agent - State of Florida';
@@ -191,20 +191,20 @@ function setCopyrightYear() {
  */
 function setupNewsletter() {
     if (!$w('#newsletterForm').valid) return;
-    
+
     $w('#newsletterSubmit').onClick(async () => {
         const email = $w('#newsletterEmail').value;
-        
+
         if (!email || !isValidEmail(email)) {
             $w('#newsletterError').text = 'Please enter a valid email address';
             $w('#newsletterError').show();
             return;
         }
-        
+
         try {
             $w('#newsletterSubmit').disable();
             $w('#newsletterSubmit').label = 'Subscribing...';
-            
+
             // Save to database
             import('wix-data').then(async (wixData) => {
                 await wixData.insert('NewsletterSubscribers', {
@@ -213,14 +213,14 @@ function setupNewsletter() {
                     source: 'footer'
                 });
             });
-            
+
             // Show success
             $w('#newsletterForm').hide();
             $w('#newsletterSuccess').show();
             $w('#newsletterSuccess').text = 'Thank you for subscribing!';
-            
+
             trackEvent('Newsletter_Subscribe', { source: 'footer' });
-            
+
         } catch (error) {
             $w('#newsletterError').text = 'Error subscribing. Please try again.';
             $w('#newsletterError').show();
@@ -249,4 +249,4 @@ function trackEvent(eventName, eventData = {}) {
 }
 
 // Export for use in masterPage.js
-export { initFooter, setupContactInfo, setupFooterNav };
+export { setupContactInfo, setupFooterNav };

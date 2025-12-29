@@ -23,16 +23,16 @@ let isLoggedIn = false;
 export async function initHeader() {
     // Check login status
     isLoggedIn = await checkLoginStatus();
-    
+
     // Update header based on login status
     updateHeaderForLoginStatus();
-    
+
     // Set up event listeners
     setupHeaderListeners();
-    
+
     // Handle responsive behavior
     handleResponsive();
-    
+
     // Highlight current page in navigation
     highlightCurrentPage();
 }
@@ -74,13 +74,13 @@ function setupHeaderListeners() {
     $w('#headerLogo').onClick(() => {
         wixLocation.to('/');
     });
-    
+
     // Call Now button
     $w('#headerCallBtn').onClick(() => {
         trackEvent('Header_CTA_Click', { button: 'call_now' });
         wixLocation.to(PHONE_TEL);
     });
-    
+
     // Start Bail button
     $w('#startBailBtn').onClick(() => {
         trackEvent('Header_CTA_Click', { button: 'start_bail' });
@@ -90,34 +90,34 @@ function setupHeaderListeners() {
             wixLocation.to('/members/login?returnUrl=/members/start-bail');
         }
     });
-    
+
     // Login button
     $w('#loginBtn').onClick(() => {
         trackEvent('Header_Login_Click');
         wixLocation.to('/members/login');
     });
-    
+
     // Account button (for logged-in users)
     $w('#accountBtn').onClick(() => {
         trackEvent('Header_Account_Click');
         wixLocation.to('/members/account');
     });
-    
+
     // Mobile menu toggle
     $w('#mobileMenuBtn').onClick(() => {
         toggleMobileMenu();
     });
-    
+
     // Mobile menu close button
     $w('#mobileMenuClose').onClick(() => {
         closeMobileMenu();
     });
-    
+
     // Mobile menu overlay click to close
     $w('#mobileMenuOverlay').onClick(() => {
         closeMobileMenu();
     });
-    
+
     // Navigation links
     setupNavLinks();
 }
@@ -135,7 +135,7 @@ function setupNavLinks() {
         { selector: '#navBlog', path: '/blog' },
         { selector: '#navContact', path: '/contact' }
     ];
-    
+
     navItems.forEach(item => {
         if ($w(item.selector).valid) {
             $w(item.selector).onClick(() => {
@@ -145,7 +145,7 @@ function setupNavLinks() {
             });
         }
     });
-    
+
     // Mobile nav items
     navItems.forEach(item => {
         const mobileSelector = item.selector.replace('#nav', '#mobileNav');
@@ -178,7 +178,7 @@ function openMobileMenu() {
     $w('#mobileMenu').show('slide', { duration: 300, direction: 'right' });
     $w('#mobileMenuOverlay').show('fade', { duration: 200 });
     $w('#mobileMenuBtn').label = '✕';
-    
+
     // Prevent body scroll
     // Note: This may need to be handled differently in Wix
     trackEvent('Mobile_Menu_Open');
@@ -192,7 +192,7 @@ function closeMobileMenu() {
     $w('#mobileMenu').hide('slide', { duration: 300, direction: 'right' });
     $w('#mobileMenuOverlay').hide('fade', { duration: 200 });
     $w('#mobileMenuBtn').label = '☰';
-    
+
     trackEvent('Mobile_Menu_Close');
 }
 
@@ -203,7 +203,7 @@ function handleResponsive() {
     wixWindow.getBoundingRect()
         .then((windowSize) => {
             const isMobile = windowSize.window.width < 1024;
-            
+
             if (isMobile) {
                 // Mobile view
                 $w('#desktopNav').hide();
@@ -224,7 +224,7 @@ function handleResponsive() {
  */
 function highlightCurrentPage() {
     const currentPath = wixLocation.path.join('/');
-    
+
     const navMapping = {
         '': 'navHome',
         'how-bail-works': 'navHowBailWorks',
@@ -234,14 +234,14 @@ function highlightCurrentPage() {
         'blog': 'navBlog',
         'contact': 'navContact'
     };
-    
+
     // Remove active class from all nav items
     Object.values(navMapping).forEach(navId => {
         if ($w(`#${navId}`).valid) {
             $w(`#${navId}`).style.fontWeight = 'normal';
         }
     });
-    
+
     // Add active class to current page
     const activeNavId = navMapping[currentPath] || navMapping[currentPath.split('/')[0]];
     if (activeNavId && $w(`#${activeNavId}`).valid) {
@@ -259,4 +259,4 @@ function trackEvent(eventName, eventData = {}) {
 }
 
 // Export for use in masterPage.js
-export { initHeader, checkLoginStatus, toggleMobileMenu };
+export { checkLoginStatus, toggleMobileMenu };

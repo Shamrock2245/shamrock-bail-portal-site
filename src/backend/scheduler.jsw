@@ -1,0 +1,86 @@
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'backend/collectionIds';
+import { fetch } from 'wix-fetch';
+import { getSecret } from 'wix-secrets-backend';
+
+/**
+ * Watchdog: Check for Missed Check-ins
+ * intended to run daily via jobs.config
+ */
+export async function checkMissedCheckIns() {
+    console.log('⏰ Watchdog: Starting Missed Check-in Scan...');
+
+    try {
+        // 1. Get all "Active" Defendants
+        // Assuming 'Cases' collection has a status field and link to member
+        const activeCases = await wixData.query(COLLECTIONS.CASES)
+            .eq('status', 'Active') // Adjust field name if necessary
+            .find();
+
+        const missedCheckIns = [];
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        // 2. For each active defendant, check last location
+        for (const caseItem of activeCases.items) {
+            const memberId = caseItem.memberId;
+            if (!memberId) continue;
+
+            const lastLoc = await wixData.query('UserLocations')
+                .eq('memberId', memberId)
+                .descending('timestamp')
+                .limit(1)
+                .find();
+
+            let isMissing = false;
+
+            if (lastLoc.items.length === 0) {
+                isMissing = true; // Never checked in
+            } else {
+                const lastCheckIn = new Date(lastLoc.items[0].timestamp);
+                if (lastCheckIn < yesterday) {
+                    isMissing = true; // Checked in > 24 hours ago
+                }
+            }
+
+            if (isMissing) {
+                missedCheckIns.push({
+                    name: caseItem.defendantName || 'Unknown Defendant',
+                    email: caseItem.email,
+                    caseNumber: caseItem.caseNumber
+                });
+            }
+        }
+
+        // 3. Report Results
+        if (missedCheckIns.length > 0) {
+            console.log(`⚠️ ALERT: ${missedCheckIns.length} defendants missed check-in.`);
+            await sendAdminAlert(missedCheckIns);
+        } else {
+            console.log('✅ All active defendants accounted for.');
+        }
+
+    } catch (error) {
+        console.error('Watchdog Error:', error);
+    }
+}
+
+async function sendAdminAlert(missingList) {
+    try {
+        const gasUrl = await getSecret('GAS_WEB_APP_URL');
+        if (!gasUrl) return;
+
+        await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'sendAdminAlert', // Needs handler in GAS
+                subject: 'URGENT: Missed Check-in Report',
+                body: `The following defendants have not checked in within 24 hours:\n\n${missingList.map(m => `- ${m.name} (${m.caseNumber})`).join('\n')}`,
+                severity: 'HIGH'
+            })
+        });
+    } catch (err) {
+        console.error('Failed to send admin alert:', err);
+    }
+}

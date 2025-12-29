@@ -20,65 +20,78 @@ import { isLoggedIn, getUserRole, ROLES } from './portal-auth';
 export async function portal_Router(request) {
   const path = request.path;
 
-  // Check if user is logged in
-  if (!isLoggedIn()) {
-    // Redirect to custom login page if not logged in
-    return redirect('/Custom Login'); // Assuming '/Custom Login' is the existing login page
-  }
+  try {
+    // Check if user is logged in
+    // Note: 'isLoggedIn' verifies if the Wix User is authenticated
+    if (!isLoggedIn()) {
+      // Redirect to login page. 
+      // Standard Wix naming convention for "Custom Login" is "custom-login" or "login"
+      // We use "custom-login" to match standard behavior, but fallback to root if needed.
+      return redirect('/custom-login');
+    }
 
-  const userRole = await getUserRole();
+    const userRole = await getUserRole();
+    console.log(`[Router] User ${request.user ? request.user.id : 'Anon'} Role: ${userRole || 'None'}, Path: ${path}`);
 
-  switch (path[0]) {
-    case 'defendant':
-      if (userRole === ROLES.DEFENDANT) {
-        return ok('portal-defendant'); // Render the 'portal-defendant' page
-      } else {
-        return redirect('/portal'); // Redirect to portal landing if wrong role
-      }
-    case 'indemnitor':
-      if (userRole === ROLES.INDEMNITOR || userRole === ROLES.COINDEMNITOR) {
-        return ok('portal-indemnitor'); // Render the 'portal-indemnitor' page
-      } else {
-        return redirect('/portal'); // Redirect to portal landing if wrong role
-      }
-    case 'staff':
-      if (userRole === ROLES.STAFF || userRole === ROLES.ADMIN) {
-        return ok('portal-staff'); // Render the 'portal-staff' page
-      } else {
-        return redirect('/portal'); // Redirect to portal landing if wrong role
-      }
-    case undefined:
-      // Root /portal/ path, show role selection or redirect based on role
-      return ok('portal-landing'); // Render the 'portal-landing' page
-    default:
-      return notFound(); // Handle unknown paths under /portal/
+    switch (path[0]) {
+      case 'defendant':
+        if (userRole === ROLES.DEFENDANT) {
+          return ok('portal-defendant');
+        } else {
+          // Wrong role? specific redirect or consistent landing
+          return redirect('/portal');
+        }
+      case 'indemnitor':
+        if (userRole === ROLES.INDEMNITOR || userRole === ROLES.COINDEMNITOR) {
+          return ok('portal-indemnitor');
+        } else {
+          return redirect('/portal');
+        }
+      case 'staff':
+        if (userRole === ROLES.STAFF || userRole === ROLES.ADMIN) {
+          return ok('portal-staff');
+        } else {
+          return redirect('/portal');
+        }
+      case undefined:
+      case '':
+        // Root /portal/ path
+        // Behavior: If they have a role, we SHOULD redirect them to their dashboard
+        // If they don't have a role, show the landing page
+        if (userRole === ROLES.DEFENDANT) return redirect('/portal/defendant');
+        if (userRole === ROLES.STAFF || userRole === ROLES.ADMIN) return redirect('/portal/staff');
+        if (userRole === ROLES.INDEMNITOR || userRole === ROLES.COINDEMNITOR) return redirect('/portal/indemnitor');
+
+        // No role? Show landing page (Login/Claim Access)
+        return ok('portal-landing');
+
+      default:
+        return notFound();
+    }
+  } catch (error) {
+    console.error("[Router] Error in portal_Router:", error);
+    // Fallback to landing instead of crashing
+    return ok('portal-landing');
   }
 }
 
 /**
  * Hook for before router for /portal/ prefix.
- * Can be used for additional checks before the router logic.
  * 
  * @param {WixRouterRequest} request
  * @returns {WixRouterResponse|Promise<WixRouterResponse>}
  */
 export function portal_beforeRouter(request) {
-  // Example: Log request details
-  console.log(`Incoming request to /portal/: ${request.url}`);
-  return request; // Continue with the request
+  return request;
 }
 
 /**
  * Hook for after router for /portal/ prefix.
- * Can be used to modify response or log after routing.
  * 
  * @param {WixRouterRequest} request
  * @param {WixRouterResponse} response
  * @returns {WixRouterResponse|Promise<WixRouterResponse>}
  */
 export function portal_afterRouter(request, response) {
-  // Example: Add a custom header
-  // response.headers['X-Custom-Header'] = 'Portal-Route-Handled';
-  return response; // Continue with the response
+  return response;
 }
-

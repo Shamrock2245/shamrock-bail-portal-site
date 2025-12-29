@@ -10,9 +10,11 @@ import { getSecret } from 'wix-secrets-backend';
  * Save user location to the database and sync to Google Sheets
  * @param {number} latitude - GPS latitude
  * @param {number} longitude - GPS longitude
+ * @param {string} [notes] - Optional comments from the user
+ * @param {string} [imageUrl] - Optional URL of the selfie/evidence
  * @returns {Promise<{success: boolean, message: string}>}
  */
-export async function saveUserLocation(latitude, longitude) {
+export async function saveUserLocation(latitude, longitude, notes = "", imageUrl = "") {
     try {
         const member = await currentMember.getMember();
 
@@ -20,20 +22,17 @@ export async function saveUserLocation(latitude, longitude) {
             return { success: false, message: 'User not logged in' };
         }
 
-        // 1. Check daily ping limit (max 3 times a day)
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // --- ENHANCEMENT: Removed Daily Limit ---
+        // We want unlimited data points for active monitoring.
 
-        const dailyResults = await wixData.query('UserLocations')
-            .eq('memberId', member._id)
-            .ge('timestamp', today)
-            .count();
+        // 1. Get Last Location for Velocity Check
+        const lastLocation = await getLastLocation(member._id);
 
-        if (dailyResults >= 3) {
-            return { success: false, message: 'Daily location ping limit reached' };
-        }
+        // 2. Perform Risk Analysis
+        const { analyzeLocationRisk } = await import('backend/fraud-detection');
+        const { riskLevel, riskFactors } = analyzeLocationRisk(latitude, longitude, lastLocation);
 
-        // 2. Reverse Geocoding via Google Maps
+        // 3. Reverse Geocoding
         let address = 'Unknown';
         let intersection = 'Unknown';
 
@@ -45,13 +44,10 @@ export async function saveUserLocation(latitude, longitude) {
                     const geoData = await geoResponse.json();
                     if (geoData.status === 'OK' && geoData.results.length > 0) {
                         address = geoData.results[0].formatted_address;
-
-                        // Look for closest intersection
                         const intersectionResult = geoData.results.find(r => r.types.includes('intersection'));
                         if (intersectionResult) {
                             intersection = intersectionResult.formatted_address;
                         } else {
-                            // Fallback: look for route/street
                             const route = geoData.results[0].address_components.find(c => c.types.includes('route'));
                             if (route) intersection = `Near ${route.long_name}`;
                         }
@@ -70,13 +66,18 @@ export async function saveUserLocation(latitude, longitude) {
             address: address,
             intersection: intersection,
             timestamp: new Date(),
-            userAgent: 'Wix Member Portal'
+            notes: notes || "",
+            imageUrl: imageUrl || "",       // NEW
+            userAgent: 'Wix Member Portal',
+            riskLevel: riskLevel,
+            riskFactors: riskFactors,
+            isHighRisk: riskLevel === 'HIGH'
         };
 
-        // 3. Save to UserLocations collection
+        // 4. Save to UserLocations collection
         await wixData.insert('UserLocations', locationData);
 
-        // 4. Sync to Google Sheets via GAS
+        // 5. Sync to Google Sheets via GAS
         try {
             const gasUrl = await getSecret('GAS_WEB_APP_URL');
             if (gasUrl) {
@@ -96,7 +97,13 @@ export async function saveUserLocation(latitude, longitude) {
             console.error('GAS sync failed:', gasError);
         }
 
-        return { success: true, message: 'Location saved and synced successfully', address, intersection };
+        return {
+            success: true,
+            message: 'Check-in successful',
+            address,
+            intersection,
+            riskAlert: riskLevel === 'HIGH' ? 'High Risk Detected' : null
+        };
 
     } catch (error) {
         console.error('Error saving user location:', error);

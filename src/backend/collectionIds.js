@@ -21,19 +21,19 @@ export const COLLECTIONS = {
   MEMBER_PROFILES: 'MemberProfiles',     // Member profile information
   PORTAL_USERS: 'PortalUsers',           // Portal user accounts
   PERSONS: 'Persons',                    // Person records
-  
+
   // Bail Process Collections
   BAIL_START_LOGS: 'BailStartLogs',      // Audit logs for bail paperwork initiation
   SIGNNOW_HANDOFFS: 'SignNowHandoffs',   // SignNow integration handoff records
   REQUIRED_DOCUMENTS: 'RequiredDocuments', // Required document types
   PENDING_DOCUMENTS: 'PendingDocuments', // Documents pending review
-  
+
   // Analytics & Tracking
   ANALYTICS_EVENTS: 'AnalyticsEvents',   // Site analytics events
   CALL_LOGS: 'CallLogs',                 // Call tracking logs
   USER_LOCATIONS: 'UserLocations',       // User location data
   GEOLOCATION_CACHE: 'GeolocationCache', // Cached geolocation lookups
-  
+
   // Supporting Collections
   FAQ: 'FAQs',                           // Frequently asked questions
   TESTIMONIALS: 'Testimonials',          // Client testimonials
@@ -101,23 +101,23 @@ export const FLORIDA_COUNTIES_FIELDS = {
   NAME: 'countyName',              // County name (e.g., "Lee")
   TITLE: 'title',                  // Full title (e.g., "Lee County Bail Bonds")
   SLUG: 'countySlug',              // URL slug (e.g., "lee")
-  
+
   // Contact info
   PRIMARY_PHONE: 'primaryPhone',
-  
+
   // Sheriff/Jail info
   BOOKING_WEBSITE: 'bookingWebsiteLink',
   BOOKING_PHONE: 'bookingPhoneNumber',
-  
+
   // Clerk info
   CLERK_WEBSITE: 'countyClerkWebsitelink',
   CLERK_PHONE: 'countyClerkPhoneNumber',
   RECORDS_SEARCH: 'recordsSearchLink',
-  
+
   // SEO
   SEO_TITLE: 'seoTitle',
   SEO_DESCRIPTION: 'seoDescription',
-  
+
   // Content
   SERVICE_AREA_COPY: 'serviceAreaCopy',
   H1_HEADLINE: 'h1Headline',

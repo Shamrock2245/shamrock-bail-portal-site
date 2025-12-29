@@ -1,6 +1,9 @@
 // countyUtils.js
 import wixData from 'wix-data';
-import { COLLECTIONS } from 'backend/collectionIds';
+// import { COLLECTIONS } from 'backend/collectionIds';
+const COLLECTIONS = {
+    FLORIDA_COUNTIES: 'Import1'
+};
 
 // Cache for county data
 let countyCache = null;
@@ -19,7 +22,7 @@ export async function getCounties() {
             .ascending("countyName")
             .limit(100)
             .find();
-        
+
         // Normalize field names for consistent use across the site
         countyCache = results.items.map(county => ({
             _id: county._id,
@@ -41,7 +44,7 @@ export async function getCounties() {
             countyName: county.countyName,
             countySlug: county.countySlug
         }));
-        
+
         return countyCache;
     } catch (error) {
         console.error("Failed to fetch counties:", error);
@@ -60,7 +63,7 @@ export async function getCountyBySlug(slug) {
             .eq("countySlug", slug)
             .limit(1)
             .find();
-            
+
         if (results.items.length > 0) {
             const county = results.items[0];
             // Return normalized object
@@ -106,7 +109,7 @@ export async function getNearbyCounties(region, currentId) {
             .ne("_id", currentId)
             .limit(4)
             .find();
-        
+
         // Normalize results
         return results.items.map(county => ({
             _id: county._id,

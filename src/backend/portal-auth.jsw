@@ -51,12 +51,12 @@ export async function getUserRole() {
   const user = await wixUsersBackend.getCurrentUser();
   if (!user) return null;
 
-  // Look up role in PortalUsers collection
+  // Look up role in PortalUsers collection (admin bypass to ensure we can read it)
   const rs = await wixData
     .query("PortalUsers")
     .eq("userId", user.id)
     .limit(1)
-    .find();
+    .find({ suppressAuth: true });
   if (rs.items.length) {
     const role = (rs.items[0].role || "").toLowerCase();
     return Object.values(ROLES).includes(role) ? role : null;
@@ -95,7 +95,7 @@ export async function setSessionData(key, value) {
       timestamp: new Date().toISOString(),
       userId: user.id,
     };
-    await wixData.save("PortalSessions", sessionData);
+    await wixData.save("PortalSessions", sessionData, { suppressAuth: true });
   } catch (e) {
     console.error("setSessionData error:", e);
   }
@@ -111,13 +111,13 @@ export async function getSessionData(key) {
       .eq("key", key)
       .eq("userId", user.id)
       .limit(1)
-      .find();
+      .find({ suppressAuth: true });
 
     if (!rs.items.length) return null;
 
     const item = rs.items[0];
     if (Date.now() - new Date(item.timestamp).getTime() > SESSION_TIMEOUT) {
-      await wixData.remove("PortalSessions", item._id);
+      await wixData.remove("PortalSessions", item._id, { suppressAuth: true });
       return null;
     }
     return JSON.parse(item.value);
@@ -134,9 +134,9 @@ export async function clearSessionData(key = null) {
 
     let q = wixData.query("PortalSessions").eq("userId", user.id);
     if (key) q = q.eq("key", key);
-    const rs = await q.find();
+    const rs = await q.find({ suppressAuth: true });
     await Promise.all(
-      rs.items.map((i) => wixData.remove("PortalSessions", i._id))
+      rs.items.map((i) => wixData.remove("PortalSessions", i._id, { suppressAuth: true }))
     );
   } catch (e) {
     console.error("clearSessionData error:", e);
@@ -157,7 +157,7 @@ export async function generateMagicLink(personId, role, caseId = null) {
     expiresAt: new Date(now + MAGIC_LINK_EXPIRATION).toISOString(),
     used: false,
   };
-  await wixData.save("MagicLinks", doc);
+  await wixData.save("MagicLinks", doc, { suppressAuth: true });
   return token;
 }
 
@@ -167,7 +167,7 @@ export async function validateMagicLink(token) {
     .eq("token", token)
     .eq("used", false)
     .limit(1)
-    .find();
+    .find({ suppressAuth: true });
   if (!rs.items.length) return null;
 
   const link = rs.items[0];
@@ -181,13 +181,13 @@ export async function useMagicLink(token) {
     .query("MagicLinks")
     .eq("token", token)
     .limit(1)
-    .find();
+    .find({ suppressAuth: true });
   if (!rs.items.length) return false;
 
   const link = rs.items[0];
   link.used = true;
   link.usedAt = new Date().toISOString();
-  await wixData.update("MagicLinks", link);
+  await wixData.update("MagicLinks", link, { suppressAuth: true });
   return true;
 }
 
@@ -269,13 +269,15 @@ export async function getUserProfile(userId) {
     .query("PortalUsers")
     .eq("userId", id)
     .limit(1)
-    .find();
+    .find({ suppressAuth: true });
   return rs.items[0] || null;
 }
 
 export async function saveUserProfile(profile) {
-  if (profile._id) return wixData.update("PortalUsers", profile);
-  return wixData.save("PortalUsers", profile);
+  // Ensure we save with admin permissions
+  const options = { suppressAuth: true };
+  if (profile._id) return wixData.update("PortalUsers", profile, options);
+  return wixData.save("PortalUsers", profile, options);
 }
 
 export async function linkUserToPerson(personId) {
