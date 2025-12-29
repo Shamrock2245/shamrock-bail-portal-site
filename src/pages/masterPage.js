@@ -28,10 +28,13 @@ $w.onReady(function () {
 
 function checkMobileView() {
     const formFactor = wixWindow.formFactor; // "Desktop", "Mobile", "Tablet"
+    const mobileCTA = $w('#stickyMobileCTA');
 
-    if (formFactor === "Mobile") {
-        $w('#stickyMobileCTA').expand();
-    } else {
-        $w('#stickyMobileCTA').collapse();
+    if (mobileCTA.valid) {
+        if (formFactor === "Mobile") {
+            mobileCTA.expand();
+        } else {
+            mobileCTA.collapse();
+        }
     }
 }

@@ -1,16 +1,17 @@
-// Force Sync: Spy Code for File h3izu
+// Force Sync: Restoring Dynamic Page Code (Legacy File Update)
 import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
 import { getCountyBySlug } from 'public/countyUtils';
 
 $w.onReady(async function () {
-    console.log("🚀 SPY: File h3izu (Counties Item) is ACTIVE!");
+    console.log("🚀 Dynamic County Page Loading (h3izu)...");
 
     // 1. Extract Slug from URL
     const path = wixLocation.path;
+    // Handle both /county/lee and /floridacounties-1/lee formats
     const countySlug = path.length > 0 ? path[path.length - 1] : null;
 
-    console.log("📍 h3izu Slug:", countySlug);
+    console.log("📍 Extracted Slug:", countySlug);
 
     if (!countySlug) {
         console.error("❌ h3izu: No slug found");

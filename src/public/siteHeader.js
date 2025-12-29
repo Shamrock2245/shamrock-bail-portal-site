@@ -204,16 +204,20 @@ function handleResponsive() {
         .then((windowSize) => {
             const isMobile = windowSize.window.width < 1024;
 
+            const desktopNav = $w('#desktopNav');
+            const mobileMenuBtn = $w('#mobileMenuBtn');
+            const headerCallBtn = $w('#headerCallBtn');
+
             if (isMobile) {
                 // Mobile view
-                $w('#desktopNav').hide();
-                $w('#mobileMenuBtn').show();
-                $w('#headerCallBtn').hide(); // Use sticky footer on mobile
+                if (desktopNav.valid) desktopNav.hide();
+                if (mobileMenuBtn.valid) mobileMenuBtn.show();
+                if (headerCallBtn.valid) headerCallBtn.hide(); // Use sticky footer on mobile
             } else {
                 // Desktop view
-                $w('#desktopNav').show();
-                $w('#mobileMenuBtn').hide();
-                $w('#headerCallBtn').show();
+                if (desktopNav.valid) desktopNav.show();
+                if (mobileMenuBtn.valid) mobileMenuBtn.hide();
+                if (headerCallBtn.valid) headerCallBtn.show();
                 closeMobileMenu();
             }
         });

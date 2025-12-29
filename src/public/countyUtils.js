@@ -13,18 +13,50 @@ let countyCache = null;
  * @returns {Promise<Array>} List of county objects with normalized field names
  */
 export async function getCounties() {
-    if (countyCache) {
-        return countyCache;
-    }
+    console.log("DEBUG: getCounties() started");
+    console.log("DEBUG: Using Collection ID:", COLLECTIONS.FLORIDA_COUNTIES);
+
+    // if (countyCache) {
+    //     console.log("DEBUG: Returning cached counties:", countyCache.length);
+    //     return countyCache;
+    // }
 
     try {
+        console.log("DEBUG: Executing wixData.query...");
         const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
             .ascending("countyName")
             .limit(100)
             .find();
 
+        console.log("DEBUG: Query successful. Total items found:", results.totalCount);
+        console.log("DEBUG: Raw items (first 3):", results.items.slice(0, 3));
+
+        let itemsToMap = results.items;
+
+        // --- MOCK DATA INJECTION REMOVED (DB Verified: 67 items found) ---
+        // if (itemsToMap.length === 0) {
+        //     console.warn("DEBUG: No items found in DB. injecting MOCK DATA.");
+        //     itemsToMap = [
+        //         {
+        //             _id: "mock-1",
+        //             countyName: "Mock Alachua",
+        //             countySlug: "alachua", // Valid slug to test routing
+        //             title: "Mock Alachua Bail Bonds",
+        //             primaryPhone: "(555) 123-4567"
+        //         },
+        //         {
+        //             _id: "mock-2",
+        //             countyName: "Mock Lee",
+        //             countySlug: "lee",
+        //             title: "Mock Lee Bail Bonds",
+        //             primaryPhone: "(555) 987-6543"
+        //         }
+        //     ];
+        // }
+        // ---------------------------
+
         // Normalize field names for consistent use across the site
-        countyCache = results.items.map(county => ({
+        countyCache = itemsToMap.map(county => ({
             _id: county._id,
             name: county.countyName,           // Map countyName -> name
             slug: county.countySlug,           // Map countySlug -> slug
@@ -45,9 +77,10 @@ export async function getCounties() {
             countySlug: county.countySlug
         }));
 
+        console.log("DEBUG: Normalized counties count:", countyCache.length);
         return countyCache;
     } catch (error) {
-        console.error("Failed to fetch counties:", error);
+        console.error("DEBUG: Failed to fetch counties:", error);
         return [];
     }
 }
@@ -63,6 +96,15 @@ export async function getCountyBySlug(slug) {
             .eq("countySlug", slug)
             .limit(1)
             .find();
+
+        // if (results.items.length > 0) {
+        //     const county = results.items[0];
+
+        // let foundItem = results.items.length > 0 ? results.items[0] : null;
+
+        // --- MOCK DATA INJECTION REMOVED ---
+        // if (!foundItem) { ... }
+        // ---------------------------
 
         if (results.items.length > 0) {
             const county = results.items[0];

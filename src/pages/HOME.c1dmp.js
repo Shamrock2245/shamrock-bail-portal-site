@@ -5,6 +5,7 @@ import { getCounties } from 'public/countyUtils';
 // Velo API Reference: https://www.wix.com/velo/reference/api-overview/introduction
 
 $w.onReady(function () {
+    console.log("🚀 HOME PAGE LOADED - SYNC CHECK: " + new Date().toISOString());
     // 1. Initialize County Dropdown
     initCountyDropdown();
 
