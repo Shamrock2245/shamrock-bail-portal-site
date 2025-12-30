@@ -1,0 +1,2 @@
+fullName,firstName,lastName,dob,phone,email,address,city,state,zip,status,lastCheckIn,_createdDate
+John Doe,John,Doe,1990-01-01,555-0100,john@example.com,"123 Main St",Fort Myers,FL,33901,Good Standing,,2025-01-01T12:00:00.000Z
