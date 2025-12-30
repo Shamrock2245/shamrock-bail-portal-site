@@ -1,0 +1,126 @@
+/**
+ * backend/portal-sync.jsw
+ * Handles synchronization of case data from GAS to Wix CMS.
+ */
+
+import wixData from "wix-data";
+
+/**
+ * Syncs full case data payload from GAS into Wix Collections.
+ * Upserts Records based on natural keys (caseNumber, email, etc.)
+ * 
+ * @param {Object} payload
+ * @param {Object} payload.caseInfo - Case details
+ * @param {Object} payload.defendant - Defendant profile
+ * @param {Array<Object>} payload.indemnitors - Array of indemnitor profiles
+ * @param {Object} payload.paymentPlan - Payment plan details (optional)
+ */
+export async function syncCaseData(payload) {
+    const { caseInfo, defendant, indemnitors, paymentPlan } = payload;
+    let caseId = null;
+
+    // 1. Upsert Case
+    if (caseInfo) {
+        caseId = await upsertCase(caseInfo);
+    }
+
+    // 2. Upsert Defendant (and link to case if possible, though schema links by ID usually)
+    // We use email/phone as unique identifiers or rely on what GAS sends
+    let defendantId = null;
+    if (defendant) {
+        defendantId = await upsertDefendant(defendant);
+        // If we have a caseId and defendantId, we might want to ensure they are linked in the Case record
+        if (caseId && defendantId) {
+            // Fetch case and update defendantId if missing
+            // (Assuming 1:1 or 1:Many relationship logic here)
+        }
+    }
+
+    // 3. Upsert Indemnitors
+    if (indemnitors && Array.isArray(indemnitors)) {
+        for (const ind of indemnitors) {
+            // Ensure indemnitor is linked to this caseId
+            await upsertIndemnitor({ ...ind, caseId }); // Pass caseId to link
+        }
+    }
+
+    // 4. Upsert Payment Plan
+    if (paymentPlan && caseId) {
+        await upsertPaymentPlan({ ...paymentPlan, caseId });
+    }
+
+    return { success: true, caseId };
+}
+
+
+async function upsertCase(data) {
+    // Try to find by Booking Number OR Case Number
+    let q = wixData.query("Cases");
+    if (data.bookingNumber) q = q.eq("bookingNumber", data.bookingNumber);
+    else if (data.caseNumber) q = q.eq("caseNumber", data.caseNumber);
+    else return null; // Cannot key
+
+    const rs = await q.find({ suppressAuth: true });
+    let item = rs.items[0] || {};
+
+    // Merge
+    item = { ...item, ...data, _updatedDate: new Date() };
+    if (!item._createdDate) item._createdDate = new Date();
+
+    return (await wixData.save("Cases", item, { suppressAuth: true }))._id;
+}
+
+async function upsertDefendant(data) {
+    // Key by email or phone? Or separate ID from GAS?
+    // Let's assume GAS sends a robust unique ID or we use Email.
+    // Fallback to name+dob if necessary, but Email is safest if available.
+
+    let q = wixData.query("Defendants");
+    if (data.email) q = q.eq("email", data.email);
+    else if (data.phone) q = q.eq("phone", data.phone);
+    else return null; // Skip if no contact info? Or create new?
+
+    const rs = await q.find({ suppressAuth: true });
+    let item = rs.items[0] || {};
+
+    item = { ...item, ...data };
+    // Status management
+    if (!item.status) item.status = "Good Standing";
+
+    return (await wixData.save("Defendants", item, { suppressAuth: true }))._id;
+}
+
+async function upsertIndemnitor(data) {
+    // Key by email + caseId? Indemnitors might be on multiple cases.
+    // If we want a unique Indemnitor *profile*, we key by Email.
+    // If we want a unique "Indemnitor on this Case" record, we key by Email + CaseId.
+    // The schema template suggests 'Indemnitors' is a list of people.
+    // BUT the fields include 'relationship' effectively making it a link table with attributes.
+    // Let's query by email + caseId to update that specific instance.
+
+    if (!data.caseId || !data.email) return;
+
+    const rs = await wixData.query("Indemnitors")
+        .eq("caseId", data.caseId)
+        .eq("email", data.email)
+        .find({ suppressAuth: true });
+
+    let item = rs.items[0] || {};
+    item = { ...item, ...data };
+
+    await wixData.save("Indemnitors", item, { suppressAuth: true });
+}
+
+async function upsertPaymentPlan(data) {
+    if (!data.caseId) return;
+
+    // One plan per case?
+    const rs = await wixData.query("PaymentPlans")
+        .eq("caseId", data.caseId)
+        .find({ suppressAuth: true });
+
+    let item = rs.items[0] || {};
+    item = { ...item, ...data };
+
+    await wixData.save("PaymentPlans", item, { suppressAuth: true });
+}

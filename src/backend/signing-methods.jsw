@@ -12,15 +12,31 @@ import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
 import wixData from 'wix-data';
 
-// GAS Web App URL (from signnow-integration.jsw)
-const GAS_WEB_APP_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
+// GAS Web App URL - Try to load from Secrets, fallback to const
+let CACHED_GAS_URL = null;
+const FALLBACK_GAS_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
+
+async function getGasUrl() {
+    if (CACHED_GAS_URL) return CACHED_GAS_URL;
+    try {
+        const url = await getSecret("GAS_WEB_APP_URL");
+        if (url) {
+            CACHED_GAS_URL = url;
+            return url;
+        }
+    } catch (e) {
+        console.warn("GAS_WEB_APP_URL secret not found, using fallback.");
+    }
+    return FALLBACK_GAS_URL;
+}
 
 /**
  * Core function to call GAS Backend
  */
 async function callGasBackend(payload) {
     try {
-        const response = await fetch(GAS_WEB_APP_URL, {
+        const url = await getGasUrl();
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -232,14 +248,33 @@ async function savePendingDocument(data) {
 /**
  * Log signing event to collection
  */
+/**
+ * Log signing event to collection and update Case status
+ */
 async function logSigningEvent(caseId, method, result) {
     try {
+        // 1. Log Event
         await wixData.insert('SignatureEvents', {
             caseId,
             method,
             result: JSON.stringify(result),
             eventTime: new Date()
         }, { suppressAuth: true });
+
+        // 2. Update Case Status
+        // If method is 'email' or 'sms' or 'kiosk', we consider it 'Sent'
+        let newStatus = 'Sent';
+        if (method === 'print') newStatus = 'Downloaded'; // or 'Partially Signed' if we assume wet-ink process started
+
+        const caseQ = await wixData.query("Cases").eq("_id", caseId).find({ suppressAuth: true });
+        if (caseQ.items.length > 0) {
+            let record = caseQ.items[0];
+            record.paperworkStatus = newStatus;
+            record.signingMethod = method;
+            record._updatedDate = new Date();
+            await wixData.update("Cases", record, { suppressAuth: true });
+        }
+
     } catch (error) {
         console.error('Error logging signing event:', error);
     }

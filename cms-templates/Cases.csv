@@ -1,0 +1,2 @@
+caseNumber,bookingNumber,defendantId,defendantName,defendantEmail,defendantPhone,bondAmount,premiumAmount,downPayment,chargeCount,courtDate,courtTime,courtLocation,county,status,paperworkStatus,signingMethod,_createdDate,_updatedDate
+CASE-001,BK-2025-001,DEF-001,John Doe,john@example.com,555-0100,5000,500,100,2,2025-02-15,09:00 AM,Lee County Justice Center,LEE,Active,Not Started,email,2025-01-01T12:00:00.000Z,2025-01-01T12:00:00.000Z

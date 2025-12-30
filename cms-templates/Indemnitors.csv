@@ -1,0 +1,2 @@
+caseId,fullName,firstName,lastName,relationship,dob,phone,email,address,city,state,zip,employer,employerPhone,_createdDate
+CASE-001,Jane Doe,Jane,Doe,Spouse,1992-05-15,555-0101,jane@example.com,"123 Main St",Fort Myers,FL,33901,Walmart,555-9999,2025-01-01T12:00:00.000Z

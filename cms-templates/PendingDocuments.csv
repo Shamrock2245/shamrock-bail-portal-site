@@ -1,0 +1,2 @@
+caseId,memberId,documentId,signingLink,downloadUrl,method,status,expiresAt,signedAt,createdAt
+CASE-001,MEM-001,DOC-001,https://app.signnow.com/invite/...,,email,pending,2025-01-02T12:00:00.000Z,,2025-01-01T12:00:00.000Z
