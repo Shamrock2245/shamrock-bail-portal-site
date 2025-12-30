@@ -1,0 +1,2 @@
+caseId,signNowDocumentId,method,status,signers,createdAt,completedAt
+CASE-001,SN-DOC-123,email,pending,"[{""email"":""john@example.com"",""role"":""defendant"",""status"":""pending""}]",2025-01-01T12:00:00.000Z,
