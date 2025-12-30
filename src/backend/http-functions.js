@@ -4,6 +4,150 @@
 
 import { ok, badRequest, serverError, forbidden } from 'wix-http-functions';
 import { addPendingDocument, addPendingDocumentsBatch, updateDocumentStatus } from 'backend/wixApi';
+import wixData from 'wix-data';
+import { getSecret } from 'wix-secrets-backend';
+
+/**
+ * POST /api/syncCaseData
+ * Sync case data from Google Apps Script to Wix CMS
+ * 
+ * This endpoint is called by GAS when a case is saved/updated
+ * 
+ * Request body:
+ * {
+ *   "apiKey": "your-api-key",
+ *   "caseData": {
+ *     "caseNumber": "2024-CF-001234",
+ *     "defendantName": "John Doe",
+ *     "defendantEmail": "john@example.com",
+ *     "defendantPhone": "2395551234",
+ *     "indemnitorName": "Jane Doe",
+ *     "indemnitorEmail": "jane@example.com",
+ *     "indemnitorPhone": "2395555678",
+ *     "bondAmount": "10000",
+ *     "county": "Collier",
+ *     "arrestDate": "2024-01-15",
+ *     "charges": "DUI",
+ *     "status": "pending",
+ *     "receiptNumber": "201234",
+ *     "gasSheetRow": 5
+ *   }
+ * }
+ */
+export async function post_apiSyncCaseData(request) {
+    try {
+        const body = await request.body.json();
+        
+        // Validate API key
+        if (!body.apiKey) {
+            return badRequest({
+                body: { success: false, message: 'Missing apiKey' }
+            });
+        }
+        
+        // Verify API key against stored secret
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (body.apiKey !== validApiKey) {
+            return forbidden({
+                body: { success: false, message: 'Invalid API key' }
+            });
+        }
+        
+        // Validate case data
+        if (!body.caseData || !body.caseData.caseNumber) {
+            return badRequest({
+                body: { success: false, message: 'Missing caseData or caseNumber' }
+            });
+        }
+        
+        const caseData = body.caseData;
+        
+        // Check if case already exists in Cases collection
+        const existingCases = await wixData.query('Cases')
+            .eq('caseNumber', caseData.caseNumber)
+            .find();
+        
+        let result;
+        
+        if (existingCases.items.length > 0) {
+            // Update existing case
+            const existingCase = existingCases.items[0];
+            const updatedCase = {
+                ...existingCase,
+                defendantName: caseData.defendantName || existingCase.defendantName,
+                defendantEmail: caseData.defendantEmail || existingCase.defendantEmail,
+                defendantPhone: caseData.defendantPhone || existingCase.defendantPhone,
+                indemnitorName: caseData.indemnitorName || existingCase.indemnitorName,
+                indemnitorEmail: caseData.indemnitorEmail || existingCase.indemnitorEmail,
+                indemnitorPhone: caseData.indemnitorPhone || existingCase.indemnitorPhone,
+                bondAmount: caseData.bondAmount || existingCase.bondAmount,
+                county: caseData.county || existingCase.county,
+                arrestDate: caseData.arrestDate || existingCase.arrestDate,
+                charges: caseData.charges || existingCase.charges,
+                status: caseData.status || existingCase.status,
+                receiptNumber: caseData.receiptNumber || existingCase.receiptNumber,
+                gasSheetRow: caseData.gasSheetRow || existingCase.gasSheetRow,
+                lastSyncedAt: new Date()
+            };
+            
+            result = await wixData.update('Cases', updatedCase);
+            
+            return ok({
+                headers: { 'Content-Type': 'application/json' },
+                body: {
+                    success: true,
+                    message: 'Case updated successfully',
+                    caseId: result._id,
+                    caseNumber: result.caseNumber,
+                    action: 'updated'
+                }
+            });
+            
+        } else {
+            // Create new case
+            const newCase = {
+                caseNumber: caseData.caseNumber,
+                defendantName: caseData.defendantName || '',
+                defendantEmail: caseData.defendantEmail || '',
+                defendantPhone: caseData.defendantPhone || '',
+                indemnitorName: caseData.indemnitorName || '',
+                indemnitorEmail: caseData.indemnitorEmail || '',
+                indemnitorPhone: caseData.indemnitorPhone || '',
+                bondAmount: caseData.bondAmount || '',
+                county: caseData.county || '',
+                arrestDate: caseData.arrestDate || '',
+                charges: caseData.charges || '',
+                status: caseData.status || 'pending',
+                receiptNumber: caseData.receiptNumber || '',
+                gasSheetRow: caseData.gasSheetRow || null,
+                lastSyncedAt: new Date()
+            };
+            
+            result = await wixData.insert('Cases', newCase);
+            
+            return ok({
+                headers: { 'Content-Type': 'application/json' },
+                body: {
+                    success: true,
+                    message: 'Case created successfully',
+                    caseId: result._id,
+                    caseNumber: result.caseNumber,
+                    action: 'created'
+                }
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error syncing case data:', error);
+        return serverError({
+            body: {
+                success: false,
+                message: error.message,
+                error: error.toString()
+            }
+        });
+    }
+}
 
 /**
  * POST /api/documents/add
