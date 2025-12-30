@@ -1,0 +1,289 @@
+/**
+ * backend/signing-methods.jsw
+ * 
+ * Integration layer between Wix Portal and GAS Dashboard for all signing methods:
+ * - Email: SignNow sends email with signing link
+ * - SMS: SignNow sends text message with link  
+ * - Kiosk: In-office iPad signing (embedded SignNow)
+ * - Print: Generate PDFs for wet signature
+ */
+
+import { fetch } from 'wix-fetch';
+import { getSecret } from 'wix-secrets-backend';
+import wixData from 'wix-data';
+
+// GAS Web App URL (from signnow-integration.jsw)
+const GAS_WEB_APP_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
+
+/**
+ * Core function to call GAS Backend
+ */
+async function callGasBackend(payload) {
+    try {
+        const response = await fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`GAS Backend Error: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('Failed to call GAS Backend:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Send paperwork via Email
+ * @param {Object} params - { caseId, defendantEmail, indemnitorEmails[], documentIds[] }
+ */
+export async function sendViaEmail(params) {
+    const { caseId, defendantEmail, indemnitorEmails, documentIds, emailSubject } = params;
+
+    const result = await callGasBackend({
+        action: 'sendForSignature',
+        method: 'email',
+        caseId,
+        defendantEmail,
+        indemnitorEmails: indemnitorEmails || [],
+        documentIds: documentIds || [],
+        emailSubject: emailSubject || 'Shamrock Bail Bonds - Documents for Signature'
+    });
+
+    if (result.success) {
+        // Log to Wix collection
+        await logSigningEvent(caseId, 'email', result);
+    }
+
+    return result;
+}
+
+/**
+ * Send paperwork via SMS
+ * @param {Object} params - { caseId, defendantPhone, indemnitorPhones[], documentIds[] }
+ */
+export async function sendViaSMS(params) {
+    const { caseId, defendantPhone, indemnitorPhones, documentIds } = params;
+
+    const result = await callGasBackend({
+        action: 'sendForSignature',
+        method: 'sms',
+        caseId,
+        defendantPhone,
+        indemnitorPhones: indemnitorPhones || [],
+        documentIds: documentIds || []
+    });
+
+    if (result.success) {
+        await logSigningEvent(caseId, 'sms', result);
+    }
+
+    return result;
+}
+
+/**
+ * Create embedded signing link for Kiosk Mode
+ * @param {Object} params - { caseId, documentId, signerEmail, signerRole }
+ */
+export async function createKioskLink(params) {
+    const { caseId, documentId, signerEmail, signerRole } = params;
+
+    const result = await callGasBackend({
+        action: 'createEmbeddedLink',
+        documentId,
+        signerEmail: signerEmail || 'signer@example.com',
+        signerRole: signerRole || 'Signer',
+        linkExpiration: 60 // 1 hour for kiosk
+    });
+
+    if (result.success && result.links && result.links[0]) {
+        // Save kiosk link to PendingDocuments collection
+        await savePendingDocument({
+            caseId,
+            documentId,
+            signingLink: result.links[0],
+            method: 'kiosk',
+            status: 'pending',
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+        });
+
+        await logSigningEvent(caseId, 'kiosk', result);
+    }
+
+    return result;
+}
+
+/**
+ * Generate PDFs for print/download
+ * @param {Object} params - { caseId, documentIds[] }
+ */
+export async function generatePrintPDFs(params) {
+    const { caseId, documentIds } = params;
+
+    const result = await callGasBackend({
+        action: 'generatePDFs',
+        method: 'download',
+        caseId,
+        documentIds: documentIds || []
+    });
+
+    if (result.success) {
+        await logSigningEvent(caseId, 'print', result);
+    }
+
+    return result;
+}
+
+/**
+ * Get signing status for a case
+ * @param {string} caseId
+ */
+export async function getSigningStatus(caseId) {
+    try {
+        const results = await wixData.query('SigningSessions')
+            .eq('caseId', caseId)
+            .descending('_createdDate')
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (results.items.length > 0) {
+            return {
+                success: true,
+                status: results.items[0].status,
+                method: results.items[0].method,
+                session: results.items[0]
+            };
+        }
+
+        return { success: false, message: 'No signing session found' };
+    } catch (error) {
+        console.error('Error getting signing status:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get pending documents for a member
+ * @param {string} memberId
+ */
+export async function getPendingDocuments(memberId) {
+    try {
+        const results = await wixData.query('PendingDocuments')
+            .eq('memberId', memberId)
+            .eq('status', 'pending')
+            .find({ suppressAuth: true });
+
+        return {
+            success: true,
+            documents: results.items
+        };
+    } catch (error) {
+        console.error('Error getting pending documents:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Mark document as signed
+ * @param {string} documentId
+ */
+export async function markDocumentSigned(documentId) {
+    try {
+        const results = await wixData.query('PendingDocuments')
+            .eq('documentId', documentId)
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (results.items.length > 0) {
+            const doc = results.items[0];
+            doc.status = 'signed';
+            doc.signedAt = new Date();
+            await wixData.update('PendingDocuments', doc, { suppressAuth: true });
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error marking document signed:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Save pending document to collection
+ */
+async function savePendingDocument(data) {
+    try {
+        await wixData.insert('PendingDocuments', {
+            ...data,
+            createdAt: new Date()
+        }, { suppressAuth: true });
+    } catch (error) {
+        console.error('Error saving pending document:', error);
+    }
+}
+
+/**
+ * Log signing event to collection
+ */
+async function logSigningEvent(caseId, method, result) {
+    try {
+        await wixData.insert('SignatureEvents', {
+            caseId,
+            method,
+            result: JSON.stringify(result),
+            eventTime: new Date()
+        }, { suppressAuth: true });
+    } catch (error) {
+        console.error('Error logging signing event:', error);
+    }
+}
+
+/**
+ * Initiate signing workflow from Staff Portal
+ * @param {Object} params - { caseId, method, defendantInfo, indemnitorInfo, documentIds }
+ */
+export async function initiateSigningWorkflow(params) {
+    const { caseId, method, defendantInfo, indemnitorInfo, documentIds } = params;
+
+    switch (method) {
+        case 'email':
+            return await sendViaEmail({
+                caseId,
+                defendantEmail: defendantInfo.email,
+                indemnitorEmails: indemnitorInfo.map(i => i.email),
+                documentIds
+            });
+
+        case 'sms':
+            return await sendViaSMS({
+                caseId,
+                defendantPhone: defendantInfo.phone,
+                indemnitorPhones: indemnitorInfo.map(i => i.phone),
+                documentIds
+            });
+
+        case 'kiosk':
+            return await createKioskLink({
+                caseId,
+                documentId: documentIds[0], // First document for kiosk
+                signerEmail: defendantInfo.email,
+                signerRole: 'Defendant'
+            });
+
+        case 'print':
+            return await generatePrintPDFs({
+                caseId,
+                documentIds
+            });
+
+        default:
+            return { success: false, error: 'Invalid signing method' };
+    }
+}
