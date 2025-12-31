@@ -132,7 +132,7 @@ function setupNavLinks() {
     const navItems = [
         { selector: '#navHome', path: '/' },
         { selector: '#navHowBailWorks', path: '/how-bail-works' },
-        { selector: '#navCounties', path: '/bail-bonds' },
+        { selector: '#navCounties', path: '/florida-sheriffs-clerks-directory' },
         { selector: '#navBecomeBondsman', path: '/become-a-bondsman' },
         { selector: '#navDirectory', path: '/florida-sheriffs-clerks-directory' },
         { selector: '#navBlog', path: '/blog' },
@@ -140,9 +140,8 @@ function setupNavLinks() {
     ];
 
     navItems.forEach(item => {
-        // Direct handling - if element missing, Velo will log warning but continue
         const el = $w(item.selector);
-        if (el) {
+        if (el.length > 0) {
             el.onClick(() => {
                 trackEvent('Navigation_Click', { destination: item.path });
                 closeMobileMenu();
@@ -155,7 +154,7 @@ function setupNavLinks() {
     navItems.forEach(item => {
         const mobileSelector = item.selector.replace('#nav', '#mobileNav');
         const el = $w(mobileSelector);
-        if (el) {
+        if (el.length > 0) {
             el.onClick(() => {
                 trackEvent('Mobile_Navigation_Click', { destination: item.path });
                 closeMobileMenu();

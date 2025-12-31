@@ -11,7 +11,7 @@ $w.onReady(function () {
 
     // 2. Setup Spanish Speaking Phone Button (Defensive)
     const spanishBtn = $w("#callNowSpanishBtn");
-    if (spanishBtn) {
+    if (spanishBtn.length > 0) {
         spanishBtn.onClick(() => wixLocation.to("tel:12399550301"));
         spanishBtn.onDblClick(() => wixLocation.to("tel:12399550301"));
     }
@@ -29,19 +29,26 @@ async function initCountyDropdown() {
         let dropdown = $w('#countySelector');
 
         // Fallback attempts
-        if (!dropdown) dropdown = $w('#dropdown1');
+        if (dropdown.length === 0) dropdown = $w('#dropdown1');
 
-        if (!dropdown) {
+        if (dropdown.length === 0) {
             console.error('CRITICAL: Dropdown not found. Checked: #countySelector, #dropdown1');
             return;
         }
 
-        // 2. Fetch counties
-        let counties = await getCounties();
+        // 2. Fetch counties (WITH TIMEOUT)
+        // Create a timeout promise that resolves to empty array after 3 seconds
+        const timeoutPromise = new Promise(resolve => setTimeout(() => {
+            console.warn("DEBUG: Fetch timed out. Using fallback.");
+            resolve([]);
+        }, 3000));
 
-        // 2a. HARDCODED FALLBACK (If DB fails/empty)
+        // Race the fetch against the timeout
+        let counties = await Promise.race([getCounties(), timeoutPromise]);
+
+        // 2a. HARDCODED FALLBACK (If DB fails/empty/timeout)
         if (!counties || counties.length === 0) {
-            console.warn("DEBUG: Fetch failed. Using Hardcoded Fallback.");
+            console.warn("DEBUG: Fetch failed/empty. Using Hardcoded Fallback.");
             counties = [
                 { name: "Alachua", slug: "alachua" },
                 { name: "Charlotte", slug: "charlotte" },
@@ -65,8 +72,12 @@ async function initCountyDropdown() {
 
         // 5. Setup Change Handler
         dropdown.onChange((event) => {
-            const dest = event.target.value;
-            if (dest) wixLocation.to(dest);
+            try {
+                const dest = event.target.value;
+                if (dest) wixLocation.to(dest);
+            } catch (e) {
+                console.error("Navigation error:", e);
+            }
         });
 
     } catch (err) {
