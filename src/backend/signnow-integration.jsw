@@ -13,12 +13,7 @@
 // Refactored to use Centralized GAS Backend for Unified Workflows
 
 import { fetch } from 'wix-fetch';
-
-/**
- * CONFIGURATION - Google Apps Script Backend
- * This serves as our single source of truth for SignNow logic
- */
-const GAS_WEB_APP_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
+import { getSecret } from 'wix-secrets-backend';
 
 /**
  * Core function to call the GAS Backend
@@ -26,7 +21,13 @@ const GAS_WEB_APP_URL = 'https://script.google.com/a/macros/shamrockbailbonds.bi
  */
 async function callGasBackend(payload) {
     try {
-        const response = await fetch(GAS_WEB_APP_URL, {
+        const gasWebAppUrl = await getSecret('GAS_WEB_APP_URL');
+
+        if (!gasWebAppUrl) {
+            throw new Error('GAS_WEB_APP_URL secret not configured');
+        }
+
+        const response = await fetch(gasWebAppUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

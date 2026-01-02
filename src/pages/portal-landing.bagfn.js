@@ -50,7 +50,7 @@ function setupEventHandlers() {
         await handleToken(token);
     });
 
-    // Role Selection (New)
+    // Role Selection
     const { assignRoleToCurrentUser } = require('backend/portal-auth');
 
     $w('#selectDefendantBtn').onClick(async () => {
@@ -59,6 +59,13 @@ function setupEventHandlers() {
 
     $w('#selectIndemnitorBtn').onClick(async () => {
         await handleRoleSelection('indemnitor');
+    });
+
+    // Add Staff Button Handler
+    // Note: Staff cannot self-assign the role, they must already have it.
+    // This button simply navigates them to the staff portal.
+    $w('#selectStaffBtn').onClick(async () => {
+        wixLocation.to('/portal-staff');
     });
 
     async function handleRoleSelection(role) {

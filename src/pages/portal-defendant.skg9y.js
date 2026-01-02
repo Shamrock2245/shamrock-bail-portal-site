@@ -1,34 +1,60 @@
 // Page: portal-defendant.skg9y.js
-// Function: Client Dashboard for Check-Ins with Selfie Requirement
+// Function: Client Dashboard for Check-Ins with Selfie Requirement and Case Status
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { currentMember } from 'wix-members';
 import { saveUserLocation } from 'backend/location';
-import { getUserProfile } from 'backend/portal-auth';
+import { getUserProfile, getDefendantDetails } from 'backend/portal-auth';
 
 $w.onReady(async function () {
-    $w('#welcomeText').text = "Loading...";
+    initUI(); // Set loading states
 
-    // 1. Load User Info
     try {
         const member = await currentMember.getMember();
-        if (member) {
-            const profile = await getUserProfile(member._id);
-            const name = (member.contactDetails?.firstName) || "Client";
-            $w('#welcomeText').text = `Welcome, ${name}`;
+        if (!member) return;
+
+        // Fetch Comprehensive Data
+        const data = await getDefendantDetails(member._id);
+        const name = (member.contactDetails?.firstName) || "Client";
+
+        // --- I. TOP SECTION: Case Details ---
+        $w('#welcomeText').text = `Welcome, ${name}`;
+        if (data) {
+            $w('#caseNumberText').text = data.caseNumber || "Pending";
+            $w('#bondAmountText').text = data.bondAmount || "$0.00";
+            $w('#nextCourtDateValueText').text = data.nextCourtDate || "TBD";
+            $w('#caseStatusText').text = data.caseStatus || "Active";
+
+            // --- II. MIDDLE SECTION: Paperwork ---
+            $w('#paperworkStatusText').text = data.paperworkStatus || "Pending";
+            $w('#signingStatusText').text = data.signingStatus || "Incomplete";
         }
+
     } catch (e) {
-        console.error("Profile Load Error", e);
+        console.error("Dashboard Load Error", e);
         $w('#welcomeText').text = "Welcome";
     }
 
-    // 2. Setup Check-In Handler
+    setupEventHandlers();
+});
+
+function initUI() {
+    $w('#welcomeText').text = "Loading...";
+    $w('#checkInStatusText').collapse(); // Hide status initially
+}
+
+function setupEventHandlers() {
+    // --- II. Paperwork Buttons ---
+    $w('#signEmailBtn').onClick(() => wixWindow.openLightbox("SignViaEmail")); // Placeholder
+    $w('#signKioskBtn').onClick(() => wixWindow.openLightbox("SignViaKiosk")); // Placeholder
+    $w('#downloadPrintBtn').onClick(() => console.log("Download clicked"));
+
+    // --- III. Check-In Handler ---
     $w('#checkInBtn').onClick(async () => {
         // Validation: Must have a file selected
         if ($w('#selfieUpload').value.length === 0) {
-            $w('#statusBox').style.backgroundColor = "#FFE6E6";
-            $w('#nextCourtDateText').text = "Error: Please take a selfie first.";
+            updateCheckInStatus("Error: Please take a selfie first.", "error");
             return;
         }
 
@@ -58,12 +84,7 @@ $w.onReady(async function () {
                 $w('#checkInBtn').label = "Check In Complete";
                 $w('#checkInBtn').enable();
                 $w('#updateNotesInput').value = "";
-
-                // Visual feedback
-                $w('#statusBox').style.backgroundColor = "#E6FFFA";
-                if (result.address) {
-                    $w('#nextCourtDateText').text = `Checked in at: ${result.address}`;
-                }
+                updateCheckInStatus(`Checked in at: ${result.address}`, "success");
             } else {
                 throw new Error(result.message);
             }
@@ -72,8 +93,14 @@ $w.onReady(async function () {
             console.error("Check-in Error", error);
             $w('#checkInBtn').label = "Try Again";
             $w('#checkInBtn').enable();
-            $w('#statusBox').style.backgroundColor = "#FFE6E6";
-            $w('#nextCourtDateText').text = "Error: " + (error.message || "Please enable Location Services.");
+            updateCheckInStatus("Error: " + (error.message || "Please enable Location Services."), "error");
         }
     });
-});
+}
+
+function updateCheckInStatus(msg, type) {
+    const color = type === "success" ? "#E6FFFA" : "#FFE6E6";
+    $w('#statusBox').style.backgroundColor = color;
+    $w('#checkInStatusText').text = msg;
+    $w('#checkInStatusText').expand();
+}

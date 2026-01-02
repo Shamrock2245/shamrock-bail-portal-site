@@ -1,69 +1,103 @@
 // Page: portal-staff.qs9dx.js
-// Function: Admin Dashboard to manage users and generate links
+// Function: Staff Dashboard for Case Management (Stats, Search, Filtering)
 
 import wixData from 'wix-data';
 import wixLocation from 'wix-location';
-import { currentMember } from 'wix-members';
-import { generateMagicLink } from 'backend/portal-auth';
+import { generateMagicLink, getStaffDashboardData } from 'backend/portal-auth';
+
+let allCases = []; // Store locally for fast filtering
 
 $w.onReady(async function () {
-    // 1. Initial Load
-    await loadDefendants();
+    $w('#welcomeText').text = "Loading Dashboard...";
 
-    // 2. Refresh Link
-    $w('#refreshBtn').onClick(() => loadDefendants());
+    // 1. Load Data
+    try {
+        const result = await getStaffDashboardData();
+        const { stats, cases } = result;
+        allCases = cases;
+
+        // A. Populate Stats
+        $w('#activeCasesCount').text = stats.activeCases.toString();
+        $w('#pendingSignaturesCount').text = stats.pendingSignatures.toString();
+        $w('#completedTodayCount').text = stats.completedToday.toString();
+        $w('#failedCount').text = stats.failedChecks.toString();
+
+        $w('#welcomeText').text = "Welcome, Staff";
+
+        // B. Init Repeater
+        setupRepeater();
+        $w('#caseListRepeater').data = allCases;
+
+    } catch (err) {
+        console.error("Staff Data Error", err);
+        $w('#welcomeText').text = "Error loading data.";
+    }
+
+    // 2. Setup Event Handlers
+    initFilters();
+    $w('#searchBar').onInput((event) => filterData());
 });
 
-async function loadDefendants() {
-    $w('#loadingText').expand();
-    $w('#defendantsRepeater').collapse();
+function setupRepeater() {
+    $w('#caseListRepeater').onItemReady(($item, itemData) => {
+        // Map Fields
+        $item('#caseNumberText').text = itemData.caseNumber;
+        $item('#defendantNameText').text = itemData.defendantName;
+        $item('#bondAmountText').text = itemData.bondAmount;
+        $item('#caseStatusText').text = itemData.status;
+        $item('#paperworkStatusText').text = itemData.paperworkStatus;
 
-    try {
-        const results = await wixData.query("PortalUsers")
-            .eq("role", "defendant")
-            .descending("_updatedDate")
-            .limit(50)
-            .find();
-
-        $w('#defendantsRepeater').data = results.items;
-
-        $w('#defendantsRepeater').onItemReady(($item, itemData) => {
-            $item('#nameText').text = itemData.personId || "Unknown Defendant";
-            $item('#roleText').text = itemData.role || "No Role";
-
-            $item('#generateLinkBtn').onClick(async () => {
-                $item('#generateLinkBtn').disable();
-                $item('#generateLinkBtn').label = "...";
-
-                try {
-                    const caseId = itemData.caseIds && itemData.caseIds.length > 0 ? itemData.caseIds[0] : null;
-                    const token = await generateMagicLink(itemData.personId, itemData.role, caseId);
-
-                    const link = `https://www.shamrockbailbonds.biz/portal?token=${token}`;
-
-                    console.log("Magic Link Generated:", link);
-
-                    $item('#linkOutput').text = "Link Logged to Console";
-                    $item('#linkOutput').expand();
-                    $item('#generateLinkBtn').label = "Sent";
-                } catch (err) {
-                    console.error("Gen Link Error:", err);
-                    $item('#generateLinkBtn').label = "Error";
-                }
+        // Actions
+        $item('#detailsBtn').onClick(() => {
+            console.log("Opening Details for", itemData.defendantName);
+            import('wix-window').then(wixWindow => {
+                wixWindow.openLightbox("DefendantDetails", itemData);
             });
         });
 
-        $w('#loadingText').collapse();
-        $w('#defendantsRepeater').expand();
-        $w('#noDataText').collapse();
+        $item('#sendMagicLinkBtn').onClick(async () => {
+            $item('#sendMagicLinkBtn').label = "...";
+            try {
+                // Generate magic link for this defendant
+                // assuming itemData matches personId or generic ID for now
+                const token = await generateMagicLink(itemData._id, "defendant");
+                console.log(`Link for ${itemData.defendantName}: https://www.shamrockbailbonds.biz/portal?token=${token}`);
+                $item('#sendMagicLinkBtn').label = "Sent";
+            } catch (e) {
+                $item('#sendMagicLinkBtn').label = "Error";
+            }
+        });
+    });
+}
 
-        if (results.items.length === 0) {
-            $w('#noDataText').expand();
-        }
+function initFilters() {
+    // Stat Card Filters
+    $w('#filterAllBtn').onClick(() => setFilter("All"));
+    $w('#filterPendingBtn').onClick(() => setFilter("Pending"));
+    $w('#filterActiveBtn').onClick(() => setFilter("Active"));
+    $w('#filterCompletedBtn').onClick(() => setFilter("Completed"));
+}
 
-    } catch (error) {
-        console.error("Load Error:", error);
-        $w('#loadingText').text = "Error loading data. Check console.";
-        $w('#loadingText').expand();
-    }
+let currentFilter = "All";
+
+function setFilter(status) {
+    currentFilter = status;
+    filterData();
+}
+
+function filterData() {
+    const query = $w('#searchBar').value.toLowerCase();
+
+    const filtered = allCases.filter(c => {
+        const matchesStatus = currentFilter === "All" || c.status.toLowerCase() === currentFilter.toLowerCase();
+        const matchesSearch = c.defendantName.toLowerCase().includes(query) ||
+            c.caseNumber.toLowerCase().includes(query);
+        return matchesStatus && matchesSearch;
+    });
+
+    $w('#caseListRepeater').data = filtered;
+
+    // Toggle "No Data" text if empty
+    if (filtered.length === 0) $w('#noDataText').expand();
+    else $w('#noDataText').collapse();
 }
