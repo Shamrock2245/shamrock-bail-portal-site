@@ -37,18 +37,21 @@ async function initCountyDropdown() {
         }
 
         // 2. Fetch counties (WITH TIMEOUT)
-        // Create a timeout promise that resolves to empty array after 3 seconds
+        // Create a timeout promise that resolves to NULL to differentiate from empty array
         const timeoutPromise = new Promise(resolve => setTimeout(() => {
             console.warn("DEBUG: Fetch timed out. Using fallback.");
-            resolve([]);
+            resolve(null);
         }, 3000));
 
         // Race the fetch against the timeout
         let counties = await Promise.race([getCounties(), timeoutPromise]);
 
-        // 2a. HARDCODED FALLBACK (If DB fails/empty/timeout)
-        if (!counties || counties.length === 0) {
-            console.warn("DEBUG: Fetch failed/empty. Using Hardcoded Fallback.");
+        console.log("DEBUG: Raw counties from fetch:", counties);
+
+        // 2a. VALIDATION & FALLBACK
+        // We check if it is falsy OR empty array OR not an array
+        if (!Array.isArray(counties) || counties.length === 0) {
+            console.warn("DEBUG: Fetch failed/empty/timeout. Using Hardcoded Fallback.");
             counties = [
                 { name: "Alachua", slug: "alachua" },
                 { name: "Charlotte", slug: "charlotte" },
@@ -60,13 +63,19 @@ async function initCountyDropdown() {
         }
 
         // 3. Map to dropdown options format { label, value }
-        const options = counties.map(county => ({
-            label: county.name + ' County',
-            value: `/county/${county.slug}`
-        }));
+        const options = counties.map(county => {
+            const name = county.name || county.countyName || "Unknown";
+            const slug = county.slug || county.countySlug || "";
+            return {
+                label: name + ' County',
+                value: `/county/${slug}`
+            };
+        });
 
         // 4. Set options
-        console.log("Loading Dropdown with " + options.length + " counties.");
+        console.log("Loading Dropdown with " + options.length + " options.");
+        console.log("Options Sample:", options.slice(0, 2));
+
         dropdown.options = options;
         dropdown.placeholder = "Select a County";
 
@@ -74,6 +83,7 @@ async function initCountyDropdown() {
         dropdown.onChange((event) => {
             try {
                 const dest = event.target.value;
+                console.log("Navigation triggered to:", dest);
                 if (dest) wixLocation.to(dest);
             } catch (e) {
                 console.error("Navigation error:", e);
