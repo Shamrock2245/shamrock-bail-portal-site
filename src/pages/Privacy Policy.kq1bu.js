@@ -1,10 +1,33 @@
-// API Reference: https://www.wix.com/velo/reference/api-overview/introduction
-// “Hello, World!” Example: https://learn-code.wix.com/en/article/hello-world
+// Florida Counties Page (Moved from bh0r4)
+import wixLocation from 'wix-location';
+import { getCounties } from 'public/countyUtils';
 
-$w.onReady(function () {
-    // Write your JavaScript here
+$w.onReady(async function () {
+    console.log("🚀 Florida Counties directory page LOADED (kq1bu)");
+    try {
+        // Get the repeater element
+        const repeaterId = '#countiesRepeater';
+        const repeater = $w(repeaterId);
 
-    // To select an element by ID use: $w('#elementID')
+        if (repeater.length === 0) {
+            console.error('Counties repeater not found on page');
+            return;
+        }
 
-    // Click 'Preview' to run your code
+        // Fetch counties data
+        console.log('Fetching counties data...');
+        const counties = await getCounties();
+        console.log(`Loaded ${counties.length} counties`);
+
+        if (counties.length > 0) {
+            // Set repeater data
+            repeater.data = counties;
+            console.log('✅ Counties repeater populated successfully');
+        } else {
+            console.warn('⚠️ No counties data returned');
+        }
+
+    } catch (error) {
+        console.error('❌ Error loading Florida Counties page:', error);
+    }
 });
