@@ -50,8 +50,8 @@ $w.onReady(async function () {
   $w('#paymentsTab').onClick(() => switchView('payments'));
   $w('#checkInsTab').onClick(() => switchView('checkins'));
   $w('#documentsTab').onClick(() => switchView('documents'));
-  
-  $w('#refreshButton').onClick(refreshCurrentView);
+
+  $w('#refreshBtn').onClick(refreshCurrentView);
 });
 
 /**
@@ -195,8 +195,8 @@ async function loadActiveCases() {
 
   // Set up repeater item handlers
   $w('#activeCasesRepeater').onItemReady(($item, itemData) => {
-    $item('#viewCaseButton').onClick(() => viewCase(itemData._id));
-    $item('#flagCaseButton').onClick(() => handleFlagCase(itemData._id));
+    $item('#viewCaseBtn').onClick(() => viewCase(itemData._id));
+    $item('#flagCaseBtn').onClick(() => handleFlagCase(itemData._id));
   });
 }
 
@@ -223,8 +223,8 @@ async function loadMissingPaperwork() {
   }));
 
   $w('#paperworkRepeater').onItemReady(($item, itemData) => {
-    $item('#resendButton').onClick(() => handleResendPaperwork(itemData._id));
-    $item('#viewCaseButton').onClick(() => viewCase(itemData._id));
+    $item('#resendBtn').onClick(() => handleResendPaperwork(itemData._id));
+    $item('#viewCaseBtn').onClick(() => viewCase(itemData._id));
   });
 }
 
@@ -251,8 +251,8 @@ async function loadPaymentIssues() {
   }));
 
   $w('#paymentsRepeater').onItemReady(($item, itemData) => {
-    $item('#contactButton').onClick(() => contactMember(itemData.defendantEmail));
-    $item('#viewCaseButton').onClick(() => viewCase(itemData._id));
+    $item('#contactBtn').onClick(() => contactMember(itemData.defendantEmail));
+    $item('#viewCaseBtn').onClick(() => viewCase(itemData._id));
   });
 }
 
@@ -298,9 +298,9 @@ async function loadPendingDocuments() {
   }));
 
   $w('#documentsRepeater').onItemReady(($item, itemData) => {
-    $item('#viewDocButton').onClick(() => viewDocument(itemData.fileUrl));
-    $item('#approveButton').onClick(() => handleApproveDocument(itemData._id));
-    $item('#rejectButton').onClick(() => handleRejectDocument(itemData._id));
+    $item('#viewDocBtn').onClick(() => viewDocument(itemData.fileUrl));
+    $item('#approveBtn').onClick(() => handleApproveDocument(itemData._id));
+    $item('#rejectBtn').onClick(() => handleRejectDocument(itemData._id));
   });
 }
 
@@ -389,9 +389,9 @@ function formatDate(date) {
 function formatDateTime(date) {
   if (!date) return 'N/A';
   const d = new Date(date);
-  return d.toLocaleString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit'
@@ -415,7 +415,7 @@ function showLoading(show) {
 function showError(message) {
   $w('#errorBox').show();
   $w('#errorText').text = message;
-  
+
   setTimeout(() => {
     $w('#errorBox').hide();
   }, 5000);
@@ -427,7 +427,7 @@ function showError(message) {
 function showSuccess(message) {
   $w('#successBox').show();
   $w('#successText').text = message;
-  
+
   setTimeout(() => {
     $w('#successBox').hide();
   }, 3000);

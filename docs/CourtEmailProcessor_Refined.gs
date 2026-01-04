@@ -244,6 +244,42 @@ function extractCourtDateData(message) {
 }
 
 /**
+ * Extract forfeiture data
+ */
+function extractForfeitureData(message) {
+  try {
+    const subject = message.getSubject();
+    const body = message.getPlainBody();
+    
+    // Case Number
+    const caseMatch = subject.match(/(\d{2}-[A-Z]+-\d+)/i) || body.match(/Case\s*No\.?\s*[:\s]*(\d{2}-[A-Z]+-\d+)/i);
+    const caseNumber = caseMatch ? caseMatch[1] : 'Unknown';
+    
+    // Defendant
+    let defendant = 'Unknown';
+    const defendantMatch = body.match(/(?:Parties|Defendant|Name of Defendant|In Re:)\s*[:\s]+([^\n\r,]+)/i);
+    if (defendantMatch) defendant = defendantMatch[1].trim();
+
+    // Forfeiture Date (Default to email date if not found)
+    let forfeitureDate = message.getDate();
+    const dateMatch = body.match(/Forfeiture Date[:\s]+(\d{1,2}\/\d{1,2}\/\d{4})/i);
+    if (dateMatch) {
+       forfeitureDate = new Date(dateMatch[1]);
+    }
+
+    return {
+      caseNumber,
+      defendant,
+      forfeitureDate,
+      emailDate: message.getDate()
+    };
+  } catch (e) {
+    Logger.log(`❌ Forfeiture extraction error: ${e.message}`);
+    return null;
+  }
+}
+
+/**
  * Lookup defendant email in Master Sheet
  */
 function lookupDefendantEmail(name, caseNumber) {
@@ -349,6 +385,29 @@ function createCourtDateEvent(data) {
   Logger.log(`📅 Created & Shared event: ${title}`);
 }
 
+/**
+ * Create forfeiture events
+ */
+function createForfeitureEvents(data) {
+  const calendar = CalendarApp.getCalendarById(CONFIG.calendarId);
+  if (!calendar) throw new Error('Target calendar not found');
+
+  const title = `FORFEITURE: ${data.defendant} - ${data.caseNumber}`;
+  const description = `⚠️ NOTICE OF FORFEITURE\n\nDefendant: ${data.defendant}\nCase: ${data.caseNumber}\nDate Issued: ${data.forfeitureDate}`;
+
+  // Duplicate check
+  if (CONFIG.preventDuplicates) {
+    const existing = calendar.getEventsForDay(data.forfeitureDate);
+    if (existing.some(e => e.getTitle() === title)) return;
+  }
+
+  const event = calendar.createAllDayEvent(title, data.forfeitureDate, {
+    description: description
+  });
+  event.setColor(CONFIG.colors.forfeitureDate);
+  Logger.log(`🚨 Created Forfeiture event: ${title}`);
+}
+
 // ... (Rest of the functions: getUnprocessedEmails, labelEmail, postToSlack, etc. remain similar to original)
 
 function getUnprocessedEmails(days) {
@@ -392,4 +451,8 @@ function postToSlack(url, msg) {
 
 function formatCourtDateSlackMessage(d) {
   return { text: `🏛️ *Court Date Found*\n*Defendant:* ${d.defendant}\n*Case:* ${d.caseNumber}\n*Date:* ${d.courtDate.toLocaleString()}\n*Room:* ${d.courtroom}\n*Shared with:* ${d.defendantEmail || 'None (Email not found)'}` };
+}
+
+function formatForfeitureSlackMessage(d) {
+  return { text: `🚨 *FORFEITURE NOTICE*\n*Defendant:* ${d.defendant}\n*Case:* ${d.caseNumber}\n*Date:* ${d.forfeitureDate.toLocaleDateString()}` };
 }

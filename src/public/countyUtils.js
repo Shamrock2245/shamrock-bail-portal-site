@@ -135,6 +135,14 @@ export async function getCountyBySlug(slug) {
                 serviceAreaCopy: county.serviceAreaCopy,
                 h1Headline: county.h1Headline,
                 ctaLink: county.ctaLink,
+                // Address & Contact Fields
+                sheriffAddress: county.sheriffAddress,
+                jailAddress: county.jailAddress,
+                bookingPhone: county.bookingPhoneNumber, // Sheriff/Booking Phone
+                clerkPhone: county.countyClerkPhoneNumber, // Clerk Phone
+                countySeat: county.countySeat,
+                population: county.population,
+
                 // Keep original for compatibility
                 countyName: county.countyName,
                 countySlug: county.countySlug

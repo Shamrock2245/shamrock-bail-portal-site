@@ -4,7 +4,7 @@ $w.onReady(function () {
     // 1. Setup the Top Form
     setupForm(
         '#bailSchoolEmailInput',
-        '#bailSchoolSubmitButton',
+        '#bailSchoolSubmitBtn',
         '#bailSchoolSuccessMsg',
         '#bailSchoolErrorText'
     );
@@ -12,7 +12,7 @@ $w.onReady(function () {
     // 2. Setup the Bottom Form
     setupForm(
         '#bailSchoolEmailInputBottom',
-        '#bailSchoolSubmitButtonBottom',
+        '#bailSchoolSubmitBtnBottom',
         '#bailSchoolSuccessMsgBottom',
         '#bailSchoolErrorTextBottom'
     );

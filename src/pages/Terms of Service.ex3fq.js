@@ -1,10 +1,24 @@
-// API Reference: https://www.wix.com/velo/reference/api-overview/introduction
-// “Hello, World!” Example: https://learn-code.wix.com/en/article/hello-world
+import wixWindow from 'wix-window';
+import wixLocation from 'wix-location';
 
 $w.onReady(function () {
-    // Write your JavaScript here
+    console.log("📄 Terms of Service Loaded");
 
-    // To select an element by ID use: $w('#elementID')
+    // Optional: Print Functionality
+    // If you add a button with ID #printTermsBtn, this will make it work.
+    const printBtn = $w('#printTermsBtn');
+    if (printBtn.valid) {
+        printBtn.onClick(() => {
+            wixWindow.print();
+        });
+    }
 
-    // Click 'Preview' to run your code
+    // Optional: Back to Home
+    // If you add a button with ID #backHomeBtn, this will make it work.
+    const backBtn = $w('#backHomeBtn');
+    if (backBtn.valid) {
+        backBtn.onClick(() => {
+            wixLocation.to('/');
+        });
+    }
 });

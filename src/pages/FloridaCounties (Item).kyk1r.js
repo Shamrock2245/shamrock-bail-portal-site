@@ -31,28 +31,90 @@ $w.onReady(async function () {
 
         console.log("✅ County Data Loaded:", county.name);
 
-        // 3. Populate Page Elements
-        const nameElement = $w('#countyName');
-        console.log(`DEBUG: Element #countyName valid: ${nameElement.valid}`);
-        if (nameElement.valid) {
-            nameElement.text = county.name + " County";
-        } else {
-            console.error("CRITICAL: #countyName TEXT element missing on Dynamic Page!");
-        }
+        // 3. Populate Page Elements (Screenshot Design)
 
-        // Dynamic Header (if exists)
-        const headerText = $w('#dynamicHeader');
-        console.log(`DEBUG: Element #dynamicHeader valid: ${headerText.valid}`);
-        if (headerText.valid) headerText.text = `Bail Bonds in ${county.name} County`;
+        // --- Headers ---
+        setText('#countyName', county.name);
+        setText('#dynamicHeader', `Bail Bonds in ${county.name} County`);
+        setText('#quickRefHeader', `${county.name} Quick Reference`);
+
+        // --- Sheriff's Office (Top Left) ---
+        setText('#sheriffPhone', county.bookingPhone || "(239) 477-1500");
+        setLink('#sheriffWebsite', county.bookingWebsite, "Visit Sheriff's Website");
+
+        // --- Main Jail (Top Right) ---
+        setText('#jailAddress', county.jailAddress || "Address not available");
+
+        // --- Clerk of Court (Bottom Left) ---
+        setText('#clerkPhone', county.clerkPhone || "(239) 533-5000");
+        setLink('#clerkWebsite', county.clerkWebsite, "Visit Clerk's Website");
+
+        // --- County Information (Bottom Right) ---
+        setText('#countySeat', county.countySeat ? `County Seat: ${county.countySeat}` : "");
+        // Population removed per user request
+
+        // --- About Section (Dynamic Content) ---
+        // Header: "About Bail Bonds in [Lee County]"
+        setText('#aboutHeader', `About Bail Bonds in ${county.name} County`);
+
+        // Body: "...throughout Lee County, including Fort Myers and all surrounding..."
+        const city = county.countySeat || "the area";
+        const aboutText = `Shamrock Bail Bonds provides fast, professional bail bond services throughout ${county.name} County, including ${city} and all surrounding communities. When someone you care about is arrested and taken to ${county.name} County Main Jail, time is critical. Our experienced agents are available 24 hours a day, 7 days a week to help secure their release as quickly as possible.`;
+        setText('#aboutBody', aboutText);
+
+        // Header: "Why Choose Shamrock Bail Bonds in [Lee County]"
+        setText('#whyChooseHeader', `Why Choose Shamrock Bail Bonds in ${county.name} County`);
+
+        // --- Call Button (Sticky/Header) ---
+        const phone = county.primaryPhone || "239-955-0301";
+        const callBtn = $w('#callCountiesBtn');
+        if (callBtn.valid) {
+            callBtn.label = `Call ${phone}`;
+            callBtn.onClick(() => wixLocation.to(`tel:${phone.replace(/[^0-9]/g, '')}`));
+        }
 
         // 4. Update SEO Tags
         wixSeo.setTitle(`Bail Bonds ${county.name} County | Shamrock Bail Bonds`);
         wixSeo.setMetaTags([{
             "name": "description",
-            "content": `24/7 Bail Bonds in ${county.name} County. Call 1239-955-0301 for immediate release. Fast, confidential service.`
+            "content": `24/7 Bail Bonds in ${county.name} County. Call ${phone} for immediate release. Fast, confidential service.`
         }]);
 
     } catch (error) {
         console.error("❌ Error initializing page:", error);
     }
 });
+
+// Helper to safely set text
+function setText(selector, value) {
+    const el = $w(selector);
+    if (el.valid) {
+        el.text = value || "";
+    } else {
+        console.warn(`⚠️ Element ${selector} not found on page.`);
+    }
+}
+
+// Helper to safely set link on buttons or text
+function setLink(selector, url, label) {
+    const el = $w(selector);
+    if (el.valid) {
+        if (url) {
+            if (el.type === '$w.Button') {
+                el.label = label;
+                el.link = url;
+                el.target = "_blank";
+            } else {
+                // For Text elements, assuming they are used as labels or headers for the link
+                // If the user uses a Text element for "Visit Website", we can't easily make it a link without HTML
+                // But strictly setting .text property. If they want a clickable text link, they should use a Button styled as text.
+                el.text = label;
+                // If we want to force it to be clickable if it's a text element, we'd need onClick
+                el.onClick(() => wixLocation.to(url));
+            }
+            el.expand();
+        } else {
+            el.collapse(); // Hide if no URL
+        }
+    }
+}

@@ -5,6 +5,7 @@ import wixData from 'wix-data';
 import { currentMember } from 'wix-members-backend';
 import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
+import { fetchWithRetry } from 'backend/utils';
 
 /**
  * Save user location to the database and sync to Google Sheets
@@ -39,7 +40,7 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
         try {
             const apiKey = await getSecret('GOOGLE_MAPS_API_KEY');
             if (apiKey) {
-                const geoResponse = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`);
+                const geoResponse = await fetchWithRetry(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`);
                 if (geoResponse.ok) {
                     const geoData = await geoResponse.json();
                     if (geoData.status === 'OK' && geoData.results.length > 0) {
@@ -81,7 +82,7 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
         try {
             const gasUrl = await getSecret('GAS_WEB_APP_URL');
             if (gasUrl) {
-                await fetch(gasUrl, {
+                await fetchWithRetry(gasUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

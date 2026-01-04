@@ -11,6 +11,7 @@
 import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
 import wixData from 'wix-data';
+import { fetchWithRetry } from 'backend/utils';
 
 // GAS Web App URL - Try to load from Secrets, fallback to const
 let CACHED_GAS_URL = null;
@@ -36,7 +37,7 @@ async function getGasUrl() {
 async function callGasBackend(payload) {
     try {
         const url = await getGasUrl();
-        const response = await fetch(url, {
+        const response = await fetchWithRetry(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

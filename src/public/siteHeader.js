@@ -84,23 +84,19 @@ function setupHeaderListeners() {
     // Start Bail button
     $w('#startBailBtn').onClick(() => {
         trackEvent('Header_CTA_Click', { button: 'start_bail' });
-        if (isLoggedIn) {
-            wixLocation.to('/members/start-bail');
-        } else {
-            wixLocation.to('/members/login?returnUrl=/members/start-bail');
-        }
+        wixLocation.to('/portal');
     });
 
     // Login button
     $w('#loginBtn').onClick(() => {
         trackEvent('Header_Login_Click');
-        wixLocation.to('/members/login');
+        wixLocation.to('/portal');
     });
 
     // Account button (for logged-in users)
     $w('#accountBtn').onClick(() => {
         trackEvent('Header_Account_Click');
-        wixLocation.to('/members/account');
+        wixLocation.to('/portal');
     });
 
     // Mobile menu toggle

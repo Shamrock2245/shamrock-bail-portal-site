@@ -1,0 +1,42 @@
+/**
+ * Utility functions for backend operations
+ * Filename: backend/utils.jsw
+ */
+
+import { fetch } from 'wix-fetch';
+
+/**
+ * Fetch with exponential backoff retry logic
+ * @param {string} url - The URL to fetch
+ * @param {Object} options - Fetch options
+ * @param {number} retries - Maximum number of retries (default: 3)
+ * @param {number} backoff - Initial backoff delay in ms (default: 1000)
+ * @returns {Promise<Response>}
+ */
+export async function fetchWithRetry(url, options = {}, retries = 3, backoff = 1000) {
+    try {
+        const response = await fetch(url, options);
+
+        // If response is successful (2xx), return it
+        if (response.ok) {
+            return response;
+        }
+
+        // If 4xx (client error), do not retry (unless 429 Too Many Requests)
+        if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+            return response;
+        }
+
+        // Otherwise (5xx or 429), throw to trigger retry
+        throw new Error(`Request failed with status: ${response.status}`);
+
+    } catch (error) {
+        if (retries > 0) {
+            console.warn(`Fetch failed. Retrying in ${backoff}ms... (${retries} attempts left). Error: ${error.message}`);
+            await new Promise(resolve => setTimeout(resolve, backoff));
+            return fetchWithRetry(url, options, retries - 1, backoff * 2);
+        }
+
+        throw error;
+    }
+}

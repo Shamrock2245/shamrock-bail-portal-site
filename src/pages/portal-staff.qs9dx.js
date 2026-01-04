@@ -10,6 +10,15 @@ let allCases = []; // Store locally for fast filtering
 $w.onReady(async function () {
     $w('#welcomeText').text = "Loading Dashboard...";
 
+    // 0. Security Check
+    import('wix-members').then(async (wm) => {
+        const member = await wm.currentMember.getMember();
+        if (!member) {
+            console.warn("⛔ Staff Access Denied. Redirecting...");
+            wixLocation.to('/portal');
+        }
+    });
+
     // 1. Load Data
     try {
         const result = await getStaffDashboardData();

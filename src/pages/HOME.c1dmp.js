@@ -9,13 +9,42 @@ $w.onReady(function () {
     // 1. Initialize County Dropdown
     initCountyDropdown();
 
-    // 2. Setup Spanish Speaking Phone Button (Defensive)
+    // 2. Setup Testimonials
+    setupTestimonials();
+
+    // 3. Setup Spanish Speaking Phone Button (Defensive)
     const spanishBtn = $w("#callNowSpanishBtn");
     if (spanishBtn.length > 0) {
         spanishBtn.onClick(() => wixLocation.to("tel:12399550301"));
         spanishBtn.onDblClick(() => wixLocation.to("tel:12399550301"));
     }
 });
+
+function setupTestimonials() {
+    const data = [
+        { _id: "1", quote: "Process was fast and easy. Highly recommend.", name: "Sarah M." },
+        { _id: "2", quote: "They helped me at 3am when no one else would.", name: "John D." },
+        { _id: "3", quote: "Professional and explained everything clearly.", name: "Michael R." },
+        { _id: "4", quote: "Got my brother out in hours. Thank you!", name: "Emily S." },
+        { _id: "5", quote: "Very respectful and understanding during a tough time.", name: "David K." },
+        { _id: "6", quote: "Best bail bondsman in Fort Myers.", name: "Jessica L." },
+        { _id: "7", quote: "Honest and upfront about the costs.", name: "Robert P." },
+        { _id: "8", quote: "Shamrock really cares about their clients.", name: "Jennifer B." },
+        { _id: "9", quote: "Fastest release time I've ever seen.", name: "Christopher W." },
+        { _id: "10", quote: "Walked me through the whole court process.", name: "Amanda H." },
+        { _id: "11", quote: "Great communication from start to finish.", name: "James T." },
+        { _id: "12", quote: "Lifesavers. I didn't know what to do until I called.", name: "Melissa G." }
+    ];
+
+    const rep = $w('#testimonialsRepeater');
+    if (rep.valid) {
+        rep.data = data;
+        rep.onItemReady(($item, itemData) => {
+            $item('#quoteText').text = `"${itemData.quote}"`;
+            $item('#authorName').text = itemData.name;
+        });
+    }
+}
 
 /**
  * Initialize the county selector dropdown

@@ -11,7 +11,11 @@ $w.onReady(async function () {
 
     try {
         const member = await currentMember.getMember();
-        if (!member) return;
+        if (!member) {
+            console.warn("⛔ Unauthorized Access. Redirecting to Portal Landing.");
+            wixLocation.to('/portal');
+            return;
+        }
 
         // Fetch Comprehensive Data
         const data = await getIndemnitorDetails(member._id);

@@ -97,13 +97,13 @@ async function updatePhoneElements(phoneData, county, sessionId) {
 
   // List of common phone element IDs
   const phoneElementIds = [
-    '#callNowButton',
+    '#callNowBtn',
     '#primaryPhone',
     '#headerPhone',
     '#footerPhone',
     '#heroCallLink',
-    '#stickyCallButton',
-    '#mobileCallButton',
+    '#stickyCallBtn',
+    '#mobileCallBtn',
     '#emergencyPhone',
     '#contactPhone',
     '#spanishSpeakingPhone'
