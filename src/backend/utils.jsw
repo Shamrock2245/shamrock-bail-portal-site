@@ -2,41 +2,44 @@
  * Utility functions for backend operations
  * Filename: backend/utils.jsw
  */
-
 import { fetch } from 'wix-fetch';
+import { getSecret } from 'wix-secrets-backend';
+
+// Cached URL so we don't hit Secrets Manager on every single call
+let CACHED_GAS_URL = null;
+const FALLBACK_GAS_URL = 'https://script.google.com/macros/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
 
 /**
- * Fetch with exponential backoff retry logic
- * @param {string} url - The URL to fetch
- * @param {Object} options - Fetch options
- * @param {number} retries - Maximum number of retries (default: 3)
- * @param {number} backoff - Initial backoff delay in ms (default: 1000)
- * @returns {Promise<Response>}
+ * Get GAS Web App URL with Caching & Fallback
  */
+export async function getGasUrl() {
+    if (CACHED_GAS_URL) return CACHED_GAS_URL;
+    try {
+        const url = await getSecret("GAS_WEB_APP_URL");
+        if (url) {
+            CACHED_GAS_URL = url;
+            return url;
+        }
+    } catch (e) {
+        console.warn("GAS_WEB_APP_URL secret not found, using fallback.");
+    }
+    return FALLBACK_GAS_URL;
+}
+
 export async function fetchWithRetry(url, options = {}, retries = 3, backoff = 1000) {
     try {
         const response = await fetch(url, options);
-
-        // If response is successful (2xx), return it
-        if (response.ok) {
-            return response;
-        }
-
-        // If 4xx (client error), do not retry (unless 429 Too Many Requests)
+        if (response.ok) return response;
         if (response.status >= 400 && response.status < 500 && response.status !== 429) {
             return response;
         }
-
-        // Otherwise (5xx or 429), throw to trigger retry
         throw new Error(`Request failed with status: ${response.status}`);
-
     } catch (error) {
         if (retries > 0) {
-            console.warn(`Fetch failed. Retrying in ${backoff}ms... (${retries} attempts left). Error: ${error.message}`);
+            console.warn(`Fetch failed. Retrying in ${backoff}ms... (${retries} attempts left)`);
             await new Promise(resolve => setTimeout(resolve, backoff));
             return fetchWithRetry(url, options, retries - 1, backoff * 2);
         }
-
         throw error;
     }
 }

@@ -12,8 +12,7 @@
 // Backend file: signnow-integration.jsw
 // Refactored to use Centralized GAS Backend for Unified Workflows
 
-import { fetch } from 'wix-fetch';
-import { getSecret } from 'wix-secrets-backend';
+import { getGasUrl, fetchWithRetry } from 'backend/utils';
 
 /**
  * Core function to call the GAS Backend
@@ -21,13 +20,8 @@ import { getSecret } from 'wix-secrets-backend';
  */
 async function callGasBackend(payload) {
     try {
-        const gasWebAppUrl = await getSecret('GAS_WEB_APP_URL');
-
-        if (!gasWebAppUrl) {
-            throw new Error('GAS_WEB_APP_URL secret not configured');
-        }
-
-        const response = await fetch(gasWebAppUrl, {
+        const url = await getGasUrl();
+        const response = await fetchWithRetry(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

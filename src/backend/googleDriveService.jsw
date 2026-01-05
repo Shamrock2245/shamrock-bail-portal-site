@@ -6,17 +6,27 @@
  * Routes through GAS backend for OAuth handling.
  */
 
-import { fetch } from 'wix-fetch';
-import { getSecret } from 'wix-secrets-backend';
+import { getGasUrl, fetchWithRetry } from 'backend/utils';
 import wixData from 'wix-data';
 
 /**
- * GAS Backend URL for Google Drive operations
- * The GAS backend handles OAuth and has direct Drive access
+ * Shared wrapper for GAS Drive calls
  */
-const getGasUrl = async () => {
-    return await getSecret('GAS_WEB_APP_URL');
-};
+async function callGasDrive(payload) {
+    try {
+        const url = await getGasUrl();
+        const response = await fetchWithRetry(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error(`Drive Service Error: ${response.statusText}`);
+        return await response.json();
+    } catch (error) {
+        console.error('Drive Service Failed:', error);
+        return { success: false, error: error.message };
+    }
+}
 
 /**
  * Create a case folder in Google Drive
@@ -29,23 +39,13 @@ const getGasUrl = async () => {
  */
 export async function createCaseFolder(caseData) {
     try {
-        const gasUrl = await getGasUrl();
-
-        const response = await fetch(gasUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'createCaseFolder',
-                caseNumber: caseData.caseNumber,
-                defendantName: caseData.defendantName,
-                county: caseData.county,
-                createdAt: new Date().toISOString()
-            })
+        const result = await callGasDrive({
+            action: 'createCaseFolder',
+            caseNumber: caseData.caseNumber,
+            defendantName: caseData.defendantName,
+            county: caseData.county,
+            createdAt: new Date().toISOString()
         });
-
-        if (!response.ok) {
-            throw new Error(`Failed to create case folder: ${response.statusText}`);
-        }
 
         const result = await response.json();
 
@@ -82,24 +82,14 @@ export async function createCaseFolder(caseData) {
  */
 export async function saveDocumentToCase(documentData) {
     try {
-        const gasUrl = await getGasUrl();
-
-        const response = await fetch(gasUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'saveDocumentToCase',
-                caseNumber: documentData.caseNumber,
-                fileName: documentData.fileName,
-                fileContent: documentData.fileContent,
-                mimeType: documentData.mimeType || 'application/pdf',
-                metadata: documentData.metadata || {}
-            })
+        const result = await callGasDrive({
+            action: 'saveDocumentToCase',
+            caseNumber: documentData.caseNumber,
+            fileName: documentData.fileName,
+            fileContent: documentData.fileContent,
+            mimeType: documentData.mimeType || 'application/pdf',
+            metadata: documentData.metadata || {}
         });
-
-        if (!response.ok) {
-            throw new Error(`Failed to save document: ${response.statusText}`);
-        }
 
         const result = await response.json();
 
@@ -135,34 +125,21 @@ export async function saveDocumentToCase(documentData) {
  */
 export async function saveMemberIdDocument(idData) {
     try {
-        const gasUrl = await getGasUrl();
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `ID_${idData.idType}_${idData.memberName.replace(/\s+/g, '_')}_${timestamp}`;
 
-        const response = await fetch(gasUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'saveMemberIdDocument',
-                memberEmail: idData.memberEmail,
-                memberName: idData.memberName,
-                fileName: fileName,
-                fileContent: idData.fileContent,
-                idType: idData.idType,
-                metadata: {
-                    gps: idData.metadata?.gps,
-                    uploadedAt: idData.metadata?.uploadedAt || new Date().toISOString(),
-                    userAgent: idData.metadata?.userAgent
-                }
-            })
+        return await callGasDrive({
+            action: 'saveMemberIdDocument',
+            memberEmail: idData.memberEmail,
+            memberName: idData.memberName,
+            fileName: fileName,
+            fileContent: idData.fileContent,
+            idType: idData.idType,
+            metadata: {
+                gps: idData.metadata?.gps,
+                uploadedAt: idData.metadata?.uploadedAt || new Date().toISOString(),
+                userAgent: idData.metadata?.userAgent
+            }
         });
-
-        if (!response.ok) {
-            throw new Error(`Failed to save ID document: ${response.statusText}`);
-        }
-
-        return await response.json();
 
     } catch (error) {
         console.error('Error saving member ID document:', error);
@@ -183,29 +160,16 @@ export async function saveMemberIdDocument(idData) {
  */
 export async function saveSignedPaperwork(paperworkData) {
     try {
-        const gasUrl = await getGasUrl();
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `Signed_${paperworkData.documentName || 'BailPaperwork'}_${timestamp}.pdf`;
 
-        const response = await fetch(gasUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'saveSignedPaperwork',
-                caseNumber: paperworkData.caseNumber,
-                memberEmail: paperworkData.memberEmail,
-                fileName: fileName,
-                fileContent: paperworkData.signedPdfBase64,
-                signingMetadata: paperworkData.signingMetadata || {}
-            })
+        const result = await callGasDrive({
+            action: 'saveSignedPaperwork',
+            caseNumber: paperworkData.caseNumber,
+            memberEmail: paperworkData.memberEmail,
+            fileName: fileName,
+            fileContent: paperworkData.signedPdfBase64,
+            signingMetadata: paperworkData.signingMetadata || {}
         });
-
-        if (!response.ok) {
-            throw new Error(`Failed to save signed paperwork: ${response.statusText}`);
-        }
-
-        const result = await response.json();
 
         // Update signing session with Drive info
         if (result.success && paperworkData.sessionId) {
@@ -234,22 +198,10 @@ export async function saveSignedPaperwork(paperworkData) {
  */
 export async function getCaseDocuments(caseNumber) {
     try {
-        const gasUrl = await getGasUrl();
-
-        const response = await fetch(gasUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'getCaseDocuments',
-                caseNumber: caseNumber
-            })
+        return await callGasDrive({
+            action: 'getCaseDocuments',
+            caseNumber: caseNumber
         });
-
-        if (!response.ok) {
-            throw new Error(`Failed to get case documents: ${response.statusText}`);
-        }
-
-        return await response.json();
 
     } catch (error) {
         console.error('Error getting case documents:', error);
@@ -265,22 +217,10 @@ export async function getCaseDocuments(caseNumber) {
  */
 export async function getDocumentDownloadUrl(fileId) {
     try {
-        const gasUrl = await getGasUrl();
-
-        const response = await fetch(gasUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'getDocumentDownloadUrl',
-                fileId: fileId
-            })
+        return await callGasDrive({
+            action: 'getDocumentDownloadUrl',
+            fileId: fileId
         });
-
-        if (!response.ok) {
-            throw new Error(`Failed to get download URL: ${response.statusText}`);
-        }
-
-        return await response.json();
 
     } catch (error) {
         console.error('Error getting download URL:', error);
@@ -296,22 +236,10 @@ export async function getDocumentDownloadUrl(fileId) {
  */
 export async function deleteDocument(fileId) {
     try {
-        const gasUrl = await getGasUrl();
-
-        const response = await fetch(gasUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'deleteDocument',
-                fileId: fileId
-            })
+        return await callGasDrive({
+            action: 'deleteDocument',
+            fileId: fileId
         });
-
-        if (!response.ok) {
-            throw new Error(`Failed to delete document: ${response.statusText}`);
-        }
-
-        return await response.json();
 
     } catch (error) {
         console.error('Error deleting document:', error);

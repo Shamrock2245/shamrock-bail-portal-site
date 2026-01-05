@@ -11,25 +11,7 @@
 import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
 import wixData from 'wix-data';
-import { fetchWithRetry } from 'backend/utils';
-
-// GAS Web App URL - Try to load from Secrets, fallback to const
-let CACHED_GAS_URL = null;
-const FALLBACK_GAS_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
-
-async function getGasUrl() {
-    if (CACHED_GAS_URL) return CACHED_GAS_URL;
-    try {
-        const url = await getSecret("GAS_WEB_APP_URL");
-        if (url) {
-            CACHED_GAS_URL = url;
-            return url;
-        }
-    } catch (e) {
-        console.warn("GAS_WEB_APP_URL secret not found, using fallback.");
-    }
-    return FALLBACK_GAS_URL;
-}
+import { fetchWithRetry, getGasUrl } from 'backend/utils';
 
 /**
  * Core function to call GAS Backend
@@ -121,17 +103,23 @@ export async function createKioskLink(params) {
     });
 
     if (result.success && result.links && result.links[0]) {
+        // Normalize link from complex return structure if necessary
+        const link = result.link || result.links[0].link || result.links[0];
+
         // Save kiosk link to PendingDocuments collection
         await savePendingDocument({
             caseId,
             documentId,
-            signingLink: result.links[0],
+            signingLink: link,
             method: 'kiosk',
             status: 'pending',
             expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
         });
 
         await logSigningEvent(caseId, 'kiosk', result);
+
+        // Return clear structure for frontend
+        return { success: true, links: [link] };
     }
 
     return result;
