@@ -106,9 +106,6 @@ function setupEventListeners() {
 /**
  * Request location permission
  */
-/**
- * Request location permission
- */
 async function requestLocationPermission() {
     try {
         $w('#locationStatus').text = 'Requesting location...';
