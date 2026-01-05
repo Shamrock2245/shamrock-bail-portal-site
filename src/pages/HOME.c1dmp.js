@@ -2,9 +2,16 @@
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { getCounties } from 'public/countyUtils';
+import { LightboxController } from 'public/lightbox-controller';
 
 $w.onReady(function () {
     console.log("🚀 HOME PAGE LOADED - PRODUCTION MODE");
+
+    // Initialize Lightbox Controller
+    LightboxController.init($w);
+    LightboxController.initEmergencyCtaLightbox();
+    LightboxController.initPrivacyLightbox();
+    LightboxController.initTermsLightbox();
 
     // 1. Initialize County Dropdown
     initCountyDropdown();

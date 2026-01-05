@@ -3,6 +3,7 @@
 
 import wixData from 'wix-data';
 import wixLocation from 'wix-location';
+import { LightboxController } from 'public/lightbox-controller';
 import { generateMagicLink, getStaffDashboardData } from 'backend/portal-auth';
 
 let allCases = []; // Store locally for fast filtering
@@ -59,9 +60,7 @@ function setupRepeater() {
         // Actions
         $item('#detailsBtn').onClick(() => {
             console.log("Opening Details for", itemData.defendantName);
-            import('wix-window').then(wixWindow => {
-                wixWindow.openLightbox("DefendantDetails", itemData);
-            });
+            LightboxController.setupDefendantDetailsLightbox(itemData);
         });
 
         $item('#sendMagicLinkBtn').onClick(async () => {

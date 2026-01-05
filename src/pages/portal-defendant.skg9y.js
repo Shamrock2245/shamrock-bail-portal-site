@@ -5,10 +5,16 @@ import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { currentMember } from 'wix-members';
 import { saveUserLocation } from 'backend/location';
-import { getUserProfile, getDefendantDetails } from 'backend/portal-auth';
-import { initiateSigningWorkflow } from 'backend/signing-methods';
+import { getUserProfile, getDefendantDetails, saveUserProfile } from 'backend/portal-auth';
+// New Imports
+import { LightboxController } from 'public/lightbox-controller';
+import { uploadIdDocument, getMemberDocuments } from 'backend/documentUpload';
+import { createEmbeddedLink } from 'backend/signnow-integration';
 
 $w.onReady(async function () {
+    // Initialize Lightbox Controller
+    LightboxController.init($w);
+
     initUI(); // Set loading states
 
     try {
@@ -36,76 +42,67 @@ $w.onReady(async function () {
             $w('#signingStatusText').text = data.signingStatus || "Incomplete";
         }
 
+        // Setup Lightbox workfows
+        setupIdUploadLightbox();
+        setupConsentLightbox();
+        setupSigningLightbox();
+
+        // Setup Existing Handlers (Check-In)
+        setupCheckInHandlers();
+
+        // Setup Button Aliases for Paperwork
+        setupPaperworkButtons(member);
+
     } catch (e) {
         console.error("Dashboard Load Error", e);
         $w('#welcomeText').text = "Welcome";
     }
-
-    setupEventHandlers();
 });
 
 function initUI() {
     $w('#welcomeText').text = "Loading...";
-    $w('#checkInStatusText').collapse(); // Hide status initially
+    $w('#checkInStatusText').collapse();
 }
 
-function setupEventHandlers() {
-    // --- II. Paperwork Buttons ---
-    // --- II. Paperwork Buttons ---
-    $w('#signEmailBtn').onClick(async () => {
-        $w('#signEmailBtn').label = "Sending...";
-        try {
-            const member = await currentMember.getMember();
-            // Assuming we have a way to get case ID - for now getting from defendant details if possible or context
-            // In dashboard, we might need to know WHICH case. 
-            // Simplified: Use defendant's current active case or passed ID.
-            if (!member) throw new Error("Not logged in");
+function setupPaperworkButtons(member) {
+    // 1. "Start Paperwork" (Primary)
+    const startBtn = $w('#startPaperworkBtn');
+    if (startBtn.length > 0) {
+        startBtn.onClick(() => handlePaperworkStart(member));
+    }
 
-            const result = await initiateSigningWorkflow({
-                caseId: "ACTIVE_CASE", // This needs to be resolved to actual ID in backend or fetched
-                method: 'email',
-                defendantInfo: { email: member.loginEmail },
-                documentIds: [] // Let backend decide or hardcode
-            });
+    // 2. "Sign Kiosk" (Legacy/Alias) -> Mapped to new flow
+    const kioskBtn = $w('#signKioskBtn');
+    if (kioskBtn.length > 0) {
+        kioskBtn.onClick(() => handlePaperworkStart(member));
+    }
+}
 
-            $w('#signEmailBtn').label = "Sent!";
-            $w('#signingStatusText').text = "Check your email to sign.";
-            $w('#signingStatusText').expand();
-        } catch (e) {
-            console.error("Email Sign Error", e);
-            $w('#signEmailBtn').label = "Retry";
+async function handlePaperworkStart(member) {
+    // Check if ID is already uploaded
+    const hasUploadedId = await checkIdUploadStatus(member.loginEmail);
+
+    if (!hasUploadedId) {
+        LightboxController.show('idUpload');
+    } else {
+        // Check consent status
+        const hasConsented = await checkConsentStatus(member.loginEmail);
+
+        if (!hasConsented) {
+            LightboxController.show('consent');
+        } else {
+            // Proceed directly to signing
+            await proceedToSignNow();
         }
-    });
+    }
+}
 
-    $w('#signKioskBtn').onClick(async () => {
-        $w('#signKioskBtn').label = "Opening...";
-        try {
-            const member = await currentMember.getMember();
-            const result = await initiateSigningWorkflow({
-                caseId: "ACTIVE_CASE",
-                method: 'kiosk',
-                defendantInfo: { email: member.loginEmail, role: 'Defendant' },
-                documentIds: []
-            });
-
-            if (result.success && result.links && result.links[0]) {
-                wixWindow.openLightbox("SigningLightbox", {
-                    signingUrl: result.links[0],
-                    documentId: result.documentId || 'doc_unknown'
-                });
-                $w('#signKioskBtn').label = "Resume Signing";
-            } else {
-                throw new Error("Could not generate signing link");
-            }
-        } catch (e) {
-            console.error("Kiosk Sign Error", e);
-            $w('#signKioskBtn').label = "Retry";
-        }
-    }); // Implement Kiosk Mode via SingingLightbox
-    $w('#downloadPrintBtn').onClick(() => console.log("Download clicked"));
-
+function setupCheckInHandlers() {
     // --- III. Check-In Handler ---
-    $w('#checkInBtn').onClick(async () => {
+    const checkInBtn = $w('#checkInBtn');
+    if (checkInBtn.length === 0) return;
+
+    checkInBtn.onClick(async () => {
         // Validation: Must have a file selected
         if ($w('#selfieUpload').value.length === 0) {
             updateCheckInStatus("Error: Please take a selfie first.", "error");
@@ -150,6 +147,8 @@ function setupEventHandlers() {
             updateCheckInStatus("Error: " + (error.message || "Please enable Location Services."), "error");
         }
     });
+
+    $w('#downloadPrintBtn').onClick(() => console.log("Download clicked"));
 }
 
 function updateCheckInStatus(msg, type) {
@@ -157,4 +156,196 @@ function updateCheckInStatus(msg, type) {
     $w('#statusBox').style.backgroundColor = color;
     $w('#checkInStatusText').text = msg;
     $w('#checkInStatusText').expand();
+}
+
+/**
+ * Setup ID Upload Lightbox
+ */
+function setupIdUploadLightbox() {
+    setupIdUploadForm();
+}
+
+/**
+ * Setup ID Upload Form
+ */
+function setupIdUploadForm() {
+    // Front of ID upload
+    if ($w('#idFrontUploadBtn').length > 0) {
+        $w('#idFrontUploadBtn').onChange(async () => {
+            await handleFileUpload($w('#idFrontUploadBtn'), 'front', '#idFrontStatus');
+        });
+    }
+
+    // Back of ID upload
+    if ($w('#idBackUploadBtn').length > 0) {
+        $w('#idBackUploadBtn').onChange(async () => {
+            await handleFileUpload($w('#idBackUploadBtn'), 'back', '#idBackStatus');
+        });
+    }
+
+    // Submit button (after both sides uploaded)
+    if ($w('#idUploadSubmitBtn').length > 0) {
+        $w('#idUploadSubmitBtn').onClick(async () => {
+            const member = await currentMember.getMember();
+            const hasUploadedId = await checkIdUploadStatus(member.loginEmail);
+
+            if (hasUploadedId) {
+                LightboxController.hide('idUpload');
+                LightboxController.show('consent');
+            } else {
+                $w('#idUploadError').text = 'Please upload both front and back of your ID';
+                $w('#idUploadError').expand();
+            }
+        });
+    }
+}
+
+async function handleFileUpload(uploadBtn, side, statusInfo) {
+    const file = uploadBtn.value[0];
+    if (file) {
+        $w(statusInfo).text = 'Uploading...';
+        $w(statusInfo).expand();
+
+        try {
+            const member = await currentMember.getMember();
+            const metadata = await captureMetadata(); // Utilizing the one in file scope
+
+            // Defendant Role
+            const result = await uploadIdDocument({
+                file: file,
+                side: side,
+                metadata: {
+                    memberEmail: member.loginEmail,
+                    memberName: member.contactDetails?.firstName + ' ' + member.contactDetails?.lastName,
+                    memberRole: 'defendant',
+                    ...metadata
+                }
+            });
+
+            if (result.success) {
+                $w(statusInfo).text = `✓ ${side.charAt(0).toUpperCase() + side.slice(1)} uploaded`;
+            } else {
+                $w(statusInfo).text = '✗ Upload failed';
+            }
+        } catch (e) {
+            console.error(e);
+            $w(statusInfo).text = '✗ Error';
+        }
+    }
+}
+
+
+/**
+ * Setup Consent Lightbox
+ */
+function setupConsentLightbox() {
+    // "I Agree" button
+    if ($w('#consentAgreeBtn').length > 0) {
+        $w('#consentAgreeBtn').onClick(async () => {
+            const member = await currentMember.getMember();
+
+            let profile = await getUserProfile(member._id);
+            if (!profile) profile = { _id: member._id };
+
+            profile.consentGiven = true;
+            profile.consentTimestamp = new Date().toISOString();
+            profile.consentRole = 'defendant';
+            await saveUserProfile(profile);
+
+            LightboxController.hide('consent');
+            await proceedToSignNow();
+        });
+    }
+
+    if ($w('#consentLearnMoreBtn').length > 0) {
+        $w('#consentLearnMoreBtn').onClick(() => {
+            LightboxController.show('privacy');
+        });
+    }
+}
+
+/**
+ * Setup Signing Lightbox
+ */
+function setupSigningLightbox() {
+    if ($w('#signingCloseBtn').length > 0) {
+        $w('#signingCloseBtn').onClick(() => {
+            LightboxController.hide('signing');
+        });
+    }
+
+    if ($w('#signingResumeLaterBtn').length > 0) {
+        $w('#signingResumeLaterBtn').onClick(() => {
+            LightboxController.hide('signing');
+            // Logic to update status text on main page if desired
+        });
+    }
+}
+
+async function checkIdUploadStatus(memberEmail) {
+    try {
+        const result = await getMemberDocuments(memberEmail);
+        if (!result.success) return false;
+
+        const idDocs = result.documents.filter(doc => doc.documentType === 'government_id');
+        const hasFront = idDocs.some(doc => doc.documentSide === 'front');
+        const hasBack = idDocs.some(doc => doc.documentSide === 'back');
+
+        return hasFront && hasBack;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function checkConsentStatus(memberEmail) {
+    try {
+        const member = await currentMember.getMember();
+        const profile = await getUserProfile(member._id);
+        return profile?.consentGiven === true;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function captureMetadata() {
+    return new Promise((resolve) => {
+        wixWindow.getCurrentGeolocation()
+            .then((result) => {
+                resolve({
+                    gps: {
+                        latitude: result.coords.latitude,
+                        longitude: result.coords.longitude,
+                        accuracy: result.coords.accuracy
+                    },
+                    uploadedAt: new Date().toISOString(),
+                    userAgent: "WixClient"
+                });
+            })
+            .catch((err) => {
+                resolve({
+                    gps: null,
+                    uploadedAt: new Date().toISOString()
+                });
+            });
+    });
+}
+
+async function proceedToSignNow() {
+    const member = await currentMember.getMember();
+    const profile = await getUserProfile(member._id);
+
+    // Get the first case ID
+    const caseId = profile?.caseIds?.[0] || "Active_Case_Fallback";
+
+    // Role: Defendant
+    const result = await createEmbeddedLink(caseId, member.loginEmail, 'defendant');
+
+    if (result.success) {
+        LightboxController.show('signing', {
+            signingUrl: result.embeddedLink
+        });
+    } else {
+        console.error('Failed to create SignNow link:', result.error);
+        // Display error if UI element exists
+    }
 }
