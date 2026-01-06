@@ -2,10 +2,12 @@
 /**
  * Configuration for Booking Form Submission SPI
  */
-export function getConfig() {
-    return {
-        UserProfile: {
-            forceLogin: false
-        }
-    };
-}
+module.exports = {
+    getConfig: function () {
+        return {
+            UserProfile: {
+                forceLogin: false
+            }
+        };
+    }
+};
