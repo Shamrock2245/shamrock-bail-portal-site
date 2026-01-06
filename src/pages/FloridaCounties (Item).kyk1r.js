@@ -39,10 +39,11 @@ $w.onReady(async function () {
         setText('#quickRefHeader', `${county.name} Quick Reference`);
 
         // --- Sheriff's Office (Top Left) ---
-        setText('#sheriffPhone', county.bookingPhone || "(239) 477-1500");
-        setLink('#sheriffWebsite', county.bookingWebsite, "Visit Sheriff's Website");
+        setText('#sheriffPhone', county.jailPhone || county.primaryPhone || "(239) 477-1500");
+        setLink('#sheriffWebsite', county.sheriffWebsite || county.jailBookingUrl, "Visit Sheriff's Website");
 
         // --- Main Jail (Top Right) ---
+        setText('#jailName', county.jailName || `${county.name} County Jail`);
         setText('#jailAddress', county.jailAddress || "Address not available");
 
         // --- Clerk of Court (Bottom Left) ---
@@ -66,7 +67,7 @@ $w.onReady(async function () {
         setText('#whyChooseHeader', `Why Choose Shamrock Bail Bonds in ${county.name} County`);
 
         // --- Call Button (Sticky/Header) ---
-        const phone = county.primaryPhone || "239-955-0301";
+        const phone = county.primaryPhone || "(239) 332-2245";
         const callBtn = $w('#callCountiesBtn');
         if (callBtn.valid) {
             callBtn.label = `Call ${phone}`;
