@@ -44,14 +44,27 @@ $w.onReady(async function () {
   await initializeDashboard();
 
   // Set up event handlers
-  $w('#overviewTab').onClick(() => switchView('overview'));
-  $w('#activeCasesTab').onClick(() => switchView('active'));
-  $w('#paperworkTab').onClick(() => switchView('paperwork'));
-  $w('#paymentsTab').onClick(() => switchView('payments'));
-  $w('#checkInsTab').onClick(() => switchView('checkins'));
-  $w('#documentsTab').onClick(() => switchView('documents'));
+  // Set up event handlers
+  const overviewTab = $w('#overviewTab');
+  if (overviewTab.length) overviewTab.onClick(() => switchView('overview'));
 
-  $w('#refreshBtn').onClick(refreshCurrentView);
+  const activeCasesTab = $w('#activeCasesTab');
+  if (activeCasesTab.length) activeCasesTab.onClick(() => switchView('active'));
+
+  const paperworkTab = $w('#paperworkTab');
+  if (paperworkTab.length) paperworkTab.onClick(() => switchView('paperwork'));
+
+  const paymentsTab = $w('#paymentsTab');
+  if (paymentsTab.length) paymentsTab.onClick(() => switchView('payments'));
+
+  const checkInsTab = $w('#checkInsTab');
+  if (checkInsTab.length) checkInsTab.onClick(() => switchView('checkins'));
+
+  const documentsTab = $w('#documentsTab');
+  if (documentsTab.length) documentsTab.onClick(() => switchView('documents'));
+
+  const refreshBtn = $w('#refreshBtn');
+  if (refreshBtn.length) refreshBtn.onClick(refreshCurrentView);
 });
 
 /**

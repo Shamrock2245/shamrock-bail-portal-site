@@ -38,9 +38,14 @@ $w.onReady(async function () {
   await initializePage();
 
   // Set up event handlers
-  $w('#authorizeBtn').onClick(handleAuthorizeClick);
-  $w('#declineBtn').onClick(handleDeclineClick);
-  $w('#agreementCheckbox').onChange(handleAgreementChange);
+  const authorizeBtn = $w('#authorizeBtn');
+  if (authorizeBtn.length) authorizeBtn.onClick(handleAuthorizeClick);
+
+  const declineBtn = $w('#declineBtn');
+  if (declineBtn.length) declineBtn.onClick(handleDeclineClick);
+
+  const agreementCheckbox = $w('#agreementCheckbox');
+  if (agreementCheckbox.length) agreementCheckbox.onChange(handleAgreementChange);
 });
 
 /**

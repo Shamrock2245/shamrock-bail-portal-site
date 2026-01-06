@@ -38,8 +38,11 @@ $w.onReady(async function () {
   await initializePage();
 
   // Set up event handlers
-  $w('#payNowBtn').onClick(handlePayNowClick);
-  $w('#cancelBtn').onClick(handleCancelClick);
+  const payNowBtn = $w('#payNowBtn');
+  if (payNowBtn.length) payNowBtn.onClick(handlePayNowClick);
+
+  const cancelBtn = $w('#cancelBtn');
+  if (cancelBtn.length) cancelBtn.onClick(handleCancelClick);
 });
 
 /**
