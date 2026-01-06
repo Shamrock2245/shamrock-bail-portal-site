@@ -348,13 +348,13 @@ export function validateDOB(dob) {
   const monthDiff = today.getMonth() - birthDate.getMonth();
   const isBeforeBirthday = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate());
 
-  const age = isBeforeBirthday ? yearDiff - 1 : yearDiff;
+  const currentAge = isBeforeBirthday ? yearDiff - 1 : yearDiff;
 
-  if (age < 18) {
+  if (currentAge < 18) {
     return { valid: false, message: 'Must be at least 18 years old' };
   }
 
-  if (age > 120) {
+  if (currentAge > 120) {
     return { valid: false, message: 'Invalid date of birth' };
   }
 
