@@ -3,7 +3,7 @@
 // Handles ID and supporting document uploads, saves to Google Drive via GAS
 
 import wixData from 'wix-data';
-import { COLLECTIONS } from 'backend/collectionIds';
+import { COLLECTIONS } from 'public/collectionIds';
 import { getSecret } from 'wix-secrets-backend';
 import { fetch } from 'wix-fetch';
 import { mediaManager } from 'wix-media-backend';

@@ -16,7 +16,7 @@
 
 import { Permissions, webMethod } from 'wix-web-module';
 import wixData from 'wix-data';
-import { COLLECTIONS } from 'backend/collectionIds';
+import { COLLECTIONS } from 'public/collectionIds';
 
 /**
  * STAFF ROLE VERIFICATION
@@ -85,7 +85,7 @@ export const getDashboardStats = webMethod(
       // Get today's check-ins count
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       const todayCheckIns = await wixData.query('CheckInRecords')
         .ge('checkInDate', today)
         .count();
