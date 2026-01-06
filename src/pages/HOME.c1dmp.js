@@ -4,8 +4,8 @@ import wixLocation from 'wix-location';
 import { getCounties } from 'public/countyUtils';
 import { LightboxController } from 'public/lightbox-controller';
 
-$w.onReady(function () {
-    console.log("🚀 HOME PAGE LOADED - PRODUCTION MODE");
+$w.onReady(async function () {
+    console.log("🚀 HOME PAGE LOADED - PRODUCTION MODE v2.0");
 
     // Initialize Lightbox Controller
     LightboxController.init($w);
@@ -14,12 +14,18 @@ $w.onReady(function () {
     LightboxController.initTermsLightbox();
 
     // 1. Initialize County Dropdown
-    initCountyDropdown();
+    await initCountyDropdown();
 
     // 2. Setup Testimonials
     setupTestimonials();
 
-    // 3. Setup Spanish Speaking Phone Button (Defensive)
+    // 3. Setup FAQ (Added)
+    setupFAQ();
+
+    // 4. Setup Common Charges (Added)
+    setupBondAmounts();
+
+    // 5. Setup Spanish Speaking Phone Button (Defensive)
     const spanishBtn = $w("#callNowSpanishBtn");
     if (spanishBtn.length > 0) {
         spanishBtn.onClick(() => wixLocation.to("tel:12399550301"));
@@ -27,103 +33,86 @@ $w.onReady(function () {
     }
 });
 
-function setupTestimonials() {
-    const data = [
-        { _id: "1", quote: "Process was fast and easy. Highly recommend.", name: "Sarah M." },
-        { _id: "2", quote: "They helped me at 3am when no one else would.", name: "John D." },
-        { _id: "3", quote: "Professional and explained everything clearly.", name: "Michael R." },
-        { _id: "4", quote: "Got my brother out in hours. Thank you!", name: "Emily S." },
-        { _id: "5", quote: "Very respectful and understanding during a tough time.", name: "David K." },
-        { _id: "6", quote: "Best bail bondsman in Fort Myers.", name: "Jessica L." },
-        { _id: "7", quote: "Honest and upfront about the costs.", name: "Robert P." },
-        { _id: "8", quote: "Shamrock really cares about their clients.", name: "Jennifer B." },
-        { _id: "9", quote: "Fastest release time I've ever seen.", name: "Christopher W." },
-        { _id: "10", quote: "Walked me through the whole court process.", name: "Amanda H." },
-        { _id: "11", quote: "Great communication from start to finish.", name: "James T." },
-        { _id: "12", quote: "Lifesavers. I didn't know what to do until I called.", name: "Melissa G." }
-    ];
-
-    const rep = $w('#testimonialsRepeater');
-    if (rep.valid) {
-        rep.data = data;
-        rep.onItemReady(($item, itemData) => {
-            $item('#quoteText').text = `"${itemData.quote}"`;
-            $item('#authorName').text = itemData.name;
-        });
-    }
-}
 
 /**
- * Initialize the county selector dropdown
- * FETCHES from Database with Fallback
+ * ------------------------------------------------------------------
+ * 1. COUNTY DROPDOWN LOGIC
+ * ------------------------------------------------------------------
  */
 async function initCountyDropdown() {
-    try {
-        console.log("DEBUG: Attempting to select dropdown...");
+    console.log("DEBUG: initCountyDropdown() calling...");
 
-        // DIRECT SELECTOR
+    try {
+        // 1. ROBUST ELEMENT SELECTION
         let dropdown = $w('#countySelector');
 
-        // Fallback attempts
-        if (dropdown.length === 0) dropdown = $w('#dropdown1');
+        if (dropdown.length === 0) {
+            console.warn("DEBUG: #countySelector not found. Trying #dropdown1 fallback...");
+            dropdown = $w('#dropdown1');
+        }
 
         if (dropdown.length === 0) {
-            console.error('CRITICAL: Dropdown not found. Checked: #countySelector, #dropdown1');
+            console.error('CRITICAL: All Dropdown selectors failed.');
             return;
         }
 
-        // 2. Fetch counties (WITH TIMEOUT)
-        // Create a timeout promise that resolves to NULL to differentiate from empty array
-        const timeoutPromise = new Promise(resolve => setTimeout(() => {
-            console.warn("DEBUG: Fetch timed out. Using fallback.");
-            resolve(null);
-        }, 3000));
+        console.log(`DEBUG: Dropdown found! ID: ${dropdown.id}`);
 
-        // Race the fetch against the timeout
+        // 2. Initialize with "Loading..." state if possible, or simple placeholder
+        dropdown.placeholder = "Loading Counties...";
+
+        // 3. Define Fallback Data IMMEDIATELY
+        const fallbackCounties = [
+            { name: "Alachua", slug: "alachua" },
+            { name: "Charlotte", slug: "charlotte" },
+            { name: "Collier", slug: "collier" },
+            { name: "Hendry", slug: "hendry" },
+            { name: "Lee", slug: "lee" },
+            { name: "Sarasota", slug: "sarasota" },
+            { name: "Manatee", slug: "manatee" },
+            { name: "Desoto", slug: "desoto" }
+        ];
+
+        // 4. Fetch counties (WITH 5s TIMEOUT)
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 5000));
         let counties = await Promise.race([getCounties(), timeoutPromise]);
 
-        console.log("DEBUG: Raw counties from fetch:", counties);
-
-        // 2a. VALIDATION & FALLBACK
-        // We check if it is falsy OR empty array OR not an array
         if (!Array.isArray(counties) || counties.length === 0) {
-            console.warn("DEBUG: Fetch failed/empty/timeout. Using Hardcoded Fallback.");
-            counties = [
-                { name: "Alachua", slug: "alachua" },
-                { name: "Charlotte", slug: "charlotte" },
-                { name: "Collier", slug: "collier" },
-                { name: "Hendry", slug: "hendry" },
-                { name: "Lee", slug: "lee" },
-                { name: "Sarasota", slug: "sarasota" }
-            ];
+            console.warn("DEBUG: Fetch failed/empty/timeout. Using Fallback.");
+            counties = fallbackCounties;
         }
 
-        // 3. Map to dropdown options format { label, value }
-        const options = counties.map(county => {
-            const name = county.name || county.countyName || "Unknown";
-            const slug = county.slug || county.countySlug || "";
-            return {
-                label: name + ' County',
-                value: `/county/${slug}`
-            };
-        });
+        // 5. Transform for Dropdown
+        const options = counties
+            .filter(c => c && (c.name || c.countyName))
+            .map(county => {
+                const name = county.name || county.countyName || "Unknown";
+                const slug = county.slug || county.countySlug || name.toLowerCase().replace(/\s+/g, '-');
+                return {
+                    label: name + ' County',
+                    value: `/county/${slug}`
+                };
+            })
+            .sort((a, b) => a.label.localeCompare(b.label));
 
-        // 4. Set options
-        console.log("Loading Dropdown with " + options.length + " options.");
-        console.log("Options Sample:", options.slice(0, 2));
+        // 6. Set Options
+        console.log("DEBUG: Setting " + options.length + " options.");
 
-        dropdown.options = options;
-        dropdown.placeholder = "Select a County";
+        // Force reset
+        dropdown.options = [];
+        setTimeout(() => {
+            dropdown.options = options;
+            dropdown.placeholder = "Select a County";
+            // Force visibility
+            if (dropdown.collapsed) dropdown.expand();
+            if (dropdown.hidden) dropdown.show();
+        }, 100);
 
-        // 5. Setup Change Handler
+        // 7. Change Handler
         dropdown.onChange((event) => {
-            try {
-                const dest = event.target.value;
-                console.log("Navigation triggered to:", dest);
-                if (dest) wixLocation.to(dest);
-            } catch (e) {
-                console.error("Navigation error:", e);
-            }
+            const dest = event.target.value;
+            console.log("Navigation triggered to:", dest);
+            if (dest) wixLocation.to(dest);
         });
 
     } catch (err) {
@@ -131,23 +120,112 @@ async function initCountyDropdown() {
     }
 }
 
-// Export functions for Wix Editor wiring
-export function beginProcessButton_click(event) {
-    const dropdown = $w('#countySelector');
-    // Simple existence check
-    if (dropdown && dropdown.value) {
-        console.log("Button Clicked - Navigating to:", dropdown.value);
-        wixLocation.to(dropdown.value);
+
+/**
+ * ------------------------------------------------------------------
+ * 2. TESTIMONIALS LOGIC
+ * ------------------------------------------------------------------
+ */
+function setupTestimonials() {
+    const data = [
+        { _id: "1", quote: "Process was fast and easy. Highly recommend.", name: "Sarah M." },
+        { _id: "2", quote: "They helped me at 3am when no one else would.", name: "John D." },
+        { _id: "3", quote: "Professional and explained everything clearly.", name: "Michael R." },
+        { _id: "4", quote: "Got my brother out in hours. Thank you!", name: "Emily S." },
+        { _id: "5", quote: "Very respectful and understanding.", name: "David K." }
+    ];
+
+    const rep = $w('#testimonialsRepeater');
+    if (rep.length > 0) {
+        rep.data = data;
+        rep.onItemReady(($item, itemData) => {
+            if ($item('#quoteText').length) $item('#quoteText').text = `"${itemData.quote}"`;
+            if ($item('#authorName').length) $item('#authorName').text = itemData.name;
+        });
     } else {
-        console.warn("Button Clicked - No county selected");
-        wixLocation.to('/portal');
+        console.warn("DEBUG: #testimonialsRepeater not found");
     }
 }
 
-export function spanishSpeakingPhone_click(event) {
-    wixLocation.to("tel:12399550301");
+
+/**
+ * ------------------------------------------------------------------
+ * 3. FAQ LOGIC (New)
+ * ------------------------------------------------------------------
+ */
+function setupFAQ() {
+    const data = [
+        { _id: "1", q: "Can bail be reduced?", a: "Yes. An attorney can file a motion to reduce bail if it is excessive or circumstances change." },
+        { _id: "2", q: "Can I get my premium back?", a: "No. The 10% premium is a non-refundable service fee earned by the bondsman." },
+        { _id: "3", q: "What if I can't afford 10%?", a: "We offer flexible payment plans. Call us to discuss options." },
+        { _id: "4", q: "How long does release take?", a: "Typical release times are 2-8 hours after we post the bond, depending on the jail." },
+        { _id: "5", q: "Difference between Bail and Bond?", a: "Bail is the full amount set by court. Bond is the 10% service we provide." },
+        { _id: "6", q: "Can anyone be denied bail?", a: "Yes. Bail can be denied for capital offenses, flight risks, or danger to the community." }
+    ];
+
+    const rep = $w('#faqRepeater');
+    if (rep.length > 0) {
+        rep.data = data;
+        rep.onItemReady(($item, itemData) => {
+            if ($item('#faqQuestion').length) $item('#faqQuestion').text = itemData.q;
+
+            // Handle Answer Text
+            const answer = $item('#faqAnswer');
+            if (answer.length > 0) {
+                answer.text = itemData.a;
+            }
+        });
+    } else {
+        console.warn("DEBUG: #faqRepeater not found. Checked: #faqRepeater");
+    }
 }
 
-export function spanishSpeakingPhone_dblClick(event) {
-    wixLocation.to("tel:12399550301");
+
+/**
+ * ------------------------------------------------------------------
+ * 4. BOND AMOUNTS LOGIC (New)
+ * ------------------------------------------------------------------
+ */
+function setupBondAmounts() {
+    const data = [
+        { _id: "1", offense: "DUI (First Offense)", range: "$500 - $2,500" },
+        { _id: "2", offense: "Domestic Violence", range: "$2,500 - $10,000" },
+        { _id: "3", offense: "Drug Possession", range: "$1,000 - $25,000" },
+        { _id: "4", offense: "Assault", range: "$5,000 - $25,000" },
+        { _id: "5", offense: "Burglary", range: "$10,000 - $50,000" }
+    ];
+
+    // Try finding the repeater. User called it "common charge and bond amounts"
+    // Likely IDs: #amountsRepeater, #bondAmountsRepeater, #chargesRepeater
+    let rep = $w('#amountsRepeater');
+    if (rep.length === 0) rep = $w('#bondAmountsRepeater');
+
+    if (rep.length > 0) {
+        rep.data = data;
+        rep.onItemReady(($item, itemData) => {
+            // Try common field IDs
+            if ($item('#offenseName').length) $item('#offenseName').text = itemData.offense;
+            if ($item('#bailRange').length) $item('#bailRange').text = itemData.range;
+
+            // Fallbacks
+            if ($item('#chargeName').length) $item('#chargeName').text = itemData.offense;
+            if ($item('#amountText').length) $item('#amountText').text = itemData.range;
+        });
+    } else {
+        console.warn("DEBUG: Bond/Amounts Repeater not found. Checked: #amountsRepeater, #bondAmountsRepeater");
+    }
 }
+
+/**
+ * EXPORTS (For Editor wiring)
+ */
+export function beginProcessButton_click(event) {
+    const dropdown = $w('#countySelector');
+    if (dropdown.length > 0 && dropdown.value) {
+        wixLocation.to(dropdown.value);
+    } else {
+        wixLocation.to('/portal');
+    }
+}
+export function spanishSpeakingPhone_click(event) { wixLocation.to("tel:12399550301"); }
+export function spanishSpeakingPhone_dblClick(event) { wixLocation.to("tel:12399550301"); }
