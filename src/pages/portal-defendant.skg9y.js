@@ -1,3 +1,4 @@
+/// <reference path="../types/wix-overrides.d.ts" />
 // Page: portal-defendant.skg9y.js (FIXED)
 // Function: Client Dashboard for Check-Ins with Selfie Requirement and Case Status
 //
