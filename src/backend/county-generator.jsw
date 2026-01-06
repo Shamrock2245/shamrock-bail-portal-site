@@ -2,8 +2,8 @@
  * Shamrock Bail Bonds - County Page Generator
  * Generates county page data from the FloridaCounties collection
  * 
- * Updated: 2025-12-29
- * Now uses actual FloridaCounties (Import1) collection schema
+ * Updated: 2026-01-06
+ * Now uses FloridaCounties collection with updated schema
  */
 
 import wixData from 'wix-data';
@@ -94,23 +94,23 @@ function transformCountyData(county) {
 
     // Jail information
     jail: {
-      name: `${countyName} County Jail`,
-      booking_url: county.bookingWebsiteLink || '',
-      booking_phone: county.bookingPhoneNumber || phone
+      name: county.jailName || `${countyName} County Jail`,
+      booking_url: county.jailBookingUrl || '',
+      booking_phone: county.jailPhone || phone
     },
 
     // Clerk information
     clerk: {
-      name: `${countyName} County Clerk of Court`,
-      website: county.countyClerkWebsitelink || '',
+      name: county.clerkName || `${countyName} County Clerk of Court`,
+      website: county.clerkWebsite || '',
       records_url: county.recordsSearchLink || '',
-      phone: county.countyClerkPhoneNumber || ''
+      phone: county.clerkPhone || ''
     },
 
     // Sheriff information
     sheriff: {
-      name: `${countyName} County Sheriff's Office`,
-      website: county.bookingWebsiteLink || ''
+      name: county.sheriffName || `${countyName} County Sheriff's Office`,
+      website: county.sheriffWebsite || ''
     },
 
     // Content
