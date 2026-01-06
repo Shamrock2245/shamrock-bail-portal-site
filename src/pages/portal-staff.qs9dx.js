@@ -1,5 +1,10 @@
-// Page: portal-staff.qs9dx.js
+// Page: portal-staff.qs9dx.js (FIXED)
 // Function: Staff Dashboard for Case Management (Stats, Search, Filtering)
+//
+// FIXES:
+// - Added proper element existence checks before calling .onClick()
+// - Added try-catch blocks around all element manipulations
+// - Prevents "onClick is not a function" errors
 
 import wixData from 'wix-data';
 import wixLocation from 'wix-location';
@@ -9,7 +14,11 @@ import { generateMagicLink, getStaffDashboardData } from 'backend/portal-auth';
 let allCases = []; // Store locally for fast filtering
 
 $w.onReady(async function () {
-    $w('#welcomeText').text = "Loading Dashboard...";
+    try {
+        if ($w('#welcomeText').type) {
+            $w('#welcomeText').text = "Loading Dashboard...";
+        }
+    } catch (e) { }
 
     // 0. Security Check
     import('wix-members').then(async (wm) => {
@@ -27,63 +36,147 @@ $w.onReady(async function () {
         allCases = cases;
 
         // A. Populate Stats
-        $w('#activeCasesCount').text = stats.activeCases.toString();
-        $w('#pendingSignaturesCount').text = stats.pendingSignatures.toString();
-        $w('#completedTodayCount').text = stats.completedToday.toString();
-        $w('#failedCount').text = stats.failedChecks.toString();
-
-        $w('#welcomeText').text = "Welcome, Staff";
+        try {
+            if ($w('#activeCasesCount').type) {
+                $w('#activeCasesCount').text = stats.activeCases.toString();
+            }
+            if ($w('#pendingSignaturesCount').type) {
+                $w('#pendingSignaturesCount').text = stats.pendingSignatures.toString();
+            }
+            if ($w('#completedTodayCount').type) {
+                $w('#completedTodayCount').text = stats.completedToday.toString();
+            }
+            if ($w('#failedCount').type) {
+                $w('#failedCount').text = stats.failedChecks.toString();
+            }
+            if ($w('#welcomeText').type) {
+                $w('#welcomeText').text = "Welcome, Staff";
+            }
+        } catch (e) {
+            console.error('Error populating stats:', e);
+        }
 
         // B. Init Repeater
         setupRepeater();
-        $w('#caseListRepeater').data = allCases;
+        try {
+            if ($w('#caseListRepeater').type) {
+                $w('#caseListRepeater').data = allCases;
+            }
+        } catch (e) {
+            console.error('Error setting repeater data:', e);
+        }
 
     } catch (err) {
         console.error("Staff Data Error", err);
-        $w('#welcomeText').text = "Error loading data.";
+        try {
+            if ($w('#welcomeText').type) {
+                $w('#welcomeText').text = "Error loading data.";
+            }
+        } catch (e) { }
     }
 
     // 2. Setup Event Handlers
     initFilters();
-    $w('#searchBar').onInput((event) => filterData());
+
+    try {
+        if ($w('#searchBar').type) {
+            $w('#searchBar').onInput((event) => filterData());
+        }
+    } catch (e) {
+        console.error('Error setting up search bar:', e);
+    }
 });
 
 function setupRepeater() {
-    $w('#caseListRepeater').onItemReady(($item, itemData) => {
-        // Map Fields
-        $item('#caseNumberText').text = itemData.caseNumber;
-        $item('#defendantNameText').text = itemData.defendantName;
-        $item('#bondAmountText').text = itemData.bondAmount;
-        $item('#caseStatusText').text = itemData.status;
-        $item('#paperworkStatusText').text = itemData.paperworkStatus;
+    try {
+        if (!$w('#caseListRepeater').type) return;
 
-        // Actions
-        $item('#detailsBtn').onClick(() => {
-            console.log("Opening Details for", itemData.defendantName);
-            LightboxController.setupDefendantDetailsLightbox(itemData);
-        });
-
-        $item('#sendMagicLinkBtn').onClick(async () => {
-            $item('#sendMagicLinkBtn').label = "...";
+        $w('#caseListRepeater').onItemReady(($item, itemData) => {
+            // Map Fields
             try {
-                // Generate magic link for this defendant
-                // assuming itemData matches personId or generic ID for now
-                const token = await generateMagicLink(itemData._id, "defendant");
-                console.log(`Link for ${itemData.defendantName}: https://www.shamrockbailbonds.biz/portal?token=${token}`);
-                $item('#sendMagicLinkBtn').label = "Sent";
+                if ($item('#caseNumberText').type) {
+                    $item('#caseNumberText').text = itemData.caseNumber;
+                }
+                if ($item('#defendantNameText').type) {
+                    $item('#defendantNameText').text = itemData.defendantName;
+                }
+                if ($item('#bondAmountText').type) {
+                    $item('#bondAmountText').text = itemData.bondAmount;
+                }
+                if ($item('#caseStatusText').type) {
+                    $item('#caseStatusText').text = itemData.status;
+                }
+                if ($item('#paperworkStatusText').type) {
+                    $item('#paperworkStatusText').text = itemData.paperworkStatus;
+                }
             } catch (e) {
-                $item('#sendMagicLinkBtn').label = "Error";
+                console.error('Error mapping repeater fields:', e);
+            }
+
+            // Actions - Details Button
+            try {
+                if ($item('#detailsBtn').type) {
+                    $item('#detailsBtn').onClick(() => {
+                        console.log("Opening Details for", itemData.defendantName);
+                        LightboxController.setupDefendantDetailsLightbox(itemData);
+                    });
+                }
+            } catch (e) {
+                console.error('Error setting up details button:', e);
+            }
+
+            // Actions - Send Magic Link Button
+            try {
+                if ($item('#sendMagicLinkBtn').type) {
+                    $item('#sendMagicLinkBtn').onClick(async () => {
+                        try {
+                            $item('#sendMagicLinkBtn').label = "...";
+
+                            // Generate magic link for this defendant
+                            const token = await generateMagicLink(itemData._id, "defendant");
+                            console.log(`Link for ${itemData.defendantName}: https://www.shamrockbailbonds.biz/portal?token=${token}`);
+
+                            $item('#sendMagicLinkBtn').label = "Sent";
+                        } catch (e) {
+                            console.error('Error generating magic link:', e);
+                            $item('#sendMagicLinkBtn').label = "Error";
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Error setting up magic link button:', e);
             }
         });
-    });
+    } catch (e) {
+        console.error('Error setting up repeater:', e);
+    }
 }
 
 function initFilters() {
     // Stat Card Filters
-    $w('#filterAllBtn').onClick(() => setFilter("All"));
-    $w('#filterPendingBtn').onClick(() => setFilter("Pending"));
-    $w('#filterActiveBtn').onClick(() => setFilter("Active"));
-    $w('#filterCompletedBtn').onClick(() => setFilter("Completed"));
+    try {
+        if ($w('#filterAllBtn').type) {
+            $w('#filterAllBtn').onClick(() => setFilter("All"));
+        }
+    } catch (e) { }
+
+    try {
+        if ($w('#filterPendingBtn').type) {
+            $w('#filterPendingBtn').onClick(() => setFilter("Pending"));
+        }
+    } catch (e) { }
+
+    try {
+        if ($w('#filterActiveBtn').type) {
+            $w('#filterActiveBtn').onClick(() => setFilter("Active"));
+        }
+    } catch (e) { }
+
+    try {
+        if ($w('#filterCompletedBtn').type) {
+            $w('#filterCompletedBtn').onClick(() => setFilter("Completed"));
+        }
+    } catch (e) { }
 }
 
 let currentFilter = "All";
@@ -94,18 +187,31 @@ function setFilter(status) {
 }
 
 function filterData() {
-    const query = $w('#searchBar').value.toLowerCase();
+    try {
+        const query = $w('#searchBar').type ? $w('#searchBar').value.toLowerCase() : '';
 
-    const filtered = allCases.filter(c => {
-        const matchesStatus = currentFilter === "All" || c.status.toLowerCase() === currentFilter.toLowerCase();
-        const matchesSearch = c.defendantName.toLowerCase().includes(query) ||
-            c.caseNumber.toLowerCase().includes(query);
-        return matchesStatus && matchesSearch;
-    });
+        const filtered = allCases.filter(c => {
+            const matchesStatus = currentFilter === "All" || c.status.toLowerCase() === currentFilter.toLowerCase();
+            const matchesSearch = c.defendantName.toLowerCase().includes(query) ||
+                c.caseNumber.toLowerCase().includes(query);
+            return matchesStatus && matchesSearch;
+        });
 
-    $w('#caseListRepeater').data = filtered;
+        if ($w('#caseListRepeater').type) {
+            $w('#caseListRepeater').data = filtered;
+        }
 
-    // Toggle "No Data" text if empty
-    if (filtered.length === 0) $w('#noDataText').expand();
-    else $w('#noDataText').collapse();
+        // Toggle "No Data" text if empty
+        try {
+            if ($w('#noDataText').type) {
+                if (filtered.length === 0) {
+                    $w('#noDataText').expand();
+                } else {
+                    $w('#noDataText').collapse();
+                }
+            }
+        } catch (e) { }
+    } catch (e) {
+        console.error('Error filtering data:', e);
+    }
 }

@@ -1,5 +1,10 @@
-// Page: portal-indemnitor.k53on.js
+// Page: portal-indemnitor.k53on.js (FIXED)
 // Function: Indemnitor Dashboard with Lightbox Controller Integration
+//
+// FIXES:
+// - Replaced .length checks with proper .type checks
+// - Added try-catch blocks around all element manipulations
+// - Prevents "onClick is not a function" errors
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
@@ -12,7 +17,11 @@ import { createEmbeddedLink } from 'backend/signnow-integration';
 $w.onReady(async function () {
     LightboxController.init($w);
 
-    $w('#welcomeText').text = "Loading Dashboard...";
+    try {
+        if ($w('#welcomeText').type) {
+            $w('#welcomeText').text = "Loading Dashboard...";
+        }
+    } catch (e) { }
 
     try {
         const member = await currentMember.getMember();
@@ -24,45 +33,92 @@ $w.onReady(async function () {
 
         // Setup Actions
         setupPaperworkButtons(member);
-        $w('#contactBtn').onClick(() => wixLocation.to("/contact"));
+
+        try {
+            if ($w('#contactBtn').type) {
+                $w('#contactBtn').onClick(() => wixLocation.to("/contact"));
+            }
+        } catch (e) {
+            console.error('Error setting up contact button:', e);
+        }
 
         // Load Dashboard Data
         await loadDashboardData(member);
 
     } catch (error) {
         console.error("Dashboard Error", error);
-        $w('#welcomeText').text = "Welcome";
+        try {
+            if ($w('#welcomeText').type) {
+                $w('#welcomeText').text = "Welcome";
+            }
+        } catch (e) { }
     }
 });
 
 async function loadDashboardData(member) {
-    const data = await getIndemnitorDetails(member._id);
-    const name = (member.contactDetails?.firstName) || "Indemnitor";
-    $w('#welcomeText').text = `Welcome, ${name}`;
+    try {
+        const data = await getIndemnitorDetails(member._id);
+        const name = (member.contactDetails?.firstName) || "Indemnitor";
 
-    if (data) {
-        $w('#liabilityText').text = data.totalLiability || "$0.00";
-        $w('#totalPremiumText').text = data.totalPremium || "$0.00";
-        $w('#downPaymentText').text = data.downPayment || "$0.00";
-        $w('#balanceDueText').text = data.balanceDue || "$0.00";
-        $w('#chargesCountText').text = data.chargesCount || "0";
+        if ($w('#welcomeText').type) {
+            $w('#welcomeText').text = `Welcome, ${name}`;
+        }
 
-        $w('#defendantNameText').text = data.defendantName || "N/A";
-        $w('#defendantStatusText').text = data.defendantStatus || "Unknown";
-        $w('#lastCheckInText').text = data.lastCheckIn || "Never";
-        $w('#nextCourtDateText').text = data.nextCourtDate || "TBD";
+        if (data) {
+            try {
+                if ($w('#liabilityText').type) {
+                    $w('#liabilityText').text = data.totalLiability || "$0.00";
+                }
+                if ($w('#totalPremiumText').type) {
+                    $w('#totalPremiumText').text = data.totalPremium || "$0.00";
+                }
+                if ($w('#downPaymentText').type) {
+                    $w('#downPaymentText').text = data.downPayment || "$0.00";
+                }
+                if ($w('#balanceDueText').type) {
+                    $w('#balanceDueText').text = data.balanceDue || "$0.00";
+                }
+                if ($w('#chargesCountText').type) {
+                    $w('#chargesCountText').text = data.chargesCount || "0";
+                }
+                if ($w('#defendantNameText').type) {
+                    $w('#defendantNameText').text = data.defendantName || "N/A";
+                }
+                if ($w('#defendantStatusText').type) {
+                    $w('#defendantStatusText').text = data.defendantStatus || "Unknown";
+                }
+                if ($w('#lastCheckInText').type) {
+                    $w('#lastCheckInText').text = data.lastCheckIn || "Never";
+                }
+                if ($w('#nextCourtDateText').type) {
+                    $w('#nextCourtDateText').text = data.nextCourtDate || "TBD";
+                }
+            } catch (e) {
+                console.error('Error populating dashboard fields:', e);
+            }
+        }
+    } catch (e) {
+        console.error('Error loading dashboard data:', e);
     }
 }
 
 function setupPaperworkButtons(member) {
-    const btn = $w('#startFinancialPaperworkBtn');
-    if (btn.length > 0) {
-        btn.onClick(() => handlePaperworkStart(member));
+    // Primary Button
+    try {
+        if ($w('#startFinancialPaperworkBtn').type) {
+            $w('#startFinancialPaperworkBtn').onClick(() => handlePaperworkStart(member));
+        }
+    } catch (e) {
+        console.error('Error setting up startFinancialPaperworkBtn:', e);
     }
 
-    const btnAlias = $w('#startPaperworkBtn');
-    if (btnAlias.length > 0) {
-        btnAlias.onClick(() => handlePaperworkStart(member));
+    // Alias Button
+    try {
+        if ($w('#startPaperworkBtn').type) {
+            $w('#startPaperworkBtn').onClick(() => handlePaperworkStart(member));
+        }
+    } catch (e) {
+        console.error('Error setting up startPaperworkBtn:', e);
     }
 }
 
@@ -131,10 +187,14 @@ async function proceedToSignNow(member) {
         });
     } else {
         console.error('Failed to create SignNow link:', result.error);
-        const warning = $w('#statusMessage'); // If exists
-        if (warning.length > 0) {
-            warning.text = "Error preparing documents.";
-            warning.expand();
+
+        try {
+            if ($w('#statusMessage').type) {
+                $w('#statusMessage').text = "Error preparing documents.";
+                $w('#statusMessage').expand();
+            }
+        } catch (e) {
+            console.error('Error displaying status message:', e);
         }
     }
 }

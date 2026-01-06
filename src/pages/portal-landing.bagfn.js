@@ -1,5 +1,10 @@
-// Page: portal-landing.bagfn.js
+// Page: portal-landing.bagfn.js (FIXED)
 // Function: Handles initial access logic (Login/Magic Link)
+//
+// FIXES:
+// - Added proper element existence checks before calling .onClick()
+// - Added try-catch blocks around all element manipulations
+// - Prevents "onClick is not a function" errors
 
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
@@ -10,26 +15,39 @@ $w.onReady(async function () {
     // 1. Check for Magic Token in URL (Priority)
     const query = wixLocation.query;
     if (query.token) {
-        $w('#statusText').text = "Verifying your access link...";
-        $w('#statusText').expand();
-        $w('#tokenInputGroup').collapse();
-        $w('#roleSelectionGroup').collapse(); // Ensure this is hidden
+        try {
+            if ($w('#statusText').type) {
+                $w('#statusText').text = "Verifying your access link...";
+                $w('#statusText').expand();
+            }
+            if ($w('#tokenInputGroup').type) $w('#tokenInputGroup').collapse();
+            if ($w('#roleSelectionGroup').type) $w('#roleSelectionGroup').collapse();
+        } catch (e) { }
+
         await handleToken(query.token);
         return;
     }
 
     // 2. Check if User is Logged In
-    const member = await currentMember.getMember();
-    if (member) {
-        // User is logged in -> Show Role Selection
-        $w('#tokenInputGroup').collapse();
-        $w('#roleSelectionGroup').expand(); // New Group for Buttons
-        $w('#welcomeText').text = "Welcome! Please select your role to continue.";
-        $w('#welcomeText').expand();
-    } else {
-        // User is Guest -> Show Magic Link Input
-        if ($w('#tokenInputGroup').collapsed) $w('#tokenInputGroup').expand();
-        $w('#roleSelectionGroup').collapse();
+    try {
+        const member = await currentMember.getMember();
+        if (member) {
+            // User is logged in -> Show Role Selection
+            if ($w('#tokenInputGroup').type) $w('#tokenInputGroup').collapse();
+            if ($w('#roleSelectionGroup').type) $w('#roleSelectionGroup').expand();
+            if ($w('#welcomeText').type) {
+                $w('#welcomeText').text = "Welcome! Please select your role to continue.";
+                $w('#welcomeText').expand();
+            }
+        } else {
+            // User is Guest -> Show Magic Link Input
+            if ($w('#tokenInputGroup').type && $w('#tokenInputGroup').collapsed) {
+                $w('#tokenInputGroup').expand();
+            }
+            if ($w('#roleSelectionGroup').type) $w('#roleSelectionGroup').collapse();
+        }
+    } catch (e) {
+        console.error('Error checking member status:', e);
     }
 
     // 3. Setup Logic
@@ -37,49 +55,89 @@ $w.onReady(async function () {
 });
 
 function setupEventHandlers() {
-    // Magic Link
-    $w('#submitTokenBtn').onClick(async () => {
-        const token = $w('#tokenInput').value;
-        if (!token) {
-            $w('#errorText').text = "Please enter a valid token.";
-            $w('#errorText').expand();
-            return;
-        }
-        $w('#submitTokenBtn').disable();
-        $w('#submitTokenBtn').label = "Verifying...";
-        await handleToken(token);
-    });
+    // Magic Link Submit Button
+    try {
+        if ($w('#submitTokenBtn').type) {
+            $w('#submitTokenBtn').onClick(async () => {
+                const token = $w('#tokenInput').value;
+                if (!token) {
+                    if ($w('#errorText').type) {
+                        $w('#errorText').text = "Please enter a valid token.";
+                        $w('#errorText').expand();
+                    }
+                    return;
+                }
 
-    // Role Selection
+                if ($w('#submitTokenBtn').type) {
+                    $w('#submitTokenBtn').disable();
+                    $w('#submitTokenBtn').label = "Verifying...";
+                }
+
+                await handleToken(token);
+            });
+        }
+    } catch (e) {
+        console.error('Error setting up submitTokenBtn:', e);
+    }
+
+    // Role Selection Buttons
     const { assignRoleToCurrentUser } = require('backend/portal-auth');
 
-    $w('#selectDefendantBtn').onClick(async () => {
-        await handleRoleSelection('defendant');
-    });
+    // Defendant Button
+    try {
+        if ($w('#selectDefendantBtn').type) {
+            $w('#selectDefendantBtn').onClick(async () => {
+                await handleRoleSelection('defendant');
+            });
+        }
+    } catch (e) {
+        console.error('Error setting up selectDefendantBtn:', e);
+    }
 
-    $w('#selectIndemnitorBtn').onClick(async () => {
-        await handleRoleSelection('indemnitor');
-    });
+    // Indemnitor Button
+    try {
+        if ($w('#selectIndemnitorBtn').type) {
+            $w('#selectIndemnitorBtn').onClick(async () => {
+                await handleRoleSelection('indemnitor');
+            });
+        }
+    } catch (e) {
+        console.error('Error setting up selectIndemnitorBtn:', e);
+    }
 
-    // Add Staff Button Handler
-    // Note: Staff cannot self-assign the role, they must already have it.
-    // This button simply navigates them to the staff portal.
-    $w('#selectStaffBtn').onClick(async () => {
-        wixLocation.to('/portal-staff');
-    });
+    // Staff Button
+    try {
+        if ($w('#selectStaffBtn').type) {
+            $w('#selectStaffBtn').onClick(async () => {
+                wixLocation.to('/portal-staff');
+            });
+        }
+    } catch (e) {
+        console.error('Error setting up selectStaffBtn:', e);
+    }
 
     async function handleRoleSelection(role) {
-        $w('#statusText').text = "Setting up your dashboard...";
-        $w('#statusText').expand();
-        $w('#roleSelectionGroup').collapse();
-
         try {
-            await assignRoleToCurrentUser(role);
-            wixLocation.to('/portal'); // Router will now redirect correctly
+            if ($w('#statusText').type) {
+                $w('#statusText').text = "Setting up your dashboard...";
+                $w('#statusText').expand();
+            }
+            if ($w('#roleSelectionGroup').type) $w('#roleSelectionGroup').collapse();
+
+            try {
+                await assignRoleToCurrentUser(role);
+                wixLocation.to('/portal'); // Router will now redirect correctly
+            } catch (e) {
+                console.error('Role assignment error:', e);
+                if ($w('#statusText').type) {
+                    $w('#statusText').text = "Error setting role. Please try again.";
+                }
+                if ($w('#roleSelectionGroup').type) {
+                    $w('#roleSelectionGroup').expand();
+                }
+            }
         } catch (e) {
-            console.error(e);
-            $w('#statusText').text = "Error setting role. Please try again.";
-            $w('#roleSelectionGroup').expand();
+            console.error('Error in handleRoleSelection:', e);
         }
     }
 }
@@ -89,25 +147,46 @@ async function handleToken(token) {
         const result = await onMagicLinkLogin(token);
 
         if (result.ok) {
-            $w('#statusText').text = "Success! Redirecting...";
-            $w('#statusText').expand();
+            try {
+                if ($w('#statusText').type) {
+                    $w('#statusText').text = "Success! Redirecting...";
+                    $w('#statusText').expand();
+                }
+            } catch (e) { }
 
             wixLocation.to(result.goto || '/portal');
         } else {
             console.error("Token error:", result);
-            $w('#errorText').text = result.message || "Invalid or expired link.";
-            $w('#errorText').expand();
 
-            $w('#submitTokenBtn').enable();
-            $w('#submitTokenBtn').label = "Try Again";
-            $w('#tokenInputGroup').expand();
+            try {
+                if ($w('#errorText').type) {
+                    $w('#errorText').text = result.message || "Invalid or expired link.";
+                    $w('#errorText').expand();
+                }
+
+                if ($w('#submitTokenBtn').type) {
+                    $w('#submitTokenBtn').enable();
+                    $w('#submitTokenBtn').label = "Try Again";
+                }
+
+                if ($w('#tokenInputGroup').type) {
+                    $w('#tokenInputGroup').expand();
+                }
+            } catch (e) { }
         }
     } catch (error) {
         console.error("Link error:", error);
-        $w('#errorText').text = "System error. Please call us.";
-        $w('#errorText').expand();
 
-        $w('#submitTokenBtn').enable();
-        $w('#submitTokenBtn').label = "Try Again";
+        try {
+            if ($w('#errorText').type) {
+                $w('#errorText').text = "System error. Please call us.";
+                $w('#errorText').expand();
+            }
+
+            if ($w('#submitTokenBtn').type) {
+                $w('#submitTokenBtn').enable();
+                $w('#submitTokenBtn').label = "Try Again";
+            }
+        } catch (e) { }
     }
 }

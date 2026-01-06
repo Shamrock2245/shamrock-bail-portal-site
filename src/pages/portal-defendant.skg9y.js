@@ -1,5 +1,10 @@
-// Page: portal-defendant.skg9y.js
+// Page: portal-defendant.skg9y.js (FIXED)
 // Function: Client Dashboard for Check-Ins with Selfie Requirement and Case Status
+//
+// FIXES:
+// - Replaced .length checks with proper .type checks
+// - Added try-catch blocks around all element manipulations
+// - Prevents "onClick is not a function" errors
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
@@ -26,14 +31,33 @@ $w.onReady(async function () {
         const data = await getDefendantDetails(member._id);
         const name = (member.contactDetails?.firstName) || "Client";
 
-        $w('#welcomeText').text = `Welcome, ${name}`;
-        if (data) {
-            $w('#caseNumberText').text = data.caseNumber || "Pending";
-            $w('#bondAmountText').text = data.bondAmount || "$0.00";
-            $w('#nextCourtDateValueText').text = data.nextCourtDate || "TBD";
-            $w('#caseStatusText').text = data.caseStatus || "Active";
-            $w('#paperworkStatusText').text = data.paperworkStatus || "Pending";
-            $w('#signingStatusText').text = data.signingStatus || "Incomplete";
+        try {
+            if ($w('#welcomeText').type) {
+                $w('#welcomeText').text = `Welcome, ${name}`;
+            }
+
+            if (data) {
+                if ($w('#caseNumberText').type) {
+                    $w('#caseNumberText').text = data.caseNumber || "Pending";
+                }
+                if ($w('#bondAmountText').type) {
+                    $w('#bondAmountText').text = data.bondAmount || "$0.00";
+                }
+                if ($w('#nextCourtDateValueText').type) {
+                    $w('#nextCourtDateValueText').text = data.nextCourtDate || "TBD";
+                }
+                if ($w('#caseStatusText').type) {
+                    $w('#caseStatusText').text = data.caseStatus || "Active";
+                }
+                if ($w('#paperworkStatusText').type) {
+                    $w('#paperworkStatusText').text = data.paperworkStatus || "Pending";
+                }
+                if ($w('#signingStatusText').type) {
+                    $w('#signingStatusText').text = data.signingStatus || "Incomplete";
+                }
+            }
+        } catch (e) {
+            console.error('Error populating dashboard data:', e);
         }
 
         setupCheckInHandlers();
@@ -41,24 +65,44 @@ $w.onReady(async function () {
 
     } catch (e) {
         console.error("Dashboard Load Error", e);
-        $w('#welcomeText').text = "Welcome";
+        try {
+            if ($w('#welcomeText').type) {
+                $w('#welcomeText').text = "Welcome";
+            }
+        } catch (err) { }
     }
 });
 
 function initUI() {
-    $w('#welcomeText').text = "Loading...";
-    $w('#checkInStatusText').collapse();
+    try {
+        if ($w('#welcomeText').type) {
+            $w('#welcomeText').text = "Loading...";
+        }
+        if ($w('#checkInStatusText').type) {
+            $w('#checkInStatusText').collapse();
+        }
+    } catch (e) {
+        console.error('Error initializing UI:', e);
+    }
 }
 
 function setupPaperworkButtons(member) {
-    const startBtn = $w('#startPaperworkBtn');
-    if (startBtn.length > 0) {
-        startBtn.onClick(() => handlePaperworkStart(member));
+    // Start Paperwork Button
+    try {
+        if ($w('#startPaperworkBtn').type) {
+            $w('#startPaperworkBtn').onClick(() => handlePaperworkStart(member));
+        }
+    } catch (e) {
+        console.error('Error setting up startPaperworkBtn:', e);
     }
 
-    const kioskBtn = $w('#signKioskBtn');
-    if (kioskBtn.length > 0) {
-        kioskBtn.onClick(() => handlePaperworkStart(member));
+    // Kiosk Button
+    try {
+        if ($w('#signKioskBtn').type) {
+            $w('#signKioskBtn').onClick(() => handlePaperworkStart(member));
+        }
+    } catch (e) {
+        console.error('Error setting up signKioskBtn:', e);
     }
 }
 
@@ -87,8 +131,6 @@ async function handlePaperworkStart(member) {
         const consentResult = await LightboxController.show('consent');
 
         // If they didn't agree (e.g. cancelled), stop.
-        // Assuming consent lightbox returns an object with consent info or null
-        // If your ConsentLightbox just saves to backend and closes, we might re-check status or trust the result.
         if (!consentResult) {
             // Optional: re-check status to be sure
             const doubleCheck = await checkConsentStatus(member._id);
@@ -139,63 +181,88 @@ async function proceedToSignNow(member) {
         });
     } else {
         console.error('Failed to create SignNow link:', result.error);
-        $w('#signingStatusText').text = "Error preparing documents.";
+        try {
+            if ($w('#signingStatusText').type) {
+                $w('#signingStatusText').text = "Error preparing documents.";
+            }
+        } catch (e) { }
     }
 }
 
 // --- Check-In Logic (Preserved) ---
 
 function setupCheckInHandlers() {
-    const checkInBtn = $w('#checkInBtn');
-    if (checkInBtn.length === 0) return;
+    try {
+        if (!$w('#checkInBtn').type) return;
 
-    checkInBtn.onClick(async () => {
-        if ($w('#selfieUpload').value.length === 0) {
-            updateCheckInStatus("Error: Please take a selfie first.", "error");
-            return;
-        }
+        $w('#checkInBtn').onClick(async () => {
+            try {
+                if (!$w('#selfieUpload').type || $w('#selfieUpload').value.length === 0) {
+                    updateCheckInStatus("Error: Please take a selfie first.", "error");
+                    return;
+                }
 
-        $w('#checkInBtn').disable();
-        $w('#checkInBtn').label = "Uploading...";
-        $w('#statusBox').style.backgroundColor = "#FFFFFF";
+                $w('#checkInBtn').disable();
+                $w('#checkInBtn').label = "Uploading...";
 
-        try {
-            const uploadFiles = await $w('#selfieUpload').startUpload();
-            const selfieUrl = uploadFiles.url;
+                try {
+                    if ($w('#statusBox').type) {
+                        $w('#statusBox').style.backgroundColor = "#FFFFFF";
+                    }
+                } catch (e) { }
 
-            $w('#checkInBtn').label = "Acquiring Location...";
-            const locationObj = await wixWindow.getCurrentGeolocation();
+                const uploadFiles = await $w('#selfieUpload').startUpload();
+                const selfieUrl = uploadFiles.url;
 
-            $w('#checkInBtn').label = "Verifying...";
-            const result = await saveUserLocation(
-                locationObj.coords.latitude,
-                locationObj.coords.longitude,
-                $w('#updateNotesInput').value,
-                selfieUrl
-            );
+                $w('#checkInBtn').label = "Acquiring Location...";
+                const locationObj = await wixWindow.getCurrentGeolocation();
 
-            if (result.success) {
-                $w('#checkInBtn').label = "Check In Complete";
+                $w('#checkInBtn').label = "Verifying...";
+                const result = await saveUserLocation(
+                    locationObj.coords.latitude,
+                    locationObj.coords.longitude,
+                    $w('#updateNotesInput').type ? $w('#updateNotesInput').value : '',
+                    selfieUrl
+                );
+
+                if (result.success) {
+                    $w('#checkInBtn').label = "Check In Complete";
+                    $w('#checkInBtn').enable();
+
+                    try {
+                        if ($w('#updateNotesInput').type) {
+                            $w('#updateNotesInput').value = "";
+                        }
+                    } catch (e) { }
+
+                    updateCheckInStatus(`Checked in at: ${result.address}`, "success");
+                } else {
+                    throw new Error(result.message);
+                }
+
+            } catch (error) {
+                console.error("Check-in Error", error);
+                $w('#checkInBtn').label = "Try Again";
                 $w('#checkInBtn').enable();
-                $w('#updateNotesInput').value = "";
-                updateCheckInStatus(`Checked in at: ${result.address}`, "success");
-            } else {
-                throw new Error(result.message);
+                updateCheckInStatus("Error: " + (error.message || "Location required."), "error");
             }
-
-        } catch (error) {
-            console.error("Check-in Error", error);
-            $w('#checkInBtn').label = "Try Again";
-            $w('#checkInBtn').enable();
-            updateCheckInStatus("Error: " + (error.message || "Location required."), "error");
-        }
-    });
+        });
+    } catch (e) {
+        console.error('Error setting up check-in handlers:', e);
+    }
 }
 
 function updateCheckInStatus(msg, type) {
-    const color = type === "success" ? "#E6FFFA" : "#FFE6E6";
-    const box = $w('#statusBox');
-    if (box) box.style.backgroundColor = color;
-    $w('#checkInStatusText').text = msg;
-    $w('#checkInStatusText').expand();
+    try {
+        const color = type === "success" ? "#E6FFFA" : "#FFE6E6";
+        if ($w('#statusBox').type) {
+            $w('#statusBox').style.backgroundColor = color;
+        }
+        if ($w('#checkInStatusText').type) {
+            $w('#checkInStatusText').text = msg;
+            $w('#checkInStatusText').expand();
+        }
+    } catch (e) {
+        console.error('Error updating check-in status:', e);
+    }
 }
