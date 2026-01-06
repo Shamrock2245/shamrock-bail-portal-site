@@ -1,96 +1,65 @@
 // countyUtils.js
-import wixData from 'wix-data';
-// import { COLLECTIONS } from 'backend/collectionIds';
-const COLLECTIONS = {
-    FLORIDA_COUNTIES: 'Import1'
-};
+import { getCounties as getBackendCounties } from 'backend/counties';
 
 // Cache for county data
 let countyCache = null;
 
 /**
- * Fetch all counties from the FloridaCounties collection
+ * Fetch all counties from the backend source
  * @returns {Promise<Array>} List of county objects with normalized field names
  */
 export async function getCounties() {
-    console.log("DEBUG: getCounties() started");
-    console.log("DEBUG: Using Collection ID:", COLLECTIONS.FLORIDA_COUNTIES);
+    console.log("DEBUG: getCounties() started (via Backend Module)");
 
-    // if (countyCache) {
-    //     console.log("DEBUG: Returning cached counties:", countyCache.length);
-    //     return countyCache;
-    // }
+    if (countyCache) {
+        console.log("DEBUG: Returning cached counties:", countyCache.length);
+        return countyCache;
+    }
 
     try {
-        console.log("DEBUG: Executing wixData.query...");
+        const result = await getBackendCounties();
 
-        // Strategy: Try the config ID first ('Import1'), if empty, try 'FloridaCounties'
-        let results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
-            .ascending("countyName")
-            .limit(100)
-            .find();
-
-        if (results.totalCount === 0) {
-            console.warn(`DEBUG: Collection '${COLLECTIONS.FLORIDA_COUNTIES}' is empty or not found. Trying fallback ID 'FloridaCounties'...`);
-            results = await wixData.query("FloridaCounties")
-                .ascending("countyName")
-                .limit(100)
-                .find();
+        if (!result.success || !result.data || !Array.isArray(result.data.counties)) {
+            console.warn("DEBUG: Backend returned invalid structure", result);
+            return [];
         }
 
-        console.log("DEBUG: Query successful. Total items found:", results.totalCount);
-        console.log("DEBUG: Raw items (first 3):", results.items.slice(0, 3));
-
-        let itemsToMap = results.items;
-
-        // --- MOCK DATA INJECTION REMOVED (DB Verified: 67 items found) ---
-        // if (itemsToMap.length === 0) {
-        //     console.warn("DEBUG: No items found in DB. injecting MOCK DATA.");
-        //     itemsToMap = [
-        //         {
-        //             _id: "mock-1",
-        //             countyName: "Mock Alachua",
-        //             countySlug: "alachua", // Valid slug to test routing
-        //             title: "Mock Alachua Bail Bonds",
-        //             primaryPhone: "(555) 123-4567"
-        //         },
-        //         {
-        //             _id: "mock-2",
-        //             countyName: "Mock Lee",
-        //             countySlug: "lee",
-        //             title: "Mock Lee Bail Bonds",
-        //             primaryPhone: "(555) 987-6543"
-        //         }
-        //     ];
-        // }
-        // ---------------------------
+        const rawItems = result.data.counties;
+        console.log("DEBUG: Backend returned count:", rawItems.length);
 
         // Normalize field names for consistent use across the site
-        countyCache = itemsToMap.map(county => ({
-            _id: county._id,
-            name: county.countyName,           // Map countyName -> name
-            slug: county.countySlug,           // Map countySlug -> slug
-            title: county.title,
-            primaryPhone: county.primaryPhone,
-            bookingWebsite: county.bookingWebsiteLink,
-            bookingPhone: county.bookingPhoneNumber,
-            clerkWebsite: county.countyClerkWebsitelink,
-            clerkPhone: county.countyClerkPhoneNumber,
-            recordsSearch: county.recordsSearchLink,
-            seoTitle: county.seoTitle,
-            seoDescription: county.seoDescription,
-            serviceAreaCopy: county.serviceAreaCopy,
-            h1Headline: county.h1Headline,
-            ctaLink: county.ctaLink,
-            // Keep original fields for backward compatibility
-            countyName: county.countyName,
-            countySlug: county.countySlug
-        }));
+        countyCache = rawItems.map((county, index) => {
+            const name = county.county_name || "Unknown";
+            const slug = name.toLowerCase().replace(/\./g, '').replace(/\s+/g, '-');
+
+            return {
+                _id: `generated-${index}`,
+                name: name,
+                slug: slug,
+                title: `${name} County Bail Bonds`,
+                primaryPhone: county.phone_sheriff || "(239) 332-2245", // Fallback to main number
+                bookingWebsite: county.sheriff_url,
+                bookingPhone: county.phone_sheriff,
+                clerkWebsite: county.clerk_url,
+                clerkPhone: county.phone_clerk,
+                recordsSearch: county.jail_roster_url,
+
+                // SEO Defaults
+                seoTitle: `Bail Bonds in ${name} County, FL | Shamrock Bail Bonds`,
+                seoDescription: `Fast, professional bail bond services in ${name} County, Florida. Available 24/7.`,
+                h1Headline: `${name} County Bail Bonds`,
+                ctaLink: `/county/${slug}`,
+
+                // Compatibility fields
+                countyName: name,
+                countySlug: slug
+            };
+        });
 
         console.log("DEBUG: Normalized counties count:", countyCache.length);
         return countyCache;
     } catch (error) {
-        console.error("DEBUG: Failed to fetch counties:", error);
+        console.error("DEBUG: Failed to fetch counties from backend:", error);
         return [];
     }
 }
@@ -102,53 +71,9 @@ export async function getCounties() {
  */
 export async function getCountyBySlug(slug) {
     try {
-        const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
-            .eq("countySlug", slug)
-            .limit(1)
-            .find();
-
-        // if (results.items.length > 0) {
-        //     const county = results.items[0];
-
-        // let foundItem = results.items.length > 0 ? results.items[0] : null;
-
-        // --- MOCK DATA INJECTION REMOVED ---
-        // if (!foundItem) { ... }
-        // ---------------------------
-
-        if (results.items.length > 0) {
-            const county = results.items[0];
-            // Return normalized object
-            return {
-                _id: county._id,
-                name: county.countyName,
-                slug: county.countySlug,
-                title: county.title,
-                primaryPhone: county.primaryPhone,
-                bookingWebsite: county.bookingWebsiteLink,
-                bookingPhone: county.bookingPhoneNumber,
-                clerkWebsite: county.countyClerkWebsitelink,
-                clerkPhone: county.countyClerkPhoneNumber,
-                recordsSearch: county.recordsSearchLink,
-                seoTitle: county.seoTitle,
-                seoDescription: county.seoDescription,
-                serviceAreaCopy: county.serviceAreaCopy,
-                h1Headline: county.h1Headline,
-                ctaLink: county.ctaLink,
-                // Address & Contact Fields
-                sheriffAddress: county.sheriffAddress,
-                jailAddress: county.jailAddress,
-                bookingPhone: county.bookingPhoneNumber, // Sheriff/Booking Phone
-                clerkPhone: county.countyClerkPhoneNumber, // Clerk Phone
-                countySeat: county.countySeat,
-                population: county.population,
-
-                // Keep original for compatibility
-                countyName: county.countyName,
-                countySlug: county.countySlug
-            };
-        }
-        return null;
+        const counties = await getCounties();
+        const found = counties.find(c => c.slug === slug);
+        return found || null;
     } catch (error) {
         console.error(`Failed to fetch county ${slug}:`, error);
         return null;
@@ -163,20 +88,12 @@ export async function getCountyBySlug(slug) {
  */
 export async function getNearbyCounties(region, currentId) {
     try {
-        // Note: region field doesn't exist in current schema
-        // This will need to be added to the collection or logic changed
-        const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
-            .ne("_id", currentId)
-            .limit(4)
-            .find();
-
-        // Normalize results
-        return results.items.map(county => ({
-            _id: county._id,
-            name: county.countyName,
-            slug: county.countySlug,
-            title: county.title
-        }));
+        const counties = await getCounties();
+        // Since we don't have region data yet, just return 4 random counties that aren't the current one
+        return counties
+            .filter(c => c._id !== currentId)
+            .sort(() => 0.5 - Math.random())
+            .slice(0, 4);
     } catch (error) {
         console.error("Failed to fetch nearby counties:", error);
         return [];
