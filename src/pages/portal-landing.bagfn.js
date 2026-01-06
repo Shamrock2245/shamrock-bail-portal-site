@@ -9,7 +9,7 @@
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import { currentMember } from 'wix-members';
-import { onMagicLinkLogin } from 'backend/portal-auth';
+import { onMagicLinkLogin, assignRoleToCurrentUser } from 'backend/portal-auth';
 
 $w.onReady(async function () {
     // 1. Check for Magic Token in URL (Priority)
@@ -50,15 +50,22 @@ $w.onReady(async function () {
         console.error('Error checking member status:', e);
     }
 
+
     // 3. Setup Logic
+    console.log("Portal Landing: Setting up event handlers...");
     setupEventHandlers();
 });
 
 function setupEventHandlers() {
+    console.log("Portal Landing: Inside setupEventHandlers");
+
     // Magic Link Submit Button
     try {
-        if ($w('#submitTokenBtn').type) {
-            $w('#submitTokenBtn').onClick(async () => {
+        const btn = $w('#submitTokenBtn');
+        if (btn && btn.type) {
+            console.log("Portal Landing: Found #submitTokenBtn");
+            btn.onClick(async () => {
+                console.log("Portal Landing: #submitTokenBtn clicked");
                 const token = $w('#tokenInput').value;
                 if (!token) {
                     if ($w('#errorText').type) {
@@ -68,27 +75,32 @@ function setupEventHandlers() {
                     return;
                 }
 
-                if ($w('#submitTokenBtn').type) {
-                    $w('#submitTokenBtn').disable();
-                    $w('#submitTokenBtn').label = "Verifying...";
-                }
+                btn.disable();
+                btn.label = "Verifying...";
 
                 await handleToken(token);
             });
+        } else {
+            console.log("Portal Landing: #submitTokenBtn NOT found");
         }
     } catch (e) {
         console.error('Error setting up submitTokenBtn:', e);
     }
 
     // Role Selection Buttons
-    const { assignRoleToCurrentUser } = require('backend/portal-auth');
+    // assignRoleToCurrentUser is imported at the top level
 
     // Defendant Button
     try {
-        if ($w('#selectDefendantBtn').type) {
-            $w('#selectDefendantBtn').onClick(async () => {
+        const btnDef = $w('#selectDefendantBtn');
+        if (btnDef && btnDef.type) {
+            console.log("Portal Landing: Found #selectDefendantBtn");
+            btnDef.onClick(async () => {
+                console.log("Portal Landing: #selectDefendantBtn clicked");
                 await handleRoleSelection('defendant');
             });
+        } else {
+            console.log("Portal Landing: #selectDefendantBtn NOT found");
         }
     } catch (e) {
         console.error('Error setting up selectDefendantBtn:', e);
@@ -96,10 +108,15 @@ function setupEventHandlers() {
 
     // Indemnitor Button
     try {
-        if ($w('#selectIndemnitorBtn').type) {
-            $w('#selectIndemnitorBtn').onClick(async () => {
+        const btnInd = $w('#selectIndemnitorBtn');
+        if (btnInd && btnInd.type) {
+            console.log("Portal Landing: Found #selectIndemnitorBtn");
+            btnInd.onClick(async () => {
+                console.log("Portal Landing: #selectIndemnitorBtn clicked");
                 await handleRoleSelection('indemnitor');
             });
+        } else {
+            console.log("Portal Landing: #selectIndemnitorBtn NOT found");
         }
     } catch (e) {
         console.error('Error setting up selectIndemnitorBtn:', e);
@@ -107,16 +124,24 @@ function setupEventHandlers() {
 
     // Staff Button
     try {
-        if ($w('#selectStaffBtn').type) {
-            $w('#selectStaffBtn').onClick(async () => {
+        const btnStaff = $w('#selectStaffBtn');
+        if (btnStaff && btnStaff.type) {
+            console.log("Portal Landing: Found #selectStaffBtn");
+            btnStaff.onClick(async () => {
+                console.log("Portal Landing: #selectStaffBtn clicked");
+                // Staff portal usually requires login first, but let's try direct
+                console.log("Redirecting to /portal-staff");
                 wixLocation.to('/portal-staff');
             });
+        } else {
+            console.log("Portal Landing: #selectStaffBtn NOT found");
         }
     } catch (e) {
         console.error('Error setting up selectStaffBtn:', e);
     }
 
     async function handleRoleSelection(role) {
+        console.log(`Portal Landing: Handling role selection for ${role}`);
         try {
             if ($w('#statusText').type) {
                 $w('#statusText').text = "Setting up your dashboard...";
@@ -125,8 +150,10 @@ function setupEventHandlers() {
             if ($w('#roleSelectionGroup').type) $w('#roleSelectionGroup').collapse();
 
             try {
+                console.log("Calling assignRoleToCurrentUser...");
                 await assignRoleToCurrentUser(role);
-                wixLocation.to('/portal'); // Router will now redirect correctly
+                console.log("Role assigned. Redirecting to /portal...");
+                wixLocation.to('/portal');
             } catch (e) {
                 console.error('Role assignment error:', e);
                 if ($w('#statusText').type) {
@@ -141,6 +168,7 @@ function setupEventHandlers() {
         }
     }
 }
+
 
 async function handleToken(token) {
     try {

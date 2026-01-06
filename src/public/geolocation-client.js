@@ -11,6 +11,7 @@
 
 import { detectCounty } from 'backend/geocoding';
 import wixWindow from 'wix-window';
+import { session } from 'wix-storage';
 
 /**
  * Capture user geolocation with consent
@@ -234,11 +235,9 @@ export async function autoDetectLocation() {
  */
 function saveLocationToStorage(location) {
   try {
-    if (wixWindow.rendering.env === 'browser') {
-      sessionStorage.setItem('userLocation', JSON.stringify(location));
-    }
+    session.setItem('userLocation', JSON.stringify(location));
   } catch (error) {
-    console.error('Error saving location to storage:', error);
+    console.warn('Error saving location to storage:', error);
   }
 }
 
@@ -248,13 +247,10 @@ function saveLocationToStorage(location) {
  */
 function getLocationFromStorage() {
   try {
-    if (wixWindow.rendering.env === 'browser') {
-      const stored = sessionStorage.getItem('userLocation');
-      return stored ? JSON.parse(stored) : null;
-    }
-    return null;
+    const stored = session.getItem('userLocation');
+    return stored ? JSON.parse(stored) : null;
   } catch (error) {
-    console.error('Error getting location from storage:', error);
+    console.warn('Error getting location from storage:', error);
     return null;
   }
 }
@@ -264,11 +260,9 @@ function getLocationFromStorage() {
  */
 export function clearLocationStorage() {
   try {
-    if (wixWindow.rendering.env === 'browser') {
-      sessionStorage.removeItem('userLocation');
-    }
+    session.removeItem('userLocation');
   } catch (error) {
-    console.error('Error clearing location storage:', error);
+    console.warn('Error clearing location storage:', error);
   }
 }
 

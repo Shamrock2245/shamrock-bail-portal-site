@@ -1,8 +1,4 @@
-// Basic Velo placeholder for My Account page
-import wixUsers from 'wix-users';
-import wixLocation from 'wix-location';
-
+// Portal.hslzo.js - Cleared to resolve persistent build errors
 $w.onReady(function () {
-    console.log("My Account page ready");
-    // Currently disabled to fix build errors from React/JSX mismatch
+    console.log("Portal (My Account) page ready - Placeholder");
 });
