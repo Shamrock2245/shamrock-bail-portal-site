@@ -1,5 +1,5 @@
-// counties.jsw - FIXED VERSION
-// This version queries the Import1 CMS collection instead of using require()
+// counties.jsw - PRODUCTION VERSION
+// This version queries the FloridaCounties CMS collection
 
 import wixData from 'wix-data';
 
@@ -9,31 +9,35 @@ import wixData from 'wix-data';
  */
 export async function getCounties() {
   try {
-    // Query the Import1 collection which contains all Florida counties
-    const results = await wixData.query("Import1")
+    // Query the FloridaCounties collection which contains all Florida counties
+    const results = await wixData.query("FloridaCounties")
       .limit(100)
       .ascending("countyName")
       .find();
     
-    console.log(`Fetched ${results.items.length} counties from Import1 collection`);
+    console.log(`Fetched ${results.items.length} counties from FloridaCounties collection`);
     
-    // Map Import1 fields to the expected schema format
+    // Map FloridaCounties fields to the expected schema format
     const counties = results.items.map(item => ({
       county_name: item.countyName || "",
       slug: item.countySlug || "",
-      sheriff_url: item.bookingWebsiteLink || "",
-      clerk_url: item.countyClerkWebsitelink || "",
+      sheriff_url: item.sheriffWebsite || "",
+      clerk_url: item.clerkWebsite || "",
       jail_roster_url: item.recordsSearchLink || "",
-      phone_sheriff: item.bookingPhoneNumber || "",
-      phone_clerk: item.countyClerkPhoneNumber || "",
-      status: "Active", // All counties in Import1 are active
+      phone_sheriff: item.jailPhone || "",
+      phone_clerk: item.clerkPhone || "",
+      status: "Active", // All counties in FloridaCounties are active
       
-      // Additional useful fields from Import1
+      // Additional useful fields from FloridaCounties
       title: item.title || "",
       h1Headline: item.h1Headline || "",
       seoTitle: item.seoTitle || "",
       seoDescription: item.seoDescription || "",
-      primaryPhone: item.primaryPhone || "(239) 332-2245"
+      primaryPhone: item.primaryPhone || "(239) 332-2245",
+      jailName: item.jailName || "",
+      clerkName: item.clerkName || "",
+      sheriffName: item.sheriffName || "",
+      jailBookingUrl: item.jailBookingUrl || ""
     }));
     
     return {
@@ -44,7 +48,7 @@ export async function getCounties() {
       }
     };
   } catch (error) {
-    console.error('Error fetching counties from Import1:', error);
+    console.error('Error fetching counties from FloridaCounties:', error);
     return {
       success: false,
       error: 'Failed to load county data',
@@ -62,7 +66,7 @@ export async function getCountyByName(countyName) {
   try {
     const normalizedName = countyName.trim();
     
-    const results = await wixData.query("Import1")
+    const results = await wixData.query("FloridaCounties")
       .eq("countyName", normalizedName)
       .find();
     
@@ -77,11 +81,11 @@ export async function getCountyByName(countyName) {
     const county = {
       county_name: item.countyName || "",
       slug: item.countySlug || "",
-      sheriff_url: item.bookingWebsiteLink || "",
-      clerk_url: item.countyClerkWebsitelink || "",
+      sheriff_url: item.sheriffWebsite || "",
+      clerk_url: item.clerkWebsite || "",
       jail_roster_url: item.recordsSearchLink || "",
-      phone_sheriff: item.bookingPhoneNumber || "",
-      phone_clerk: item.countyClerkPhoneNumber || "",
+      phone_sheriff: item.jailPhone || "",
+      phone_clerk: item.clerkPhone || "",
       status: "Active",
       title: item.title || "",
       h1Headline: item.h1Headline || "",
@@ -128,11 +132,11 @@ export async function getCountyBySlug(slug) {
     const county = {
       county_name: item.countyName || "",
       slug: item.countySlug || "",
-      sheriff_url: item.bookingWebsiteLink || "",
-      clerk_url: item.countyClerkWebsitelink || "",
+      sheriff_url: item.sheriffWebsite || "",
+      clerk_url: item.clerkWebsite || "",
       jail_roster_url: item.recordsSearchLink || "",
-      phone_sheriff: item.bookingPhoneNumber || "",
-      phone_clerk: item.countyClerkPhoneNumber || "",
+      phone_sheriff: item.jailPhone || "",
+      phone_clerk: item.clerkPhone || "",
       status: "Active",
       title: item.title || "",
       h1Headline: item.h1Headline || "",
@@ -162,9 +166,9 @@ export async function getCountyBySlug(slug) {
  */
 export async function getCountiesByStatus(status) {
   try {
-    // Note: Import1 only contains active counties
-    // If you need to filter, you would need a status field in Import1
-    const results = await wixData.query("Import1")
+    // Note: FloridaCounties only contains active counties
+    // If you need to filter, you would need a status field in FloridaCounties
+    const results = await wixData.query("FloridaCounties")
       .limit(100)
       .ascending("countyName")
       .find();
@@ -172,11 +176,11 @@ export async function getCountiesByStatus(status) {
     const counties = results.items.map(item => ({
       county_name: item.countyName || "",
       slug: item.countySlug || "",
-      sheriff_url: item.bookingWebsiteLink || "",
-      clerk_url: item.countyClerkWebsitelink || "",
+      sheriff_url: item.sheriffWebsite || "",
+      clerk_url: item.clerkWebsite || "",
       jail_roster_url: item.recordsSearchLink || "",
-      phone_sheriff: item.bookingPhoneNumber || "",
-      phone_clerk: item.countyClerkPhoneNumber || "",
+      phone_sheriff: item.jailPhone || "",
+      phone_clerk: item.clerkPhone || "",
       status: "Active"
     }));
     
@@ -206,7 +210,7 @@ export async function searchCounties(searchTerm) {
   try {
     const normalizedTerm = searchTerm.trim();
     
-    const results = await wixData.query("Import1")
+    const results = await wixData.query("FloridaCounties")
       .contains("countyName", normalizedTerm)
       .limit(50)
       .find();
@@ -214,11 +218,11 @@ export async function searchCounties(searchTerm) {
     const counties = results.items.map(item => ({
       county_name: item.countyName || "",
       slug: item.countySlug || "",
-      sheriff_url: item.bookingWebsiteLink || "",
-      clerk_url: item.countyClerkWebsitelink || "",
+      sheriff_url: item.sheriffWebsite || "",
+      clerk_url: item.clerkWebsite || "",
       jail_roster_url: item.recordsSearchLink || "",
-      phone_sheriff: item.bookingPhoneNumber || "",
-      phone_clerk: item.countyClerkPhoneNumber || "",
+      phone_sheriff: item.jailPhone || "",
+      phone_clerk: item.clerkPhone || "",
       status: "Active"
     }));
     
