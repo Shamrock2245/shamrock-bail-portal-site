@@ -14,6 +14,7 @@
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
+import wixData from 'wix-data';
 
 // Contact information
 const CONTACT = {
@@ -243,12 +244,10 @@ function setupNewsletter() {
                     $w('#newsletterSubmit').label = 'Subscribing...';
 
                     // Save to database
-                    import('wix-data').then(async (wixData) => {
-                        await wixData.insert('NewsletterSubscribers', {
-                            email: email,
-                            subscribedAt: new Date(),
-                            source: 'footer'
-                        });
+                    await wixData.insert('NewsletterSubscribers', {
+                        email: email,
+                        subscribedAt: new Date(),
+                        source: 'footer'
                     });
 
                     // Show success
@@ -289,9 +288,7 @@ function isValidEmail(email) {
  */
 function trackEvent(eventName, eventData = {}) {
     try {
-        import('wix-window').then((wixWindow) => {
-            wixWindow.trackEvent(eventName, eventData);
-        });
+        wixWindow.trackEvent(eventName, eventData);
     } catch (e) {
         console.log('Event tracking failed:', eventName);
     }

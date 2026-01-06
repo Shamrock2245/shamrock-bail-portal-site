@@ -9,6 +9,7 @@
 import wixData from 'wix-data';
 import wixLocation from 'wix-location';
 import { LightboxController } from 'public/lightbox-controller';
+import { currentMember } from 'wix-members';
 import { generateMagicLink, getStaffDashboardData } from 'backend/portal-auth';
 
 let allCases = []; // Store locally for fast filtering
@@ -21,13 +22,12 @@ $w.onReady(async function () {
     } catch (e) { }
 
     // 0. Security Check
-    import('wix-members').then(async (wm) => {
-        const member = await wm.currentMember.getMember();
-        if (!member) {
-            console.warn("⛔ Staff Access Denied. Redirecting...");
-            wixLocation.to('/portal');
-        }
-    });
+    // 0. Security Check
+    const member = await currentMember.getMember();
+    if (!member) {
+        console.warn("⛔ Staff Access Denied. Redirecting...");
+        wixLocation.to('/portal');
+    }
 
     // 1. Load Data
     try {
