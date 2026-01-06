@@ -40,6 +40,7 @@ export const COLLECTIONS = {
   CONTACT_SUBMISSIONS: 'ContactSubmissions', // Contact form submissions
   BAIL_SCHOOL_SIGNUPS: 'BailSchoolSignups',  // Bail school interest signups
   MAGIC_LINKS: 'MagicLinks',             // Magic link authentication tokens
+  COMMON_CHARGES: 'CommonCharges',       // Common charges and bond amounts
 
   // System Collections (Wix-managed)
   BLOG_POSTS: 'Blog/Posts',
@@ -89,7 +90,8 @@ export const COLLECTION_DISPLAY_NAMES = {
   [COLLECTIONS.TESTIMONIALS]: 'Testimonials',
   [COLLECTIONS.CONTACT_SUBMISSIONS]: 'Contact Submissions',
   [COLLECTIONS.BAIL_SCHOOL_SIGNUPS]: 'Bail School Signups',
-  [COLLECTIONS.MAGIC_LINKS]: 'Magic Links'
+  [COLLECTIONS.MAGIC_LINKS]: 'Magic Links',
+  [COLLECTIONS.COMMON_CHARGES]: 'Common Charges'
 };
 
 /**

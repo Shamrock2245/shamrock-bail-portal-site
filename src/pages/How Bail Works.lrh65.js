@@ -1,5 +1,7 @@
 
 import wixLocation from 'wix-location';
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'public/collectionIds';
 
 $w.onReady(function () {
     console.log("🚀 How Bail Works Page Loading...");
@@ -127,8 +129,9 @@ function setupBailAmounts() {
 }
 
 // --- 5. Common Bail Amounts (Table) ---
-function setupCommonBailAmounts() {
-    const data = [
+// --- 5. Common Bail Amounts (Table) ---
+async function setupCommonBailAmounts() {
+    const fallbackData = [
         { _id: "1", offense: "DUI (First Offense)", range: "$500 - $2,500" },
         { _id: "2", offense: "Domestic Violence", range: "$2,500 - $10,000" },
         { _id: "3", offense: "Drug Possession", range: "$1,000 - $25,000" },
@@ -136,19 +139,40 @@ function setupCommonBailAmounts() {
         { _id: "5", offense: "Burglary", range: "$10,000 - $50,000" }
     ];
 
+    let data = fallbackData;
+
+    try {
+        const result = await wixData.query(COLLECTIONS.COMMON_CHARGES)
+            .limit(20)
+            .find();
+
+        if (result.items.length > 0) {
+            console.log(`DEBUG: Loaded ${result.items.length} Common Charges from CMS.`);
+            data = result.items;
+        } else {
+            console.warn("DEBUG: No Common Charges in CMS, using fallback.");
+        }
+    } catch (err) {
+        console.error("ERROR: Failed to load Common Charges from CMS", err);
+    }
+
     const rep = $w('#amountsRepeater');
     if (rep.valid) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            $item('#offenseName').text = itemData.offense;
-            $item('#bailRange').text = itemData.range;
+            const offense = itemData.offense || itemData.chargeName || itemData.title || "Unknown Offense";
+            const range = itemData.range || itemData.bondAmount || itemData.amount || "Varies";
+
+            $item('#offenseName').text = offense;
+            $item('#bailRange').text = range;
         });
     }
 }
 
 // --- 6. FAQ Section ---
-function setupFAQ() {
-    const data = [
+// --- 6. FAQ Section ---
+async function setupFAQ() {
+    const fallbackData = [
         { _id: "1", q: "Can bail be reduced?", a: "Yes. An attorney can file a motion to reduce bail if it is excessive or circumstances change." },
         { _id: "2", q: "Can I get my premium back?", a: "No. The 10% premium is a non-refundable service fee earned by the bondsman." },
         { _id: "3", q: "What if I can't afford 10%?", a: "We offer flexible payment plans. Call us to discuss options." },
@@ -157,17 +181,37 @@ function setupFAQ() {
         { _id: "6", q: "Can anyone be denied bail?", a: "Yes. Bail can be denied for capital offenses, flight risks, or danger to the community." }
     ];
 
+    let data = fallbackData;
+
+    try {
+        const result = await wixData.query(COLLECTIONS.FAQ)
+            .limit(10)
+            .find();
+
+        if (result.items.length > 0) {
+            console.log(`DEBUG: Loaded ${result.items.length} FAQs from CMS.`);
+            data = result.items;
+        } else {
+            console.warn("DEBUG: No FAQs in CMS, using fallback.");
+        }
+    } catch (err) {
+        console.error("ERROR: Failed to load FAQs from CMS", err);
+    }
+
     // Using Native Wix Collapsible Text
     const rep = $w('#faqRepeater');
     if (rep.valid) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            $item('#faqQuestion').text = itemData.q;
+            const question = itemData.q || itemData.question || "No Question";
+            const answerText = itemData.a || itemData.answer || "No Amswer";
+
+            $item('#faqQuestion').text = question;
 
             // Just populate the text. The element handles its own Read More/Less state.
             const answer = $item('#faqAnswer');
             if (answer.valid) {
-                answer.text = itemData.a;
+                answer.text = answerText;
             }
         });
     }

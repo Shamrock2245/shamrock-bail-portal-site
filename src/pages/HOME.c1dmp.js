@@ -1,6 +1,8 @@
 // HOME.c1dmp.js
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'public/collectionIds';
 import { getCounties } from 'public/countyUtils';
 import { LightboxController } from 'public/lightbox-controller';
 
@@ -126,8 +128,13 @@ async function initCountyDropdown() {
  * 2. TESTIMONIALS LOGIC
  * ------------------------------------------------------------------
  */
-function setupTestimonials() {
-    const data = [
+/**
+ * ------------------------------------------------------------------
+ * 2. TESTIMONIALS LOGIC
+ * ------------------------------------------------------------------
+ */
+async function setupTestimonials() {
+    const fallbackData = [
         { _id: "1", quote: "Process was fast and easy. Highly recommend.", name: "Sarah M." },
         { _id: "2", quote: "They helped me at 3am when no one else would.", name: "John D." },
         { _id: "3", quote: "Professional and explained everything clearly.", name: "Michael R." },
@@ -135,12 +142,32 @@ function setupTestimonials() {
         { _id: "5", quote: "Very respectful and understanding.", name: "David K." }
     ];
 
+    let data = fallbackData;
+
+    try {
+        const result = await wixData.query(COLLECTIONS.TESTIMONIALS)
+            .limit(5)
+            .find();
+
+        if (result.items.length > 0) {
+            console.log(`DEBUG: Loaded ${result.items.length} testimonials from CMS.`);
+            data = result.items;
+        } else {
+            console.warn("DEBUG: No testimonials in CMS, using fallback.");
+        }
+    } catch (err) {
+        console.error("ERROR: Failed to load testimonials from CMS", err);
+    }
+
     const rep = $w('#testimonialsRepeater');
     if (rep.length > 0) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            if ($item('#quoteText').length) $item('#quoteText').text = `"${itemData.quote}"`;
-            if ($item('#authorName').length) $item('#authorName').text = itemData.name;
+            const quote = itemData.quote || itemData.text || itemData.message || "No quote provided";
+            const name = itemData.name || itemData.author || "Anonymous";
+
+            if ($item('#quoteText').length) $item('#quoteText').text = `"${quote}"`;
+            if ($item('#authorName').length) $item('#authorName').text = name;
         });
     } else {
         console.warn("DEBUG: #testimonialsRepeater not found");
@@ -153,8 +180,13 @@ function setupTestimonials() {
  * 3. FAQ LOGIC (New)
  * ------------------------------------------------------------------
  */
-function setupFAQ() {
-    const data = [
+/**
+ * ------------------------------------------------------------------
+ * 3. FAQ LOGIC (New)
+ * ------------------------------------------------------------------
+ */
+async function setupFAQ() {
+    const fallbackData = [
         { _id: "1", q: "Can bail be reduced?", a: "Yes. An attorney can file a motion to reduce bail if it is excessive or circumstances change." },
         { _id: "2", q: "Can I get my premium back?", a: "No. The 10% premium is a non-refundable service fee earned by the bondsman." },
         { _id: "3", q: "What if I can't afford 10%?", a: "We offer flexible payment plans. Call us to discuss options." },
@@ -163,16 +195,36 @@ function setupFAQ() {
         { _id: "6", q: "Can anyone be denied bail?", a: "Yes. Bail can be denied for capital offenses, flight risks, or danger to the community." }
     ];
 
+    let data = fallbackData;
+
+    try {
+        const result = await wixData.query(COLLECTIONS.FAQ)
+            .limit(10)
+            .find();
+
+        if (result.items.length > 0) {
+            console.log(`DEBUG: Loaded ${result.items.length} FAQs from CMS.`);
+            data = result.items;
+        } else {
+            console.warn("DEBUG: No FAQs in CMS, using fallback.");
+        }
+    } catch (err) {
+        console.error("ERROR: Failed to load FAQs from CMS", err);
+    }
+
     const rep = $w('#faqRepeater');
     if (rep.length > 0) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            if ($item('#faqQuestion').length) $item('#faqQuestion').text = itemData.q;
+            const question = itemData.q || itemData.question || "No Question";
+            const answerText = itemData.a || itemData.answer || "No Amswer";
+
+            if ($item('#faqQuestion').length) $item('#faqQuestion').text = question;
 
             // Handle Answer Text
             const answer = $item('#faqAnswer');
             if (answer.length > 0) {
-                answer.text = itemData.a;
+                answer.text = answerText;
             }
         });
     } else {
@@ -186,14 +238,36 @@ function setupFAQ() {
  * 4. BOND AMOUNTS LOGIC (New)
  * ------------------------------------------------------------------
  */
-function setupBondAmounts() {
-    const data = [
+/**
+ * ------------------------------------------------------------------
+ * 4. BOND AMOUNTS LOGIC (New)
+ * ------------------------------------------------------------------
+ */
+async function setupBondAmounts() {
+    const fallbackData = [
         { _id: "1", offense: "DUI (First Offense)", range: "$500 - $2,500" },
         { _id: "2", offense: "Domestic Violence", range: "$2,500 - $10,000" },
         { _id: "3", offense: "Drug Possession", range: "$1,000 - $25,000" },
         { _id: "4", offense: "Assault", range: "$5,000 - $25,000" },
         { _id: "5", offense: "Burglary", range: "$10,000 - $50,000" }
     ];
+
+    let data = fallbackData;
+
+    try {
+        const result = await wixData.query(COLLECTIONS.COMMON_CHARGES)
+            .limit(20)
+            .find();
+
+        if (result.items.length > 0) {
+            console.log(`DEBUG: Loaded ${result.items.length} Common Charges from CMS.`);
+            data = result.items;
+        } else {
+            console.warn("DEBUG: No Common Charges in CMS, using fallback.");
+        }
+    } catch (err) {
+        console.error("ERROR: Failed to load Common Charges from CMS", err);
+    }
 
     // Try finding the repeater. User called it "common charge and bond amounts"
     // Likely IDs: #amountsRepeater, #bondAmountsRepeater, #chargesRepeater
@@ -203,13 +277,16 @@ function setupBondAmounts() {
     if (rep.length > 0) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
+            const offense = itemData.offense || itemData.chargeName || itemData.title || "Unknown Offense";
+            const range = itemData.range || itemData.bondAmount || itemData.amount || "Varies";
+
             // Try common field IDs
-            if ($item('#offenseName').length) $item('#offenseName').text = itemData.offense;
-            if ($item('#bailRange').length) $item('#bailRange').text = itemData.range;
+            if ($item('#offenseName').length) $item('#offenseName').text = offense;
+            if ($item('#bailRange').length) $item('#bailRange').text = range;
 
             // Fallbacks
-            if ($item('#chargeName').length) $item('#chargeName').text = itemData.offense;
-            if ($item('#amountText').length) $item('#amountText').text = itemData.range;
+            if ($item('#chargeName').length) $item('#chargeName').text = offense;
+            if ($item('#amountText').length) $item('#amountText').text = range;
         });
     } else {
         console.warn("DEBUG: Bond/Amounts Repeater not found. Checked: #amountsRepeater, #bondAmountsRepeater");
