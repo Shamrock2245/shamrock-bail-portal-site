@@ -47,8 +47,6 @@ export async function createCaseFolder(caseData) {
             createdAt: new Date().toISOString()
         });
 
-        const result = await response.json();
-
         // Store folder reference in database
         if (result.success && result.folderId) {
             await wixData.insert('CaseFolders', {

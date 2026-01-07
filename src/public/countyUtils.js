@@ -1,15 +1,15 @@
 // countyUtils.js
-import { getCounties as getBackendCounties } from 'backend/counties';
+import { get_allCounties } from 'backend/counties-api.web';
 
 // Cache for county data
 let countyCache = null;
 
 /**
- * Fetch all counties from the backend source
+ * Fetch all counties from the backend source via web module
  * @returns {Promise<Array>} List of county objects with normalized field names
  */
 export async function getCounties() {
-    console.log("DEBUG: getCounties() started (via Backend Module)");
+    console.log("DEBUG: getCounties() started (via Web Module)");
 
     if (countyCache) {
         console.log("DEBUG: Returning cached counties:", countyCache.length);
@@ -17,23 +17,23 @@ export async function getCounties() {
     }
 
     try {
-        const result = await getBackendCounties();
+        const result = await get_allCounties();
 
-        if (!result.success || !result.data || !Array.isArray(result.data.counties)) {
-            console.warn("DEBUG: Backend returned invalid structure", result);
+        if (!result.success || !result.counties || !Array.isArray(result.counties)) {
+            console.warn("DEBUG: Web module returned invalid structure", result);
             return [];
         }
 
-        const rawItems = result.data.counties;
-        console.log("DEBUG: Backend returned count:", rawItems.length);
+        const rawItems = result.counties;
+        console.log("DEBUG: Web module returned count:", rawItems.length);
 
         // Normalize field names for consistent use across the site
         countyCache = rawItems.map((county, index) => {
-            const name = county.county_name || "Unknown";
-            const slug = name.toLowerCase().replace(/\./g, '').replace(/\s+/g, '-');
+            const name = county.county_name || county.name || "Unknown";
+            const slug = (county.slug || name.toLowerCase().replace(/\./g, '').replace(/\s+/g, '-'));
 
             return {
-                _id: `generated-${index}`,
+                _id: county._id || `generated-${index}`,
                 name: name,
                 slug: slug,
                 title: `${name} County Bail Bonds`,
@@ -59,7 +59,7 @@ export async function getCounties() {
         console.log("DEBUG: Normalized counties count:", countyCache.length);
         return countyCache;
     } catch (error) {
-        console.error("DEBUG: Failed to fetch counties from backend:", error);
+        console.error("DEBUG: Failed to fetch counties from web module:", error);
         return [];
     }
 }
