@@ -42,7 +42,7 @@ $w.onReady(async function () {
  * ------------------------------------------------------------------
  */
 async function initCountyDropdown() {
-    console.log("DEBUG: initCountyDropdown() calling...");
+    console.log("DEBUG: initCountyDropdown() [v3.1 Fix] calling...");
 
     try {
         // 1. ROBUST ELEMENT SELECTION
