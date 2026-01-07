@@ -8,6 +8,7 @@ import { silentPingLocation } from 'public/location-tracker';
 import { initializePhoneInjection } from 'public/phone-injector';
 import { initHeader } from 'public/siteHeader';
 import { initFooter } from 'public/siteFooter';
+import { processBookingSheet } from 'public/bookingSheetHandler';
 
 $w.onReady(function () {
     // 1. Initialize Site Components (Public Modules)
