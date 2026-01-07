@@ -1,0 +1,213 @@
+/**
+ * Shamrock Bail Bonds - Access Code Validation Backend
+ * 
+ * This backend module handles validation of access codes
+ * for the portal landing page, integrated with the existing MagicLinks collection.
+ */
+
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'public/collectionIds';
+
+/**
+ * Validate an access code and return portal information
+ * @param {string} accessCode - The access code to validate
+ * @returns {Promise<object>} Validation result with portal information
+ */
+export async function validateCode(accessCode) {
+    try {
+        // Query the MagicLinks collection
+        // Mapping: accessCode -> token, portalType -> role
+
+        const results = await wixData.query(COLLECTIONS.MAGIC_LINKS)
+            .eq("token", accessCode)
+            .eq("used", false) // Ensure it hasn't been used/deactivated
+            .find({ suppressAuth: true }); // Admin read to validate
+
+        if (results.items.length === 0) {
+            return {
+                valid: false,
+                message: "Invalid access code"
+            };
+        }
+
+        const codeData = results.items[0];
+
+        // Check if code has expired
+        if (codeData.expiresAt && new Date(codeData.expiresAt) < new Date()) {
+            return {
+                valid: false,
+                message: "Access code has expired"
+            };
+        }
+
+        // Determine redirect URL based on portal type (stored as 'role')
+        let redirectUrl;
+        const role = (codeData.role || "").toLowerCase();
+
+        switch (role) {
+            case 'defendant':
+                redirectUrl = '/members/defendant-dashboard';
+                break;
+            case 'indemnitor':
+                redirectUrl = '/members/indemnitor-dashboard';
+                break;
+            case 'staff':
+                redirectUrl = '/members/staff-dashboard';
+                break;
+            default:
+                redirectUrl = '/members/start-bail';
+        }
+
+        // Log access code usage (custom logging)
+        await logAccessCodeUsage(accessCode, codeData.caseId);
+
+        return {
+            valid: true,
+            caseId: codeData.caseId,
+            portalType: role,
+            redirectUrl: redirectUrl,
+            message: "Access code validated successfully"
+        };
+
+    } catch (error) {
+        console.error('Error validating access code:', error);
+        return {
+            valid: false,
+            message: "Error validating access code"
+        };
+    }
+}
+
+/**
+ * Generate a new access code for a case
+ * @param {string} caseId - The case ID
+ * @param {string} portalType - Type of portal (defendant, indemnitor, staff)
+ * @param {number} expirationDays - Number of days until expiration (default: 30)
+ * @returns {Promise<string>} The generated access code
+ */
+export async function generateAccessCode(caseId, portalType, expirationDays = 30) {
+    try {
+        // Generate a random 8-character access code
+        const accessCode = generateRandomCode(8);
+
+        // Calculate expiration date
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expirationDays);
+
+        // Store in MagicLinks collection
+        await wixData.insert(COLLECTIONS.MAGIC_LINKS, {
+            token: accessCode,
+            caseId: caseId,
+            role: portalType, // Mapping portalType to role
+            expiresAt: expiresAt.toISOString(),
+            used: false,
+            createdAt: new Date().toISOString()
+        }, { suppressAuth: true });
+
+        return accessCode;
+
+    } catch (error) {
+        console.error('Error generating access code:', error);
+        throw error;
+    }
+}
+
+/**
+ * Deactivate an access code
+ * @param {string} accessCode - The access code to deactivate
+ * @returns {Promise<boolean>} Success status
+ */
+export async function deactivateAccessCode(accessCode) {
+    try {
+        const results = await wixData.query(COLLECTIONS.MAGIC_LINKS)
+            .eq("token", accessCode)
+            .find({ suppressAuth: true });
+
+        if (results.items.length > 0) {
+            const codeData = results.items[0];
+            await wixData.update(COLLECTIONS.MAGIC_LINKS, {
+                _id: codeData._id,
+                ...codeData,
+                used: true // Mark as used/deactivated
+            }, { suppressAuth: true });
+            return true;
+        }
+
+        return false;
+
+    } catch (error) {
+        console.error('Error deactivating access code:', error);
+        return false;
+    }
+}
+
+/**
+ * Log access code usage for analytics
+ * @param {string} accessCode - The access code used
+ * @param {string} caseId - The associated case ID
+ */
+async function logAccessCodeUsage(accessCode, caseId) {
+    try {
+        // Keeping "AccessCodeUsage" as a separate logging collection if desired,
+        // or could log to AnalyticsEvents
+        await wixData.insert("AccessCodeUsage", {
+            accessCode: accessCode,
+            caseId: caseId,
+            usedAt: new Date(),
+            ipAddress: null,
+            userAgent: null
+        }, { suppressAuth: true });
+    } catch (error) {
+        console.error('Error logging access code usage:', error);
+    }
+}
+
+/**
+ * Generate a random alphanumeric code
+ * @param {number} length - Length of the code
+ * @returns {string} Random code
+ */
+function generateRandomCode(length) {
+    const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluding similar characters
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+}
+
+/**
+ * Get case information by access code
+ * @param {string} accessCode - The access code
+ * @returns {Promise<object>} Case information
+ */
+export async function getCaseByAccessCode(accessCode) {
+    try {
+        const results = await wixData.query(COLLECTIONS.MAGIC_LINKS)
+            .eq("token", accessCode)
+            .eq("used", false)
+            .find({ suppressAuth: true });
+
+        if (results.items.length === 0) {
+            return null;
+        }
+
+        const codeData = results.items[0];
+
+        // Fetch full case data
+        // Using COLLECTIONS.CASES if available
+        const caseResults = await wixData.query(COLLECTIONS.CASES || "Cases")
+            .eq("_id", codeData.caseId)
+            .find({ suppressAuth: true });
+
+        if (caseResults.items.length > 0) {
+            return caseResults.items[0];
+        }
+
+        return null;
+
+    } catch (error) {
+        console.error('Error getting case by access code:', error);
+        return null;
+    }
+}
