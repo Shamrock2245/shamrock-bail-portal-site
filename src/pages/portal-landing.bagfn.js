@@ -62,24 +62,30 @@ function setupEventHandlers() {
     // Magic Link Submit Button
     try {
         const btn = $w('#submitTokenBtn');
-        if (btn && btn.type) {
-            console.log("Portal Landing: Found #submitTokenBtn");
-            btn.onClick(async () => {
-                console.log("Portal Landing: #submitTokenBtn clicked");
-                const token = $w('#tokenInput').value;
-                if (!token) {
-                    if ($w('#errorText').type) {
-                        $w('#errorText').text = "Please enter a valid token.";
-                        $w('#errorText').expand();
+        if (btn) {
+            if (typeof btn.onClick === 'function') {
+                console.log("Portal Landing: Found #submitTokenBtn, attaching onClick");
+                btn.onClick(async () => {
+                    console.log("Portal Landing: #submitTokenBtn clicked");
+                    const token = $w('#tokenInput').value;
+                    if (!token) {
+                        try {
+                            if ($w('#errorText').type) {
+                                $w('#errorText').text = "Please enter a valid token.";
+                                $w('#errorText').expand();
+                            }
+                        } catch (e) { }
+                        return;
                     }
-                    return;
-                }
 
-                btn.disable();
-                btn.label = "Verifying...";
+                    btn.disable();
+                    btn.label = "Verifying...";
 
-                await handleToken(token);
-            });
+                    await handleToken(token);
+                });
+            } else {
+                console.warn("Portal Landing: #submitTokenBtn found but missing .onClick() method.", btn);
+            }
         } else {
             console.log("Portal Landing: #submitTokenBtn NOT found");
         }
@@ -87,58 +93,41 @@ function setupEventHandlers() {
         console.error('Error setting up submitTokenBtn:', e);
     }
 
-    // Role Selection Buttons
-    // assignRoleToCurrentUser is imported at the top level
-
-    // Defendant Button
-    try {
-        const btnDef = $w('#selectDefendantBtn');
-        if (btnDef && btnDef.type) {
-            console.log("Portal Landing: Found #selectDefendantBtn");
-            btnDef.onClick(async () => {
-                console.log("Portal Landing: #selectDefendantBtn clicked");
-                await handleRoleSelection('defendant');
-            });
-        } else {
-            console.log("Portal Landing: #selectDefendantBtn NOT found");
+    // Role Selection Buttons - Helper
+    const setupRoleButton = (id, roleName, handler) => {
+        try {
+            const el = $w(id);
+            if (el) {
+                if (typeof el.onClick === 'function') {
+                    console.log(`Portal Landing: Attaching click to ${id}`);
+                    el.onClick(handler);
+                } else {
+                    console.warn(`Portal Landing: ${id} found but missing .onClick() method.`);
+                }
+            } else {
+                console.log(`Portal Landing: ${id} NOT found`);
+            }
+        } catch (e) {
+            console.error(`Error setting up ${id} for ${roleName}:`, e);
         }
-    } catch (e) {
-        console.error('Error setting up selectDefendantBtn:', e);
-    }
+    };
 
-    // Indemnitor Button
-    try {
-        const btnInd = $w('#selectIndemnitorBtn');
-        if (btnInd && btnInd.type) {
-            console.log("Portal Landing: Found #selectIndemnitorBtn");
-            btnInd.onClick(async () => {
-                console.log("Portal Landing: #selectIndemnitorBtn clicked");
-                await handleRoleSelection('indemnitor');
-            });
-        } else {
-            console.log("Portal Landing: #selectIndemnitorBtn NOT found");
-        }
-    } catch (e) {
-        console.error('Error setting up selectIndemnitorBtn:', e);
-    }
+    // Setup Buttons
+    setupRoleButton('#selectDefendantBtn', 'defendant', async () => {
+        console.log("Portal Landing: #selectDefendantBtn clicked");
+        await handleRoleSelection('defendant');
+    });
 
-    // Staff Button
-    try {
-        const btnStaff = $w('#selectStaffBtn');
-        if (btnStaff && btnStaff.type) {
-            console.log("Portal Landing: Found #selectStaffBtn");
-            btnStaff.onClick(async () => {
-                console.log("Portal Landing: #selectStaffBtn clicked");
-                // Staff portal usually requires login first, but let's try direct
-                console.log("Redirecting to /portal-staff");
-                wixLocation.to('/portal-staff');
-            });
-        } else {
-            console.log("Portal Landing: #selectStaffBtn NOT found");
-        }
-    } catch (e) {
-        console.error('Error setting up selectStaffBtn:', e);
-    }
+    setupRoleButton('#selectIndemnitorBtn', 'indemnitor', async () => {
+        console.log("Portal Landing: #selectIndemnitorBtn clicked");
+        await handleRoleSelection('indemnitor');
+    });
+
+    setupRoleButton('#selectStaffBtn', 'staff', async () => {
+        console.log("Portal Landing: #selectStaffBtn clicked");
+        console.log("Redirecting to /portal-staff");
+        wixLocation.to('/portal-staff');
+    });
 
     async function handleRoleSelection(role) {
         console.log(`Portal Landing: Handling role selection for ${role}`);
