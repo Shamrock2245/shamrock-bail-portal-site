@@ -152,8 +152,19 @@ function setupEventHandlers() {
             try {
                 console.log("Calling assignRoleToCurrentUser...");
                 await assignRoleToCurrentUser(role);
-                console.log("Role assigned. Redirecting to /portal...");
-                wixLocation.to('/portal');
+                
+                // Redirect to role-specific portal
+                const rolePortalMap = {
+                    'defendant': '/portal-defendant',
+                    'indemnitor': '/portal-indemnitor',
+                    'coindemnitor': '/portal-indemnitor',
+                    'staff': '/portal-staff',
+                    'admin': '/portal-staff'
+                };
+                
+                const targetPortal = rolePortalMap[role] || '/portal';
+                console.log(`Role assigned. Redirecting to ${targetPortal}...`);
+                wixLocation.to(targetPortal);
             } catch (e) {
                 console.error('Role assignment error:', e);
                 if ($w('#statusText').type) {
