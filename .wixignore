@@ -1,0 +1,26 @@
+# Wix Build Ignore File
+# Files and directories listed here will be excluded from Wix builds
+
+# Node modules (if any get added accidentally)
+node_modules/
+
+# React or other framework folders that shouldn't be processed by Wix
+**/react/
+**/vue/
+**/angular/
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build artifacts
+dist/
+build/
+.cache/
+
+# Development files
+*.log
+.DS_Store
+.env.local
+.env.development
