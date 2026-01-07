@@ -14,9 +14,9 @@ export async function getCounties() {
       .limit(100)
       .ascending("countyName")
       .find();
-    
+
     console.log(`Fetched ${results.items.length} counties from FloridaCounties collection`);
-    
+
     // Map FloridaCounties fields to the expected schema format
     const counties = results.items.map(item => ({
       county_name: item.countyName || "",
@@ -27,7 +27,7 @@ export async function getCounties() {
       phone_sheriff: item.jailPhone || "",
       phone_clerk: item.clerkPhone || "",
       status: "Active", // All counties in FloridaCounties are active
-      
+
       // Additional useful fields from FloridaCounties
       title: item.title || "",
       h1Headline: item.h1Headline || "",
@@ -39,7 +39,7 @@ export async function getCounties() {
       sheriffName: item.sheriffName || "",
       jailBookingUrl: item.jailBookingUrl || ""
     }));
-    
+
     return {
       success: true,
       data: {
@@ -65,18 +65,18 @@ export async function getCounties() {
 export async function getCountyByName(countyName) {
   try {
     const normalizedName = countyName.trim();
-    
+
     const results = await wixData.query("FloridaCounties")
       .eq("countyName", normalizedName)
       .find();
-    
+
     if (results.items.length === 0) {
       return {
         success: true,
         data: null
       };
     }
-    
+
     const item = results.items[0];
     const county = {
       county_name: item.countyName || "",
@@ -93,7 +93,7 @@ export async function getCountyByName(countyName) {
       seoDescription: item.seoDescription || "",
       primaryPhone: item.primaryPhone || "(239) 332-2245"
     };
-    
+
     return {
       success: true,
       data: county
@@ -116,18 +116,18 @@ export async function getCountyByName(countyName) {
 export async function getCountyBySlug(slug) {
   try {
     const normalizedSlug = slug.trim().toLowerCase();
-    
-    const results = await wixData.query("Import1")
+
+    const results = await wixData.query("FloridaCounties")
       .eq("countySlug", normalizedSlug)
       .find();
-    
+
     if (results.items.length === 0) {
       return {
         success: true,
         data: null
       };
     }
-    
+
     const item = results.items[0];
     const county = {
       county_name: item.countyName || "",
@@ -144,7 +144,7 @@ export async function getCountyBySlug(slug) {
       seoDescription: item.seoDescription || "",
       primaryPhone: item.primaryPhone || "(239) 332-2245"
     };
-    
+
     return {
       success: true,
       data: county
@@ -172,7 +172,7 @@ export async function getCountiesByStatus(status) {
       .limit(100)
       .ascending("countyName")
       .find();
-    
+
     const counties = results.items.map(item => ({
       county_name: item.countyName || "",
       slug: item.countySlug || "",
@@ -183,7 +183,7 @@ export async function getCountiesByStatus(status) {
       phone_clerk: item.clerkPhone || "",
       status: "Active"
     }));
-    
+
     return {
       success: true,
       data: {
@@ -209,12 +209,12 @@ export async function getCountiesByStatus(status) {
 export async function searchCounties(searchTerm) {
   try {
     const normalizedTerm = searchTerm.trim();
-    
+
     const results = await wixData.query("FloridaCounties")
       .contains("countyName", normalizedTerm)
       .limit(50)
       .find();
-    
+
     const counties = results.items.map(item => ({
       county_name: item.countyName || "",
       slug: item.countySlug || "",
@@ -225,7 +225,7 @@ export async function searchCounties(searchTerm) {
       phone_clerk: item.clerkPhone || "",
       status: "Active"
     }));
-    
+
     return {
       success: true,
       data: {
