@@ -88,22 +88,52 @@ function initUI() {
 }
 
 function setupPaperworkButtons(member) {
-    // Start Paperwork Button
+    // Sign via Email Button (#comp-mjsigfv9)
     try {
-        if ($w('#startPaperworkBtn').type) {
-            $w('#startPaperworkBtn').onClick(() => handlePaperworkStart(member));
+        const emailBtn = $w('#comp-mjsigfv9');
+        if (emailBtn && typeof emailBtn.onClick === 'function') {
+            console.log('Defendant Portal: Sign via Email button found');
+            emailBtn.onClick(() => {
+                console.log('Defendant Portal: Sign via Email clicked');
+                handlePaperworkStart(member);
+            });
+        } else {
+            console.warn('Defendant Portal: Sign via Email button (#comp-mjsigfv9) not found');
         }
     } catch (e) {
-        console.error('Error setting up startPaperworkBtn:', e);
+        console.error('Error setting up Sign via Email button:', e);
     }
 
-    // Kiosk Button
+    // Sign Via Kiosk Button (#comp-mjsihbjl)
     try {
-        if ($w('#signKioskBtn').type) {
-            $w('#signKioskBtn').onClick(() => handlePaperworkStart(member));
+        const kioskBtn = $w('#comp-mjsihbjl');
+        if (kioskBtn && typeof kioskBtn.onClick === 'function') {
+            console.log('Defendant Portal: Sign Via Kiosk button found');
+            kioskBtn.onClick(() => {
+                console.log('Defendant Portal: Sign Via Kiosk clicked');
+                handlePaperworkStart(member);
+            });
+        } else {
+            console.warn('Defendant Portal: Sign Via Kiosk button (#comp-mjsihbjl) not found');
         }
     } catch (e) {
-        console.error('Error setting up signKioskBtn:', e);
+        console.error('Error setting up Sign Via Kiosk button:', e);
+    }
+
+    // Download and Print to Sign Button (#comp-mjsihg1a)
+    try {
+        const downloadBtn = $w('#comp-mjsihg1a');
+        if (downloadBtn && typeof downloadBtn.onClick === 'function') {
+            console.log('Defendant Portal: Download and Print button found');
+            downloadBtn.onClick(() => {
+                console.log('Defendant Portal: Download and Print clicked');
+                handleDownloadPaperwork(member);
+            });
+        } else {
+            console.warn('Defendant Portal: Download and Print button (#comp-mjsihg1a) not found');
+        }
+    } catch (e) {
+        console.error('Error setting up Download and Print button:', e);
     }
 }
 
@@ -265,5 +295,38 @@ function updateCheckInStatus(msg, type) {
         }
     } catch (e) {
         console.error('Error updating check-in status:', e);
+    }
+}
+
+
+/**
+ * Handle Download and Print option
+ * Generates PDF packet and downloads it
+ */
+async function handleDownloadPaperwork(member) {
+    console.log('Defendant Portal: Handling download paperwork');
+    
+    try {
+        // Show loading message
+        alert('Preparing your paperwork for download...');
+        
+        // Get user profile and case ID
+        const profile = await getUserProfile(member._id);
+        const caseId = profile?.caseIds?.[0] || "Active_Case_Fallback";
+        
+        // TODO: Implement PDF generation and download
+        // For now, show a placeholder message
+        alert('Download feature coming soon! Please use "Sign via Email" or "Sign Via Kiosk" for now.');
+        
+        // Future implementation:
+        // 1. Call backend to generate PDF packet
+        // 2. Get download URL
+        // 3. Trigger download
+        // const pdfUrl = await generatePDFPacket(caseId, member.loginEmail);
+        // wixLocation.to(pdfUrl);
+        
+    } catch (error) {
+        console.error('Error handling download paperwork:', error);
+        alert('Unable to prepare paperwork for download. Please try again or contact support.');
     }
 }
