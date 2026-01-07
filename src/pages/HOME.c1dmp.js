@@ -30,8 +30,16 @@ $w.onReady(async function () {
     // 5. Setup Spanish Speaking Phone Button (Defensive)
     const spanishBtn = $w("#callNowSpanishBtn");
     if (spanishBtn.length > 0) {
-        spanishBtn.onClick(() => wixLocation.to("tel:12399550301"));
-        spanishBtn.onDblClick(() => wixLocation.to("tel:12399550301"));
+        if (typeof spanishBtn.onClick === 'function') {
+            spanishBtn.onClick(() => wixLocation.to("tel:12399550301"));
+        } else {
+            console.warn("DEBUG: #callNowSpanishBtn found but does not support onClick");
+        }
+
+        // onDblClick is rare and often causes issues, removing strictly or checking
+        if (typeof spanishBtn.onDblClick === 'function') {
+            spanishBtn.onDblClick(() => wixLocation.to("tel:12399550301"));
+        }
     }
 });
 
