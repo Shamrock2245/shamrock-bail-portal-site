@@ -89,7 +89,8 @@ export async function saveDocumentToCase(documentData) {
             metadata: documentData.metadata || {}
         });
 
-        const result = await response.json();
+        // Removed invalid line: const result = await response.json(); 
+        // 'result' is already parsed above by callGasDrive
 
         // Log document save
         if (result.success) {
@@ -123,6 +124,7 @@ export async function saveDocumentToCase(documentData) {
  */
 export async function saveMemberIdDocument(idData) {
     try {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `ID_${idData.idType}_${idData.memberName.replace(/\s+/g, '_')}_${timestamp}`;
 
         return await callGasDrive({
@@ -158,6 +160,7 @@ export async function saveMemberIdDocument(idData) {
  */
 export async function saveSignedPaperwork(paperworkData) {
     try {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `Signed_${paperworkData.documentName || 'BailPaperwork'}_${timestamp}.pdf`;
 
         const result = await callGasDrive({
