@@ -1,0 +1,531 @@
+{
+  "collections": [
+    {
+      "id": "Cases",
+      "displayName": "Cases",
+      "permissions": {
+        "insert": "Admin",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Anyone"
+      },
+      "fields": [
+        {
+          "key": "caseNumber",
+          "displayName": "Case Number",
+          "type": "text"
+        },
+        {
+          "key": "bookingNumber",
+          "displayName": "Booking Number",
+          "type": "text"
+        },
+        {
+          "key": "defendantId",
+          "displayName": "Defendant ID",
+          "type": "reference",
+          "referencedCollection": "Defendants"
+        },
+        {
+          "key": "defendantName",
+          "displayName": "Defendant Name",
+          "type": "text"
+        },
+        {
+          "key": "defendantEmail",
+          "displayName": "Defendant Email",
+          "type": "text"
+        },
+        {
+          "key": "defendantPhone",
+          "displayName": "Defendant Phone",
+          "type": "text"
+        },
+        {
+          "key": "indemnitorName",
+          "displayName": "Indemnitor Name",
+          "type": "text"
+        },
+        {
+          "key": "indemnitorEmail",
+          "displayName": "Indemnitor Email",
+          "type": "text"
+        },
+        {
+          "key": "indemnitorPhone",
+          "displayName": "Indemnitor Phone",
+          "type": "text"
+        },
+        {
+          "key": "county",
+          "displayName": "County",
+          "type": "text"
+        },
+        {
+          "key": "bondAmount",
+          "displayName": "Bond Amount",
+          "type": "number"
+        },
+        {
+          "key": "premiumAmount",
+          "displayName": "Premium Amount",
+          "type": "number"
+        },
+        {
+          "key": "status",
+          "displayName": "Status",
+          "type": "text"
+        },
+        {
+          "key": "arrestDate",
+          "displayName": "Arrest Date",
+          "type": "datetime"
+        },
+        {
+          "key": "releaseDate",
+          "displayName": "Release Date",
+          "type": "datetime"
+        },
+        {
+          "key": "charges",
+          "displayName": "Charges",
+          "type": "richText"
+        },
+        {
+          "key": "receiptNumber",
+          "displayName": "Receipt Number",
+          "type": "text"
+        },
+        {
+          "key": "signNowDocumentId",
+          "displayName": "SignNow Document ID",
+          "type": "text"
+        },
+        {
+          "key": "gasSheetRow",
+          "displayName": "GAS Sheet Row",
+          "type": "number"
+        },
+        {
+          "key": "lastSyncedAt",
+          "displayName": "Last Synced At",
+          "type": "datetime"
+        }
+      ]
+    },
+    {
+      "id": "Defendants",
+      "displayName": "Defendants",
+      "permissions": {
+        "insert": "Admin",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Anyone"
+      },
+      "fields": [
+        {
+          "key": "firstName",
+          "displayName": "First Name",
+          "type": "text"
+        },
+        {
+          "key": "lastName",
+          "displayName": "Last Name",
+          "type": "text"
+        },
+        {
+          "key": "middleName",
+          "displayName": "Middle Name",
+          "type": "text"
+        },
+        {
+          "key": "dob",
+          "displayName": "Date of Birth",
+          "type": "date"
+        },
+        {
+          "key": "ssn",
+          "displayName": "SSN",
+          "type": "text"
+        },
+        {
+          "key": "email",
+          "displayName": "Email",
+          "type": "text"
+        },
+        {
+          "key": "phone",
+          "displayName": "Phone",
+          "type": "text"
+        },
+        {
+          "key": "address",
+          "displayName": "Address",
+          "type": "text"
+        },
+        {
+          "key": "city",
+          "displayName": "City",
+          "type": "text"
+        },
+        {
+          "key": "state",
+          "displayName": "State",
+          "type": "text"
+        },
+        {
+          "key": "zip",
+          "displayName": "ZIP Code",
+          "type": "text"
+        },
+        {
+          "key": "status",
+          "displayName": "Status",
+          "type": "text"
+        },
+        {
+          "key": "idDocumentUrl",
+          "displayName": "ID Document URL",
+          "type": "url"
+        }
+      ]
+    },
+    {
+      "id": "Indemnitors",
+      "displayName": "Indemnitors",
+      "permissions": {
+        "insert": "Admin",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Anyone"
+      },
+      "fields": [
+        {
+          "key": "caseId",
+          "displayName": "Case ID",
+          "type": "reference",
+          "referencedCollection": "Cases"
+        },
+        {
+          "key": "firstName",
+          "displayName": "First Name",
+          "type": "text"
+        },
+        {
+          "key": "lastName",
+          "displayName": "Last Name",
+          "type": "text"
+        },
+        {
+          "key": "email",
+          "displayName": "Email",
+          "type": "text"
+        },
+        {
+          "key": "phone",
+          "displayName": "Phone",
+          "type": "text"
+        },
+        {
+          "key": "address",
+          "displayName": "Address",
+          "type": "text"
+        },
+        {
+          "key": "city",
+          "displayName": "City",
+          "type": "text"
+        },
+        {
+          "key": "state",
+          "displayName": "State",
+          "type": "text"
+        },
+        {
+          "key": "zip",
+          "displayName": "ZIP Code",
+          "type": "text"
+        },
+        {
+          "key": "relationship",
+          "displayName": "Relationship",
+          "type": "text"
+        },
+        {
+          "key": "idDocumentUrl",
+          "displayName": "ID Document URL",
+          "type": "url"
+        }
+      ]
+    },
+    {
+      "id": "PendingDocuments",
+      "displayName": "Pending Documents",
+      "permissions": {
+        "insert": "Admin",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Anyone"
+      },
+      "fields": [
+        {
+          "key": "memberEmail",
+          "displayName": "Member Email",
+          "type": "text"
+        },
+        {
+          "key": "memberPhone",
+          "displayName": "Member Phone",
+          "type": "text"
+        },
+        {
+          "key": "defendantName",
+          "displayName": "Defendant Name",
+          "type": "text"
+        },
+        {
+          "key": "caseNumber",
+          "displayName": "Case Number",
+          "type": "text"
+        },
+        {
+          "key": "documentName",
+          "displayName": "Document Name",
+          "type": "text"
+        },
+        {
+          "key": "signingLink",
+          "displayName": "Signing Link",
+          "type": "url"
+        },
+        {
+          "key": "signerRole",
+          "displayName": "Signer Role",
+          "type": "text"
+        },
+        {
+          "key": "signNowDocumentId",
+          "displayName": "SignNow Document ID",
+          "type": "text"
+        },
+        {
+          "key": "status",
+          "displayName": "Status",
+          "type": "text"
+        },
+        {
+          "key": "expiresAt",
+          "displayName": "Expires At",
+          "type": "datetime"
+        },
+        {
+          "key": "completedAt",
+          "displayName": "Completed At",
+          "type": "datetime"
+        }
+      ]
+    },
+    {
+      "id": "MemberDocuments",
+      "displayName": "Member Documents",
+      "permissions": {
+        "insert": "Admin",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Anyone"
+      },
+      "fields": [
+        {
+          "key": "memberEmail",
+          "displayName": "Member Email",
+          "type": "text"
+        },
+        {
+          "key": "memberName",
+          "displayName": "Member Name",
+          "type": "text"
+        },
+        {
+          "key": "memberPhone",
+          "displayName": "Member Phone",
+          "type": "text"
+        },
+        {
+          "key": "documentType",
+          "displayName": "Document Type",
+          "type": "text"
+        },
+        {
+          "key": "documentSide",
+          "displayName": "Document Side",
+          "type": "text"
+        },
+        {
+          "key": "fileName",
+          "displayName": "File Name",
+          "type": "text"
+        },
+        {
+          "key": "fileUrl",
+          "displayName": "File URL",
+          "type": "url"
+        },
+        {
+          "key": "mediaId",
+          "displayName": "Media ID",
+          "type": "text"
+        },
+        {
+          "key": "status",
+          "displayName": "Status",
+          "type": "text"
+        },
+        {
+          "key": "metadata",
+          "displayName": "Metadata",
+          "type": "richText"
+        },
+        {
+          "key": "caseNumber",
+          "displayName": "Case Number",
+          "type": "text"
+        },
+        {
+          "key": "driveSynced",
+          "displayName": "Drive Synced",
+          "type": "boolean"
+        },
+        {
+          "key": "driveSyncedAt",
+          "displayName": "Drive Synced At",
+          "type": "datetime"
+        },
+        {
+          "key": "verified",
+          "displayName": "Verified",
+          "type": "boolean"
+        },
+        {
+          "key": "verifiedAt",
+          "displayName": "Verified At",
+          "type": "datetime"
+        },
+        {
+          "key": "verificationNotes",
+          "displayName": "Verification Notes",
+          "type": "richText"
+        }
+      ]
+    },
+    {
+      "id": "PaymentPlans",
+      "displayName": "Payment Plans",
+      "permissions": {
+        "insert": "Admin",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Anyone"
+      },
+      "fields": [
+        {
+          "key": "caseId",
+          "displayName": "Case ID",
+          "type": "reference",
+          "referencedCollection": "Cases"
+        },
+        {
+          "key": "totalAmount",
+          "displayName": "Total Amount",
+          "type": "number"
+        },
+        {
+          "key": "downPayment",
+          "displayName": "Down Payment",
+          "type": "number"
+        },
+        {
+          "key": "remainingBalance",
+          "displayName": "Remaining Balance",
+          "type": "number"
+        },
+        {
+          "key": "installmentAmount",
+          "displayName": "Installment Amount",
+          "type": "number"
+        },
+        {
+          "key": "frequency",
+          "displayName": "Frequency",
+          "type": "text"
+        },
+        {
+          "key": "startDate",
+          "displayName": "Start Date",
+          "type": "date"
+        },
+        {
+          "key": "endDate",
+          "displayName": "End Date",
+          "type": "date"
+        },
+        {
+          "key": "status",
+          "displayName": "Status",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "UserLocations",
+      "displayName": "User Locations (GPS)",
+      "permissions": {
+        "insert": "Admin",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Admin"
+      },
+      "fields": [
+        {
+          "key": "memberEmail",
+          "displayName": "Member Email",
+          "type": "text"
+        },
+        {
+          "key": "latitude",
+          "displayName": "Latitude",
+          "type": "number"
+        },
+        {
+          "key": "longitude",
+          "displayName": "Longitude",
+          "type": "number"
+        },
+        {
+          "key": "accuracy",
+          "displayName": "Accuracy",
+          "type": "number"
+        },
+        {
+          "key": "altitude",
+          "displayName": "Altitude",
+          "type": "number"
+        },
+        {
+          "key": "timestamp",
+          "displayName": "Timestamp",
+          "type": "datetime"
+        },
+        {
+          "key": "action",
+          "displayName": "Action",
+          "type": "text"
+        },
+        {
+          "key": "deviceInfo",
+          "displayName": "Device Info",
+          "type": "richText"
+        }
+      ]
+    }
+  ]
+}

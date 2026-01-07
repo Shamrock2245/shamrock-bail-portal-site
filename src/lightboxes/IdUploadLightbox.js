@@ -312,14 +312,28 @@ async function handleSubmit() {
         $w('#submitBtn').label = 'Uploading...';
         $w('#progressBar').show();
         
+        // Capture GPS location
+        let gpsData = locationData;
+        if (!gpsData) {
+            try {
+                gpsData = await captureGPSLocation();
+            } catch (gpsError) {
+                console.warn('GPS capture failed:', gpsError);
+                // Continue without GPS if user denies permission
+            }
+        }
+        
         // Prepare metadata
         const metadata = {
             memberEmail: memberData?.email || '',
             memberName: memberData?.name || '',
             memberPhone: memberData?.phone || '',
-            gps: locationData,
+            caseNumber: memberData?.caseNumber || '',
+            gps: gpsData,
             uploadedAt: new Date().toISOString(),
-            userAgent: navigator.userAgent
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language
         };
         
         // Upload front ID
@@ -387,6 +401,41 @@ function handleCancel() {
 }
 
 /**
+ * Capture GPS location
+ */
+function captureGPSLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Geolocation not supported'));
+            return;
+        }
+        
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                resolve({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    altitude: position.coords.altitude,
+                    altitudeAccuracy: position.coords.altitudeAccuracy,
+                    heading: position.coords.heading,
+                    speed: position.coords.speed,
+                    timestamp: new Date(position.timestamp).toISOString()
+                });
+            },
+            (error) => {
+                reject(error);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    });
+}
+
+/**
  * Show error message
  */
 function showError(message) {
@@ -398,4 +447,4 @@ function showError(message) {
     }, 5000);
 }
 
-export { handleFrontIdUpload, handleBackIdUpload };
+export { handleFrontIdUpload, handleBackIdUpload, captureGPSLocation };

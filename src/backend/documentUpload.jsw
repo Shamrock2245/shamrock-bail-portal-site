@@ -184,15 +184,12 @@ async function syncToGoogleDrive(documentRecord, fileUrl) {
         }
 
         const payload = {
-            action: 'saveDocumentToDrive',
-            document: {
-                memberEmail: documentRecord.memberEmail,
-                memberName: documentRecord.memberName || '',
-                documentType: documentRecord.documentType,
-                documentName: documentRecord.documentName || documentRecord.fileName,
-                fileUrl: fileUrl,
-                metadata: documentRecord.metadata
-            }
+            action: 'saveIdToGoogleDrive',
+            fileUrl: fileUrl,
+            fileName: documentRecord.fileName,
+            caseNumber: documentRecord.caseNumber || 'NO_CASE',
+            memberEmail: documentRecord.memberEmail,
+            metadata: JSON.parse(documentRecord.metadata || '{}')
         };
 
         const response = await fetch(gasWebhookUrl, {
