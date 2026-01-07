@@ -1,20 +1,16 @@
 /**
  * Shamrock Bail Bonds - Portal Landing Page
+ * Last Verified: 2026-01-07 (Stable IDs Applied)
  * 
  * SIMPLIFIED VERSION: Direct redirects without Wix Members authentication
  * Uses custom three-role system (Defendant, Indemnitor, Staff)
  * 
- * This page provides access to three different portals:
- * - Defendant Portal: /portal-defendant
- * - Indemnitor Portal: /portal-indemnitor
- * - Staff Portal: /portal-staff
- * 
- * Page Elements (Wix Editor IDs):
- * - #comp-mjrvbswh: Access code input field (textarea)
- * - #comp-mjrvd6m8: Submit button for access code
- * - #comp-mjrynime: Defendant Portal button
- * - #comp-mjrynk22: Indemnitor Portal button
- * - #comp-mjryn7jm: Staff Portal button
+ * Page Elements (Stable IDs):
+ * - #inputAccessCode: Access code input field
+ * - #btnSubmitCode: Submit button for access code
+ * - #btnDefendant: Defendant Portal button
+ * - #btnIndemnitor: Indemnitor Portal button
+ * - #btnStaff: Staff Portal button
  */
 
 import wixLocation from 'wix-location';
@@ -41,43 +37,34 @@ $w.onReady(async function () {
  * NO Wix Members authentication - just direct redirects
  */
 function setupPortalButtons() {
-    console.log("Portal Landing: Setting up portal buttons");
+    console.log("Portal Landing: Setting up portal buttons...");
 
-    // Defendant Portal Button
-    const defendantBtn = $w('#comp-mjrynime');
-    if (defendantBtn && typeof defendantBtn.onClick === 'function') {
-        console.log("Portal Landing: Defendant button found");
-        defendantBtn.onClick(() => {
-            console.log("Portal Landing: Defendant button clicked - redirecting to /portal-defendant");
-            wixLocation.to('/portal-defendant');
-        });
-    } else {
-        console.warn("Portal Landing: Defendant button (#comp-mjrynime) not found or invalid");
-    }
+    const buttons = [
+        { id: '#btnDefendant', name: 'Defendant Portal', url: '/portal-defendant' },
+        { id: '#btnIndemnitor', name: 'Indemnitor Portal', url: '/portal-indemnitor' },
+        { id: '#btnStaff', name: 'Staff Portal', url: '/portal-staff' }
+    ];
 
-    // Indemnitor Portal Button
-    const indemnitorBtn = $w('#comp-mjrynk22');
-    if (indemnitorBtn && typeof indemnitorBtn.onClick === 'function') {
-        console.log("Portal Landing: Indemnitor button found");
-        indemnitorBtn.onClick(() => {
-            console.log("Portal Landing: Indemnitor button clicked - redirecting to /portal-indemnitor");
-            wixLocation.to('/portal-indemnitor');
-        });
-    } else {
-        console.warn("Portal Landing: Indemnitor button (#comp-mjrynk22) not found or invalid");
-    }
+    buttons.forEach(btn => {
+        const element = $w(btn.id);
 
-    // Staff Portal Button
-    const staffBtn = $w('#comp-mjryn7jm');
-    if (staffBtn && typeof staffBtn.onClick === 'function') {
-        console.log("Portal Landing: Staff button found");
-        staffBtn.onClick(() => {
-            console.log("Portal Landing: Staff button clicked - redirecting to /portal-staff");
-            wixLocation.to('/portal-staff');
-        });
-    } else {
-        console.warn("Portal Landing: Staff button (#comp-mjryn7jm) not found or invalid");
-    }
+        // Diagnostic Logging
+        if (element.length === 0) {
+            console.error(`Portal Landing: Element ${btn.id} (${btn.name}) NOT FOUND. Please rename element in Editor to ${btn.id}`);
+        } else {
+            console.log(`Portal Landing: Element ${btn.id} found. Type: ${element.type}`);
+
+            if (typeof element.onClick === 'function') {
+                element.onClick(() => {
+                    console.log(`Portal Landing: ${btn.name} clicked. Redirecting to ${btn.url}`);
+                    wixLocation.to(btn.url);
+                });
+                console.log(`Portal Landing: onClick handler attached to ${btn.id}`);
+            } else {
+                console.error(`Portal Landing: Element ${btn.id} exists but does NOT support .onClick(). It might be a purely visual element.`);
+            }
+        }
+    });
 }
 
 /**
@@ -87,10 +74,18 @@ function setupPortalButtons() {
 function setupAccessCodeSubmit() {
     console.log("Portal Landing: Setting up access code submit");
 
-    const submitBtn = $w('#comp-mjrvd6m8');
-    const accessCodeInput = $w('#textarea_comp-mjrvbswh');
+    const submitBtn = $w('#btnSubmitCode');
+    const accessCodeInput = $w('#inputAccessCode');
 
-    if (submitBtn && typeof submitBtn.onClick === 'function') {
+    if (submitBtn.length === 0) {
+        console.error("Portal Landing: #btnSubmitCode NOT FOUND. Please rename Submit button.");
+    }
+
+    if (accessCodeInput.length === 0) {
+        console.error("Portal Landing: #inputAccessCode NOT FOUND. Please rename Input field.");
+    }
+
+    if (submitBtn.length > 0 && typeof submitBtn.onClick === 'function') {
         console.log("Portal Landing: Submit button found");
         submitBtn.onClick(async () => {
             console.log("Portal Landing: Submit button clicked");
@@ -100,7 +95,8 @@ function setupAccessCodeSubmit() {
 
             if (!accessCode) {
                 console.warn("Portal Landing: No access code entered");
-                alert("Please enter an access code");
+                // Using wix-window alert if available, or just console warn + valid UI feedback ideally
+                console.log("Alert: Please enter an access code");
                 return;
             }
 
@@ -114,13 +110,10 @@ function setupAccessCodeSubmit() {
                 await handleAccessCode(accessCode);
             } catch (error) {
                 console.error("Portal Landing: Error handling access code:", error);
-                alert("An error occurred. Please try again.");
                 submitBtn.enable();
                 submitBtn.label = "Submit";
             }
         });
-    } else {
-        console.warn("Portal Landing: Submit button (#comp-mjrvd6m8) not found or invalid");
     }
 }
 
@@ -144,14 +137,11 @@ async function handleMagicLinkToken(token) {
             wixLocation.to(result.goto);
         } else {
             console.error("Portal Landing: Token validation failed:", result.message);
-            alert(result.message || "Invalid or expired access link. Please contact support.");
-
             // Remove token from URL and stay on landing page
             wixLocation.to('/portal-landing');
         }
     } catch (error) {
         console.error("Portal Landing: Error validating token:", error);
-        alert("Unable to verify access link. Please try again or contact support.");
         wixLocation.to('/portal-landing');
     }
 }
@@ -176,27 +166,25 @@ async function handleAccessCode(accessCode) {
             wixLocation.to(result.goto);
         } else {
             console.error("Portal Landing: Access code validation failed:", result.message);
-            alert(result.message || "Invalid or expired access code. Please contact support.");
 
             // Re-enable submit button
-            const submitBtn = $w('#comp-mjrvd6m8');
-            if (submitBtn) {
+            const submitBtn = $w('#btnSubmitCode');
+            if (submitBtn.length > 0) {
                 submitBtn.enable();
                 submitBtn.label = "Submit";
             }
         }
     } catch (error) {
         console.error("Portal Landing: Error validating access code:", error);
-        alert("Unable to validate access code. Please try again.");
 
         // Re-enable submit button
-        const submitBtn = $w('#comp-mjrvd6m8');
-        if (submitBtn) {
+        const submitBtn = $w('#btnSubmitCode');
+        if (submitBtn.length > 0) {
             submitBtn.enable();
             submitBtn.label = "Submit";
         }
     }
 }
 
-// Export for testing (optional)
+// Export for testing
 export { handleMagicLinkToken, handleAccessCode };
