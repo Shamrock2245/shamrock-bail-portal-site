@@ -1,263 +1,202 @@
 /**
  * Shamrock Bail Bonds - Portal Landing Page
  * 
+ * SIMPLIFIED VERSION: Direct redirects without Wix Members authentication
+ * Uses custom three-role system (Defendant, Indemnitor, Staff)
+ * 
  * This page provides access to three different portals:
- * - Defendant Portal: For defendants to view case status and sign paperwork
- * - Indemnitor Portal: For indemnitors to manage payments and track status
- * - Staff Portal: For staff to manage paperwork and signatures
+ * - Defendant Portal: /portal-defendant
+ * - Indemnitor Portal: /portal-indemnitor
+ * - Staff Portal: /portal-staff
  * 
  * Page Elements (Wix Editor IDs):
- * - #comp-mjrvbswh: Access code input field
+ * - #comp-mjrvbswh: Access code input field (textarea)
  * - #comp-mjrvd6m8: Submit button for access code
- * - #comp-mjrynime: Defendant Portal button (index 24)
- * - #comp-mjrynk22: Indemnitor Portal button (index 26)
- * - #comp-mjryn7jm: Staff Portal button (index 28)
+ * - #comp-mjrynime: Defendant Portal button
+ * - #comp-mjrynk22: Indemnitor Portal button
+ * - #comp-mjryn7jm: Staff Portal button
  */
 
 import wixLocation from 'wix-location';
-import wixWindow from 'wix-window';
-import { authentication } from 'wix-members-frontend';
+import { onMagicLinkLogin } from 'backend/portal-auth';
 
-// Portal configuration
-const PORTAL_CONFIG = {
-    defendant: {
-        buttonId: '#comp-mjrynime',
-        memberRole: 'Defendant',
-        redirectUrl: '/members/defendant-dashboard',
-        loginPrompt: 'Defendant Portal Login'
-    },
-    indemnitor: {
-        buttonId: '#comp-mjrynk22',
-        memberRole: 'Indemnitor',
-        redirectUrl: '/members/indemnitor-dashboard',
-        loginPrompt: 'Indemnitor Portal Login'
-    },
-    staff: {
-        buttonId: '#comp-mjryn7jm',
-        memberRole: 'Staff',
-        redirectUrl: '/members/staff-dashboard',
-        loginPrompt: 'Staff Portal Login'
+$w.onReady(async function () {
+    console.log("Portal Landing: Page loaded");
+    
+    // Check for magic link token in URL
+    const query = wixLocation.query;
+    if (query.token) {
+        console.log("Portal Landing: Token detected in URL:", query.token);
+        await handleMagicLinkToken(query.token);
+        return;
     }
-};
-
-$w.onReady(function () {
-    initializePortalButtons();
-    initializeAccessCodeForm();
-    checkExistingSession();
+    
+    // Set up button click handlers
+    setupPortalButtons();
+    setupAccessCodeSubmit();
 });
 
 /**
- * Initialize all three portal access buttons
+ * Set up the three portal buttons for direct navigation
+ * NO Wix Members authentication - just direct redirects
  */
-function initializePortalButtons() {
+function setupPortalButtons() {
+    console.log("Portal Landing: Setting up portal buttons");
+    
     // Defendant Portal Button
-    $w(PORTAL_CONFIG.defendant.buttonId).onClick(() => {
-        handlePortalAccess('defendant');
-    });
-
+    const defendantBtn = $w('#comp-mjrynime');
+    if (defendantBtn && typeof defendantBtn.onClick === 'function') {
+        console.log("Portal Landing: Defendant button found");
+        defendantBtn.onClick(() => {
+            console.log("Portal Landing: Defendant button clicked - redirecting to /portal-defendant");
+            wixLocation.to('/portal-defendant');
+        });
+    } else {
+        console.warn("Portal Landing: Defendant button (#comp-mjrynime) not found or invalid");
+    }
+    
     // Indemnitor Portal Button
-    $w(PORTAL_CONFIG.indemnitor.buttonId).onClick(() => {
-        handlePortalAccess('indemnitor');
-    });
-
+    const indemnitorBtn = $w('#comp-mjrynk22');
+    if (indemnitorBtn && typeof indemnitorBtn.onClick === 'function') {
+        console.log("Portal Landing: Indemnitor button found");
+        indemnitorBtn.onClick(() => {
+            console.log("Portal Landing: Indemnitor button clicked - redirecting to /portal-indemnitor");
+            wixLocation.to('/portal-indemnitor');
+        });
+    } else {
+        console.warn("Portal Landing: Indemnitor button (#comp-mjrynk22) not found or invalid");
+    }
+    
     // Staff Portal Button
-    $w(PORTAL_CONFIG.staff.buttonId).onClick(() => {
-        handlePortalAccess('staff');
-    });
-}
-
-/**
- * Handle portal access - check if user is logged in, if not prompt for login
- * @param {string} portalType - Type of portal (defendant, indemnitor, staff)
- */
-async function handlePortalAccess(portalType) {
-    const config = PORTAL_CONFIG[portalType];
-
-    try {
-        // Check if user is already logged in
-        const isLoggedIn = authentication.loggedIn();
-
-        if (isLoggedIn) {
-            // User is logged in - verify role and redirect
-            const member = await authentication.currentMember.getMember();
-
-            // Check if user has the correct role
-            const roles = await authentication.currentMember.getRoles();
-
-            if (roles && roles.some(role => role.name === config.memberRole)) {
-                // User has correct role - redirect to portal
-                trackEvent('Portal_Access', {
-                    portal: portalType,
-                    method: 'existing_session'
-                });
-                wixLocation.to(config.redirectUrl);
-            } else {
-                // User logged in but wrong role
-                wixWindow.openLightbox('role-mismatch-lightbox', {
-                    requestedRole: config.memberRole,
-                    currentRoles: roles.map(r => r.name).join(', ')
-                });
-            }
-        } else {
-            // User not logged in - prompt for authentication
-            promptLogin(portalType, config);
-        }
-    } catch (error) {
-        console.error('Error handling portal access:', error);
-        // If error checking session, assume not logged in and prompt
-        promptLogin(portalType, config);
+    const staffBtn = $w('#comp-mjryn7jm');
+    if (staffBtn && typeof staffBtn.onClick === 'function') {
+        console.log("Portal Landing: Staff button found");
+        staffBtn.onClick(() => {
+            console.log("Portal Landing: Staff button clicked - redirecting to /portal-staff");
+            wixLocation.to('/portal-staff');
+        });
+    } else {
+        console.warn("Portal Landing: Staff button (#comp-mjryn7jm) not found or invalid");
     }
 }
 
 /**
- * Prompt user to log in or request magic link
- * @param {string} portalType - Type of portal
- * @param {object} config - Portal configuration
+ * Set up access code submission
+ * Validates magic link tokens from MagicLinks collection
  */
-function promptLogin(portalType, config) {
-    // Store the intended destination
-    wixWindow.sessionStorage.setItem('portal_redirect', config.redirectUrl);
-    wixWindow.sessionStorage.setItem('portal_type', portalType);
-
-    trackEvent('Portal_Login_Prompt', { portal: portalType });
-
-    // Open login lightbox or redirect to login page
-    // Option 1: Use Wix Members login prompt
-    authentication.promptLogin({
-        mode: 'login',
-        modal: true
-    })
-        .then(() => {
-            // After successful login, redirect to portal
-            wixLocation.to(config.redirectUrl);
-        })
-        .catch((error) => {
-            if (error.message !== 'User closed the dialog') {
-                console.error('Login error:', error);
-            }
-        });
-
-    // Option 2: Redirect to custom magic link page
-    // wixLocation.to(`/request-access?portal=${portalType}`);
-}
-
-/**
- * Initialize access code form submission
- */
-function initializeAccessCodeForm() {
-    const accessCodeInput = $w('#comp-mjrvbswh');
-    const submitButton = $w('#comp-mjrvd6m8');
-
-    if (accessCodeInput && submitButton) {
-        submitButton.onClick(async () => {
-            const accessCode = accessCodeInput.value;
-
-            if (!accessCode || accessCode.trim() === '') {
-                // Show error - no access code entered
-                wixWindow.openLightbox('error-lightbox', {
-                    message: 'Please enter your access code'
-                });
+function setupAccessCodeSubmit() {
+    console.log("Portal Landing: Setting up access code submit");
+    
+    const submitBtn = $w('#comp-mjrvd6m8');
+    const accessCodeInput = $w('#textarea_comp-mjrvbswh');
+    
+    if (submitBtn && typeof submitBtn.onClick === 'function') {
+        console.log("Portal Landing: Submit button found");
+        submitBtn.onClick(async () => {
+            console.log("Portal Landing: Submit button clicked");
+            
+            // Get access code value
+            const accessCode = accessCodeInput && accessCodeInput.value ? accessCodeInput.value.trim() : '';
+            
+            if (!accessCode) {
+                console.warn("Portal Landing: No access code entered");
+                alert("Please enter an access code");
                 return;
             }
-
-            // Validate access code and redirect
-            await validateAccessCode(accessCode.trim());
-        });
-
-        // Allow Enter key to submit
-        accessCodeInput.onKeyPress((event) => {
-            if (event.key === 'Enter') {
-                submitButton.click();
+            
+            console.log("Portal Landing: Validating access code:", accessCode);
+            
+            // Disable button during validation
+            submitBtn.disable();
+            submitBtn.label = "Validating...";
+            
+            try {
+                await handleAccessCode(accessCode);
+            } catch (error) {
+                console.error("Portal Landing: Error handling access code:", error);
+                alert("An error occurred. Please try again.");
+                submitBtn.enable();
+                submitBtn.label = "Submit";
             }
         });
+    } else {
+        console.warn("Portal Landing: Submit button (#comp-mjrvd6m8) not found or invalid");
     }
 }
 
 /**
- * Validate access code and redirect to appropriate portal
- * @param {string} accessCode - The access code entered by user
+ * Handle magic link token from URL
+ * Called when user clicks magic link: portal-landing?token=ABC123
  */
-async function validateAccessCode(accessCode) {
+async function handleMagicLinkToken(token) {
+    console.log("Portal Landing: Handling magic link token");
+    
     try {
-        // Call backend function to validate access code
-        const { validateCode } = await import('backend/accessCodes');
-
-        const result = await validateCode(accessCode);
-
-        if (result.valid) {
-            trackEvent('Access_Code_Valid', {
-                portal: result.portalType,
-                caseId: result.caseId
-            });
-
-            // Store case information in session
-            wixWindow.sessionStorage.setItem('case_id', result.caseId);
-            wixWindow.sessionStorage.setItem('access_code', accessCode);
-
+        // Validate token via backend
+        const result = await onMagicLinkLogin(token);
+        
+        console.log("Portal Landing: Magic link result:", result);
+        
+        if (result.ok) {
+            console.log("Portal Landing: Token valid, redirecting to:", result.goto);
+            
             // Redirect to appropriate portal
-            const redirectUrl = result.redirectUrl || '/members/start-bail';
-            wixLocation.to(redirectUrl);
+            wixLocation.to(result.goto);
         } else {
-            // Invalid access code
-            trackEvent('Access_Code_Invalid', { code: accessCode });
-
-            wixWindow.openLightbox('error-lightbox', {
-                message: 'Invalid access code. Please check your code and try again, or call (239) 332-2245 for assistance.'
-            });
+            console.error("Portal Landing: Token validation failed:", result.message);
+            alert(result.message || "Invalid or expired access link. Please contact support.");
+            
+            // Remove token from URL and stay on landing page
+            wixLocation.to('/portal-landing');
         }
     } catch (error) {
-        console.error('Error validating access code:', error);
-
-        wixWindow.openLightbox('error-lightbox', {
-            message: 'Unable to validate access code. Please try again or call (239) 332-2245.'
-        });
+        console.error("Portal Landing: Error validating token:", error);
+        alert("Unable to verify access link. Please try again or contact support.");
+        wixLocation.to('/portal-landing');
     }
 }
 
 /**
- * Check if user has an existing session and redirect if appropriate
+ * Handle access code submission
+ * User manually enters access code from text/email
  */
-async function checkExistingSession() {
+async function handleAccessCode(accessCode) {
+    console.log("Portal Landing: Validating access code");
+    
     try {
-        const isLoggedIn = authentication.loggedIn();
-
-        if (isLoggedIn) {
-            // Check if there's a pending redirect
-            const pendingRedirect = wixWindow.sessionStorage.getItem('portal_redirect');
-
-            if (pendingRedirect) {
-                // Clear the pending redirect
-                wixWindow.sessionStorage.removeItem('portal_redirect');
-                wixWindow.sessionStorage.removeItem('portal_type');
-
-                // Redirect to the intended portal
-                wixLocation.to(pendingRedirect);
+        // Validate via backend (same as magic link)
+        const result = await onMagicLinkLogin(accessCode);
+        
+        console.log("Portal Landing: Access code result:", result);
+        
+        if (result.ok) {
+            console.log("Portal Landing: Access code valid, redirecting to:", result.goto);
+            
+            // Redirect to appropriate portal
+            wixLocation.to(result.goto);
+        } else {
+            console.error("Portal Landing: Access code validation failed:", result.message);
+            alert(result.message || "Invalid or expired access code. Please contact support.");
+            
+            // Re-enable submit button
+            const submitBtn = $w('#comp-mjrvd6m8');
+            if (submitBtn) {
+                submitBtn.enable();
+                submitBtn.label = "Submit";
             }
         }
     } catch (error) {
-        console.error('Error checking existing session:', error);
+        console.error("Portal Landing: Error validating access code:", error);
+        alert("Unable to validate access code. Please try again.");
+        
+        // Re-enable submit button
+        const submitBtn = $w('#comp-mjrvd6m8');
+        if (submitBtn) {
+            submitBtn.enable();
+            submitBtn.label = "Submit";
+        }
     }
 }
 
-/**
- * Track custom events
- * @param {string} eventName - Name of the event
- * @param {object} eventData - Additional event data
- */
-function trackEvent(eventName, eventData) {
-    try {
-        wixWindow.trackEvent(eventName, eventData);
-    } catch (error) {
-        console.error('Error tracking event:', error);
-    }
-}
-
-/**
- * Export functions for testing
- */
-export {
-    initializePortalButtons,
-    handlePortalAccess,
-    validateAccessCode,
-    checkExistingSession
-};
+// Export for testing (optional)
+export { handleMagicLinkToken, handleAccessCode };
