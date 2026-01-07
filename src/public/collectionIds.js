@@ -4,8 +4,9 @@
  * This module provides a centralized mapping between human-readable
  * collection names and their actual Wix collection IDs.
  * 
- * Updated: 2025-12-29
- * All collections now use their proper readable names instead of Import prefixes.
+ * Updated: 2026-01-06
+ * FloridaCounties collection now uses proper name (was Import1).
+ * All collections use their proper readable names instead of Import prefixes.
  * 
  * Usage:
  * import { COLLECTIONS } from 'backend/collectionIds';
@@ -14,8 +15,8 @@
 
 export const COLLECTIONS = {
   // Core Collections
-  FLORIDA_COUNTIES: 'Import1',           // FloridaCounties - County data with full schema
-  COUNTIES: 'Import21',                  // Counties - Alternate/new county schema (currently empty)
+  FLORIDA_COUNTIES: 'FloridaCounties', // FloridaCounties - County data with full schema
+  // COUNTIES: 'Import21',           // DEPRECATED - Use FLORIDA_COUNTIES instead
   CASES: 'Cases',                        // Bail bond cases
   MEMBER_DOCUMENTS: 'MemberDocuments',   // Uploaded IDs and documents
   MEMBER_PROFILES: 'MemberProfiles',     // Member profile information
@@ -40,6 +41,7 @@ export const COLLECTIONS = {
   CONTACT_SUBMISSIONS: 'ContactSubmissions', // Contact form submissions
   BAIL_SCHOOL_SIGNUPS: 'BailSchoolSignups',  // Bail school interest signups
   MAGIC_LINKS: 'MagicLinks',             // Magic link authentication tokens
+  COMMON_CHARGES: 'CommonCharges',       // Common charges and bond amounts
 
   // System Collections (Wix-managed)
   BLOG_POSTS: 'Blog/Posts',
@@ -89,7 +91,8 @@ export const COLLECTION_DISPLAY_NAMES = {
   [COLLECTIONS.TESTIMONIALS]: 'Testimonials',
   [COLLECTIONS.CONTACT_SUBMISSIONS]: 'Contact Submissions',
   [COLLECTIONS.BAIL_SCHOOL_SIGNUPS]: 'Bail School Signups',
-  [COLLECTIONS.MAGIC_LINKS]: 'Magic Links'
+  [COLLECTIONS.MAGIC_LINKS]: 'Magic Links',
+  [COLLECTIONS.COMMON_CHARGES]: 'Common Charges'
 };
 
 /**
@@ -106,12 +109,16 @@ export const FLORIDA_COUNTIES_FIELDS = {
   PRIMARY_PHONE: 'primaryPhone',
 
   // Sheriff/Jail info
-  BOOKING_WEBSITE: 'bookingWebsiteLink',
-  BOOKING_PHONE: 'bookingPhoneNumber',
+  JAIL_NAME: 'jailName',
+  JAIL_PHONE: 'jailPhone',
+  JAIL_BOOKING_URL: 'jailBookingUrl',
+  SHERIFF_NAME: 'sheriffName',
+  SHERIFF_WEBSITE: 'sheriffWebsite',
 
   // Clerk info
-  CLERK_WEBSITE: 'countyClerkWebsitelink',
-  CLERK_PHONE: 'countyClerkPhoneNumber',
+  CLERK_NAME: 'clerkName',
+  CLERK_PHONE: 'clerkPhone',
+  CLERK_WEBSITE: 'clerkWebsite',
   RECORDS_SEARCH: 'recordsSearchLink',
 
   // SEO

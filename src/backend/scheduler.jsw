@@ -1,5 +1,5 @@
 import wixData from 'wix-data';
-import { COLLECTIONS } from 'backend/collectionIds';
+import { COLLECTIONS } from 'public/collectionIds';
 import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
 

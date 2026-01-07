@@ -38,20 +38,20 @@ $w.onReady(function () {
 function initializeLightbox() {
     // Get context data
     const context = wixWindow.lightbox.getContext();
-    
+
     if (context) {
         signingUrl = context.signingUrl;
         documentId = context.documentId;
         sessionId = context.sessionId;
     }
-    
+
     // Set initial states
     $w('#errorMessage').hide();
     $w('#loadingIndicator').show();
-    
+
     // Set instructions
     $w('#signingInstructions').text = 'Please review and sign the document below. All fields marked with * are required.';
-    
+
     // Load signing URL
     if (signingUrl) {
         loadSigningFrame();
@@ -67,16 +67,16 @@ function loadSigningFrame() {
     try {
         // Set the iframe source
         $w('#signingFrame').src = signingUrl;
-        
+
         // Handle iframe load
         $w('#signingFrame').onLoad(() => {
             $w('#loadingIndicator').hide();
             trackEvent('Signing_Frame_Loaded', { documentId });
         });
-        
+
         // Show the frame
         $w('#signingFrame').show();
-        
+
     } catch (error) {
         console.error('Error loading signing frame:', error);
         showError('Error loading document. Please try again.');
@@ -89,14 +89,16 @@ function loadSigningFrame() {
 function setupEventListeners() {
     // Cancel button
     $w('#cancelBtn').onClick(handleCancel);
-    
+
     // Help button
     if ($w('#helpBtn')) {
         $w('#helpBtn').onClick(() => {
-            wixWindow.openLightbox('SigningHelpLightbox');
+            // TODO: Create SigningHelpLightbox
+            console.log('Help button clicked');
+            // wixWindow.openLightbox('SigningHelpLightbox');
         });
     }
-    
+
     // Refresh button (if available)
     if ($w('#refreshBtn')) {
         $w('#refreshBtn').onClick(() => {
@@ -118,13 +120,13 @@ function setupMessageListener() {
             'https://signnow.com',
             'https://api.signnow.com'
         ];
-        
+
         // Note: In Wix, we may not have direct access to event.origin
-        // This is a simplified handler
-        
+        // Depending on Wix environment, event.origin might be available or not throughout strictly.
+        // We will proceed if we can parse the data.
+
         try {
             const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-            
             handleSignNowEvent(data);
         } catch (error) {
             // Not a SignNow event or invalid JSON
@@ -137,27 +139,27 @@ function setupMessageListener() {
  */
 function handleSignNowEvent(data) {
     const eventType = data.type || data.event;
-    
+
     switch (eventType) {
         case 'signature_complete':
         case 'document_signed':
             handleSigningComplete(data);
             break;
-        
+
         case 'signing_declined':
         case 'document_declined':
             handleSigningDeclined(data);
             break;
-        
+
         case 'signing_error':
         case 'error':
             handleSigningError(data);
             break;
-        
+
         case 'field_completed':
             updateProgress(data);
             break;
-        
+
         default:
             console.log('SignNow event:', eventType, data);
     }
@@ -168,23 +170,23 @@ function handleSignNowEvent(data) {
  */
 async function handleSigningComplete(data) {
     signingComplete = true;
-    
+
     trackEvent('Signing_Complete', {
         documentId,
         sessionId
     });
-    
+
     // Show completion message
     $w('#signingTitle').text = 'Document Signed Successfully!';
     $w('#signingInstructions').text = 'Thank you for signing. You will receive a copy via email.';
-    
+
     // Hide frame, show success
     $w('#signingFrame').hide();
-    
+
     if ($w('#successMessage')) {
         $w('#successMessage').show();
     }
-    
+
     // Close after delay
     setTimeout(() => {
         wixWindow.lightbox.close({
@@ -203,7 +205,7 @@ function handleSigningDeclined(data) {
         documentId,
         reason: data.reason
     });
-    
+
     wixWindow.lightbox.close({
         success: false,
         declined: true,
@@ -216,12 +218,12 @@ function handleSigningDeclined(data) {
  */
 function handleSigningError(data) {
     console.error('Signing error:', data);
-    
+
     trackEvent('Signing_Error', {
         documentId,
         error: data.message || data.error
     });
-    
+
     showError(data.message || 'An error occurred during signing. Please try again.');
 }
 
@@ -232,7 +234,7 @@ function updateProgress(data) {
     if ($w('#progressIndicator') && data.progress) {
         $w('#progressIndicator').targetValue = data.progress;
     }
-    
+
     if ($w('#progressText') && data.fieldsCompleted && data.totalFields) {
         $w('#progressText').text = `${data.fieldsCompleted} of ${data.totalFields} fields completed`;
     }
@@ -243,19 +245,15 @@ function updateProgress(data) {
  */
 async function handleCancel() {
     // Confirm cancellation
-    const confirmed = await wixWindow.openLightbox('ConfirmCancelLightbox', {
-        title: 'Cancel Signing?',
-        message: 'Are you sure you want to cancel? Your progress will not be saved.'
+    // Note: 'ConfirmCancelLightbox' does not exist in src/lightboxes. 
+    // Falling back to direct close for now.
+
+    trackEvent('Signing_Cancelled', { documentId });
+
+    wixWindow.lightbox.close({
+        success: false,
+        cancelled: true
     });
-    
-    if (confirmed) {
-        trackEvent('Signing_Cancelled', { documentId });
-        
-        wixWindow.lightbox.close({
-            success: false,
-            cancelled: true
-        });
-    }
 }
 
 /**
@@ -271,8 +269,9 @@ function showError(message) {
  * Track custom events
  */
 function trackEvent(eventName, eventData = {}) {
-    wixWindow.trackEvent(eventName, {
-        ...eventData,
+    wixWindow.trackEvent('CustomEvent', {
+        event: eventName,
+        detail: eventData,
         timestamp: new Date().toISOString()
     });
 }
@@ -282,10 +281,10 @@ function trackEvent(eventName, eventData = {}) {
  */
 async function checkDocumentStatus() {
     if (!documentId || signingComplete) return;
-    
+
     try {
         const status = await getDocumentStatus(documentId);
-        
+
         if (status.success && status.status === 'completed') {
             handleSigningComplete({ fromPoll: true });
         }

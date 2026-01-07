@@ -2,12 +2,12 @@
  * Shamrock Bail Bonds - County Page Generator
  * Generates county page data from the FloridaCounties collection
  * 
- * Updated: 2025-12-29
- * Now uses actual FloridaCounties (Import1) collection schema
+ * Updated: 2026-01-06
+ * Now uses FloridaCounties collection with updated schema
  */
 
 import wixData from 'wix-data';
-import { COLLECTIONS } from 'backend/collectionIds';
+import { COLLECTIONS } from 'public/collectionIds';
 
 /**
  * Generate complete county page data
@@ -17,10 +17,10 @@ import { COLLECTIONS } from 'backend/collectionIds';
 export async function generateCountyPage(countySlug) {
   try {
     console.log(`Generating county page for slug: ${countySlug}`);
-    
+
     // Load county data from FloridaCounties collection
     const countyData = await getCountyFromDatabase(countySlug);
-    
+
     if (!countyData) {
       return {
         success: false,
@@ -28,15 +28,15 @@ export async function generateCountyPage(countySlug) {
         data: null
       };
     }
-    
+
     // Transform to expected page format
     const pageData = transformCountyData(countyData);
-    
+
     return {
       success: true,
       data: pageData
     };
-    
+
   } catch (error) {
     console.error('Error generating county page:', error);
     return {
@@ -57,13 +57,13 @@ async function getCountyFromDatabase(countySlug) {
     const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
       .eq('countySlug', countySlug)
       .find();
-    
+
     if (results.items.length > 0) {
       return results.items[0];
     }
-    
+
     return null;
-    
+
   } catch (error) {
     console.error('Error getting county from database:', error);
     return null;
@@ -79,55 +79,55 @@ function transformCountyData(county) {
   const countyName = county.countyName || 'Unknown';
   const phone = county.primaryPhone || '(239) 332-2245';
   const phoneDisplay = formatPhoneForDisplay(phone);
-  
+
   return {
     // Basic info
     county_name: countyName,
     county_name_full: `${countyName} County`,
     county_slug: county.countySlug,
-    
+
     // Contact
     contact: {
       primary_phone: phone,
       primary_phone_display: phoneDisplay
     },
-    
+
     // Jail information
     jail: {
-      name: `${countyName} County Jail`,
-      booking_url: county.bookingWebsiteLink || '',
-      booking_phone: county.bookingPhoneNumber || phone
+      name: county.jailName || `${countyName} County Jail`,
+      booking_url: county.jailBookingUrl || '',
+      booking_phone: county.jailPhone || phone
     },
-    
+
     // Clerk information
     clerk: {
-      name: `${countyName} County Clerk of Court`,
-      website: county.countyClerkWebsitelink || '',
+      name: county.clerkName || `${countyName} County Clerk of Court`,
+      website: county.clerkWebsite || '',
       records_url: county.recordsSearchLink || '',
-      phone: county.countyClerkPhoneNumber || ''
+      phone: county.clerkPhone || ''
     },
-    
+
     // Sheriff information
     sheriff: {
-      name: `${countyName} County Sheriff's Office`,
-      website: county.bookingWebsiteLink || ''
+      name: county.sheriffName || `${countyName} County Sheriff's Office`,
+      website: county.sheriffWebsite || ''
     },
-    
+
     // Content
     content: {
       hero_headline: county.h1Headline || `${countyName} County Bail Bonds - 24/7 Fast Release`,
       hero_subheadline: `Licensed, trusted, and ready to help. Get your loved one home fast from ${countyName} County Jail.`,
       hero_cta_primary: `Call Now: ${phoneDisplay}`,
       hero_cta_secondary: 'Start Bail Process Online',
-      
+
       about_county: stripHtml(county.serviceAreaCopy) || `Shamrock Bail Bonds proudly serves ${countyName} County, Florida. We work directly with the ${countyName} County Jail to secure fast and reliable release. Our licensed bail agents are available 24/7 to answer questions and begin the release process immediately.`,
-      
+
       why_choose_us: `Shamrock Bail Bonds has deep roots in ${countyName} County. We understand the local jail system, court procedures, and how to get your loved one released quickly. Our licensed bail bondsmen are available around the clock to answer your questions and start the bail process immediately. We treat every client with dignity and respect during this difficult time.`,
-      
+
       how_it_works: `When someone is arrested in ${countyName} County, they are typically taken to the ${countyName} County Jail for booking. Once booking is complete and bail is set, we can begin the release process. Our bail bondsmen will meet with you, explain the process, and handle all the paperwork. In most cases, your loved one can be released within hours of posting bail.`,
-      
+
       service_areas: `We serve all of ${countyName} County and surrounding communities.`,
-      
+
       faq: [
         {
           question: `How long does it take to get someone out of ${countyName} County Jail?`,
@@ -147,7 +147,7 @@ function transformCountyData(county) {
         }
       ]
     },
-    
+
     // SEO
     seo: {
       meta_title: county.seoTitle || `${countyName} County Bail Bonds - 24/7 Fast Release | Shamrock Bail Bonds`,
@@ -170,17 +170,17 @@ function transformCountyData(county) {
  */
 function formatPhoneForDisplay(phone) {
   if (!phone) return '(239) 332-2245';
-  
+
   // Remove all non-digits
   const digits = phone.replace(/\D/g, '');
-  
+
   // Format as (XXX) XXX-XXXX
   if (digits.length === 10) {
     return `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
   } else if (digits.length === 11 && digits[0] === '1') {
     return `(${digits.substring(1, 4)}) ${digits.substring(4, 7)}-${digits.substring(7)}`;
   }
-  
+
   return phone;
 }
 
@@ -203,25 +203,25 @@ export async function getAllCountiesByTier() {
     const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
       .ascending('countyName')
       .find();
-    
+
     // Group by primary county flag or alphabetically
     const primary = [];
     const other = [];
-    
+
     for (const county of results.items) {
       const countyInfo = {
         slug: county.countySlug,
         name: county.countyName,
         title: county.title
       };
-      
+
       if (county.isPrimaryCounty) {
         primary.push(countyInfo);
       } else {
         other.push(countyInfo);
       }
     }
-    
+
     return {
       success: true,
       tiers: {
@@ -229,7 +229,7 @@ export async function getAllCountiesByTier() {
         other
       }
     };
-    
+
   } catch (error) {
     console.error('Error getting counties by tier:', error);
     return {

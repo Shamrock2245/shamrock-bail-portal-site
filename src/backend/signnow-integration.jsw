@@ -12,13 +12,7 @@
 // Backend file: signnow-integration.jsw
 // Refactored to use Centralized GAS Backend for Unified Workflows
 
-import { fetch } from 'wix-fetch';
-
-/**
- * CONFIGURATION - Google Apps Script Backend
- * This serves as our single source of truth for SignNow logic
- */
-const GAS_WEB_APP_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzU7hz5OCAZkkdjOZdKK6t7K0whw65iMH-EOzxtSf7KkVCuLvy1X-Las8CgGdTMw8pOpg/exec';
+import { getGasUrl, fetchWithRetry } from 'backend/utils';
 
 /**
  * Core function to call the GAS Backend
@@ -26,7 +20,8 @@ const GAS_WEB_APP_URL = 'https://script.google.com/a/macros/shamrockbailbonds.bi
  */
 async function callGasBackend(payload) {
     try {
-        const response = await fetch(GAS_WEB_APP_URL, {
+        const url = await getGasUrl();
+        const response = await fetchWithRetry(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

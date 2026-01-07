@@ -363,6 +363,8 @@ function generateToken() {
   return token;
 }
 
+// ... existing cleanupExpired ...
+
 export async function cleanupExpired() {
   const now = Date.now();
 
@@ -386,4 +388,103 @@ export async function cleanupExpired() {
   );
 
   return { ok: true };
+}
+
+/***** DATA AGGREGATION (New for Defendant Portal) *****/
+/**
+ * Aggregates all data needed for the Defendant Dashboard.
+ * Currently mocks missing DB fields, but STRUCTURE IS FINAL.
+ */
+export async function getDefendantDetails(userId) {
+  // 1. Get Basic Profile
+  const profile = await getUserProfile(userId);
+  if (!profile) return null;
+
+  // 2. Mock/Fetch Case Data
+  // In future, this will query a "Cases" or "BailData" collection by profile.personId/caseIds
+  const details = {
+    firstName: "Client", // TODO: fetch from Contact
+    caseNumber: "Pending",
+    bondAmount: "$0.00",
+    nextCourtDate: "TBD",
+    caseStatus: "Active",
+    paperworkStatus: "Incomplete",
+    signingStatus: "Waiting",
+    ...profile // overlay any existing profile data
+  };
+
+  // Try to get real name from Members/Contacts if available
+  try {
+    const user = await wixUsersBackend.getUser(userId);
+    // Note: wix-users-backend doesn't always give contact details directly without suppressing auth
+    // For now, we return specific structure
+  } catch (e) { }
+
+  return details;
+}
+
+export async function getIndemnitorDetails(userId) {
+  // Mock Data for Indemnitor Dashboard
+  const details = {
+    totalLiability: "$50,000",
+    totalPremium: "$5,000",
+    downPayment: "$1,000",
+    balanceDue: "$4,000",
+    chargesCount: "2",
+    defendantName: "John Doe",
+    defendantStatus: "Good Standing",
+    lastCheckIn: "2 days ago",
+    nextCourtDate: "Oct 15, 2025",
+    ppRemainingBalance: "$4,000",
+    ppPaymentTerms: "$400 / month",
+    ppNextDueDate: "Nov 1, 2025",
+    ppProgressValue: 20,
+    paperworkStatus: "Pending Signature(s)"
+  };
+  return details;
+}
+
+export async function getStaffDashboardData() {
+  await requireStaff(); // Security Check
+
+  // 1. Stats (Mocked)
+  const stats = {
+    activeCases: 12,
+    pendingSignatures: 5,
+    completedToday: 3,
+    failedChecks: 1
+  };
+
+  // 2. Case List (Mocked)
+  const cases = [
+    {
+      _id: "c1",
+      caseNumber: "20-CF-003444",
+      defendantName: "Jane Smith",
+      bondAmount: "$50,000",
+      status: "Active",
+      paperworkStatus: "Signed",
+      phone: "555-0101"
+    },
+    {
+      _id: "c2",
+      caseNumber: "21-CF-112233",
+      defendantName: "John Doe",
+      bondAmount: "$10,000",
+      status: "Pending",
+      paperworkStatus: "Sent",
+      phone: "555-0102"
+    },
+    {
+      _id: "c3",
+      caseNumber: "22-MM-998877",
+      defendantName: "Robert Jones",
+      bondAmount: "$5,000",
+      status: "Active",
+      paperworkStatus: "Unsent",
+      phone: "555-0103"
+    }
+  ];
+
+  return { stats, cases };
 }

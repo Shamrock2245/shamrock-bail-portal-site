@@ -38,9 +38,14 @@ $w.onReady(async function () {
   await initializePage();
 
   // Set up event handlers
-  $w('#authorizeButton').onClick(handleAuthorizeClick);
-  $w('#declineButton').onClick(handleDeclineClick);
-  $w('#agreementCheckbox').onChange(handleAgreementChange);
+  const authorizeBtn = $w('#authorizeBtn');
+  if (authorizeBtn.length) authorizeBtn.onClick(handleAuthorizeClick);
+
+  const declineBtn = $w('#declineBtn');
+  if (declineBtn.length) declineBtn.onClick(handleDeclineClick);
+
+  const agreementCheckbox = $w('#agreementCheckbox');
+  if (agreementCheckbox.length) agreementCheckbox.onChange(handleAgreementChange);
 });
 
 /**
@@ -111,9 +116,9 @@ function displayAuthorizationInfo(calcResult) {
 
   // Show authorization section
   $w('#authorizationSection').show();
-  
+
   // Keep authorize button disabled until agreement is checked
-  $w('#authorizeButton').disable();
+  $w('#authorizeBtn').disable();
 }
 
 /**
@@ -121,9 +126,9 @@ function displayAuthorizationInfo(calcResult) {
  */
 function handleAgreementChange(event) {
   if (event.target.checked) {
-    $w('#authorizeButton').enable();
+    $w('#authorizeBtn').enable();
   } else {
-    $w('#authorizeButton').disable();
+    $w('#authorizeBtn').disable();
   }
 }
 
@@ -139,8 +144,8 @@ async function handleAuthorizeClick() {
     }
 
     // Disable button to prevent double-clicks
-    $w('#authorizeButton').disable();
-    $w('#authorizeButton').label = 'Processing...';
+    $w('#authorizeBtn').disable();
+    $w('#authorizeBtn').label = 'Processing...';
 
     showLoading(true);
 
@@ -177,10 +182,10 @@ async function handleAuthorizeClick() {
   } catch (error) {
     console.error('Authorization error:', error);
     showError(`Authorization failed: ${error.message}`);
-    
+
     // Re-enable button
-    $w('#authorizeButton').enable();
-    $w('#authorizeButton').label = 'I Authorize Payment Responsibility';
+    $w('#authorizeBtn').enable();
+    $w('#authorizeBtn').label = 'I Authorize Payment Responsibility';
     showLoading(false);
   }
 }
@@ -195,7 +200,7 @@ function handleDeclineClick() {
       if (result === 'confirmed') {
         // Show message about consequences
         showInfo('Authorization declined. The defendant will need to find another indemnitor or payment method.');
-        
+
         // Redirect to dashboard after 3 seconds
         setTimeout(() => {
           wixLocation.to('/portal/dashboard');
@@ -259,7 +264,7 @@ function showLoading(show) {
 function showError(message) {
   $w('#errorBox').show();
   $w('#errorText').text = message;
-  
+
   // Hide error after 10 seconds
   setTimeout(() => {
     $w('#errorBox').hide();
@@ -281,7 +286,7 @@ function showSuccess(message) {
 function showInfo(message) {
   $w('#infoBox').show();
   $w('#infoText').text = message;
-  
+
   // Hide info after 5 seconds
   setTimeout(() => {
     $w('#infoBox').hide();

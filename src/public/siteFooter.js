@@ -1,14 +1,20 @@
 /**
- * Shamrock Bail Bonds - Site Footer Component
+ * Shamrock Bail Bonds - Site Footer Component (FIXED)
  * 
  * Global footer component with navigation, contact info, and legal links.
  * Used across all pages for consistent footer experience.
  * 
  * File: public/siteFooter.js
+ * 
+ * FIXES:
+ * - Replaced .valid checks with proper .type checks
+ * - Added try-catch blocks around all .onClick() calls
+ * - Prevents "onClick is not a function" errors
  */
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
+import wixData from 'wix-data';
 
 // Contact information
 const CONTACT = {
@@ -43,36 +49,50 @@ export function initFooter() {
  */
 function setupContactInfo() {
     // Phone
-    if ($w('#footerPhone').valid) {
-        $w('#footerPhone').text = CONTACT.phone;
-    }
-    if ($w('#footerPhoneLink').valid) {
-        $w('#footerPhoneLink').link = CONTACT.phoneTel;
-        $w('#footerPhoneLink').onClick(() => {
-            trackEvent('Footer_Phone_Click');
-        });
-    }
+    try {
+        if ($w('#footerPhone').type) {
+            $w('#footerPhone').text = CONTACT.phone;
+        }
+    } catch (e) { }
+
+    try {
+        if ($w('#footerPhoneLink').type) {
+            $w('#footerPhoneLink').link = CONTACT.phoneTel;
+            $w('#footerPhoneLink').onClick(() => {
+                trackEvent('Footer_Phone_Click');
+            });
+        }
+    } catch (e) { }
 
     // Email
-    if ($w('#footerEmail').valid) {
-        $w('#footerEmail').text = CONTACT.email;
-    }
-    if ($w('#footerEmailLink').valid) {
-        $w('#footerEmailLink').link = `mailto:${CONTACT.email}`;
-        $w('#footerEmailLink').onClick(() => {
-            trackEvent('Footer_Email_Click');
-        });
-    }
+    try {
+        if ($w('#footerEmail').type) {
+            $w('#footerEmail').text = CONTACT.email;
+        }
+    } catch (e) { }
+
+    try {
+        if ($w('#footerEmailLink').type) {
+            $w('#footerEmailLink').link = `mailto:${CONTACT.email}`;
+            $w('#footerEmailLink').onClick(() => {
+                trackEvent('Footer_Email_Click');
+            });
+        }
+    } catch (e) { }
 
     // Address
-    if ($w('#footerAddress').valid) {
-        $w('#footerAddress').text = CONTACT.address;
-    }
+    try {
+        if ($w('#footerAddress').type) {
+            $w('#footerAddress').text = CONTACT.address;
+        }
+    } catch (e) { }
 
     // 24/7 badge
-    if ($w('#footer247Badge').valid) {
-        $w('#footer247Badge').text = 'Available 24/7';
-    }
+    try {
+        if ($w('#footer247Badge').type) {
+            $w('#footer247Badge').text = 'Available 24/7';
+        }
+    } catch (e) { }
 }
 
 /**
@@ -88,12 +108,14 @@ function setupFooterNav() {
     ];
 
     quickLinks.forEach(link => {
-        if ($w(link.selector).valid) {
-            $w(link.selector).link = link.path;
-            $w(link.selector).onClick(() => {
-                trackEvent('Footer_Nav_Click', { destination: link.path });
-            });
-        }
+        try {
+            if ($w(link.selector).type) {
+                $w(link.selector).link = link.path;
+                $w(link.selector).onClick(() => {
+                    trackEvent('Footer_Nav_Click', { destination: link.path });
+                });
+            }
+        } catch (e) { }
     });
 
     // Resources
@@ -105,12 +127,14 @@ function setupFooterNav() {
     ];
 
     resourceLinks.forEach(link => {
-        if ($w(link.selector).valid) {
-            $w(link.selector).link = link.path;
-            $w(link.selector).onClick(() => {
-                trackEvent('Footer_Nav_Click', { destination: link.path });
-            });
-        }
+        try {
+            if ($w(link.selector).type) {
+                $w(link.selector).link = link.path;
+                $w(link.selector).onClick(() => {
+                    trackEvent('Footer_Nav_Click', { destination: link.path });
+                });
+            }
+        } catch (e) { }
     });
 
     // Legal Links
@@ -121,12 +145,14 @@ function setupFooterNav() {
     ];
 
     legalLinks.forEach(link => {
-        if ($w(link.selector).valid) {
-            $w(link.selector).link = link.path;
-            $w(link.selector).onClick(() => {
-                trackEvent('Footer_Legal_Click', { destination: link.path });
-            });
-        }
+        try {
+            if ($w(link.selector).type) {
+                $w(link.selector).link = link.path;
+                $w(link.selector).onClick(() => {
+                    trackEvent('Footer_Legal_Click', { destination: link.path });
+                });
+            }
+        } catch (e) { }
     });
 
     // Popular Counties
@@ -139,12 +165,14 @@ function setupFooterNav() {
     ];
 
     popularCounties.forEach(link => {
-        if ($w(link.selector).valid) {
-            $w(link.selector).link = link.path;
-            $w(link.selector).onClick(() => {
-                trackEvent('Footer_County_Click', { county: link.label });
-            });
-        }
+        try {
+            if ($w(link.selector).type) {
+                $w(link.selector).link = link.path;
+                $w(link.selector).onClick(() => {
+                    trackEvent('Footer_County_Click', { county: link.label });
+                });
+            }
+        } catch (e) { }
     });
 }
 
@@ -160,13 +188,15 @@ function setupSocialLinks() {
     ];
 
     socialLinks.forEach(social => {
-        if ($w(social.selector).valid) {
-            $w(social.selector).link = social.url;
-            $w(social.selector).target = '_blank';
-            $w(social.selector).onClick(() => {
-                trackEvent('Footer_Social_Click', { platform: social.platform });
-            });
-        }
+        try {
+            if ($w(social.selector).type) {
+                $w(social.selector).link = social.url;
+                $w(social.selector).target = '_blank';
+                $w(social.selector).onClick(() => {
+                    trackEvent('Footer_Social_Click', { platform: social.platform });
+                });
+            }
+        } catch (e) { }
     });
 }
 
@@ -176,59 +206,73 @@ function setupSocialLinks() {
 function setCopyrightYear() {
     const currentYear = new Date().getFullYear();
 
-    if ($w('#copyrightText').valid) {
-        $w('#copyrightText').text = `© ${currentYear} Shamrock Bail Bonds. All rights reserved.`;
-    }
+    try {
+        if ($w('#copyrightText').type) {
+            $w('#copyrightText').text = `© ${currentYear} Shamrock Bail Bonds. All rights reserved.`;
+        }
+    } catch (e) { }
 
     // License info
-    if ($w('#licenseText').valid) {
-        $w('#licenseText').text = 'Licensed Bail Bond Agent - State of Florida';
-    }
+    try {
+        if ($w('#licenseText').type) {
+            $w('#licenseText').text = 'Licensed Bail Bond Agent - State of Florida';
+        }
+    } catch (e) { }
 }
 
 /**
  * Set up newsletter signup form
  */
 function setupNewsletter() {
-    if (!$w('#newsletterForm').valid) return;
+    try {
+        if (!$w('#newsletterForm').type) return;
 
-    $w('#newsletterSubmit').onClick(async () => {
-        const email = $w('#newsletterEmail').value;
+        if ($w('#newsletterSubmit').type) {
+            $w('#newsletterSubmit').onClick(async () => {
+                const email = $w('#newsletterEmail').value;
 
-        if (!email || !isValidEmail(email)) {
-            $w('#newsletterError').text = 'Please enter a valid email address';
-            $w('#newsletterError').show();
-            return;
-        }
+                if (!email || !isValidEmail(email)) {
+                    if ($w('#newsletterError').type) {
+                        $w('#newsletterError').text = 'Please enter a valid email address';
+                        $w('#newsletterError').show();
+                    }
+                    return;
+                }
 
-        try {
-            $w('#newsletterSubmit').disable();
-            $w('#newsletterSubmit').label = 'Subscribing...';
+                try {
+                    $w('#newsletterSubmit').disable();
+                    $w('#newsletterSubmit').label = 'Subscribing...';
 
-            // Save to database
-            import('wix-data').then(async (wixData) => {
-                await wixData.insert('NewsletterSubscribers', {
-                    email: email,
-                    subscribedAt: new Date(),
-                    source: 'footer'
-                });
+                    // Save to database
+                    await wixData.insert('NewsletterSubscribers', {
+                        email: email,
+                        subscribedAt: new Date(),
+                        source: 'footer'
+                    });
+
+                    // Show success
+                    if ($w('#newsletterForm').type) $w('#newsletterForm').hide();
+                    if ($w('#newsletterSuccess').type) {
+                        $w('#newsletterSuccess').show();
+                        $w('#newsletterSuccess').text = 'Thank you for subscribing!';
+                    }
+
+                    trackEvent('Newsletter_Subscribe', { source: 'footer' });
+
+                } catch (error) {
+                    if ($w('#newsletterError').type) {
+                        $w('#newsletterError').text = 'Error subscribing. Please try again.';
+                        $w('#newsletterError').show();
+                    }
+                } finally {
+                    $w('#newsletterSubmit').enable();
+                    $w('#newsletterSubmit').label = 'Subscribe';
+                }
             });
-
-            // Show success
-            $w('#newsletterForm').hide();
-            $w('#newsletterSuccess').show();
-            $w('#newsletterSuccess').text = 'Thank you for subscribing!';
-
-            trackEvent('Newsletter_Subscribe', { source: 'footer' });
-
-        } catch (error) {
-            $w('#newsletterError').text = 'Error subscribing. Please try again.';
-            $w('#newsletterError').show();
-        } finally {
-            $w('#newsletterSubmit').enable();
-            $w('#newsletterSubmit').label = 'Subscribe';
         }
-    });
+    } catch (e) {
+        console.log('Newsletter setup skipped (elements missing)');
+    }
 }
 
 /**
@@ -243,9 +287,11 @@ function isValidEmail(email) {
  * Track events
  */
 function trackEvent(eventName, eventData = {}) {
-    import('wix-window').then((wixWindow) => {
+    try {
         wixWindow.trackEvent(eventName, eventData);
-    });
+    } catch (e) {
+        console.log('Event tracking failed:', eventName);
+    }
 }
 
 // Export for use in masterPage.js

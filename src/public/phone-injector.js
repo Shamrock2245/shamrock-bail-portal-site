@@ -18,8 +18,8 @@ import wixWindow from 'wix-window';
 // EMERGENCY FALLBACKS: Hardcoded site-wide defaults if backend fails
 const EMERGENCY_PRIMARY_DISPLAY = '(239) 332-2245';
 const EMERGENCY_PRIMARY_NUMBER = '+12393322245';
-const EMERGENCY_SPANISH_DISPLAY = '(239) 955-0305';
-const EMERGENCY_SPANISH_NUMBER = '+12399550305';
+const EMERGENCY_SPANISH_DISPLAY = '(239) 955-0301';
+const EMERGENCY_SPANISH_NUMBER = '+12399550301';
 
 /**
  * Initialize phone number injection on page load
@@ -97,13 +97,13 @@ async function updatePhoneElements(phoneData, county, sessionId) {
 
   // List of common phone element IDs
   const phoneElementIds = [
-    '#callNowButton',
+    '#callNowBtn',
     '#primaryPhone',
     '#headerPhone',
     '#footerPhone',
     '#heroCallLink',
-    '#stickyCallButton',
-    '#mobileCallButton',
+    '#stickyCallBtn',
+    '#mobileCallBtn',
     '#emergencyPhone',
     '#contactPhone',
     '#spanishSpeakingPhone'

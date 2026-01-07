@@ -21,7 +21,7 @@ $w.onReady(function () {
     silentPingLocation();
 
     // 4. Global Phone Injection (Dynamic Routing)
-    // 4. Global Phone Injection (Dynamic Routing)
+
     initializePhoneInjection();
 
     // 5. Global Login Handler - Enforce Portal Redirect

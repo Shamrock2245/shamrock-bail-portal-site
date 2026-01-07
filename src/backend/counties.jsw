@@ -1,12 +1,7 @@
-import { fetch } from 'wix-fetch';
+// counties.jsw - PRODUCTION VERSION
+// This version queries the FloridaCounties CMS collection
 
-/**
- * Counties Backend Module
- * Provides secure access to Florida county data for the front-end
- */
-
-// Import the county data
-const countiesData = require('./data/florida-sheriff-clerk-directory.json');
+import wixData from 'wix-data';
 
 /**
  * Get all Florida counties with sheriff and clerk information
@@ -14,15 +9,50 @@ const countiesData = require('./data/florida-sheriff-clerk-directory.json');
  */
 export async function getCounties() {
   try {
+    // Query the FloridaCounties collection which contains all Florida counties
+    const results = await wixData.query("FloridaCounties")
+      .limit(100)
+      .ascending("countyName")
+      .find();
+    
+    console.log(`Fetched ${results.items.length} counties from FloridaCounties collection`);
+    
+    // Map FloridaCounties fields to the expected schema format
+    const counties = results.items.map(item => ({
+      county_name: item.countyName || "",
+      slug: item.countySlug || "",
+      sheriff_url: item.sheriffWebsite || "",
+      clerk_url: item.clerkWebsite || "",
+      jail_roster_url: item.recordsSearchLink || "",
+      phone_sheriff: item.jailPhone || "",
+      phone_clerk: item.clerkPhone || "",
+      status: "Active", // All counties in FloridaCounties are active
+      
+      // Additional useful fields from FloridaCounties
+      title: item.title || "",
+      h1Headline: item.h1Headline || "",
+      seoTitle: item.seoTitle || "",
+      seoDescription: item.seoDescription || "",
+      primaryPhone: item.primaryPhone || "(239) 332-2245",
+      jailName: item.jailName || "",
+      clerkName: item.clerkName || "",
+      sheriffName: item.sheriffName || "",
+      jailBookingUrl: item.jailBookingUrl || ""
+    }));
+    
     return {
       success: true,
-      data: countiesData
+      data: {
+        counties: counties,
+        total: results.totalCount
+      }
     };
   } catch (error) {
-    console.error('Error fetching counties:', error);
+    console.error('Error fetching counties from FloridaCounties:', error);
     return {
       success: false,
-      error: 'Failed to load county data'
+      error: 'Failed to load county data',
+      details: error.message
     };
   }
 }
@@ -34,20 +64,97 @@ export async function getCounties() {
  */
 export async function getCountyByName(countyName) {
   try {
-    const normalizedName = countyName.trim().toLowerCase();
-    const county = countiesData.counties.find(
-      c => c.county_name.toLowerCase() === normalizedName
-    );
+    const normalizedName = countyName.trim();
+    
+    const results = await wixData.query("FloridaCounties")
+      .eq("countyName", normalizedName)
+      .find();
+    
+    if (results.items.length === 0) {
+      return {
+        success: true,
+        data: null
+      };
+    }
+    
+    const item = results.items[0];
+    const county = {
+      county_name: item.countyName || "",
+      slug: item.countySlug || "",
+      sheriff_url: item.sheriffWebsite || "",
+      clerk_url: item.clerkWebsite || "",
+      jail_roster_url: item.recordsSearchLink || "",
+      phone_sheriff: item.jailPhone || "",
+      phone_clerk: item.clerkPhone || "",
+      status: "Active",
+      title: item.title || "",
+      h1Headline: item.h1Headline || "",
+      seoTitle: item.seoTitle || "",
+      seoDescription: item.seoDescription || "",
+      primaryPhone: item.primaryPhone || "(239) 332-2245"
+    };
     
     return {
       success: true,
-      data: county || null
+      data: county
     };
   } catch (error) {
-    console.error('Error fetching county:', error);
+    console.error('Error fetching county by name:', error);
     return {
       success: false,
-      error: 'Failed to load county data'
+      error: 'Failed to load county data',
+      details: error.message
+    };
+  }
+}
+
+/**
+ * Get a single county by slug
+ * @param {string} slug - The URL slug for the county (e.g., "lee")
+ * @returns {Promise<Object>} Single county object or null if not found
+ */
+export async function getCountyBySlug(slug) {
+  try {
+    const normalizedSlug = slug.trim().toLowerCase();
+    
+    const results = await wixData.query("Import1")
+      .eq("countySlug", normalizedSlug)
+      .find();
+    
+    if (results.items.length === 0) {
+      return {
+        success: true,
+        data: null
+      };
+    }
+    
+    const item = results.items[0];
+    const county = {
+      county_name: item.countyName || "",
+      slug: item.countySlug || "",
+      sheriff_url: item.sheriffWebsite || "",
+      clerk_url: item.clerkWebsite || "",
+      jail_roster_url: item.recordsSearchLink || "",
+      phone_sheriff: item.jailPhone || "",
+      phone_clerk: item.clerkPhone || "",
+      status: "Active",
+      title: item.title || "",
+      h1Headline: item.h1Headline || "",
+      seoTitle: item.seoTitle || "",
+      seoDescription: item.seoDescription || "",
+      primaryPhone: item.primaryPhone || "(239) 332-2245"
+    };
+    
+    return {
+      success: true,
+      data: county
+    };
+  } catch (error) {
+    console.error('Error fetching county by slug:', error);
+    return {
+      success: false,
+      error: 'Failed to load county data',
+      details: error.message
     };
   }
 }
@@ -59,22 +166,37 @@ export async function getCountyByName(countyName) {
  */
 export async function getCountiesByStatus(status) {
   try {
-    const filtered = countiesData.counties.filter(
-      c => c.status === status
-    );
+    // Note: FloridaCounties only contains active counties
+    // If you need to filter, you would need a status field in FloridaCounties
+    const results = await wixData.query("FloridaCounties")
+      .limit(100)
+      .ascending("countyName")
+      .find();
+    
+    const counties = results.items.map(item => ({
+      county_name: item.countyName || "",
+      slug: item.countySlug || "",
+      sheriff_url: item.sheriffWebsite || "",
+      clerk_url: item.clerkWebsite || "",
+      jail_roster_url: item.recordsSearchLink || "",
+      phone_sheriff: item.jailPhone || "",
+      phone_clerk: item.clerkPhone || "",
+      status: "Active"
+    }));
     
     return {
       success: true,
       data: {
-        counties: filtered,
-        total: filtered.length
+        counties: counties,
+        total: results.totalCount
       }
     };
   } catch (error) {
     console.error('Error filtering counties:', error);
     return {
       success: false,
-      error: 'Failed to filter county data'
+      error: 'Failed to filter county data',
+      details: error.message
     };
   }
 }
@@ -86,23 +208,37 @@ export async function getCountiesByStatus(status) {
  */
 export async function searchCounties(searchTerm) {
   try {
-    const normalizedTerm = searchTerm.trim().toLowerCase();
-    const results = countiesData.counties.filter(
-      c => c.county_name.toLowerCase().includes(normalizedTerm)
-    );
+    const normalizedTerm = searchTerm.trim();
+    
+    const results = await wixData.query("FloridaCounties")
+      .contains("countyName", normalizedTerm)
+      .limit(50)
+      .find();
+    
+    const counties = results.items.map(item => ({
+      county_name: item.countyName || "",
+      slug: item.countySlug || "",
+      sheriff_url: item.sheriffWebsite || "",
+      clerk_url: item.clerkWebsite || "",
+      jail_roster_url: item.recordsSearchLink || "",
+      phone_sheriff: item.jailPhone || "",
+      phone_clerk: item.clerkPhone || "",
+      status: "Active"
+    }));
     
     return {
       success: true,
       data: {
-        counties: results,
-        total: results.length
+        counties: counties,
+        total: results.totalCount
       }
     };
   } catch (error) {
     console.error('Error searching counties:', error);
     return {
       success: false,
-      error: 'Failed to search county data'
+      error: 'Failed to search county data',
+      details: error.message
     };
   }
 }

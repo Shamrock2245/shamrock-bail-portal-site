@@ -1,6 +1,6 @@
 // Account.js (Members Only)
 import wixData from 'wix-data';
-import { COLLECTIONS } from 'backend/collectionIds';
+import { COLLECTIONS } from 'public/collectionIds';
 import { currentMember } from 'wix-members';
 
 $w.onReady(async function () {
@@ -16,7 +16,7 @@ async function loadMemberProfile(memberId) {
         const results = await wixData.query("MemberProfiles")
             .eq("_id", memberId)
             .find();
-            
+
         if (results.items.length > 0) {
             const profile = results.items[0];
             $w('#profileName').text = `${profile.firstName} ${profile.lastName}`;
@@ -30,15 +30,15 @@ async function loadMemberProfile(memberId) {
 
 function setupDocumentUpload(memberId) {
     $w('#idUploadBtn').fileType = "Image, Document"; // Allow images and PDFs
-    
+
     $w('#idUploadBtn').onChange(async () => {
         if ($w('#idUploadBtn').value.length > 0) {
             $w('#uploadStatus').text = "Uploading...";
             $w('#uploadStatus').expand();
-            
+
             try {
                 const uploadedFile = await $w('#idUploadBtn').startUpload();
-                
+
                 // Save reference to database
                 await wixData.insert(COLLECTIONS.MEMBER_DOCUMENTS, {
                     memberId: memberId,
@@ -47,17 +47,17 @@ function setupDocumentUpload(memberId) {
                     uploadDate: new Date(),
                     type: "Government ID"
                 });
-                
+
                 $w('#uploadStatus').text = "Upload Successful!";
                 refreshDocumentList(memberId);
-                
+
             } catch (error) {
                 console.error("Upload failed:", error);
                 $w('#uploadStatus').text = "Upload Failed. Please try again.";
             }
         }
     });
-    
+
     refreshDocumentList(memberId);
 }
 
@@ -66,9 +66,9 @@ async function refreshDocumentList(memberId) {
         .eq("memberId", memberId)
         .descending("uploadDate")
         .find();
-        
+
     $w('#documentsRepeater').data = results.items;
-    
+
     $w('#documentsRepeater').onItemReady(($item, itemData) => {
         $item('#docName').text = itemData.fileName;
         $item('#docDate').text = itemData.uploadDate.toLocaleDateString();

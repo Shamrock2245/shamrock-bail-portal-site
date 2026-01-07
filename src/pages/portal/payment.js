@@ -38,8 +38,11 @@ $w.onReady(async function () {
   await initializePage();
 
   // Set up event handlers
-  $w('#payNowButton').onClick(handlePayNowClick);
-  $w('#cancelButton').onClick(handleCancelClick);
+  const payNowBtn = $w('#payNowBtn');
+  if (payNowBtn.length) payNowBtn.onClick(handlePayNowClick);
+
+  const cancelBtn = $w('#cancelBtn');
+  if (cancelBtn.length) cancelBtn.onClick(handleCancelClick);
 });
 
 /**
@@ -103,7 +106,7 @@ function displayPaymentInfo(calcResult) {
 
   // Show payment section
   $w('#paymentSection').show();
-  $w('#payNowButton').enable();
+  $w('#payNowBtn').enable();
 }
 
 /**
@@ -112,8 +115,8 @@ function displayPaymentInfo(calcResult) {
 async function handlePayNowClick() {
   try {
     // Disable button to prevent double-clicks
-    $w('#payNowButton').disable();
-    $w('#payNowButton').label = 'Processing...';
+    $w('#payNowBtn').disable();
+    $w('#payNowBtn').label = 'Processing...';
 
     showLoading(true);
 
@@ -149,10 +152,10 @@ async function handlePayNowClick() {
   } catch (error) {
     console.error('Payment error:', error);
     showError(`Payment failed: ${error.message}`);
-    
+
     // Re-enable button
-    $w('#payNowButton').enable();
-    $w('#payNowButton').label = 'Pay Now';
+    $w('#payNowBtn').enable();
+    $w('#payNowBtn').label = 'Pay Now';
     showLoading(false);
   }
 }
@@ -166,28 +169,28 @@ function handlePaymentResult(result) {
   if (result.status === 'Successful') {
     // Redirect to success page
     wixLocation.to(`/portal/payment-success?caseId=${currentCaseId}`);
-    
+
   } else if (result.status === 'Pending') {
     // Show pending message
     showInfo('Payment is pending. You will receive a confirmation email once processed.');
-    
+
     // Redirect to dashboard after 3 seconds
     setTimeout(() => {
       wixLocation.to('/portal/dashboard');
     }, 3000);
-    
+
   } else if (result.status === 'Failed') {
     // Show error message
     showError('Payment failed. Please try again or contact support.');
-    
+
     // Re-enable button
-    $w('#payNowButton').enable();
-    $w('#payNowButton').label = 'Pay Now';
-    
+    $w('#payNowBtn').enable();
+    $w('#payNowBtn').label = 'Pay Now';
+
   } else {
     // Unknown status
     showError('Payment status unknown. Please check your dashboard or contact support.');
-    
+
     // Redirect to dashboard after 3 seconds
     setTimeout(() => {
       wixLocation.to('/portal/dashboard');
@@ -200,12 +203,16 @@ function handlePaymentResult(result) {
  */
 function handleCancelClick() {
   // Confirm cancellation
-  wixWindowFrontend.openLightbox('ConfirmCancelPayment')
-    .then((result) => {
-      if (result === 'confirmed') {
-        wixLocation.to('/portal/dashboard');
-      }
-    });
+  // TODO: Create 'ConfirmCancelPayment' lightbox
+  // wixWindowFrontend.openLightbox('ConfirmCancelPayment')
+  //   .then((result) => {
+  //     if (result === 'confirmed') {
+  //       wixLocation.to('/portal/dashboard');
+  //     }
+  //   });
+
+  // Temporary fallback: Direct redirect
+  wixLocation.to('/portal/dashboard');
 }
 
 /**
@@ -228,7 +235,7 @@ function showError(message) {
   $w('#errorBox').show();
   $w('#errorText').text = message;
   $w('#paymentSection').collapse();
-  
+
   // Hide error after 10 seconds
   setTimeout(() => {
     $w('#errorBox').hide();
@@ -241,7 +248,7 @@ function showError(message) {
 function showInfo(message) {
   $w('#infoBox').show();
   $w('#infoText').text = message;
-  
+
   // Hide info after 5 seconds
   setTimeout(() => {
     $w('#infoBox').hide();

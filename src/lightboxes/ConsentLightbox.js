@@ -39,7 +39,7 @@ function initializeLightbox() {
     $w('#agreeBtn').disable();
     $w('#errorMessage').hide();
     $w('#locationStatus').text = 'Location not shared';
-    
+
     // Set consent text
     $w('#consentText').text = `
         Before we can begin your bail paperwork, we need your consent for the following:
@@ -69,32 +69,32 @@ function setupEventListeners() {
             updateAgreeButton();
         }
     });
-    
+
     // Terms checkbox
     $w('#termsCheckbox').onChange((event) => {
         termsAccepted = event.target.checked;
         updateAgreeButton();
     });
-    
+
     // Privacy checkbox
     $w('#privacyCheckbox').onChange((event) => {
         privacyAccepted = event.target.checked;
         updateAgreeButton();
     });
-    
+
     // Agree button
     $w('#agreeBtn').onClick(handleAgree);
-    
+
     // Cancel button
     $w('#cancelBtn').onClick(handleCancel);
-    
+
     // Terms link
     if ($w('#termsLink')) {
         $w('#termsLink').onClick(() => {
             wixWindow.openLightbox('TermsLightbox');
         });
     }
-    
+
     // Privacy link
     if ($w('#privacyLink')) {
         $w('#privacyLink').onClick(() => {
@@ -109,51 +109,43 @@ function setupEventListeners() {
 async function requestLocationPermission() {
     try {
         $w('#locationStatus').text = 'Requesting location...';
-        
-        // Check if geolocation is available
-        if (!navigator.geolocation) {
-            throw new Error('Geolocation is not supported by your browser');
-        }
-        
-        // Request location
-        const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            });
-        });
-        
+
+        // Use Wix Window API which handles permissions and browser differences
+        const locationData = await wixWindow.getCurrentGeolocation();
+
         userLocation = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            timestamp: new Date().toISOString()
+            latitude: locationData.coords.latitude,
+            longitude: locationData.coords.longitude,
+            accuracy: locationData.coords.accuracy,
+            timestamp: locationData.timestamp || new Date().toISOString()
         };
-        
+
         locationGranted = true;
         $w('#locationStatus').text = '✓ Location shared successfully';
         $w('#locationStatus').style.color = '#28A745';
-        
+
         updateAgreeButton();
-        
+
     } catch (error) {
         console.error('Location error:', error);
         locationGranted = false;
         $w('#locationCheckbox').checked = false;
-        
+
+        // Error handling for Wix Geolocation
         let errorMessage = 'Unable to get location';
-        if (error.code === 1) {
+        if (error.code === 0) { // UNKNOWN_ERROR
+            errorMessage = 'Unknown error getting location.';
+        } else if (error.code === 1) { // PERMISSION_DENIED
             errorMessage = 'Location permission denied. Please enable location access.';
-        } else if (error.code === 2) {
+        } else if (error.code === 2) { // POSITION_UNAVAILABLE
             errorMessage = 'Location unavailable. Please try again.';
-        } else if (error.code === 3) {
+        } else if (error.code === 3) { // TIMEOUT
             errorMessage = 'Location request timed out. Please try again.';
         }
-        
+
         $w('#locationStatus').text = errorMessage;
         $w('#locationStatus').style.color = '#DC3545';
-        
+
         showError(errorMessage);
     }
 }
@@ -163,7 +155,7 @@ async function requestLocationPermission() {
  */
 function updateAgreeButton() {
     const allConsentsGiven = locationGranted && termsAccepted && privacyAccepted;
-    
+
     if (allConsentsGiven) {
         $w('#agreeBtn').enable();
         $w('#agreeBtn').style.backgroundColor = '#0066CC';
@@ -180,7 +172,7 @@ async function handleAgree() {
     try {
         $w('#agreeBtn').disable();
         $w('#agreeBtn').label = 'Processing...';
-        
+
         // Prepare consent data
         const consentData = {
             locationGranted: locationGranted,
@@ -190,10 +182,10 @@ async function handleAgree() {
             consentTimestamp: new Date().toISOString(),
             userAgent: navigator.userAgent
         };
-        
+
         // Close lightbox and return consent data
         wixWindow.lightbox.close(consentData);
-        
+
     } catch (error) {
         console.error('Error processing consent:', error);
         showError('An error occurred. Please try again.');
@@ -215,7 +207,7 @@ function handleCancel() {
 function showError(message) {
     $w('#errorMessage').text = message;
     $w('#errorMessage').show();
-    
+
     // Auto-hide after 5 seconds
     setTimeout(() => {
         $w('#errorMessage').hide();

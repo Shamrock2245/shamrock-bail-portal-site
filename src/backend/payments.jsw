@@ -15,7 +15,7 @@
 import { Permissions, webMethod } from 'wix-web-module';
 import wixPay from 'wix-pay-backend';
 import wixData from 'wix-data';
-import { COLLECTIONS } from 'backend/collectionIds';
+import { COLLECTIONS } from 'public/collectionIds';
 
 /**
  * Create payment for bail bond premium (defendant)
@@ -118,7 +118,7 @@ export const createBondPremiumPayment = webMethod(
 
     } catch (error) {
       console.error('Error creating bond premium payment:', error);
-      
+
       await logPaymentEvent('payment_creation_error', {
         caseId: paymentData.caseId,
         memberEmail: paymentData.memberEmail,
@@ -160,7 +160,7 @@ export const createPaymentAuthorization = webMethod(
 
       // Verify indemnitor is associated with this case
       const isAuthorizedIndemnitor = caseRecord.indemnitorEmails?.includes(indemnitorEmail);
-      
+
       if (!isAuthorizedIndemnitor) {
         throw new Error('Unauthorized: Not an indemnitor for this case');
       }
@@ -209,7 +209,7 @@ export const createPaymentAuthorization = webMethod(
 
     } catch (error) {
       console.error('Error creating payment authorization:', error);
-      
+
       await logPaymentEvent('payment_authorization_error', {
         caseId: authData.caseId,
         indemnitorEmail: authData.indemnitorEmail,
@@ -386,7 +386,7 @@ export function wixPay_onPaymentUpdate(event) {
     .then(results => {
       if (results.items.length > 0) {
         const caseRecord = results.items[0];
-        
+
         return wixData.update(COLLECTIONS.CASES, {
           _id: caseRecord._id,
           paymentStatus: newStatus.toLowerCase(),

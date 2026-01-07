@@ -4,7 +4,7 @@
  */
 
 import wixData from 'wix-data';
-import { COLLECTIONS } from 'backend/collectionIds';
+import { COLLECTIONS } from 'public/collectionIds';
 
 /**
  * Get all counties
@@ -15,7 +15,7 @@ export async function getAllCounties() {
     const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
       .ascending('countyName')
       .find();
-    
+
     return results.items;
   } catch (error) {
     console.error('Error fetching all counties:', error);
@@ -33,7 +33,7 @@ export async function getFeaturedCounties() {
       .eq('featured', true)
       .ascending('countyName')
       .find();
-    
+
     return results.items;
   } catch (error) {
     console.error('Error fetching featured counties:', error);
@@ -51,11 +51,11 @@ export async function getCountyBySlug(slug) {
     const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
       .eq('countySlug', slug)
       .find();
-    
+
     if (results.items.length === 0) {
       throw new Error(`County not found: ${slug}`);
     }
-    
+
     return results.items[0];
   } catch (error) {
     console.error(`Error fetching county ${slug}:`, error);
@@ -74,7 +74,7 @@ export async function searchCounties(searchTerm) {
       .contains('countyName', searchTerm)
       .ascending('countyName')
       .find();
-    
+
     return results.items;
   } catch (error) {
     console.error('Error searching counties:', error);
@@ -92,7 +92,7 @@ export async function getCountyStats() {
     const featuredCounties = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
       .eq('featured', true)
       .find();
-    
+
     return {
       total: allCounties.totalCount,
       featured: featuredCounties.totalCount,

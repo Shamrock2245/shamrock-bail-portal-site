@@ -31,7 +31,7 @@ export const API_TIMEOUT = 30000;
  * Company phone number
  * @constant {string}
  */
-export const PHONE_NUMBER = '(239) 334-0009';
+export const PHONE_NUMBER = '(239) 332-2245';
 
 /**
  * Company office address

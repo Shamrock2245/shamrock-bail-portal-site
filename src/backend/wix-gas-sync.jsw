@@ -1,0 +1,34 @@
+/**
+ * backend/wix-gas-sync.jsw
+ * Receives case data sync requests from GAS backend
+ */
+
+import { syncCaseData } from 'backend/portal-sync';
+import { getSecret } from 'wix-secrets-backend';
+
+/**
+ * Sync case data from GAS to Wix CMS
+ * Called by GAS backend after packet generation
+ * @param {Object} payload - Case data from GAS
+ * @returns {Object} - Sync result
+ */
+export async function syncCaseDataFromGAS(payload) {
+    try {
+        // Validate API key
+        const apiKey = payload.apiKey;
+        const validKey = await getSecret('GAS_API_KEY');
+        
+        if (!apiKey || apiKey !== validKey) {
+            console.error('Invalid API key in syncCaseDataFromGAS');
+            return { success: false, error: 'Unauthorized' };
+        }
+        
+        // Sync case data to Wix CMS
+        const result = await syncCaseData(payload);
+        
+        return result;
+    } catch (error) {
+        console.error('Sync error in syncCaseDataFromGAS:', error);
+        return { success: false, error: error.message };
+    }
+}
