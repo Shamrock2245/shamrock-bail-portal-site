@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* global React, ReactDOM */
 
 // Placeholder script to resolve build errors.
