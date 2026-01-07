@@ -82,12 +82,16 @@ $w.onReady(async function () {
         if ($w('#searchBar').type) {
             // "onInput" is not available on all Velo inputs. Using onKeyPress + debounce is safer.
             let debounceTimer;
-            $w('#searchBar').onKeyPress((event) => {
-                if (debounceTimer) clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    filterData();
-                }, 500); // 500ms debounce
-            });
+            if (typeof $w('#searchBar').onKeyPress === 'function') {
+                $w('#searchBar').onKeyPress((event) => {
+                    if (debounceTimer) clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        filterData();
+                    }, 500); // 500ms debounce
+                });
+            } else {
+                console.warn("DEBUG: #searchBar does not support onKeyPress");
+            }
 
             // Also trigger on manual change (loss of focus / enter)
             $w('#searchBar').onChange((event) => {
