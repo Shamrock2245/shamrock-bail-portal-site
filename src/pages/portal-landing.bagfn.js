@@ -22,7 +22,7 @@ import { onMagicLinkLogin } from 'backend/portal-auth';
 
 $w.onReady(async function () {
     console.log("Portal Landing: Page loaded");
-    
+
     // Check for magic link token in URL
     const query = wixLocation.query;
     if (query.token) {
@@ -30,7 +30,7 @@ $w.onReady(async function () {
         await handleMagicLinkToken(query.token);
         return;
     }
-    
+
     // Set up button click handlers
     setupPortalButtons();
     setupAccessCodeSubmit();
@@ -42,7 +42,7 @@ $w.onReady(async function () {
  */
 function setupPortalButtons() {
     console.log("Portal Landing: Setting up portal buttons");
-    
+
     // Defendant Portal Button
     const defendantBtn = $w('#comp-mjrynime');
     if (defendantBtn && typeof defendantBtn.onClick === 'function') {
@@ -54,7 +54,7 @@ function setupPortalButtons() {
     } else {
         console.warn("Portal Landing: Defendant button (#comp-mjrynime) not found or invalid");
     }
-    
+
     // Indemnitor Portal Button
     const indemnitorBtn = $w('#comp-mjrynk22');
     if (indemnitorBtn && typeof indemnitorBtn.onClick === 'function') {
@@ -66,7 +66,7 @@ function setupPortalButtons() {
     } else {
         console.warn("Portal Landing: Indemnitor button (#comp-mjrynk22) not found or invalid");
     }
-    
+
     // Staff Portal Button
     const staffBtn = $w('#comp-mjryn7jm');
     if (staffBtn && typeof staffBtn.onClick === 'function') {
@@ -86,30 +86,30 @@ function setupPortalButtons() {
  */
 function setupAccessCodeSubmit() {
     console.log("Portal Landing: Setting up access code submit");
-    
+
     const submitBtn = $w('#comp-mjrvd6m8');
     const accessCodeInput = $w('#textarea_comp-mjrvbswh');
-    
+
     if (submitBtn && typeof submitBtn.onClick === 'function') {
         console.log("Portal Landing: Submit button found");
         submitBtn.onClick(async () => {
             console.log("Portal Landing: Submit button clicked");
-            
+
             // Get access code value
             const accessCode = accessCodeInput && accessCodeInput.value ? accessCodeInput.value.trim() : '';
-            
+
             if (!accessCode) {
                 console.warn("Portal Landing: No access code entered");
                 alert("Please enter an access code");
                 return;
             }
-            
+
             console.log("Portal Landing: Validating access code:", accessCode);
-            
+
             // Disable button during validation
             submitBtn.disable();
             submitBtn.label = "Validating...";
-            
+
             try {
                 await handleAccessCode(accessCode);
             } catch (error) {
@@ -130,22 +130,22 @@ function setupAccessCodeSubmit() {
  */
 async function handleMagicLinkToken(token) {
     console.log("Portal Landing: Handling magic link token");
-    
+
     try {
         // Validate token via backend
         const result = await onMagicLinkLogin(token);
-        
+
         console.log("Portal Landing: Magic link result:", result);
-        
+
         if (result.ok) {
             console.log("Portal Landing: Token valid, redirecting to:", result.goto);
-            
+
             // Redirect to appropriate portal
             wixLocation.to(result.goto);
         } else {
             console.error("Portal Landing: Token validation failed:", result.message);
             alert(result.message || "Invalid or expired access link. Please contact support.");
-            
+
             // Remove token from URL and stay on landing page
             wixLocation.to('/portal-landing');
         }
@@ -162,22 +162,22 @@ async function handleMagicLinkToken(token) {
  */
 async function handleAccessCode(accessCode) {
     console.log("Portal Landing: Validating access code");
-    
+
     try {
         // Validate via backend (same as magic link)
         const result = await onMagicLinkLogin(accessCode);
-        
+
         console.log("Portal Landing: Access code result:", result);
-        
+
         if (result.ok) {
             console.log("Portal Landing: Access code valid, redirecting to:", result.goto);
-            
+
             // Redirect to appropriate portal
             wixLocation.to(result.goto);
         } else {
             console.error("Portal Landing: Access code validation failed:", result.message);
             alert(result.message || "Invalid or expired access code. Please contact support.");
-            
+
             // Re-enable submit button
             const submitBtn = $w('#comp-mjrvd6m8');
             if (submitBtn) {
@@ -188,7 +188,7 @@ async function handleAccessCode(accessCode) {
     } catch (error) {
         console.error("Portal Landing: Error validating access code:", error);
         alert("Unable to validate access code. Please try again.");
-        
+
         // Re-enable submit button
         const submitBtn = $w('#comp-mjrvd6m8');
         if (submitBtn) {
