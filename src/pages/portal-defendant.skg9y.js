@@ -1,36 +1,57 @@
 /// <reference path="../types/wix-overrides.d.ts" />
-// Page: portal-defendant.skg9y.js (FIXED)
+// Page: portal-defendant.skg9y.js (CUSTOM AUTH VERSION)
 // Function: Client Dashboard for Check-Ins with Selfie Requirement and Case Status
+// Last Updated: 2026-01-08
 //
-// FIXES:
-// - Replaced .length checks with proper .type checks
-// - Added try-catch blocks around all element manipulations
-// - Prevents "onClick is not a function" errors
+// AUTHENTICATION: Custom session-based (NO Wix Members)
+// Uses browser localStorage session tokens validated against PortalSessions collection
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-import { currentMember } from 'wix-members';
 import { saveUserLocation } from 'backend/location';
-import { getUserProfile, getDefendantDetails } from 'backend/portal-auth';
+import { validateCustomSession, getDefendantDetails } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink } from 'backend/signnow-integration';
+import { getSessionToken, clearSessionToken } from 'public/session-manager';
+
+let currentSession = null; // Store validated session data
 
 $w.onReady(async function () {
     LightboxController.init($w);
     initUI();
 
     try {
-        const member = await currentMember.getMember();
-        if (!member) {
-            console.warn("⛔ Unauthorized Access. Redirecting to Portal Landing.");
-            wixLocation.to('/portal');
+        // CUSTOM AUTH CHECK - Replace Wix Members
+        const sessionToken = getSessionToken();
+        if (!sessionToken) {
+            console.warn("⛔ No session token found. Redirecting to Portal Landing.");
+            wixLocation.to('/portal-landing');
             return;
         }
 
-        // Fetch Data
-        const data = await getDefendantDetails(member._id);
-        const name = (member.contactDetails?.firstName) || "Client";
+        // Validate session with backend
+        const session = await validateCustomSession(sessionToken);
+        if (!session || !session.role) {
+            console.warn("⛔ Invalid or expired session. Redirecting to Portal Landing.");
+            clearSessionToken();
+            wixLocation.to('/portal-landing');
+            return;
+        }
+
+        // Check role authorization
+        if (session.role !== 'defendant') {
+            console.warn(`⛔ Wrong role: ${session.role}. This is the defendant portal.`);
+            wixLocation.to('/portal-landing');
+            return;
+        }
+
+        console.log("✅ Defendant authenticated:", session.personId);
+        currentSession = session;
+
+        // Fetch Data using personId
+        const data = await getDefendantDetails(session.personId);
+        const name = data?.firstName || "Client";
 
         try {
             if ($w('#welcomeText').type) {
@@ -62,13 +83,14 @@ $w.onReady(async function () {
         }
 
         setupCheckInHandlers();
-        setupPaperworkButtons(member);
+        setupPaperworkButtons();
+        setupLogoutButton();
 
     } catch (e) {
         console.error("Dashboard Load Error", e);
         try {
             if ($w('#welcomeText').type) {
-                $w('#welcomeText').text = "Welcome";
+                $w('#welcomeText').text = "Error loading dashboard";
             }
         } catch (err) { }
     }
@@ -87,7 +109,7 @@ function initUI() {
     }
 }
 
-function setupPaperworkButtons(member) {
+function setupPaperworkButtons() {
     // Sign via Email Button (#comp-mjsigfv9)
     try {
         const emailBtn = $w('#comp-mjsigfv9');
@@ -95,7 +117,7 @@ function setupPaperworkButtons(member) {
             console.log('Defendant Portal: Sign via Email button found');
             emailBtn.onClick(() => {
                 console.log('Defendant Portal: Sign via Email clicked');
-                handlePaperworkStart(member);
+                handlePaperworkStart();
             });
         } else {
             console.warn('Defendant Portal: Sign via Email button (#comp-mjsigfv9) not found');
@@ -111,7 +133,7 @@ function setupPaperworkButtons(member) {
             console.log('Defendant Portal: Sign Via Kiosk button found');
             kioskBtn.onClick(() => {
                 console.log('Defendant Portal: Sign Via Kiosk clicked');
-                handlePaperworkStart(member);
+                handlePaperworkStart();
             });
         } else {
             console.warn('Defendant Portal: Sign Via Kiosk button (#comp-mjsihbjl) not found');
@@ -127,7 +149,7 @@ function setupPaperworkButtons(member) {
             console.log('Defendant Portal: Download and Print button found');
             downloadBtn.onClick(() => {
                 console.log('Defendant Portal: Download and Print clicked');
-                handleDownloadPaperwork(member);
+                handleDownloadPaperwork();
             });
         } else {
             console.warn('Defendant Portal: Download and Print button (#comp-mjsihg1a) not found');
@@ -137,41 +159,68 @@ function setupPaperworkButtons(member) {
     }
 }
 
+function setupLogoutButton() {
+    try {
+        const logoutBtn = $w('#logoutBtn');
+        if (logoutBtn && typeof logoutBtn.onClick === 'function') {
+            console.log('Defendant Portal: Logout button found');
+            logoutBtn.onClick(() => {
+                console.log('Defendant Portal: Logout clicked');
+                handleLogout();
+            });
+        } else {
+            console.warn('Defendant Portal: Logout button (#logoutBtn) not found');
+        }
+    } catch (e) {
+        console.warn('Defendant Portal: No logout button configured');
+    }
+}
+
+async function handleLogout() {
+    console.log('Defendant Portal: Logging out...');
+    clearSessionToken();
+    wixLocation.to('/portal-landing');
+}
+
 /**
  * Main Paperwork Orchestration Flow
  * Checks status sequentially and opens lightboxes if needed.
  */
-async function handlePaperworkStart(member) {
+async function handlePaperworkStart() {
+    if (!currentSession) {
+        console.error('No session available');
+        return;
+    }
+
+    // For now, we'll use a mock email - in production, this should come from user profile
+    const userEmail = `defendant_${currentSession.personId}@shamrock.local`;
+
     // 1. ID Upload Check
-    const hasUploadedId = await checkIdUploadStatus(member.loginEmail);
+    const hasUploadedId = await checkIdUploadStatus(userEmail);
     if (!hasUploadedId) {
         console.log("START FLOW: ID Missing -> Opening Lightbox");
-        // Open Lightbox and WAIT for close
         const idResult = await LightboxController.show('idUpload', {
-            memberData: { email: member.loginEmail, name: member.contactDetails?.firstName }
+            memberData: { email: userEmail, name: "Client" }
         });
 
-        // If they closed it without success, stop here.
         if (!idResult?.success) return;
     }
 
     // 2. Consent Check
-    const hasConsented = await checkConsentStatus(member._id);
+    const hasConsented = await checkConsentStatus(currentSession.personId);
     if (!hasConsented) {
         console.log("START FLOW: Consent Missing -> Opening Lightbox");
         const consentResult = await LightboxController.show('consent');
 
-        // If they didn't agree (e.g. cancelled), stop.
         if (!consentResult) {
-            // Optional: re-check status to be sure
-            const doubleCheck = await checkConsentStatus(member._id);
+            const doubleCheck = await checkConsentStatus(currentSession.personId);
             if (!doubleCheck) return;
         }
     }
 
     // 3. Signing
     console.log("START FLOW: Ready for Signing");
-    await proceedToSignNow(member);
+    await proceedToSignNow();
 }
 
 // --- Status Check Helpers ---
@@ -189,21 +238,27 @@ async function checkIdUploadStatus(memberEmail) {
     }
 }
 
-async function checkConsentStatus(memberId) {
+async function checkConsentStatus(personId) {
     try {
-        const profile = await getUserProfile(memberId);
-        return profile?.consentGiven === true;
+        // TODO: Check consent in PortalUsers or custom collection
+        // For now, return false to trigger consent flow
+        return false;
     } catch (e) {
         return false;
     }
 }
 
-async function proceedToSignNow(member) {
-    const profile = await getUserProfile(member._id);
-    const caseId = profile?.caseIds?.[0] || "Active_Case_Fallback";
+async function proceedToSignNow() {
+    if (!currentSession) {
+        console.error('No session available');
+        return;
+    }
+
+    const caseId = currentSession.caseId || "Active_Case_Fallback";
+    const userEmail = `defendant_${currentSession.personId}@shamrock.local`;
 
     // Generate Link
-    const result = await createEmbeddedLink(caseId, member.loginEmail, 'defendant');
+    const result = await createEmbeddedLink(caseId, userEmail, 'defendant');
 
     if (result.success) {
         LightboxController.show('signing', {
@@ -303,16 +358,19 @@ function updateCheckInStatus(msg, type) {
  * Handle Download and Print option
  * Generates PDF packet and downloads it
  */
-async function handleDownloadPaperwork(member) {
+async function handleDownloadPaperwork() {
     console.log('Defendant Portal: Handling download paperwork');
     
     try {
         // Show loading message
         alert('Preparing your paperwork for download...');
         
-        // Get user profile and case ID
-        const profile = await getUserProfile(member._id);
-        const caseId = profile?.caseIds?.[0] || "Active_Case_Fallback";
+        if (!currentSession) {
+            alert('Session error. Please log in again.');
+            return;
+        }
+
+        const caseId = currentSession.caseId || "Active_Case_Fallback";
         
         // TODO: Implement PDF generation and download
         // For now, show a placeholder message
@@ -322,7 +380,7 @@ async function handleDownloadPaperwork(member) {
         // 1. Call backend to generate PDF packet
         // 2. Get download URL
         // 3. Trigger download
-        // const pdfUrl = await generatePDFPacket(caseId, member.loginEmail);
+        // const pdfUrl = await generatePDFPacket(caseId, userEmail);
         // wixLocation.to(pdfUrl);
         
     } catch (error) {

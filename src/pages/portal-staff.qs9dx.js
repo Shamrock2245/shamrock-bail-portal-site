@@ -1,18 +1,18 @@
-// Page: portal-staff.qs9dx.js (FIXED)
+// Page: portal-staff.qs9dx.js (CUSTOM AUTH VERSION)
 // Function: Staff Dashboard for Case Management (Stats, Search, Filtering)
+// Last Updated: 2026-01-08
 //
-// FIXES:
-// - Added proper element existence checks before calling .onClick()
-// - Added try-catch blocks around all element manipulations
-// - Prevents "onClick is not a function" errors
+// AUTHENTICATION: Custom session-based (NO Wix Members)
+// Uses browser localStorage session tokens validated against PortalSessions collection
 
 import wixData from 'wix-data';
 import wixLocation from 'wix-location';
 import { LightboxController } from 'public/lightbox-controller';
-import { currentMember } from 'wix-members';
-import { generateMagicLink, getStaffDashboardData } from 'backend/portal-auth';
+import { validateCustomSession, generateMagicLink, getStaffDashboardData } from 'backend/portal-auth';
+import { getSessionToken, clearSessionToken } from 'public/session-manager';
 
 let allCases = []; // Store locally for fast filtering
+let currentSession = null; // Store validated session data
 
 $w.onReady(async function () {
     try {
@@ -21,13 +21,32 @@ $w.onReady(async function () {
         }
     } catch (e) { }
 
-    // 0. Security Check
-    // 0. Security Check
-    const member = await currentMember.getMember();
-    if (!member) {
-        console.warn("⛔ Staff Access Denied. Redirecting...");
-        wixLocation.to('/portal');
+    // CUSTOM AUTH CHECK - Replace Wix Members
+    const sessionToken = getSessionToken();
+    if (!sessionToken) {
+        console.warn("⛔ No session token found. Redirecting to Portal Landing.");
+        wixLocation.to('/portal-landing');
+        return;
     }
+
+    // Validate session with backend
+    const session = await validateCustomSession(sessionToken);
+    if (!session || !session.role) {
+        console.warn("⛔ Invalid or expired session. Redirecting to Portal Landing.");
+        clearSessionToken();
+        wixLocation.to('/portal-landing');
+        return;
+    }
+
+    // Check role authorization (staff or admin)
+    if (session.role !== 'staff' && session.role !== 'admin') {
+        console.warn(`⛔ Wrong role: ${session.role}. This is the staff portal.`);
+        wixLocation.to('/portal-landing');
+        return;
+    }
+
+    console.log("✅ Staff authenticated:", session.personId);
+    currentSession = session;
 
     // 1. Load Data
     try {
@@ -77,6 +96,7 @@ $w.onReady(async function () {
 
     // 2. Setup Event Handlers
     initFilters();
+    setupLogoutButton();
 
     try {
         if ($w('#searchBar').type) {
@@ -151,7 +171,7 @@ function setupRepeater() {
 
                             // Generate magic link for this defendant
                             const token = await generateMagicLink(itemData._id, "defendant");
-                            console.log(`Link for ${itemData.defendantName}: https://www.shamrockbailbonds.biz/portal?token=${token}`);
+                            console.log(`Link for ${itemData.defendantName}: https://www.shamrockbailbonds.biz/portal-landing?token=${token}`);
 
                             $item('#sendMagicLinkBtn').label = "Sent";
                         } catch (e) {
@@ -194,6 +214,29 @@ function initFilters() {
             $w('#filterCompletedBtn').onClick(() => setFilter("Completed"));
         }
     } catch (e) { }
+}
+
+function setupLogoutButton() {
+    try {
+        const logoutBtn = $w('#logoutBtn');
+        if (logoutBtn && typeof logoutBtn.onClick === 'function') {
+            console.log('Staff Portal: Logout button found');
+            logoutBtn.onClick(() => {
+                console.log('Staff Portal: Logout clicked');
+                handleLogout();
+            });
+        } else {
+            console.warn('Staff Portal: Logout button (#logoutBtn) not found');
+        }
+    } catch (e) {
+        console.warn('Staff Portal: No logout button configured');
+    }
+}
+
+async function handleLogout() {
+    console.log('Staff Portal: Logging out...');
+    clearSessionToken();
+    wixLocation.to('/portal-landing');
 }
 
 let currentFilter = "All";

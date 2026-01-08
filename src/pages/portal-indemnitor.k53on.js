@@ -1,18 +1,19 @@
-// Page: portal-indemnitor.k53on.js (FIXED)
+// Page: portal-indemnitor.k53on.js (CUSTOM AUTH VERSION)
 // Function: Indemnitor Dashboard with Lightbox Controller Integration
+// Last Updated: 2026-01-08
 //
-// FIXES:
-// - Replaced .length checks with proper .type checks
-// - Added try-catch blocks around all element manipulations
-// - Prevents "onClick is not a function" errors
+// AUTHENTICATION: Custom session-based (NO Wix Members)
+// Uses browser localStorage session tokens validated against PortalSessions collection
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-import { currentMember } from 'wix-members';
-import { getUserProfile, getIndemnitorDetails } from 'backend/portal-auth';
+import { validateCustomSession, getIndemnitorDetails } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink } from 'backend/signnow-integration';
+import { getSessionToken, clearSessionToken } from 'public/session-manager';
+
+let currentSession = null; // Store validated session data
 
 $w.onReady(async function () {
     LightboxController.init($w);
@@ -24,15 +25,36 @@ $w.onReady(async function () {
     } catch (e) { }
 
     try {
-        const member = await currentMember.getMember();
-        if (!member) {
-            console.warn("⛔ Unauthorized Access. Redirecting to Portal Landing.");
-            wixLocation.to('/portal');
+        // CUSTOM AUTH CHECK - Replace Wix Members
+        const sessionToken = getSessionToken();
+        if (!sessionToken) {
+            console.warn("⛔ No session token found. Redirecting to Portal Landing.");
+            wixLocation.to('/portal-landing');
             return;
         }
 
+        // Validate session with backend
+        const session = await validateCustomSession(sessionToken);
+        if (!session || !session.role) {
+            console.warn("⛔ Invalid or expired session. Redirecting to Portal Landing.");
+            clearSessionToken();
+            wixLocation.to('/portal-landing');
+            return;
+        }
+
+        // Check role authorization (indemnitor or coindemnitor)
+        if (session.role !== 'indemnitor' && session.role !== 'coindemnitor') {
+            console.warn(`⛔ Wrong role: ${session.role}. This is the indemnitor portal.`);
+            wixLocation.to('/portal-landing');
+            return;
+        }
+
+        console.log("✅ Indemnitor authenticated:", session.personId);
+        currentSession = session;
+
         // Setup Actions
-        setupPaperworkButtons(member);
+        setupPaperworkButtons();
+        setupLogoutButton();
 
         try {
             if ($w('#contactBtn').type) {
@@ -43,22 +65,27 @@ $w.onReady(async function () {
         }
 
         // Load Dashboard Data
-        await loadDashboardData(member);
+        await loadDashboardData();
 
     } catch (error) {
         console.error("Dashboard Error", error);
         try {
             if ($w('#welcomeText').type) {
-                $w('#welcomeText').text = "Welcome";
+                $w('#welcomeText').text = "Error loading dashboard";
             }
         } catch (e) { }
     }
 });
 
-async function loadDashboardData(member) {
+async function loadDashboardData() {
+    if (!currentSession) {
+        console.error('No session available');
+        return;
+    }
+
     try {
-        const data = await getIndemnitorDetails(member._id);
-        const name = (member.contactDetails?.firstName) || "Indemnitor";
+        const data = await getIndemnitorDetails(currentSession.personId);
+        const name = "Indemnitor"; // TODO: Get from user profile
 
         if ($w('#welcomeText').type) {
             $w('#welcomeText').text = `Welcome, ${name}`;
@@ -102,11 +129,11 @@ async function loadDashboardData(member) {
     }
 }
 
-function setupPaperworkButtons(member) {
+function setupPaperworkButtons() {
     // Primary Button
     try {
         if ($w('#startFinancialPaperworkBtn').type) {
-            $w('#startFinancialPaperworkBtn').onClick(() => handlePaperworkStart(member));
+            $w('#startFinancialPaperworkBtn').onClick(() => handlePaperworkStart());
         }
     } catch (e) {
         console.error('Error setting up startFinancialPaperworkBtn:', e);
@@ -115,38 +142,69 @@ function setupPaperworkButtons(member) {
     // Alias Button
     try {
         if ($w('#startPaperworkBtn').type) {
-            $w('#startPaperworkBtn').onClick(() => handlePaperworkStart(member));
+            $w('#startPaperworkBtn').onClick(() => handlePaperworkStart());
         }
     } catch (e) {
         console.error('Error setting up startPaperworkBtn:', e);
     }
 }
 
+function setupLogoutButton() {
+    try {
+        const logoutBtn = $w('#logoutBtn');
+        if (logoutBtn && typeof logoutBtn.onClick === 'function') {
+            console.log('Indemnitor Portal: Logout button found');
+            logoutBtn.onClick(() => {
+                console.log('Indemnitor Portal: Logout clicked');
+                handleLogout();
+            });
+        } else {
+            console.warn('Indemnitor Portal: Logout button (#logoutBtn) not found');
+        }
+    } catch (e) {
+        console.warn('Indemnitor Portal: No logout button configured');
+    }
+}
+
+async function handleLogout() {
+    console.log('Indemnitor Portal: Logging out...');
+    clearSessionToken();
+    wixLocation.to('/portal-landing');
+}
+
 /**
  * Main Paperwork Orchestration Flow
  */
-async function handlePaperworkStart(member) {
+async function handlePaperworkStart() {
+    if (!currentSession) {
+        console.error('No session available');
+        return;
+    }
+
+    // For now, we'll use a mock email - in production, this should come from user profile
+    const userEmail = `indemnitor_${currentSession.personId}@shamrock.local`;
+
     // 1. ID Upload Check
-    const hasUploadedId = await checkIdUploadStatus(member.loginEmail);
+    const hasUploadedId = await checkIdUploadStatus(userEmail);
     if (!hasUploadedId) {
         const idResult = await LightboxController.show('idUpload', {
-            memberData: { email: member.loginEmail, name: member.contactDetails?.firstName }
+            memberData: { email: userEmail, name: "Indemnitor" }
         });
         if (!idResult?.success) return;
     }
 
     // 2. Consent Check
-    const hasConsented = await checkConsentStatus(member._id);
+    const hasConsented = await checkConsentStatus(currentSession.personId);
     if (!hasConsented) {
         const consentResult = await LightboxController.show('consent');
         if (!consentResult) {
-            const recheck = await checkConsentStatus(member._id);
+            const recheck = await checkConsentStatus(currentSession.personId);
             if (!recheck) return;
         }
     }
 
     // 3. Signing
-    await proceedToSignNow(member);
+    await proceedToSignNow();
 }
 
 // --- Helpers ---
@@ -164,21 +222,27 @@ async function checkIdUploadStatus(memberEmail) {
     }
 }
 
-async function checkConsentStatus(memberId) {
+async function checkConsentStatus(personId) {
     try {
-        const profile = await getUserProfile(memberId);
-        return profile?.consentGiven === true;
+        // TODO: Check consent in PortalUsers or custom collection
+        // For now, return false to trigger consent flow
+        return false;
     } catch (e) {
         return false;
     }
 }
 
-async function proceedToSignNow(member) {
-    const profile = await getUserProfile(member._id);
-    const caseId = profile?.caseIds?.[0] || "Active_Case_Fallback";
+async function proceedToSignNow() {
+    if (!currentSession) {
+        console.error('No session available');
+        return;
+    }
+
+    const caseId = currentSession.caseId || "Active_Case_Fallback";
+    const userEmail = `indemnitor_${currentSession.personId}@shamrock.local`;
 
     // Role: Indemnitor
-    const result = await createEmbeddedLink(caseId, member.loginEmail, 'indemnitor');
+    const result = await createEmbeddedLink(caseId, userEmail, 'indemnitor');
 
     if (result.success) {
         LightboxController.show('signing', {

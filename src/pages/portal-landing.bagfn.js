@@ -1,9 +1,10 @@
 /**
  * Shamrock Bail Bonds - Portal Landing Page
- * Last Verified: 2026-01-07 (Stable IDs Applied)
+ * Last Updated: 2026-01-08 (Custom Session Auth Implemented)
  * 
- * SIMPLIFIED VERSION: Direct redirects without Wix Members authentication
+ * CUSTOM AUTHENTICATION SYSTEM (No Wix Members)
  * Uses custom three-role system (Defendant, Indemnitor, Staff)
+ * Session tokens stored in browser localStorage
  * 
  * Page Elements (Stable IDs):
  * - #inputAccessCode: Access code input field
@@ -11,13 +12,30 @@
  * - #btnDefendant: Defendant Portal button
  * - #btnIndemnitor: Indemnitor Portal button
  * - #btnStaff: Staff Portal button
+ * - #errorMessage: Error message text element (optional)
  */
 
 import wixLocation from 'wix-location';
-import { onMagicLinkLogin } from 'backend/portal-auth';
+import { onMagicLinkLoginV2, validateCustomSession } from 'backend/portal-auth';
+import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 
 $w.onReady(async function () {
     console.log("Portal Landing: Page loaded");
+
+    // Check if user already has a valid session
+    const existingSession = getSessionToken();
+    if (existingSession) {
+        console.log("Portal Landing: Existing session found, validating...");
+        const session = await validateCustomSession(existingSession);
+        if (session && session.role) {
+            console.log("Portal Landing: Valid session, redirecting to portal:", session.role);
+            redirectToPortal(session.role);
+            return;
+        } else {
+            console.log("Portal Landing: Session invalid or expired, clearing...");
+            clearSessionToken();
+        }
+    }
 
     // Check for magic link token in URL
     const query = wixLocation.query;
@@ -33,35 +51,58 @@ $w.onReady(async function () {
 });
 
 /**
- * Set up the three portal buttons for direct navigation
- * NO Wix Members authentication - just direct redirects
+ * Set up the three portal buttons
+ * These now require a valid session before allowing access
  */
 function setupPortalButtons() {
     console.log("Portal Landing: Setting up portal buttons...");
 
     const buttons = [
-        { id: '#btnDefendant', name: 'Defendant Portal', url: '/portal-defendant' },
-        { id: '#btnIndemnitor', name: 'Indemnitor Portal', url: '/portal-indemnitor' },
-        { id: '#btnStaff', name: 'Staff Portal', url: '/portal-staff' }
+        { id: '#btnDefendant', name: 'Defendant Portal', role: 'defendant' },
+        { id: '#btnIndemnitor', name: 'Indemnitor Portal', role: 'indemnitor' },
+        { id: '#btnStaff', name: 'Staff Portal', role: 'staff' }
     ];
 
     buttons.forEach(btn => {
         const element = $w(btn.id);
 
-        // Diagnostic Logging
         if (element.length === 0) {
-            console.error(`Portal Landing: Element ${btn.id} (${btn.name}) NOT FOUND. Please rename element in Editor to ${btn.id}`);
+            console.error(`Portal Landing: Element ${btn.id} (${btn.name}) NOT FOUND`);
         } else {
-            console.log(`Portal Landing: Element ${btn.id} found. Type: ${element.type}`);
+            console.log(`Portal Landing: Element ${btn.id} found`);
 
             if (typeof element.onClick === 'function') {
-                element.onClick(() => {
-                    console.log(`Portal Landing: ${btn.name} clicked. Redirecting to ${btn.url}`);
-                    wixLocation.to(btn.url);
+                element.onClick(async () => {
+                    console.log(`Portal Landing: ${btn.name} clicked`);
+                    
+                    // Check if user has a valid session
+                    const sessionToken = getSessionToken();
+                    if (!sessionToken) {
+                        showError("Please enter your access code first to log in.");
+                        return;
+                    }
+
+                    // Validate session
+                    const session = await validateCustomSession(sessionToken);
+                    if (!session || !session.role) {
+                        showError("Your session has expired. Please enter your access code again.");
+                        clearSessionToken();
+                        return;
+                    }
+
+                    // Check if role matches
+                    if (session.role !== btn.role) {
+                        showError(`You are logged in as ${session.role}. Please use the correct portal button.`);
+                        return;
+                    }
+
+                    // Redirect to appropriate portal
+                    console.log(`Portal Landing: Redirecting to ${btn.role} portal`);
+                    redirectToPortal(btn.role);
                 });
                 console.log(`Portal Landing: onClick handler attached to ${btn.id}`);
             } else {
-                console.error(`Portal Landing: Element ${btn.id} exists but does NOT support .onClick(). It might be a purely visual element.`);
+                console.error(`Portal Landing: Element ${btn.id} does NOT support .onClick()`);
             }
         }
     });
@@ -69,7 +110,7 @@ function setupPortalButtons() {
 
 /**
  * Set up access code submission
- * Validates magic link tokens from MagicLinks collection
+ * Validates magic link tokens and creates session
  */
 function setupAccessCodeSubmit() {
     console.log("Portal Landing: Setting up access code submit");
@@ -78,11 +119,11 @@ function setupAccessCodeSubmit() {
     const accessCodeInput = $w('#inputAccessCode');
 
     if (submitBtn.length === 0) {
-        console.error("Portal Landing: #btnSubmitCode NOT FOUND. Please rename Submit button.");
+        console.error("Portal Landing: #btnSubmitCode NOT FOUND");
     }
 
     if (accessCodeInput.length === 0) {
-        console.error("Portal Landing: #inputAccessCode NOT FOUND. Please rename Input field.");
+        console.error("Portal Landing: #inputAccessCode NOT FOUND");
     }
 
     if (submitBtn.length > 0 && typeof submitBtn.onClick === 'function') {
@@ -95,8 +136,7 @@ function setupAccessCodeSubmit() {
 
             if (!accessCode) {
                 console.warn("Portal Landing: No access code entered");
-                // Using wix-window alert if available, or just console warn + valid UI feedback ideally
-                console.log("Alert: Please enter an access code");
+                showError("Please enter an access code");
                 return;
             }
 
@@ -105,11 +145,13 @@ function setupAccessCodeSubmit() {
             // Disable button during validation
             submitBtn.disable();
             submitBtn.label = "Validating...";
+            hideError();
 
             try {
                 await handleAccessCode(accessCode);
             } catch (error) {
                 console.error("Portal Landing: Error handling access code:", error);
+                showError("An error occurred. Please try again.");
                 submitBtn.enable();
                 submitBtn.label = "Submit";
             }
@@ -125,23 +167,35 @@ async function handleMagicLinkToken(token) {
     console.log("Portal Landing: Handling magic link token");
 
     try {
-        // Validate token via backend
-        const result = await onMagicLinkLogin(token);
+        // Validate token and create session via backend
+        const result = await onMagicLinkLoginV2(token);
 
         console.log("Portal Landing: Magic link result:", result);
 
-        if (result.ok) {
-            console.log("Portal Landing: Token valid, redirecting to:", result.goto);
+        if (result.ok && result.sessionToken) {
+            console.log("Portal Landing: Token valid, storing session");
 
-            // Redirect to appropriate portal
-            wixLocation.to(result.goto);
+            // Store session token in browser
+            setSessionToken(result.sessionToken);
+
+            // Show success message briefly
+            showSuccess("Login successful! Redirecting...");
+
+            // Redirect to appropriate portal after brief delay
+            setTimeout(() => {
+                console.log("Portal Landing: Redirecting to:", result.goto);
+                wixLocation.to(result.goto);
+            }, 1000);
         } else {
             console.error("Portal Landing: Token validation failed:", result.message);
+            showError(result.message || "Invalid or expired access code");
+            
             // Remove token from URL and stay on landing page
             wixLocation.to('/portal-landing');
         }
     } catch (error) {
         console.error("Portal Landing: Error validating token:", error);
+        showError("An error occurred. Please try again.");
         wixLocation.to('/portal-landing');
     }
 }
@@ -153,36 +207,127 @@ async function handleMagicLinkToken(token) {
 async function handleAccessCode(accessCode) {
     console.log("Portal Landing: Validating access code");
 
+    const submitBtn = $w('#btnSubmitCode');
+
     try {
         // Validate via backend (same as magic link)
-        const result = await onMagicLinkLogin(accessCode);
+        const result = await onMagicLinkLoginV2(accessCode);
 
         console.log("Portal Landing: Access code result:", result);
 
-        if (result.ok) {
-            console.log("Portal Landing: Access code valid, redirecting to:", result.goto);
+        if (result.ok && result.sessionToken) {
+            console.log("Portal Landing: Access code valid, storing session");
 
-            // Redirect to appropriate portal
-            wixLocation.to(result.goto);
-        } else {
-            console.error("Portal Landing: Access code validation failed:", result.message);
+            // Store session token in browser
+            setSessionToken(result.sessionToken);
 
-            // Re-enable submit button
-            const submitBtn = $w('#btnSubmitCode');
-            if (submitBtn.length > 0) {
+            // Update UI
+            submitBtn.label = "Success!";
+            showSuccess(`Welcome! Click your portal button to continue.`);
+
+            // Clear input
+            const accessCodeInput = $w('#inputAccessCode');
+            if (accessCodeInput.length > 0) {
+                accessCodeInput.value = "";
+            }
+
+            // Re-enable button
+            setTimeout(() => {
                 submitBtn.enable();
                 submitBtn.label = "Submit";
-            }
-        }
-    } catch (error) {
-        console.error("Portal Landing: Error validating access code:", error);
+            }, 2000);
 
-        // Re-enable submit button
-        const submitBtn = $w('#btnSubmitCode');
-        if (submitBtn.length > 0) {
+        } else {
+            console.error("Portal Landing: Access code validation failed:", result.message);
+            showError(result.message || "Invalid or expired access code");
+
+            // Re-enable submit button
             submitBtn.enable();
             submitBtn.label = "Submit";
         }
+    } catch (error) {
+        console.error("Portal Landing: Error validating access code:", error);
+        showError("An error occurred. Please try again.");
+
+        // Re-enable submit button
+        submitBtn.enable();
+        submitBtn.label = "Submit";
+    }
+}
+
+/**
+ * Redirect to appropriate portal based on role
+ */
+function redirectToPortal(role) {
+    const paths = {
+        'defendant': '/portal-defendant',
+        'indemnitor': '/portal-indemnitor',
+        'coindemnitor': '/portal-indemnitor',
+        'staff': '/portal-staff',
+        'admin': '/portal-staff'
+    };
+
+    const path = paths[role] || '/portal-landing';
+    console.log(`Portal Landing: Redirecting to ${path}`);
+    wixLocation.to(path);
+}
+
+/**
+ * Show error message to user
+ */
+function showError(message) {
+    console.log("Portal Landing: Showing error:", message);
+    
+    // Try to use dedicated error message element
+    try {
+        const errorElement = $w('#errorMessage');
+        if (errorElement.length > 0) {
+            errorElement.text = message;
+            errorElement.show();
+            return;
+        }
+    } catch (e) {
+        console.warn("Portal Landing: #errorMessage element not found");
+    }
+
+    // Fallback: log to console
+    console.error("ERROR:", message);
+}
+
+/**
+ * Show success message to user
+ */
+function showSuccess(message) {
+    console.log("Portal Landing: Showing success:", message);
+    
+    // Try to use dedicated success message element
+    try {
+        const successElement = $w('#successMessage');
+        if (successElement.length > 0) {
+            successElement.text = message;
+            successElement.show();
+            return;
+        }
+    } catch (e) {
+        console.warn("Portal Landing: #successMessage element not found");
+    }
+
+    // Fallback: hide error and log
+    hideError();
+    console.log("SUCCESS:", message);
+}
+
+/**
+ * Hide error message
+ */
+function hideError() {
+    try {
+        const errorElement = $w('#errorMessage');
+        if (errorElement.length > 0) {
+            errorElement.hide();
+        }
+    } catch (e) {
+        // Element doesn't exist, that's fine
     }
 }
 
