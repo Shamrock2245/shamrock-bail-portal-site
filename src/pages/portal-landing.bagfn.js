@@ -4,7 +4,7 @@
  * 
  * CUSTOM AUTHENTICATION SYSTEM (No Wix Members)
  * Uses custom three-role system (Defendant, Indemnitor, Staff)
- * Session tokens stored in browser localStorage
+ * Session tokens stored in browser storage (wix-storage-frontend)
  * 
  * Page Elements (Stable IDs):
  * - #inputAccessCode: Access code input field

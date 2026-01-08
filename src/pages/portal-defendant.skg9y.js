@@ -4,7 +4,7 @@
 // Last Updated: 2026-01-08
 //
 // AUTHENTICATION: Custom session-based (NO Wix Members)
-// Uses browser localStorage session tokens validated against PortalSessions collection
+// Uses browser storage (wix-storage-frontend) session tokens validated against PortalSessions collection
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
