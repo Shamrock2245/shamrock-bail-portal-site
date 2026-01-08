@@ -209,8 +209,8 @@ async function setupFAQ() {
     if (rep && rep.valid) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            // Primary field names from CSV: question, answer
-            const question = itemData.question || itemData.q || "No Question";
+            // Primary field names from CMS: title (question text), answer
+            const question = itemData.title || itemData.question || itemData.q || "No Question";
             const answerText = itemData.answer || itemData.a || "No Answer";
 
             const questionEl = $item('#faqQuestion');
