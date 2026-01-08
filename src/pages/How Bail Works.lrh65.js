@@ -157,15 +157,21 @@ async function setupCommonBailAmounts() {
     }
 
     const rep = $w('#amountsRepeater');
-    if (rep.valid) {
+    if (rep && rep.valid) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
+            // Primary field names from CSV: offense, range
             const offense = itemData.offense || itemData.chargeName || itemData.title || "Unknown Offense";
             const range = itemData.range || itemData.bondAmount || itemData.amount || "Varies";
 
-            $item('#offenseName').text = offense;
-            $item('#bailRange').text = range;
+            const offenseEl = $item('#offenseName');
+            const rangeEl = $item('#bailRange');
+            
+            if (offenseEl && offenseEl.valid) offenseEl.text = offense;
+            if (rangeEl && rangeEl.valid) rangeEl.text = range;
         });
+    } else {
+        console.error('ERROR: #amountsRepeater not found on page');
     }
 }
 
@@ -200,19 +206,20 @@ async function setupFAQ() {
 
     // Using Native Wix Collapsible Text
     const rep = $w('#faqRepeater');
-    if (rep.valid) {
+    if (rep && rep.valid) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            const question = itemData.q || itemData.question || "No Question";
-            const answerText = itemData.a || itemData.answer || "No Amswer";
+            // Primary field names from CSV: question, answer
+            const question = itemData.question || itemData.q || "No Question";
+            const answerText = itemData.answer || itemData.a || "No Answer";
 
-            $item('#faqQuestion').text = question;
-
-            // Just populate the text. The element handles its own Read More/Less state.
-            const answer = $item('#faqAnswer');
-            if (answer.valid) {
-                answer.text = answerText;
-            }
+            const questionEl = $item('#faqQuestion');
+            const answerEl = $item('#faqAnswer');
+            
+            if (questionEl && questionEl.valid) questionEl.text = question;
+            if (answerEl && answerEl.valid) answerEl.text = answerText;
         });
+    } else {
+        console.error('ERROR: #faqRepeater not found on page');
     }
 }
