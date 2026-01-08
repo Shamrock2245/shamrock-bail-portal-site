@@ -41,7 +41,7 @@ export const COLLECTIONS = {
   CONTACT_SUBMISSIONS: 'ContactSubmissions', // Contact form submissions
   BAIL_SCHOOL_SIGNUPS: 'BailSchoolSignups',  // Bail school interest signups
   MAGIC_LINKS: 'MagicLinks',             // Magic link authentication tokens
-  COMMON_CHARGES: 'Import22',            // Common charges and bond amounts (was CommonCharges)
+  COMMON_CHARGES: 'CommonCharges',       // Common charges and bond amounts
 
   // System Collections (Wix-managed)
   BLOG_POSTS: 'Blog/Posts',
