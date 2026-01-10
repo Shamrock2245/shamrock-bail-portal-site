@@ -6,9 +6,9 @@
 
 import wixData from "wix-data";
 import wixUsersBackend from "wix-users-backend";
+import { fetch } from "wix-fetch";
 import { API_BASE_URL, API_TIMEOUT } from 'public/portal-config';
-// (unused now, handy later)
-import { secrets } from "wix-secrets-backend"; // for external API creds later
+import { secrets } from "wix-secrets-backend";
 
 /***** CONFIG & ROLES *****/
 export const ROLES = {
@@ -243,20 +243,92 @@ export async function onMagicLinkLogin(token) {
   }
 }
 
-/***** EMAIL SENDER (stub) *****/
-export async function sendMagicLink(email, token, role) {
+/***** EMAIL SENDER *****/
+export async function sendMagicLink(email, token, role, personName = null) {
   // Build the correct page URL for role (token redeemed on that page)
   const base = "https://www.shamrockbailbonds.biz";
-  const path = PORTAL_PATHS[role] || "/portal-landing";
+  const path = "/portal-landing"; // Always land on portal-landing with token
   const portalUrl = `${base}${path}?token=${encodeURIComponent(token)}`;
 
-  // TODO: wire up Wix Triggered Emails or an external provider
-  console.log("Send email →", {
-    to: email,
-    subject: "Portal Access",
-    url: portalUrl,
-  });
-  return true;
+  try {
+    // Send via GAS backend (same system used for other emails)
+    const gasUrl = await secrets.getSecret('GAS_WEB_APP_URL');
+    
+    if (!gasUrl) {
+      console.warn('GAS_WEB_APP_URL not configured, cannot send email');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    const roleDisplayNames = {
+      'defendant': 'Defendant',
+      'indemnitor': 'Indemnitor',
+      'coindemnitor': 'Co-Indemnitor',
+      'staff': 'Staff',
+      'admin': 'Admin'
+    };
+
+    const roleName = roleDisplayNames[role] || 'User';
+    const greeting = personName ? `Hello ${personName}` : `Hello`;
+
+    const emailBody = `
+      <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #1a5490;">Shamrock Bail Bonds - Portal Access</h2>
+            <p>${greeting},</p>
+            <p>You've been granted access to the Shamrock Bail Bonds ${roleName} Portal.</p>
+            <p>Click the button below to securely log in:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${portalUrl}" 
+                 style="background-color: #1a5490; color: white; padding: 15px 30px; 
+                        text-decoration: none; border-radius: 5px; display: inline-block; 
+                        font-weight: bold;">Access Your Portal</a>
+            </div>
+            <p style="font-size: 12px; color: #666;">
+              Or copy and paste this link into your browser:<br>
+              <a href="${portalUrl}">${portalUrl}</a>
+            </p>
+            <p style="font-size: 12px; color: #666;">
+              <strong>Access Code:</strong> ${token}<br>
+              You can also enter this code manually on the portal landing page.
+            </p>
+            <p style="font-size: 12px; color: #666; margin-top: 30px;">
+              This link will expire in 24 hours for security purposes.
+            </p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+            <p style="font-size: 11px; color: #999;">
+              Shamrock Bail Bonds<br>
+              <a href="https://www.shamrockbailbonds.biz">www.shamrockbailbonds.biz</a>
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const response = await fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'sendEmail',
+        to: email,
+        subject: `Shamrock Bail Bonds - ${roleName} Portal Access`,
+        htmlBody: emailBody,
+        textBody: `${greeting},\n\nYou've been granted access to the Shamrock Bail Bonds ${roleName} Portal.\n\nAccess your portal: ${portalUrl}\n\nOr enter this access code manually: ${token}\n\nThis link expires in 24 hours.\n\nShamrock Bail Bonds\nwww.shamrockbailbonds.biz`
+      })
+    });
+
+    if (response.ok) {
+      console.log(`Magic link email sent to ${email} for role ${role}`);
+      return { success: true };
+    } else {
+      console.error('Failed to send magic link email:', await response.text());
+      return { success: false, error: 'Email send failed' };
+    }
+
+  } catch (error) {
+    console.error('Error sending magic link email:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 /***** USER PROFILE CRUD (PortalUsers collection) *****/

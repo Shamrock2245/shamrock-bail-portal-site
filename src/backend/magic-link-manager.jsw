@@ -1,0 +1,407 @@
+/**
+ * Magic Link Manager
+ * backend/magic-link-manager.jsw
+ * 
+ * Complete workflow for generating, sending, and managing magic links
+ * Used by staff to grant portal access to defendants and indemnitors
+ */
+
+import { generateMagicLink, sendMagicLink } from 'backend/portal-auth';
+import wixData from 'wix-data';
+
+/**
+ * Generate and send magic link to a user
+ * This is the main function staff will call
+ * 
+ * @param {Object} params
+ * @param {string} params.email - User's email address
+ * @param {string} params.personId - Unique person identifier
+ * @param {string} params.role - Role (defendant, indemnitor, staff)
+ * @param {string} params.caseId - Case ID (optional)
+ * @param {string} params.personName - Person's name for email greeting (optional)
+ * @returns {Promise<{success: boolean, token?: string, error?: string}>}
+ */
+export async function generateAndSendMagicLink(params) {
+  const { email, personId, role, caseId = null, personName = null } = params;
+
+  // Validate required fields
+  if (!email || !personId || !role) {
+    return {
+      success: false,
+      error: 'Missing required fields: email, personId, and role are required'
+    };
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return {
+      success: false,
+      error: 'Invalid email address format'
+    };
+  }
+
+  // Validate role
+  const validRoles = ['defendant', 'indemnitor', 'coindemnitor', 'staff', 'admin'];
+  if (!validRoles.includes(role.toLowerCase())) {
+    return {
+      success: false,
+      error: `Invalid role. Must be one of: ${validRoles.join(', ')}`
+    };
+  }
+
+  try {
+    // Generate magic link token
+    const token = await generateMagicLink(personId, role, caseId);
+
+    if (!token) {
+      return {
+        success: false,
+        error: 'Failed to generate magic link token'
+      };
+    }
+
+    // Send email with magic link
+    const emailResult = await sendMagicLink(email, token, role, personName);
+
+    if (!emailResult.success) {
+      return {
+        success: false,
+        error: `Magic link generated but email failed: ${emailResult.error}`
+      };
+    }
+
+    // Log the action
+    await logMagicLinkSent(email, personId, role, caseId, token);
+
+    return {
+      success: true,
+      token: token,
+      message: `Magic link sent successfully to ${email}`
+    };
+
+  } catch (error) {
+    console.error('Error in generateAndSendMagicLink:', error);
+    return {
+      success: false,
+      error: error.message || 'Unknown error occurred'
+    };
+  }
+}
+
+/**
+ * Generate magic link without sending email
+ * Useful for displaying access code to staff for phone/text delivery
+ * 
+ * @param {Object} params
+ * @param {string} params.personId - Unique person identifier
+ * @param {string} params.role - Role (defendant, indemnitor, staff)
+ * @param {string} params.caseId - Case ID (optional)
+ * @returns {Promise<{success: boolean, token?: string, url?: string, error?: string}>}
+ */
+export async function generateMagicLinkOnly(params) {
+  const { personId, role, caseId = null } = params;
+
+  if (!personId || !role) {
+    return {
+      success: false,
+      error: 'Missing required fields: personId and role are required'
+    };
+  }
+
+  try {
+    const token = await generateMagicLink(personId, role, caseId);
+
+    if (!token) {
+      return {
+        success: false,
+        error: 'Failed to generate magic link token'
+      };
+    }
+
+    const url = `https://www.shamrockbailbonds.biz/portal-landing?token=${encodeURIComponent(token)}`;
+
+    return {
+      success: true,
+      token: token,
+      url: url,
+      message: 'Magic link generated successfully'
+    };
+
+  } catch (error) {
+    console.error('Error in generateMagicLinkOnly:', error);
+    return {
+      success: false,
+      error: error.message || 'Unknown error occurred'
+    };
+  }
+}
+
+/**
+ * Batch generate and send magic links
+ * Useful for onboarding multiple users at once
+ * 
+ * @param {Array<Object>} users - Array of user objects with email, personId, role, etc.
+ * @returns {Promise<{success: boolean, results: Array, summary: Object}>}
+ */
+export async function batchGenerateAndSendMagicLinks(users) {
+  if (!Array.isArray(users) || users.length === 0) {
+    return {
+      success: false,
+      error: 'Users must be a non-empty array'
+    };
+  }
+
+  const results = [];
+  let successCount = 0;
+  let failureCount = 0;
+
+  for (const user of users) {
+    const result = await generateAndSendMagicLink(user);
+    
+    results.push({
+      email: user.email,
+      personId: user.personId,
+      role: user.role,
+      ...result
+    });
+
+    if (result.success) {
+      successCount++;
+    } else {
+      failureCount++;
+    }
+  }
+
+  return {
+    success: true,
+    results: results,
+    summary: {
+      total: users.length,
+      successful: successCount,
+      failed: failureCount
+    }
+  };
+}
+
+/**
+ * Get all active magic links for a person
+ * Useful for checking if a user already has access
+ * 
+ * @param {string} personId - Person identifier
+ * @returns {Promise<{success: boolean, links: Array}>}
+ */
+export async function getActiveMagicLinks(personId) {
+  try {
+    const now = new Date().toISOString();
+
+    const results = await wixData
+      .query('MagicLinks')
+      .eq('personId', personId)
+      .eq('used', false)
+      .gt('expiresAt', now)
+      .descending('createdAt')
+      .find({ suppressAuth: true });
+
+    return {
+      success: true,
+      links: results.items.map(link => ({
+        token: link.token,
+        role: link.role,
+        caseId: link.caseId,
+        createdAt: link.createdAt,
+        expiresAt: link.expiresAt
+      }))
+    };
+
+  } catch (error) {
+    console.error('Error getting active magic links:', error);
+    return {
+      success: false,
+      links: [],
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Revoke a magic link (mark as used/expired)
+ * 
+ * @param {string} token - Magic link token to revoke
+ * @returns {Promise<{success: boolean}>}
+ */
+export async function revokeMagicLink(token) {
+  try {
+    const results = await wixData
+      .query('MagicLinks')
+      .eq('token', token)
+      .limit(1)
+      .find({ suppressAuth: true });
+
+    if (results.items.length === 0) {
+      return {
+        success: false,
+        error: 'Magic link not found'
+      };
+    }
+
+    const link = results.items[0];
+    link.used = true;
+    link.usedAt = new Date().toISOString();
+
+    await wixData.update('MagicLinks', link, { suppressAuth: true });
+
+    return {
+      success: true,
+      message: 'Magic link revoked successfully'
+    };
+
+  } catch (error) {
+    console.error('Error revoking magic link:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Resend magic link email
+ * Finds existing active link and resends the email
+ * 
+ * @param {Object} params
+ * @param {string} params.email - User's email
+ * @param {string} params.personId - Person identifier
+ * @param {string} params.personName - Person's name (optional)
+ * @returns {Promise<{success: boolean}>}
+ */
+export async function resendMagicLink(params) {
+  const { email, personId, personName = null } = params;
+
+  if (!email || !personId) {
+    return {
+      success: false,
+      error: 'Email and personId are required'
+    };
+  }
+
+  try {
+    // Get active magic links for this person
+    const linksResult = await getActiveMagicLinks(personId);
+
+    if (!linksResult.success || linksResult.links.length === 0) {
+      return {
+        success: false,
+        error: 'No active magic link found for this person. Please generate a new one.'
+      };
+    }
+
+    // Use the most recent active link
+    const link = linksResult.links[0];
+
+    // Resend email
+    const emailResult = await sendMagicLink(email, link.token, link.role, personName);
+
+    if (!emailResult.success) {
+      return {
+        success: false,
+        error: `Failed to resend email: ${emailResult.error}`
+      };
+    }
+
+    return {
+      success: true,
+      message: `Magic link resent successfully to ${email}`
+    };
+
+  } catch (error) {
+    console.error('Error resending magic link:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Log magic link sent action
+ * Private helper function for audit trail
+ */
+async function logMagicLinkSent(email, personId, role, caseId, token) {
+  try {
+    await wixData.insert('MagicLinkLogs', {
+      email: email,
+      personId: personId,
+      role: role,
+      caseId: caseId,
+      token: token,
+      action: 'sent',
+      sentAt: new Date().toISOString()
+    }, { suppressAuth: true });
+  } catch (error) {
+    console.error('Error logging magic link:', error);
+    // Don't fail the main operation if logging fails
+  }
+}
+
+/**
+ * Get magic link statistics for a case or person
+ * 
+ * @param {Object} params
+ * @param {string} params.personId - Person identifier (optional)
+ * @param {string} params.caseId - Case identifier (optional)
+ * @returns {Promise<{success: boolean, stats: Object}>}
+ */
+export async function getMagicLinkStats(params) {
+  const { personId = null, caseId = null } = params;
+
+  if (!personId && !caseId) {
+    return {
+      success: false,
+      error: 'Either personId or caseId is required'
+    };
+  }
+
+  try {
+    let query = wixData.query('MagicLinks');
+
+    if (personId) {
+      query = query.eq('personId', personId);
+    }
+    if (caseId) {
+      query = query.eq('caseId', caseId);
+    }
+
+    const allLinks = await query.find({ suppressAuth: true });
+
+    const now = new Date();
+    const stats = {
+      total: allLinks.items.length,
+      active: 0,
+      used: 0,
+      expired: 0
+    };
+
+    allLinks.items.forEach(link => {
+      if (link.used) {
+        stats.used++;
+      } else if (new Date(link.expiresAt) < now) {
+        stats.expired++;
+      } else {
+        stats.active++;
+      }
+    });
+
+    return {
+      success: true,
+      stats: stats
+    };
+
+  } catch (error) {
+    console.error('Error getting magic link stats:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}

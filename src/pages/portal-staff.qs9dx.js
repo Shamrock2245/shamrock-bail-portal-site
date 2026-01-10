@@ -275,3 +275,201 @@ function filterData() {
         console.error('Error filtering data:', e);
     }
 }
+
+
+// ==================== MAGIC LINK GENERATION ====================
+
+/**
+ * Setup magic link generation button
+ * Call this in $w.onReady after authentication
+ */
+function setupMagicLinkGenerator() {
+    try {
+        const generateBtn = $w('#btnGenerateMagicLink');
+        if (generateBtn && typeof generateBtn.onClick === 'function') {
+            console.log('Staff Portal: Magic link generator button found');
+            generateBtn.onClick(() => {
+                openMagicLinkLightbox();
+            });
+        } else {
+            console.warn('Staff Portal: Magic link generator button (#btnGenerateMagicLink) not found');
+        }
+    } catch (e) {
+        console.warn('Staff Portal: No magic link generator configured');
+    }
+}
+
+/**
+ * Open lightbox for generating magic links
+ * This lightbox should have fields for email, personId, role, caseId, name
+ */
+async function openMagicLinkLightbox() {
+    try {
+        const result = await LightboxController.show('magicLinkGenerator', {
+            staffSession: currentSession
+        });
+
+        if (result && result.success) {
+            showStaffMessage(`Magic link sent successfully to ${result.email}`, 'success');
+        }
+    } catch (e) {
+        console.error('Error opening magic link lightbox:', e);
+        showStaffMessage('Error generating magic link', 'error');
+    }
+}
+
+/**
+ * Generate magic link directly from staff portal
+ * Can be called from repeater row actions
+ * 
+ * @param {Object} userData - User data (email, personId, role, caseId, name)
+ */
+async function generateMagicLinkForUser(userData) {
+    const { email, personId, role, caseId, personName } = userData;
+
+    if (!email || !personId || !role) {
+        showStaffMessage('Missing required fields for magic link generation', 'error');
+        return;
+    }
+
+    try {
+        // Import the magic link manager
+        const { generateAndSendMagicLink } = await import('backend/magic-link-manager');
+
+        // Show loading state
+        showStaffMessage('Generating and sending magic link...', 'info');
+
+        // Generate and send
+        const result = await generateAndSendMagicLink({
+            email: email,
+            personId: personId,
+            role: role,
+            caseId: caseId,
+            personName: personName
+        });
+
+        if (result.success) {
+            showStaffMessage(`Magic link sent to ${email}`, 'success');
+            console.log('Magic link token:', result.token);
+        } else {
+            showStaffMessage(`Failed: ${result.error}`, 'error');
+        }
+
+    } catch (error) {
+        console.error('Error generating magic link:', error);
+        showStaffMessage('Error generating magic link', 'error');
+    }
+}
+
+/**
+ * Generate magic link without sending email
+ * Displays the access code for staff to share via phone/text
+ * 
+ * @param {Object} userData - User data (personId, role, caseId)
+ */
+async function generateAccessCodeOnly(userData) {
+    const { personId, role, caseId } = userData;
+
+    if (!personId || !role) {
+        showStaffMessage('Missing required fields', 'error');
+        return;
+    }
+
+    try {
+        const { generateMagicLinkOnly } = await import('backend/magic-link-manager');
+
+        const result = await generateMagicLinkOnly({
+            personId: personId,
+            role: role,
+            caseId: caseId
+        });
+
+        if (result.success) {
+            // Show access code in a lightbox or message
+            showAccessCodeDisplay(result.token, result.url);
+        } else {
+            showStaffMessage(`Failed: ${result.error}`, 'error');
+        }
+
+    } catch (error) {
+        console.error('Error generating access code:', error);
+        showStaffMessage('Error generating access code', 'error');
+    }
+}
+
+/**
+ * Display access code to staff
+ * Can be shown in a lightbox or message box
+ */
+function showAccessCodeDisplay(token, url) {
+    try {
+        // Try to show in a dedicated element
+        const codeDisplay = $w('#accessCodeDisplay');
+        const urlDisplay = $w('#accessCodeUrl');
+
+        if (codeDisplay && codeDisplay.type) {
+            codeDisplay.text = `Access Code: ${token}`;
+            codeDisplay.show();
+        }
+
+        if (urlDisplay && urlDisplay.type) {
+            urlDisplay.text = url;
+            urlDisplay.show();
+        }
+
+        // Also log to console for easy copying
+        console.log('=== ACCESS CODE GENERATED ===');
+        console.log('Code:', token);
+        console.log('URL:', url);
+        console.log('============================');
+
+        showStaffMessage('Access code generated! Check console for details.', 'success');
+
+    } catch (e) {
+        console.error('Error displaying access code:', e);
+        // Fallback: just show in console
+        console.log('Access Code:', token);
+        console.log('URL:', url);
+        showStaffMessage(`Access code: ${token}`, 'success');
+    }
+}
+
+/**
+ * Show message to staff
+ * 
+ * @param {string} message - Message text
+ * @param {string} type - Message type (success, error, info)
+ */
+function showStaffMessage(message, type = 'info') {
+    console.log(`[Staff Portal ${type.toUpperCase()}]:`, message);
+
+    try {
+        const messageElement = $w('#staffMessage');
+        if (messageElement && messageElement.type) {
+            messageElement.text = message;
+            
+            // Set color based on type
+            if (type === 'success') {
+                messageElement.style.color = '#28a745';
+            } else if (type === 'error') {
+                messageElement.style.color = '#dc3545';
+            } else {
+                messageElement.style.color = '#17a2b8';
+            }
+
+            messageElement.show();
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                try {
+                    messageElement.hide();
+                } catch (e) { }
+            }, 5000);
+        }
+    } catch (e) {
+        // Element doesn't exist, message already logged to console
+    }
+}
+
+// Export for use in other parts of the staff portal
+export { generateMagicLinkForUser, generateAccessCodeOnly, setupMagicLinkGenerator };
