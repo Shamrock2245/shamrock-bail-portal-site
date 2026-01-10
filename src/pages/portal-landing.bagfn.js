@@ -331,5 +331,35 @@ function hideError() {
     }
 }
 
+/**
+ * Show loading state on submit button
+ */
+function showLoading() {
+    try {
+        const submitBtn = $w('#btnSubmitCode');
+        if (submitBtn && typeof submitBtn.disable === 'function') {
+            submitBtn.disable();
+            submitBtn.label = 'Processing...';
+        }
+    } catch (e) {
+        console.warn('Portal Landing: Could not show loading state:', e);
+    }
+}
+
+/**
+ * Hide loading state on submit button
+ */
+function hideLoading() {
+    try {
+        const submitBtn = $w('#btnSubmitCode');
+        if (submitBtn && typeof submitBtn.enable === 'function') {
+            submitBtn.enable();
+            submitBtn.label = 'Submit';
+        }
+    } catch (e) {
+        console.warn('Portal Landing: Could not hide loading state:', e);
+    }
+}
+
 // Export for testing
 export { handleMagicLinkToken, handleAccessCode };

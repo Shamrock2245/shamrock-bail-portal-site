@@ -450,6 +450,36 @@ export async function onMagicLinkLoginV2(token) {
   }
 
   try {
+    // DEMO ACCESS CODES - Hardcoded for easy testing
+    const DEMO_CODES = {
+      'DEMO-STAFF': { personId: 'demo_staff_001', role: 'staff', caseId: null },
+      'DEMO-DEFENDANT': { personId: 'demo_defendant_001', role: 'defendant', caseId: 'demo_case_001' },
+      'DEMO-INDEMNITOR': { personId: 'demo_indemnitor_001', role: 'indemnitor', caseId: 'demo_case_001' }
+    };
+
+    // Check if token is a demo code
+    const demoData = DEMO_CODES[token.toUpperCase()];
+    if (demoData) {
+      console.log('Demo access code detected:', token);
+      
+      // Create custom session for demo user
+      const sessionToken = await createCustomSession(demoData.personId, demoData.role, demoData.caseId);
+      
+      const role = demoData.role;
+      const caseId = demoData.caseId;
+      const goto = PORTAL_PATHS[role] || "/portal-landing";
+
+      return { 
+        ok: true, 
+        role, 
+        caseId, 
+        goto, 
+        sessionToken,
+        message: `Demo access granted! Welcome to the ${role} portal.` 
+      };
+    }
+
+    // Not a demo code, try regular magic link validation
     const link = await validateMagicLink(token);
     if (!link) {
       return { ok: false, error: "INVALID_OR_EXPIRED", message: "This secure link has expired or has already been used. Please request a new one." };
