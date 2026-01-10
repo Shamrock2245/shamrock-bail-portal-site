@@ -14,19 +14,30 @@
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { currentMember } from 'wix-members-frontend';
+import { hasSessionToken } from 'public/session-manager';
 
 // Phone number
 const PHONE_TEL = 'tel:+12393322245';
 
 let isMobileMenuOpen = false;
 let isLoggedIn = false;
+let $W = null; // Private scope variable for the passed $w instance
 
 /**
  * Initialize header on page load
  */
-export async function initHeader() {
+export async function initHeader($wContext) {
+    if (!$wContext) {
+        console.error("Header: initHeader called without $w context!");
+        return;
+    }
+    $W = $wContext; // Assign to module-level variable
+
+    console.log("Header: Initializing with $w context...");
+
     // Check login status
     isLoggedIn = await checkLoginStatus();
+    console.log("Header: Login Status:", isLoggedIn);
 
     // Update header based on login status
     updateHeaderForLoginStatus();
@@ -46,9 +57,12 @@ export async function initHeader() {
  */
 async function checkLoginStatus() {
     try {
-        const member = await currentMember.getMember();
-        return !!member;
+        // STRICT: Only check for Custom Session. Ignore Wix Members.
+        const hasCustom = hasSessionToken();
+        console.log("Header: checkLoginStatus -> hasCustomSession:", hasCustom);
+        return hasCustom;
     } catch (error) {
+        console.error("Header: Login check failed", error);
         return false;
     }
 }
@@ -56,21 +70,52 @@ async function checkLoginStatus() {
 /**
  * Update header based on login status
  */
+let retryCount = 0;
+
 function updateHeaderForLoginStatus() {
+    console.log(`Header: Updating UI. LoggedIn = ${isLoggedIn}. Retry: ${retryCount}`);
+
+    const selector = $W || $w;
+    const loginBtn = selector('#loginBtn');
+    const accountBtn = selector('#accountBtn');
+
+    // Feature detection: Check if it looks like a valid Velo element (has .show method)
+    // Arrays/NodeLists might be behaving oddly across modules.
+    const loginExists = loginBtn && typeof loginBtn.show === 'function';
+    const accountExists = accountBtn && typeof accountBtn.show === 'function';
+
+    console.log(`Header: Element Status -> loginBtn: ${loginExists}, accountBtn: ${accountExists}`);
+
+    // RETRY LOGIC
+    if (!loginExists && !accountExists && retryCount < 3) {
+        console.warn("Header: Elements not found yet. Retrying in 500ms...");
+        retryCount++;
+        setTimeout(updateHeaderForLoginStatus, 500);
+        return;
+    }
+
     try {
+        console.log("Header: Elements check -> loginBtn:", loginBtn.length > 0, "accountBtn:", accountBtn.length > 0);
+
         if (isLoggedIn) {
             // Show logged-in state
-            if ($w('#loginBtn').type) $w('#loginBtn').hide();
-            if ($w('#accountBtn').type) $w('#accountBtn').show();
-            if ($w('#startBailBtn').type) $w('#startBailBtn').label = 'Start Bail';
+            if (loginExists) loginBtn.hide();
+            if (accountExists) accountBtn.show();
+            if (selector('#startBailBtn').type) selector('#startBailBtn').label = 'Start Bail';
         } else {
             // Show logged-out state
-            if ($w('#loginBtn').type) $w('#loginBtn').show();
-            if ($w('#accountBtn').type) $w('#accountBtn').hide();
-            if ($w('#startBailBtn').type) $w('#startBailBtn').label = 'Start Bail';
+            if (loginExists) {
+                loginBtn.show();
+                console.log("Header: Shown loginBtn");
+            } else {
+                console.warn("Header: loginBtn NOT FOUND");
+            }
+
+            if (accountExists) accountBtn.hide();
+            if (selector('#startBailBtn').type) selector('#startBailBtn').label = 'Start Bail';
         }
     } catch (e) {
-        console.log('Header login status update skipped (elements missing)');
+        console.log('Header login status update skipped (elements missing)', e);
     }
 }
 
@@ -102,7 +147,7 @@ function setupHeaderListeners() {
         if ($w('#startBailBtn').type) {
             $w('#startBailBtn').onClick(() => {
                 trackEvent('Header_CTA_Click', { button: 'start_bail' });
-                wixLocation.to('/portal');
+                wixLocation.to('/portal-landing');
             });
         }
     } catch (e) { }
@@ -112,7 +157,7 @@ function setupHeaderListeners() {
         if ($w('#loginBtn').type) {
             $w('#loginBtn').onClick(() => {
                 trackEvent('Header_Login_Click');
-                wixLocation.to('/portal');
+                wixLocation.to('/portal-landing');
             });
         }
     } catch (e) { }
@@ -122,7 +167,7 @@ function setupHeaderListeners() {
         if ($w('#accountBtn').type) {
             $w('#accountBtn').onClick(() => {
                 trackEvent('Header_Account_Click');
-                wixLocation.to('/portal');
+                wixLocation.to('/portal-landing');
             });
         }
     } catch (e) { }

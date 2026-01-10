@@ -49,8 +49,8 @@ $w.onReady(async function () {
         console.log("✅ Defendant authenticated:", session.personId);
         currentSession = session;
 
-        // Fetch Data using personId
-        const data = await getDefendantDetails(session.personId);
+        // Fetch Data using sessionToken (session.personId is extracted on backend)
+        const data = await getDefendantDetails(sessionToken);
         const name = data?.firstName || "Client";
 
         try {
@@ -360,29 +360,29 @@ function updateCheckInStatus(msg, type) {
  */
 async function handleDownloadPaperwork() {
     console.log('Defendant Portal: Handling download paperwork');
-    
+
     try {
         // Show loading message
         alert('Preparing your paperwork for download...');
-        
+
         if (!currentSession) {
             alert('Session error. Please log in again.');
             return;
         }
 
         const caseId = currentSession.caseId || "Active_Case_Fallback";
-        
+
         // TODO: Implement PDF generation and download
         // For now, show a placeholder message
         alert('Download feature coming soon! Please use "Sign via Email" or "Sign Via Kiosk" for now.');
-        
+
         // Future implementation:
         // 1. Call backend to generate PDF packet
         // 2. Get download URL
         // 3. Trigger download
         // const pdfUrl = await generatePDFPacket(caseId, userEmail);
         // wixLocation.to(pdfUrl);
-        
+
     } catch (error) {
         console.error('Error handling download paperwork:', error);
         alert('Unable to prepare paperwork for download. Please try again or contact support.');

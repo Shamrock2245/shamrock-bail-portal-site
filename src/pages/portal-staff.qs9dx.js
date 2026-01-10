@@ -114,10 +114,12 @@ $w.onReady(async function () {
             }
 
             // Also trigger on manual change (loss of focus / enter)
-            $w('#searchBar').onChange((event) => {
-                if (debounceTimer) clearTimeout(debounceTimer);
-                filterData();
-            });
+            if (typeof $w('#searchBar').onChange === 'function') {
+                $w('#searchBar').onChange((event) => {
+                    if (debounceTimer) clearTimeout(debounceTimer);
+                    filterData();
+                });
+            }
         }
     } catch (e) {
         console.error('Error setting up search bar:', e);
@@ -126,57 +128,82 @@ $w.onReady(async function () {
 
 function setupRepeater() {
     try {
-        if (!$w('#caseListRepeater').type) return;
+        const repeater = $w('#caseListRepeater');
+        if (!repeater) {
+            console.error("CRITICAL: #caseListRepeater NOT FOUND on page");
+            return;
+        }
 
-        $w('#caseListRepeater').onItemReady(($item, itemData) => {
+        console.log("Setup Repeater: #caseListRepeater found. Attaching onItemReady...");
+
+        repeater.onItemReady(($item, itemData) => {
+            console.log(`Repeater Item Ready: ${itemData._id} - ${itemData.defendantName}`);
+
             // Map Fields
             try {
-                if ($item('#caseNumberText').type) {
+                if ($item('#caseNumberText')) {
                     $item('#caseNumberText').text = itemData.caseNumber;
-                }
-                if ($item('#defendantNameText').type) {
+                } else { console.warn("Missing element: #caseNumberText"); }
+
+                if ($item('#defendantNameText')) {
                     $item('#defendantNameText').text = itemData.defendantName;
-                }
-                if ($item('#bondAmountText').type) {
+                } else { console.warn("Missing element: #defendantNameText"); }
+
+                if ($item('#bondAmountText')) {
                     $item('#bondAmountText').text = itemData.bondAmount;
-                }
-                if ($item('#caseStatusText').type) {
+                } else { console.warn("Missing element: #bondAmountText"); }
+
+                if ($item('#caseStatusText')) {
                     $item('#caseStatusText').text = itemData.status;
-                }
-                if ($item('#paperworkStatusText').type) {
+                } else { console.warn("Missing element: #caseStatusText"); }
+
+                if ($item('#paperworkStatusText')) {
                     $item('#paperworkStatusText').text = itemData.paperworkStatus;
-                }
+                } else { console.warn("Missing element: #paperworkStatusText"); }
+
             } catch (e) {
                 console.error('Error mapping repeater fields:', e);
             }
 
             // Actions - Details Button
             try {
-                if ($item('#detailsBtn').type) {
-                    $item('#detailsBtn').onClick(() => {
+                const detailsBtn = $item('#detailsBtn');
+                if (detailsBtn) {
+                    detailsBtn.onClick(() => {
                         console.log("Opening Details for", itemData.defendantName);
                         LightboxController.setupDefendantDetailsLightbox(itemData);
                     });
-                }
+                } else { console.warn("Missing element: #detailsBtn"); }
             } catch (e) {
                 console.error('Error setting up details button:', e);
             }
 
             // Actions - Send Magic Link Button
             try {
-                if ($item('#sendMagicLinkBtn').type) {
-                    $item('#sendMagicLinkBtn').onClick(async () => {
+                const magicBtn = $item('#sendMagicLinkBtn');
+                if (magicBtn) {
+                    magicBtn.onClick(async () => {
                         try {
-                            $item('#sendMagicLinkBtn').label = "...";
+                            // Using the new helper function from the bottom of the file
+                            // generateMagicLinkForUser comes from local scope or export
+                            // We need to make sure we call the right function.
+                            // The Remote file has `generateMagicLinkForUser` logic.
 
-                            // Generate magic link for this defendant
+                            magicBtn.label = "...";
+
+                            // Check if generateMagicLinkForUser is available or import it?
+                            // In the Remote file, generateMagicLinkForUser is defined at the bottom.
+                            // But we are inside $w.onReady scope mostly? No, setupRepeater is top-level function.
+                            // generateMagicLinkForUser is exported. Ideally we can just call it if it's in scope.
+                            // However, let's keep the logic simple here:
+
                             const token = await generateMagicLink(itemData._id, "defendant");
-                            console.log(`Link for ${itemData.defendantName}: https://www.shamrockbailbonds.biz/portal-landing?token=${token}`);
+                            console.log(`Link: https://www.shamrockbailbonds.biz/portal-landing?token=${token}`);
+                            magicBtn.label = "Sent";
 
-                            $item('#sendMagicLinkBtn').label = "Sent";
                         } catch (e) {
                             console.error('Error generating magic link:', e);
-                            $item('#sendMagicLinkBtn').label = "Error";
+                            magicBtn.label = "Error";
                         }
                     });
                 }
@@ -447,7 +474,7 @@ function showStaffMessage(message, type = 'info') {
         const messageElement = $w('#staffMessage');
         if (messageElement && messageElement.type) {
             messageElement.text = message;
-            
+
             // Set color based on type
             if (type === 'success') {
                 messageElement.style.color = '#28a745';

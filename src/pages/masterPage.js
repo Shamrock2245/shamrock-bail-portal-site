@@ -12,7 +12,7 @@ import { processBookingSheet } from 'public/bookingSheetHandler';
 
 $w.onReady(function () {
     // 1. Initialize Site Components (Public Modules)
-    initHeader();
+    initHeader($w);
     initFooter();
 
     // 2. Handle Responsive View
@@ -31,7 +31,7 @@ $w.onReady(function () {
         console.log("🔒 Global Login Detected. Redirecting to Portal...");
         // Small delay to ensure Wix's native processes settle
         setTimeout(() => {
-            wixLocation.to('/portal');
+            wixLocation.to('/portal-landing');
         }, 100);
     });
 });

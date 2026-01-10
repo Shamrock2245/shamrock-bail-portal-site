@@ -1,4 +1,6 @@
-// Portal.hslzo.js - Cleared to resolve persistent build errors
+import wixLocation from 'wix-location';
+
 $w.onReady(function () {
-    console.log("Portal (My Account) page ready - Placeholder");
+    console.log("Defensive Redirect: Legacy Portal -> Portal Landing");
+    wixLocation.to('/portal-landing');
 });

@@ -66,15 +66,15 @@ function setupPortalButtons() {
     buttons.forEach(btn => {
         const element = $w(btn.id);
 
-        if (element.length === 0) {
-            console.error(`Portal Landing: Element ${btn.id} (${btn.name}) NOT FOUND`);
+        if (!element) {
+            console.error(`Portal Landing: Element ${btn.id} (${btn.name}) is null/undefined`);
         } else {
-            console.log(`Portal Landing: Element ${btn.id} found`);
+            console.log(`Portal Landing: Element ${btn.id} check...`);
 
             if (typeof element.onClick === 'function') {
                 element.onClick(async () => {
                     console.log(`Portal Landing: ${btn.name} clicked`);
-                    
+
                     // Check if user has a valid session
                     const sessionToken = getSessionToken();
                     if (!sessionToken) {
@@ -118,18 +118,23 @@ function setupAccessCodeSubmit() {
     const submitBtn = $w('#btnSubmitCode');
     const accessCodeInput = $w('#inputAccessCode');
 
-    if (submitBtn.length === 0) {
-        console.error("Portal Landing: #btnSubmitCode NOT FOUND");
+    // Robust check: don't rely on .length which may be undefined
+    const submitValid = submitBtn && typeof submitBtn.onClick === 'function';
+    const inputValid = accessCodeInput && typeof accessCodeInput.value !== 'undefined'; // value prop exists
+
+    if (!submitValid) {
+        console.error("Portal Landing: #btnSubmitCode NOT FOUND or invalid (no onClick)");
     }
 
-    if (accessCodeInput.length === 0) {
-        console.error("Portal Landing: #inputAccessCode NOT FOUND");
+    if (!inputValid) {
+        console.error("Portal Landing: #inputAccessCode NOT FOUND or invalid (no value prop)");
     }
 
-    if (submitBtn.length > 0 && typeof submitBtn.onClick === 'function') {
+    if (submitValid) {
         console.log("Portal Landing: Submit button found");
         submitBtn.onClick(async () => {
-            console.log("Portal Landing: Submit button clicked");
+            console.log("🖱️ CLIENT CLICKED SUBMIT BUTTON - HANDLER FIRED");
+            showLoading();
 
             // Get access code value
             const accessCode = accessCodeInput && accessCodeInput.value ? accessCodeInput.value.trim() : '';
@@ -148,12 +153,17 @@ function setupAccessCodeSubmit() {
             hideError();
 
             try {
+                console.log("Portal Landing: Calling handleAccessCode...");
                 await handleAccessCode(accessCode);
             } catch (error) {
-                console.error("Portal Landing: Error handling access code:", error);
-                showError("An error occurred. Please try again.");
-                submitBtn.enable();
-                submitBtn.label = "Submit";
+                console.error("Portal Landing: CRITICAL ERROR in submit handler:", error);
+                showError("System error. Please try again or contact support.");
+            } finally {
+                // ALWAYS re-enable button if it wasn't handled inside
+                if (submitBtn.label === "Validating...") {
+                    submitBtn.enable();
+                    submitBtn.label = "Submit";
+                }
             }
         });
     }
@@ -189,7 +199,7 @@ async function handleMagicLinkToken(token) {
         } else {
             console.error("Portal Landing: Token validation failed:", result.message);
             showError(result.message || "Invalid or expired access code");
-            
+
             // Remove token from URL and stay on landing page
             wixLocation.to('/portal-landing');
         }
@@ -227,7 +237,7 @@ async function handleAccessCode(accessCode) {
 
             // Clear input
             const accessCodeInput = $w('#inputAccessCode');
-            if (accessCodeInput.length > 0) {
+            if (accessCodeInput && accessCodeInput.value) {
                 accessCodeInput.value = "";
             }
 
@@ -249,9 +259,7 @@ async function handleAccessCode(accessCode) {
         console.error("Portal Landing: Error validating access code:", error);
         showError("An error occurred. Please try again.");
 
-        // Re-enable submit button
-        submitBtn.enable();
-        submitBtn.label = "Submit";
+        // Button re-enabled in finally block of caller
     }
 }
 
@@ -277,11 +285,11 @@ function redirectToPortal(role) {
  */
 function showError(message) {
     console.log("Portal Landing: Showing error:", message);
-    
+
     // Try to use dedicated error message element
     try {
         const errorElement = $w('#errorMessage');
-        if (errorElement.length > 0) {
+        if (errorElement) {
             errorElement.text = message;
             errorElement.show();
             return;
@@ -299,11 +307,11 @@ function showError(message) {
  */
 function showSuccess(message) {
     console.log("Portal Landing: Showing success:", message);
-    
+
     // Try to use dedicated success message element
     try {
         const successElement = $w('#successMessage');
-        if (successElement.length > 0) {
+        if (successElement) {
             successElement.text = message;
             successElement.show();
             return;
@@ -323,7 +331,7 @@ function showSuccess(message) {
 function hideError() {
     try {
         const errorElement = $w('#errorMessage');
-        if (errorElement.length > 0) {
+        if (errorElement) {
             errorElement.hide();
         }
     } catch (e) {
@@ -363,3 +371,25 @@ function hideLoading() {
 
 // Export for testing
 export { handleMagicLinkToken, handleAccessCode };
+
+/**
+ * Show loading state on submit button
+ */
+function showLoading() {
+    const submitBtn = $w('#btnSubmitCode');
+    if (submitBtn) {
+        submitBtn.disable();
+        submitBtn.label = "Processing...";
+    }
+}
+
+/**
+ * Hide loading state on submit button
+ */
+function hideLoading() {
+    const submitBtn = $w('#btnSubmitCode');
+    if (submitBtn) {
+        submitBtn.enable();
+        submitBtn.label = "Submit";
+    }
+}

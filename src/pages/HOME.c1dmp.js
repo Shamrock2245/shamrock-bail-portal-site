@@ -11,7 +11,7 @@ $w.onReady(async function () {
 
     // Initialize Lightbox Controller
     LightboxController.init($w);
-    LightboxController.initEmergencyCtaLightbox();
+    // LightboxController.initEmergencyCtaLightbox(); // Disabled automatic popup per user request
     LightboxController.initPrivacyLightbox();
     LightboxController.initTermsLightbox();
 

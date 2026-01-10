@@ -84,7 +84,7 @@ async function loadDashboardData() {
     }
 
     try {
-        const data = await getIndemnitorDetails(currentSession.personId);
+        const data = await getIndemnitorDetails(currentSession.token);
         const name = "Indemnitor"; // TODO: Get from user profile
 
         if ($w('#welcomeText').type) {
