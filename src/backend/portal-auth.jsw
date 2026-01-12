@@ -92,7 +92,7 @@ export async function setSessionData(key, value) {
     const sessionData = {
       key,
       value: JSON.stringify(value),
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(), // Use Date object
       userId: user.id,
     };
     await wixData.save("PortalSessions", sessionData, { suppressAuth: true });
@@ -153,8 +153,8 @@ export async function generateMagicLink(personId, role, caseId = null) {
     personId,
     role: (role || "").toLowerCase(),
     caseId,
-    createdAt: new Date(now).toISOString(),
-    expiresAt: new Date(now + MAGIC_LINK_EXPIRATION).toISOString(),
+    createdAt: new Date(now), // Use Date object
+    expiresAt: new Date(now + MAGIC_LINK_EXPIRATION), // Use Date object
     used: false,
   };
   await wixData.save("MagicLinks", doc, { suppressAuth: true });
@@ -186,7 +186,7 @@ export async function useMagicLink(token) {
 
   const link = rs.items[0];
   link.used = true;
-  link.usedAt = new Date().toISOString();
+  link.usedAt = new Date(); // Use Date object
   await wixData.update("MagicLinks", link, { suppressAuth: true });
   return true;
 }
@@ -239,7 +239,7 @@ export async function onMagicLinkLogin(token) {
     return { ok: true, role, caseId, goto, message: "Access granted! Welcome to your dashboard." };
   } catch (err) {
     console.error("onMagicLinkLogin error:", err);
-    return { ok: false, error: "SERVER_ERROR", message: "Something went wrong on our end. Please try again in a few minutes." };
+    return { ok: false, error: "SERVER_ERROR", message: "Server Error: " + err.message };
   }
 }
 
@@ -253,7 +253,7 @@ export async function sendMagicLink(email, token, role, personName = null) {
   try {
     // Send via GAS backend (same system used for other emails)
     const gasUrl = await secrets.getSecret('GAS_WEB_APP_URL');
-    
+
     if (!gasUrl) {
       console.warn('GAS_WEB_APP_URL not configured, cannot send email');
       return { success: false, error: 'Email service not configured' };
@@ -355,7 +355,7 @@ export async function saveUserProfile(profile) {
 export async function linkUserToPerson(personId) {
   const p = (await getUserProfile()) || {};
   p.personId = personId;
-  p.updatedAt = new Date().toISOString();
+  p.updatedAt = new Date();
   if (!p.createdAt) p.createdAt = p.updatedAt;
   await saveUserProfile(p);
   return true;
@@ -371,7 +371,7 @@ export async function linkUserToCase(caseId) {
   const list = Array.isArray(p.caseIds) ? p.caseIds : [];
   if (!list.includes(caseId)) list.push(caseId);
   p.caseIds = list;
-  p.updatedAt = new Date().toISOString();
+  p.updatedAt = new Date();
   if (!p.createdAt) p.createdAt = p.updatedAt;
   await saveUserProfile(p);
   return true;
@@ -404,7 +404,7 @@ export async function assignRoleToCurrentUser(roleName) {
     ...profile,
     userId: user.id,
     role: roleName,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date()
   };
 
   await saveUserProfile(updated);
@@ -434,17 +434,17 @@ export async function requireStaff() {
 export async function createCustomSession(personId, role, caseId = null) {
   const sessionToken = generateToken();
   const now = Date.now();
-  
+
   const sessionData = {
     token: sessionToken,
     personId,
     role: (role || "").toLowerCase(),
     caseId,
-    createdAt: new Date(now).toISOString(),
-    expiresAt: new Date(now + SESSION_TIMEOUT).toISOString(),
-    lastActivity: new Date(now).toISOString(),
+    createdAt: new Date(now), // Use Date object
+    expiresAt: new Date(now + SESSION_TIMEOUT), // Use Date object
+    lastActivity: new Date(now), // Use Date object
   };
-  
+
   await wixData.save("PortalSessions", sessionData, { suppressAuth: true });
   return sessionToken;
 }
@@ -455,30 +455,30 @@ export async function createCustomSession(personId, role, caseId = null) {
  */
 export async function validateCustomSession(sessionToken) {
   if (!sessionToken || typeof sessionToken !== "string") return null;
-  
+
   try {
     const rs = await wixData
       .query("PortalSessions")
       .eq("token", sessionToken)
       .limit(1)
       .find({ suppressAuth: true });
-    
+
     if (!rs.items.length) return null;
-    
+
     const session = rs.items[0];
     const now = Date.now();
     const expiresAt = new Date(session.expiresAt).getTime();
-    
+
     // Check if expired
     if (now > expiresAt) {
       await wixData.remove("PortalSessions", session._id, { suppressAuth: true });
       return null;
     }
-    
+
     // Update last activity
-    session.lastActivity = new Date(now).toISOString();
+    session.lastActivity = new Date(now);
     await wixData.update("PortalSessions", session, { suppressAuth: true });
-    
+
     return {
       personId: session.personId,
       role: session.role,
@@ -496,14 +496,14 @@ export async function validateCustomSession(sessionToken) {
  */
 export async function destroyCustomSession(sessionToken) {
   if (!sessionToken) return;
-  
+
   try {
     const rs = await wixData
       .query("PortalSessions")
       .eq("token", sessionToken)
       .limit(1)
       .find({ suppressAuth: true });
-    
+
     if (rs.items.length) {
       await wixData.remove("PortalSessions", rs.items[0]._id, { suppressAuth: true });
     }
@@ -533,21 +533,21 @@ export async function onMagicLinkLoginV2(token) {
     const demoData = DEMO_CODES[token.toUpperCase()];
     if (demoData) {
       console.log('Demo access code detected:', token);
-      
+
       // Create custom session for demo user
       const sessionToken = await createCustomSession(demoData.personId, demoData.role, demoData.caseId);
-      
+
       const role = demoData.role;
       const caseId = demoData.caseId;
       const goto = PORTAL_PATHS[role] || "/portal-landing";
 
-      return { 
-        ok: true, 
-        role, 
-        caseId, 
-        goto, 
+      return {
+        ok: true,
+        role,
+        caseId,
+        goto,
         sessionToken,
-        message: `Demo access granted! Welcome to the ${role} portal.` 
+        message: `Demo access granted! Welcome to the ${role} portal.`
       };
     }
 
@@ -559,7 +559,7 @@ export async function onMagicLinkLoginV2(token) {
 
     // Create custom session (no Wix Members required)
     const sessionToken = await createCustomSession(link.personId, link.role, link.caseId);
-    
+
     // Mark magic link as used
     await useMagicLink(token);
 
@@ -569,17 +569,17 @@ export async function onMagicLinkLoginV2(token) {
       ? PORTAL_PATHS[role] || "/portal-landing"
       : "/portal-landing";
 
-    return { 
-      ok: true, 
-      role, 
-      caseId, 
-      goto, 
+    return {
+      ok: true,
+      role,
+      caseId,
+      goto,
       sessionToken,
-      message: "Access granted! Welcome to your dashboard." 
+      message: "Access granted! Welcome to your dashboard."
     };
   } catch (err) {
     console.error("onMagicLinkLoginV2 error:", err);
-    return { ok: false, error: "SERVER_ERROR", message: "Something went wrong on our end. Please try again in a few minutes." };
+    return { ok: false, error: "SERVER_ERROR", message: "Server Error: " + err.message };
   }
 }
 
