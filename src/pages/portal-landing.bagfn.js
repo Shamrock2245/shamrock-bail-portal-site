@@ -64,13 +64,19 @@ function setupPortalButtons() {
     ];
 
     buttons.forEach(btn => {
-        const element = $w(btn.id);
+        try {
+            const element = $w(btn.id);
 
-        if (!element) {
-            console.error(`Portal Landing: Element ${btn.id} (${btn.name}) is null/undefined`);
-        } else {
-            console.log(`Portal Landing: Element ${btn.id} check...`);
+            if (!element) {
+                console.error(`Portal Landing: Element ${btn.id} (${btn.name}) is null/undefined`);
+                return;
+            }
 
+            // LOG DIAGNOSTICS
+            console.log(`Portal Landing: checking ${btn.id} - Type: ${element.type}`);
+
+            // Safe check for onClick compatibility
+            // Some elements like Boxes support onClick but might not show up in strict type checks
             if (typeof element.onClick === 'function') {
                 element.onClick(async () => {
                     console.log(`Portal Landing: ${btn.name} clicked`);
@@ -102,8 +108,10 @@ function setupPortalButtons() {
                 });
                 console.log(`Portal Landing: onClick handler attached to ${btn.id}`);
             } else {
-                console.error(`Portal Landing: Element ${btn.id} does NOT support .onClick()`);
+                console.error(`Portal Landing: Element ${btn.id} (Type: ${element.type}) does NOT support .onClick()`);
             }
+        } catch (err) {
+            console.error(`Portal Landing: Error setting up button ${btn.id}:`, err);
         }
     });
 }
@@ -115,57 +123,64 @@ function setupPortalButtons() {
 function setupAccessCodeSubmit() {
     console.log("Portal Landing: Setting up access code submit");
 
-    const submitBtn = $w('#btnSubmitCode');
-    const accessCodeInput = $w('#inputAccessCode');
+    try {
+        const submitBtn = $w('#btnSubmitCode');
+        const accessCodeInput = $w('#inputAccessCode');
 
-    // Robust check: don't rely on .length which may be undefined
-    const submitValid = submitBtn && typeof submitBtn.onClick === 'function';
-    const inputValid = accessCodeInput && typeof accessCodeInput.value !== 'undefined'; // value prop exists
+        // DIAGNOSTICS
+        if (submitBtn) console.log(`Portal Landing: #btnSubmitCode found - Type: ${submitBtn.type}`);
+        else console.error("Portal Landing: #btnSubmitCode NOT FOUND");
 
-    if (!submitValid) {
-        console.error("Portal Landing: #btnSubmitCode NOT FOUND or invalid (no onClick)");
-    }
+        if (accessCodeInput) console.log(`Portal Landing: #inputAccessCode found - Type: ${accessCodeInput.type}`);
+        else console.error("Portal Landing: #inputAccessCode NOT FOUND");
 
-    if (!inputValid) {
-        console.error("Portal Landing: #inputAccessCode NOT FOUND or invalid (no value prop)");
-    }
+        // Robust check
+        const submitValid = submitBtn && typeof submitBtn.onClick === 'function';
+        const inputValid = accessCodeInput; // Value prop check might be type specific
 
-    if (submitValid) {
-        console.log("Portal Landing: Submit button found");
-        submitBtn.onClick(async () => {
-            console.log("🖱️ CLIENT CLICKED SUBMIT BUTTON - HANDLER FIRED");
-            showLoading();
+        if (submitValid) {
+            console.log("Portal Landing: Submit button valid, attaching handler");
+            submitBtn.onClick(async () => {
+                console.log("🖱️ CLIENT CLICKED SUBMIT BUTTON - HANDLER FIRED");
+                showLoading();
 
-            // Get access code value
-            const accessCode = accessCodeInput && accessCodeInput.value ? accessCodeInput.value.trim() : '';
+                // Get access code value
+                const accessCode = accessCodeInput && accessCodeInput.value ? accessCodeInput.value.trim() : '';
 
-            if (!accessCode) {
-                console.warn("Portal Landing: No access code entered");
-                showError("Please enter an access code");
-                return;
-            }
-
-            console.log("Portal Landing: Validating access code:", accessCode);
-
-            // Disable button during validation
-            submitBtn.disable();
-            submitBtn.label = "Validating...";
-            hideError();
-
-            try {
-                console.log("Portal Landing: Calling handleAccessCode...");
-                await handleAccessCode(accessCode);
-            } catch (error) {
-                console.error("Portal Landing: CRITICAL ERROR in submit handler:", error);
-                showError("System error. Please try again or contact support.");
-            } finally {
-                // ALWAYS re-enable button if it wasn't handled inside
-                if (submitBtn.label === "Validating...") {
-                    submitBtn.enable();
-                    submitBtn.label = "Submit";
+                if (!accessCode) {
+                    console.warn("Portal Landing: No access code entered");
+                    showError("Please enter an access code");
+                    return;
                 }
-            }
-        });
+
+                console.log("Portal Landing: Validating access code:", accessCode);
+
+                // Disable button during validation
+                if (typeof submitBtn.disable === 'function') {
+                    submitBtn.disable();
+                    submitBtn.label = "Validating...";
+                }
+                hideError();
+
+                try {
+                    console.log("Portal Landing: Calling handleAccessCode...");
+                    await handleAccessCode(accessCode);
+                } catch (error) {
+                    console.error("Portal Landing: CRITICAL ERROR in submit handler:", error);
+                    showError("System error. Please try again or contact support.");
+                } finally {
+                    // ALWAYS re-enable button if it wasn't handled inside
+                    if (submitBtn.label === "Validating..." && typeof submitBtn.enable === 'function') {
+                        submitBtn.enable();
+                        submitBtn.label = "Submit";
+                    }
+                }
+            });
+        } else {
+            console.error(`Portal Landing: Submit button invalid. Exists? ${!!submitBtn}. Has onClick? ${typeof submitBtn?.onClick}`);
+        }
+    } catch (err) {
+        console.error("Portal Landing: Critical error in setupAccessCodeSubmit:", err);
     }
 }
 
