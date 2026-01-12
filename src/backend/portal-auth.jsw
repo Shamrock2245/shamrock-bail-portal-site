@@ -270,6 +270,7 @@ export async function sendMagicLink(email, token, role, personName = null) {
 
   try {
     // Send via GAS backend (same system used for other emails)
+    // NOTE: GAS_WEB_APP_URL is the canonical Wix secret for the GAS Web App; GAS_WEBHOOK_URL may exist as an alias but must point to the same deployment.
     const gasUrl = await secrets.getSecret('GAS_WEB_APP_URL');
 
     if (!gasUrl) {
