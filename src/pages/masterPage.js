@@ -3,7 +3,7 @@
 
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
-import { authentication } from 'wix-members';
+
 import { silentPingLocation } from 'public/location-tracker';
 import { initializePhoneInjection } from 'public/phone-injector';
 import { initHeader } from 'public/siteHeader';
@@ -25,15 +25,7 @@ $w.onReady(function () {
 
     initializePhoneInjection();
 
-    // 5. Global Login Handler - Enforce Portal Redirect
-    // This catches users logging in via Google/Facebook and sends them to our custom flow
-    authentication.onLogin(async (member) => {
-        console.log("🔒 Global Login Detected. Redirecting to Portal...");
-        // Small delay to ensure Wix's native processes settle
-        setTimeout(() => {
-            wixLocation.to('/portal-landing');
-        }, 100);
-    });
+
 });
 
 // Note: Local initHeader and initFooter are removed in favor of robust public/siteHeader and public/siteFooter components.

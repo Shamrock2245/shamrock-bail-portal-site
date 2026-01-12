@@ -13,7 +13,7 @@
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-import { currentMember } from 'wix-members-frontend';
+
 import { hasSessionToken } from 'public/session-manager';
 
 // Phone number
