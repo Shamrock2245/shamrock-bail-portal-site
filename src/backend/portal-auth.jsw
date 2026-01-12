@@ -10,6 +10,24 @@ import { fetch } from "wix-fetch";
 import { API_BASE_URL, API_TIMEOUT } from 'public/portal-config';
 import { secrets } from "wix-secrets-backend";
 
+/**
+ * GAS WEB APP URL CONFIGURATION
+ * 
+ * The Google Apps Script web app endpoint is stored in Wix Secrets Manager under TWO keys:
+ * 
+ * - GAS_WEB_APP_URL (CANONICAL) - Use this for all backend calls from Wix
+ *   (email sending, dashboard integration, API-style requests)
+ * 
+ * - GAS_WEBHOOK_URL (ALIAS) - May exist for webhook-style semantics
+ *   (external callbacks), but should not introduce new logic paths
+ * 
+ * Both keys point to the SAME deployed GAS web app:
+ * https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzvYxPLTpP-nUv7M25i55D58c8LPv5b142Jsijd5tS0lirB0mjmKehaS9LGaSZrdLECcg/exec
+ * 
+ * RULE: Prefer GAS_WEB_APP_URL in new code. Treat both as pointing to same deployment.
+ * No refactor required for existing references if working.
+ */
+
 /***** CONFIG & ROLES *****/
 export const ROLES = {
   DEFENDANT: "defendant",
