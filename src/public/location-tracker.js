@@ -1,12 +1,8 @@
-/**
- * Public/location-tracker.js
- * Frontend utility for managing silent geolocation pings (3x daily limit)
- */
-
 import wixWindow from 'wix-window';
 import { saveUserLocation } from 'backend/location.jsw';
-import { authentication } from 'wix-members';
-import { local } from 'wix-storage';
+// REMOVED: import { authentication } from 'wix-members';
+import { local } from 'wix-storage-frontend';
+import { getSessionToken, hasSessionToken } from 'public/session-manager';
 
 const PING_STORAGE_KEY = 'last_location_ping_dates';
 
@@ -16,8 +12,9 @@ const PING_STORAGE_KEY = 'last_location_ping_dates';
  */
 export async function silentPingLocation() {
     try {
-        // 1. Only ping if logged in
-        if (!authentication.loggedIn()) return;
+        // 1. Only ping if logged in (Custom Auth)
+        if (!hasSessionToken()) return;
+        const token = getSessionToken();
 
         // 2. Check if we've already pinged 3 times today (frontend check)
         const todayStr = new Date().toDateString();
@@ -48,8 +45,8 @@ export async function silentPingLocation() {
         if (geolocation && geolocation.coords) {
             const { latitude, longitude } = geolocation.coords;
 
-            // 4. Save to Backend
-            const result = await saveUserLocation(latitude, longitude);
+            // 4. Save to Backend (PASSING TOKEN)
+            const result = await saveUserLocation(latitude, longitude, "", "", token);
 
             if (result.success) {
                 // Update local storage tracking

@@ -1,22 +1,25 @@
-// Account.js (Members Only)
-import wixData from 'wix-data';
-import { COLLECTIONS } from 'public/collectionIds';
-import { currentMember } from 'wix-members';
+// Account.js (DEPRECATED - LEGACY ARTIFACT)
+// This page was part of the old Wix Member system.
+// Redirecting to Portal Landing to prevent confusion.
 
-$w.onReady(async function () {
-    const member = await currentMember.getMember();
-    if (member) {
-        loadMemberProfile(member._id);
-        setupDocumentUpload(member._id);
-    }
+import wixLocation from 'wix-location';
+
+$w.onReady(function () {
+    console.warn("Legacy Account page accessed. Redirecting to Portal Landing.");
+    wixLocation.to('/portal-landing');
 });
+
+/*
+LEGACY CODE ARCHIVE:
+import { currentMember } from 'wix-members';
+...
+*/
 
 async function loadMemberProfile(memberId) {
     try {
         const results = await wixData.query("MemberProfiles")
             .eq("_id", memberId)
             .find();
-
         if (results.items.length > 0) {
             const profile = results.items[0];
             $w('#profileName').text = `${profile.firstName} ${profile.lastName}`;

@@ -86,6 +86,7 @@ async function loadDashboardData() {
     try {
         const data = await getIndemnitorDetails(currentSession.token);
         const name = "Indemnitor"; // TODO: Get from user profile
+        currentSession.email = data?.email || ""; // Store retrieved email
 
         if ($w('#welcomeText').type) {
             $w('#welcomeText').text = `Welcome, ${name}`;
@@ -181,8 +182,8 @@ async function handlePaperworkStart() {
         return;
     }
 
-    // For now, we'll use a mock email - in production, this should come from user profile
-    const userEmail = `indemnitor_${currentSession.personId}@shamrock.local`;
+    // Use REAL email or fallback
+    const userEmail = currentSession.email || `indemnitor_${currentSession.personId}@shamrock.local`;
 
     // 1. ID Upload Check
     const hasUploadedId = await checkIdUploadStatus(userEmail);
@@ -239,7 +240,8 @@ async function proceedToSignNow() {
     }
 
     const caseId = currentSession.caseId || "Active_Case_Fallback";
-    const userEmail = `indemnitor_${currentSession.personId}@shamrock.local`;
+    // Use REAL email or fallback
+    const userEmail = currentSession.email || `indemnitor_${currentSession.personId}@shamrock.local`;
 
     // Role: Indemnitor
     const result = await createEmbeddedLink(caseId, userEmail, 'indemnitor');

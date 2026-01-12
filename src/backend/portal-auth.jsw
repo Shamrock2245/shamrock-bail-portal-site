@@ -639,20 +639,28 @@ export async function cleanupExpired() {
   return { ok: true };
 }
 
-/***** DATA AGGREGATION (New for Defendant Portal) *****/
-/**
- * Aggregates all data needed for the Defendant Dashboard.
- * Currently mocks missing DB fields, but STRUCTURE IS FINAL.
- */
-export async function getDefendantDetails(userId) {
-  // 1. Get Basic Profile
-  const profile = await getUserProfile(userId);
-  if (!profile) return null;
+// Refactored to use Custom Session Token
+export async function getDefendantDetails(sessionToken) {
+  // 1. Validate Session
+  const session = await validateCustomSession(sessionToken);
+  if (!session || !session.personId) {
+    throw new Error("Invalid session");
+  }
 
-  // 2. Mock/Fetch Case Data
-  // In future, this will query a "Cases" or "BailData" collection by profile.personId/caseIds
+  // 2. Get Profile from PortalUsers
+  // We identify the user by personId for now
+  const rs = await wixData.query("PortalUsers")
+    .eq("personId", session.personId)
+    .limit(1)
+    .find({ suppressAuth: true });
+
+  const profile = rs.items[0] || {};
+
+  // 3. Mock/Fetch Case Data
   const details = {
-    firstName: "Client", // TODO: fetch from Contact
+    firstName: profile.firstName || "Client",
+    lastName: profile.lastName || "",
+    email: profile.email || "", // Return REAL email from DB
     caseNumber: "Pending",
     bondAmount: "$0.00",
     nextCourtDate: "TBD",
@@ -662,19 +670,30 @@ export async function getDefendantDetails(userId) {
     ...profile // overlay any existing profile data
   };
 
-  // Try to get real name from Members/Contacts if available
-  try {
-    const user = await wixUsersBackend.getUser(userId);
-    // Note: wix-users-backend doesn't always give contact details directly without suppressing auth
-    // For now, we return specific structure
-  } catch (e) { }
-
   return details;
 }
 
-export async function getIndemnitorDetails(userId) {
+export async function getIndemnitorDetails(sessionToken) {
+  // 1. Validate Session
+  const session = await validateCustomSession(sessionToken);
+  if (!session || !session.personId) {
+    throw new Error("Invalid session");
+  }
+
+  // 2. Get Profile from PortalUsers
+  const rs = await wixData.query("PortalUsers")
+    .eq("personId", session.personId)
+    .limit(1)
+    .find({ suppressAuth: true });
+
+  const profile = rs.items[0] || {};
+
   // Mock Data for Indemnitor Dashboard
   const details = {
+    firstName: profile.firstName || "Client",
+    lastName: profile.lastName || "",
+    email: profile.email || "", // Return REAL email from DB
+
     totalLiability: "$50,000",
     totalPremium: "$5,000",
     downPayment: "$1,000",
@@ -688,7 +707,8 @@ export async function getIndemnitorDetails(userId) {
     ppPaymentTerms: "$400 / month",
     ppNextDueDate: "Nov 1, 2025",
     ppProgressValue: 20,
-    paperworkStatus: "Pending Signature(s)"
+    paperworkStatus: "Pending Signature(s)",
+    ...profile
   };
   return details;
 }

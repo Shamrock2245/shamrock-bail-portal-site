@@ -52,6 +52,7 @@ $w.onReady(async function () {
         // Fetch Data using sessionToken (session.personId is extracted on backend)
         const data = await getDefendantDetails(sessionToken);
         const name = data?.firstName || "Client";
+        currentSession.email = data?.email || ""; // Store retrieved email
 
         try {
             if ($w('#welcomeText').type) {
@@ -103,6 +104,10 @@ function initUI() {
         }
         if ($w('#checkInStatusText').type) {
             $w('#checkInStatusText').collapse();
+        }
+        // Hide Download Button (Per Implementation Plan)
+        if ($w('#comp-mjsihg1a').type) {
+            $w('#comp-mjsihg1a').collapse();
         }
     } catch (e) {
         console.error('Error initializing UI:', e);
@@ -187,13 +192,11 @@ async function handleLogout() {
  * Checks status sequentially and opens lightboxes if needed.
  */
 async function handlePaperworkStart() {
-    if (!currentSession) {
-        console.error('No session available');
-        return;
-    }
+    if (!currentSession) return;
 
-    // For now, we'll use a mock email - in production, this should come from user profile
-    const userEmail = `defendant_${currentSession.personId}@shamrock.local`;
+    // Use REAL email or fallback
+    const userEmail = currentSession.email || `defendant_${currentSession.personId}@shamrock.local`;
+    console.log("Portal: Using email for paperwork:", userEmail);
 
     // 1. ID Upload Check
     const hasUploadedId = await checkIdUploadStatus(userEmail);
@@ -249,13 +252,11 @@ async function checkConsentStatus(personId) {
 }
 
 async function proceedToSignNow() {
-    if (!currentSession) {
-        console.error('No session available');
-        return;
-    }
+    if (!currentSession) return;
 
     const caseId = currentSession.caseId || "Active_Case_Fallback";
-    const userEmail = `defendant_${currentSession.personId}@shamrock.local`;
+    // Use REAL email or fallback
+    const userEmail = currentSession.email || `defendant_${currentSession.personId}@shamrock.local`;
 
     // Generate Link
     const result = await createEmbeddedLink(caseId, userEmail, 'defendant');
@@ -304,11 +305,13 @@ function setupCheckInHandlers() {
                 const locationObj = await wixWindow.getCurrentGeolocation();
 
                 $w('#checkInBtn').label = "Verifying...";
+                const token = getSessionToken(); // Get auth token for backend
                 const result = await saveUserLocation(
                     locationObj.coords.latitude,
                     locationObj.coords.longitude,
                     $w('#updateNotesInput').type ? $w('#updateNotesInput').value : '',
-                    selfieUrl
+                    selfieUrl,
+                    token
                 );
 
                 if (result.success) {

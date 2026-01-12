@@ -231,6 +231,18 @@ async function handleAccessCode(accessCode) {
             // Store session token in browser
             setSessionToken(result.sessionToken);
 
+            // VERIFY storage (hardening)
+            const verifyToken = getSessionToken();
+            if (!verifyToken) {
+                console.error("Portal Landing: CRITICAL - Token failed to save to storage");
+                showError("Browser storage error. Please enable cookies/local storage.");
+                submitBtn.enable();
+                submitBtn.label = "Retry";
+                return;
+            }
+
+            console.log("Portal Landing: Token verified in storage. Ready to redirect.");
+
             // Update UI
             submitBtn.label = "Success!";
             showSuccess(`Login successful! Redirecting to ${result.role} portal...`);
@@ -245,7 +257,7 @@ async function handleAccessCode(accessCode) {
             setTimeout(() => {
                 console.log("Portal Landing: Redirecting to:", result.goto);
                 wixLocation.to(result.goto);
-            }, 1000);
+            }, 500);
 
         } else {
             console.error("Portal Landing: Access code validation failed:", result.message);

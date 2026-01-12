@@ -1,35 +1,45 @@
-// Backend module for saving user location
-// Filename: backend/location.jsw
-
 import wixData from 'wix-data';
-import { currentMember } from 'wix-members-backend';
+// REMOVED: import { currentMember } from 'wix-members-backend';
 import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
 import { fetchWithRetry } from 'backend/utils';
+import { validateCustomSession } from 'backend/portal-auth';
 
 /**
  * Save user location to the database and sync to Google Sheets
+ * Refactored for Custom Session Auth (No Wix Members)
+ * 
  * @param {number} latitude - GPS latitude
  * @param {number} longitude - GPS longitude
- * @param {string} [notes] - Optional comments from the user
- * @param {string} [imageUrl] - Optional URL of the selfie/evidence
+ * @param {string} [notes] - Optional comments
+ * @param {string} [imageUrl] - Optional URL of selfie
+ * @param {string} sessionToken - REQUIRED: Custom session token
  * @returns {Promise<{success: boolean, message: string}>}
  */
-export async function saveUserLocation(latitude, longitude, notes = "", imageUrl = "") {
+export async function saveUserLocation(latitude, longitude, notes = "", imageUrl = "", sessionToken) {
     try {
-        const member = await currentMember.getMember();
+        console.log("LocationBackend: Saving location...");
 
-        if (!member) {
-            return { success: false, message: 'User not logged in' };
+        if (!sessionToken) {
+            console.error("LocationBackend: Missing session token");
+            return { success: false, message: 'Unauthorized: Missing token' };
         }
 
-        // --- ENHANCEMENT: Removed Daily Limit ---
-        // We want unlimited data points for active monitoring.
+        // Validate Token
+        const session = await validateCustomSession(sessionToken);
+        if (!session || !session.personId) {
+            console.error("LocationBackend: Invalid session");
+            return { success: false, message: 'Unauthorized: Invalid session' };
+        }
 
-        // 1. Get Last Location for Velocity Check
-        const lastLocation = await getLastLocation(member._id);
+        const personId = session.personId;
+        const email = session.email || `user_${personId}@shamrock.local`; // Fallback if email not in session yet
 
-        // 2. Perform Risk Analysis
+        // 1. Get Last Location (for risk/velocity)
+        const lastLocation = await getLastLocation(personId);
+
+        // 2. Risk Analysis (Dynamically imported)
+        // Note: Check if fraud-detection needs updating too, but assuming it just does math
         const { analyzeLocationRisk } = await import('backend/fraud-detection');
         const { riskLevel, riskFactors } = analyzeLocationRisk(latitude, longitude, lastLocation);
 
@@ -46,39 +56,34 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
                     if (geoData.status === 'OK' && geoData.results.length > 0) {
                         address = geoData.results[0].formatted_address;
                         const intersectionResult = geoData.results.find(r => r.types.includes('intersection'));
-                        if (intersectionResult) {
-                            intersection = intersectionResult.formatted_address;
-                        } else {
-                            const route = geoData.results[0].address_components.find(c => c.types.includes('route'));
-                            if (route) intersection = `Near ${route.long_name}`;
-                        }
+                        if (intersectionResult) intersection = intersectionResult.formatted_address;
                     }
                 }
             }
         } catch (geoError) {
-            console.error('Reverse geocoding failed:', geoError);
+            console.warn('LocationBackend: Geocoding failed', geoError);
         }
 
         const locationData = {
-            memberId: member._id,
-            memberEmail: member.loginEmail,
+            memberId: personId, // Using personId as memberId for compatibility
+            memberEmail: email,
             latitude: latitude,
             longitude: longitude,
             address: address,
             intersection: intersection,
             timestamp: new Date(),
             notes: notes || "",
-            imageUrl: imageUrl || "",       // NEW
-            userAgent: 'Wix Member Portal',
+            imageUrl: imageUrl || "",
+            userAgent: 'Portal Custom Auth',
             riskLevel: riskLevel,
             riskFactors: riskFactors,
             isHighRisk: riskLevel === 'HIGH'
         };
 
-        // 4. Save to UserLocations collection
+        // 4. Save to UserLocations
         await wixData.insert('UserLocations', locationData);
 
-        // 5. Sync to Google Sheets via GAS
+        // 5. Sync to GAS
         try {
             const gasUrl = await getSecret('GAS_WEB_APP_URL');
             if (gasUrl) {
@@ -95,19 +100,18 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
                 });
             }
         } catch (gasError) {
-            console.error('GAS sync failed:', gasError);
+            console.error('LocationBackend: GAS sync failed', gasError);
         }
 
         return {
             success: true,
             message: 'Check-in successful',
             address,
-            intersection,
             riskAlert: riskLevel === 'HIGH' ? 'High Risk Detected' : null
         };
 
     } catch (error) {
-        console.error('Error saving user location:', error);
+        console.error('LocationBackend: Critical Error', error);
         return { success: false, message: error.message };
     }
 }
