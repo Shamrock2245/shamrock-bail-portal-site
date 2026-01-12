@@ -233,7 +233,7 @@ async function handleAccessCode(accessCode) {
 
             // Update UI
             submitBtn.label = "Success!";
-            showSuccess(`Welcome! Click your portal button to continue.`);
+            showSuccess(`Login successful! Redirecting to ${result.role} portal...`);
 
             // Clear input
             const accessCodeInput = $w('#inputAccessCode');
@@ -241,11 +241,11 @@ async function handleAccessCode(accessCode) {
                 accessCodeInput.value = "";
             }
 
-            // Re-enable button
+            // Auto-Redirect
             setTimeout(() => {
-                submitBtn.enable();
-                submitBtn.label = "Submit";
-            }, 2000);
+                console.log("Portal Landing: Redirecting to:", result.goto);
+                wixLocation.to(result.goto);
+            }, 1000);
 
         } else {
             console.error("Portal Landing: Access code validation failed:", result.message);
