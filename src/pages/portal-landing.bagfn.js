@@ -372,24 +372,4 @@ function hideLoading() {
 // Export for testing
 export { handleMagicLinkToken, handleAccessCode };
 
-/**
- * Show loading state on submit button
- */
-function showLoading() {
-    const submitBtn = $w('#btnSubmitCode');
-    if (submitBtn) {
-        submitBtn.disable();
-        submitBtn.label = "Processing...";
-    }
-}
 
-/**
- * Hide loading state on submit button
- */
-function hideLoading() {
-    const submitBtn = $w('#btnSubmitCode');
-    if (submitBtn) {
-        submitBtn.enable();
-        submitBtn.label = "Submit";
-    }
-}
