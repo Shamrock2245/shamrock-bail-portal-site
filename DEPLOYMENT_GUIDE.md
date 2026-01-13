@@ -46,40 +46,40 @@ This guide provides step-by-step instructions for deploying the newly implemente
 
 **Order matters!** Add these in the following sequence:
 
+**Recommended Method:** Use the CDN links below. This ensures your site loads faster (caching) and keeps your Wix dashboard clean.
+
 #### 1.1 Add Design System CSS (First)
 
 ```html
 <!-- Design System - Load First -->
-<link rel="stylesheet" href="https://raw.githubusercontent.com/Shamrock2245/shamrock-bail-portal-site/main/src/styles/design-system.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shamrock2245/shamrock-bail-portal-site@main/src/styles/design-system.css">
 ```
 
-**OR** copy the contents of `src/styles/design.css` directly into:
-
-- Wix Editor → Site Settings → Custom Code → All Pages → Head
-
-#### 1.2 Add Components CSS (Second )
+#### 1.2 Add Components CSS (Second)
 
 ```html
 <!-- Component Library - Load Second -->
-<link rel="stylesheet" href="https://raw.githubusercontent.com/Shamrock2245/shamrock-bail-portal-site/main/src/styles/components.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shamrock2245/shamrock-bail-portal-site@main/src/styles/components.css">
 ```
 
-**OR** copy the contents of `src/styles/components.css` directly into:
-
-- Wix Editor → Site Settings → Custom Code → All Pages → Head
-
-#### 1.3 Add Global CSS (Third )
+#### 1.3 Add Global CSS (Third)
 
 ```html
 <!-- Global Styles - Load Third -->
-<link rel="stylesheet" href="https://raw.githubusercontent.com/Shamrock2245/shamrock-bail-portal-site/main/src/styles/global.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shamrock2245/shamrock-bail-portal-site@main/src/styles/global.css">
 ```
 
-**OR** copy the contents of `src/styles/global.css` directly into:
+#### 1.4 Add Performance Optimizations (Fourth)
 
-- Wix Editor → Site Settings → Custom Code → All Pages → Head
+Copy this entire block to speed up loading of external resources:
 
-**Note:** Using direct CSS paste is recommended for production to avoid external dependencies.
+```html
+<!-- Performance Boosters -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link rel="dns-prefetch" href="https://app.signnow.com">
+<link rel="dns-prefetch" href="https://fonts.googleapis.com">
+```
 
 ---
 
@@ -98,11 +98,10 @@ This guide provides step-by-step instructions for deploying the newly implemente
 1. Add to **Head** section:
 
 ```html
+```html
 <!-- County Page Mobile Styles -->
-<link rel="stylesheet" href="https://raw.githubusercontent.com/Shamrock2245/shamrock-bail-portal-site/main/src/styles/county-page-mobile.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shamrock2245/shamrock-bail-portal-site@main/src/styles/county-page-mobile.css">
 ```
-
-**OR** copy the contents of `src/styles/county-page-mobile.css` into the page's custom CSS.
 
 #### 2.2 Update County Page JavaScript
 
