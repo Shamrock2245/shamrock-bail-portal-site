@@ -1,0 +1,569 @@
+/**
+ * Shamrock Bail Bonds - Mobile-Optimized County Page Styles
+ * Based on Figma Design: https://pause-heat-20846788.figma.site
+ * 
+ * This CSS enhances the existing FloridaCounties (Item) dynamic page
+ * with mobile-first styling matching the Figma prototype.
+ * 
+ * USAGE: Add this to the County Page's custom CSS in Wix Editor
+ */
+
+/* ============================================
+   HERO SECTION - Mobile First
+   ============================================ */
+
+#heroSection {
+  background: linear-gradient(135deg, #1B3A5F 0%, #0066CC 100%);
+  padding: 48px 20px;
+  text-align: center;
+  color: white;
+}
+
+#dynamicHeader {
+  font-family: 'Poppins', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: white;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+#heroSubtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+/* Hero CTA Buttons - Stacked Vertically on Mobile */
+#heroButtons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+#callCountiesBtn,
+#heroCallBtn {
+  background-color: #0066CC;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: 8px;
+  border: none;
+  width: 100%;
+  max-width: 320px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#callCountiesBtn:hover,
+#heroCallBtn:hover {
+  background-color: #0052A3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.4);
+}
+
+#startBailBtn {
+  background-color: #FDB913;
+  color: #212529;
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: 8px;
+  border: none;
+  width: 100%;
+  max-width: 320px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#startBailBtn:hover {
+  background-color: #E5A811;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(253, 185, 19, 0.4);
+}
+
+/* ============================================
+   QUICK REFERENCE CARD - 2x2 Grid
+   ============================================ */
+
+#quickRefSection {
+  background-color: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 24px 20px;
+  box-shadow: 0 2px 8px rgba(27, 58, 95, 0.1);
+}
+
+#quickRefHeader {
+  font-family: 'Poppins', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 24px;
+}
+
+#quickRefGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Individual Grid Cells */
+.quick-ref-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-ref-icon {
+  width: 24px;
+  height: 24px;
+  color: #0066CC;
+  margin-bottom: 4px;
+}
+
+.quick-ref-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 8px;
+}
+
+#sheriffPhone,
+#clerkPhone {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: #0066CC;
+  text-decoration: none;
+  margin-bottom: 8px;
+}
+
+#sheriffWebsite,
+#clerkWebsite {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #0066CC;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#jailName {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 8px;
+}
+
+#jailAddress {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #343A40;
+  margin-bottom: 8px;
+}
+
+#inmateSearchBtn {
+  background-color: #0066CC;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#countySeat,
+#countyPopulation {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #343A40;
+  margin-bottom: 4px;
+}
+
+/* ============================================
+   ABOUT SECTION
+   ============================================ */
+
+#aboutSection {
+  background-color: white;
+  padding: 48px 20px;
+}
+
+#aboutHeader {
+  font-family: 'Poppins', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 24px;
+}
+
+#aboutBody {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #343A40;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+/* ============================================
+   WHY CHOOSE US SECTION
+   ============================================ */
+
+#whyChooseSection {
+  background-color: #F8F9FA;
+  padding: 48px 20px;
+}
+
+#whyChooseHeader {
+  font-family: 'Poppins', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 24px;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.feature-checkmark {
+  width: 16px;
+  height: 16px;
+  color: #0066CC;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.feature-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #343A40;
+  line-height: 1.6;
+}
+
+.feature-text strong {
+  font-weight: 600;
+}
+
+/* ============================================
+   PROCESS STEPS SECTION
+   ============================================ */
+
+#processSection {
+  background-color: white;
+  padding: 48px 20px;
+}
+
+#processHeader {
+  font-family: 'Poppins', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 32px;
+}
+
+.process-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.process-step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.step-number {
+  width: 48px;
+  height: 48px;
+  background-color: #0066CC;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-number-text {
+  font-family: 'Poppins', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 8px;
+}
+
+.step-description {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: #343A40;
+  line-height: 1.6;
+}
+
+/* ============================================
+   FAQ SECTION
+   ============================================ */
+
+#faqSection {
+  background-color: #F8F9FA;
+  padding: 48px 20px;
+}
+
+#faqHeader {
+  font-family: 'Poppins', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 24px;
+}
+
+.faq-item {
+  background-color: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(27, 58, 95, 0.08);
+}
+
+.faq-question {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.faq-answer {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: #343A40;
+  line-height: 1.6;
+  margin-top: 12px;
+  display: none;
+}
+
+.faq-item.active .faq-answer {
+  display: block;
+}
+
+/* ============================================
+   FINAL CTA SECTION
+   ============================================ */
+
+#finalCtaSection {
+  background-color: #1B3A5F;
+  padding: 48px 20px;
+  text-align: center;
+  color: white;
+}
+
+#finalCtaTitle {
+  font-family: 'Poppins', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 16px;
+}
+
+#finalCtaSubtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 24px;
+}
+
+#finalCallBtn {
+  background-color: #FDB913;
+  color: #212529;
+  font-family: 'Poppins', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 16px 32px;
+  border-radius: 8px;
+  border: none;
+  width: 90%;
+  max-width: 320px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#finalCallBtn:hover {
+  background-color: #E5A811;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(253, 185, 19, 0.4);
+}
+
+/* ============================================
+   RESPONSIVE - TABLET & DESKTOP
+   ============================================ */
+
+@media (min-width: 768px) {
+  #dynamicHeader {
+    font-size: 42px;
+  }
+  
+  #heroSubtitle {
+    font-size: 18px;
+  }
+  
+  #heroButtons {
+    flex-direction: row;
+    max-width: 100%;
+    justify-content: center;
+  }
+  
+  #callCountiesBtn,
+  #heroCallBtn,
+  #startBailBtn {
+    width: auto;
+    min-width: 200px;
+  }
+  
+  #quickRefSection {
+    margin: 32px auto;
+    max-width: 900px;
+  }
+  
+  #quickRefGrid {
+    gap: 32px;
+  }
+  
+  #aboutSection,
+  #whyChooseSection,
+  #processSection,
+  #faqSection,
+  #finalCtaSection {
+    padding: 64px 40px;
+  }
+  
+  #aboutHeader,
+  #whyChooseHeader,
+  #processHeader,
+  #faqHeader,
+  #finalCtaTitle {
+    font-size: 36px;
+  }
+}
+
+@media (min-width: 1024px) {
+  #dynamicHeader {
+    font-size: 56px;
+  }
+  
+  #quickRefGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .process-steps {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .process-step {
+    flex-direction: column;
+    text-align: center;
+    flex: 1;
+  }
+  
+  .step-number {
+    margin: 0 auto 16px;
+  }
+}
+
+/* ============================================
+   TOUCH TARGETS - Mobile Accessibility
+   ============================================ */
+
+@media (max-width: 767px) {
+  button,
+  a.btn,
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.hidden {
+  display: none !important;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.px-4 {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.py-4 {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
