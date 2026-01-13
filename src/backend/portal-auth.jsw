@@ -10,24 +10,6 @@ import { fetch } from "wix-fetch";
 import { API_BASE_URL, API_TIMEOUT } from 'public/portal-config';
 import { secrets } from "wix-secrets-backend";
 
-/**
- * GAS WEB APP URL CONFIGURATION
- * 
- * The Google Apps Script web app endpoint is stored in Wix Secrets Manager under TWO keys:
- * 
- * - GAS_WEB_APP_URL (CANONICAL) - Use this for all backend calls from Wix
- *   (email sending, dashboard integration, API-style requests)
- * 
- * - GAS_WEBHOOK_URL (ALIAS) - May exist for webhook-style semantics
- *   (external callbacks), but should not introduce new logic paths
- * 
- * Both keys point to the SAME deployed GAS web app:
- * https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzvYxPLTpP-nUv7M25i55D58c8LPv5b142Jsijd5tS0lirB0mjmKehaS9LGaSZrdLECcg/exec
- * 
- * RULE: Prefer GAS_WEB_APP_URL in new code. Treat both as pointing to same deployment.
- * No refactor required for existing references if working.
- */
-
 /***** CONFIG & ROLES *****/
 export const ROLES = {
   DEFENDANT: "defendant",
@@ -639,28 +621,20 @@ export async function cleanupExpired() {
   return { ok: true };
 }
 
-// Refactored to use Custom Session Token
-export async function getDefendantDetails(sessionToken) {
-  // 1. Validate Session
-  const session = await validateCustomSession(sessionToken);
-  if (!session || !session.personId) {
-    throw new Error("Invalid session");
-  }
+/***** DATA AGGREGATION (New for Defendant Portal) *****/
+/**
+ * Aggregates all data needed for the Defendant Dashboard.
+ * Currently mocks missing DB fields, but STRUCTURE IS FINAL.
+ */
+export async function getDefendantDetails(userId) {
+  // 1. Get Basic Profile
+  const profile = await getUserProfile(userId);
+  if (!profile) return null;
 
-  // 2. Get Profile from PortalUsers
-  // We identify the user by personId for now
-  const rs = await wixData.query("PortalUsers")
-    .eq("personId", session.personId)
-    .limit(1)
-    .find({ suppressAuth: true });
-
-  const profile = rs.items[0] || {};
-
-  // 3. Mock/Fetch Case Data
+  // 2. Mock/Fetch Case Data
+  // In future, this will query a "Cases" or "BailData" collection by profile.personId/caseIds
   const details = {
-    firstName: profile.firstName || "Client",
-    lastName: profile.lastName || "",
-    email: profile.email || "", // Return REAL email from DB
+    firstName: "Client", // TODO: fetch from Contact
     caseNumber: "Pending",
     bondAmount: "$0.00",
     nextCourtDate: "TBD",
@@ -670,30 +644,19 @@ export async function getDefendantDetails(sessionToken) {
     ...profile // overlay any existing profile data
   };
 
+  // Try to get real name from Members/Contacts if available
+  try {
+    const user = await wixUsersBackend.getUser(userId);
+    // Note: wix-users-backend doesn't always give contact details directly without suppressing auth
+    // For now, we return specific structure
+  } catch (e) { }
+
   return details;
 }
 
-export async function getIndemnitorDetails(sessionToken) {
-  // 1. Validate Session
-  const session = await validateCustomSession(sessionToken);
-  if (!session || !session.personId) {
-    throw new Error("Invalid session");
-  }
-
-  // 2. Get Profile from PortalUsers
-  const rs = await wixData.query("PortalUsers")
-    .eq("personId", session.personId)
-    .limit(1)
-    .find({ suppressAuth: true });
-
-  const profile = rs.items[0] || {};
-
+export async function getIndemnitorDetails(userId) {
   // Mock Data for Indemnitor Dashboard
   const details = {
-    firstName: profile.firstName || "Client",
-    lastName: profile.lastName || "",
-    email: profile.email || "", // Return REAL email from DB
-
     totalLiability: "$50,000",
     totalPremium: "$5,000",
     downPayment: "$1,000",
@@ -707,8 +670,7 @@ export async function getIndemnitorDetails(sessionToken) {
     ppPaymentTerms: "$400 / month",
     ppNextDueDate: "Nov 1, 2025",
     ppProgressValue: 20,
-    paperworkStatus: "Pending Signature(s)",
-    ...profile
+    paperworkStatus: "Pending Signature(s)"
   };
   return details;
 }
