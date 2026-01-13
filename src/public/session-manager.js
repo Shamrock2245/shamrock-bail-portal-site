@@ -3,16 +3,16 @@
  * Client-side session management for custom role-based authentication
  * NO Wix Members dependency - pure custom session system
  * 
- * FIXED: Uses wix-storage-frontend (browser-safe) instead of localStorage
+ * STANDARD: Uses wix-storage (standard Velo API)
  */
 
-import { local } from 'wix-storage-frontend';
+import { local } from 'wix-storage';
 
 const SESSION_KEY = 'shamrock_portal_session';
 
 /**
  * Session Manager - Client-side utilities for custom authentication
- * Uses Wix's storage API which is browser-safe and SSR-compatible
+ * Uses Wix's storage API
  */
 export const SessionManager = {
   /**
@@ -23,10 +23,22 @@ export const SessionManager = {
       console.error('SessionManager: Cannot set empty session token');
       return false;
     }
-    
+
     try {
+      if (!local) {
+        console.error('SessionManager: wix-storage "local" is undefined');
+        return false;
+      }
       local.setItem(SESSION_KEY, sessionToken);
-      console.log('SessionManager: Session token stored');
+      console.log('SessionManager: Session token stored successfully');
+
+      // Verification
+      const verify = local.getItem(SESSION_KEY);
+      if (verify !== sessionToken) {
+        console.error('SessionManager: Immediate verification failed!');
+        return false;
+      }
+
       return true;
     } catch (e) {
       console.error('SessionManager: Error storing session:', e);
@@ -39,7 +51,12 @@ export const SessionManager = {
    */
   getSession() {
     try {
+      if (!local) {
+        console.error('SessionManager: wix-storage "local" is undefined');
+        return null;
+      }
       const token = local.getItem(SESSION_KEY);
+      // console.log('SessionManager: Retrieved token:', token ? 'YES' : 'NO');
       return token || null;
     } catch (e) {
       console.error('SessionManager: Error retrieving session:', e);
@@ -52,6 +69,7 @@ export const SessionManager = {
    */
   clearSession() {
     try {
+      if (!local) return false;
       local.removeItem(SESSION_KEY);
       console.log('SessionManager: Session cleared');
       return true;
