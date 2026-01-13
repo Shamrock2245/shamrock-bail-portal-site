@@ -1,4 +1,5 @@
 // masterPage.js
+// Updated: Force Sync
 // Global code that runs on every page
 
 import wixLocation from 'wix-location';

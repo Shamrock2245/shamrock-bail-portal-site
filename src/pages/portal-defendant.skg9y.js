@@ -53,6 +53,10 @@ $w.onReady(async function () {
         const data = await getDefendantDetails(sessionToken);
         const name = data?.firstName || "Client";
         currentSession.email = data?.email || ""; // Store retrieved email
+        // Glue Fix: Ensure SignNow flow uses the Case Number we just found
+        if (data?.caseNumber && data.caseNumber !== "Pending") {
+            currentSession.caseId = data.caseNumber;
+        }
 
         try {
             if ($w('#welcomeText').type) {

@@ -1,5 +1,6 @@
 /**
  * Backend Portal Validators
+ * Updated: Force Sync
  * 
  * This file has been deprecated. All validation logic has been moved to:
  * public/portal-validators.js

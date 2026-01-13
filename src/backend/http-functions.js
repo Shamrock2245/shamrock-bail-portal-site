@@ -37,14 +37,14 @@ import { getSecret } from 'wix-secrets-backend';
 export async function post_apiSyncCaseData(request) {
     try {
         const body = await request.body.json();
-        
+
         // Validate API key
         if (!body.apiKey) {
             return badRequest({
                 body: { success: false, message: 'Missing apiKey' }
             });
         }
-        
+
         // Verify API key against stored secret
         const validApiKey = await getSecret('GAS_API_KEY');
         if (body.apiKey !== validApiKey) {
@@ -52,99 +52,87 @@ export async function post_apiSyncCaseData(request) {
                 body: { success: false, message: 'Invalid API key' }
             });
         }
-        
+
         // Validate case data
         if (!body.caseData || !body.caseData.caseNumber) {
             return badRequest({
                 body: { success: false, message: 'Missing caseData or caseNumber' }
             });
         }
-        
+
         const caseData = body.caseData;
-        
-        // Check if case already exists in Cases collection
-        const existingCases = await wixData.query('Cases')
-            .eq('caseNumber', caseData.caseNumber)
-            .find();
-        
-        let result;
-        
-        if (existingCases.items.length > 0) {
-            // Update existing case
-            const existingCase = existingCases.items[0];
-            const updatedCase = {
-                ...existingCase,
-                defendantName: caseData.defendantName || existingCase.defendantName,
-                defendantEmail: caseData.defendantEmail || existingCase.defendantEmail,
-                defendantPhone: caseData.defendantPhone || existingCase.defendantPhone,
-                indemnitorName: caseData.indemnitorName || existingCase.indemnitorName,
-                indemnitorEmail: caseData.indemnitorEmail || existingCase.indemnitorEmail,
-                indemnitorPhone: caseData.indemnitorPhone || existingCase.indemnitorPhone,
-                bondAmount: caseData.bondAmount || existingCase.bondAmount,
-                county: caseData.county || existingCase.county,
-                arrestDate: caseData.arrestDate || existingCase.arrestDate,
-                charges: caseData.charges || existingCase.charges,
-                status: caseData.status || existingCase.status,
-                receiptNumber: caseData.receiptNumber || existingCase.receiptNumber,
-                gasSheetRow: caseData.gasSheetRow || existingCase.gasSheetRow,
-                lastSyncedAt: new Date()
-            };
-            
-            result = await wixData.update('Cases', updatedCase);
-            
-            return ok({
-                headers: { 'Content-Type': 'application/json' },
-                body: {
-                    success: true,
-                    message: 'Case updated successfully',
-                    caseId: result._id,
-                    caseNumber: result.caseNumber,
-                    action: 'updated'
-                }
-            });
-            
-        } else {
-            // Create new case
-            const newCase = {
-                caseNumber: caseData.caseNumber,
-                defendantName: caseData.defendantName || '',
-                defendantEmail: caseData.defendantEmail || '',
-                defendantPhone: caseData.defendantPhone || '',
-                indemnitorName: caseData.indemnitorName || '',
-                indemnitorEmail: caseData.indemnitorEmail || '',
-                indemnitorPhone: caseData.indemnitorPhone || '',
-                bondAmount: caseData.bondAmount || '',
-                county: caseData.county || '',
-                arrestDate: caseData.arrestDate || '',
-                charges: caseData.charges || '',
-                status: caseData.status || 'pending',
-                receiptNumber: caseData.receiptNumber || '',
-                gasSheetRow: caseData.gasSheetRow || null,
-                lastSyncedAt: new Date()
-            };
-            
-            result = await wixData.insert('Cases', newCase);
-            
-            return ok({
-                headers: { 'Content-Type': 'application/json' },
-                body: {
-                    success: true,
-                    message: 'Case created successfully',
-                    caseId: result._id,
-                    caseNumber: result.caseNumber,
-                    action: 'created'
-                }
+
+        const caseData = body.caseData;
+
+        // Use Strict camelCase Schema (Matching 'Cases' Collection)
+        const c = {
+            caseNumber: caseData.caseNumber,
+            defendantName: caseData.defendantName,
+            defendantEmail: caseData.defendantEmail,
+            defendantPhone: caseData.defendantPhone,
+            indemnitorName: caseData.indemnitorName,
+            indemnitorEmail: caseData.indemnitorEmail,
+            indemnitorPhone: caseData.indemnitorPhone,
+            bondAmount: caseData.bondAmount,
+            county: caseData.county,
+            arrestDate: caseData.arrestDate,
+            charges: caseData.charges,
+            status: caseData.status,
+            receiptNumber: caseData.receiptNumber,
+            gasSheetRow: caseData.gasSheetRow
+        };
+
+        if (!c.caseNumber) {
+            return badRequest({
+                body: { success: false, message: 'Missing caseNumber' }
             });
         }
-        
+
+        const recordToSave = {
+            caseNumber: c.caseNumber,
+            defendantName: c.defendantName,
+            defendantEmail: c.defendantEmail,
+            defendantPhone: c.defendantPhone,
+            indemnitorName: c.indemnitorName,
+            indemnitorEmail: c.indemnitorEmail,
+            indemnitorPhone: c.indemnitorPhone,
+            bondAmount: c.bondAmount,
+            county: c.county,
+            arrestDate: c.arrestDate,
+            charges: c.charges,
+            status: c.status,
+            receiptNumber: c.receiptNumber,
+            gasSheetRow: c.gasSheetRow,
+            lastSyncedAt: new Date()
+        };
+
+        const existingCases = await wixData.query('Cases')
+            .eq('caseNumber', c.caseNumber)
+            .find();
+
+        let result;
+
+        if (existingCases.items.length > 0) {
+            const existingCase = existingCases.items[0];
+            // Merge existing ID
+            recordToSave._id = existingCase._id;
+            result = await wixData.update('Cases', recordToSave);
+            return ok({
+                headers: { 'Content-Type': 'application/json' },
+                body: { success: true, message: 'Case updated', caseId: result._id, action: 'updated' }
+            });
+        } else {
+            result = await wixData.insert('Cases', recordToSave);
+            return ok({
+                headers: { 'Content-Type': 'application/json' },
+                body: { success: true, message: 'Case created', caseId: result._id, action: 'created' }
+            });
+        }
+
     } catch (error) {
         console.error('Error syncing case data:', error);
         return serverError({
-            body: {
-                success: false,
-                message: error.message,
-                error: error.toString()
-            }
+            body: { success: false, message: error.message }
         });
     }
 }
@@ -172,15 +160,15 @@ export async function post_apiSyncCaseData(request) {
 export async function post_documentsAdd(request) {
     try {
         const body = await request.body.json();
-        
+
         if (!body.apiKey || !body.document) {
             return badRequest({
                 body: { success: false, message: 'Missing apiKey or document' }
             });
         }
-        
+
         const result = await addPendingDocument(body.document, body.apiKey);
-        
+
         if (result.success) {
             return ok({
                 headers: { 'Content-Type': 'application/json' },
@@ -191,7 +179,7 @@ export async function post_documentsAdd(request) {
                 body: result
             });
         }
-        
+
     } catch (error) {
         return serverError({
             body: { success: false, message: error.message }
@@ -215,15 +203,15 @@ export async function post_documentsAdd(request) {
 export async function post_documentsBatch(request) {
     try {
         const body = await request.body.json();
-        
+
         if (!body.apiKey || !body.documents || !Array.isArray(body.documents)) {
             return badRequest({
                 body: { success: false, message: 'Missing apiKey or documents array' }
             });
         }
-        
+
         const result = await addPendingDocumentsBatch(body.documents, body.apiKey);
-        
+
         if (result.success) {
             return ok({
                 headers: { 'Content-Type': 'application/json' },
@@ -234,7 +222,7 @@ export async function post_documentsBatch(request) {
                 body: result
             });
         }
-        
+
     } catch (error) {
         return serverError({
             body: { success: false, message: error.message }
@@ -256,15 +244,15 @@ export async function post_documentsBatch(request) {
 export async function post_documentsStatus(request) {
     try {
         const body = await request.body.json();
-        
+
         if (!body.apiKey || !body.signNowDocumentId || !body.status) {
             return badRequest({
                 body: { success: false, message: 'Missing required fields' }
             });
         }
-        
+
         const result = await updateDocumentStatus(body.signNowDocumentId, body.status, body.apiKey);
-        
+
         if (result.success) {
             return ok({
                 headers: { 'Content-Type': 'application/json' },
@@ -275,7 +263,7 @@ export async function post_documentsStatus(request) {
                 body: result
             });
         }
-        
+
     } catch (error) {
         return serverError({
             body: { success: false, message: error.message }
@@ -292,30 +280,30 @@ export async function post_documentsStatus(request) {
 export async function post_webhookSignnow(request) {
     try {
         const body = await request.body.json();
-        
+
         // SignNow webhook payload structure
         // https://docs.signnow.com/docs/signnow/webhooks
-        
+
         const eventType = body.event || body.meta?.event;
         const documentId = body.document_id || body.content?.document_id;
-        
+
         if (eventType === 'document.complete' || eventType === 'document_complete') {
             // Document has been fully signed
             // Use a stored API key for webhook authentication
             const apiKey = process.env.GAS_API_KEY || 'webhook-internal';
-            
+
             await updateDocumentStatus(documentId, 'signed', apiKey);
-            
+
             return ok({
                 body: { received: true, status: 'processed' }
             });
         }
-        
+
         // Acknowledge other events
         return ok({
             body: { received: true, status: 'ignored' }
         });
-        
+
     } catch (error) {
         console.error('Webhook error:', error);
         return serverError({

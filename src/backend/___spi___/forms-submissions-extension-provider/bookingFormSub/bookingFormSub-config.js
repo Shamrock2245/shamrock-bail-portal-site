@@ -1,6 +1,6 @@
-
 /**
  * Configuration for Booking Form Submission SPI
+ * Updated: Force Sync
  * 
  * This configuration is used by Wix Forms to handle form submissions.
  * Currently set to allow submissions without requiring user login.

@@ -79,6 +79,26 @@ This document outlines **all planned automations** for the Shamrock Bail Bonds s
 
 ---
 
+### 🎯 **AUTOMATION #1.5: GAS → Wix Data Bridge** (CRITICAL V1)
+**Stage**: 2b. PORTAL ACTIVATION  
+**Trigger**: Staff saves/updates booking in Dashboard.html  
+**Source**: GAS `saveBookingData` function  
+**Destination**: Wix `Cases` Collection  
+
+**Automated Actions**:
+1.  Staff clicks "Save" in GAS Dashboard.
+2.  GAS script calls `syncCaseDataToWix` (new function).
+3.  Payload (Defendant Name, Booking #, Charges, Bond amount) sent to Wix JSON API.
+4.  Wix `Cases` collection updated or created.
+5.  **Result**: Defendant can now log in and see their case immediately.
+
+**Implementation Status**: ✅ READY (Needs Deployment to GAS)
+**Code Location**: `GAS: Code.gs` (`syncCaseDataToWix`)  
+**Wix Endpoint**: `backend/http-functions.js` (`post_apiSyncCaseData`)
+
+
+---
+
 ### 🎯 **AUTOMATION #3: Document Generation**
 **Stage**: 3. DOCUMENT GENERATION  
 **Trigger**: Click "Generate Packet" button  

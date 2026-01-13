@@ -523,34 +523,6 @@ export async function onMagicLinkLoginV2(token) {
   }
 
   try {
-    // DEMO ACCESS CODES - Hardcoded for easy testing
-    const DEMO_CODES = {
-      'DEMO-STAFF': { personId: 'demo_staff_001', role: 'staff', caseId: null },
-      'DEMO-DEFENDANT': { personId: 'demo_defendant_001', role: 'defendant', caseId: 'demo_case_001' },
-      'DEMO-INDEMNITOR': { personId: 'demo_indemnitor_001', role: 'indemnitor', caseId: 'demo_case_001' }
-    };
-
-    // Check if token is a demo code
-    const demoData = DEMO_CODES[token.toUpperCase()];
-    if (demoData) {
-      console.log('Demo access code detected:', token);
-
-      // Create custom session for demo user
-      const sessionToken = await createCustomSession(demoData.personId, demoData.role, demoData.caseId);
-
-      const role = demoData.role;
-      const caseId = demoData.caseId;
-      const goto = PORTAL_PATHS[role] || "/portal-landing";
-
-      return {
-        ok: true,
-        role,
-        caseId,
-        goto,
-        sessionToken,
-        message: `Demo access granted! Welcome to the ${role} portal.`
-      };
-    }
 
     // Not a demo code, try regular magic link validation
     const link = await validateMagicLink(token);
@@ -631,96 +603,160 @@ export async function getDefendantDetails(userId) {
   const profile = await getUserProfile(userId);
   if (!profile) return null;
 
-  // 2. Mock/Fetch Case Data
-  // In future, this will query a "Cases" or "BailData" collection by profile.personId/caseIds
+  // 2. Fetch Real Case Data from 'Cases' Collection
+  // Automation Bridge: Bookmarklet -> GAS -> Wix (Cases) -> Portal (Here)
+  let caseData = {};
+  try {
+    // Try to find case by Email first (most reliable link from Automation)
+    let caseQuery = wixData.query("Cases");
+
+    // If profile has an email, use it
+    if (profile.email) {
+      caseQuery = caseQuery.eq("defendantEmail", profile.email);
+    } else if (profile.caseIds && profile.caseIds.length > 0) {
+      // Fallback to caseId if available
+      caseQuery = caseQuery.in("caseNumber", profile.caseIds);
+    } else {
+      // No linking info
+      throw new Error("No email or caseId to link data");
+    }
+
+    const caseResult = await caseQuery.find({ suppressAuth: true });
+
+    if (caseResult.items.length > 0) {
+      const c = caseResult.items[0];
+      caseData = {
+        caseNumber: c.caseNumber || "Pending",
+        bondAmount: c.bondAmount || "$0.00",
+        nextCourtDate: c.nextCourtDate || "TBD", // Ensure scraper/GAS populates this
+        caseStatus: c.status || "Active",
+        charges: c.charges || "",
+        county: c.county || ""
+      };
+    }
+  } catch (err) {
+    console.warn("getDefendantDetails: Case lookup failed/empty", err);
+  }
+
+  let firstName = "Client";
+  try {
+    const user = await wixUsersBackend.getUser(userId);
+    if (user && user.info && user.info.firstName) {
+      firstName = user.info.firstName;
+    }
+  } catch (e) { }
+
   const details = {
-    firstName: "Client", // TODO: fetch from Contact
-    caseNumber: "Pending",
-    bondAmount: "$0.00",
-    nextCourtDate: "TBD",
-    caseStatus: "Active",
-    paperworkStatus: "Incomplete",
+    firstName: firstName,
+    caseNumber: caseData.caseNumber || "Pending",
+    bondAmount: caseData.bondAmount || "$0.00",
+    nextCourtDate: caseData.nextCourtDate || "TBD",
+    caseStatus: caseData.caseStatus || "Active",
+    paperworkStatus: "Incomplete", // TODO: Link to SignNow status if available
     signingStatus: "Waiting",
+    charges: caseData.charges || "", // Added for UI
+    county: caseData.county || "",   // Added for UI
     ...profile // overlay any existing profile data
   };
 
-  // Try to get real name from Members/Contacts if available
-  try {
-    const user = await wixUsersBackend.getUser(userId);
-    // Note: wix-users-backend doesn't always give contact details directly without suppressing auth
-    // For now, we return specific structure
-  } catch (e) { }
-
   return details;
 }
 
-export async function getIndemnitorDetails(userId) {
-  // Mock Data for Indemnitor Dashboard
-  const details = {
-    totalLiability: "$50,000",
-    totalPremium: "$5,000",
-    downPayment: "$1,000",
-    balanceDue: "$4,000",
-    chargesCount: "2",
-    defendantName: "John Doe",
-    defendantStatus: "Good Standing",
-    lastCheckIn: "2 days ago",
-    nextCourtDate: "Oct 15, 2025",
-    ppRemainingBalance: "$4,000",
-    ppPaymentTerms: "$400 / month",
-    ppNextDueDate: "Nov 1, 2025",
-    ppProgressValue: 20,
-    paperworkStatus: "Pending Signature(s)"
-  };
-  return details;
+export async function getIndemnitorDetails(token) {
+  // Validate session to ensure security and get correct personId
+  // Frontend passes session token, not raw userId
+  const session = await validateCustomSession(token);
+  if (!session || !session.personId) {
+    console.warn("getIndemnitorDetails: Invalid session token provided.");
+    throw new Error("Unauthorized: Invalid session");
+  }
+
+  const personId = session.personId;
+
+  try {
+    // Query FinancialObligations collection
+    // Using suppressAuth: true because custom auth users are not Wix Members
+    const result = await wixData.query("FinancialObligations")
+      .eq("personid", personId)
+      .limit(1)
+      .find({ suppressAuth: true });
+
+    if (result.items.length === 0) {
+      console.warn(`No financial obligations found for personId: ${personId}`);
+      // Return default structure to prevent frontend crash
+      return {
+        totalLiability: "$0.00",
+        totalPremium: "$0.00",
+        downPayment: "$0.00",
+        balanceDue: "$0.00",
+        chargesCount: 0,
+        defendantName: "N/A",
+        defendantStatus: "Unknown",
+        lastCheckIn: "Never",
+        nextCourtDate: "TBD"
+      };
+    }
+
+    const data = result.items[0];
+
+    return {
+      totalLiability: data.totalliability || "$0.00",
+      totalPremium: data.totalpremium || "$0.00",
+      downPayment: data.downpayment || "$0.00",
+      balanceDue: data.balancedue || "$0.00",
+      chargesCount: Number(data.chargescount) || 0,
+      defendantName: data.defendantname || "",
+      defendantStatus: data.defendantstatus || "",
+      lastCheckIn: data.lastcheckin || "",
+      nextCourtDate: data.nextcourtdate || ""
+    };
+  } catch (error) {
+    console.error("Error fetching indemnitor details:", error);
+    throw error;
+  }
 }
 
 export async function getStaffDashboardData() {
-  // await requireStaff(); // Security Check - DISABLED FOR DEV/MOCK DATA
+  await requireStaff();
+
+  // 1. Query Real Cases
+  let rawCases = [];
   try {
-    await requireStaff();
-  } catch (e) {
-    console.warn("DEV MODE: Staff check failed, but proceeding with MOCK DATA for testing.");
+    const result = await wixData.query("Cases")
+      .limit(100)
+      .descending("_createdDate")
+      .find({ suppressAuth: true });
+    rawCases = result.items;
+  } catch (err) {
+    console.error("getStaffDashboardData: Failed to query Cases", err);
+    // Fallback empty array to prevent crash
+    rawCases = [];
   }
 
-  // 1. Stats (Mocked)
-  const stats = {
-    activeCases: 12,
-    pendingSignatures: 5,
-    completedToday: 3,
-    failedChecks: 1
-  };
+  // 2. Map Data
+  const cases = rawCases.map(c => ({
+    _id: c._id,
+    caseNumber: c.caseNumber || "UNK",
+    defendantName: c.defendantName || "Unknown",
+    bondAmount: c.bondAmount || "$0.00",
+    status: c.status || "Pending",
+    paperworkStatus: c.paperworkStatus || "Incomplete", // Assumes this field exists or defaults
+    phone: c.defendantPhone || "",
+    defendantEmail: c.defendantEmail || ""
+  }));
 
-  // 2. Case List (Mocked)
-  const cases = [
-    {
-      _id: "c1",
-      caseNumber: "20-CF-003444",
-      defendantName: "Jane Smith",
-      bondAmount: "$50,000",
-      status: "Active",
-      paperworkStatus: "Signed",
-      phone: "555-0101"
-    },
-    {
-      _id: "c2",
-      caseNumber: "21-CF-112233",
-      defendantName: "John Doe",
-      bondAmount: "$10,000",
-      status: "Pending",
-      paperworkStatus: "Sent",
-      phone: "555-0102"
-    },
-    {
-      _id: "c3",
-      caseNumber: "22-MM-998877",
-      defendantName: "Robert Jones",
-      bondAmount: "$5,000",
-      status: "Active",
-      paperworkStatus: "Unsent",
-      phone: "555-0103"
-    }
-  ];
+  // 3. Dynamic Stats
+  const stats = {
+    activeCases: cases.filter(c => c.status === 'Active' || c.status === 'open').length,
+    pendingSignatures: cases.filter(c => c.paperworkStatus === 'Sent' || c.paperworkStatus === 'Pending').length,
+    completedToday: cases.filter(c => {
+      // Check if created today? Or status changed today? Using _createdDate for now as proxy for daily volume
+      // Ideally we check a 'completionDate' field
+      return false; // logic placeholder
+    }).length,
+    // totalCases: cases.length,
+    failedChecks: 0 // Placeholder
+  };
 
   return { stats, cases };
 }
