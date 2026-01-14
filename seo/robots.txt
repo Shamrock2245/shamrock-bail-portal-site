@@ -3,44 +3,34 @@
 
 User-agent: *
 Allow: /
+# Disallow internal Wix paths and sensitive member areas
+Disallow: /_api/
+Disallow: /_functions/
+Disallow: /_partials/
+Disallow: /editor/
+Disallow: /members/
+Disallow: /admin/
+Disallow: /account/
+
+# Allow specific useful paths if blocked by above wildcards (Member areas usually 403 anyway)
+Allow: /blog/
+Allow: /bail-bonds/
+Allow: /county-directory
 
 # Sitemap location
 Sitemap: https://www.shamrockbailbonds.biz/sitemap.xml
 
-# Disallow admin and member-only areas from indexing
-Disallow: /members/account
-Disallow: /members/documents
-Disallow: /members/signing
-Disallow: /_api/
-Disallow: /_functions/
-Disallow: /admin/
+# Crawl delay (optional, usually ignored by Google but good for others)
+Crawl-delay: 2
 
-# Allow important pages
-Allow: /members/start-bail
-Allow: /how-bail-works
-Allow: /county-directory
-Allow: /bail-bonds/
-Allow: /blog/
-Allow: /faq
-Allow: /contact
-Allow: /about
-Allow: /become-a-bondsman
-Allow: /sheriffs-directory
-
-# Crawl delay (optional, be respectful)
-Crawl-delay: 1
-
-# Specific bot rules
+# Professional bot rules
 User-agent: Googlebot
 Allow: /
 
 User-agent: Bingbot
 Allow: /
 
-User-agent: Slurp
-Allow: /
-
-# Block bad bots
+# Block Aggressive SEO bots (Access to these tools is usually paid anyway)
 User-agent: AhrefsBot
 Disallow: /
 
@@ -48,4 +38,10 @@ User-agent: SemrushBot
 Disallow: /
 
 User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: PetalBot
 Disallow: /

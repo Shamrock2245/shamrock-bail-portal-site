@@ -48,23 +48,24 @@ const staticPages = [
 function generateSitemap() {
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-    
+
     // Add static pages
     staticPages.forEach(page => {
         xml += generateUrlEntry(page.url, page.priority, page.changefreq);
     });
-    
+
     // Add county pages
     floridaCounties.forEach(county => {
+        const safeSlug = encodeURIComponent(county.toLowerCase());
         xml += generateUrlEntry(
-            `/bail-bonds/${county}-county`,
+            `/bail-bonds/${safeSlug}-county`,
             '0.8',
             'monthly'
         );
     });
-    
+
     xml += '</urlset>';
-    
+
     return xml;
 }
 
@@ -86,22 +87,27 @@ function generateUrlEntry(url, priority, changefreq) {
 function generateSitemapIndex(sitemaps) {
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-    
+
     sitemaps.forEach(sitemap => {
         xml += `  <sitemap>
     <loc>${SITE_URL}/${sitemap}</loc>
     <lastmod>${LAST_MOD}</lastmod>
   </sitemap>\n`;
     });
-    
+
     xml += '</sitemapindex>';
-    
+
     return xml;
 }
 
 // Generate and output sitemap
-const sitemap = generateSitemap();
-console.log(sitemap);
+try {
+    const sitemap = generateSitemap();
+    console.log(sitemap);
+} catch (error) {
+    console.error("CRITICAL ERROR Generating Sitemap:", error);
+    process.exit(1);
+}
 
 // Export for use in other scripts
 module.exports = { generateSitemap, generateSitemapIndex, floridaCounties, staticPages };
