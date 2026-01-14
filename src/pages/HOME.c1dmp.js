@@ -315,6 +315,22 @@ async function setupBondAmounts() {
 /**
  * EXPORTS (For Editor wiring)
  */
+// --- HELPER FOR SAFE NAVIGATION ---
+function navigateToCounty(value) {
+    if (!value) return;
+
+    let dest = value;
+    // If value is just a name/slug (e.g. "Lee" or "lee"), format it
+    if (!dest.startsWith('/')) {
+        const slug = dest.trim().toLowerCase().replace(/\s+/g, '-');
+        dest = `/bail-bonds/${slug}`;
+        console.log(`DEBUG: Sanitized "${value}" to "${dest}"`);
+    }
+
+    console.log(`DEBUG: Navigating to ${dest} (Origin: ${value})`);
+    wixLocation.to(dest);
+}
+
 /**
  * REUSABLE HANDLER for Start Process
  */
@@ -329,8 +345,7 @@ function handleStartProcess() {
     if (dropdown.length === 0) dropdown = $w('#dropdown1');
 
     if (dropdown.length > 0 && dropdown.value) {
-        console.log(`DEBUG: Navigating to ${dropdown.value}`);
-        wixLocation.to(dropdown.value);
+        navigateToCounty(dropdown.value);
     } else {
         // If no county selected, go to Portal Landing (Central Hub)
         console.log("DEBUG: No county selected, going to Portal Landing");
