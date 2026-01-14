@@ -1,10 +1,13 @@
-// API Reference: https://www.wix.com/velo/reference/api-overview/introduction
-// “Hello, World!” Example: https://learn-code.wix.com/en/article/hello-world
+// Bail School (How to Become a Bondsman)
+import wixLocation from 'wix-location';
 
 $w.onReady(function () {
-    // Write your JavaScript here
+    console.log("🚀 Bail School Page Loaded...");
 
-    // To select an element by ID use: $w('#elementID')
+    // Basic Navigation Handlers (matches other pages)
+    const startBtn = $w('#startBailProcessBtn');
+    if (startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal'));
 
-    // Click 'Preview' to run your code
+    const contactBtn = $w('#contactUsBtn');
+    if (contactBtn.valid) contactBtn.onClick(() => wixLocation.to('/contact'));
 });
