@@ -243,15 +243,10 @@ async function setupBondAmounts() {
  * REUSABLE HANDLER for Start Process
  */
 function handleStartProcess() {
-    let dropdown = $w('#countyDropdown');
-    if (dropdown.length === 0) dropdown = $w('#countySelector');
-    if (dropdown.length === 0) dropdown = $w('#dropdown1');
-
-    if (dropdown.length > 0 && dropdown.value) {
-        navigateToCounty(dropdown.value);
-    } else {
-        wixLocation.to('/portal-landing');
-    }
+    // User Request: "Start a Bond" button should explicitly go to Login/Portal Landing
+    // The dropdown already navigates on selection via onChange.
+    console.log("DEBUG: 'Start Process' clicked. Redirecting to Portal Landing.");
+    wixLocation.to('/portal-landing');
 }
 
 export function beginProcessButton_click(event) { handleStartProcess(); }

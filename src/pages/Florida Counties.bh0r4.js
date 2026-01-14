@@ -130,10 +130,9 @@ $w.onReady(async function () {
         }
 
         // Start Bail Process Button
-        const startBailBtn = $w('#startBailProcessBtn').length ? $w('#startBailProcessBtn') : $w('#button2');
         if (startBailBtn.valid) {
-            startBailBtn.label = "Start Bail Process";
-            startBailBtn.onClick(() => wixLocation.to('/portal'));
+            startBailBtn.label = "Start Bond Process"; // Updated label for clarity
+            startBailBtn.onClick(() => wixLocation.to('/portal-landing'));
             startBailBtn.expand();
         }
 
