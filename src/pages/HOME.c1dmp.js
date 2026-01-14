@@ -27,20 +27,26 @@ $w.onReady(async function () {
     // 4. Setup Common Charges (Added)
     setupBondAmounts();
 
-    // 5. Setup Spanish Speaking Phone Button (Defensive)
+    // 5. Setup Spanish Speaking Phone Button (Safe)
     const spanishBtn = $w("#callNowSpanishBtn");
     if (spanishBtn.length > 0) {
-        if (typeof spanishBtn.onClick === 'function') {
-            spanishBtn.onClick(() => wixLocation.to("tel:12399550301"));
-        } else {
-            console.warn("DEBUG: #callNowSpanishBtn found but does not support onClick");
-        }
-
-        // onDblClick is rare and often causes issues, removing strictly or checking
-        if (typeof spanishBtn.onDblClick === 'function') {
-            spanishBtn.onDblClick(() => wixLocation.to("tel:12399550301"));
-        }
+        spanishBtn.onClick(() => wixLocation.to("tel:12399550301"));
     }
+
+    // 6. Manual Wiring for Start Button (Fix for unresponsive button)
+    const startBtns = ['#startBailProcessBtn', '#button2', '#button1', '#getStartedBtn'];
+    let wired = false;
+
+    startBtns.forEach(id => {
+        const btn = $w(id);
+        if (btn.length > 0) {
+            console.log(`DEBUG: Manually wiring click for ${id}`);
+            btn.onClick(handleStartProcess);
+            wired = true;
+        }
+    });
+
+    if (!wired) console.warn("DEBUG: No known Start Buttons found to wire.");
 });
 
 
@@ -105,7 +111,7 @@ async function initCountyDropdown() {
                 const slug = county.slug || county.countySlug || name.toLowerCase().replace(/\s+/g, '-');
                 return {
                     label: name + ' County',
-                    value: `/county/${slug}`
+                    value: `/bail-bonds/${slug}`
                 };
             })
             .sort((a, b) => a.label.localeCompare(b.label));
@@ -312,18 +318,31 @@ async function setupBondAmounts() {
 /**
  * EXPORTS (For Editor wiring)
  */
-export function beginProcessButton_click(event) {
+/**
+ * REUSABLE HANDLER for Start Process
+ */
+function handleStartProcess() {
+    console.log("DEBUG: handleStartProcess triggered");
+
     // BRIDGE LOGIC for button action
     let dropdown = $w('#countyDropdown');
+
+    // Fallbacks
     if (dropdown.length === 0) dropdown = $w('#countySelector');
     if (dropdown.length === 0) dropdown = $w('#dropdown1');
 
     if (dropdown.length > 0 && dropdown.value) {
+        console.log(`DEBUG: Navigating to ${dropdown.value}`);
         wixLocation.to(dropdown.value);
     } else {
         // If no county selected, go to Portal Landing (Central Hub)
+        console.log("DEBUG: No county selected, going to Portal Landing");
         wixLocation.to('/portal-landing');
     }
+}
+
+export function beginProcessButton_click(event) {
+    handleStartProcess();
 }
 export function spanishSpeakingPhone_click(event) { wixLocation.to("tel:12399550301"); }
 export function spanishSpeakingPhone_dblClick(event) { wixLocation.to("tel:12399550301"); }
