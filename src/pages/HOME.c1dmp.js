@@ -33,10 +33,25 @@ $w.onReady(async function () {
         // 5. Setup Spanish Speaking Phone Button (Safe)
         safeBindAndLog("#callNowSpanishBtn", 'onClick', () => wixLocation.to("tel:12399550301"));
 
-        // 6. Manual Wiring for Start Button (Safe)
+        // 6. Manual Wiring for Start Button (Enhanced Debugging)
         const startBtns = ['#startBailProcessBtn', '#button2', '#button1', '#getStartedBtn'];
+        console.log("🔧 Attempting to bind Get Started buttons...");
+        
         startBtns.forEach(id => {
-            safeBindAndLog(id, 'onClick', handleStartProcess);
+            try {
+                const btn = $w(id);
+                if (btn && btn.type) {
+                    btn.onClick(() => {
+                        console.log(`✅ Button clicked: ${id}`);
+                        handleStartProcess();
+                    });
+                    console.log(`  ✅ Successfully bound: ${id}`);
+                } else {
+                    console.log(`  ⚠️  Button not found: ${id}`);
+                }
+            } catch (err) {
+                console.log(`  ❌ Error binding ${id}:`, err.message);
+            }
         });
 
     } catch (criticalErr) {
@@ -125,11 +140,36 @@ async function initCountyDropdown() {
             if (dropdown.hidden) dropdown.show();
         }, 100);
 
-        // 7. Change Handler (Updated to use navigateToCounty)
+        // 7. Change Handler - Show lightbox with Get Started button
         dropdown.onChange((event) => {
-            const dest = event.target.value;
-            console.log("Navigation triggered to:", dest);
-            navigateToCounty(dest);
+            const selectedCounty = event.target.value;
+            console.log("📦 County selected:", selectedCounty);
+            
+            // Show the county lightbox
+            const lightbox = $w('#countyLightbox');
+            if (lightbox && lightbox.type) {
+                lightbox.show();
+                console.log("✅ Lightbox shown");
+                
+                // NOW bind the Get Started button (it's inside the lightbox)
+                setTimeout(() => {
+                    const getStartedBtn = $w('#getStartedBtn');
+                    if (getStartedBtn && getStartedBtn.type) {
+                        getStartedBtn.onClick(() => {
+                            console.log("🚀 Get Started clicked! Navigating to:", selectedCounty);
+                            lightbox.hide();
+                            navigateToCounty(selectedCounty);
+                        });
+                        console.log("✅ Get Started button bound successfully");
+                    } else {
+                        console.error("❌ Get Started button not found in lightbox");
+                    }
+                }, 300); // Wait for lightbox to fully render
+            } else {
+                // Fallback: If no lightbox, navigate directly
+                console.warn("⚠️  Lightbox not found, navigating directly");
+                navigateToCounty(selectedCounty);
+            }
         });
 
     } catch (err) {
@@ -243,16 +283,27 @@ async function setupBondAmounts() {
  * REUSABLE HANDLER for Start Process
  */
 function handleStartProcess() {
+    console.log("🚀 handleStartProcess() called!");
+    
     // User Request: If county selected, go there. If not, go to Portal Landing.
     let dropdown = $w('#countyDropdown');
-    if (dropdown.length === 0) dropdown = $w('#countySelector');
-    if (dropdown.length === 0) dropdown = $w('#dropdown1');
+    console.log("  Checking #countyDropdown:", dropdown.type ? "Found" : "Not found");
+    
+    if (!dropdown.type) {
+        dropdown = $w('#countySelector');
+        console.log("  Checking #countySelector:", dropdown.type ? "Found" : "Not found");
+    }
+    
+    if (!dropdown.type) {
+        dropdown = $w('#dropdown1');
+        console.log("  Checking #dropdown1:", dropdown.type ? "Found" : "Not found");
+    }
 
-    if (dropdown.length > 0 && dropdown.value) {
-        console.log(`DEBUG: 'Start Process' clicked. Redirecting to selected county: ${dropdown.value}`);
+    if (dropdown.type && dropdown.value) {
+        console.log(`✅ County selected: ${dropdown.value}. Navigating to county page...`);
         navigateToCounty(dropdown.value);
     } else {
-        console.log("DEBUG: 'Start Process' clicked. No county selected. Redirecting to Portal Landing.");
+        console.log("✅ No county selected. Navigating to Portal Landing...");
         wixLocation.to('/portal-landing');
     }
 }
