@@ -1,4 +1,3 @@
-// HOME.c1dmp.js
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import wixData from 'wix-data';
@@ -25,10 +24,10 @@ $w.onReady(async function () {
         // 2. Setup Testimonials
         setupTestimonials();
 
-        // 3. Setup FAQ (Added)
+        // 3. Setup FAQ
         setupFAQ();
 
-        // 4. Setup Common Charges (Added)
+        // 4. Setup Common Charges
         setupBondAmounts();
 
         // 5. Setup Spanish Speaking Phone Button (Safe)
@@ -45,37 +44,40 @@ $w.onReady(async function () {
     }
 });
 
+// --- HELPER FOR SAFE NAVIGATION (Added) ---
+function navigateToCounty(value) {
+    if (!value) return;
+
+    let dest = value;
+    // If value is just a name/slug (e.g. "Lee" or "lee"), format it
+    if (!dest.startsWith('/')) {
+        const slug = dest.trim().toLowerCase().replace(/\s+/g, '-');
+        dest = `/bail-bonds/${slug}`;
+        console.log(`DEBUG: Sanitized "${value}" to "${dest}"`);
+    }
+
+    console.log(`DEBUG: Navigating to ${dest} (Origin: ${value})`);
+    wixLocation.to(dest);
+}
 
 /**
- * ------------------------------------------------------------------
  * 1. COUNTY DROPDOWN LOGIC
- * ------------------------------------------------------------------
  */
 async function initCountyDropdown() {
     console.log("DEBUG: initCountyDropdown() [v3.1 Fix] calling...");
 
     try {
-        // 1. ROBUST ELEMENT SELECTION (Bridge: Spec > Legacy > Fallback)
-        let dropdown = $w('#countyDropdown'); // Spec Compliant
-
-        if (dropdown.length === 0) {
-            console.warn("DEBUG: #countyDropdown (Spec) not found. Try #countySelector (Legacy)...");
-            dropdown = $w('#countySelector');
-        }
-
-        if (dropdown.length === 0) {
-            console.warn("DEBUG: #countySelector not found. Trying #dropdown1 fallback...");
-            dropdown = $w('#dropdown1');
-        }
+        // 1. ROBUST ELEMENT SELECTION
+        let dropdown = $w('#countyDropdown');
+        if (dropdown.length === 0) dropdown = $w('#countySelector');
+        if (dropdown.length === 0) dropdown = $w('#dropdown1');
 
         if (dropdown.length === 0) {
             console.error('CRITICAL: All Dropdown selectors failed.');
             return;
         }
 
-        console.log(`DEBUG: Dropdown found! ID: ${dropdown.id}`);
-
-        // 2. Initialize with "Loading..." state if possible, or simple placeholder
+        // 2. Initialize
         dropdown.placeholder = "Loading Counties...";
 
         // 3. Define Fallback Data IMMEDIATELY
@@ -113,44 +115,30 @@ async function initCountyDropdown() {
             .sort((a, b) => a.label.localeCompare(b.label));
 
         // 6. Set Options
-        console.log("DEBUG: Setting " + options.length + " options.");
-
-        // Force reset
         dropdown.options = [];
         setTimeout(() => {
             dropdown.options = options;
-            dropdown.value = undefined; // Force "Select a County" placeholder
+            dropdown.value = undefined;
             dropdown.resetValidityIndication();
             dropdown.placeholder = "Select a County";
-
-            // Force visibility
             if (dropdown.collapsed) dropdown.expand();
             if (dropdown.hidden) dropdown.show();
         }, 100);
 
-        // 7. Change Handler
+        // 7. Change Handler (Updated to use navigateToCounty)
         dropdown.onChange((event) => {
             const dest = event.target.value;
             console.log("Navigation triggered to:", dest);
             navigateToCounty(dest);
         });
 
-
     } catch (err) {
         console.error("CRITICAL ERROR in initCountyDropdown:", err);
     }
 }
 
-
 /**
- * ------------------------------------------------------------------
  * 2. TESTIMONIALS LOGIC
- * ------------------------------------------------------------------
- */
-/**
- * ------------------------------------------------------------------
- * 2. TESTIMONIALS LOGIC
- * ------------------------------------------------------------------
  */
 async function setupTestimonials() {
     const fallbackData = [
@@ -164,16 +152,8 @@ async function setupTestimonials() {
     let data = fallbackData;
 
     try {
-        const result = await wixData.query(COLLECTIONS.TESTIMONIALS)
-            .limit(5)
-            .find();
-
-        if (result.items.length > 0) {
-            console.log(`DEBUG: Loaded ${result.items.length} testimonials from CMS.`);
-            data = result.items;
-        } else {
-            console.warn("DEBUG: No testimonials in CMS, using fallback.");
-        }
+        const result = await wixData.query(COLLECTIONS.TESTIMONIALS).limit(5).find();
+        if (result.items.length > 0) data = result.items;
     } catch (err) {
         console.error("ERROR: Failed to load testimonials from CMS", err);
     }
@@ -184,49 +164,30 @@ async function setupTestimonials() {
         rep.onItemReady(($item, itemData) => {
             const quote = itemData.quote || itemData.text || itemData.message || "No quote provided";
             const name = itemData.name || itemData.author || "Anonymous";
-
             if ($item('#quoteText').length) $item('#quoteText').text = `"${quote}"`;
             if ($item('#authorName').length) $item('#authorName').text = name;
         });
-    } else {
-        console.warn("DEBUG: #testimonialsRepeater not found");
     }
 }
 
-
 /**
- * ------------------------------------------------------------------
- * 3. FAQ LOGIC (New)
- * ------------------------------------------------------------------
- */
-/**
- * ------------------------------------------------------------------
- * 3. FAQ LOGIC (New)
- * ------------------------------------------------------------------
+ * 3. FAQ LOGIC
  */
 async function setupFAQ() {
     const fallbackData = [
-        { _id: "1", q: "Can bail be reduced?", a: "Yes. An attorney can file a motion to reduce bail if it is excessive or circumstances change." },
-        { _id: "2", q: "Can I get my premium back?", a: "No. The 10% premium is a non-refundable service fee earned by the bondsman." },
-        { _id: "3", q: "What if I can't afford 10%?", a: "We offer flexible payment plans. Call us to discuss options." },
-        { _id: "4", q: "How long does release take?", a: "Typical release times are 2-8 hours after we post the bond, depending on the jail." },
-        { _id: "5", q: "Difference between Bail and Bond?", a: "Bail is the full amount set by court. Bond is the 10% service we provide." },
-        { _id: "6", q: "Can anyone be denied bail?", a: "Yes. Bail can be denied for capital offenses, flight risks, or danger to the community." }
+        { _id: "1", q: "Can bail be reduced?", a: "Yes. An attorney can file a motion to reduce bail." },
+        { _id: "2", q: "Can I get my premium back?", a: "No. The 10% premium is non-refundable." },
+        { _id: "3", q: "What if I can't afford 10%?", a: "We offer flexible payment plans." },
+        { _id: "4", q: "How long does release take?", a: "2-8 hours on average." },
+        { _id: "5", q: "Difference between Bail and Bond?", a: "Bail is the full amount; Bond is the 10% service." },
+        { _id: "6", q: "Can anyone be denied bail?", a: "Yes, for capital offenses or flight risks." }
     ];
 
     let data = fallbackData;
 
     try {
-        const result = await wixData.query(COLLECTIONS.FAQ)
-            .limit(10)
-            .find();
-
-        if (result.items.length > 0) {
-            console.log(`DEBUG: Loaded ${result.items.length} FAQs from CMS.`);
-            data = result.items;
-        } else {
-            console.warn("DEBUG: No FAQs in CMS, using fallback.");
-        }
+        const result = await wixData.query(COLLECTIONS.FAQ).limit(10).find();
+        if (result.items.length > 0) data = result.items;
     } catch (err) {
         console.error("ERROR: Failed to load FAQs from CMS", err);
     }
@@ -235,32 +196,16 @@ async function setupFAQ() {
     if (rep.length > 0) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            const question = itemData.q || itemData.question || "No Question";
-            const answerText = itemData.a || itemData.answer || "No Amswer";
-
+            const question = itemData.q || itemData.question;
+            const answerText = itemData.a || itemData.answer;
             if ($item('#faqQuestion').length) $item('#faqQuestion').text = question;
-
-            // Handle Answer Text
-            const answer = $item('#faqAnswer');
-            if (answer.length > 0) {
-                answer.text = answerText;
-            }
+            if ($item('#faqAnswer').length) $item('#faqAnswer').text = answerText;
         });
-    } else {
-        console.warn("DEBUG: #faqRepeater not found. Checked: #faqRepeater");
     }
 }
 
-
 /**
- * ------------------------------------------------------------------
- * 4. BOND AMOUNTS LOGIC (New)
- * ------------------------------------------------------------------
- */
-/**
- * ------------------------------------------------------------------
- * 4. BOND AMOUNTS LOGIC (New)
- * ------------------------------------------------------------------
+ * 4. BOND AMOUNTS LOGIC
  */
 async function setupBondAmounts() {
     const fallbackData = [
@@ -274,118 +219,52 @@ async function setupBondAmounts() {
     let data = fallbackData;
 
     try {
-        const result = await wixData.query(COLLECTIONS.COMMON_CHARGES)
-            .limit(20)
-            .find();
+        const result = await wixData.query(COLLECTIONS.COMMON_CHARGES).limit(20).find();
+        if (result.items.length > 0) data = result.items;
+    } catch (err) { }
 
-        if (result.items.length > 0) {
-            console.log(`DEBUG: Loaded ${result.items.length} Common Charges from CMS.`);
-            data = result.items;
-        } else {
-            console.warn("DEBUG: No Common Charges in CMS, using fallback.");
-        }
-    } catch (err) {
-        console.error("ERROR: Failed to load Common Charges from CMS", err);
-    }
-
-    // Try finding the repeater. User called it "common charge and bond amounts"
-    // Likely IDs: #amountsRepeater, #bondAmountsRepeater, #chargesRepeater
     let rep = $w('#amountsRepeater');
     if (rep.length === 0) rep = $w('#bondAmountsRepeater');
 
     if (rep.length > 0) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            const offense = itemData.offense || itemData.chargeName || itemData.title || "Unknown Offense";
-            const range = itemData.range || itemData.bondAmount || itemData.amount || "Varies";
-
-            // Try common field IDs
+            const offense = itemData.offense || itemData.chargeName || "Unknown";
+            const range = itemData.range || itemData.bondAmount || "Varies";
             if ($item('#offenseName').length) $item('#offenseName').text = offense;
             if ($item('#bailRange').length) $item('#bailRange').text = range;
-
-            // Fallbacks
-            if ($item('#chargeName').length) $item('#chargeName').text = offense;
-            if ($item('#amountText').length) $item('#amountText').text = range;
+            if ($item('#chargeName').length) $item('#chargeName').text = offense; // Fallback ID
+            if ($item('#amountText').length) $item('#amountText').text = range; // Fallback ID
         });
-    } else {
-        console.warn("DEBUG: Bond/Amounts Repeater not found. Checked: #amountsRepeater, #bondAmountsRepeater");
     }
-}
-
-/**
- * EXPORTS (For Editor wiring)
- */
-// --- HELPER FOR SAFE NAVIGATION ---
-function navigateToCounty(value) {
-    if (!value) return;
-
-    let dest = value;
-    // If value is just a name/slug (e.g. "Lee" or "lee"), format it
-    if (!dest.startsWith('/')) {
-        const slug = dest.trim().toLowerCase().replace(/\s+/g, '-');
-        dest = `/bail-bonds/${slug}`;
-        console.log(`DEBUG: Sanitized "${value}" to "${dest}"`);
-    }
-
-    console.log(`DEBUG: Navigating to ${dest} (Origin: ${value})`);
-    wixLocation.to(dest);
 }
 
 /**
  * REUSABLE HANDLER for Start Process
  */
 function handleStartProcess() {
-    console.log("DEBUG: handleStartProcess triggered");
-
-    // BRIDGE LOGIC for button action
     let dropdown = $w('#countyDropdown');
-
-    // Fallbacks
     if (dropdown.length === 0) dropdown = $w('#countySelector');
     if (dropdown.length === 0) dropdown = $w('#dropdown1');
 
     if (dropdown.length > 0 && dropdown.value) {
         navigateToCounty(dropdown.value);
     } else {
-        // If no county selected, go to Portal Landing (Central Hub)
-        console.log("DEBUG: No county selected, going to Portal Landing");
         wixLocation.to('/portal-landing');
     }
 }
 
-export function beginProcessButton_click(event) {
-    handleStartProcess();
-}
+export function beginProcessButton_click(event) { handleStartProcess(); }
 export function spanishSpeakingPhone_click(event) { wixLocation.to("tel:12399550301"); }
 export function spanishSpeakingPhone_dblClick(event) { wixLocation.to("tel:12399550301"); }
 
-
-// --- HELPER FOR SAFE WIRING ---
-/**
- * Safely binds an event to an element if it exists and supports the event.
- * Logs success or failure to help debugging.
- */
 function safeBindAndLog(selector, eventName, handler) {
     const el = $w(selector);
     if (el.length > 0) {
         if (typeof el[eventName] === 'function') {
-            try {
-                el[eventName](handler);
-                console.log(`DEBUG: Wired ${eventName} for ${selector}`);
-            } catch (err) {
-                console.error(`DEBUG: Failed to wire ${eventName} for ${selector}:`, err);
-            }
-        } else {
-            console.warn(`DEBUG: ${selector} found but does not support ${eventName}`);
-            // Fallback for tricky elements (e.g. Boxes acting as buttons)
-            if (eventName === 'onClick') {
-                try {
-                    el.onClick(handler);
-                    console.log(`DEBUG: Wired onClick (Force) for ${selector}`);
-                } catch (e) {
-                    console.warn(`DEBUG: Force bind failed for ${selector}`);
-                }
-            }
+            try { el[eventName](handler); } catch (e) { }
+        } else if (eventName === 'onClick') {
+            try { el.onClick(handler); } catch (e) { }
         }
     }
 }
