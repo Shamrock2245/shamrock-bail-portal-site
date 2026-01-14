@@ -16,13 +16,13 @@ $w.onReady(function () {
 
     // 2. Setup Buttons
     const startBtn = $w('#startBailProcessBtn');
-    if (startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal'));
+    if (startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal-landing'));
 
     const bottomOnline = $w('#bottomOnlineBtn');
-    if (bottomOnline.valid) bottomOnline.onClick(() => wixLocation.to('/portal'));
+    if (bottomOnline.valid) bottomOnline.onClick(() => wixLocation.to('/portal-landing'));
 
     const bottomCall = $w('#bottomCallBtn');
-    if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:2395552245')); // Default placeholder
+    if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:12393322245')); // Real Shamrock number
 });
 
 // --- 1. The Arrest Process ---

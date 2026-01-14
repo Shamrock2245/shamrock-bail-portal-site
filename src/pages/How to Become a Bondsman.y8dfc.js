@@ -6,7 +6,7 @@ $w.onReady(function () {
 
     // Basic Navigation Handlers (matches other pages)
     const startBtn = $w('#startBailProcessBtn');
-    if (startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal'));
+    if (startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal-landing'));
 
     const contactBtn = $w('#contactUsBtn');
     if (contactBtn.valid) contactBtn.onClick(() => wixLocation.to('/contact'));
