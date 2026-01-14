@@ -1,9 +1,9 @@
-// Locate an Inmate (Directory Page)
+// Locate an Inmate (Directory Page) - Mobile Optimized
 import wixLocation from 'wix-location';
 import { getCounties } from 'public/countyUtils';
 
 $w.onReady(async function () {
-    console.log("🚀 Locate Page Loaded (v2 Hardened)...");
+    console.log("🚀 Locate Page Loaded (v3 Mobile Optimized)...");
 
     const rep = $w('#sectionList');
 
@@ -16,20 +16,20 @@ $w.onReady(async function () {
     try {
         // 2. Fetch Data
         console.log("DEBUG: Fetching counties...");
-        const counties = await getCounties();
+        let counties = await getCounties();
 
         if (!counties || counties.length === 0) {
             console.warn("DEBUG: No counties returned from backend. Using fallback data.");
             // Fallback data to prevent blank page
             counties = [
-                { name: "Alachua", slug: "alachua", countySeat: "Gainesville" },
-                { name: "Charlotte", slug: "charlotte", countySeat: "Punta Gorda" },
-                { name: "Collier", slug: "collier", countySeat: "Naples" },
-                { name: "Hendry", slug: "hendry", countySeat: "LaBelle" },
-                { name: "Lee", slug: "lee", countySeat: "Fort Myers" },
-                { name: "Sarasota", slug: "sarasota", countySeat: "Sarasota" },
-                { name: "Manatee", slug: "manatee", countySeat: "Bradenton" },
-                { name: "Desoto", slug: "desoto", countySeat: "Arcadia" }
+                { name: "Alachua", slug: "alachua", countySeat: "Gainesville", bookingWebsite: "https://www.alachuasheriff.org/inmates" },
+                { name: "Charlotte", slug: "charlotte", countySeat: "Punta Gorda", bookingWebsite: "https://ccso.org/correctional_facility/local_arrest_database.php" },
+                { name: "Collier", slug: "collier", countySeat: "Naples", bookingWebsite: "https://www2.colliersheriff.org/arrestsearch/" },
+                { name: "Hendry", slug: "hendry", countySeat: "LaBelle", bookingWebsite: "https://www.hendrysheriff.org/inmateSearch" },
+                { name: "Lee", slug: "lee", countySeat: "Fort Myers", bookingWebsite: "https://www.sheriffleefl.org/booking-search/" },
+                { name: "Sarasota", slug: "sarasota", countySeat: "Sarasota", bookingWebsite: "https://www.sarasotasheriff.org/arrest-inquiry.html" },
+                { name: "Manatee", slug: "manatee", countySeat: "Bradenton", bookingWebsite: "https://www.manateesheriff.com/inmate-search.html" },
+                { name: "Desoto", slug: "desoto", countySeat: "Arcadia", bookingWebsite: "https://www.desotosheriff.org/inmate-search" }
             ];
         }
 
@@ -38,7 +38,9 @@ $w.onReady(async function () {
         // 3. Populate Repeater
         rep.data = counties;
 
-        rep.onItemReady(($item, itemData) => {
+        rep.onItemReady(($item, itemData, index) => {
+            console.log(`DEBUG: Processing item ${index}:`, itemData.name);
+
             // A. Prepare Data
             const countyName = (itemData.name || itemData.countyName || "Unknown") + " County";
             const city = itemData.countySeat || "Southwest Florida";
@@ -46,33 +48,62 @@ $w.onReady(async function () {
             const internalLink = `/bail-bonds/${itemData.slug}`;
             const externalSearchLink = itemData.bookingWebsite || itemData.recordsSearch || itemData.sheriffWebsite;
 
-            // B. Map to Elements (Safely)
-            const $title = $item('#textTitle').length ? $item('#textTitle') : $item('#itemTitle');
-            if ($title.length) $title.text = countyName;
+            // B. Map to Elements - FIXED: Direct assignment without length check
+            try {
+                // Title
+                const $title = $item('#textTitle');
+                $title.text = countyName;
+                console.log(`  ✅ Set title: ${countyName}`);
 
-            const $desc = $item('#textDesc');
-            if ($desc.length) $desc.text = descText;
+                // Description
+                const $desc = $item('#textDesc');
+                $desc.text = descText;
+                console.log(`  ✅ Set description: ${descText}`);
 
-            // C. Interaction Logic
-            // 1. Container Click -> Internal Page
-            if ($item('#container1').length) {
-                $item('#container1').onClick(() => wixLocation.to(internalLink));
-            }
+                // C. Interaction Logic
+                // 1. Make entire card clickable -> Internal Page
+                $item.onClick(() => {
+                    console.log(`Card clicked: ${countyName} -> ${internalLink}`);
+                    wixLocation.to(internalLink);
+                });
 
-            // 2. Action Button Click -> Arrest Search (External) or Internal
-            const $btn = $item('#actionButton');
-            if ($btn.length) {
-                if ($btn.label) $btn.label = "Arrest Search"; // Reset label if possible
-
-                if (externalSearchLink) {
-                    // Go to external search
-                    $btn.onClick(() => wixLocation.to(externalSearchLink));
-                } else {
-                    // Fallback to internal page
-                    $btn.onClick(() => wixLocation.to(internalLink));
+                // 2. If there's a button, set it up for Arrest Search
+                try {
+                    const $btn = $item('#actionButton');
+                    if ($btn) {
+                        $btn.label = "Arrest Search";
+                        
+                        if (externalSearchLink) {
+                            $btn.onClick((event) => {
+                                event.stopPropagation(); // Prevent card click
+                                console.log(`Button clicked: ${countyName} -> ${externalSearchLink}`);
+                                wixLocation.to(externalSearchLink);
+                            });
+                        } else {
+                            $btn.onClick((event) => {
+                                event.stopPropagation(); // Prevent card click
+                                console.log(`Button clicked: ${countyName} -> ${internalLink}`);
+                                wixLocation.to(internalLink);
+                            });
+                        }
+                    }
+                } catch (btnErr) {
+                    // Button doesn't exist, that's okay
+                    console.log(`  ℹ️  No action button found (optional)`);
                 }
+
+                // D. Mobile Optimization - Show/Hide elements
+                $title.show();
+                $desc.show();
+
+            } catch (err) {
+                console.error(`ERROR processing item ${index} (${itemData.name}):`, err);
             }
         });
+
+        // 4. Show the repeater
+        rep.show();
+        console.log("✅ Repeater populated and visible");
 
     } catch (err) {
         console.error("CRITICAL ERROR in Locate Page:", err);
