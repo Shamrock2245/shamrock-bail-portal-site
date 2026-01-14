@@ -319,7 +319,7 @@ export async function sendMagicLink(email, token, role, personName = null) {
     });
 
     if (response.ok) {
-      console.log(`Magic link email sent to ${email} for role ${role}`);
+      console.log(`Magic link email sent to [REDACTED] for role ${role}`);
       return { success: true };
     } else {
       console.error('Failed to send magic link email:', await response.text());

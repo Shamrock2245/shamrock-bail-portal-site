@@ -5,7 +5,6 @@
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 
-import { startSessionTracker } from 'public/session-manager'; // Correct export not verified yet, wait. I created getOrSetSessionId.
 import { getOrSetSessionId } from 'public/session-manager';
 import { silentPingLocation } from 'public/location-tracker';
 import { initializePhoneInjection } from 'public/phone-injector';
