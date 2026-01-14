@@ -42,7 +42,11 @@ $w.onReady(async function () {
             wixData.query(COLLECTIONS.FAQ).limit(6).find()
         ]);
 
-        if (!county) return;
+        if (!county) {
+            console.warn(`County not found for slug: ${countySlug}. Redirecting to portal landing.`);
+            wixLocation.to('/portal-landing');
+            return;
+        }
 
         console.log(`Loaded County: ${county.name} | Loaded ${faqResult.totalCount} FAQs`);
 

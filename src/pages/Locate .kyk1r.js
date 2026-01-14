@@ -19,9 +19,18 @@ $w.onReady(async function () {
         const counties = await getCounties();
 
         if (!counties || counties.length === 0) {
-            console.warn("DEBUG: No counties returned from backend.");
-            rep.collapse();
-            return;
+            console.warn("DEBUG: No counties returned from backend. Using fallback data.");
+            // Fallback data to prevent blank page
+            counties = [
+                { name: "Alachua", slug: "alachua", countySeat: "Gainesville" },
+                { name: "Charlotte", slug: "charlotte", countySeat: "Punta Gorda" },
+                { name: "Collier", slug: "collier", countySeat: "Naples" },
+                { name: "Hendry", slug: "hendry", countySeat: "LaBelle" },
+                { name: "Lee", slug: "lee", countySeat: "Fort Myers" },
+                { name: "Sarasota", slug: "sarasota", countySeat: "Sarasota" },
+                { name: "Manatee", slug: "manatee", countySeat: "Bradenton" },
+                { name: "Desoto", slug: "desoto", countySeat: "Arcadia" }
+            ];
         }
 
         console.log(`DEBUG: Loaded ${counties.length} counties. Populating repeater...`);
