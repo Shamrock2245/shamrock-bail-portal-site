@@ -1,7 +1,7 @@
 // Force Sync: Restoring Dynamic Page Code
 import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
-import { getCountyBySlug } from 'public/countyUtils';
+import { getCountyBySlug, getNearbyCounties } from 'public/countyUtils';
 
 $w.onReady(async function () {
     console.log("🚀 Dynamic County Page Loading...");
@@ -40,7 +40,13 @@ $w.onReady(async function () {
 
         // --- Sheriff's Office (Top Left) ---
         setText('#sheriffPhone', county.jailPhone || county.primaryPhone || "(239) 477-1500");
-        setLink('#sheriffWebsite', county.sheriffWebsite || county.jailBookingUrl, "Visit Sheriff's Website");
+        // Bridge: Spec #callSheriffBtn (Button) vs Legacy #sheriffWebsite (Link)
+        if ($w('#callSheriffBtn').length > 0) {
+            setLink('#callSheriffBtn', county.sheriffWebsite || county.jailBookingUrl, "Visit Sheriff's Website");
+            $w('#sheriffWebsite').collapse(); // Hide legacy if matching spec exists? Or keep both? Keeping legacy safe.
+        } else {
+            setLink('#sheriffWebsite', county.sheriffWebsite || county.jailBookingUrl, "Visit Sheriff's Website");
+        }
 
         // --- Main Jail (Top Right) ---
         setText('#jailName', county.jailName || `${county.name} County Jail`);
@@ -48,7 +54,12 @@ $w.onReady(async function () {
 
         // --- Clerk of Court (Bottom Left) ---
         setText('#clerkPhone', county.clerkPhone || "(239) 533-5000");
-        setLink('#clerkWebsite', county.clerkWebsite, "Visit Clerk's Website");
+        // Bridge: Spec #callClerkBtn vs Legacy #clerkWebsite
+        if ($w('#callClerkBtn').length > 0) {
+            setLink('#callClerkBtn', county.clerkWebsite, "Visit Clerk's Website");
+        } else {
+            setLink('#clerkWebsite', county.clerkWebsite, "Visit Clerk's Website");
+        }
 
         // --- County Information (Bottom Right) ---
         setText('#countySeat', county.countySeat ? `County Seat: ${county.countySeat}` : "");
@@ -68,10 +79,20 @@ $w.onReady(async function () {
 
         // --- Call Button (Sticky/Header) ---
         const phone = county.primaryPhone || "(239) 332-2245";
-        const callBtn = $w('#callCountiesBtn');
-        if (callBtn.valid) {
-            callBtn.label = `Call ${phone}`;
-            callBtn.onClick(() => wixLocation.to(`tel:${phone.replace(/[^0-9]/g, '')}`));
+
+        // Bridge: Spec #callShamrockBtn vs Legacy #callCountiesBtn
+        const specCall = $w('#callShamrockBtn');
+        const legacyCall = $w('#callCountiesBtn');
+
+        if (specCall.valid) {
+            specCall.label = `Call ${phone}`;
+            specCall.onClick(() => wixLocation.to(`tel:${phone.replace(/[^0-9]/g, '')}`));
+            specCall.expand();
+        }
+
+        if (legacyCall.valid) {
+            legacyCall.label = `Call ${phone}`;
+            legacyCall.onClick(() => wixLocation.to(`tel:${phone.replace(/[^0-9]/g, '')}`));
         }
 
         // 4. Update SEO Tags
@@ -80,6 +101,31 @@ $w.onReady(async function () {
             "name": "description",
             "content": `24/7 Bail Bonds in ${county.name} County. Call ${phone} for immediate release. Fast, confidential service.`
         }]);
+
+        // 5. Populate Nearby Counties
+        const nearby = await getNearbyCounties("Southwest Florida", county._id); // Region mocked for now
+        const rep = $w('#nearbyCountiesRepeater');
+
+        if (rep.length > 0) {
+            rep.data = nearby;
+            rep.onItemReady(($item, itemData) => {
+                const name = itemData.name || itemData.countyName || "Unknown";
+                const slug = itemData.slug || itemData.countySlug || name.toLowerCase();
+
+                // Try common repeater elements
+                if ($item('#neighborName').length) $item('#neighborName').text = name;
+                if ($item('#neighborLink').length) {
+                    $item('#neighborLink').link = `/county/${slug}`;
+                    $item('#neighborLink').label = name; // If it's a button
+                }
+
+                // Fallback: If container is clicked
+                if ($item('#neighborContainer').length) {
+                    $item('#neighborContainer').onClick(() => wixLocation.to(`/county/${slug}`));
+                }
+            });
+            rep.expand();
+        }
 
     } catch (error) {
         console.error("❌ Error initializing page:", error);
