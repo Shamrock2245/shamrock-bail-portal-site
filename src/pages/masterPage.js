@@ -5,6 +5,8 @@
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 
+import { startSessionTracker } from 'public/session-manager'; // Correct export not verified yet, wait. I created getOrSetSessionId.
+import { getOrSetSessionId } from 'public/session-manager';
 import { silentPingLocation } from 'public/location-tracker';
 import { initializePhoneInjection } from 'public/phone-injector';
 import { initHeader } from 'public/siteHeader';
@@ -12,6 +14,9 @@ import { initFooter } from 'public/siteFooter';
 import { processBookingSheet } from 'public/bookingSheetHandler';
 
 $w.onReady(function () {
+    // 0. ID TRUTH (Must run first)
+    getOrSetSessionId();
+
     // 1. Initialize Site Components (Public Modules)
     initHeader($w);
     initFooter();

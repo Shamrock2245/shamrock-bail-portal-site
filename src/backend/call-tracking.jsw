@@ -49,11 +49,15 @@ export async function logCall(callData) {
     // Generate tracking ID
     const trackingId = generateCallTrackingId(county);
 
+    // Session ID Priority: Frontend > Member > Generated
+    const finalSessionId = sessionId || generateSessionId();
+
     // Prepare call log data
     const callLogData = {
       trackingId,
       timestamp: new Date(),
-      sessionId: sessionId || generateSessionId(),
+      sessionId: finalSessionId,
+      sessionSource: sessionId ? 'frontend' : 'backend_generated', // Audit trail
       memberId: memberId || null,
       memberEmail: memberEmail || null,
       county: county || 'unknown',

@@ -105,3 +105,22 @@ export function clearSessionToken() {
 export function hasSessionToken() {
   return SessionManager.hasSession();
 }
+
+/**
+ * GUARANTEE: Gets existing session or creates new one immediately.
+ * Truth Source for all downstream logging.
+ */
+export function getOrSetSessionId() {
+  let token = SessionManager.getSession();
+  if (!token) {
+    // Generate new UUID v4
+    token = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+    SessionManager.setSession(token);
+    console.log("SessionManager: New Session ID generated:", token);
+  }
+  return token;
+}
