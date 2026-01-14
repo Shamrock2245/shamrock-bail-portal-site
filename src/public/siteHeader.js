@@ -213,6 +213,7 @@ function setupNavLinks() {
         { selector: '#navCounties', path: '/florida-sheriffs-clerks-directory' },
         { selector: '#navBecomeBondsman', path: '/become-a-bondsman' },
         { selector: '#navDirectory', path: '/florida-sheriffs-clerks-directory' },
+        { selector: '#navLocate', path: '/locate-an-inmate' }, // Added per user request
         { selector: '#navBlog', path: '/blog' },
         { selector: '#navContact', path: '/contact' }
     ];
