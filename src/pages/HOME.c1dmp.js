@@ -53,8 +53,13 @@ async function initCountyDropdown() {
     console.log("DEBUG: initCountyDropdown() [v3.1 Fix] calling...");
 
     try {
-        // 1. ROBUST ELEMENT SELECTION
-        let dropdown = $w('#countySelector');
+        // 1. ROBUST ELEMENT SELECTION (Bridge: Spec > Legacy > Fallback)
+        let dropdown = $w('#countyDropdown'); // Spec Compliant
+
+        if (dropdown.length === 0) {
+            console.warn("DEBUG: #countyDropdown (Spec) not found. Try #countySelector (Legacy)...");
+            dropdown = $w('#countySelector');
+        }
 
         if (dropdown.length === 0) {
             console.warn("DEBUG: #countySelector not found. Trying #dropdown1 fallback...");

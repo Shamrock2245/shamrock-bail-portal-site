@@ -119,8 +119,18 @@ function initUI() {
 }
 
 function setupPaperworkButtons() {
-    // Sign via Email Button (#comp-mjsigfv9)
+    // Sign via Email Button (#comp-mjsigfv9) vs Spec (#startPaperworkBtn)
     try {
+        // Bridge: Spec #startPaperworkBtn
+        const specBtn = $w('#startPaperworkBtn');
+        if (specBtn.length > 0) {
+            console.log('Defendant Portal: Spec Button #startPaperworkBtn found');
+            specBtn.onClick(() => {
+                console.log('Defendant Portal: Spec Button Triggered');
+                handlePaperworkStart();
+            });
+        }
+
         const emailBtn = $w('#comp-mjsigfv9');
         if (emailBtn && typeof emailBtn.onClick === 'function') {
             console.log('Defendant Portal: Sign via Email button found');
