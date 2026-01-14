@@ -33,33 +33,14 @@ $w.onReady(async function () {
         // 5. Setup Spanish Speaking Phone Button (Safe)
         safeBindAndLog("#callNowSpanishBtn", 'onClick', () => wixLocation.to("tel:12399550301"));
 
-        // 6. Manual Wiring for Start Button (Enhanced Debugging)
-        const startBtns = ['#startBailProcessBtn', '#button2', '#button1', '#getStartedBtn'];
-        console.log("🔧 Attempting to bind Get Started buttons...");
-        
-        startBtns.forEach(id => {
-            try {
-                const btn = $w(id);
-                if (btn && btn.type) {
-                    btn.onClick(() => {
-                        console.log(`✅ Button clicked: ${id}`);
-                        handleStartProcess();
-                    });
-                    console.log(`  ✅ Successfully bound: ${id}`);
-                } else {
-                    console.log(`  ⚠️  Button not found: ${id}`);
-                }
-            } catch (err) {
-                console.log(`  ❌ Error binding ${id}:`, err.message);
-            }
-        });
+        // 6. Removed unnecessary button binding - dropdown onChange handles navigation directly
 
     } catch (criticalErr) {
         console.error("CRITICAL ERROR IN HOME PAGE ONREADY:", criticalErr);
     }
 });
 
-// --- HELPER FOR SAFE NAVIGATION (Added) ---
+// --- HELPER FOR SAFE NAVIGATION (Enhanced UX with Loading State) ---
 function navigateToCounty(value) {
     if (!value) return;
 
@@ -68,11 +49,58 @@ function navigateToCounty(value) {
     if (!dest.startsWith('/')) {
         const slug = dest.trim().toLowerCase().replace(/\s+/g, '-');
         dest = `/bail-bonds/${slug}`;
-        console.log(`DEBUG: Sanitized "${value}" to "${dest}"`);
+        console.log(`🛣️  Formatted "${value}" → "${dest}"`);
     }
 
-    console.log(`DEBUG: Navigating to ${dest} (Origin: ${value})`);
+    console.log(`🚀 Navigating to ${dest}`);
+    
+    // Show loading state with multiple fallback options
+    showLoadingState(value);
+    
+    // Navigate
     wixLocation.to(dest);
+}
+
+/**
+ * Show loading state with graceful fallbacks
+ */
+function showLoadingState(countyName) {
+    try {
+        // Option 1: Custom loading box
+        const loadingBox = $w('#loadingBox');
+        if (loadingBox && loadingBox.type) {
+            loadingBox.show('fade', { duration: 200 });
+            
+            // Update text if available
+            const loadingText = $w('#loadingText');
+            if (loadingText && loadingText.type) {
+                loadingText.text = `Loading ${countyName} County...`;
+            }
+            return;
+        }
+    } catch (e) { }
+    
+    try {
+        // Option 2: Simple loading text
+        const loadingText = $w('#loadingText');
+        if (loadingText && loadingText.type) {
+            loadingText.text = `Loading ${countyName} County...`;
+            loadingText.show('fade', { duration: 200 });
+            return;
+        }
+    } catch (e) { }
+    
+    try {
+        // Option 3: Generic loading indicator
+        const loader = $w('#loadingIndicator');
+        if (loader && loader.type) {
+            loader.show('fade', { duration: 200 });
+            return;
+        }
+    } catch (e) { }
+    
+    // No loading indicator available - that's okay, navigation still works
+    console.log('ℹ️  No loading indicator found (optional)');
 }
 
 /**
@@ -140,36 +168,18 @@ async function initCountyDropdown() {
             if (dropdown.hidden) dropdown.show();
         }, 100);
 
-        // 7. Change Handler - Show lightbox with Get Started button
+        // 7. Change Handler - Direct navigation (Best UX for stressed customers)
         dropdown.onChange((event) => {
             const selectedCounty = event.target.value;
-            console.log("📦 County selected:", selectedCounty);
+            if (!selectedCounty) return;
             
-            // Show the county lightbox
-            const lightbox = $w('#countyLightbox');
-            if (lightbox && lightbox.type) {
-                lightbox.show();
-                console.log("✅ Lightbox shown");
-                
-                // NOW bind the Get Started button (it's inside the lightbox)
-                setTimeout(() => {
-                    const getStartedBtn = $w('#getStartedBtn');
-                    if (getStartedBtn && getStartedBtn.type) {
-                        getStartedBtn.onClick(() => {
-                            console.log("🚀 Get Started clicked! Navigating to:", selectedCounty);
-                            lightbox.hide();
-                            navigateToCounty(selectedCounty);
-                        });
-                        console.log("✅ Get Started button bound successfully");
-                    } else {
-                        console.error("❌ Get Started button not found in lightbox");
-                    }
-                }, 300); // Wait for lightbox to fully render
-            } else {
-                // Fallback: If no lightbox, navigate directly
-                console.warn("⚠️  Lightbox not found, navigating directly");
-                navigateToCounty(selectedCounty);
-            }
+            console.log("🎯 County selected:", selectedCounty, "- Navigating immediately...");
+            
+            // Provide visual feedback
+            dropdown.disable();
+            
+            // Navigate directly - no extra clicks needed
+            navigateToCounty(selectedCounty);
         });
 
     } catch (err) {
