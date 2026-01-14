@@ -1,5 +1,5 @@
 // countyUtils.js
-import { get_allCounties } from 'backend/counties-api.web';
+import { getCounties as fetchCountiesBackend } from 'backend/counties.jsw';
 
 // Cache for county data
 let countyCache = null;
@@ -9,7 +9,7 @@ let countyCache = null;
  * @returns {Promise<Array>} List of county objects with normalized field names
  */
 export async function getCounties() {
-    console.log("DEBUG: getCounties() started (via Web Module)");
+    console.log("DEBUG: getCounties() started (Direct JSW Link)");
 
     if (countyCache) {
         console.log("DEBUG: Returning cached counties:", countyCache.length);
@@ -17,14 +17,17 @@ export async function getCounties() {
     }
 
     try {
-        const result = await get_allCounties();
+        // Call the JSW directly
+        const response = await fetchCountiesBackend();
+        console.log("DEBUG: JSW Response:", response);
 
-        if (!result.success || !result.counties || !Array.isArray(result.counties)) {
-            console.warn("DEBUG: Web module returned invalid structure", result);
+        // JSW format: { success: true, data: { counties: [], total: N } }
+        if (!response.success || !response.data || !Array.isArray(response.data.counties)) {
+            console.warn("DEBUG: Backend returned invalid structure", response);
             return [];
         }
 
-        const rawItems = result.counties;
+        const rawItems = response.data.counties;
         console.log("DEBUG: Web module returned count:", rawItems.length);
 
         // Normalize field names for consistent use across the site
@@ -44,11 +47,16 @@ export async function getCounties() {
                 clerkPhone: county.phone_clerk,
                 recordsSearch: county.jail_roster_url,
 
+                // Extra fields from JSW
+                jailName: county.jailName || `${name} County Jail`,
+                jailAddress: county.jailAddress, // May be undefined in some sources
+                countySeat: county.countySeat,
+
                 // SEO Defaults
                 seoTitle: `Bail Bonds in ${name} County, FL | Shamrock Bail Bonds`,
                 seoDescription: `Fast, professional bail bond services in ${name} County, Florida. Available 24/7.`,
                 h1Headline: `${name} County Bail Bonds`,
-                ctaLink: `/county/${slug}`,
+                ctaLink: `/bail-bonds/${slug}`, // Canonical URL
 
                 // Compatibility fields
                 countyName: name,
@@ -59,7 +67,7 @@ export async function getCounties() {
         console.log("DEBUG: Normalized counties count:", countyCache.length);
         return countyCache;
     } catch (error) {
-        console.error("DEBUG: Failed to fetch counties from web module:", error);
+        console.error("DEBUG: Failed to fetch counties from backend/counties.jsw:", error);
         return [];
     }
 }
