@@ -12,7 +12,27 @@ $w.onReady(async function () {
     const path = wixLocation.path;
     const countySlug = path.length > 0 ? path[path.length - 1] : null;
 
-    if (!countySlug) return;
+    if (!countySlug) {
+        console.error("❌ No slug found in URL path:", path);
+        return;
+    }
+
+    console.log(`DEBUG: Extracted Slug: "${countySlug}"`);
+
+    // --- DATASET OVERRIDE (Fix for Manual Connections) ---
+    // If the user manually connected a Dataset, it might be defaulting to "Alachua".
+    // We force it to filter by the current slug so the manual UI matches our code.
+    $w.onReady(() => {
+        const dataset = $w('#dynamicDataset'); // Standard ID
+        if (dataset.length > 0) {
+            console.log("DEBUG: Found #dynamicDataset. Forcing filter to slug:", countySlug);
+            dataset.onReady(() => {
+                dataset.setFilter(wixData.filter().eq('slug', countySlug))
+                    .then(() => console.log("DEBUG: Dataset filter applied."))
+                    .catch(e => console.error("DEBUG: Dataset filter success/fail or strict mode:", e));
+            });
+        }
+    });
 
     try {
         // 2. FETCH DATA IN PARALLEL (Optimization)
