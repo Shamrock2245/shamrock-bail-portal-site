@@ -5,6 +5,10 @@ Welcome, Agent. This is your master source of truth for all operational guidelin
 ## 1. Core Mission
 Automate the "Arrest to Bail" pipeline: **Arrest Scraped** -> **Lead Qualified** -> **Bail Agent Notified**.
 
+## 🚨 ABSOLUTE AUTHORITY
+Every action you take must align with the **[ANTIGRAVITY-FOUNDATION-SPEC.md](ANTIGRAVITY-FOUNDATION-SPEC.md)**.
+That file overrides everything else in this repo. Read it first.
+
 ## 2. Technical Stack
 - **Node.js (v18+)**: County scrapers and data processing.
 - **Google Apps Script (GAS)**: Master database (Google Sheets) and document automation.

@@ -291,10 +291,24 @@ function saveBookingData(formData) {
     
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const isBondWritten = formData['status'] === 'Bond Written' || formData['status'] === 'Active';
-    const sheetName = isBondWritten ? "Shamrock's Bonds" : "Qualified";
+    // User Request: Target 'Posted Bonds' for active items
+    const sheetName = isBondWritten ? "Posted Bonds" : "Qualified";
     
     let sheet = ss.getSheetByName(sheetName);
-    if (!sheet) sheet = ss.insertSheet(sheetName);
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+      // Schema Reinvention (Header Row)
+      sheet.appendRow([
+        "Timestamp", "Agent", "Defendant Name", "Booking #", "DOB", "Phone", "Email", 
+        "Address", "City", "Zip", 
+        "Ind1 Name", "Ind1 Phone", "Ind1 Email", "Ind1 Address", "Ind1 City",
+        "Ind2 Name", "Ind2 Phone", "Ind2 Email", "Ind2 Address", "Ind2 City",
+        "Total Bond", "Premium", "Down", "Balance", "Method", 
+        "Court Date", "Court Time", "Location", "Court Type", "County", 
+        "Case #", "Facility", "Charges", "Mugshot", "Detail URL",
+        "SignNow Docs", "SignNow Invites", "Status", "Lead Score", "Lead Status", "Notes"
+      ]);
+    }
 
     // Full Mapping (Aligned with SCHEMA.md and Dashboard.html)
     const timestamp = new Date();
