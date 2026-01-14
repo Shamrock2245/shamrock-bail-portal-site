@@ -41,16 +41,28 @@ $w.onReady(async function () {
         // --- Sheriff's Office (Top Left) ---
         setText('#sheriffPhone', county.jailPhone || county.primaryPhone || "(239) 477-1500");
         // Bridge: Spec #callSheriffBtn (Button) vs Legacy #sheriffWebsite (Link)
+        const sheriffUrl = county.sheriffWebsite || county.jailBookingUrl; // Fallback to either
+
         if ($w('#callSheriffBtn').length > 0) {
-            setLink('#callSheriffBtn', county.sheriffWebsite || county.jailBookingUrl, "Visit Sheriff's Website");
-            $w('#sheriffWebsite').collapse(); // Hide legacy if matching spec exists? Or keep both? Keeping legacy safe.
+            setLink('#callSheriffBtn', sheriffUrl, "Visit Sheriff's Website");
+            $w('#sheriffWebsite').collapse();
         } else {
-            setLink('#sheriffWebsite', county.sheriffWebsite || county.jailBookingUrl, "Visit Sheriff's Website");
+            setLink('#sheriffWebsite', sheriffUrl, "Visit Sheriff's Website");
         }
 
         // --- Main Jail (Top Right) ---
         setText('#jailName', county.jailName || `${county.name} County Jail`);
-        setText('#jailAddress', county.jailAddress || "Address not available");
+
+        // RELAXED REQUIREMENT: If no address, just show the county name/state or hide
+        if (county.jailAddress) {
+            setText('#jailAddress', county.jailAddress);
+        } else {
+            // User request: Don't show "Address not available" or scour for it.
+            // Option A: Hide
+            $w('#jailAddress').collapse();
+            // Option B: Generic
+            // setText('#jailAddress', `${county.name}, FL`);
+        }
 
         // --- Clerk of Court (Bottom Left) ---
         setText('#clerkPhone', county.clerkPhone || "(239) 533-5000");
