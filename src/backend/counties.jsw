@@ -37,7 +37,9 @@ export async function getCounties() {
       jailName: item.jailName || "",
       clerkName: item.clerkName || "",
       sheriffName: item.sheriffName || "",
-      jailBookingUrl: item.jailBookingUrl || ""
+      jailBookingUrl: item.jailBookingUrl || "",
+      countySeat: item.countySeat || "",
+      jailAddress: item.jailAddress || ""
     }));
 
     return {

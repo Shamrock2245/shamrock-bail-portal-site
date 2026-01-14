@@ -31,7 +31,7 @@ $w.onReady(async function () {
 
         rep.onItemReady(($item, itemData) => {
             // A. Prepare Data
-            const countyName = itemData.name + " County";
+            const countyName = (itemData.name || itemData.countyName || "Unknown") + " County";
             const city = itemData.countySeat || "Southwest Florida";
             const descText = `Serving ${city} & Surrounding Areas`;
             const internalLink = `/bail-bonds/${itemData.slug}`;

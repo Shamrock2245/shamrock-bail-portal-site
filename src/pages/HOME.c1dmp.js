@@ -244,9 +244,11 @@ async function setupBondAmounts() {
  */
 function handleStartProcess() {
     // User Request: If county selected, go there. If not, go to Portal Landing.
-    const dropdown = $w('#countyDropdown');
+    let dropdown = $w('#countyDropdown');
+    if (dropdown.length === 0) dropdown = $w('#countySelector');
+    if (dropdown.length === 0) dropdown = $w('#dropdown1');
 
-    if (dropdown && dropdown.value) {
+    if (dropdown.length > 0 && dropdown.value) {
         console.log(`DEBUG: 'Start Process' clicked. Redirecting to selected county: ${dropdown.value}`);
         navigateToCounty(dropdown.value);
     } else {
