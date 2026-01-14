@@ -99,8 +99,67 @@ function showLoadingState(countyName) {
         }
     } catch (e) { }
     
-    // No loading indicator available - that's okay, navigation still works
-    console.log('ℹ️  No loading indicator found (optional)');
+    // Option 4: Programmatically create loading overlay (fallback)
+    createLoadingOverlay(countyName);
+}
+
+/**
+ * Programmatically create loading overlay with animated GIF
+ */
+function createLoadingOverlay(countyName) {
+    try {
+        console.log('✨ Creating programmatic loading overlay');
+        
+        // Create overlay container
+        const overlay = document.createElement('div');
+        overlay.id = 'shamrock-loading-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            animation: fadeIn 0.2s ease-in;
+        `;
+        
+        // Create loading image
+        const img = document.createElement('img');
+        img.src = 'https://static.wixstatic.com/media/4e4d4a_5d75f6a857404c6fba3b40b823187709~mv2.gif';
+        img.alt = 'Loading...';
+        img.style.cssText = `
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+        `;
+        
+        // Create loading text
+        const text = document.createElement('div');
+        text.textContent = `Loading ${countyName} County...`;
+        text.style.cssText = `
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 18px;
+            font-weight: 500;
+            text-align: center;
+        `;
+        
+        // Assemble and add to page
+        overlay.appendChild(img);
+        overlay.appendChild(text);
+        document.body.appendChild(overlay);
+        
+        console.log('✅ Loading overlay created');
+        
+    } catch (err) {
+        console.log('ℹ️  Could not create loading overlay:', err.message);
+        // Navigation still works without loading indicator
+    }
 }
 
 /**
