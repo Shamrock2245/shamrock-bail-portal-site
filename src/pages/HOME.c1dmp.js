@@ -7,46 +7,42 @@ import { getCounties } from 'public/countyUtils';
 import { LightboxController } from 'public/lightbox-controller';
 
 $w.onReady(async function () {
-    console.log("🚀 HOME PAGE LOADED - PRODUCTION MODE v2.0");
+    console.log("🚀 HOME PAGE LOADED - PRODUCTION MODE v2.2 (Defensive)");
 
-    // Initialize Lightbox Controller
-    LightboxController.init($w);
-    // LightboxController.initEmergencyCtaLightbox(); // Disabled automatic popup per user request
-    LightboxController.initPrivacyLightbox();
-    LightboxController.initTermsLightbox();
-
-    // 1. Initialize County Dropdown
-    await initCountyDropdown();
-
-    // 2. Setup Testimonials
-    setupTestimonials();
-
-    // 3. Setup FAQ (Added)
-    setupFAQ();
-
-    // 4. Setup Common Charges (Added)
-    setupBondAmounts();
-
-    // 5. Setup Spanish Speaking Phone Button (Safe)
-    const spanishBtn = $w("#callNowSpanishBtn");
-    if (spanishBtn.length > 0) {
-        spanishBtn.onClick(() => wixLocation.to("tel:12399550301"));
-    }
-
-    // 6. Manual Wiring for Start Button (Fix for unresponsive button)
-    const startBtns = ['#startBailProcessBtn', '#button2', '#button1', '#getStartedBtn'];
-    let wired = false;
-
-    startBtns.forEach(id => {
-        const btn = $w(id);
-        if (btn.length > 0) {
-            console.log(`DEBUG: Manually wiring click for ${id}`);
-            btn.onClick(handleStartProcess);
-            wired = true;
+    try {
+        // Initialize Lightbox Controller
+        try {
+            LightboxController.init($w);
+            LightboxController.initPrivacyLightbox();
+            LightboxController.initTermsLightbox();
+        } catch (err) {
+            console.error("Non-Critical: Lightbox init failed", err);
         }
-    });
 
-    if (!wired) console.warn("DEBUG: No known Start Buttons found to wire.");
+        // 1. Initialize County Dropdown
+        await initCountyDropdown();
+
+        // 2. Setup Testimonials
+        setupTestimonials();
+
+        // 3. Setup FAQ (Added)
+        setupFAQ();
+
+        // 4. Setup Common Charges (Added)
+        setupBondAmounts();
+
+        // 5. Setup Spanish Speaking Phone Button (Safe)
+        safeBindAndLog("#callNowSpanishBtn", 'onClick', () => wixLocation.to("tel:12399550301"));
+
+        // 6. Manual Wiring for Start Button (Safe)
+        const startBtns = ['#startBailProcessBtn', '#button2', '#button1', '#getStartedBtn'];
+        startBtns.forEach(id => {
+            safeBindAndLog(id, 'onClick', handleStartProcess);
+        });
+
+    } catch (criticalErr) {
+        console.error("CRITICAL ERROR IN HOME PAGE ONREADY:", criticalErr);
+    }
 });
 
 
@@ -346,3 +342,34 @@ export function beginProcessButton_click(event) {
 }
 export function spanishSpeakingPhone_click(event) { wixLocation.to("tel:12399550301"); }
 export function spanishSpeakingPhone_dblClick(event) { wixLocation.to("tel:12399550301"); }
+
+
+// --- HELPER FOR SAFE WIRING ---
+/**
+ * Safely binds an event to an element if it exists and supports the event.
+ * Logs success or failure to help debugging.
+ */
+function safeBindAndLog(selector, eventName, handler) {
+    const el = $w(selector);
+    if (el.length > 0) {
+        if (typeof el[eventName] === 'function') {
+            try {
+                el[eventName](handler);
+                console.log(`DEBUG: Wired ${eventName} for ${selector}`);
+            } catch (err) {
+                console.error(`DEBUG: Failed to wire ${eventName} for ${selector}:`, err);
+            }
+        } else {
+            console.warn(`DEBUG: ${selector} found but does not support ${eventName}`);
+            // Fallback for tricky elements (e.g. Boxes acting as buttons)
+            if (eventName === 'onClick') {
+                try {
+                    el.onClick(handler);
+                    console.log(`DEBUG: Wired onClick (Force) for ${selector}`);
+                } catch (e) {
+                    console.warn(`DEBUG: Force bind failed for ${selector}`);
+                }
+            }
+        }
+    }
+}
