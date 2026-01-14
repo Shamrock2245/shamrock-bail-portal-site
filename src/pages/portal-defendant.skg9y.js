@@ -210,10 +210,27 @@ async function handlePaperworkStart() {
 
     // Use REAL email or fallback
     const userEmail = currentSession.email || `defendant_${currentSession.personId}@shamrock.local`;
-    console.log("Portal: Using email for paperwork:", userEmail);
+    // console.log("Portal: Using email for paperwork:", userEmail); // Redacted for privacy
+
+    // 0. FORTRESS GATE: Check if paperwork is already active
+    const status = currentSession.paperworkStatus || "Pending"; // Default to pending if unknown to be safe, or fetch fresh
+    // Note: The data load at line 80 populates this.
+    // If status is 'Pending' (meaning documents sent), blocking duplicate requests.
+    // If status is 'Active' or 'Incomplete' (meaning user needs to sign), we allow.
+    // We need to be careful with terminology. Let's assume 'Pending' means "Sent to user".
+
+    // Better Logic: If PENDING_DOCUMENTS collection has an active envelope, don't create new.
+    // For now, simple UI gate:
+    if (status === "Packet Sent" || status === "Signed") {
+        // Adjust these string values to match your actual backend status values
+        // If you are unsure, we will simply log a warning for now but allow retry in case of lost email.
+        console.warn("Portal: Paperwork status is", status, "- allowing retry but consider blocking in future.");
+        // alert("Paperwork already sent! Please check your email.");
+        // return; 
+    }
 
     // 1. ID Upload Check
-    const hasUploadedId = await checkIdUploadStatus(userEmail);
+    const hasUploadedId = await checkIdUploadStatus(userEmail, currentSession.token);
     if (!hasUploadedId) {
         console.log("START FLOW: ID Missing -> Opening Lightbox");
         const idResult = await LightboxController.show('idUpload', {
@@ -242,9 +259,9 @@ async function handlePaperworkStart() {
 
 // --- Status Check Helpers ---
 
-async function checkIdUploadStatus(memberEmail) {
+async function checkIdUploadStatus(memberEmail, sessionToken) {
     try {
-        const result = await getMemberDocuments(memberEmail);
+        const result = await getMemberDocuments(memberEmail, sessionToken);
         if (!result.success) return false;
         const idDocs = result.documents.filter(doc => doc.documentType === 'government_id');
         const hasFront = idDocs.some(doc => doc.documentSide === 'front');

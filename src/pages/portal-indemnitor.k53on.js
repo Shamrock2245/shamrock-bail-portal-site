@@ -186,7 +186,7 @@ async function handlePaperworkStart() {
     const userEmail = currentSession.email || `indemnitor_${currentSession.personId}@shamrock.local`;
 
     // 1. ID Upload Check
-    const hasUploadedId = await checkIdUploadStatus(userEmail);
+    const hasUploadedId = await checkIdUploadStatus(userEmail, currentSession.token);
     if (!hasUploadedId) {
         const idResult = await LightboxController.show('idUpload', {
             memberData: { email: userEmail, name: "Indemnitor" }
@@ -210,9 +210,9 @@ async function handlePaperworkStart() {
 
 // --- Helpers ---
 
-async function checkIdUploadStatus(memberEmail) {
+async function checkIdUploadStatus(memberEmail, sessionToken) {
     try {
-        const result = await getMemberDocuments(memberEmail);
+        const result = await getMemberDocuments(memberEmail, sessionToken);
         if (!result.success) return false;
         const idDocs = result.documents.filter(doc => doc.documentType === 'government_id');
         const hasFront = idDocs.some(doc => doc.documentSide === 'front');
