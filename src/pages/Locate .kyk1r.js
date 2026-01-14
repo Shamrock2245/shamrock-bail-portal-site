@@ -37,9 +37,9 @@ $w.onReady(async function () {
             const title = itemData.name + " County";
             const desc = "Bail Bonds & Inmate Search";
 
-            // Try specific ID first, then fallbacks
-            if ($item('#textTitle').length) $item('#textTitle').text = title;
-            else if ($item('#itemTitle').length) $item('#itemTitle').text = title;
+            // User requested: Dynamic text mentioning the main city (County Seat)
+            const city = itemData.countySeat || "Southwest Florida";
+            const desc = `Serving ${city} & Surrounding Areas`;
 
             if ($item('#textDesc').length) $item('#textDesc').text = desc;
 
