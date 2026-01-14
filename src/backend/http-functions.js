@@ -62,7 +62,7 @@ export async function post_apiSyncCaseData(request) {
 
         const caseData = body.caseData;
 
-        const caseData = body.caseData;
+
 
         // Use Strict camelCase Schema (Matching 'Cases' Collection)
         const c = {
