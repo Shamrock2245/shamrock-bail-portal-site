@@ -33,7 +33,26 @@ $w.onReady(async function () {
         // 5. Setup Spanish Speaking Phone Button (Safe)
         safeBindAndLog("#callNowSpanishBtn", 'onClick', () => wixLocation.to("tel:12399550301"));
 
-        // 6. Removed unnecessary button binding - dropdown onChange handles navigation directly
+        // 6. Bind Get Started Button - SIMPLE AND WORKING
+        try {
+            const btn = $w('#getStartedBtn');
+            btn.onClick(() => {
+                console.log('🚀 GET STARTED CLICKED!');
+                const dropdown = $w('#countyDropdown');
+                const selectedCounty = dropdown.value;
+                
+                if (selectedCounty && selectedCounty !== 'All') {
+                    console.log('✅ Navigating to:', selectedCounty);
+                    navigateToCounty(selectedCounty);
+                } else {
+                    console.log('⚠️ No county selected, going to portal-landing');
+                    wixLocation.to('/portal-landing');
+                }
+            });
+            console.log('✅ Get Started button bound successfully');
+        } catch (err) {
+            console.error('❌ Failed to bind Get Started button:', err);
+        }
 
     } catch (criticalErr) {
         console.error("CRITICAL ERROR IN HOME PAGE ONREADY:", criticalErr);
@@ -99,68 +118,11 @@ function showLoadingState(countyName) {
         }
     } catch (e) { }
     
-    // Option 4: Programmatically create loading overlay (fallback)
-    createLoadingOverlay(countyName);
+    // Option 4: No loading indicator available
+    console.log('ℹ️  No loading indicator found (navigation still works)');
 }
 
-/**
- * Programmatically create loading overlay with animated GIF
- */
-function createLoadingOverlay(countyName) {
-    try {
-        console.log('✨ Creating programmatic loading overlay');
-        
-        // Create overlay container
-        const overlay = document.createElement('div');
-        overlay.id = 'shamrock-loading-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 99999;
-            animation: fadeIn 0.2s ease-in;
-        `;
-        
-        // Create loading image
-        const img = document.createElement('img');
-        img.src = 'https://static.wixstatic.com/media/4e4d4a_5d75f6a857404c6fba3b40b823187709~mv2.gif';
-        img.alt = 'Loading...';
-        img.style.cssText = `
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
-        `;
-        
-        // Create loading text
-        const text = document.createElement('div');
-        text.textContent = `Loading ${countyName} County...`;
-        text.style.cssText = `
-            color: white;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 18px;
-            font-weight: 500;
-            text-align: center;
-        `;
-        
-        // Assemble and add to page
-        overlay.appendChild(img);
-        overlay.appendChild(text);
-        document.body.appendChild(overlay);
-        
-        console.log('✅ Loading overlay created');
-        
-    } catch (err) {
-        console.log('ℹ️  Could not create loading overlay:', err.message);
-        // Navigation still works without loading indicator
-    }
-}
+
 
 /**
  * 1. COUNTY DROPDOWN LOGIC
