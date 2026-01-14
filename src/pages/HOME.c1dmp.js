@@ -132,8 +132,9 @@ async function initCountyDropdown() {
         dropdown.onChange((event) => {
             const dest = event.target.value;
             console.log("Navigation triggered to:", dest);
-            if (dest) wixLocation.to(dest);
+            navigateToCounty(dest);
         });
+
 
     } catch (err) {
         console.error("CRITICAL ERROR in initCountyDropdown:", err);
