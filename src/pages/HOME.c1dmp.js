@@ -117,7 +117,10 @@ async function initCountyDropdown() {
         dropdown.options = [];
         setTimeout(() => {
             dropdown.options = options;
+            dropdown.value = undefined; // Force "Select a County" placeholder
+            dropdown.resetValidityIndication();
             dropdown.placeholder = "Select a County";
+
             // Force visibility
             if (dropdown.collapsed) dropdown.expand();
             if (dropdown.hidden) dropdown.show();
@@ -310,11 +313,16 @@ async function setupBondAmounts() {
  * EXPORTS (For Editor wiring)
  */
 export function beginProcessButton_click(event) {
-    const dropdown = $w('#countySelector');
+    // BRIDGE LOGIC for button action
+    let dropdown = $w('#countyDropdown');
+    if (dropdown.length === 0) dropdown = $w('#countySelector');
+    if (dropdown.length === 0) dropdown = $w('#dropdown1');
+
     if (dropdown.length > 0 && dropdown.value) {
         wixLocation.to(dropdown.value);
     } else {
-        wixLocation.to('/portal');
+        // If no county selected, go to Portal Landing (Central Hub)
+        wixLocation.to('/portal-landing');
     }
 }
 export function spanishSpeakingPhone_click(event) { wixLocation.to("tel:12399550301"); }

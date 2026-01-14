@@ -96,7 +96,16 @@ async function updatePhoneElements(phoneData, county, sessionId) {
   const { number, display, trackingId } = phoneData;
 
   // List of common phone element IDs
+  // List of common phone element IDs (Updated to match ELEMENT-ID-CHEATSHEET + Legacy)
   const phoneElementIds = [
+    // Spec IDs
+    '#phoneNumber',       // Global Text
+    '#callButton',        // Desktop CTA
+    '#headerCallBtn',     // Header CTA
+    '#stickyMobileCTA',   // Mobile CTA
+    '#callShamrockBtn',   // Dynamic County Page CTA
+
+    // Legacy / Other IDs found in code
     '#callNowBtn',
     '#primaryPhone',
     '#headerPhone',
@@ -106,7 +115,7 @@ async function updatePhoneElements(phoneData, county, sessionId) {
     '#mobileCallBtn',
     '#emergencyPhone',
     '#contactPhone',
-    '#spanishSpeakingPhone'
+    // '#spanishSpeakingPhone' // handled separately
   ];
 
   for (const elementId of phoneElementIds) {

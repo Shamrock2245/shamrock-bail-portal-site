@@ -1,7 +1,7 @@
 // Force Sync: Restoring Dynamic Page Code
 import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
-import { getCountyBySlug } from 'public/countyUtils';
+import { getCountyBySlug, getNearbyCounties } from 'public/countyUtils';
 
 $w.onReady(async function () {
     console.log("🚀 Dynamic County Page Loading...");
@@ -101,6 +101,31 @@ $w.onReady(async function () {
             "name": "description",
             "content": `24/7 Bail Bonds in ${county.name} County. Call ${phone} for immediate release. Fast, confidential service.`
         }]);
+
+        // 5. Populate Nearby Counties
+        const nearby = await getNearbyCounties("Southwest Florida", county._id); // Region mocked for now
+        const rep = $w('#nearbyCountiesRepeater');
+
+        if (rep.length > 0) {
+            rep.data = nearby;
+            rep.onItemReady(($item, itemData) => {
+                const name = itemData.name || itemData.countyName || "Unknown";
+                const slug = itemData.slug || itemData.countySlug || name.toLowerCase();
+
+                // Try common repeater elements
+                if ($item('#neighborName').length) $item('#neighborName').text = name;
+                if ($item('#neighborLink').length) {
+                    $item('#neighborLink').link = `/county/${slug}`;
+                    $item('#neighborLink').label = name; // If it's a button
+                }
+
+                // Fallback: If container is clicked
+                if ($item('#neighborContainer').length) {
+                    $item('#neighborContainer').onClick(() => wixLocation.to(`/county/${slug}`));
+                }
+            });
+            rep.expand();
+        }
 
     } catch (error) {
         console.error("❌ Error initializing page:", error);
