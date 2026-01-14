@@ -31,29 +31,33 @@ $w.onReady(async function () {
         rep.data = counties;
 
         rep.onItemReady(($item, itemData) => {
-            // Map Data to Elements
-            // Using generic IDs based on the screenshot "Item Title"
+            // --- MAP DATA TO ELEMENTS ---
 
-            // Text
+            // 1. TEXT
             const title = itemData.name + " County";
             const desc = "Bail Bonds & Inmate Search";
 
-            if ($item('#textTitle').length) $item('#textTitle').text = title; // Try standard name
-            else if ($item('#itemTitle').length) $item('#itemTitle').text = title; // Common default
+            // Try specific ID first, then fallbacks
+            if ($item('#textTitle').length) $item('#textTitle').text = title;
+            else if ($item('#itemTitle').length) $item('#itemTitle').text = title;
 
             if ($item('#textDesc').length) $item('#textDesc').text = desc;
 
-            // Link the Container AND Button (if any)
+            // 2. LINKING (Click Action)
             const link = `/bail-bonds/${itemData.slug}`;
 
-            if ($item('#container1').length) $item('#container1').onClick(() => wixLocation.to(link));
-            // Or just the repeated item itself (often works in Velo)
+            // Bind click to Container and Button (if present)
+            // Removed #vectorImage as requested
+            const clickableElements = ['#container1', '#actionButton', '#group1'];
 
-            // If there's a button
-            if ($item('#actionButton').length) {
-                $item('#actionButton').label = "Locate Inmate";
-                $item('#actionButton').onClick(() => wixLocation.to(link));
-            }
+            clickableElements.forEach(id => {
+                const el = $item(id);
+                if (el.length > 0) {
+                    el.onClick(() => wixLocation.to(link));
+                    // If it's the button, ensure label is set
+                    if (el.type === '$w.Button') el.label = "Locate Inmate";
+                }
+            });
         });
 
     } catch (err) {
