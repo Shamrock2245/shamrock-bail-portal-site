@@ -1,5 +1,6 @@
 import wixLocation from 'wix-location';
 import wixData from 'wix-data';
+import wixSeo from 'wix-seo';
 import { COLLECTIONS } from 'public/collectionIds';
 
 $w.onReady(function () {
@@ -128,7 +129,6 @@ function setupBailAmounts() {
 }
 
 // --- 5. Common Bail Amounts (Table) ---
-// --- 5. Common Bail Amounts (Table) ---
 async function setupCommonBailAmounts() {
     const fallbackData = [
         { _id: "1", offense: "DUI (First Offense)", range: "$500 - $2,500" },
@@ -221,4 +221,63 @@ async function setupFAQ() {
     } else {
         console.error('ERROR: #faqRepeater not found on page');
     }
+
+    // Trigger SEO Update
+    updatePageSEO(data);
+}
+
+// --- 7. SEO Injection ---
+function updatePageSEO(faqItems) {
+    // 1. FAQ Schema
+    const faqSchema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": faqItems.map(item => ({
+            "@type": "Question",
+            "name": item.title || item.question || item.q || "Question",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": item.answer || item.a || "Answer"
+            }
+        }))
+    };
+
+    // 2. HowTo Schema (The Arrest Process)
+    // Matching data from setupBailProcess()
+    const howToSchema = {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How the Bail Bond Process Works",
+        "step": [
+            {
+                "@type": "HowToStep",
+                "name": "Booking",
+                "text": "After arrest, the defendant is taken to jail for booking. This includes fingerprinting, photographing, and recording personal information. This process typically takes 2-4 hours."
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Bail Setting",
+                "text": "A judge reviews the case and sets a bail amount. For common offenses, there may be a pre-set bail schedule. For more serious charges, a bail hearing may be required."
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Bail Payment Options",
+                "text": "Once bail is set, you have three options: Cash Bail (pay full to court), Property Bond (use collateral), or Bail Bond (pay 10% to bondsman)."
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Release",
+                "text": "After bail is posted, the jail processes the release. This can take anywhere from 2-12 hours depending on the facility."
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Court Appearances",
+                "text": "The defendant must appear at all scheduled court dates. Failure to appear results in bail forfeiture and an arrest warrant."
+            }
+        ]
+    };
+
+    wixSeo.setStructuredData([faqSchema, howToSchema])
+        .then(() => console.log("SEO: Structured Data Set Successfully"))
+        .catch(err => console.error("SEO: Failed to set structured data", err));
 }

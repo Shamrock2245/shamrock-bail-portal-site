@@ -50,34 +50,82 @@ $w.onReady(async function () {
 
         console.log(`Loaded County: ${county.name} | Loaded ${faqResult.totalCount} FAQs`);
 
-        // 3. GENERATE SEO SCHEMA (LocalBusiness + FAQPage)
-        // We combine the business info with the FAQ data for a rich Google result
+        // 3. GENERATE SEO (Meta + Schema)
         const faqs = faqResult.items;
+        const pageTitle = `Bail Bonds ${county.name} County, FL | Shamrock Bail Bonds`;
+        const pageDesc = `Fast, professional bail bond services in ${county.name} County, FL. 24/7 jail release for ${county.countySeat || "all cities"} & surrounding areas. Call now.`;
+        const pageUrl = `https://www.shamrockbailbonds.biz/bail-bonds/${county.slug}`;
+        const logoUrl = "https://www.shamrockbailbonds.biz/logo.png"; // Ensure this path is correct or use a full media URL
 
-        wixSeo.setStructuredData([
-            {
-                "@context": "https://schema.org",
-                "@type": "LocalBusiness",
-                "name": `Shamrock Bail Bonds - ${county.name} County`,
-                "description": `Professional 24/7 bail bond services in ${county.name} County, Florida. Fast jail release for ${county.countySeat || "the area"} and surrounding areas.`,
-                "url": `https://www.shamrockbailbonds.biz/bail-bonds/${county.slug}`,
-                "telephone": "+12393322245",
-                "image": "https://www.shamrockbailbonds.biz/logo.png",
-                "priceRange": "$$",
-                "areaServed": {
-                    "@type": "AdministrativeArea",
-                    "name": `${county.name} County, Florida`
+        // A. Meta Tags
+        wixSeo.setTitle(pageTitle);
+        wixSeo.setMetaTags([
+            { "name": "description", "content": pageDesc },
+            { "property": "og:title", "content": pageTitle },
+            { "property": "og:description", "content": pageDesc },
+            { "property": "og:image", "content": logoUrl },
+            { "property": "og:url", "content": pageUrl },
+            { "property": "og:type", "content": "website" },
+            { "name": "twitter:card", "content": "summary_large_image" },
+            { "name": "twitter:title", "content": pageTitle },
+            { "name": "twitter:description", "content": pageDesc },
+            { "name": "twitter:image", "content": logoUrl }
+        ]);
+
+        // B. Structured Data
+        const schemas = [];
+
+        // 1. BreadcrumbList
+        schemas.push({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://www.shamrockbailbonds.biz/"
                 },
-                "openingHoursSpecification": {
-                    "@type": "OpeningHoursSpecification",
-                    "dayOfWeek": [
-                        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
-                    ],
-                    "opens": "00:00",
-                    "closes": "23:59"
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Locate Inmate",
+                    "item": "https://www.shamrockbailbonds.biz/locate"
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 3,
+                    "name": `${county.name} County`,
+                    "item": pageUrl
                 }
+            ]
+        });
+
+        // 2. LocalBusiness
+        schemas.push({
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            "name": `Shamrock Bail Bonds - ${county.name} County`,
+            "description": pageDesc,
+            "url": pageUrl,
+            "telephone": "+12393322245", // Main office or dynamic if available
+            "image": logoUrl,
+            "priceRange": "$$",
+            "areaServed": {
+                "@type": "AdministrativeArea",
+                "name": `${county.name} County, Florida`
             },
-            {
+            "openingHoursSpecification": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "opens": "00:00",
+                "closes": "23:59"
+            }
+        });
+
+        // 3. FAQPage (if data exists)
+        if (faqs.length > 0) {
+            schemas.push({
                 "@context": "https://schema.org",
                 "@type": "FAQPage",
                 "mainEntity": faqs.map(faq => ({
@@ -88,8 +136,12 @@ $w.onReady(async function () {
                         "text": faq.answer
                     }
                 }))
-            }
-        ]);
+            });
+        }
+
+        wixSeo.setStructuredData(schemas)
+            .then(() => console.log("✅ SEO: Structured Data & Meta Tags Set"))
+            .catch(err => console.error("❌ SEO: Failed to set data", err));
 
         // 4. UPDATE PAGE UI
         // Text Fields
