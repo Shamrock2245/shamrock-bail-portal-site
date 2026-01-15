@@ -1,4 +1,3 @@
-
 import wixLocation from 'wix-location';
 import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
@@ -166,7 +165,7 @@ async function setupCommonBailAmounts() {
 
             const offenseEl = $item('#offenseName');
             const rangeEl = $item('#bailRange');
-            
+
             if (offenseEl && offenseEl.valid) offenseEl.text = offense;
             if (rangeEl && rangeEl.valid) rangeEl.text = range;
         });
@@ -215,7 +214,7 @@ async function setupFAQ() {
 
             const questionEl = $item('#faqQuestion');
             const answerEl = $item('#faqAnswer');
-            
+
             if (questionEl && questionEl.valid) questionEl.text = question;
             if (answerEl && answerEl.valid) answerEl.text = answerText;
         });
