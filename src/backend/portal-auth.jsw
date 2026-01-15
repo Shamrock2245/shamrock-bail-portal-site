@@ -760,3 +760,175 @@ export async function getStaffDashboardData() {
 
   return { stats, cases };
 }
+
+
+/***** SIMPLIFIED LOGIN SYSTEM (Fortune 50 Grade) *****/
+/**
+ * Simplified login/signup flow - Auto-detects role, sends magic link
+ * Takes email or phone, checks existing data, sends appropriate magic link
+ * 
+ * @param {string} emailOrPhone - User's email or phone number
+ * @returns {Promise<{success: boolean, isNewUser: boolean, message: string}>}
+ */
+export async function sendMagicLinkSimplified(emailOrPhone) {
+  if (!emailOrPhone || typeof emailOrPhone !== 'string') {
+    return {
+      success: false,
+      message: "Please enter a valid email or phone number."
+    };
+  }
+
+  const input = emailOrPhone.trim().toLowerCase();
+
+  try {
+    // 1. Determine if email or phone
+    const isEmail = input.includes('@');
+    const searchField = isEmail ? 'defendantEmail' : 'defendantPhone';
+
+    // 2. Check if user exists in Cases collection
+    let userRole = null;
+    let personId = null;
+    let userName = null;
+    let isNewUser = false;
+
+    const caseQuery = await wixData
+      .query("Cases")
+      .eq(searchField, input)
+      .limit(1)
+      .find({ suppressAuth: true });
+
+    if (caseQuery.items.length > 0) {
+      // Existing user - they're a defendant
+      const caseData = caseQuery.items[0];
+      userRole = ROLES.DEFENDANT;
+      personId = caseData._id; // Use case ID as personId
+      userName = caseData.defendantName;
+      isNewUser = false;
+
+      console.log(`✅ Existing defendant found: ${userName}`);
+    } else {
+      // Check if they're an indemnitor
+      const indemnitorQuery = await wixData
+        .query("Cases")
+        .eq(isEmail ? 'indemnitorEmail' : 'indemnitorPhone', input)
+        .limit(1)
+        .find({ suppressAuth: true });
+
+      if (indemnitorQuery.items.length > 0) {
+        // Existing indemnitor
+        const caseData = indemnitorQuery.items[0];
+        userRole = ROLES.INDEMNITOR;
+        personId = `indemnitor_${caseData._id}`;
+        userName = caseData.indemnitorName;
+        isNewUser = false;
+
+        console.log(`✅ Existing indemnitor found: ${userName}`);
+      } else {
+        // New user - create as defendant (default role for new signups)
+        userRole = ROLES.DEFENDANT;
+        personId = `new_${Date.now()}`; // Temporary ID until case is created
+        userName = null;
+        isNewUser = true;
+
+        console.log(`🆕 New user detected: ${input}`);
+      }
+    }
+
+    // 3. Generate magic link token
+    const token = await generateMagicLink(personId, userRole);
+
+    // 4. Send magic link via email/SMS
+    const sendResult = await sendMagicLink(
+      input,
+      token,
+      userRole,
+      userName
+    );
+
+    if (!sendResult.success) {
+      console.error(`❌ Failed to send magic link to ${input}:`, sendResult.error);
+      return {
+        success: false,
+        message: "Unable to send secure link. Please try again or call 239-332-2245."
+      };
+    }
+
+    console.log(`✅ Magic link sent successfully to ${input}`);
+
+    return {
+      success: true,
+      isNewUser: isNewUser,
+      message: isNewUser
+        ? "Welcome! Check your email/phone for your secure link."
+        : "Check your email/phone for your secure link."
+    };
+
+  } catch (error) {
+    console.error("❌ sendMagicLinkSimplified error:", error);
+    return {
+      success: false,
+      message: "System error. Please try again or call 239-332-2245."
+    };
+  }
+}
+
+/**
+ * Lookup user details by email or phone
+ * Used for auto-populating forms and personalizing experience
+ * 
+ * @param {string} emailOrPhone - User's email or phone
+ * @returns {Promise<{found: boolean, role: string, name: string, caseId: string}>}
+ */
+export async function lookupUserByContact(emailOrPhone) {
+  if (!emailOrPhone) {
+    return { found: false };
+  }
+
+  const input = emailOrPhone.trim().toLowerCase();
+  const isEmail = input.includes('@');
+  const searchField = isEmail ? 'defendantEmail' : 'defendantPhone';
+
+  try {
+    // Check defendant
+    const defendantQuery = await wixData
+      .query("Cases")
+      .eq(searchField, input)
+      .limit(1)
+      .find({ suppressAuth: true });
+
+    if (defendantQuery.items.length > 0) {
+      const data = defendantQuery.items[0];
+      return {
+        found: true,
+        role: ROLES.DEFENDANT,
+        name: data.defendantName,
+        caseId: data.caseNumber,
+        personId: data._id
+      };
+    }
+
+    // Check indemnitor
+    const indemnitorQuery = await wixData
+      .query("Cases")
+      .eq(isEmail ? 'indemnitorEmail' : 'indemnitorPhone', input)
+      .limit(1)
+      .find({ suppressAuth: true });
+
+    if (indemnitorQuery.items.length > 0) {
+      const data = indemnitorQuery.items[0];
+      return {
+        found: true,
+        role: ROLES.INDEMNITOR,
+        name: data.indemnitorName,
+        caseId: data.caseNumber,
+        personId: `indemnitor_${data._id}`
+      };
+    }
+
+    return { found: false };
+
+  } catch (error) {
+    console.error("lookupUserByContact error:", error);
+    return { found: false };
+  }
+}
