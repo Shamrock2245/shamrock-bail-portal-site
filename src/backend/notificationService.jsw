@@ -33,7 +33,8 @@ const NOTIFICATION_TYPES = {
     DOCUMENT_NEEDS_REVIEW: 'document_needs_review',
     SIGNING_DECLINED: 'signing_declined',
     URGENT_CASE: 'urgent_case',
-    SYSTEM_ERROR: 'system_error'
+    SYSTEM_ERROR: 'system_error',
+    NEW_CONTACT_INQUIRY: 'new_contact_inquiry'
 };
 
 /**
@@ -182,7 +183,10 @@ function formatSlackMessage(type, data) {
             `:rotating_light: *URGENT CASE*\nMember: ${data.memberName}\nCounty: ${data.county}\nDetails: ${data.details || 'See portal for details'}`,
 
         [NOTIFICATION_TYPES.SYSTEM_ERROR]:
-            `:warning: *SYSTEM ERROR ALERT*\nService: ${data.service}\nError: ${data.error}\nSeverity: ${data.severity || 'High'}\nContext: ${data.context || 'None'}`
+            `:warning: *SYSTEM ERROR ALERT*\nService: ${data.service}\nError: ${data.error}\nSeverity: ${data.severity || 'High'}\nContext: ${data.context || 'None'}`,
+
+        [NOTIFICATION_TYPES.NEW_CONTACT_INQUIRY]:
+            `:e-mail: *New Contact Inquiry*\nFrom: ${data.name}\nPhone: ${data.phone}\nEmail: ${data.email || 'N/A'}\nSubject: ${data.relationship} / ${data.jail}\nMessage: ${data.notes || 'No notes'}`
     };
 
     return messages[type] || `:bell: Notification: ${type}\n${JSON.stringify(data, null, 2)}`;
@@ -198,7 +202,8 @@ function getSlackChannel(type) {
         [NOTIFICATION_TYPES.DOCUMENT_NEEDS_REVIEW]: '#documents',
         [NOTIFICATION_TYPES.SIGNING_DECLINED]: '#urgent',
         [NOTIFICATION_TYPES.URGENT_CASE]: '#urgent',
-        [NOTIFICATION_TYPES.SYSTEM_ERROR]: '#system-logs'
+        [NOTIFICATION_TYPES.SYSTEM_ERROR]: '#system-logs',
+        [NOTIFICATION_TYPES.NEW_CONTACT_INQUIRY]: '#inquiries'
     };
 
     return channelMap[type] || '#general';

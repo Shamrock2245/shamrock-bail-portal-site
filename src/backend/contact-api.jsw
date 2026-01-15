@@ -1,0 +1,84 @@
+/**
+ * Contact API
+ * Filename: backend/contact-api.jsw
+ * 
+ * Handles contact form submissions and routes to notification service.
+ */
+
+import { sendAdminNotification, NOTIFICATION_TYPES } from 'backend/notificationService';
+
+/**
+ * Submit Contact Form
+ * Validates input and triggers notification
+ * 
+ * @param {Object} formData
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function submitContactForm(formData) {
+    try {
+        const {
+            name,
+            phone,
+            email,
+            relationship,
+            defendantName,
+            defendantDob,
+            jail,
+            bookingNumber,
+            charges,
+            source,
+            notes,
+            consent
+        } = formData;
+
+        // 1. Basic Validation
+        if (!name || !phone || !defendantName || !jail) {
+            return {
+                success: false,
+                error: "Missing required fields (Name, Phone, Defendant Name, or Jail)."
+            };
+        }
+
+        if (!consent) {
+            return {
+                success: false,
+                error: "You must consent to be contacted."
+            };
+        }
+
+        // 2. Prepare Notification Payload
+        const notificationData = {
+            name,
+            phone,
+            email,
+            relationship,
+            defendantName,
+            defendantDob: defendantDob ? new Date(defendantDob).toLocaleDateString() : 'N/A',
+            jail,
+            bookingNumber: bookingNumber || 'N/A',
+            charges: charges || 'N/A',
+            source: source || 'Website Contact Form',
+            notes: notes || '',
+            submittedAt: new Date().toLocaleString()
+        };
+
+        // 3. Send Notification (Slack + Email via GAS)
+        const result = await sendAdminNotification(
+            NOTIFICATION_TYPES.NEW_CONTACT_INQUIRY,
+            notificationData
+        );
+
+        if (!result.success) {
+            console.error("Failed to send contact notification:", result.error);
+            // We still return success to the user so they don't retry endlessly, 
+            // but we log the error. Ideally, we should have a fallback here.
+            return { success: true, meta: "notification_failed" };
+        }
+
+        return { success: true };
+
+    } catch (error) {
+        console.error("submitContactForm Error:", error);
+        return { success: false, error: "Unable to submit form. Please call us directly." };
+    }
+}

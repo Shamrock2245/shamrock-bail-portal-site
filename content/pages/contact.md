@@ -24,14 +24,14 @@ We're here when you need us most. Day or night, weekends or holidays—we answer
 
 ### Method 1: Phone (Primary)
 **Call Us Now**
-📞 **(239) 555-BAIL**
+📞 **(239) 332-BAIL**
 Available 24 hours a day, 7 days a week
 
 *Fastest response for urgent situations*
 
 ### Method 2: Text
 **Text Us**
-📱 **(239) 555-BAIL**
+📱 **(239) 332-BAIL**
 Text anytime—we respond quickly
 
 *Great for sharing booking information*
