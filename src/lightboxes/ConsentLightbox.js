@@ -173,8 +173,9 @@ async function handleAgree() {
         $w('#agreeBtn').disable();
         $w('#agreeBtn').label = 'Processing...';
 
-        // Prepare consent data
+        // Prepare consent data with success flag for flow control
         const consentData = {
+            success: true,  // Explicit success flag for parent page
             locationGranted: locationGranted,
             location: userLocation,
             termsAccepted: termsAccepted,

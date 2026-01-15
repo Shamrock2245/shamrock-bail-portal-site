@@ -61,15 +61,33 @@ export async function sendForSignature(params) {
  * @param {string} documentId 
  * @param {string} email 
  * @param {string} role 
+ * @returns {Promise<{success: boolean, embeddedLink?: string, documentId?: string, error?: string}>}
  */
 export async function createEmbeddedLink(documentId, email, role) {
-    return await callGasBackend({
+    const result = await callGasBackend({
         action: 'createEmbeddedLink',
         documentId,
         signerEmail: email,
         signerRole: role,
         linkExpiration: 60 // 1 hour for portal
     });
+
+    // Normalize response to ensure consistent structure for frontend
+    if (result.success) {
+        // Handle various response formats from GAS/SignNow
+        const link = result.embeddedLink || result.link || 
+                     (result.links && result.links[0]?.link) || 
+                     (result.links && result.links[0]) || 
+                     result.url;
+        
+        return {
+            success: true,
+            embeddedLink: link,
+            documentId: result.documentId || documentId
+        };
+    }
+
+    return result;
 }
 
 /**

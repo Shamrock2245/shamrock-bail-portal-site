@@ -246,9 +246,19 @@ async function handlePaperworkStart() {
         console.log("START FLOW: Consent Missing -> Opening Lightbox");
         const consentResult = await LightboxController.show('consent');
 
-        if (!consentResult) {
+        if (consentResult && consentResult.success) {
+            // Store consent in localStorage for persistence
+            const consentKey = `consent_${currentSession.personId}`;
+            wixWindow.browserStorage.local.setItem(consentKey, 'true');
+            currentSession.hasConsented = true;
+            console.log("START FLOW: Consent granted and stored");
+        } else {
+            // Double-check in case consent was stored by lightbox directly
             const doubleCheck = await checkConsentStatus(currentSession.personId);
-            if (!doubleCheck) return;
+            if (!doubleCheck) {
+                console.log("START FLOW: Consent not granted, aborting");
+                return;
+            }
         }
     }
 
@@ -274,10 +284,22 @@ async function checkIdUploadStatus(memberEmail, sessionToken) {
 
 async function checkConsentStatus(personId) {
     try {
-        // TODO: Check consent in PortalUsers or custom collection
-        // For now, return false to trigger consent flow
+        // Check consent status in session data
+        // Consent is stored when user completes the consent lightbox
+        if (currentSession && currentSession.hasConsented) {
+            return true;
+        }
+        
+        // Check localStorage for consent flag (persists across sessions)
+        const consentKey = `consent_${personId}`;
+        const storedConsent = wixWindow.browserStorage.local.getItem(consentKey);
+        if (storedConsent === 'true') {
+            return true;
+        }
+        
         return false;
     } catch (e) {
+        console.error('Error checking consent status:', e);
         return false;
     }
 }
