@@ -24,6 +24,7 @@ import wixLocation from 'wix-location';
 import { sendMagicLinkSimplified, onMagicLinkLoginV2, validateCustomSession } from 'backend/portal-auth';
 import { getGoogleAuthUrl, getFacebookAuthUrl } from 'backend/social-auth'; // New Import
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
+import wixSeo from 'wix-seo';
 
 // ... existing onReady code ...
 
@@ -61,7 +62,42 @@ $w.onReady(async function () {
 
     // Set up the simplified login form
     setupSimplifiedLogin();
+
+    updatePageSEO();
 });
+
+function updatePageSEO() {
+    const pageTitle = "Client Portal Login | Shamrock Bail Bonds";
+    const pageDesc = "Secure client portal for Shamrock Bail Bonds. Manage your bail case, check in, and view paperwork.";
+    const pageUrl = "https://www.shamrockbailbonds.biz/portal-landing";
+
+    wixSeo.setTitle(pageTitle);
+    wixSeo.setMetaTags([
+        { "name": "description", "content": pageDesc },
+        { "property": "og:title", "content": pageTitle },
+        { "property": "og:description", "content": pageDesc },
+        { "property": "og:url", "content": pageUrl },
+        { "property": "og:type", "content": "website" },
+        { "name": "robots", "content": "noindex" } // Login pages should generally not be indexed
+    ]);
+
+    wixSeo.setStructuredData([
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
+                { "@type": "ListItem", "position": 2, "name": "Portal Login", "item": pageUrl }
+            ]
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "AccountPage",
+            "name": "Shamrock Bail Bonds Client Portal",
+            "url": pageUrl
+        }
+    ]);
+}
 
 /**
  * Setup the simplified login form

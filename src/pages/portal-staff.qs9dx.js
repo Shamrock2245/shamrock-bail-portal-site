@@ -10,6 +10,7 @@ import wixLocation from 'wix-location';
 import { LightboxController } from 'public/lightbox-controller';
 import { validateCustomSession, generateMagicLink, getStaffDashboardData } from 'backend/portal-auth';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
+import wixSeo from 'wix-seo';
 
 let allCases = []; // Store locally for fast filtering
 let currentSession = null; // Store validated session data
@@ -124,7 +125,22 @@ $w.onReady(async function () {
     } catch (e) {
         console.error('Error setting up search bar:', e);
     }
+} catch (e) {
+    console.error('Error setting up search bar:', e);
+}
+
+updatePageSEO();
 });
+
+function updatePageSEO() {
+    const pageTitle = "Staff Dashboard | Shamrock Bail Bonds";
+    // STRICT No index for staff portals
+    wixSeo.setTitle(pageTitle);
+    wixSeo.setMetaTags([
+        { "name": "robots", "content": "noindex, nofollow" },
+        { "name": "googlebot", "content": "noindex" }
+    ]);
+}
 
 function setupRepeater() {
     try {

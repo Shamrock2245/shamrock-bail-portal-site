@@ -12,6 +12,7 @@ import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink } from 'backend/signnow-integration';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
+import wixSeo from 'wix-seo';
 
 let currentSession = null; // Store validated session data
 
@@ -75,7 +76,32 @@ $w.onReady(async function () {
             }
         } catch (e) { }
     }
+} catch (e) { }
+    }
+
+updatePageSEO();
 });
+
+function updatePageSEO() {
+    const pageTitle = "Indemnitor Dashboard | Shamrock Bail Bonds";
+    // No index for private dashboards
+    wixSeo.setTitle(pageTitle);
+    wixSeo.setMetaTags([
+        { "name": "robots", "content": "noindex, nofollow" }
+    ]);
+
+    wixSeo.setStructuredData([
+        {
+            "@context": "https://schema.org",
+            "@type": "ProfilePage",
+            "name": "Indemnitor Dashboard",
+            "mainEntity": {
+                "@type": "Person",
+                "name": "Indemnitor"
+            }
+        }
+    ]);
+}
 
 async function loadDashboardData() {
     if (!currentSession) {
