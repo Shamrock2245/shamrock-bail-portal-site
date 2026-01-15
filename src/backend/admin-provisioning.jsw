@@ -1,0 +1,35 @@
+import { generateMagicLink } from 'backend/portal-auth';
+
+/**
+ * Run this function directly in the Wix Editor Backend to get your Admin Link.
+ * 1. Sync this file to Wix (it will happen automatically).
+ * 2. In Wix Editor > Backend > admin-provisioning.jsw
+ * 3. Click the green "Play" / "Run" arrow next to this function.
+ * 4. Copy the URL from the output console.
+ */
+export async function generateAdminLinkForBrendan() {
+    const email = "admin@shamrockbailbonds.biz";
+    const personId = "admin_master_01"; // Stable ID for the super admin
+    const role = "admin";
+
+    console.log(`Generating Admin Link for ${email}...`);
+
+    try {
+        // Generate the secure token
+        const token = await generateMagicLink(personId, role);
+
+        // Construct the full URL
+        const url = `https://www.shamrockbailbonds.biz/portal-landing?token=${token}`;
+
+        console.log("\n===========================================");
+        console.log(">>> YOUR ADMIN MAGIC LINK <<<");
+        console.log(url);
+        console.log("===========================================\n");
+
+        return { success: true, url: url, token: token };
+
+    } catch (error) {
+        console.error("Failed to generate link:", error);
+        return { success: false, error: error.message };
+    }
+}
