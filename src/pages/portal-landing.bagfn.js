@@ -47,6 +47,7 @@ $w.onReady(async function () {
     }
 
     // Check for session token (Social Login Redirect)
+    const query = wixLocation.query;
     if (query.sessionToken) {
         console.log("🔗 Social login session detected, validating...");
         await handleSocialSession(query.sessionToken, query.role);
