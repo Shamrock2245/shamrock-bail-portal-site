@@ -10,6 +10,9 @@ import { fetch } from "wix-fetch";
 import { API_BASE_URL, API_TIMEOUT } from 'public/portal-config';
 import { secrets } from "wix-secrets-backend";
 
+// Additional imports might be needed for specific queries if expanding scope
+
+
 /***** CONFIG & ROLES *****/
 export const ROLES = {
   DEFENDANT: "defendant",
@@ -761,6 +764,27 @@ export async function getStaffDashboardData() {
   return { stats, cases };
 }
 
+export async function getUserConsentStatus(personId) {
+  if (!personId) return false;
+
+  try {
+    // Query PortalUsers collection for consent
+    // Assumes field is 'consent' or 'marketingConsent'
+    const result = await wixData.query("PortalUsers")
+      .eq("personId", personId)
+      .limit(1)
+      .find({ suppressAuth: true });
+
+    if (result.items.length > 0) {
+      // Check for explicit true
+      return result.items[0].consent === true;
+    }
+    return false;
+  } catch (e) {
+    console.error("getUserConsentStatus error:", e);
+    return false;
+  }
+}
 
 /***** SIMPLIFIED LOGIN SYSTEM (Fortune 50 Grade) *****/
 /**
@@ -795,9 +819,11 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
       .query("Cases")
       .eq(searchField, input)
       .limit(1)
+
       .find({ suppressAuth: true });
 
     if (caseQuery.items.length > 0) {
+
       // Existing user - they're a defendant
       const caseData = caseQuery.items[0];
       userRole = ROLES.DEFENDANT;

@@ -9,7 +9,7 @@
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { saveUserLocation } from 'backend/location';
-import { validateCustomSession, getDefendantDetails } from 'backend/portal-auth';
+import { validateCustomSession, getDefendantDetails, getUserConsentStatus } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink } from 'backend/signnow-integration';
@@ -284,22 +284,11 @@ async function checkIdUploadStatus(memberEmail, sessionToken) {
 
 async function checkConsentStatus(personId) {
     try {
-        // Check consent status in session data
-        // Consent is stored when user completes the consent lightbox
-        if (currentSession && currentSession.hasConsented) {
-            return true;
-        }
-        
-        // Check localStorage for consent flag (persists across sessions)
-        const consentKey = `consent_${personId}`;
-        const storedConsent = wixWindow.browserStorage.local.getItem(consentKey);
-        if (storedConsent === 'true') {
-            return true;
-        }
-        
-        return false;
+        // Call Backend to Check Real Consent
+        return await getUserConsentStatus(personId);
     } catch (e) {
-        console.error('Error checking consent status:', e);
+        console.error("Frontend checkConsentStatus failed:", e);
+        // Fallback or rethrow depending on desired behavior, for now just return false
         return false;
     }
 }

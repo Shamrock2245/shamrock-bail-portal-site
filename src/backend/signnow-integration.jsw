@@ -72,22 +72,34 @@ export async function createEmbeddedLink(documentId, email, role) {
         linkExpiration: 60 // 1 hour for portal
     });
 
-    // Normalize response to ensure consistent structure for frontend
-    if (result.success) {
-        // Handle various response formats from GAS/SignNow
-        const link = result.embeddedLink || result.link || 
-                     (result.links && result.links[0]?.link) || 
-                     (result.links && result.links[0]) || 
-                     result.url;
-        
+    // Normalize Response: Combine logic from both branches to be maximally robust
+    // Handling: {embeddedLink}, {link}, {url}, {links:[{link}]}, {data:{link:{link}}}
+    let link = result.embeddedLink || result.link;
+
+    // Check deep nested structures if simple keys failed or if they are objects
+    if (!link || typeof link === 'object') {
+        link = result.data?.link?.link ||
+            result.link?.link ||
+            (result.links && result.links[0]?.link) ||
+            (result.links && result.links[0]) ||
+            result.url ||
+            link; // fallback to the object if nothing better found (though likely wrong)
+    }
+
+    // Return standardized format for frontend
+    if (result.success && link && typeof link === 'string') {
         return {
             success: true,
             embeddedLink: link,
             documentId: result.documentId || documentId
         };
+    } else {
+        return {
+            success: false,
+            error: result.error || "Failed to retrieve signing link.",
+            debug: result // useful for debugging
+        };
     }
-
-    return result;
 }
 
 /**
