@@ -35,9 +35,7 @@ $w.onReady(async function () {
 
         console.log(`DEBUG: Loaded ${counties.length} counties. Populating repeater...`);
 
-        // 3. Populate Repeater
-        rep.data = counties;
-
+        // 3. Populate Repeater - ORDER MATTERS: Handler first, then Data
         rep.onItemReady(($item, itemData) => {
             // A. Prepare Data
             const countyName = (itemData.name || itemData.countyName || "Unknown") + " County";
@@ -73,6 +71,9 @@ $w.onReady(async function () {
                 }
             }
         });
+
+        // Assign Data triggers the ItemReady event
+        rep.data = counties;
 
     } catch (err) {
         console.error("CRITICAL ERROR in Locate Page:", err);
