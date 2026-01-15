@@ -1,5 +1,6 @@
 import { submitContactForm } from 'backend/contact-api';
 import { getCounties } from 'public/countyUtils';
+import wixSeo from 'wix-seo';
 
 $w.onReady(async function () {
     console.log("🚀 Contact Page Loaded");
@@ -13,7 +14,75 @@ $w.onReady(async function () {
     // Optional: Pre-fill data if query params exist (e.g. from a "Quick Contact" link)
     // const query = wixLocation.query;
     // if(query.jail) $w('#dropdownJail').value = query.jail;
+
+    updatePageSEO();
 });
+
+function updatePageSEO() {
+    const pageTitle = "Contact Shamrock Bail Bonds | 24/7 Bail Bonds & Jail Release";
+    const pageDesc = "Contact Shamrock Bail Bonds for immediate assistance. Open 24/7 in Fort Myers, Naples, and Punta Gorda. Call (239) 332-2245.";
+    const pageUrl = "https://www.shamrockbailbonds.biz/contact";
+
+    // 1. Meta Tags
+    wixSeo.setTitle(pageTitle);
+    wixSeo.setMetaTags([
+        { "name": "description", "content": pageDesc },
+        { "property": "og:title", "content": pageTitle },
+        { "property": "og:description", "content": pageDesc },
+        { "property": "og:url", "content": pageUrl },
+        { "property": "og:type", "content": "website" }
+    ]);
+
+    // 2. Structured Data
+    wixSeo.setStructuredData([
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://www.shamrockbailbonds.biz/"
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Contact",
+                    "item": pageUrl
+                }
+            ]
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "ContactPage",
+            "mainEntity": {
+                "@type": "LocalBusiness",
+                "name": "Shamrock Bail Bonds",
+                "image": "https://www.shamrockbailbonds.biz/logo.png",
+                "telephone": "+12393322245",
+                "url": "https://www.shamrockbailbonds.biz/",
+                "contactPoint": {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-239-332-2245",
+                    "contactType": "customer service",
+                    "areaServed": ["FL"],
+                    "availableLanguage": "English"
+                },
+                "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": "2245 Main St",
+                    "addressLocality": "Fort Myers",
+                    "addressRegion": "FL",
+                    "postalCode": "33901",
+                    "addressCountry": "US"
+                }
+            }
+        }
+    ])
+        .then(() => console.log("✅ Contact Page SEO Set"))
+        .catch(e => console.error("❌ Contact Page SEO Error", e));
+}
 
 async function loadJails() {
     try {

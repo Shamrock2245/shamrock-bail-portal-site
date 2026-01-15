@@ -4,6 +4,7 @@ import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
 import { getCounties } from 'public/countyUtils';
 import { LightboxController } from 'public/lightbox-controller';
+import wixSeo from 'wix-seo';
 
 $w.onReady(async function () {
     console.log("🚀 HOME PAGE LOADED - PRODUCTION MODE v2.2 (Defensive)");
@@ -40,7 +41,7 @@ $w.onReady(async function () {
                 console.log('🚀 GET STARTED CLICKED!');
                 const dropdown = $w('#countyDropdown');
                 const selectedCounty = dropdown.value;
-                
+
                 if (selectedCounty && selectedCounty !== 'All') {
                     console.log('✅ Navigating to:', selectedCounty);
                     navigateToCounty(selectedCounty);
@@ -57,7 +58,78 @@ $w.onReady(async function () {
     } catch (criticalErr) {
         console.error("CRITICAL ERROR IN HOME PAGE ONREADY:", criticalErr);
     }
+
+    // 7. SEO Injection
+    updatePageSEO();
 });
+
+function updatePageSEO() {
+    const pageTitle = "Shamrock Bail Bonds | 24/7 Florida Bail Bonds & Jail Release";
+    const pageDesc = "Fast, professional bail bond services in Fort Myers, Naples, and Punta Gorda. Open 24/7. Call (239) 332-2245 for immediate release.";
+    const pageUrl = "https://www.shamrockbailbonds.biz/";
+
+    // 1. Meta Tags
+    wixSeo.setTitle(pageTitle);
+    wixSeo.setMetaTags([
+        { "name": "description", "content": pageDesc },
+        { "property": "og:title", "content": pageTitle },
+        { "property": "og:description", "content": pageDesc },
+        { "property": "og:url", "content": pageUrl },
+        { "property": "og:type", "content": "website" },
+        { "property": "og:image", "content": "https://www.shamrockbailbonds.biz/logo.png" }
+    ]);
+
+    // 2. Structured Data
+    wixSeo.setStructuredData([
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Shamrock Bail Bonds",
+            "url": pageUrl
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Shamrock Bail Bonds",
+            "url": pageUrl,
+            "logo": "https://www.shamrockbailbonds.biz/logo.png",
+            "contactPoint": {
+                "@type": "ContactPoint",
+                "telephone": "+1-239-332-2245",
+                "contactType": "customer service",
+                "areaServed": ["FL"],
+                "availableLanguage": "English"
+            },
+            "sameAs": [
+                "https://www.facebook.com/shamrockbailbonds"
+            ]
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            "name": "Shamrock Bail Bonds (Fort Myers HQ)",
+            "image": "https://www.shamrockbailbonds.biz/logo.png",
+            "telephone": "+12393322245",
+            "url": pageUrl,
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "2245 Main St",
+                "addressLocality": "Fort Myers",
+                "addressRegion": "FL",
+                "postalCode": "33901",
+                "addressCountry": "US"
+            },
+            "openingHoursSpecification": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "opens": "00:00",
+                "closes": "23:59"
+            }
+        }
+    ])
+        .then(() => console.log("✅ Home Page SEO Set"))
+        .catch(e => console.error("❌ Home Page SEO Error", e));
+}
 
 // --- HELPER FOR SAFE NAVIGATION (Enhanced UX with Loading State) ---
 function navigateToCounty(value) {
@@ -72,10 +144,10 @@ function navigateToCounty(value) {
     }
 
     console.log(`🚀 Navigating to ${dest}`);
-    
+
     // Show loading state with multiple fallback options
     showLoadingState(value);
-    
+
     // Navigate
     wixLocation.to(dest);
 }
@@ -89,7 +161,7 @@ function showLoadingState(countyName) {
         const loadingBox = $w('#loadingBox');
         if (loadingBox && loadingBox.type) {
             loadingBox.show('fade', { duration: 200 });
-            
+
             // Update text if available
             const loadingText = $w('#loadingText');
             if (loadingText && loadingText.type) {
@@ -98,7 +170,7 @@ function showLoadingState(countyName) {
             return;
         }
     } catch (e) { }
-    
+
     try {
         // Option 2: Simple loading text
         const loadingText = $w('#loadingText');
@@ -108,7 +180,7 @@ function showLoadingState(countyName) {
             return;
         }
     } catch (e) { }
-    
+
     try {
         // Option 3: Generic loading indicator
         const loader = $w('#loadingIndicator');
@@ -117,7 +189,7 @@ function showLoadingState(countyName) {
             return;
         }
     } catch (e) { }
-    
+
     // Option 4: No loading indicator available
     console.log('ℹ️  No loading indicator found (navigation still works)');
 }
@@ -193,12 +265,12 @@ async function initCountyDropdown() {
         dropdown.onChange((event) => {
             const selectedCounty = event.target.value;
             if (!selectedCounty) return;
-            
+
             console.log("🎯 County selected:", selectedCounty, "- Navigating immediately...");
-            
+
             // Provide visual feedback
             dropdown.disable();
-            
+
             // Navigate directly - no extra clicks needed
             navigateToCounty(selectedCounty);
         });
@@ -315,16 +387,16 @@ async function setupBondAmounts() {
  */
 function handleStartProcess() {
     console.log("🚀 handleStartProcess() called!");
-    
+
     // User Request: If county selected, go there. If not, go to Portal Landing.
     let dropdown = $w('#countyDropdown');
     console.log("  Checking #countyDropdown:", dropdown.type ? "Found" : "Not found");
-    
+
     if (!dropdown.type) {
         dropdown = $w('#countySelector');
         console.log("  Checking #countySelector:", dropdown.type ? "Found" : "Not found");
     }
-    
+
     if (!dropdown.type) {
         dropdown = $w('#dropdown1');
         console.log("  Checking #dropdown1:", dropdown.type ? "Found" : "Not found");
