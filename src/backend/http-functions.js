@@ -312,9 +312,144 @@ export async function post_webhookSignnow(request) {
     }
 }
 
+// ... existing imports
+import { verifyGoogleUser, verifyFacebookUser } from 'backend/social-auth';
+import { sendMagicLinkSimplified } from 'backend/portal-auth'; // Reuse lookup logic
+import { createCustomSession } from 'backend/portal-auth'; // Reuse session logic
+
+/**
+ * GET /_functions/authCallback
+ * Public endpoint for OAuth 2.0 Redirects (Google/Facebook)
+ * 
+ * Flow:
+ * 1. Provider redirects here with ?code=...
+ * 2. We exchange code for profile (server-to-server)
+ * 3. We lookup user in Cases collection
+ * 4. We generate Custom Session Token
+ * 5. We return HTML that posts token to window.opener
+ */
+export async function get_authCallback(request) {
+    const { code, state, error } = request.query;
+
+    // 1. Handle Errors
+    if (error || !code) {
+        return response(200, renderCloseScript({ success: false, message: "Login denied or failed." }));
+    }
+
+    try {
+        let userProfile = null;
+
+        // 2. Determine Provider (state param passed from frontend)
+        if (state === 'google') {
+            userProfile = await verifyGoogleUser(code);
+        } else if (state === 'facebook') {
+            userProfile = await verifyFacebookUser(code);
+        } else {
+            return response(200, renderCloseScript({ success: false, message: "Invalid provider state." }));
+        }
+
+        if (!userProfile || !userProfile.email) {
+            return response(200, renderCloseScript({ success: false, message: "Could not verify email address." }));
+        }
+
+        // 3. Reuse "Magic Link" Logic to Find User & Role
+        // We use the internal logic of sendMagicLinkSimplified but stop short of sending email
+        // We just need the "User Lookup" part. 
+        // OPTIMIZATION: We can just use the lookup logic directly here or refactor.
+        // For now, let's replicate the lookup logic for safety/speed without touching shared code heavily.
+
+        // (A) Lookup User
+        const { lookupUserByContact } = require('backend/portal-auth');
+        const lookup = await lookupUserByContact(userProfile.email);
+
+        let sessionToken = null;
+        let role = null;
+
+        if (lookup.found) {
+            // Existing User
+            role = lookup.role;
+            sessionToken = await createCustomSession(lookup.personId, lookup.role, lookup.caseId);
+        } else {
+            // New User (Default to Defendant)
+            // CREATE NEW USER RECORD HERE IF NEEDED? 
+            // For now, follow "Magic Link" logic: treating new emails as "New Defendant"
+            role = 'defendant';
+            const newPersonId = `social_${userProfile.provider}_${userProfile.providerId}`;
+            sessionToken = await createCustomSession(newPersonId, 'defendant');
+        }
+
+        // 4. Return Success HTML
+        return response(200, renderCloseScript({
+            success: true,
+            token: sessionToken,
+            role: role,
+            message: "Login successful!"
+        }));
+
+    } catch (err) {
+        console.error("Auth Callback Error:", err);
+        return response(200, renderCloseScript({ success: false, message: "System error during login." }));
+    }
+}
+
+/**
+ * Helper to return HTML response
+ */
+function response(status, body) {
+    return ok({
+        headers: { "Content-Type": "text/html" },
+        body: body
+    });
+}
+
+/**
+ * HTML that passes data back to the main window and closes popup, OR redirects if not in popup.
+ */
+function renderCloseScript(data) {
+    const safeData = JSON.stringify(data);
+    const landingUrl = "https://www.shamrockbailbonds.biz/portal-landing";
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Authenticating...</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+          .loader { border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto; }
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+      </head>
+      <body>
+        <div class="loader"></div>
+        <h3>Finishing secure login...</h3>
+        <script>
+          const data = ${safeData};
+          
+          if (window.opener) {
+            // Popup Mode
+            window.opener.postMessage(data, "*");
+            window.close();
+          } else {
+            // Redirect Mode
+            if (data.success && data.token) {
+              // Redirect back with session token
+              window.location.href = "${landingUrl}?sessionToken=" + encodeURIComponent(data.token) + "&role=" + encodeURIComponent(data.role || "");
+            } else {
+              // Error case
+              document.body.innerHTML = "<h3>Login Failed: " + (data.message || "Unknown error") + "</h3><p><a href='${landingUrl}'>Return to Portal</a></p>";
+            }
+          }
+        </script>
+      </body>
+      </html>
+    `;
+}
+
 /**
  * GET /api/health
- * Health check endpoint
+ * ... (existing health check)
  */
 export function get_health(request) {
     return ok({

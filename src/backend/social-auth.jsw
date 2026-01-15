@@ -1,0 +1,142 @@
+/**
+ * backend/social-auth.jsw
+ * Helpers for Custom OAuth 2.0 Flow (Google & Facebook)
+ * Bypasses Wix Members entirely.
+ */
+
+import { secrets } from "wix-secrets-backend";
+import { fetch } from "wix-fetch";
+
+// CONSTANTS
+const REDIRECT_URI = "https://www.shamrockbailbonds.biz/_functions/authCallback";
+
+/**
+ * Generates the Google OAuth 2.0 URL
+ * @returns {Promise<string>}
+ */
+export async function getGoogleAuthUrl() {
+    try {
+        const clientId = await secrets.getSecret("GOOGLE_CLIENT_ID");
+        if (!clientId) throw new Error("Missing GOOGLE_CLIENT_ID secret");
+
+        const scopes = [
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile"
+        ];
+
+        const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: REDIRECT_URI,
+            response_type: "code",
+            scope: scopes.join(" "),
+            access_type: "offline",
+            prompt: "consent"
+        });
+
+        return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    } catch (error) {
+        console.error("getGoogleAuthUrl failed:", error);
+        throw error;
+    }
+}
+
+/**
+ * Generates the Facebook OAuth 2.0 URL
+ * @returns {Promise<string>}
+ */
+export async function getFacebookAuthUrl() {
+    try {
+        const appId = await secrets.getSecret("FACEBOOK_APP_ID");
+        if (!appId) throw new Error("Missing FACEBOOK_APP_ID secret");
+
+        const params = new URLSearchParams({
+            client_id: appId,
+            redirect_uri: REDIRECT_URI,
+            scope: "email,public_profile",
+            response_type: "code"
+        });
+
+        return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+    } catch (error) {
+        console.error("getFacebookAuthUrl failed:", error);
+        throw error;
+    }
+}
+
+/**
+ * Exchanges Google Authorization Code for User Profile
+ * @param {string} code 
+ */
+export async function verifyGoogleUser(code) {
+    try {
+        const clientId = await secrets.getSecret("GOOGLE_CLIENT_ID");
+        const clientSecret = await secrets.getSecret("GOOGLE_CLIENT_SECRET");
+
+        // 1. Exchange code for access token
+        const tokenResp = await fetch("https://oauth2.googleapis.com/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+                code,
+                client_id: clientId,
+                client_secret: clientSecret,
+                redirect_uri: REDIRECT_URI,
+                grant_type: "authorization_code"
+            }).toString()
+        });
+
+        const tokenData = await tokenResp.json();
+        if (!tokenResp.ok) throw new Error(tokenData.error_description || "Google token exchange failed");
+
+        // 2. Get User Info
+        const userResp = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+            headers: { Authorization: `Bearer ${tokenData.access_token}` }
+        });
+
+        const userData = await userResp.json();
+        return {
+            email: userData.email,
+            name: userData.name,
+            provider: "google",
+            providerId: userData.id
+        };
+
+    } catch (error) {
+        console.error("verifyGoogleUser failed:", error);
+        throw error;
+    }
+}
+
+/**
+ * Exchanges Facebook Authorization Code for User Profile
+ * @param {string} code 
+ */
+export async function verifyFacebookUser(code) {
+    try {
+        const appId = await secrets.getSecret("FACEBOOK_APP_ID");
+        const appSecret = await secrets.getSecret("FACEBOOK_APP_SECRET");
+
+        // 1. Exchange code for access token
+        const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&redirect_uri=${REDIRECT_URI}&client_secret=${appSecret}&code=${code}`;
+        const tokenResp = await fetch(tokenUrl);
+        const tokenData = await tokenResp.json();
+
+        if (tokenData.error) throw new Error(tokenData.error.message);
+
+        // 2. Get User Info
+        const userUrl = `https://graph.facebook.com/me?fields=id,name,email&access_token=${tokenData.access_token}`;
+        const userResp = await fetch(userUrl);
+        const userData = await userResp.json();
+
+        return {
+            email: userData.email,
+            name: userData.name, // Facebook might not return email if user denies it
+            provider: "facebook",
+            providerId: userData.id
+        };
+
+    } catch (error) {
+        console.error("verifyFacebookUser failed:", error);
+        throw error;
+    }
+}
