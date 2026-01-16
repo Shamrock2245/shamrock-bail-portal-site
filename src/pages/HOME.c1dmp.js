@@ -100,7 +100,7 @@ function updatePageSEO() {
             "slogan": "Making Bail Easy in Florida", // Brand differentiation
             "contactPoint": {
                 "@type": "ContactPoint",
-                "telephone": "+1-239-332-2245",
+                "telephone": "+12393322245",
                 "contactType": "customer service",
                 "areaServed": ["FL"],
                 "availableLanguage": "English"

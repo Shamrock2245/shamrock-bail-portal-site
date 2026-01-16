@@ -64,7 +64,7 @@ function updatePageSEO() {
                 "url": "https://www.shamrockbailbonds.biz/",
                 "contactPoint": {
                     "@type": "ContactPoint",
-                    "telephone": "+1-239-332-2245",
+                    "telephone": "+12393322245",
                     "contactType": "customer service",
                     "areaServed": ["FL"],
                     "availableLanguage": "English"

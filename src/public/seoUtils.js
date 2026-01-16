@@ -12,8 +12,8 @@ import wixLocation from 'wix-location';
 // Site constants
 const SITE_URL = 'https://www.shamrockbailbonds.biz';
 const SITE_NAME = 'Shamrock Bail Bonds';
-const PHONE = '239-332-2245';
-const PHONE_FORMATTED = '+1-239-332-2245';
+const PHONE = '(239) 332-2245';
+const PHONE_FORMATTED = '+12393322245';
 
 /**
  * Set page meta tags
@@ -27,17 +27,17 @@ const PHONE_FORMATTED = '+1-239-332-2245';
 export function setPageMeta({ title, description, keywords, image }) {
     // Set title
     wixSeo.setTitle(title);
-    
+
     // Set description
     wixSeo.setMetaDescription(description);
-    
+
     // Set keywords if provided
     if (keywords) {
         wixSeo.setMetaTags([
             { name: 'keywords', content: keywords }
         ]);
     }
-    
+
     // Set Open Graph tags
     const ogTags = [
         { property: 'og:title', content: title },
@@ -46,22 +46,22 @@ export function setPageMeta({ title, description, keywords, image }) {
         { property: 'og:url', content: `${SITE_URL}${wixLocation.path.join('/')}` },
         { property: 'og:site_name', content: SITE_NAME }
     ];
-    
+
     if (image) {
         ogTags.push({ property: 'og:image', content: image });
     }
-    
+
     // Set Twitter Card tags
     const twitterTags = [
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:title', content: title },
         { name: 'twitter:description', content: description }
     ];
-    
+
     if (image) {
         twitterTags.push({ name: 'twitter:image', content: image });
     }
-    
+
     wixSeo.setMetaTags([...ogTags, ...twitterTags]);
 }
 
