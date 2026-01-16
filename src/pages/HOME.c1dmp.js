@@ -182,10 +182,32 @@ function updatePageSEO() {
                 ]
             },
             "paymentAccepted": "Cash, Credit Card, Debit Card",
-            "hasMap": "https://www.google.com/maps?cid=123" // Placeholder, but good signal
+            "hasMap": "https://www.google.com/maps?cid=123", // Placeholder, but good signal
+            "knowsAbout": [
+                "Florida Statute 903 (Bail)",
+                "Jail Release Procedures Lee County",
+                "Warrant Search Florida",
+                "Traffic Law Florida",
+                "Criminal Defense Procedures",
+                "Federal Bail Bonds",
+                "Surety Bonds",
+                "Immigration Bonds",
+                "Nebbia Hearings",
+                "Collateral Management"
+            ]
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+                { "@type": "Question", "name": "Can bail be reduced in Florida?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. A licensed attorney can file a motion to reduce bail in court." } },
+                { "@type": "Question", "name": "How long does it take to get out of jail in Lee County?", "acceptedAnswer": { "@type": "Answer", "text": "Release times normally range from 2 to 8 hours depending on jail workload." } },
+                { "@type": "Question", "name": "Is the bail bond premium refundable?", "acceptedAnswer": { "@type": "Answer", "text": "No. The 10% premium is a fee for the service of posting the full bond amount." } },
+                { "@type": "Question", "name": "What happens if the defendant misses court?", "acceptedAnswer": { "@type": "Answer", "text": "A warrant is issued. Contact Shamrock Bail Bonds immediately to attempt to reinstate the bond." } }
+            ]
         }
     ])
-        .then(() => console.log("✅ Home Page SEO Set (Advanced & Deep)"))
+        .then(() => console.log("✅ Home Page SEO Set (AI Authority Knowledge Graph)"))
         .catch(e => console.error("❌ Home Page SEO Error", e));
 }
 
