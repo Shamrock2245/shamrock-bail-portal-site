@@ -21,7 +21,7 @@ const CONTACT = {
     phone: '(239) 332-2245',
     phoneTel: 'tel:+12393322245',
     email: 'info@shamrockbailbonds.biz',
-    address: '2245 Main St, Fort Myers, FL 33901'
+    address: '1528 Broadway, Fort Myers, FL 33901'
 };
 
 /**

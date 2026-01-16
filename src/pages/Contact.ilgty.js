@@ -71,7 +71,7 @@ function updatePageSEO() {
                 },
                 "address": {
                     "@type": "PostalAddress",
-                    "streetAddress": "2245 Main St",
+                    "streetAddress": "1528 Broadway",
                     "addressLocality": "Fort Myers",
                     "addressRegion": "FL",
                     "postalCode": "33901",

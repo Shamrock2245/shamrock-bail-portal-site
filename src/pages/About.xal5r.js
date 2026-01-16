@@ -59,7 +59,7 @@ function updatePageSEO() {
                 "url": "https://www.shamrockbailbonds.biz/",
                 "address": {
                     "@type": "PostalAddress",
-                    "streetAddress": "2245 Main St",
+                    "streetAddress": "1528 Broadway",
                     "addressLocality": "Fort Myers",
                     "addressRegion": "FL",
                     "postalCode": "33901",
