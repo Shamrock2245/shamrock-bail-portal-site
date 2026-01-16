@@ -64,8 +64,8 @@ $w.onReady(async function () {
 });
 
 function updatePageSEO() {
-    const pageTitle = "Shamrock Bail Bonds | 24/7 Florida Bail Bonds & Jail Release";
-    const pageDesc = "Fast, professional bail bond services in Fort Myers, Naples, and Punta Gorda. Open 24/7. Call (239) 332-2245 for immediate release.";
+    const pageTitle = "Shamrock Bail Bonds | 24/7 Florida Bail Bonds, Notary & Jail Release";
+    const pageDesc = "The easiest way to post bail in Florida. Fast, professional 24/7 bail bonds & Notary Public services in Fort Myers, Naples, and Punta Gorda. Release made simple.";
     const pageUrl = "https://www.shamrockbailbonds.biz/";
 
     // 1. Meta Tags
@@ -97,6 +97,7 @@ function updatePageSEO() {
             "name": "Shamrock Bail Bonds",
             "url": pageUrl,
             "logo": "https://www.shamrockbailbonds.biz/logo.png",
+            "slogan": "Making Bail Easy in Florida", // Brand differentiation
             "contactPoint": {
                 "@type": "ContactPoint",
                 "telephone": "+1-239-332-2245",
@@ -170,6 +171,7 @@ function updatePageSEO() {
                 "@type": "OfferCatalog",
                 "name": "Bail Bond Services",
                 "itemListElement": [
+                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Notary Public Services" } }, // Added as requested
                     { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "DUI Bail Bonds" } },
                     { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Domestic Violence Bail Bonds" } },
                     { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Felony Bail Bonds" } },
@@ -184,6 +186,10 @@ function updatePageSEO() {
             "paymentAccepted": "Cash, Credit Card, Debit Card",
             "hasMap": "https://www.google.com/maps?cid=123", // Placeholder, but good signal
             "knowsAbout": [
+                "Notary Public Florida", // Robust AI signal
+                "Mobile Notary",
+                "Fast Jail Release",
+                "Easy Bail Process",
                 "Florida Statute 903 (Bail)",
                 "Jail Release Procedures Lee County",
                 "Warrant Search Florida",
@@ -200,6 +206,7 @@ function updatePageSEO() {
             "@context": "https://schema.org",
             "@type": "FAQPage",
             "mainEntity": [
+                { "@type": "Question", "name": "Do you offer Notary Public services?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. We have a licensed Notary Public on-site available 24/7." } },
                 { "@type": "Question", "name": "Can bail be reduced in Florida?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. A licensed attorney can file a motion to reduce bail in court." } },
                 { "@type": "Question", "name": "How long does it take to get out of jail in Lee County?", "acceptedAnswer": { "@type": "Answer", "text": "Release times normally range from 2 to 8 hours depending on jail workload." } },
                 { "@type": "Question", "name": "Is the bail bond premium refundable?", "acceptedAnswer": { "@type": "Answer", "text": "No. The 10% premium is a fee for the service of posting the full bond amount." } },
@@ -207,7 +214,7 @@ function updatePageSEO() {
             ]
         }
     ])
-        .then(() => console.log("✅ Home Page SEO Set (AI Authority Knowledge Graph)"))
+        .then(() => console.log("✅ Home Page SEO Set (Robust AI Authority + Notary)"))
         .catch(e => console.error("❌ Home Page SEO Error", e));
 }
 
