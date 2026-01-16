@@ -461,3 +461,73 @@ export function get_health(request) {
         }
     });
 }
+
+/**
+ * GET /_functions/sitemap
+ * Serves a custom XML sitemap for Google Search Console
+ * URL: https://www.shamrockbailbonds.biz/_functions/sitemap
+ */
+export function get_sitemap(request) {
+    const SITE_URL = 'https://www.shamrockbailbonds.biz';
+    const LAST_MOD = new Date().toISOString().split('T')[0];
+
+    // All 67 Florida counties
+    const floridaCounties = [
+        'alachua', 'baker', 'bay', 'bradford', 'brevard', 'broward', 'calhoun',
+        'charlotte', 'citrus', 'clay', 'collier', 'columbia', 'desoto', 'dixie',
+        'duval', 'escambia', 'flagler', 'franklin', 'gadsden', 'gilchrist', 'glades',
+        'gulf', 'hamilton', 'hardee', 'hendry', 'hernando', 'highlands', 'hillsborough',
+        'holmes', 'indian-river', 'jackson', 'jefferson', 'lafayette', 'lake', 'lee',
+        'leon', 'levy', 'liberty', 'madison', 'manatee', 'marion', 'martin', 'miami-dade',
+        'monroe', 'nassau', 'okaloosa', 'okeechobee', 'orange', 'osceola', 'palm-beach',
+        'pasco', 'pinellas', 'polk', 'putnam', 'santa-rosa', 'sarasota', 'seminole',
+        'st-johns', 'st-lucie', 'sumter', 'suwannee', 'taylor', 'union', 'volusia',
+        'wakulla', 'walton', 'washington'
+    ];
+
+    // Static pages with their priorities and change frequencies
+    const staticPages = [
+        { url: '/', priority: '1.0', changefreq: 'weekly' },
+        { url: '/how-bail-works', priority: '0.9', changefreq: 'monthly' },
+        { url: '/florida-sheriffs-clerks-directory', priority: '0.9', changefreq: 'monthly' },
+        { url: '/become-a-bondsman', priority: '0.8', changefreq: 'monthly' },
+        { url: '/locate-an-inmate', priority: '0.8', changefreq: 'monthly' },
+        { url: '/contact', priority: '0.8', changefreq: 'monthly' },
+        { url: '/blog', priority: '0.7', changefreq: 'weekly' },
+        { url: '/privacy-policy', priority: '0.3', changefreq: 'yearly' },
+        { url: '/terms-of-service', priority: '0.3', changefreq: 'yearly' }
+    ];
+
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+    // Add static pages
+    staticPages.forEach(page => {
+        xml += `  <url>
+    <loc>${SITE_URL}${page.url}</loc>
+    <lastmod>${LAST_MOD}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>\n`;
+    });
+
+    // Add county pages
+    floridaCounties.forEach(county => {
+        const safeSlug = encodeURIComponent(county.toLowerCase());
+        xml += `  <url>
+    <loc>${SITE_URL}/bail-bonds/${safeSlug}-county</loc>
+    <lastmod>${LAST_MOD}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>\n`;
+    });
+
+    xml += '</urlset>';
+
+    return ok({
+        headers: {
+            "Content-Type": "application/xml"
+        },
+        body: xml
+    });
+}
