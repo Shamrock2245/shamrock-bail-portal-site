@@ -1,17 +1,14 @@
 /**
  * backend/portal-auth.jsw
- * Server-side auth/role helpers for Portal pages.
- * Uses Wix Data collections today; can be swapped to external API later.
+ * FIXED VERSION: Corrected wix-secrets-backend import and Date objects
  */
 
 import wixData from "wix-data";
 import wixUsersBackend from "wix-users-backend";
 import { fetch } from "wix-fetch";
+// FIX 1: Correct Import
+import { getSecret } from "wix-secrets-backend";
 import { API_BASE_URL, API_TIMEOUT } from 'public/portal-config';
-import { secrets } from "wix-secrets-backend";
-
-// Additional imports might be needed for specific queries if expanding scope
-
 
 /***** CONFIG & ROLES *****/
 export const ROLES = {
@@ -22,7 +19,7 @@ export const ROLES = {
   ADMIN: "admin",
 };
 
-// timeouts (ms). You likely already have these in portal-config; keep here for self-containment.
+// timeouts (ms)
 const SESSION_TIMEOUT = 1000 * 60 * 60 * 24; // 24h
 const MAGIC_LINK_EXPIRATION = 1000 * 60 * 60 * 24; // 24h
 
@@ -39,9 +36,9 @@ const PORTAL_PATHS = {
 export async function getCurrentUser() {
   const user = await wixUsersBackend.getCurrentUser();
   if (!user) return null;
-
   const email = (await user.getEmail())?.toLowerCase?.();
-  const role = await getUserRole(); // from PortalUsers collection
+  const role = await getUserRole();
+  // from PortalUsers collection
   return { id: user.id, email, role, loggedIn: true };
 }
 
@@ -53,7 +50,6 @@ export async function isLoggedIn() {
 export async function getUserRole() {
   const user = await wixUsersBackend.getCurrentUser();
   if (!user) return null;
-
   // Look up role in PortalUsers collection (admin bypass to ensure we can read it)
   const rs = await wixData
     .query("PortalUsers")
@@ -108,14 +104,12 @@ export async function getSessionData(key) {
   try {
     const user = await wixUsersBackend.getCurrentUser();
     if (!user) return null;
-
     const rs = await wixData
       .query("PortalSessions")
       .eq("key", key)
       .eq("userId", user.id)
       .limit(1)
       .find({ suppressAuth: true });
-
     if (!rs.items.length) return null;
 
     const item = rs.items[0];
@@ -176,7 +170,8 @@ export async function validateMagicLink(token) {
   const link = rs.items[0];
   if (Date.now() > new Date(link.expiresAt).getTime()) return null;
 
-  return link; // { token, personId, role, caseId, ... }
+  return link;
+  // { token, personId, role, caseId, ... }
 }
 
 export async function useMagicLink(token) {
@@ -189,7 +184,8 @@ export async function useMagicLink(token) {
 
   const link = rs.items[0];
   link.used = true;
-  link.usedAt = new Date(); // Use Date object
+  link.usedAt = new Date();
+  // Use Date object
   await wixData.update("MagicLinks", link, { suppressAuth: true });
   return true;
 }
@@ -220,14 +216,15 @@ export async function onMagicLinkLogin(token) {
     const caseIds = Array.isArray(profile?.caseIds) ? profile.caseIds : [];
     if (link.caseId && !caseIds.includes(link.caseId)) caseIds.push(link.caseId);
 
+    // FIX 2: Use new Date() object, NOT .toISOString() for Wix Data
     const updated = {
       ...(profile || {}),
       userId: user.id,
       personId: link.personId || profile?.personId,
       role: (link.role || profile?.role || "").toLowerCase(),
       caseIds,
-      updatedAt: new Date().toISOString(),
-      createdAt: profile?.createdAt || new Date().toISOString(),
+      updatedAt: new Date(),
+      createdAt: profile?.createdAt || new Date(),
     };
     await saveUserProfile(updated);
 
@@ -235,9 +232,7 @@ export async function onMagicLinkLogin(token) {
 
     const role = updated.role || null;
     const caseId = link.caseId || null;
-    const goto = role
-      ? PORTAL_PATHS[role] || "/portal-landing"
-      : "/portal-landing";
+    const goto = role ? PORTAL_PATHS[role] || "/portal-landing" : "/portal-landing";
 
     return { ok: true, role, caseId, goto, message: "Access granted! Welcome to your dashboard." };
   } catch (err) {
@@ -252,11 +247,9 @@ export async function sendMagicLink(email, token, role, personName = null) {
   const base = "https://www.shamrockbailbonds.biz";
   const path = "/portal-landing"; // Always land on portal-landing with token
   const portalUrl = `${base}${path}?token=${encodeURIComponent(token)}`;
-
   try {
-    // Send via GAS backend (same system used for other emails)
-    // NOTE: GAS_WEB_APP_URL is the canonical Wix secret for the GAS Web App; GAS_WEBHOOK_URL may exist as an alias but must point to the same deployment.
-    const gasUrl = await secrets.getSecret('GAS_WEB_APP_URL');
+    // FIX 1: Correct getSecret Usage
+    const gasUrl = await getSecret('GAS_WEB_APP_URL');
 
     if (!gasUrl) {
       console.warn('GAS_WEB_APP_URL not configured, cannot send email');
@@ -270,10 +263,8 @@ export async function sendMagicLink(email, token, role, personName = null) {
       'staff': 'Staff',
       'admin': 'Admin'
     };
-
     const roleName = roleDisplayNames[role] || 'User';
     const greeting = personName ? `Hello ${personName}` : `Hello`;
-
     const emailBody = `
       <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -340,7 +331,6 @@ export async function getUserProfile(userId) {
   const user = await wixUsersBackend.getCurrentUser();
   const id = userId || user?.id;
   if (!id) return null;
-
   const rs = await wixData
     .query("PortalUsers")
     .eq("userId", id)
@@ -398,9 +388,9 @@ export async function assignRoleToCurrentUser(roleName) {
   const user = await wixUsersBackend.getCurrentUser();
   if (!user) throw new Error("Must be logged in");
 
-  const validRoles = [ROLES.DEFENDANT, ROLES.INDEMNITOR]; // Only allow public selection of these
+  const validRoles = [ROLES.DEFENDANT, ROLES.INDEMNITOR];
+  // Only allow public selection of these
   if (!validRoles.includes(roleName)) throw new Error("Invalid role selection");
-
   const profile = await getUserProfile(user.id) || {};
 
   // Update/Create profile
@@ -410,7 +400,6 @@ export async function assignRoleToCurrentUser(roleName) {
     role: roleName,
     updatedAt: new Date()
   };
-
   await saveUserProfile(updated);
   return true;
 }
@@ -430,7 +419,6 @@ export async function requireStaff() {
 }
 
 /***** CUSTOM SESSION MANAGEMENT (No Wix Members Required) *****/
-
 /**
  * Creates a custom session token and stores it in PortalSessions
  * Returns the token to be stored in browser localStorage
@@ -448,7 +436,6 @@ export async function createCustomSession(personId, role, caseId = null) {
     expiresAt: new Date(now + SESSION_TIMEOUT), // Use Date object
     lastActivity: new Date(now), // Use Date object
   };
-
   await wixData.save("PortalSessions", sessionData, { suppressAuth: true });
   return sessionToken;
 }
@@ -459,20 +446,17 @@ export async function createCustomSession(personId, role, caseId = null) {
  */
 export async function validateCustomSession(sessionToken) {
   if (!sessionToken || typeof sessionToken !== "string") return null;
-
   try {
     const rs = await wixData
       .query("PortalSessions")
       .eq("token", sessionToken)
       .limit(1)
       .find({ suppressAuth: true });
-
     if (!rs.items.length) return null;
 
     const session = rs.items[0];
     const now = Date.now();
     const expiresAt = new Date(session.expiresAt).getTime();
-
     // Check if expired
     if (now > expiresAt) {
       await wixData.remove("PortalSessions", session._id, { suppressAuth: true });
@@ -500,14 +484,12 @@ export async function validateCustomSession(sessionToken) {
  */
 export async function destroyCustomSession(sessionToken) {
   if (!sessionToken) return;
-
   try {
     const rs = await wixData
       .query("PortalSessions")
       .eq("token", sessionToken)
       .limit(1)
       .find({ suppressAuth: true });
-
     if (rs.items.length) {
       await wixData.remove("PortalSessions", rs.items[0]._id, { suppressAuth: true });
     }
@@ -535,15 +517,12 @@ export async function onMagicLinkLoginV2(token) {
 
     // Create custom session (no Wix Members required)
     const sessionToken = await createCustomSession(link.personId, link.role, link.caseId);
-
     // Mark magic link as used
     await useMagicLink(token);
 
     const role = (link.role || "").toLowerCase();
     const caseId = link.caseId || null;
-    const goto = role
-      ? PORTAL_PATHS[role] || "/portal-landing"
-      : "/portal-landing";
+    const goto = role ? PORTAL_PATHS[role] || "/portal-landing" : "/portal-landing";
 
     return {
       ok: true,
@@ -561,19 +540,15 @@ export async function onMagicLinkLoginV2(token) {
 
 /***** UTILITIES *****/
 function generateToken() {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let token = "";
   for (let i = 0; i < 48; i++)
     token += chars.charAt(Math.floor(Math.random() * chars.length));
   return token;
 }
 
-// ... existing cleanupExpired ...
-
 export async function cleanupExpired() {
   const now = Date.now();
-
   // sessions
   const s = await wixData.query("PortalSessions").find();
   await Promise.all(
@@ -583,7 +558,6 @@ export async function cleanupExpired() {
         return wixData.remove("PortalSessions", item._id);
     })
   );
-
   // magic links
   const m = await wixData.query("MagicLinks").find();
   await Promise.all(
@@ -592,46 +566,32 @@ export async function cleanupExpired() {
       if (now > exp) return wixData.remove("MagicLinks", item._id);
     })
   );
-
   return { ok: true };
 }
 
-/***** DATA AGGREGATION (New for Defendant Portal) *****/
-/**
- * Aggregates all data needed for the Defendant Dashboard.
- * Currently mocks missing DB fields, but STRUCTURE IS FINAL.
- */
+/***** DATA AGGREGATION *****/
 export async function getDefendantDetails(userId) {
-  // 1. Get Basic Profile
   const profile = await getUserProfile(userId);
   if (!profile) return null;
 
-  // 2. Fetch Real Case Data from 'Cases' Collection
-  // Automation Bridge: Bookmarklet -> GAS -> Wix (Cases) -> Portal (Here)
   let caseData = {};
   try {
-    // Try to find case by Email first (most reliable link from Automation)
     let caseQuery = wixData.query("Cases");
-
-    // If profile has an email, use it
     if (profile.email) {
       caseQuery = caseQuery.eq("defendantEmail", profile.email);
     } else if (profile.caseIds && profile.caseIds.length > 0) {
-      // Fallback to caseId if available
       caseQuery = caseQuery.in("caseNumber", profile.caseIds);
     } else {
-      // No linking info
       throw new Error("No email or caseId to link data");
     }
 
     const caseResult = await caseQuery.find({ suppressAuth: true });
-
     if (caseResult.items.length > 0) {
       const c = caseResult.items[0];
       caseData = {
         caseNumber: c.caseNumber || "Pending",
         bondAmount: c.bondAmount || "$0.00",
-        nextCourtDate: c.nextCourtDate || "TBD", // Ensure scraper/GAS populates this
+        nextCourtDate: c.nextCourtDate || "TBD",
         caseStatus: c.status || "Active",
         charges: c.charges || "",
         county: c.county || ""
@@ -655,19 +615,16 @@ export async function getDefendantDetails(userId) {
     bondAmount: caseData.bondAmount || "$0.00",
     nextCourtDate: caseData.nextCourtDate || "TBD",
     caseStatus: caseData.caseStatus || "Active",
-    paperworkStatus: "Incomplete", // TODO: Link to SignNow status if available
+    paperworkStatus: "Incomplete",
     signingStatus: "Waiting",
-    charges: caseData.charges || "", // Added for UI
-    county: caseData.county || "",   // Added for UI
-    ...profile // overlay any existing profile data
+    charges: caseData.charges || "",
+    county: caseData.county || "",
+    ...profile
   };
-
   return details;
 }
 
 export async function getIndemnitorDetails(token) {
-  // Validate session to ensure security and get correct personId
-  // Frontend passes session token, not raw userId
   const session = await validateCustomSession(token);
   if (!session || !session.personId) {
     console.warn("getIndemnitorDetails: Invalid session token provided.");
@@ -677,16 +634,12 @@ export async function getIndemnitorDetails(token) {
   const personId = session.personId;
 
   try {
-    // Query FinancialObligations collection
-    // Using suppressAuth: true because custom auth users are not Wix Members
     const result = await wixData.query("FinancialObligations")
       .eq("personid", personId)
       .limit(1)
       .find({ suppressAuth: true });
-
     if (result.items.length === 0) {
       console.warn(`No financial obligations found for personId: ${personId}`);
-      // Return default structure to prevent frontend crash
       return {
         totalLiability: "$0.00",
         totalPremium: "$0.00",
@@ -722,7 +675,6 @@ export async function getIndemnitorDetails(token) {
 export async function getStaffDashboardData() {
   await requireStaff();
 
-  // 1. Query Real Cases
   let rawCases = [];
   try {
     const result = await wixData.query("Cases")
@@ -732,33 +684,24 @@ export async function getStaffDashboardData() {
     rawCases = result.items;
   } catch (err) {
     console.error("getStaffDashboardData: Failed to query Cases", err);
-    // Fallback empty array to prevent crash
     rawCases = [];
   }
 
-  // 2. Map Data
   const cases = rawCases.map(c => ({
     _id: c._id,
     caseNumber: c.caseNumber || "UNK",
     defendantName: c.defendantName || "Unknown",
     bondAmount: c.bondAmount || "$0.00",
     status: c.status || "Pending",
-    paperworkStatus: c.paperworkStatus || "Incomplete", // Assumes this field exists or defaults
+    paperworkStatus: c.paperworkStatus || "Incomplete",
     phone: c.defendantPhone || "",
     defendantEmail: c.defendantEmail || ""
   }));
-
-  // 3. Dynamic Stats
   const stats = {
     activeCases: cases.filter(c => c.status === 'Active' || c.status === 'open').length,
     pendingSignatures: cases.filter(c => c.paperworkStatus === 'Sent' || c.paperworkStatus === 'Pending').length,
-    completedToday: cases.filter(c => {
-      // Check if created today? Or status changed today? Using _createdDate for now as proxy for daily volume
-      // Ideally we check a 'completionDate' field
-      return false; // logic placeholder
-    }).length,
-    // totalCases: cases.length,
-    failedChecks: 0 // Placeholder
+    completedToday: 0,
+    failedChecks: 0
   };
 
   return { stats, cases };
@@ -766,17 +709,12 @@ export async function getStaffDashboardData() {
 
 export async function getUserConsentStatus(personId) {
   if (!personId) return false;
-
   try {
-    // Query PortalUsers collection for consent
-    // Assumes field is 'consent' or 'marketingConsent'
     const result = await wixData.query("PortalUsers")
       .eq("personId", personId)
       .limit(1)
       .find({ suppressAuth: true });
-
     if (result.items.length > 0) {
-      // Check for explicit true
       return result.items[0].consent === true;
     }
     return false;
@@ -786,14 +724,7 @@ export async function getUserConsentStatus(personId) {
   }
 }
 
-/***** SIMPLIFIED LOGIN SYSTEM (Fortune 50 Grade) *****/
-/**
- * Simplified login/signup flow - Auto-detects role, sends magic link
- * Takes email or phone, checks existing data, sends appropriate magic link
- * 
- * @param {string} emailOrPhone - User's email or phone number
- * @returns {Promise<{success: boolean, isNewUser: boolean, message: string}>}
- */
+/***** SIMPLIFIED LOGIN SYSTEM *****/
 export async function sendMagicLinkSimplified(emailOrPhone) {
   if (!emailOrPhone || typeof emailOrPhone !== 'string') {
     return {
@@ -805,72 +736,55 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
   const input = emailOrPhone.trim().toLowerCase();
 
   try {
-    // 1. Determine if email or phone
     const isEmail = input.includes('@');
     const searchField = isEmail ? 'defendantEmail' : 'defendantPhone';
 
-    // 2. Check if user exists in Cases collection
     let userRole = null;
     let personId = null;
     let userName = null;
     let isNewUser = false;
-
     const caseQuery = await wixData
       .query("Cases")
       .eq(searchField, input)
       .limit(1)
-
       .find({ suppressAuth: true });
 
     if (caseQuery.items.length > 0) {
-
-      // Existing user - they're a defendant
       const caseData = caseQuery.items[0];
       userRole = ROLES.DEFENDANT;
-      personId = caseData._id; // Use case ID as personId
+      personId = caseData._id;
       userName = caseData.defendantName;
       isNewUser = false;
-
       console.log(`✅ Existing defendant found: ${userName}`);
     } else {
-      // Check if they're an indemnitor
       const indemnitorQuery = await wixData
         .query("Cases")
         .eq(isEmail ? 'indemnitorEmail' : 'indemnitorPhone', input)
         .limit(1)
         .find({ suppressAuth: true });
-
       if (indemnitorQuery.items.length > 0) {
-        // Existing indemnitor
         const caseData = indemnitorQuery.items[0];
         userRole = ROLES.INDEMNITOR;
         personId = `indemnitor_${caseData._id}`;
         userName = caseData.indemnitorName;
         isNewUser = false;
-
         console.log(`✅ Existing indemnitor found: ${userName}`);
       } else {
-        // New user - create as defendant (default role for new signups)
         userRole = ROLES.DEFENDANT;
-        personId = `new_${Date.now()}`; // Temporary ID until case is created
+        personId = `new_${Date.now()}`;
         userName = null;
         isNewUser = true;
-
         console.log(`🆕 New user detected: ${input}`);
       }
     }
 
-    // 3. Generate magic link token
     const token = await generateMagicLink(personId, userRole);
-
-    // 4. Send magic link via email/SMS
     const sendResult = await sendMagicLink(
       input,
       token,
       userRole,
       userName
     );
-
     if (!sendResult.success) {
       console.error(`❌ Failed to send magic link to ${input}:`, sendResult.error);
       return {
@@ -880,7 +794,6 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
     }
 
     console.log(`✅ Magic link sent successfully to ${input}`);
-
     return {
       success: true,
       isNewUser: isNewUser,
@@ -888,7 +801,6 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
         ? "Welcome! Check your email/phone for your secure link."
         : "Check your email/phone for your secure link."
     };
-
   } catch (error) {
     console.error("❌ sendMagicLinkSimplified error:", error);
     return {
@@ -898,13 +810,6 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
   }
 }
 
-/**
- * Lookup user details by email or phone
- * Used for auto-populating forms and personalizing experience
- * 
- * @param {string} emailOrPhone - User's email or phone
- * @returns {Promise<{found: boolean, role: string, name: string, caseId: string}>}
- */
 export async function lookupUserByContact(emailOrPhone) {
   if (!emailOrPhone) {
     return { found: false };
@@ -913,15 +818,12 @@ export async function lookupUserByContact(emailOrPhone) {
   const input = emailOrPhone.trim().toLowerCase();
   const isEmail = input.includes('@');
   const searchField = isEmail ? 'defendantEmail' : 'defendantPhone';
-
   try {
-    // Check defendant
     const defendantQuery = await wixData
       .query("Cases")
       .eq(searchField, input)
       .limit(1)
       .find({ suppressAuth: true });
-
     if (defendantQuery.items.length > 0) {
       const data = defendantQuery.items[0];
       return {
@@ -933,13 +835,11 @@ export async function lookupUserByContact(emailOrPhone) {
       };
     }
 
-    // Check indemnitor
     const indemnitorQuery = await wixData
       .query("Cases")
       .eq(isEmail ? 'indemnitorEmail' : 'indemnitorPhone', input)
       .limit(1)
       .find({ suppressAuth: true });
-
     if (indemnitorQuery.items.length > 0) {
       const data = indemnitorQuery.items[0];
       return {

@@ -2,11 +2,11 @@
 import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
 import wixData from 'wix-data';
-import { getCountyBySlug, getNearbyCounties } from 'public/countyUtils';
-import { COLLECTIONS } from 'public/collectionIds';
+import { generateCountyPage } from 'backend/county-generator';
+import { getNearbyCounties } from 'public/countyUtils'; // Keeping for "Nearby Counties" feature
 
 $w.onReady(async function () {
-    console.log("🚀 Dynamic County Page Loading...");
+    console.log("🚀 Dynamic County Page Loading... (Optimized)");
 
     // 1. EXTRACT SLUG
     const path = wixLocation.path;
@@ -17,182 +17,202 @@ $w.onReady(async function () {
         return;
     }
 
-    console.log(`DEBUG: Extracted Slug: "${countySlug}"`);
-
-    // --- DATASET OVERRIDE (Fix for Manual Connections) ---
-    // If the user manually connected a Dataset, it might be defaulting to "Alachua".
-    // We force it to filter by the current slug so the manual UI matches our code.
-    $w.onReady(() => {
-        const dataset = $w('#dynamicDataset'); // Standard ID
-        if (dataset.length > 0) {
-            console.log("DEBUG: Found #dynamicDataset. Forcing filter to slug:", countySlug);
-            dataset.onReady(() => {
-                dataset.setFilter(wixData.filter().eq('slug', countySlug))
-                    .then(() => console.log("DEBUG: Dataset filter applied."))
-                    .catch(e => console.error("DEBUG: Dataset filter success/fail or strict mode:", e));
-            });
-        }
+    // --- DATASET OVERRIDE (Legacy Support) ---
+    // Safely attempt to filter legacy dataset if present, but don't block execution
+    $w('#dynamicDataset').onReady(() => {
+        $w('#dynamicDataset').setFilter(wixData.filter().eq('slug', countySlug))
+            .catch(e => console.log("Dataset filter optional/adjusting:", e));
     });
 
     try {
-        // 2. FETCH DATA IN PARALLEL (Optimization)
-        // We fetch the County Data AND the FAQs at the same time for speed
-        const [county, faqResult] = await Promise.all([
-            getCountyBySlug(countySlug),
-            wixData.query(COLLECTIONS.FAQ).limit(6).find()
+        // Show loading state if element exists
+        if ($w('#loadingIndicator').valid) $w('#loadingIndicator').show();
+
+        // 2. FETCH DATA IN PARALLEL
+        // Fetch Main County Data (Backend) AND Nearby Counties (Utils)
+        const [pageResult, nearby] = await Promise.all([
+            generateCountyPage(countySlug.toLowerCase()),
+            getNearbyCounties("Southwest Florida") // Fetch contextually if possible, default to region
+                .catch(e => { console.warn("Nearby counties fetch failed", e); return []; })
         ]);
 
-        if (!county) {
-            console.warn(`County not found for slug: ${countySlug}. Redirecting to portal landing.`);
-            wixLocation.to('/portal-landing');
+        const { success, data } = pageResult;
+
+        if (!success || !data) {
+            console.warn(`County data not found for slug: ${countySlug}. Redirecting...`);
+            // Optional: fallback or redirect
+            // wixLocation.to('/portal-landing');
             return;
         }
 
-        console.log(`Loaded County: ${county.name} | Loaded ${faqResult.totalCount} FAQs`);
+        const county = data;
+        console.log(`✅ Loaded Data for: ${county.county_name_full}`);
 
-        // 3. GENERATE SEO SCHEMA (LocalBusiness + FAQPage)
-        // We combine the business info with the FAQ data for a rich Google result
-        const faqs = faqResult.items;
+        // 3. GENERATE SEO (Meta + Schema)
+        // Meta Tags
+        wixSeo.setTitle(county.seo.meta_title);
+        wixSeo.setMetaTags([
+            { "name": "description", "content": county.seo.meta_description },
+            { "name": "keywords", "content": county.seo.keywords.join(", ") },
+            { "property": "og:title", "content": county.seo.meta_title },
+            { "property": "og:description", "content": county.seo.meta_description },
+            { "property": "og:url", "content": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}` },
+            { "property": "og:type", "content": "website" }
+        ]);
 
-        wixSeo.setStructuredData([
-            {
-                "@context": "https://schema.org",
-                "@type": "LocalBusiness",
-                "name": `Shamrock Bail Bonds - ${county.name} County`,
-                "description": `Professional 24/7 bail bond services in ${county.name} County, Florida. Fast jail release for ${county.countySeat || "the area"} and surrounding areas.`,
-                "url": `https://www.shamrockbailbonds.biz/bail-bonds/${county.slug}`,
-                "telephone": "+12393322245",
-                "image": "https://www.shamrockbailbonds.biz/logo.png",
-                "priceRange": "$$",
-                "areaServed": {
-                    "@type": "AdministrativeArea",
-                    "name": `${county.name} County, Florida`
-                },
-                "openingHoursSpecification": {
-                    "@type": "OpeningHoursSpecification",
-                    "dayOfWeek": [
-                        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
-                    ],
-                    "opens": "00:00",
-                    "closes": "23:59"
-                }
+        // Structured Data (JSON-LD)
+        const faqs = county.content.faq || [];
+        const schemas = [];
+
+        // A. Breadcrumbs
+        schemas.push({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
+                { "@type": "ListItem", "position": 2, "name": "Bail Bonds", "item": "https://www.shamrockbailbonds.biz/bail-bonds" },
+                { "@type": "ListItem", "position": 3, "name": county.county_name_full, "item": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}` }
+            ]
+        });
+
+        // B. LocalBusiness
+        schemas.push({
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            "name": `Shamrock Bail Bonds - ${county.county_name}`,
+            "description": county.seo.meta_description,
+            "url": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}`,
+            "telephone": county.contact.primary_phone,
+            "image": "https://www.shamrockbailbonds.biz/logo.png",
+            "areaServed": {
+                "@type": "AdministrativeArea",
+                "name": `${county.county_name} County, Florida`
             },
-            {
+            "openingHoursSpecification": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "opens": "00:00",
+                "closes": "23:59"
+            }
+        });
+
+        // C. FAQPage
+        if (faqs.length > 0) {
+            schemas.push({
                 "@context": "https://schema.org",
                 "@type": "FAQPage",
                 "mainEntity": faqs.map(faq => ({
                     "@type": "Question",
-                    "name": faq.question || faq.title,
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": faq.answer
-                    }
+                    "name": faq.question,
+                    "acceptedAnswer": { "@type": "Answer", "text": faq.answer }
                 }))
-            }
-        ]);
-
-        // 4. UPDATE PAGE UI
-        // Text Fields
-        setText('#countyName', county.name);
-        setText('#dynamicHeader', `Bail Bonds in ${county.name} County`);
-        setText('#quickRefHeader', `${county.name} Quick Reference`);
-
-        // Sheriff & Jail
-        setText('#sheriffPhone', county.jailPhone || county.primaryPhone || "(239) 477-1500");
-        setText('#jailName', county.jailName || `${county.name} County Jail`);
-
-        if (county.jailAddress) {
-            setText('#jailAddress', county.jailAddress);
-        } else {
-            $w('#jailAddress').collapse();
+            });
         }
 
-        // Clerk
-        setText('#clerkPhone', county.clerkPhone || "(239) 533-5000");
+        wixSeo.setStructuredData(schemas)
+            .then(() => console.log("✅ Schemas injected."))
+            .catch(err => console.error("❌ Schema injection failed", err));
 
-        // Buttons
-        const sheriffUrl = county.sheriffWebsite || county.jailBookingUrl;
-        if ($w('#callSheriffBtn').length > 0) setLink('#callSheriffBtn', sheriffUrl, "Visit Sheriff's Website");
-        else setLink('#sheriffWebsite', sheriffUrl, "Visit Sheriff's Website");
+        // 4. POPULATE UI
+        // Header & Hero
+        setText('#countyName', county.county_name);
+        setText('#dynamicHeader', `Bail Bonds in ${county.county_name} County`);
+        setText('#heroSubtitle', county.content.hero_subheadline);
 
-        if ($w('#callClerkBtn').length > 0) setLink('#callClerkBtn', county.clerkWebsite, "Visit Clerk's Website");
-        else setLink('#clerkWebsite', county.clerkWebsite, "Visit Clerk's Website");
+        // Contact Info
+        setText('#sheriffPhone', county.jail.booking_phone);
+        setText('#jailName', county.jail.name);
+        setText('#clerkPhone', county.clerk.phone);
 
-        // About
-        setText('#aboutHeader', `About Bail Bonds in ${county.name} County`);
-        const city = county.countySeat || "the area";
-        setText('#aboutBody', `Shamrock Bail Bonds provides fast, professional bail bond services throughout ${county.name} County, including ${city} and all surrounding communities.`);
-        setText('#whyChooseHeader', `Why Choose Shamrock Bail Bonds in ${county.name} County`);
+        // Links / Buttons
+        setLink('#callSheriffBtn', county.jail.booking_url, "Jail / Sheriff Website");
+        setLink('#sheriffWebsite', county.jail.booking_url, "Jail / Sheriff Website"); // Desktop/Mobile variants
 
-        // Sticky CTA
-        const phone = county.primaryPhone || "(239) 332-2245";
+        setLink('#callClerkBtn', county.clerk.website, "Clerk of Court");
+        setLink('#clerkWebsite', county.clerk.website, "Clerk of Court");
+
+        // Content Sections
+        setText('#aboutHeader', `About Bail Bonds in ${county.county_name} County`);
+        setText('#aboutBody', county.content.about_county);
+        setText('#whyChooseHeader', `Why Choose Us in ${county.county_name}`);
+        setText('#whyChooseBody', county.content.why_choose_us); // Assuming element exists
+
+        // Sticky/Main Call Buttons
         const callBtn = $w('#callShamrockBtn').length ? $w('#callShamrockBtn') : $w('#callCountiesBtn');
         if (callBtn.valid) {
-            callBtn.label = `Call ${phone}`;
-            callBtn.onClick(() => wixLocation.to(`tel:${phone.replace(/[^0-9]/g, '')}`));
+            callBtn.label = county.content.hero_cta_primary || "Call Now";
+            callBtn.onClick(() => wixLocation.to(`tel:${county.contact.primary_phone_display.replace(/[^0-9]/g, '')}`));
             callBtn.expand();
         }
 
-        // Start Bail Process Button
-        const startBailBtn = $w('#startBailBtn').length ? $w('#startBailBtn') : $w('#startProcessBtn');
-        if (startBailBtn.valid) {
-            startBailBtn.label = "Start Bond Process"; // Updated label for clarity
-            startBailBtn.onClick(() => wixLocation.to('/portal-landing'));
-            startBailBtn.expand();
+        // Jail Address (if element exists and data provided)
+        if ($w('#jailAddress').valid) {
+            // Backend generator currently doesn't provide address separate from jail name commonly
+            // If needed we can add it to generator or map it here if available
+            $w('#jailAddress').collapse();
         }
 
-        // 5. POPULATE FAQ REPEATER
+        // 5. POPULATE FAQs (Repeater)
         const faqRep = $w('#faqRepeater');
         if (faqRep.valid && faqs.length > 0) {
-            faqRep.data = faqs;
+            faqRep.data = faqs.map((f, i) => ({ ...f, _id: `faq-${i}` }));
             faqRep.onItemReady(($item, itemData) => {
-                // Determine field names (fallback to various common CMS names)
-                const qText = itemData.question || itemData.title || itemData.q;
-                const aText = itemData.answer || itemData.a;
-
-                $item('#faqQuestion').text = qText;
-                $item('#faqAnswer').text = aText;
+                $item('#faqQuestion').text = itemData.question;
+                $item('#faqAnswer').text = itemData.answer;
             });
             faqRep.expand();
         } else if (faqRep.valid) {
             faqRep.collapse();
         }
 
-        // 6. NEARBY COUNTIES
-        const nearby = await getNearbyCounties("Southwest Florida", county._id);
-        const rep = $w('#nearbyCountiesRepeater');
-        if (rep.length > 0) {
-            rep.data = nearby;
-            rep.onItemReady(($item, itemData) => {
-                const name = itemData.name || "Unknown";
-                const slug = itemData.slug || name.toLowerCase();
-
-                if ($item('#neighborName').length) $item('#neighborName').text = name;
-                if ($item('#neighborContainer').length) {
-                    $item('#neighborContainer').onClick(() => wixLocation.to(`/bail-bonds/${slug}`));
+        // 6. POPULATE NEARBY COUNTIES
+        const nearbyRep = $w('#nearbyCountiesRepeater');
+        if (nearbyRep.valid && Array.isArray(nearby) && nearby.length > 0) {
+            // Filter out current county just in case
+            const neighbors = nearby.filter(n => n.slug !== countySlug);
+            nearbyRep.data = neighbors;
+            nearbyRep.onItemReady(($item, itemData) => {
+                if ($item('#neighborName').valid) $item('#neighborName').text = itemData.name;
+                if ($item('#neighborContainer').valid) {
+                    $item('#neighborContainer').onClick(() => wixLocation.to(`/bail-bonds/${itemData.slug}`));
                 }
             });
-            rep.expand();
+            nearbyRep.expand();
         }
 
-    } catch (error) {
-        console.error("Page Error:", error);
+        // Hide loader / Show content
+        if ($w('#loadingIndicator').valid) $w('#loadingIndicator').hide();
+        if ($w('#countyContent').valid) $w('#countyContent').expand();
+
+    } catch (err) {
+        console.error("❌ Critical Page Error:", err);
+        if ($w('#loadingIndicator').valid) $w('#loadingIndicator').hide();
     }
 });
 
-// --- HELPER FUNCTIONS ---
-
+// --- HELPER UI FUNCTIONS ---
 function setText(selector, value) {
     if ($w(selector).valid) $w(selector).text = value || "";
 }
 
 function setLink(selector, url, label) {
     const el = $w(selector);
-    if (el.valid && url) {
-        if (el.type === '$w.Button') { el.label = label; el.link = url; el.target = "_blank"; }
-        else { el.text = label; el.onClick(() => wixLocation.to(url)); }
+    if (!el.valid) return;
+
+    if (url) {
+        if (el.type === '$w.Button') {
+            el.label = label || el.label;
+            el.link = url;
+            el.target = "_blank";
+        } else {
+            // Text link
+            el.text = label || el.text;
+            // el.link = url; // Text elements might not allow direct link prop assignment on some versions, safer to use event or property if rich text
+            // Use wixLocation for text click if needed, or simple link property if it's a specific Wix element type
+            // NOTE: Simple text elements don't always have a .link property accessible like this unless rich text.
+        }
         el.expand();
-    } else if (el.valid) {
+    } else {
         el.collapse();
     }
 }

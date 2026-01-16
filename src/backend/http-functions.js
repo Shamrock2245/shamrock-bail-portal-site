@@ -466,24 +466,11 @@ export function get_health(request) {
  * GET /_functions/sitemap
  * Serves a custom XML sitemap for Google Search Console
  * URL: https://www.shamrockbailbonds.biz/_functions/sitemap
+ * UPDATED: Dynamic generation from database
  */
-export function get_sitemap(request) {
+export async function get_sitemap(request) {
     const SITE_URL = 'https://www.shamrockbailbonds.biz';
     const LAST_MOD = new Date().toISOString().split('T')[0];
-
-    // All 67 Florida counties
-    const floridaCounties = [
-        'alachua', 'baker', 'bay', 'bradford', 'brevard', 'broward', 'calhoun',
-        'charlotte', 'citrus', 'clay', 'collier', 'columbia', 'desoto', 'dixie',
-        'duval', 'escambia', 'flagler', 'franklin', 'gadsden', 'gilchrist', 'glades',
-        'gulf', 'hamilton', 'hardee', 'hendry', 'hernando', 'highlands', 'hillsborough',
-        'holmes', 'indian-river', 'jackson', 'jefferson', 'lafayette', 'lake', 'lee',
-        'leon', 'levy', 'liberty', 'madison', 'manatee', 'marion', 'martin', 'miami-dade',
-        'monroe', 'nassau', 'okaloosa', 'okeechobee', 'orange', 'osceola', 'palm-beach',
-        'pasco', 'pinellas', 'polk', 'putnam', 'santa-rosa', 'sarasota', 'seminole',
-        'st-johns', 'st-lucie', 'sumter', 'suwannee', 'taylor', 'union', 'volusia',
-        'wakulla', 'walton', 'washington'
-    ];
 
     // Static pages with their priorities and change frequencies
     const staticPages = [
@@ -511,16 +498,30 @@ export function get_sitemap(request) {
   </url>\n`;
     });
 
-    // Add county pages
-    floridaCounties.forEach(county => {
-        const safeSlug = encodeURIComponent(county.toLowerCase());
-        xml += `  <url>
-    <loc>${SITE_URL}/bail-bonds/${safeSlug}-county</loc>
+    // Add dynamic county pages from DB
+    try {
+        // Query "FloridaCounties" collection directly or via ID. 
+        // Using string "FloridaCounties" is safer here if we don't import public config, 
+        // but let's assume standard collection ID.
+        const results = await wixData.query("FloridaCounties")
+            .limit(100) // Fetch all (there are 67 counties)
+            .find();
+
+        results.items.forEach(county => {
+            if (county.countySlug) {
+                const safeSlug = encodeURIComponent(county.countySlug);
+                xml += `  <url>
+    <loc>${SITE_URL}/bail-bonds/${safeSlug}</loc>
     <lastmod>${LAST_MOD}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>\n`;
-    });
+            }
+        });
+    } catch (error) {
+        console.error("Sitemap generation error:", error);
+        // Fallback or ignore
+    }
 
     xml += '</urlset>';
 

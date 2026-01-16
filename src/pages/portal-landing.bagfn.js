@@ -211,25 +211,39 @@ async function handleGetStarted() {
             // Clear input
             input.value = "";
 
-            // Reset button after delay
-            setTimeout(() => {
-                button.enable();
-                button.label = originalLabel;
-            }, 3000);
+            // RESEND LOGIC (UX UPGRADE)
+            // Disable button for 60 seconds to prevent spam, then change to "Resend Link"
+            let countdown = 60;
+            const timer = setInterval(() => {
+                countdown--;
+                if (button.label !== "Sent! ✓" && !button.label.startsWith("Resend")) {
+                    // If label changed externally (unlikely), stop
+                    if (button.enabled) { clearInterval(timer); return; }
+                }
+
+                // Show countdown
+                button.label = `Resend in ${countdown}s`;
+
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    button.label = "Resend Link";
+                    button.enable();
+                }
+            }, 1000);
 
         } else {
             // Error
             console.error("❌ Magic link send failed:", result.message);
             showMessage(result.message || "Unable to send link. Please try again.", "error");
             button.enable();
-            button.label = originalLabel;
+            button.label = "Try Again";
         }
 
     } catch (error) {
         console.error("❌ CRITICAL ERROR sending magic link:", error);
         showMessage("System error. Please try again or call us at 239-332-2245.", "error");
         button.enable();
-        button.label = originalLabel;
+        button.label = "Try Again";
     }
 }
 
@@ -273,6 +287,9 @@ async function handleMagicLinkLogin(token) {
                 'staff': 'Staff'
             };
             const roleName = roleNames[result.role] || 'User';
+
+            // Nice UX: Use first name if available in result (backend should ideally return it)
+            // If not, generic welcome.
             showMessage(`Welcome! Redirecting to your ${roleName} Portal...`, "success");
 
             // Redirect to correct portal based on role
@@ -282,13 +299,18 @@ async function handleMagicLinkLogin(token) {
 
         } else {
             console.error("❌ Token validation failed:", result.message);
-            showMessage(result.message || "Invalid or expired link. Please request a new one.", "error");
+            showMessage("Link expired or invalid. Please request a new one below.", "error");
             hideLoading();
 
-            // Remove token from URL and stay on landing page
-            setTimeout(() => {
-                wixLocation.to('/portal-landing');
-            }, 2000);
+            // Allow user to try again immediately
+            const button = $w('#getStartedBtn');
+            if (button) {
+                button.label = "Resend Link";
+                button.enable();
+            }
+
+            // Remove token from URL without reload (if possible) or just stay put
+            // wixLocation.queryParams.remove(['token']); // Not always available in all Velo versions, so we just leave it.
         }
 
     } catch (error) {
@@ -317,6 +339,8 @@ async function handleSocialSession(sessionToken, role) {
             console.log("✅ Social Session Validated!");
             setSessionToken(sessionToken);
 
+            // UX Polish: Check if we have a name stored from the social flow or session to say "Welcome Back, Brendan"
+            // For now, simple "Welcome back!" is better than "Finalizing..."
             showMessage(`Welcome back! Redirecting...`, "success");
 
             // Redirect based on role
