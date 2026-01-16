@@ -100,10 +100,9 @@ $w.onReady(async function () {
             }
         } catch (err) { }
     }
-} catch (err) { }
-    }
 
-updatePageSEO();
+
+    updatePageSEO();
 });
 
 function updatePageSEO() {

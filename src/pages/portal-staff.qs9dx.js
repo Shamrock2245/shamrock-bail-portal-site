@@ -125,11 +125,9 @@ $w.onReady(async function () {
     } catch (e) {
         console.error('Error setting up search bar:', e);
     }
-} catch (e) {
-    console.error('Error setting up search bar:', e);
-}
 
-updatePageSEO();
+
+    updatePageSEO();
 });
 
 function updatePageSEO() {

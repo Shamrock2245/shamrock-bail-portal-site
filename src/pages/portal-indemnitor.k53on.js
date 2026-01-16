@@ -76,10 +76,9 @@ $w.onReady(async function () {
             }
         } catch (e) { }
     }
-} catch (e) { }
-    }
 
-updatePageSEO();
+
+    updatePageSEO();
 });
 
 function updatePageSEO() {

@@ -123,48 +123,8 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
  */
 export async function getCurrentLocation() {
     try {
-        const member = await currentMember.getMember();
-
-        if (!member) {
-            return { success: false, message: 'User not logged in' };
-        }
-
-        // Get the most recent location
-        const results = await wixData.query('UserLocations')
-            .eq('memberId', member._id)
-            .descending('timestamp')
-            .limit(1)
-            .find();
-
-        if (results.items.length > 0) {
-            const location = results.items[0];
-            const locationAge = Date.now() - new Date(location.timestamp).getTime();
-            const isRecent = locationAge < 30 * 60 * 1000; // Less than 30 minutes old
-
-            return {
-                success: true,
-                location: {
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                    address: location.address,
-                    intersection: location.intersection,
-                    timestamp: location.timestamp,
-                    isRecent: isRecent
-                },
-                message: isRecent ? 'Recent location found' : 'Location may be outdated'
-            };
-        }
-
-        return {
-            success: false,
-            message: 'No location data available. Please enable location services.'
-        };
-
-    } catch (error) {
-        console.error('Error getting current location:', error);
-        return { success: false, message: error.message };
+        return { success: false, message: 'Not implemented for custom auth' };
     }
-}
 
 /**
  * Get the last known location for a member
@@ -172,17 +132,17 @@ export async function getCurrentLocation() {
  * @returns {Promise<Object|null>}
  */
 export async function getLastLocation(memberId) {
-    try {
-        const results = await wixData.query('UserLocations')
-            .eq('memberId', memberId)
-            .descending('timestamp')
-            .limit(1)
-            .find();
+        try {
+            const results = await wixData.query('UserLocations')
+                .eq('memberId', memberId)
+                .descending('timestamp')
+                .limit(1)
+                .find();
 
-        return results.items.length > 0 ? results.items[0] : null;
+            return results.items.length > 0 ? results.items[0] : null;
 
-    } catch (error) {
-        console.error('Error getting last location:', error);
-        return null;
+        } catch (error) {
+            console.error('Error getting last location:', error);
+            return null;
+        }
     }
-}
