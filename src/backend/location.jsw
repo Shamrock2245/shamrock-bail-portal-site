@@ -122,9 +122,8 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
  * @returns {Promise<{success: boolean, location?: Object, message?: string}>}
  */
 export async function getCurrentLocation() {
-    try {
-        return { success: false, message: 'Not implemented for custom auth' };
-    }
+    return { success: false, message: 'Not implemented for custom auth' };
+}
 
 /**
  * Get the last known location for a member
@@ -132,17 +131,17 @@ export async function getCurrentLocation() {
  * @returns {Promise<Object|null>}
  */
 export async function getLastLocation(memberId) {
-        try {
-            const results = await wixData.query('UserLocations')
-                .eq('memberId', memberId)
-                .descending('timestamp')
-                .limit(1)
-                .find();
+    try {
+        const results = await wixData.query('UserLocations')
+            .eq('memberId', memberId)
+            .descending('timestamp')
+            .limit(1)
+            .find();
 
-            return results.items.length > 0 ? results.items[0] : null;
+        return results.items.length > 0 ? results.items[0] : null;
 
-        } catch (error) {
-            console.error('Error getting last location:', error);
-            return null;
-        }
+    } catch (error) {
+        console.error('Error getting last location:', error);
+        return null;
     }
+}
