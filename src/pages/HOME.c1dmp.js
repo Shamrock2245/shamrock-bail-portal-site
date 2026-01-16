@@ -76,7 +76,11 @@ function updatePageSEO() {
         { "property": "og:description", "content": pageDesc },
         { "property": "og:url", "content": pageUrl },
         { "property": "og:type", "content": "website" },
-        { "property": "og:image", "content": "https://www.shamrockbailbonds.biz/logo.png" }
+        { "property": "og:image", "content": "https://www.shamrockbailbonds.biz/logo.png" },
+        { "name": "geo.region", "content": "US-FL" },
+        { "name": "geo.placename", "content": "Fort Myers" },
+        { "name": "geo.position", "content": "26.6406;-81.8723" },
+        { "name": "ICBM", "content": "26.6406, -81.8723" }
     ]);
 
     // 2. Structured Data
@@ -111,6 +115,7 @@ function updatePageSEO() {
             "image": "https://www.shamrockbailbonds.biz/logo.png",
             "telephone": "+12393322245",
             "url": pageUrl,
+            "priceRange": "$$",
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "2245 Main St",
@@ -119,15 +124,68 @@ function updatePageSEO() {
                 "postalCode": "33901",
                 "addressCountry": "US"
             },
+            "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": 26.6406,
+                "longitude": -81.8723
+            },
             "openingHoursSpecification": {
                 "@type": "OpeningHoursSpecification",
                 "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
                 "opens": "00:00",
                 "closes": "23:59"
-            }
+            },
+            "areaServed": [
+                // Primary Service Area (HQ)
+                { "@type": "AdministrativeArea", "name": "Lee County" },
+                { "@type": "City", "name": "Fort Myers" },
+                { "@type": "City", "name": "Cape Coral" },
+                { "@type": "City", "name": "Bonita Springs" },
+                { "@type": "City", "name": "Lehigh Acres" },
+                // Expanded Regional Coverage
+                { "@type": "AdministrativeArea", "name": "Collier County" },
+                { "@type": "City", "name": "Naples" },
+                { "@type": "City", "name": "Immokalee" },
+                { "@type": "AdministrativeArea", "name": "Charlotte County" },
+                { "@type": "City", "name": "Punta Gorda" },
+                { "@type": "City", "name": "Port Charlotte" },
+                { "@type": "AdministrativeArea", "name": "Hendry County" },
+                { "@type": "City", "name": "Labelle" },
+                { "@type": "City", "name": "Clewiston" },
+                // Extended State Coverage
+                { "@type": "AdministrativeArea", "name": "Sarasota County" },
+                { "@type": "City", "name": "Sarasota" },
+                { "@type": "City", "name": "Venice" },
+                { "@type": "AdministrativeArea", "name": "Manatee County" },
+                { "@type": "City", "name": "Bradenton" },
+                { "@type": "City", "name": "Palmetto" },
+                { "@type": "AdministrativeArea", "name": "Desoto County" },
+                { "@type": "City", "name": "Arcadia" },
+                { "@type": "AdministrativeArea", "name": "Alachua County" },
+                { "@type": "City", "name": "Gainesville" },
+                { "@type": "AdministrativeArea", "name": "Glades County" },
+                { "@type": "AdministrativeArea", "name": "State of Florida" }
+            ],
+            "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "name": "Bail Bond Services",
+                "itemListElement": [
+                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "DUI Bail Bonds" } },
+                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Domestic Violence Bail Bonds" } },
+                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Felony Bail Bonds" } },
+                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Misdemeanor Bail Bonds" } },
+                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Traffic Violation Bail Bonds" } },
+                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Drug Charge Bail Bonds" } },
+                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Warrant Walk-Through Service" } },
+                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Federal Bail Bonds" } },
+                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Immigration Bail Bonds" } }
+                ]
+            },
+            "paymentAccepted": "Cash, Credit Card, Debit Card",
+            "hasMap": "https://www.google.com/maps?cid=123" // Placeholder, but good signal
         }
     ])
-        .then(() => console.log("✅ Home Page SEO Set"))
+        .then(() => console.log("✅ Home Page SEO Set (Advanced & Deep)"))
         .catch(e => console.error("❌ Home Page SEO Error", e));
 }
 

@@ -1,10 +1,25 @@
-// API Reference: https://www.wix.com/velo/reference/api-overview/introduction
-// “Hello, World!” Example: https://learn-code.wix.com/en/article/hello-world
+import wixSeo from 'wix-seo';
 
 $w.onReady(function () {
-    // Write your JavaScript here
-
-    // To select an element by ID use: $w('#elementID')
-
-    // Click 'Preview' to run your code
+    updatePageSEO();
 });
+
+function updatePageSEO() {
+    wixSeo.setTitle("Privacy Policy | Shamrock Bail Bonds");
+    wixSeo.setMetaTags([
+        { "name": "description", "content": "Privacy Policy for Shamrock Bail Bonds. Learn how we handle your data, ensure confidentiality, and protect your rights." },
+        { "property": "og:title", "content": "Privacy Policy | Shamrock Bail Bonds" },
+        { "property": "og:type", "content": "website" }
+    ]);
+
+    wixSeo.setStructuredData([{
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "Privacy Policy",
+        "url": "https://www.shamrockbailbonds.biz/privacy-policy",
+        "publisher": {
+            "@type": "Organization",
+            "name": "Shamrock Bail Bonds"
+        }
+    }]);
+}
