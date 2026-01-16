@@ -3,12 +3,18 @@
  * 
  * Integration layer between Wix Portal and GAS Dashboard for all signing methods:
  * - Email: SignNow sends email with signing link
- * - SMS: SignNow sends text message with link  
+ * - SMS: Twilio sends text message with signing link (via Wix backend)
  * - Kiosk: In-office iPad signing (embedded SignNow)
  * - Print: Generate PDFs for wet signature
+ * 
+ * SMS Flow:
+ * 1. GAS creates SignNow document and generates signing link
+ * 2. Wix receives the link and sends SMS via Twilio
+ * This ensures Twilio credentials stay in Wix Secrets, not GAS
  */
 
 import { fetchWithRetry, getGasUrl } from 'backend/utils';
+import { sendSms } from 'backend/twilio-client';
 import wixData from 'wix-data';
 
 /**
@@ -39,19 +45,26 @@ async function callGasBackend(payload) {
 
 /**
  * Send paperwork via Email
+ * Uses SignNow's built-in email invite functionality
  * @param {Object} params - { caseId, defendantEmail, indemnitorEmails[], documentIds[] }
  */
 export async function sendViaEmail(params) {
     const { caseId, defendantEmail, indemnitorEmails, documentIds, emailSubject } = params;
 
     const result = await callGasBackend({
-        action: 'sendForSignature',
-        method: 'email',
-        caseId,
-        defendantEmail,
-        indemnitorEmails: indemnitorEmails || [],
-        documentIds: documentIds || [],
-        emailSubject: emailSubject || 'Shamrock Bail Bonds - Documents for Signature'
+        action: 'sendEmailInvite',
+        documentId: documentIds[0], // Primary document
+        signers: [
+            { email: defendantEmail, role: 'Defendant', order: 1 }
+        ].concat((indemnitorEmails || []).map((email, idx) => ({
+            email,
+            role: 'Indemnitor',
+            order: idx + 2
+        }))),
+        options: {
+            subject: emailSubject || 'Shamrock Bail Bonds - Documents for Signature',
+            message: 'Please review and sign the attached bail bond documents.'
+        }
     });
 
     if (result.success) {
@@ -64,25 +77,81 @@ export async function sendViaEmail(params) {
 
 /**
  * Send paperwork via SMS
+ * Creates embedded signing link via GAS/SignNow, then sends via Twilio
  * @param {Object} params - { caseId, defendantPhone, indemnitorPhones[], documentIds[] }
  */
 export async function sendViaSMS(params) {
     const { caseId, defendantPhone, indemnitorPhones, documentIds } = params;
 
-    const result = await callGasBackend({
-        action: 'sendForSignature',
-        method: 'sms',
-        caseId,
-        defendantPhone,
-        indemnitorPhones: indemnitorPhones || [],
-        documentIds: documentIds || []
-    });
+    try {
+        // Step 1: Get embedded signing link from GAS/SignNow
+        const linkResult = await callGasBackend({
+            action: 'createEmbeddedLink',
+            documentId: documentIds[0],
+            signerEmail: `sms_${defendantPhone.replace(/\D/g, '')}@shamrockbailbonds.biz`,
+            signerRole: 'Defendant',
+            linkExpiration: 1440 // 24 hours for SMS
+        });
 
-    if (result.success) {
-        await logSigningEvent(caseId, 'sms', result);
+        if (!linkResult.success || !linkResult.link) {
+            console.error('Failed to get signing link from GAS:', linkResult);
+            return { success: false, error: linkResult.error || 'Failed to generate signing link' };
+        }
+
+        const signingLink = linkResult.link;
+
+        // Step 2: Send SMS via Twilio (Wix backend)
+        const smsBody = `Shamrock Bail Bonds: Your bail paperwork is ready to sign.\n\nClick here to sign: ${signingLink}\n\nThis link expires in 24 hours. Questions? Call (727) 295-2245`;
+
+        const smsResult = await sendSms(defendantPhone, smsBody);
+
+        if (!smsResult.success) {
+            console.error('Failed to send SMS via Twilio:', smsResult);
+            return { success: false, error: smsResult.error || 'Failed to send SMS' };
+        }
+
+        // Step 3: Send to indemnitors if provided
+        const indemnitorResults = [];
+        if (indemnitorPhones && indemnitorPhones.length > 0) {
+            for (const phone of indemnitorPhones) {
+                if (phone) {
+                    // Get separate link for each indemnitor
+                    const indLinkResult = await callGasBackend({
+                        action: 'createEmbeddedLink',
+                        documentId: documentIds[0],
+                        signerEmail: `sms_${phone.replace(/\D/g, '')}@shamrockbailbonds.biz`,
+                        signerRole: 'Indemnitor',
+                        linkExpiration: 1440
+                    });
+
+                    if (indLinkResult.success && indLinkResult.link) {
+                        const indSmsBody = `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${indLinkResult.link}\n\nQuestions? Call (727) 295-2245`;
+                        const indSmsResult = await sendSms(phone, indSmsBody);
+                        indemnitorResults.push({ phone, success: indSmsResult.success });
+                    }
+                }
+            }
+        }
+
+        // Log success
+        await logSigningEvent(caseId, 'sms', {
+            success: true,
+            defendantPhone,
+            signingLink,
+            indemnitorResults
+        });
+
+        return {
+            success: true,
+            message: `SMS sent to ${defendantPhone}`,
+            signingLink,
+            indemnitorResults
+        };
+
+    } catch (error) {
+        console.error('SMS signing workflow error:', error);
+        return { success: false, error: error.message };
     }
-
-    return result;
 }
 
 /**
@@ -100,7 +169,7 @@ export async function createKioskLink(params) {
         linkExpiration: 60 // 1 hour for kiosk
     });
 
-    if (result.success && result.links && result.links[0]) {
+    if (result.success && (result.link || (result.links && result.links[0]))) {
         // Normalize link from complex return structure if necessary
         const link = result.link || result.links[0].link || result.links[0];
 
@@ -233,9 +302,6 @@ async function savePendingDocument(data) {
 }
 
 /**
- * Log signing event to collection
- */
-/**
  * Log signing event to collection and update Case status
  */
 async function logSigningEvent(caseId, method, result) {
@@ -251,7 +317,7 @@ async function logSigningEvent(caseId, method, result) {
         // 2. Update Case Status
         // If method is 'email' or 'sms' or 'kiosk', we consider it 'Sent'
         let newStatus = 'Sent';
-        if (method === 'print') newStatus = 'Downloaded'; // or 'Partially Signed' if we assume wet-ink process started
+        if (method === 'print') newStatus = 'Downloaded';
 
         const caseQ = await wixData.query("Cases").eq("_id", caseId).find({ suppressAuth: true });
         if (caseQ.items.length > 0) {
@@ -274,28 +340,42 @@ async function logSigningEvent(caseId, method, result) {
 export async function initiateSigningWorkflow(params) {
     const { caseId, method, defendantInfo, indemnitorInfo, documentIds } = params;
 
+    // Validate required params
+    if (!caseId) {
+        return { success: false, error: 'Missing caseId' };
+    }
+    if (!documentIds || documentIds.length === 0) {
+        return { success: false, error: 'No documents specified' };
+    }
+
     switch (method) {
         case 'email':
+            if (!defendantInfo.email) {
+                return { success: false, error: 'Defendant email required for email signing' };
+            }
             return await sendViaEmail({
                 caseId,
                 defendantEmail: defendantInfo.email,
-                indemnitorEmails: indemnitorInfo.map(i => i.email),
+                indemnitorEmails: (indemnitorInfo || []).map(i => i.email).filter(e => e),
                 documentIds
             });
 
         case 'sms':
+            if (!defendantInfo.phone) {
+                return { success: false, error: 'Defendant phone required for SMS signing' };
+            }
             return await sendViaSMS({
                 caseId,
                 defendantPhone: defendantInfo.phone,
-                indemnitorPhones: indemnitorInfo.map(i => i.phone),
+                indemnitorPhones: (indemnitorInfo || []).map(i => i.phone).filter(p => p),
                 documentIds
             });
 
         case 'kiosk':
             return await createKioskLink({
                 caseId,
-                documentId: documentIds[0], // First document for kiosk
-                signerEmail: defendantInfo.email,
+                documentId: documentIds[0],
+                signerEmail: defendantInfo.email || `kiosk_${caseId}@shamrockbailbonds.biz`,
                 signerRole: 'Defendant'
             });
 
@@ -306,6 +386,28 @@ export async function initiateSigningWorkflow(params) {
             });
 
         default:
-            return { success: false, error: 'Invalid signing method' };
+            return { success: false, error: 'Invalid signing method. Use: email, sms, kiosk, or print' };
     }
+}
+
+/**
+ * Send signing link directly via SMS (utility function)
+ * Can be called independently when you already have a signing link
+ * @param {string} phone - Phone number to send to
+ * @param {string} signingLink - The SignNow signing URL
+ * @param {string} recipientType - 'defendant' or 'indemnitor'
+ */
+export async function sendSigningLinkViaSms(phone, signingLink, recipientType = 'defendant') {
+    if (!phone || !signingLink) {
+        return { success: false, error: 'Phone and signing link are required' };
+    }
+
+    const messageTemplates = {
+        defendant: `Shamrock Bail Bonds: Your bail paperwork is ready to sign.\n\nClick here to sign: ${signingLink}\n\nThis link expires in 24 hours. Questions? Call (727) 295-2245`,
+        indemnitor: `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${signingLink}\n\nQuestions? Call (727) 295-2245`
+    };
+
+    const smsBody = messageTemplates[recipientType] || messageTemplates.defendant;
+
+    return await sendSms(phone, smsBody);
 }

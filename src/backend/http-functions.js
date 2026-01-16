@@ -448,6 +448,130 @@ function renderCloseScript(data) {
 }
 
 /**
+ * POST /api/sms/send
+ * Send SMS via Twilio - allows GAS to trigger SMS through Wix
+ * This keeps Twilio credentials secure in Wix Secrets Manager
+ * 
+ * Request body:
+ * {
+ *   "apiKey": "your-api-key",
+ *   "to": "2395551234",
+ *   "body": "Your message here"
+ * }
+ */
+export async function post_smsSend(request) {
+    try {
+        const body = await request.body.json();
+
+        // Validate API key
+        if (!body.apiKey) {
+            return badRequest({
+                body: { success: false, message: 'Missing apiKey' }
+            });
+        }
+
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (body.apiKey !== validApiKey) {
+            return forbidden({
+                body: { success: false, message: 'Invalid API key' }
+            });
+        }
+
+        // Validate required fields
+        if (!body.to || !body.body) {
+            return badRequest({
+                body: { success: false, message: 'Missing required fields: to, body' }
+            });
+        }
+
+        // Import and call Twilio client
+        const { sendSms } = await import('backend/twilio-client');
+        const result = await sendSms(body.to, body.body);
+
+        if (result.success) {
+            return ok({
+                headers: { 'Content-Type': 'application/json' },
+                body: { success: true, message: 'SMS sent successfully' }
+            });
+        } else {
+            return serverError({
+                body: { success: false, message: result.error || 'Failed to send SMS' }
+            });
+        }
+
+    } catch (error) {
+        console.error('SMS send error:', error);
+        return serverError({
+            body: { success: false, message: error.message }
+        });
+    }
+}
+
+/**
+ * POST /api/sms/signing-link
+ * Send a signing link via SMS - convenience endpoint for GAS
+ * 
+ * Request body:
+ * {
+ *   "apiKey": "your-api-key",
+ *   "phone": "2395551234",
+ *   "signingLink": "https://app.signnow.com/...",
+ *   "recipientType": "defendant" | "indemnitor",
+ *   "defendantName": "John Doe" (optional)
+ * }
+ */
+export async function post_smsSigningLink(request) {
+    try {
+        const body = await request.body.json();
+
+        // Validate API key
+        if (!body.apiKey) {
+            return badRequest({
+                body: { success: false, message: 'Missing apiKey' }
+            });
+        }
+
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (body.apiKey !== validApiKey) {
+            return forbidden({
+                body: { success: false, message: 'Invalid API key' }
+            });
+        }
+
+        // Validate required fields
+        if (!body.phone || !body.signingLink) {
+            return badRequest({
+                body: { success: false, message: 'Missing required fields: phone, signingLink' }
+            });
+        }
+
+        const { sendSigningLinkViaSms } = await import('backend/signing-methods');
+        const result = await sendSigningLinkViaSms(
+            body.phone,
+            body.signingLink,
+            body.recipientType || 'defendant'
+        );
+
+        if (result.success) {
+            return ok({
+                headers: { 'Content-Type': 'application/json' },
+                body: { success: true, message: `Signing link sent to ${body.phone}` }
+            });
+        } else {
+            return serverError({
+                body: { success: false, message: result.error || 'Failed to send signing link' }
+            });
+        }
+
+    } catch (error) {
+        console.error('Signing link SMS error:', error);
+        return serverError({
+            body: { success: false, message: error.message }
+        });
+    }
+}
+
+/**
  * GET /api/health
  * ... (existing health check)
  */
