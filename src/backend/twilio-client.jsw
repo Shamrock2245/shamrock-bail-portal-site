@@ -1,0 +1,77 @@
+/**
+ * backend/twilio-client.jsw
+ * Lightweight Twilio SMS Client for Wix
+ */
+
+import { fetch } from 'wix-fetch';
+import { getSecret } from 'wix-secrets-backend';
+
+/**
+ * Send an SMS via Twilio
+ * @param {string} to - The recipient's phone number (e.g. "2395551234")
+ * @param {string} body - The message content
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function sendSms(to, body) {
+    try {
+        console.log(`📱 Twilio sending to ${to}...`);
+
+        // 1. Fetch Credentials
+        const [accountSid, authToken, fromNumber] = await Promise.all([
+            getSecret("TWILIO_ACCOUNT_SID"),
+            getSecret("TWILIO_AUTH_TOKEN"),
+            getSecret("TWILIO_PHONE_NUMBER")
+        ]);
+
+        if (!accountSid || !authToken || !fromNumber) {
+            console.error("❌ Twilio Secrets Missing. Check Secrets Manager.");
+            return { success: false, error: "SMS configuration missing" };
+        }
+
+        // 2. Format Number (E.164)
+        // Ensure +1 prefix if missing and it's a US number
+        let formattedTo = to.replace(/\D/g, ''); // clear non-digits
+        if (formattedTo.length === 10) {
+            formattedTo = '+1' + formattedTo;
+        } else if (formattedTo.length === 11 && formattedTo.startsWith('1')) {
+            formattedTo = '+' + formattedTo;
+        } else if (!formattedTo.startsWith('+')) {
+            // Best guess for international or already formatted
+            formattedTo = '+' + formattedTo;
+        }
+
+        // 3. Prepare Request
+        // Twilio API requires URL encoded form data (not JSON)
+        const params = new URLSearchParams();
+        params.append("To", formattedTo);
+        params.append("From", fromNumber);
+        params.append("Body", body);
+
+        // 4. Send Request
+        const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+        const headers = {
+            "Authorization": "Basic " + Buffer.from(`${accountSid}:${authToken}`).toString("base64"),
+            "Content-Type": "application/x-www-form-urlencoded"
+        };
+
+        const response = await fetch(url, {
+            method: "POST",
+            headers: headers,
+            body: params.toString()
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error("❌ Twilio Error:", result);
+            return { success: false, error: result.message || "Failed to send SMS" };
+        }
+
+        console.log("✅ Twilio SMS Sent:", result.sid);
+        return { success: true };
+
+    } catch (err) {
+        console.error("❌ Twilio Client Error:", err);
+        return { success: false, error: err.message };
+    }
+}

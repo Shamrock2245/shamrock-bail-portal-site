@@ -9,6 +9,7 @@ import { fetch } from "wix-fetch";
 // FIX 1: Correct Import
 import { getSecret } from "wix-secrets-backend";
 import { API_BASE_URL, API_TIMEOUT } from 'public/portal-config';
+import { sendSms } from 'backend/twilio-client'; // FIX: Single Twilio Import
 
 /***** CONFIG & ROLES *****/
 export const ROLES = {
@@ -264,6 +265,29 @@ export async function sendMagicLink(email, token, role, personName = null) {
       'admin': 'Admin'
     };
     const roleName = roleDisplayNames[role] || 'User';
+
+    // DETECT SMS vs EMAIL
+    // Simple check: if it looks like a phone (only digits/plus/dash/space and < 5 chars of alpha), treat as SMS
+    // Ideally we pass a type, but for backward compat we sniff it
+    const isEmail = email.includes('@');
+
+    if (!isEmail) {
+      // --- SMS PATH ---
+      const loginLink = `${portalUrl}`;
+      // Short message for SMS
+      const smsBody = `Shamrock Portal: Your login code is ${token}\n\nLink: ${loginLink}\n\n(Expires in 24h)`;
+
+      const smsResult = await sendSms(email, smsBody);
+      if (smsResult.success) {
+        console.log(`✅ Text sent to ${email} (${role})`);
+        return { success: true };
+      } else {
+        console.warn("⚠️ SMS failed, falling back/error", smsResult.error);
+        return { success: false, error: smsResult.error };
+      }
+    }
+
+    // --- EMAIL PATH (Existing) ---
     const greeting = personName ? `Hello ${personName}` : `Hello`;
     const emailBody = `
       <html>
