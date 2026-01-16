@@ -12,26 +12,36 @@ import { initHeader } from 'public/siteHeader';
 import { initFooter } from 'public/siteFooter';
 import { processBookingSheet } from 'public/bookingSheetHandler';
 
+const safeRun = (name, fn) => {
+    try {
+        const result = fn();
+        if (result instanceof Promise) {
+            result.catch(e => console.error(`⚠️ [Resiliency] ${name} (Async) failed:`, e));
+        }
+    } catch (e) {
+        console.error(`⚠️ [Resiliency] ${name} failed:`, e);
+    }
+};
+
 $w.onReady(function () {
     // 0. ID TRUTH (Must run first)
-    getOrSetSessionId();
+    safeRun("Session", getOrSetSessionId);
 
     // 1. Initialize Site Components (Public Modules)
-    initHeader($w);
-    initFooter();
+    safeRun("Header", () => initHeader($w));
+    safeRun("Footer", initFooter);
 
-    // 2. Handle Responsive View
-    checkMobileView();
+    // 2. Handle Responsive View (Crucial for UI)
+    safeRun("Responsive", checkMobileView);
 
     // 3. Proactive tracking
-    silentPingLocation();
+    safeRun("LocationPing", silentPingLocation);
 
-    // 4. Global Phone Injection (Dynamic Routing)
-    initializePhoneInjection();
+    // 4. Global Phone Injection
+    safeRun("PhoneInjector", initializePhoneInjection);
 
-    // 5. GLOBAL SEO SAFETY NET (Auto-Alt Text)
-    // This aggressively fixes missing alt text on ALL images site-wide to satisfy Wix/Google checklists.
-    runGlobalSEO();
+    // 5. GLOBAL SEO SAFETY NET
+    safeRun("GlobalSEO", runGlobalSEO);
 });
 
 function runGlobalSEO() {

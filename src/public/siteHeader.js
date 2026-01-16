@@ -35,21 +35,26 @@ export async function initHeader($wContext) {
 
     console.log("Header: Initializing with $w context...");
 
-    // Check login status
-    isLoggedIn = await checkLoginStatus();
-    console.log("Header: Login Status:", isLoggedIn);
+    // Check login status (Fail-Safe)
+    try {
+        isLoggedIn = await checkLoginStatus();
+        console.log("Header: Login Status:", isLoggedIn);
+    } catch (e) {
+        console.error("Header: Login check failed, defaulting to guest.", e);
+        isLoggedIn = false;
+    }
 
     // Update header based on login status
-    updateHeaderForLoginStatus();
+    try {
+        updateHeaderForLoginStatus();
+    } catch (e) { console.error("Header: Update UI failed", e); }
 
-    // Set up event listeners
-    setupHeaderListeners();
-
-    // Handle responsive behavior
-    handleResponsive();
-
-    // Highlight current page in navigation
-    highlightCurrentPage();
+    // Set up event listeners and Responsive (CRITICAL: Must run even if login fails)
+    try {
+        setupHeaderListeners();
+        handleResponsive();
+        highlightCurrentPage();
+    } catch (e) { console.error("Header: Setup listeners failed", e); }
 }
 
 /**

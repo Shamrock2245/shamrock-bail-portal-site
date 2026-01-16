@@ -29,6 +29,10 @@ export async function getBailData(url) {
 
 // Helper function to extract charges and bail amounts from HTML text
 function extractChargesAndBailAmounts(htmlText) {
+  if (typeof DOMParser === 'undefined') {
+    console.warn('DOMParser not available in this environment');
+    return { bailAmounts: [] };
+  }
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlText, 'text/html');
   let bailAmounts = [];
