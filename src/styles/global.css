@@ -166,14 +166,15 @@
 
 * {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  /* Removed global zeroing of margin/padding to prevent breaking Wix layout engine */
+  /* margin: 0; */
+  /* padding: 0; */
   /* Premium Feel: Removes mobile tap highlight */
   -webkit-tap-highlight-color: transparent;
 }
 
 html {
-  font-size: 16px;
+  /* font-size: 16px; */
   /* Big Win: Silky Smooth Scrolling */
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
@@ -182,7 +183,7 @@ html {
 
 body {
   font-family: var(--font-primary);
-  font-size: var(--text-base);
+  /* font-size: var(--text-base); */
   font-weight: var(--font-normal);
   line-height: var(--leading-normal);
   color: var(--color-charcoal);

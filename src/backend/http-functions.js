@@ -490,7 +490,7 @@ export function get_sitemap(request) {
         { url: '/', priority: '1.0', changefreq: 'weekly' },
         { url: '/how-bail-works', priority: '0.9', changefreq: 'monthly' },
         { url: '/florida-sheriffs-clerks-directory', priority: '0.9', changefreq: 'monthly' },
-        { url: '/become-a-bondsman', priority: '0.8', changefreq: 'monthly' },
+        { url: '/how-to-become-a-bondsman', priority: '0.8', changefreq: 'monthly' },
         { url: '/locate-an-inmate', priority: '0.8', changefreq: 'monthly' },
         { url: '/contact', priority: '0.8', changefreq: 'monthly' },
         { url: '/blog', priority: '0.7', changefreq: 'weekly' },
