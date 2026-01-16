@@ -53,7 +53,7 @@ function updatePageSEO() {
             "@type": "AboutPage",
             "mainEntity": {
                 "@type": "LocalBusiness",
-                "name": "Shamrock Bail Bonds",
+                "name": "Shamrock Bail Bonds, LLC",
                 "image": "https://www.shamrockbailbonds.biz/logo.png",
                 "telephone": "+12393322245",
                 "url": "https://www.shamrockbailbonds.biz/",

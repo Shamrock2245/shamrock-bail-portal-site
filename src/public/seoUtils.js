@@ -11,8 +11,8 @@ import wixLocation from 'wix-location';
 
 // Site constants
 const SITE_URL = 'https://www.shamrockbailbonds.biz';
-const SITE_NAME = 'Shamrock Bail Bonds';
-const PHONE = '(239) 332-2245';
+const SITE_NAME = 'Shamrock Bail Bonds, LLC';
+const PHONE = '239-332-2245';
 const PHONE_FORMATTED = '+12393322245';
 
 /**

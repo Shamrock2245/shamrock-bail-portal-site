@@ -105,7 +105,7 @@ $w.onReady(async function () {
         schemas.push({
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
-            "name": `Shamrock Bail Bonds - ${county.name} County`,
+            "name": `Shamrock Bail Bonds, LLC - ${county.name} County`,
             "description": pageDesc,
             "url": pageUrl,
             "telephone": "+12393322245", // Main office or dynamic if available

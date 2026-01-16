@@ -94,7 +94,7 @@ function updatePageSEO() {
         {
             "@context": "https://schema.org",
             "@type": "Organization",
-            "name": "Shamrock Bail Bonds",
+            "name": "Shamrock Bail Bonds, LLC",
             "url": pageUrl,
             "logo": "https://www.shamrockbailbonds.biz/logo.png",
             "slogan": "Making Bail Easy in Florida", // Brand differentiation
@@ -112,7 +112,7 @@ function updatePageSEO() {
         {
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
-            "name": "Shamrock Bail Bonds (Fort Myers HQ)",
+            "name": "Shamrock Bail Bonds, LLC (Fort Myers HQ)",
             "image": "https://www.shamrockbailbonds.biz/logo.png",
             "telephone": "+12393322245",
             "url": pageUrl,

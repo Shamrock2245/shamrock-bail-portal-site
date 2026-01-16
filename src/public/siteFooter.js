@@ -18,10 +18,10 @@ import wixData from 'wix-data';
 
 // Contact information
 const CONTACT = {
-    phone: '(239) 332-2245',
+    phone: '239-332-2245',
     phoneTel: 'tel:+12393322245',
     email: 'info@shamrockbailbonds.biz',
-    address: '1528 Broadway, Fort Myers, FL 33901'
+    address: '1528 Broadway, Ft. Myers, FL 33901'
 };
 
 /**
@@ -208,7 +208,7 @@ function setCopyrightYear() {
 
     try {
         if ($w('#copyrightText').type) {
-            $w('#copyrightText').text = `© ${currentYear} Shamrock Bail Bonds. All rights reserved.`;
+            $w('#copyrightText').text = `© ${currentYear} Shamrock Bail Bonds, LLC. All rights reserved.`;
         }
     } catch (e) { }
 
