@@ -4,6 +4,7 @@ import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
 import { fetchWithRetry } from 'backend/utils';
 import { validateCustomSession } from 'backend/portal-auth';
+import { analyzeLocationRisk } from 'backend/fraud-detection'; // Static import
 
 /**
  * Save user location to the database and sync to Google Sheets
@@ -38,9 +39,7 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
         // 1. Get Last Location (for risk/velocity)
         const lastLocation = await getLastLocation(personId);
 
-        // 2. Risk Analysis (Dynamically imported)
-        // Note: Check if fraud-detection needs updating too, but assuming it just does math
-        const { analyzeLocationRisk } = await import('backend/fraud-detection');
+        // 2. Risk Analysis
         const { riskLevel, riskFactors } = analyzeLocationRisk(latitude, longitude, lastLocation);
 
         // 3. Reverse Geocoding
