@@ -42,7 +42,7 @@ $w.onReady(function () {
                     method: 'email',
                     defendantInfo,
                     indemnitorInfo: [], // Add indemnitors if available
-                    documentIds: ['doc_123'] // Mock doc ID for testing
+                    documentIds: [] // Empty = Use Default Template
                 });
 
                 if (result.success) {
@@ -82,7 +82,7 @@ $w.onReady(function () {
                     method: 'sms',
                     defendantInfo,
                     indemnitorInfo: [],
-                    documentIds: ['doc_123']
+                    documentIds: [] // Empty = Use Default Template
                 });
 
                 if (result.success) {
@@ -116,14 +116,14 @@ $w.onReady(function () {
                     method: 'kiosk',
                     defendantInfo: { email: 'kiosk@test.com' }, // Kiosk dummy email
                     indemnitorInfo: [],
-                    documentIds: ['doc_123']
+                    documentIds: [] // Empty = Use Default Template
                 });
 
                 if (result.success && result.links && result.links[0]) {
                     // Open the *Signing* Lightbox with the link
                     wixWindow.openLightbox("SigningLightbox", {
                         signingUrl: result.links[0],
-                        documentId: 'doc_123'
+                        documentId: null
                     });
                     $w('#openKioskBtn').label = "Open Kiosk";
                     if (statusText.length) statusText.text = "Kiosk session started.";

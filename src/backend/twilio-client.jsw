@@ -10,7 +10,7 @@
  * - Comprehensive error handling
  */
 
-import { fetch } from 'wix-fetch';
+import { fetchWithRetry } from 'backend/utils';
 import { getSecret } from 'wix-secrets-backend';
 
 // Cache for secrets to avoid repeated lookups
@@ -130,7 +130,7 @@ export async function sendSms(to, body, options = {}) {
         const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
         const authHeader = "Basic " + Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString("base64");
 
-        const response = await fetch(url, {
+        const response = await fetchWithRetry(url, {
             method: "POST",
             headers: {
                 "Authorization": authHeader,

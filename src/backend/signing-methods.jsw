@@ -84,68 +84,100 @@ export async function sendViaSMS(params) {
     const { caseId, defendantPhone, indemnitorPhones, documentIds } = params;
 
     try {
-        // Step 1: Get embedded signing link from GAS/SignNow
-        const linkResult = await callGasBackend({
-            action: 'createEmbeddedLink',
-            documentId: documentIds[0],
-            signerEmail: `sms_${defendantPhone.replace(/\D/g, '')}@shamrockbailbonds.biz`,
-            signerRole: 'Defendant',
-            linkExpiration: 1440 // 24 hours for SMS
-        });
+        let signingLink = '';
+        let indemnitorResults = [];
 
-        if (!linkResult.success || !linkResult.link) {
-            console.error('Failed to get signing link from GAS:', linkResult);
-            return { success: false, error: linkResult.error || 'Failed to generate signing link' };
+        // CASE 1: Document Already Exists
+        if (documentIds && documentIds.length > 0 && documentIds[0] !== 'doc_123') {
+            // Step 1: Get embedded signing link from GAS/SignNow
+            const linkResult = await callGasBackend({
+                action: 'createEmbeddedLink',
+                documentId: documentIds[0],
+                signerEmail: `sms_${defendantPhone.replace(/\D/g, '')}@shamrockbailbonds.biz`,
+                signerRole: 'Defendant',
+                linkExpiration: 1440 // 24 hours for SMS
+            });
+
+            if (!linkResult.success || !linkResult.link) {
+                console.error('Failed to get signing link from GAS:', linkResult);
+                return { success: false, error: linkResult.error || 'Failed to generate signing link' };
+            }
+            signingLink = linkResult.link;
+
+        } else {
+            // CASE 2: New Document from Template (Default Flow)
+            console.log("📄 No document ID provided. Requesting new packet from GAS Template...");
+            const templateResult = await callGasBackend({
+                action: 'createSigningRequest',
+                method: 'sms_return_links',
+                bookingData: {
+                    defendantPhone: defendantPhone,
+                    indemnitorPhone: (indemnitorPhones && indemnitorPhones.length > 0) ? indemnitorPhones[0] : null
+                }
+            });
+
+            if (!templateResult.success || !templateResult.links) {
+                return { success: false, error: templateResult.error || 'Failed to generate links from template' };
+            }
+
+            // Extract defendant link
+            // GAS returns links array: [{ email, phone, role, link }]
+            const defLinkObj = templateResult.links.find(l => l.role === 'Defendant');
+            if (defLinkObj) signingLink = defLinkObj.link;
+
+            // Extract indemnitor link
+            const indLinkObjs = templateResult.links.filter(l => l.role === 'Indemnitor');
+            for (const indLink of indLinkObjs) {
+                // Use the phone number returned by GAS if available (it should match input)
+                const phoneToSend = indLink.phone;
+                // Match with input param indemnitorPhones if needed, but GAS link object is reliable if built from input
+                if (phoneToSend) {
+                    const indSmsBody = `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${indLink.link}\n\nQuestions? Call (727) 295-2245`;
+                    const indSmsResult = await sendSms(phoneToSend, indSmsBody);
+                    indemnitorResults.push({ phone: phoneToSend, success: indSmsResult.success });
+                }
+            }
         }
 
-        const signingLink = linkResult.link;
+        // Step 2: Send SMS via Twilio (Wix backend) - Defendant
+        if (signingLink) {
+            const smsBody = `Shamrock Bail Bonds: Your bail paperwork is ready to sign.\n\nClick here to sign: ${signingLink}\n\nThis link expires in 24 hours. Questions? Call (727) 295-2245`;
+            const smsResult = await sendSms(defendantPhone, smsBody);
 
-        // Step 2: Send SMS via Twilio (Wix backend)
-        const smsBody = `Shamrock Bail Bonds: Your bail paperwork is ready to sign.\n\nClick here to sign: ${signingLink}\n\nThis link expires in 24 hours. Questions? Call (727) 295-2245`;
-
-        const smsResult = await sendSms(defendantPhone, smsBody);
-
-        if (!smsResult.success) {
-            console.error('Failed to send SMS via Twilio:', smsResult);
-            return { success: false, error: smsResult.error || 'Failed to send SMS' };
+            if (!smsResult.success) {
+                console.error('Failed to send SMS via Twilio:', smsResult);
+                return { success: false, error: smsResult.error || 'Failed to send SMS' };
+            }
         }
 
-        // Step 3: Send to indemnitors if provided
-        const indemnitorResults = [];
-        if (indemnitorPhones && indemnitorPhones.length > 0) {
-            for (const phone of indemnitorPhones) {
-                if (phone) {
-                    // Get separate link for each indemnitor
-                    const indLinkResult = await callGasBackend({
-                        action: 'createEmbeddedLink',
-                        documentId: documentIds[0],
-                        signerEmail: `sms_${phone.replace(/\D/g, '')}@shamrockbailbonds.biz`,
-                        signerRole: 'Indemnitor',
-                        linkExpiration: 1440
-                    });
+        // Step 3: Handle Indemnitors for EXISTING DOCS (Case 1)
+        // (Template flow handled above inside the else block because we already got links)
+        if (documentIds && documentIds.length > 0 && documentIds[0] !== 'doc_123') {
+            if (indemnitorPhones && indemnitorPhones.length > 0) {
+                for (const phone of indemnitorPhones) {
+                    if (phone) {
+                        const indLinkResult = await callGasBackend({
+                            action: 'createEmbeddedLink',
+                            documentId: documentIds[0],
+                            signerEmail: `sms_${phone.replace(/\D/g, '')}@shamrockbailbonds.biz`,
+                            signerRole: 'Indemnitor',
+                            linkExpiration: 1440
+                        });
 
-                    if (indLinkResult.success && indLinkResult.link) {
-                        const indSmsBody = `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${indLinkResult.link}\n\nQuestions? Call (727) 295-2245`;
-                        const indSmsResult = await sendSms(phone, indSmsBody);
-                        indemnitorResults.push({ phone, success: indSmsResult.success });
+                        if (indLinkResult.success && indLinkResult.link) {
+                            const indSmsBody = `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${indLinkResult.link}\n\nQuestions? Call (727) 295-2245`;
+                            const indSmsResult = await sendSms(phone, indSmsBody);
+                            indemnitorResults.push({ phone, success: indSmsResult.success });
+                        }
                     }
                 }
             }
         }
 
-        // Log success
-        await logSigningEvent(caseId, 'sms', {
-            success: true,
-            defendantPhone,
-            signingLink,
-            indemnitorResults
-        });
-
         return {
             success: true,
             message: `SMS sent to ${defendantPhone}`,
-            signingLink,
-            indemnitorResults
+            signingLink
         };
 
     } catch (error) {
