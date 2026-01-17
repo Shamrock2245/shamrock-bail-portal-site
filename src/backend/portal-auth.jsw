@@ -856,39 +856,65 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
 
   try {
     const isEmail = input.includes('@');
-    const searchField = isEmail ? 'defendantEmail' : 'defendantPhone';
+    
+    // Field names matching Wix CMS Cases collection
+    // Using the actual field keys from the collection schema
+    const defendantEmailField = 'defendantEmail';
+    const defendantPhoneField = 'defendantPhone';
+    const defendantNameField = 'defendantName';
+    const indemnitorEmailField = 'indemnitorEmail';
+    const indemnitorPhoneField = 'indemnitorPhone';
+    const indemnitorNameField = 'indemnitorName';
+    
+    const searchField = isEmail ? defendantEmailField : defendantPhoneField;
+    console.log(`🔍 Searching Cases collection for ${searchField} = ${input}`);
 
     let userRole = null;
     let personId = null;
     let userName = null;
     let isNewUser = false;
+    let caseId = null;
+    
+    // Search for defendant
     const caseQuery = await wixData
       .query("Cases")
       .eq(searchField, input)
       .limit(1)
       .find({ suppressAuth: true });
 
+    console.log(`📊 Defendant query returned ${caseQuery.items.length} results`);
+
     if (caseQuery.items.length > 0) {
       const caseData = caseQuery.items[0];
       userRole = ROLES.DEFENDANT;
       personId = caseData._id;
-      userName = caseData.defendantName;
+      caseId = caseData._id;
+      userName = caseData[defendantNameField] || caseData.title || 'Client';
       isNewUser = false;
-      console.log(`✅ Existing defendant found: ${userName}`);
+      console.log(`✅ Existing defendant found: ${userName}, caseId: ${caseId}`);
     } else {
+      // Search for indemnitor
+      const indemnitorSearchField = isEmail ? indemnitorEmailField : indemnitorPhoneField;
+      console.log(`🔍 Searching for indemnitor: ${indemnitorSearchField} = ${input}`);
+      
       const indemnitorQuery = await wixData
         .query("Cases")
-        .eq(isEmail ? 'indemnitorEmail' : 'indemnitorPhone', input)
+        .eq(indemnitorSearchField, input)
         .limit(1)
         .find({ suppressAuth: true });
+        
+      console.log(`📊 Indemnitor query returned ${indemnitorQuery.items.length} results`);
+      
       if (indemnitorQuery.items.length > 0) {
         const caseData = indemnitorQuery.items[0];
         userRole = ROLES.INDEMNITOR;
         personId = `indemnitor_${caseData._id}`;
-        userName = caseData.indemnitorName;
+        caseId = caseData._id;
+        userName = caseData[indemnitorNameField] || 'Indemnitor';
         isNewUser = false;
-        console.log(`✅ Existing indemnitor found: ${userName}`);
+        console.log(`✅ Existing indemnitor found: ${userName}, caseId: ${caseId}`);
       } else {
+        // New user - allow them to proceed
         userRole = ROLES.DEFENDANT;
         personId = `new_${Date.now()}`;
         userName = null;
@@ -897,13 +923,18 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
       }
     }
 
-    const token = await generateMagicLink(personId, userRole);
+    // Generate magic link token with caseId
+    const token = await generateMagicLink(personId, userRole, caseId);
+    console.log(`🔑 Generated magic link token for ${userRole}`);
+    
+    // Send magic link via email or SMS
     const sendResult = await sendMagicLink(
       input,
       token,
       userRole,
       userName
     );
+    
     if (!sendResult.success) {
       console.error(`❌ Failed to send magic link to ${input}:`, sendResult.error);
       return {
@@ -921,7 +952,7 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
         : "Check your email/phone for your secure link."
     };
   } catch (error) {
-    console.error("❌ sendMagicLinkSimplified error:", error);
+    console.error("❌ sendMagicLinkSimplified error:", error.message, error.stack);
     return {
       success: false,
       message: "System error. Please try again or call 239-332-2245."
