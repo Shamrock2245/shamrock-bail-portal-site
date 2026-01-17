@@ -25,25 +25,42 @@ $w.onReady(async function () {
     try {
         // CUSTOM AUTH CHECK - Replace Wix Members
         const sessionToken = getSessionToken();
+        // console.log("DEBUG: Checking Token:", sessionToken);
+
         if (!sessionToken) {
             console.warn("⛔ No session token found. Redirecting to Portal Landing.");
-            wixLocation.to('/portal-landing');
+            $w('#welcomeText').text = "Authentication Error: No session token found locally.";
+            $w('#welcomeText').show();
+            // DEBUG MODE: Don't redirect immediately so we can see the error
+            // wixLocation.to('/portal-landing'); 
             return;
         }
 
         // Validate session with backend
         const session = await validateCustomSession(sessionToken);
-        if (!session || !session.role) {
-            console.warn("⛔ Invalid or expired session. Redirecting to Portal Landing.");
-            clearSessionToken();
-            wixLocation.to('/portal-landing');
+
+        if (!session) {
+            console.warn("⛔ Session validation returned null.");
+            $w('#welcomeText').text = "Authentication Failed: Session invalid or not found in DB.";
+            $w('#welcomeText').show();
+            // clearSessionToken(); // Keep token for debugging
+            return;
+        }
+
+        if (!session.role) {
+            console.warn("⛔ Session has no role.");
+            $w('#welcomeText').text = "Authentication Error: Session missing role.";
+            $w('#welcomeText').show();
             return;
         }
 
         // Check role authorization
         if (session.role !== 'defendant') {
-            console.warn(`⛔ Wrong role: ${session.role}. This is the defendant portal.`);
-            wixLocation.to('/portal-landing');
+            const msg = `⛔ Wrong role: ${session.role}. This is the defendant portal.`;
+            console.warn(msg);
+            $w('#welcomeText').text = msg;
+            $w('#welcomeText').show();
+            // wixLocation.to('/portal-landing');
             return;
         }
 
