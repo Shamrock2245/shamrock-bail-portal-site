@@ -10,6 +10,7 @@ import { fetch } from "wix-fetch";
 import { getSecret } from "wix-secrets-backend";
 import { API_BASE_URL, API_TIMEOUT } from 'public/portal-config';
 import { sendSms } from 'backend/twilio-client'; // FIX: Single Twilio Import
+import { generateToken } from 'backend/utils';
 
 /***** CONFIG & ROLES *****/
 export const ROLES = {
@@ -518,13 +519,143 @@ export async function validateCustomSession(sessionToken) {
   }
 }
 
-// ... destroyCustomSession ...
+/**
+ * Destroys a custom session (logout)
+ * @param {string} sessionToken - The session token to destroy
+ */
+export async function destroyCustomSession(sessionToken) {
+  if (!sessionToken) return false;
+  try {
+    const rs = await wixData
+      .query("PortalSessions")
+      .eq("token", sessionToken)
+      .limit(1)
+      .find({ suppressAuth: true });
+    
+    if (rs.items.length > 0) {
+      await wixData.remove("PortalSessions", rs.items[0]._id, { suppressAuth: true });
+      console.log("Custom session destroyed successfully");
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("destroyCustomSession error:", err);
+    return false;
+  }
+}
 
-// ... onMagicLinkLoginV2 ...
+/**
+ * Magic Link Login V2 - Custom Session Based (No Wix Members)
+ * Called when user clicks magic link from email/SMS
+ * Creates a custom session and returns session token for browser storage
+ * 
+ * @param {string} token - The magic link token from URL
+ * @returns {Promise<{ok: boolean, sessionToken?: string, role?: string, caseId?: string, error?: string, message?: string}>}
+ */
+export async function onMagicLinkLoginV2(token) {
+  if (!token || typeof token !== "string") {
+    return { 
+      ok: false, 
+      error: "MISSING_TOKEN", 
+      message: "No secure token provided." 
+    };
+  }
 
-/* ... UTILITIES ... */
+  try {
+    // 1. Validate the magic link token
+    const link = await validateMagicLink(token);
+    if (!link) {
+      return { 
+        ok: false, 
+        error: "INVALID_OR_EXPIRED", 
+        message: "This secure link has expired or has already been used. Please request a new one." 
+      };
+    }
 
-// ... cleanupExpired ...
+    // 2. Mark the magic link as used
+    await useMagicLink(token);
+
+    // 3. Create a custom session (No Wix Members required)
+    const sessionToken = await createCustomSession(
+      link.personId,
+      link.role,
+      link.caseId
+    );
+
+    if (!sessionToken) {
+      return { 
+        ok: false, 
+        error: "SESSION_CREATION_FAILED", 
+        message: "Failed to create session. Please try again." 
+      };
+    }
+
+    // 4. Determine redirect path based on role
+    const role = (link.role || "").toLowerCase();
+    const goto = role ? PORTAL_PATHS[role] || "/portal-landing" : "/portal-landing";
+
+    console.log(`✅ Magic Link V2 Login Success: role=${role}, personId=${link.personId}`);
+
+    return { 
+      ok: true, 
+      sessionToken,
+      role,
+      caseId: link.caseId || null,
+      goto,
+      message: "Access granted! Welcome to your dashboard." 
+    };
+
+  } catch (err) {
+    console.error("onMagicLinkLoginV2 error:", err);
+    return { 
+      ok: false, 
+      error: "SERVER_ERROR", 
+      message: "Server Error: " + err.message 
+    };
+  }
+}
+
+/**
+ * Cleanup expired sessions and magic links
+ * Should be called periodically (e.g., via scheduled job)
+ */
+export async function cleanupExpiredSessions() {
+  try {
+    const now = new Date();
+    
+    // Cleanup expired sessions
+    const expiredSessions = await wixData
+      .query("PortalSessions")
+      .lt("expiresAt", now)
+      .limit(100)
+      .find({ suppressAuth: true });
+    
+    for (const session of expiredSessions.items) {
+      await wixData.remove("PortalSessions", session._id, { suppressAuth: true });
+    }
+    
+    // Cleanup expired magic links
+    const expiredLinks = await wixData
+      .query("MagicLinks")
+      .lt("expiresAt", now)
+      .limit(100)
+      .find({ suppressAuth: true });
+    
+    for (const link of expiredLinks.items) {
+      await wixData.remove("MagicLinks", link._id, { suppressAuth: true });
+    }
+    
+    console.log(`Cleanup: Removed ${expiredSessions.items.length} sessions, ${expiredLinks.items.length} magic links`);
+    return { 
+      success: true, 
+      sessionsRemoved: expiredSessions.items.length,
+      linksRemoved: expiredLinks.items.length
+    };
+  } catch (err) {
+    console.error("cleanupExpiredSessions error:", err);
+    return { success: false, error: err.message };
+  }
+}
 
 /***** DATA AGGREGATION *****/
 export async function getDefendantDetails(sessionTokenOrUserId) {

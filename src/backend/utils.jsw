@@ -26,6 +26,20 @@ export async function getGasUrl() {
     return FALLBACK_GAS_URL;
 }
 
+/**
+ * Generate a cryptographically secure random token
+ * Used for magic links and session tokens
+ * @returns {string} A 64-character hex token
+ */
+export function generateToken() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let token = '';
+    for (let i = 0; i < 64; i++) {
+        token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return token;
+}
+
 export async function fetchWithRetry(url, options = {}, retries = 3, backoff = 1000) {
     try {
         const response = await fetch(url, options);

@@ -4,7 +4,7 @@
  * Bypasses Wix Members entirely.
  */
 
-import { secrets } from "wix-secrets-backend";
+import { getSecret } from "wix-secrets-backend";
 import { fetch } from "wix-fetch";
 
 // CONSTANTS
@@ -16,7 +16,7 @@ const REDIRECT_URI = "https://www.shamrockbailbonds.biz/_functions/authCallback"
  */
 export async function getGoogleAuthUrl() {
     try {
-        const clientId = await secrets.getSecret("GOOGLE_CLIENT_ID");
+        const clientId = await getSecret("GOOGLE_CLIENT_ID");
         if (!clientId) throw new Error("Missing GOOGLE_CLIENT_ID secret");
 
         const scopes = [
@@ -46,7 +46,7 @@ export async function getGoogleAuthUrl() {
  */
 export async function getFacebookAuthUrl() {
     try {
-        const appId = await secrets.getSecret("FACEBOOK_APP_ID");
+        const appId = await getSecret("FACEBOOK_APP_ID");
         if (!appId) throw new Error("Missing FACEBOOK_APP_ID secret");
 
         const params = new URLSearchParams({
@@ -69,8 +69,8 @@ export async function getFacebookAuthUrl() {
  */
 export async function verifyGoogleUser(code) {
     try {
-        const clientId = await secrets.getSecret("GOOGLE_CLIENT_ID");
-        const clientSecret = await secrets.getSecret("GOOGLE_CLIENT_SECRET");
+        const clientId = await getSecret("GOOGLE_CLIENT_ID");
+        const clientSecret = await getSecret("GOOGLE_CLIENT_SECRET");
 
         // 1. Exchange code for access token
         const tokenResp = await fetch("https://oauth2.googleapis.com/token", {
@@ -113,8 +113,8 @@ export async function verifyGoogleUser(code) {
  */
 export async function verifyFacebookUser(code) {
     try {
-        const appId = await secrets.getSecret("FACEBOOK_APP_ID");
-        const appSecret = await secrets.getSecret("FACEBOOK_APP_SECRET");
+        const appId = await getSecret("FACEBOOK_APP_ID");
+        const appSecret = await getSecret("FACEBOOK_APP_SECRET");
 
         // 1. Exchange code for access token
         const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&redirect_uri=${REDIRECT_URI}&client_secret=${appSecret}&code=${code}`;

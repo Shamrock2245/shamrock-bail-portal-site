@@ -10,6 +10,7 @@ import wixData from 'wix-data';
 import { getSecret } from 'wix-secrets-backend';
 import { fetch } from 'wix-fetch';
 import { triggeredEmails } from 'wix-crm-backend';
+import crypto from 'crypto';
 
 /**
  * SignNow Webhook Event Types
@@ -484,8 +485,7 @@ export async function verifyWebhookSignature(signature, body) {
             return true;
         }
         
-        // SignNow uses HMAC-SHA256
-        const crypto = require('crypto');
+        // SignNow uses HMAC-SHA256 (crypto imported at top)
         const expectedSignature = crypto
             .createHmac('sha256', webhookSecret)
             .update(body)

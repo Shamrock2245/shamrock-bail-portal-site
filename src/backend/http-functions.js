@@ -312,10 +312,9 @@ export async function post_webhookSignnow(request) {
     }
 }
 
-// ... existing imports
+// Social Auth Imports
 import { verifyGoogleUser, verifyFacebookUser } from 'backend/social-auth';
-import { sendMagicLinkSimplified } from 'backend/portal-auth'; // Reuse lookup logic
-import { createCustomSession } from 'backend/portal-auth'; // Reuse session logic
+import { lookupUserByContact, createCustomSession } from 'backend/portal-auth';
 
 /**
  * GET /_functions/authCallback
@@ -358,8 +357,7 @@ export async function get_authCallback(request) {
         // OPTIMIZATION: We can just use the lookup logic directly here or refactor.
         // For now, let's replicate the lookup logic for safety/speed without touching shared code heavily.
 
-        // (A) Lookup User
-        const { lookupUserByContact } = require('backend/portal-auth');
+        // (A) Lookup User (using imported function)
         const lookup = await lookupUserByContact(userProfile.email);
 
         let sessionToken = null;
