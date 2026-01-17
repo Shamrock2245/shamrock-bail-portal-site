@@ -572,6 +572,76 @@ export async function post_smsSigningLink(request) {
 }
 
 /**
+ * POST /_functions/twilio/status
+ * Twilio SMS Status Callback Endpoint
+ * 
+ * Twilio will POST to this endpoint when SMS status changes:
+ * - queued -> sending -> sent -> delivered (success)
+ * - queued -> sending -> sent -> undelivered (failure)
+ * - failed (immediate failure)
+ * 
+ * This is used for delivery tracking and logging.
+ */
+export async function post_twilioStatus(request) {
+    try {
+        // Twilio sends status callbacks as form-urlencoded
+        const body = await request.body.text();
+        const params = new URLSearchParams(body);
+        
+        const statusData = {
+            messageSid: params.get('MessageSid'),
+            messageStatus: params.get('MessageStatus'),
+            to: params.get('To'),
+            from: params.get('From'),
+            errorCode: params.get('ErrorCode'),
+            errorMessage: params.get('ErrorMessage'),
+            accountSid: params.get('AccountSid')
+        };
+
+        console.log('📱 Twilio Status Callback:', statusData);
+
+        // Log delivery status for tracking
+        if (statusData.messageStatus === 'delivered') {
+            console.log(`✅ SMS Delivered: ${statusData.messageSid} to ${statusData.to}`);
+        } else if (statusData.messageStatus === 'undelivered' || statusData.messageStatus === 'failed') {
+            console.error(`❌ SMS Failed: ${statusData.messageSid} to ${statusData.to}`, {
+                errorCode: statusData.errorCode,
+                errorMessage: statusData.errorMessage
+            });
+            
+            // Optionally store failed messages for retry or notification
+            try {
+                await wixData.insert('SmsDeliveryLogs', {
+                    messageSid: statusData.messageSid,
+                    to: statusData.to,
+                    from: statusData.from,
+                    status: statusData.messageStatus,
+                    errorCode: statusData.errorCode,
+                    errorMessage: statusData.errorMessage,
+                    timestamp: new Date()
+                });
+            } catch (logError) {
+                // Collection may not exist - that's okay
+                console.log('Note: SmsDeliveryLogs collection not found, skipping log storage');
+            }
+        }
+
+        // Always return 200 OK to Twilio
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: { received: true, status: statusData.messageStatus }
+        });
+
+    } catch (error) {
+        console.error('Twilio status callback error:', error);
+        // Still return 200 to prevent Twilio from retrying
+        return ok({
+            body: { received: true, error: 'Processing error' }
+        });
+    }
+}
+
+/**
  * GET /api/health
  * ... (existing health check)
  */
