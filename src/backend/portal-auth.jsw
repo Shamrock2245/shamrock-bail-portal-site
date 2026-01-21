@@ -873,61 +873,78 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
     const indemnitorEmailField = 'indemnitorEmail';
     const indemnitorPhoneField = 'indemnitorPhone';
     const indemnitorNameField = 'indemnitorName';
-    
-    const searchField = isEmail ? defendantEmailField : defendantPhoneField;
-    console.log(`🔍 Searching Cases collection for ${searchField} = ${input}`);
 
     let userRole = null;
     let personId = null;
     let userName = null;
     let isNewUser = false;
     let caseId = null;
-    
-    // Search for defendant
-    const caseQuery = await wixData
-      .query("Cases")
-      .eq(searchField, input)
+
+    // STEP 1: Check Portal Users first (for staff/admin accounts)
+    console.log(`🔍 Checking Portal Users for staff/admin: ${input}`);
+    const staffQuery = await wixData
+      .query("Portal Users")
+      .eq("email", input)
       .limit(1)
       .find({ suppressAuth: true });
 
-    console.log(`📊 Defendant query returned ${caseQuery.items.length} results`);
-
-    if (caseQuery.items.length > 0) {
-      const caseData = caseQuery.items[0];
-      userRole = ROLES.DEFENDANT;
-      personId = caseData._id;
-      caseId = caseData._id;
-      userName = caseData[defendantNameField] || caseData.title || 'Client';
+    if (staffQuery.items.length > 0) {
+      const staffUser = staffQuery.items[0];
+      userRole = staffUser.role || ROLES.STAFF;
+      personId = staffUser._id;
+      userName = `${staffUser.firstName || ''} ${staffUser.lastName || ''}`.trim() || 'Staff';
       isNewUser = false;
-      console.log(`✅ Existing defendant found: ${userName}, caseId: ${caseId}`);
+      console.log(`✅ Staff/Admin user found: ${userName}, role: ${userRole}`);
     } else {
-      // Search for indemnitor
-      const indemnitorSearchField = isEmail ? indemnitorEmailField : indemnitorPhoneField;
-      console.log(`🔍 Searching for indemnitor: ${indemnitorSearchField} = ${input}`);
-      
-      const indemnitorQuery = await wixData
+      // STEP 2: Search Cases for defendant
+      const searchField = isEmail ? defendantEmailField : defendantPhoneField;
+      console.log(`🔍 Searching Cases collection for ${searchField} = ${input}`);
+
+      const caseQuery = await wixData
         .query("Cases")
-        .eq(indemnitorSearchField, input)
+        .eq(searchField, input)
         .limit(1)
         .find({ suppressAuth: true });
-        
-      console.log(`📊 Indemnitor query returned ${indemnitorQuery.items.length} results`);
-      
-      if (indemnitorQuery.items.length > 0) {
-        const caseData = indemnitorQuery.items[0];
-        userRole = ROLES.INDEMNITOR;
-        personId = `indemnitor_${caseData._id}`;
-        caseId = caseData._id;
-        userName = caseData[indemnitorNameField] || 'Indemnitor';
-        isNewUser = false;
-        console.log(`✅ Existing indemnitor found: ${userName}, caseId: ${caseId}`);
-      } else {
-        // New user - allow them to proceed
+
+      console.log(`📊 Defendant query returned ${caseQuery.items.length} results`);
+
+      if (caseQuery.items.length > 0) {
+        const caseData = caseQuery.items[0];
         userRole = ROLES.DEFENDANT;
-        personId = `new_${Date.now()}`;
-        userName = null;
-        isNewUser = true;
-        console.log(`🆕 New user detected: ${input}`);
+        personId = caseData._id;
+        caseId = caseData._id;
+        userName = caseData[defendantNameField] || caseData.title || 'Client';
+        isNewUser = false;
+        console.log(`✅ Existing defendant found: ${userName}, caseId: ${caseId}`);
+      } else {
+        // STEP 3: Search for indemnitor
+        const indemnitorSearchField = isEmail ? indemnitorEmailField : indemnitorPhoneField;
+        console.log(`🔍 Searching for indemnitor: ${indemnitorSearchField} = ${input}`);
+        
+        const indemnitorQuery = await wixData
+          .query("Cases")
+          .eq(indemnitorSearchField, input)
+          .limit(1)
+          .find({ suppressAuth: true });
+          
+        console.log(`📊 Indemnitor query returned ${indemnitorQuery.items.length} results`);
+        
+        if (indemnitorQuery.items.length > 0) {
+          const caseData = indemnitorQuery.items[0];
+          userRole = ROLES.INDEMNITOR;
+          personId = `indemnitor_${caseData._id}`;
+          caseId = caseData._id;
+          userName = caseData[indemnitorNameField] || 'Indemnitor';
+          isNewUser = false;
+          console.log(`✅ Existing indemnitor found: ${userName}, caseId: ${caseId}`);
+        } else {
+          // STEP 4: New user - allow them to proceed as defendant
+          userRole = ROLES.DEFENDANT;
+          personId = `new_${Date.now()}`;
+          userName = null;
+          isNewUser = true;
+          console.log(`🆕 New user detected: ${input}`);
+        }
       }
     }
 
