@@ -152,8 +152,9 @@ function initUI() {
             $w('#checkInStatusText').collapse();
         }
         // Hide Download Button (Per Implementation Plan)
-        if ($w('#comp-mjsihg1a').type) {
-            $w('#comp-mjsihg1a').collapse();
+        // Hide Download Button (Per Implementation Plan)
+        if ($w('#btnDownloadPdf').type) {
+            $w('#btnDownloadPdf').collapse();
         }
     } catch (e) {
         console.error('Error initializing UI:', e);
@@ -161,35 +162,25 @@ function initUI() {
 }
 
 function setupPaperworkButtons() {
-    // Sign via Email Button (#comp-mjsigfv9) vs Spec (#startPaperworkBtn)
+    // Sign via Email Button (#startPaperworkBtn)
     try {
-        // Bridge: Spec #startPaperworkBtn
-        const specBtn = $w('#startPaperworkBtn');
-        if (specBtn.length > 0) {
-            console.log('Defendant Portal: Spec Button #startPaperworkBtn found');
-            specBtn.onClick(() => {
-                console.log('Defendant Portal: Spec Button Triggered');
-                handlePaperworkStart();
-            });
-        }
-
-        const emailBtn = $w('#comp-mjsigfv9');
-        if (emailBtn && typeof emailBtn.onClick === 'function') {
+        const emailBtn = $w('#startPaperworkBtn');
+        if (emailBtn.length > 0) {
             console.log('Defendant Portal: Sign via Email button found');
             emailBtn.onClick(() => {
                 console.log('Defendant Portal: Sign via Email clicked');
                 handlePaperworkStart();
             });
         } else {
-            console.warn('Defendant Portal: Sign via Email button (#comp-mjsigfv9) not found');
+            console.warn('Defendant Portal: #startPaperworkBtn not found');
         }
     } catch (e) {
         console.error('Error setting up Sign via Email button:', e);
     }
 
-    // Sign Via Kiosk Button (#comp-mjsihbjl)
+    // Sign Via Kiosk Button (#btnSignKiosk)
     try {
-        const kioskBtn = $w('#comp-mjsihbjl');
+        const kioskBtn = $w('#btnSignKiosk');
         if (kioskBtn && typeof kioskBtn.onClick === 'function') {
             console.log('Defendant Portal: Sign Via Kiosk button found');
             kioskBtn.onClick(() => {
@@ -197,15 +188,15 @@ function setupPaperworkButtons() {
                 handlePaperworkStart();
             });
         } else {
-            console.warn('Defendant Portal: Sign Via Kiosk button (#comp-mjsihbjl) not found');
+            console.warn('Defendant Portal: #btnSignKiosk not found');
         }
     } catch (e) {
         console.error('Error setting up Sign Via Kiosk button:', e);
     }
 
-    // Download and Print to Sign Button (#comp-mjsihg1a)
+    // Download and Print to Sign Button (#btnDownloadPdf)
     try {
-        const downloadBtn = $w('#comp-mjsihg1a');
+        const downloadBtn = $w('#btnDownloadPdf');
         if (downloadBtn && typeof downloadBtn.onClick === 'function') {
             console.log('Defendant Portal: Download and Print button found');
             downloadBtn.onClick(() => {
@@ -213,7 +204,7 @@ function setupPaperworkButtons() {
                 handleDownloadPaperwork();
             });
         } else {
-            console.warn('Defendant Portal: Download and Print button (#comp-mjsihg1a) not found');
+            console.warn('Defendant Portal: #btnDownloadPdf not found');
         }
     } catch (e) {
         console.error('Error setting up Download and Print button:', e);

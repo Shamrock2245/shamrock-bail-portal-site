@@ -1,0 +1,19 @@
+/**
+ * backend/schema-sync.jsw
+ * 
+ * Provides schema versioning information to the frontend.
+ * Use this to detect "Schema Drift" where the frontend might be using
+ * older validation rules than what the backend expects.
+ */
+
+// Bump this version whenever you change backend schemas or validation logic.
+// This acts as a signal to the frontend to potentially reload or warn the user.
+export const SCHEMA_VERSION = '1.0.0';
+
+/**
+ * Returns the current backend schema version.
+ * @returns {Promise<string>} The semantic version string (e.g. "1.0.0")
+ */
+export function getSchemaVersion() {
+    return Promise.resolve(SCHEMA_VERSION);
+}
