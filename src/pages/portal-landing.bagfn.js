@@ -29,13 +29,19 @@ import wixSeo from 'wix-seo';
 $w.onReady(async function () {
     console.log("🚀 Portal Landing v2.1: Session Token URL Fix");
 
-    // Check for session token passed via URL (from magic link redirect)
-    const query = wixLocation.query;
+    // 1. PRIORITY: Check for magic link token in URL (returning from email/SMS)
+    if (query.token) {
+        console.log("🔗 Magic link token detected, processing...");
+        await handleMagicLinkLogin(query.token);
+        return;
+    }
+
+    // 2. Check for session token passed via URL (redirect)
     if (query.st) {
         console.log("🔗 Session token in URL detected, storing...");
         const stored = setSessionToken(query.st);
         console.log("📦 Session stored:", stored);
-        
+
         // Validate and redirect
         const session = await validateCustomSession(query.st);
         if (session && session.role) {
@@ -45,33 +51,31 @@ $w.onReady(async function () {
         }
     }
 
-    // Check if user already has a valid session in storage
-    const existingSession = getSessionToken();
-    if (existingSession) {
-        console.log("✅ Existing session found, validating...");
-        const session = await validateCustomSession(existingSession);
-        if (session && session.role) {
-            console.log("✅ Valid session, auto-redirecting to " + session.role + " portal");
-            redirectToPortal(session.role);
-            return;
-        } else {
-            console.log("⚠️ Session invalid/expired, clearing...");
-            clearSessionToken();
-        }
-    }
-
-    // Check for session token (Social Login Redirect)
+    // 3. Check for social login result
     if (query.sessionToken) {
         console.log("🔗 Social login session detected, validating...");
         await handleSocialSession(query.sessionToken, query.role);
         return;
     }
 
-    // Check for magic link token in URL (returning from email/SMS)
-    if (query.token) {
-        console.log("🔗 Magic link token detected, processing...");
-        await handleMagicLinkLogin(query.token);
-        return;
+    // 4. LAST: Check if user already has a valid session in storage
+    const existingSession = getSessionToken();
+    if (existingSession) {
+        console.log("✅ Existing session found, validating...");
+        try {
+            const session = await validateCustomSession(existingSession);
+            if (session && session.role) {
+                console.log("✅ Valid session, auto-redirecting to " + session.role + " portal");
+                redirectToPortal(session.role);
+                return;
+            } else {
+                console.log("⚠️ Session invalid/expired, clearing...");
+                clearSessionToken();
+            }
+        } catch (err) {
+            console.error("❌ Session validation crashed:", err);
+            clearSessionToken(); // Safety clear
+        }
     }
 
     // Set up the simplified login form
