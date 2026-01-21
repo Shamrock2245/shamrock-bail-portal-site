@@ -1,0 +1,22 @@
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'public/collectionIds';
+
+export async function listAllCounties() {
+    try {
+        console.log("Querying collection:", COLLECTIONS.FLORIDA_COUNTIES);
+        const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
+            .limit(100)
+            .find({ suppressAuth: true });
+
+        console.log(`Found ${results.items.length} counties.`);
+
+        return results.items.map(item => ({
+            name: item.countyName,
+            slug: item.countySlug,
+            id: item._id
+        }));
+    } catch (error) {
+        console.error("Query failed:", error);
+        return { error: error.message };
+    }
+}

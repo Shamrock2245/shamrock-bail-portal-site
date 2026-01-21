@@ -692,6 +692,28 @@ export async function get_testTwilio(request) {
     }
 }
 
+}
+
+/**
+ * GET /_functions/debugCounties
+ * List all counties in the DB
+ */
+export async function get_debugCounties(request) {
+    try {
+        const { listAllCounties } = await import('backend/debug-counties');
+        const data = await listAllCounties();
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: { success: true, count: data.length, items: data }
+        });
+    } catch (error) {
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: { success: false, error: error.message }
+        });
+    }
+}
+
 /**
  * GET /api/health
  * ... (existing health check)
