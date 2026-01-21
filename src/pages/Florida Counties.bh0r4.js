@@ -12,6 +12,8 @@ $w.onReady(async function () {
     const path = wixLocation.path;
     const countySlug = path.length > 0 ? path[path.length - 1] : null;
 
+    console.log(`🔎 Frontend detected slug: "${countySlug}"`);
+
     if (!countySlug) {
         console.error("❌ No slug found in URL path:", path);
         return;
@@ -20,13 +22,17 @@ $w.onReady(async function () {
     // --- DATASET OVERRIDE (Legacy Support) ---
     // Safely attempt to filter legacy dataset if present, but don't block execution
     $w('#dynamicDataset').onReady(() => {
-        $w('#dynamicDataset').setFilter(wixData.filter().eq('slug', countySlug))
-            .catch(e => console.log("Dataset filter optional/adjusting:", e));
+        console.log("Dataset Ready - Applying Filter...");
+        $w('#dynamicDataset').setFilter(wixData.filter().eq('countySlug', countySlug))
+            .then(() => console.log("✅ Dataset filter applied."))
+            .catch(e => console.log("⚠️ Dataset filter failed:", e));
     });
 
     try {
         // Show loading state if element exists
         if ($w('#loadingIndicator').valid) $w('#loadingIndicator').show();
+
+        console.log("⏳ Calling backend generateCountyPage...");
 
         // 2. FETCH DATA IN PARALLEL
         // Fetch Main County Data (Backend) AND Nearby Counties (Utils)
@@ -36,17 +42,19 @@ $w.onReady(async function () {
                 .catch(e => { console.warn("Nearby counties fetch failed", e); return []; })
         ]);
 
+        console.log("📥 Backend Response:", pageResult);
+
         const { success, data } = pageResult;
 
         if (!success || !data) {
-            console.warn(`County data not found for slug: ${countySlug}. Redirecting...`);
+            console.warn(`⚠️ County data not found for slug: ${countySlug}.`);
             // Optional: fallback or redirect
             // wixLocation.to('/portal-landing');
             return;
         }
 
         const county = data;
-        console.log(`✅ Loaded Data for: ${county.county_name_full}`);
+        console.log(`✅ Loaded Data for: ${county.county_name_full}. Starting UI Update...`);
 
         // 3. GENERATE SEO (Meta + Schema)
         // Meta Tags
@@ -115,6 +123,7 @@ $w.onReady(async function () {
 
         // 4. POPULATE UI
         // Header & Hero
+        console.log("Setting #countyName to:", county.county_name);
         setText('#countyName', county.county_name);
         setText('#dynamicHeader', `Bail Bonds in ${county.county_name} County`);
         setText('#heroSubtitle', county.content.hero_subheadline);
