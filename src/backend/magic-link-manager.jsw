@@ -196,7 +196,7 @@ export async function getActiveMagicLinks(personId) {
     const now = new Date().toISOString();
 
     const results = await wixData
-      .query('MagicLinks')
+      .query('Magiclinks')
       .eq('personId', personId)
       .eq('used', false)
       .gt('expiresAt', now)
@@ -233,7 +233,7 @@ export async function getActiveMagicLinks(personId) {
 export async function revokeMagicLink(token) {
   try {
     const results = await wixData
-      .query('MagicLinks')
+      .query('Magiclinks')
       .eq('token', token)
       .limit(1)
       .find({ suppressAuth: true });
@@ -249,7 +249,7 @@ export async function revokeMagicLink(token) {
     link.used = true;
     link.usedAt = new Date().toISOString();
 
-    await wixData.update('MagicLinks', link, { suppressAuth: true });
+    await wixData.update('Magiclinks', link, { suppressAuth: true });
 
     return {
       success: true,
@@ -363,7 +363,7 @@ export async function getMagicLinkStats(params) {
   }
 
   try {
-    let query = wixData.query('MagicLinks');
+    let query = wixData.query('Magiclinks');
 
     if (personId) {
       query = query.eq('personId', personId);

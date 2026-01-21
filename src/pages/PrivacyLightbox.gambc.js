@@ -1,10 +1,69 @@
-// API Reference: https://www.wix.com/velo/reference/api-overview/introduction
-// “Hello, World!” Example: https://learn-code.wix.com/en/article/hello-world
+/**
+ * PrivacyLightbox.gambc.js
+ * Simple privacy policy display lightbox
+ * 
+ * Expected Elements:
+ * - #privacyTitle: Title
+ * - #privacyContent: Content text/rich text
+ * - #closeBtn: Close button
+ */
+
+import wixWindow from 'wix-window';
 
 $w.onReady(function () {
-    // Write your JavaScript here
-
-    // To select an element by ID use: $w('#elementID')
-
-    // Click 'Preview' to run your code
+    setupUI();
+    setupEventHandlers();
 });
+
+function setupUI() {
+    if ($w('#privacyTitle')) {
+        $w('#privacyTitle').text = 'Privacy Policy';
+    }
+    if ($w('#privacyContent')) {
+        $w('#privacyContent').text = getPrivacyText();
+    }
+}
+
+function setupEventHandlers() {
+    try {
+        if ($w('#closeBtn')) {
+            $w('#closeBtn').onClick(() => {
+                wixWindow.lightbox.close({ acknowledged: true });
+            });
+        }
+    } catch (e) {}
+}
+
+function getPrivacyText() {
+    return `SHAMROCK BAIL BONDS - PRIVACY POLICY
+
+We collect information you provide (name, contact, ID) to process bail bonds and comply with legal requirements.
+
+HOW WE USE YOUR DATA:
+• Process bail bond applications
+• Verify identity and prevent fraud
+• Communicate about your case
+• Comply with court and legal requirements
+
+WE SHARE DATA WITH:
+• Courts and law enforcement (as required)
+• Insurance companies (for underwriting)
+• Service providers (for operations)
+
+We do NOT sell your personal information.
+
+YOUR RIGHTS:
+• Access your information
+• Request corrections
+• Request deletion (subject to legal requirements)
+
+SECURITY:
+We use encryption and secure storage to protect your data.
+
+CONTACT:
+Shamrock Bail Bonds
+Phone: 239-332-2245
+Email: admin@shamrockbailbonds.biz
+
+Last Updated: January 2026`;
+}

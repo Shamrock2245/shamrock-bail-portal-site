@@ -4,44 +4,58 @@
  * This module provides a centralized mapping between human-readable
  * collection names and their actual Wix collection IDs.
  * 
- * Updated: 2026-01-06
- * FloridaCounties collection now uses proper name (was Import1).
- * All collections use their proper readable names instead of Import prefixes.
+ * Updated: 2026-01-21
+ * Verified against live CMS - 27 collections total
+ * Collection names match exactly what appears in Wix CMS dashboard
  * 
  * Usage:
- * import { COLLECTIONS } from 'backend/collectionIds';
- * wixData.query(COLLECTIONS.FLORIDA_COUNTIES)...
+ * import { COLLECTIONS } from 'public/collectionIds';
+ * wixData.query(COLLECTIONS.CASES)...
  */
 
 export const COLLECTIONS = {
-  // Core Collections
-  FLORIDA_COUNTIES: 'FloridaCounties', // FloridaCounties - County data with full schema
-  // COUNTIES: 'Import21',           // DEPRECATED - Use FLORIDA_COUNTIES instead
-  CASES: 'Cases',                        // Bail bond cases
-  MEMBER_DOCUMENTS: 'MemberDocuments',   // Uploaded IDs and documents
-  MEMBER_PROFILES: 'MemberProfiles',     // Member profile information
-  PORTAL_USERS: 'PortalUsers',           // Portal user accounts
-  PERSONS: 'Persons',                    // Person records
-
-  // Bail Process Collections
-  BAIL_START_LOGS: 'BailStartLogs',      // Audit logs for bail paperwork initiation
-  SIGNNOW_HANDOFFS: 'SignNowHandoffs',   // SignNow integration handoff records
-  REQUIRED_DOCUMENTS: 'RequiredDocuments', // Required document types
-  PENDING_DOCUMENTS: 'PendingDocuments', // Documents pending review
-
-  // Analytics & Tracking
-  ANALYTICS_EVENTS: 'AnalyticsEvents',   // Site analytics events
-  CALL_LOGS: 'CallLogs',                 // Call tracking logs
-  USER_LOCATIONS: 'UserLocations',       // User location data
-  GEOLOCATION_CACHE: 'GeolocationCache', // Cached geolocation lookups
-
+  // Core Business Collections
+  CASES: 'Cases',                              // Bail bond cases - main data
+  DEFENDANTS: 'Defendants',                    // Defendant records
+  INDEMNITORS: 'Indemnitors',                  // Indemnitor/co-signer records
+  PERSONS: 'Persons',                          // Person records (general)
+  
+  // Portal & Authentication
+  PORTAL_USERS: 'Portal Users',                // Portal user accounts (space in name!)
+  PORTAL_SESSIONS: 'Portal Sessions',          // Active portal sessions (space in name!)
+  MAGIC_LINKS: 'Magiclinks',                   // Magic link authentication tokens
+  
+  // Documents & Signing
+  MEMBER_DOCUMENTS: 'Memberdocuments',         // Uploaded IDs and documents
+  PENDING_DOCUMENTS: 'Pendingdocuments',       // Documents pending signature
+  REQUIRED_DOCUMENTS: 'Requireddocuments',     // Required document types
+  SIGNING_SESSIONS: 'Signing Sessions',        // SignNow signing sessions (space in name!)
+  SIGNNOW_HANDOFFS: 'Signnowhandoffs',         // SignNow integration handoff records
+  
+  // Financial
+  FINANCIAL_OBLIGATIONS: 'Financial Obligations', // Financial tracking (space in name!)
+  PAYMENT_PLANS: 'Payment Plans',              // Payment plan records (space in name!)
+  COMMON_CHARGES: 'Common Charges',            // Common charges and bond amounts (space in name!)
+  
+  // Location & County Data
+  FLORIDA_COUNTIES: 'Florida Counties',        // Florida county data (space in name!)
+  COUNTIES: 'Counties',                        // General county data
+  GEOLOCATION_CACHE: 'Geolocationcache',       // Cached geolocation lookups
+  USER_LOCATIONS: 'Userlocations',             // User location check-ins
+  
+  // Analytics & Logging
+  ANALYTICS_EVENTS: 'Analyticsevents',         // Site analytics events
+  BAIL_START_LOGS: 'Bailstartlogs',            // Audit logs for bail paperwork initiation
+  CALL_LOGS: 'Calllogs',                       // Call tracking logs
+  
+  // User Profiles
+  MEMBER_PROFILES: 'Memberprofiles',           // Member profile information
+  
   // Supporting Collections
-  FAQ: 'FAQs',                           // Frequently asked questions
-  TESTIMONIALS: 'Testimonials',          // Client testimonials
-  CONTACT_SUBMISSIONS: 'ContactSubmissions', // Contact form submissions
-  BAIL_SCHOOL_SIGNUPS: 'BailSchoolSignups',  // Bail school interest signups
-  MAGIC_LINKS: 'MagicLinks',             // Magic link authentication tokens
-  COMMON_CHARGES: 'CommonCharges',       // Common charges and bond amounts
+  FAQS: 'Faqs',                                // Frequently asked questions
+  TESTIMONIALS: 'Testimonials',                // Client testimonials
+  CONTACT_SUBMISSIONS: 'Contactsubmissions',   // Contact form submissions
+  BAIL_SCHOOL_SIGNUPS: 'Bailschoolsignups',    // Bail school interest signups
 
   // System Collections (Wix-managed)
   BLOG_POSTS: 'Blog/Posts',
@@ -70,33 +84,40 @@ export function getCollectionId(collectionName) {
 
 /**
  * Collection display names for reference
+ * Maps collection IDs back to display-friendly names
  */
 export const COLLECTION_DISPLAY_NAMES = {
-  [COLLECTIONS.FLORIDA_COUNTIES]: 'FloridaCounties',
-  [COLLECTIONS.COUNTIES]: 'Counties (New Schema)',
   [COLLECTIONS.CASES]: 'Cases',
-  [COLLECTIONS.MEMBER_DOCUMENTS]: 'Member Documents',
-  [COLLECTIONS.MEMBER_PROFILES]: 'Member Profiles',
-  [COLLECTIONS.PORTAL_USERS]: 'Portal Users',
+  [COLLECTIONS.DEFENDANTS]: 'Defendants',
+  [COLLECTIONS.INDEMNITORS]: 'Indemnitors',
   [COLLECTIONS.PERSONS]: 'Persons',
-  [COLLECTIONS.BAIL_START_LOGS]: 'Bail Start Logs',
-  [COLLECTIONS.SIGNNOW_HANDOFFS]: 'SignNow Handoffs',
-  [COLLECTIONS.REQUIRED_DOCUMENTS]: 'Required Documents',
+  [COLLECTIONS.PORTAL_USERS]: 'Portal Users',
+  [COLLECTIONS.PORTAL_SESSIONS]: 'Portal Sessions',
+  [COLLECTIONS.MAGIC_LINKS]: 'Magic Links',
+  [COLLECTIONS.MEMBER_DOCUMENTS]: 'Member Documents',
   [COLLECTIONS.PENDING_DOCUMENTS]: 'Pending Documents',
-  [COLLECTIONS.ANALYTICS_EVENTS]: 'Analytics Events',
-  [COLLECTIONS.CALL_LOGS]: 'Call Logs',
-  [COLLECTIONS.USER_LOCATIONS]: 'User Locations',
+  [COLLECTIONS.REQUIRED_DOCUMENTS]: 'Required Documents',
+  [COLLECTIONS.SIGNING_SESSIONS]: 'Signing Sessions',
+  [COLLECTIONS.SIGNNOW_HANDOFFS]: 'SignNow Handoffs',
+  [COLLECTIONS.FINANCIAL_OBLIGATIONS]: 'Financial Obligations',
+  [COLLECTIONS.PAYMENT_PLANS]: 'Payment Plans',
+  [COLLECTIONS.COMMON_CHARGES]: 'Common Charges',
+  [COLLECTIONS.FLORIDA_COUNTIES]: 'Florida Counties',
+  [COLLECTIONS.COUNTIES]: 'Counties',
   [COLLECTIONS.GEOLOCATION_CACHE]: 'Geolocation Cache',
-  [COLLECTIONS.FAQ]: 'FAQs',
+  [COLLECTIONS.USER_LOCATIONS]: 'User Locations',
+  [COLLECTIONS.ANALYTICS_EVENTS]: 'Analytics Events',
+  [COLLECTIONS.BAIL_START_LOGS]: 'Bail Start Logs',
+  [COLLECTIONS.CALL_LOGS]: 'Call Logs',
+  [COLLECTIONS.MEMBER_PROFILES]: 'Member Profiles',
+  [COLLECTIONS.FAQS]: 'FAQs',
   [COLLECTIONS.TESTIMONIALS]: 'Testimonials',
   [COLLECTIONS.CONTACT_SUBMISSIONS]: 'Contact Submissions',
-  [COLLECTIONS.BAIL_SCHOOL_SIGNUPS]: 'Bail School Signups',
-  [COLLECTIONS.MAGIC_LINKS]: 'Magic Links',
-  [COLLECTIONS.COMMON_CHARGES]: 'Common Charges'
+  [COLLECTIONS.BAIL_SCHOOL_SIGNUPS]: 'Bail School Signups'
 };
 
 /**
- * Field name mappings for FloridaCounties collection
+ * Field name mappings for Florida Counties collection
  * Maps between code expectations and actual Wix field names
  */
 export const FLORIDA_COUNTIES_FIELDS = {

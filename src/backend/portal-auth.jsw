@@ -54,7 +54,7 @@ export async function getUserRole() {
   if (!user) return null;
   // Look up role in PortalUsers collection (admin bypass to ensure we can read it)
   const rs = await wixData
-    .query("PortalUsers")
+    .query("Portal Users")
     .eq("userId", user.id)
     .limit(1)
     .find({ suppressAuth: true });
@@ -96,7 +96,7 @@ export async function setSessionData(key, value) {
       timestamp: new Date(), // Use Date object
       userId: user.id,
     };
-    await wixData.save("PortalSessions", sessionData, { suppressAuth: true });
+    await wixData.save("Portal Sessions", sessionData, { suppressAuth: true });
   } catch (e) {
     console.error("setSessionData error:", e);
   }
@@ -107,7 +107,7 @@ export async function getSessionData(key) {
     const user = await wixUsersBackend.getCurrentUser();
     if (!user) return null;
     const rs = await wixData
-      .query("PortalSessions")
+      .query("Portal Sessions")
       .eq("key", key)
       .eq("userId", user.id)
       .limit(1)
@@ -116,7 +116,7 @@ export async function getSessionData(key) {
 
     const item = rs.items[0];
     if (Date.now() - new Date(item.timestamp).getTime() > SESSION_TIMEOUT) {
-      await wixData.remove("PortalSessions", item._id, { suppressAuth: true });
+      await wixData.remove("Portal Sessions", item._id, { suppressAuth: true });
       return null;
     }
     return JSON.parse(item.value);
@@ -131,18 +131,18 @@ export async function clearSessionData(key = null) {
     const user = await wixUsersBackend.getCurrentUser();
     if (!user) return;
 
-    let q = wixData.query("PortalSessions").eq("userId", user.id);
+    let q = wixData.query("Portal Sessions").eq("userId", user.id);
     if (key) q = q.eq("key", key);
     const rs = await q.find({ suppressAuth: true });
     await Promise.all(
-      rs.items.map((i) => wixData.remove("PortalSessions", i._id, { suppressAuth: true }))
+      rs.items.map((i) => wixData.remove("Portal Sessions", i._id, { suppressAuth: true }))
     );
   } catch (e) {
     console.error("clearSessionData error:", e);
   }
 }
 
-/***** MAGIC LINKS (MagicLinks collection) *****/
+/***** MAGIC LINKS (Magiclinks collection) *****/
 // Generates and stores a token (for staff-initiated sends)
 export async function generateMagicLink(personId, role, caseId = null) {
   const token = generateToken();
@@ -156,13 +156,13 @@ export async function generateMagicLink(personId, role, caseId = null) {
     expiresAt: new Date(now + MAGIC_LINK_EXPIRATION), // Use Date object
     used: false,
   };
-  await wixData.save("MagicLinks", doc, { suppressAuth: true });
+  await wixData.save("Magiclinks", doc, { suppressAuth: true });
   return token;
 }
 
 export async function validateMagicLink(token) {
   const rs = await wixData
-    .query("MagicLinks")
+    .query("Magiclinks")
     .eq("token", token)
     .eq("used", false)
     .limit(1)
@@ -178,7 +178,7 @@ export async function validateMagicLink(token) {
 
 export async function useMagicLink(token) {
   const rs = await wixData
-    .query("MagicLinks")
+    .query("Magiclinks")
     .eq("token", token)
     .limit(1)
     .find({ suppressAuth: true });
@@ -188,7 +188,7 @@ export async function useMagicLink(token) {
   link.used = true;
   link.usedAt = new Date();
   // Use Date object
-  await wixData.update("MagicLinks", link, { suppressAuth: true });
+  await wixData.update("Magiclinks", link, { suppressAuth: true });
   return true;
 }
 
@@ -357,7 +357,7 @@ export async function getUserProfile(userId) {
   const id = userId || user?.id;
   if (!id) return null;
   const rs = await wixData
-    .query("PortalUsers")
+    .query("Portal Users")
     .eq("userId", id)
     .limit(1)
     .find({ suppressAuth: true });
@@ -367,8 +367,8 @@ export async function getUserProfile(userId) {
 export async function saveUserProfile(profile) {
   // Ensure we save with admin permissions
   const options = { suppressAuth: true };
-  if (profile._id) return wixData.update("PortalUsers", profile, options);
-  return wixData.save("PortalUsers", profile, options);
+  if (profile._id) return wixData.update("Portal Users", profile, options);
+  return wixData.save("Portal Users", profile, options);
 }
 
 export async function linkUserToPerson(personId) {
@@ -461,7 +461,7 @@ export async function createCustomSession(personId, role, caseId = null) {
     expiresAt: new Date(now + SESSION_TIMEOUT), // Use Date object
     lastActivity: new Date(now), // Use Date object
   };
-  await wixData.save("PortalSessions", sessionData, { suppressAuth: true });
+  await wixData.save("Portal Sessions", sessionData, { suppressAuth: true });
   return sessionToken;
 }
 
@@ -480,7 +480,7 @@ export async function validateCustomSession(sessionToken) {
   }
   try {
     const rs = await wixData
-      .query("PortalSessions")
+      .query("Portal Sessions")
       .eq("token", sessionToken)
       .limit(1)
       .find({ suppressAuth: true });
@@ -499,13 +499,13 @@ export async function validateCustomSession(sessionToken) {
     // Check if expired
     if (now > expiresAt) {
       console.warn("validateCustomSession: Session expired");
-      await wixData.remove("PortalSessions", session._id, { suppressAuth: true });
+      await wixData.remove("Portal Sessions", session._id, { suppressAuth: true });
       return null;
     }
 
     // Update last activity
     session.lastActivity = new Date(now);
-    await wixData.update("PortalSessions", session, { suppressAuth: true });
+    await wixData.update("Portal Sessions", session, { suppressAuth: true });
 
     return {
       personId: session.personId,
@@ -527,13 +527,13 @@ export async function destroyCustomSession(sessionToken) {
   if (!sessionToken) return false;
   try {
     const rs = await wixData
-      .query("PortalSessions")
+      .query("Portal Sessions")
       .eq("token", sessionToken)
       .limit(1)
       .find({ suppressAuth: true });
     
     if (rs.items.length > 0) {
-      await wixData.remove("PortalSessions", rs.items[0]._id, { suppressAuth: true });
+      await wixData.remove("Portal Sessions", rs.items[0]._id, { suppressAuth: true });
       console.log("Custom session destroyed successfully");
       return true;
     }
@@ -625,24 +625,24 @@ export async function cleanupExpiredSessions() {
     
     // Cleanup expired sessions
     const expiredSessions = await wixData
-      .query("PortalSessions")
+      .query("Portal Sessions")
       .lt("expiresAt", now)
       .limit(100)
       .find({ suppressAuth: true });
     
     for (const session of expiredSessions.items) {
-      await wixData.remove("PortalSessions", session._id, { suppressAuth: true });
+      await wixData.remove("Portal Sessions", session._id, { suppressAuth: true });
     }
     
     // Cleanup expired magic links
     const expiredLinks = await wixData
-      .query("MagicLinks")
+      .query("Magiclinks")
       .lt("expiresAt", now)
       .limit(100)
       .find({ suppressAuth: true });
     
     for (const link of expiredLinks.items) {
-      await wixData.remove("MagicLinks", link._id, { suppressAuth: true });
+      await wixData.remove("Magiclinks", link._id, { suppressAuth: true });
     }
     
     console.log(`Cleanup: Removed ${expiredSessions.items.length} sessions, ${expiredLinks.items.length} magic links`);
@@ -829,7 +829,7 @@ export async function getStaffDashboardData() {
 export async function getUserConsentStatus(personId) {
   if (!personId) return false;
   try {
-    const result = await wixData.query("PortalUsers")
+    const result = await wixData.query("Portal Users")
       .eq("personId", personId)
       .limit(1)
       .find({ suppressAuth: true });
