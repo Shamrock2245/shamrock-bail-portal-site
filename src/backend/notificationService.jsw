@@ -10,6 +10,7 @@ import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
 import { triggeredEmails } from 'wix-crm-backend';
 import wixData from 'wix-data';
+import { sendSms } from 'backend/twilio-client';
 
 /**
  * Notification types
@@ -86,11 +87,51 @@ export async function sendMemberNotification(type, data) {
         // Log notification
         await logNotification(type, 'email', memberEmail, variables);
 
+        // Attempt SMS if applicable (fire and forget to not block email success)
+        if (data.memberPhone) {
+            await sendSmsNotificationIfNeeded(type, data).catch(err =>
+                console.error("SMS notification failed:", err)
+            );
+        }
+
         return { success: true };
 
     } catch (error) {
         console.error('Error sending member notification:', error);
         return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Helper to determine if we should also send an SMS
+ * based on notification type and data availability.
+ */
+async function sendSmsNotificationIfNeeded(type, data) {
+    // List of types that warrant an SMS
+    const SMS_TYPES = [
+        NOTIFICATION_TYPES.ID_REJECTED,
+        NOTIFICATION_TYPES.PAPERWORK_READY,
+        NOTIFICATION_TYPES.PAPERWORK_SENT,
+        NOTIFICATION_TYPES.PAPERWORK_DECLINED,
+        NOTIFICATION_TYPES.URGENT_CASE
+    ];
+
+    if (!SMS_TYPES.includes(type)) return;
+    if (!data.memberPhone) return;
+
+    // Simple templates for SMS
+    const smsTemplates = {
+        [NOTIFICATION_TYPES.ID_REJECTED]: `Shamrock Bail: Your ID was rejected. Please log in to upload a new one.`,
+        [NOTIFICATION_TYPES.PAPERWORK_READY]: `Shamrock Bail: Your paperwork is ready. Login to sign: https://www.shamrockbailbonds.biz/portal-landing`,
+        [NOTIFICATION_TYPES.PAPERWORK_SENT]: `Shamrock Bail: Documents sent for signature. Please check your email or portal.`,
+        [NOTIFICATION_TYPES.PAPERWORK_DECLINED]: `Shamrock Bail: Providing documents was declined/failed. Please contact us.`,
+        [NOTIFICATION_TYPES.URGENT_CASE]: `Shamrock Bail: URGENT update on your case. Please contact us immediately.`
+    };
+
+    const body = smsTemplates[type];
+    if (body) {
+        await sendSms(data.memberPhone, body);
+        await logNotification(type, 'sms', data.memberPhone, { body });
     }
 }
 

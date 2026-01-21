@@ -1,255 +1,113 @@
 /**
  * backend/twilio-client.jsw
- * Twilio SMS Client for Wix - Following Twilio Best Practices
  * 
- * Best Practices Implemented:
- * - Uses Messaging Service SID for intelligent routing
- * - Includes status callback URL for delivery tracking
- * - Returns Message SID for tracking
- * - Proper E.164 phone number formatting
- * - Comprehensive error handling
+ * Centralized Twilio Client Module
+ * Uses the official 'twilio' npm package.
  */
 
-import { fetchWithRetry } from 'backend/utils';
+import twilio from 'twilio';
 import { getSecret } from 'wix-secrets-backend';
 
-// Cache for secrets to avoid repeated lookups
-let secretsCache = null;
-let secretsCacheTime = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// Cache the client instance if possible (though Velo creates fresh scope often)
+let twilioClient = null;
 
-/**
- * Get Twilio credentials from Wix Secrets Manager (with caching)
- */
-async function getTwilioCredentials() {
-    const now = Date.now();
-    if (secretsCache && (now - secretsCacheTime) < CACHE_TTL) {
-        return secretsCache;
+async function getClient() {
+    if (twilioClient) return twilioClient;
+
+    const accountSid = await getSecret('TWILIO_ACCOUNT_SID');
+    const authToken = await getSecret('TWILIO_AUTH_TOKEN');
+
+    if (!accountSid || !authToken) {
+        throw new Error('Missing Twilio credentials in Secrets Manager');
     }
 
-    const [accountSid, authToken, fromNumber, messagingServiceSid] = await Promise.all([
-        getSecret("TWILIO_ACCOUNT_SID"),
-        getSecret("TWILIO_AUTH_TOKEN"),
-        getSecret("TWILIO_PHONE_NUMBER"),
-        getSecret("TWILIO_MESSAGING_SERVICE_SID").catch(() => null) // Optional
-    ]);
-
-    secretsCache = { accountSid, authToken, fromNumber, messagingServiceSid };
-    secretsCacheTime = now;
-    return secretsCache;
+    twilioClient = twilio(accountSid, authToken);
+    return twilioClient;
 }
 
 /**
- * Format phone number to E.164 format
- * @param {string} phone - Phone number in any format
- * @returns {string} - E.164 formatted phone number
+ * Send an SMS message
+ * @param {string} to - Recipient phone number (E.164 format preferred)
+ * @param {string} body - Message body
+ * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
  */
-function formatPhoneE164(phone) {
-    if (!phone) return null;
-    
-    // Remove all non-digit characters
-    let digits = phone.replace(/\D/g, '');
-    
-    // Handle US numbers
-    if (digits.length === 10) {
-        return '+1' + digits;
-    } else if (digits.length === 11 && digits.startsWith('1')) {
-        return '+' + digits;
-    } else if (!digits.startsWith('+')) {
-        return '+' + digits;
-    }
-    
-    return digits;
-}
-
-/**
- * Send an SMS via Twilio using best practices
- * @param {string} to - The recipient's phone number
- * @param {string} body - The message content
- * @param {Object} options - Optional parameters
- * @param {string} options.statusCallback - URL for delivery status callbacks
- * @param {string} options.tag - Custom tag for tracking (stored in metadata)
- * @returns {Promise<{success: boolean, messageSid?: string, status?: string, error?: string, errorCode?: number}>}
- */
-export async function sendSms(to, body, options = {}) {
+export async function sendSms(to, body) {
     try {
-        console.log(`📱 Twilio: Preparing to send SMS to ${to}...`);
+        const client = await getClient();
+        const from = await getSecret('TWILIO_FROM_NUMBER'); // Or Messaging Service SID
 
-        // 1. Get Credentials
-        const creds = await getTwilioCredentials();
-
-        if (!creds.accountSid || !creds.authToken) {
-            console.error("❌ Twilio: Missing Account SID or Auth Token");
-            return { 
-                success: false, 
-                error: "SMS configuration missing - check Twilio secrets",
-                errorCode: 1001
-            };
+        if (!from) {
+            throw new Error('Missing TWILIO_FROM_NUMBER secret');
         }
 
-        if (!creds.fromNumber && !creds.messagingServiceSid) {
-            console.error("❌ Twilio: Missing From number and Messaging Service SID");
-            return { 
-                success: false, 
-                error: "SMS sender configuration missing",
-                errorCode: 1002
-            };
+        const message = await client.messages.create({
+            body,
+            from,
+            to
+        });
+
+        // console.log(`SMS sent to ${to}: ${message.sid}`);
+        return { success: true, messageId: message.sid };
+
+    } catch (error) {
+        console.error('Twilio sendSms error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Send an OTP Verification Code (Twilio Verify)
+ * @param {string} phone - User's phone number
+ * @returns {Promise<{success: boolean, status?: string, error?: string}>}
+ */
+export async function sendVerificationCode(phone) {
+    try {
+        const client = await getClient();
+        const serviceSid = await getSecret('TWILIO_VERIFY_SERVICE_SID');
+
+        if (!serviceSid) {
+            throw new Error('Missing TWILIO_VERIFY_SERVICE_SID secret');
         }
 
-        // 2. Format Phone Number
-        const formattedTo = formatPhoneE164(to);
-        if (!formattedTo) {
-            console.error("❌ Twilio: Invalid phone number");
-            return { 
-                success: false, 
-                error: "Invalid phone number format",
-                errorCode: 1003
-            };
+        const verification = await client.verify.v2.services(serviceSid)
+            .verifications
+            .create({ to: phone, channel: 'sms' });
+
+        return { success: true, status: verification.status };
+
+    } catch (error) {
+        console.error('Twilio sendVerificationCode error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Check an OTP Verification Code
+ * @param {string} phone - User's phone number
+ * @param {string} code - Code entered by user
+ * @returns {Promise<{success: boolean, valid: boolean, error?: string}>}
+ */
+export async function checkVerificationCode(phone, code) {
+    try {
+        const client = await getClient();
+        const serviceSid = await getSecret('TWILIO_VERIFY_SERVICE_SID');
+
+        if (!serviceSid) {
+            throw new Error('Missing TWILIO_VERIFY_SERVICE_SID secret');
         }
 
-        // 3. Prepare Request Parameters
-        const params = new URLSearchParams();
-        params.append("To", formattedTo);
-        params.append("Body", body);
+        const verificationCheck = await client.verify.v2.services(serviceSid)
+            .verificationChecks
+            .create({ to: phone, code });
 
-        // Use Messaging Service SID if available (Twilio Best Practice)
-        // This enables intelligent routing, opt-out handling, and other features
-        if (creds.messagingServiceSid) {
-            params.append("MessagingServiceSid", creds.messagingServiceSid);
-            console.log("📱 Twilio: Using Messaging Service for intelligent routing");
+        if (verificationCheck.status === 'approved') {
+            return { success: true, valid: true };
         } else {
-            params.append("From", creds.fromNumber);
+            return { success: true, valid: false };
         }
 
-        // Add status callback URL if provided (for delivery tracking)
-        if (options.statusCallback) {
-            params.append("StatusCallback", options.statusCallback);
-        }
-
-        // 4. Send Request to Twilio API
-        const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
-        const authHeader = "Basic " + Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString("base64");
-
-        const response = await fetchWithRetry(url, {
-            method: "POST",
-            headers: {
-                "Authorization": authHeader,
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: params.toString()
-        });
-
-        const result = await response.json();
-
-        // 5. Handle Response
-        if (!response.ok) {
-            console.error("❌ Twilio API Error:", {
-                status: response.status,
-                code: result.code,
-                message: result.message
-            });
-
-            // Map common Twilio error codes to user-friendly messages
-            let userMessage = result.message || "Failed to send SMS";
-            if (result.code === 21211) {
-                userMessage = "Invalid phone number format";
-            } else if (result.code === 21608) {
-                userMessage = "Phone number is not verified for trial account";
-            } else if (result.code === 21610) {
-                userMessage = "Recipient has opted out of messages";
-            } else if (result.code === 30034) {
-                userMessage = "A2P 10DLC registration pending - SMS blocked by carrier";
-            }
-
-            return { 
-                success: false, 
-                error: userMessage,
-                errorCode: result.code,
-                twilioError: result.message
-            };
-        }
-
-        console.log("✅ Twilio SMS Queued:", {
-            sid: result.sid,
-            status: result.status,
-            to: result.to
-        });
-
-        return { 
-            success: true, 
-            messageSid: result.sid,
-            status: result.status,
-            to: result.to,
-            from: result.from
-        };
-
-    } catch (err) {
-        console.error("❌ Twilio Client Exception:", err);
-        return { 
-            success: false, 
-            error: err.message || "Unexpected error sending SMS",
-            errorCode: 1000
-        };
-    }
-}
-
-/**
- * Send a magic link via SMS
- * @param {string} to - Recipient phone number
- * @param {string} link - The magic link URL
- * @param {string} type - Type of link (login, signing, etc.)
- * @returns {Promise<{success: boolean, messageSid?: string, error?: string}>}
- */
-export async function sendMagicLinkSms(to, link, type = 'login') {
-    let body;
-    
-    switch (type) {
-        case 'signing':
-            body = `Shamrock Bail Bonds: Sign your documents securely here: ${link}\n\nQuestions? Call (239) 332-2245`;
-            break;
-        case 'login':
-        default:
-            body = `Shamrock Bail Bonds: Access your portal securely here: ${link}\n\nThis link expires in 24 hours.`;
-            break;
-    }
-
-    return sendSms(to, body, {
-        statusCallback: 'https://www.shamrockbailbonds.biz/_functions/twilio/status'
-    });
-}
-
-/**
- * Send a notification SMS
- * @param {string} to - Recipient phone number
- * @param {string} message - Notification message
- * @returns {Promise<{success: boolean, messageSid?: string, error?: string}>}
- */
-export async function sendNotificationSms(to, message) {
-    const body = `Shamrock Bail Bonds: ${message}\n\nQuestions? Call (239) 332-2245`;
-    
-    return sendSms(to, body, {
-        statusCallback: 'https://www.shamrockbailbonds.biz/_functions/twilio/status'
-    });
-}
-
-/**
- * Check if SMS sending is properly configured
- * @returns {Promise<{configured: boolean, hasMessagingService: boolean, error?: string}>}
- */
-export async function checkSmsConfiguration() {
-    try {
-        const creds = await getTwilioCredentials();
-        
-        return {
-            configured: !!(creds.accountSid && creds.authToken && (creds.fromNumber || creds.messagingServiceSid)),
-            hasMessagingService: !!creds.messagingServiceSid,
-            hasFromNumber: !!creds.fromNumber
-        };
-    } catch (err) {
-        return {
-            configured: false,
-            hasMessagingService: false,
-            error: err.message
-        };
+    } catch (error) {
+        console.error('Twilio checkVerificationCode error:', error);
+        return { success: false, error: error.message };
     }
 }
