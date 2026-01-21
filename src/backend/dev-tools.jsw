@@ -1,0 +1,85 @@
+/**
+ * backend/dev-tools.jsw
+ *
+ * Developer Utilities for validating Schema vs Frontend Alignment.
+ * Intended to be called from frontend onReady during development.
+ */
+
+import wixData from 'wix-data';
+
+// --- Hardcoded Schema Definitions for Validation (Mirroring Collections) ---
+// In a real automated setup, we might fetch these, but hardcoding ensures
+// we validate against what the CODE expects.
+
+const SCHEMAS = {
+    'DefendantDetails': [
+        'firstName',
+        'lastName',
+        'email',
+        'caseNumber',
+        'bondAmount',
+        'nextCourtDate',
+        'caseStatus',
+        'paperworkStatus',
+        'signingStatus'
+    ],
+    'CheckIn': [
+        'latitude',
+        'longitude',
+        'address',
+        'photoUrl',
+        'notes',
+        'timestamp'
+    ]
+};
+
+/**
+ * Validates that provided IDs match expected patterns for a given context.
+ * This is a helper to run manually or log warnings.
+ *
+ * @param {string} contextName - e.g. "DefendantDashboard"
+ * @param {string[]} elementIds - List of IDs present on the page (pass manually from frontend)
+ * @returns {object} Report of missing or malformed IDs
+ */
+export function validatePageIds(contextName, elementIds) {
+    const report = {
+        context: contextName,
+        status: "Pass",
+        warnings: []
+    };
+
+    // 1. Basic Prefix Check
+    const prefixes = ['btn', 'input', 'text', 'box', 'rpt', 'img', 'dropdown', 'date'];
+
+    elementIds.forEach(id => {
+        // Strip #
+        const cleanId = id.replace(/^#/, '');
+        const hasValidPrefix = prefixes.some(p => cleanId.startsWith(p));
+
+        if (!hasValidPrefix) {
+            report.warnings.push(`ID '${id}' does not follow naming convention (btn, input, text, etc.)`);
+            report.status = "Review Needed";
+        }
+    });
+
+    return report;
+}
+
+/**
+ * Returns the "Expected" IDs for a given data retrieval function.
+ * Use this to copy-paste into frontend code or verify.
+ */
+export function getExpectedIdsFor(schemaKey) {
+    if (!SCHEMAS[schemaKey]) return { error: "Schema not found" };
+
+    const fields = SCHEMAS[schemaKey];
+    return {
+        inputs: fields.map(f => `#input${capitalize(f)}`),
+        texts: fields.map(f => `#text${capitalize(f)}`)
+    };
+}
+
+function capitalize(s) {
+    if (!s) return '';
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}

@@ -36,8 +36,8 @@ $w.onReady(async function () {
 
         if (!sessionToken) {
             console.warn("⛔ No session token found. Redirecting to Portal Landing.");
-            $w('#welcomeText').text = "Authentication Error: No session token found locally.";
-            $w('#welcomeText').show();
+            $w('#textUserWelcome').text = "Authentication Error: No session token found locally.";
+            $w('#textUserWelcome').show();
             // DEBUG MODE: Don't redirect immediately so we can see the error
             // wixLocation.to('/portal-landing'); 
             return;
@@ -48,16 +48,16 @@ $w.onReady(async function () {
 
         if (!session) {
             console.warn("⛔ Session validation returned null.");
-            $w('#welcomeText').text = "Authentication Failed: Session invalid or not found in DB.";
-            $w('#welcomeText').show();
+            $w('#textUserWelcome').text = "Authentication Failed: Session invalid or not found in DB.";
+            $w('#textUserWelcome').show();
             // clearSessionToken(); // Keep token for debugging
             return;
         }
 
         if (!session.role) {
             console.warn("⛔ Session has no role.");
-            $w('#welcomeText').text = "Authentication Error: Session missing role.";
-            $w('#welcomeText').show();
+            $w('#textUserWelcome').text = "Authentication Error: Session missing role.";
+            $w('#textUserWelcome').show();
             return;
         }
 
@@ -65,8 +65,8 @@ $w.onReady(async function () {
         if (session.role !== 'defendant') {
             const msg = `⛔ Wrong role: ${session.role}. This is the defendant portal.`;
             console.warn(msg);
-            $w('#welcomeText').text = msg;
-            $w('#welcomeText').show();
+            $w('#textUserWelcome').text = msg;
+            $w('#textUserWelcome').show();
             // wixLocation.to('/portal-landing');
             return;
         }
@@ -84,28 +84,28 @@ $w.onReady(async function () {
         }
 
         try {
-            if ($w('#welcomeText').type) {
-                $w('#welcomeText').text = `Welcome, ${name}`;
+            if ($w('#textUserWelcome').type) {
+                $w('#textUserWelcome').text = `Welcome, ${name}`;
             }
 
             if (data) {
-                if ($w('#caseNumberText').type) {
-                    $w('#caseNumberText').text = data.caseNumber || "Pending";
+                if ($w('#textCaseNumber').type) {
+                    $w('#textCaseNumber').text = data.caseNumber || "Pending";
                 }
-                if ($w('#bondAmountText').type) {
-                    $w('#bondAmountText').text = data.bondAmount || "$0.00";
+                if ($w('#textBondAmount').type) {
+                    $w('#textBondAmount').text = data.bondAmount || "$0.00";
                 }
-                if ($w('#nextCourtDateValueText').type) {
-                    $w('#nextCourtDateValueText').text = data.nextCourtDate || "TBD";
+                if ($w('#textNextCourtDate').type) {
+                    $w('#textNextCourtDate').text = data.nextCourtDate || "TBD";
                 }
-                if ($w('#caseStatusText').type) {
-                    $w('#caseStatusText').text = data.caseStatus || "Active";
+                if ($w('#textCaseStatus').type) {
+                    $w('#textCaseStatus').text = data.caseStatus || "Active";
                 }
-                if ($w('#paperworkStatusText').type) {
-                    $w('#paperworkStatusText').text = data.paperworkStatus || "Pending";
+                if ($w('#textPaperworkStatus').type) {
+                    $w('#textPaperworkStatus').text = data.paperworkStatus || "Pending";
                 }
-                if ($w('#signingStatusText').type) {
-                    $w('#signingStatusText').text = data.signingStatus || "Incomplete";
+                if ($w('#textSigningStatus').type) {
+                    $w('#textSigningStatus').text = data.signingStatus || "Incomplete";
                 }
             }
         } catch (e) {
@@ -119,8 +119,8 @@ $w.onReady(async function () {
     } catch (e) {
         console.error("Dashboard Load Error", e);
         try {
-            if ($w('#welcomeText').type) {
-                $w('#welcomeText').text = "Error loading dashboard";
+            if ($w('#textUserWelcome').type) {
+                $w('#textUserWelcome').text = "Error loading dashboard";
             }
         } catch (err) { }
     }
@@ -152,11 +152,11 @@ function updatePageSEO() {
 
 function initUI() {
     try {
-        if ($w('#welcomeText').type) {
-            $w('#welcomeText').text = "Loading...";
+        if ($w('#textUserWelcome').type) {
+            $w('#textUserWelcome').text = "Loading...";
         }
-        if ($w('#checkInStatusText').type) {
-            $w('#checkInStatusText').collapse();
+        if ($w('#textCheckInStatus').type) {
+            $w('#textCheckInStatus').collapse();
         }
         // Hide Download Button (Per Implementation Plan)
         // Hide Download Button (Per Implementation Plan)
@@ -169,9 +169,9 @@ function initUI() {
 }
 
 function setupPaperworkButtons() {
-    // Sign via Email Button (#startPaperworkBtn)
+    // Sign via Email Button (#btnStartPaperwork)
     try {
-        const emailBtn = $w('#startPaperworkBtn');
+        const emailBtn = $w('#btnStartPaperwork');
         if (emailBtn.length > 0) {
             console.log('Defendant Portal: Sign via Email button found');
             emailBtn.onClick(() => {
@@ -179,7 +179,7 @@ function setupPaperworkButtons() {
                 handlePaperworkStart();
             });
         } else {
-            console.warn('Defendant Portal: #startPaperworkBtn not found');
+            console.warn('Defendant Portal: #btnStartPaperwork not found');
         }
     } catch (e) {
         console.error('Error setting up Sign via Email button:', e);
@@ -220,7 +220,7 @@ function setupPaperworkButtons() {
 
 function setupLogoutButton() {
     try {
-        const logoutBtn = $w('#logoutBtn');
+        const logoutBtn = $w('#btnLogout');
         if (logoutBtn && typeof logoutBtn.onClick === 'function') {
             console.log('Defendant Portal: Logout button found');
             logoutBtn.onClick(() => {
@@ -228,7 +228,7 @@ function setupLogoutButton() {
                 handleLogout();
             });
         } else {
-            console.warn('Defendant Portal: Logout button (#logoutBtn) not found');
+            console.warn('Defendant Portal: Logout button (#btnLogout) not found');
         }
     } catch (e) {
         console.warn('Defendant Portal: No logout button configured');
@@ -351,8 +351,8 @@ async function proceedToSignNow() {
     } else {
         console.error('Failed to create SignNow link:', result.error);
         try {
-            if ($w('#signingStatusText').type) {
-                $w('#signingStatusText').text = "Error preparing documents.";
+            if ($w('#textSigningStatus').type) {
+                $w('#textSigningStatus').text = "Error preparing documents.";
             }
         } catch (e) { }
     }
@@ -362,47 +362,47 @@ async function proceedToSignNow() {
 
 function setupCheckInHandlers() {
     try {
-        if (!$w('#checkInBtn').type) return;
+        if (!$w('#btnCheckIn').type) return;
 
-        $w('#checkInBtn').onClick(async () => {
+        $w('#btnCheckIn').onClick(async () => {
             try {
-                if (!$w('#selfieUpload').type || $w('#selfieUpload').value.length === 0) {
+                if (!$w('#btnUploadSelfie').type || $w('#btnUploadSelfie').value.length === 0) {
                     updateCheckInStatus("Error: Please take a selfie first.", "error");
                     return;
                 }
 
-                $w('#checkInBtn').disable();
-                $w('#checkInBtn').label = "Uploading...";
+                $w('#btnCheckIn').disable();
+                $w('#btnCheckIn').label = "Uploading...";
 
                 try {
-                    if ($w('#statusBox').type) {
-                        $w('#statusBox').style.backgroundColor = "#FFFFFF";
+                    if ($w('#boxStatus').type) {
+                        $w('#boxStatus').style.backgroundColor = "#FFFFFF";
                     }
                 } catch (e) { }
 
-                const uploadFiles = await $w('#selfieUpload').startUpload();
+                const uploadFiles = await $w('#btnUploadSelfie').startUpload();
                 const selfieUrl = uploadFiles.url;
 
-                $w('#checkInBtn').label = "Acquiring Location...";
+                $w('#btnCheckIn').label = "Acquiring Location...";
                 const locationObj = await wixWindow.getCurrentGeolocation();
 
-                $w('#checkInBtn').label = "Verifying...";
+                $w('#btnCheckIn').label = "Verifying...";
                 const token = getSessionToken(); // Get auth token for backend
                 const result = await saveUserLocation(
                     locationObj.coords.latitude,
                     locationObj.coords.longitude,
-                    $w('#updateNotesInput').type ? $w('#updateNotesInput').value : '',
+                    $w('#inputUpdateNotes').type ? $w('#inputUpdateNotes').value : '',
                     selfieUrl,
                     token
                 );
 
                 if (result.success) {
-                    $w('#checkInBtn').label = "Check In Complete";
-                    $w('#checkInBtn').enable();
+                    $w('#btnCheckIn').label = "Check In Complete";
+                    $w('#btnCheckIn').enable();
 
                     try {
-                        if ($w('#updateNotesInput').type) {
-                            $w('#updateNotesInput').value = "";
+                        if ($w('#inputUpdateNotes').type) {
+                            $w('#inputUpdateNotes').value = "";
                         }
                     } catch (e) { }
 
@@ -413,8 +413,8 @@ function setupCheckInHandlers() {
 
             } catch (error) {
                 console.error("Check-in Error", error);
-                $w('#checkInBtn').label = "Try Again";
-                $w('#checkInBtn').enable();
+                $w('#btnCheckIn').label = "Try Again";
+                $w('#btnCheckIn').enable();
                 updateCheckInStatus("Error: " + (error.message || "Location required."), "error");
             }
         });
@@ -426,12 +426,12 @@ function setupCheckInHandlers() {
 function updateCheckInStatus(msg, type) {
     try {
         const color = type === "success" ? "#E6FFFA" : "#FFE6E6";
-        if ($w('#statusBox').type) {
-            $w('#statusBox').style.backgroundColor = color;
+        if ($w('#boxStatus').type) {
+            $w('#boxStatus').style.backgroundColor = color;
         }
-        if ($w('#checkInStatusText').type) {
-            $w('#checkInStatusText').text = msg;
-            $w('#checkInStatusText').expand();
+        if ($w('#textCheckInStatus').type) {
+            $w('#textCheckInStatus').text = msg;
+            $w('#textCheckInStatus').expand();
         }
     } catch (e) {
         console.error('Error updating check-in status:', e);

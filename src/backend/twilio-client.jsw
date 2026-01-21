@@ -1,28 +1,27 @@
 /**
  * backend/twilio-client.jsw
- * 
- * Centralized Twilio Client Module
- * Uses the official 'twilio' npm package.
+ *
+ * Centralized Twilio Client Module (Wix-Fetch Version)
+ * Removes dependency on 'twilio' npm package to fix Velo compatibility issues.
  */
 
-import twilio from 'twilio';
+import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
 
-// Cache the client instance if possible (though Velo creates fresh scope often)
-let twilioClient = null;
-
-async function getClient() {
-    if (twilioClient) return twilioClient;
-
+// Helper to get credentials
+async function getCredentials() {
     const accountSid = await getSecret('TWILIO_ACCOUNT_SID');
     const authToken = await getSecret('TWILIO_AUTH_TOKEN');
 
     if (!accountSid || !authToken) {
-        throw new Error('Missing Twilio credentials in Secrets Manager');
+        throw new Error('Missing Twilio credentials in Secrets Manager (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)');
     }
+    return { accountSid, authToken };
+}
 
-    twilioClient = twilio(accountSid, authToken);
-    return twilioClient;
+// Helper for Basic Auth Header
+function getAuthHeader(sid, token) {
+    return "Basic " + Buffer.from(sid + ":" + token).toString("base64");
 }
 
 /**
@@ -33,21 +32,37 @@ async function getClient() {
  */
 export async function sendSms(to, body) {
     try {
-        const client = await getClient();
+        const { accountSid, authToken } = await getCredentials();
         const from = await getSecret('TWILIO_FROM_NUMBER'); // Or Messaging Service SID
 
         if (!from) {
             throw new Error('Missing TWILIO_FROM_NUMBER secret');
         }
 
-        const message = await client.messages.create({
-            body,
-            from,
-            to
+        const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+
+        // URLSearchParams is standard in Node.js environments (Velo backend)
+        const params = new URLSearchParams();
+        params.append('To', to);
+        params.append('From', from);
+        params.append('Body', body);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                "Authorization": getAuthHeader(accountSid, authToken),
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: params.toString()
         });
 
-        // console.log(`SMS sent to ${to}: ${message.sid}`);
-        return { success: true, messageId: message.sid };
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Twilio API Error (${response.status}): ${errorText}`);
+        }
+
+        const data = await response.json();
+        return { success: true, messageId: data.sid };
 
     } catch (error) {
         console.error('Twilio sendSms error:', error);
@@ -62,18 +77,35 @@ export async function sendSms(to, body) {
  */
 export async function sendVerificationCode(phone) {
     try {
-        const client = await getClient();
+        const { accountSid, authToken } = await getCredentials();
         const serviceSid = await getSecret('TWILIO_VERIFY_SERVICE_SID');
 
         if (!serviceSid) {
             throw new Error('Missing TWILIO_VERIFY_SERVICE_SID secret');
         }
 
-        const verification = await client.verify.v2.services(serviceSid)
-            .verifications
-            .create({ to: phone, channel: 'sms' });
+        const url = `https://verify.twilio.com/v2/Services/${serviceSid}/Verifications`;
 
-        return { success: true, status: verification.status };
+        const params = new URLSearchParams();
+        params.append('To', phone);
+        params.append('Channel', 'sms');
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                "Authorization": getAuthHeader(accountSid, authToken),
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: params.toString()
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Twilio Verify Error (${response.status}): ${errorText}`);
+        }
+
+        const data = await response.json();
+        return { success: true, status: data.status };
 
     } catch (error) {
         console.error('Twilio sendVerificationCode error:', error);
@@ -89,22 +121,37 @@ export async function sendVerificationCode(phone) {
  */
 export async function checkVerificationCode(phone, code) {
     try {
-        const client = await getClient();
+        const { accountSid, authToken } = await getCredentials();
         const serviceSid = await getSecret('TWILIO_VERIFY_SERVICE_SID');
 
         if (!serviceSid) {
             throw new Error('Missing TWILIO_VERIFY_SERVICE_SID secret');
         }
 
-        const verificationCheck = await client.verify.v2.services(serviceSid)
-            .verificationChecks
-            .create({ to: phone, code });
+        const url = `https://verify.twilio.com/v2/Services/${serviceSid}/VerificationChecks`;
 
-        if (verificationCheck.status === 'approved') {
-            return { success: true, valid: true };
-        } else {
-            return { success: true, valid: false };
+        const params = new URLSearchParams();
+        params.append('To', phone);
+        params.append('Code', code);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                "Authorization": getAuthHeader(accountSid, authToken),
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: params.toString()
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Twilio Check Error (${response.status}): ${errorText}`);
         }
+
+        const data = await response.json();
+        const valid = data.status === 'approved';
+
+        return { success: true, valid: valid };
 
     } catch (error) {
         console.error('Twilio checkVerificationCode error:', error);
