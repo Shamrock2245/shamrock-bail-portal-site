@@ -56,7 +56,7 @@ async function getCountyFromDatabase(countySlug) {
   try {
     const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
       .eq('countySlug', countySlug)
-      .find();
+      .find({ suppressAuth: true });
 
     if (results.items.length > 0) {
       return results.items[0];
