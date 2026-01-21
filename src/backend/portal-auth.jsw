@@ -10,7 +10,15 @@ import { fetch } from "wix-fetch";
 import { getSecret } from "wix-secrets-backend";
 import { API_BASE_URL, API_TIMEOUT } from 'public/portal-config';
 import { sendSms } from 'backend/twilio-client'; // FIX: Single Twilio Import
-import { generateToken } from 'backend/utils';
+// generateToken defined locally to avoid import issues
+function generateToken() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let token = '';
+    for (let i = 0; i < 64; i++) {
+        token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return token;
+}
 
 /***** CONFIG & ROLES *****/
 export const ROLES = {
