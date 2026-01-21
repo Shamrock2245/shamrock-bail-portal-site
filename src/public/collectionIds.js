@@ -19,38 +19,38 @@ export const COLLECTIONS = {
   DEFENDANTS: 'Defendants',                    // Defendant records
   INDEMNITORS: 'Indemnitors',                  // Indemnitor/co-signer records
   PERSONS: 'Persons',                          // Person records (general)
-  
+
   // Portal & Authentication
   PORTAL_USERS: 'Portal Users',                // Portal user accounts (space in name!)
   PORTAL_SESSIONS: 'Portal Sessions',          // Active portal sessions (space in name!)
   MAGIC_LINKS: 'Magiclinks',                   // Magic link authentication tokens
-  
+
   // Documents & Signing
   MEMBER_DOCUMENTS: 'Memberdocuments',         // Uploaded IDs and documents
   PENDING_DOCUMENTS: 'Pendingdocuments',       // Documents pending signature
   REQUIRED_DOCUMENTS: 'Requireddocuments',     // Required document types
   SIGNING_SESSIONS: 'Signing Sessions',        // SignNow signing sessions (space in name!)
   SIGNNOW_HANDOFFS: 'Signnowhandoffs',         // SignNow integration handoff records
-  
+
   // Financial
   FINANCIAL_OBLIGATIONS: 'Financial Obligations', // Financial tracking (space in name!)
   PAYMENT_PLANS: 'Payment Plans',              // Payment plan records (space in name!)
   COMMON_CHARGES: 'Common Charges',            // Common charges and bond amounts (space in name!)
-  
+
   // Location & County Data
-  FLORIDA_COUNTIES: 'Florida Counties',        // Florida county data (space in name!)
+  FLORIDA_COUNTIES: 'FloridaCounties',         // Florida county data (Verified: No space in ID)
   COUNTIES: 'Counties',                        // General county data
   GEOLOCATION_CACHE: 'Geolocationcache',       // Cached geolocation lookups
   USER_LOCATIONS: 'Userlocations',             // User location check-ins
-  
+
   // Analytics & Logging
   ANALYTICS_EVENTS: 'Analyticsevents',         // Site analytics events
   BAIL_START_LOGS: 'Bailstartlogs',            // Audit logs for bail paperwork initiation
   CALL_LOGS: 'Calllogs',                       // Call tracking logs
-  
+
   // User Profiles
   MEMBER_PROFILES: 'Memberprofiles',           // Member profile information
-  
+
   // Supporting Collections
   FAQS: 'Faqs',                                // Frequently asked questions
   TESTIMONIALS: 'Testimonials',                // Client testimonials
