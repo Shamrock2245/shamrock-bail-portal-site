@@ -692,8 +692,6 @@ export async function get_testTwilio(request) {
     }
 }
 
-}
-
 /**
  * GET /_functions/debugCounties
  * List all counties in the DB
