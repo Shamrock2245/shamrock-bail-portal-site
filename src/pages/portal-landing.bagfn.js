@@ -27,7 +27,8 @@ import { setSessionToken, getSessionToken, clearSessionToken } from 'public/sess
 import wixSeo from 'wix-seo';
 
 $w.onReady(async function () {
-    console.log("🚀 Portal Landing v2.1: Session Token URL Fix");
+    console.log("🚀 Portal Landing v2.2: Fix Query Scope");
+    const query = wixLocation.query;
 
     // 1. PRIORITY: Check for magic link token in URL (returning from email/SMS)
     if (query.token) {
