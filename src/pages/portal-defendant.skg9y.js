@@ -13,7 +13,7 @@ import { validateCustomSession, getDefendantDetails, getUserConsentStatus } from
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink } from 'backend/signnow-integration';
-import { getSessionToken, clearSessionToken } from 'public/session-manager';
+import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
 
 let currentSession = null; // Store validated session data
@@ -23,8 +23,15 @@ $w.onReady(async function () {
     initUI();
 
     try {
+        // Check for session token in URL (passed from magic link redirect)
+        const query = wixLocation.query;
+        if (query.st) {
+            console.log("🔗 Session token in URL, storing...");
+            setSessionToken(query.st);
+        }
+
         // CUSTOM AUTH CHECK - Replace Wix Members
-        const sessionToken = getSessionToken();
+        const sessionToken = query.st || getSessionToken();
         // console.log("DEBUG: Checking Token:", sessionToken);
 
         if (!sessionToken) {

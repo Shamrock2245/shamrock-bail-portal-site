@@ -9,7 +9,7 @@ import wixData from 'wix-data';
 import wixLocation from 'wix-location';
 import { LightboxController } from 'public/lightbox-controller';
 import { validateCustomSession, generateMagicLink, getStaffDashboardData } from 'backend/portal-auth';
-import { getSessionToken, clearSessionToken } from 'public/session-manager';
+import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
 
 let allCases = []; // Store locally for fast filtering
@@ -22,8 +22,15 @@ $w.onReady(async function () {
         }
     } catch (e) { }
 
+    // Check for session token in URL (passed from magic link redirect)
+    const query = wixLocation.query;
+    if (query.st) {
+        console.log("🔗 Session token in URL, storing...");
+        setSessionToken(query.st);
+    }
+
     // CUSTOM AUTH CHECK - Replace Wix Members
-    const sessionToken = getSessionToken();
+    const sessionToken = query.st || getSessionToken();
     if (!sessionToken) {
         console.warn("⛔ No session token found. Redirecting to Portal Landing.");
         wixLocation.to('/portal-landing');
