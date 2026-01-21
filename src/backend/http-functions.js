@@ -585,7 +585,7 @@ export async function post_twilioStatus(request) {
         // Twilio sends status callbacks as form-urlencoded
         const body = await request.body.text();
         const params = new URLSearchParams(body);
-        
+
         const statusData = {
             messageSid: params.get('MessageSid'),
             messageStatus: params.get('MessageStatus'),
@@ -606,7 +606,7 @@ export async function post_twilioStatus(request) {
                 errorCode: statusData.errorCode,
                 errorMessage: statusData.errorMessage
             });
-            
+
             // Optionally store failed messages for retry or notification
             try {
                 await wixData.insert('SmsDeliveryLogs', {
@@ -635,6 +635,59 @@ export async function post_twilioStatus(request) {
         // Still return 200 to prevent Twilio from retrying
         return ok({
             body: { received: true, error: 'Processing error' }
+        });
+    }
+}
+
+}
+
+/**
+ * GET /_functions/testTwilio
+ * Temporary Debug Endpoint
+ * Usage: https://www.shamrockbailbonds.biz/_functions/testTwilio?phone=+15551234567&key=shamrock-debug
+ */
+export async function get_testTwilio(request) {
+    const phone = request.query.phone;
+    const msg = request.query.msg || "Test from Shamrock Debugger";
+    const key = request.query.key;
+
+    if (key !== 'shamrock-debug') {
+        return forbidden({ body: { error: "Invalid debug key" } });
+    }
+
+    if (!phone) {
+        return badRequest({ body: { error: "Missing 'phone' query parameter" } });
+    }
+
+    try {
+        // Dynamic import to test module resolution too
+        const { sendSms } = await import('backend/twilio-client');
+
+        // Test Secret Access first
+        const secretCheck = await getSecret('TWILIO_ACCOUNT_SID').catch(e => "FAILED_TO_READ");
+
+        const start = Date.now();
+        const result = await sendSms(phone, msg);
+        const duration = Date.now() - start;
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+                test: "Twilio SMS",
+                target: phone,
+                duration: `${duration}ms`,
+                secretStatus: secretCheck === "FAILED_TO_READ" ? "Values Missing/Unreadable" : "Readable",
+                result: result
+            }
+        });
+    } catch (error) {
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+                success: false,
+                error: error.message,
+                stack: error.stack
+            }
         });
     }
 }
