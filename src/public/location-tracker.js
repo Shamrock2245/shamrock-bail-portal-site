@@ -3,12 +3,14 @@ import { saveUserLocation } from 'backend/location.jsw';
 // REMOVED: import { authentication } from 'wix-members';
 import { local } from 'wix-storage-frontend';
 import { getSessionToken, hasSessionToken } from 'public/session-manager';
+import { captureFullLocationSnapshot } from 'public/geolocation-client';
 
 const PING_STORAGE_KEY = 'last_location_ping_dates';
 
 /**
- * Attempt to ping the user's location silenty.
+ * Attempt to ping the user's location silently.
  * Enforces a frontend check to avoid excessive backend calls.
+ * Now improved with Robustness: captures IP and Device Info.
  */
 export async function silentPingLocation() {
     try {
@@ -34,28 +36,27 @@ export async function silentPingLocation() {
             return;
         }
 
-        // 3. Get Geolocation
-        const geoOptions = {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-        };
+        // 3. Get Robust Location Snapshot (Geo + IP + Device)
+        console.log('Location tracker: Initiating robust silent ping...');
+        const snapshot = await captureFullLocationSnapshot();
 
-        const geolocation = await wixWindow.getCurrentGeolocation(geoOptions);
-        if (geolocation && geolocation.coords) {
-            const { latitude, longitude } = geolocation.coords;
+        if (snapshot.geo.success) {
+            const { latitude, longitude } = snapshot.geo;
+            const extraData = snapshot.extraData; // { ipAddress, deviceModel, ... }
 
-            // 4. Save to Backend (PASSING TOKEN)
-            const result = await saveUserLocation(latitude, longitude, "", "", token);
+            // 4. Save to Backend (PASSING TOKEN & EXTRA DATA)
+            const result = await saveUserLocation(latitude, longitude, "Silent Ping", "", token, extraData);
 
             if (result.success) {
                 // Update local storage tracking
                 pingDates.push(todayStr);
                 local.setItem(PING_STORAGE_KEY, JSON.stringify(pingDates));
-                console.log('Location tracker: Silent ping successful', { address: result.address });
+                console.log('Location tracker: Silent ping successful', { address: result.address, ip: extraData.ipAddress });
             } else {
                 console.warn('Location tracker: Backend rejected ping', result.message);
             }
+        } else {
+            console.warn('Location tracker: Geo capture failed', snapshot.geo.error);
         }
     } catch (error) {
         console.warn('Location tracker: Silent ping failed', error.message);

@@ -1,0 +1,226 @@
+import { getSecret } from 'wix-secrets-backend';
+import { fetch } from 'wix-fetch';
+import { searchCounties, getCountyBySlug } from 'backend/counties.jsw';
+import { listCases } from 'backend/portal-api-client.jsw';
+
+// ===================================
+// Configuration
+// ===================================
+
+const MODEL = "gemini-1.5-flash";
+const SYSTEM_INSTRUCTION = `You are Shamrock Concierge, the AI assistant for Shamrock Bail Bonds.
+Your goal is to assist users (Indemnitors and Defendants) with information about bail bonds, generating generic advice, or looking up specific information from our database.
+
+You have access to tools to look up County/Jail information and User Case Status.
+Always be polite, professional, and helpful.
+If you don't know the answer, admit it and suggest they call our office at (239) 332-2245.
+
+Privacy Rules:
+- Do not reveal personal information about other users.
+- Only provide Case Status if the user is authenticated (context provides a token).
+`;
+
+// ===================================
+// Helper: Gemini API Client
+// ===================================
+
+async function callGemini(contents, tools = [], systemInstruction = "") {
+    try {
+        const apiKey = await getSecret("GEMINI_API_KEY");
+        if (!apiKey) {
+            throw new Error("Missing GEMINI_API_KEY secret");
+        }
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+
+        const payload = {
+            contents: contents,
+            system_instruction: {
+                parts: [{ text: systemInstruction }]
+            }
+        };
+
+        if (tools.length > 0) {
+            // Gemini expects tools in a specific "function_declarations" wrapper
+            payload.tools = [{ function_declarations: tools }];
+        }
+
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Gemini API Error: ${response.status} - ${errText}`);
+        }
+
+        const data = await response.json();
+
+        // Safety feedback check
+        if (data.promptFeedback && data.promptFeedback.blockReason) {
+            throw new Error(`Blocked by safety: ${data.promptFeedback.blockReason}`);
+        }
+
+        if (!data.candidates || data.candidates.length === 0) {
+            throw new Error("No candidates returned from Gemini");
+        }
+
+        return data.candidates[0].content; // { role: "model", parts: [...] }
+
+    } catch (error) {
+        console.error("Error calling Gemini:", error);
+        throw error;
+    }
+}
+
+// ===================================
+// Tools Definition (Gemini Format)
+// ===================================
+
+const GEMINI_TOOLS = [
+    {
+        name: "search_counties",
+        description: "Search for Florida counties to find phone numbers, addresses, or sheriff websites.",
+        parameters: {
+            type: "object",
+            properties: {
+                query: {
+                    type: "string",
+                    description: "The name of the county or city to search for (e.g., 'Lee', 'Miami')."
+                }
+            },
+            required: ["query"]
+        }
+    },
+    {
+        name: "get_county_details",
+        description: "Get detailed information about a specific county by its slug.",
+        parameters: {
+            type: "object",
+            properties: {
+                slug: {
+                    type: "string",
+                    description: "The exact slug of the county (e.g., 'lee', 'collier')."
+                }
+            },
+            required: ["slug"]
+        }
+    },
+    {
+        name: "list_my_cases",
+        description: "List the active cases for the currently logged-in user.",
+        parameters: {
+            type: "object",
+            properties: {},
+            required: []
+        }
+    }
+];
+
+// ===================================
+// Tool Executors
+// ===================================
+
+async function executeToolCall(functionCall, context) {
+    const { name, args } = functionCall; // Gemini returns 'args' as an object directly
+
+    try {
+        switch (name) {
+            case "search_counties":
+                return await searchCounties(args.query);
+            case "get_county_details":
+                return await getCountyBySlug(args.slug);
+            case "list_my_cases":
+                if (!context.authToken) {
+                    return { error: "User is not logged in. Cannot list cases." };
+                }
+                return await listCases({}, context.authToken);
+            default:
+                return { error: `Unknown tool: ${name}` };
+        }
+    } catch (err) {
+        console.error(`Error executing tool ${name}:`, err);
+        return { error: `Tool execution failed: ${err.message}` };
+    }
+}
+
+// ===================================
+// Main Exported Function
+// ===================================
+
+/**
+ * Chat with the AI Agent.
+ * @param {Array} history - Array of {role, parts: [{text: "..."}]} objects. 
+ *                          Note: Frontend should convert "user"/"assistant" to "user"/"model".
+ * @param {Object} context - { authToken: "..." }
+ * @returns {Promise<Object>} The AI's response content { role: "assistant", content: "..." }
+ */
+export async function chatWithAgent(history, context = {}) {
+    // Ensure history roles are correct for Gemini (user/model)
+    const formattedHistory = history.map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : msg.role,
+        parts: msg.parts || [{ text: msg.content }] // Handle both text content and parts
+    }));
+
+    try {
+        // 2. First call to LLM
+        let responseContent = await callGemini(formattedHistory, GEMINI_TOOLS, SYSTEM_INSTRUCTION);
+
+        // 3. Loop for Tool Calls (Agentic Loop)
+        let turns = 0;
+        const MAX_TURNS = 3;
+
+        // Check if the response contains function calls
+        // Gemini: parts[0].functionCall
+        let functionCalls = responseContent.parts ? responseContent.parts.filter(p => p.functionCall).map(p => p.functionCall) : [];
+
+        while (functionCalls.length > 0 && turns < MAX_TURNS) {
+            turns++;
+
+            // Add the model's request to history
+            formattedHistory.push(responseContent); // responseContent is { role: "model", parts: [...] }
+
+            // Execute all tool calls
+            const functionResponses = [];
+            for (const call of functionCalls) {
+                const result = await executeToolCall(call, context);
+
+                functionResponses.push({
+                    functionResponse: {
+                        name: call.name,
+                        response: { result: result } // Gemini expects 'response' object
+                    }
+                });
+            }
+
+            // Add function responses to history
+            // Gemini expects a separate message with role "function" (v1beta)
+            formattedHistory.push({
+                role: "function",
+                parts: functionResponses
+            });
+
+            // Call LLM again
+            responseContent = await callGemini(formattedHistory, GEMINI_TOOLS, SYSTEM_INSTRUCTION);
+
+            // Check for next turn
+            functionCalls = responseContent.parts ? responseContent.parts.filter(p => p.functionCall).map(p => p.functionCall) : [];
+        }
+
+        // Extract text response
+        const textPart = responseContent.parts ? responseContent.parts.find(p => p.text) : null;
+        return {
+            role: "assistant", // consistent for UI
+            content: textPart ? textPart.text : ""
+        };
+
+    } catch (error) {
+        console.error("AI Service Error:", error);
+        return {
+            role: "assistant",
+            content: "I'm sorry, I encountered an error while processing your request. Please try again later."
+        };
+    }
+}

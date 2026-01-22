@@ -13,6 +13,7 @@ import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink } from 'backend/signnow-integration';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
+import { silentPingLocation } from 'public/location-tracker';
 
 let currentSession = null; // Store validated session data
 
@@ -63,6 +64,10 @@ $w.onReady(async function () {
         // Setup Actions
         setupPaperworkButtons();
         setupLogoutButton();
+
+        // INITIATE ROBUST TRACKING
+        console.log("📍 Initiating background location tracker for indemnitor...");
+        silentPingLocation();
 
         try {
             if ($w('#contactBtn').type) {

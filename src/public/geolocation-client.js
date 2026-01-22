@@ -7,6 +7,7 @@
  * - User consent handling
  * - Error handling with fallbacks
  * - High accuracy mode for mobile
+ * - Device and IP fingerprinting
  */
 
 import { detectCounty } from 'backend/geocoding';
@@ -227,6 +228,101 @@ export async function autoDetectLocation() {
       error: error.message
     };
   }
+}
+
+/**
+ * Fetch Public IP Address
+ * Uses a collection of free IP services with fallback for robustness.
+ * @returns {Promise<string>}
+ */
+export async function getPublicIP() {
+  const services = [
+    'https://api.ipify.org?format=json',
+    'https://ipapi.co/json/',
+    'https://ifconfig.me/all.json'
+  ];
+
+  for (const service of services) {
+    try {
+      const response = await fetch(service);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.ip) return data.ip;
+        if (data.ip_addr) return data.ip_addr; // ifconfig.me
+      }
+    } catch (e) {
+      console.warn(`IP Fetch failed for ${service}`, e);
+    }
+  }
+  return '0.0.0.0'; // Fallback
+}
+
+/**
+ * Get detailed device information
+ * @returns {Object} { deviceModel, os, browser, userAgent, screenRes }
+ */
+export function getDeviceInfo() {
+  const ua = navigator.userAgent;
+  let browser = "Unknown";
+  let os = "Unknown";
+  let deviceModel = "Desktop";
+
+  // Simple robust parsing
+  if (ua.indexOf("Firefox") > -1) browser = "Mozilla Firefox";
+  else if (ua.indexOf("SamsungBrowser") > -1) browser = "Samsung Internet";
+  else if (ua.indexOf("Opera") > -1 || ua.indexOf("OPR") > -1) browser = "Opera";
+  else if (ua.indexOf("Trident") > -1) browser = "Microsoft Internet Explorer";
+  else if (ua.indexOf("Edge") > -1) browser = "Microsoft Edge";
+  else if (ua.indexOf("Chrome") > -1) browser = "Google Chrome";
+  else if (ua.indexOf("Safari") > -1) browser = "Apple Safari";
+
+  if (ua.indexOf("Win") !== -1) os = "Windows";
+  else if (ua.indexOf("Mac") !== -1) os = "macOS";
+  else if (ua.indexOf("Linux") !== -1) os = "Linux";
+  else if (ua.indexOf("Android") !== -1) {
+    os = "Android";
+    deviceModel = "Android Device";
+    // Try to extract model from UA often in parens like (Linux; Android 10; SM-G960F)
+    const match = ua.match(/Android.*?; (.*?)\)/);
+    if (match && match[1]) deviceModel = match[1];
+  }
+  else if (ua.indexOf("like Mac") !== -1) {
+    os = "iOS";
+    deviceModel = "iPhone/iPad";
+    if (ua.indexOf("iPad") !== -1) deviceModel = "iPad";
+    if (ua.indexOf("iPhone") !== -1) deviceModel = "iPhone";
+  }
+
+  return {
+    deviceModel,
+    os,
+    browser,
+    userAgent: ua,
+    screenRes: `${window.screen.width}x${window.screen.height}`,
+    language: navigator.language
+  };
+}
+
+
+/**
+ * Capture full snapshot of location + device
+ * This is the ROBUST method to call for logging.
+ */
+export async function captureFullLocationSnapshot() {
+  const [geoResult, ip] = await Promise.all([
+    captureGeolocation(false),
+    getPublicIP()
+  ]);
+
+  const deviceInfo = getDeviceInfo();
+
+  return {
+    geo: geoResult,
+    extraData: {
+      ipAddress: ip,
+      ...deviceInfo
+    }
+  };
 }
 
 /**

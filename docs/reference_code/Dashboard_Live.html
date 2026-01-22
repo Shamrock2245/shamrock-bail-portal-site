@@ -1,3 +1,4 @@
+<!-- PASTE YOUR Dashboard.html CONTENT HERE -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -2432,7 +2433,7 @@
            CONFIGURATION
            ========================================================= */
         const CONFIG = {
-            gasWebAppUrl: 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbxZ3_3xcLQyCpVZy3CYvJyygzfkt-P6d0EY-P_6fDejDiUg21tQC9cmkS_PjfdclnAFEw/exec', // UPDATE WITH YOUR DEPLOYED URL
+            gasWebAppUrl: 'https://script.google.com/macros/s/AKfycbyNP9qTxyW4iukEIB0RBu1n4Q7WI5opawkiVprZgw83hmd3t6oTCrgbmpYlMpic78NnKw/exec', // UPDATE WITH YOUR DEPLOYED URL
             signNowApiBase: 'https://api.signnow.com',
             // signNowToken moved to Script Properties for security
 
@@ -5540,31 +5541,74 @@
          * @returns {Promise<Object>} Result of the save operation
          */
         async function saveSigningLinkToWixPortal(params) {
-            if (!WIX_PORTAL_CONFIG.enabled) return { success: false, reason: 'disabled' };
-            // Wrap single item as batch
-            const doc = {
-                signerEmail: params.signerEmail,
-                signerName: params.signerName,
-                signerPhone: params.signerPhone,
-                signerRole: params.signerRole,
-                signingLink: params.signingLink,
-                documentId: params.documentId,
-                defendantName: params.defendantName,
-                caseNumber: params.caseNumber || '',
-                documentName: params.documentName || 'Bail Bond Packet',
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-            };
-            return batchSaveToWixPortal([doc]);
+            if (!WIX_PORTAL_CONFIG.enabled) {
+                console.log('Wix Portal integration disabled');
+                return { success: false, reason: 'disabled' };
+            }
+
+            try {
+                const payload = {
+                    signerEmail: params.signerEmail,
+                    signerName: params.signerName,
+                    signerPhone: params.signerPhone,
+                    signerRole: params.signerRole,
+                    signingLink: params.signingLink,
+                    documentId: params.documentId,
+                    defendantName: params.defendantName,
+                    caseNumber: params.caseNumber || '',
+                    documentName: params.documentName || 'Bail Bond Packet',
+                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+                };
+
+                const response = await fetch(WIX_PORTAL_CONFIG.siteUrl + WIX_PORTAL_CONFIG.endpoints.addDocument, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log('Signing link saved to Wix portal:', result.documentId);
+                } else {
+                    console.error('Failed to save to Wix portal:', result.error);
+                }
+
+                return result;
+
+            } catch (error) {
+                console.error('Error saving to Wix portal:', error);
+                return { success: false, error: error.message };
+            }
         }
 
+        /**
+         * Save multiple signing links to Wix portal at once
+         * 
+         * @param {Array<Object>} documents - Array of document objects (same structure as saveSigningLinkToWixPortal params)
+         * @returns {Promise<Object>} Result with counts of successful/failed saves
+         */
         async function batchSaveToWixPortal(documents) {
-            if (!WIX_PORTAL_CONFIG.enabled) return { success: false, reason: 'disabled' };
+            if (!WIX_PORTAL_CONFIG.enabled) {
+                console.log('Wix Portal integration disabled');
+                return { success: false, reason: 'disabled' };
+            }
 
-            // Call Server-Side Logic (Secure)
             try {
-                const result = await callGAS('batchSaveToWixPortal', { documents: documents });
-                console.log('Batch save to Wix portal (via GAS):', result);
+                const response = await fetch(WIX_PORTAL_CONFIG.siteUrl + WIX_PORTAL_CONFIG.endpoints.batchAdd, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ documents })
+                });
+
+                const result = await response.json();
+                console.log('Batch save to Wix portal:', result);
                 return result;
+
             } catch (error) {
                 console.error('Error batch saving to Wix portal:', error);
                 return { success: false, error: error.message };

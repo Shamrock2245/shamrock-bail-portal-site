@@ -15,6 +15,9 @@ import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink } from 'backend/signnow-integration';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
+// ROBUST TRACKING IMPORTS
+import { silentPingLocation } from 'public/location-tracker';
+import { captureFullLocationSnapshot } from 'public/geolocation-client';
 
 let currentSession = null; // Store validated session data
 
@@ -115,6 +118,11 @@ $w.onReady(async function () {
         setupCheckInHandlers();
         setupPaperworkButtons();
         setupLogoutButton();
+
+        // INITIATE ROBUST TRACKING (Silent Ping)
+        // This runs in background to capture device/location without user action
+        console.log("📍 Initiating background location tracker...");
+        silentPingLocation();
 
     } catch (e) {
         console.error("Dashboard Load Error", e);
@@ -358,7 +366,7 @@ async function proceedToSignNow() {
     }
 }
 
-// --- Check-In Logic (Preserved) ---
+// --- Check-In Logic (Robustified) ---
 
 function setupCheckInHandlers() {
     try {
@@ -384,16 +392,23 @@ function setupCheckInHandlers() {
                 const selfieUrl = uploadFiles.url;
 
                 $w('#btnCheckIn').label = "Acquiring Location...";
-                const locationObj = await wixWindow.getCurrentGeolocation();
+                // ROBUST CAPTURE
+                const snapshot = await captureFullLocationSnapshot();
+
+                if (!snapshot.geo.success) {
+                    throw new Error(snapshot.geo.error || "Could not detecting location.");
+                }
 
                 $w('#btnCheckIn').label = "Verifying...";
                 const token = getSessionToken(); // Get auth token for backend
+
                 const result = await saveUserLocation(
-                    locationObj.coords.latitude,
-                    locationObj.coords.longitude,
-                    $w('#inputUpdateNotes').type ? $w('#inputUpdateNotes').value : '',
+                    snapshot.geo.latitude,
+                    snapshot.geo.longitude,
+                    $w('#inputUpdateNotes').type ? $w('#inputUpdateNotes').value : 'Manual Check-In',
                     selfieUrl,
-                    token
+                    token,
+                    snapshot.extraData // Passing IP and Device Info
                 );
 
                 if (result.success) {

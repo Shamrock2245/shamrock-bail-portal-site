@@ -17,12 +17,14 @@ import { analyzeLocationRisk } from 'backend/fraud-detection'; // Static import
  * @param {string} sessionToken - REQUIRED: Custom session token
  * @returns {Promise<{success: boolean, message: string}>}
  */
-export async function saveUserLocation(latitude, longitude, notes = "", imageUrl = "", sessionToken) {
+export async function saveUserLocation(latitude, longitude, notes = "", imageUrl = "", sessionToken, extraData = {}) {
     try {
         console.log("LocationBackend: Saving location...");
 
         if (!sessionToken) {
             console.error("LocationBackend: Missing session token");
+            // Check if we can proceed with just IP/device logging? No, we need a user context usually.
+            // But for "robustness", maybe we log anonymous hits? sticking to auth for now.
             return { success: false, message: 'Unauthorized: Missing token' };
         }
 
@@ -34,7 +36,17 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
         }
 
         const personId = session.personId;
-        const email = session.email || `user_${personId}@shamrock.local`; // Fallback if email not in session yet
+        const email = session.email || `user_${personId}@shamrock.local`;
+
+        // Extract extra data
+        const {
+            ipAddress = '',
+            deviceModel = '',
+            os = '',
+            browser = '',
+            phoneNumber = '',
+            userAgent = ''
+        } = extraData;
 
         // 1. Get Last Location (for risk/velocity)
         const lastLocation = await getLastLocation(personId);
@@ -64,18 +76,23 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
         }
 
         const locationData = {
-            memberId: personId, // Using personId as memberId for compatibility
+            memberId: personId,
             memberEmail: email,
-            latitude: latitude,
-            longitude: longitude,
-            address: address,
-            intersection: intersection,
+            phoneNumber: phoneNumber || session.phone || '', // Try session phone if available
+            latitude,
+            longitude,
+            address,
+            intersection,
             timestamp: new Date(),
             notes: notes || "",
             imageUrl: imageUrl || "",
-            userAgent: 'Portal Custom Auth',
-            riskLevel: riskLevel,
-            riskFactors: riskFactors,
+            ipAddress,
+            deviceModel,
+            os,
+            browser,
+            userAgent: userAgent || 'Portal Custom Auth',
+            riskLevel,
+            riskFactors,
             isHighRisk: riskLevel === 'HIGH'
         };
 
