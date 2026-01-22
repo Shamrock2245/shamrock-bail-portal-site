@@ -1,6 +1,6 @@
 # Simplified Login System - Fortune 50 Grade
 
-**Last Updated:** 2026-01-14  
+**Last Updated:** 2026-01-22  
 **Status:** ✅ Production Ready  
 **Commit:** 6cd8d9a
 
@@ -164,10 +164,16 @@ Query: Cases WHERE indemnitorEmail = input OR indemnitorPhone = input
 Result: Role = "indemnitor"
 ```
 
+### Staff Detection (HIGHEST PRIORITY)
+```
+Hardcoded emails: admin@shamrockbailbonds.biz, shamrockbailoffice@gmail.com
+Result: Role = "staff"
+```
+
 ### New User
 ```
 No match found in either query
-Result: Role = "defendant" (default for new signups)
+Result: Role = "indemnitor" (default - cosigner signs first)
 PersonId = "new_{timestamp}"
 ```
 
@@ -218,7 +224,7 @@ PersonId = "new_{timestamp}"
 - [ ] Click magic link → Auto-login to correct portal
 - [ ] Existing defendant → Routes to defendant portal
 - [ ] Existing indemnitor → Routes to indemnitor portal
-- [ ] New user → Routes to defendant portal
+- [ ] New user → Routes to indemnitor portal (cosigner signs first)
 - [ ] Expired token → See error, stay on landing page
 
 ### UX Tests
