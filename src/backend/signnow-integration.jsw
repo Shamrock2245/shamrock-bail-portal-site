@@ -63,13 +63,14 @@ export async function sendForSignature(params) {
  * @param {string} role 
  * @returns {Promise<{success: boolean, embeddedLink?: string, documentId?: string, error?: string}>}
  */
-export async function createEmbeddedLink(documentId, email, role) {
+export async function createEmbeddedLink(documentId, email, role, formData = {}) {
     const result = await callGasBackend({
         action: 'createEmbeddedLink',
         documentId,
         signerEmail: email,
         signerRole: role,
-        linkExpiration: 60 // 1 hour for portal
+        linkExpiration: 60, // 1 hour for portal
+        formData
     });
 
     // Normalize Response: Combine logic from both branches to be maximally robust

@@ -7,7 +7,7 @@
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-import { validateCustomSession, getIndemnitorDetails } from 'backend/portal-auth';
+import { validateCustomSession, getIndemnitorDetails, getUserConsentStatus } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink } from 'backend/signnow-integration';
@@ -129,6 +129,11 @@ async function loadDashboardData() {
             $w('#welcomeText').text = `Welcome, ${name}`;
         }
 
+        // Phase 2: Pre-fill Email
+        if ($w('#inputIndemnitorEmail').type) {
+            $w('#inputIndemnitorEmail').value = currentSession.email || "";
+        }
+
         if (data) {
             try {
                 if ($w('#liabilityText').type) {
@@ -219,6 +224,74 @@ async function handlePaperworkStart() {
         return;
     }
 
+    // --- FORM DATA COLLECTION & VALIDATION ---
+    // Phase 1 Fields
+    const defendantName = $w('#inputDefendantName').value;
+    // Optional Field: Defendant Phone
+    const defendantPhone = $w('#inputDefendantPhone').value;
+    const indemnitorName = $w('#inputIndemnitorName').value;
+    const indemnitorAddressObj = $w('#inputIndemnitorAddress').value;
+    const indemnitorAddress = indemnitorAddressObj?.formatted || "";
+
+    // Phase 2 Fields
+    const indemnitorEmail = $w('#inputIndemnitorEmail').value;
+    const indemnitorPhone = $w('#inputIndemnitorPhone').value;
+
+    // References
+    const ref1Name = $w('#inputRef1Name').value;
+    const ref1Phone = $w('#inputRef1Phone').value;
+    const ref1AddressObj = $w('#inputRef1Address').value;
+    const ref1Address = ref1AddressObj?.formatted || "";
+
+    const ref2Name = $w('#inputRef2Name').value;
+    const ref2Phone = $w('#inputRef2Phone').value;
+    const ref2AddressObj = $w('#inputRef2Address').value;
+    const ref2Address = ref2AddressObj?.formatted || "";
+
+
+    // Validation
+    const missingFields = [];
+    if (!defendantName) missingFields.push("Defendant Name");
+    if (!indemnitorName) missingFields.push("Your Name");
+    if (!indemnitorAddress) missingFields.push("Your Address");
+    if (!indemnitorEmail) missingFields.push("Email");
+    if (!indemnitorPhone) missingFields.push("Phone");
+    if (!ref1Name || !ref1Phone || !ref1Address) missingFields.push("Reference 1 (Complete)");
+    if (!ref2Name || !ref2Phone || !ref2Address) missingFields.push("Reference 2 (Complete)");
+
+    if (missingFields.length > 0) {
+        if ($w('#statusMessage').type) {
+            $w('#statusMessage').text = `⚠️ Missing: ${missingFields.join(", ")}`;
+            $w('#statusMessage').expand();
+            // Optional: Auto-hide after a few seconds
+            setTimeout(() => $w('#statusMessage').collapse(), 8000);
+        }
+        return; // Stop execution
+    }
+
+    // Construct Data Payload
+    const formData = {
+        defendantName,
+        defendantPhone, // Optional
+        indemnitorName,
+        indemnitorAddress,
+        indemnitorEmail,
+        indemnitorPhone,
+        reference1: {
+            name: ref1Name,
+            phone: ref1Phone,
+            address: ref1Address
+        },
+        reference2: {
+            name: ref2Name,
+            phone: ref2Phone,
+            address: ref2Address
+        }
+    };
+
+    // Clear any previous error messages
+    if ($w('#statusMessage').type) $w('#statusMessage').collapse();
+
     // Use REAL email or fallback
     const userEmail = currentSession.email || `indemnitor_${currentSession.personId}@shamrock.local`;
 
@@ -242,7 +315,7 @@ async function handlePaperworkStart() {
     }
 
     // 3. Signing
-    await proceedToSignNow();
+    await proceedToSignNow(formData);
 }
 
 // --- Helpers ---
@@ -262,15 +335,14 @@ async function checkIdUploadStatus(memberEmail, sessionToken) {
 
 async function checkConsentStatus(personId) {
     try {
-        // TODO: Check consent in PortalUsers or custom collection
-        // For now, return false to trigger consent flow
-        return false;
+        return await getUserConsentStatus(personId);
     } catch (e) {
+        console.error("Indemnitor checkConsentStatus error:", e);
         return false;
     }
 }
 
-async function proceedToSignNow() {
+async function proceedToSignNow(formData) {
     if (!currentSession) {
         console.error('No session available');
         return;
@@ -281,7 +353,7 @@ async function proceedToSignNow() {
     const userEmail = currentSession.email || `indemnitor_${currentSession.personId}@shamrock.local`;
 
     // Role: Indemnitor
-    const result = await createEmbeddedLink(caseId, userEmail, 'indemnitor');
+    const result = await createEmbeddedLink(caseId, userEmail, 'indemnitor', formData);
 
     if (result.success) {
         LightboxController.show('signing', {
