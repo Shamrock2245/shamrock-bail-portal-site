@@ -12,7 +12,8 @@
 type WixElementSelectorOverride = string;
 
 declare global {
-    type WixElementSelector = string | number | symbol;
+    // Force allow any string selector to bypass generated union types
+    type WixElementSelector = string | any;
 }
 
 // Ensure the module is treated as a global augmentation

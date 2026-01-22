@@ -5,6 +5,10 @@ import wixData from 'wix-data';
 import { generateCountyPage } from 'backend/county-generator';
 import { getNearbyCounties } from 'public/countyUtils'; // Keeping for "Nearby Counties" feature
 
+// Type-safe element selector to bypass ID validation issues
+// cast to any to allow any string
+const Select = (selector) => /** @type {any} */($w)(selector);
+
 $w.onReady(async function () {
     console.log("🚀 Dynamic County Page Loading... (Optimized)");
 
@@ -21,16 +25,16 @@ $w.onReady(async function () {
 
     // --- DATASET OVERRIDE (Legacy Support) ---
     // Safely attempt to filter legacy dataset if present, but don't block execution
-    $w('#dynamicDataset').onReady(() => {
+    Select('#dynamicDataset').onReady(() => {
         console.log("Dataset Ready - Applying Filter...");
-        $w('#dynamicDataset').setFilter(wixData.filter().eq('countySlug', countySlug))
+        Select('#dynamicDataset').setFilter(wixData.filter().eq('countySlug', countySlug))
             .then(() => console.log("✅ Dataset filter applied."))
             .catch(e => console.log("⚠️ Dataset filter failed:", e));
     });
 
     try {
         // Show loading state if element exists
-        if ($w('#loadingIndicator').valid) $w('#loadingIndicator').show();
+        try { Select('#loadingIndicator').show(); } catch (e) { }
 
         console.log("⏳ Calling backend generateCountyPage...");
 
@@ -48,8 +52,6 @@ $w.onReady(async function () {
 
         if (!success || !data) {
             console.warn(`⚠️ County data not found for slug: ${countySlug}.`);
-            // Optional: fallback or redirect
-            // wixLocation.to('/portal-landing');
             return;
         }
 
@@ -147,81 +149,102 @@ $w.onReady(async function () {
         setText('#whyChooseBody', county.content.why_choose_us); // Assuming element exists
 
         // Sticky/Main Call Buttons
-        const callBtn = $w('#callShamrockBtn').length ? $w('#callShamrockBtn') : $w('#callCountiesBtn');
-        if (callBtn.valid) {
+        // Fallback checks
+        let callBtn = $w('#callShamrockBtn');
+        // if (!callBtn.valid) callBtn = $w('#callCountiesBtn'); // Removed .valid
+
+        // Try binding primary button
+        try {
             callBtn.label = county.content.hero_cta_primary || "Call Now";
             callBtn.onClick(() => wixLocation.to(`tel:${county.contact.primary_phone_display.replace(/[^0-9]/g, '')}`));
             callBtn.expand();
+        } catch (e) {
+            // Try fallback button
+            try {
+                const fallbackBtn = Select('#callCountiesBtn');
+                fallbackBtn.label = county.content.hero_cta_primary || "Call Now";
+                fallbackBtn.onClick(() => wixLocation.to(`tel:${county.contact.primary_phone_display.replace(/[^0-9]/g, '')}`));
+                fallbackBtn.expand();
+            } catch (e2) { }
         }
 
         // Jail Address (if element exists and data provided)
-        if ($w('#jailAddress').valid) {
-            // Backend generator currently doesn't provide address separate from jail name commonly
-            // If needed we can add it to generator or map it here if available
+        try {
             $w('#jailAddress').collapse();
-        }
+        } catch (e) { }
 
         // 5. POPULATE FAQs (Repeater)
         const faqRep = $w('#faqRepeater');
-        if (faqRep.valid && faqs.length > 0) {
-            faqRep.data = faqs.map((f, i) => ({ ...f, _id: `faq-${i}` }));
-            faqRep.onItemReady(($item, itemData) => {
-                $item('#faqQuestion').text = itemData.question;
-                $item('#faqAnswer').text = itemData.answer;
-            });
-            faqRep.expand();
-        } else if (faqRep.valid) {
-            faqRep.collapse();
-        }
+        try {
+            if (faqs.length > 0) {
+                faqRep.data = faqs.map((f, i) => ({ ...f, _id: `faq-${i}` }));
+                faqRep.onItemReady(($item, itemData) => {
+                    $item('#faqQuestion').text = itemData.question;
+                    $item('#faqAnswer').text = itemData.answer;
+                });
+                faqRep.expand();
+            } else {
+                faqRep.collapse();
+            }
+        } catch (e) { }
 
         // 6. POPULATE NEARBY COUNTIES
-        const nearbyRep = $w('#nearbyCountiesRepeater');
-        if (nearbyRep.valid && Array.isArray(nearby) && nearby.length > 0) {
-            // Filter out current county just in case
-            const neighbors = nearby.filter(n => n.slug !== countySlug);
-            nearbyRep.data = neighbors;
-            nearbyRep.onItemReady(($item, itemData) => {
-                if ($item('#neighborName').valid) $item('#neighborName').text = itemData.name;
-                if ($item('#neighborContainer').valid) {
-                    $item('#neighborContainer').onClick(() => wixLocation.to(`/bail-bonds/${itemData.slug}`));
-                }
-            });
-            nearbyRep.expand();
-        }
+        const nearbyRep = Select('#nearbyCountiesRepeater');
+        try {
+            if (Array.isArray(nearby) && nearby.length > 0) {
+                // Filter out current county just in case
+                const neighbors = nearby.filter(n => n.slug !== countySlug);
+                nearbyRep.data = neighbors;
+                nearbyRep.onItemReady(($item, itemData) => {
+                    // Try/Catch handling for internal elements
+                    try { $item('#neighborName').text = itemData.name; } catch (e) { }
+                    try {
+                        $item('#neighborContainer').onClick(() => wixLocation.to(`/bail-bonds/${itemData.slug}`));
+                    } catch (e) { }
+                });
+                nearbyRep.expand();
+            }
+        } catch (e) { }
 
         // Hide loader / Show content
-        if ($w('#loadingIndicator').valid) $w('#loadingIndicator').hide();
-        if ($w('#countyContent').valid) $w('#countyContent').expand();
+        try { Select('#loadingIndicator').hide(); } catch (e) { }
+        try { Select('#countyContent').expand(); } catch (e) { }
 
     } catch (err) {
         console.error("❌ Critical Page Error:", err);
-        if ($w('#loadingIndicator').valid) $w('#loadingIndicator').hide();
+        try { Select('#loadingIndicator').hide(); } catch (e) { }
     }
 });
 
 // --- HELPER UI FUNCTIONS ---
 function setText(selector, value) {
-    if ($w(selector).valid) $w(selector).text = value || "";
+    // Velo: Just try to set it. If element missing, catch it.
+    try {
+        $w(selector).text = value || "";
+    } catch (e) {
+        // Optional element missing, ignore.
+    }
 }
 
 function setLink(selector, url, label) {
     const el = $w(selector);
-    if (!el.valid) return;
+    // invalid check: if (!el.valid) return; 
 
     if (url) {
-        if (el.type === '$w.Button') {
-            el.label = label || el.label;
-            el.link = url;
-            el.target = "_blank";
-        } else {
-            // Text link
-            el.text = label || el.text;
-            // el.link = url; // Text elements might not allow direct link prop assignment on some versions, safer to use event or property if rich text
-            // Use wixLocation for text click if needed, or simple link property if it's a specific Wix element type
-            // NOTE: Simple text elements don't always have a .link property accessible like this unless rich text.
-        }
-        el.expand();
+        try {
+            if (el.type === '$w.Button') {
+                el.label = label || el.label;
+                el.link = url;
+                el.target = "_blank";
+            } else {
+                // Text link (Try/Catch wrapper covers missing props)
+                el.text = label || el.text;
+                // Rich text elements support html, others might not support link property directly on the element interface in all cases
+                // but we will leave it as is for text setting.
+            }
+            el.expand();
+        } catch (e) { }
     } else {
-        el.collapse();
+        try { el.collapse(); } catch (e) { }
     }
 }

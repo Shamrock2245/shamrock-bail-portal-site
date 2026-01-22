@@ -8,6 +8,7 @@
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
+import { local } from 'wix-storage';
 import { saveUserLocation } from 'backend/location';
 import { validateCustomSession, getDefendantDetails, getUserConsentStatus } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
@@ -180,7 +181,7 @@ function setupPaperworkButtons() {
     // Sign via Email Button (#btnStartPaperwork)
     try {
         const emailBtn = $w('#btnStartPaperwork');
-        if (emailBtn.length > 0) {
+        if (emailBtn) {
             console.log('Defendant Portal: Sign via Email button found');
             emailBtn.onClick(() => {
                 console.log('Defendant Portal: Sign via Email clicked');
@@ -297,8 +298,13 @@ async function handlePaperworkStart() {
         if (consentResult && consentResult.success) {
             // Store consent in localStorage for persistence
             const consentKey = `consent_${currentSession.personId}`;
-            wixWindow.browserStorage.local.setItem(consentKey, 'true');
-            currentSession.hasConsented = true;
+            try {
+                local.setItem(consentKey, 'true');
+                currentSession.hasConsented = true;
+                console.log("START FLOW: Consent granted and stored");
+            } catch (e) {
+                console.warn("Could not store consent:", e);
+            }
             console.log("START FLOW: Consent granted and stored");
         } else {
             // Double-check in case consent was stored by lightbox directly
@@ -463,10 +469,10 @@ async function handleDownloadPaperwork() {
 
     try {
         // Show loading message
-        alert('Preparing your paperwork for download...');
+        console.log('Preparing your paperwork for download...');
 
         if (!currentSession) {
-            alert('Session error. Please log in again.');
+            console.warn('Session error. Please log in again.');
             return;
         }
 
@@ -474,7 +480,10 @@ async function handleDownloadPaperwork() {
 
         // TODO: Implement PDF generation and download
         // For now, show a placeholder message
-        alert('Download feature coming soon! Please use "Sign via Email" or "Sign Via Kiosk" for now.');
+        console.log('Download feature coming soon! Please use "Sign via Email" or "Sign Via Kiosk" for now.');
+        // Consider opening a lightbox or showing a text message on screen instead of alert
+        $w('#textUserWelcome').text = "Download feature coming soon!";
+        $w('#textUserWelcome').show();
 
         // Future implementation:
         // 1. Call backend to generate PDF packet
@@ -485,6 +494,7 @@ async function handleDownloadPaperwork() {
 
     } catch (error) {
         console.error('Error handling download paperwork:', error);
-        alert('Unable to prepare paperwork for download. Please try again or contact support.');
+        $w('#textUserWelcome').text = "Error preparing download.";
+        $w('#textUserWelcome').show();
     }
 }

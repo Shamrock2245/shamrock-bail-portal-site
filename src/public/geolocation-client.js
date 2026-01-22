@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 /**
  * Shamrock Bail Bonds - Geolocation Client
  * Frontend module for capturing user location
@@ -22,7 +23,8 @@ import { session } from 'wix-storage';
 export async function captureGeolocation(requireConsent = true) {
   try {
     // Check if geolocation is available
-    if (!navigator.geolocation) {
+    // Type-safe check for Velo/Worker environments
+    if (!navigator || !('geolocation' in navigator)) {
       return {
         success: false,
         error: 'Geolocation not supported',
@@ -38,7 +40,12 @@ export async function captureGeolocation(requireConsent = true) {
         maximumAge: 300000 // 5 minutes
       };
 
-      navigator.geolocation.getCurrentPosition(resolve, reject, options);
+      const nav = navigator; // Cast to any if needed invisibly, or just trust 'in' check
+      if (nav.geolocation) {
+        nav.geolocation.getCurrentPosition(resolve, reject, options);
+      } else {
+        reject(new Error("Geolocation not supported"));
+      }
     });
 
     const latitude = position.coords.latitude;
@@ -293,13 +300,26 @@ export function getDeviceInfo() {
     if (ua.indexOf("iPhone") !== -1) deviceModel = "iPhone";
   }
 
+  try {
+    if (typeof window !== 'undefined' && window.screen) {
+      return {
+        deviceModel,
+        os,
+        browser,
+        userAgent: ua,
+        screenRes: `${window.screen.width}x${window.screen.height}`,
+        language: navigator.language
+      };
+    }
+  } catch (e) { }
+
   return {
     deviceModel,
     os,
     browser,
     userAgent: ua,
-    screenRes: `${window.screen.width}x${window.screen.height}`,
-    language: navigator.language
+    screenRes: "Unknown",
+    language: "en"
   };
 }
 

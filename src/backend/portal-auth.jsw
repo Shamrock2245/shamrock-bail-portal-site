@@ -12,12 +12,12 @@ import { API_BASE_URL, API_TIMEOUT } from 'public/portal-config';
 import { sendSms } from 'backend/twilio-client'; // FIX: Single Twilio Import
 // generateToken defined locally to avoid import issues
 function generateToken() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let token = '';
-    for (let i = 0; i < 64; i++) {
-        token += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return token;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let token = '';
+  for (let i = 0; i < 64; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
 }
 
 /***** CONFIG & ROLES *****/
@@ -502,6 +502,7 @@ export async function validateCustomSession(sessionToken) {
     const now = Date.now();
 
     // Safety check for expiresAt
+    // Wix Data dates are Date objects.
     const expiresAt = session.expiresAt ? new Date(session.expiresAt).getTime() : 0;
 
     // Check if expired
@@ -512,7 +513,7 @@ export async function validateCustomSession(sessionToken) {
     }
 
     // Update last activity
-    session.lastActivity = new Date(now);
+    session.lastActivity = new Date(); // Updates strictly to Date object
     await wixData.update("Portal Sessions", session, { suppressAuth: true });
 
     return {
@@ -539,7 +540,7 @@ export async function destroyCustomSession(sessionToken) {
       .eq("token", sessionToken)
       .limit(1)
       .find({ suppressAuth: true });
-    
+
     if (rs.items.length > 0) {
       await wixData.remove("Portal Sessions", rs.items[0]._id, { suppressAuth: true });
       console.log("Custom session destroyed successfully");
@@ -562,10 +563,10 @@ export async function destroyCustomSession(sessionToken) {
  */
 export async function onMagicLinkLoginV2(token) {
   if (!token || typeof token !== "string") {
-    return { 
-      ok: false, 
-      error: "MISSING_TOKEN", 
-      message: "No secure token provided." 
+    return {
+      ok: false,
+      error: "MISSING_TOKEN",
+      message: "No secure token provided."
     };
   }
 
@@ -573,10 +574,10 @@ export async function onMagicLinkLoginV2(token) {
     // 1. Validate the magic link token
     const link = await validateMagicLink(token);
     if (!link) {
-      return { 
-        ok: false, 
-        error: "INVALID_OR_EXPIRED", 
-        message: "This secure link has expired or has already been used. Please request a new one." 
+      return {
+        ok: false,
+        error: "INVALID_OR_EXPIRED",
+        message: "This secure link has expired or has already been used. Please request a new one."
       };
     }
 
@@ -591,10 +592,10 @@ export async function onMagicLinkLoginV2(token) {
     );
 
     if (!sessionToken) {
-      return { 
-        ok: false, 
-        error: "SESSION_CREATION_FAILED", 
-        message: "Failed to create session. Please try again." 
+      return {
+        ok: false,
+        error: "SESSION_CREATION_FAILED",
+        message: "Failed to create session. Please try again."
       };
     }
 
@@ -604,21 +605,21 @@ export async function onMagicLinkLoginV2(token) {
 
     console.log(`✅ Magic Link V2 Login Success: role=${role}, personId=${link.personId}`);
 
-    return { 
-      ok: true, 
+    return {
+      ok: true,
       sessionToken,
       role,
       caseId: link.caseId || null,
       goto,
-      message: "Access granted! Welcome to your dashboard." 
+      message: "Access granted! Welcome to your dashboard."
     };
 
   } catch (err) {
     console.error("onMagicLinkLoginV2 error:", err);
-    return { 
-      ok: false, 
-      error: "SERVER_ERROR", 
-      message: "Server Error: " + err.message 
+    return {
+      ok: false,
+      error: "SERVER_ERROR",
+      message: "Server Error: " + err.message
     };
   }
 }
@@ -630,32 +631,32 @@ export async function onMagicLinkLoginV2(token) {
 export async function cleanupExpiredSessions() {
   try {
     const now = new Date();
-    
+
     // Cleanup expired sessions
     const expiredSessions = await wixData
       .query("Portal Sessions")
       .lt("expiresAt", now)
       .limit(100)
       .find({ suppressAuth: true });
-    
+
     for (const session of expiredSessions.items) {
       await wixData.remove("Portal Sessions", session._id, { suppressAuth: true });
     }
-    
+
     // Cleanup expired magic links
     const expiredLinks = await wixData
       .query("Magiclinks")
       .lt("expiresAt", now)
       .limit(100)
       .find({ suppressAuth: true });
-    
+
     for (const link of expiredLinks.items) {
       await wixData.remove("Magiclinks", link._id, { suppressAuth: true });
     }
-    
+
     console.log(`Cleanup: Removed ${expiredSessions.items.length} sessions, ${expiredLinks.items.length} magic links`);
-    return { 
-      success: true, 
+    return {
+      success: true,
       sessionsRemoved: expiredSessions.items.length,
       linksRemoved: expiredLinks.items.length
     };
@@ -864,7 +865,7 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
 
   try {
     const isEmail = input.includes('@');
-    
+
     // Field names matching Wix CMS Cases collection
     // Using the actual field keys from the collection schema
     const defendantEmailField = 'defendantEmail';
@@ -920,15 +921,15 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
         // STEP 3: Search for indemnitor
         const indemnitorSearchField = isEmail ? indemnitorEmailField : indemnitorPhoneField;
         console.log(`🔍 Searching for indemnitor: ${indemnitorSearchField} = ${input}`);
-        
+
         const indemnitorQuery = await wixData
           .query("Cases")
           .eq(indemnitorSearchField, input)
           .limit(1)
           .find({ suppressAuth: true });
-          
+
         console.log(`📊 Indemnitor query returned ${indemnitorQuery.items.length} results`);
-        
+
         if (indemnitorQuery.items.length > 0) {
           const caseData = indemnitorQuery.items[0];
           userRole = ROLES.INDEMNITOR;
@@ -951,7 +952,7 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
     // Generate magic link token with caseId
     const token = await generateMagicLink(personId, userRole, caseId);
     console.log(`🔑 Generated magic link token for ${userRole}`);
-    
+
     // Send magic link via email or SMS
     const sendResult = await sendMagicLink(
       input,
@@ -959,7 +960,7 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
       userRole,
       userName
     );
-    
+
     if (!sendResult.success) {
       console.error(`❌ Failed to send magic link to ${input}:`, sendResult.error);
       return {

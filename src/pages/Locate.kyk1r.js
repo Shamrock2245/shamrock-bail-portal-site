@@ -8,8 +8,8 @@ $w.onReady(async function () {
 
     const rep = $w('#sectionList');
 
-    // 1. Check Repeater Existence
-    if (rep.length === 0) {
+    // 1. Check Repeater Existence (Simple null check)
+    if (!rep) {
         console.error("CRITICAL: Repeater #sectionList NOT FOUND on this page.");
         return;
     }
@@ -21,55 +21,59 @@ $w.onReady(async function () {
 
         if (!counties || counties.length === 0) {
             console.warn("DEBUG: No counties returned from backend. Using fallback data.");
-            // Fallback data to prevent blank page
+            // Fallback data to prevent blank page - FIXED: Added _ids
             counties = [
-                { name: "Alachua", slug: "alachua", countySeat: "Gainesville" },
-                { name: "Charlotte", slug: "charlotte", countySeat: "Punta Gorda" },
-                { name: "Collier", slug: "collier", countySeat: "Naples" },
-                { name: "Hendry", slug: "hendry", countySeat: "LaBelle" },
-                { name: "Lee", slug: "lee", countySeat: "Fort Myers" },
-                { name: "Sarasota", slug: "sarasota", countySeat: "Sarasota" },
-                { name: "Manatee", slug: "manatee", countySeat: "Bradenton" },
-                { name: "Desoto", slug: "desoto", countySeat: "Arcadia" }
+                { _id: "fallback_alachua", name: "Alachua", slug: "alachua", countySeat: "Gainesville" },
+                { _id: "fallback_charlotte", name: "Charlotte", slug: "charlotte", countySeat: "Punta Gorda" },
+                { _id: "fallback_collier", name: "Collier", slug: "collier", countySeat: "Naples" },
+                { _id: "fallback_hendry", name: "Hendry", slug: "hendry", countySeat: "LaBelle" },
+                { _id: "fallback_lee", name: "Lee", slug: "lee", countySeat: "Fort Myers" },
+                { _id: "fallback_sarasota", name: "Sarasota", slug: "sarasota", countySeat: "Sarasota" },
+                { _id: "fallback_manatee", name: "Manatee", slug: "manatee", countySeat: "Bradenton" },
+                { _id: "fallback_desoto", name: "Desoto", slug: "desoto", countySeat: "Arcadia" }
             ];
         }
 
-        console.log(`DEBUG: Loaded ${counties.length} counties. Populating repeater...`);
+        console.log(`DEBUG: Final County Data Count: ${counties.length}`);
+
+        // Validation: Check if items have _id
+        if (counties.length > 0 && !counties[0]._id) {
+            console.warn("DEBUG: Data items missing _id. Auto-generating...");
+            counties = counties.map((c, i) => ({ ...c, _id: c._id || `gen_id_${i}` }));
+        }
+
+        console.log("DEBUG: Populating repeater with data...");
 
         // 3. Populate Repeater - ORDER MATTERS: Handler first, then Data
         rep.onItemReady(($item, itemData) => {
             // A. Prepare Data
             const countyName = (itemData.name || itemData.countyName || "Unknown") + " County";
             const city = itemData.countySeat || "Southwest Florida";
-            const descText = `Serving ${city} & Surrounding Areas`;
-            const internalLink = `/bail-bonds/${itemData.slug}`;
+            // User Request: Text should be the website link
             const externalSearchLink = itemData.bookingWebsite || itemData.recordsSearch || itemData.sheriffWebsite;
+            const descText = externalSearchLink || `Serving ${city} & Surrounding Areas`;
+            const internalLink = `/bail-bonds/${itemData.slug}`;
 
-            // B. Map to Elements (Safely)
-            const $title = $item('#textTitle').length ? $item('#textTitle') : $item('#itemTitle');
-            if ($title.length) $title.text = countyName;
+            // B. Map to Elements
+            // We trust the IDs now as per user confirmation
+            $item('#textTitle').text = countyName;
 
-            const $desc = $item('#textDesc');
-            if ($desc.length) $desc.text = descText;
+            // Handle Description
+            const description = descText.length > 50 ? descText.substring(0, 47) + "..." : descText;
+            $item('#textDesc').text = description;
 
             // C. Interaction Logic
             // 1. Container Click -> Internal Page
-            if ($item('#container1').length) {
-                $item('#container1').onClick(() => wixLocation.to(internalLink));
-            }
+            $item('#container1').onClick(() => wixLocation.to(internalLink));
 
             // 2. Action Button Click -> Arrest Search (External) or Internal
-            const $btn = $item('#actionButton');
-            if ($btn.length) {
-                if ($btn.label) $btn.label = "Arrest Search"; // Reset label if possible
+            const $btn = $item('#btnAction');
+            $btn.label = "GO";
 
-                if (externalSearchLink) {
-                    // Go to external search
-                    $btn.onClick(() => wixLocation.to(externalSearchLink));
-                } else {
-                    // Fallback to internal page
-                    $btn.onClick(() => wixLocation.to(internalLink));
-                }
+            if (externalSearchLink) {
+                $btn.onClick(() => wixLocation.to(externalSearchLink));
+            } else {
+                $btn.onClick(() => wixLocation.to(internalLink));
             }
         });
 
