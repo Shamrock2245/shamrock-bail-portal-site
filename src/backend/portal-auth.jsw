@@ -881,22 +881,42 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
     let isNewUser = false;
     let caseId = null;
 
-    // STEP 1: Check Portal Users first (for staff/admin accounts)
-    console.log(`🔍 Checking Portal Users for staff/admin: ${input}`);
-    const staffQuery = await wixData
-      .query("Portal Users")
-      .eq("email", input)
-      .limit(1)
-      .find({ suppressAuth: true });
+    // HARDCODED STAFF EMAILS - These users always get staff role
+    const STAFF_EMAILS = [
+      'admin@shamrockbailbonds.biz',
+      'shamrockbailoffice@gmail.com'
+    ];
 
-    if (staffQuery.items.length > 0) {
-      const staffUser = staffQuery.items[0];
-      userRole = staffUser.role || ROLES.STAFF;
-      personId = staffUser._id;
-      userName = `${staffUser.firstName || ''} ${staffUser.lastName || ''}`.trim() || 'Staff';
+    // STEP 0: Check hardcoded staff emails first (most reliable)
+    if (STAFF_EMAILS.includes(input)) {
+      userRole = ROLES.STAFF;
+      personId = 'staff_' + input.replace(/[@.]/g, '_');
+      userName = 'Staff';
       isNewUser = false;
-      console.log(`✅ Staff/Admin user found: ${userName}, role: ${userRole}`);
-    } else {
+      console.log('✅ Hardcoded staff email detected: ' + input);
+    }
+
+    // STEP 1: Check Portal Users for staff/admin accounts (if not already matched)
+    if (!userRole) {
+      console.log('🔍 Checking Portal Users for staff/admin: ' + input);
+      const staffQuery = await wixData
+        .query("Portal Users")
+        .eq("email", input)
+        .limit(1)
+        .find({ suppressAuth: true });
+
+      if (staffQuery.items.length > 0) {
+        const staffUser = staffQuery.items[0];
+        userRole = staffUser.role || ROLES.STAFF;
+        personId = staffUser._id;
+        userName = (staffUser.firstName || '') + ' ' + (staffUser.lastName || '').trim() || 'Staff';
+        isNewUser = false;
+        console.log('✅ Staff/Admin user found: ' + userName + ', role: ' + userRole);
+      }
+    }
+
+    // STEP 2: Search Cases for defendant (if not staff)
+    if (!userRole) {
       // STEP 2: Search Cases for defendant
       const searchField = isEmail ? defendantEmailField : defendantPhoneField;
       console.log(`🔍 Searching Cases collection for ${searchField} = ${input}`);
