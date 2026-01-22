@@ -5,6 +5,7 @@ import { COLLECTIONS } from 'public/collectionIds';
 import { getCounties } from 'public/countyUtils';
 import { LightboxController } from 'public/lightbox-controller';
 import wixSeo from 'wix-seo';
+import { styled, Colors } from 'public/theme';
 
 // Type-safe element selector for elements missing from strict type defs
 const Select = (selector) => /** @type {any} */($w)(selector);
@@ -400,8 +401,8 @@ async function setupTestimonials() {
         rep.onItemReady(($item, itemData) => {
             const quote = itemData.quote || itemData.text || itemData.message || "No quote provided";
             const name = itemData.name || itemData.author || "Anonymous";
-            $item('#quoteText').text = `"${quote}"`;
-            $item('#authorName').text = name;
+            $item('#quoteText').html = styled(`"${quote}"`, 'p', 'TextPrimary');
+            $item('#authorName').html = styled(name, 'small', 'TextSecondary');
         });
     }
 }
