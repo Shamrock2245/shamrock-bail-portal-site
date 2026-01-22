@@ -959,12 +959,12 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
           isNewUser = false;
           console.log(`✅ Existing indemnitor found: ${userName}, caseId: ${caseId}`);
         } else {
-          // STEP 4: New user - allow them to proceed as defendant
-          userRole = ROLES.DEFENDANT;
+          // STEP 4: New user - default to INDEMNITOR (cosigner signs first, then defendant)
+          userRole = ROLES.INDEMNITOR;
           personId = `new_${Date.now()}`;
           userName = null;
           isNewUser = true;
-          console.log(`🆕 New user detected: ${input}`);
+          console.log(`🆕 New user detected, defaulting to indemnitor: ${input}`);
         }
       }
     }
