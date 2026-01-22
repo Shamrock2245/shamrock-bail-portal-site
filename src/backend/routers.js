@@ -4,6 +4,9 @@
  * Handles custom routing for the /portal/ pages.
  * This allows for dynamic content and role-based access control.
  * 
+ * NOTE: The actual pages use hyphenated URLs (portal-defendant, portal-indemnitor, portal-staff)
+ * This router handles the /portal/ prefix and redirects to the correct hyphenated pages.
+ * 
  * @module routers
  */
 
@@ -13,6 +16,14 @@ import { isLoggedIn, getUserRole, ROLES } from './portal-auth';
 /**
  * Router for the /portal/ prefix.
  * Handles routing for the main portal landing page and role-specific portals.
+ * 
+ * IMPORTANT: Pages are configured as Main Pages with hyphenated URLs:
+ * - /portal-landing
+ * - /portal-defendant
+ * - /portal-indemnitor
+ * - /portal-staff
+ * 
+ * This router redirects /portal/* requests to the correct hyphenated URLs.
  * 
  * @param {WixRouterRequest} request
  * @returns {WixRouterResponse}
@@ -25,11 +36,8 @@ export async function portal_Router(request) {
     // Note: 'isLoggedIn' verifies if the Wix User is authenticated
     if (!isLoggedIn()) {
       // User is NOT logged in.
-      // Instead of sending them to the default Wix Login ('/custom-login'),
-      // we send them to our custom Portal Landing page where they can:
-      // 1. Enter a Magic Link
-      // 2. Click "Start Bond" (which triggers login)
-      return ok('portal-landing');
+      // Redirect to the hyphenated portal-landing page
+      return redirect('/portal-landing');
     }
 
     const userRole = await getUserRole();
@@ -38,42 +46,49 @@ export async function portal_Router(request) {
     switch (path[0]) {
       case 'defendant':
         if (userRole === ROLES.DEFENDANT) {
-          return ok('portal-defendant');
+          // Redirect to hyphenated URL
+          return redirect('/portal-defendant');
         } else {
-          // Wrong role? specific redirect or consistent landing
-          return redirect('/portal');
+          // Wrong role? redirect to landing
+          return redirect('/portal-landing');
         }
       case 'indemnitor':
         if (userRole === ROLES.INDEMNITOR || userRole === ROLES.COINDEMNITOR) {
-          return ok('portal-indemnitor');
+          // Redirect to hyphenated URL
+          return redirect('/portal-indemnitor');
         } else {
-          return redirect('/portal');
+          return redirect('/portal-landing');
         }
       case 'staff':
         if (userRole === ROLES.STAFF || userRole === ROLES.ADMIN) {
-          return ok('portal-staff');
+          // Redirect to hyphenated URL
+          return redirect('/portal-staff');
         } else {
-          return redirect('/portal');
+          return redirect('/portal-landing');
         }
+      case 'landing':
+        // /portal/landing -> /portal-landing
+        return redirect('/portal-landing');
       case undefined:
       case '':
         // Root /portal/ path
-        // Behavior: If they have a role, we SHOULD redirect them to their dashboard
+        // Behavior: If they have a role, redirect them to their dashboard
         // If they don't have a role, show the landing page
-        if (userRole === ROLES.DEFENDANT) return redirect('/portal/defendant');
-        if (userRole === ROLES.STAFF || userRole === ROLES.ADMIN) return redirect('/portal/staff');
-        if (userRole === ROLES.INDEMNITOR || userRole === ROLES.COINDEMNITOR) return redirect('/portal/indemnitor');
+        if (userRole === ROLES.DEFENDANT) return redirect('/portal-defendant');
+        if (userRole === ROLES.STAFF || userRole === ROLES.ADMIN) return redirect('/portal-staff');
+        if (userRole === ROLES.INDEMNITOR || userRole === ROLES.COINDEMNITOR) return redirect('/portal-indemnitor');
 
-        // No role? Show landing page (Login/Claim Access)
-        return ok('portal-landing');
+        // No role? Redirect to landing page
+        return redirect('/portal-landing');
 
       default:
-        return notFound();
+        // Unknown path - redirect to landing
+        return redirect('/portal-landing');
     }
   } catch (error) {
     console.error("[Router] Error in portal_Router:", error);
     // Fallback to landing instead of crashing
-    return ok('portal-landing');
+    return redirect('/portal-landing');
   }
 }
 
@@ -81,7 +96,7 @@ export async function portal_Router(request) {
  * Hook for before router for /portal/ prefix.
  * 
  * @param {WixRouterRequest} request
- * @returns {WixRouterResponse|Promise<WixRouterResponse>}
+ * @returns {WixRouterRequest}
  */
 export function portal_beforeRouter(request) {
   return request;
@@ -92,7 +107,7 @@ export function portal_beforeRouter(request) {
  * 
  * @param {WixRouterRequest} request
  * @param {WixRouterResponse} response
- * @returns {WixRouterResponse|Promise<WixRouterResponse>}
+ * @returns {WixRouterResponse}
  */
 export function portal_afterRouter(request, response) {
   return response;
