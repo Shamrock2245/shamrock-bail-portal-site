@@ -416,7 +416,7 @@ async function setupFAQ() {
     let data = fallbackData;
 
     try {
-        const result = await wixData.query(COLLECTIONS.FAQ).limit(10).find();
+        const result = await wixData.query(COLLECTIONS.FAQS).limit(10).find();
         if (result.items.length > 0) data = result.items;
     } catch (err) {
         console.error("ERROR: Failed to load FAQs from CMS", err);

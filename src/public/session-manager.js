@@ -106,21 +106,32 @@ export function hasSessionToken() {
   return SessionManager.hasSession();
 }
 
+const ANALYTICS_KEY = 'shamrock_analytics_id';
+
 /**
- * GUARANTEE: Gets existing session or creates new one immediately.
+ * GUARANTEE: Gets existing ANALYTICS session or creates new one immediately.
  * Truth Source for all downstream logging.
+ * NOTE: This is distinct from the Auth Token (SESSION_KEY) to prevent
+ * anonymous users from triggering invalid auth warnings.
  */
 export function getOrSetSessionId() {
-  let token = SessionManager.getSession();
-  if (!token) {
-    // Generate new UUID v4
-    token = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-    SessionManager.setSession(token);
-    console.log("SessionManager: New Session ID generated:", token);
+  try {
+    if (!local) return 'no-storage';
+
+    let id = local.getItem(ANALYTICS_KEY);
+    if (!id) {
+      // Generate new UUID v4
+      id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+      local.setItem(ANALYTICS_KEY, id);
+      console.log("SessionManager: New Analytics ID generated:", id);
+    }
+    return id;
+  } catch (e) {
+    console.error("SessionManager: Error in getOrSetSessionId", e);
+    return 'error-generating-id';
   }
-  return token;
 }

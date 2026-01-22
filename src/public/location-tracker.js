@@ -2,7 +2,7 @@ import wixWindow from 'wix-window';
 import { saveUserLocation } from 'backend/location.jsw';
 // REMOVED: import { authentication } from 'wix-members';
 import { local } from 'wix-storage-frontend';
-import { getSessionToken, hasSessionToken } from 'public/session-manager';
+import { getSessionToken, hasSessionToken, clearSessionToken } from 'public/session-manager';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
 
 const PING_STORAGE_KEY = 'last_location_ping_dates';
@@ -54,6 +54,11 @@ export async function silentPingLocation() {
                 console.log('Location tracker: Silent ping successful', { address: result.address, ip: extraData.ipAddress });
             } else {
                 console.warn('Location tracker: Backend rejected ping', result.message);
+                // AUTO-HEAL: If session is invalid, clear it to prevent UI lying to user
+                if (result.message && (result.message.includes('Unauthorized') || result.message.includes('Invalid session'))) {
+                    console.log('Location tracker: Clearing invalid session.');
+                    clearSessionToken();
+                }
             }
         } else {
             console.warn('Location tracker: Geo capture failed', snapshot.geo.error);
