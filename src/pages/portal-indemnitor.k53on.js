@@ -11,6 +11,7 @@ import { validateCustomSession, getIndemnitorDetails, getUserConsentStatus } fro
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink } from 'backend/signnow-integration';
+import { reverseGeocodeToCityStateZip, geocodeAddressToCityStateZip } from 'backend/googleMaps';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
 import { silentPingLocation } from 'public/location-tracker';
@@ -89,6 +90,52 @@ $w.onReady(async function () {
         } catch (e) { }
     }
 
+
+    // --- GOOGLE MAPS AUTOFILL ---
+    if (!anyHasValue('#inputIndemnitorCity', '#inputIndemnitorState', '#inputIndemnitorZip')) {
+        try {
+            // Prompts the user for permission if needed
+            const geo = await wixWindow.getCurrentGeolocation();
+            const lat = geo.coords.latitude;
+            const lng = geo.coords.longitude;
+
+            const { city, state, zip } = await reverseGeocodeToCityStateZip(lat, lng);
+
+            // Set values ONLY if we got them
+            if (city && !$w('#inputIndemnitorCity').value) $w('#inputIndemnitorCity').value = city;
+            if (state && !$w('#inputIndemnitorState').value) $w('#inputIndemnitorState').value = state;
+            if (zip && !$w('#inputIndemnitorZip').value) $w('#inputIndemnitorZip').value = zip;
+
+        } catch (e) {
+            // Silent fail: user can still type manually
+            console.log('Geo autofill skipped:', e?.message || e);
+        }
+    }
+
+    // --- ADDRESS CHANGE AUTOFILL ---
+    $w('#inputIndemnitorAddress').onChange(async () => {
+        try {
+            const address = ($w('#inputIndemnitorAddress').value || '').trim();
+            if (!address) return;
+
+            // Don't overwrite if user already filled ANY of these
+            const alreadyFilled =
+                $w('#inputIndemnitorCity').value ||
+                $w('#inputIndemnitorState').value ||
+                $w('#inputIndemnitorZip').value;
+
+            if (alreadyFilled) return;
+
+            const { city, state, zip } = await geocodeAddressToCityStateZip(address);
+
+            fillIfEmpty('#inputIndemnitorCity', city);
+            fillIfEmpty('#inputIndemnitorState', state);
+            fillIfEmpty('#inputIndemnitorZip', zip);
+
+        } catch (e) {
+            console.log('Address-based autofill skipped:', e?.message || e);
+        }
+    });
 
     updatePageSEO();
 });
@@ -371,5 +418,15 @@ async function proceedToSignNow(formData) {
         } catch (e) {
             console.error('Error displaying status message:', e);
         }
+    }
+}
+
+function anyHasValue(...ids) {
+    return ids.some(id => ($w(id).value || '').toString().trim().length > 0);
+}
+
+function fillIfEmpty(id, value) {
+    if (!$w(id).value && value) {
+        $w(id).value = value;
     }
 }

@@ -1,0 +1,77 @@
+// backend/googleMaps.jsw
+import { fetch } from 'wix-fetch';
+import wixSecretsBackend from 'wix-secrets-backend';
+
+const GEOCODE_BASE = 'https://maps.googleapis.com/maps/api/geocode/json';
+
+async function getApiKey() {
+    const key = await wixSecretsBackend.getSecret('GOOGLE_MAPS_API_KEY');
+    if (!key) throw new Error('Missing Wix Secret: GOOGLE_MAPS_API_KEY');
+    return key;
+}
+
+/**
+ * Reverse geocode lat/lng -> { city, state, zip }
+ */
+export async function reverseGeocodeToCityStateZip(lat, lng) {
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+        throw new Error('reverseGeocodeToCityStateZip: lat/lng must be numbers');
+    }
+
+    const key = await getApiKey();
+    const url = `${GEOCODE_BASE}?latlng=${encodeURIComponent(`${lat},${lng}`)}&key=${encodeURIComponent(key)}`;
+
+    const res = await fetch(url, { method: 'get' });
+    const json = await res.json();
+
+    if (json.status !== 'OK' || !Array.isArray(json.results) || !json.results[0]) {
+        return { city: '', state: '', zip: '' };
+    }
+
+    const comps = json.results[0].address_components || [];
+
+    const pick = (type) =>
+        comps.find(c => Array.isArray(c.types) && c.types.includes(type));
+
+    const city = pick('locality')?.long_name
+        || pick('postal_town')?.long_name
+        || pick('administrative_area_level_2')?.long_name
+        || '';
+
+    const state = pick('administrative_area_level_1')?.short_name || '';
+    const zip = pick('postal_code')?.long_name || '';
+
+    return { city, state, zip };
+}
+
+/**
+ * Geocode Address -> { city, state, zip }
+ */
+export async function geocodeAddressToCityStateZip(address) {
+    if (!address) return { city: '', state: '', zip: '' };
+
+    const key = await getApiKey();
+    const url = `${GEOCODE_BASE}?address=${encodeURIComponent(address)}&key=${encodeURIComponent(key)}`;
+
+    const res = await fetch(url, { method: 'get' });
+    const json = await res.json();
+
+    if (json.status !== 'OK' || !Array.isArray(json.results) || !json.results[0]) {
+        return { city: '', state: '', zip: '' };
+    }
+
+    const comps = json.results[0].address_components || [];
+
+    const pick = (type) =>
+        comps.find(c => Array.isArray(c.types) && c.types.includes(type));
+
+    const city = pick('locality')?.long_name
+        || pick('postal_town')?.long_name
+        || pick('administrative_area_level_2')?.long_name
+        || '';
+
+    const state = pick('administrative_area_level_1')?.short_name || '';
+    const zip = pick('postal_code')?.long_name || '';
+
+    return { city, state, zip };
+}

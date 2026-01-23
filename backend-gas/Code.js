@@ -13,6 +13,11 @@
 // ============================================================================
 // CONFIGURATION & INIT
 // ============================================================================
+// ARCHITECTURE NOTE:
+// This Web App implementation follows patterns for concurrency (LockService) and 
+// request handling (doPost/JSON) recommended in:
+// https://github.com/tanaikech/taking-advantage-of-Web-Apps-with-google-apps-script
+// ============================================================================
 
 // Load Compliance Modules
 var Compliance = this.Compliance;
