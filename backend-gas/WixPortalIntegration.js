@@ -351,3 +351,27 @@ function batchSaveToWixPortal_Server(documents) {
   Logger.log(`🔄 Syncing ${wixPayloadDocs.length} documents to Wix...`);
   return sendToWixWithRetry(config.endpoints.addDocumentsBatch, payload);
 }
+
+/**
+ * Fetch Indemnitor Profile from Wix by Email
+ * Called from Dashboard.html via Code.js anchor
+ */
+function fetchIndemnitorProfile(email) {
+  const config = getWixPortalConfig();
+  if (!config.apiKey) return { success: false, message: 'Wix API key missing' };
+
+  const url = config.baseUrl + '/getIndemnitorProfile?email=' + encodeURIComponent(email);
+  const params = {
+    method: 'GET',
+    headers: { 'api-key': config.apiKey },
+    muteHttpExceptions: true
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, params);
+    const result = JSON.parse(response.getContentText());
+    return result;
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}

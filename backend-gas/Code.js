@@ -210,6 +210,12 @@ function handleAction(data) {
         result = { success: false, error: 'Safe wrapper not found' };
       }
       break;
+
+    case 'fetchIndemnitorProfile':
+      if (typeof fetchIndemnitorProfile !== 'function')
+        return { success: false, error: 'Function fetchIndemnitorProfile not found' };
+      result = fetchIndemnitorProfile(data.email);
+      break;
   }
   return result;
 }
@@ -381,11 +387,15 @@ function handleSendForSignature(data) {
       return { success: true, method: 'sms', results: results, documentId: documentId };
     }
     // Default: Email Invite via SignNow
+    const defName = formData.defendantFullName || formData['defendant-first-name'] + ' ' + formData['defendant-last-name'] || 'Defendant';
+    const emailSubject = data.subject || `Action Required: Bond Application for ${defName}`;
+    const emailBody = data.message || `Please review and sign the attached bond application documents for ${defName}. \n\nThank you,\nShamrock Bail Bonds`;
+
     return createSigningRequest({
       documentId: documentId,
       signers: signers,
-      subject: data.subject || 'Please sign your Bond Application',
-      message: data.message || 'Attached are the documents for review.'
+      subject: emailSubject,
+      message: emailBody
     });
   } catch (err) {
     return { success: false, error: 'Template Flow Failed: ' + err.message };

@@ -797,3 +797,68 @@ export async function get_sitemap(request) {
         body: xml
     });
 }
+
+/**
+ * GET /_functions/getIndemnitorProfile?email=...
+ * Lookup a member profile by email for GAS Dashboard pre-fill
+ */
+export async function get_getIndemnitorProfile(request) {
+    try {
+        const apiKey = request.headers['api-key'];
+        const email = request.query.email;
+
+        // 1. Auth Check
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (apiKey !== validApiKey) {
+            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
+        }
+
+        if (!email) {
+            return badRequest({ body: { success: false, message: 'Missing email' } });
+        }
+
+        // 2. Query Members/PrivateData OR Contacts
+        // We'll try "Members/PrivateData" first (standard Wix Members)
+        // If you store custom profiles in "Cases" or "Users", query that instead.
+        // Assuming "Members/PrivateData" for generic member info.
+
+        let member = null;
+
+        // Strategy: Query 'Members/PrivateData' which has PII
+        // Note: This requires suppressing auth if not called by admin, but http-functions run as admin-ish if configured?
+        // Actually, http-functions run as 'Anyone' usually unless suppressed.
+        // We use wixData.query("Members/PrivateData") with options.
+
+        const options = { suppressAuth: true };
+        const results = await wixData.query("Members/PrivateData")
+            .eq("loginEmail", email)
+            .find(options);
+
+        if (results.items.length > 0) {
+            const m = results.items[0];
+            member = {
+                firstName: m.firstName,
+                lastName: m.lastName,
+                phone: m.mainPhone,
+                email: m.loginEmail,
+                address: m.address, // Object usually
+                city: (m.address && m.address.city) ? m.address.city : '',
+                state: (m.address && m.address.state) ? m.address.state : '',
+                zip: (m.address && m.address.postalCode) ? m.address.postalCode : ''
+            };
+        } else {
+            // Fallback: Check 'Cases' collection for previous indemnitor records?
+            // Optional optimization.
+            return ok({ body: { success: false, message: 'Member not found' } });
+        }
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: { success: true, profile: member }
+        });
+
+    } catch (error) {
+        console.error("Profile Lookup Error:", error);
+        return serverError({ body: { success: false, message: error.message } });
+    }
+}

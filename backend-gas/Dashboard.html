@@ -2311,7 +2311,13 @@
                                 <input type="email" id="signer-defendant-email" placeholder="defendant@email.com">
                             </div>
                             <div class="form-group">
-                                <label>Indemnitor Email</label>
+                                <label style="display:flex; justify-content:space-between; align-items:center;">
+                                    Indemnitor Email
+                                    <button type="button" onclick="fetchIndemnitorProfile()"
+                                        style="background:none; border:none; color:var(--accent); font-size:11px; cursor:pointer; font-weight:700; text-transform:uppercase;">
+                                        ⚡ Fetch Profile
+                                    </button>
+                                </label>
                                 <input type="email" id="signer-indemnitor-email" placeholder="indemnitor@email.com">
                             </div>
                         </div>
@@ -5841,6 +5847,80 @@
         // Uncomment the line below to automatically use the Wix portal version
         // Uncomment the line below to automatically use the Wix portal version
         window.generateAndSend = generateAndSendWithWixPortal;
+
+        // --- Indemnitor Profile Fetch ---
+        function fetchIndemnitorProfile() {
+            const email = document.getElementById('signer-indemnitor-email').value;
+            if (!email || !email.includes('@')) {
+                alert('Please enter a valid Indemnitor Email first.');
+                return;
+            }
+
+            const btn = event.currentTarget || document.querySelector('button[onclick="fetchIndemnitorProfile()"]');
+            const originalText = btn ? btn.innerText : 'Fetch Profile';
+            if (btn) {
+                btn.innerText = '⌛ Fetching...';
+                btn.disabled = true;
+            }
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    if (btn) {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                    }
+
+                    if (response && response.success && response.profile) {
+                        const p = response.profile;
+                        // Auto-fill fields if they obtain data
+                        if (p.firstName || p.lastName) {
+                            const fullName = (p.firstName + ' ' + p.lastName).trim();
+                            if (document.getElementById('indemnitor-full-name')) {
+                                document.getElementById('indemnitor-full-name').value = fullName;
+                            }
+                        }
+                        if (p.phone && document.getElementById('signer-indemnitor-phone')) {
+                            document.getElementById('signer-indemnitor-phone').value = p.phone;
+                        }
+                        if (p.address && document.getElementById('indemnitor-street')) {
+                            // Try to parse address object or string
+                            if (typeof p.address === 'object') {
+                                if (p.address.formatted) document.getElementById('indemnitor-street').value = p.address.formatted;
+                                if (p.address.city && document.getElementById('indemnitor-city')) document.getElementById('indemnitor-city').value = p.address.city;
+                                if (p.address.state && document.getElementById('indemnitor-state')) document.getElementById('indemnitor-state').value = p.address.state;
+                                if (p.address.postalCode && document.getElementById('indemnitor-zip')) document.getElementById('indemnitor-zip').value = p.address.postalCode;
+                            } else {
+                                document.getElementById('indemnitor-street').value = p.address;
+                            }
+                        }
+                        // Also fill email if empty (redundant but safe)
+                        if (p.email && document.getElementById('signer-indemnitor-email')) {
+                            document.getElementById('signer-indemnitor-email').value = p.email;
+                        }
+
+                        // Also fill Phone in the main form if it exists
+                        if (p.phone && document.getElementById('indemnitor-phone')) {
+                            document.getElementById('indemnitor-phone').value = p.phone;
+                        }
+
+                        alert('✅ Profile data found and applied!');
+                    } else {
+                        alert('⚠️ Profile not found in Shamrock system for this email.');
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    if (btn) {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                    }
+                    alert('Error fetching profile: ' + err.message);
+                })
+                .doPostFromClient({
+                    action: 'fetchIndemnitorProfile',
+                    email: email
+                });
+        }
+
 
         console.log('Wix Portal Integration module loaded');
     </script>
