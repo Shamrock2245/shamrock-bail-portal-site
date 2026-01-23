@@ -72,16 +72,17 @@ pkill -f "wix dev" 2>/dev/null && echo -e "${GREEN}✅ Stopped existing servers$
 sleep 2
 echo ""
 
-# 7. Force push to Wix
-echo "⬆️  Pushing files to Wix..."
-echo "This may take a minute..."
-if wix push --force; then
-    echo -e "${GREEN}✅ Files pushed to Wix successfully${NC}"
-else
-    echo -e "${RED}❌ Error pushing to Wix${NC}"
-    echo "Try running manually: wix push --force"
-    exit 1
-fi
+# 7. Force push to Wix (DEPRECATED in new CLI)
+# echo "⬆️  Pushing files to Wix..."
+# echo "This may take a minute..."
+# if wix push --force; then
+#     echo -e "${GREEN}✅ Files pushed to Wix successfully${NC}"
+# else
+#     echo -e "${RED}❌ Error pushing to Wix${NC}"
+#     echo "Try running manually: wix push --force"
+#     # exit 1  <-- Allowing script to continue to wix dev
+# fi
+echo "⚠️  Skipping 'wix push' (Command not found). Relying on 'wix dev' for sync."
 echo ""
 
 # 8. List files that were synced
