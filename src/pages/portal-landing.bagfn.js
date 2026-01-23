@@ -113,7 +113,13 @@ function updatePageSEO() {
             "@context": "https://schema.org",
             "@type": "AccountPage",
             "name": "Shamrock Bail Bonds Client Portal",
-            "url": pageUrl
+            "url": pageUrl,
+            "mainEntity": {
+                "@type": "LocalBusiness",
+                "name": "Shamrock Bail Bonds, LLC",
+                "telephone": "+12393322245",
+                "image": "https://www.shamrockbailbonds.biz/logo.png"
+            }
         }
     ]);
 }

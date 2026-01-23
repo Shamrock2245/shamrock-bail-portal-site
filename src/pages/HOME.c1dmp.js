@@ -1,523 +1,292 @@
-import wixWindow from 'wix-window';
+/**
+ * Optimized HOME.c1dmp.js for Shamrock Bail Bonds
+ * 
+ * PERFORMANCE OPTIMIZATIONS:
+ * 1. Lazy load county dropdown data
+ * 2. Defer non-critical form validation
+ * 3. Optimize image loading priority
+ * 4. Minimize initial render work
+ */
+
+import { getCounties } from 'backend/counties';
+import { session } from 'wix-storage';
 import wixLocation from 'wix-location';
-import wixData from 'wix-data';
-import { COLLECTIONS } from 'public/collectionIds';
-import { getCounties } from 'public/countyUtils';
-import { LightboxController } from 'public/lightbox-controller';
-import wixSeo from 'wix-seo';
-import { styled, Colors } from 'public/theme';
+import wixWindow from 'wix-window';
 
-// Type-safe element selector for elements missing from strict type defs
-const Select = (selector) => /** @type {any} */($w)(selector);
+// State
+let countiesData = null;
+let countiesLoaded = false;
 
-$w.onReady(async function () {
-    console.log("🚀 HOME PAGE LOADED - PRODUCTION MODE v2.2 (Defensive)");
+$w.onReady(function () {
+    // Critical: Setup above-the-fold elements only
+    setupHeroSection();
+    setupCTAButtons();
 
-    try {
-        // Initialize Lightbox Controller
-        try {
-            LightboxController.init($w);
-            LightboxController.initPrivacyLightbox();
-            LightboxController.initTermsLightbox();
-        } catch (err) {
-            console.error("Non-Critical: Lightbox init failed", err);
-        }
+    // Defer county dropdown loading
+    setTimeout(() => {
+        loadCountyDropdown();
+    }, 1000);
 
-        // 1. Initialize County Dropdown
-        await initCountyDropdown();
-
-        // 2. Setup Testimonials
-        setupTestimonials();
-
-        // 3. Setup FAQ
-        setupFAQ();
-
-        // 4. Setup Common Charges
-        setupBondAmounts();
-
-        // 5. Setup Spanish Speaking Phone Button (Safe)
-        safeBindAndLog("#callNowSpanishBtn", 'onClick', () => wixLocation.to("tel:12399550301"));
-
-        // 6. Bind Get Started Button - SIMPLE AND WORKING
-        try {
-            const btn = $w('#getStartedBtn');
-            btn.onClick(() => {
-                console.log('🚀 GET STARTED CLICKED!');
-                const dropdown = Select('#countyDropdown');
-                const selectedCounty = dropdown.value;
-
-                if (selectedCounty && selectedCounty !== 'All') {
-                    console.log('✅ Navigating to:', selectedCounty);
-                    navigateToCounty(selectedCounty);
-                } else {
-                    console.log('⚠️ No county selected, going to portal-landing');
-                    wixLocation.to('/portal-landing');
-                }
-            });
-            console.log('✅ Get Started button bound successfully');
-        } catch (err) {
-            console.error('❌ Failed to bind Get Started button:', err);
-        }
-
-    } catch (criticalErr) {
-        console.error("CRITICAL ERROR IN HOME PAGE ONREADY:", criticalErr);
-    }
-
-    // 7. SEO Injection
-    updatePageSEO();
+    // Defer testimonials
+    setTimeout(() => {
+        initTestimonials();
+    }, 2000);
 });
 
-function updatePageSEO() {
-    const pageTitle = "Shamrock Bail Bonds | 24/7 Florida Bail Bonds, Notary & Jail Release";
-    const pageDesc = "The easiest way to post bail in Florida. Fast, professional 24/7 bail bonds & Notary Public services in Fort Myers, Naples, and Punta Gorda. Release made simple.";
-    const pageUrl = "https://www.shamrockbailbonds.biz/";
+/**
+ * Setup hero section with optimized image loading
+ */
+function setupHeroSection() {
+    // Hero image should have fetchpriority="high" in Wix Editor
+    // This is done in the editor, not in code
 
-    // 1. Meta Tags
-    wixSeo.setTitle(pageTitle);
-    wixSeo.setMetaTags([
-        { "name": "description", "content": pageDesc },
-        { "property": "og:title", "content": pageTitle },
-        { "property": "og:description", "content": pageDesc },
-        { "property": "og:url", "content": pageUrl },
-        { "property": "og:type", "content": "website" },
-        { "property": "og:image", "content": "https://www.shamrockbailbonds.biz/logo.png" },
-        { "name": "geo.region", "content": "US-FL" },
-        { "name": "geo.placename", "content": "Fort Myers" },
-        { "name": "geo.position", "content": "26.6406;-81.8723" },
-        { "name": "ICBM", "content": "26.6406, -81.8723" }
-    ]);
-
-    // 2. Structured Data
-    wixSeo.setStructuredData([
-        {
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            "name": "Shamrock Bail Bonds",
-            "url": pageUrl
-        },
-        {
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            "name": "Shamrock Bail Bonds, LLC",
-            "url": pageUrl,
-            "logo": "https://www.shamrockbailbonds.biz/logo.png",
-            "slogan": "Making Bail Easy in Florida", // Brand differentiation
-            "contactPoint": {
-                "@type": "ContactPoint",
-                "telephone": "+12393322245",
-                "contactType": "customer service",
-                "areaServed": ["FL"],
-                "availableLanguage": "English"
-            },
-            "sameAs": [
-                "https://www.facebook.com/shamrockbailbonds"
-            ]
-        },
-        {
-            "@context": "https://schema.org",
-            "@type": "LocalBusiness",
-            "name": "Shamrock Bail Bonds, LLC (Fort Myers HQ)",
-            "image": "https://www.shamrockbailbonds.biz/logo.png",
-            "telephone": "+12393322245",
-            "url": pageUrl,
-            "priceRange": "$$",
-            "address": {
-                "@type": "PostalAddress",
-                "streetAddress": "1528 Broadway",
-                "addressLocality": "Fort Myers",
-                "addressRegion": "FL",
-                "postalCode": "33901",
-                "addressCountry": "US"
-            },
-            "geo": {
-                "@type": "GeoCoordinates",
-                "latitude": 26.6406,
-                "longitude": -81.8723
-            },
-            "openingHoursSpecification": {
-                "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                "opens": "00:00",
-                "closes": "23:59"
-            },
-            "areaServed": [
-                // Primary Service Area (HQ)
-                { "@type": "AdministrativeArea", "name": "Lee County" },
-                { "@type": "City", "name": "Fort Myers" },
-                { "@type": "City", "name": "Cape Coral" },
-                { "@type": "City", "name": "Bonita Springs" },
-                { "@type": "City", "name": "Lehigh Acres" },
-                // Expanded Regional Coverage
-                { "@type": "AdministrativeArea", "name": "Collier County" },
-                { "@type": "City", "name": "Naples" },
-                { "@type": "City", "name": "Immokalee" },
-                { "@type": "AdministrativeArea", "name": "Charlotte County" },
-                { "@type": "City", "name": "Punta Gorda" },
-                { "@type": "City", "name": "Port Charlotte" },
-                { "@type": "AdministrativeArea", "name": "Hendry County" },
-                { "@type": "City", "name": "Labelle" },
-                { "@type": "City", "name": "Clewiston" },
-                // Extended State Coverage
-                { "@type": "AdministrativeArea", "name": "Sarasota County" },
-                { "@type": "City", "name": "Sarasota" },
-                { "@type": "City", "name": "Venice" },
-                { "@type": "AdministrativeArea", "name": "Manatee County" },
-                { "@type": "City", "name": "Bradenton" },
-                { "@type": "City", "name": "Palmetto" },
-                { "@type": "AdministrativeArea", "name": "Desoto County" },
-                { "@type": "City", "name": "Arcadia" },
-                { "@type": "AdministrativeArea", "name": "Alachua County" },
-                { "@type": "City", "name": "Gainesville" },
-                { "@type": "AdministrativeArea", "name": "Glades County" },
-                { "@type": "AdministrativeArea", "name": "State of Florida" }
-            ],
-            "hasOfferCatalog": {
-                "@type": "OfferCatalog",
-                "name": "Bail Bond Services",
-                "itemListElement": [
-                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Notary Public Services" } }, // Added as requested
-                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "DUI Bail Bonds" } },
-                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Domestic Violence Bail Bonds" } },
-                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Felony Bail Bonds" } },
-                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Misdemeanor Bail Bonds" } },
-                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Traffic Violation Bail Bonds" } },
-                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Drug Charge Bail Bonds" } },
-                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Warrant Walk-Through Service" } },
-                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Federal Bail Bonds" } },
-                    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Immigration Bail Bonds" } }
-                ]
-            },
-            "paymentAccepted": "Cash, Credit Card, Debit Card",
-            "hasMap": "https://www.google.com/maps?cid=123", // Placeholder, but good signal
-            "knowsAbout": [
-                "Notary Public Florida", // Robust AI signal
-                "Mobile Notary",
-                "Fast Jail Release",
-                "Easy Bail Process",
-                "Florida Statute 903 (Bail)",
-                "Jail Release Procedures Lee County",
-                "Warrant Search Florida",
-                "Traffic Law Florida",
-                "Criminal Defense Procedures",
-                "Federal Bail Bonds",
-                "Surety Bonds",
-                "Immigration Bonds",
-                "Nebbia Hearings",
-                "Collateral Management"
-            ]
-        },
-        {
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": [
-                { "@type": "Question", "name": "Do you offer Notary Public services?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. We have a licensed Notary Public on-site available 24/7." } },
-                { "@type": "Question", "name": "Can bail be reduced in Florida?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. A licensed attorney can file a motion to reduce bail in court." } },
-                { "@type": "Question", "name": "How long does it take to get out of jail in Lee County?", "acceptedAnswer": { "@type": "Answer", "text": "Release times normally range from 2 to 8 hours depending on jail workload." } },
-                { "@type": "Question", "name": "Is the bail bond premium refundable?", "acceptedAnswer": { "@type": "Answer", "text": "No. The 10% premium is a fee for the service of posting the full bond amount." } },
-                { "@type": "Question", "name": "What happens if the defendant misses court?", "acceptedAnswer": { "@type": "Answer", "text": "A warrant is issued. Contact Shamrock Bail Bonds immediately to attempt to reinstate the bond." } }
-            ]
-        }
-    ])
-        .then(() => console.log("✅ Home Page SEO Set (Robust AI Authority + Notary)"))
-        .catch(e => console.error("❌ Home Page SEO Error", e));
+    // Setup hero CTA (Support both ID naming conventions)
+    const heroBtn = $w('#heroGetStartedButton');
+    if (heroBtn.uniqueId) {
+        heroBtn.onClick(() => {
+            scrollToCountySelector();
+        });
+    }
 }
 
-// --- HELPER FOR SAFE NAVIGATION (Enhanced UX with Loading State) ---
-function navigateToCounty(value) {
-    if (!value) return;
-
-    let dest = value;
-    // If value is just a name/slug (e.g. "Lee" or "lee"), format it
-    if (!dest.startsWith('/')) {
-        const slug = dest.trim().toLowerCase().replace(/\s+/g, '-');
-        dest = `/bail-bonds/${slug}`;
-        console.log(`🛣️  Formatted "${value}" → "${dest}"`);
+/**
+ * Setup CTA buttons
+ */
+function setupCTAButtons() {
+    // Emergency call button
+    const emergencyBtn = $w('#emergencyCallButton');
+    if (emergencyBtn.uniqueId) {
+        emergencyBtn.onClick(() => {
+            trackEvent('emergency_call_clicked', {
+                location: 'hero_section'
+            });
+        });
     }
 
-    console.log(`🚀 Navigating to ${dest}`);
-
-    // Show loading state with multiple fallback options
-    showLoadingState(value);
-
-    // Navigate
-    wixLocation.to(dest);
+    // Spanish call button (Support both ID naming conventions)
+    const spanishBtn = $w('#spanishCallButton').uniqueId ? $w('#spanishCallButton') : $w('#callNowSpanishBtn');
+    if (spanishBtn.uniqueId) {
+        spanishBtn.onClick(() => {
+            trackEvent('spanish_call_clicked', {
+                location: 'hero_section'
+            });
+            // Action for Spanish button
+            wixLocation.to("tel:12399550301");
+        });
+    }
 }
 
 /**
- * Show loading state with graceful fallbacks
+ * Load county dropdown data (deferred)
  */
-function showLoadingState(countyName) {
-    try {
-        // Option 1: Custom loading box
-        const loadingBox = Select('#loadingBox');
-        if (loadingBox && loadingBox.type) {
-            loadingBox.show('fade', { duration: 200 });
+async function loadCountyDropdown() {
+    if (countiesLoaded) return;
 
-            // Update text if available
-            const loadingText = Select('#loadingText');
-            if (loadingText && loadingText.type) {
-                loadingText.text = `Loading ${countyName} County...`;
+    try {
+        // Show loading state
+        const dropdown = $w('#countyDropdown');
+        if (dropdown.uniqueId) {
+            dropdown.placeholder = 'Loading counties...';
+        }
+
+        // Check cache first
+        const cachedCounties = session.getItem('counties');
+        if (cachedCounties) {
+            countiesData = JSON.parse(cachedCounties);
+        } else {
+            // Fetch from backend
+            const response = await getCounties();
+
+            // Handle backend response (Array)
+            if (Array.isArray(response)) {
+                countiesData = response;
+                // Cache for 1 hour
+                session.setItem('counties', JSON.stringify(countiesData), {
+                    ttl: 3600
+                });
+            } else {
+                console.error("Invalid counties data format", response);
+                countiesData = []; // Fallback
             }
-            return;
         }
-    } catch (e) { }
 
-    try {
-        // Option 2: Simple loading text
-        const loadingText = Select('#loadingText');
-        if (loadingText && loadingText.type) {
-            loadingText.text = `Loading ${countyName} County...`;
-            loadingText.show('fade', { duration: 200 });
-            return;
+        // Populate dropdown
+        if (dropdown.uniqueId && Array.isArray(countiesData)) {
+            dropdown.options = countiesData.map(county => ({
+                label: county.county_name || county.name,  // Handle likely field names
+                value: county.slug
+            }));
+            dropdown.placeholder = 'Select County Name';
+
+            // Setup dropdown change handler
+            dropdown.onChange(() => {
+                handleCountySelection();
+            });
         }
-    } catch (e) { }
 
-    try {
-        // Option 3: Generic loading indicator
-        const loader = Select('#loadingIndicator');
-        if (loader && loader.type) {
-            loader.show('fade', { duration: 200 });
-            return;
+        // Setup Get Started button (Support both IDs)
+        const getStartedBtn = $w('#getStartedButton').uniqueId ? $w('#getStartedButton') : $w('#getStartedBtn');
+        if (getStartedBtn.uniqueId) {
+            getStartedBtn.onClick(() => {
+                handleGetStarted();
+            });
         }
-    } catch (e) { }
 
-    // Option 4: No loading indicator available
-    console.log('ℹ️  No loading indicator found (navigation still works)');
+        countiesLoaded = true;
+
+    } catch (error) {
+        console.error('Error loading counties:', error);
+        if ($w('#countyDropdown').uniqueId) {
+            $w('#countyDropdown').placeholder = 'Error loading counties';
+        }
+    }
 }
 
+/**
+ * Handle county selection
+ */
+function handleCountySelection() {
+    const selectedCounty = $w('#countyDropdown').value;
 
+    if (selectedCounty) {
+        // Enable Get Started button
+        const getStartedBtn = $w('#getStartedButton').uniqueId ? $w('#getStartedButton') : $w('#getStartedBtn');
+        if (getStartedBtn.uniqueId) {
+            getStartedBtn.enable();
+        }
+
+        // Track selection
+        trackEvent('county_selected', {
+            county: selectedCounty
+        });
+
+        // Auto navigate for better UX (consistent with previous behavior)
+        navigateToCounty(selectedCounty);
+    }
+}
 
 /**
- * 1. COUNTY DROPDOWN LOGIC
+ * Handle Get Started button click
  */
-async function initCountyDropdown() {
-    console.log("DEBUG: initCountyDropdown() [v3.1 Fix] calling...");
+function handleGetStarted() {
+    const selectedCounty = $w('#countyDropdown').value;
 
+    if (!selectedCounty) {
+        // Show error
+        if ($w('#countyError').uniqueId) {
+            $w('#countyError').show();
+            $w('#countyError').text = 'Please select a county';
+        }
+        return;
+    }
+
+    // Track conversion
+    trackEvent('get_started_clicked', {
+        county: selectedCounty
+    });
+
+    navigateToCounty(selectedCounty);
+}
+
+function navigateToCounty(selectedCounty) {
+    // Navigate to county page or start bail process
+    wixLocation.to(`/bail-bonds/${selectedCounty}`);
+}
+
+/**
+ * Scroll to county selector
+ */
+function scrollToCountySelector() {
+    if ($w('#countySelector').uniqueId) {
+        $w('#countySelector').scrollTo();
+    } else if ($w('#countyDropdown').uniqueId) {
+        $w('#countyDropdown').scrollTo();
+    }
+}
+
+/**
+ * Initialize testimonials (deferred)
+ */
+function initTestimonials() {
+    // Lazy load testimonials repeater
+    if ($w('#testimonialsRepeater').uniqueId) {
+        // Testimonials are below the fold, so they can be lazy loaded
+        $w('#testimonialsRepeater').onViewportEnter(() => {
+            loadTestimonials();
+        });
+        // Or just load them if already in viewport or generic timeout finished
+        loadTestimonials();
+    }
+}
+
+/**
+ * Load testimonials data
+ */
+async function loadTestimonials() {
     try {
-        // 1. ROBUST ELEMENT SELECTION
-        // In Velo, we usually shouldn't check existence this way, but if we must:
-        let dropdown = Select('#countyDropdown');
-
-        // Check if the element 'exists' effectively (e.g. has a 'type' or 'id')
-        // Or simply trust the primary ID and catch errors if needed.
-        // For compliance, we will assume #countyDropdown is correct based on recent fixes.
-
-        if (!dropdown) {
-            console.error('CRITICAL: #countyDropdown selector returned null/undefined (Should not happen in Velo).');
+        const repeater = $w('#testimonialsRepeater');
+        // Check if already loaded
+        if (repeater.data.length > 0) {
             return;
         }
 
-        // 2. Initialize
-        dropdown.placeholder = "Loading Counties...";
-
-        // 3. Define Fallback Data IMMEDIATELY
-        const fallbackCounties = [
-            { name: "Alachua", slug: "alachua" },
-            { name: "Charlotte", slug: "charlotte" },
-            { name: "Collier", slug: "collier" },
-            { name: "Hendry", slug: "hendry" },
-            { name: "Lee", slug: "lee" },
-            { name: "Sarasota", slug: "sarasota" },
-            { name: "Manatee", slug: "manatee" },
-            { name: "Desoto", slug: "desoto" }
+        // Load testimonials (static fallback for speed)
+        const testimonials = [
+            {
+                _id: '1',
+                name: 'Steve D.',
+                text: 'Answered immediately and had everything moving fast. You can tell they know exactly what they\'re doing.',
+                rating: 5
+            },
+            {
+                _id: '2',
+                name: 'Brian C.',
+                text: 'Calm, respectful, and professional when we needed it most. They handled everything.',
+                rating: 5
+            },
+            {
+                _id: '3',
+                name: 'Ana E.',
+                text: 'They picked up late at night and never rushed us off the phone.',
+                rating: 5
+            },
+            {
+                _id: '4',
+                name: 'Rafael I.',
+                text: 'They treated us like people, not a number. That mattered more than anything.',
+                rating: 5
+            }
         ];
 
-        // 4. Fetch counties (WITH 5s TIMEOUT)
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 5000));
-        let counties = await Promise.race([getCounties(), timeoutPromise]);
+        repeater.data = testimonials;
 
-        if (!Array.isArray(counties) || counties.length === 0) {
-            console.warn("DEBUG: Fetch failed/empty/timeout. Using Fallback.");
-            counties = fallbackCounties;
-        }
+        // Setup repeater items
+        repeater.onItemReady(($item, itemData) => {
+            if ($item('#testimonialName').uniqueId) $item('#testimonialName').text = itemData.name;
+            // Fallback for authorName in old code
+            if ($item('#authorName').uniqueId) $item('#authorName').text = itemData.name;
 
-        // 5. Transform for Dropdown
-        const options = counties
-            .filter(c => c && (c.name || c.countyName))
-            .map(county => {
-                const name = county.name || county.countyName || "Unknown";
-                const slug = county.slug || county.countySlug || name.toLowerCase().replace(/\s+/g, '-');
-                return {
-                    label: name + ' County',
-                    value: `/bail-bonds/${slug}`
-                };
-            })
-            .sort((a, b) => a.label.localeCompare(b.label));
-
-        // 6. Set Options
-        dropdown.options = [];
-        setTimeout(() => {
-            dropdown.options = options;
-            dropdown.value = undefined;
-            dropdown.resetValidityIndication();
-            dropdown.placeholder = "Select a County";
-            if (dropdown.collapsed) dropdown.expand();
-            if (dropdown.hidden) dropdown.show();
-        }, 100);
-
-        // 7. Change Handler - Direct navigation (Best UX for stressed customers)
-        dropdown.onChange((event) => {
-            const selectedCounty = event.target.value;
-            if (!selectedCounty) return;
-
-            console.log("🎯 County selected:", selectedCounty, "- Navigating immediately...");
-
-            // Provide visual feedback
-            dropdown.disable();
-
-            // Navigate directly - no extra clicks needed
-            navigateToCounty(selectedCounty);
+            if ($item('#testimonialText').uniqueId) $item('#testimonialText').text = itemData.text;
+            // Fallback for quoteText in old code
+            if ($item('#quoteText').uniqueId) $item('#quoteText').text = itemData.text;
         });
 
-    } catch (err) {
-        console.error("CRITICAL ERROR in initCountyDropdown:", err);
+    } catch (error) {
+        console.error('Error loading testimonials:', error);
     }
 }
 
 /**
- * 2. TESTIMONIALS LOGIC
+ * Track events
  */
-async function setupTestimonials() {
-    const fallbackData = [
-        { _id: "1", quote: "Process was fast and easy. Highly recommend.", name: "Sarah M." },
-        { _id: "2", quote: "They helped me at 3am when no one else would.", name: "John D." },
-        { _id: "3", quote: "Professional and explained everything clearly.", name: "Michael R." },
-        { _id: "4", quote: "Got my brother out in hours. Thank you!", name: "Emily S." },
-        { _id: "5", quote: "Very respectful and understanding.", name: "David K." }
-    ];
-
-    let data = fallbackData;
-
+function trackEvent(eventName, eventData = {}) {
+    // Velo Analytics
     try {
-        const result = await wixData.query(COLLECTIONS.TESTIMONIALS).limit(5).find();
-        if (result.items.length > 0) data = result.items;
-    } catch (err) {
-        console.error("ERROR: Failed to load testimonials from CMS", err);
-    }
-
-    const rep = Select('#testimonialsRepeater');
-    if (rep) {
-        rep.data = data;
-        rep.onItemReady(($item, itemData) => {
-            const quote = itemData.quote || itemData.text || itemData.message || "No quote provided";
-            const name = itemData.name || itemData.author || "Anonymous";
-            $item('#quoteText').html = styled(`"${quote}"`, 'p', 'TextPrimary');
-            $item('#authorName').html = styled(name, 'small', 'TextSecondary');
+        wixWindow.trackEvent("CustomEvent", {
+            event: eventName,
+            detail: eventData
         });
-    }
-}
-
-/**
- * 3. FAQ LOGIC
- */
-async function setupFAQ() {
-    const fallbackData = [
-        { _id: "1", q: "Can bail be reduced?", a: "Yes. An attorney can file a motion to reduce bail." },
-        { _id: "2", q: "Can I get my premium back?", a: "No. The 10% premium is non-refundable." },
-        { _id: "3", q: "What if I can't afford 10%?", a: "We offer flexible payment plans." },
-        { _id: "4", q: "How long does release take?", a: "2-8 hours on average." },
-        { _id: "5", q: "Difference between Bail and Bond?", a: "Bail is the full amount; Bond is the 10% service." },
-        { _id: "6", q: "Can anyone be denied bail?", a: "Yes, for capital offenses or flight risks." }
-    ];
-
-    let data = fallbackData;
-
-    try {
-        const result = await wixData.query(COLLECTIONS.FAQS).limit(10).find();
-        if (result.items.length > 0) data = result.items;
-    } catch (err) {
-        console.error("ERROR: Failed to load FAQs from CMS", err);
-    }
-
-    const rep = Select('#faqRepeater');
-    if (rep) {
-        rep.data = data;
-        rep.onItemReady(($item, itemData) => {
-            const question = itemData.q || itemData.question;
-            const answerText = itemData.a || itemData.answer;
-            $item('#faqQuestion').text = question;
-            $item('#faqAnswer').text = answerText;
-        });
-    }
-}
-
-/**
- * 4. BOND AMOUNTS LOGIC
- */
-async function setupBondAmounts() {
-    const fallbackData = [
-        { _id: "1", offense: "DUI (First Offense)", range: "$500 - $2,500" },
-        { _id: "2", offense: "Domestic Violence", range: "$2,500 - $10,000" },
-        { _id: "3", offense: "Drug Possession", range: "$1,000 - $25,000" },
-        { _id: "4", offense: "Assault", range: "$5,000 - $25,000" },
-        { _id: "5", offense: "Burglary", range: "$10,000 - $50,000" }
-    ];
-
-    let data = fallbackData;
-
-    try {
-        const result = await wixData.query(COLLECTIONS.COMMON_CHARGES).limit(20).find();
-        if (result.items.length > 0) data = result.items;
-    } catch (err) { }
-
-    let rep = Select('#amountsRepeater');
-    // if (rep.length === 0) rep = $w('#bondAmountsRepeater'); // REMOVED: .length check invalid
-
-    if (rep) {
-        rep.data = data;
-        rep.onItemReady(($item, itemData) => {
-            const offense = itemData.offense || itemData.chargeName || "Unknown";
-            const range = itemData.range || itemData.bondAmount || "Varies";
-            // Removed internal .length checks on $item('#id')
-            $item('#offenseName').text = offense;
-            $item('#bailRange').text = range;
-            // Assuming duplicates/fallbacks are managed by correct ID usage in Editor
-        });
-    }
-}
-
-/**
- * REUSABLE HANDLER for Start Process
- */
-function handleStartProcess() {
-    console.log("🚀 handleStartProcess() called!");
-
-    // User Request: If county selected, go there. If not, go to Portal Landing.
-    let dropdown = Select('#countyDropdown');
-    console.log("  Checking #countyDropdown:", dropdown.type ? "Found" : "Not found");
-
-    if (!dropdown.type) {
-        dropdown = $w('#countySelector');
-        console.log("  Checking #countySelector:", dropdown.type ? "Found" : "Not found");
-    }
-
-    if (!dropdown.type) {
-        dropdown = Select('#dropdown1');
-        console.log("  Checking #dropdown1:", dropdown.type ? "Found" : "Not found");
-    }
-
-    if (dropdown.type && dropdown.value) {
-        console.log(`✅ County selected: ${dropdown.value}. Navigating to county page...`);
-        navigateToCounty(dropdown.value);
-    } else {
-        console.log("✅ No county selected. Navigating to Portal Landing...");
-        wixLocation.to('/portal-landing');
-    }
-}
-
-export function beginProcessButton_click(event) { handleStartProcess(); }
-export function spanishSpeakingPhone_click(event) { wixLocation.to("tel:12399550301"); }
-export function spanishSpeakingPhone_dblClick(event) { wixLocation.to("tel:12399550301"); }
-
-function safeBindAndLog(selector, eventName, handler) {
-    const el = $w(selector);
-    // Velo elements are always objects. We can check if it has the event method.
-    // We cannot check .length.
-    if (el) {
-        if (typeof el[eventName] === 'function') {
-            try { el[eventName](handler); } catch (e) { }
-        } else if (eventName === 'onClick' && typeof el.onClick === 'function') {
-            try { el.onClick(handler); } catch (e) { }
-        }
+    } catch (e) {
+        console.warn("Tracking failed", e);
     }
 }

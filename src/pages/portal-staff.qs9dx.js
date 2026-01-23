@@ -145,6 +145,19 @@ function updatePageSEO() {
         { "name": "robots", "content": "noindex, nofollow" },
         { "name": "googlebot", "content": "noindex" }
     ]);
+
+    wixSeo.setStructuredData([
+        {
+            "@context": "https://schema.org",
+            "@type": "ProfilePage",
+            "name": "Staff Dashboard",
+            "mainEntity": {
+                "@type": "Person",
+                "name": "Staff Member",
+                "jobTitle": "Bail Agent"
+            }
+        }
+    ]);
 }
 
 function setupRepeater() {
