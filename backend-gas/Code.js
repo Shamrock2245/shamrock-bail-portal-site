@@ -216,6 +216,19 @@ function handleAction(data) {
         return { success: false, error: 'Function fetchIndemnitorProfile not found' };
       result = fetchIndemnitorProfile(data.email);
       break;
+
+    // --- Intake Queue ---
+    case 'fetchPendingIntakes':
+      if (typeof fetchPendingIntakes !== 'function')
+        return { success: false, error: 'Queue fetch not implemented' };
+      result = fetchPendingIntakes();
+      break;
+
+    case 'markIntakeProcessed':
+      if (typeof markIntakeAsProcessed !== 'function')
+        return { success: false, error: 'Queue update not implemented' };
+      result = markIntakeAsProcessed(data.intakeId);
+      break;
   }
   return result;
 }

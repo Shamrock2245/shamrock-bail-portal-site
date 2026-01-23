@@ -1329,7 +1329,11 @@
         <!-- NAVIGATION TABS -->
         <nav class="nav-container">
             <button class="tab active" onclick="switchTab(this, 'scrapers')">
-                <span class="tab-icon">&#128269;</span> Counties
+                <span class="tab-icon">🔍</span> Counties
+            </button>
+            <button class="tab" onclick="switchTab(this, 'queue')">
+                <span class="tab-icon">📋</span> Queue
+                <span class="tab-badge" id="queue-badge" style="display:none;">0</span>
             </button>
             <button class="tab" onclick="switchTab(this, 'charges')">
                 <span class="tab-icon">&#9878;</span> Charges
@@ -5923,6 +5927,146 @@
 
 
         console.log('Wix Portal Integration module loaded');
+    </script>
+
+    <!-- ============================================================
+         TAB: QUEUE (New)
+         ============================================================ -->
+    <div id="queue" class="tab-content" style="display:none;">
+        <div class="card">
+            <div class="card-header">
+                <h3><span class="icon">📋</span> Incoming Intake Queue</h3>
+                <div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="fetchQueue()">🔄 Refresh</button>
+                    <!-- <button type="button" class="btn btn-primary btn-sm" onclick="alert('Feature coming soon')">Bulk Archive</button> -->
+                </div>
+            </div>
+
+            <p class="text-muted" style="margin-bottom: 20px;">
+                Submissions from the Shamrock Bail Bonds website appear here. Click "Load" to populate the dashboard.
+            </p>
+
+            <div class="table-container">
+                <table class="table" style="width:100%; text-align:left; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="padding:12px;">Submitted</th>
+                            <th style="padding:12px;">Defendant</th>
+                            <th style="padding:12px;">Indemnitor</th>
+                            <th style="padding:12px;">Jail/Charge</th>
+                            <th style="padding:12px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="queue-list">
+                        <tr>
+                            <td colspan="5" style="text-align:center; padding:20px;">Loading queue...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN SCRIPT -->
+    <script>
+        // --- QUEUE LOGIC ---
+        function fetchQueue() {
+            const list = document.getElementById('queue-list');
+            list.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">⌛ Fetching pending intakes...</td></tr>';
+
+            google.script.run
+                .withSuccessHandler(renderQueue)
+                .withFailureHandler(err => {
+                    list.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error: ${err.message}</td></tr>`;
+                })
+                .doPostFromClient({ action: 'fetchPendingIntakes' });
+        }
+
+        function renderQueue(response) {
+            const list = document.getElementById('queue-list');
+            const badge = document.getElementById('queue-badge');
+
+            if (!response || !response.success || !response.intakes) {
+                list.innerHTML = '<tr><td colspan="5" style="text-align:center;">No pending intakes found.</td></tr>';
+                if (badge) badge.style.display = 'none';
+                return;
+            }
+
+            const items = response.intakes;
+
+            // Update Badge
+            if (badge) {
+                badge.innerText = items.length;
+                badge.style.display = items.length > 0 ? 'inline-block' : 'none';
+            }
+
+            if (items.length === 0) {
+                list.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">✅ All caught up! No pending intakes.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                const date = new Date(item.submittedAt).toLocaleDateString() + ' ' + new Date(item.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding:12px;">${date}</td>
+                        <td style="padding:12px;">
+                            <strong>${item.defendantName || 'N/A'}</strong><br>
+                            <small class="text-muted">DOB: ${item.defendantDob || '--'}</small>
+                        </td>
+                        <td style="padding:12px;">
+                            <strong>${item.name || 'Anonymous'}</strong><br>
+                            <small>${item.phone || ''}</small><br>
+                            <small class="text-muted">${item.relationship || ''}</small>
+                        </td>
+                        <td style="padding:12px;">
+                            <span class="badge" style="background:var(--surface-2); border:1px solid var(--border);">${item.jail || 'Unknown'}</span><br>
+                            <small>${(item.charges || '').substring(0, 30)}...</small>
+                        </td>
+                        <td style="padding:12px;">
+                            <button class="btn btn-primary btn-sm" onclick='loadIntake(${JSON.stringify(item)})'>
+                                ⚡ Load
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        function loadIntake(item) {
+            if (!confirm(`Load details for ${item.defendantName}? This will overwrite current form fields.`)) return;
+
+            // 1. Fill Defendant Fields
+            if (document.getElementById('defendant-name')) document.getElementById('defendant-name').value = item.defendantName || '';
+            if (document.getElementById('defendant-dob')) document.getElementById('defendant-dob').value = item.defendantDob || '';
+            // Map Jail to County drop-down roughly logic would go here
+            if (document.getElementById('charges-input')) document.getElementById('charges-input').value = item.charges || '';
+
+            // 2. Fill Indemnitor Fields
+            if (document.getElementById('indemnitor-full-name')) document.getElementById('indemnitor-full-name').value = item.name || '';
+            if (document.getElementById('indemnitor-phone')) document.getElementById('indemnitor-phone').value = item.phone || '';
+            if (document.getElementById('signer-indemnitor-email')) document.getElementById('signer-indemnitor-email').value = item.email || '';
+            if (document.getElementById('signer-indemnitor-phone')) document.getElementById('signer-indemnitor-phone').value = item.phone || '';
+
+            switchTab(document.querySelector('button[onclick*="dashboard"]'), 'dashboard');
+
+            // 3. Mark as Processed
+            google.script.run
+                .withSuccessHandler(() => {
+                    fetchQueue(); // Refresh to remove
+                    showToast('✅ Intake loaded and removed from queue!');
+                })
+                .doPostFromClient({
+                    action: 'markIntakeProcessed',
+                    apiKey: 'GAS_CLIENT_KEY', // Ideally valid key, but here we proxy via GAS backend
+                    intakeId: item._id
+                });
+        }
+
+        // Auto-fetch on load
+        setTimeout(fetchQueue, 2000);
     </script>
 </body>
 

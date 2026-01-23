@@ -862,3 +862,75 @@ export async function get_getIndemnitorProfile(request) {
         return serverError({ body: { success: false, message: error.message } });
     }
 }
+
+/**
+ * GET /_functions/getPendingIntakes
+ * Fetch all pending submissions from IntakeQueue
+ */
+export async function get_getPendingIntakes(request) {
+    try {
+        const apiKey = request.headers['api-key'];
+
+        // 1. Auth Check
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (apiKey !== validApiKey) {
+            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
+        }
+
+        // 2. Query Pending
+        const options = { suppressAuth: true };
+        const results = await wixData.query("IntakeQueue")
+            .eq("status", "Pending")
+            .descending("submittedAt") // Newest first
+            .limit(50)
+            .find(options);
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: { success: true, intakes: results.items }
+        });
+
+    } catch (error) {
+        return serverError({ body: { success: false, message: error.message } });
+    }
+}
+
+/**
+ * POST /_functions/markIntakeProcessed
+ * Mark an intake as processed/done
+ */
+export async function post_markIntakeProcessed(request) {
+    try {
+        const body = await request.body.json();
+        const apiKey = body.apiKey;
+        const intakeId = body.intakeId;
+
+        // 1. Auth Check
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (apiKey !== validApiKey) {
+            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
+        }
+
+        if (!intakeId) return badRequest({ body: { success: false, message: 'Missing intakeId' } });
+
+        // 2. ID Validation & Update
+        const options = { suppressAuth: true };
+        const item = await wixData.get("IntakeQueue", intakeId, options);
+
+        if (!item) return badRequest({ body: { success: false, message: 'Intake not found' } });
+
+        item.status = "Processed";
+        item.isRead = true;
+        item.processedAt = new Date();
+
+        await wixData.update("IntakeQueue", item, options);
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: { success: true, message: "Marked as processed" }
+        });
+
+    } catch (error) {
+        return serverError({ body: { success: false, message: error.message } });
+    }
+}

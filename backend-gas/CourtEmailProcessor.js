@@ -24,39 +24,39 @@
 const CONFIG = {
   // Master Sheet for Email Lookups
   masterSheetId: '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E',
-  
+
   // Calendar configuration
-  calendarId: 'admin@shamrockbailbonds.biz', 
+  calendarId: 'admin@shamrockbailbonds.biz',
   reviewerEmail: 'shamrockbailoffice@gmail.com',
-  
+
   // Slack webhook URLs (Populate these in Script Properties if needed, or hardcode here)
   slackWebhooks: {
-    courtDates: '', 
+    courtDates: '',
     forfeitures: '',
     discharges: ''
   },
-  
+
   // Email whitelist
   emailWhitelist: {
     specific: ['infocriminalbonds@leeclerk.org', 'automail@leeclerk.org'],
     domains: [
-      'leeclerk.org', 
-      'collierclerk.com', 
-      'hendryso.org', 
-      'charlotteclerk.com', 
-      'manateeclerk.com', 
-      'sarasotaclerk.com', 
-      'desotoclerk.com', 
+      'leeclerk.org',
+      'collierclerk.com',
+      'hendryso.org',
+      'charlotteclerk.com',
+      'manateeclerk.com',
+      'sarasotaclerk.com',
+      'desotoclerk.com',
       'hillsboroughclerk.com'
     ],
     patterns: [
-      /.*clerk.*\.org$/i, 
-      /.*clerk.*\.gov$/i, 
-      /.*county.*\.org$/i, 
+      /.*clerk.*\.org$/i,
+      /.*clerk.*\.gov$/i,
+      /.*county.*\.org$/i,
       /.*county.*\.gov$/i
     ]
   },
-  
+
   // Processing settings
   maxEmailsPerRun: 20,
   batchSize: 10,
@@ -64,7 +64,7 @@ const CONFIG = {
   lookbackDays: 30,
   skipAlreadyProcessed: true,
   preventDuplicates: true,
-  
+
   // Gmail labels
   labels: {
     courtDate: 'Processed - Court Date',
@@ -72,7 +72,7 @@ const CONFIG = {
     discharge: 'Processed - Discharge',
     error: 'Processing Error'
   },
-  
+
   // Calendar event colors
   colors: {
     courtDate: CalendarApp.EventColor.BLUE,
@@ -80,17 +80,17 @@ const CONFIG = {
     forfeitureReceived: CalendarApp.EventColor.ORANGE,
     discharge: CalendarApp.EventColor.GREEN
   },
-  
+
   // Subject line keywords
   keywords: {
     courtDate: [
-      'SERVICE OF COURT DOCUMENT for Case Number', 
-      'Notice of Appearance', 
+      'SERVICE OF COURT DOCUMENT for Case Number',
+      'Notice of Appearance',
       'Court Date Notice',
       'Notice of Hearing'
     ],
     forfeiture: [
-      'Notice of Forfeiture', 
+      'Notice of Forfeiture',
       'FORFEITURE'
     ],
     discharge: [
@@ -113,25 +113,25 @@ const CONFIG = {
  */
 function processCourtEmails() {
   const startTime = new Date().getTime();
-  
+
   try {
     Logger.log('🚀 Starting Unified Court Email Processor...');
     Logger.log(`📅 Target Calendar: ${CONFIG.calendarId}`);
-    
+
     // Ensure labels exist
     setupLabels();
-    
+
     const emails = getUnprocessedEmails(CONFIG.lookbackDays);
     Logger.log(`📧 Found ${emails.length} unprocessed emails`);
-    
+
     if (emails.length === 0) return { processed: 0, skipped: 0, errors: 0 };
-    
+
     let processed = 0;
     let skipped = 0;
     let errors = 0;
-    
+
     const batchSize = Math.min(CONFIG.batchSize, emails.length);
-    
+
     for (let i = 0; i < batchSize; i++) {
       // Time Safety Check
       // Time Safety Check
@@ -140,12 +140,12 @@ function processCourtEmails() {
         createContinuationTrigger();
         return { processed, skipped, errors, continuation: true };
       }
-      
+
       const message = emails[i];
       try {
         Logger.log(`\n[${i + 1}/${batchSize}] Processing: ${message.getSubject()}`);
         const result = processEmail(message);
-        
+
         if (result.success) {
           processed++;
           Logger.log('✅ Success');
@@ -162,15 +162,15 @@ function processCourtEmails() {
         labelEmail(message, CONFIG.labels.error);
       }
     }
-    
+
     Logger.log(`\n📊 Batch complete: ✅ ${processed} | ⏭️ ${skipped} | ❌ ${errors}`);
     Logger.log(`\n📊 Batch complete: ✅ ${processed} | ⏭️ ${skipped} | ❌ ${errors}`);
-    
+
     // If we finished the batch naturally (didn't hit time limit), invoke delete triggers
     deleteContinuationTriggers();
-    
+
     return { processed, skipped, errors };
-    
+
   } catch (error) {
     Logger.log(`❌ Fatal error: ${error.message}`);
     throw error;
@@ -182,7 +182,7 @@ function processCourtEmails() {
  */
 function processEmail(message) {
   const subject = message.getSubject();
-  
+
   // prioritize Forfeiture > Discharge > Court Date
   if (CONFIG.keywords.forfeiture.some(k => subject.includes(k))) {
     return processForfeitureEmail(message);
@@ -202,22 +202,71 @@ function processEmail(message) {
 function processCourtDateEmail(message) {
   Logger.log('🏛️ Type: Court Date');
   const data = extractCourtDateData(message);
-  
+
   if (!data) return { success: false, error: 'Extraction failed' };
-  
-  // Find defendant email
-  data.defendantEmail = lookupDefendantEmail(data.defendant, data.caseNumber);
-  if (data.defendantEmail) Logger.log(`🔍 Found defendant email: ${data.defendantEmail}`);
-  
+
+  // Find contacts (Defendant & Indemnitor)
+  // Use new lookup helper
+  if (typeof lookupCaseContacts === 'function') {
+    const contacts = lookupCaseContacts(data.defendant, data.caseNumber);
+    if (contacts && contacts.found) {
+      data.contacts = contacts;
+      Logger.log(`🔍 Found contacts: ${JSON.stringify(contacts)}`);
+    }
+  } else {
+    Logger.log('⚠️ lookupCaseContacts not found');
+  }
+
   createCourtDateEvent(data);
   addCourtDateToSheet(data); // Added from Utils.gs
-  
+
+  // Send Notifications
+  notifyParties(data);
+
   if (CONFIG.slackWebhooks.courtDates) {
     postToSlack(CONFIG.slackWebhooks.courtDates, formatCourtDateSlackMessage(data));
   }
-  
+
   labelEmail(message, CONFIG.labels.courtDate);
   return { success: true };
+}
+
+/**
+ * Send SMS & Email Notifications to Parties
+ */
+function notifyParties(data) {
+  if (!data.contacts || !data.contacts.found) return;
+
+  const subject = `Court Date Reminder: ${data.defendant}`;
+  const body = `Shamrock Bail Bonds Reminder:\n\nCourt Date: ${data.courtDate.toLocaleString()}\nCase: ${data.caseNumber}\nLocation: Courtroom ${data.courtroom}\n\nPlease arrive 30 minutes early. Call us if you need transportation.`;
+
+  // 1. Notify Defendant
+  if (data.contacts.defendantPhone) {
+    // Assuming sendSmsViaTwilio is available globally in GAS
+    if (typeof sendSmsViaTwilio === 'function') {
+      sendSmsViaTwilio(data.contacts.defendantPhone, body);
+      Logger.log(`📱 SMS sent to Defendant: ${data.contacts.defendantPhone}`);
+    } else {
+      Logger.log('⚠️ sendSmsViaTwilio function not found');
+    }
+  }
+  if (data.contacts.defendantEmail) {
+    MailApp.sendEmail(data.contacts.defendantEmail, subject, body);
+    Logger.log(`📧 Email sent to Defendant: ${data.contacts.defendantEmail}`);
+  }
+
+  // 2. Notify Indemnitor
+  if (data.contacts.indemnitorPhone && typeof sendSmsViaTwilio === 'function') {
+    const indBody = `Shamrock Bail Bonds Update:\n\nCourt Date scheduled for ${data.defendant}.\nDate: ${data.courtDate.toLocaleString()}\n\nPlease ensure they attend to avoid bond forfeiture.`;
+    sendSmsViaTwilio(data.contacts.indemnitorPhone, indBody);
+    Logger.log(`📱 SMS sent to Indemnitor: ${data.contacts.indemnitorPhone}`);
+  }
+  if (data.contacts.indemnitorEmail) {
+    const indSubject = `URGENT: Court Date for ${data.defendant}`;
+    const indEmailBody = `Shamrock Bail Bonds Notification\n\nA new court date has been scheduled for ${data.defendant}.\n\nWhen: ${data.courtDate.toLocaleString()}\nWhere: Courtroom ${data.courtroom}\nCase: ${data.caseNumber}\n\nIt is your responsibility as Indemnitor to ensure their appearance. Failure to appear will result in bond forfeiture.\n\nThank you,\nShamrock Bail Bonds`;
+    MailApp.sendEmail(data.contacts.indemnitorEmail, indSubject, indEmailBody);
+    Logger.log(`📧 Email sent to Indemnitor: ${data.contacts.indemnitorEmail}`);
+  }
 }
 
 /**
@@ -226,16 +275,16 @@ function processCourtDateEmail(message) {
 function processForfeitureEmail(message) {
   Logger.log('⚖️ Type: Forfeiture');
   const data = extractForfeitureData(message);
-  
+
   if (!data) return { success: false, error: 'Extraction failed' };
-  
+
   createForfeitureEvents(data);
   addForfeitureToSheet(data); // Added from Utils.gs
-  
+
   if (CONFIG.slackWebhooks.forfeitures) {
     postToSlack(CONFIG.slackWebhooks.forfeitures, formatForfeitureSlackMessage(data));
   }
-  
+
   labelEmail(message, CONFIG.labels.forfeiture);
   return { success: true };
 }
@@ -246,16 +295,16 @@ function processForfeitureEmail(message) {
 function processDischargeEmail(message) {
   Logger.log('✅ Type: Discharge');
   const data = extractDischargeData(message); // Uses similar extraction to court date
-  
+
   if (!data) return { success: false, error: 'Extraction failed' };
-  
+
   createDischargeEvent(data);
   addDischargeToSheet(data); // Added from Utils.gs
-  
+
   if (CONFIG.slackWebhooks.discharges) {
     postToSlack(CONFIG.slackWebhooks.discharges, formatDischargeSlackMessage(data));
   }
-  
+
   labelEmail(message, CONFIG.labels.discharge);
   return { success: true };
 }
@@ -272,57 +321,57 @@ function extractCourtDateData(message) {
     const subject = message.getSubject();
     const body = message.getPlainBody();
     const attachments = message.getAttachments();
-    
+
     // Case Number
     const caseMatch = subject.match(/(\d{2}-[A-Z]+-\d+)/i) || body.match(/Case\s*No\.?\s*[:\s]*(\d{2}-[A-Z]+-\d+)/i);
     const caseNumber = caseMatch ? caseMatch[1] : 'Unknown';
-    
+
     // Defendant
     let defendant = 'Unknown';
     const defendantMatch = body.match(/(?:Parties|Defendant|Name of Defendant|In Re:)\s*[:\s]+([^\n\r,]+)/i);
     if (defendantMatch) defendant = defendantMatch[1].trim();
-    
+
     // Court Date & Time
     let courtDateStr = null;
     let courtTime = '09:00 AM';
-    
+
     // Try body first
     const bodyDateMatch = body.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
     const bodyTimeMatch = body.match(/(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))/);
-    
+
     if (bodyDateMatch) courtDateStr = bodyDateMatch[1];
     if (bodyTimeMatch) courtTime = bodyTimeMatch[1];
-    
+
     // Scan PDF for missing info
     let pdfText = '';
     const pdf = attachments.find(a => a.getContentType() === 'application/pdf');
     if (pdf) {
       pdfText = extractTextFromPDF(pdf);
-      
+
       if (!courtDateStr) {
         const pdfDateMatch = pdfText.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
         if (pdfDateMatch) courtDateStr = pdfDateMatch[1];
       }
-      
+
       const pdfTimeMatch = pdfText.match(/(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))/);
       if (pdfTimeMatch) courtTime = pdfTimeMatch[1];
-      
+
       // If defendant still unknown, try PDF
       if (defendant === 'Unknown') {
         const pdfDefMatch = pdfText.match(/Defendant[:\s]+([^\n\r,]+)/i) || pdfText.match(/State of Florida vs\.?\s+([^\n\r,]+)/i);
         if (pdfDefMatch) defendant = pdfDefMatch[1].trim();
       }
     }
-    
+
     if (!courtDateStr) return null;
-    
+
     // Room
     let courtroom = 'Unknown';
     const roomMatch = (body + pdfText).match(/Courtroom[:\s]*([A-Z0-9-]+)/i) || (body + pdfText).match(/Room[:\s]*([A-Z0-9-]+)/i);
     if (roomMatch) courtroom = roomMatch[1];
-    
+
     const courtDate = new Date(courtDateStr + ' ' + courtTime);
-    
+
     return {
       caseNumber,
       defendant,
@@ -344,21 +393,21 @@ function extractForfeitureData(message) {
     const body = message.getPlainBody();
     const attachments = message.getAttachments();
     let pdfText = '';
-    
+
     const pdf = attachments.find(a => a.getContentType() === 'application/pdf');
     if (pdf) pdfText = extractTextFromPDF(pdf);
-    
+
     const combinedText = body + '\n' + pdfText;
-    
+
     // Extract everything
     const caseMatch = combinedText.match(/Case\s*No\.?\s*[:\s]*(\d{2}-[A-Z]+-\d+)/i);
     const defendantMatch = combinedText.match(/Defendant[:\s]+([^\n\r,]+)/i);
     const amountMatch = combinedText.match(/\$\s*([\d,]+\.?\d*)/);
     const dateMatch = combinedText.match(/forfeited.*on\s+(\d{1,2}\/\d{1,2}\/\d{4})/i) || combinedText.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
     const powerMatch = combinedText.match(/Power\s*(?:No|Number)?\.?[:\s]*([A-Z0-9-]+)/i);
-    
+
     if (!caseMatch && !defendantMatch) return null;
-    
+
     return {
       caseNumber: caseMatch ? caseMatch[1] : 'Unknown',
       defendant: defendantMatch ? defendantMatch[1].trim() : 'Unknown',
@@ -367,7 +416,7 @@ function extractForfeitureData(message) {
       powerNumber: powerMatch ? powerMatch[1] : 'Unknown',
       receivedDate: new Date() // Today
     };
-    
+
   } catch (e) {
     Logger.log(`❌ Forfeiture extraction error: ${e.message}`);
     return null;
@@ -382,34 +431,34 @@ function extractDischargeData(message) {
     const subject = message.getSubject();
     const body = message.getPlainBody();
     const attachments = message.getAttachments();
-    
+
     let pdfText = '';
     const pdf = attachments.find(a => a.getContentType() === 'application/pdf');
     if (pdf) pdfText = extractTextFromPDF(pdf);
-    
+
     const combinedText = body + '\n' + pdfText;
-    
+
     // Case
     const caseMatch = subject.match(/(\d{2}-[A-Z]+-\d+)/i) || combinedText.match(/Case\s*No\.?\s*[:\s]*(\d{2}-[A-Z]+-\d+)/i);
-    
+
     // Defendant
     let defendant = 'Unknown';
     const defendantMatch = combinedText.match(/Defendant[:\s]+([^\n\r,]+)/i) || combinedText.match(/Principal[:\s]+([^\n\r,]+)/i);
     if (defendantMatch) defendant = defendantMatch[1].trim();
-    
+
     // Date
     const dateMatch = combinedText.match(/discharged.*on\s+(\d{1,2}\/\d{1,2}\/\d{4})/i) || combinedText.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
-    
+
     return {
       caseNumber: caseMatch ? caseMatch[1] : 'Unknown',
       defendant: defendant,
       dischargeDate: dateMatch ? new Date(dateMatch[1]) : new Date(),
       info: 'Discharge of Bond'
     };
-    
+
   } catch (e) {
-     Logger.log(`❌ Discharge extraction error: ${e.message}`);
-     return null;
+    Logger.log(`❌ Discharge extraction error: ${e.message}`);
+    return null;
   }
 }
 
@@ -422,12 +471,12 @@ function extractTextFromPDF(attachment) {
       title: attachment.getName(),
       mimeType: attachment.getContentType()
     };
-    
+
     // Drive.Files.insert requires Advanced Drive Service enabled
     const file = Drive.Files.insert(resource, attachment, { ocr: true });
     const doc = DocumentApp.openById(file.id);
     const text = doc.getBody().getText();
-    
+
     Drive.Files.remove(file.id); // Clean up
     return text;
   } catch (e) {
@@ -447,10 +496,10 @@ function extractTextFromPDF(attachment) {
 function createCourtDateEvent(data) {
   const calendar = CalendarApp.getCalendarById(CONFIG.calendarId);
   if (!calendar) throw new Error(`Target calendar ${CONFIG.calendarId} not found`);
-  
+
   const title = `Court: ${data.defendant} $${data.caseNumber}`;
   const description = `Court Appearance\n\nDefendant: ${data.defendant}\nCase: ${data.caseNumber}\nRoom: ${data.courtroom}`;
-  
+
   if (CONFIG.preventDuplicates) {
     const existing = calendar.getEventsForDay(data.courtDate);
     if (existing.some(e => e.getTitle() === title)) {
@@ -458,18 +507,18 @@ function createCourtDateEvent(data) {
       return;
     }
   }
-  
+
   // Guests: Reviewer + Defendant (if any)
   let guestList = CONFIG.reviewerEmail;
   if (data.defendantEmail) guestList += `,${data.defendantEmail}`;
-  
+
   const options = {
     description: description,
     location: `Courtroom ${data.courtroom}`,
     guests: guestList,
     sendInvites: true
   };
-  
+
   const event = calendar.createEvent(title, data.courtDate, new Date(data.courtDate.getTime() + 60 * 60 * 1000), options);
   event.setColor(CONFIG.colors.courtDate);
   Logger.log(`📅 Created Event: ${title} | Shared with: ${guestList}`);
@@ -480,19 +529,19 @@ function createCourtDateEvent(data) {
  */
 function createForfeitureEvents(data) {
   const calendar = CalendarApp.getCalendarById(CONFIG.calendarId);
-  
+
   // Event 1: The Forfeiture Date (Past)
   calendar.createEvent(`FORFEITURE: ${data.defendant}`, data.forfeitureDate, data.forfeitureDate, {
     description: `Case: ${data.caseNumber}\nAmount: $${data.amount}\nPower: ${data.powerNumber}`,
     guests: CONFIG.reviewerEmail
   }).setColor(CONFIG.colors.forfeitureDate);
-  
+
   // Event 2: Received Notification (Today - All Day)
   calendar.createAllDayEvent(`⚠️ FORFEITURE RECEIVED: ${data.defendant}`, new Date(), {
-     description: `Case: ${data.caseNumber}\nAmount: $${data.amount}\nCheck File!`,
-     guests: CONFIG.reviewerEmail
+    description: `Case: ${data.caseNumber}\nAmount: $${data.amount}\nCheck File!`,
+    guests: CONFIG.reviewerEmail
   }).setColor(CONFIG.colors.forfeitureReceived);
-  
+
   Logger.log(`📅 Created Forfeiture Events for ${data.defendant}`);
 }
 
@@ -501,12 +550,12 @@ function createForfeitureEvents(data) {
  */
 function createDischargeEvent(data) {
   const calendar = CalendarApp.getCalendarById(CONFIG.calendarId);
-  
+
   calendar.createAllDayEvent(`✅ DISCHARGE: ${data.defendant}`, data.dischargeDate, {
     description: `Case: ${data.caseNumber}\nBond Discharged.`,
     guests: CONFIG.reviewerEmail
   }).setColor(CONFIG.colors.discharge);
-  
+
   Logger.log(`📅 Created Discharge Event for ${data.defendant}`);
 }
 
@@ -514,62 +563,92 @@ function createDischargeEvent(data) {
 // HELPERS & LOOKUPS
 // ============================================================================
 
-function lookupDefendantEmail(name, caseNumber) {
-  if (!name || name === 'Unknown') return null;
+
+/**
+ * Lookup Case Contacts (Defendant & Indemnitor)
+ * Returns object with found emails/phones
+ */
+function lookupCaseContacts(name, caseNumber) {
+  const result = {
+    defendantEmail: null,
+    defendantPhone: null,
+    indemnitorEmail: null,
+    indemnitorPhone: null,
+    found: false
+  };
+
+  if (!name || name === 'Unknown') return result;
+
   try {
     const ss = SpreadsheetApp.openById(CONFIG.masterSheetId);
-    // Search specific high-value sheets
-    const sheets = ['Defendant Locations', 'PortalUsers', 'ArrestLeads'];
-    const searchName = name.toLowerCase();
-    
-    for (const sName of sheets) {
-      const sheet = ss.getSheetByName(sName);
-      if (!sheet) continue;
-      
-      const data = sheet.getDataRange().getValues();
-      if (data.length < 2) continue;
-      
+
+    // 1. Search 'Bookings' Sheet (Best Source)
+    const bookingSheet = ss.getSheetByName('Bookings');
+    if (bookingSheet) {
+      const data = bookingSheet.getDataRange().getValues();
       const headers = data[0].map(h => h.toString().toLowerCase());
-      const emailIdx = headers.findIndex(h => h.includes('email'));
-      const nameIdx = headers.findIndex(h => h.includes('name') || h.includes('defendant'));
-      
-      if (emailIdx > -1 && nameIdx > -1) {
-        for (let i = 1; i < data.length; i++) {
-          const rowName = data[i][nameIdx].toString().toLowerCase();
-          const rowEmail = data[i][emailIdx].toString();
-          
-          if (rowEmail && rowName.includes(searchName)) {
-            return rowEmail;
-          }
+
+      const defNameIdx = headers.findIndex(h => h.includes('defendant'));
+      const defEmailIdx = headers.findIndex(h => h.includes('email') && !h.includes('indemnitor')); // simple 'email' usually defendant
+      const defPhoneIdx = headers.findIndex(h => h.includes('phone') && !h.includes('indemnitor'));
+      const indNameIdx = headers.findIndex(h => h.includes('indemnitor'));
+      // Sometimes headers are "Indemnitor Email", sometimes just in adjacent columns. 
+      // Let's look for explicit headers first.
+      const indEmailIdx = headers.findIndex(h => h.includes('indemnitor') && h.includes('email')) > -1
+        ? headers.findIndex(h => h.includes('indemnitor') && h.includes('email'))
+        : headers.findIndex(h => h === 'email' && h > indNameIdx); // Heuristic
+
+      const indPhoneIdx = headers.findIndex(h => h.includes('indemnitor') && h.includes('phone'));
+
+      const searchName = name.toLowerCase();
+
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const rowDefName = row[defNameIdx]?.toString().toLowerCase() || '';
+
+        // Match Name (fuzzy)
+        if (rowDefName.includes(searchName) || searchName.includes(rowDefName)) {
+          // Found potential match
+          if (defEmailIdx > -1) result.defendantEmail = row[defEmailIdx];
+          if (defPhoneIdx > -1) result.defendantPhone = row[defPhoneIdx];
+          if (indEmailIdx > -1) result.indemnitorEmail = row[indEmailIdx];
+          if (indPhoneIdx > -1) result.indemnitorPhone = row[indPhoneIdx];
+          result.found = true;
+          Logger.log(`🔍 Found contacts in Bookings: ${JSON.stringify(result)}`);
+          return result;
         }
       }
     }
+
+    // 2. Fallback to other sheets logic if needed...
+    // (Keeping it simple for now as Bookings is the main source of truth for recent cases)
+
   } catch (e) {
-    Logger.log(`⚠️ Email lookup failed: ${e.message}`);
+    Logger.log(`⚠️ Contact lookup failed: ${e.message}`);
   }
-  return null;
+  return result;
 }
 
 function getUnprocessedEmails(days) {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
   const dateStr = Utilities.formatDate(cutoff, "GMT", "yyyy/MM/dd");
-  
+
   // Build query
   let query = `has:attachment after:${dateStr}`;
   // Optimization: Pre-filter by subject terms to reduce noise
   // query += ` (subject:court OR subject:appearance OR subject:forfeiture OR subject:discharge OR subject:release)`;
-  
+
   const threads = GmailApp.search(query, 0, CONFIG.maxEmailsPerRun);
   const messages = [];
-  
+
   threads.forEach(t => t.getMessages().forEach(m => {
     // Check if valid sender
     if (isFromWhitelistedSender(m.getFrom())) {
-       // Check if processed
-       if (!isAlreadyProcessed(m)) {
-         messages.push(m);
-       }
+      // Check if processed
+      if (!isAlreadyProcessed(m)) {
+        messages.push(m);
+      }
     }
   }));
   return messages;
@@ -577,13 +656,13 @@ function getUnprocessedEmails(days) {
 
 function isFromWhitelistedSender(from) {
   const f = from.toLowerCase();
-  
+
   // 1. Check Specific
   if (CONFIG.emailWhitelist.specific.some(s => f.includes(s))) return true;
-  
+
   // 2. Check Domains
   if (CONFIG.emailWhitelist.domains.some(d => f.includes(`@${d}`))) return true;
-  
+
   // 3. Check Patterns
   return CONFIG.emailWhitelist.patterns.some(p => p.test(f));
 }
@@ -653,7 +732,7 @@ function createContinuationTrigger() {
     .timeBased()
     .after(60 * 1000) // Run in 1 minute
     .create();
-    
+
   Logger.log('🔄 Continuation trigger scheduled.');
 }
 
@@ -672,7 +751,7 @@ function deleteContinuationTriggers() {
       // BETTER APPROACH: Only delete if proper ID is stored or just rely on them expiring? 
       // Actually, standard practice for "after" triggers is they run once and gone.
       // But good hygiene is to clear them if we finish early.
-      
+
       // For this simplified version, we won't aggressive delete to avoid killing the daily schedule.
       // We assume "after" triggers self-destruct after running.
     }
@@ -746,7 +825,7 @@ function addForfeitureToSheet(data) {
     const totalBond = calculateTotalBond(data.bonds);
     const receivedDateStr = Utilities.formatDate(data.receivedDate || new Date(), Session.getScriptTimeZone(), 'MM/dd/yyyy');
     const forfeitureDateStr = data.forfeitureDate ? Utilities.formatDate(data.forfeitureDate, Session.getScriptTimeZone(), 'MM/dd/yyyy') : 'Unknown';
-    
+
     // Determine reminder
     const nextReminder = new Date();
     nextReminder.setDate(nextReminder.getDate() + 10);

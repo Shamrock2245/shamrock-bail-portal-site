@@ -6,6 +6,7 @@
  */
 
 import { sendAdminNotification, NOTIFICATION_TYPES } from 'backend/notificationService';
+import wixData from 'wix-data';
 
 /**
  * Submit Contact Form
@@ -62,7 +63,19 @@ export async function submitContactForm(formData) {
             submittedAt: new Date().toLocaleString()
         };
 
-        // 3. Send Notification (Slack + Email via GAS)
+        // 3. Save to Queue (New Feature)
+        try {
+            await wixData.insert('IntakeQueue', {
+                ...notificationData,
+                status: 'Pending',
+                isRead: false
+            });
+        } catch (dbError) {
+            console.error("Queue Insert Failed (Non-fatal):", dbError);
+            // We proceed to notifications anyway
+        }
+
+        // 4. Send Notification (Slack + Email via GAS)
         const result = await sendAdminNotification(
             NOTIFICATION_TYPES.NEW_CONTACT_INQUIRY,
             notificationData
@@ -70,9 +83,7 @@ export async function submitContactForm(formData) {
 
         if (!result.success) {
             console.error("Failed to send contact notification:", result.error);
-            // We still return success to the user so they don't retry endlessly, 
-            // but we log the error. Ideally, we should have a fallback here.
-            return { success: true, meta: "notification_failed" };
+            return { success: true, meta: "notification_failed_but_queued" };
         }
 
         return { success: true };

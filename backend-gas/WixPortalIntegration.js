@@ -375,3 +375,53 @@ function fetchIndemnitorProfile(email) {
     return { success: false, message: e.message };
   }
 }
+
+/**
+ * Fetch Pending Intakes from Wix Queue
+ */
+function fetchPendingIntakes() {
+  const config = getWixPortalConfig();
+  if (!config.apiKey) return { success: false, message: 'Wix API key missing' };
+
+  const url = config.baseUrl + '/getPendingIntakes';
+  const params = {
+    method: 'GET',
+    headers: { 'api-key': config.apiKey },
+    muteHttpExceptions: true
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, params);
+    return JSON.parse(response.getContentText());
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Mark Intake as Processed
+ */
+function markIntakeAsProcessed(intakeId) {
+  const config = getWixPortalConfig();
+  if (!config.apiKey) return { success: false, message: 'Wix API key missing' };
+
+  const url = config.baseUrl + '/markIntakeProcessed';
+  const payload = {
+    apiKey: config.apiKey,
+    intakeId: intakeId
+  };
+
+  const params = {
+    method: 'POST',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, params);
+    return JSON.parse(response.getContentText());
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
