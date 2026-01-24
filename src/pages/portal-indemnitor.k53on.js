@@ -12,9 +12,11 @@ import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink } from 'backend/signnow-integration';
 import { reverseGeocodeToCityStateZip, geocodeAddressToCityStateZip } from 'backend/googleMaps';
+import { sendAdminNotification, NOTIFICATION_TYPES } from 'backend/notificationService';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
 import { silentPingLocation } from 'public/location-tracker';
+import { getAllDocumentsForMember } from 'backend/wixApi';
 
 let currentSession = null; // Store validated session data
 
@@ -64,7 +66,10 @@ $w.onReady(async function () {
 
         // Setup Actions
         setupPaperworkButtons();
+        setupPaperworkButtons();
         setupLogoutButton();
+        setupContactForm();
+        setupCallButton();
 
         // INITIATE ROBUST TRACKING
         console.log("📍 Initiating background location tracker for indemnitor...");
@@ -161,6 +166,8 @@ function updatePageSEO() {
     ]);
 }
 
+
+
 async function loadDashboardData() {
     if (!currentSession) {
         console.error('No session available');
@@ -179,6 +186,33 @@ async function loadDashboardData() {
         // Phase 2: Pre-fill Email
         if ($w('#inputIndemnitorEmail').type) {
             $w('#inputIndemnitorEmail').value = currentSession.email || "";
+        }
+
+        // --- NEW: CHECK IF PAPERWORK IS ALREADY SIGNED ---
+        if (currentSession.email) {
+            try {
+                // Check for ANY signed document
+                const docResult = await getAllDocumentsForMember(currentSession.email);
+                if (docResult.success && docResult.documents && docResult.documents.length > 0) {
+                    const hasSigned = docResult.documents.some(d => d.status === 'signed');
+
+                    if (hasSigned) {
+                        console.log("✅ User has signed documents. Hiding paperwork inputs.");
+                        if ($w('#mainContent').type) {
+                            $w('#mainContent').collapse();
+                        }
+                        // Optional: Show a "Thank You" or "Status" message instead?
+                        // For now, just collapsing as requested.
+                    } else {
+                        // Ensure it's expanded if not signed (e.g. if they come back)
+                        if ($w('#mainContent').type) {
+                            $w('#mainContent').expand();
+                        }
+                    }
+                }
+            } catch (docErr) {
+                console.warn("Could not check document status:", docErr);
+            }
         }
 
         if (data) {
@@ -254,6 +288,55 @@ function setupLogoutButton() {
     } catch (e) {
         console.warn('Indemnitor Portal: No logout button configured');
     }
+}
+
+function setupCallButton() {
+    if ($w('#callBtn').type) {
+        $w('#callBtn').onClick(() => {
+            wixLocation.to('tel:2393322245');
+        });
+    }
+}
+
+function setupContactForm() {
+    if (!$w('#inputMessageSubmitBtn').type) return;
+
+    $w('#inputMessageSubmitBtn').onClick(async () => {
+        const messageBox = $w('#inputMessageBox');
+        const message = (messageBox.value || '').trim();
+
+        if (!message) return;
+
+        $w('#inputMessageSubmitBtn').disable();
+        $w('#inputMessageSubmitBtn').label = "Sending...";
+
+        try {
+            await sendAdminNotification(NOTIFICATION_TYPES.NEW_CONTACT_INQUIRY, {
+                // TODO: Retrieve actual member name/phone from session/profile data
+                name: currentSession.memberName || "Indemnitor",
+                phone: currentSession.memberPhone || "Unknown",
+                email: currentSession.email,
+                relationship: 'Indemnitor',
+                jail: 'Portal Inquiry',
+                notes: message
+            });
+
+            messageBox.value = "";
+            $w('#inputMessageSubmitBtn').label = "Sent!";
+            setTimeout(() => {
+                $w('#inputMessageSubmitBtn').label = "Send";
+                $w('#inputMessageSubmitBtn').enable();
+            }, 3000);
+
+        } catch (e) {
+            console.error("Failed to send message:", e);
+            $w('#inputMessageSubmitBtn').label = "Error";
+            setTimeout(() => {
+                $w('#inputMessageSubmitBtn').label = "Send";
+                $w('#inputMessageSubmitBtn').enable();
+            }, 3000);
+        }
+    });
 }
 
 async function handleLogout() {
