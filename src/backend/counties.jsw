@@ -1,0 +1,209 @@
+/**
+ * Optimized counties.jsw backend module
+ * 
+ * PERFORMANCE OPTIMIZATIONS:
+ * 1. Implement memory caching
+ * 2. Reduce database queries
+ * 3. Return only necessary data
+ * 4. Add error handling
+ */
+
+import { memory } from 'wix-storage-backend';
+
+// Cache configuration
+const CACHE_KEY = 'florida_counties';
+const CACHE_TTL = 3600000; // 1 hour in milliseconds
+
+/**
+ * Get all Florida counties with caching
+ * @returns {Promise<Array>} Array of county objects
+ */
+export async function getCounties() {
+    try {
+        // Check cache first
+        const cached = memory.getItem(CACHE_KEY);
+        if (cached) {
+            const { data, timestamp } = JSON.parse(cached);
+
+            // Check if cache is still valid
+            if (Date.now() - timestamp < CACHE_TTL) {
+                console.log('Returning cached counties');
+                return data;
+            }
+        }
+
+        // Cache miss or expired - fetch from database
+        console.log('Fetching counties from database');
+        const counties = await fetchCountiesFromDatabase();
+
+        // Cache the result
+        memory.setItem(CACHE_KEY, JSON.stringify({
+            data: counties,
+            timestamp: Date.now()
+        }));
+
+        return counties;
+
+    } catch (error) {
+        console.error('Error getting counties:', error);
+        // Return fallback data
+        return getFallbackCounties();
+    }
+}
+
+/**
+ * Get a single county by slug
+ * @param {string} slug - County slug (e.g., 'lee-county')
+ * @returns {Promise<Object>} County object
+ */
+export async function getCountyBySlug(slug) {
+    try {
+        const counties = await getCounties();
+        const county = counties.find(c => c.slug === slug);
+
+        if (!county) {
+            throw new Error(`County not found: ${slug}`);
+        }
+
+        return county;
+
+    } catch (error) {
+        console.error('Error getting county by slug:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get counties by region (for regional pages)
+ * @param {string} region - Region name (e.g., 'southwest')
+ * @returns {Promise<Array>} Array of county objects
+ */
+export async function getCountiesByRegion(region) {
+    try {
+        const counties = await getCounties();
+        return counties.filter(c => c.region === region);
+    } catch (error) {
+        console.error('Error getting counties by region:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch counties from database
+ * @returns {Promise<Array>} Array of county objects
+ */
+async function fetchCountiesFromDatabase() {
+    // In a real implementation, this would query Wix Data
+    // For now, return static data
+
+    // Example with Wix Data:
+    // import wixData from 'wix-data';
+    // return await wixData.query('Counties')
+    //   .ascending('name')
+    //   .find()
+    //   .then(results => results.items);
+
+    // Static data for performance (avoids database query)
+    return getStaticCounties();
+}
+
+/**
+ * Get static county data (optimized for performance)
+ * @returns {Array} Array of county objects with minimal data
+ */
+function getStaticCounties() {
+    // Only return essential fields to minimize payload
+    return [
+        { name: 'Alachua County', slug: 'alachua-county', region: 'north' },
+        { name: 'Baker County', slug: 'baker-county', region: 'north' },
+        { name: 'Bay County', slug: 'bay-county', region: 'panhandle' },
+        { name: 'Bradford County', slug: 'bradford-county', region: 'north' },
+        { name: 'Brevard County', slug: 'brevard-county', region: 'east' },
+        { name: 'Broward County', slug: 'broward-county', region: 'southeast' },
+        { name: 'Calhoun County', slug: 'calhoun-county', region: 'panhandle' },
+        { name: 'Charlotte County', slug: 'charlotte-county', region: 'southwest' },
+        { name: 'Citrus County', slug: 'citrus-county', region: 'central' },
+        { name: 'Clay County', slug: 'clay-county', region: 'north' },
+        { name: 'Collier County', slug: 'collier-county', region: 'southwest' },
+        { name: 'Columbia County', slug: 'columbia-county', region: 'north' },
+        { name: 'DeSoto County', slug: 'desoto-county', region: 'southwest' },
+        { name: 'Dixie County', slug: 'dixie-county', region: 'north' },
+        { name: 'Duval County', slug: 'duval-county', region: 'north' },
+        { name: 'Escambia County', slug: 'escambia-county', region: 'panhandle' },
+        { name: 'Flagler County', slug: 'flagler-county', region: 'east' },
+        { name: 'Franklin County', slug: 'franklin-county', region: 'panhandle' },
+        { name: 'Gadsden County', slug: 'gadsden-county', region: 'panhandle' },
+        { name: 'Gilchrist County', slug: 'gilchrist-county', region: 'north' },
+        { name: 'Glades County', slug: 'glades-county', region: 'southwest' },
+        { name: 'Gulf County', slug: 'gulf-county', region: 'panhandle' },
+        { name: 'Hamilton County', slug: 'hamilton-county', region: 'north' },
+        { name: 'Hardee County', slug: 'hardee-county', region: 'central' },
+        { name: 'Hendry County', slug: 'hendry-county', region: 'southwest' },
+        { name: 'Hernando County', slug: 'hernando-county', region: 'central' },
+        { name: 'Highlands County', slug: 'highlands-county', region: 'central' },
+        { name: 'Hillsborough County', slug: 'hillsborough-county', region: 'central' },
+        { name: 'Holmes County', slug: 'holmes-county', region: 'panhandle' },
+        { name: 'Indian River County', slug: 'indian-river-county', region: 'east' },
+        { name: 'Jackson County', slug: 'jackson-county', region: 'panhandle' },
+        { name: 'Jefferson County', slug: 'jefferson-county', region: 'panhandle' },
+        { name: 'Lafayette County', slug: 'lafayette-county', region: 'north' },
+        { name: 'Lake County', slug: 'lake-county', region: 'central' },
+        { name: 'Lee County', slug: 'lee-county', region: 'southwest' },
+        { name: 'Leon County', slug: 'leon-county', region: 'panhandle' },
+        { name: 'Levy County', slug: 'levy-county', region: 'north' },
+        { name: 'Liberty County', slug: 'liberty-county', region: 'panhandle' },
+        { name: 'Madison County', slug: 'madison-county', region: 'north' },
+        { name: 'Manatee County', slug: 'manatee-county', region: 'southwest' },
+        { name: 'Marion County', slug: 'marion-county', region: 'central' },
+        { name: 'Martin County', slug: 'martin-county', region: 'east' },
+        { name: 'Miami-Dade County', slug: 'miami-dade-county', region: 'southeast' },
+        { name: 'Monroe County', slug: 'monroe-county', region: 'southeast' },
+        { name: 'Nassau County', slug: 'nassau-county', region: 'north' },
+        { name: 'Okaloosa County', slug: 'okaloosa-county', region: 'panhandle' },
+        { name: 'Okeechobee County', slug: 'okeechobee-county', region: 'east' },
+        { name: 'Orange County', slug: 'orange-county', region: 'central' },
+        { name: 'Osceola County', slug: 'osceola-county', region: 'central' },
+        { name: 'Palm Beach County', slug: 'palm-beach-county', region: 'southeast' },
+        { name: 'Pasco County', slug: 'pasco-county', region: 'central' },
+        { name: 'Pinellas County', slug: 'pinellas-county', region: 'central' },
+        { name: 'Polk County', slug: 'polk-county', region: 'central' },
+        { name: 'Putnam County', slug: 'putnam-county', region: 'north' },
+        { name: 'St. Johns County', slug: 'st-johns-county', region: 'north' },
+        { name: 'St. Lucie County', slug: 'st-lucie-county', region: 'east' },
+        { name: 'Santa Rosa County', slug: 'santa-rosa-county', region: 'panhandle' },
+        { name: 'Sarasota County', slug: 'sarasota-county', region: 'southwest' },
+        { name: 'Seminole County', slug: 'seminole-county', region: 'central' },
+        { name: 'Sumter County', slug: 'sumter-county', region: 'central' },
+        { name: 'Suwannee County', slug: 'suwannee-county', region: 'north' },
+        { name: 'Taylor County', slug: 'taylor-county', region: 'north' },
+        { name: 'Union County', slug: 'union-county', region: 'north' },
+        { name: 'Volusia County', slug: 'volusia-county', region: 'east' },
+        { name: 'Wakulla County', slug: 'wakulla-county', region: 'panhandle' },
+        { name: 'Walton County', slug: 'walton-county', region: 'panhandle' },
+        { name: 'Washington County', slug: 'washington-county', region: 'panhandle' }
+    ];
+}
+
+/**
+ * Get fallback counties (in case of error)
+ * @returns {Array} Minimal county data
+ */
+function getFallbackCounties() {
+    // Return most common counties as fallback
+    return [
+        { name: 'Lee County', slug: 'lee-county', region: 'southwest' },
+        { name: 'Collier County', slug: 'collier-county', region: 'southwest' },
+        { name: 'Charlotte County', slug: 'charlotte-county', region: 'southwest' },
+        { name: 'Miami-Dade County', slug: 'miami-dade-county', region: 'southeast' },
+        { name: 'Broward County', slug: 'broward-county', region: 'southeast' },
+        { name: 'Palm Beach County', slug: 'palm-beach-county', region: 'southeast' }
+    ];
+}
+
+/**
+ * Clear county cache (for admin use)
+ */
+export function clearCountyCache() {
+    memory.removeItem(CACHE_KEY);
+    console.log('County cache cleared');
+}

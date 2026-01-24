@@ -16,7 +16,7 @@ import { sendAdminNotification, NOTIFICATION_TYPES } from 'backend/notificationS
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
 import { silentPingLocation } from 'public/location-tracker';
-import { getAllDocumentsForMember } from 'backend/wixApi';
+import { getAllDocumentsForMember } from 'backend/wixApi.jsw';
 
 let currentSession = null; // Store validated session data
 

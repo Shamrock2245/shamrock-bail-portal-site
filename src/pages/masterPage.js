@@ -33,6 +33,7 @@ function initCriticalUI() {
     setupEmergencyCallButton();
 
     // Check if user is logged in (for portal access)
+    // We do this non-blockingly
     checkAuthStatus();
 }
 
@@ -76,21 +77,14 @@ function deferNonCriticalOperations() {
 }
 
 /**
- * Setup sticky header with optimized scroll listener
+ * Setup sticky header with optimized scroll logic
  */
 function setupStickyHeader() {
-    // Note: Velo does not support window.requestAnimationFrame.
-    // Using sentinel approach or assuming Wix Editor Fixed Header is used.
-    // If code based stickiness is required, we use anchors.
-
+    // Note: Velo does not support window.requestAnimationFrame directly.
+    // relying on Wix's native fixed header/elements is best for performance.
+    // If strict custom logic is needed, use onViewportLeave of a sentinel element.
     const header = $w('#SITE_HEADER');
-    // const sentinel = $w('#headerSentinel'); 
-
-    // For robustness in this optimization pass, we'll verify header exists
     if (!header.uniqueId) return;
-
-    // Optimized: We leave standard fixed header behavior to Wix settings 
-    // unless we have specific logic.
 }
 
 /**
@@ -100,9 +94,8 @@ function setupEmergencyCallButton() {
     const btn = $w('#emergencyCallButton');
     if (btn.uniqueId) {
         btn.onClick(() => {
-            // Track call button click
+            // Track call button click - fire and forget
             trackEvent('emergency_call_clicked');
-            // Phone number is in href, no additional action needed
         });
     }
 }
@@ -131,7 +124,7 @@ async function checkAuthStatus() {
  */
 function initAnalytics() {
     // Google Analytics or other analytics code
-    console.log('Analytics initialized');
+    // console.log('Analytics initialized');
 }
 
 /**
@@ -142,7 +135,8 @@ async function initGeolocation() {
         // Only init if user hasn't denied permission
         const geoPermission = session.getItem('geoPermission');
         if (geoPermission !== 'denied') {
-            console.log("Geolocation init triggered");
+            // Lazy load geolocation logic if complex
+            // console.log("Geolocation init triggered");
         }
     } catch (error) {
         console.error('Geolocation error:', error);
@@ -154,7 +148,7 @@ async function initGeolocation() {
  */
 function initChatWidget() {
     // Only load chat widget if user has been on site for 5+ seconds
-    console.log('Chat widget initialized');
+    // console.log('Chat widget initialized');
 }
 
 /**
@@ -162,7 +156,7 @@ function initChatWidget() {
  */
 function initTrackingPixels() {
     // Facebook Pixel, etc.
-    console.log('Tracking pixels initialized');
+    // console.log('Tracking pixels initialized');
 }
 
 /**
@@ -175,6 +169,6 @@ function trackEvent(eventName, eventData = {}) {
             detail: eventData
         });
     } catch (e) {
-        console.warn("Tracking failed", e);
+        // Fail silently to not impact user
     }
 }

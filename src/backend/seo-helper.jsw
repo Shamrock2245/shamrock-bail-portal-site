@@ -1,0 +1,66 @@
+/**
+ * SEO Helper Module
+ * Generates dynamic SEO tags and structured data for Shamrock Bail Bonds
+ */
+
+/**
+ * Generate SEO tags for a county page
+ * @param {Object} county - County data object
+ * @returns {Array} Array of meta tags
+ */
+export function generateCountySEOTags(county) {
+    const title = `Bail Bonds in ${county.name} | Shamrock Bail Bonds`;
+    const description = `Fast, reliable bail bonds in ${county.name}, Florida. 24/7 service, no collateral needed for most cases. Call Shamrock Bail Bonds today!`;
+    const canonicalUrl = `https://www.shamrockbailbonds.com/bail-bonds/${county.slug}`;
+
+    return [
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:url', content: canonicalUrl },
+        { property: 'og:type', content: 'website' },
+        { name: 'description', content: description },
+        { name: 'keywords', content: `bail bonds ${county.name}, ${county.name} bail bonds, bail bondsman ${county.name}, jail ${county.name}` }
+    ];
+}
+
+/**
+ * Generate LocalBusiness Schema utilizing Google Maps data
+ * @param {Object} county - County data object
+ * @returns {Object} JSON-LD object or string
+ */
+export function generateLocalBusinessSchema(county) {
+    return {
+        "@context": "https://schema.org",
+        "@type": "BailBondBusiness",
+        "name": "Shamrock Bail Bonds",
+        "image": "https://www.shamrockbailbonds.com/logo.png",
+        "telephone": "+1-239-955-0301", // Should ideally be county-specific if you have local numbers
+        "url": `https://www.shamrockbailbonds.com/bail-bonds/${county.slug}`,
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": county.name.replace(" County", ""), // Approximate
+            "addressRegion": "FL",
+            "addressCountry": "US"
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": "26.640628", // Central HQ lat
+            "longitude": "-81.872306" // Central HQ long
+        },
+        "openingHoursSpecification": {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday"
+            ],
+            "opens": "00:00",
+            "closes": "23:59"
+        },
+        "priceRange": "$$"
+    };
+}
