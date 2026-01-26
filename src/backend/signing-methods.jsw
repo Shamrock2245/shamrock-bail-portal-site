@@ -251,7 +251,7 @@ export async function generatePrintPDFs(params) {
  */
 export async function getSigningStatus(caseId) {
     try {
-        const results = await wixData.query('SigningSessions')
+        const results = await wixData.query('Signing Sessions')
             .eq('caseId', caseId)
             .descending('_createdDate')
             .limit(1)

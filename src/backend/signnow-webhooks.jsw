@@ -91,7 +91,7 @@ async function handleDocumentComplete(data) {
         // Update session status
         session.status = 'completed';
         session.completedAt = new Date();
-        await wixData.update('SigningSessions', session);
+        await wixData.update('Signing Sessions', session);
         
         // Download the signed document
         const signedDocument = await downloadSignedDocument(document_id);
@@ -141,7 +141,7 @@ async function handleDocumentSigned(data) {
             signers[signerIndex].status = 'signed';
             signers[signerIndex].signedAt = new Date();
             session.signers = JSON.stringify(signers);
-            await wixData.update('SigningSessions', session);
+            await wixData.update('Signing Sessions', session);
         }
         
         // Log the signature event
@@ -180,7 +180,7 @@ async function handleDocumentDeclined(data) {
         session.declinedBy = signer_email;
         session.declineReason = decline_reason || 'No reason provided';
         session.declinedAt = new Date();
-        await wixData.update('SigningSessions', session);
+        await wixData.update('Signing Sessions', session);
         
         // Send notification to admin
         await sendDeclineNotification(session);
@@ -208,7 +208,7 @@ async function handleDocumentExpired(data) {
         
         session.status = 'expired';
         session.expiredAt = new Date();
-        await wixData.update('SigningSessions', session);
+        await wixData.update('Signing Sessions', session);
         
         // Send expiration notification
         await sendExpirationNotification(session);
@@ -238,7 +238,7 @@ async function handleDocumentViewed(data) {
         if (!session.firstViewedAt) {
             session.firstViewedAt = new Date();
             session.firstViewedBy = viewer_email;
-            await wixData.update('SigningSessions', session);
+            await wixData.update('Signing Sessions', session);
         }
         
         // Log view event
@@ -294,7 +294,7 @@ async function handleInviteEvent(event, data) {
  */
 async function findSigningSession(documentId) {
     try {
-        const results = await wixData.query('SigningSessions')
+        const results = await wixData.query('Signing Sessions')
             .eq('signNowDocumentId', documentId)
             .find();
         
