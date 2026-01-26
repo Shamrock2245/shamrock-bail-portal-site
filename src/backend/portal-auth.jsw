@@ -342,10 +342,9 @@ export async function onMagicLinkLoginV2(token) {
             return { ok: false, message: 'No token provided' };
         }
 
-        // Find the magic link
+        // Find the magic link (allow used ones for grace period check)
         const results = await wixData.query(CONFIG.MAGIC_LINKS_COLLECTION)
             .eq('token', token)
-            .eq('used', false)
             .find({ suppressAuth: true });
 
         if (results.items.length === 0) {
@@ -353,15 +352,40 @@ export async function onMagicLinkLoginV2(token) {
         }
 
         const linkData = results.items[0];
+        const now = new Date();
+
+        // Anti-Scanner Logic: If used < 60 seconds ago, allow it (idempotency)
+        if (linkData.used) {
+            const usedAt = new Date(linkData.usedAt);
+            const timeDiff = now - usedAt;
+            if (timeDiff < 60000) { // 60 second grace period
+                console.log('⚠️ Token reused within grace period (Scanner defense)');
+                // Create session anyway
+                const sessionToken = await createCustomSession(
+                    linkData.personId,
+                    linkData.role,
+                    linkData.caseId
+                );
+                return {
+                    ok: true,
+                    sessionToken: sessionToken,
+                    role: linkData.role,
+                    personId: linkData.personId
+                };
+            }
+            return { ok: false, message: 'Link already used' };
+        }
+
+        // ... Normal flow ...
 
         // Check expiration
-        if (new Date(linkData.expiresAt) < new Date()) {
+        if (new Date(linkData.expiresAt) < now) {
             return { ok: false, message: 'Link has expired' };
         }
 
         // Mark as used
         linkData.used = true;
-        linkData.usedAt = new Date();
+        linkData.usedAt = now;
         await wixData.update(CONFIG.MAGIC_LINKS_COLLECTION, linkData, { suppressAuth: true });
 
         // Create session
