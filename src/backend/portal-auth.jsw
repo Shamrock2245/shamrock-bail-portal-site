@@ -15,7 +15,8 @@
  */
 
 import wixData from 'wix-data';
-import { getSecret } from 'wix-secrets-backend';
+import { generateToken, hashPassword, verifyPassword } from 'backend/auth-utils';
+import { getGasUrl } from 'backend/utils';
 import { sendSms } from 'backend/twilio-client';
 import { fetch } from 'wix-fetch';
 import crypto from 'crypto';
@@ -28,16 +29,16 @@ const CONFIG = {
     // Session settings
     SESSION_DURATION_HOURS: 24,
     MAGIC_LINK_EXPIRY_HOURS: 24,
-    
+
     // Collections
     SESSIONS_COLLECTION: 'PortalSessions',
     MAGIC_LINKS_COLLECTION: 'Magiclinks',
     CASES_COLLECTION: 'Cases',
-    
+
     // Portal URLs
     BASE_URL: 'https://www.shamrockbailbonds.biz',
     PORTAL_LANDING: '/portal-landing',
-    
+
     // Hardcoded Staff Accounts
     STAFF_ACCOUNTS: {
         'admin@shamrockbailbonds.biz': {
@@ -127,10 +128,10 @@ function getStaffAccountDetails(email) {
  */
 export async function lookupUserByContact(contact) {
     try {
-        const normalized = isEmail(contact) 
-            ? normalizeEmail(contact) 
+        const normalized = isEmail(contact)
+            ? normalizeEmail(contact)
             : normalizePhone(contact);
-        
+
         // 1. Check if it's a hardcoded staff account
         if (isEmail(contact) && isStaffAccount(contact)) {
             const staffDetails = getStaffAccountDetails(contact);
@@ -143,10 +144,10 @@ export async function lookupUserByContact(contact) {
                 isStaff: true
             };
         }
-        
+
         // 2. Search in Cases collection
         let query = wixData.query(CONFIG.CASES_COLLECTION);
-        
+
         if (isEmail(contact)) {
             // Check defendant email
             query = query.eq('defendantEmail', normalized);
@@ -154,9 +155,9 @@ export async function lookupUserByContact(contact) {
             // Check defendant phone
             query = query.eq('defendantPhone', normalized);
         }
-        
+
         let results = await query.find({ suppressAuth: true });
-        
+
         if (results.items.length > 0) {
             const caseData = results.items[0];
             return {
@@ -169,7 +170,7 @@ export async function lookupUserByContact(contact) {
                 name: caseData.defendantName
             };
         }
-        
+
         // 3. Check indemnitor fields
         if (isEmail(contact)) {
             query = wixData.query(CONFIG.CASES_COLLECTION)
@@ -178,9 +179,9 @@ export async function lookupUserByContact(contact) {
             query = wixData.query(CONFIG.CASES_COLLECTION)
                 .eq('indemnitorPhone', normalized);
         }
-        
+
         results = await query.find({ suppressAuth: true });
-        
+
         if (results.items.length > 0) {
             const caseData = results.items[0];
             return {
@@ -193,13 +194,13 @@ export async function lookupUserByContact(contact) {
                 name: caseData.indemnitorName
             };
         }
-        
+
         // 4. Not found - will be treated as new user
         return {
             found: false,
             contact: normalized
         };
-        
+
     } catch (error) {
         console.error('Error in lookupUserByContact:', error);
         return { found: false, error: error.message };
@@ -218,7 +219,7 @@ export async function createCustomSession(personId, role, caseId = null) {
         const sessionToken = generateToken(48);
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + CONFIG.SESSION_DURATION_HOURS);
-        
+
         const sessionData = {
             sessionToken: sessionToken,
             personId: personId,
@@ -228,12 +229,12 @@ export async function createCustomSession(personId, role, caseId = null) {
             expiresAt: expiresAt,
             isActive: true
         };
-        
+
         await wixData.insert(CONFIG.SESSIONS_COLLECTION, sessionData, { suppressAuth: true });
-        
+
         console.log(`✅ Session created for ${personId} with role ${role}`);
         return sessionToken;
-        
+
     } catch (error) {
         console.error('Error creating session:', error);
         throw error;
@@ -248,19 +249,19 @@ export async function validateCustomSession(sessionToken) {
         if (!sessionToken) {
             return null;
         }
-        
+
         const results = await wixData.query(CONFIG.SESSIONS_COLLECTION)
             .eq('sessionToken', sessionToken)
             .eq('isActive', true)
             .find({ suppressAuth: true });
-        
+
         if (results.items.length === 0) {
             console.log('⚠️ Session not found or inactive');
             return null;
         }
-        
+
         const session = results.items[0];
-        
+
         // Check expiration
         if (new Date(session.expiresAt) < new Date()) {
             console.log('⚠️ Session expired');
@@ -269,7 +270,7 @@ export async function validateCustomSession(sessionToken) {
             await wixData.update(CONFIG.SESSIONS_COLLECTION, session, { suppressAuth: true });
             return null;
         }
-        
+
         return {
             personId: session.personId,
             role: session.role,
@@ -277,7 +278,7 @@ export async function validateCustomSession(sessionToken) {
             createdAt: session.createdAt,
             expiresAt: session.expiresAt
         };
-        
+
     } catch (error) {
         console.error('Error validating session:', error);
         return null;
@@ -292,16 +293,16 @@ export async function invalidateSession(sessionToken) {
         const results = await wixData.query(CONFIG.SESSIONS_COLLECTION)
             .eq('sessionToken', sessionToken)
             .find({ suppressAuth: true });
-        
+
         if (results.items.length > 0) {
             const session = results.items[0];
             session.isActive = false;
             session.invalidatedAt = new Date();
             await wixData.update(CONFIG.SESSIONS_COLLECTION, session, { suppressAuth: true });
         }
-        
+
         return { success: true };
-        
+
     } catch (error) {
         console.error('Error invalidating session:', error);
         return { success: false, error: error.message };
@@ -320,7 +321,7 @@ export async function generateMagicLink(personId, role, caseId = null) {
         const token = generateToken(32);
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + CONFIG.MAGIC_LINK_EXPIRY_HOURS);
-        
+
         const linkData = {
             token: token,
             personId: personId,
@@ -330,12 +331,12 @@ export async function generateMagicLink(personId, role, caseId = null) {
             expiresAt: expiresAt,
             used: false
         };
-        
+
         await wixData.insert(CONFIG.MAGIC_LINKS_COLLECTION, linkData, { suppressAuth: true });
-        
+
         console.log(`✅ Magic link generated for ${personId}`);
         return token;
-        
+
     } catch (error) {
         console.error('Error generating magic link:', error);
         throw error;
@@ -350,43 +351,43 @@ export async function onMagicLinkLoginV2(token) {
         if (!token) {
             return { ok: false, message: 'No token provided' };
         }
-        
+
         // Find the magic link
         const results = await wixData.query(CONFIG.MAGIC_LINKS_COLLECTION)
             .eq('token', token)
             .eq('used', false)
             .find({ suppressAuth: true });
-        
+
         if (results.items.length === 0) {
             return { ok: false, message: 'Invalid or expired link' };
         }
-        
+
         const linkData = results.items[0];
-        
+
         // Check expiration
         if (new Date(linkData.expiresAt) < new Date()) {
             return { ok: false, message: 'Link has expired' };
         }
-        
+
         // Mark as used
         linkData.used = true;
         linkData.usedAt = new Date();
         await wixData.update(CONFIG.MAGIC_LINKS_COLLECTION, linkData, { suppressAuth: true });
-        
+
         // Create session
         const sessionToken = await createCustomSession(
             linkData.personId,
             linkData.role,
             linkData.caseId
         );
-        
+
         return {
             ok: true,
             sessionToken: sessionToken,
             role: linkData.role,
             personId: linkData.personId
         };
-        
+
     } catch (error) {
         console.error('Error validating magic link:', error);
         return { ok: false, message: error.message };
@@ -405,13 +406,13 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
     try {
         const input = emailOrPhone.trim();
         const isEmailInput = isEmail(input);
-        
+
         // 1. Look up user
         const lookup = await lookupUserByContact(input);
-        
+
         let personId, role, caseId, email, phone, name;
         let isNewUser = false;
-        
+
         if (lookup.found) {
             // Existing user
             personId = lookup.personId;
@@ -429,11 +430,11 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
             phone = !isEmailInput ? normalizePhone(input) : null;
             name = null;
         }
-        
+
         // 2. Generate magic link
         const token = await generateMagicLink(personId, role, caseId);
         const magicLinkUrl = `${CONFIG.BASE_URL}${CONFIG.PORTAL_LANDING}?token=${encodeURIComponent(token)}`;
-        
+
         // 3. Send via appropriate channel
         if (isEmailInput && email) {
             // Send via email
@@ -451,16 +452,16 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
         } else {
             return { success: false, message: 'Unable to determine contact method' };
         }
-        
+
         return {
             success: true,
             isNewUser: isNewUser,
             role: role,
-            message: isEmailInput 
+            message: isEmailInput
                 ? 'Check your email for your secure login link'
                 : 'Check your phone for your secure login link'
         };
-        
+
     } catch (error) {
         console.error('Error in sendMagicLinkSimplified:', error);
         return { success: false, message: error.message };
@@ -473,20 +474,15 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
 async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
     try {
         // Use GAS backend to send email
-        const gasUrl = await getSecret('GAS_WEB_APP_URL');
-        
-        if (!gasUrl) {
-            console.error('GAS_WEB_APP_URL not configured');
-            return { success: false, error: 'Email service not configured' };
-        }
-        
+        const gasUrl = await getGasUrl();
+
         const roleLabels = {
             'admin': 'Administrator',
             'staff': 'Staff',
             'defendant': 'Client',
             'indemnitor': 'Cosigner'
         };
-        
+
         const emailBody = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: #1a5f2a; padding: 20px; text-align: center;">
@@ -510,7 +506,7 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
                 </div>
             </div>
         `;
-        
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -521,13 +517,13 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
                 htmlBody: emailBody
             })
         });
-        
+
         if (!response.ok) {
             throw new Error('Email send failed: ' + response.status);
         }
-        
+
         return { success: true };
-        
+
     } catch (error) {
         console.error('Error sending magic link email:', error);
         return { success: false, error: error.message };
@@ -548,13 +544,13 @@ export async function getStaffDashboardData() {
             .descending('_createdDate')
             .limit(100)
             .find({ suppressAuth: true });
-        
+
         const cases = casesResult.items;
-        
+
         // Calculate stats
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         const stats = {
             activeCases: cases.filter(c => c.status === 'active' || c.status === 'pending').length,
             pendingSignatures: cases.filter(c => c.paperworkStatus === 'pending').length,
@@ -564,7 +560,7 @@ export async function getStaffDashboardData() {
             }).length,
             failedChecks: cases.filter(c => c.status === 'failed').length
         };
-        
+
         // Format cases for display
         const formattedCases = cases.map(c => ({
             _id: c._id,
@@ -576,12 +572,12 @@ export async function getStaffDashboardData() {
             county: c.county || 'N/A',
             createdAt: c._createdDate
         }));
-        
+
         return {
             stats: stats,
             cases: formattedCases
         };
-        
+
     } catch (error) {
         console.error('Error getting staff dashboard data:', error);
         return {
@@ -601,7 +597,7 @@ export async function getStaffDashboardData() {
 export async function getDefendantPortalData(personId, caseId) {
     try {
         let caseData = null;
-        
+
         if (caseId) {
             caseData = await wixData.get(CONFIG.CASES_COLLECTION, caseId, { suppressAuth: true });
         } else if (personId) {
@@ -612,17 +608,17 @@ export async function getDefendantPortalData(personId, caseId) {
                 caseData = results.items[0];
             }
         }
-        
+
         if (!caseData) {
             return { success: false, message: 'Case not found' };
         }
-        
+
         // Get pending documents
         const pendingDocs = await wixData.query('PendingDocuments')
             .eq('caseNumber', caseData.caseNumber)
             .eq('status', 'pending')
             .find({ suppressAuth: true });
-        
+
         return {
             success: true,
             case: {
@@ -636,7 +632,7 @@ export async function getDefendantPortalData(personId, caseId) {
             pendingDocuments: pendingDocs.items,
             requiresIdUpload: !caseData.idUploaded
         };
-        
+
     } catch (error) {
         console.error('Error getting defendant portal data:', error);
         return { success: false, message: error.message };
@@ -649,24 +645,24 @@ export async function getDefendantPortalData(personId, caseId) {
 export async function getIndemnitorPortalData(personId, caseId) {
     try {
         let caseData = null;
-        
+
         if (caseId) {
             caseData = await wixData.get(CONFIG.CASES_COLLECTION, caseId, { suppressAuth: true });
         } else if (personId && personId.startsWith('indemnitor_')) {
             const actualCaseId = personId.replace('indemnitor_', '');
             caseData = await wixData.get(CONFIG.CASES_COLLECTION, actualCaseId, { suppressAuth: true });
         }
-        
+
         if (!caseData) {
             return { success: false, message: 'Case not found' };
         }
-        
+
         // Get pending documents for indemnitor
         const pendingDocs = await wixData.query('PendingDocuments')
             .eq('memberEmail', caseData.indemnitorEmail)
             .eq('status', 'pending')
             .find({ suppressAuth: true });
-        
+
         return {
             success: true,
             case: {
@@ -684,7 +680,7 @@ export async function getIndemnitorPortalData(personId, caseId) {
             pendingDocuments: pendingDocs.items,
             requiresIdUpload: !caseData.indemnitorIdUploaded
         };
-        
+
     } catch (error) {
         console.error('Error getting indemnitor portal data:', error);
         return { success: false, message: error.message };
@@ -705,7 +701,7 @@ export async function getDefendantDetails(sessionToken) {
         if (!session || !session.personId) {
             return null;
         }
-        
+
         // Get case data
         let caseData = null;
         if (session.caseId) {
@@ -719,7 +715,7 @@ export async function getDefendantDetails(sessionToken) {
                 caseData = results.items[0];
             }
         }
-        
+
         if (!caseData) {
             return {
                 firstName: 'Client',
@@ -732,7 +728,7 @@ export async function getDefendantDetails(sessionToken) {
                 signingStatus: 'Incomplete'
             };
         }
-        
+
         // Format court date
         let nextCourtDate = 'TBD';
         if (caseData.courtDate) {
@@ -744,13 +740,13 @@ export async function getDefendantDetails(sessionToken) {
                 day: 'numeric'
             });
         }
-        
+
         // Format bond amount
         let bondAmount = '$0.00';
         if (caseData.bondAmount) {
             bondAmount = '$' + Number(caseData.bondAmount).toLocaleString();
         }
-        
+
         return {
             firstName: caseData.defendantName?.split(' ')[0] || 'Client',
             lastName: caseData.defendantName?.split(' ').slice(1).join(' ') || '',
@@ -765,7 +761,7 @@ export async function getDefendantDetails(sessionToken) {
             county: caseData.county || '',
             charges: caseData.charges || ''
         };
-        
+
     } catch (error) {
         console.error('Error getting defendant details:', error);
         return null;
@@ -782,20 +778,20 @@ export async function getUserConsentStatus(sessionToken) {
         if (!session) {
             return { hasConsent: false };
         }
-        
+
         // Check consent in Persons or Cases collection
         let caseData = null;
         if (session.caseId) {
             caseData = await wixData.get(CONFIG.CASES_COLLECTION, session.caseId, { suppressAuth: true });
         }
-        
+
         return {
             hasConsent: caseData?.consentGiven || false,
             consentDate: caseData?.consentDate || null,
             locationConsent: caseData?.locationConsentGiven || false,
             smsConsent: caseData?.smsConsentGiven || false
         };
-        
+
     } catch (error) {
         console.error('Error getting consent status:', error);
         return { hasConsent: false };
@@ -816,7 +812,7 @@ export async function getIndemnitorDetails(sessionToken) {
         if (!session || !session.personId) {
             return null;
         }
-        
+
         // Get case data
         let caseData = null;
         if (session.caseId) {
@@ -825,7 +821,7 @@ export async function getIndemnitorDetails(sessionToken) {
             const actualCaseId = session.personId.replace('indemnitor_', '');
             caseData = await wixData.get(CONFIG.CASES_COLLECTION, actualCaseId, { suppressAuth: true });
         }
-        
+
         if (!caseData) {
             return {
                 firstName: 'Cosigner',
@@ -837,13 +833,13 @@ export async function getIndemnitorDetails(sessionToken) {
                 signingStatus: 'Incomplete'
             };
         }
-        
+
         // Format bond amount
         let bondAmount = '$0.00';
         if (caseData.bondAmount) {
             bondAmount = '$' + Number(caseData.bondAmount).toLocaleString();
         }
-        
+
         return {
             firstName: caseData.indemnitorName?.split(' ')[0] || 'Cosigner',
             lastName: caseData.indemnitorName?.split(' ').slice(1).join(' ') || '',
@@ -858,7 +854,7 @@ export async function getIndemnitorDetails(sessionToken) {
             county: caseData.county || '',
             relationship: caseData.indemnitorRelationship || ''
         };
-        
+
     } catch (error) {
         console.error('Error getting indemnitor details:', error);
         return null;
