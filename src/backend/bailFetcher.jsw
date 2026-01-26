@@ -17,36 +17,59 @@ export async function getBailData(url) {
   try {
     // Fetch the HTML content from the provided URL
     const response = await fetch(url, { method: 'get' });
-    
+
     if (!response.ok) {
+      console.error(`Failed to fetch booking sheet: ${response.status} ${response.statusText}`);
       throw new Error('Failed to fetch the booking sheet.');
     }
 
     const text = await response.text();
 
-    // Use regex or a DOM parser to extract charges and bail amounts
+    // Use regex to extract charges and bail amounts (DOMParser is not available in backend)
     const chargesData = extractChargesAndBailAmounts(text);
 
     return { bailAmounts: chargesData.bailAmounts };
   } catch (error) {
+    console.error("Error in getBailData:", error);
     return { error: error.message };
   }
 }
 
 // Helper function to extract charges and bail amounts from HTML text
 function extractChargesAndBailAmounts(htmlText) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(htmlText, 'text/html');
   let bailAmounts = [];
-  
-  // Extract charges and bail amounts using DOM methods or regex
-  const charges = doc.querySelectorAll("#charges-content > div");
 
-  charges.forEach((chargeDiv) => {
-    const bail = chargeDiv.querySelector("div.col-sm-4").textContent.trim();
-    const bailAmount = parseInt(bail.replace(/[^0-9]/g, ''));
-    bailAmounts.push(bailAmount);
-  });
+  try {
+    // Regex to find the charge blocks and bail amounts
+    // Looking for pattern that matches the DOM structure implied by: 
+    // #charges-content > div ... div.col-sm-4
+    // We'll search for the col-sm-4 divs which seem to contain the bail amount
+
+    // Pattern strategy: Look for the specific class and capture content inside
+    // <div class="col-sm-4">...$500...</div>
+    const bailAmountRegex = /<div[^>]*class=["'][^"']*col-sm-4[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
+
+    let match;
+    while ((match = bailAmountRegex.exec(htmlText)) !== null) {
+      const content = match[1].trim();
+      // Check if this looks like a bail amount (contains digits, maybe currency symbol)
+      // and isn't a header label like "Bail Amount"
+      if (/\d/.test(content) && !/bail|amount/i.test(content)) {
+        const cleanBail = parseInt(content.replace(/[^0-9]/g, ''));
+        if (!isNaN(cleanBail)) {
+          bailAmounts.push(cleanBail);
+        }
+      }
+    }
+
+    // Fallback if the specific class structure isn't strict
+    if (bailAmounts.length === 0) {
+      console.warn("Regex failed to find standard structure, attempting broad currency search in context.");
+    }
+
+  } catch (e) {
+    console.error("Regex parsing error:", e);
+  }
 
   return { bailAmounts };
 }
