@@ -4,7 +4,7 @@
 
 import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
-import { getSecret } from 'wix-secrets-backend';
+import { getGasUrl } from 'backend/utils';
 import { fetch } from 'wix-fetch';
 import { mediaManager } from 'wix-media-backend';
 import { validateCustomSession } from 'backend/portal-auth';
@@ -188,7 +188,7 @@ export async function uploadSupportingDocument(uploadData) {
  */
 async function syncToGoogleDrive(documentRecord, fileUrl) {
     try {
-        const gasWebhookUrl = await getSecret('GAS_WEB_APP_URL');
+        const gasWebhookUrl = await getGasUrl();
 
         if (!gasWebhookUrl) {
             console.log('GAS webhook URL not configured, skipping Drive sync');
