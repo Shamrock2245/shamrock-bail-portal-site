@@ -8,7 +8,13 @@
  * 4. Add error handling
  */
 
-import { memory } from 'wix-storage-backend';
+// Shim for in-memory caching since wix-storage-backend is not available
+const _cache = {};
+const memory = {
+    getItem: (key) => _cache[key] || null,
+    setItem: (key, value) => { _cache[key] = value; },
+    removeItem: (key) => { delete _cache[key]; }
+};
 
 // Cache configuration
 const CACHE_KEY = 'florida_counties';
