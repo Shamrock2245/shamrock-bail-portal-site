@@ -128,3 +128,14 @@ export async function makeSignNowRequest(endpoint, method = 'GET', body = null) 
         body
     });
 }
+
+/**
+ * Submit intake data to GAS Backend (Bookings Sheet)
+ * @param {Object} data - Form data from portal
+ */
+export async function submitIntake(data) {
+    return await callGasBackend({
+        action: 'saveBooking',
+        bookingData: data
+    });
+}
