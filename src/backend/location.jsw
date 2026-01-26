@@ -2,6 +2,7 @@ import wixData from 'wix-data';
 // REMOVED: import { currentMember } from 'wix-members-backend';
 import { fetch } from 'wix-fetch';
 import { getGasUrl } from 'backend/utils';
+import { getSecret } from 'wix-secrets-backend';
 import { fetchWithRetry } from 'backend/utils';
 import { validateCustomSession } from 'backend/portal-auth';
 import { analyzeLocationRisk } from 'backend/fraud-detection'; // Static import
