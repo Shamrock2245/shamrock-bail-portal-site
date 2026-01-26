@@ -1,14 +1,20 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 4.3.1 - Twilio SMS Integration + Expiration Fix
+// Version: 5.0.0 - Enterprise Portal Release
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
  * 
- * V4.3.1 HIGHLIGHTS:
- * - Fix: Respects linkExpiration parameter (24h for SMS).
- * - Twilio SMS Integration: Sends signing links via text.
- * - Unified SignNow Workflow: Handles both PDF Uploads AND Template Generation.
+ * V5.0.0 SUMMARY:
+ * This backend orchestrates the entire Shamrock Portal workflow:
+ * 1. INTAKE & BOOKING: Receives form data from Wix, generates receipts, and stores in 'Bookings' Sheet.
+ * 2. SIGNNOW INTEGRATION: Handles document generation (Templates), PDF uploads, and embedded signing links.
+ * 3. TWILIO SMS: Sends signing links and notifications via text message.
+ * 4. MAGIC LINKS: Manages secure access links for Defendants/Indemnitors.
+ * 5. COMPLIANCE: Validates SOC2 webhooks and logs all access/processing events.
+ * 
+ * DEPLOYMENT:
+ * Deploy as Web App -> Execute as Me -> Access: Anyone
  */
 // ============================================================================
 // CONFIGURATION & INIT
