@@ -393,14 +393,19 @@ function setupSubmitButton() {
             if (result.success) {
                 btn.label = "Submitted!";
                 if ($w('#statusMessage').type) {
-                    $w('#statusMessage').text = "✅ Info submitted successfully! We are preparing your paperwork.";
+                    $w('#statusMessage').text = "✅ Info submitted! Starting paperwork...";
                     $w('#statusMessage').expand();
                 }
-                // Optional: Disable button permanently or redirect
+
+                // 4. AUTO-TRIGGER SIGNING FLOW
+                console.log("Auto-triggering paperwork flow...");
+                await handlePaperworkStart();
+
+                // Reset button triggering
                 setTimeout(() => {
                     btn.label = originalLabel;
                     btn.enable();
-                }, 3000);
+                }, 1000);
             } else {
                 throw new Error(result.error || "Submission failed.");
             }
