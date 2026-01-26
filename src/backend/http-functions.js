@@ -3,7 +3,14 @@
 // These endpoints can be called from Dashboard.html/GAS
 
 import { ok, badRequest, serverError, forbidden } from 'wix-http-functions';
-import { addPendingDocument, addPendingDocumentsBatch, updateDocumentStatus } from 'backend/wixApi.jsw';
+import {
+    addPendingDocument,
+    addPendingDocumentsBatch,
+    updateDocumentStatus,
+    getPendingIntakes,
+    markIntakeProcessed,
+    getIndemnitorProfile
+} from 'backend/wixApi.jsw';
 import wixData from 'wix-data';
 import { getSecret } from 'wix-secrets-backend';
 

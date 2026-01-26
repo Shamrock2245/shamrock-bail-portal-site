@@ -50,10 +50,11 @@ It is a **conversion engine under legal constraints**.
 The following systems are **outside agent authority**:
 
 - SignNow (documents, flows, URLs, tokens)
-- Google Apps Script
-- Google Sheets used by scrapers or ops
-- Arrest scraper pipelines
-- External APIs not explicitly wrapped in backend `.jsw` modules
+- Google Sheets used by ops (unless via GAS API)
+- External APIs not explicitly wrapped in backend modules
+
+The **Google Apps Script (GAS)** project is now **INTEGRATED** into this repository (`backend-gas/`).
+Agents **ARE AUTHORIZED** to modify, optimize, and deploy GAS code, provided they follow `clasp` deployment protocols.
 
 Agents may:
 - call them only through existing, approved interfaces
