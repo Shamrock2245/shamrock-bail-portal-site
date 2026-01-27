@@ -1,6 +1,6 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 5.1.0 - Enterprise Portal Release (Updated 2026-01-26)
+// Version: 5.1 - Enterprise Portal Release (Updated 2026-01-26)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
@@ -272,7 +272,7 @@ function handleGetAction(e) {
   const action = e.parameter.action;
   const callback = e.parameter.callback;
   let result = { success: false, error: 'Unknown action' };
-  if (action === 'health') result = { success: true, version: '5.1.0', timestamp: new Date().toISOString() };
+  if (action === 'health') result = { success: true, version: '5.1', timestamp: new Date().toISOString() };
   if (action === 'getNextReceiptNumber') result = getNextReceiptNumber();
   return createResponse(result, callback);
 }
@@ -457,61 +457,61 @@ function handleSendForSignature(data) {
  */
 function createPortalSigningSession(data) {
   const config = getConfig();
-  
+
   // Validate required data
   if (!data.signerEmail) {
     return { success: false, error: 'Missing signer email' };
   }
-  
+
   // Get template ID
   const templateId = data.templateId || config.SIGNNOW_TEMPLATE_ID;
   if (!templateId) {
     return { success: false, error: 'No template ID configured' };
   }
-  
+
   try {
     // 1. Create document from template
     const defendantName = data.defendantName || data.formData?.defendantName || 'Unknown';
     const docName = `Bail Application - ${defendantName} - ${new Date().toISOString().split('T')[0]}`;
     const documentId = createDocumentFromTemplate(templateId, docName);
-    
+
     Logger.log('📄 Document created from template: ' + documentId);
-    
+
     // 2. Map and fill form data
     const formData = data.formData || {};
     const mappedFields = mapPortalFormDataToSignNowFields({
       // Defendant info
       defendantName: data.defendantName || formData.defendantName,
       defendantPhone: data.defendantPhone || formData.defendantPhone,
-      
+
       // Indemnitor info
       indemnitorName: data.indemnitorName || formData.indemnitorName,
       indemnitorEmail: data.indemnitorEmail || data.signerEmail,
       indemnitorPhone: data.indemnitorPhone || formData.indemnitorPhone,
       indemnitorAddress: data.indemnitorAddress || formData.indemnitorAddress,
-      
+
       // References
       reference1: data.reference1 || formData.reference1,
       reference2: data.reference2 || formData.reference2
     });
-    
+
     if (mappedFields.length > 0) {
       fillDocumentFields(documentId, mappedFields);
       Logger.log('✅ Fields filled: ' + mappedFields.length);
     }
-    
+
     // 3. Create embedded signing link
     const signerRole = data.signerRole || 'Indemnitor';
     const linkExpiration = data.linkExpiration || 60; // 1 hour default
-    
+
     const embeddedResult = createEmbeddedLink(documentId, data.signerEmail, signerRole, linkExpiration);
-    
+
     if (!embeddedResult.success) {
       return { success: false, error: embeddedResult.error || 'Failed to create signing link', documentId: documentId };
     }
-    
+
     Logger.log('🔗 Embedded link created for ' + data.signerEmail);
-    
+
     // 4. Store in Wix Portal (optional sync)
     try {
       if (typeof saveSigningLinkToWix === 'function') {
@@ -526,14 +526,14 @@ function createPortalSigningSession(data) {
     } catch (syncErr) {
       Logger.log('⚠️ Wix sync failed (non-blocking): ' + syncErr.message);
     }
-    
+
     return {
       success: true,
       embeddedLink: embeddedResult.link,
       link: embeddedResult.link,
       documentId: documentId
     };
-    
+
   } catch (err) {
     Logger.log('❌ Portal signing session failed: ' + err.message);
     return { success: false, error: 'Portal signing session failed: ' + err.message };
@@ -547,17 +547,17 @@ function createPortalSigningSession(data) {
  */
 function mapPortalFormDataToSignNowFields(data) {
   const fields = [];
-  
+
   // Helper to add field if value exists
   const addField = (name, value) => {
     if (value) fields.push({ name, value: String(value) });
   };
-  
+
   // Defendant fields
   addField('DefName', data.defendantName);
   addField('DefendantName', data.defendantName);
   addField('DefPhone', data.defendantPhone);
-  
+
   // Indemnitor fields
   addField('IndName', data.indemnitorName);
   addField('IndemnitorName', data.indemnitorName);
@@ -567,7 +567,7 @@ function mapPortalFormDataToSignNowFields(data) {
   addField('IndemnitorPhone', data.indemnitorPhone);
   addField('IndAddress', data.indemnitorAddress);
   addField('IndemnitorAddress', data.indemnitorAddress);
-  
+
   // Reference 1
   if (data.reference1) {
     addField('Ref1Name', data.reference1.name);
@@ -577,7 +577,7 @@ function mapPortalFormDataToSignNowFields(data) {
     addField('Ref1Address', data.reference1.address);
     addField('Reference1Address', data.reference1.address);
   }
-  
+
   // Reference 2
   if (data.reference2) {
     addField('Ref2Name', data.reference2.name);
@@ -587,11 +587,11 @@ function mapPortalFormDataToSignNowFields(data) {
     addField('Ref2Address', data.reference2.address);
     addField('Reference2Address', data.reference2.address);
   }
-  
+
   // Date fields
   addField('Date', new Date().toLocaleDateString());
   addField('SignDate', new Date().toLocaleDateString());
-  
+
   return fields;
 }
 
