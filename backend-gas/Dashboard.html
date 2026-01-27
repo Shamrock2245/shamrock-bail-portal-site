@@ -3105,12 +3105,68 @@
               <input type="email" id="indemnitor-${indemnitorCount}-email" placeholder="indemnitor@email.com" value="${data.email || ''}">
             </div>
             <div class="form-group">
-              <label>Employer</label>
+              <label>Employer Name</label>
               <input type="text" id="indemnitor-${indemnitorCount}-employer" placeholder="ABC Company" value="${data.employer || ''}">
             </div>
             <div class="form-group">
               <label>Employer Phone</label>
               <input type="tel" id="indemnitor-${indemnitorCount}-employer-phone" placeholder="(239) 555-9999" value="${data.employerPhone || ''}">
+            </div>
+            <div class="form-group">
+               <label>Employer City</label>
+               <input type="text" id="indemnitor-${indemnitorCount}-employer-city" placeholder="City" value="${data.employerCity || ''}">
+            </div>
+            <div class="form-group">
+               <label>Employer State</label>
+               <input type="text" id="indemnitor-${indemnitorCount}-employer-state" placeholder="FL" value="${data.employerState || ''}">
+            </div>
+             <div class="form-group">
+              <label>Supervisor Name</label>
+              <input type="text" id="indemnitor-${indemnitorCount}-supervisor" placeholder="Boss Name" value="${data.supervisor || ''}">
+            </div>
+            <div class="form-group">
+              <label>Supervisor Phone</label>
+              <input type="tel" id="indemnitor-${indemnitorCount}-supervisor-phone" placeholder="(239) 555-8888" value="${data.supervisorPhone || ''}">
+            </div>
+          </div>
+          
+          <h5 style="margin: 16px 0 8px; color: var(--muted); font-size: 12px; text-transform: uppercase;">References</h5>
+          
+          <div class="form-row" style="background: var(--surface); padding: 12px; border-radius: 8px;">
+            <div class="form-group">
+                <label>Ref 1 Name</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref1-name" placeholder="Name" value="${data.ref1Name || ''}">
+            </div>
+            <div class="form-group">
+                <label>Ref 1 Relation</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref1-relation" placeholder="Friend" value="${data.ref1Relation || ''}">
+            </div>
+             <div class="form-group">
+                <label>Ref 1 Phone</label>
+                <input type="tel" id="indemnitor-${indemnitorCount}-ref1-phone" placeholder="Phone" value="${data.ref1Phone || ''}">
+            </div>
+             <div class="form-group">
+                <label>Ref 1 Address</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref1-address" placeholder="Address" value="${data.ref1Address || ''}">
+            </div>
+          </div>
+
+          <div class="form-row" style="background: var(--surface); padding: 12px; border-radius: 8px; margin-top: 8px;">
+            <div class="form-group">
+                <label>Ref 2 Name</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref2-name" placeholder="Name" value="${data.ref2Name || ''}">
+            </div>
+            <div class="form-group">
+                <label>Ref 2 Relation</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref2-relation" placeholder="Friend" value="${data.ref2Relation || ''}">
+            </div>
+             <div class="form-group">
+                <label>Ref 2 Phone</label>
+                <input type="tel" id="indemnitor-${indemnitorCount}-ref2-phone" placeholder="Phone" value="${data.ref2Phone || ''}">
+            </div>
+             <div class="form-group">
+                <label>Ref 2 Address</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref2-address" placeholder="Address" value="${data.ref2Address || ''}">
             </div>
           </div>
         </div>
@@ -3697,7 +3753,20 @@
                     phone: document.getElementById(`indemnitor-${num}-phone`)?.value || '',
                     email: document.getElementById(`indemnitor-${num}-email`)?.value || '',
                     employer: document.getElementById(`indemnitor-${num}-employer`)?.value || '',
-                    employerPhone: document.getElementById(`indemnitor-${num}-employer-phone`)?.value || ''
+                    employerPhone: document.getElementById(`indemnitor-${num}-employer-phone`)?.value || '',
+                    employerCity: document.getElementById(`indemnitor-${num}-employer-city`)?.value || '',
+                    employerState: document.getElementById(`indemnitor-${num}-employer-state`)?.value || '',
+                    supervisor: document.getElementById(`indemnitor-${num}-supervisor`)?.value || '',
+                    supervisorPhone: document.getElementById(`indemnitor-${num}-supervisor-phone`)?.value || '',
+                    // References
+                    ref1Name: document.getElementById(`indemnitor-${num}-ref1-name`)?.value || '',
+                    ref1Relation: document.getElementById(`indemnitor-${num}-ref1-relation`)?.value || '',
+                    ref1Phone: document.getElementById(`indemnitor-${num}-ref1-phone`)?.value || '',
+                    ref1Address: document.getElementById(`indemnitor-${num}-ref1-address`)?.value || '',
+                    ref2Name: document.getElementById(`indemnitor-${num}-ref2-name`)?.value || '',
+                    ref2Relation: document.getElementById(`indemnitor-${num}-ref2-relation`)?.value || '',
+                    ref2Phone: document.getElementById(`indemnitor-${num}-ref2-phone`)?.value || '',
+                    ref2Address: document.getElementById(`indemnitor-${num}-ref2-address`)?.value || ''
                 });
             });
 
@@ -4658,6 +4727,42 @@
                 'employer': ind.employer,
                 'employerPhone': ind.employerPhone,
                 'employer-phone': ind.employerPhone,
+                'employerCity': ind.employerCity,
+                'employer-city': ind.employerCity,
+                'employerState': ind.employerState,
+                'employer-state': ind.employerState,
+                // Composite Employer Address
+                'employerAddress': `${ind.employerCity || ''}, ${ind.employerState || ''}`.trim().replace(/^,/, '').replace(/,$/, ''),
+                'employer-address': `${ind.employerCity || ''}, ${ind.employerState || ''}`.trim().replace(/^,/, '').replace(/,$/, ''),
+                'supervisor': ind.supervisor,
+                'supervisorPhone': ind.supervisorPhone,
+                'supervisor-phone': ind.supervisorPhone,
+                // Reference 1
+                'ref1Name': ind.ref1Name,
+                'ref1-name': ind.ref1Name,
+                'ref-1-name': ind.ref1Name,
+                'ref1Relation': ind.ref1Relation,
+                'ref1-relation': ind.ref1Relation,
+                'ref-1-relation': ind.ref1Relation,
+                'ref1Phone': ind.ref1Phone,
+                'ref1-phone': ind.ref1Phone,
+                'ref-1-phone': ind.ref1Phone,
+                'ref1Address': ind.ref1Address,
+                'ref1-address': ind.ref1Address,
+                'ref-1-address': ind.ref1Address,
+                // Reference 2
+                'ref2Name': ind.ref2Name,
+                'ref2-name': ind.ref2Name,
+                'ref-2-name': ind.ref2Name,
+                'ref2Relation': ind.ref2Relation,
+                'ref2-relation': ind.ref2Relation,
+                'ref-2-relation': ind.ref2Relation,
+                'ref2Phone': ind.ref2Phone,
+                'ref2-phone': ind.ref2Phone,
+                'ref-2-phone': ind.ref2Phone,
+                'ref2Address': ind.ref2Address,
+                'ref2-address': ind.ref2Address,
+                'ref-2-address': ind.ref2Address,
                 'relationship': ind.relationship
             };
 
@@ -6045,10 +6150,73 @@
             if (document.getElementById('charges-input')) document.getElementById('charges-input').value = item.charges || '';
 
             // 2. Fill Indemnitor Fields
-            if (document.getElementById('indemnitor-full-name')) document.getElementById('indemnitor-full-name').value = item.name || '';
-            if (document.getElementById('indemnitor-phone')) document.getElementById('indemnitor-phone').value = item.phone || '';
-            if (document.getElementById('signer-indemnitor-email')) document.getElementById('signer-indemnitor-email').value = item.email || '';
-            if (document.getElementById('signer-indemnitor-phone')) document.getElementById('signer-indemnitor-phone').value = item.phone || '';
+            // Clear existing indemnitors from UI
+            const container = document.getElementById('indemnitors-container');
+            const noIndMsg = document.getElementById('no-indemnitors-message');
+            if (container) {
+                container.innerHTML = '';
+                indemnitorCount = 0;
+                if (noIndMsg) noIndMsg.style.display = 'block';
+            }
+
+            // Parse Employer/Supervisor Info from JSON string
+            let empInfo = {};
+            try {
+                if (item.EmployerInfo) {
+                    empInfo = JSON.parse(item.EmployerInfo);
+                } else if (item.employerInfo) { // Case fallback
+                    empInfo = JSON.parse(item.employerInfo);
+                }
+            } catch (e) {
+                console.warn('Could not parse EmployerInfo payload:', e);
+            }
+
+            // Parse References from JSON string
+            let refs = [];
+            try {
+                if (item.References) {
+                    refs = JSON.parse(item.References);
+                } else if (item.references) {
+                    refs = JSON.parse(item.references);
+                }
+            } catch (e) {
+                console.warn('Could not parse References payload:', e);
+            }
+
+            // Determine Name parts
+            const fullIndemName = item.FullName || item.name || '';
+            const nameParts = fullIndemName.split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            // Add Indemnitor Record
+            addIndemnitor({
+                firstName: firstName,
+                lastName: lastName,
+                phone: item.Phone || item.phone || '',
+                email: item.Email || item.email || '',
+                relationship: item.Role || item.role || 'indemnitor',
+                // Mapped fields
+                employer: empInfo.employer || '',
+                employerPhone: empInfo.employerPhone || '',
+                employerCity: empInfo.employerCity || '',
+                employerState: empInfo.employerState || '',
+                supervisor: empInfo.supervisor || '',
+                supervisorPhone: empInfo.supervisorPhone || '',
+                // Map References (take first 2)
+                ref1Name: refs[0]?.name || '',
+                ref1Relation: refs[0]?.relation || '',
+                ref1Phone: refs[0]?.phone || '',
+                ref1Address: refs[0]?.address || '',
+                ref2Name: refs[1]?.name || '',
+                ref2Relation: refs[1]?.relation || '',
+                ref2Phone: refs[1]?.phone || '',
+                ref2Address: refs[1]?.address || ''
+            });
+
+            // Also populate the static signing fields for convenience
+            if (document.getElementById('signer-indemnitor-email')) document.getElementById('signer-indemnitor-email').value = item.Email || item.email || '';
+            if (document.getElementById('signer-indemnitor-phone')) document.getElementById('signer-indemnitor-phone').value = item.Phone || item.phone || '';
 
             switchTab(document.querySelector('button[onclick*="dashboard"]'), 'dashboard');
 

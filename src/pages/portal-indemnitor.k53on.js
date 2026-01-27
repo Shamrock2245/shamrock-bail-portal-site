@@ -364,12 +364,25 @@ function setupSubmitButton() {
                 indemnitorPhone: $w('#inputIndemnitorPhone').value,
                 // Parse Address Object if available
                 indemnitorStreetAddress: $w('#inputIndemnitorAddress').value?.formatted || "",
-                // Split formatted address logic could go here if needed, but keeping simple for now
-                // We rely on backend/GAS to handle raw strings if needed or add parsing utility
+
+                // --- NEW FIELDS (Employer & Supervisor) ---
+                indemnitorEmployerName: $w('#inputIndemnitorEmployerName').value,
+                indemnitorEmployerPhone: $w('#inputIndemnitorEmployerPhone').value,
+                // Address fields for employer (Assuming separate inputs or partial address object if available)
+                // For now, mapping safely assuming single line or simple inputs as per standard forms
+                indemnitorEmployerCity: $w('#inputIndemnitorEmployerCity').value || "",
+                indemnitorEmployerState: $w('#inputIndemnitorEmployerState').value || "",
+                indemnitorEmployerZip: $w('#inputIndemnitorEmployerZip').value || "",
+
+                indemnitorSupervisorName: $w('#inputIndemnitorSupervisorName').value,
+                indemnitorSupervisorPhone: $w('#inputIndemnitorSupervisorPhone').value,
+
+                residenceType: $w('#dropdownResidenceType').value, // Rent/Own
+
                 reference1: {
                     name: $w('#inputRef1Name').value,
                     phone: $w('#inputRef1Phone').value,
-                    relation: $w('#inputRef1Relation').value // Added based on typical forms
+                    relation: $w('#inputRef1Relation').value
                 },
                 reference2: {
                     name: $w('#inputRef2Name').value,

@@ -714,6 +714,14 @@ function mapFormDataToSignNowFields(data) {
     'IndCity': data.indemnitorCity,
     'IndState': data.indemnitorState,
     'IndZip': data.indemnitorZip,
+    // --- Employer & Supervisor Mappings (New V5.1.0) ---
+    'IndEmployer': data.indemnitorEmployerName,
+    'IndEmpPhone': data.indemnitorEmployerPhone,
+    'IndEmpAddress': (data.indemnitorEmployerCity && data.indemnitorEmployerState)
+      ? `${data.indemnitorEmployerCity}, ${data.indemnitorEmployerState}`
+      : '',
+    'IndSupervisor': data.indemnitorSupervisorName,
+
     'TotalBond': data.totalBond || data['payment-total-bond'],
     'Premium': data.totalPremium || data['payment-premium-due'],
     'BookingNum': data.bookingNumber || data['defendant-booking-number']
@@ -834,10 +842,10 @@ function handleIntakeSubmission(data) {
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(5000);
-    
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let sheet = ss.getSheetByName('IntakeQueue');
-    
+
     // Auto-create if missing
     if (!sheet) {
       sheet = ss.insertSheet('IntakeQueue');
@@ -848,10 +856,10 @@ function handleIntakeSubmission(data) {
       ]);
       sheet.setFrozenRows(1);
     }
-    
+
     const timestamp = new Date();
     const intakeId = 'INT-' + timestamp.getTime();
-    
+
     // Extract data from the intake payload
     const row = [
       timestamp,
@@ -860,7 +868,7 @@ function handleIntakeSubmission(data) {
       data.indemnitorEmail || data.email || '',
       data.indemnitorPhone || data.phone || '',
       data.indemnitorFullName || data.fullName || '',
-      data.defendantName || '',
+      data.defendantFullName || data.defendantName || '',
       data.defendantPhone || '',
       data.caseNumber || '',
       'pending',
@@ -877,19 +885,19 @@ function handleIntakeSubmission(data) {
       data.residenceType || '',
       '' // ProcessedAt - empty until processed
     ];
-    
+
     sheet.appendRow(row);
     const lastRow = sheet.getLastRow();
-    
+
     Logger.log('✅ Intake saved: ' + intakeId);
-    
-    return { 
-      success: true, 
-      message: 'Intake received', 
-      intakeId: intakeId, 
-      row: lastRow 
+
+    return {
+      success: true,
+      message: 'Intake received',
+      intakeId: intakeId,
+      row: lastRow
     };
-    
+
   } catch (e) {
     console.error('Intake submission failed: ' + e.message);
     return { success: false, error: e.message };
@@ -905,23 +913,23 @@ function handleIntakeSubmission(data) {
 function handleStartPaperwork(data) {
   try {
     Logger.log('🚀 Starting paperwork for case: ' + (data.caseNumber || 'NEW'));
-    
+
     // 1. Check if we have a pending document already
     if (data.documentId) {
       // Return existing signing link
       const link = createEmbeddedLink(
-        data.documentId, 
-        data.signerEmail || data.indemnitorEmail, 
+        data.documentId,
+        data.signerEmail || data.indemnitorEmail,
         data.signerRole || 'Indemnitor',
         60 // 60 minute expiration
       );
       return link;
     }
-    
+
     // 2. If no document exists, we need to generate one
     // This would typically be triggered from the Dashboard after staff review
     // For now, return a message indicating the intake is queued
-    
+
     // Check if generateAndSendWithWixPortal is available
     if (typeof generateAndSendWithWixPortal === 'function') {
       // Prepare the form data for document generation
@@ -938,16 +946,16 @@ function handleStartPaperwork(data) {
         signingMethod: data.signingMethod || 'embedded',
         selectedDocs: data.selectedDocs || ['bail_application', 'indemnitor_agreement']
       };
-      
+
       return generateAndSendWithWixPortal(formData);
     }
-    
-    return { 
-      success: false, 
+
+    return {
+      success: false,
       error: 'Document generation not available. Please use Dashboard to process this intake.',
       intakeQueued: true
     };
-    
+
   } catch (e) {
     console.error('Start paperwork failed: ' + e.message);
     return { success: false, error: e.message };
@@ -961,19 +969,19 @@ function fetchPendingIntakes() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName('IntakeQueue');
-    
+
     if (!sheet) {
       return { success: true, intakes: [], message: 'No intake queue found' };
     }
-    
+
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
     const intakes = [];
-    
+
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       const status = row[9]; // Status column
-      
+
       if (status === 'pending') {
         const intake = {};
         headers.forEach((header, idx) => {
@@ -983,9 +991,9 @@ function fetchPendingIntakes() {
         intakes.push(intake);
       }
     }
-    
+
     return { success: true, intakes: intakes, count: intakes.length };
-    
+
   } catch (e) {
     return { success: false, error: e.message };
   }
@@ -998,13 +1006,13 @@ function markIntakeAsProcessed(intakeId) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName('IntakeQueue');
-    
+
     if (!sheet) {
       return { success: false, error: 'IntakeQueue sheet not found' };
     }
-    
+
     const data = sheet.getDataRange().getValues();
-    
+
     for (let i = 1; i < data.length; i++) {
       if (data[i][1] === intakeId) { // IntakeID column
         sheet.getRange(i + 1, 10).setValue('processed'); // Status column
@@ -1012,9 +1020,9 @@ function markIntakeAsProcessed(intakeId) {
         return { success: true, message: 'Intake marked as processed' };
       }
     }
-    
+
     return { success: false, error: 'Intake not found: ' + intakeId };
-    
+
   } catch (e) {
     return { success: false, error: e.message };
   }
@@ -1032,12 +1040,12 @@ function generateAndSendWithWixPortal_Safe(data) {
       timestamp: new Date().toISOString()
     });
   }
-  
+
   // Delegate to the main function if available
   if (typeof generateAndSendWithWixPortal === 'function') {
     return generateAndSendWithWixPortal(data);
   }
-  
+
   // Fallback: Use the basic signing flow
   return handleSendForSignature(data);
 }
@@ -1050,24 +1058,24 @@ function saveFilledPacketToDrive(data) {
     const config = getConfig();
     const folderId = data.folderId || config.GOOGLE_DRIVE_OUTPUT_FOLDER_ID;
     const folder = DriveApp.getFolderById(folderId);
-    
+
     if (!data.pdfBase64) {
       return { success: false, error: 'No PDF data provided' };
     }
-    
+
     const fileName = data.fileName || `Bond_Packet_${new Date().toISOString().split('T')[0]}.pdf`;
     const pdfBytes = Utilities.base64Decode(data.pdfBase64);
     const blob = Utilities.newBlob(pdfBytes, 'application/pdf', fileName);
-    
+
     const file = folder.createFile(blob);
-    
-    return { 
-      success: true, 
-      fileId: file.getId(), 
+
+    return {
+      success: true,
+      fileId: file.getId(),
       fileUrl: file.getUrl(),
-      fileName: fileName 
+      fileName: fileName
     };
-    
+
   } catch (e) {
     return { success: false, error: e.message };
   }
