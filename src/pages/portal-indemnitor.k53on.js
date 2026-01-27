@@ -29,6 +29,11 @@ $w.onReady(async function () {
         }
     } catch (e) { }
 
+    // Initialize Success Message State
+    try {
+        if ($w('#txtSubmissionSuccess').type) $w('#txtSubmissionSuccess').collapse();
+    } catch (e) { }
+
     try {
         // Check for session token in URL (passed from magic link redirect)
         const query = wixLocation.query;
@@ -407,6 +412,12 @@ function setupSubmitButton() {
                 if ($w('#statusMessage').type) {
                     $w('#statusMessage').text = "✅ Info submitted! Starting paperwork...";
                     $w('#statusMessage').expand();
+                }
+
+                if ($w('#txtSubmissionSuccess').type) {
+                    $w('#txtSubmissionSuccess').expand();
+                    // Optional: Scroll to it
+                    $w('#txtSubmissionSuccess').scrollTo();
                 }
 
                 // 4. AUTO-TRIGGER SIGNING FLOW
