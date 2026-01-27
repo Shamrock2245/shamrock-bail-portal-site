@@ -568,6 +568,18 @@ function mapPortalFormDataToSignNowFields(data) {
   addField('IndAddress', data.indemnitorAddress);
   addField('IndemnitorAddress', data.indemnitorAddress);
 
+  // Employer & Supervisor (V5.1 Added)
+  addField('IndEmployer', data.indemnitorEmployerName);
+  addField('IndEmpPhone', data.indemnitorEmployerPhone);
+  // Composite address for Employer if available
+  const empAddr = (data.indemnitorEmployerCity && data.indemnitorEmployerState)
+    ? `${data.indemnitorEmployerCity}, ${data.indemnitorEmployerState} ${data.indemnitorEmployerZip || ''}`
+    : '';
+  addField('IndEmpAddress', empAddr);
+
+  addField('IndSupervisor', data.indemnitorSupervisorName);
+  addField('IndSupervisorPhone', data.indemnitorSupervisorPhone);
+
   // Reference 1
   if (data.reference1) {
     addField('Ref1Name', data.reference1.name);
@@ -695,8 +707,18 @@ function SN_makeRequest(endpoint, method, body) {
   if (body) options.payload = JSON.stringify(body);
   const url = config.SIGNNOW_API_BASE + (endpoint.startsWith('/') ? endpoint : '/' + endpoint);
   const res = UrlFetchApp.fetch(url, options);
-  if (res.getResponseCode() === 401) throw new Error("SignNow Unauthorized - Check Token");
-  return JSON.parse(res.getContentText());
+  const responseCode = res.getResponseCode();
+  const content = res.getContentText();
+
+  if (responseCode === 401) throw new Error("SignNow Unauthorized - Check Token");
+  if (responseCode >= 400) throw new Error(`SignNow API Error (${responseCode}): ${content}`);
+
+  try {
+    return JSON.parse(content);
+  } catch (e) {
+    if (content.includes('<!DOCTYPE html>')) throw new Error('SignNow Gateway Error (HTML received)');
+    return { success: true, raw: content }; // Fallback for non-JSON success
+  }
 }
 function mapFormDataToSignNowFields(data) {
   const MAPPING = {
