@@ -11,9 +11,19 @@ const PING_STORAGE_KEY = 'last_location_ping_dates';
  * Attempt to ping the user's location silently.
  * Enforces a frontend check to avoid excessive backend calls.
  * Now improved with Robustness: captures IP and Device Info.
+ * @param {string} [caseStatus] - Optional status to check against 'discharged' or 'closed' logic
  */
-export async function silentPingLocation() {
+export async function silentPingLocation(caseStatus) {
     try {
+        // 0. STOP PINGING IF DISCHARGED
+        if (caseStatus) {
+            const normalized = caseStatus.toLowerCase().trim();
+            if (normalized === 'discharged' || normalized === 'closed' || normalized === 'completed' || normalized === 'exonerated') {
+                console.log(`Location tracker: Case is ${caseStatus}. Tracking disabled.`);
+                return;
+            }
+        }
+
         // 1. Only ping if logged in (Custom Auth)
         if (!hasSessionToken()) return;
         const token = getSessionToken();

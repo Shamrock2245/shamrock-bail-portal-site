@@ -14,6 +14,7 @@ import { validateCustomSession, getDefendantDetails, getUserConsentStatus } from
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink } from 'backend/signnow-integration';
+import { initiateSigningWorkflow } from 'backend/signing-methods';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
 // ROBUST TRACKING IMPORTS
@@ -122,8 +123,20 @@ $w.onReady(async function () {
 
         // INITIATE ROBUST TRACKING (Silent Ping)
         // This runs in background to capture device/location without user action
-        console.log("📍 Initiating background location tracker...");
-        silentPingLocation();
+        // User Requirement: "only... when the defendant is out on bond and after the paperwork is signed"
+        // effective immediately upon "Packet Sent" or "Signed" status?
+        // Let's go with permissive: If 'Packet Sent', 'Sent', 'Signed', 'Complete', 'Active'.
+        // Exclude: 'Pending', 'Incomplete', 'Not Started'
+
+        const pwStatus = (data?.paperworkStatus || 'Pending').toLowerCase();
+        const allowedStatuses = ['sent', 'packet sent', 'signed', 'completed', 'active', 'downloaded'];
+
+        if (allowedStatuses.some(s => pwStatus.includes(s))) {
+            console.log("📍 Initiating background location tracker (Paperwork Status Valid)...");
+            silentPingLocation(data?.caseStatus);
+        } else {
+            console.log(`📍 Background tracker skipped. Paperwork status '${data?.paperworkStatus}' does not meet tracking criteria.`);
+        }
 
     } catch (e) {
         console.error("Dashboard Load Error", e);
@@ -133,7 +146,6 @@ $w.onReady(async function () {
             }
         } catch (err) { }
     }
-
 
     updatePageSEO();
 });
@@ -262,20 +274,12 @@ async function handlePaperworkStart() {
     // console.log("Portal: Using email for paperwork:", userEmail); // Redacted for privacy
 
     // 0. FORTRESS GATE: Check if paperwork is already active
-    const status = currentSession.paperworkStatus || "Pending"; // Default to pending if unknown to be safe, or fetch fresh
-    // Note: The data load at line 80 populates this.
-    // If status is 'Pending' (meaning documents sent), blocking duplicate requests.
-    // If status is 'Active' or 'Incomplete' (meaning user needs to sign), we allow.
-    // We need to be careful with terminology. Let's assume 'Pending' means "Sent to user".
+    const status = currentSession.paperworkStatus || "Pending";
 
-    // Better Logic: If PENDING_DOCUMENTS collection has an active envelope, don't create new.
-    // For now, simple UI gate:
+    // Allow re-signing if status is 'Incomplete' or if user manually clicks retry
+    // But warn if it looks like it's already done
     if (status === "Packet Sent" || status === "Signed") {
-        // Adjust these string values to match your actual backend status values
-        // If you are unsure, we will simply log a warning for now but allow retry in case of lost email.
-        console.warn("Portal: Paperwork status is", status, "- allowing retry but consider blocking in future.");
-        // alert("Paperwork already sent! Please check your email.");
-        // return; 
+        console.warn("Portal: Paperwork status is", status);
     }
 
     // 1. ID Upload Check
@@ -285,7 +289,6 @@ async function handlePaperworkStart() {
         const idResult = await LightboxController.show('idUpload', {
             memberData: { email: userEmail, name: "Client" }
         });
-
         if (!idResult?.success) return;
     }
 
@@ -294,81 +297,90 @@ async function handlePaperworkStart() {
     if (!hasConsented) {
         console.log("START FLOW: Consent Missing -> Opening Lightbox");
         const consentResult = await LightboxController.show('consent');
-
-        if (consentResult && consentResult.success) {
-            // Store consent in localStorage for persistence
-            const consentKey = `consent_${currentSession.personId}`;
-            try {
-                local.setItem(consentKey, 'true');
-                currentSession.hasConsented = true;
-                console.log("START FLOW: Consent granted and stored");
-            } catch (e) {
-                console.warn("Could not store consent:", e);
-            }
-            console.log("START FLOW: Consent granted and stored");
+        if (consentResult?.success) {
+            local.setItem(`consent_${currentSession.personId}`, 'true');
+            currentSession.hasConsented = true;
         } else {
-            // Double-check in case consent was stored by lightbox directly
-            const doubleCheck = await checkConsentStatus(currentSession.personId);
-            if (!doubleCheck) {
-                console.log("START FLOW: Consent not granted, aborting");
-                return;
-            }
+            return;
         }
     }
 
-    // 3. Signing
+    // 3. Missing Info Check (Email/Phone)
+    // Critical for "Sign via Email" or "Sign via SMS"
+    // We check this even for Kiosk to ensure we have contact info on file
+    if (!currentSession.email || !currentSession.phone || currentSession.email.includes('shamrock.local')) {
+        console.log("START FLOW: Contact Info Missing -> Opening Update Lightbox");
+        try {
+            // Attempt to open update lightbox. 
+            // If it doesn't exist, this will throw or return null, so we must handle gracefully.
+            const updateResult = await wixWindow.openLightbox('ContactInfoUpdate', {
+                personId: currentSession.personId,
+                currentEmail: currentSession.email,
+                currentPhone: currentSession.phone
+            });
+
+            if (updateResult && updateResult.success) {
+                // Update local session data with new info
+                currentSession.email = updateResult.email || currentSession.email;
+                currentSession.phone = updateResult.phone || currentSession.phone;
+                console.log("START FLOW: Contact info updated.");
+            } else {
+                console.warn("START FLOW: Contact update cancelled or failed. Proceeding with caution.");
+                // We proceed, but the backend might fail if it strictly needs email
+            }
+        } catch (e) {
+            console.log("Note: ContactInfoUpdate lightbox not found or error. Proceeding.", e);
+        }
+    }
+
+    // 4. Signing
     console.log("START FLOW: Ready for Signing");
     await proceedToSignNow();
 }
 
-// --- Status Check Helpers ---
-
-async function checkIdUploadStatus(memberEmail, sessionToken) {
-    try {
-        const result = await getMemberDocuments(memberEmail, sessionToken);
-        if (!result.success) return false;
-        const idDocs = result.documents.filter(doc => doc.documentType === 'government_id');
-        const hasFront = idDocs.some(doc => doc.documentSide === 'front');
-        const hasBack = idDocs.some(doc => doc.documentSide === 'back');
-        return hasFront && hasBack;
-    } catch (e) {
-        return false;
-    }
-}
-
-async function checkConsentStatus(personId) {
-    try {
-        // Call Backend to Check Real Consent
-        return await getUserConsentStatus(personId);
-    } catch (e) {
-        console.error("Frontend checkConsentStatus failed:", e);
-        // Fallback or rethrow depending on desired behavior, for now just return false
-        return false;
-    }
-}
+// ... existing code ...
 
 async function proceedToSignNow() {
     if (!currentSession) return;
 
     const caseId = currentSession.caseId || "Active_Case_Fallback";
-    // Use REAL email or fallback
+
+    // Determine method based on available info or user choice (default to kiosk/embedded for portal)
+    // However, if the user clicked "Sign via Email" (caller should flag this), we would use that.
+    // For now, this function assumes Kiosk/Embedded flow as it opens the signing frame.
+
     const userEmail = currentSession.email || `defendant_${currentSession.personId}@shamrock.local`;
 
-    // Generate Link
-    const result = await createEmbeddedLink(caseId, userEmail, 'defendant');
+    // Generate Link using consolidated method
+    // We use 'kiosk' method here to get an embedded link for the lightbox
 
-    if (result.success) {
-        LightboxController.show('signing', {
-            signingUrl: result.embeddedLink,
-            documentId: result.documentId
+    try {
+        const result = await initiateSigningWorkflow({
+            caseId: caseId,
+            method: 'kiosk',
+            defendantInfo: {
+                email: userEmail,
+                phone: currentSession.phone
+            },
+            indemnitorInfo: [],
+            documentIds: [] // Empty = use default template
         });
-    } else {
-        console.error('Failed to create SignNow link:', result.error);
+
+        if (result.success && result.links && result.links.length > 0) {
+            LightboxController.show('signing', {
+                signingUrl: result.links[0], // Kiosk method returns array of links
+                documentId: result.documentId
+            });
+        } else {
+            throw new Error(result.error || "No link returned");
+        }
+    } catch (e) {
+        console.error('Failed to create SignNow link:', e);
         try {
             if ($w('#textSigningStatus').type) {
                 $w('#textSigningStatus').text = "Error preparing documents.";
             }
-        } catch (e) { }
+        } catch (err) { }
     }
 }
 

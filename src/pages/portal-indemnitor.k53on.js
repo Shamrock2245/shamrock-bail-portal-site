@@ -9,16 +9,17 @@
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-import { 
-    validateCustomSession, 
-    getIndemnitorDetails, 
+import {
+    validateCustomSession,
+    getIndemnitorDetails,
     getUserConsentStatus,
     getIndemnitorLinkedCases,
-    getIndemnitorPendingPaperwork 
+    getIndemnitorPendingPaperwork
 } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
-import { createEmbeddedLink, submitIntake } from 'backend/signnow-integration';
+import { submitIntake } from 'backend/signnow-integration';
+import { initiateSigningWorkflow } from 'backend/signing-methods';
 import { reverseGeocodeToCityStateZip, geocodeAddressToCityStateZip } from 'backend/googleMaps';
 import { sendAdminNotification, NOTIFICATION_TYPES } from 'backend/notificationService';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
@@ -210,10 +211,10 @@ async function loadDashboardData() {
         if (casesResult.success && casesResult.cases.length > 0) {
             linkedCases = casesResult.cases;
             console.log(`📋 Found ${linkedCases.length} linked case(s) for indemnitor`);
-            
+
             // Populate case selector if multiple cases
             await populateCaseSelector();
-            
+
             // If no case selected, default to first case
             if (!selectedCaseId && linkedCases.length > 0) {
                 selectedCaseId = linkedCases[0].caseId;
@@ -253,7 +254,7 @@ async function loadDashboardData() {
                 const docResult = await getAllDocumentsForMember(currentSession.email);
                 if (docResult.success && docResult.documents && docResult.documents.length > 0) {
                     // Check if signed for the SELECTED case
-                    const hasSigned = docResult.documents.some(d => 
+                    const hasSigned = docResult.documents.some(d =>
                         d.status === 'signed' && d.caseId === selectedCaseId
                     );
 
@@ -391,7 +392,7 @@ function setupCaseSelector() {
             $w('#caseSelector').onChange(async (event) => {
                 selectedCaseId = event.target.value;
                 console.log('📋 Case selected:', selectedCaseId);
-                
+
                 // Reload dashboard for selected case
                 await loadSelectedCaseData();
             });
@@ -445,7 +446,7 @@ async function loadPendingPaperwork() {
         const pendingResult = await getIndemnitorPendingPaperwork(currentSession.token);
         if (pendingResult.success && pendingResult.pendingDocuments.length > 0) {
             console.log(`📄 Found ${pendingResult.totalPending} pending document(s)`);
-            
+
             // Show pending paperwork section
             try {
                 if ($w('#pendingPaperworkSection').type) {
@@ -465,7 +466,7 @@ async function loadPendingPaperwork() {
                         $item('#docCaseNumber').text = itemData.caseNumber;
                         $item('#docName').text = itemData.documentName;
                         $item('#docStatus').text = itemData.status;
-                        
+
                         $item('#signDocBtn').onClick(() => {
                             openSigningForDocument(itemData);
                         });
@@ -622,29 +623,55 @@ async function handlePaperworkStart() {
         }
     } catch (e) { }
 
-    // Create embedded signing link
-    const result = await createEmbeddedLink(caseId, userEmail, 'indemnitor', formData);
+    // Create embedded signing link using ROBUST workflow
+    // This handles validation, Gas fallback, and logging automatically.
 
-    if (result.success) {
-        LightboxController.show('signing', {
-            signingUrl: result.embeddedLink,
-            documentId: result.documentId,
-            caseId: caseId
+    // We pass form data as 'indemnitorInfo' (even though it's one person, the structure might expect an array or specific object in future updates, 
+    // but looking at initiateSigningWorkflow signature: { caseId, method, defendantInfo, indemnitorInfo, documentIds })
+
+    // NOTE: initiateSigningWorkflow's kiosk mode currently takes 'signerEmail' and 'signerRole'.
+    // If we want to support full Indemnitor data injection, we need to pass that indemnitor info.
+    // The current initiateSigningWorkflow logic for 'kiosk' implies a single signer. 
+    // Let's call it with the logic required:
+
+    try {
+        const result = await initiateSigningWorkflow({
+            caseId: caseId,
+            method: 'kiosk',
+            defendantInfo: {}, // Not signing as defendant
+            // We pass the indemnitor's email as the primary signer for this kiosk session
+            customSigner: {
+                email: userEmail,
+                role: 'indemnitor',
+                formData: formData // Pass the full form data for document generation
+            },
+            indemnitorInfo: [formData], // Keeping this for consistency if backend uses it
+            documentIds: []
         });
 
+        if (result.success && result.links && result.links.length > 0) {
+            LightboxController.show('signing', {
+                signingUrl: result.links[0],
+                documentId: result.documentId,
+                caseId: caseId
+            });
+
+            try {
+                if ($w('#statusMessage').type) {
+                    $w('#statusMessage').collapse();
+                }
+            } catch (e) { }
+        } else {
+            throw new Error(result.error || "No link returned");
+        }
+    } catch (e) {
+        console.error('Failed to create SignNow link:', e);
         try {
             if ($w('#statusMessage').type) {
-                $w('#statusMessage').collapse();
-            }
-        } catch (e) { }
-    } else {
-        console.error('Failed to create SignNow link:', result.error);
-        try {
-            if ($w('#statusMessage').type) {
-                $w('#statusMessage').text = "Error preparing documents. Please try again.";
+                $w('#statusMessage').text = "Error preparing documents. System may be busy.";
                 $w('#statusMessage').expand();
             }
-        } catch (e) { }
+        } catch (err) { }
     }
 }
 
@@ -666,32 +693,32 @@ function collectFormData() {
         indemnitorCity: getValue('#inputIndemnitorCity'),
         indemnitorState: getValue('#inputIndemnitorState'),
         indemnitorZip: getValue('#inputIndemnitorZip'),
-        
+
         // Employer Info
         indemnitorEmployerName: getValue('#inputEmployerName'),
         indemnitorEmployerPhone: getValue('#inputEmployerPhone'),
         indemnitorEmployerCity: getValue('#inputEmployerCity'),
         indemnitorEmployerState: getValue('#inputEmployerState'),
         indemnitorEmployerZip: getValue('#inputEmployerZip'),
-        
+
         // Supervisor Info
         indemnitorSupervisorName: getValue('#inputSupervisorName'),
         indemnitorSupervisorPhone: getValue('#inputSupervisorPhone'),
-        
+
         // Reference 1
         reference1: {
             name: getValue('#inputRef1Name'),
             phone: getValue('#inputRef1Phone'),
             address: getValue('#inputRef1Address')
         },
-        
+
         // Reference 2
         reference2: {
             name: getValue('#inputRef2Name'),
             phone: getValue('#inputRef2Phone'),
             address: getValue('#inputRef2Address')
         },
-        
+
         // Case context
         caseId: selectedCaseId || currentSession.caseId,
         defendantName: linkedCases.find(c => c.caseId === selectedCaseId)?.defendantName || ''

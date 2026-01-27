@@ -191,14 +191,15 @@ export async function sendViaSMS(params) {
  * @param {Object} params - { caseId, documentId, signerEmail, signerRole }
  */
 export async function createKioskLink(params) {
-    const { caseId, documentId, signerEmail, signerRole } = params;
+    const { caseId, documentId, signerEmail, signerRole, formData } = params;
 
     const result = await callGasBackend({
         action: 'createEmbeddedLink',
         documentId,
         signerEmail: signerEmail || 'signer@example.com',
         signerRole: signerRole || 'Signer',
-        linkExpiration: 60 // 1 hour for kiosk
+        linkExpiration: 60, // 1 hour for kiosk
+        formData // Pass form data for document generation if needed
     });
 
     if (result.success && (result.link || (result.links && result.links[0]))) {
@@ -370,7 +371,7 @@ async function logSigningEvent(caseId, method, result) {
  * @param {Object} params - { caseId, method, defendantInfo, indemnitorInfo, documentIds }
  */
 export async function initiateSigningWorkflow(params) {
-    const { caseId, method, defendantInfo, indemnitorInfo, documentIds } = params;
+    const { caseId, method, defendantInfo, indemnitorInfo, documentIds, customSigner, formData } = params;
 
     // Validate required params
     if (!caseId) {
@@ -404,11 +405,17 @@ export async function initiateSigningWorkflow(params) {
             });
 
         case 'kiosk':
+            // Support custom signer (e.g. Indemnitor portal) or default to Defendant
+            const signerEmail = customSigner?.email || defendantInfo?.email || `kiosk_${caseId}@shamrockbailbonds.biz`;
+            const signerRole = customSigner?.role || 'Defendant';
+            const data = customSigner?.formData || formData || {};
+
             return await createKioskLink({
                 caseId,
                 documentId: documentIds[0],
-                signerEmail: defendantInfo.email || `kiosk_${caseId}@shamrockbailbonds.biz`,
-                signerRole: 'Defendant'
+                signerEmail,
+                signerRole,
+                formData: data
             });
 
         case 'print':
