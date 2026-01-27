@@ -280,8 +280,8 @@ async function checkIdUploadStatus(email, token) {
         const docs = await getMemberDocuments(email);
         if (docs && docs.length > 0) {
             // Look for ID document types
-            const hasId = docs.some(doc => 
-                doc.documentType === 'id' || 
+            const hasId = docs.some(doc =>
+                doc.documentType === 'id' ||
                 doc.documentType === 'drivers_license' ||
                 doc.documentType === 'identification' ||
                 doc.category === 'id'
