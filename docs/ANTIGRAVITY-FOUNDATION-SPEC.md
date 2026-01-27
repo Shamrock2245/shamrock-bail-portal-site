@@ -282,14 +282,13 @@ The following sequence is fixed:
 4. Backend prepares payload
 5. Redirect to SignNow
 
-Rules:
-- No previews
-- No embedded SignNow
-- No retries
-- No interception
-- No alternate flows
+ Rules:
+- **Embedded Lightbox is the STANDARD** (via `createEmbeddedLink`).
+- Fallback to Email Invite only if Lightbox fails.
+- No "Preview" step - straight to signing.
+- Handoff must be immediate after "Submit".
 
-If SignNow fails, fallback is **human intervention**, not code.
+If SignNow fails, fallback is **human intervention** (Call CTA), then email retry.
 
 ---
 
