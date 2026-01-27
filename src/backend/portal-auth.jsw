@@ -813,61 +813,6 @@ export async function getDefendantDetails(sessionToken) {
     }
 }
 
-/**
- * Get indemnitor details by session token
- * Required by portal-indemnitor.k53on.js
- */
-export async function getIndemnitorDetails(sessionToken) {
-    try {
-        const session = await validateCustomSession(sessionToken);
-        if (!session || !session.personId) {
-            return null;
-        }
-
-        // Get case data
-        let caseData = null;
-        if (session.caseId) {
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, session.caseId, { suppressAuth: true });
-        } else if (session.personId.startsWith('indemnitor_')) {
-            // Try to extract case ID from personId if formatted like indemnitor_<caseId>
-            const possibleCaseId = session.personId.replace('indemnitor_', '');
-            try {
-                caseData = await wixData.get(CONFIG.CASES_COLLECTION, possibleCaseId, { suppressAuth: true });
-            } catch (e) {
-                // Not a valid case ID, ignore
-            }
-        }
-
-        if (!caseData) {
-            // Return session data if no case found
-            return {
-                name: session.name || 'Indemnitor',
-                email: session.email || '',
-                phone: session.phone || '',
-                caseNumber: 'Pending',
-                bondAmount: '$0.00',
-                totalLiability: '$0.00'
-            };
-        }
-
-        return {
-            name: caseData.indemnitorName || session.name || 'Indemnitor',
-            email: caseData.indemnitorEmail || session.email || '',
-            phone: caseData.indemnitorPhone || session.phone || '',
-            caseNumber: caseData.caseNumber || 'Pending',
-            bondAmount: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
-            totalLiability: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
-            defendantName: caseData.defendantName || "N/A",
-            defendantStatus: caseData.status || "Unknown",
-            nextCourtDate: caseData.courtDate ? new Date(caseData.courtDate).toLocaleDateString() : "TBD",
-            chargesCount: (caseData.charges || []).length.toString() || "0"
-        };
-
-    } catch (error) {
-        console.error('Error getting indemnitor details:', error);
-        return null;
-    }
-}
 
 /**
  * Get user consent status
@@ -994,6 +939,282 @@ export async function getIndemnitorDetails(sessionToken) {
     }
 }
 
+// ============================================================================
+// MULTI-CASE LOOKUP FUNCTIONS
+// ============================================================================
+
+/**
+ * Get ALL cases where the user appears as an indemnitor
+ * Supports many-to-many relationship: one indemnitor can sign for multiple defendants
+ * @param {string} sessionToken - The session token
+ * @returns {Object} - { success, cases: [...], totalCases }
+ */
+export async function getIndemnitorLinkedCases(sessionToken) {
+    try {
+        const session = await validateCustomSession(sessionToken);
+        if (!session) {
+            return { success: false, cases: [], totalCases: 0, error: 'Invalid session' };
+        }
+
+        const email = normalizeEmail(session.email);
+        const phone = normalizePhone(session.phone);
+
+        if (!email && !phone) {
+            return { success: false, cases: [], totalCases: 0, error: 'No contact info in session' };
+        }
+
+        // Build queries to find all cases where this person is an indemnitor
+        let allCases = [];
+
+        // Query 1: Check single indemnitorEmail field
+        if (email) {
+            const emailQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                .eq('indemnitorEmail', email)
+                .find({ suppressAuth: true });
+            allCases = allCases.concat(emailQuery.items);
+        }
+
+        // Query 2: Check single indemnitorPhone field
+        if (phone) {
+            const phoneQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                .eq('indemnitorPhone', phone)
+                .find({ suppressAuth: true });
+            // Avoid duplicates
+            phoneQuery.items.forEach(item => {
+                if (!allCases.find(c => c._id === item._id)) {
+                    allCases.push(item);
+                }
+            });
+        }
+
+        // Query 3: Check indemnitorEmails array (if exists)
+        if (email) {
+            try {
+                const arrayQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                    .hasSome('indemnitorEmails', [email])
+                    .find({ suppressAuth: true });
+                arrayQuery.items.forEach(item => {
+                    if (!allCases.find(c => c._id === item._id)) {
+                        allCases.push(item);
+                    }
+                });
+            } catch (e) {
+                // Field may not exist, ignore
+            }
+        }
+
+        // Query 4: Check indemnitor2Email, indemnitor3Email, etc. (numbered fields)
+        for (let i = 2; i <= 5; i++) {
+            if (email) {
+                try {
+                    const numberedQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                        .eq('indemnitor' + i + 'Email', email)
+                        .find({ suppressAuth: true });
+                    numberedQuery.items.forEach(item => {
+                        if (!allCases.find(c => c._id === item._id)) {
+                            allCases.push(item);
+                        }
+                    });
+                } catch (e) {
+                    // Field may not exist, ignore
+                }
+            }
+        }
+
+        // Format cases for frontend display
+        const formattedCases = allCases.map(caseData => ({
+            caseId: caseData._id,
+            caseNumber: caseData.caseNumber || 'Pending',
+            defendantName: caseData.defendantName || 'Unknown',
+            defendantStatus: caseData.defendantStatus || caseData.status || 'Active',
+            bondAmount: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
+            county: caseData.county || '',
+            arrestDate: caseData.arrestDate ? new Date(caseData.arrestDate).toLocaleDateString() : 'N/A',
+            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD',
+            paperworkStatus: caseData.paperworkStatus || 'Pending',
+            signingStatus: caseData.indemnitorSigningStatus || 'Incomplete',
+            charges: caseData.charges || '',
+            createdDate: caseData._createdDate ? new Date(caseData._createdDate).toLocaleDateString() : 'N/A'
+        }));
+
+        // Sort by created date (newest first)
+        formattedCases.sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+
+        return {
+            success: true,
+            cases: formattedCases,
+            totalCases: formattedCases.length,
+            indemnitorEmail: email,
+            indemnitorPhone: phone
+        };
+
+    } catch (error) {
+        console.error('Error in getIndemnitorLinkedCases:', error);
+        return { success: false, cases: [], totalCases: 0, error: error.message };
+    }
+}
+
+/**
+ * Get ALL cases where the user appears as a defendant
+ * Supports the scenario where a person can be a defendant in some cases and indemnitor in others
+ * @param {string} sessionToken - The session token
+ * @returns {Object} - { success, cases: [...], totalCases }
+ */
+export async function getDefendantLinkedCases(sessionToken) {
+    try {
+        const session = await validateCustomSession(sessionToken);
+        if (!session) {
+            return { success: false, cases: [], totalCases: 0, error: 'Invalid session' };
+        }
+
+        const email = normalizeEmail(session.email);
+        const phone = normalizePhone(session.phone);
+
+        if (!email && !phone) {
+            return { success: false, cases: [], totalCases: 0, error: 'No contact info in session' };
+        }
+
+        let allCases = [];
+
+        // Query by defendant email
+        if (email) {
+            const emailQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                .eq('defendantEmail', email)
+                .find({ suppressAuth: true });
+            allCases = allCases.concat(emailQuery.items);
+        }
+
+        // Query by defendant phone
+        if (phone) {
+            const phoneQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                .eq('defendantPhone', phone)
+                .find({ suppressAuth: true });
+            phoneQuery.items.forEach(item => {
+                if (!allCases.find(c => c._id === item._id)) {
+                    allCases.push(item);
+                }
+            });
+        }
+
+        // Format cases for frontend display
+        const formattedCases = allCases.map(caseData => ({
+            caseId: caseData._id,
+            caseNumber: caseData.caseNumber || 'Pending',
+            defendantName: caseData.defendantName || 'Unknown',
+            status: caseData.status || 'Active',
+            bondAmount: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
+            county: caseData.county || '',
+            arrestDate: caseData.arrestDate ? new Date(caseData.arrestDate).toLocaleDateString() : 'N/A',
+            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD',
+            paperworkStatus: caseData.paperworkStatus || 'Pending',
+            signingStatus: caseData.defendantSigningStatus || 'Incomplete',
+            charges: caseData.charges || '',
+            indemnitorName: caseData.indemnitorName || 'N/A',
+            createdDate: caseData._createdDate ? new Date(caseData._createdDate).toLocaleDateString() : 'N/A'
+        }));
+
+        formattedCases.sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+
+        return {
+            success: true,
+            cases: formattedCases,
+            totalCases: formattedCases.length,
+            defendantEmail: email,
+            defendantPhone: phone
+        };
+
+    } catch (error) {
+        console.error('Error in getDefendantLinkedCases:', error);
+        return { success: false, cases: [], totalCases: 0, error: error.message };
+    }
+}
+
+/**
+ * Get ALL roles and cases for a user (both as indemnitor AND defendant)
+ * This is the master lookup function for users who may have multiple roles
+ * @param {string} sessionToken - The session token
+ * @returns {Object} - { success, indemnitorCases: [...], defendantCases: [...], totalCases }
+ */
+export async function getAllUserCases(sessionToken) {
+    try {
+        const [indemnitorResult, defendantResult] = await Promise.all([
+            getIndemnitorLinkedCases(sessionToken),
+            getDefendantLinkedCases(sessionToken)
+        ]);
+
+        return {
+            success: true,
+            indemnitorCases: indemnitorResult.cases || [],
+            defendantCases: defendantResult.cases || [],
+            totalIndemnitorCases: indemnitorResult.totalCases || 0,
+            totalDefendantCases: defendantResult.totalCases || 0,
+            totalCases: (indemnitorResult.totalCases || 0) + (defendantResult.totalCases || 0)
+        };
+
+    } catch (error) {
+        console.error('Error in getAllUserCases:', error);
+        return {
+            success: false,
+            indemnitorCases: [],
+            defendantCases: [],
+            totalCases: 0,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Get pending paperwork for an indemnitor across all their linked cases
+ * @param {string} sessionToken - The session token
+ * @returns {Object} - { success, pendingDocuments: [...] }
+ */
+export async function getIndemnitorPendingPaperwork(sessionToken) {
+    try {
+        const casesResult = await getIndemnitorLinkedCases(sessionToken);
+        if (!casesResult.success) {
+            return { success: false, pendingDocuments: [], error: casesResult.error };
+        }
+
+        // Get pending documents for each case
+        const pendingDocuments = [];
+        for (const caseInfo of casesResult.cases) {
+            if (caseInfo.signingStatus !== 'Complete' && caseInfo.signingStatus !== 'Signed') {
+                // Query PendingDocuments collection for this case
+                try {
+                    const docsQuery = await wixData.query('PendingDocuments')
+                        .eq('caseId', caseInfo.caseId)
+                        .ne('status', 'signed')
+                        .find({ suppressAuth: true });
+                    
+                    docsQuery.items.forEach(doc => {
+                        pendingDocuments.push({
+                            documentId: doc._id,
+                            caseId: caseInfo.caseId,
+                            caseNumber: caseInfo.caseNumber,
+                            defendantName: caseInfo.defendantName,
+                            documentName: doc.documentName || 'Bail Bond Document',
+                            signingLink: doc.signingLink || '',
+                            status: doc.status || 'pending',
+                            createdDate: doc._createdDate ? new Date(doc._createdDate).toLocaleDateString() : 'N/A'
+                        });
+                    });
+                } catch (e) {
+                    console.warn('Could not query documents for case ' + caseInfo.caseId + ':', e);
+                }
+            }
+        }
+
+        return {
+            success: true,
+            pendingDocuments: pendingDocuments,
+            totalPending: pendingDocuments.length
+        };
+
+    } catch (error) {
+        console.error('Error in getIndemnitorPendingPaperwork:', error);
+        return { success: false, pendingDocuments: [], error: error.message };
+    }
+}
 // ============================================================================
 // EXPORTS
 // ============================================================================

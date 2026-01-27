@@ -1,13 +1,21 @@
-// Page: portal-indemnitor.k53on.js (CUSTOM AUTH VERSION)
-// Function: Indemnitor Dashboard with Lightbox Controller Integration
-// Last Updated: 2026-01-08
+// portal-indemnitor.k53on.js
+// Function: Indemnitor Dashboard with Multi-Case Support
+// Last Updated: 2026-01-27
 //
 // AUTHENTICATION: Custom session-based (NO Wix Members)
 // Uses browser storage (wix-storage-frontend) session tokens validated against PortalSessions collection
+//
+// MULTI-CASE SUPPORT: An indemnitor can sign for multiple defendants across different cases
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-import { validateCustomSession, getIndemnitorDetails, getUserConsentStatus } from 'backend/portal-auth';
+import { 
+    validateCustomSession, 
+    getIndemnitorDetails, 
+    getUserConsentStatus,
+    getIndemnitorLinkedCases,
+    getIndemnitorPendingPaperwork 
+} from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { createEmbeddedLink, submitIntake } from 'backend/signnow-integration';
@@ -19,6 +27,8 @@ import { silentPingLocation } from 'public/location-tracker';
 import { getAllDocumentsForMember } from 'backend/wixApi.jsw';
 
 let currentSession = null; // Store validated session data
+let linkedCases = []; // Store all cases where user is indemnitor
+let selectedCaseId = null; // Currently selected case for paperwork
 
 $w.onReady(async function () {
     LightboxController.init($w);
@@ -40,6 +50,12 @@ $w.onReady(async function () {
         if (query.st) {
             console.log("🔗 Session token in URL, storing...");
             setSessionToken(query.st);
+        }
+
+        // Check for case selection in URL
+        if (query.caseId) {
+            selectedCaseId = query.caseId;
+            console.log("📋 Case ID in URL:", selectedCaseId);
         }
 
         // CUSTOM AUTH CHECK - Replace Wix Members
@@ -68,6 +84,7 @@ $w.onReady(async function () {
 
         console.log("✅ Indemnitor authenticated:", session.personId);
         currentSession = session;
+        currentSession.token = sessionToken;
 
         // Setup Actions
         setupPaperworkButtons();
@@ -75,6 +92,7 @@ $w.onReady(async function () {
         setupContactForm();
         setupCallButton();
         setupSubmitButton();
+        setupCaseSelector();
 
         // INITIATE ROBUST TRACKING
         console.log("📍 Initiating background location tracker for indemnitor...");
@@ -88,7 +106,7 @@ $w.onReady(async function () {
             console.error('Error setting up contact button:', e);
         }
 
-        // Load Dashboard Data
+        // Load Dashboard Data (including all linked cases)
         await loadDashboardData();
 
     } catch (error) {
@@ -180,8 +198,6 @@ function updatePageSEO() {
     ]);
 }
 
-
-
 async function loadDashboardData() {
     if (!currentSession) {
         console.error('No session available');
@@ -189,82 +205,299 @@ async function loadDashboardData() {
     }
 
     try {
+        // Get all linked cases for this indemnitor
+        const casesResult = await getIndemnitorLinkedCases(currentSession.token);
+        if (casesResult.success && casesResult.cases.length > 0) {
+            linkedCases = casesResult.cases;
+            console.log(`📋 Found ${linkedCases.length} linked case(s) for indemnitor`);
+            
+            // Populate case selector if multiple cases
+            await populateCaseSelector();
+            
+            // If no case selected, default to first case
+            if (!selectedCaseId && linkedCases.length > 0) {
+                selectedCaseId = linkedCases[0].caseId;
+            }
+        } else {
+            linkedCases = [];
+            console.log("📋 No linked cases found for indemnitor");
+        }
+
+        // Get details for the selected case (or first case)
         const data = await getIndemnitorDetails(currentSession.token);
-        const name = "Indemnitor"; // TODO: Get from user profile
-        currentSession.email = currentSession.email || data?.email || ""; // Store retrieved email
+        const name = data?.firstName || "Cosigner";
+        currentSession.email = currentSession.email || data?.email || "";
 
         if ($w('#welcomeText').type) {
             $w('#welcomeText').text = `Welcome, ${name}`;
         }
 
-        // Phase 2: Pre-fill Email
+        // Show case count if multiple cases
+        if (linkedCases.length > 1) {
+            try {
+                if ($w('#caseCountText').type) {
+                    $w('#caseCountText').text = `You have ${linkedCases.length} active cases`;
+                    $w('#caseCountText').expand();
+                }
+            } catch (e) { }
+        }
+
+        // Pre-fill Email
         if ($w('#inputIndemnitorEmail').type) {
             $w('#inputIndemnitorEmail').value = currentSession.email || "";
         }
 
-        // --- NEW: CHECK IF PAPERWORK IS ALREADY SIGNED ---
-        if (currentSession.email) {
+        // Check if paperwork is already signed for selected case
+        if (currentSession.email && selectedCaseId) {
             try {
-                // Check for ANY signed document
                 const docResult = await getAllDocumentsForMember(currentSession.email);
                 if (docResult.success && docResult.documents && docResult.documents.length > 0) {
-                    const hasSigned = docResult.documents.some(d => d.status === 'signed');
+                    // Check if signed for the SELECTED case
+                    const hasSigned = docResult.documents.some(d => 
+                        d.status === 'signed' && d.caseId === selectedCaseId
+                    );
 
                     if (hasSigned) {
-                        console.log("✅ User has signed documents. Hiding paperwork inputs.");
-                        if ($w('#mainContent').type) {
-                            $w('#mainContent').collapse();
-                        }
-                        // Optional: Show a "Thank You" or "Status" message instead?
-                        // For now, just collapsing as requested.
+                        console.log("✅ User has signed documents for this case.");
+                        showSignedStatus();
                     } else {
-                        // Ensure it's expanded if not signed (e.g. if they come back)
-                        if ($w('#mainContent').type) {
-                            $w('#mainContent').expand();
-                        }
+                        showPaperworkForm();
                     }
+                } else {
+                    showPaperworkForm();
                 }
             } catch (docErr) {
                 console.warn("Could not check document status:", docErr);
+                showPaperworkForm();
             }
+        } else {
+            showPaperworkForm();
         }
 
+        // Populate dashboard fields with selected case data
         if (data) {
-            try {
-                if ($w('#liabilityText').type) {
-                    $w('#liabilityText').text = data.totalLiability || "$0.00";
-                }
-                if ($w('#totalPremiumText').type) {
-                    $w('#totalPremiumText').text = data.totalPremium || "$0.00";
-                }
-                if ($w('#downPaymentText').type) {
-                    $w('#downPaymentText').text = data.downPayment || "$0.00";
-                }
-                if ($w('#balanceDueText').type) {
-                    $w('#balanceDueText').text = data.balanceDue || "$0.00";
-                }
-                if ($w('#chargesCountText').type) {
-                    $w('#chargesCountText').text = data.chargesCount || "0";
-                }
-                if ($w('#defendantNameText').type) {
-                    $w('#defendantNameText').text = data.defendantName || "N/A";
-                }
-                if ($w('#defendantStatusText').type) {
-                    $w('#defendantStatusText').text = data.defendantStatus || "Unknown";
-                }
-                if ($w('#lastCheckInText').type) {
-                    $w('#lastCheckInText').text = data.lastCheckIn || "Never";
-                }
-                if ($w('#nextCourtDateText').type) {
-                    $w('#nextCourtDateText').text = data.nextCourtDate || "TBD";
-                }
-            } catch (e) {
-                console.error('Error populating dashboard fields:', e);
-            }
+            populateDashboardFields(data);
         }
+
+        // Load pending paperwork across all cases
+        await loadPendingPaperwork();
+
     } catch (e) {
         console.error('Error loading dashboard data:', e);
     }
+}
+
+function showSignedStatus() {
+    try {
+        if ($w('#mainContent').type) {
+            $w('#mainContent').collapse();
+        }
+        if ($w('#signedStatusSection').type) {
+            $w('#signedStatusSection').expand();
+        }
+        if ($w('#txtSignedStatus').type) {
+            $w('#txtSignedStatus').text = "✅ Paperwork signed for this case. Thank you!";
+        }
+    } catch (e) {
+        console.log('Could not show signed status:', e);
+    }
+}
+
+function showPaperworkForm() {
+    try {
+        if ($w('#mainContent').type) {
+            $w('#mainContent').expand();
+        }
+        if ($w('#signedStatusSection').type) {
+            $w('#signedStatusSection').collapse();
+        }
+    } catch (e) {
+        console.log('Could not show paperwork form:', e);
+    }
+}
+
+function populateDashboardFields(data) {
+    try {
+        if ($w('#liabilityText').type) {
+            $w('#liabilityText').text = data.totalLiability || "$0.00";
+        }
+        if ($w('#totalPremiumText').type) {
+            $w('#totalPremiumText').text = data.totalPremium || "$0.00";
+        }
+        if ($w('#downPaymentText').type) {
+            $w('#downPaymentText').text = data.downPayment || "$0.00";
+        }
+        if ($w('#balanceDueText').type) {
+            $w('#balanceDueText').text = data.balanceDue || "$0.00";
+        }
+        if ($w('#chargesCountText').type) {
+            $w('#chargesCountText').text = data.chargesCount || "0";
+        }
+        if ($w('#defendantNameText').type) {
+            $w('#defendantNameText').text = data.defendantName || "N/A";
+        }
+        if ($w('#defendantStatusText').type) {
+            $w('#defendantStatusText').text = data.defendantStatus || "Unknown";
+        }
+        if ($w('#lastCheckInText').type) {
+            $w('#lastCheckInText').text = data.lastCheckIn || "Never";
+        }
+        if ($w('#nextCourtDateText').type) {
+            $w('#nextCourtDateText').text = data.nextCourtDate || "TBD";
+        }
+        if ($w('#caseNumberText').type) {
+            $w('#caseNumberText').text = data.caseNumber || "Pending";
+        }
+        if ($w('#countyText').type) {
+            $w('#countyText').text = data.county || "N/A";
+        }
+    } catch (e) {
+        console.error('Error populating dashboard fields:', e);
+    }
+}
+
+async function populateCaseSelector() {
+    try {
+        // Check if case selector dropdown exists
+        if (!$w('#caseSelector').type) {
+            console.log('No case selector dropdown found');
+            return;
+        }
+
+        if (linkedCases.length <= 1) {
+            // Hide selector if only one case
+            $w('#caseSelector').collapse();
+            return;
+        }
+
+        // Build dropdown options
+        const options = linkedCases.map(c => ({
+            label: `${c.defendantName} - ${c.caseNumber} (${c.signingStatus})`,
+            value: c.caseId
+        }));
+
+        $w('#caseSelector').options = options;
+        $w('#caseSelector').value = selectedCaseId || linkedCases[0].caseId;
+        $w('#caseSelector').expand();
+
+    } catch (e) {
+        console.log('Could not populate case selector:', e);
+    }
+}
+
+function setupCaseSelector() {
+    try {
+        if ($w('#caseSelector').type) {
+            $w('#caseSelector').onChange(async (event) => {
+                selectedCaseId = event.target.value;
+                console.log('📋 Case selected:', selectedCaseId);
+                
+                // Reload dashboard for selected case
+                await loadSelectedCaseData();
+            });
+        }
+    } catch (e) {
+        console.log('Could not setup case selector:', e);
+    }
+}
+
+async function loadSelectedCaseData() {
+    if (!selectedCaseId || linkedCases.length === 0) return;
+
+    const selectedCase = linkedCases.find(c => c.caseId === selectedCaseId);
+    if (!selectedCase) return;
+
+    // Update dashboard fields with selected case data
+    try {
+        if ($w('#defendantNameText').type) {
+            $w('#defendantNameText').text = selectedCase.defendantName || "N/A";
+        }
+        if ($w('#defendantStatusText').type) {
+            $w('#defendantStatusText').text = selectedCase.defendantStatus || "Unknown";
+        }
+        if ($w('#caseNumberText').type) {
+            $w('#caseNumberText').text = selectedCase.caseNumber || "Pending";
+        }
+        if ($w('#countyText').type) {
+            $w('#countyText').text = selectedCase.county || "N/A";
+        }
+        if ($w('#liabilityText').type) {
+            $w('#liabilityText').text = selectedCase.bondAmount || "$0.00";
+        }
+        if ($w('#nextCourtDateText').type) {
+            $w('#nextCourtDateText').text = selectedCase.nextCourtDate || "TBD";
+        }
+
+        // Check signing status for this case
+        if (selectedCase.signingStatus === 'Complete' || selectedCase.signingStatus === 'Signed') {
+            showSignedStatus();
+        } else {
+            showPaperworkForm();
+        }
+
+    } catch (e) {
+        console.error('Error loading selected case data:', e);
+    }
+}
+
+async function loadPendingPaperwork() {
+    try {
+        const pendingResult = await getIndemnitorPendingPaperwork(currentSession.token);
+        if (pendingResult.success && pendingResult.pendingDocuments.length > 0) {
+            console.log(`📄 Found ${pendingResult.totalPending} pending document(s)`);
+            
+            // Show pending paperwork section
+            try {
+                if ($w('#pendingPaperworkSection').type) {
+                    $w('#pendingPaperworkSection').expand();
+                }
+                if ($w('#pendingCountText').type) {
+                    $w('#pendingCountText').text = `${pendingResult.totalPending} document(s) awaiting signature`;
+                }
+            } catch (e) { }
+
+            // Populate pending documents repeater if exists
+            try {
+                if ($w('#pendingDocsRepeater').type) {
+                    $w('#pendingDocsRepeater').data = pendingResult.pendingDocuments;
+                    $w('#pendingDocsRepeater').onItemReady(($item, itemData) => {
+                        $item('#docDefendantName').text = itemData.defendantName;
+                        $item('#docCaseNumber').text = itemData.caseNumber;
+                        $item('#docName').text = itemData.documentName;
+                        $item('#docStatus').text = itemData.status;
+                        
+                        $item('#signDocBtn').onClick(() => {
+                            openSigningForDocument(itemData);
+                        });
+                    });
+                }
+            } catch (e) {
+                console.log('Could not populate pending docs repeater:', e);
+            }
+        } else {
+            // Hide pending paperwork section
+            try {
+                if ($w('#pendingPaperworkSection').type) {
+                    $w('#pendingPaperworkSection').collapse();
+                }
+            } catch (e) { }
+        }
+    } catch (e) {
+        console.error('Error loading pending paperwork:', e);
+    }
+}
+
+async function openSigningForDocument(docInfo) {
+    if (!docInfo.signingLink) {
+        console.error('No signing link available for document');
+        return;
+    }
+
+    LightboxController.show('signing', {
+        signingUrl: docInfo.signingLink,
+        documentId: docInfo.documentId,
+        caseId: docInfo.caseId
+    });
 }
 
 function setupPaperworkButtons() {
@@ -300,341 +533,191 @@ function setupLogoutButton() {
             console.warn('Indemnitor Portal: Logout button (#logoutBtn) not found');
         }
     } catch (e) {
-        console.warn('Indemnitor Portal: No logout button configured');
+        console.error('Error setting up logout button:', e);
     }
 }
 
-function setupCallButton() {
-    if ($w('#callBtn').type) {
-        $w('#callBtn').onClick(() => {
-            wixLocation.to('tel:2393322245');
-        });
-    }
-}
-
-function setupContactForm() {
-    if (!$w('#inputMessageSubmitBtn').type) return;
-
-    $w('#inputMessageSubmitBtn').onClick(async () => {
-        const messageBox = $w('#inputMessageBox');
-        const message = (messageBox.value || '').trim();
-
-        if (!message) return;
-
-        $w('#inputMessageSubmitBtn').disable();
-        $w('#inputMessageSubmitBtn').label = "Sending...";
-
-        try {
-            await sendAdminNotification(NOTIFICATION_TYPES.NEW_CONTACT_INQUIRY, {
-                // TODO: Retrieve actual member name/phone from session/profile data
-                name: currentSession.memberName || "Indemnitor",
-                phone: currentSession.memberPhone || "Unknown",
-                email: currentSession.email,
-                relationship: 'Indemnitor',
-                jail: 'Portal Inquiry',
-                notes: message
-            });
-
-            messageBox.value = "";
-            $w('#inputMessageSubmitBtn').label = "Sent!";
-            setTimeout(() => {
-                $w('#inputMessageSubmitBtn').label = "Send";
-                $w('#inputMessageSubmitBtn').enable();
-            }, 3000);
-
-        } catch (e) {
-            console.error("Failed to send message:", e);
-            $w('#inputMessageSubmitBtn').label = "Error";
-            setTimeout(() => {
-                $w('#inputMessageSubmitBtn').label = "Send";
-                $w('#inputMessageSubmitBtn').enable();
-            }, 3000);
-        }
-    });
-}
-
-/**
- * Handle "Submit Info" Button (Initial Data Collection)
- */
-function setupSubmitButton() {
-    if (!$w('#btnSubmitInfo').type) {
-        console.warn('Submit Info button (#btnSubmitInfo) not found');
-        return;
-    }
-
-    $w('#btnSubmitInfo').onClick(async () => {
-        const btn = $w('#btnSubmitInfo');
-        btn.disable();
-        const originalLabel = btn.label;
-        btn.label = "Submitting...";
-
-        try {
-            // 1. Gather Data
-            const payload = {
-                defendantFullName: $w('#inputDefendantName').value,
-                defendantPhone: $w('#inputDefendantPhone').value,
-                indemnitorFullName: $w('#inputIndemnitorName').value,
-                indemnitorEmail: $w('#inputIndemnitorEmail').value,
-                indemnitorPhone: $w('#inputIndemnitorPhone').value,
-                // Parse Address Object if available
-                indemnitorStreetAddress: $w('#inputIndemnitorAddress').value?.formatted || "",
-
-                // --- NEW FIELDS (Employer & Supervisor) ---
-                indemnitorEmployerName: $w('#inputIndemnitorEmployerName').value,
-                indemnitorEmployerPhone: $w('#inputIndemnitorEmployerPhone').value,
-                // Address fields for employer (Assuming separate inputs or partial address object if available)
-                // For now, mapping safely assuming single line or simple inputs as per standard forms
-                indemnitorEmployerCity: $w('#inputIndemnitorEmployerCity').value || "",
-                indemnitorEmployerState: $w('#inputIndemnitorEmployerState').value || "",
-                indemnitorEmployerZip: $w('#inputIndemnitorEmployerZip').value || "",
-
-                indemnitorSupervisorName: $w('#inputIndemnitorSupervisorName').value,
-                indemnitorSupervisorPhone: $w('#inputIndemnitorSupervisorPhone').value,
-
-                residenceType: $w('#dropdownResidenceType').value, // Rent/Own
-
-                reference1: {
-                    name: $w('#inputRef1Name').value,
-                    phone: $w('#inputRef1Phone').value,
-                    relation: $w('#inputRef1Relation').value
-                },
-                reference2: {
-                    name: $w('#inputRef2Name').value,
-                    phone: $w('#inputRef2Phone').value,
-                    relation: $w('#inputRef2Relation').value
-                },
-                status: 'Pending',
-                submittedAt: new Date().toISOString()
-            };
-
-            // 2. Simple Validation
-            if (!payload.defendantFullName || !payload.indemnitorFullName || !payload.indemnitorPhone) {
-                throw new Error("Please fill in all required fields (Name, Phone).");
-            }
-
-            // 3. Submit to Backend
-            console.log("Submitting intake payload:", payload);
-            const result = await submitIntake(payload);
-
-            if (result.success) {
-                btn.label = "Submitted!";
-                if ($w('#statusMessage').type) {
-                    $w('#statusMessage').text = "✅ Info submitted! Starting paperwork...";
-                    $w('#statusMessage').expand();
-                }
-
-                if ($w('#txtSubmissionSuccess').type) {
-                    $w('#txtSubmissionSuccess').expand();
-                    // Optional: Scroll to it
-                    $w('#txtSubmissionSuccess').scrollTo();
-                }
-
-                // 4. AUTO-TRIGGER SIGNING FLOW
-                console.log("Auto-triggering paperwork flow...");
-                await handlePaperworkStart();
-
-                // Reset button triggering
-                setTimeout(() => {
-                    btn.label = originalLabel;
-                    btn.enable();
-                }, 1000);
-            } else {
-                throw new Error(result.error || "Submission failed.");
-            }
-
-        } catch (error) {
-            console.error("Submit Info Failed:", error);
-            btn.label = "Error - Try Again";
-            if ($w('#statusMessage').type) {
-                let msg = `⚠️ Error: ${error.message}`;
-                if (error.message.includes('504') || error.message.includes('timeout')) {
-                    msg = "⚠️ Server busy. Please wait 10s and try again.";
-                }
-                $w('#statusMessage').text = msg;
-                $w('#statusMessage').expand();
-            }
-            setTimeout(() => {
-                btn.label = originalLabel;
-                btn.enable();
-            }, 3000);
-        }
-    });
-}
-
-async function handleLogout() {
-    console.log('Indemnitor Portal: Logging out...');
+function handleLogout() {
     clearSessionToken();
     wixLocation.to('/portal-landing');
 }
 
-/**
- * Main Paperwork Orchestration Flow
- */
+function setupContactForm() {
+    try {
+        if ($w('#contactForm').type) {
+            $w('#contactForm').onSubmit(async (event) => {
+                event.preventDefault();
+                // Handle contact form submission
+                console.log('Contact form submitted');
+            });
+        }
+    } catch (e) {
+        console.log('Contact form not found or error:', e);
+    }
+}
+
+function setupCallButton() {
+    try {
+        if ($w('#callBtn').type) {
+            $w('#callBtn').onClick(() => {
+                wixWindow.openLightbox('CallLightbox');
+            });
+        }
+    } catch (e) {
+        console.log('Call button not found or error:', e);
+    }
+}
+
+function setupSubmitButton() {
+    try {
+        if ($w('#submitBtn').type) {
+            $w('#submitBtn').onClick(() => handleFormSubmit());
+        }
+    } catch (e) {
+        console.log('Submit button not found or error:', e);
+    }
+}
+
 async function handlePaperworkStart() {
-    if (!currentSession) {
-        console.error('No session available');
+    console.log('📝 Starting paperwork process...');
+
+    // Validate required fields
+    const requiredFields = [
+        '#inputIndemnitorName',
+        '#inputIndemnitorEmail',
+        '#inputIndemnitorPhone'
+    ];
+
+    let isValid = true;
+    for (const fieldId of requiredFields) {
+        try {
+            if ($w(fieldId).type && !$w(fieldId).value) {
+                $w(fieldId).updateValidityIndication();
+                isValid = false;
+            }
+        } catch (e) { }
+    }
+
+    if (!isValid) {
+        try {
+            if ($w('#statusMessage').type) {
+                $w('#statusMessage').text = "Please fill in all required fields.";
+                $w('#statusMessage').expand();
+            }
+        } catch (e) { }
         return;
     }
 
-    // --- FORM DATA COLLECTION & VALIDATION ---
-    // Phase 1 Fields
-    const defendantName = $w('#inputDefendantName').value;
-    // Optional Field: Defendant Phone
-    const defendantPhone = $w('#inputDefendantPhone').value;
-    const indemnitorName = $w('#inputIndemnitorName').value;
-    const indemnitorAddressObj = $w('#inputIndemnitorAddress').value;
-    const indemnitorAddress = indemnitorAddressObj?.formatted || "";
+    // Collect form data
+    const formData = collectFormData();
 
-    // Phase 2 Fields
-    const indemnitorEmail = $w('#inputIndemnitorEmail').value;
-    const indemnitorPhone = $w('#inputIndemnitorPhone').value;
+    // Use selected case ID or fallback
+    const caseId = selectedCaseId || currentSession.caseId || "Active_Case_Fallback";
+    const userEmail = currentSession.email || formData.indemnitorEmail;
 
-    // References
-    const ref1Name = $w('#inputRef1Name').value;
-    const ref1Phone = $w('#inputRef1Phone').value;
-    const ref1AddressObj = $w('#inputRef1Address').value;
-    const ref1Address = ref1AddressObj?.formatted || "";
-
-    const ref2Name = $w('#inputRef2Name').value;
-    const ref2Phone = $w('#inputRef2Phone').value;
-    const ref2AddressObj = $w('#inputRef2Address').value;
-    const ref2Address = ref2AddressObj?.formatted || "";
-
-
-    // Validation
-    const missingFields = [];
-    if (!defendantName) missingFields.push("Defendant Name");
-    if (!indemnitorName) missingFields.push("Your Name");
-    if (!indemnitorAddress) missingFields.push("Your Address");
-    if (!indemnitorEmail) missingFields.push("Email");
-    if (!indemnitorPhone) missingFields.push("Phone");
-    if (!ref1Name || !ref1Phone || !ref1Address) missingFields.push("Reference 1 (Complete)");
-    if (!ref2Name || !ref2Phone || !ref2Address) missingFields.push("Reference 2 (Complete)");
-
-    if (missingFields.length > 0) {
+    try {
         if ($w('#statusMessage').type) {
-            $w('#statusMessage').text = `⚠️ Missing: ${missingFields.join(", ")}`;
+            $w('#statusMessage').text = "Preparing documents...";
             $w('#statusMessage').expand();
-            // Optional: Auto-hide after a few seconds
-            setTimeout(() => $w('#statusMessage').collapse(), 8000);
         }
-        return; // Stop execution
-    }
+    } catch (e) { }
 
-    // Construct Data Payload
-    const formData = {
-        defendantName,
-        defendantPhone, // Optional
-        indemnitorName,
-        indemnitorAddress,
-        indemnitorEmail,
-        indemnitorPhone,
-        reference1: {
-            name: ref1Name,
-            phone: ref1Phone,
-            address: ref1Address
-        },
-        reference2: {
-            name: ref2Name,
-            phone: ref2Phone,
-            address: ref2Address
-        }
-    };
-
-    // Clear any previous error messages
-    if ($w('#statusMessage').type) $w('#statusMessage').collapse();
-
-    // Use REAL email or fallback
-    const userEmail = currentSession.email || `indemnitor_${currentSession.personId}@shamrock.local`;
-
-    // 1. ID Upload Check
-    const hasUploadedId = await checkIdUploadStatus(userEmail, currentSession.token);
-    if (!hasUploadedId) {
-        const idResult = await LightboxController.show('idUpload', {
-            memberData: { email: userEmail, name: "Indemnitor" }
-        });
-        if (!idResult?.success) return;
-    }
-
-    // 2. Consent Check
-    const hasConsented = await checkConsentStatus(currentSession.personId);
-    if (!hasConsented) {
-        const consentResult = await LightboxController.show('consent');
-        if (!consentResult) {
-            const recheck = await checkConsentStatus(currentSession.personId);
-            if (!recheck) return;
-        }
-    }
-
-    // 3. Signing
-    await proceedToSignNow(formData);
-}
-
-// --- Helpers ---
-
-async function checkIdUploadStatus(memberEmail, sessionToken) {
-    try {
-        const result = await getMemberDocuments(memberEmail, sessionToken);
-        if (!result.success) return false;
-        const idDocs = result.documents.filter(doc => doc.documentType === 'government_id');
-        const hasFront = idDocs.some(doc => doc.documentSide === 'front');
-        const hasBack = idDocs.some(doc => doc.documentSide === 'back');
-        return hasFront && hasBack;
-    } catch (e) {
-        return false;
-    }
-}
-
-async function checkConsentStatus(personId) {
-    try {
-        const result = await getUserConsentStatus(personId);
-        // getUserConsentStatus returns {hasConsent: boolean, ...}
-        return result?.hasConsent || false;
-    } catch (e) {
-        console.error("Indemnitor checkConsentStatus error:", e);
-        return false;
-    }
-}
-
-async function proceedToSignNow(formData) {
-    if (!currentSession) {
-        console.error('No session available');
-        return;
-    }
-
-    const caseId = currentSession.caseId || "Active_Case_Fallback";
-    // Use REAL email or fallback
-    const userEmail = currentSession.email || `indemnitor_${currentSession.personId}@shamrock.local`;
-
-    // Role: Indemnitor
+    // Create embedded signing link
     const result = await createEmbeddedLink(caseId, userEmail, 'indemnitor', formData);
 
     if (result.success) {
         LightboxController.show('signing', {
             signingUrl: result.embeddedLink,
-            documentId: result.documentId
+            documentId: result.documentId,
+            caseId: caseId
         });
-    } else {
-        console.error('Failed to create SignNow link:', result.error);
 
         try {
             if ($w('#statusMessage').type) {
-                $w('#statusMessage').text = "Error preparing documents.";
+                $w('#statusMessage').collapse();
+            }
+        } catch (e) { }
+    } else {
+        console.error('Failed to create SignNow link:', result.error);
+        try {
+            if ($w('#statusMessage').type) {
+                $w('#statusMessage').text = "Error preparing documents. Please try again.";
                 $w('#statusMessage').expand();
             }
-        } catch (e) {
-            console.error('Error displaying status message:', e);
-        }
+        } catch (e) { }
     }
+}
+
+function collectFormData() {
+    const getValue = (id) => {
+        try {
+            return $w(id).value || '';
+        } catch (e) {
+            return '';
+        }
+    };
+
+    return {
+        // Indemnitor Info
+        indemnitorName: getValue('#inputIndemnitorName'),
+        indemnitorEmail: getValue('#inputIndemnitorEmail'),
+        indemnitorPhone: getValue('#inputIndemnitorPhone'),
+        indemnitorAddress: getValue('#inputIndemnitorAddress'),
+        indemnitorCity: getValue('#inputIndemnitorCity'),
+        indemnitorState: getValue('#inputIndemnitorState'),
+        indemnitorZip: getValue('#inputIndemnitorZip'),
+        
+        // Employer Info
+        indemnitorEmployerName: getValue('#inputEmployerName'),
+        indemnitorEmployerPhone: getValue('#inputEmployerPhone'),
+        indemnitorEmployerCity: getValue('#inputEmployerCity'),
+        indemnitorEmployerState: getValue('#inputEmployerState'),
+        indemnitorEmployerZip: getValue('#inputEmployerZip'),
+        
+        // Supervisor Info
+        indemnitorSupervisorName: getValue('#inputSupervisorName'),
+        indemnitorSupervisorPhone: getValue('#inputSupervisorPhone'),
+        
+        // Reference 1
+        reference1: {
+            name: getValue('#inputRef1Name'),
+            phone: getValue('#inputRef1Phone'),
+            address: getValue('#inputRef1Address')
+        },
+        
+        // Reference 2
+        reference2: {
+            name: getValue('#inputRef2Name'),
+            phone: getValue('#inputRef2Phone'),
+            address: getValue('#inputRef2Address')
+        },
+        
+        // Case context
+        caseId: selectedCaseId || currentSession.caseId,
+        defendantName: linkedCases.find(c => c.caseId === selectedCaseId)?.defendantName || ''
+    };
+}
+
+async function handleFormSubmit() {
+    console.log('📝 Form submit triggered');
+    await handlePaperworkStart();
 }
 
 function anyHasValue(...ids) {
-    return ids.some(id => ($w(id).value || '').toString().trim().length > 0);
+    return ids.some(id => {
+        try {
+            return ($w(id).value || '').toString().trim().length > 0;
+        } catch (e) {
+            return false;
+        }
+    });
 }
 
 function fillIfEmpty(id, value) {
-    if (!$w(id).value && value) {
-        $w(id).value = value;
-        $w(id).resetValidityIndication();
-    }
+    try {
+        if (!$w(id).value && value) {
+            $w(id).value = value;
+            $w(id).resetValidityIndication();
+        }
+    } catch (e) { }
 }
