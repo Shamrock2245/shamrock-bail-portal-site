@@ -112,9 +112,18 @@ $w.onReady(async function () {
             const { city, state, zip } = await reverseGeocodeToCityStateZip(lat, lng);
 
             // Set values ONLY if we got them
-            if (city && !$w('#inputIndemnitorCity').value) $w('#inputIndemnitorCity').value = city;
-            if (state && !$w('#inputIndemnitorState').value) $w('#inputIndemnitorState').value = state;
-            if (zip && !$w('#inputIndemnitorZip').value) $w('#inputIndemnitorZip').value = zip;
+            if (city && !$w('#inputIndemnitorCity').value) {
+                $w('#inputIndemnitorCity').value = city;
+                $w('#inputIndemnitorCity').resetValidityIndication();
+            }
+            if (state && !$w('#inputIndemnitorState').value) {
+                $w('#inputIndemnitorState').value = state;
+                $w('#inputIndemnitorState').resetValidityIndication();
+            }
+            if (zip && !$w('#inputIndemnitorZip').value) {
+                $w('#inputIndemnitorZip').value = zip;
+                $w('#inputIndemnitorZip').resetValidityIndication();
+            }
 
         } catch (e) {
             // Silent fail: user can still type manually
@@ -437,7 +446,11 @@ function setupSubmitButton() {
             console.error("Submit Info Failed:", error);
             btn.label = "Error - Try Again";
             if ($w('#statusMessage').type) {
-                $w('#statusMessage').text = `⚠️ Error: ${error.message}`;
+                let msg = `⚠️ Error: ${error.message}`;
+                if (error.message.includes('504') || error.message.includes('timeout')) {
+                    msg = "⚠️ Server busy. Please wait 10s and try again.";
+                }
+                $w('#statusMessage').text = msg;
                 $w('#statusMessage').expand();
             }
             setTimeout(() => {
@@ -622,5 +635,6 @@ function anyHasValue(...ids) {
 function fillIfEmpty(id, value) {
     if (!$w(id).value && value) {
         $w(id).value = value;
+        $w(id).resetValidityIndication();
     }
 }
