@@ -10,13 +10,13 @@ import wixLocation from 'wix-location';
 import { validateCustomSession, getIndemnitorDetails, getUserConsentStatus } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
-import { createEmbeddedLink } from 'backend/signnow-integration';
+import { createEmbeddedLink, submitIntake } from 'backend/signnow-integration';
 import { reverseGeocodeToCityStateZip, geocodeAddressToCityStateZip } from 'backend/googleMaps';
 import { sendAdminNotification, NOTIFICATION_TYPES } from 'backend/notificationService';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
 import { silentPingLocation } from 'public/location-tracker';
-import { getAllDocumentsForMember } from 'backend/wixApi';
+import { getAllDocumentsForMember } from 'backend/wixApi.jsw';
 
 let currentSession = null; // Store validated session data
 
@@ -69,6 +69,7 @@ $w.onReady(async function () {
         setupLogoutButton();
         setupContactForm();
         setupCallButton();
+        setupSubmitButton();
 
         // INITIATE ROBUST TRACKING
         console.log("📍 Initiating background location tracker for indemnitor...");
@@ -333,6 +334,91 @@ function setupContactForm() {
             setTimeout(() => {
                 $w('#inputMessageSubmitBtn').label = "Send";
                 $w('#inputMessageSubmitBtn').enable();
+            }, 3000);
+        }
+    });
+}
+
+/**
+ * Handle "Submit Info" Button (Initial Data Collection)
+ */
+function setupSubmitButton() {
+    if (!$w('#btnSubmitInfo').type) {
+        console.warn('Submit Info button (#btnSubmitInfo) not found');
+        return;
+    }
+
+    $w('#btnSubmitInfo').onClick(async () => {
+        const btn = $w('#btnSubmitInfo');
+        btn.disable();
+        const originalLabel = btn.label;
+        btn.label = "Submitting...";
+
+        try {
+            // 1. Gather Data
+            const payload = {
+                defendantFullName: $w('#inputDefendantName').value,
+                defendantPhone: $w('#inputDefendantPhone').value,
+                indemnitorFullName: $w('#inputIndemnitorName').value,
+                indemnitorEmail: $w('#inputIndemnitorEmail').value,
+                indemnitorPhone: $w('#inputIndemnitorPhone').value,
+                // Parse Address Object if available
+                indemnitorStreetAddress: $w('#inputIndemnitorAddress').value?.formatted || "",
+                // Split formatted address logic could go here if needed, but keeping simple for now
+                // We rely on backend/GAS to handle raw strings if needed or add parsing utility
+                reference1: {
+                    name: $w('#inputRef1Name').value,
+                    phone: $w('#inputRef1Phone').value,
+                    relation: $w('#inputRef1Relation').value // Added based on typical forms
+                },
+                reference2: {
+                    name: $w('#inputRef2Name').value,
+                    phone: $w('#inputRef2Phone').value,
+                    relation: $w('#inputRef2Relation').value
+                },
+                status: 'Pending',
+                submittedAt: new Date().toISOString()
+            };
+
+            // 2. Simple Validation
+            if (!payload.defendantFullName || !payload.indemnitorFullName || !payload.indemnitorPhone) {
+                throw new Error("Please fill in all required fields (Name, Phone).");
+            }
+
+            // 3. Submit to Backend
+            console.log("Submitting intake payload:", payload);
+            const result = await submitIntake(payload);
+
+            if (result.success) {
+                btn.label = "Submitted!";
+                if ($w('#statusMessage').type) {
+                    $w('#statusMessage').text = "✅ Info submitted! Starting paperwork...";
+                    $w('#statusMessage').expand();
+                }
+
+                // 4. AUTO-TRIGGER SIGNING FLOW
+                console.log("Auto-triggering paperwork flow...");
+                await handlePaperworkStart();
+
+                // Reset button triggering
+                setTimeout(() => {
+                    btn.label = originalLabel;
+                    btn.enable();
+                }, 1000);
+            } else {
+                throw new Error(result.error || "Submission failed.");
+            }
+
+        } catch (error) {
+            console.error("Submit Info Failed:", error);
+            btn.label = "Error - Try Again";
+            if ($w('#statusMessage').type) {
+                $w('#statusMessage').text = `⚠️ Error: ${error.message}`;
+                $w('#statusMessage').expand();
+            }
+            setTimeout(() => {
+                btn.label = originalLabel;
+                btn.enable();
             }, 3000);
         }
     });

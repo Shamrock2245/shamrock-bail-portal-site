@@ -25,13 +25,16 @@ import { sendMagicLinkSimplified, onMagicLinkLoginV2, validateCustomSession } fr
 import { getGoogleAuthUrl, getFacebookAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
+import wixWindow from 'wix-window';
 
 $w.onReady(async function () {
     console.log("🚀 Portal Landing v2.2: Fix Query Scope");
     const query = wixLocation.query;
 
     // 1. PRIORITY: Check for magic link token in URL (returning from email/SMS)
-    if (query.token) {
+    // 1. PRIORITY: Check for magic link token in URL (returning from email/SMS)
+    // ONLY run on client-side to prevent SSR from consuming the token
+    if (query.token && wixWindow.rendering.env === 'browser') {
         console.log("🔗 Magic link token detected, processing...");
         await handleMagicLinkLogin(query.token);
         return;

@@ -13,7 +13,7 @@ The Shamrock Bail Bonds portal is a **mobile-first paperwork completion and sign
 
 - **Wix/Velo** — Frontend portal pages
 - **SignNow** — E-signature capture
-- **Google Apps Script (GAS)** — Document generation & backend logic
+- Google Apps Script (GAS) — Document generation & backend logic (Unified in `backend-gas/`)
 - **Twilio** — SMS/OTP automations
 - **Google Drive** — Completed document storage
 
@@ -211,6 +211,12 @@ Staff and admin accounts.
 - Magic link SMS delivery
 - OTP verification (optional)
 - Configured in `twilio-client.jsw`
+- Configured- SignNow (documents, flows, URLs, tokens)
+- Google Sheets used by ops (unless via GAS API)
+- External APIs not explicitly wrapped in backend modules
+
+The **Google Apps Script (GAS)** project is now **INTEGRATED** into this repository (`backend-gas/`).
+Agents **ARE AUTHORIZED** to modify, optimize, and deploy GAS code, provided they follow `clasp` deployment protocols.
 
 ### Google Apps Script (GAS)
 - Document generation (20+ page packets)

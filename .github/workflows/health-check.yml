@@ -1,0 +1,61 @@
+name: Site Health & Automation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 8 * * 1' # Run every Monday at 8am UTC
+
+jobs:
+  # 1. Code Quality: Ensures no syntax errors or bad imports (like the one we fixed)
+  lint:
+    name: Code Quality (ESLint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npm ci
+        
+      - name: Run Linter
+        run: npm run lint
+
+  # 2. SEO Health: Checks for broken links on the live site
+  link-check:
+    name: Broken Link Checker
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' # Only run on main branch updates or schedule
+    steps:
+      - name: Check for broken links
+        uses: lycheeverse/lychee-action@v1.8.0
+        with:
+          args: --verbose --no-progress 'https://www.shamrockbailbonds.biz'
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 3. Performance: Audits the live site for speed/SEO scores
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Audit Live Site
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          urls: |
+            https://www.shamrockbailbonds.biz/
+            https://www.shamrockbailbonds.biz/portal-landing
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          budgetPath: .github/lighthouse-budget.json

@@ -1,14 +1,20 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 4.3.1 - Twilio SMS Integration + Expiration Fix
+// Version: 5.1.0 - Enterprise Portal Release (Updated 2026-01-26)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
  * 
- * V4.3.1 HIGHLIGHTS:
- * - Fix: Respects linkExpiration parameter (24h for SMS).
- * - Twilio SMS Integration: Sends signing links via text.
- * - Unified SignNow Workflow: Handles both PDF Uploads AND Template Generation.
+ * V5.0.0 SUMMARY:
+ * This backend orchestrates the entire Shamrock Portal workflow:
+ * 1. INTAKE & BOOKING: Receives form data from Wix, generates receipts, and stores in 'Bookings' Sheet.
+ * 2. SIGNNOW INTEGRATION: Handles document generation (Templates), PDF uploads, and embedded signing links.
+ * 3. TWILIO SMS: Sends signing links and notifications via text message.
+ * 4. MAGIC LINKS: Manages secure access links for Defendants/Indemnitors.
+ * 5. COMPLIANCE: Validates SOC2 webhooks and logs all access/processing events.
+ * 
+ * DEPLOYMENT:
+ * Deploy as Web App -> Execute as Me -> Access: Anyone
  */
 // ============================================================================
 // CONFIGURATION & INIT
@@ -200,7 +206,7 @@ function handleAction(data) {
       result = runLeeScraper();
       break;
     case 'health':
-      result = { success: true, message: 'GAS v4.3.0 Online' };
+      result = { success: true, message: 'GAS v5.1.0 Online', timestamp: new Date().toISOString() };
       break;
 
     // --- New: Wix Portal Batch Sync (Exposed to Front-end) ---
@@ -238,6 +244,26 @@ function handleAction(data) {
         return { success: false, error: 'Queue update not implemented' };
       result = markIntakeAsProcessed(data.intakeId);
       break;
+
+    // --- Intake from Wix Portal (NEW in v5.1.0) ---
+    case 'submitIntake':
+      // Handles indemnitor/defendant intake from Wix portal
+      result = handleIntakeSubmission(data);
+      break;
+
+    case 'startPaperwork':
+      // Triggers document generation and signing flow
+      result = handleStartPaperwork(data);
+      break;
+
+    case 'getSigningLink':
+      // Returns embedded signing link for a pending document
+      if (data.documentId && data.signerEmail) {
+        result = createEmbeddedLink(data.documentId, data.signerEmail, data.signerRole || 'Signer', data.linkExpiration || 60);
+      } else {
+        result = { success: false, error: 'documentId and signerEmail required' };
+      }
+      break;
   }
   return result;
 }
@@ -246,7 +272,7 @@ function handleGetAction(e) {
   const action = e.parameter.action;
   const callback = e.parameter.callback;
   let result = { success: false, error: 'Unknown action' };
-  if (action === 'health') result = { success: true, version: '4.3.0', timestamp: new Date().toISOString() };
+  if (action === 'health') result = { success: true, version: '5.1.0', timestamp: new Date().toISOString() };
   if (action === 'getNextReceiptNumber') result = getNextReceiptNumber();
   return createResponse(result, callback);
 }
@@ -792,5 +818,257 @@ function sendEmailBasic(data) {
     return { success: true };
   } catch (e) {
     return { success: false, error: e.toString() };
+  }
+}
+
+
+// ============================================================================
+// NEW IN V5.1.0: WIX PORTAL INTAKE HANDLERS
+// ============================================================================
+
+/**
+ * Handles intake submission from Wix Portal (Indemnitor/Defendant forms)
+ * This receives data from the portal-indemnitor page and queues it for processing
+ */
+function handleIntakeSubmission(data) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('IntakeQueue');
+    
+    // Auto-create if missing
+    if (!sheet) {
+      sheet = ss.insertSheet('IntakeQueue');
+      sheet.appendRow([
+        'Timestamp', 'IntakeID', 'Role', 'Email', 'Phone', 'FullName',
+        'DefendantName', 'DefendantPhone', 'CaseNumber', 'Status',
+        'References', 'EmployerInfo', 'ResidenceType', 'ProcessedAt'
+      ]);
+      sheet.setFrozenRows(1);
+    }
+    
+    const timestamp = new Date();
+    const intakeId = 'INT-' + timestamp.getTime();
+    
+    // Extract data from the intake payload
+    const row = [
+      timestamp,
+      intakeId,
+      data.role || 'indemnitor',
+      data.indemnitorEmail || data.email || '',
+      data.indemnitorPhone || data.phone || '',
+      data.indemnitorFullName || data.fullName || '',
+      data.defendantName || '',
+      data.defendantPhone || '',
+      data.caseNumber || '',
+      'pending',
+      JSON.stringify(data.references || []),
+      JSON.stringify({
+        employer: data.indemnitorEmployerName,
+        employerCity: data.indemnitorEmployerCity,
+        employerState: data.indemnitorEmployerState,
+        employerZip: data.indemnitorEmployerZip,
+        employerPhone: data.indemnitorEmployerPhone,
+        supervisor: data.indemnitorSupervisorName,
+        supervisorPhone: data.indemnitorSupervisorPhone
+      }),
+      data.residenceType || '',
+      '' // ProcessedAt - empty until processed
+    ];
+    
+    sheet.appendRow(row);
+    const lastRow = sheet.getLastRow();
+    
+    Logger.log('✅ Intake saved: ' + intakeId);
+    
+    return { 
+      success: true, 
+      message: 'Intake received', 
+      intakeId: intakeId, 
+      row: lastRow 
+    };
+    
+  } catch (e) {
+    console.error('Intake submission failed: ' + e.message);
+    return { success: false, error: e.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Handles the "Start Paperwork" action from Wix Portal
+ * This triggers document generation and returns a signing link
+ */
+function handleStartPaperwork(data) {
+  try {
+    Logger.log('🚀 Starting paperwork for case: ' + (data.caseNumber || 'NEW'));
+    
+    // 1. Check if we have a pending document already
+    if (data.documentId) {
+      // Return existing signing link
+      const link = createEmbeddedLink(
+        data.documentId, 
+        data.signerEmail || data.indemnitorEmail, 
+        data.signerRole || 'Indemnitor',
+        60 // 60 minute expiration
+      );
+      return link;
+    }
+    
+    // 2. If no document exists, we need to generate one
+    // This would typically be triggered from the Dashboard after staff review
+    // For now, return a message indicating the intake is queued
+    
+    // Check if generateAndSendWithWixPortal is available
+    if (typeof generateAndSendWithWixPortal === 'function') {
+      // Prepare the form data for document generation
+      const formData = {
+        'defendant-first-name': data.defendantFirstName || '',
+        'defendant-last-name': data.defendantLastName || '',
+        defendantName: data.defendantName || '',
+        defendantEmail: data.defendantEmail || '',
+        defendantPhone: data.defendantPhone || '',
+        indemnitorFullName: data.indemnitorFullName || '',
+        indemnitorEmail: data.indemnitorEmail || '',
+        indemnitorPhone: data.indemnitorPhone || '',
+        caseNumber: data.caseNumber || '',
+        signingMethod: data.signingMethod || 'embedded',
+        selectedDocs: data.selectedDocs || ['bail_application', 'indemnitor_agreement']
+      };
+      
+      return generateAndSendWithWixPortal(formData);
+    }
+    
+    return { 
+      success: false, 
+      error: 'Document generation not available. Please use Dashboard to process this intake.',
+      intakeQueued: true
+    };
+    
+  } catch (e) {
+    console.error('Start paperwork failed: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Fetches pending intakes from the queue
+ */
+function fetchPendingIntakes() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('IntakeQueue');
+    
+    if (!sheet) {
+      return { success: true, intakes: [], message: 'No intake queue found' };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const intakes = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const status = row[9]; // Status column
+      
+      if (status === 'pending') {
+        const intake = {};
+        headers.forEach((header, idx) => {
+          intake[header] = row[idx];
+        });
+        intake.rowNumber = i + 1;
+        intakes.push(intake);
+      }
+    }
+    
+    return { success: true, intakes: intakes, count: intakes.length };
+    
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Marks an intake as processed
+ */
+function markIntakeAsProcessed(intakeId) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('IntakeQueue');
+    
+    if (!sheet) {
+      return { success: false, error: 'IntakeQueue sheet not found' };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][1] === intakeId) { // IntakeID column
+        sheet.getRange(i + 1, 10).setValue('processed'); // Status column
+        sheet.getRange(i + 1, 14).setValue(new Date()); // ProcessedAt column
+        return { success: true, message: 'Intake marked as processed' };
+      }
+    }
+    
+    return { success: false, error: 'Intake not found: ' + intakeId };
+    
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Safe wrapper for generateAndSendWithWixPortal (SOC II compliant)
+ */
+function generateAndSendWithWixPortal_Safe(data) {
+  // Log the request for audit
+  if (typeof logProcessingEvent === 'function') {
+    logProcessingEvent('GENERATE_AND_SEND_REQUEST', {
+      caseNumber: data.caseNumber,
+      defendantName: data.defendantName || data['defendant-first-name'],
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  // Delegate to the main function if available
+  if (typeof generateAndSendWithWixPortal === 'function') {
+    return generateAndSendWithWixPortal(data);
+  }
+  
+  // Fallback: Use the basic signing flow
+  return handleSendForSignature(data);
+}
+
+/**
+ * Saves filled packet to Google Drive
+ */
+function saveFilledPacketToDrive(data) {
+  try {
+    const config = getConfig();
+    const folderId = data.folderId || config.GOOGLE_DRIVE_OUTPUT_FOLDER_ID;
+    const folder = DriveApp.getFolderById(folderId);
+    
+    if (!data.pdfBase64) {
+      return { success: false, error: 'No PDF data provided' };
+    }
+    
+    const fileName = data.fileName || `Bond_Packet_${new Date().toISOString().split('T')[0]}.pdf`;
+    const pdfBytes = Utilities.base64Decode(data.pdfBase64);
+    const blob = Utilities.newBlob(pdfBytes, 'application/pdf', fileName);
+    
+    const file = folder.createFile(blob);
+    
+    return { 
+      success: true, 
+      fileId: file.getId(), 
+      fileUrl: file.getUrl(),
+      fileName: fileName 
+    };
+    
+  } catch (e) {
+    return { success: false, error: e.message };
   }
 }

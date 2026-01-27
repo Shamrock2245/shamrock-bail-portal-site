@@ -174,12 +174,12 @@ export async function saveSignedPaperwork(paperworkData) {
 
         // Update signing session with Drive info
         if (result.success && paperworkData.sessionId) {
-            const session = await wixData.get('SigningSessions', paperworkData.sessionId);
+            const session = await wixData.get('Signing Sessions', paperworkData.sessionId);
             if (session) {
                 session.driveFileId = result.fileId;
                 session.driveFileUrl = result.fileUrl;
                 session.savedToDriveAt = new Date();
-                await wixData.update('SigningSessions', session);
+                await wixData.update('Signing Sessions', session);
             }
         }
 

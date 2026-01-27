@@ -115,12 +115,12 @@ async function upsertPaymentPlan(data) {
     if (!data.caseId) return;
 
     // One plan per case?
-    const rs = await wixData.query("PaymentPlans")
+    const rs = await wixData.query("Payment Plans")
         .eq("caseId", data.caseId)
         .find({ suppressAuth: true });
 
     let item = rs.items[0] || {};
     item = { ...item, ...data };
 
-    await wixData.save("PaymentPlans", item, { suppressAuth: true });
+    await wixData.save("Payment Plans", item, { suppressAuth: true });
 }

@@ -1,7 +1,7 @@
 import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
 import { fetch } from 'wix-fetch';
-import { getSecret } from 'wix-secrets-backend';
+import { getGasUrl } from 'backend/utils';
 
 /**
  * Watchdog: Check for Missed Check-ins
@@ -67,7 +67,7 @@ export async function checkMissedCheckIns() {
 
 async function sendAdminAlert(missingList) {
     try {
-        const gasUrl = await getSecret('GAS_WEB_APP_URL');
+        const gasUrl = await getGasUrl();
         if (!gasUrl) return;
 
         await fetch(gasUrl, {

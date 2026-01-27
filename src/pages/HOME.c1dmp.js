@@ -22,25 +22,24 @@ $w.onReady(function () {
     setupHeroSection();
     setupCTAButtons();
 
-    // Defer county dropdown loading
+    // Defer county dropdown loading (1s) to prioritize LCP
     setTimeout(() => {
         loadCountyDropdown();
     }, 1000);
 
-    // Defer testimonials
+    // Defer testimonials (2s)
     setTimeout(() => {
         initTestimonials();
     }, 2000);
 });
 
 /**
- * Setup hero section with optimized image loading
+ * Setup hero section
  */
 function setupHeroSection() {
-    // Hero image should have fetchpriority="high" in Wix Editor
-    // This is done in the editor, not in code
+    // Note: Prioritize hero image loading in Wix Editor settings
 
-    // Setup hero CTA (Support both ID naming conventions)
+    // Setup hero CTA with ID fallback support
     const heroBtn = $w('#heroGetStartedButton');
     if (heroBtn.uniqueId) {
         heroBtn.onClick(() => {
@@ -70,7 +69,6 @@ function setupCTAButtons() {
             trackEvent('spanish_call_clicked', {
                 location: 'hero_section'
             });
-            // Action for Spanish button
             wixLocation.to("tel:12399550301");
         });
     }
@@ -83,21 +81,19 @@ async function loadCountyDropdown() {
     if (countiesLoaded) return;
 
     try {
-        // Show loading state
         const dropdown = $w('#countyDropdown');
         if (dropdown.uniqueId) {
             dropdown.placeholder = 'Loading counties...';
         }
 
-        // Check cache first
+        // Check cache first to avoid backend roundtrip
         const cachedCounties = session.getItem('counties');
         if (cachedCounties) {
             countiesData = JSON.parse(cachedCounties);
         } else {
-            // Fetch from backend
+            // Fetch from backend (now optimized in backend/counties.jsw)
             const response = await getCounties();
 
-            // Handle backend response (Array)
             if (Array.isArray(response)) {
                 countiesData = response;
                 // Cache for 1 hour
@@ -105,7 +101,7 @@ async function loadCountyDropdown() {
                     ttl: 3600
                 });
             } else {
-                console.error("Invalid counties data format", response);
+                console.warn("Invalid counties data format", response);
                 countiesData = []; // Fallback
             }
         }
@@ -117,19 +113,13 @@ async function loadCountyDropdown() {
                 value: county.slug
             }));
             dropdown.placeholder = 'Select County Name';
-
-            // Setup dropdown change handler
-            dropdown.onChange(() => {
-                handleCountySelection();
-            });
+            dropdown.onChange(() => handleCountySelection());
         }
 
         // Setup Get Started button (Support both IDs)
         const getStartedBtn = $w('#getStartedButton').uniqueId ? $w('#getStartedButton') : $w('#getStartedBtn');
         if (getStartedBtn.uniqueId) {
-            getStartedBtn.onClick(() => {
-                handleGetStarted();
-            });
+            getStartedBtn.onClick(() => handleGetStarted());
         }
 
         countiesLoaded = true;
@@ -149,18 +139,14 @@ function handleCountySelection() {
     const selectedCounty = $w('#countyDropdown').value;
 
     if (selectedCounty) {
-        // Enable Get Started button
         const getStartedBtn = $w('#getStartedButton').uniqueId ? $w('#getStartedButton') : $w('#getStartedBtn');
         if (getStartedBtn.uniqueId) {
             getStartedBtn.enable();
         }
 
-        // Track selection
-        trackEvent('county_selected', {
-            county: selectedCounty
-        });
+        trackEvent('county_selected', { county: selectedCounty });
 
-        // Auto navigate for better UX (consistent with previous behavior)
+        // Auto navigate
         navigateToCounty(selectedCounty);
     }
 }
@@ -172,24 +158,19 @@ function handleGetStarted() {
     const selectedCounty = $w('#countyDropdown').value;
 
     if (!selectedCounty) {
-        // Show error
-        if ($w('#countyError').uniqueId) {
-            $w('#countyError').show();
-            $w('#countyError').text = 'Please select a county';
+        const errorText = $w('#countyError');
+        if (errorText.uniqueId) {
+            errorText.show();
+            errorText.text = 'Please select a county';
         }
         return;
     }
 
-    // Track conversion
-    trackEvent('get_started_clicked', {
-        county: selectedCounty
-    });
-
+    trackEvent('get_started_clicked', { county: selectedCounty });
     navigateToCounty(selectedCounty);
 }
 
 function navigateToCounty(selectedCounty) {
-    // Navigate to county page or start bail process
     wixLocation.to(`/bail-bonds/${selectedCounty}`);
 }
 
@@ -208,85 +189,75 @@ function scrollToCountySelector() {
  * Initialize testimonials (deferred)
  */
 function initTestimonials() {
-    // Lazy load testimonials repeater
-    if ($w('#testimonialsRepeater').uniqueId) {
-        // Testimonials are below the fold, so they can be lazy loaded
-        $w('#testimonialsRepeater').onViewportEnter(() => {
-            loadTestimonials();
-        });
-        // Or just load them if already in viewport or generic timeout finished
+    const repeater = $w('#testimonialsRepeater');
+    if (!repeater.uniqueId) return;
+
+    // Use IntersectionObserver (onViewportEnter) for lazy rendering
+    repeater.onViewportEnter(() => {
         loadTestimonials();
-    }
+    });
+
+    // Also trigger if it might already be in view
+    loadTestimonials();
 }
 
 /**
  * Load testimonials data
  */
-async function loadTestimonials() {
-    try {
-        const repeater = $w('#testimonialsRepeater');
-        // Check if already loaded
-        if (repeater.data.length > 0) {
-            return;
+function loadTestimonials() {
+    const repeater = $w('#testimonialsRepeater');
+    if (repeater.data.length > 0) return;
+
+    // Static content for speed - eventually fetch from CMS if needed
+    const testimonials = [
+        {
+            _id: '1',
+            name: 'Steve D.',
+            text: 'Answered immediately and had everything moving fast. You can tell they know exactly what they\'re doing.',
+            rating: 5
+        },
+        {
+            _id: '2',
+            name: 'Brian C.',
+            text: 'Calm, respectful, and professional when we needed it most. They handled everything.',
+            rating: 5
+        },
+        {
+            _id: '3',
+            name: 'Ana E.',
+            text: 'They picked up late at night and never rushed us off the phone.',
+            rating: 5
+        },
+        {
+            _id: '4',
+            name: 'Rafael I.',
+            text: 'They treated us like people, not a number. That mattered more than anything.',
+            rating: 5
         }
+    ];
 
-        // Load testimonials (static fallback for speed)
-        const testimonials = [
-            {
-                _id: '1',
-                name: 'Steve D.',
-                text: 'Answered immediately and had everything moving fast. You can tell they know exactly what they\'re doing.',
-                rating: 5
-            },
-            {
-                _id: '2',
-                name: 'Brian C.',
-                text: 'Calm, respectful, and professional when we needed it most. They handled everything.',
-                rating: 5
-            },
-            {
-                _id: '3',
-                name: 'Ana E.',
-                text: 'They picked up late at night and never rushed us off the phone.',
-                rating: 5
-            },
-            {
-                _id: '4',
-                name: 'Rafael I.',
-                text: 'They treated us like people, not a number. That mattered more than anything.',
-                rating: 5
-            }
-        ];
+    repeater.data = testimonials;
 
-        repeater.data = testimonials;
+    repeater.onItemReady(($item, itemData) => {
+        // ID Fallbacks for robustness
+        const nameTxt = $item('#testimonialName').uniqueId ? $item('#testimonialName') : $item('#authorName');
+        if (nameTxt.uniqueId) nameTxt.text = itemData.name;
 
-        // Setup repeater items
-        repeater.onItemReady(($item, itemData) => {
-            if ($item('#testimonialName').uniqueId) $item('#testimonialName').text = itemData.name;
-            // Fallback for authorName in old code
-            if ($item('#authorName').uniqueId) $item('#authorName').text = itemData.name;
-
-            if ($item('#testimonialText').uniqueId) $item('#testimonialText').text = itemData.text;
-            // Fallback for quoteText in old code
-            if ($item('#quoteText').uniqueId) $item('#quoteText').text = itemData.text;
-        });
-
-    } catch (error) {
-        console.error('Error loading testimonials:', error);
-    }
+        const bodyTxt = $item('#testimonialText').uniqueId ? $item('#testimonialText') : $item('#quoteText');
+        if (bodyTxt.uniqueId) bodyTxt.text = itemData.text;
+    });
 }
 
 /**
- * Track events
+ * Track events (lightweight wrapper)
  */
 function trackEvent(eventName, eventData = {}) {
-    // Velo Analytics
     try {
         wixWindow.trackEvent("CustomEvent", {
             event: eventName,
             detail: eventData
         });
     } catch (e) {
-        console.warn("Tracking failed", e);
+        // Fail silently
     }
 }

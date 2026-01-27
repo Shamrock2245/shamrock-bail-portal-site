@@ -267,7 +267,7 @@ export async function getAllDocumentsForMember(memberEmail) {
 export async function getDocumentById(documentId) {
     try {
         const document = await wixData.get(COLLECTION_PENDING_DOCUMENTS, documentId);
-        
+
         if (!document) {
             return { success: false, message: 'Document not found' };
         }
@@ -358,7 +358,7 @@ export async function getRequiredDocuments(memberEmail) {
 export async function cleanupExpiredDocuments() {
     try {
         const now = new Date();
-        
+
         const results = await wixData.query(COLLECTION_PENDING_DOCUMENTS)
             .eq('status', 'pending')
             .lt('expiresAt', now)
@@ -379,6 +379,93 @@ export async function cleanupExpiredDocuments() {
 
     } catch (error) {
         console.error('Error cleaning up expired documents:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+// ============================================================================
+// Intake Queue Functions (for GAS Dashboard)
+// ============================================================================
+
+/**
+ * Get pending intakes for GAS processing
+ */
+export async function getPendingIntakes(apiKey) {
+    try {
+        const isValid = await validateApiKey(apiKey);
+        if (!isValid) return { success: false, message: 'Invalid API key' };
+
+        // Assuming 'Intakes' is the collection name - verify schema if possible
+        const results = await wixData.query('Intakes')
+            .eq('status', 'pending')
+            .descending('createdAt')
+            .find();
+
+        return {
+            success: true,
+            intakes: results.items
+        };
+    } catch (error) {
+        console.error('Error getting pending intakes:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Mark intake as processed
+ */
+export async function markIntakeProcessed(intakeId, apiKey) {
+    try {
+        const isValid = await validateApiKey(apiKey);
+        if (!isValid) return { success: false, message: 'Invalid API key' };
+
+        const intake = await wixData.get('Intakes', intakeId);
+        if (!intake) return { success: false, message: 'Intake not found' };
+
+        intake.status = 'processed';
+        intake.processedAt = new Date();
+
+        await wixData.update('Intakes', intake);
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error marking intake processed:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Get indemnitor profile by email
+ */
+export async function getIndemnitorProfile(email, apiKey) {
+    try {
+        const isValid = await validateApiKey(apiKey);
+        if (!isValid) return { success: false, message: 'Invalid API key' };
+
+        // Query Cases or a separate Profiles collection
+        // Based on portal-auth logic, indemnitor data is in Cases
+        const results = await wixData.query('Cases')
+            .eq('indemnitorEmail', email)
+            .descending('_updatedDate')
+            .limit(1)
+            .find();
+
+        if (results.items.length === 0) {
+            return { success: false, message: 'Profile not found' };
+        }
+
+        const data = results.items[0];
+        return {
+            success: true,
+            profile: {
+                name: data.indemnitorName,
+                email: data.indemnitorEmail,
+                phone: data.indemnitorPhone,
+                address: data.indemnitorAddress || '' // Add field if exists
+            }
+        };
+    } catch (error) {
+        console.error('Error getting indemnitor profile:', error);
         return { success: false, message: error.message };
     }
 }
