@@ -189,11 +189,13 @@ function populateMainUI(county) {
     const faqs = county.content.faq || [];
     try {
         if (faqs.length > 0) {
-            faqRep.data = faqs.map((f, i) => ({ ...f, _id: `faq-${i}` }));
+            // FIX: onItemReady MUST be defined before setting .data
             faqRep.onItemReady(($item, itemData) => {
                 $item('#faqQuestion').text = itemData.question;
                 $item('#faqAnswer').text = itemData.answer;
             });
+            // Ensure unique IDs
+            faqRep.data = faqs.map((f, i) => ({ ...f, _id: `faq-${i}-${Date.now()}` }));
             faqRep.expand();
         } else {
             faqRep.collapse();
@@ -215,13 +217,19 @@ async function loadNearbyCounties(region, currentSlug) {
             // Filter out current county
             const neighbors = nearby.filter(n => n.slug !== currentSlug);
 
-            nearbyRep.data = neighbors;
+            // FIX: onItemReady MUST be defined before setting .data
             nearbyRep.onItemReady(($item, itemData) => {
                 try { $item('#neighborName').text = itemData.county_name || itemData.name; } catch (e) { }
                 try {
                     $item('#neighborContainer').onClick(() => wixLocation.to(`/bail-bonds/${itemData.slug}`));
                 } catch (e) { }
             });
+
+            // Ensure unique IDs
+            nearbyRep.data = neighbors.map((n, i) => ({
+                ...n,
+                _id: n._id || `neighbor-${i}-${Date.now()}`
+            }));
             nearbyRep.expand();
         }
     } catch (e) {
