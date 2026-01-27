@@ -20,29 +20,93 @@ const memory = {
 const CACHE_KEY = 'florida_counties';
 const CACHE_TTL = 3600000; // 1 hour in milliseconds
 
+// Full Florida County Centroids (Approximate)
+const COUNTY_COORDINATES = {
+    "alachua": { lat: 29.67, lon: -82.35 },
+    "baker": { lat: 30.33, lon: -82.29 },
+    "bay": { lat: 30.26, lon: -85.63 },
+    "bradford": { lat: 29.95, lon: -82.16 },
+    "brevard": { lat: 28.30, lon: -80.70 },
+    "broward": { lat: 26.15, lon: -80.45 },
+    "calhoun": { lat: 30.41, lon: -85.20 },
+    "charlotte": { lat: 26.90, lon: -81.92 },
+    "citrus": { lat: 28.85, lon: -82.47 },
+    "clay": { lat: 29.98, lon: -81.86 },
+    "collier": { lat: 26.10, lon: -81.39 },
+    "columbia": { lat: 30.22, lon: -82.63 },
+    "desoto": { lat: 27.20, lon: -81.81 },
+    "dixie": { lat: 29.60, lon: -83.15 },
+    "duval": { lat: 30.33, lon: -81.67 },
+    "escambia": { lat: 30.65, lon: -87.35 },
+    "flagler": { lat: 29.47, lon: -81.30 },
+    "franklin": { lat: 29.80, lon: -84.80 },
+    "gadsden": { lat: 30.56, lon: -84.63 },
+    "gilchrist": { lat: 29.72, lon: -82.78 },
+    "glades": { lat: 26.95, lon: -81.18 },
+    "gulf": { lat: 29.93, lon: -85.22 },
+    "hamilton": { lat: 30.51, lon: -82.95 },
+    "hardee": { lat: 27.49, lon: -81.79 },
+    "hendry": { lat: 26.54, lon: -81.14 },
+    "hernando": { lat: 28.56, lon: -82.46 },
+    "highlands": { lat: 27.35, lon: -81.35 },
+    "hillsborough": { lat: 27.91, lon: -82.35 },
+    "holmes": { lat: 30.86, lon: -85.81 },
+    "indian-river": { lat: 27.67, lon: -80.49 },
+    "jackson": { lat: 30.79, lon: -85.22 },
+    "jefferson": { lat: 30.41, lon: -83.90 },
+    "lafayette": { lat: 30.07, lon: -83.18 },
+    "lake": { lat: 28.75, lon: -81.72 },
+    "lee": { lat: 26.58, lon: -81.85 },
+    "leon": { lat: 30.46, lon: -84.27 },
+    "levy": { lat: 29.27, lon: -82.61 },
+    "liberty": { lat: 30.25, lon: -84.86 },
+    "madison": { lat: 30.45, lon: -83.47 },
+    "manatee": { lat: 27.49, lon: -82.35 },
+    "marion": { lat: 29.19, lon: -82.13 },
+    "martin": { lat: 27.08, lon: -80.42 },
+    "miami-dade": { lat: 25.61, lon: -80.56 },
+    "monroe": { lat: 25.10, lon: -81.10 },
+    "nassau": { lat: 30.61, lon: -81.76 },
+    "okaloosa": { lat: 30.66, lon: -86.58 },
+    "okeechobee": { lat: 27.25, lon: -80.89 },
+    "orange": { lat: 28.51, lon: -81.32 },
+    "osceola": { lat: 28.06, lon: -81.15 },
+    "palm-beach": { lat: 26.63, lon: -80.44 },
+    "pasco": { lat: 28.30, lon: -82.46 },
+    "pinellas": { lat: 27.90, lon: -82.74 },
+    "polk": { lat: 27.96, lon: -81.87 },
+    "putnam": { lat: 29.62, lon: -81.73 },
+    "st-johns": { lat: 29.93, lon: -81.42 },
+    "st-lucie": { lat: 27.38, lon: -80.43 },
+    "santa-rosa": { lat: 30.71, lon: -87.03 },
+    "sarasota": { lat: 27.18, lon: -82.34 },
+    "seminole": { lat: 28.71, lon: -81.23 },
+    "sumter": { lat: 28.70, lon: -82.08 },
+    "suwannee": { lat: 30.20, lon: -82.96 },
+    "taylor": { lat: 30.03, lon: -83.62 },
+    "union": { lat: 30.05, lon: -82.37 },
+    "volusia": { lat: 29.07, lon: -81.15 },
+    "wakulla": { lat: 30.15, lon: -84.38 },
+    "walton": { lat: 30.63, lon: -86.17 },
+    "washington": { lat: 30.61, lon: -85.67 }
+};
+
 /**
  * Get all Florida counties with caching
  * @returns {Promise<Array>} Array of county objects
  */
 export async function getCounties() {
     try {
-        // Check cache first
         const cached = memory.getItem(CACHE_KEY);
         if (cached) {
             const { data, timestamp } = JSON.parse(cached);
-
-            // Check if cache is still valid
             if (Date.now() - timestamp < CACHE_TTL) {
-                console.log('Returning cached counties');
                 return data;
             }
         }
 
-        // Cache miss or expired - fetch from database
-        console.log('Fetching counties from database');
         const counties = await fetchCountiesFromDatabase();
 
-        // Cache the result
         memory.setItem(CACHE_KEY, JSON.stringify({
             data: counties,
             timestamp: Date.now()
@@ -52,142 +116,102 @@ export async function getCounties() {
 
     } catch (error) {
         console.error('Error getting counties:', error);
-        // Return fallback data
         return getFallbackCounties();
     }
 }
 
 /**
- * Get a single county by slug
- * @param {string} slug - County slug (e.g., 'lee-county')
- * @returns {Promise<Object>} County object
+ * Get nearest counties to a specific location
+ * @param {number} userLat - User latitude
+ * @param {number} userLon - User longitude
+ * @param {number} limit - Number of counties to return (default 9)
+ * @returns {Promise<Array>} Sorted array of nearest counties
  */
-export async function getCountyBySlug(slug) {
+export async function getNearestCounties(userLat, userLon, limit = 9) {
     try {
-        const counties = await getCounties();
-        const county = counties.find(c => c.slug === slug);
-
-        if (!county) {
-            throw new Error(`County not found: ${slug}`);
+        if (!userLat || !userLon) {
+            console.warn("Invalid coordinates provided to getNearestCounties, returning default.");
+            return getCounties();
         }
 
-        return county;
+        const allCounties = await getCounties(); // Get cached base data
+
+        // Calculate distance for each county
+        const countiesWithDistance = allCounties.map(county => {
+            const slug = county.slug.replace('-county', ''); // handle suffix matching
+            const coords = COUNTY_COORDINATES[slug] || COUNTY_COORDINATES[county.slug];
+
+            let distance = 9999;
+            if (coords) {
+                distance = calculateHaversineDistance(userLat, userLon, coords.lat, coords.lon);
+            }
+
+            return { ...county, distance };
+        });
+
+        // Sort by distance
+        countiesWithDistance.sort((a, b) => a.distance - b.distance);
+
+        // Return top N
+        return countiesWithDistance.slice(0, limit);
 
     } catch (error) {
-        console.error('Error getting county by slug:', error);
-        throw error;
+        console.error("Error in getNearestCounties:", error);
+        return getCounties(); // Fallback to all
     }
 }
 
 /**
- * Get counties by region (for regional pages)
- * @param {string} region - Region name (e.g., 'southwest')
- * @returns {Promise<Array>} Array of county objects
+ * Calculate Haversine distance in KM
  */
+function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth radius km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function toRad(deg) {
+    return deg * (Math.PI / 180);
+}
+
+// ... keep getCountyBySlug and getCountiesByRegion ...
+
+export async function getCountyBySlug(slug) {
+    const counties = await getCounties();
+    const county = counties.find(c => c.slug === slug);
+    if (!county) throw new Error(`County not found: ${slug}`);
+    return county;
+}
+
 export async function getCountiesByRegion(region) {
-    try {
-        const counties = await getCounties();
-        return counties.filter(c => c.region === region);
-    } catch (error) {
-        console.error('Error getting counties by region:', error);
-        return [];
-    }
+    const counties = await getCounties();
+    return counties.filter(c => c.region === region);
 }
 
-/**
- * Fetch counties from database
- * @returns {Promise<Array>} Array of county objects
- */
 async function fetchCountiesFromDatabase() {
-    // In a real implementation, this would query Wix Data
-    // For now, return static data
-
-    // Example with Wix Data:
-    // import wixData from 'wix-data';
-    // return await wixData.query('Counties')
-    //   .ascending('name')
-    //   .find()
-    //   .then(results => results.items);
-
-    // Static data for performance (avoids database query)
     return getStaticCounties();
 }
+
+import allCountiesData from 'backend/data/allFloridaCounties.json';
 
 /**
  * Get static county data (optimized for performance)
  * @returns {Array} Array of county objects with minimal data
  */
 function getStaticCounties() {
-    // Only return essential fields to minimize payload
-    return [
-        { name: 'Alachua County', slug: 'alachua-county', region: 'north' },
-        { name: 'Baker County', slug: 'baker-county', region: 'north' },
-        { name: 'Bay County', slug: 'bay-county', region: 'panhandle' },
-        { name: 'Bradford County', slug: 'bradford-county', region: 'north' },
-        { name: 'Brevard County', slug: 'brevard-county', region: 'east' },
-        { name: 'Broward County', slug: 'broward-county', region: 'southeast' },
-        { name: 'Calhoun County', slug: 'calhoun-county', region: 'panhandle' },
-        { name: 'Charlotte County', slug: 'charlotte-county', region: 'southwest' },
-        { name: 'Citrus County', slug: 'citrus-county', region: 'central' },
-        { name: 'Clay County', slug: 'clay-county', region: 'north' },
-        { name: 'Collier County', slug: 'collier-county', region: 'southwest' },
-        { name: 'Columbia County', slug: 'columbia-county', region: 'north' },
-        { name: 'DeSoto County', slug: 'desoto-county', region: 'southwest' },
-        { name: 'Dixie County', slug: 'dixie-county', region: 'north' },
-        { name: 'Duval County', slug: 'duval-county', region: 'north' },
-        { name: 'Escambia County', slug: 'escambia-county', region: 'panhandle' },
-        { name: 'Flagler County', slug: 'flagler-county', region: 'east' },
-        { name: 'Franklin County', slug: 'franklin-county', region: 'panhandle' },
-        { name: 'Gadsden County', slug: 'gadsden-county', region: 'panhandle' },
-        { name: 'Gilchrist County', slug: 'gilchrist-county', region: 'north' },
-        { name: 'Glades County', slug: 'glades-county', region: 'southwest' },
-        { name: 'Gulf County', slug: 'gulf-county', region: 'panhandle' },
-        { name: 'Hamilton County', slug: 'hamilton-county', region: 'north' },
-        { name: 'Hardee County', slug: 'hardee-county', region: 'central' },
-        { name: 'Hendry County', slug: 'hendry-county', region: 'southwest' },
-        { name: 'Hernando County', slug: 'hernando-county', region: 'central' },
-        { name: 'Highlands County', slug: 'highlands-county', region: 'central' },
-        { name: 'Hillsborough County', slug: 'hillsborough-county', region: 'central' },
-        { name: 'Holmes County', slug: 'holmes-county', region: 'panhandle' },
-        { name: 'Indian River County', slug: 'indian-river-county', region: 'east' },
-        { name: 'Jackson County', slug: 'jackson-county', region: 'panhandle' },
-        { name: 'Jefferson County', slug: 'jefferson-county', region: 'panhandle' },
-        { name: 'Lafayette County', slug: 'lafayette-county', region: 'north' },
-        { name: 'Lake County', slug: 'lake-county', region: 'central' },
-        { name: 'Lee County', slug: 'lee-county', region: 'southwest' },
-        { name: 'Leon County', slug: 'leon-county', region: 'panhandle' },
-        { name: 'Levy County', slug: 'levy-county', region: 'north' },
-        { name: 'Liberty County', slug: 'liberty-county', region: 'panhandle' },
-        { name: 'Madison County', slug: 'madison-county', region: 'north' },
-        { name: 'Manatee County', slug: 'manatee-county', region: 'southwest' },
-        { name: 'Marion County', slug: 'marion-county', region: 'central' },
-        { name: 'Martin County', slug: 'martin-county', region: 'east' },
-        { name: 'Miami-Dade County', slug: 'miami-dade-county', region: 'southeast' },
-        { name: 'Monroe County', slug: 'monroe-county', region: 'southeast' },
-        { name: 'Nassau County', slug: 'nassau-county', region: 'north' },
-        { name: 'Okaloosa County', slug: 'okaloosa-county', region: 'panhandle' },
-        { name: 'Okeechobee County', slug: 'okeechobee-county', region: 'east' },
-        { name: 'Orange County', slug: 'orange-county', region: 'central' },
-        { name: 'Osceola County', slug: 'osceola-county', region: 'central' },
-        { name: 'Palm Beach County', slug: 'palm-beach-county', region: 'southeast' },
-        { name: 'Pasco County', slug: 'pasco-county', region: 'central' },
-        { name: 'Pinellas County', slug: 'pinellas-county', region: 'central' },
-        { name: 'Polk County', slug: 'polk-county', region: 'central' },
-        { name: 'Putnam County', slug: 'putnam-county', region: 'north' },
-        { name: 'St. Johns County', slug: 'st-johns-county', region: 'north' },
-        { name: 'St. Lucie County', slug: 'st-lucie-county', region: 'east' },
-        { name: 'Santa Rosa County', slug: 'santa-rosa-county', region: 'panhandle' },
-        { name: 'Sarasota County', slug: 'sarasota-county', region: 'southwest' },
-        { name: 'Seminole County', slug: 'seminole-county', region: 'central' },
-        { name: 'Sumter County', slug: 'sumter-county', region: 'central' },
-        { name: 'Suwannee County', slug: 'suwannee-county', region: 'north' },
-        { name: 'Taylor County', slug: 'taylor-county', region: 'north' },
-        { name: 'Union County', slug: 'union-county', region: 'north' },
-        { name: 'Volusia County', slug: 'volusia-county', region: 'east' },
-        { name: 'Wakulla County', slug: 'wakulla-county', region: 'panhandle' },
-        { name: 'Walton County', slug: 'walton-county', region: 'panhandle' },
-        { name: 'Washington County', slug: 'washington-county', region: 'panhandle' }
-    ];
+    // Use the comprehensive JSON data
+    const list = allCountiesData.counties || [];
+
+    // Inject coordinates for future use (performance optimization)
+    return list.map(c => {
+        const slug = c.slug.replace('-county', '');
+        return { ...c, ...COUNTY_COORDINATES[slug] };
+    });
 }
 
 /**
@@ -206,9 +230,6 @@ function getFallbackCounties() {
     ];
 }
 
-/**
- * Clear county cache (for admin use)
- */
 export function clearCountyCache() {
     memory.removeItem(CACHE_KEY);
     console.log('County cache cleared');

@@ -1,66 +1,85 @@
 // Locate an Inmate (Directory Page)
 import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
-import { getCounties } from 'public/countyUtils';
+import { getNearestCounties, getCounties } from 'backend/counties';
+import { autoDetectLocation } from 'public/geolocation-client';
 
 $w.onReady(async function () {
-    console.log("🚀 Locate Page Loaded (v2 Hardened)...");
+    console.log("🚀 Locate Page Loaded (v3.1 Geo+ShortURL)...");
 
     const rep = $w('#sectionList');
 
-    // 1. Check Repeater Existence (Simple null check)
+    // 1. Check Repeater Existence
     if (!rep) {
         console.error("CRITICAL: Repeater #sectionList NOT FOUND on this page.");
         return;
     }
 
     try {
-        // 2. Fetch Data
-        console.log("DEBUG: Fetching counties...");
-        let counties = await getCounties();
+        // 2. Determine Location & Fetch Data
+        console.log("DEBUG: Detecting location...");
+        let counties = [];
+        let isGeoBased = false;
 
+        try {
+            // Attempt silent auto-detection
+            const loc = await autoDetectLocation();
+
+            if (loc.success && loc.latitude && loc.longitude) {
+                console.log(`DEBUG: Location found (${loc.county} County). Fetching nearest...`);
+                // Get 9 nearest counties
+                counties = await getNearestCounties(loc.latitude, loc.longitude, 9);
+                isGeoBased = true;
+            } else {
+                console.log("DEBUG: Location not detected. Fetching default list...");
+                counties = await getCounties();
+            }
+        } catch (err) {
+            console.warn("DEBUG: Geolocation failed, using default fallback.", err);
+            counties = await getCounties();
+        }
+
+        // 3. Fallback if backend returns nothing
         if (!counties || counties.length === 0) {
-            console.warn("DEBUG: No counties returned from backend. Using fallback data.");
-            // Fallback data to prevent blank page - FIXED: Added _ids
-            counties = [
-                { _id: "fallback_alachua", name: "Alachua", slug: "alachua", countySeat: "Gainesville" },
-                { _id: "fallback_charlotte", name: "Charlotte", slug: "charlotte", countySeat: "Punta Gorda" },
-                { _id: "fallback_collier", name: "Collier", slug: "collier", countySeat: "Naples" },
-                { _id: "fallback_hendry", name: "Hendry", slug: "hendry", countySeat: "LaBelle" },
-                { _id: "fallback_lee", name: "Lee", slug: "lee", countySeat: "Fort Myers" },
-                { _id: "fallback_sarasota", name: "Sarasota", slug: "sarasota", countySeat: "Sarasota" },
-                { _id: "fallback_manatee", name: "Manatee", slug: "manatee", countySeat: "Bradenton" },
-                { _id: "fallback_desoto", name: "Desoto", slug: "desoto", countySeat: "Arcadia" }
-            ];
+            console.warn("DEBUG: No data from backend. Using static fallback.");
+            counties = getFallbackData();
         }
 
         console.log(`DEBUG: Final County Data Count: ${counties.length}`);
 
-        // Validation: Check if items have _id
-        if (counties.length > 0 && !counties[0]._id) {
-            console.warn("DEBUG: Data items missing _id. Auto-generating...");
-            counties = counties.map((c, i) => ({ ...c, _id: c._id || `gen_id_${i}` }));
-        }
-
-        console.log("DEBUG: Populating repeater with data...");
-
-        // 3. Populate Repeater - ORDER MATTERS: Handler first, then Data
+        // 4. Populate Repeater
         rep.onItemReady(($item, itemData) => {
             // A. Prepare Data
-            const countyName = (itemData.name || itemData.countyName || "Unknown") + " County";
+            const countyName = (itemData.name || "Unknown") + " County";
             const city = itemData.countySeat || "Southwest Florida";
-            // User Request: Text should be the website link
-            const externalSearchLink = itemData.bookingWebsite || itemData.recordsSearch || itemData.sheriffWebsite;
-            const descText = externalSearchLink || `Serving ${city} & Surrounding Areas`;
+
+            // Map JSON keys to expected variables
+            const externalSearchLink = itemData.bookingUrl || itemData.bookingWebsite || itemData.recordsUrl || itemData.sheriffWebsite || itemData.booking_url;
             const internalLink = `/bail-bonds/${itemData.slug}`;
 
-            // B. Map to Elements
-            // We trust the IDs now as per user confirmation
-            $item('#textTitle').text = countyName;
+            // Create display text logic
+            let descText = `Serving ${city} & Surrounding Areas`;
+            if (externalSearchLink) {
+                // SHORTENED URL LOGIC per user request
+                try {
+                    // Extract hostname (e.g., www.sheriffleefl.org -> sheriffleefl.org)
+                    let hostname = new URL(externalSearchLink).hostname;
+                    hostname = hostname.replace('www.', '');
 
-            // Handle Description
-            const description = descText.length > 50 ? descText.substring(0, 47) + "..." : descText;
-            $item('#textDesc').text = description;
+                    // Truncate hostname if excessively long to maintain uniform box size
+                    if (hostname.length > 28) {
+                        descText = hostname.substring(0, 25) + '...';
+                    } else {
+                        descText = hostname;
+                    }
+                } catch (e) {
+                    descText = "Inmate Search";
+                }
+            }
+
+            // B. Map to Elements
+            $item('#textTitle').text = countyName;
+            $item('#textDesc').text = descText; // Guaranteed to be short now
 
             // C. Interaction Logic
             // 1. Container Click -> Internal Page
@@ -77,20 +96,33 @@ $w.onReady(async function () {
             }
         });
 
-        // Assign Data triggers the ItemReady event
-        rep.data = counties;
+        // Set Data
+        // Ensure _id exists
+        rep.data = counties.map((c, i) => ({ ...c, _id: c._id || c.slug || `gen_id_${i}` }));
 
-        // 4. Update SEO
-        updatePageSEO(counties);
+        // 5. Update SEO
+        updatePageSEO(counties, isGeoBased);
 
     } catch (err) {
         console.error("CRITICAL ERROR in Locate Page:", err);
     }
 });
 
+// --- Fallback Data ---
+function getFallbackData() {
+    return [
+        { _id: "fb_alachua", name: "Alachua", slug: "alachua-county", countySeat: "Gainesville" },
+        { _id: "fb_charlotte", name: "Charlotte", slug: "charlotte-county", countySeat: "Punta Gorda" },
+        { _id: "fb_collier", name: "Collier", slug: "collier-county", countySeat: "Naples" },
+        { _id: "fb_hendry", name: "Hendry", slug: "hendry-county", countySeat: "LaBelle" },
+        { _id: "fb_lee", name: "Lee", slug: "lee-county", countySeat: "Fort Myers" },
+        { _id: "fb_sarasota", name: "Sarasota", slug: "sarasota-county", countySeat: "Sarasota" }
+    ];
+}
+
 // --- SEO Helper ---
-function updatePageSEO(counties) {
-    const pageTitle = "Locate an Inmate | Shamrock Bail Bonds";
+function updatePageSEO(counties, isGeo) {
+    const pageTitle = isGeo ? "Inmate Search Near You | Shamrock Bail Bonds" : "Locate an Inmate | Shamrock Bail Bonds";
     const pageDesc = "Find inmate arrest records and mugshots in Florida. Quick search for Lee, Collier, Charlotte, Hendry, and surrounding counties.";
     const pageUrl = "https://www.shamrockbailbonds.biz/locate";
 
@@ -104,33 +136,9 @@ function updatePageSEO(counties) {
         { "property": "og:type", "content": "website" }
     ]);
 
-    // 2. Structured Data
-    const schemas = [];
-
-    // A. BreadcrumbList
-    schemas.push({
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-            {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": "https://www.shamrockbailbonds.biz/"
-            },
-            {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "Locate Inmate",
-                "item": pageUrl
-            }
-        ]
-    });
-
-    // B. CollectionPage (Directory schema)
-    // We list the counties as parts of this collection
+    // 2. Structured Data (Directory Schema)
     if (counties && counties.length > 0) {
-        schemas.push({
+        const schema = {
             "@context": "https://schema.org",
             "@type": "CollectionPage",
             "name": "Florida Inmate Search Directory",
@@ -141,10 +149,10 @@ function updatePageSEO(counties) {
                 "name": `${c.name} County Bail Bonds`,
                 "url": `https://www.shamrockbailbonds.biz/bail-bonds/${c.slug}`
             }))
-        });
-    }
+        };
 
-    wixSeo.setStructuredData(schemas)
-        .then(() => console.log("✅ Locate Page SEO Set"))
-        .catch(e => console.error("❌ Locate Page SEO Error", e));
+        wixSeo.setStructuredData([schema])
+            .then(() => console.log("✅ Locate Page SEO Set"))
+            .catch(e => console.error("❌ Locate Page SEO Error", e));
+    }
 }
