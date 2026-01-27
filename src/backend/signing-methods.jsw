@@ -188,18 +188,23 @@ export async function sendViaSMS(params) {
 
 /**
  * Create embedded signing link for Kiosk Mode
- * @param {Object} params - { caseId, documentId, signerEmail, signerRole }
+ * @param {Object} params - { caseId, documentId, signerEmail, signerRole, formData }
  */
 export async function createKioskLink(params) {
     const { caseId, documentId, signerEmail, signerRole, formData } = params;
 
+    // If no documentId provided but we have formData, use createPortalSigningSession
+    // which generates documents from templates on-the-fly
+    const action = documentId ? 'createEmbeddedLink' : 'createPortalSigningSession';
+    
     const result = await callGasBackend({
-        action: 'createEmbeddedLink',
+        action,
+        caseId,
         documentId,
         signerEmail: signerEmail || 'signer@example.com',
         signerRole: signerRole || 'Signer',
         linkExpiration: 60, // 1 hour for kiosk
-        formData // Pass form data for document generation if needed
+        formData // Pass form data for document generation
     });
 
     if (result.success && (result.link || (result.links && result.links[0]))) {
@@ -377,7 +382,11 @@ export async function initiateSigningWorkflow(params) {
     if (!caseId) {
         return { success: false, error: 'Missing caseId' };
     }
-    if (!documentIds || documentIds.length === 0) {
+    
+    // For kiosk mode with formData, documents are generated on-the-fly from templates
+    // So documentIds can be empty when using customSigner with formData
+    const isKioskWithFormData = method === 'kiosk' && (customSigner?.formData || formData);
+    if (!isKioskWithFormData && (!documentIds || documentIds.length === 0)) {
         return { success: false, error: 'No documents specified' };
     }
 
@@ -409,10 +418,13 @@ export async function initiateSigningWorkflow(params) {
             const signerEmail = customSigner?.email || defendantInfo?.email || `kiosk_${caseId}@shamrockbailbonds.biz`;
             const signerRole = customSigner?.role || 'Defendant';
             const data = customSigner?.formData || formData || {};
+            
+            // documentId can be null/undefined when using formData - GAS will generate from template
+            const docId = documentIds && documentIds.length > 0 ? documentIds[0] : null;
 
             return await createKioskLink({
                 caseId,
-                documentId: documentIds[0],
+                documentId: docId,
                 signerEmail,
                 signerRole,
                 formData: data
