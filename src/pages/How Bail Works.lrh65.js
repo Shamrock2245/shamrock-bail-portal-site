@@ -155,20 +155,41 @@ async function setupCommonBailAmounts() {
         console.error("ERROR: Failed to load Common Charges from CMS", err);
     }
 
-    const rep = $w('#amountsRepeater');
-    if (rep && rep.valid) {
-        rep.data = data;
-        rep.onItemReady(($item, itemData) => {
-            // Primary field names from CSV: offense, range
-            const offense = itemData.offense || itemData.chargeName || itemData.title || "Unknown Offense";
-            const range = itemData.range || itemData.bondAmount || itemData.amount || "Varies";
+    const element = $w('#amountsRepeater');
 
-            const offenseEl = $item('#offenseName');
-            const rangeEl = $item('#bailRange');
+    if (element && element.valid) {
+        // DETECT ELEMENT TYPE: Check if it's a Table or a Repeater
+        if (element.type === '$w.Table') {
+            console.log("DEBUG: #amountsRepeater is a Table. Setting rows.");
 
-            if (offenseEl && offenseEl.valid) offenseEl.text = offense;
-            if (rangeEl && rangeEl.valid) rangeEl.text = range;
-        });
+            // For Tables, we just match the data to the column keys.
+            // Ensure data has the correct keys expected by the table columns.
+            // Assuming table columns are set to 'offense' and 'range' in the Editor.
+            // We map fallback data or CMS data to ensure these keys exist.
+            const tableRows = data.map(item => ({
+                offense: item.offense || item.chargeName || item.title || "Unknown Offense",
+                range: item.range || item.bondAmount || item.amount || "Varies",
+                // Keep original data accessible if needed
+                ...item
+            }));
+
+            element.rows = tableRows;
+
+        } else {
+            // It's a Repeater
+            console.log("DEBUG: #amountsRepeater is a Repeater. Binding items.");
+            element.data = data;
+            element.onItemReady(($item, itemData) => {
+                const offense = itemData.offense || itemData.chargeName || itemData.title || "Unknown Offense";
+                const range = itemData.range || itemData.bondAmount || itemData.amount || "Varies";
+
+                const offenseEl = $item('#offenseName');
+                const rangeEl = $item('#bailRange');
+
+                if (offenseEl && offenseEl.valid) offenseEl.text = offense;
+                if (rangeEl && rangeEl.valid) rangeEl.text = range;
+            });
+        }
     } else {
         console.error('ERROR: #amountsRepeater not found on page');
     }
@@ -189,7 +210,7 @@ async function setupFAQ() {
     let data = fallbackData;
 
     try {
-        const result = await wixData.query(COLLECTIONS.FAQ)
+        const result = await wixData.query(COLLECTIONS.FAQS)
             .limit(10)
             .find();
 
