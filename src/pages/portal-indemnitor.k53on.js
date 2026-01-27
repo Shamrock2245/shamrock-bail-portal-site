@@ -66,7 +66,6 @@ $w.onReady(async function () {
 
         // Setup Actions
         setupPaperworkButtons();
-        setupPaperworkButtons();
         setupLogoutButton();
         setupContactForm();
         setupCallButton();
@@ -465,7 +464,9 @@ async function checkIdUploadStatus(memberEmail, sessionToken) {
 
 async function checkConsentStatus(personId) {
     try {
-        return await getUserConsentStatus(personId);
+        const result = await getUserConsentStatus(personId);
+        // getUserConsentStatus returns {hasConsent: boolean, ...}
+        return result?.hasConsent || false;
     } catch (e) {
         console.error("Indemnitor checkConsentStatus error:", e);
         return false;

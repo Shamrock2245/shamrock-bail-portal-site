@@ -151,6 +151,10 @@ function handleAction(data) {
     case 'createEmbeddedLink':
       result = createEmbeddedLink(data.documentId, data.signerEmail, data.signerRole, data.linkExpiration);
       break;
+    case 'createPortalSigningSession':
+      // New handler for Wix Portal - generates document from template and creates embedded link
+      result = createPortalSigningSession(data);
+      break;
     case 'uploadToSignNow':
       result = uploadFilledPdfToSignNow(data.pdfBase64, data.fileName);
       break;
@@ -419,6 +423,152 @@ function handleSendForSignature(data) {
     return { success: false, error: 'Template Flow Failed: ' + err.message };
   }
 }
+/**
+ * Creates a signing session for the Wix Portal
+ * Generates document from template, fills fields, and creates embedded signing link
+ * @param {Object} data - Contains formData, signerEmail, signerRole, etc.
+ * @returns {Object} - {success, embeddedLink, documentId, error}
+ */
+function createPortalSigningSession(data) {
+  const config = getConfig();
+  
+  // Validate required data
+  if (!data.signerEmail) {
+    return { success: false, error: 'Missing signer email' };
+  }
+  
+  // Get template ID
+  const templateId = data.templateId || config.SIGNNOW_TEMPLATE_ID;
+  if (!templateId) {
+    return { success: false, error: 'No template ID configured' };
+  }
+  
+  try {
+    // 1. Create document from template
+    const defendantName = data.defendantName || data.formData?.defendantName || 'Unknown';
+    const docName = `Bail Application - ${defendantName} - ${new Date().toISOString().split('T')[0]}`;
+    const documentId = createDocumentFromTemplate(templateId, docName);
+    
+    Logger.log('📄 Document created from template: ' + documentId);
+    
+    // 2. Map and fill form data
+    const formData = data.formData || {};
+    const mappedFields = mapPortalFormDataToSignNowFields({
+      // Defendant info
+      defendantName: data.defendantName || formData.defendantName,
+      defendantPhone: data.defendantPhone || formData.defendantPhone,
+      
+      // Indemnitor info
+      indemnitorName: data.indemnitorName || formData.indemnitorName,
+      indemnitorEmail: data.indemnitorEmail || data.signerEmail,
+      indemnitorPhone: data.indemnitorPhone || formData.indemnitorPhone,
+      indemnitorAddress: data.indemnitorAddress || formData.indemnitorAddress,
+      
+      // References
+      reference1: data.reference1 || formData.reference1,
+      reference2: data.reference2 || formData.reference2
+    });
+    
+    if (mappedFields.length > 0) {
+      fillDocumentFields(documentId, mappedFields);
+      Logger.log('✅ Fields filled: ' + mappedFields.length);
+    }
+    
+    // 3. Create embedded signing link
+    const signerRole = data.signerRole || 'Indemnitor';
+    const linkExpiration = data.linkExpiration || 60; // 1 hour default
+    
+    const embeddedResult = createEmbeddedLink(documentId, data.signerEmail, signerRole, linkExpiration);
+    
+    if (!embeddedResult.success) {
+      return { success: false, error: embeddedResult.error || 'Failed to create signing link', documentId: documentId };
+    }
+    
+    Logger.log('🔗 Embedded link created for ' + data.signerEmail);
+    
+    // 4. Store in Wix Portal (optional sync)
+    try {
+      if (typeof saveSigningLinkToWix === 'function') {
+        saveSigningLinkToWix({
+          memberEmail: data.signerEmail,
+          defendantName: defendantName,
+          signingLink: embeddedResult.link,
+          signNowDocumentId: documentId,
+          signerRole: signerRole
+        });
+      }
+    } catch (syncErr) {
+      Logger.log('⚠️ Wix sync failed (non-blocking): ' + syncErr.message);
+    }
+    
+    return {
+      success: true,
+      embeddedLink: embeddedResult.link,
+      link: embeddedResult.link,
+      documentId: documentId
+    };
+    
+  } catch (err) {
+    Logger.log('❌ Portal signing session failed: ' + err.message);
+    return { success: false, error: 'Portal signing session failed: ' + err.message };
+  }
+}
+
+/**
+ * Maps portal form data to SignNow field format
+ * @param {Object} data - Form data from portal
+ * @returns {Array} - Array of {name, value} objects for SignNow
+ */
+function mapPortalFormDataToSignNowFields(data) {
+  const fields = [];
+  
+  // Helper to add field if value exists
+  const addField = (name, value) => {
+    if (value) fields.push({ name, value: String(value) });
+  };
+  
+  // Defendant fields
+  addField('DefName', data.defendantName);
+  addField('DefendantName', data.defendantName);
+  addField('DefPhone', data.defendantPhone);
+  
+  // Indemnitor fields
+  addField('IndName', data.indemnitorName);
+  addField('IndemnitorName', data.indemnitorName);
+  addField('IndEmail', data.indemnitorEmail);
+  addField('IndemnitorEmail', data.indemnitorEmail);
+  addField('IndPhone', data.indemnitorPhone);
+  addField('IndemnitorPhone', data.indemnitorPhone);
+  addField('IndAddress', data.indemnitorAddress);
+  addField('IndemnitorAddress', data.indemnitorAddress);
+  
+  // Reference 1
+  if (data.reference1) {
+    addField('Ref1Name', data.reference1.name);
+    addField('Reference1Name', data.reference1.name);
+    addField('Ref1Phone', data.reference1.phone);
+    addField('Reference1Phone', data.reference1.phone);
+    addField('Ref1Address', data.reference1.address);
+    addField('Reference1Address', data.reference1.address);
+  }
+  
+  // Reference 2
+  if (data.reference2) {
+    addField('Ref2Name', data.reference2.name);
+    addField('Reference2Name', data.reference2.name);
+    addField('Ref2Phone', data.reference2.phone);
+    addField('Reference2Phone', data.reference2.phone);
+    addField('Ref2Address', data.reference2.address);
+    addField('Reference2Address', data.reference2.address);
+  }
+  
+  // Date fields
+  addField('Date', new Date().toLocaleDateString());
+  addField('SignDate', new Date().toLocaleDateString());
+  
+  return fields;
+}
+
 // --- SignNow Primitives ---
 function createDocumentFromTemplate(templateId, docName) {
   const res = SN_makeRequest('/template/' + templateId + '/copy', 'POST', { document_name: docName });

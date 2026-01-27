@@ -844,7 +844,27 @@ export async function getIndemnitorDetails(sessionToken) {
             bondAmount = '$' + Number(caseData.bondAmount).toLocaleString();
         }
         
+        // Calculate financial fields
+        const totalLiability = caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00';
+        const premiumRate = 0.10; // 10% premium rate
+        const totalPremium = caseData.bondAmount ? '$' + (Number(caseData.bondAmount) * premiumRate).toLocaleString() : '$0.00';
+        const downPayment = caseData.downPayment ? '$' + Number(caseData.downPayment).toLocaleString() : '$0.00';
+        const balanceDue = caseData.balanceDue ? '$' + Number(caseData.balanceDue).toLocaleString() : 
+            (caseData.bondAmount && caseData.downPayment ? 
+                '$' + ((Number(caseData.bondAmount) * premiumRate) - Number(caseData.downPayment)).toLocaleString() : '$0.00');
+        
+        // Count charges if available
+        let chargesCount = '0';
+        if (caseData.charges) {
+            if (Array.isArray(caseData.charges)) {
+                chargesCount = String(caseData.charges.length);
+            } else if (typeof caseData.charges === 'string') {
+                chargesCount = String(caseData.charges.split(',').length);
+            }
+        }
+        
         return {
+            // Basic info
             firstName: caseData.indemnitorName?.split(' ')[0] || 'Cosigner',
             lastName: caseData.indemnitorName?.split(' ').slice(1).join(' ') || '',
             email: caseData.indemnitorEmail || '',
@@ -856,7 +876,19 @@ export async function getIndemnitorDetails(sessionToken) {
             paperworkStatus: caseData.paperworkStatus || 'Pending',
             signingStatus: caseData.indemnitorSigningStatus || 'Incomplete',
             county: caseData.county || '',
-            relationship: caseData.indemnitorRelationship || ''
+            relationship: caseData.indemnitorRelationship || '',
+            
+            // Financial fields for dashboard
+            totalLiability: totalLiability,
+            totalPremium: totalPremium,
+            downPayment: downPayment,
+            balanceDue: balanceDue,
+            chargesCount: chargesCount,
+            
+            // Defendant status fields
+            defendantStatus: caseData.defendantStatus || 'In Custody',
+            lastCheckIn: caseData.lastCheckIn ? new Date(caseData.lastCheckIn).toLocaleDateString() : 'Never',
+            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD'
         };
         
     } catch (error) {

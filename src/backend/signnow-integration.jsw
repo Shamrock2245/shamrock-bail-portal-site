@@ -58,19 +58,37 @@ export async function sendForSignature(params) {
 
 /**
  * Create an embedded signing link (kiosk mode)
- * @param {string} documentId 
- * @param {string} email 
- * @param {string} role 
+ * If documentId is a caseId or placeholder, this will generate documents first
+ * @param {string} documentId - Can be SignNow doc ID or caseId for new document generation
+ * @param {string} email - Signer's email
+ * @param {string} role - Signer's role (indemnitor, defendant, etc.)
+ * @param {Object} formData - Form data for document population
  * @returns {Promise<{success: boolean, embeddedLink?: string, documentId?: string, error?: string}>}
  */
 export async function createEmbeddedLink(documentId, email, role, formData = {}) {
+    // Check if we have form data that needs document generation
+    const hasFormData = formData && Object.keys(formData).length > 0;
+    
+    // If formData is provided, use the portal signing session action
+    // This will generate documents from template and create embedded link
+    const action = hasFormData ? 'createPortalSigningSession' : 'createEmbeddedLink';
+    
     const result = await callGasBackend({
-        action: 'createEmbeddedLink',
+        action: action,
         documentId,
         signerEmail: email,
         signerRole: role,
         linkExpiration: 60, // 1 hour for portal
-        formData
+        formData,
+        // Include additional context for document generation
+        indemnitorName: formData.indemnitorName,
+        indemnitorEmail: formData.indemnitorEmail || email,
+        indemnitorPhone: formData.indemnitorPhone,
+        indemnitorAddress: formData.indemnitorAddress,
+        defendantName: formData.defendantName,
+        defendantPhone: formData.defendantPhone,
+        reference1: formData.reference1,
+        reference2: formData.reference2
     });
 
     // Normalize Response: Combine logic from both branches to be maximally robust
