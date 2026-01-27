@@ -52,7 +52,10 @@ export async function generateAndSendMagicLink(params) {
 
   try {
     // Generate magic link token
-    const token = await generateMagicLink(personId, role, caseId);
+    const token = await generateMagicLink(personId, role, caseId, {
+      email: email,
+      name: personName
+    });
 
     if (!token) {
       return {
@@ -158,7 +161,7 @@ export async function batchGenerateAndSendMagicLinks(users) {
 
   for (const user of users) {
     const result = await generateAndSendMagicLink(user);
-    
+
     results.push({
       email: user.email,
       personId: user.personId,

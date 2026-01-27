@@ -203,8 +203,12 @@ export async function lookupUserByContact(contact) {
 
 /**
  * Create a custom session for a user
+ * @param {string} personId
+ * @param {string} role
+ * @param {string} caseId
+ * @param {Object} contactInfo - { email, phone, name } (optional)
  */
-export async function createCustomSession(personId, role, caseId = null) {
+export async function createCustomSession(personId, role, caseId = null, contactInfo = {}) {
     try {
         const sessionToken = generateToken(48);
         const expiresAt = new Date();
@@ -215,6 +219,9 @@ export async function createCustomSession(personId, role, caseId = null) {
             personId: personId,
             role: role,
             caseId: caseId,
+            email: contactInfo.email || null,
+            phone: contactInfo.phone || null,
+            name: contactInfo.name || null,
             createdAt: new Date(),
             expiresAt: expiresAt,
             isActive: true
@@ -265,6 +272,9 @@ export async function validateCustomSession(sessionToken) {
             personId: session.personId,
             role: session.role,
             caseId: session.caseId,
+            email: session.email,
+            phone: session.phone,
+            name: session.name,
             createdAt: session.createdAt,
             expiresAt: session.expiresAt
         };
@@ -305,8 +315,12 @@ export async function invalidateSession(sessionToken) {
 
 /**
  * Generate a magic link token
+ * @param {string} personId - Person identifier
+ * @param {string} role - User role
+ * @param {string} caseId - Case identifier (optional)
+ * @param {Object} options - { email, phone, name } (optional)
  */
-export async function generateMagicLink(personId, role, caseId = null) {
+export async function generateMagicLink(personId, role, caseId = null, options = {}) {
     try {
         const token = generateToken(32);
         const expiresAt = new Date();
@@ -317,6 +331,9 @@ export async function generateMagicLink(personId, role, caseId = null) {
             personId: personId,
             role: role,
             caseId: caseId,
+            email: options.email || null,
+            phone: options.phone || null,
+            name: options.name || null,
             createdAt: new Date(),
             expiresAt: expiresAt,
             used: false
@@ -324,7 +341,7 @@ export async function generateMagicLink(personId, role, caseId = null) {
 
         await wixData.insert(CONFIG.MAGIC_LINKS_COLLECTION, linkData, { suppressAuth: true });
 
-        console.log(`✅ Magic link generated for ${personId}`);
+        console.log(`✅ Magic link generated for ${personId} (${options.email || 'no-email'})`);
         return token;
 
     } catch (error) {
@@ -364,7 +381,12 @@ export async function onMagicLinkLoginV2(token) {
                 const sessionToken = await createCustomSession(
                     linkData.personId,
                     linkData.role,
-                    linkData.caseId
+                    linkData.caseId,
+                    {
+                        email: linkData.email,
+                        phone: linkData.phone,
+                        name: linkData.name
+                    }
                 );
                 return {
                     ok: true,
@@ -392,7 +414,12 @@ export async function onMagicLinkLoginV2(token) {
         const sessionToken = await createCustomSession(
             linkData.personId,
             linkData.role,
-            linkData.caseId
+            linkData.caseId,
+            {
+                email: linkData.email,
+                phone: linkData.phone,
+                name: linkData.name
+            }
         );
 
         return {
@@ -446,7 +473,11 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
         }
 
         // 2. Generate magic link
-        const token = await generateMagicLink(personId, role, caseId);
+        const token = await generateMagicLink(personId, role, caseId, {
+            email: email,
+            phone: phone,
+            name: name
+        });
         const magicLinkUrl = `${CONFIG.BASE_URL}${CONFIG.PORTAL_LANDING}?token=${encodeURIComponent(token)}`;
 
         // 3. Send via appropriate channel
@@ -783,6 +814,62 @@ export async function getDefendantDetails(sessionToken) {
 }
 
 /**
+ * Get indemnitor details by session token
+ * Required by portal-indemnitor.k53on.js
+ */
+export async function getIndemnitorDetails(sessionToken) {
+    try {
+        const session = await validateCustomSession(sessionToken);
+        if (!session || !session.personId) {
+            return null;
+        }
+
+        // Get case data
+        let caseData = null;
+        if (session.caseId) {
+            caseData = await wixData.get(CONFIG.CASES_COLLECTION, session.caseId, { suppressAuth: true });
+        } else if (session.personId.startsWith('indemnitor_')) {
+            // Try to extract case ID from personId if formatted like indemnitor_<caseId>
+            const possibleCaseId = session.personId.replace('indemnitor_', '');
+            try {
+                caseData = await wixData.get(CONFIG.CASES_COLLECTION, possibleCaseId, { suppressAuth: true });
+            } catch (e) {
+                // Not a valid case ID, ignore
+            }
+        }
+
+        if (!caseData) {
+            // Return session data if no case found
+            return {
+                name: session.name || 'Indemnitor',
+                email: session.email || '',
+                phone: session.phone || '',
+                caseNumber: 'Pending',
+                bondAmount: '$0.00',
+                totalLiability: '$0.00'
+            };
+        }
+
+        return {
+            name: caseData.indemnitorName || session.name || 'Indemnitor',
+            email: caseData.indemnitorEmail || session.email || '',
+            phone: caseData.indemnitorPhone || session.phone || '',
+            caseNumber: caseData.caseNumber || 'Pending',
+            bondAmount: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
+            totalLiability: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
+            defendantName: caseData.defendantName || "N/A",
+            defendantStatus: caseData.status || "Unknown",
+            nextCourtDate: caseData.courtDate ? new Date(caseData.courtDate).toLocaleDateString() : "TBD",
+            chargesCount: (caseData.charges || []).length.toString() || "0"
+        };
+
+    } catch (error) {
+        console.error('Error getting indemnitor details:', error);
+        return null;
+    }
+}
+
+/**
  * Get user consent status
  * Required by portal-defendant.skg9y.js
  */
@@ -853,16 +940,16 @@ export async function getIndemnitorDetails(sessionToken) {
         if (caseData.bondAmount) {
             bondAmount = '$' + Number(caseData.bondAmount).toLocaleString();
         }
-        
+
         // Calculate financial fields
         const totalLiability = caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00';
         const premiumRate = 0.10; // 10% premium rate
         const totalPremium = caseData.bondAmount ? '$' + (Number(caseData.bondAmount) * premiumRate).toLocaleString() : '$0.00';
         const downPayment = caseData.downPayment ? '$' + Number(caseData.downPayment).toLocaleString() : '$0.00';
-        const balanceDue = caseData.balanceDue ? '$' + Number(caseData.balanceDue).toLocaleString() : 
-            (caseData.bondAmount && caseData.downPayment ? 
+        const balanceDue = caseData.balanceDue ? '$' + Number(caseData.balanceDue).toLocaleString() :
+            (caseData.bondAmount && caseData.downPayment ?
                 '$' + ((Number(caseData.bondAmount) * premiumRate) - Number(caseData.downPayment)).toLocaleString() : '$0.00');
-        
+
         // Count charges if available
         let chargesCount = '0';
         if (caseData.charges) {
@@ -872,7 +959,7 @@ export async function getIndemnitorDetails(sessionToken) {
                 chargesCount = String(caseData.charges.split(',').length);
             }
         }
-        
+
         return {
             // Basic info
             firstName: caseData.indemnitorName?.split(' ')[0] || 'Cosigner',
@@ -887,14 +974,14 @@ export async function getIndemnitorDetails(sessionToken) {
             signingStatus: caseData.indemnitorSigningStatus || 'Incomplete',
             county: caseData.county || '',
             relationship: caseData.indemnitorRelationship || '',
-            
+
             // Financial fields for dashboard
             totalLiability: totalLiability,
             totalPremium: totalPremium,
             downPayment: downPayment,
             balanceDue: balanceDue,
             chargesCount: chargesCount,
-            
+
             // Defendant status fields
             defendantStatus: caseData.defendantStatus || 'In Custody',
             lastCheckIn: caseData.lastCheckIn ? new Date(caseData.lastCheckIn).toLocaleDateString() : 'Never',

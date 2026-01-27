@@ -85,7 +85,7 @@ export async function validateCode(accessCode) {
  * @param {number} expirationDays - Number of days until expiration (default: 30)
  * @returns {Promise<string>} The generated access code
  */
-export async function generateAccessCode(caseId, portalType, expirationDays = 30) {
+export async function generateAccessCode(caseId, portalType, expirationDays = 30, contactInfo = {}) {
     try {
         // Generate a random 8-character access code
         const accessCode = generateRandomCode(8);
@@ -99,6 +99,9 @@ export async function generateAccessCode(caseId, portalType, expirationDays = 30
             token: accessCode,
             caseId: caseId,
             role: portalType, // Mapping portalType to role
+            email: contactInfo.email || null,
+            phone: contactInfo.phone || null,
+            name: contactInfo.name || null,
             expiresAt: expiresAt.toISOString(),
             used: false,
             createdAt: new Date().toISOString()

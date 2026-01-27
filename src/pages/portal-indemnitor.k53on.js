@@ -191,7 +191,7 @@ async function loadDashboardData() {
     try {
         const data = await getIndemnitorDetails(currentSession.token);
         const name = "Indemnitor"; // TODO: Get from user profile
-        currentSession.email = data?.email || ""; // Store retrieved email
+        currentSession.email = currentSession.email || data?.email || ""; // Store retrieved email
 
         if ($w('#welcomeText').type) {
             $w('#welcomeText').text = `Welcome, ${name}`;
