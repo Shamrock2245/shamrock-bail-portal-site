@@ -1,0 +1,198 @@
+/**
+ * Authentication Utilities
+ * Filename: backend/auth-utils.jsw
+ * 
+ * Provides secure token generation and password hashing utilities
+ * for the custom authentication system.
+ */
+
+import crypto from 'crypto';
+
+/**
+ * Generate a cryptographically secure random token
+ * Used for magic links, session tokens, and API keys
+ * 
+ * @param {number} length - Length of the token (default: 64)
+ * @returns {string} A secure random token
+ */
+export function generateToken(length = 64) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let token = '';
+    
+    // Use crypto for better randomness
+    const randomBytes = crypto.randomBytes(length);
+    for (let i = 0; i < length; i++) {
+        token += chars.charAt(randomBytes[i] % chars.length);
+    }
+    
+    return token;
+}
+
+/**
+ * Generate a short numeric code for SMS verification
+ * 
+ * @param {number} length - Length of the code (default: 6)
+ * @returns {string} A numeric verification code
+ */
+export function generateVerificationCode(length = 6) {
+    const randomBytes = crypto.randomBytes(length);
+    let code = '';
+    
+    for (let i = 0; i < length; i++) {
+        code += (randomBytes[i] % 10).toString();
+    }
+    
+    return code;
+}
+
+/**
+ * Hash a password using PBKDF2
+ * 
+ * @param {string} password - The plain text password
+ * @returns {Promise<string>} The hashed password with salt (format: salt:hash)
+ */
+export async function hashPassword(password) {
+    return new Promise((resolve, reject) => {
+        // Generate a random salt
+        const salt = crypto.randomBytes(32).toString('hex');
+        
+        // Hash the password with PBKDF2
+        crypto.pbkdf2(password, salt, 100000, 64, 'sha512', (err, derivedKey) => {
+            if (err) {
+                reject(err);
+            } else {
+                // Return salt:hash format
+                resolve(`${salt}:${derivedKey.toString('hex')}`);
+            }
+        });
+    });
+}
+
+/**
+ * Verify a password against a stored hash
+ * 
+ * @param {string} password - The plain text password to verify
+ * @param {string} storedHash - The stored hash (format: salt:hash)
+ * @returns {Promise<boolean>} True if password matches, false otherwise
+ */
+export async function verifyPassword(password, storedHash) {
+    return new Promise((resolve, reject) => {
+        try {
+            // Split the stored hash into salt and hash
+            const [salt, hash] = storedHash.split(':');
+            
+            if (!salt || !hash) {
+                resolve(false);
+                return;
+            }
+            
+            // Hash the provided password with the same salt
+            crypto.pbkdf2(password, salt, 100000, 64, 'sha512', (err, derivedKey) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    // Compare the hashes using timing-safe comparison
+                    const derivedHash = derivedKey.toString('hex');
+                    
+                    // Use timing-safe comparison to prevent timing attacks
+                    try {
+                        const hashBuffer = Buffer.from(hash, 'hex');
+                        const derivedBuffer = Buffer.from(derivedHash, 'hex');
+                        
+                        if (hashBuffer.length !== derivedBuffer.length) {
+                            resolve(false);
+                        } else {
+                            resolve(crypto.timingSafeEqual(hashBuffer, derivedBuffer));
+                        }
+                    } catch (e) {
+                        // If buffers can't be compared, do string comparison
+                        resolve(hash === derivedHash);
+                    }
+                }
+            });
+        } catch (e) {
+            resolve(false);
+        }
+    });
+}
+
+/**
+ * Generate a secure magic link token with embedded data
+ * 
+ * @param {Object} data - Data to embed in the token
+ * @param {string} secret - Secret key for signing
+ * @returns {string} A signed token
+ */
+export function generateSignedToken(data, secret) {
+    const payload = JSON.stringify(data);
+    const payloadBase64 = Buffer.from(payload).toString('base64url');
+    
+    // Create HMAC signature
+    const signature = crypto
+        .createHmac('sha256', secret)
+        .update(payloadBase64)
+        .digest('base64url');
+    
+    return `${payloadBase64}.${signature}`;
+}
+
+/**
+ * Verify and decode a signed token
+ * 
+ * @param {string} token - The signed token
+ * @param {string} secret - Secret key for verification
+ * @returns {Object|null} The decoded data or null if invalid
+ */
+export function verifySignedToken(token, secret) {
+    try {
+        const [payloadBase64, signature] = token.split('.');
+        
+        if (!payloadBase64 || !signature) {
+            return null;
+        }
+        
+        // Verify signature
+        const expectedSignature = crypto
+            .createHmac('sha256', secret)
+            .update(payloadBase64)
+            .digest('base64url');
+        
+        // Timing-safe comparison
+        const sigBuffer = Buffer.from(signature, 'base64url');
+        const expectedBuffer = Buffer.from(expectedSignature, 'base64url');
+        
+        if (sigBuffer.length !== expectedBuffer.length) {
+            return null;
+        }
+        
+        if (!crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
+            return null;
+        }
+        
+        // Decode payload
+        const payload = Buffer.from(payloadBase64, 'base64url').toString('utf8');
+        return JSON.parse(payload);
+        
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Generate a UUID v4
+ * 
+ * @returns {string} A UUID v4 string
+ */
+export function generateUUID() {
+    return crypto.randomUUID();
+}
+
+/**
+ * Create a hash of data for integrity checking
+ * 
+ * @param {string} data - Data to hash
+ * @returns {string} SHA-256 hash of the data
+ */
+export function createHash(data) {
+    return crypto.createHash('sha256').update(data).digest('hex');
+}

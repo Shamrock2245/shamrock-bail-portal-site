@@ -263,6 +263,72 @@ async function handleLogout() {
 }
 
 /**
+ * Check if user has uploaded their ID
+ * @param {string} email - User's email
+ * @param {string} token - Session token
+ * @returns {Promise<boolean>} True if ID has been uploaded
+ */
+async function checkIdUploadStatus(email, token) {
+    try {
+        // Check local storage first for quick response
+        const localIdStatus = local.getItem(`id_uploaded_${email}`);
+        if (localIdStatus === 'true') {
+            return true;
+        }
+
+        // Check backend for ID upload status
+        const docs = await getMemberDocuments(email);
+        if (docs && docs.length > 0) {
+            // Look for ID document types
+            const hasId = docs.some(doc => 
+                doc.documentType === 'id' || 
+                doc.documentType === 'drivers_license' ||
+                doc.documentType === 'identification' ||
+                doc.category === 'id'
+            );
+            if (hasId) {
+                local.setItem(`id_uploaded_${email}`, 'true');
+                return true;
+            }
+        }
+
+        return false;
+    } catch (e) {
+        console.warn('Error checking ID upload status:', e);
+        // Return true to not block the flow if check fails
+        return true;
+    }
+}
+
+/**
+ * Check if user has provided consent
+ * @param {string} personId - User's person ID
+ * @returns {Promise<boolean>} True if consent has been given
+ */
+async function checkConsentStatus(personId) {
+    try {
+        // Check local storage first
+        const localConsent = local.getItem(`consent_${personId}`);
+        if (localConsent === 'true') {
+            return true;
+        }
+
+        // Check backend for consent status
+        const consentResult = await getUserConsentStatus(personId);
+        if (consentResult && consentResult.hasConsent) {
+            local.setItem(`consent_${personId}`, 'true');
+            return true;
+        }
+
+        return false;
+    } catch (e) {
+        console.warn('Error checking consent status:', e);
+        // Return false to ensure consent is captured
+        return false;
+    }
+}
+
+/**
  * Main Paperwork Orchestration Flow
  * Checks status sequentially and opens lightboxes if needed.
  */
