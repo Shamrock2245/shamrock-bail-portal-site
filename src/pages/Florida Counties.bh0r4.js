@@ -1,3 +1,4 @@
+/// <reference path="../types/wix-overrides.d.ts" />
 // Force Sync: Dynamic Page Logic
 import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
