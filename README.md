@@ -20,18 +20,18 @@ This project is the official Shamrock Bail Bonds Portal. It runs on Wix (Velo + 
 
 ## 🛠 Tech Stack
 	•	Front End: Wix + Velo (JS), Members Area, Forms, Camera/GPS APIs.
-	•	Backend API: Node.js or Python (FastAPI) with OpenAPI 3.1 spec.
-	•	Database: Encrypted PII store (e.g., Postgres + KMS).
-	•	Storage: Secure blob for PDFs, selfies, signatures.
+	•	Backend API: Google Apps Script (GAS) Web App (Serverless).
+	•	Database: Wix Collections (MagicLinks, Sessions, Cases) + Google Sheets (Backups).
+	•	Storage: Google Drive (PDFs, Signatures) + Wix Media Manager.
 	•	Payments: Wix Payments / Stripe.
-	•	Deployment: GitHub integration with Wix; external API hosted (Vercel/Render/AWS).
+	•	Deployment: GitHub integration (Wix) + Clasp (GAS).
 
 ⸻
 
 ## 🔐 Security & Compliance
 	•	PII encrypted at rest, TLS in transit.
 	•	PCI DSS compliance (never store raw PAN/CVV).
-	•	JWT auth for staff; magic links/OTP for clients.
+	•	Custom Session Auth (Magic Links) + Wix Portal Integration.
 	•	Audit logs for all signatures, payments, check-ins.
 
 ⸻
@@ -39,51 +39,41 @@ This project is the official Shamrock Bail Bonds Portal. It runs on Wix (Velo + 
 ## 🚀 Workflows
 
 **Defendant**
-	1.	Log in via magic link.
-	2.	Complete Appearance Application, Waivers, optional Payment.
-	3.	Perform GPS/selfie check-in (if required).
+	1.	Log in via magic link (SMS/Email).
+	2.	Complete Appearance Application, Waivers.
+	3.	Perform GPS/selfie check-in.
 	4.	Receive PDF + email copy.
 
 **Indemnitor**
-	1.	Log in.
-	2.	Complete Financial Indemnity, Collateral, Credit Card Auth.
-	3.	E-sign documents.
+	1.	Log in via magic link.
+	2.	Complete Financial Indemnity, Collateral fields.
+	3.	E-sign documents via SignNow Lightbox.
 	4.	Receive receipt + signed packet.
 
 **Staff**
-	1.	Log in.
+	1.	Log in (Admin/Staff role).
 	2.	Create Case + pre-fill details.
-	3.	Send links to Defendant/Indemnitor.
-	4.	Monitor progress, payments, check-ins.
+	3.	Generate Magic Links for Defendant/Indemnitor.
+	4.	Monitor progress in Google Sheets / Dashboard.
 	5.	Export signed packet PDFs.
 
 ⸻
 
 ## 🔗 API Endpoints
 
-See API_SPEC.md for full OpenAPI 3.1 definitions.
-Key endpoints:
-	•	POST /persons
-	•	POST /cases
-	•	POST /documents
-	•	POST /signatures/requests
-	•	POST /payments/authorize
-	•	POST /checkins
+The backend is hosted on Google Apps Script.
+Key Actions (via `doPost` router):
+	•	`submitIntake`: Handle form submissions.
+	•	`createEmbeddedLink`: Generate SignNow signing sessions.
+	•	`sendEmail`: Send magic links or notifications.
+	•	`logCheckIn`: Handle GPS check-ins.
 
 ⸻
 
 ## 📄 Documents & Schemas
 
-All forms are digitized via JSON Schema (Draft 2020-12).
-See SCHEMAS.md for definitions and conditionals.
-Examples:
-	•	financial_indemnity_v1
-	•	appearance_application_v1
-	•	collateral_promissory_v1
-	•	bond_info_sheet_v1
-	•	waiver_authorization_v1
-	•	ssa_3288_v1
-	•	cc_authorization_v1
+All forms are digitized via JSON Schema.
+See `docs/` for detailed breakdown.
 
 ⸻
 
@@ -91,17 +81,12 @@ Examples:
 	1.	Wix Side
 	•	Connect Wix to this repo via GitHub integration.
 	•	Enable Velo developer mode.
-	•	Add Members Area for login.
-	•	Configure Wix Payments.
-	•	Create Velo data collections for Persons, Cases, Docs, Check-Ins.
-	2.	API Side
-	•	Deploy backend (api/) separately.
-	•	Import shamrock_openapi.yaml into Postman/Swagger.
-	•	Configure environment variables (DB_URL, STRIPE_KEY, JWT_SECRET).
-	3.	Integration
-	•	Velo fetch calls to /api/v1/... endpoints.
-	•	Validate form inputs against schemas before submission.
-	•	Store PDF/selfie/signature blobs via backend.
+	•	Set up distinct Pages for Defendant/Indemnitor portals.
+	•	Configure Wix Secrets (`GAS_WEB_APP_URL`, `GOOGLE_MAPS_API_KEY`).
+	2.	API Side (GAS)
+	•	Code stored in `backend-gas/`.
+	•	Deploy using `clasp push`.
+	•	Update `gasWebAppUrl` in `utils.jsw`.
 
 ⸻
 
