@@ -141,9 +141,10 @@ export async function sendCheckInComplianceReport() {
     }
 }
 
-
+/**
+ * Job: Watchdog - Missed Check-ins
  * intended to run daily via jobs.config
-    */
+ */
 export async function checkMissedCheckIns() {
     console.log('⏰ Watchdog: Starting Missed Check-in Scan...');
 
