@@ -154,7 +154,7 @@ function setupIntakeForm() {
         if (indemnitorData.zip) safeSetValue('#indemnitorZipCode', indemnitorData.zip);
     }
 
-    safeShow('#intakeFormSection');
+    safeShow('#mainContent');
     safeHide('#bondDashboardSection');
 }
 
@@ -164,7 +164,8 @@ function setupIntakeForm() {
 function showBondDashboard() {
     if (!currentIntake) return;
 
-    safeHide('#intakeFormSection');
+    safeHide('#mainContent');
+    safeShow('#bondDashboardSection');
     safeShow('#bondDashboardSection');
 
     // Populate defendant status from Intake or Live Data?
