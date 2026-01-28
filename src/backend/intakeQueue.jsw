@@ -8,7 +8,7 @@
  */
 
 import wixData from 'wix-data';
-import { currentMember } from 'wix-members-backend';
+
 import { notifyGASOfNewIntake } from './gasIntegration.jsw';
 
 /**
