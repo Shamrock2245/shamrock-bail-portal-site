@@ -2762,10 +2762,18 @@
             if (window.INJECTED_DATA) {
                 console.log('Found injected data for auto-fill:', window.INJECTED_DATA);
                 try {
-                    // Populate basic fields
+                    // Populate Defendant fields
                     if (window.INJECTED_DATA.firstName) document.getElementById('defendant-first-name').value = window.INJECTED_DATA.firstName;
                     if (window.INJECTED_DATA.lastName) document.getElementById('defendant-last-name').value = window.INJECTED_DATA.lastName;
                     if (window.INJECTED_DATA.middleName) document.getElementById('defendant-middle-name').value = window.INJECTED_DATA.middleName;
+
+                    // Populate Defendant Name from FullName if splits missing
+                    if (!window.INJECTED_DATA.firstName && window.INJECTED_DATA.defendantFullName) {
+                        const parts = window.INJECTED_DATA.defendantFullName.split(' ');
+                        if (parts.length > 0) document.getElementById('defendant-first-name').value = parts[0];
+                        if (parts.length > 1) document.getElementById('defendant-last-name').value = parts.slice(1).join(' ');
+                    }
+
                     if (window.INJECTED_DATA.dob) {
                         // Format DOB safely for date input (YYYY-MM-DD)
                         try {
@@ -2778,17 +2786,46 @@
                         }
                     }
                     if (window.INJECTED_DATA.bookingNumber) document.getElementById('case-number').value = window.INJECTED_DATA.bookingNumber;
-                    if (window.INJECTED_DATA.charges) {
-                        // Parse charges string if possible, or usually just add as one charge logic if complex
-                        // For now, let's trigger a summary update
+
+                    // Populate Indemnitor Fields (New Logic)
+                    if (window.INJECTED_DATA.indemnitorEmail) {
+                        document.getElementById('signer-indemnitor-email').value = window.INJECTED_DATA.indemnitorEmail;
                     }
-                    if (window.INJECTED_DATA.bondAmount) {
-                        // Logic to populate bond could go here, but often requires adding a charge structure first
+                    if (window.INJECTED_DATA.indemnitorPhone) {
+                        document.getElementById('signer-indemnitor-phone').value = window.INJECTED_DATA.indemnitorPhone;
+                    }
+
+                    // populate 1st Indemnitor Name fields if we have a name
+                    if (window.INJECTED_DATA.indemnitorName) {
+                        // We need to find or trigger the creation of the first indemnitor card if not present,
+                        // but usually the default UI has one. Let's assume standard UI state or basic fields.
+                        // Ideally we fill a "Main Indemnitor" section or the first repeated item.
+                        // For now, we'll try to target common IDs if they exist or just the signer info
+                        const parts = window.INJECTED_DATA.indemnitorName.split(' ');
+                        const fName = parts[0] || '';
+                        const lName = parts.slice(1).join(' ') || '';
+
+                        // Try to find first indemnitor inputs (dynamic IDs often indemnitor-1-...)
+                        const ind1First = document.getElementById('indemnitor-1-first-name');
+                        const ind1Last = document.getElementById('indemnitor-1-last-name');
+
+                        if (ind1First) ind1First.value = fName;
+                        if (ind1Last) ind1Last.value = lName;
+                    }
+
+                    if (window.INJECTED_DATA.role) {
+                        // potential to set relationship dropdown if exists
                     }
 
                     // Trigger update summary to refresh the UI
                     updateSummary();
-                    showToast('Data auto-filled from spreadsheet!', 'success');
+
+                    if (window.INJECTED_DATA.indemnitorName || window.INJECTED_DATA.indemnitorEmail) {
+                        showToast('Intake data (Defendant + Indemnitor) auto-filled!', 'success');
+                    } else {
+                        showToast('Defendant data auto-filled from spreadsheet!', 'success');
+                    }
+
                 } catch (err) {
                     console.error('Error auto-filling form:', err);
                     showToast('Error auto-filling data', 'error');

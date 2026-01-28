@@ -68,6 +68,7 @@ const ERROR_CODES = {
 
 function doGet(e) {
   if (!e) e = { parameter: {} };
+
   // 1. Check for JSON mode explicitly
   if (e.parameter.format === 'json') {
     if (e.parameter.mode === 'scrape') {
@@ -81,10 +82,37 @@ function doGet(e) {
   // 2. Default to HTML for Browser
   try {
     const page = e.parameter.page || 'Dashboard';
-    return HtmlService.createHtmlOutputFromFile(page)
-      .setTitle('Shamrock Bail Bonds')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+
+    // Check if we need to pre-fill data (e.g. from "Send to Form")
+    if (e.parameter.prefill === 'true') {
+      const template = HtmlService.createTemplateFromFile(page);
+
+      // Attempt to get data from Script Properties (passed from ComprehensiveMenuSystem.js)
+      // We rely on getPrefillData() being available in the context (from ComprehensiveMenuSystem.gs)
+      let prefillData = null;
+      try {
+        if (typeof getPrefillData === 'function') {
+          prefillData = getPrefillData();
+        }
+      } catch (err) {
+        console.warn('Failed to retrieve prefill data:', err);
+      }
+
+      // Inject data into the template context
+      // The HTML file uses <?!= JSON.stringify(data) ?> to read this
+      template.data = prefillData;
+
+      return template.evaluate()
+        .setTitle('Shamrock Bail Bonds')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+    } else {
+      // Standard load without data injection
+      return HtmlService.createHtmlOutputFromFile(page)
+        .setTitle('Shamrock Bail Bonds')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+    }
   } catch (error) {
     // Return friendly HTML error
     return HtmlService.createHtmlOutput('<h1>Page Error</h1><p>' + error.message + '</p>');

@@ -99,7 +99,7 @@ function sendSelectedRowToForm() {
 
 function mapSheetDataToForm_(sheetData) {
   return {
-    defendantFullName: sheetData['Full_Name'] || '',
+    defendantFullName: sheetData['DefendantName'] || sheetData['Full_Name'] || '',
     defendantFirstName: sheetData['First_Name'] || '',
     defendantLastName: sheetData['Last_Name'] || '',
     defendantDOB: formatDate_(sheetData['DOB']),
@@ -114,8 +114,15 @@ function mapSheetDataToForm_(sheetData) {
     defendantState: sheetData['State'] || 'FL',
     defendantZip: sheetData['Zipcode'] || '',
 
-    defendantPhone: sheetData['Phone'] || '',
-    defendantEmail: sheetData['Email'] || '',
+    defendantPhone: sheetData['DefendantPhone'] || sheetData['Phone'] || '',
+    defendantEmail: sheetData['Email'] || '', // Check if this is defendant or indemnitor context
+
+    // Indemnitor Data (Mapped from IntakeQueue)
+    indemnitorName: sheetData['FullName'] || '',
+    indemnitorEmail: sheetData['IndemnitorEmail'] || sheetData['Email'] || '',
+    indemnitorPhone: sheetData['IndemnitorPhone'] || sheetData['Phone'] || '',
+    indemnitorAddress: sheetData['Address'] || '', // If Indemnitor address is in Address column
+    role: sheetData['Role'] || '',
 
     charges: parseChargesFromSheet_(sheetData),
 
@@ -134,7 +141,7 @@ function parseChargesFromSheet_(sheetData) {
     try {
       const parsed = JSON.parse(chargesField);
       if (Array.isArray(parsed)) return parsed;
-    } catch (e) {}
+    } catch (e) { }
 
     const chargesList = chargesField.split(/[;,\n]/).map(c => c.trim()).filter(Boolean);
     chargesList.forEach(charge => {
@@ -317,7 +324,7 @@ function updateCountyInCustodyStatus(sheet, countyName, fullWebCheck = false) {
       try {
         const inCustody = checkIfInCustody_(countyName, String(bookingNumber));
         inferredStatus = inCustody ? 'In Custody' : 'Released';
-      } catch (err) {}
+      } catch (err) { }
     }
 
     if (inferredStatus && inferredStatus !== currentStatus) {
