@@ -18,8 +18,8 @@ var QUAL_ROUTER_CONFIG = {
 
   // County/source tabs (specified order)
   SOURCE_TABS: [
-    'Lee','Charlotte','Collier','Sarasota','Hendry','DeSoto','Manatee','Palm Beach',
-    'Seminole','Orange','Osceola','Pinellas','Broward','Hillsborough'
+    'Lee', 'Charlotte', 'Collier', 'Sarasota', 'Hendry', 'DeSoto', 'Manatee', 'Palm Beach',
+    'Seminole', 'Orange', 'Osceola', 'Pinellas', 'Broward', 'Hillsborough'
   ],
 
   MIN_SCORE: 70,
@@ -92,7 +92,7 @@ function scoreAndSyncQualifiedRows() {
   var ss = SpreadsheetApp.openById(QUAL_ROUTER_CONFIG.SPREADSHEET_ID);
 
   // 1) Score each source sheet
-  QUAL_ROUTER_CONFIG.SOURCE_TABS.forEach(function(tabName) {
+  QUAL_ROUTER_CONFIG.SOURCE_TABS.forEach(function (tabName) {
     var sh = ss.getSheetByName(tabName);
     if (!sh) return;
     scoreSheet_(sh);
@@ -158,7 +158,7 @@ function syncQualifiedRows_() {
   var appendRows = [];
   var now = new Date();
 
-  QUAL_ROUTER_CONFIG.SOURCE_TABS.forEach(function(tabName) {
+  QUAL_ROUTER_CONFIG.SOURCE_TABS.forEach(function (tabName) {
     var sh = ss.getSheetByName(tabName);
     if (!sh) return;
 
@@ -209,7 +209,7 @@ function syncQualifiedSchemaQueue_() {
   var now = new Date();
   var append = [];
 
-  QUAL_ROUTER_CONFIG.SOURCE_TABS.forEach(function(tabName) {
+  QUAL_ROUTER_CONFIG.SOURCE_TABS.forEach(function (tabName) {
     var sh = ss.getSheetByName(tabName);
     if (!sh) return;
 
@@ -257,11 +257,11 @@ function syncQualifiedSchemaQueue_() {
 
       var fullRow = [];
       // Fill schema columns
-      QUAL_ROUTER_CONFIG.SCHEMA_COLUMNS.forEach(function(colName) {
+      QUAL_ROUTER_CONFIG.SCHEMA_COLUMNS.forEach(function (colName) {
         fullRow.push(schemaRow[colName] || '');
       });
       // Fill meta columns
-      QUAL_ROUTER_CONFIG.QUEUE_META_COLUMNS.forEach(function(metaCol) {
+      QUAL_ROUTER_CONFIG.QUEUE_META_COLUMNS.forEach(function (metaCol) {
         fullRow.push(meta[metaCol] !== undefined ? meta[metaCol] : '');
       });
 
@@ -318,7 +318,7 @@ function getOrCreateQueueSheet_(ss) {
     var p = sh.getRange(1, 1, 1, headers.length).protect();
     p.setDescription('Protect queue headers');
     p.setWarningOnly(true);
-  } catch (e) {}
+  } catch (e) { }
 
   return sh;
 }
@@ -374,7 +374,7 @@ function buildSchemaRow_(srcObj, sourceTab) {
   var extras = {};
 
   // copy direct if present
-  QUAL_ROUTER_CONFIG.SCHEMA_COLUMNS.forEach(function(col) {
+  QUAL_ROUTER_CONFIG.SCHEMA_COLUMNS.forEach(function (col) {
     if (col === 'extra_fields_json') return;
     if (srcObj[col] !== undefined && srcObj[col] !== null && String(srcObj[col]).trim() !== '') {
       out[col] = srcObj[col];
@@ -392,9 +392,9 @@ function buildSchemaRow_(srcObj, sourceTab) {
 
   // Anything not in schema becomes extra_fields_json
   var schemaSet = {};
-  QUAL_ROUTER_CONFIG.SCHEMA_COLUMNS.forEach(function(c) { schemaSet[c] = true; });
+  QUAL_ROUTER_CONFIG.SCHEMA_COLUMNS.forEach(function (c) { schemaSet[c] = true; });
 
-  Object.keys(srcObj).forEach(function(k) {
+  Object.keys(srcObj).forEach(function (k) {
     if (!schemaSet[k]) {
       var v = srcObj[k];
       if (v !== null && v !== '' && v !== undefined) extras[k] = v;
@@ -439,54 +439,144 @@ function ensureColumn_(sheet, colMap, colName) {
 }
 
 /**
- * Default scoring logic (same as your version, kept intact)
- * Expects canonical headers like Bond_Amount, Bond_Type, Status, Charges, Full_Name, Court_Date.
+ * ============================================
+ * UNIFIED SCORING ENGINE (Ported & Optimized)
+ * ============================================
+ */
+
+// Key Constants
+const SCORING_CONFIG = {
+  HOT_THRESHOLD: 70,
+  WARM_THRESHOLD: 40,
+  PASS_THRESHOLD: 40, // Warm or Hot routes to qualified
+  RELEASED_NEVER_QUALIFIES: true, // Hard rule
+
+  // "AI" Prompts / Weights (Tuned for ROI)
+  POINTS: {
+    BOND_HIGH: 40,     // $50k+
+    BOND_MED: 25,      // $10k-$50k
+    BOND_LOW: 10,      // $2.5k-$10k
+
+    CUSTODY_IN: 20,
+    CUSTODY_OUT: -60,
+
+    // Charge Keywords
+    TRAFFICKING: 30,   // $$$
+    DUI: 25,           // Urgent
+    DOMESTIC: 20,      // Urgent
+    BATTERY: 15,
+    VOP: 15,           // No bond usually, but good to track
+    THEFT: 10,
+    BURGLARY: 15,
+
+    // Disqualifiers
+    CAPITAL: -200,     // Murder etc
+    FEDERAL: -200,
+    IMMIGRATION: -200
+  }
+};
+
+const LEAD_STATUS = {
+  HOT: "Hot",
+  WARM: "Warm",
+  COLD: "Cold",
+  DISQUALIFIED: "Disqualified"
+};
+
+/**
+ * Advanced Scoring Model (The "AI" Brain)
+ * Returns: { score:number, status:string, qualified:boolean, reasons:string[] }
  */
 function scoreArrestLeadCompat_(record) {
-  var score = 0;
+  let score = 0;
+  var reasons = [];
+  var disqualified = false;
 
+  // 1. Parse Inputs
   var bondAmount = parseFloat(String(record.Bond_Amount || '0').replace(/[$,]/g, '')) || 0;
-  var bondType = String(record.Bond_Type || '').toUpperCase();
-  var status = String(record.Status || '').toUpperCase();
-  var charges = String(record.Charges || '');
+  var bondType = String(record.Bond_Type || '').toLowerCase();
+  var statusRaw = String(record.Status || '').toLowerCase();
 
-  if (bondAmount >= 5000 && bondAmount <= 50000) score += 40;
-  else if (bondAmount >= 1000 && bondAmount < 5000) score += 20;
-  else if (bondAmount > 50000 && bondAmount <= 100000) score += 15;
-  else if (bondAmount > 100000) score += 10;
-  else if (bondAmount > 0 && bondAmount < 1000) score += 5;
-  else if (bondAmount === 0) score -= 50;
+  // Combine all charge text for broad keyword matching
+  var chargesText = (
+    String(record.Charges || '') + " " +
+    String(record.Charge_1 || '') + " " +
+    String(record.Charge_2 || '')
+  ).toLowerCase();
 
-  if (bondType.indexOf('CASH') !== -1 || bondType.indexOf('SURETY') !== -1) score += 25;
-  if (bondType.indexOf('NO BOND') !== -1 || bondType.indexOf('HOLD') !== -1) score -= 60;
-  if (bondType.indexOf('ROR') !== -1 || bondType.indexOf('R.O.R') !== -1 || bondType.indexOf('RECOGNIZANCE') !== -1) score -= 30;
+  // 2. Custody Status Analysis
+  var inCustody = statusRaw.includes('in custody') || statusRaw.includes('incustody') || statusRaw.includes('booked') || statusRaw.includes('jail');
+  var released = statusRaw.includes('released') || statusRaw.includes('discharged') || statusRaw.includes('bonded');
 
-  if (status.indexOf('IN CUSTODY') !== -1 || status.indexOf('INCUSTODY') !== -1 || status === 'IN' || status === 'CUSTODY') score += 20;
-  else if (status.indexOf('RELEASED') !== -1) score -= 30;
-
-  var hasAllRequired = true;
-  if (!record.Full_Name || String(record.Full_Name).trim() === '') hasAllRequired = false;
-  if (!record.Charges || String(record.Charges).trim() === '') hasAllRequired = false;
-  if (!record.Bond_Amount || String(record.Bond_Amount).trim() === '') hasAllRequired = false;
-  if (!record.Court_Date || String(record.Court_Date).trim() === '') hasAllRequired = false;
-
-  if (hasAllRequired) score += 15;
-  else score -= 10;
-
-  var chargesLower = charges.toLowerCase();
-  if (chargesLower.indexOf('capital') !== -1 ||
-      chargesLower.indexOf('murder') !== -1 ||
-      chargesLower.indexOf('homicide') !== -1 ||
-      chargesLower.indexOf('federal') !== -1) {
-    score -= 100;
+  if (SCORING_CONFIG.RELEASED_NEVER_QUALIFIES && released) {
+    // We still score it for analytics, but it won't route
+    reasons.push("Hard Rule: Released");
+    score += SCORING_CONFIG.POINTS.CUSTODY_OUT;
+  } else if (inCustody) {
+    score += SCORING_CONFIG.POINTS.CUSTODY_IN;
+    reasons.push("In Custody");
   }
 
-  var leadStatus = 'Cold';
-  if (score < 0) leadStatus = 'Disqualified';
-  else if (score >= QUAL_ROUTER_CONFIG.MIN_SCORE) leadStatus = 'Hot';
-  else if (score >= 40) leadStatus = 'Warm';
+  // 3. Disqualifiers (Fail Fast)
+  const DISQUALIFY_KW = ['capital', 'murder', 'homicide', 'federal', 'u.s. marshal', 'us marshal', 'ice hold', 'immigration', 'detainer'];
+  for (var i = 0; i < DISQUALIFY_KW.length; i++) {
+    if (chargesText.includes(DISQUALIFY_KW[i])) {
+      disqualified = true;
+      score += SCORING_CONFIG.POINTS.FEDERAL;
+      reasons.push("Disqualified: " + DISQUALIFY_KW[i]);
+      break;
+    }
+  }
 
-  return { score: score, status: leadStatus };
+  if (bondType.includes('no bond') || bondType.includes('hold')) {
+    disqualified = true;
+    score -= 100;
+    reasons.push("No Bond/Hold");
+  }
+
+  // 4. Bond Amount Logic (ROI Potential)
+  if (bondAmount === 0) {
+    score -= 50;
+  } else if (bondAmount < 2500) {
+    score -= 10; // Small bonds often not worth paperwork time unless simple
+  } else if (bondAmount < 10000) {
+    score += SCORING_CONFIG.POINTS.BOND_LOW;
+  } else if (bondAmount < 50000) {
+    score += SCORING_CONFIG.POINTS.BOND_MED;
+  } else {
+    score += SCORING_CONFIG.POINTS.BOND_HIGH;
+  }
+
+  // 5. Charge "Prompt" Matching (Charge Value)
+  // We look for high-value keywords
+  if (chargesText.includes('trafficking')) { score += SCORING_CONFIG.POINTS.TRAFFICKING; reasons.push("Trafficking"); }
+  if (chargesText.includes('dui') || chargesText.includes('driving under')) { score += SCORING_CONFIG.POINTS.DUI; reasons.push("DUI"); }
+  if (chargesText.includes('domestic') || chargesText.includes('battery')) { score += SCORING_CONFIG.POINTS.DOMESTIC; reasons.push("Domestic/Battery"); }
+  if (chargesText.includes('violation of probation') || chargesText.includes('vop')) { score += SCORING_CONFIG.POINTS.VOP; reasons.push("VOP"); }
+
+  // 6. Data Completeness
+  if (record.Full_Name && record.Booking_Number && record.Charges) {
+    score += 10;
+  } else {
+    score -= 20;
+    reasons.push("Missing Data");
+  }
+
+  // 7. Final Classification
+  var leadStatus = LEAD_STATUS.COLD;
+  if (disqualified || score < 0) leadStatus = LEAD_STATUS.DISQUALIFIED;
+  else if (score >= SCORING_CONFIG.HOT_THRESHOLD) leadStatus = LEAD_STATUS.HOT;
+  else if (score >= SCORING_CONFIG.WARM_THRESHOLD) leadStatus = LEAD_STATUS.WARM;
+
+  // Qualification Check
+  var qualified = (score >= SCORING_CONFIG.PASS_THRESHOLD) && !disqualified && !(SCORING_CONFIG.RELEASED_NEVER_QUALIFIES && released);
+
+  return {
+    score: score,
+    status: leadStatus,
+    qualified: qualified,
+    reasons: reasons
+  };
 }
 
 /**
@@ -494,7 +584,7 @@ function scoreArrestLeadCompat_(record) {
  */
 function installQualifiedRouterTrigger_15min() {
   var triggers = ScriptApp.getProjectTriggers();
-  triggers.forEach(function(t) {
+  triggers.forEach(function (t) {
     if (t.getHandlerFunction() === 'scoreAndSyncQualifiedRows') ScriptApp.deleteTrigger(t);
   });
 

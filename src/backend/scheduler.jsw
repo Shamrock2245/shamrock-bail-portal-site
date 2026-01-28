@@ -3,10 +3,147 @@ import { COLLECTIONS } from 'public/collectionIds';
 import { fetch } from 'wix-fetch';
 import { getGasUrl } from 'backend/utils';
 
+import { sendSms } from 'backend/twilio-client';
+
+// ... existing imports ...
+
 /**
- * Watchdog: Check for Missed Check-ins
- * intended to run daily via jobs.config
+ * Job: Send Court Date Reminders
+ * intended to run daily via jobs.config (e.g., at 8:00 AM)
+ * Sends SMS to defendants with court dates in the next 48 hours (approximated as "the day after tomorrow")
  */
+export async function sendCourtDateReminders() {
+    console.log('⚖️ Scheduler: Starting Court Date Reminders...');
+    let sentCount = 0;
+    let errorCount = 0;
+
+    try {
+        const now = new Date();
+        const twoDaysFromNow = new Date();
+        twoDaysFromNow.setDate(now.getDate() + 2);
+
+        // Normalize to start/end of that day to catch all times
+        const startOfDay = new Date(twoDaysFromNow.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(twoDaysFromNow.setHours(23, 59, 59, 999));
+
+        // Query Cases
+        const query = wixData.query(COLLECTIONS.CASES)
+            .eq('status', 'Active')
+            .ge('nextCourtDate', startOfDay)
+            .le('nextCourtDate', endOfDay);
+
+        const results = await query.find();
+
+        if (results.totalCount === 0) {
+            console.log('✅ No court dates found for target range.');
+            return;
+        }
+
+        console.log(`Found ${results.totalCount} cases with court dates on ${startOfDay.toLocaleDateString()}`);
+
+        for (const item of results.items) {
+            if (!item.defendantPhone) {
+                console.warn(`Skipping reminder for Case ${item.caseNumber}: No phone number.`);
+                continue;
+            }
+
+            const dateStr = new Date(item.nextCourtDate).toLocaleString('en-US', {
+                weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+            });
+
+            const message = `Shamrock Bail Bonds Reminder: You have court on ${dateStr}. Please arrive 15 minutes early. Call us at 239-337-HAIL if you need transport.`;
+
+            const res = await sendSms(item.defendantPhone, message);
+            if (res.success) {
+                console.log(`✅ SMS sent to ${item.defendantName} (${item.caseNumber})`);
+                sentCount++;
+            } else {
+                console.error(`❌ Failed to send SMS to ${item.defendantName}:`, res.error);
+                errorCount++;
+            }
+        }
+
+    } catch (error) {
+        console.error('Court Reminder Job Error:', error);
+    }
+
+    console.log(`⚖️ Reminder Job Complete. Sent: ${sentCount}, Errors: ${errorCount}`);
+    return { sent: sentCount, errors: errorCount };
+}
+
+// ... existing code ...
+
+/**
+ * Job: Weekly Check-In Compliance Report
+ * intended to run weekly (e.g., Monday 9:00 AM)
+ * Generates a report of all active defendants and their check-in status
+ */
+export async function sendCheckInComplianceReport() {
+    console.log('📊 Scheduler: Generate Compliance Report...');
+    try {
+        const activeCases = await wixData.query(COLLECTIONS.CASES)
+            .eq('status', 'Active')
+            .find();
+
+        const reportData = [];
+        const now = new Date();
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(now.getDate() - 7);
+
+        for (const item of activeCases.items) {
+            if (!item.memberId) continue;
+
+            // Count check-ins this week
+            const count = await wixData.query(COLLECTIONS.USER_LOCATIONS)
+                .eq('memberId', item.memberId)
+                .ge('timestamp', oneWeekAgo)
+                .count();
+
+            reportData.push({
+                name: item.defendantName,
+                caseNumber: item.caseNumber,
+                checkInsThisWeek: count,
+                status: count > 0 ? 'Active' : 'Missing'
+            });
+        }
+
+        // Format for Email
+        const htmlBody = `
+            <h2>Weekly Compliance Report</h2>
+            <p>Period: ${oneWeekAgo.toLocaleDateString()} - ${now.toLocaleDateString()}</p>
+            <table border="1" cellpadding="5" style="border-collapse: collapse;">
+                <tr><th>Defendant</th><th>Case #</th><th>Check-ins (7d)</th><th>Status</th></tr>
+                ${reportData.map(r => `
+                    <tr style="background-color: ${r.status === 'Missing' ? '#ffcccc' : '#ccffcc'}">
+                        <td>${r.name}</td>
+                        <td>${r.caseNumber}</td>
+                        <td style="text-align:center">${r.checkInsThisWeek}</td>
+                        <td>${r.status}</td>
+                    </tr>
+                `).join('')}
+            </table>
+        `;
+
+        // Send to Admin
+        await fetch(await getGasUrl(), {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'sendAdminEmail',
+                subject: 'Weekly Check-In Compliance Report',
+                body: htmlBody
+            })
+        });
+
+        console.log(`✅ Compliance report sent for ${reportData.length} defendants.`);
+
+    } catch (error) {
+        console.error('Compliance Report Error:', error);
+    }
+}
+
+
+ * intended to run daily via jobs.config
+    */
 export async function checkMissedCheckIns() {
     console.log('⏰ Watchdog: Starting Missed Check-in Scan...');
 

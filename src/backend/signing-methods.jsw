@@ -17,6 +17,8 @@ import { fetchWithRetry, getGasUrl } from 'backend/utils';
 import { sendSms } from 'backend/twilio-client';
 import wixData from 'wix-data';
 
+const PAYMENT_LINK = 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
+
 /**
  * Core function to call GAS Backend
  */
@@ -63,7 +65,7 @@ export async function sendViaEmail(params) {
         }))),
         options: {
             subject: emailSubject || 'Shamrock Bail Bonds - Documents for Signature',
-            message: 'Please review and sign the attached bail bond documents.'
+            message: `Please review and sign the attached bail bond documents.\n\nTo pay by credit card: ${PAYMENT_LINK}`
         }
     });
 
@@ -132,7 +134,7 @@ export async function sendViaSMS(params) {
                 const phoneToSend = indLink.phone;
                 // Match with input param indemnitorPhones if needed, but GAS link object is reliable if built from input
                 if (phoneToSend) {
-                    const indSmsBody = `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${indLink.link}\n\nQuestions? Call (727) 295-2245`;
+                    const indSmsBody = `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${indLink.link}\n\nPay Bail: ${PAYMENT_LINK}\n\nQuestions? Call (727) 295-2245`;
                     const indSmsResult = await sendSms(phoneToSend, indSmsBody);
                     indemnitorResults.push({ phone: phoneToSend, success: indSmsResult.success });
                 }
@@ -141,7 +143,7 @@ export async function sendViaSMS(params) {
 
         // Step 2: Send SMS via Twilio (Wix backend) - Defendant
         if (signingLink) {
-            const smsBody = `Shamrock Bail Bonds: Your bail paperwork is ready to sign.\n\nClick here to sign: ${signingLink}\n\nThis link expires in 24 hours. Questions? Call (727) 295-2245`;
+            const smsBody = `Shamrock Bail Bonds: Your bail paperwork is ready to sign.\n\nClick here to sign: ${signingLink}\n\nPay Bail: ${PAYMENT_LINK}\n\nThis link expires in 24 hours. Questions? Call (727) 295-2245`;
             const smsResult = await sendSms(defendantPhone, smsBody);
 
             if (!smsResult.success) {
@@ -165,7 +167,7 @@ export async function sendViaSMS(params) {
                         });
 
                         if (indLinkResult.success && indLinkResult.link) {
-                            const indSmsBody = `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${indLinkResult.link}\n\nQuestions? Call (727) 295-2245`;
+                            const indSmsBody = `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${indLinkResult.link}\n\nPay Bail: ${PAYMENT_LINK}\n\nQuestions? Call (727) 295-2245`;
                             const indSmsResult = await sendSms(phone, indSmsBody);
                             indemnitorResults.push({ phone, success: indSmsResult.success });
                         }
@@ -196,7 +198,7 @@ export async function createKioskLink(params) {
     // If no documentId provided but we have formData, use createPortalSigningSession
     // which generates documents from templates on-the-fly
     const action = documentId ? 'createEmbeddedLink' : 'createPortalSigningSession';
-    
+
     const result = await callGasBackend({
         action,
         caseId,
@@ -382,7 +384,7 @@ export async function initiateSigningWorkflow(params) {
     if (!caseId) {
         return { success: false, error: 'Missing caseId' };
     }
-    
+
     // For kiosk mode with formData, documents are generated on-the-fly from templates
     // So documentIds can be empty when using customSigner with formData
     const isKioskWithFormData = method === 'kiosk' && (customSigner?.formData || formData);
@@ -418,7 +420,7 @@ export async function initiateSigningWorkflow(params) {
             const signerEmail = customSigner?.email || defendantInfo?.email || `kiosk_${caseId}@shamrockbailbonds.biz`;
             const signerRole = customSigner?.role || 'Defendant';
             const data = customSigner?.formData || formData || {};
-            
+
             // documentId can be null/undefined when using formData - GAS will generate from template
             const docId = documentIds && documentIds.length > 0 ? documentIds[0] : null;
 
@@ -454,8 +456,8 @@ export async function sendSigningLinkViaSms(phone, signingLink, recipientType = 
     }
 
     const messageTemplates = {
-        defendant: `Shamrock Bail Bonds: Your bail paperwork is ready to sign.\n\nClick here to sign: ${signingLink}\n\nThis link expires in 24 hours. Questions? Call (727) 295-2245`,
-        indemnitor: `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${signingLink}\n\nQuestions? Call (727) 295-2245`
+        defendant: `Shamrock Bail Bonds: Your bail paperwork is ready to sign.\n\nClick here to sign: ${signingLink}\n\nPay Bail: ${PAYMENT_LINK}\n\nThis link expires in 24 hours. Questions? Call (727) 295-2245`,
+        indemnitor: `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${signingLink}\n\nPay Bail: ${PAYMENT_LINK}\n\nQuestions? Call (727) 295-2245`
     };
 
     const smsBody = messageTemplates[recipientType] || messageTemplates.defendant;

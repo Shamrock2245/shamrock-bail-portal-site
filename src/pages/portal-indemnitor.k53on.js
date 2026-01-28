@@ -92,6 +92,7 @@ $w.onReady(async function () {
         setupLogoutButton();
         setupContactForm();
         setupCallButton();
+        setupPayButton(); // [NEW] SwipeSimple Integration
         setupSubmitButton();
         setupCaseSelector();
 
@@ -576,6 +577,19 @@ function setupSubmitButton() {
         }
     } catch (e) {
         console.log('Submit button not found or error:', e);
+    }
+}
+
+function setupPayButton() {
+    try {
+        if ($w('#payBondBtn').type) {
+            $w('#payBondBtn').onClick(() => {
+                console.log('💸 Opening Payment Link...');
+                wixLocation.to('https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd');
+            });
+        }
+    } catch (e) {
+        console.log('Pay button not found:', e);
     }
 }
 

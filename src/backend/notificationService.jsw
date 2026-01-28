@@ -122,8 +122,8 @@ async function sendSmsNotificationIfNeeded(type, data) {
     // Simple templates for SMS
     const smsTemplates = {
         [NOTIFICATION_TYPES.ID_REJECTED]: `Shamrock Bail: Your ID was rejected. Please log in to upload a new one.`,
-        [NOTIFICATION_TYPES.PAPERWORK_READY]: `Shamrock Bail: Your paperwork is ready. Login to sign: https://www.shamrockbailbonds.biz/portal-landing`,
-        [NOTIFICATION_TYPES.PAPERWORK_SENT]: `Shamrock Bail: Documents sent for signature. Please check your email or portal.`,
+        [NOTIFICATION_TYPES.PAPERWORK_READY]: `Shamrock Bail: Your paperwork is ready. Login to sign: https://www.shamrockbailbonds.biz/portal-landing. Pay Bail: https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd`,
+        [NOTIFICATION_TYPES.PAPERWORK_SENT]: `Shamrock Bail: Documents sent for signature. Pay Bail here: https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd`,
         [NOTIFICATION_TYPES.PAPERWORK_DECLINED]: `Shamrock Bail: Providing documents was declined/failed. Please contact us.`,
         [NOTIFICATION_TYPES.URGENT_CASE]: `Shamrock Bail: URGENT update on your case. Please contact us immediately.`
     };

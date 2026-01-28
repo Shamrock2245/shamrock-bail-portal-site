@@ -58,10 +58,27 @@ function getConfig() {
 // ============================================================================
 // WEB APP HANDLERS
 // ============================================================================
+const ERROR_CODES = {
+  INVALID_JSON: 'INVALID_JSON',
+  MISSING_ACTION: 'MISSING_ACTION',
+  UNKNOWN_ACTION: 'UNKNOWN_ACTION',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  UNAUTHORIZED: 'UNAUTHORIZED'
+};
+
 function doGet(e) {
   if (!e) e = { parameter: {} };
-  if (e.parameter.mode === 'scrape') return runLeeScraper();
-  if (e.parameter.action) return handleGetAction(e);
+  // 1. Check for JSON mode explicitly
+  if (e.parameter.format === 'json') {
+    if (e.parameter.mode === 'scrape') {
+      const result = runLeeScraper();
+      return createResponse(result);
+    }
+    if (e.parameter.action) return handleGetAction(e);
+    return createErrorResponse('No action specified', ERROR_CODES.MISSING_ACTION);
+  }
+
+  // 2. Default to HTML for Browser
   try {
     const page = e.parameter.page || 'Dashboard';
     return HtmlService.createHtmlOutputFromFile(page)
@@ -69,9 +86,11 @@ function doGet(e) {
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   } catch (error) {
+    // Return friendly HTML error
     return HtmlService.createHtmlOutput('<h1>Page Error</h1><p>' + error.message + '</p>');
   }
 }
+
 function doPost(e) {
   // 1. Log Incoming Request (Access Control)
   try {
@@ -104,183 +123,53 @@ function doPost(e) {
       data = JSON.parse(e.postData.contents);
     } catch (parseError) {
       if (typeof logSecurityEvent === 'function') logSecurityEvent('JSON_PARSE_ERROR', { error: parseError.toString() });
-      return createResponse({ success: false, error: 'Invalid JSON payload' });
+      return createErrorResponse('Invalid JSON payload', ERROR_CODES.INVALID_JSON);
     }
 
     // --- WEBHOOK HANDLER (SOC II Aware) ---
     if (data.event && data.event.startsWith('document.')) {
       if (typeof handleSOC2Webhook === 'function') {
-        // We can't easily verify signature here without headers if it came as raw body.
-        // Ideally all webhooks should go to e.pathInfo /signnow.
-        // For now, log it.
         if (typeof logProcessingEvent === 'function') logProcessingEvent('LEGACY_WEBHOOK_RECEIVED', { event: data.event });
-
-        // If we have a verified payload (signature check skipped here because we can't), 
-        // we could potentially trust it if we trust the path. 
-        // BUT SOC2 says verify everything. 
-        // Given v4.3.1 trusted it blindly, strict SOC2 would require migrating webhook config to use custom headers.
-        // We will ACK it but log it.
         return createResponse({ received: true });
       }
     }
 
     // Delegate to shared handler
     const result = handleAction(data);
-    return createResponse(result);
+    return createResponse(result); // Result typically has success: true/false
   } catch (error) {
     if (typeof logSecurityEvent === 'function') logSecurityEvent('DOPOST_FAILURE', { error: error.toString() });
-    return createResponse({ success: false, error: error.toString(), stack: error.stack });
+    return createErrorResponse(error.toString(), ERROR_CODES.INTERNAL_ERROR, error.stack);
   }
 }
 
-/**
- * Adapter for Client-Side calls (google.script.run)
- * This allows Dashboard.html to call backend functions securely.
- */
-function doPostFromClient(data) {
-  return handleAction(data);
-}
-
-/**
- * Shared Action Handler (Business Logic)
- */
-function handleAction(data) {
-  const action = data.action;
-  let result = { success: false, error: 'Unknown action: ' + action };
-
-  switch (action) {
-    // --- SignNow Actions ---
-    case 'createSigningRequest':
-    case 'sendForSignature': // Hybrid Handler
-      result = handleSendForSignature(data);
-      break;
-    case 'createEmbeddedLink':
-      result = createEmbeddedLink(data.documentId, data.signerEmail, data.signerRole, data.linkExpiration);
-      break;
-    case 'createPortalSigningSession':
-      // New handler for Wix Portal - generates document from template and creates embedded link
-      result = createPortalSigningSession(data);
-      break;
-    case 'uploadToSignNow':
-      result = uploadFilledPdfToSignNow(data.pdfBase64, data.fileName);
-      break;
-    case 'getDocumentStatus':
-      result = getDocumentStatus(data.documentId);
-      break;
-    case 'addSignatureFields': // Added for Dashboard_Full.html support
-      if (typeof SN_addFields !== 'function') {
-        // Fallback or error if SN_addFields is missing (it was in SignNow_Integration_Complete.gs)
-        // Assuming SignNow_Integration_Complete.gs is loaded in the project
-        return { success: false, error: 'SN_addFields function not found' };
-      }
-      result = SN_addFields(data.documentId, data.fields);
-      break;
-
-    case 'sendEmail':
-      result = sendEmailBasic(data);
-      break;
-
-    // --- Database & Drive ---
-    case 'saveBooking':
-      result = saveBookingData(data.bookingData);
-      // Hardened: Sync to Wix Portal if save successful
-      if (result.success && typeof syncCaseDataToWix === 'function') {
-        try {
-          const wixRes = syncCaseDataToWix(data.bookingData, result.row);
-          result.wixSync = wixRes;
-        } catch (e) {
-          console.error("Wix Sync Failed inside doPost: " + e.message);
-          result.wixSync = { success: false, error: e.message };
-        }
-      }
-      break;
-    case 'saveToGoogleDrive':
-      result = saveFilledPacketToDrive(data);
-      break;
-
-    // --- Utilities ---
-    case 'getNextReceiptNumber':
-      result = getNextReceiptNumber();
-      break;
-    case 'runLeeScraper':
-      result = runLeeScraper();
-      break;
-    case 'health':
-      result = { success: true, message: 'GAS v5.1.0 Online', timestamp: new Date().toISOString() };
-      break;
-
-    // --- New: Wix Portal Batch Sync (Exposed to Front-end) ---
-    case 'batchSaveToWixPortal':
-      if (typeof batchSaveToWixPortal_Server !== 'function')
-        return { success: false, error: 'Wix Portal Sync not implemented on server' };
-      result = batchSaveToWixPortal_Server(data.documents);
-      break;
-
-    // --- Wix Portal Integration (SOC II Safe Wrapper) ---
-    case 'sendToWixPortal':
-    case 'generateAndSendWithWixPortal':
-      if (typeof generateAndSendWithWixPortal_Safe === 'function') {
-        result = generateAndSendWithWixPortal_Safe(data);
-      } else {
-        result = { success: false, error: 'Safe wrapper not found' };
-      }
-      break;
-
-    case 'fetchIndemnitorProfile':
-      if (typeof fetchIndemnitorProfile !== 'function')
-        return { success: false, error: 'Function fetchIndemnitorProfile not found' };
-      result = fetchIndemnitorProfile(data.email);
-      break;
-
-    // --- Intake Queue ---
-    case 'fetchPendingIntakes':
-      if (typeof fetchPendingIntakes !== 'function')
-        return { success: false, error: 'Queue fetch not implemented' };
-      result = fetchPendingIntakes();
-      break;
-
-    case 'markIntakeProcessed':
-      if (typeof markIntakeAsProcessed !== 'function')
-        return { success: false, error: 'Queue update not implemented' };
-      result = markIntakeAsProcessed(data.intakeId);
-      break;
-
-    // --- Intake from Wix Portal (NEW in v5.1.0) ---
-    case 'submitIntake':
-      // Handles indemnitor/defendant intake from Wix portal
-      result = handleIntakeSubmission(data);
-      break;
-
-    case 'startPaperwork':
-      // Triggers document generation and signing flow
-      result = handleStartPaperwork(data);
-      break;
-
-    case 'getSigningLink':
-      // Returns embedded signing link for a pending document
-      if (data.documentId && data.signerEmail) {
-        result = createEmbeddedLink(data.documentId, data.signerEmail, data.signerRole || 'Signer', data.linkExpiration || 60);
-      } else {
-        result = { success: false, error: 'documentId and signerEmail required' };
-      }
-      break;
-  }
-  return result;
-}
 function handleGetAction(e) {
   // Limited GET actions for security
   const action = e.parameter.action;
   const callback = e.parameter.callback;
-  let result = { success: false, error: 'Unknown action' };
-  if (action === 'health') result = { success: true, version: '5.1', timestamp: new Date().toISOString() };
-  if (action === 'getNextReceiptNumber') result = getNextReceiptNumber();
-  return createResponse(result, callback);
+
+  if (action === 'health') return createResponse({ success: true, version: '5.2', timestamp: new Date().toISOString() }, callback);
+  if (action === 'getNextReceiptNumber') return createResponse(getNextReceiptNumber(), callback);
+
+  return createErrorResponse('Unknown action', ERROR_CODES.UNKNOWN_ACTION);
 }
+
 function createResponse(data, callback) {
   const json = JSON.stringify(data);
   const output = ContentService.createTextOutput(callback ? callback + '(' + json + ')' : json);
   output.setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
   return output;
+}
+
+function createErrorResponse(message, code = 'INTERNAL_ERROR', details = null) {
+  return createResponse({
+    success: false,
+    error: {
+      code: code,
+      message: message,
+      details: details
+    }
+  });
 }
 // ============================================================================
 // SUB: TWILIO SMS
@@ -553,56 +442,62 @@ function mapPortalFormDataToSignNowFields(data) {
     if (value) fields.push({ name, value: String(value) });
   };
 
+  // Normalization Helpers (using FormDataHandler.gs if available, else simple fallback)
+  const normName = (typeof FDH_title_ === 'function') ? FDH_title_ : (s => String(s || "").trim());
+  const normPhone = (typeof FDH_cleanPhone_ === 'function') ? FDH_cleanPhone_ : (s => String(s || "").trim());
+  const normDate = (s) => (typeof FDH_normalizeDate_ === 'function') ? FDH_normalizeDate_(s) : new Date(s).toLocaleDateString();
+
   // Defendant fields
-  addField('DefName', data.defendantName);
-  addField('DefendantName', data.defendantName);
-  addField('DefPhone', data.defendantPhone);
+  addField('DefName', normName(data.defendantName));
+  addField('DefendantName', normName(data.defendantName));
+  addField('DefPhone', normPhone(data.defendantPhone));
 
   // Indemnitor fields
-  addField('IndName', data.indemnitorName);
-  addField('IndemnitorName', data.indemnitorName);
-  addField('IndEmail', data.indemnitorEmail);
+  addField('IndName', normName(data.indemnitorName));
+  addField('IndemnitorName', normName(data.indemnitorName));
+  addField('IndEmail', data.indemnitorEmail); // Email usually doesn't need title case
   addField('IndemnitorEmail', data.indemnitorEmail);
-  addField('IndPhone', data.indemnitorPhone);
-  addField('IndemnitorPhone', data.indemnitorPhone);
+  addField('IndPhone', normPhone(data.indemnitorPhone));
+  addField('IndemnitorPhone', normPhone(data.indemnitorPhone));
   addField('IndAddress', data.indemnitorAddress);
   addField('IndemnitorAddress', data.indemnitorAddress);
 
   // Employer & Supervisor (V5.1 Added)
-  addField('IndEmployer', data.indemnitorEmployerName);
-  addField('IndEmpPhone', data.indemnitorEmployerPhone);
+  addField('IndEmployer', normName(data.indemnitorEmployerName));
+  addField('IndEmpPhone', normPhone(data.indemnitorEmployerPhone));
   // Composite address for Employer if available
   const empAddr = (data.indemnitorEmployerCity && data.indemnitorEmployerState)
-    ? `${data.indemnitorEmployerCity}, ${data.indemnitorEmployerState} ${data.indemnitorEmployerZip || ''}`
+    ? `${normName(data.indemnitorEmployerCity)}, ${data.indemnitorEmployerState} ${data.indemnitorEmployerZip || ''}`
     : '';
   addField('IndEmpAddress', empAddr);
 
-  addField('IndSupervisor', data.indemnitorSupervisorName);
-  addField('IndSupervisorPhone', data.indemnitorSupervisorPhone);
+  addField('IndSupervisor', normName(data.indemnitorSupervisorName));
+  addField('IndSupervisorPhone', normPhone(data.indemnitorSupervisorPhone));
 
   // Reference 1
   if (data.reference1) {
-    addField('Ref1Name', data.reference1.name);
-    addField('Reference1Name', data.reference1.name);
-    addField('Ref1Phone', data.reference1.phone);
-    addField('Reference1Phone', data.reference1.phone);
+    addField('Ref1Name', normName(data.reference1.name));
+    addField('Reference1Name', normName(data.reference1.name));
+    addField('Ref1Phone', normPhone(data.reference1.phone));
+    addField('Reference1Phone', normPhone(data.reference1.phone));
     addField('Ref1Address', data.reference1.address);
     addField('Reference1Address', data.reference1.address);
   }
 
   // Reference 2
   if (data.reference2) {
-    addField('Ref2Name', data.reference2.name);
-    addField('Reference2Name', data.reference2.name);
-    addField('Ref2Phone', data.reference2.phone);
-    addField('Reference2Phone', data.reference2.phone);
+    addField('Ref2Name', normName(data.reference2.name));
+    addField('Reference2Name', normName(data.reference2.name));
+    addField('Ref2Phone', normPhone(data.reference2.phone));
+    addField('Reference2Phone', normPhone(data.reference2.phone));
     addField('Ref2Address', data.reference2.address);
     addField('Reference2Address', data.reference2.address);
   }
 
   // Date fields
-  addField('Date', new Date().toLocaleDateString());
-  addField('SignDate', new Date().toLocaleDateString());
+  const today = new Date().toLocaleDateString();
+  addField('Date', today);
+  addField('SignDate', today);
 
   return fields;
 }
