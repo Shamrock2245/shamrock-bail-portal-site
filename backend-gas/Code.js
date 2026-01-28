@@ -210,6 +210,9 @@ function handleAction(data) {
   if (action === 'fetchPendingIntakes') return getWixIntakeQueue(); // Updated to new robust function
   if (action === 'markIntakeProcessed') return markWixIntakeAsSynced(data.intakeId); // Updated to new robust function
 
+  // 1.5. NOTIFICATIONS
+  if (action === 'sendEmail') return handleSendEmail(data);
+
   // 2. SIGNING & DOCS
   if (action === 'sendForSignature') return handleSendForSignature(data);
   if (action === 'createPortalSigningSession') return createPortalSigningSession(data);

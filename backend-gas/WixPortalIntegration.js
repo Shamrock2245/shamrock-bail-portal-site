@@ -564,7 +564,7 @@ INDEMNITOR INFORMATION:
 Name: ${intakeData.indemnitorName}
 Phone: ${intakeData.indemnitorPhone}
 Please review this intake in the Dashboard Queue tab.
-https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzM87__8sLZhhvWyUif2VN3u48LND7UldEbxMhhklttd3ikrW-jfbPEHWKMcLWWx-RNSQ/exec
+https://script.google.com/macros/s/AKfycby_heMOPxvwdnsdd2vL6cQWVLKv5j6ziCPhSxUMBRUTdZxJ6mVTEShbuDrZvIsvY1ohew/exec
     `.trim();
     MailApp.sendEmail(staffEmail, subject, body);
     Logger.log(`Staff notification sent for case ${caseId}`);
