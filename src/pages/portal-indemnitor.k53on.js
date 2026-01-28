@@ -199,11 +199,11 @@ function showBondDashboard() {
  */
 function setupEventListeners() {
     // CRITICAL: Check if submit button exists
-    if (!$w('#btnSubmitInfo').valid) {
-        console.error("❌ CRITICAL ERROR: '#btnSubmitInfo' not found on page. Check Element ID in Editor!");
+    if (!$w('#btnSubmitForm').valid) {
+        console.error("❌ CRITICAL ERROR: '#btnSubmitForm' not found on page. Check Element ID in Editor!");
         showError("Development Error: Submit button ID mismatch. Please check console.");
     } else {
-        $w('#btnSubmitInfo').onClick(handleSubmitIntake);
+        $w('#btnSubmitForm').onClick(handleSubmitIntake);
         console.log("✅ Submit button handler attached");
     }
 
@@ -243,8 +243,8 @@ async function handleSubmitIntake() {
 
     try {
         isSubmitting = true;
-        safeDisable('#btnSubmitInfo');
-        safeSetText('#btnSubmitInfo', 'Submitting...');
+        safeDisable('#btnSubmitForm');
+        safeSetText('#btnSubmitForm', 'Submitting...');
         showLoading(true);
 
         const validation = validateIntakeForm();
@@ -284,8 +284,8 @@ async function handleSubmitIntake() {
         showError(error.message || 'Error submitting form.');
     } finally {
         isSubmitting = false;
-        safeEnable('#btnSubmitInfo');
-        safeSetText('#btnSubmitInfo', 'Submit Info');
+        safeEnable('#btnSubmitForm');
+        safeSetText('#btnSubmitForm', 'Submit Info');
         showLoading(false);
     }
 }
