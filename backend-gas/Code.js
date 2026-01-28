@@ -1,6 +1,6 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 5.2 - Enterprise Portal Release (Updated 2026-01-27)
+// Version: 5.3 - Enterprise Portal Release (Updated 2026-01-27)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
@@ -81,6 +81,7 @@ function doGet(e) {
 
   // 2. Default to HTML for Browser
   try {
+    const VERSION = '5.3';
     const page = e.parameter.page || 'Dashboard';
 
     // Check if we need to pre-fill data (e.g. from "Send to Form")

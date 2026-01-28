@@ -476,12 +476,13 @@ const SCORING_CONFIG = {
   }
 };
 
-const LEAD_STATUS = {
-  HOT: "Hot",
-  WARM: "Warm",
-  COLD: "Cold",
-  DISQUALIFIED: "Disqualified"
-};
+// LEAD_STATUS is already declared in LeadScoringSystem.js
+// const LEAD_STATUS = {
+//   HOT: "Hot",
+//   WARM: "Warm",
+//   COLD: "Cold",
+//   DISQUALIFIED: "Disqualified"
+// };
 
 /**
  * Advanced Scoring Model (The "AI" Brain)
