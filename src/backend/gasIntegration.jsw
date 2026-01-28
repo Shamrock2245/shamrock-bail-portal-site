@@ -12,7 +12,7 @@
 import wixData from 'wix-data';
 import wixSecretsBackend from 'wix-secrets-backend';
 
-const GAS_WEB_APP_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzM87__8sLZhhvWyUif2VN3u48LND7UldEbxMhhklttd3ikrW-jfbPEHWKMcLWWx-RNSQ/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby_heMOPxvwdnsdd2vL6cQWVLKv5j6ziCPhSxUMBRUTdZxJ6mVTEShbuDrZvIsvY1ohew/exec';
 
 /**
  * Get all pending intake submissions for GAS Dashboard
@@ -26,13 +26,13 @@ export async function getPendingIntakesForGAS() {
             .eq('gasSyncStatus', 'pending')
             .descending('_createdDate')
             .limit(100)
-            .find();
-        
+            .find({ suppressAuth: true });
+
         // Transform data to GAS-friendly format
         const intakes = results.items.map(item => ({
             caseId: item.caseId,
             recordId: item._id,
-            
+
             // Defendant Info
             defendantName: item.defendantName,
             defendantFirstName: item.defendantFirstName,
@@ -40,7 +40,7 @@ export async function getPendingIntakesForGAS() {
             defendantEmail: item.defendantEmail,
             defendantPhone: item.defendantPhone,
             defendantBookingNumber: item.defendantBookingNumber,
-            
+
             // Indemnitor Info
             indemnitorName: item.indemnitorName,
             indemnitorFirstName: item.indemnitorFirstName,
@@ -55,7 +55,7 @@ export async function getPendingIntakesForGAS() {
             residenceType: item.residenceType,
             indemnitorEmployer: item.indemnitorEmployer,
             indemnitorEmployerCity: item.indemnitorEmployerCity,
-            
+
             // Reference 1
             reference1Name: item.reference1Name,
             reference1Phone: item.reference1Phone,
@@ -63,7 +63,7 @@ export async function getPendingIntakesForGAS() {
             reference1City: item.reference1City,
             reference1State: item.reference1State,
             reference1Zip: item.reference1Zip,
-            
+
             // Reference 2
             reference2Name: item.reference2Name,
             reference2Phone: item.reference2Phone,
@@ -71,26 +71,26 @@ export async function getPendingIntakesForGAS() {
             reference2City: item.reference2City,
             reference2State: item.reference2State,
             reference2Zip: item.reference2Zip,
-            
+
             // Jail/Court Info
             county: item.county,
             jailFacility: item.jailFacility,
-            
+
             // Metadata
             submittedAt: item._createdDate,
             status: item.status,
             notes: item.notes
         }));
-        
+
         return {
             success: true,
             count: intakes.length,
             intakes: intakes
         };
-        
+
     } catch (error) {
         console.error('Error getting pending intakes for GAS:', error);
-        
+
         return {
             success: false,
             error: error.message,
@@ -110,33 +110,33 @@ export async function markIntakeAsSynced(caseId) {
     try {
         const results = await wixData.query('IntakeQueue')
             .eq('caseId', caseId)
-            .find();
-        
+            .find({ suppressAuth: true });
+
         if (results.items.length === 0) {
             throw new Error(`Case ${caseId} not found`);
         }
-        
+
         const record = results.items[0];
-        
+
         const updatedRecord = {
             ...record,
             gasSyncStatus: 'synced',
             gasSyncTimestamp: new Date(),
             status: 'in_progress' // Move from 'intake' to 'in_progress'
         };
-        
+
         await wixData.update('IntakeQueue', updatedRecord);
-        
+
         console.log(`Case ${caseId} marked as synced with GAS`);
-        
+
         return {
             success: true,
             caseId: caseId
         };
-        
+
     } catch (error) {
         console.error('Error marking intake as synced:', error);
-        
+
         return {
             success: false,
             error: error.message
@@ -156,14 +156,14 @@ export async function updateDefendantData(caseId, defendantData) {
     try {
         const results = await wixData.query('IntakeQueue')
             .eq('caseId', caseId)
-            .find();
-        
+            .find({ suppressAuth: true });
+
         if (results.items.length === 0) {
             throw new Error(`Case ${caseId} not found`);
         }
-        
+
         const record = results.items[0];
-        
+
         const updatedRecord = {
             ...record,
             // Update defendant fields with scraped data
@@ -178,24 +178,24 @@ export async function updateDefendantData(caseId, defendantData) {
             bondAmount: defendantData.bondAmount || record.bondAmount,
             premiumAmount: defendantData.premiumAmount || record.premiumAmount,
             bookingNumber: defendantData.bookingNumber || record.defendantBookingNumber,
-            
+
             // Update status
             defendantDataComplete: true,
             status: 'ready_for_documents'
         };
-        
+
         await wixData.update('IntakeQueue', updatedRecord);
-        
+
         console.log(`Defendant data updated for case ${caseId}`);
-        
+
         return {
             success: true,
             caseId: caseId
         };
-        
+
     } catch (error) {
         console.error('Error updating defendant data:', error);
-        
+
         return {
             success: false,
             error: error.message
@@ -215,14 +215,14 @@ export async function updateSignNowData(caseId, signNowData) {
     try {
         const results = await wixData.query('IntakeQueue')
             .eq('caseId', caseId)
-            .find();
-        
+            .find({ suppressAuth: true });
+
         if (results.items.length === 0) {
             throw new Error(`Case ${caseId} not found`);
         }
-        
+
         const record = results.items[0];
-        
+
         const updatedRecord = {
             ...record,
             signNowDocumentId: signNowData.documentId,
@@ -233,21 +233,21 @@ export async function updateSignNowData(caseId, signNowData) {
             status: 'awaiting_signatures',
             documentsSentDate: new Date()
         };
-        
+
         await wixData.update('IntakeQueue', updatedRecord);
-        
+
         console.log(`SignNow data updated for case ${caseId}`);
-        
+
         return {
             success: true,
             caseId: caseId,
             indemnitorLink: signNowData.indemnitorLink,
             defendantLink: signNowData.defendantLink
         };
-        
+
     } catch (error) {
         console.error('Error updating SignNow data:', error);
-        
+
         return {
             success: false,
             error: error.message
@@ -267,14 +267,14 @@ export async function markIntakeAsSigned(caseId, completionData) {
     try {
         const results = await wixData.query('IntakeQueue')
             .eq('caseId', caseId)
-            .find();
-        
+            .find({ suppressAuth: true });
+
         if (results.items.length === 0) {
             throw new Error(`Case ${caseId} not found`);
         }
-        
+
         const record = results.items[0];
-        
+
         const updatedRecord = {
             ...record,
             signNowStatus: 'signed',
@@ -284,19 +284,19 @@ export async function markIntakeAsSigned(caseId, completionData) {
             signedDocumentUrl: completionData.signedDocumentUrl,
             driveFileId: completionData.driveFileId
         };
-        
+
         await wixData.update('IntakeQueue', updatedRecord);
-        
+
         console.log(`Case ${caseId} marked as fully signed`);
-        
+
         return {
             success: true,
             caseId: caseId
         };
-        
+
     } catch (error) {
         console.error('Error marking intake as signed:', error);
-        
+
         return {
             success: false,
             error: error.message
@@ -314,23 +314,23 @@ export async function getIntakeByCaseId(caseId) {
     try {
         const results = await wixData.query('IntakeQueue')
             .eq('caseId', caseId)
-            .find();
-        
+            .find({ suppressAuth: true });
+
         if (results.items.length === 0) {
             return {
                 success: false,
                 error: 'Case not found'
             };
         }
-        
+
         return {
             success: true,
             intake: results.items[0]
         };
-        
+
     } catch (error) {
         console.error('Error getting intake by case ID:', error);
-        
+
         return {
             success: false,
             error: error.message
@@ -349,11 +349,11 @@ export async function notifyGASOfNewIntake(caseId) {
     try {
         // Get the intake data
         const intakeResult = await getIntakeByCaseId(caseId);
-        
+
         if (!intakeResult.success) {
             throw new Error('Intake not found');
         }
-        
+
         // Send webhook to GAS
         const response = await fetch(GAS_WEB_APP_URL, {
             method: 'POST',
@@ -366,21 +366,21 @@ export async function notifyGASOfNewIntake(caseId) {
                 data: intakeResult.intake
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`GAS notification failed: ${response.statusText}`);
         }
-        
+
         console.log(`GAS notified of new intake: ${caseId}`);
-        
+
         return {
             success: true,
             caseId: caseId
         };
-        
+
     } catch (error) {
         console.error('Error notifying GAS:', error);
-        
+
         // Don't fail the intake submission if notification fails
         return {
             success: false,
@@ -400,15 +400,15 @@ export async function healthCheck() {
         // Test IntakeQueue access
         const testQuery = await wixData.query('IntakeQueue')
             .limit(1)
-            .find();
-        
+            .find({ suppressAuth: true });
+
         return {
             success: true,
             status: 'healthy',
             timestamp: new Date().toISOString(),
             intakeQueueAccessible: true
         };
-        
+
     } catch (error) {
         return {
             success: false,
