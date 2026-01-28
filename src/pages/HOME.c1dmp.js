@@ -12,6 +12,7 @@
 import { session } from 'wix-storage';
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
+import { getCounties } from 'backend/counties';
 
 // State
 let countiesData = null;
