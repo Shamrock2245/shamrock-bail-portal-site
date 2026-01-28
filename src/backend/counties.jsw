@@ -201,16 +201,25 @@ import allCountiesData from 'backend/data/allFloridaCounties.json';
 
 /**
  * Get static county data (optimized for performance)
- * @returns {Array} Array of county objects with minimal data
+ * @returns {Array} Array of county objects with minimal data for dropdown
  */
 function getStaticCounties() {
     // Use the comprehensive JSON data
     const list = allCountiesData.counties || [];
 
-    // Inject coordinates for future use (performance optimization)
+    // Return only essential fields for dropdown to reduce payload size
     return list.map(c => {
-        const slug = c.slug.replace('-county', '');
-        return { ...c, ...COUNTY_COORDINATES[slug] };
+        const slug = c.slug || '';
+        const slugKey = slug.replace('-county', '');
+        const coords = COUNTY_COORDINATES[slugKey] || {};
+        
+        return {
+            name: c.county_name || c.name,
+            slug: slug,
+            region: c.region || 'unknown',
+            lat: coords.lat,
+            lon: coords.lon
+        };
     });
 }
 

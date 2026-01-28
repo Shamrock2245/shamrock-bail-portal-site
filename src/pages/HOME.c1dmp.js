@@ -24,10 +24,11 @@ $w.onReady(function () {
     setupHeroSection();
     setupCTAButtons();
 
-    // Defer county dropdown loading (1s) to prioritize LCP
+    // Load county dropdown - use shorter delay if cached, longer if not
+    const hasCachedCounties = session.getItem('counties');
     setTimeout(() => {
         loadCountyDropdown();
-    }, 1000);
+    }, hasCachedCounties ? 100 : 500);
 
     // Defer testimonials (2s)
     setTimeout(() => {
