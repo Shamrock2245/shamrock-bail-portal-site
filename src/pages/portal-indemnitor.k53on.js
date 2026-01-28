@@ -382,7 +382,9 @@ function collectIntakeFormData() {
 function handleSignPaperwork() {
     if (currentIntake?.signNowIndemnitorLink) {
         wixWindow.openLightbox('signing-lightbox', {
-            signNowUrl: currentIntake.signNowIndemnitorLink
+            signingUrl: currentIntake.signNowIndemnitorLink,
+            documentId: currentIntake.signNowDocumentId,
+            sessionId: currentSession.sessionToken
         });
     }
 }
