@@ -9,11 +9,7 @@
  * 5. Dynamic imports for backend and Velo APIs
  */
 
-// No top-level imports
-// import { getCounties } from 'backend/counties'; <-- Dynamic
-// import { session } from 'wix-storage';          <-- Dynamic
-// import wixLocation from 'wix-location';         <-- Dynamic
-// import wixWindow from 'wix-window';             <-- Dynamic
+import { session } from 'wix-storage';
 
 // State
 let countiesData = null;
@@ -92,7 +88,6 @@ async function loadCountyDropdown() {
         }
 
         // Dynamic Imports
-        const { session } = await import('wix-storage');
         const { getCounties } = await import('backend/counties');
 
         // Check cache first to avoid backend roundtrip
