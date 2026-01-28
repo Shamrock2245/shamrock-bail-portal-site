@@ -8,6 +8,7 @@
  */
 
 import wixData from 'wix-data';
+import { COLLECTIONS } from 'public/collectionIds';
 
 import { notifyGASOfNewIntake } from './gasIntegration.jsw';
 
@@ -20,8 +21,14 @@ import { notifyGASOfNewIntake } from './gasIntegration.jsw';
 export async function submitIntakeForm(intakeData) {
     try {
         console.log('📝 Submitting to IntakeQueue. Data keys:', Object.keys(intakeData));
+
+        // Validation: Ensure minimum required fields are present
+        if (!intakeData.indemnitorEmail || !intakeData.defendantName) {
+            throw new Error('Validation Failed: Missing required fields (Email or Defendant Name)');
+        }
+
         console.log('📝 Indemnitor/Defendant:', {
-            indemnitor: intakeData.indemnitorEmail,
+            indemnitor: intakeData.indemnitorEmail.replace(/(.{2})(.*)(@.*)/, '$1***$3'), // Mask email
             defendant: intakeData.defendantName
         });
 
@@ -97,7 +104,7 @@ export async function submitIntakeForm(intakeData) {
         // Explicitly catching insert error to log it specifically
         let result;
         try {
-            result = await wixData.insert('IntakeQueue', intakeRecord, { suppressAuth: true });
+            result = await wixData.insert(COLLECTIONS.INTAKE_QUEUE, intakeRecord, { suppressAuth: true });
             console.log('✅ IntakeQueue record created successfully:', result._id);
         } catch (insertError) {
             console.error('❌ FATAL: wixData.insert failed:', insertError);
@@ -145,7 +152,7 @@ export async function submitIntakeForm(intakeData) {
 export async function updateIntakeRecord(caseId, updateData) {
     try {
         // Find the record by caseId
-        const results = await wixData.query('IntakeQueue')
+        const results = await wixData.query(COLLECTIONS.INTAKE_QUEUE)
             .eq('caseId', caseId)
             .find({ suppressAuth: true });
 
@@ -163,7 +170,7 @@ export async function updateIntakeRecord(caseId, updateData) {
         };
 
         // Update the record
-        const result = await wixData.update('IntakeQueue', updatedRecord, { suppressAuth: true });
+        const result = await wixData.update(COLLECTIONS.INTAKE_QUEUE, updatedRecord, { suppressAuth: true });
 
         console.log('IntakeQueue record updated:', result._id);
 
@@ -191,7 +198,7 @@ export async function updateIntakeRecord(caseId, updateData) {
  */
 export async function getIntakesByStatus(status) {
     try {
-        const results = await wixData.query('IntakeQueue')
+        const results = await wixData.query(COLLECTIONS.INTAKE_QUEUE)
             .eq('status', status)
             .descending('_createdDate')
             .find({ suppressAuth: true });
@@ -220,7 +227,7 @@ export async function getIntakesByStatus(status) {
  */
 export async function getPendingIntakes() {
     try {
-        const results = await wixData.query('IntakeQueue')
+        const results = await wixData.query(COLLECTIONS.INTAKE_QUEUE)
             .eq('gasSyncStatus', 'pending')
             .descending('_createdDate')
             .find({ suppressAuth: true });
@@ -344,7 +351,7 @@ async function notifyStaffOfNewIntake(intakeRecord) {
  */
 export async function getIntakeByCaseId(caseId) {
     try {
-        const results = await wixData.query('IntakeQueue')
+        const results = await wixData.query(COLLECTIONS.INTAKE_QUEUE)
             .eq('caseId', caseId)
             .find({ suppressAuth: true });
 
@@ -378,7 +385,7 @@ export async function getIntakeByCaseId(caseId) {
  */
 export async function getIntakesByIndemnitorEmail(email) {
     try {
-        const results = await wixData.query('IntakeQueue')
+        const results = await wixData.query(COLLECTIONS.INTAKE_QUEUE)
             .eq('indemnitorEmail', email)
             .descending('_createdDate')
             .find({ suppressAuth: true });

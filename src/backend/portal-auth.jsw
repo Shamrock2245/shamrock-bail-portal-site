@@ -525,7 +525,7 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
         console.log('🔧 sendMagicLinkEmail DEBUG:');
         console.log('  - GAS URL:', gasUrl ? 'SET' : 'MISSING');
         console.log('  - API Key:', apiKey ? 'SET' : 'MISSING');
-        console.log('  - Recipient:', email);
+        console.log('  - Recipient:', email.replace(/(.{2})(.*)(@.*)/, '$1***$3'));
         console.log('  - Role:', role);
 
         const roleLabels = {
