@@ -1119,3 +1119,25 @@ function isUserAllowed(email) {
   console.warn(`Unauthorized dashboard access attempt: ${email}`);
   return false;
 }
+
+/**
+ * HANDLER: Send Email
+ * Allows Wix to trigger emails via GAS (e.g. Magic Links)
+ */
+function handleSendEmail(data) {
+  if (!data.to || !data.subject || !data.htmlBody) {
+    return { success: false, error: 'Missing email fields (to, subject, htmlBody)' };
+  }
+
+  try {
+    MailApp.sendEmail({
+      to: data.to,
+      subject: data.subject,
+      htmlBody: data.htmlBody,
+      name: 'Shamrock Portal' // Optional sender name
+    });
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
