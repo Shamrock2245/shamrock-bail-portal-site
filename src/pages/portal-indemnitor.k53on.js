@@ -119,6 +119,7 @@ async function loadCounties() {
     try {
         const results = await wixData.query('FloridaCounties')
             .ascending('countyName')
+            .limit(100) // Ensure all 67 counties are loaded
             .find();
 
         const countyOptions = results.items.map(item => ({
@@ -287,7 +288,11 @@ async function handleSubmitIntake() {
 
             // DEBUG: Show IDs to user to verify persistence
             // wixWindow.openLightbox('Success', { message: `Case ID: ${result.caseId}` });
-            $w('#groupStep3').collapse();
+
+            // Collapse the entire form group and show success
+            if ($w('#intakeFormGroup').valid) $w('#intakeFormGroup').collapse();
+            else if ($w('#groupStep3').valid) $w('#groupStep3').collapse(); // Fallback
+
             $w('#groupSuccess').expand();
 
             // Show Case ID in success message
