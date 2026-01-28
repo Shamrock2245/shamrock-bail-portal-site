@@ -521,6 +521,12 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
         // Use GAS backend to send email
         const gasUrl = await getGasUrl();
         const apiKey = await getGasApiKey();
+        
+        console.log('🔧 sendMagicLinkEmail DEBUG:');
+        console.log('  - GAS URL:', gasUrl ? 'SET' : 'MISSING');
+        console.log('  - API Key:', apiKey ? 'SET' : 'MISSING');
+        console.log('  - Recipient:', email);
+        console.log('  - Role:', role);
 
         const roleLabels = {
             'admin': 'Administrator',
@@ -553,26 +559,54 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
             </div>
         `;
 
+        const payload = {
+            action: 'sendEmail',
+            apiKey: apiKey,
+            to: email,
+            subject: 'Your Secure Portal Access - Shamrock Bail Bonds',
+            htmlBody: emailBody
+        };
+        
+        console.log('📤 Sending email request to GAS...');
+        
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'sendEmail',
-                apiKey: apiKey,
-                to: email,
-                subject: 'Your Secure Portal Access - Shamrock Bail Bonds',
-                htmlBody: emailBody
-            })
+            body: JSON.stringify(payload)
         });
 
+        console.log('📥 GAS Response Status:', response.status);
+        
+        const responseText = await response.text();
+        console.log('📥 GAS Response Body:', responseText);
+        
         if (!response.ok) {
-            throw new Error('Email send failed: ' + response.status);
+            console.error('❌ Email send failed with status:', response.status);
+            throw new Error('Email send failed: ' + response.status + ' - ' + responseText);
+        }
+        
+        // Try to parse response as JSON
+        let responseData;
+        try {
+            responseData = JSON.parse(responseText);
+            console.log('✅ Parsed GAS response:', responseData);
+        } catch (e) {
+            console.warn('⚠️ Could not parse GAS response as JSON');
+            responseData = { success: true }; // Assume success if we got 200 OK
+        }
+        
+        if (responseData.success === false) {
+            console.error('❌ GAS returned success: false:', responseData.error);
+            throw new Error('GAS error: ' + (responseData.error || 'Unknown error'));
         }
 
+        console.log('✅ Email sent successfully!');
         return { success: true };
 
     } catch (error) {
-        console.error('Error sending magic link email:', error);
+        console.error('❌ CRITICAL ERROR in sendMagicLinkEmail:', error);
+        console.error('   Error message:', error.message);
+        console.error('   Error stack:', error.stack);
         return { success: false, error: error.message };
     }
 }
