@@ -27,6 +27,11 @@ let currentIntake = null;
 let isSubmitting = false;
 
 $w.onReady(async function () {
+    console.log("🚀 Indemnitor Portal: Page Code Loaded");
+
+    // 0. Setup Listeners IMMEDIATELY (so buttons work even if data loads slowly)
+    setupEventListeners();
+
     // 1. Handle Magic Link Token from URL
     const query = wixLocation.query;
     if (query.st) {
