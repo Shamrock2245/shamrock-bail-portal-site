@@ -1,353 +1,147 @@
 /**
  * Shamrock Bail Bonds - IntakeQueue Backend Module
  * 
- * This module handles indemnitor form submissions and writes them to the IntakeQueue collection.
- * The IntakeQueue serves as the bridge between the indemnitor portal and the GAS Dashboard.
+ * Handles indemnitor intake form submissions to IntakeQueue collection.
+ * This bridges the indemnitor portal form with the GAS Dashboard.
  * 
  * File: backend/intakeQueue.jsw
  */
 
 import wixData from 'wix-data';
-import { currentMember } from 'wix-members-backend';
-import { notifyGASOfNewIntake } from './gasIntegration.jsw';
 
 /**
- * Submit indemnitor intake form to IntakeQueue
+ * Submit intake form data to IntakeQueue collection
  * 
- * @param {Object} intakeData - Data from indemnitor form submission
- * @returns {Promise<Object>} - Result with case ID and status
+ * @param {Object} formData - Form data from portal-indemnitor page
+ * @returns {Promise<Object>} - Result with success status and case ID
  */
-export async function submitIntakeForm(intakeData) {
+export async function submitIntakeForm(formData) {
     try {
-        console.log('Submitting intake form to IntakeQueue:', intakeData);
+        console.log('📝 Submitting to IntakeQueue:', formData);
         
-        // Generate a unique case ID
-        const caseId = await generateCaseId();
+        // Generate unique case ID
+        const timestamp = Date.now();
+        const random = Math.floor(Math.random() * 1000);
+        const caseId = `CASE-${timestamp}-${random}`;
         
-        // Prepare the IntakeQueue record
+        // Prepare IntakeQueue record
         const intakeRecord = {
             caseId: caseId,
             
-            // Defendant Information (from form)
-            defendantName: intakeData.defendantName || '',
-            defendantEmail: intakeData.defendantEmail || '',
-            defendantPhone: intakeData.defendantPhone || '',
+            // Defendant info
+            defendantName: formData.defendantName || '',
+            defendantEmail: formData.defendantEmail || '',
+            defendantPhone: formData.defendantPhone || '',
             
-            // Indemnitor Information (from form)
-            indemnitorName: intakeData.indemnitorName || '',
-            indemnitorEmail: intakeData.indemnitorEmail || '',
-            indemnitorPhone: intakeData.indemnitorPhone || '',
+            // Indemnitor info
+            indemnitorName: formData.indemnitorName || '',
+            indemnitorEmail: formData.indemnitorEmail || '',
+            indemnitorPhone: formData.indemnitorPhone || '',
+            indemnitorStreetAddress: formData.indemnitorStreetAddress || '',
+            indemnitorCity: formData.indemnitorCity || '',
+            indemnitorState: formData.indemnitorState || '',
+            indemnitorZipCode: formData.indemnitorZipCode || '',
+            residenceType: formData.residenceType || '',
             
-            // Case Information
-            county: intakeData.county || '',
-            arrestDate: intakeData.arrestDate ? new Date(intakeData.arrestDate) : null,
-            charges: intakeData.charges || '',
-            bondAmount: intakeData.bondAmount || 0,
-            premiumAmount: intakeData.premiumAmount || 0,
+            // References
+            reference1Name: formData.reference1Name || '',
+            reference1Phone: formData.reference1Phone || '',
+            reference1Address: formData.reference1Address || '',
+            reference1City: formData.reference1City || '',
+            reference1State: formData.reference1State || '',
+            reference1Zip: formData.reference1Zip || '',
+            
+            reference2Name: formData.reference2Name || '',
+            reference2Phone: formData.reference2Phone || '',
+            reference2Address: formData.reference2Address || '',
+            reference2City: formData.reference2City || '',
+            reference2State: formData.reference2State || '',
+            reference2Zip: formData.reference2Zip || '',
+            
+            // Employer info
+            indemnitorEmployer: formData.indemnitorEmployer || '',
+            indemnitorEmployerCity: formData.indemnitorEmployerCity || '',
+            indemnitorEmployerState: formData.indemnitorEmployerState || '',
+            indemnitorEmployerZip: formData.indemnitorEmployerZip || '',
+            indemnitorEmployerPhone: formData.indemnitorEmployerPhone || '',
+            indemnitorSupervisorName: formData.indemnitorSupervisorName || '',
+            indemnitorSupervisorPhone: formData.indemnitorSupervisorPhone || '',
+            
+            // Case info
+            county: formData.county || '',
+            jailFacility: formData.jailFacility || '',
+            bondAmount: formData.bondAmount || 0,
+            premiumAmount: formData.premiumAmount || 0,
+            charges: formData.charges || '',
+            arrestDate: formData.arrestDate ? new Date(formData.arrestDate) : null,
             
             // Status tracking
             status: 'intake',
             documentStatus: 'pending',
             gasSyncStatus: 'pending',
             
-            // Additional metadata
-            notes: intakeData.notes || '',
-            
-            // Timestamps handled automatically by Wix (_createdDate, _updatedDate)
+            // Metadata
+            notes: formData.notes || ''
         };
         
-        // Insert into IntakeQueue collection
+        // Insert into IntakeQueue
         const result = await wixData.insert('IntakeQueue', intakeRecord);
         
-        console.log('IntakeQueue record created:', result._id);
-        
-        // Send notification to staff (optional)
-        await notifyStaffOfNewIntake(result);
-        
-        // Notify GAS of new intake submission (don't block on failure)
-        notifyGASOfNewIntake(result.caseId).catch(err => {
-            console.error('GAS notification failed (non-blocking):', err);
-        });
+        console.log('✅ IntakeQueue record created:', result._id);
         
         return {
             success: true,
             caseId: caseId,
             recordId: result._id,
-            message: 'Your information has been submitted successfully. Our team will review and contact you shortly.'
+            message: 'Your information has been submitted successfully.'
         };
         
     } catch (error) {
-        console.error('Error submitting intake form:', error);
+        console.error('❌ Error submitting to IntakeQueue:', error);
         
         return {
             success: false,
-            error: error.message,
+            error: error.message || 'Failed to submit intake form',
             message: 'There was an error submitting your information. Please try again or call (239) 332-2245.'
         };
     }
 }
 
 /**
- * Update an existing IntakeQueue record (for agent use)
+ * Check if indemnitor has pending intake
  * 
- * @param {string} caseId - Case ID to update
- * @param {Object} updateData - Data to update
- * @returns {Promise<Object>} - Update result
+ * @param {string} email - Indemnitor email
+ * @returns {Promise<Object>} - Pending intake record or null
  */
-export async function updateIntakeRecord(caseId, updateData) {
-    try {
-        // Find the record by caseId
-        const results = await wixData.query('IntakeQueue')
-            .eq('caseId', caseId)
-            .find();
-        
-        if (results.items.length === 0) {
-            throw new Error(`Case ${caseId} not found in IntakeQueue`);
-        }
-        
-        const record = results.items[0];
-        
-        // Merge update data
-        const updatedRecord = {
-            ...record,
-            ...updateData,
-            _id: record._id // Preserve the ID
-        };
-        
-        // Update the record
-        const result = await wixData.update('IntakeQueue', updatedRecord);
-        
-        console.log('IntakeQueue record updated:', result._id);
-        
-        return {
-            success: true,
-            recordId: result._id,
-            caseId: caseId
-        };
-        
-    } catch (error) {
-        console.error('Error updating intake record:', error);
-        
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
-
-/**
- * Get IntakeQueue records by status
- * 
- * @param {string} status - Status to filter by (e.g., 'intake', 'in_progress', 'completed')
- * @returns {Promise<Array>} - Array of intake records
- */
-export async function getIntakesByStatus(status) {
+export async function getPendingIntake(email) {
     try {
         const results = await wixData.query('IntakeQueue')
-            .eq('status', status)
+            .eq('indemnitorEmail', email)
+            .eq('status', 'intake')
             .descending('_createdDate')
+            .limit(1)
             .find();
         
-        return {
-            success: true,
-            items: results.items,
-            totalCount: results.totalCount
-        };
-        
-    } catch (error) {
-        console.error('Error getting intakes by status:', error);
-        
-        return {
-            success: false,
-            error: error.message,
-            items: []
-        };
-    }
-}
-
-/**
- * Get IntakeQueue records pending GAS sync
- * 
- * @returns {Promise<Array>} - Array of pending intake records
- */
-export async function getPendingIntakes() {
-    try {
-        const results = await wixData.query('IntakeQueue')
-            .eq('gasSyncStatus', 'pending')
-            .descending('_createdDate')
-            .find();
-        
-        return {
-            success: true,
-            items: results.items,
-            totalCount: results.totalCount
-        };
-        
-    } catch (error) {
-        console.error('Error getting pending intakes:', error);
-        
-        return {
-            success: false,
-            error: error.message,
-            items: []
-        };
-    }
-}
-
-/**
- * Mark IntakeQueue record as synced with GAS
- * 
- * @param {string} caseId - Case ID to mark as synced
- * @returns {Promise<Object>} - Update result
- */
-export async function markAsSynced(caseId) {
-    try {
-        const updateData = {
-            gasSyncStatus: 'synced',
-            gasSyncTimestamp: new Date()
-        };
-        
-        return await updateIntakeRecord(caseId, updateData);
-        
-    } catch (error) {
-        console.error('Error marking as synced:', error);
-        
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
-
-/**
- * Update SignNow status for an IntakeQueue record
- * 
- * @param {string} caseId - Case ID
- * @param {string} signNowDocumentId - SignNow document ID
- * @param {string} signNowStatus - SignNow status
- * @returns {Promise<Object>} - Update result
- */
-export async function updateSignNowStatus(caseId, signNowDocumentId, signNowStatus) {
-    try {
-        const updateData = {
-            signNowDocumentId: signNowDocumentId,
-            signNowStatus: signNowStatus,
-            documentStatus: signNowStatus === 'signed' ? 'completed' : 'sent'
-        };
-        
-        // If fully signed, mark as completed
-        if (signNowStatus === 'signed') {
-            updateData.status = 'completed';
-            updateData.completedTimestamp = new Date();
-        }
-        
-        return await updateIntakeRecord(caseId, updateData);
-        
-    } catch (error) {
-        console.error('Error updating SignNow status:', error);
-        
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
-
-/**
- * Generate a unique case ID
- * 
- * @returns {Promise<string>} - Unique case ID
- */
-async function generateCaseId() {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `CASE-${timestamp}-${random}`;
-}
-
-/**
- * Notify staff of new intake submission
- * 
- * @param {Object} intakeRecord - The intake record
- */
-async function notifyStaffOfNewIntake(intakeRecord) {
-    try {
-        // This could send an email or SMS to staff
-        // For now, just log it
-        console.log('New intake submission:', {
-            caseId: intakeRecord.caseId,
-            defendantName: intakeRecord.defendantName,
-            indemnitorName: intakeRecord.indemnitorName,
-            county: intakeRecord.county
-        });
-        
-        // TODO: Implement email/SMS notification using Wix Triggers or external service
-        
-    } catch (error) {
-        console.error('Error notifying staff:', error);
-        // Don't throw - notification failure shouldn't block the submission
-    }
-}
-
-/**
- * Get intake record by case ID
- * 
- * @param {string} caseId - Case ID to retrieve
- * @returns {Promise<Object>} - Intake record
- */
-export async function getIntakeByCaseId(caseId) {
-    try {
-        const results = await wixData.query('IntakeQueue')
-            .eq('caseId', caseId)
-            .find();
-        
-        if (results.items.length === 0) {
+        if (results.items.length > 0) {
             return {
-                success: false,
-                error: 'Case not found'
+                success: true,
+                hasPending: true,
+                intake: results.items[0]
             };
         }
         
         return {
             success: true,
-            item: results.items[0]
+            hasPending: false,
+            intake: null
         };
         
     } catch (error) {
-        console.error('Error getting intake by case ID:', error);
-        
+        console.error('Error checking pending intake:', error);
         return {
             success: false,
+            hasPending: false,
             error: error.message
-        };
-    }
-}
-
-/**
- * Get intake records by indemnitor email
- * 
- * @param {string} email - Indemnitor email
- * @returns {Promise<Array>} - Array of intake records
- */
-export async function getIntakesByIndemnitorEmail(email) {
-    try {
-        const results = await wixData.query('IntakeQueue')
-            .eq('indemnitorEmail', email)
-            .descending('_createdDate')
-            .find();
-        
-        return {
-            success: true,
-            items: results.items,
-            totalCount: results.totalCount
-        };
-        
-    } catch (error) {
-        console.error('Error getting intakes by indemnitor email:', error);
-        
-        return {
-            success: false,
-            error: error.message,
-            items: []
         };
     }
 }
