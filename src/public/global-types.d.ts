@@ -20,8 +20,9 @@ declare module 'wix-storage' {
 }
 
 declare module 'wix-storage-frontend' {
-    const wixStorageFrontend: any;
-    export = wixStorageFrontend;
+    export const local: any;
+    export const session: any;
+    export const memory: any;
 }
 
 declare module 'wix-location' {
