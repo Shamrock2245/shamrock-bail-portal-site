@@ -1,764 +1,637 @@
-// portal-indemnitor.k53on.js
-// Function: Indemnitor Dashboard with Multi-Case Support
-// Last Updated: 2026-01-27
-//
-// AUTHENTICATION: Custom session-based (NO Wix Members)
-// Uses browser storage (wix-storage-frontend) session tokens validated against PortalSessions collection
-//
-// MULTI-CASE SUPPORT: An indemnitor can sign for multiple defendants across different cases
+/**
+ * Shamrock Bail Bonds - Indemnitor Portal Page
+ * 
+ * This is the main indemnitor portal where indemnitors:
+ * 1. Fill out their information and defendant information
+ * 2. Submit intake form to IntakeQueue
+ * 3. View bond status, paperwork, and payment information
+ * 4. Communicate with Shamrock staff
+ * 
+ * URL: /portal-indemnitor
+ * File: portal-indemnitor.k53on.js
+ * 
+ * MOBILE-OPTIMIZED: All interactions designed for touch and small screens
+ * SPEED-OPTIMIZED: Minimal API calls, efficient data loading
+ */
 
-import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-import {
-    validateCustomSession,
-    getIndemnitorDetails,
-    getUserConsentStatus,
-    getIndemnitorLinkedCases,
-    getIndemnitorPendingPaperwork
-} from 'backend/portal-auth';
-import { LightboxController } from 'public/lightbox-controller';
-import { getMemberDocuments } from 'backend/documentUpload';
-import { submitIntake } from 'backend/signnow-integration';
-import { initiateSigningWorkflow } from 'backend/signing-methods';
-import { reverseGeocodeToCityStateZip, geocodeAddressToCityStateZip } from 'backend/googleMaps';
-import { sendAdminNotification, NOTIFICATION_TYPES } from 'backend/notificationService';
-import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
-import wixSeo from 'wix-seo';
-import { silentPingLocation } from 'public/location-tracker';
-import { getAllDocumentsForMember } from 'backend/wixApi.jsw';
+import wixWindow from 'wix-window';
+import { currentMember } from 'wix-members-frontend';
+import wixData from 'wix-data';
+import { submitIntakeForm } from 'backend/intakeQueue.jsw';
 
-let currentSession = null; // Store validated session data
-let linkedCases = []; // Store all cases where user is indemnitor
-let selectedCaseId = null; // Currently selected case for paperwork
+// Page state
+let memberData = null;
+let currentIntake = null;
+let isSubmitting = false;
 
 $w.onReady(async function () {
-    LightboxController.init($w);
-
-    try {
-        if ($w('#welcomeText').type) {
-            $w('#welcomeText').text = "Loading Dashboard...";
-        }
-    } catch (e) { }
-
-    // Initialize Success Message State
-    try {
-        if ($w('#txtSubmissionSuccess').type) $w('#txtSubmissionSuccess').collapse();
-    } catch (e) { }
-
-    try {
-        // Check for session token in URL (passed from magic link redirect)
-        const query = wixLocation.query;
-        if (query.st) {
-            console.log("🔗 Session token in URL, storing...");
-            setSessionToken(query.st);
-        }
-
-        // Check for case selection in URL
-        if (query.caseId) {
-            selectedCaseId = query.caseId;
-            console.log("📋 Case ID in URL:", selectedCaseId);
-        }
-
-        // CUSTOM AUTH CHECK - Replace Wix Members
-        const sessionToken = query.st || getSessionToken();
-        if (!sessionToken) {
-            console.warn("⛔ No session token found. Redirecting to Portal Landing.");
-            wixLocation.to('/portal-landing');
-            return;
-        }
-
-        // Validate session with backend
-        const session = await validateCustomSession(sessionToken);
-        if (!session || !session.role) {
-            console.warn("⛔ Invalid or expired session. Redirecting to Portal Landing.");
-            clearSessionToken();
-            wixLocation.to('/portal-landing');
-            return;
-        }
-
-        // Check role authorization (indemnitor or coindemnitor)
-        if (session.role !== 'indemnitor' && session.role !== 'coindemnitor') {
-            console.warn(`⛔ Wrong role: ${session.role}. This is the indemnitor portal.`);
-            wixLocation.to('/portal-landing');
-            return;
-        }
-
-        console.log("✅ Indemnitor authenticated:", session.personId);
-        currentSession = session;
-        currentSession.token = sessionToken;
-
-        // Setup Actions
-        setupPaperworkButtons();
-        setupLogoutButton();
-        setupContactForm();
-        setupCallButton();
-        setupPayButton(); // [NEW] SwipeSimple Integration
-        setupSubmitButton();
-        setupCaseSelector();
-
-        // INITIATE ROBUST TRACKING
-        console.log("📍 Initiating background location tracker for indemnitor...");
-        silentPingLocation();
-
-        try {
-            if ($w('#contactBtn').type) {
-                $w('#contactBtn').onClick(() => wixLocation.to("/contact"));
-            }
-        } catch (e) {
-            console.error('Error setting up contact button:', e);
-        }
-
-        // Load Dashboard Data (including all linked cases)
-        await loadDashboardData();
-
-    } catch (error) {
-        console.error("Dashboard Error", error);
-        try {
-            if ($w('#welcomeText').type) {
-                $w('#welcomeText').text = "Error loading dashboard";
-            }
-        } catch (e) { }
-    }
-
-
-    // --- GOOGLE MAPS AUTOFILL ---
-    if (!anyHasValue('#inputIndemnitorCity', '#inputIndemnitorState', '#inputIndemnitorZip')) {
-        try {
-            // Prompts the user for permission if needed
-            const geo = await wixWindow.getCurrentGeolocation();
-            const lat = geo.coords.latitude;
-            const lng = geo.coords.longitude;
-
-            const { city, state, zip } = await reverseGeocodeToCityStateZip(lat, lng);
-
-            // Set values ONLY if we got them
-            if (city && !$w('#inputIndemnitorCity').value) {
-                $w('#inputIndemnitorCity').value = city;
-                $w('#inputIndemnitorCity').resetValidityIndication();
-            }
-            if (state && !$w('#inputIndemnitorState').value) {
-                $w('#inputIndemnitorState').value = state;
-                $w('#inputIndemnitorState').resetValidityIndication();
-            }
-            if (zip && !$w('#inputIndemnitorZip').value) {
-                $w('#inputIndemnitorZip').value = zip;
-                $w('#inputIndemnitorZip').resetValidityIndication();
-            }
-
-        } catch (e) {
-            // Silent fail: user can still type manually
-            console.log('Geo autofill skipped:', e?.message || e);
-        }
-    }
-
-    // --- ADDRESS CHANGE AUTOFILL ---
-    $w('#inputIndemnitorAddress').onChange(async () => {
-        try {
-            const address = ($w('#inputIndemnitorAddress').value || '').trim();
-            if (!address) return;
-
-            // Don't overwrite if user already filled ANY of these
-            const alreadyFilled =
-                $w('#inputIndemnitorCity').value ||
-                $w('#inputIndemnitorState').value ||
-                $w('#inputIndemnitorZip').value;
-
-            if (alreadyFilled) return;
-
-            const { city, state, zip } = await geocodeAddressToCityStateZip(address);
-
-            fillIfEmpty('#inputIndemnitorCity', city);
-            fillIfEmpty('#inputIndemnitorState', state);
-            fillIfEmpty('#inputIndemnitorZip', zip);
-
-        } catch (e) {
-            console.log('Address-based autofill skipped:', e?.message || e);
-        }
-    });
-
-    updatePageSEO();
+    await initializePage();
 });
 
-function updatePageSEO() {
-    const pageTitle = "Indemnitor Dashboard | Shamrock Bail Bonds";
-    // No index for private dashboards
-    wixSeo.setTitle(pageTitle);
-    wixSeo.setMetaTags([
-        { "name": "robots", "content": "noindex, nofollow" }
-    ]);
-
-    wixSeo.setStructuredData([
-        {
-            "@context": "https://schema.org",
-            "@type": "ProfilePage",
-            "name": "Indemnitor Dashboard",
-            "mainEntity": {
-                "@type": "Person",
-                "name": "Indemnitor"
-            }
-        }
-    ]);
-}
-
-async function loadDashboardData() {
-    if (!currentSession) {
-        console.error('No session available');
-        return;
-    }
-
+/**
+ * Initialize the page
+ */
+async function initializePage() {
     try {
-        // Get all linked cases for this indemnitor
-        const casesResult = await getIndemnitorLinkedCases(currentSession.token);
-        if (casesResult.success && casesResult.cases.length > 0) {
-            linkedCases = casesResult.cases;
-            console.log(`📋 Found ${linkedCases.length} linked case(s) for indemnitor`);
-
-            // Populate case selector if multiple cases
-            await populateCaseSelector();
-
-            // If no case selected, default to first case
-            if (!selectedCaseId && linkedCases.length > 0) {
-                selectedCaseId = linkedCases[0].caseId;
-            }
-        } else {
-            linkedCases = [];
-            console.log("📋 No linked cases found for indemnitor");
-        }
-
-        // Get details for the selected case (or first case)
-        const data = await getIndemnitorDetails(currentSession.token);
-        const name = data?.firstName || "Cosigner";
-        currentSession.email = currentSession.email || data?.email || "";
-
-        if ($w('#welcomeText').type) {
-            $w('#welcomeText').text = `Welcome, ${name}`;
-        }
-
-        // Show case count if multiple cases
-        if (linkedCases.length > 1) {
-            try {
-                if ($w('#caseCountText').type) {
-                    $w('#caseCountText').text = `You have ${linkedCases.length} active cases`;
-                    $w('#caseCountText').expand();
-                }
-            } catch (e) { }
-        }
-
-        // Pre-fill Email
-        if ($w('#inputIndemnitorEmail').type) {
-            $w('#inputIndemnitorEmail').value = currentSession.email || "";
-        }
-
-        // Check if paperwork is already signed for selected case
-        if (currentSession.email && selectedCaseId) {
-            try {
-                const docResult = await getAllDocumentsForMember(currentSession.email);
-                if (docResult.success && docResult.documents && docResult.documents.length > 0) {
-                    // Check if signed for the SELECTED case
-                    const hasSigned = docResult.documents.some(d =>
-                        d.status === 'signed' && d.caseId === selectedCaseId
-                    );
-
-                    if (hasSigned) {
-                        console.log("✅ User has signed documents for this case.");
-                        showSignedStatus();
-                    } else {
-                        showPaperworkForm();
-                    }
-                } else {
-                    showPaperworkForm();
-                }
-            } catch (docErr) {
-                console.warn("Could not check document status:", docErr);
-                showPaperworkForm();
-            }
-        } else {
-            showPaperworkForm();
-        }
-
-        // Populate dashboard fields with selected case data
-        if (data) {
-            populateDashboardFields(data);
-        }
-
-        // Load pending paperwork across all cases
-        await loadPendingPaperwork();
-
-    } catch (e) {
-        console.error('Error loading dashboard data:', e);
-    }
-}
-
-function showSignedStatus() {
-    try {
-        if ($w('#mainContent').type) {
-            $w('#mainContent').collapse();
-        }
-        if ($w('#signedStatusSection').type) {
-            $w('#signedStatusSection').expand();
-        }
-        if ($w('#txtSignedStatus').type) {
-            $w('#txtSignedStatus').text = "✅ Paperwork signed for this case. Thank you!";
-        }
-    } catch (e) {
-        console.log('Could not show signed status:', e);
-    }
-}
-
-function showPaperworkForm() {
-    try {
-        if ($w('#mainContent').type) {
-            $w('#mainContent').expand();
-        }
-        if ($w('#signedStatusSection').type) {
-            $w('#signedStatusSection').collapse();
-        }
-    } catch (e) {
-        console.log('Could not show paperwork form:', e);
-    }
-}
-
-function populateDashboardFields(data) {
-    try {
-        if ($w('#liabilityText').type) {
-            $w('#liabilityText').text = data.totalLiability || "$0.00";
-        }
-        if ($w('#totalPremiumText').type) {
-            $w('#totalPremiumText').text = data.totalPremium || "$0.00";
-        }
-        if ($w('#downPaymentText').type) {
-            $w('#downPaymentText').text = data.downPayment || "$0.00";
-        }
-        if ($w('#balanceDueText').type) {
-            $w('#balanceDueText').text = data.balanceDue || "$0.00";
-        }
-        if ($w('#chargesCountText').type) {
-            $w('#chargesCountText').text = data.chargesCount || "0";
-        }
-        if ($w('#defendantNameText').type) {
-            $w('#defendantNameText').text = data.defendantName || "N/A";
-        }
-        if ($w('#defendantStatusText').type) {
-            $w('#defendantStatusText').text = data.defendantStatus || "Unknown";
-        }
-        if ($w('#lastCheckInText').type) {
-            $w('#lastCheckInText').text = data.lastCheckIn || "Never";
-        }
-        if ($w('#nextCourtDateText').type) {
-            $w('#nextCourtDateText').text = data.nextCourtDate || "TBD";
-        }
-        if ($w('#caseNumberText').type) {
-            $w('#caseNumberText').text = data.caseNumber || "Pending";
-        }
-        if ($w('#countyText').type) {
-            $w('#countyText').text = data.county || "N/A";
-        }
-    } catch (e) {
-        console.error('Error populating dashboard fields:', e);
-    }
-}
-
-async function populateCaseSelector() {
-    try {
-        // Check if case selector dropdown exists
-        if (!$w('#caseSelector').type) {
-            console.log('No case selector dropdown found');
+        // Show loading state
+        showLoading(true);
+        
+        // Check authentication
+        const isLoggedIn = await checkMemberLogin();
+        if (!isLoggedIn) {
+            wixLocation.to('/portal-landing');
             return;
         }
+        
+        // Load member data
+        memberData = await loadMemberData();
+        
+        // Check if member has existing intake
+        await checkExistingIntake();
+        
+        // Setup form
+        if (!currentIntake) {
+            setupIntakeForm();
+        } else {
+            showBondDashboard();
+        }
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Hide loading
+        showLoading(false);
+        
+    } catch (error) {
+        console.error('Page initialization error:', error);
+        showError('Error loading page. Please refresh or call (239) 332-2245.');
+        showLoading(false);
+    }
+}
 
-        if (linkedCases.length <= 1) {
-            // Hide selector if only one case
-            $w('#caseSelector').collapse();
+/**
+ * Check if member is logged in
+ */
+async function checkMemberLogin() {
+    try {
+        const member = await currentMember.getMember();
+        return !!member;
+    } catch (error) {
+        return false;
+    }
+}
+
+/**
+ * Load member data
+ */
+async function loadMemberData() {
+    try {
+        const member = await currentMember.getMember({ fieldsets: ['FULL'] });
+        
+        return {
+            id: member._id,
+            email: member.loginEmail,
+            firstName: member.contactDetails?.firstName || '',
+            lastName: member.contactDetails?.lastName || '',
+            phone: member.contactDetails?.phones?.[0] || ''
+        };
+    } catch (error) {
+        console.error('Error loading member data:', error);
+        return null;
+    }
+}
+
+/**
+ * Check if member has existing intake submission
+ */
+async function checkExistingIntake() {
+    try {
+        if (!memberData?.email) return;
+        
+        const results = await wixData.query('IntakeQueue')
+            .eq('indemnitorEmail', memberData.email)
+            .descending('_createdDate')
+            .limit(1)
+            .find();
+        
+        if (results.items.length > 0) {
+            currentIntake = results.items[0];
+        }
+    } catch (error) {
+        console.error('Error checking existing intake:', error);
+    }
+}
+
+/**
+ * Setup intake form with prefilled data
+ */
+function setupIntakeForm() {
+    // Prefill indemnitor information from member profile
+    if (memberData) {
+        safeSetValue('#indemnitorFirstName', memberData.firstName);
+        safeSetValue('#indemnitorLastName', memberData.lastName);
+        safeSetValue('#indemnitorEmail', memberData.email);
+        safeSetValue('#indemnitorPhone', memberData.phone);
+    }
+    
+    // Show form, hide dashboard
+    safeShow('#intakeFormSection');
+    safeHide('#bondDashboardSection');
+}
+
+/**
+ * Show bond dashboard with existing intake data
+ */
+function showBondDashboard() {
+    if (!currentIntake) return;
+    
+    // Hide form, show dashboard
+    safeHide('#intakeFormSection');
+    safeShow('#bondDashboardSection');
+    
+    // Populate defendant status
+    safeSetText('#defendantNameDisplay', currentIntake.defendantName || 'Unknown');
+    safeSetText('#defendantStatusDisplay', formatStatus(currentIntake.status));
+    safeSetText('#lastCheckInDisplay', formatDate(currentIntake._updatedDate));
+    safeSetText('#nextCourtDateDisplay', formatDate(currentIntake.nextCourtDate) || 'TBD');
+    
+    // Populate paperwork status
+    const paperworkStatus = currentIntake.documentStatus || 'pending';
+    safeSetText('#paperworkStatusDisplay', formatDocumentStatus(paperworkStatus));
+    
+    // Show/hide sign button
+    if (paperworkStatus === 'sent_for_signature' && currentIntake.signNowIndemnitorLink) {
+        safeShow('#signPaperworkBtn');
+        $w('#signPaperworkBtn').link = currentIntake.signNowIndemnitorLink;
+    } else {
+        safeHide('#signPaperworkBtn');
+    }
+    
+    // Populate payment plan
+    if (currentIntake.premiumAmount) {
+        safeSetText('#remainingBalanceDisplay', `$${currentIntake.premiumAmount.toFixed(2)}`);
+        safeSetText('#paymentTermsDisplay', currentIntake.paymentTerms || '250.00');
+        safeSetText('#paymentFrequencyDisplay', currentIntake.paymentFrequency || 'weekly');
+        safeSetText('#nextPaymentDateDisplay', formatDate(currentIntake.nextPaymentDate) || 'Jan 8, 2026');
+        
+        // Show payment button
+        safeShow('#makePaymentBtn');
+    }
+}
+
+/**
+ * Setup all event listeners
+ */
+function setupEventListeners() {
+    // Submit Info button
+    safeOnClick('#submitInfoBtn', handleSubmitIntake);
+    
+    // Sign Paperwork button
+    safeOnClick('#signPaperworkBtn', handleSignPaperwork);
+    
+    // Make Payment button
+    safeOnClick('#makePaymentBtn', handleMakePayment);
+    
+    // Send message button
+    safeOnClick('#sendMessageBtn', handleSendMessage);
+    
+    // Phone number formatting
+    setupPhoneFormatting('#defendantPhone');
+    setupPhoneFormatting('#indemnitorPhone');
+    setupPhoneFormatting('#reference1Phone');
+    setupPhoneFormatting('#reference2Phone');
+    setupPhoneFormatting('#indemnitorEmployerPhone');
+    setupPhoneFormatting('#indemnitorSupervisorPhone');
+    
+    // Zip code formatting
+    setupZipFormatting('#indemnitorZipCode');
+    setupZipFormatting('#reference1Zip');
+    setupZipFormatting('#reference2Zip');
+    setupZipFormatting('#indemnitorEmployerZip');
+}
+
+/**
+ * Handle intake form submission
+ */
+async function handleSubmitIntake() {
+    if (isSubmitting) return;
+    
+    try {
+        isSubmitting = true;
+        
+        // Disable button and show loading
+        safeDisable('#submitInfoBtn');
+        safeSetText('#submitInfoBtn', 'Submitting...');
+        showLoading(true);
+        
+        // Validate form
+        const validation = validateIntakeForm();
+        if (!validation.valid) {
+            showError(validation.message);
             return;
         }
-
-        // Build dropdown options
-        const options = linkedCases.map(c => ({
-            label: `${c.defendantName} - ${c.caseNumber} (${c.signingStatus})`,
-            value: c.caseId
-        }));
-
-        $w('#caseSelector').options = options;
-        $w('#caseSelector').value = selectedCaseId || linkedCases[0].caseId;
-        $w('#caseSelector').expand();
-
-    } catch (e) {
-        console.log('Could not populate case selector:', e);
-    }
-}
-
-function setupCaseSelector() {
-    try {
-        if ($w('#caseSelector').type) {
-            $w('#caseSelector').onChange(async (event) => {
-                selectedCaseId = event.target.value;
-                console.log('📋 Case selected:', selectedCaseId);
-
-                // Reload dashboard for selected case
-                await loadSelectedCaseData();
-            });
-        }
-    } catch (e) {
-        console.log('Could not setup case selector:', e);
-    }
-}
-
-async function loadSelectedCaseData() {
-    if (!selectedCaseId || linkedCases.length === 0) return;
-
-    const selectedCase = linkedCases.find(c => c.caseId === selectedCaseId);
-    if (!selectedCase) return;
-
-    // Update dashboard fields with selected case data
-    try {
-        if ($w('#defendantNameText').type) {
-            $w('#defendantNameText').text = selectedCase.defendantName || "N/A";
-        }
-        if ($w('#defendantStatusText').type) {
-            $w('#defendantStatusText').text = selectedCase.defendantStatus || "Unknown";
-        }
-        if ($w('#caseNumberText').type) {
-            $w('#caseNumberText').text = selectedCase.caseNumber || "Pending";
-        }
-        if ($w('#countyText').type) {
-            $w('#countyText').text = selectedCase.county || "N/A";
-        }
-        if ($w('#liabilityText').type) {
-            $w('#liabilityText').text = selectedCase.bondAmount || "$0.00";
-        }
-        if ($w('#nextCourtDateText').type) {
-            $w('#nextCourtDateText').text = selectedCase.nextCourtDate || "TBD";
-        }
-
-        // Check signing status for this case
-        if (selectedCase.signingStatus === 'Complete' || selectedCase.signingStatus === 'Signed') {
-            showSignedStatus();
+        
+        // Collect form data
+        const formData = collectIntakeFormData();
+        
+        // Submit to backend
+        const result = await submitIntakeForm(formData);
+        
+        if (result.success) {
+            // Success - show confirmation
+            showSuccess('Your information has been submitted successfully! Our team will review and contact you shortly.');
+            
+            // Wait 2 seconds then reload to show dashboard
+            setTimeout(() => {
+                wixLocation.to('/portal-indemnitor');
+            }, 2000);
         } else {
-            showPaperworkForm();
+            throw new Error(result.message || 'Submission failed');
         }
-
-    } catch (e) {
-        console.error('Error loading selected case data:', e);
+        
+    } catch (error) {
+        console.error('Submit error:', error);
+        showError(error.message || 'Error submitting form. Please call (239) 332-2245.');
+    } finally {
+        isSubmitting = false;
+        safeEnable('#submitInfoBtn');
+        safeSetText('#submitInfoBtn', 'Submit Info');
+        showLoading(false);
     }
 }
 
-async function loadPendingPaperwork() {
-    try {
-        const pendingResult = await getIndemnitorPendingPaperwork(currentSession.token);
-        if (pendingResult.success && pendingResult.pendingDocuments.length > 0) {
-            console.log(`📄 Found ${pendingResult.totalPending} pending document(s)`);
-
-            // Show pending paperwork section
-            try {
-                if ($w('#pendingPaperworkSection').type) {
-                    $w('#pendingPaperworkSection').expand();
-                }
-                if ($w('#pendingCountText').type) {
-                    $w('#pendingCountText').text = `${pendingResult.totalPending} document(s) awaiting signature`;
-                }
-            } catch (e) { }
-
-            // Populate pending documents repeater if exists
-            try {
-                if ($w('#pendingDocsRepeater').type) {
-                    $w('#pendingDocsRepeater').data = pendingResult.pendingDocuments;
-                    $w('#pendingDocsRepeater').onItemReady(($item, itemData) => {
-                        $item('#docDefendantName').text = itemData.defendantName;
-                        $item('#docCaseNumber').text = itemData.caseNumber;
-                        $item('#docName').text = itemData.documentName;
-                        $item('#docStatus').text = itemData.status;
-
-                        $item('#signDocBtn').onClick(() => {
-                            openSigningForDocument(itemData);
-                        });
-                    });
-                }
-            } catch (e) {
-                console.log('Could not populate pending docs repeater:', e);
-            }
-        } else {
-            // Hide pending paperwork section
-            try {
-                if ($w('#pendingPaperworkSection').type) {
-                    $w('#pendingPaperworkSection').collapse();
-                }
-            } catch (e) { }
-        }
-    } catch (e) {
-        console.error('Error loading pending paperwork:', e);
+/**
+ * Validate intake form
+ */
+function validateIntakeForm() {
+    const errors = [];
+    
+    // Defendant name (required)
+    if (!safeGetValue('#defendantFirstName')?.trim()) {
+        errors.push('Defendant first name is required');
     }
+    if (!safeGetValue('#defendantLastName')?.trim()) {
+        errors.push('Defendant last name is required');
+    }
+    
+    // Indemnitor information (required)
+    if (!safeGetValue('#indemnitorFirstName')?.trim()) {
+        errors.push('Your first name is required');
+    }
+    if (!safeGetValue('#indemnitorLastName')?.trim()) {
+        errors.push('Your last name is required');
+    }
+    if (!safeGetValue('#indemnitorEmail')?.trim()) {
+        errors.push('Your email is required');
+    }
+    if (!safeGetValue('#indemnitorPhone')?.trim()) {
+        errors.push('Your phone number is required');
+    }
+    if (!safeGetValue('#indemnitorAddress')?.trim()) {
+        errors.push('Your address is required');
+    }
+    if (!safeGetValue('#indemnitorCity')?.trim()) {
+        errors.push('Your city is required');
+    }
+    if (!safeGetValue('#indemnitorState')?.trim()) {
+        errors.push('Your state is required');
+    }
+    if (!safeGetValue('#indemnitorZipCode')?.trim()) {
+        errors.push('Your zip code is required');
+    }
+    
+    if (errors.length > 0) {
+        return {
+            valid: false,
+            message: `Please complete required fields:\n${errors.join('\n')}`
+        };
+    }
+    
+    return { valid: true };
 }
 
-async function openSigningForDocument(docInfo) {
-    if (!docInfo.signingLink) {
-        console.error('No signing link available for document');
-        return;
-    }
-
-    LightboxController.show('signing', {
-        signingUrl: docInfo.signingLink,
-        documentId: docInfo.documentId,
-        caseId: docInfo.caseId
-    });
-}
-
-function setupPaperworkButtons() {
-    // Primary Button
-    try {
-        if ($w('#startFinancialPaperworkBtn').type) {
-            $w('#startFinancialPaperworkBtn').onClick(() => handlePaperworkStart());
-        }
-    } catch (e) {
-        console.error('Error setting up startFinancialPaperworkBtn:', e);
-    }
-
-    // Alias Button
-    try {
-        if ($w('#startPaperworkBtn').type) {
-            $w('#startPaperworkBtn').onClick(() => handlePaperworkStart());
-        }
-    } catch (e) {
-        console.error('Error setting up startPaperworkBtn:', e);
-    }
-}
-
-function setupLogoutButton() {
-    try {
-        const logoutBtn = $w('#logoutBtn');
-        if (logoutBtn && typeof logoutBtn.onClick === 'function') {
-            console.log('Indemnitor Portal: Logout button found');
-            logoutBtn.onClick(() => {
-                console.log('Indemnitor Portal: Logout clicked');
-                handleLogout();
-            });
-        } else {
-            console.warn('Indemnitor Portal: Logout button (#logoutBtn) not found');
-        }
-    } catch (e) {
-        console.error('Error setting up logout button:', e);
-    }
-}
-
-function handleLogout() {
-    clearSessionToken();
-    wixLocation.to('/portal-landing');
-}
-
-function setupContactForm() {
-    try {
-        if ($w('#contactForm').type) {
-            $w('#contactForm').onSubmit(async (event) => {
-                event.preventDefault();
-                // Handle contact form submission
-                console.log('Contact form submitted');
-            });
-        }
-    } catch (e) {
-        console.log('Contact form not found or error:', e);
-    }
-}
-
-function setupCallButton() {
-    try {
-        if ($w('#callBtn').type) {
-            $w('#callBtn').onClick(() => {
-                wixWindow.openLightbox('CallLightbox');
-            });
-        }
-    } catch (e) {
-        console.log('Call button not found or error:', e);
-    }
-}
-
-function setupSubmitButton() {
-    try {
-        if ($w('#submitBtn').type) {
-            $w('#submitBtn').onClick(() => handleFormSubmit());
-        }
-    } catch (e) {
-        console.log('Submit button not found or error:', e);
-    }
-}
-
-function setupPayButton() {
-    try {
-        if ($w('#payBondBtn').type) {
-            $w('#payBondBtn').onClick(() => {
-                console.log('💸 Opening Payment Link...');
-                wixLocation.to('https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd');
-            });
-        }
-    } catch (e) {
-        console.log('Pay button not found:', e);
-    }
-}
-
-async function handlePaperworkStart() {
-    console.log('📝 Starting paperwork process...');
-
-    // Validate required fields
-    const requiredFields = [
-        '#inputIndemnitorName',
-        '#inputIndemnitorEmail',
-        '#inputIndemnitorPhone'
-    ];
-
-    let isValid = true;
-    for (const fieldId of requiredFields) {
-        try {
-            if ($w(fieldId).type && !$w(fieldId).value) {
-                $w(fieldId).updateValidityIndication();
-                isValid = false;
-            }
-        } catch (e) { }
-    }
-
-    if (!isValid) {
-        try {
-            if ($w('#statusMessage').type) {
-                $w('#statusMessage').text = "Please fill in all required fields.";
-                $w('#statusMessage').expand();
-            }
-        } catch (e) { }
-        return;
-    }
-
-    // Collect form data
-    const formData = collectFormData();
-
-    // Use selected case ID or fallback
-    const caseId = selectedCaseId || currentSession.caseId || "Active_Case_Fallback";
-    const userEmail = currentSession.email || formData.indemnitorEmail;
-
-    try {
-        if ($w('#statusMessage').type) {
-            $w('#statusMessage').text = "Preparing documents...";
-            $w('#statusMessage').expand();
-        }
-    } catch (e) { }
-
-    // Create embedded signing link using ROBUST workflow
-    // This handles validation, Gas fallback, and logging automatically.
-
-    // We pass form data as 'indemnitorInfo' (even though it's one person, the structure might expect an array or specific object in future updates, 
-    // but looking at initiateSigningWorkflow signature: { caseId, method, defendantInfo, indemnitorInfo, documentIds })
-
-    // NOTE: initiateSigningWorkflow's kiosk mode currently takes 'signerEmail' and 'signerRole'.
-    // If we want to support full Indemnitor data injection, we need to pass that indemnitor info.
-    // The current initiateSigningWorkflow logic for 'kiosk' implies a single signer. 
-    // Let's call it with the logic required:
-
-    try {
-        const result = await initiateSigningWorkflow({
-            caseId: caseId,
-            method: 'kiosk',
-            defendantInfo: {}, // Not signing as defendant
-            // We pass the indemnitor's email as the primary signer for this kiosk session
-            customSigner: {
-                email: userEmail,
-                role: 'indemnitor',
-                formData: formData // Pass the full form data for document generation
-            },
-            indemnitorInfo: [formData], // Keeping this for consistency if backend uses it
-            documentIds: []
-        });
-
-        if (result.success && result.links && result.links.length > 0) {
-            LightboxController.show('signing', {
-                signingUrl: result.links[0],
-                documentId: result.documentId,
-                caseId: caseId
-            });
-
-            try {
-                if ($w('#statusMessage').type) {
-                    $w('#statusMessage').collapse();
-                }
-            } catch (e) { }
-        } else {
-            throw new Error(result.error || "No link returned");
-        }
-    } catch (e) {
-        console.error('Failed to create SignNow link:', e);
-        try {
-            if ($w('#statusMessage').type) {
-                $w('#statusMessage').text = "Error preparing documents. System may be busy.";
-                $w('#statusMessage').expand();
-            }
-        } catch (err) { }
-    }
-}
-
-function collectFormData() {
-    const getValue = (id) => {
-        try {
-            return $w(id).value || '';
-        } catch (e) {
-            return '';
-        }
-    };
-
+/**
+ * Collect all intake form data
+ */
+function collectIntakeFormData() {
     return {
-        // Indemnitor Info
-        indemnitorName: getValue('#inputIndemnitorName'),
-        indemnitorEmail: getValue('#inputIndemnitorEmail'),
-        indemnitorPhone: getValue('#inputIndemnitorPhone'),
-        indemnitorAddress: getValue('#inputIndemnitorAddress'),
-        indemnitorCity: getValue('#inputIndemnitorCity'),
-        indemnitorState: getValue('#inputIndemnitorState'),
-        indemnitorZip: getValue('#inputIndemnitorZip'),
-
-        // Employer Info
-        indemnitorEmployerName: getValue('#inputEmployerName'),
-        indemnitorEmployerPhone: getValue('#inputEmployerPhone'),
-        indemnitorEmployerCity: getValue('#inputEmployerCity'),
-        indemnitorEmployerState: getValue('#inputEmployerState'),
-        indemnitorEmployerZip: getValue('#inputEmployerZip'),
-
-        // Supervisor Info
-        indemnitorSupervisorName: getValue('#inputSupervisorName'),
-        indemnitorSupervisorPhone: getValue('#inputSupervisorPhone'),
-
+        // Defendant Information
+        defendantName: `${safeGetValue('#defendantFirstName')} ${safeGetValue('#defendantLastName')}`.trim(),
+        defendantFirstName: safeGetValue('#defendantFirstName'),
+        defendantLastName: safeGetValue('#defendantLastName'),
+        defendantEmail: safeGetValue('#defendantEmail'),
+        defendantPhone: safeGetValue('#defendantPhone'),
+        defendantBookingNumber: safeGetValue('#defendantBookingNumber'),
+        
+        // Indemnitor Information
+        indemnitorName: `${safeGetValue('#indemnitorFirstName')} ${safeGetValue('#indemnitorMiddleName')} ${safeGetValue('#indemnitorLastName')}`.replace(/\s+/g, ' ').trim(),
+        indemnitorFirstName: safeGetValue('#indemnitorFirstName'),
+        indemnitorMiddleName: safeGetValue('#indemnitorMiddleName'),
+        indemnitorLastName: safeGetValue('#indemnitorLastName'),
+        indemnitorEmail: safeGetValue('#indemnitorEmail'),
+        indemnitorPhone: safeGetValue('#indemnitorPhone'),
+        indemnitorStreetAddress: safeGetValue('#indemnitorAddress'),
+        indemnitorCity: safeGetValue('#indemnitorCity'),
+        indemnitorState: safeGetValue('#indemnitorState'),
+        indemnitorZipCode: safeGetValue('#indemnitorZipCode'),
+        residenceType: safeGetValue('#residenceType'),
+        
         // Reference 1
-        reference1: {
-            name: getValue('#inputRef1Name'),
-            phone: getValue('#inputRef1Phone'),
-            address: getValue('#inputRef1Address')
-        },
-
+        reference1Name: safeGetValue('#reference1Name'),
+        reference1Phone: safeGetValue('#reference1Phone'),
+        reference1Address: safeGetValue('#reference1Address'),
+        reference1City: safeGetValue('#reference1City'),
+        reference1State: safeGetValue('#reference1State'),
+        reference1Zip: safeGetValue('#reference1Zip'),
+        
         // Reference 2
-        reference2: {
-            name: getValue('#inputRef2Name'),
-            phone: getValue('#inputRef2Phone'),
-            address: getValue('#inputRef2Address')
-        },
-
-        // Case context
-        caseId: selectedCaseId || currentSession.caseId,
-        defendantName: linkedCases.find(c => c.caseId === selectedCaseId)?.defendantName || ''
+        reference2Name: safeGetValue('#reference2Name'),
+        reference2Phone: safeGetValue('#reference2Phone'),
+        reference2Address: safeGetValue('#reference2Address'),
+        reference2City: safeGetValue('#reference2City'),
+        reference2State: safeGetValue('#reference2State'),
+        reference2Zip: safeGetValue('#reference2Zip'),
+        
+        // Indemnitor Employment
+        indemnitorEmployer: safeGetValue('#indemnitorEmployerName'),
+        indemnitorEmployerCity: safeGetValue('#indemnitorEmployerCity'),
+        indemnitorEmployerState: safeGetValue('#indemnitorEmployerState'),
+        indemnitorEmployerZip: safeGetValue('#indemnitorEmployerZip'),
+        indemnitorEmployerPhone: safeGetValue('#indemnitorEmployerPhone'),
+        indemnitorSupervisorName: safeGetValue('#indemnitorSupervisorName'),
+        indemnitorSupervisorPhone: safeGetValue('#indemnitorSupervisorPhone'),
+        
+        // Jail/County Information
+        county: safeGetValue('#county'),
+        jailFacility: safeGetValue('#jailFacility'),
+        
+        // Metadata
+        submittedBy: memberData?.id,
+        submittedByEmail: memberData?.email,
+        submittedAt: new Date().toISOString()
     };
 }
 
-async function handleFormSubmit() {
-    console.log('📝 Form submit triggered');
-    await handlePaperworkStart();
+/**
+ * Handle sign paperwork button
+ */
+function handleSignPaperwork() {
+    if (currentIntake?.signNowIndemnitorLink) {
+        wixWindow.openLightbox('signing-lightbox', {
+            signNowUrl: currentIntake.signNowIndemnitorLink
+        });
+    }
 }
 
-function anyHasValue(...ids) {
-    return ids.some(id => {
-        try {
-            return ($w(id).value || '').toString().trim().length > 0;
-        } catch (e) {
-            return false;
-        }
+/**
+ * Handle make payment button
+ */
+function handleMakePayment() {
+    // Open payment lightbox or redirect to payment page
+    wixWindow.openLightbox('payment-lightbox', {
+        caseId: currentIntake?.caseId,
+        amount: currentIntake?.premiumAmount
     });
 }
 
-function fillIfEmpty(id, value) {
+/**
+ * Handle send message button
+ */
+async function handleSendMessage() {
+    const message = safeGetValue('#messageInput');
+    
+    if (!message?.trim()) {
+        showError('Please enter a message');
+        return;
+    }
+    
     try {
-        if (!$w(id).value && value) {
-            $w(id).value = value;
-            $w(id).resetValidityIndication();
-        }
-    } catch (e) { }
+        // Save message to collection or send email
+        await wixData.insert('Messages', {
+            caseId: currentIntake?.caseId,
+            fromEmail: memberData?.email,
+            message: message,
+            timestamp: new Date()
+        });
+        
+        // Clear input
+        safeSetValue('#messageInput', '');
+        
+        showSuccess('Message sent! We\'ll respond shortly.');
+        
+    } catch (error) {
+        console.error('Error sending message:', error);
+        showError('Error sending message. Please call (239) 332-2245.');
+    }
 }
+
+/**
+ * Setup phone number formatting
+ */
+function setupPhoneFormatting(selector) {
+    safeOnInput(selector, () => {
+        let value = (safeGetValue(selector) || '').replace(/\D/g, '');
+        if (value.length > 10) value = value.substring(0, 10);
+        
+        if (value.length >= 6) {
+            value = `(${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6)}`;
+        } else if (value.length >= 3) {
+            value = `(${value.substring(0, 3)}) ${value.substring(3)}`;
+        }
+        
+        safeSetValue(selector, value);
+    });
+}
+
+/**
+ * Setup zip code formatting
+ */
+function setupZipFormatting(selector) {
+    safeOnInput(selector, () => {
+        let value = (safeGetValue(selector) || '').replace(/\D/g, '');
+        if (value.length > 5) value = value.substring(0, 5);
+        safeSetValue(selector, value);
+    });
+}
+
+/**
+ * Format status for display
+ */
+function formatStatus(status) {
+    const statusMap = {
+        'intake': 'Pending Review',
+        'in_progress': 'In Progress',
+        'ready_for_documents': 'Preparing Documents',
+        'awaiting_signatures': 'Awaiting Signatures',
+        'completed': 'Active Bond',
+        'discharged': 'Discharged'
+    };
+    return statusMap[status] || 'Unknown';
+}
+
+/**
+ * Format document status for display
+ */
+function formatDocumentStatus(status) {
+    const statusMap = {
+        'pending': 'Pending',
+        'sent_for_signature': 'Pending Signature(s)',
+        'completed': 'Signed',
+        'filed': 'Filed'
+    };
+    return statusMap[status] || status;
+}
+
+/**
+ * Format date for display
+ */
+function formatDate(dateString) {
+    if (!dateString) return null;
+    
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
+ * Show loading indicator
+ */
+function showLoading(show) {
+    if (show) {
+        safeShow('#loadingSpinner');
+    } else {
+        safeHide('#loadingSpinner');
+    }
+}
+
+/**
+ * Show error message
+ */
+function showError(message) {
+    safeSetText('#errorMessage', message);
+    safeShow('#errorMessage');
+    safeHide('#successMessage');
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => safeHide('#errorMessage'), 5000);
+}
+
+/**
+ * Show success message
+ */
+function showSuccess(message) {
+    safeSetText('#successMessage', message);
+    safeShow('#successMessage');
+    safeHide('#errorMessage');
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => safeHide('#successMessage'), 5000);
+}
+
+// ============================================================================
+// SAFE WRAPPERS - Prevent errors if elements don't exist
+// ============================================================================
+
+function safeSetValue(selector, value) {
+    try {
+        if ($w(selector).valid) {
+            $w(selector).value = value || '';
+        }
+    } catch (e) {
+        console.warn(`Element ${selector} not found or not accessible`);
+    }
+}
+
+function safeGetValue(selector) {
+    try {
+        return $w(selector).valid ? $w(selector).value : '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function safeSetText(selector, text) {
+    try {
+        if ($w(selector).valid) {
+            $w(selector).text = text || '';
+        }
+    } catch (e) {
+        console.warn(`Element ${selector} not found`);
+    }
+}
+
+function safeShow(selector) {
+    try {
+        if ($w(selector).valid) {
+            $w(selector).show();
+        }
+    } catch (e) {
+        console.warn(`Element ${selector} not found`);
+    }
+}
+
+function safeHide(selector) {
+    try {
+        if ($w(selector).valid) {
+            $w(selector).hide();
+        }
+    } catch (e) {
+        console.warn(`Element ${selector} not found`);
+    }
+}
+
+function safeDisable(selector) {
+    try {
+        if ($w(selector).valid) {
+            $w(selector).disable();
+        }
+    } catch (e) {
+        console.warn(`Element ${selector} not found`);
+    }
+}
+
+function safeEnable(selector) {
+    try {
+        if ($w(selector).valid) {
+            $w(selector).enable();
+        }
+    } catch (e) {
+        console.warn(`Element ${selector} not found`);
+    }
+}
+
+function safeOnClick(selector, handler) {
+    try {
+        if ($w(selector).valid) {
+            $w(selector).onClick(handler);
+        }
+    } catch (e) {
+        console.warn(`Element ${selector} not found`);
+    }
+}
+
+function safeOnInput(selector, handler) {
+    try {
+        if ($w(selector).valid) {
+            $w(selector).onInput(handler);
+        }
+    } catch (e) {
+        console.warn(`Element ${selector} not found`);
+    }
+}
+
+// Export for testing
+export {
+    initializePage,
+    handleSubmitIntake,
+    validateIntakeForm,
+    collectIntakeFormData
+};

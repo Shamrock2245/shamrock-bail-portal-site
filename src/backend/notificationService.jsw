@@ -31,6 +31,9 @@ const NOTIFICATION_TYPES = {
     // Admin notifications
     NEW_MEMBER: 'new_member',
     NEW_CASE: 'new_case',
+    NEW_INTAKE: 'new_intake',
+    INTAKE_COMPLETED: 'intake_completed',
+    DOCUMENTS_READY: 'documents_ready',
     DOCUMENT_NEEDS_REVIEW: 'document_needs_review',
     SIGNING_DECLINED: 'signing_declined',
     URGENT_CASE: 'urgent_case',

@@ -1,0 +1,419 @@
+/**
+ * Shamrock Bail Bonds - Google Apps Script Integration Module
+ * 
+ * This module handles communication between Wix and the GAS backend.
+ * It provides endpoints for GAS to query IntakeQueue and update records.
+ * 
+ * GAS Web App URL: https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzM87__8sLZhhvWyUif2VN3u48LND7UldEbxMhhklttd3ikrW-jfbPEHWKMcLWWx-RNSQ/exec
+ * 
+ * File: backend/gasIntegration.jsw
+ */
+
+import wixData from 'wix-data';
+import wixSecretsBackend from 'wix-secrets-backend';
+
+const GAS_WEB_APP_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzM87__8sLZhhvWyUif2VN3u48LND7UldEbxMhhklttd3ikrW-jfbPEHWKMcLWWx-RNSQ/exec';
+
+/**
+ * Get all pending intake submissions for GAS Dashboard
+ * This is called by GAS to pull new submissions
+ * 
+ * @returns {Promise<Object>} - Pending intake records
+ */
+export async function getPendingIntakesForGAS() {
+    try {
+        const results = await wixData.query('IntakeQueue')
+            .eq('gasSyncStatus', 'pending')
+            .descending('_createdDate')
+            .limit(100)
+            .find();
+        
+        // Transform data to GAS-friendly format
+        const intakes = results.items.map(item => ({
+            caseId: item.caseId,
+            recordId: item._id,
+            
+            // Defendant Info
+            defendantName: item.defendantName,
+            defendantFirstName: item.defendantFirstName,
+            defendantLastName: item.defendantLastName,
+            defendantEmail: item.defendantEmail,
+            defendantPhone: item.defendantPhone,
+            defendantBookingNumber: item.defendantBookingNumber,
+            
+            // Indemnitor Info
+            indemnitorName: item.indemnitorName,
+            indemnitorFirstName: item.indemnitorFirstName,
+            indemnitorLastName: item.indemnitorLastName,
+            indemnitorMiddleName: item.indemnitorMiddleName,
+            indemnitorEmail: item.indemnitorEmail,
+            indemnitorPhone: item.indemnitorPhone,
+            indemnitorStreetAddress: item.indemnitorStreetAddress,
+            indemnitorCity: item.indemnitorCity,
+            indemnitorState: item.indemnitorState,
+            indemnitorZipCode: item.indemnitorZipCode,
+            residenceType: item.residenceType,
+            indemnitorEmployer: item.indemnitorEmployer,
+            indemnitorEmployerCity: item.indemnitorEmployerCity,
+            
+            // Reference 1
+            reference1Name: item.reference1Name,
+            reference1Phone: item.reference1Phone,
+            reference1Address: item.reference1Address,
+            reference1City: item.reference1City,
+            reference1State: item.reference1State,
+            reference1Zip: item.reference1Zip,
+            
+            // Reference 2
+            reference2Name: item.reference2Name,
+            reference2Phone: item.reference2Phone,
+            reference2Address: item.reference2Address,
+            reference2City: item.reference2City,
+            reference2State: item.reference2State,
+            reference2Zip: item.reference2Zip,
+            
+            // Jail/Court Info
+            county: item.county,
+            jailFacility: item.jailFacility,
+            
+            // Metadata
+            submittedAt: item._createdDate,
+            status: item.status,
+            notes: item.notes
+        }));
+        
+        return {
+            success: true,
+            count: intakes.length,
+            intakes: intakes
+        };
+        
+    } catch (error) {
+        console.error('Error getting pending intakes for GAS:', error);
+        
+        return {
+            success: false,
+            error: error.message,
+            intakes: []
+        };
+    }
+}
+
+/**
+ * Mark intake as synced with GAS
+ * Called by GAS after successfully pulling the data
+ * 
+ * @param {string} caseId - Case ID to mark as synced
+ * @returns {Promise<Object>} - Update result
+ */
+export async function markIntakeAsSynced(caseId) {
+    try {
+        const results = await wixData.query('IntakeQueue')
+            .eq('caseId', caseId)
+            .find();
+        
+        if (results.items.length === 0) {
+            throw new Error(`Case ${caseId} not found`);
+        }
+        
+        const record = results.items[0];
+        
+        const updatedRecord = {
+            ...record,
+            gasSyncStatus: 'synced',
+            gasSyncTimestamp: new Date(),
+            status: 'in_progress' // Move from 'intake' to 'in_progress'
+        };
+        
+        await wixData.update('IntakeQueue', updatedRecord);
+        
+        console.log(`Case ${caseId} marked as synced with GAS`);
+        
+        return {
+            success: true,
+            caseId: caseId
+        };
+        
+    } catch (error) {
+        console.error('Error marking intake as synced:', error);
+        
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Update intake with defendant data from GAS
+ * Called by GAS after scraping defendant data via bookmarklet
+ * 
+ * @param {string} caseId - Case ID to update
+ * @param {Object} defendantData - Defendant data from bookmarklet scrape
+ * @returns {Promise<Object>} - Update result
+ */
+export async function updateDefendantData(caseId, defendantData) {
+    try {
+        const results = await wixData.query('IntakeQueue')
+            .eq('caseId', caseId)
+            .find();
+        
+        if (results.items.length === 0) {
+            throw new Error(`Case ${caseId} not found`);
+        }
+        
+        const record = results.items[0];
+        
+        const updatedRecord = {
+            ...record,
+            // Update defendant fields with scraped data
+            defendantDOB: defendantData.dob || record.defendantDOB,
+            defendantSSN: defendantData.ssn || record.defendantSSN,
+            defendantAddress: defendantData.address || record.defendantAddress,
+            defendantCity: defendantData.city || record.defendantCity,
+            defendantState: defendantData.state || record.defendantState,
+            defendantZipCode: defendantData.zipCode || record.defendantZipCode,
+            arrestDate: defendantData.arrestDate || record.arrestDate,
+            charges: defendantData.charges || record.charges,
+            bondAmount: defendantData.bondAmount || record.bondAmount,
+            premiumAmount: defendantData.premiumAmount || record.premiumAmount,
+            bookingNumber: defendantData.bookingNumber || record.defendantBookingNumber,
+            
+            // Update status
+            defendantDataComplete: true,
+            status: 'ready_for_documents'
+        };
+        
+        await wixData.update('IntakeQueue', updatedRecord);
+        
+        console.log(`Defendant data updated for case ${caseId}`);
+        
+        return {
+            success: true,
+            caseId: caseId
+        };
+        
+    } catch (error) {
+        console.error('Error updating defendant data:', error);
+        
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Update intake with SignNow document information
+ * Called by GAS after generating and sending documents to SignNow
+ * 
+ * @param {string} caseId - Case ID to update
+ * @param {Object} signNowData - SignNow document data
+ * @returns {Promise<Object>} - Update result
+ */
+export async function updateSignNowData(caseId, signNowData) {
+    try {
+        const results = await wixData.query('IntakeQueue')
+            .eq('caseId', caseId)
+            .find();
+        
+        if (results.items.length === 0) {
+            throw new Error(`Case ${caseId} not found`);
+        }
+        
+        const record = results.items[0];
+        
+        const updatedRecord = {
+            ...record,
+            signNowDocumentId: signNowData.documentId,
+            signNowStatus: signNowData.status || 'sent',
+            signNowIndemnitorLink: signNowData.indemnitorLink,
+            signNowDefendantLink: signNowData.defendantLink,
+            documentStatus: 'sent_for_signature',
+            status: 'awaiting_signatures',
+            documentsSentDate: new Date()
+        };
+        
+        await wixData.update('IntakeQueue', updatedRecord);
+        
+        console.log(`SignNow data updated for case ${caseId}`);
+        
+        return {
+            success: true,
+            caseId: caseId,
+            indemnitorLink: signNowData.indemnitorLink,
+            defendantLink: signNowData.defendantLink
+        };
+        
+    } catch (error) {
+        console.error('Error updating SignNow data:', error);
+        
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Mark intake as fully signed
+ * Called by SignNow webhook or GAS after both parties have signed
+ * 
+ * @param {string} caseId - Case ID to mark as signed
+ * @param {Object} completionData - Completion data
+ * @returns {Promise<Object>} - Update result
+ */
+export async function markIntakeAsSigned(caseId, completionData) {
+    try {
+        const results = await wixData.query('IntakeQueue')
+            .eq('caseId', caseId)
+            .find();
+        
+        if (results.items.length === 0) {
+            throw new Error(`Case ${caseId} not found`);
+        }
+        
+        const record = results.items[0];
+        
+        const updatedRecord = {
+            ...record,
+            signNowStatus: 'signed',
+            documentStatus: 'completed',
+            status: 'completed',
+            completedTimestamp: new Date(),
+            signedDocumentUrl: completionData.signedDocumentUrl,
+            driveFileId: completionData.driveFileId
+        };
+        
+        await wixData.update('IntakeQueue', updatedRecord);
+        
+        console.log(`Case ${caseId} marked as fully signed`);
+        
+        return {
+            success: true,
+            caseId: caseId
+        };
+        
+    } catch (error) {
+        console.error('Error marking intake as signed:', error);
+        
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Get intake by case ID
+ * 
+ * @param {string} caseId - Case ID to retrieve
+ * @returns {Promise<Object>} - Intake record
+ */
+export async function getIntakeByCaseId(caseId) {
+    try {
+        const results = await wixData.query('IntakeQueue')
+            .eq('caseId', caseId)
+            .find();
+        
+        if (results.items.length === 0) {
+            return {
+                success: false,
+                error: 'Case not found'
+            };
+        }
+        
+        return {
+            success: true,
+            intake: results.items[0]
+        };
+        
+    } catch (error) {
+        console.error('Error getting intake by case ID:', error);
+        
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Send notification to GAS that new intake is available
+ * This can be called after intake submission to trigger GAS to pull data
+ * 
+ * @param {string} caseId - Case ID of new submission
+ * @returns {Promise<Object>} - Notification result
+ */
+export async function notifyGASOfNewIntake(caseId) {
+    try {
+        // Get the intake data
+        const intakeResult = await getIntakeByCaseId(caseId);
+        
+        if (!intakeResult.success) {
+            throw new Error('Intake not found');
+        }
+        
+        // Send webhook to GAS
+        const response = await fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: 'newIntake',
+                caseId: caseId,
+                data: intakeResult.intake
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`GAS notification failed: ${response.statusText}`);
+        }
+        
+        console.log(`GAS notified of new intake: ${caseId}`);
+        
+        return {
+            success: true,
+            caseId: caseId
+        };
+        
+    } catch (error) {
+        console.error('Error notifying GAS:', error);
+        
+        // Don't fail the intake submission if notification fails
+        return {
+            success: false,
+            error: error.message,
+            note: 'Intake saved but GAS notification failed'
+        };
+    }
+}
+
+/**
+ * Health check endpoint for GAS to verify connection
+ * 
+ * @returns {Promise<Object>} - Health status
+ */
+export async function healthCheck() {
+    try {
+        // Test IntakeQueue access
+        const testQuery = await wixData.query('IntakeQueue')
+            .limit(1)
+            .find();
+        
+        return {
+            success: true,
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            intakeQueueAccessible: true
+        };
+        
+    } catch (error) {
+        return {
+            success: false,
+            status: 'unhealthy',
+            error: error.message
+        };
+    }
+}

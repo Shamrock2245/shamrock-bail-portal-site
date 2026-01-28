@@ -1,6 +1,7 @@
 import wixData from 'wix-data';
 import { sendMemberNotification, sendAdminNotification, NOTIFICATION_TYPES } from 'backend/notificationService';
 import { COLLECTIONS } from 'public/collectionIds';
+import { notifyGASOfNewIntake } from './gasIntegration.jsw';
 
 /**
  * Hook: Cases - After Insert
@@ -27,6 +28,99 @@ export async function Cases_afterInsert(item, context) {
         console.error('❌ Cases_afterInsert failed:', error);
     }
 
+    return item;
+}
+
+/**
+ * Hook: IntakeQueue - Before Insert
+ * Validates data before insertion
+ */
+export function IntakeQueue_beforeInsert(item, context) {
+    console.log('🪝 Hook: IntakeQueue_beforeInsert for case:', item.caseId);
+    
+    // Ensure required fields are present
+    if (!item.caseId) {
+        return Promise.reject('Case ID is required');
+    }
+    
+    if (!item.indemnitorName || !item.indemnitorEmail) {
+        return Promise.reject('Indemnitor name and email are required');
+    }
+    
+    if (!item.defendantName) {
+        return Promise.reject('Defendant name is required');
+    }
+    
+    // Set default values if not provided
+    item.status = item.status || 'intake';
+    item.documentStatus = item.documentStatus || 'pending';
+    item.gasSyncStatus = item.gasSyncStatus || 'pending';
+    
+    return item;
+}
+
+/**
+ * Hook: IntakeQueue - After Insert
+ * Triggers notifications after successful insertion
+ */
+export function IntakeQueue_afterInsert(item, context) {
+    console.log('🪝 Hook: IntakeQueue_afterInsert for case:', item.caseId);
+    
+    // Notify GAS asynchronously (non-blocking)
+    notifyGASOfNewIntake(item.caseId)
+        .then(() => {
+            console.log('✅ GAS notified successfully for case:', item.caseId);
+        })
+        .catch(err => {
+            console.error('❌ GAS notification failed for case:', item.caseId, err);
+        });
+    
+    // Send email notification to staff
+    sendAdminNotification(NOTIFICATION_TYPES.NEW_INTAKE, {
+        memberName: item.indemnitorName,
+        defendantName: item.defendantName,
+        county: item.county,
+        caseId: item.caseId
+    }).catch(err => {
+        console.error('❌ Staff notification failed:', err);
+    });
+    
+    return item;
+}
+
+/**
+ * Hook: IntakeQueue - After Update
+ * Triggers when intake status changes
+ */
+export function IntakeQueue_afterUpdate(item, context) {
+    console.log('🪝 Hook: IntakeQueue_afterUpdate for case:', item.caseId);
+    
+    // If status changed to 'completed', send completion notifications
+    if (item.status === 'completed' && item.gasSyncStatus === 'synced') {
+        sendAdminNotification(NOTIFICATION_TYPES.INTAKE_COMPLETED, {
+            caseId: item.caseId,
+            defendantName: item.defendantName,
+            indemnitorName: item.indemnitorName
+        }).catch(err => {
+            console.error('❌ Completion notification failed:', err);
+        });
+    }
+    
+    // If SignNow documents were sent, notify indemnitor
+    if (item.documentStatus === 'sent_for_signature' && item.signNowIndemnitorLink) {
+        sendMemberNotification(NOTIFICATION_TYPES.DOCUMENTS_READY, {
+            memberEmail: item.indemnitorEmail,
+            memberName: item.indemnitorName,
+            memberPhone: item.indemnitorPhone,
+            variables: {
+                signingLink: item.signNowIndemnitorLink,
+                defendantName: item.defendantName
+            }
+        }).catch(err => {
+            console.error('❌ Signing notification failed:', err);
+        });
+    }
+    
     return item;
 }
 
