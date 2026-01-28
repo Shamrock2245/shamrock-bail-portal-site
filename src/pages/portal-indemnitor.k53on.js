@@ -10,22 +10,31 @@
  * URL: /portal-indemnitor
  * File: portal-indemnitor.k53on.js
  * 
- * MOBILE-OPTIMIZED: All interactions designed for touch and small screens
- * SPEED-OPTIMIZED: Minimal API calls, efficient data loading
+ * REFACTORED: Uses Custom Session Auth (NO Wix Members) to fix redirect loop
  */
 
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
-import { currentMember } from 'wix-members-frontend';
 import wixData from 'wix-data';
+import { validateCustomSession, getIndemnitorDetails } from 'backend/portal-auth';
 import { submitIntakeForm } from 'backend/intakeQueue.jsw';
+import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 
 // Page state
-let memberData = null;
+let currentSession = null;
+let indemnitorData = null; // Replaces memberData
 let currentIntake = null;
 let isSubmitting = false;
 
 $w.onReady(async function () {
+    // 1. Handle Magic Link Token from URL
+    const query = wixLocation.query;
+    if (query.st) {
+        console.log("🔗 Indemnitor Portal: Found session token in URL, storing...");
+        setSessionToken(query.st);
+        // Optional: clear query param to clean URL, but wixLocation doesn't support replaceState easily without reload
+    }
+
     await initializePage();
 });
 
@@ -36,33 +45,60 @@ async function initializePage() {
     try {
         // Show loading state
         showLoading(true);
-        
-        // Check authentication
-        const isLoggedIn = await checkMemberLogin();
-        if (!isLoggedIn) {
+
+        console.log("🚀 Indemnitor Portal: Initializing...");
+
+        // 2. Custom Authentication Check
+        const sessionToken = getSessionToken();
+        console.log("🔍 Session Token Present:", !!sessionToken);
+
+        if (!sessionToken) {
+            console.warn("⛔ Indemnitor Portal: No session token found. Redirecting to Landing.");
             wixLocation.to('/portal-landing');
             return;
         }
-        
-        // Load member data
-        memberData = await loadMemberData();
-        
-        // Check if member has existing intake
+
+        console.log("🔍 Validating Session...");
+        const session = await validateCustomSession(sessionToken);
+
+        if (!session) {
+            console.warn("⛔ Indemnitor Portal: Invalid or expired session. Redirecting to Landing.");
+            console.warn("Debug: Validation returned null. Token may be expired or not in database.");
+            clearSessionToken();
+            wixLocation.to('/portal-landing');
+            return;
+        }
+
+        // Verify Role (Optional but good for security)
+        // Note: A user might be both, so we ideally just check if they are allowed here.
+        // For now, if they have a valid session, let them in, but we might check session.role === 'indemnitor' if we enforce separation.
+        currentSession = session;
+        console.log(`✅ Indemnitor Portal: Authenticated as ${session.personId} (${session.role})`);
+
+        // 3. Load Data from Backend
+        indemnitorData = await getIndemnitorDetails(sessionToken);
+        if (!indemnitorData) {
+            console.error("❌ Failed to load indemnitor details");
+            showError("Error loading your profile. Please contact support.");
+            // fallback?
+        }
+
+        // 4. Check for existing intake
         await checkExistingIntake();
-        
-        // Setup form
+
+        // 5. Setup UI
         if (!currentIntake) {
             setupIntakeForm();
         } else {
             showBondDashboard();
         }
-        
-        // Setup event listeners
+
+        // 6. Setup Listeners
         setupEventListeners();
-        
+
         // Hide loading
         showLoading(false);
-        
+
     } catch (error) {
         console.error('Page initialization error:', error);
         showError('Error loading page. Please refresh or call (239) 332-2245.');
@@ -71,52 +107,24 @@ async function initializePage() {
 }
 
 /**
- * Check if member is logged in
- */
-async function checkMemberLogin() {
-    try {
-        const member = await currentMember.getMember();
-        return !!member;
-    } catch (error) {
-        return false;
-    }
-}
-
-/**
- * Load member data
- */
-async function loadMemberData() {
-    try {
-        const member = await currentMember.getMember({ fieldsets: ['FULL'] });
-        
-        return {
-            id: member._id,
-            email: member.loginEmail,
-            firstName: member.contactDetails?.firstName || '',
-            lastName: member.contactDetails?.lastName || '',
-            phone: member.contactDetails?.phones?.[0] || ''
-        };
-    } catch (error) {
-        console.error('Error loading member data:', error);
-        return null;
-    }
-}
-
-/**
- * Check if member has existing intake submission
+ * Check if indemnitor has existing intake submission
  */
 async function checkExistingIntake() {
     try {
-        if (!memberData?.email) return;
-        
+        // Use email from currentSession or indemnitorData
+        const email = currentSession.email || indemnitorData?.email;
+        if (!email) return;
+
+        // Look for existing intake
         const results = await wixData.query('IntakeQueue')
-            .eq('indemnitorEmail', memberData.email)
+            .eq('indemnitorEmail', email)
             .descending('_createdDate')
             .limit(1)
             .find();
-        
+
         if (results.items.length > 0) {
             currentIntake = results.items[0];
+            console.log("✅ Found existing intake:", currentIntake._id);
         }
     } catch (error) {
         console.error('Error checking existing intake:', error);
@@ -127,15 +135,20 @@ async function checkExistingIntake() {
  * Setup intake form with prefilled data
  */
 function setupIntakeForm() {
-    // Prefill indemnitor information from member profile
-    if (memberData) {
-        safeSetValue('#indemnitorFirstName', memberData.firstName);
-        safeSetValue('#indemnitorLastName', memberData.lastName);
-        safeSetValue('#indemnitorEmail', memberData.email);
-        safeSetValue('#indemnitorPhone', memberData.phone);
+    if (indemnitorData) {
+        // Map backend fields to UI
+        safeSetValue('#indemnitorFirstName', indemnitorData.firstName);
+        safeSetValue('#indemnitorLastName', indemnitorData.lastName);
+        safeSetValue('#indemnitorEmail', indemnitorData.email);
+        safeSetValue('#indemnitorPhone', indemnitorData.phone);
+
+        // If we have address info from backend (future proofing), set it too
+        if (indemnitorData.address) safeSetValue('#indemnitorAddress', indemnitorData.address);
+        if (indemnitorData.city) safeSetValue('#indemnitorCity', indemnitorData.city);
+        if (indemnitorData.state) safeSetValue('#indemnitorState', indemnitorData.state);
+        if (indemnitorData.zip) safeSetValue('#indemnitorZipCode', indemnitorData.zip);
     }
-    
-    // Show form, hide dashboard
+
     safeShow('#intakeFormSection');
     safeHide('#bondDashboardSection');
 }
@@ -145,37 +158,32 @@ function setupIntakeForm() {
  */
 function showBondDashboard() {
     if (!currentIntake) return;
-    
-    // Hide form, show dashboard
+
     safeHide('#intakeFormSection');
     safeShow('#bondDashboardSection');
-    
-    // Populate defendant status
+
+    // Populate defendant status from Intake or Live Data?
+    // Using Intake as primary source for now, but could enhance with live lookup later
     safeSetText('#defendantNameDisplay', currentIntake.defendantName || 'Unknown');
     safeSetText('#defendantStatusDisplay', formatStatus(currentIntake.status));
     safeSetText('#lastCheckInDisplay', formatDate(currentIntake._updatedDate));
     safeSetText('#nextCourtDateDisplay', formatDate(currentIntake.nextCourtDate) || 'TBD');
-    
-    // Populate paperwork status
+
     const paperworkStatus = currentIntake.documentStatus || 'pending';
     safeSetText('#paperworkStatusDisplay', formatDocumentStatus(paperworkStatus));
-    
-    // Show/hide sign button
+
     if (paperworkStatus === 'sent_for_signature' && currentIntake.signNowIndemnitorLink) {
         safeShow('#signPaperworkBtn');
         $w('#signPaperworkBtn').link = currentIntake.signNowIndemnitorLink;
     } else {
         safeHide('#signPaperworkBtn');
     }
-    
-    // Populate payment plan
+
     if (currentIntake.premiumAmount) {
         safeSetText('#remainingBalanceDisplay', `$${currentIntake.premiumAmount.toFixed(2)}`);
         safeSetText('#paymentTermsDisplay', currentIntake.paymentTerms || '250.00');
         safeSetText('#paymentFrequencyDisplay', currentIntake.paymentFrequency || 'weekly');
         safeSetText('#nextPaymentDateDisplay', formatDate(currentIntake.nextPaymentDate) || 'Jan 8, 2026');
-        
-        // Show payment button
         safeShow('#makePaymentBtn');
     }
 }
@@ -184,31 +192,33 @@ function showBondDashboard() {
  * Setup all event listeners
  */
 function setupEventListeners() {
-    // Submit Info button
     safeOnClick('#submitInfoBtn', handleSubmitIntake);
-    
-    // Sign Paperwork button
     safeOnClick('#signPaperworkBtn', handleSignPaperwork);
-    
-    // Make Payment button
     safeOnClick('#makePaymentBtn', handleMakePayment);
-    
-    // Send message button
     safeOnClick('#sendMessageBtn', handleSendMessage);
-    
-    // Phone number formatting
+
     setupPhoneFormatting('#defendantPhone');
     setupPhoneFormatting('#indemnitorPhone');
     setupPhoneFormatting('#reference1Phone');
     setupPhoneFormatting('#reference2Phone');
     setupPhoneFormatting('#indemnitorEmployerPhone');
     setupPhoneFormatting('#indemnitorSupervisorPhone');
-    
-    // Zip code formatting
+
     setupZipFormatting('#indemnitorZipCode');
     setupZipFormatting('#reference1Zip');
     setupZipFormatting('#reference2Zip');
     setupZipFormatting('#indemnitorEmployerZip');
+
+    // Logout Button (New for Custom Auth)
+    safeOnClick('#logoutBtn', handleLogout);
+}
+
+/**
+ * Handle Logout
+ */
+function handleLogout() {
+    clearSessionToken();
+    wixLocation.to('/portal-landing');
 }
 
 /**
@@ -216,43 +226,36 @@ function setupEventListeners() {
  */
 async function handleSubmitIntake() {
     if (isSubmitting) return;
-    
+
     try {
         isSubmitting = true;
-        
-        // Disable button and show loading
         safeDisable('#submitInfoBtn');
         safeSetText('#submitInfoBtn', 'Submitting...');
         showLoading(true);
-        
-        // Validate form
+
         const validation = validateIntakeForm();
         if (!validation.valid) {
             showError(validation.message);
             return;
         }
-        
-        // Collect form data
+
         const formData = collectIntakeFormData();
-        
-        // Submit to backend
+
         const result = await submitIntakeForm(formData);
-        
+
         if (result.success) {
-            // Success - show confirmation
-            showSuccess('Your information has been submitted successfully! Our team will review and contact you shortly.');
-            
-            // Wait 2 seconds then reload to show dashboard
+            showSuccess('Your information has been submitted successfully!');
             setTimeout(() => {
-                wixLocation.to('/portal-indemnitor');
+                // Refresh page implies re-running onReady which will skip intake form and show dashboard if intake found
+                wixLocation.to(wixLocation.url);
             }, 2000);
         } else {
             throw new Error(result.message || 'Submission failed');
         }
-        
+
     } catch (error) {
         console.error('Submit error:', error);
-        showError(error.message || 'Error submitting form. Please call (239) 332-2245.');
+        showError(error.message || 'Error submitting form.');
     } finally {
         isSubmitting = false;
         safeEnable('#submitInfoBtn');
@@ -266,48 +269,26 @@ async function handleSubmitIntake() {
  */
 function validateIntakeForm() {
     const errors = [];
-    
-    // Defendant name (required)
-    if (!safeGetValue('#defendantFirstName')?.trim()) {
-        errors.push('Defendant first name is required');
-    }
-    if (!safeGetValue('#defendantLastName')?.trim()) {
-        errors.push('Defendant last name is required');
-    }
-    
-    // Indemnitor information (required)
-    if (!safeGetValue('#indemnitorFirstName')?.trim()) {
-        errors.push('Your first name is required');
-    }
-    if (!safeGetValue('#indemnitorLastName')?.trim()) {
-        errors.push('Your last name is required');
-    }
-    if (!safeGetValue('#indemnitorEmail')?.trim()) {
-        errors.push('Your email is required');
-    }
-    if (!safeGetValue('#indemnitorPhone')?.trim()) {
-        errors.push('Your phone number is required');
-    }
-    if (!safeGetValue('#indemnitorAddress')?.trim()) {
-        errors.push('Your address is required');
-    }
-    if (!safeGetValue('#indemnitorCity')?.trim()) {
-        errors.push('Your city is required');
-    }
-    if (!safeGetValue('#indemnitorState')?.trim()) {
-        errors.push('Your state is required');
-    }
-    if (!safeGetValue('#indemnitorZipCode')?.trim()) {
-        errors.push('Your zip code is required');
-    }
-    
+
+    if (!safeGetValue('#defendantFirstName')?.trim()) errors.push('Defendant first name is required');
+    if (!safeGetValue('#defendantLastName')?.trim()) errors.push('Defendant last name is required');
+
+    if (!safeGetValue('#indemnitorFirstName')?.trim()) errors.push('Your first name is required');
+    if (!safeGetValue('#indemnitorLastName')?.trim()) errors.push('Your last name is required');
+    if (!safeGetValue('#indemnitorEmail')?.trim()) errors.push('Your email is required');
+    if (!safeGetValue('#indemnitorPhone')?.trim()) errors.push('Your phone number is required');
+    if (!safeGetValue('#indemnitorAddress')?.trim()) errors.push('Your address is required');
+    if (!safeGetValue('#indemnitorCity')?.trim()) errors.push('Your city is required');
+    if (!safeGetValue('#indemnitorState')?.trim()) errors.push('Your state is required');
+    if (!safeGetValue('#indemnitorZipCode')?.trim()) errors.push('Your zip code is required');
+
     if (errors.length > 0) {
         return {
             valid: false,
             message: `Please complete required fields:\n${errors.join('\n')}`
         };
     }
-    
+
     return { valid: true };
 }
 
@@ -323,7 +304,7 @@ function collectIntakeFormData() {
         defendantEmail: safeGetValue('#defendantEmail'),
         defendantPhone: safeGetValue('#defendantPhone'),
         defendantBookingNumber: safeGetValue('#defendantBookingNumber'),
-        
+
         // Indemnitor Information
         indemnitorName: `${safeGetValue('#indemnitorFirstName')} ${safeGetValue('#indemnitorMiddleName')} ${safeGetValue('#indemnitorLastName')}`.replace(/\s+/g, ' ').trim(),
         indemnitorFirstName: safeGetValue('#indemnitorFirstName'),
@@ -336,24 +317,23 @@ function collectIntakeFormData() {
         indemnitorState: safeGetValue('#indemnitorState'),
         indemnitorZipCode: safeGetValue('#indemnitorZipCode'),
         residenceType: safeGetValue('#residenceType'),
-        
-        // Reference 1
+
+        // References
         reference1Name: safeGetValue('#reference1Name'),
         reference1Phone: safeGetValue('#reference1Phone'),
         reference1Address: safeGetValue('#reference1Address'),
         reference1City: safeGetValue('#reference1City'),
         reference1State: safeGetValue('#reference1State'),
         reference1Zip: safeGetValue('#reference1Zip'),
-        
-        // Reference 2
+
         reference2Name: safeGetValue('#reference2Name'),
         reference2Phone: safeGetValue('#reference2Phone'),
         reference2Address: safeGetValue('#reference2Address'),
         reference2City: safeGetValue('#reference2City'),
         reference2State: safeGetValue('#reference2State'),
         reference2Zip: safeGetValue('#reference2Zip'),
-        
-        // Indemnitor Employment
+
+        // Employment
         indemnitorEmployer: safeGetValue('#indemnitorEmployerName'),
         indemnitorEmployerCity: safeGetValue('#indemnitorEmployerCity'),
         indemnitorEmployerState: safeGetValue('#indemnitorEmployerState'),
@@ -361,21 +341,18 @@ function collectIntakeFormData() {
         indemnitorEmployerPhone: safeGetValue('#indemnitorEmployerPhone'),
         indemnitorSupervisorName: safeGetValue('#indemnitorSupervisorName'),
         indemnitorSupervisorPhone: safeGetValue('#indemnitorSupervisorPhone'),
-        
-        // Jail/County Information
+
+        // Jail/County
         county: safeGetValue('#county'),
         jailFacility: safeGetValue('#jailFacility'),
-        
-        // Metadata
-        submittedBy: memberData?.id,
-        submittedByEmail: memberData?.email,
+
+        // Metadata - Updated to use Custom Session ID
+        submittedBy: currentSession?.personId,
+        submittedByEmail: currentSession?.email,
         submittedAt: new Date().toISOString()
     };
 }
 
-/**
- * Handle sign paperwork button
- */
 function handleSignPaperwork() {
     if (currentIntake?.signNowIndemnitorLink) {
         wixWindow.openLightbox('signing-lightbox', {
@@ -384,69 +361,53 @@ function handleSignPaperwork() {
     }
 }
 
-/**
- * Handle make payment button
- */
 function handleMakePayment() {
-    // Open payment lightbox or redirect to payment page
     wixWindow.openLightbox('payment-lightbox', {
         caseId: currentIntake?.caseId,
         amount: currentIntake?.premiumAmount
     });
 }
 
-/**
- * Handle send message button
- */
 async function handleSendMessage() {
     const message = safeGetValue('#messageInput');
-    
+
     if (!message?.trim()) {
         showError('Please enter a message');
         return;
     }
-    
+
     try {
-        // Save message to collection or send email
         await wixData.insert('Messages', {
             caseId: currentIntake?.caseId,
-            fromEmail: memberData?.email,
+            fromEmail: currentSession?.email, // Use session email
             message: message,
             timestamp: new Date()
         });
-        
-        // Clear input
+
         safeSetValue('#messageInput', '');
-        
         showSuccess('Message sent! We\'ll respond shortly.');
-        
+
     } catch (error) {
         console.error('Error sending message:', error);
-        showError('Error sending message. Please call (239) 332-2245.');
+        showError('Error sending message.');
     }
 }
 
-/**
- * Setup phone number formatting
- */
 function setupPhoneFormatting(selector) {
     safeOnInput(selector, () => {
         let value = (safeGetValue(selector) || '').replace(/\D/g, '');
         if (value.length > 10) value = value.substring(0, 10);
-        
+
         if (value.length >= 6) {
             value = `(${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6)}`;
         } else if (value.length >= 3) {
             value = `(${value.substring(0, 3)}) ${value.substring(3)}`;
         }
-        
+
         safeSetValue(selector, value);
     });
 }
 
-/**
- * Setup zip code formatting
- */
 function setupZipFormatting(selector) {
     safeOnInput(selector, () => {
         let value = (safeGetValue(selector) || '').replace(/\D/g, '');
@@ -455,9 +416,6 @@ function setupZipFormatting(selector) {
     });
 }
 
-/**
- * Format status for display
- */
 function formatStatus(status) {
     const statusMap = {
         'intake': 'Pending Review',
@@ -470,9 +428,6 @@ function formatStatus(status) {
     return statusMap[status] || 'Unknown';
 }
 
-/**
- * Format document status for display
- */
 function formatDocumentStatus(status) {
     const statusMap = {
         'pending': 'Pending',
@@ -483,152 +438,45 @@ function formatDocumentStatus(status) {
     return statusMap[status] || status;
 }
 
-/**
- * Format date for display
- */
 function formatDate(dateString) {
     if (!dateString) return null;
-    
     try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
+        return new Date(dateString).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric'
         });
-    } catch (error) {
-        return null;
-    }
+    } catch (error) { return null; }
 }
 
-/**
- * Show loading indicator
- */
 function showLoading(show) {
-    if (show) {
-        safeShow('#loadingSpinner');
-    } else {
-        safeHide('#loadingSpinner');
-    }
+    if (show) safeShow('#loadingSpinner');
+    else safeHide('#loadingSpinner');
 }
 
-/**
- * Show error message
- */
 function showError(message) {
     safeSetText('#errorMessage', message);
     safeShow('#errorMessage');
     safeHide('#successMessage');
-    
-    // Auto-hide after 5 seconds
     setTimeout(() => safeHide('#errorMessage'), 5000);
 }
 
-/**
- * Show success message
- */
 function showSuccess(message) {
     safeSetText('#successMessage', message);
     safeShow('#successMessage');
     safeHide('#errorMessage');
-    
-    // Auto-hide after 5 seconds
     setTimeout(() => safeHide('#successMessage'), 5000);
 }
 
-// ============================================================================
-// SAFE WRAPPERS - Prevent errors if elements don't exist
-// ============================================================================
+// SAFE WRAPPERS
+function safeSetValue(selector, value) { try { if ($w(selector).valid) $w(selector).value = value || ''; } catch (e) { } }
+function safeGetValue(selector) { try { return $w(selector).valid ? $w(selector).value : ''; } catch (e) { return ''; } }
+function safeSetText(selector, text) { try { if ($w(selector).valid) $w(selector).text = text || ''; } catch (e) { } }
+function safeShow(selector) { try { if ($w(selector).valid) $w(selector).show(); } catch (e) { } }
+function safeHide(selector) { try { if ($w(selector).valid) $w(selector).hide(); } catch (e) { } }
+function safeDisable(selector) { try { if ($w(selector).valid) $w(selector).disable(); } catch (e) { } }
+function safeEnable(selector) { try { if ($w(selector).valid) $w(selector).enable(); } catch (e) { } }
+function safeOnClick(selector, handler) { try { if ($w(selector).valid) $w(selector).onClick(handler); } catch (e) { } }
+function safeOnInput(selector, handler) { try { if ($w(selector).valid) $w(selector).onInput(handler); } catch (e) { } }
 
-function safeSetValue(selector, value) {
-    try {
-        if ($w(selector).valid) {
-            $w(selector).value = value || '';
-        }
-    } catch (e) {
-        console.warn(`Element ${selector} not found or not accessible`);
-    }
-}
-
-function safeGetValue(selector) {
-    try {
-        return $w(selector).valid ? $w(selector).value : '';
-    } catch (e) {
-        return '';
-    }
-}
-
-function safeSetText(selector, text) {
-    try {
-        if ($w(selector).valid) {
-            $w(selector).text = text || '';
-        }
-    } catch (e) {
-        console.warn(`Element ${selector} not found`);
-    }
-}
-
-function safeShow(selector) {
-    try {
-        if ($w(selector).valid) {
-            $w(selector).show();
-        }
-    } catch (e) {
-        console.warn(`Element ${selector} not found`);
-    }
-}
-
-function safeHide(selector) {
-    try {
-        if ($w(selector).valid) {
-            $w(selector).hide();
-        }
-    } catch (e) {
-        console.warn(`Element ${selector} not found`);
-    }
-}
-
-function safeDisable(selector) {
-    try {
-        if ($w(selector).valid) {
-            $w(selector).disable();
-        }
-    } catch (e) {
-        console.warn(`Element ${selector} not found`);
-    }
-}
-
-function safeEnable(selector) {
-    try {
-        if ($w(selector).valid) {
-            $w(selector).enable();
-        }
-    } catch (e) {
-        console.warn(`Element ${selector} not found`);
-    }
-}
-
-function safeOnClick(selector, handler) {
-    try {
-        if ($w(selector).valid) {
-            $w(selector).onClick(handler);
-        }
-    } catch (e) {
-        console.warn(`Element ${selector} not found`);
-    }
-}
-
-function safeOnInput(selector, handler) {
-    try {
-        if ($w(selector).valid) {
-            $w(selector).onInput(handler);
-        }
-    } catch (e) {
-        console.warn(`Element ${selector} not found`);
-    }
-}
-
-// Export for testing
 export {
     initializePage,
     handleSubmitIntake,

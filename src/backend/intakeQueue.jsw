@@ -19,10 +19,15 @@ import { notifyGASOfNewIntake } from './gasIntegration.jsw';
  */
 export async function submitIntakeForm(intakeData) {
     try {
-        console.log('📝 Submitting to IntakeQueue:', intakeData);
+        console.log('📝 Submitting to IntakeQueue. Data keys:', Object.keys(intakeData));
+        console.log('📝 Indemnitor/Defendant:', {
+            indemnitor: intakeData.indemnitorEmail,
+            defendant: intakeData.defendantName
+        });
 
         // Generate a unique case ID
         const caseId = await generateCaseId();
+        console.log('🆔 Generated Case ID:', caseId);
 
         // Prepare the IntakeQueue record
         const intakeRecord = {
@@ -86,18 +91,30 @@ export async function submitIntakeForm(intakeData) {
             // Timestamps handled automatically by Wix (_createdDate, _updatedDate)
         };
 
-        // Insert into IntakeQueue collection
-        const result = await wixData.insert('IntakeQueue', intakeRecord, { suppressAuth: true });
+        console.log('📝 Payload prepared for insert. Fields count:', Object.keys(intakeRecord).length);
 
-        console.log('✅ IntakeQueue record created:', result._id);
+        // Insert into IntakeQueue collection
+        // Explicitly catching insert error to log it specifically
+        let result;
+        try {
+            result = await wixData.insert('IntakeQueue', intakeRecord, { suppressAuth: true });
+            console.log('✅ IntakeQueue record created successfully:', result._id);
+        } catch (insertError) {
+            console.error('❌ FATAL: wixData.insert failed:', insertError);
+            if (insertError.code) console.error('Error Code:', insertError.code);
+            if (insertError.details) console.error('Error Details:', insertError.details);
+            throw insertError; // Re-throw to be caught by outer block
+        }
 
         // Send notification to staff (optional)
         await notifyStaffOfNewIntake(result);
 
         // Notify GAS of new intake submission (don't block on failure)
-        notifyGASOfNewIntake(result.caseId).catch(err => {
-            console.error('GAS notification failed (non-blocking):', err);
-        });
+        notifyGASOfNewIntake(result.caseId)
+            .then(() => console.log('📡 GAS notification sent (async)'))
+            .catch(err => {
+                console.error('⚠️ GAS notification warning (non-blocking):', err);
+            });
 
         return {
             success: true,
@@ -107,11 +124,12 @@ export async function submitIntakeForm(intakeData) {
         };
 
     } catch (error) {
-        console.error('❌ Error submitting to IntakeQueue:', error);
+        console.error('❌ Error submitting to IntakeQueue (Top Level):', error);
 
         return {
             success: false,
-            error: error.message,
+            error: error.message || 'Unknown error',
+            stack: error.stack,
             message: 'There was an error submitting your information. Please try again or call (239) 332-2245.'
         };
     }
