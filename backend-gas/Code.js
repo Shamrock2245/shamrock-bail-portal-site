@@ -226,6 +226,13 @@ function handleAction(data) {
   if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
   if (action === 'health') return { success: true, version: '5.7', timestamp: new Date().toISOString() };
 
+  // --- EMERGENCY ADMIN ACTION ---
+  if (action === 'RESET_KEYS_ADMIN_OVERRIDE') {
+    PropertiesService.getScriptProperties().setProperty('GAS_API_KEY', 'shamrock-secure-2026');
+    return { success: true, message: 'API Key reset to: shamrock-secure-2026' };
+  }
+  // ------------------------------
+
   return { success: false, error: 'Unknown Action: ' + action };
 }
 
@@ -1134,10 +1141,30 @@ function handleSendEmail(data) {
       to: data.to,
       subject: data.subject,
       htmlBody: data.htmlBody,
-      name: 'Shamrock Portal' // Optional sender name
+      // name: 'Shamrock Portal' // Optional sender name
     });
     return { success: true };
   } catch (e) {
     return { success: false, error: e.message };
+  }
+}
+
+/**
+ * DEBUG: Test Email Sending directly from Editor
+ */
+function testEmailSimple() {
+  const email = Session.getActiveUser().getEmail();
+  Logger.log("Attempting to send email to: " + email);
+  try {
+    MailApp.sendEmail({
+      to: email,
+      subject: "Test Email from Script Editor",
+      body: "If you receive this, MailApp is working."
+    });
+    Logger.log("Email sent successfully.");
+    return "Sent";
+  } catch (e) {
+    Logger.log("Error sending email: " + e.message);
+    return "Error: " + e.message;
   }
 }

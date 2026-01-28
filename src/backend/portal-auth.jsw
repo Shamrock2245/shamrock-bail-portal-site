@@ -521,7 +521,7 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
         // Use GAS backend to send email
         const gasUrl = await getGasUrl();
         const apiKey = await getGasApiKey();
-        
+
         console.log('🔧 sendMagicLinkEmail DEBUG:');
         console.log('  - GAS URL:', gasUrl ? 'SET' : 'MISSING');
         console.log('  - API Key:', apiKey ? 'SET' : 'MISSING');
@@ -566,9 +566,9 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
             subject: 'Your Secure Portal Access - Shamrock Bail Bonds',
             htmlBody: emailBody
         };
-        
+
         console.log('📤 Sending email request to GAS...');
-        
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -576,15 +576,15 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
         });
 
         console.log('📥 GAS Response Status:', response.status);
-        
+
         const responseText = await response.text();
         console.log('📥 GAS Response Body:', responseText);
-        
+
         if (!response.ok) {
             console.error('❌ Email send failed with status:', response.status);
             throw new Error('Email send failed: ' + response.status + ' - ' + responseText);
         }
-        
+
         // Try to parse response as JSON
         let responseData;
         try {
@@ -594,10 +594,14 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
             console.warn('⚠️ Could not parse GAS response as JSON');
             responseData = { success: true }; // Assume success if we got 200 OK
         }
-        
+
         if (responseData.success === false) {
-            console.error('❌ GAS returned success: false:', responseData.error);
-            throw new Error('GAS error: ' + (responseData.error || 'Unknown error'));
+            const errorMsg = typeof responseData.error === 'object' ?
+                JSON.stringify(responseData.error) :
+                (responseData.error || 'Unknown error');
+
+            console.error('❌ GAS returned success: false:', errorMsg);
+            throw new Error('GAS error: ' + errorMsg);
         }
 
         console.log('✅ Email sent successfully!');
