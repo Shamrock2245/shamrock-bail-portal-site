@@ -90,13 +90,22 @@ function doGet(e) {
     }
     // ---------------------------------------------
 
-    const VERSION = '5.3';
+    const VERSION = '5.4';
     const page = e.parameter.page || 'Dashboard';
 
-    // ... (existing code for prefill) ...
-    if (e.parameter.prefill === 'true') {
-      const template = HtmlService.createTemplateFromFile(page);
+    // ALWAYS use template to support Dynamic URL Injection
+    const template = HtmlService.createTemplateFromFile(page);
 
+    // 1. Inject Dynamic App URL (Self-Discovery)
+    try {
+      template.gasUrl = ScriptApp.getService().getUrl();
+    } catch (err) {
+      console.warn('Failed to get service URL:', err);
+      template.gasUrl = ''; // Frontend will use fallback
+    }
+
+    // 2. Inject Prefill Data (if requested)
+    if (e.parameter.prefill === 'true') {
       let prefillData = null;
       try {
         if (typeof getPrefillData === 'function') {
@@ -105,19 +114,16 @@ function doGet(e) {
       } catch (err) {
         console.warn('Failed to retrieve prefill data:', err);
       }
-
       template.data = prefillData;
-
-      return template.evaluate()
-        .setTitle('Shamrock Bail Bonds')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
     } else {
-      return HtmlService.createHtmlOutputFromFile(page)
-        .setTitle('Shamrock Bail Bonds')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      template.data = null;
     }
+
+    return template.evaluate()
+      .setTitle('Shamrock Bail Bonds')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+
   } catch (error) {
     return HtmlService.createHtmlOutput('<h1>Page Error</h1><p>' + error.message + '</p>');
   }
