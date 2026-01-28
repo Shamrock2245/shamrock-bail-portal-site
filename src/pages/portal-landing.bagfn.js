@@ -63,22 +63,30 @@ $w.onReady(async function () {
     }
 
     // 4. LAST: Check if user already has a valid session in storage
-    const existingSession = getSessionToken();
-    if (existingSession) {
-        console.log("✅ Existing session found, validating...");
-        try {
-            const session = await validateCustomSession(existingSession);
-            if (session && session.role) {
-                console.log("✅ Valid session, auto-redirecting to " + session.role + " portal");
-                redirectToPortal(session.role);
-                return;
-            } else {
-                console.log("⚠️ Session invalid/expired, clearing...");
-                clearSessionToken();
+    // 4. LAST: Check if user already has a valid session in storage
+    // Loop Breaker: If we just came from a failed auth redirect, DO NOT auto-redirect again
+    if (query.auth_error || query.reason === 'logout') {
+        console.log("🛑 Loop breaker active: Skipping auto-login check due to recent error/logout");
+        // Optionally clear session here to be safe
+        clearSessionToken();
+    } else {
+        const existingSession = getSessionToken();
+        if (existingSession) {
+            console.log("✅ Existing session found, validating...");
+            try {
+                const session = await validateCustomSession(existingSession);
+                if (session && session.role) {
+                    console.log("✅ Valid session, auto-redirecting to " + session.role + " portal");
+                    redirectToPortal(session.role);
+                    return;
+                } else {
+                    console.log("⚠️ Session invalid/expired, clearing...");
+                    clearSessionToken();
+                }
+            } catch (err) {
+                console.error("❌ Session validation crashed:", err);
+                clearSessionToken(); // Safety clear
             }
-        } catch (err) {
-            console.error("❌ Session validation crashed:", err);
-            clearSessionToken(); // Safety clear
         }
     }
 

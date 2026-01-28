@@ -54,7 +54,7 @@ async function initializePage() {
 
         if (!sessionToken) {
             console.warn("⛔ Indemnitor Portal: No session token found. Redirecting to Landing.");
-            wixLocation.to('/portal-landing');
+            wixLocation.to('/portal-landing?auth_error=1');
             return;
         }
 
@@ -65,7 +65,7 @@ async function initializePage() {
             console.warn("⛔ Indemnitor Portal: Invalid or expired session. Redirecting to Landing.");
             console.warn("Debug: Validation returned null. Token may be expired or not in database.");
             clearSessionToken();
-            wixLocation.to('/portal-landing');
+            wixLocation.to('/portal-landing?auth_error=1');
             return;
         }
 
