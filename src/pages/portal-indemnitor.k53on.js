@@ -192,7 +192,15 @@ function showBondDashboard() {
  * Setup all event listeners
  */
 function setupEventListeners() {
-    safeOnClick('#submitInfoBtn', handleSubmitIntake);
+    // CRITICAL: Check if submit button exists
+    if (!$w('#submitInfoBtn').valid) {
+        console.error("❌ CRITICAL ERROR: '#submitInfoBtn' not found on page. Check Element ID in Editor!");
+        showError("Development Error: Submit button ID mismatch. Please check console.");
+    } else {
+        $w('#submitInfoBtn').onClick(handleSubmitIntake);
+        console.log("✅ Submit button handler attached");
+    }
+
     safeOnClick('#signPaperworkBtn', handleSignPaperwork);
     safeOnClick('#makePaymentBtn', handleMakePayment);
     safeOnClick('#sendMessageBtn', handleSendMessage);
