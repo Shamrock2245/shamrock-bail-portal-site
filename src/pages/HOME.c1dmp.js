@@ -10,6 +10,8 @@
  */
 
 import { session } from 'wix-storage';
+import wixLocation from 'wix-location';
+import wixWindow from 'wix-window';
 
 // State
 let countiesData = null;
@@ -64,12 +66,10 @@ function setupCTAButtons() {
     // Spanish call button (Support both ID naming conventions)
     const spanishBtn = $w('#spanishCallButton').uniqueId ? $w('#spanishCallButton') : $w('#callNowSpanishBtn');
     if (spanishBtn.uniqueId) {
-        spanishBtn.onClick(async () => {
+        spanishBtn.onClick(() => {
             trackEvent('spanish_call_clicked', {
                 location: 'hero_section'
             });
-            // Dynamic Import
-            const wixLocation = await import('wix-location');
             wixLocation.to("tel:12399550301");
         });
     }
@@ -175,7 +175,6 @@ function handleGetStarted() {
 }
 
 async function navigateToCounty(selectedCounty) {
-    const wixLocation = await import('wix-location');
     wixLocation.to(`/bail-bonds/${selectedCounty}`);
 }
 
@@ -256,9 +255,8 @@ function loadTestimonials() {
 /**
  * Track events (lightweight wrapper)
  */
-async function trackEvent(eventName, eventData = {}) {
+function trackEvent(eventName, eventData = {}) {
     try {
-        const wixWindow = await import('wix-window');
         wixWindow.trackEvent("CustomEvent", {
             event: eventName,
             detail: eventData
