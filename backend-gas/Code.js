@@ -1,17 +1,18 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 5.3 - Enterprise Portal Release (Updated 2026-01-27)
+// Version: 5.4 - Security Hardening Release (Updated 2026-01-28)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
  * 
- * V5.0.0 SUMMARY:
+ * V5.4.0 SUMMARY:
  * This backend orchestrates the entire Shamrock Portal workflow:
  * 1. INTAKE & BOOKING: Receives form data from Wix, generates receipts, and stores in 'Bookings' Sheet.
  * 2. SIGNNOW INTEGRATION: Handles document generation (Templates), PDF uploads, and embedded signing links.
  * 3. TWILIO SMS: Sends signing links and notifications via text message.
  * 4. MAGIC LINKS: Manages secure access links for Defendants/Indemnitors.
  * 5. COMPLIANCE: Validates SOC2 webhooks and logs all access/processing events.
+ * 6. SECURITY: API Key enforcement and Viewer Allowlists.
  * 
  * DEPLOYMENT:
  * Deploy as Web App -> Execute as Me -> Access: Anyone
@@ -213,7 +214,7 @@ function handleAction(data) {
 
   // 4. UTILS
   if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
-  if (action === 'health') return { success: true, version: '5.3', timestamp: new Date().toISOString() };
+  if (action === 'health') return { success: true, version: '5.4', timestamp: new Date().toISOString() };
 
   return { success: false, error: 'Unknown Action: ' + action };
 }
@@ -223,7 +224,7 @@ function handleGetAction(e) {
   const action = e.parameter.action;
   const callback = e.parameter.callback;
 
-  if (action === 'health') return createResponse({ success: true, version: '5.2', timestamp: new Date().toISOString() }, callback);
+  if (action === 'health') return createResponse({ success: true, version: '5.4', timestamp: new Date().toISOString() }, callback);
   if (action === 'getNextReceiptNumber') return createResponse(getNextReceiptNumber(), callback);
 
   return createErrorResponse('Unknown action', ERROR_CODES.UNKNOWN_ACTION);
