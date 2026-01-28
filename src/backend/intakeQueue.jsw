@@ -79,13 +79,9 @@ export async function submitIntakeForm(intakeData) {
             indemnitorSupervisorName: intakeData.indemnitorSupervisorName || '',
             indemnitorSupervisorPhone: intakeData.indemnitorSupervisorPhone || '',
 
-            // Case Information
+            // Case Information (Minimal - strict schema alignment)
             county: intakeData.county || '',
             jailFacility: intakeData.jailFacility || '',
-            arrestDate: intakeData.arrestDate ? new Date(intakeData.arrestDate) : null,
-            charges: intakeData.charges || '',
-            bondAmount: intakeData.bondAmount || 0,
-            premiumAmount: intakeData.premiumAmount || 0,
 
             // Status tracking
             status: 'intake',
