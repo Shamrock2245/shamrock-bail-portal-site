@@ -81,15 +81,21 @@ function doGet(e) {
 
   // 2. Default to HTML for Browser
   try {
+    // --- VIEWER ALLOWLIST (Security Hardening) ---
+    const userEmail = Session.getActiveUser().getEmail();
+    const allowed = isUserAllowed(userEmail);
+    if (!allowed) {
+      return HtmlService.createHtmlOutput('<h1>Access Denied</h1><p>You are not authorized to view this dashboard.</p>');
+    }
+    // ---------------------------------------------
+
     const VERSION = '5.3';
     const page = e.parameter.page || 'Dashboard';
 
-    // Check if we need to pre-fill data (e.g. from "Send to Form")
+    // ... (existing code for prefill) ...
     if (e.parameter.prefill === 'true') {
       const template = HtmlService.createTemplateFromFile(page);
 
-      // Attempt to get data from Script Properties (passed from ComprehensiveMenuSystem.js)
-      // We rely on getPrefillData() being available in the context (from ComprehensiveMenuSystem.gs)
       let prefillData = null;
       try {
         if (typeof getPrefillData === 'function') {
@@ -99,8 +105,6 @@ function doGet(e) {
         console.warn('Failed to retrieve prefill data:', err);
       }
 
-      // Inject data into the template context
-      // The HTML file uses <?!= JSON.stringify(data) ?> to read this
       template.data = prefillData;
 
       return template.evaluate()
@@ -108,14 +112,12 @@ function doGet(e) {
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
         .addMetaTag('viewport', 'width=device-width, initial-scale=1');
     } else {
-      // Standard load without data injection
       return HtmlService.createHtmlOutputFromFile(page)
         .setTitle('Shamrock Bail Bonds')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
         .addMetaTag('viewport', 'width=device-width, initial-scale=1');
     }
   } catch (error) {
-    // Return friendly HTML error
     return HtmlService.createHtmlOutput('<h1>Page Error</h1><p>' + error.message + '</p>');
   }
 }
@@ -163,6 +165,16 @@ function doPost(e) {
       }
     }
 
+    // --- API KEY VERIFICATION (Security Hardening) ---
+    const config = getConfig();
+    // Allow if it matches the configured Wix API Key
+    // OR if we are in a dev/test mode (verify via Property)? No, enforcing strict now.
+    if (data.apiKey !== config.WIX_API_KEY) {
+      if (typeof logSecurityEvent === 'function') logSecurityEvent('UNAUTHORIZED_API_ACCESS', { error: 'Invalid API Key' });
+      return createErrorResponse('Unauthorized: Invalid API Key', ERROR_CODES.UNAUTHORIZED);
+    }
+    // -------------------------------------------------
+
     // Delegate to shared handler
     const result = handleAction(data);
     return createResponse(result); // Result typically has success: true/false
@@ -170,6 +182,40 @@ function doPost(e) {
     if (typeof logSecurityEvent === 'function') logSecurityEvent('DOPOST_FAILURE', { error: error.toString() });
     return createErrorResponse(error.toString(), ERROR_CODES.INTERNAL_ERROR, error.stack);
   }
+}
+
+/**
+ * CLIENT BRIDGE for google.script.run
+ */
+function doPostFromClient(data) {
+  return handleAction(data);
+}
+
+/**
+ * CENTRAL ACTION DISPATCHER
+ */
+function handleAction(data) {
+  const action = data.action;
+
+  // 1. INTAKE & QUEUE
+  if (action === 'intakeSubmission') return handleIntakeSubmission(data);
+  if (action === 'fetchPendingIntakes') return fetchPendingIntakes();
+  if (action === 'markIntakeProcessed') return markIntakeAsProcessed(data.intakeId);
+
+  // 2. SIGNING & DOCS
+  if (action === 'sendForSignature') return handleSendForSignature(data);
+  if (action === 'createPortalSigningSession') return createPortalSigningSession(data);
+
+  // 3. PROFILES (Stub/Future)
+  if (action === 'fetchIndemnitorProfile') {
+    return { success: false, error: 'Profile lookup not yet implemented' };
+  }
+
+  // 4. UTILS
+  if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
+  if (action === 'health') return { success: true, version: '5.3', timestamp: new Date().toISOString() };
+
+  return { success: false, error: 'Unknown Action: ' + action };
 }
 
 function handleGetAction(e) {
@@ -933,6 +979,16 @@ function fetchPendingIntakes() {
         headers.forEach((header, idx) => {
           intake[header] = row[idx];
         });
+
+        // Map to Dashboard Expectations (Schema Normalization)
+        intake.submittedAt = intake.Timestamp;
+        intake.defendantName = intake.DefendantName;
+        intake.name = intake.FullName;
+        intake.phone = intake.Phone;
+        intake.relationship = intake.Role;
+        intake.email = intake.Email;
+        intake._id = intake.IntakeID;
+
         intake.rowNumber = i + 1;
         intakes.push(intake);
       }
@@ -1015,6 +1071,30 @@ function saveFilledPacketToDrive(data) {
 
     const file = folder.createFile(blob);
 
+    /**
+     * Checks if a user is allowed to access the Dashboard
+     * @param {string} email - The email address of the user
+     * @returns {boolean} - True if allowed
+     */
+    function isUserAllowed(email) {
+      if (!email) return false;
+
+      // 1. Allow Admin/Owner
+      const ALLOWED_USERS = [
+        'brendan@shamrockbailbonds.biz',
+        'admin@shamrockbailbonds.biz',
+        'info@shamrockbailbonds.biz'
+      ];
+
+      if (ALLOWED_USERS.includes(email.toLowerCase())) return true;
+
+      // 2. Allow Domain (Staff)
+      if (email.endsWith('@shamrockbailbonds.biz')) return true;
+
+      // 3. Fallback: Log unauthorized attempt
+      console.warn(`Unauthorized dashboard access attempt: ${email}`);
+      return false;
+    }
     return {
       success: true,
       fileId: file.getId(),

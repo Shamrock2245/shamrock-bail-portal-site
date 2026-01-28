@@ -26,6 +26,26 @@ export async function getGasUrl() {
     return FALLBACK_GAS_URL;
 }
 
+// Cached API Key
+let CACHED_GAS_API_KEY = null;
+
+/**
+ * Get GAS API Key from Secrets
+ */
+export async function getGasApiKey() {
+    if (CACHED_GAS_API_KEY) return CACHED_GAS_API_KEY;
+    try {
+        const key = await getSecret("GAS_API_KEY");
+        if (key) {
+            CACHED_GAS_API_KEY = key;
+            return key;
+        }
+    } catch (e) {
+        console.warn("GAS_API_KEY secret not found.");
+    }
+    return null;
+}
+
 /**
  * Generate a cryptographically secure random token
  * Used for magic links and session tokens

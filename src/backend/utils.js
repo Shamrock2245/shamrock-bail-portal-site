@@ -16,6 +16,19 @@ export async function getGasUrl() {
 }
 
 /**
+ * Get GAS API Key (Consistent with utils.jsw)
+ */
+export async function getGasApiKey() {
+    try {
+        const key = await getSecret('GAS_API_KEY');
+        return key;
+    } catch (error) {
+        console.error('Error getting GAS API Key:', error);
+        return null;
+    }
+}
+
+/**
  * Fetch with exponential backoff retry
  * @param {string} url 
  * @param {Object} options 
