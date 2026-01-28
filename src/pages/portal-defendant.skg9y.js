@@ -24,8 +24,14 @@ import { captureFullLocationSnapshot } from 'public/geolocation-client';
 let currentSession = null; // Store validated session data
 
 $w.onReady(async function () {
+    console.log("🚀 Defendant Portal: Page Code Loaded");
+
+    // 0. Setup Listeners IMMEDIATELY
     LightboxController.init($w);
     initUI();
+    setupCheckInHandlers();
+    setupPaperworkButtons();
+    setupLogoutButton();
 
     try {
         // Check for session token in URL (passed from magic link redirect)
@@ -117,9 +123,7 @@ $w.onReady(async function () {
             console.error('Error populating dashboard data:', e);
         }
 
-        setupCheckInHandlers();
-        setupPaperworkButtons();
-        setupLogoutButton();
+        // Listeners moved to top of onReady for eager loading
 
         // INITIATE ROBUST TRACKING (Silent Ping)
         // This runs in background to capture device/location without user action
