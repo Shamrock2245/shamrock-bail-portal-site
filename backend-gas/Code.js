@@ -1072,30 +1072,6 @@ function saveFilledPacketToDrive(data) {
 
     const file = folder.createFile(blob);
 
-    /**
-     * Checks if a user is allowed to access the Dashboard
-     * @param {string} email - The email address of the user
-     * @returns {boolean} - True if allowed
-     */
-    function isUserAllowed(email) {
-      if (!email) return false;
-
-      // 1. Allow Admin/Owner
-      const ALLOWED_USERS = [
-        'brendan@shamrockbailbonds.biz',
-        'admin@shamrockbailbonds.biz',
-        'info@shamrockbailbonds.biz'
-      ];
-
-      if (ALLOWED_USERS.includes(email.toLowerCase())) return true;
-
-      // 2. Allow Domain (Staff)
-      if (email.endsWith('@shamrockbailbonds.biz')) return true;
-
-      // 3. Fallback: Log unauthorized attempt
-      console.warn(`Unauthorized dashboard access attempt: ${email}`);
-      return false;
-    }
     return {
       success: true,
       fileId: file.getId(),
@@ -1106,4 +1082,30 @@ function saveFilledPacketToDrive(data) {
   } catch (e) {
     return { success: false, error: e.message };
   }
+}
+
+/**
+ * Checks if a user is allowed to access the Dashboard
+ * @param {string} email - The email address of the user
+ * @returns {boolean} - True if allowed
+ */
+function isUserAllowed(email) {
+  if (!email) return false;
+
+  // 1. Allow Admin/Owner
+  const ALLOWED_USERS = [
+    'brendan@shamrockbailbonds.biz',
+    'admin@shamrockbailbonds.biz',
+    'info@shamrockbailbonds.biz',
+    'shamrockbailoffice@gmail.com'
+  ];
+
+  if (ALLOWED_USERS.includes(email.toLowerCase())) return true;
+
+  // 2. Allow Domain (Staff)
+  if (email.endsWith('@shamrockbailbonds.biz')) return true;
+
+  // 3. Fallback: Log unauthorized attempt
+  console.warn(`Unauthorized dashboard access attempt: ${email}`);
+  return false;
 }
