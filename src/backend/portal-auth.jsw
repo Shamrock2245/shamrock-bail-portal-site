@@ -16,7 +16,7 @@
 
 import wixData from 'wix-data';
 import { generateToken, hashPassword, verifyPassword } from 'backend/auth-utils';
-import { getGasUrl } from 'backend/utils';
+import { getGasUrl, getGasApiKey } from 'backend/utils';
 import { sendSms } from 'backend/twilio-client';
 import { fetch } from 'wix-fetch';
 import crypto from 'crypto';
@@ -520,6 +520,7 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
     try {
         // Use GAS backend to send email
         const gasUrl = await getGasUrl();
+        const apiKey = await getGasApiKey();
 
         const roleLabels = {
             'admin': 'Administrator',
@@ -557,6 +558,7 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'sendEmail',
+                apiKey: apiKey,
                 to: email,
                 subject: 'Your Secure Portal Access - Shamrock Bail Bonds',
                 htmlBody: emailBody
@@ -1185,7 +1187,7 @@ export async function getIndemnitorPendingPaperwork(sessionToken) {
                         .eq('caseId', caseInfo.caseId)
                         .ne('status', 'signed')
                         .find({ suppressAuth: true });
-                    
+
                     docsQuery.items.forEach(doc => {
                         pendingDocuments.push({
                             documentId: doc._id,

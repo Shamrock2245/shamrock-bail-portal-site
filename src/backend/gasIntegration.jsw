@@ -10,7 +10,7 @@
  */
 
 import wixData from 'wix-data';
-import wixSecretsBackend from 'wix-secrets-backend';
+import { getGasApiKey } from 'backend/utils';
 
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx73fNh4tA3jus4tOWLwmghpCpQ04xl9_qBz0hWPQjL0IcYNsTEfeYBhqiB9RAkzzvOUQ/exec';
 
@@ -354,6 +354,8 @@ export async function notifyGASOfNewIntake(caseId) {
             throw new Error('Intake not found');
         }
 
+        const apiKey = await getGasApiKey();
+
         // Send webhook to GAS
         const response = await fetch(GAS_WEB_APP_URL, {
             method: 'POST',
@@ -362,6 +364,7 @@ export async function notifyGASOfNewIntake(caseId) {
             },
             body: JSON.stringify({
                 action: 'newIntake',
+                apiKey: apiKey,
                 caseId: caseId,
                 data: intakeResult.intake
             })
