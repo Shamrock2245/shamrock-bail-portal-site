@@ -376,52 +376,282 @@ function fetchIndemnitorProfile(email) {
   }
 }
 
+const WIX_SITE_ID = 'a00e3857-675a-493b-91d8-a1dbc5e7c499';
+const WIX_API_BASE = 'https://www.wixapis.com/v2';
+
+// ... (keep existing imports/code) ...
+
 /**
- * Fetch Pending Intakes from Wix Queue
+ * Fetch Pending Intakes from Wix Queue (ROBUST)
+ * Replaces legacy fetchPendingIntakes
  */
-function fetchPendingIntakes() {
-  const config = getWixPortalConfig();
-  if (!config.apiKey) return { success: false, message: 'Wix API key missing' };
-
-  const url = config.baseUrl + '/getPendingIntakes';
-  const params = {
-    method: 'GET',
-    headers: { 'api-key': config.apiKey },
-    muteHttpExceptions: true
-  };
-
+function getWixIntakeQueue() {
   try {
-    const response = UrlFetchApp.fetch(url, params);
-    return JSON.parse(response.getContentText());
-  } catch (e) {
-    return { success: false, message: e.message };
+    const apiKey = PropertiesService.getScriptProperties().getProperty('WIX_API_KEY');
+
+    if (!apiKey) {
+      throw new Error('WIX_API_KEY not configured in Script Properties');
+    }
+
+    // Query Wix Data API for pending intakes
+    const url = `${WIX_API_BASE}/data/v2/collections/IntakeQueue/queryData`;
+
+    const payload = {
+      filter: {
+        gasSyncStatus: {
+          $eq: 'pending'
+        }
+      },
+      sort: [
+        {
+          fieldName: '_createdDate',
+          order: 'desc'
+        }
+      ],
+      paging: {
+        limit: 100,
+        offset: 0
+      }
+    };
+
+    const options = {
+      method: 'post',
+      headers: {
+        'Authorization': apiKey,
+        'wix-site-id': WIX_SITE_ID,
+        'Content-Type': 'application/json'
+      },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+
+    if (responseCode !== 200) {
+      throw new Error(`Wix API error: ${responseCode} - ${responseText}`);
+    }
+
+    const result = JSON.parse(responseText);
+    return result.dataItems || [];
+
+  } catch (error) {
+    Logger.log('Error querying Wix IntakeQueue:', error);
+    return [];
   }
 }
 
 /**
- * Mark Intake as Processed
+ * Mark Intake as Synced (ROBUST)
+ * Replaces legacy markIntakeAsProcessed
  */
-function markIntakeAsProcessed(intakeId) {
-  const config = getWixPortalConfig();
-  if (!config.apiKey) return { success: false, message: 'Wix API key missing' };
-
-  const url = config.baseUrl + '/markIntakeProcessed';
-  const payload = {
-    apiKey: config.apiKey,
-    intakeId: intakeId
-  };
-
-  const params = {
-    method: 'POST',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-
+function markWixIntakeAsSynced(caseId) {
   try {
-    const response = UrlFetchApp.fetch(url, params);
-    return JSON.parse(response.getContentText());
+    const apiKey = PropertiesService.getScriptProperties().getProperty('WIX_API_KEY');
+    if (!apiKey) throw new Error('WIX_API_KEY not configured');
+
+    // First fetch to get _id
+    const intake = getWixIntakeByCaseId(caseId);
+    if (!intake) throw new Error(`Intake ${caseId} not found`);
+
+    const url = `${WIX_API_BASE}/data/v2/collections/IntakeQueue/dataItems/${intake._id}`;
+    const payload = {
+      dataItem: {
+        data: {
+          gasSyncStatus: 'synced',
+          gasSyncTimestamp: new Date().toISOString(),
+          status: 'in_progress'
+        }
+      }
+    };
+    const options = {
+      method: 'patch',
+      headers: {
+        'Authorization': apiKey,
+        'wix-site-id': WIX_SITE_ID,
+        'Content-Type': 'application/json'
+      },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() !== 200) throw new Error(`Failed to update intake: ${response.getContentText()}`);
+
+    Logger.log(`Intake ${caseId} marked as synced`);
+    return true;
+
   } catch (e) {
-    return { success: false, message: e.message };
+    Logger.log('Error marking intake synced: ' + e.message);
+    return false;
+  }
+}
+
+/**
+ * Handle New Intake Webhook
+ */
+function handleNewIntake(caseId, intakeData) {
+  try {
+    Logger.log('New intake received:', caseId);
+    storeIntakeInQueue(caseId, intakeData);
+    sendStaffNotification(caseId, intakeData);
+  } catch (error) {
+    Logger.log('Error handling new intake:', error);
+  }
+}
+
+/**
+ * Get a single intake by case ID
+ */
+function getWixIntakeByCaseId(caseId) {
+  try {
+    const apiKey = PropertiesService.getScriptProperties().getProperty('WIX_API_KEY');
+    const url = `${WIX_API_BASE}/data/v2/collections/IntakeQueue/queryData`;
+    const payload = { filter: { caseId: { $eq: caseId } } };
+    const options = {
+      method: 'post',
+      headers: { 'Authorization': apiKey, 'wix-site-id': WIX_SITE_ID, 'Content-Type': 'application/json' },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+    const response = UrlFetchApp.fetch(url, options);
+    const result = JSON.parse(response.getContentText());
+    if (result.dataItems && result.dataItems.length > 0) return result.dataItems[0];
+    return null;
+  } catch (error) {
+    Logger.log('Error getting intake by case ID:', error);
+    return null;
+  }
+}
+
+/**
+ * Store intake in local queue (backup/cache)
+ */
+function storeIntakeInQueue(caseId, intakeData) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const queueKey = 'intake_queue';
+    let queue = [];
+    const existingQueue = cache.get(queueKey);
+    if (existingQueue) queue = JSON.parse(existingQueue);
+
+    queue.unshift({ caseId: caseId, data: intakeData, timestamp: new Date().toISOString() });
+    if (queue.length > 100) queue = queue.slice(0, 100);
+
+    cache.put(queueKey, JSON.stringify(queue), 21600); // 6 hours
+    Logger.log(`Intake ${caseId} stored in local queue`);
+  } catch (error) {
+    Logger.log('Error storing intake in queue:', error);
+  }
+}
+
+/**
+ * Send email notification to staff about new intake
+ */
+function sendStaffNotification(caseId, intakeData) {
+  try {
+    const staffEmail = 'admin@shamrockbailbonds.biz';
+    const subject = `New Bail Bond Intake: ${intakeData.defendantName}`;
+    const body = `
+A new bail bond intake has been submitted.
+Case ID: ${caseId}
+DEFENDANT INFORMATION:
+Name: ${intakeData.defendantName}
+County: ${intakeData.county}
+Booking Number: ${intakeData.defendantBookingNumber || 'Not provided'}
+INDEMNITOR INFORMATION:
+Name: ${intakeData.indemnitorName}
+Phone: ${intakeData.indemnitorPhone}
+Please review this intake in the Dashboard Queue tab.
+https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzM87__8sLZhhvWyUif2VN3u48LND7UldEbxMhhklttd3ikrW-jfbPEHWKMcLWWx-RNSQ/exec
+    `.trim();
+    MailApp.sendEmail(staffEmail, subject, body);
+    Logger.log(`Staff notification sent for case ${caseId}`);
+  } catch (error) {
+    Logger.log('Error sending staff notification:', error);
+  }
+}
+
+/**
+ * Update Wix intake with defendant data after bookmarklet scrape
+ */
+function updateWixDefendantData(caseId, defendantData) {
+  try {
+    const apiKey = PropertiesService.getScriptProperties().getProperty('WIX_API_KEY');
+    const intake = getWixIntakeByCaseId(caseId);
+    if (!intake) throw new Error(`Intake ${caseId} not found`);
+
+    const url = `${WIX_API_BASE}/data/v2/collections/IntakeQueue/dataItems/${intake._id}`;
+    const payload = {
+      dataItem: {
+        data: {
+          defendantDOB: defendantData.dob || null,
+          defendantSSN: defendantData.ssn || null,
+          defendantAddress: defendantData.address || null,
+          defendantCity: defendantData.city || null,
+          defendantState: defendantData.state || null,
+          defendantZipCode: defendantData.zipCode || null,
+          arrestDate: defendantData.arrestDate || null,
+          charges: defendantData.charges || null,
+          bondAmount: defendantData.bondAmount || null,
+          premiumAmount: defendantData.premiumAmount || null,
+          defendantDataComplete: true,
+          status: 'ready_for_documents'
+        }
+      }
+    };
+    const options = {
+      method: 'patch',
+      headers: { 'Authorization': apiKey, 'wix-site-id': WIX_SITE_ID, 'Content-Type': 'application/json' },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() !== 200) throw new Error(`Failed to update defendant data: ${response.getContentText()}`);
+    Logger.log(`Defendant data updated for case ${caseId}`);
+    return true;
+  } catch (error) {
+    Logger.log('Error updating defendant data:', error);
+    return false;
+  }
+}
+
+/**
+ * Update Wix intake with SignNow document information
+ */
+function updateWixSignNowData(caseId, signNowData) {
+  try {
+    const apiKey = PropertiesService.getScriptProperties().getProperty('WIX_API_KEY');
+    const intake = getWixIntakeByCaseId(caseId);
+    if (!intake) throw new Error(`Intake ${caseId} not found`);
+
+    const url = `${WIX_API_BASE}/data/v2/collections/IntakeQueue/dataItems/${intake._id}`;
+    const payload = {
+      dataItem: {
+        data: {
+          signNowDocumentId: signNowData.documentId,
+          signNowStatus: signNowData.status || 'sent',
+          signNowIndemnitorLink: signNowData.indemnitorLink || null,
+          signNowDefendantLink: signNowData.defendantLink || null,
+          documentStatus: 'sent_for_signature',
+          status: 'awaiting_signatures',
+          documentsSentDate: new Date().toISOString()
+        }
+      }
+    };
+    const options = {
+      method: 'patch',
+      headers: { 'Authorization': apiKey, 'wix-site-id': WIX_SITE_ID, 'Content-Type': 'application/json' },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() !== 200) throw new Error(`Failed to update SignNow data: ${response.getContentText()}`);
+    Logger.log(`SignNow data updated for case ${caseId}`);
+    return true;
+  } catch (error) {
+    Logger.log('Error updating SignNow data:', error);
+    return false;
   }
 }

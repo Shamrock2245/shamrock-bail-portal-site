@@ -1,6 +1,6 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 5.4 - Security Hardening Release (Updated 2026-01-28)
+// Version: 5.6 - Security Hardening Release (Updated 2026-01-28)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
@@ -206,8 +206,9 @@ function handleAction(data) {
 
   // 1. INTAKE & QUEUE
   if (action === 'intakeSubmission') return handleIntakeSubmission(data);
-  if (action === 'fetchPendingIntakes') return fetchPendingIntakes();
-  if (action === 'markIntakeProcessed') return markIntakeAsProcessed(data.intakeId);
+  if (action === 'newIntake') return handleNewIntake(data.caseId, data.data);
+  if (action === 'fetchPendingIntakes') return getWixIntakeQueue(); // Updated to new robust function
+  if (action === 'markIntakeProcessed') return markWixIntakeAsSynced(data.intakeId); // Updated to new robust function
 
   // 2. SIGNING & DOCS
   if (action === 'sendForSignature') return handleSendForSignature(data);

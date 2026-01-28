@@ -384,12 +384,14 @@ export async function cleanupExpiredDocuments() {
 }
 
 // ============================================================================
-// Intake Queue Functions (for GAS Dashboard)
+// Intake Queue Functions (DEPRECATED - Use gasIntegration.jsw)
 // ============================================================================
 
 /**
- * Get pending intakes for GAS processing
+ * DEPRECATED: Use gasIntegration.getPendingIntakesForGAS()
+ * This function referenced the wrong collection ('Intakes').
  */
+/*
 export async function getPendingIntakes(apiKey) {
     try {
         const isValid = await validateApiKey(apiKey);
@@ -410,10 +412,12 @@ export async function getPendingIntakes(apiKey) {
         return { success: false, message: error.message };
     }
 }
+*/
 
 /**
- * Mark intake as processed
+ * DEPRECATED: Use gasIntegration/http-functions logic
  */
+/*
 export async function markIntakeProcessed(intakeId, apiKey) {
     try {
         const isValid = await validateApiKey(apiKey);
@@ -433,7 +437,7 @@ export async function markIntakeProcessed(intakeId, apiKey) {
         return { success: false, message: error.message };
     }
 }
-
+*/
 /**
  * Get indemnitor profile by email
  */

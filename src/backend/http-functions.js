@@ -11,6 +11,7 @@ import {
     markIntakeProcessed,
     getIndemnitorProfile
 } from 'backend/wixApi.jsw';
+import * as gasIntegration from 'backend/gasIntegration.jsw';
 import wixData from 'wix-data';
 import { getSecret } from 'wix-secrets-backend';
 
@@ -873,6 +874,7 @@ export async function get_getIndemnitorProfile(request) {
 /**
  * GET /_functions/getPendingIntakes
  * Fetch all pending submissions from IntakeQueue
+ * Proxies to gasIntegration.getPendingIntakesForGAS()
  */
 export async function get_getPendingIntakes(request) {
     try {
@@ -884,18 +886,19 @@ export async function get_getPendingIntakes(request) {
             return forbidden({ body: { success: false, message: 'Invalid API Key' } });
         }
 
-        // 2. Query Pending
-        const options = { suppressAuth: true };
-        const results = await wixData.query("IntakeQueue")
-            .eq("status", "Pending")
-            .descending("submittedAt") // Newest first
-            .limit(50)
-            .find(options);
+        // 2. Call Implementation
+        const result = await gasIntegration.getPendingIntakesForGAS();
 
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: { success: true, intakes: results.items }
-        });
+        if (result.success) {
+            return ok({
+                headers: { 'Content-Type': 'application/json' },
+                body: result
+            });
+        } else {
+            return serverError({
+                body: { success: false, message: result.error }
+            });
+        }
 
     } catch (error) {
         return serverError({ body: { success: false, message: error.message } });
@@ -903,16 +906,116 @@ export async function get_getPendingIntakes(request) {
 }
 
 /**
+ * POST /_functions/markIntakeSynced
+ * Mark an intake as synced with GAS
+ * Proxies to gasIntegration.markIntakeAsSynced()
+ */
+export async function post_markIntakeSynced(request) {
+    return handleIntakeAction(request, gasIntegration.markIntakeAsSynced, 'caseId');
+}
+
+/**
+ * POST /_functions/updateDefendantData
+ * Update intake with defendant data from bookmarklet
+ * Proxies to gasIntegration.updateDefendantData()
+ */
+export async function post_updateDefendantData(request) {
+    try {
+        const body = await request.body.json();
+        const apiKey = body.apiKey;
+
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (apiKey !== validApiKey) {
+            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
+        }
+
+        if (!body.caseId || !body.data) {
+            return badRequest({ body: { success: false, message: 'Missing caseId or data' } });
+        }
+
+        const result = await gasIntegration.updateDefendantData(body.caseId, body.data);
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: result
+        });
+    } catch (error) {
+        return serverError({ body: { success: false, message: error.message } });
+    }
+}
+
+/**
+ * POST /_functions/updateSignNowData
+ * Update intake with SignNow document info
+ * Proxies to gasIntegration.updateSignNowData()
+ */
+export async function post_updateSignNowData(request) {
+    try {
+        const body = await request.body.json();
+        const apiKey = body.apiKey;
+
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (apiKey !== validApiKey) {
+            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
+        }
+
+        if (!body.caseId || !body.data) {
+            return badRequest({ body: { success: false, message: 'Missing caseId or data' } });
+        }
+
+        const result = await gasIntegration.updateSignNowData(body.caseId, body.data);
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: result
+        });
+    } catch (error) {
+        return serverError({ body: { success: false, message: error.message } });
+    }
+}
+
+/**
+ * POST /_functions/markIntakeSigned
+ * Mark intake as fully signed
+ * Proxies to gasIntegration.markIntakeAsSigned()
+ */
+export async function post_markIntakeSigned(request) {
+    try {
+        const body = await request.body.json();
+        const apiKey = body.apiKey;
+
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (apiKey !== validApiKey) {
+            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
+        }
+
+        if (!body.caseId || !body.data) {
+            return badRequest({ body: { success: false, message: 'Missing caseId or data' } });
+        }
+
+        const result = await gasIntegration.markIntakeAsSigned(body.caseId, body.data);
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: result
+        });
+    } catch (error) {
+        return serverError({ body: { success: false, message: error.message } });
+    }
+}
+
+/**
  * POST /_functions/markIntakeProcessed
- * Mark an intake as processed/done
+ * Legacy/Alternative status update
  */
 export async function post_markIntakeProcessed(request) {
+    // Keep implementation but route correctly if needed, or deprecate.
+    // Re-implementing using direct logic for backward compat
     try {
         const body = await request.body.json();
         const apiKey = body.apiKey;
         const intakeId = body.intakeId;
 
-        // 1. Auth Check
         const validApiKey = await getSecret('GAS_API_KEY');
         if (apiKey !== validApiKey) {
             return forbidden({ body: { success: false, message: 'Invalid API Key' } });
@@ -920,7 +1023,6 @@ export async function post_markIntakeProcessed(request) {
 
         if (!intakeId) return badRequest({ body: { success: false, message: 'Missing intakeId' } });
 
-        // 2. ID Validation & Update
         const options = { suppressAuth: true };
         const item = await wixData.get("IntakeQueue", intakeId, options);
 
@@ -936,7 +1038,33 @@ export async function post_markIntakeProcessed(request) {
             headers: { 'Content-Type': 'application/json' },
             body: { success: true, message: "Marked as processed" }
         });
+    } catch (error) {
+        return serverError({ body: { success: false, message: error.message } });
+    }
+}
 
+/**
+ * Helper for simple action calls
+ */
+async function handleIntakeAction(request, actionFunction, idField = 'caseId') {
+    try {
+        const body = await request.body.json();
+        const apiKey = body.apiKey;
+        const id = body[idField];
+
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (apiKey !== validApiKey) {
+            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
+        }
+
+        if (!id) return badRequest({ body: { success: false, message: `Missing ${idField}` } });
+
+        const result = await actionFunction(id);
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: result
+        });
     } catch (error) {
         return serverError({ body: { success: false, message: error.message } });
     }
