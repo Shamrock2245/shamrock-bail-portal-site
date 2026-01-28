@@ -244,11 +244,23 @@ async function handleSubmitIntake() {
         const result = await submitIntakeForm(formData);
 
         if (result.success) {
-            showSuccess('Your information has been submitted successfully!');
+            console.log('✅ Submission successful:', result);
+            showLoading(false);
+
+            // DEBUG: Show IDs to user to verify persistence
+            // wixWindow.openLightbox('Success', { message: `Case ID: ${result.caseId}` });
+            $w('#groupStep3').collapse();
+            $w('#groupSuccess').expand();
+
+            // Show Case ID in success message
+            $w('#textSuccessMessage').text = `Success! Your Case ID is: ${result.caseId}\n(Please write this down)`;
+            console.warn(`CONFIRMATION: Case ID ${result.caseId} created.`);
+
+            wixWindow.scrollTo(0, 0);
+
             setTimeout(() => {
-                // Refresh page implies re-running onReady which will skip intake form and show dashboard if intake found
                 wixLocation.to(wixLocation.url);
-            }, 2000);
+            }, 5000); // Increased delay to let them see the ID
         } else {
             throw new Error(result.message || 'Submission failed');
         }
