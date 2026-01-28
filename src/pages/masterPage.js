@@ -6,11 +6,13 @@
  * 2. Lazy load heavy components
  * 3. Minimize initial page load work
  * 4. Use async/await for better performance
+ * 5. Dynamic imports to reduce initial bundle size
  */
 
-import { session } from 'wix-storage';
-import wixLocation from 'wix-location';
-import wixWindow from 'wix-window';
+// No top-level imports to keep initial bundle small
+// import { session } from 'wix-storage';  <-- Moved to dynamic import
+// import wixLocation from 'wix-location'; <-- Removed (unused)
+// import wixWindow from 'wix-window';     <-- Moved to dynamic import
 
 // Critical: Load immediately
 $w.onReady(function () {
@@ -105,6 +107,9 @@ function setupEmergencyCallButton() {
  */
 async function checkAuthStatus() {
     try {
+        // Dynamic Import: Only load wix-storage when needed
+        const { session } = await import('wix-storage');
+
         const isLoggedIn = session.getItem('isLoggedIn');
         if (isLoggedIn === 'true') {
             // Show logged-in UI
@@ -133,6 +138,9 @@ function initAnalytics() {
 async function initGeolocation() {
     try {
         // Only init if user hasn't denied permission
+        // Dynamic Import: reuse wix-storage
+        const { session } = await import('wix-storage');
+
         const geoPermission = session.getItem('geoPermission');
         if (geoPermission !== 'denied') {
             // Lazy load geolocation logic if complex
@@ -162,8 +170,11 @@ function initTrackingPixels() {
 /**
  * Track events (lightweight wrapper)
  */
-function trackEvent(eventName, eventData = {}) {
+async function trackEvent(eventName, eventData = {}) {
     try {
+        // Dynamic Import: Only load wix-window when needed
+        const wixWindow = await import('wix-window');
+
         wixWindow.trackEvent("CustomEvent", {
             event: eventName,
             detail: eventData

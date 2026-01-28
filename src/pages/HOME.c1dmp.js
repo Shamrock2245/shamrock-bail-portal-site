@@ -6,12 +6,14 @@
  * 2. Defer non-critical form validation
  * 3. Optimize image loading priority
  * 4. Minimize initial render work
+ * 5. Dynamic imports for backend and Velo APIs
  */
 
-import { getCounties } from 'backend/counties';
-import { session } from 'wix-storage';
-import wixLocation from 'wix-location';
-import wixWindow from 'wix-window';
+// No top-level imports
+// import { getCounties } from 'backend/counties'; <-- Dynamic
+// import { session } from 'wix-storage';          <-- Dynamic
+// import wixLocation from 'wix-location';         <-- Dynamic
+// import wixWindow from 'wix-window';             <-- Dynamic
 
 // State
 let countiesData = null;
@@ -65,10 +67,12 @@ function setupCTAButtons() {
     // Spanish call button (Support both ID naming conventions)
     const spanishBtn = $w('#spanishCallButton').uniqueId ? $w('#spanishCallButton') : $w('#callNowSpanishBtn');
     if (spanishBtn.uniqueId) {
-        spanishBtn.onClick(() => {
+        spanishBtn.onClick(async () => {
             trackEvent('spanish_call_clicked', {
                 location: 'hero_section'
             });
+            // Dynamic Import
+            const wixLocation = await import('wix-location');
             wixLocation.to("tel:12399550301");
         });
     }
@@ -85,6 +89,10 @@ async function loadCountyDropdown() {
         if (dropdown.uniqueId) {
             dropdown.placeholder = 'Loading counties...';
         }
+
+        // Dynamic Imports
+        const { session } = await import('wix-storage');
+        const { getCounties } = await import('backend/counties');
 
         // Check cache first to avoid backend roundtrip
         const cachedCounties = session.getItem('counties');
@@ -170,7 +178,8 @@ function handleGetStarted() {
     navigateToCounty(selectedCounty);
 }
 
-function navigateToCounty(selectedCounty) {
+async function navigateToCounty(selectedCounty) {
+    const wixLocation = await import('wix-location');
     wixLocation.to(`/bail-bonds/${selectedCounty}`);
 }
 
@@ -251,8 +260,9 @@ function loadTestimonials() {
 /**
  * Track events (lightweight wrapper)
  */
-function trackEvent(eventName, eventData = {}) {
+async function trackEvent(eventName, eventData = {}) {
     try {
+        const wixWindow = await import('wix-window');
         wixWindow.trackEvent("CustomEvent", {
             event: eventName,
             detail: eventData

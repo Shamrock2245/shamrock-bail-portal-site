@@ -14,7 +14,25 @@ import { COLLECTIONS } from 'public/collectionIds';
  * @param {string} countySlug - County slug (e.g., "lee", "collier")
  * @returns {Promise<Object>} - Complete county page data
  */
+// In-memory cache store
+const _cache = {};
+const CACHE_TTL = 3600000; // 1 hour
+
+/**
+ * Generate complete county page data
+ * @param {string} countySlug - County slug (e.g., "lee", "collier")
+ * @returns {Promise<Object>} - Complete county page data
+ */
 export async function generateCountyPage(countySlug) {
+  const cacheKey = `page_${countySlug}`;
+
+  // 1. CHECK CACHE
+  const cachedItem = _cache[cacheKey];
+  if (cachedItem && (Date.now() - cachedItem.timestamp < CACHE_TTL)) {
+    // console.log(`🚀 Serving cached page for: ${countySlug}`);
+    return cachedItem.data;
+  }
+
   try {
     console.log(`Generating county page for slug: ${countySlug}`);
 
@@ -32,10 +50,18 @@ export async function generateCountyPage(countySlug) {
     // Transform to expected page format
     const pageData = transformCountyData(countyData);
 
-    return {
+    const result = {
       success: true,
       data: pageData
     };
+
+    // 2. STORE IN CACHE
+    _cache[cacheKey] = {
+      timestamp: Date.now(),
+      data: result
+    };
+
+    return result;
 
   } catch (error) {
     console.error('Error generating county page:', error);
@@ -45,6 +71,14 @@ export async function generateCountyPage(countySlug) {
       data: null
     };
   }
+}
+
+/**
+ * Clear the page cache (useful for admin updates)
+ */
+export function clearCountyPageCache() {
+  for (const key in _cache) delete _cache[key];
+  console.log('County page cache cleared');
 }
 
 /**
