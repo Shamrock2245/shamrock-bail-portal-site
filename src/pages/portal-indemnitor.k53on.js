@@ -180,7 +180,7 @@ function showBondDashboard() {
 
     if (paperworkStatus === 'sent_for_signature' && currentIntake.signNowIndemnitorLink) {
         safeShow('#signPaperworkBtn');
-        $w('#signPaperworkBtn').link = currentIntake.signNowIndemnitorLink;
+        // Link removed to force use of onClick handler (Lightbox)
     } else {
         safeHide('#signPaperworkBtn');
     }
