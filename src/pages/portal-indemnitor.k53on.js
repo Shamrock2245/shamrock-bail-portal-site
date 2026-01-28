@@ -94,6 +94,7 @@ async function initializePage() {
         // 5. Setup UI
         if (!currentIntake) {
             setupIntakeForm();
+            loadCounties(); // New: Populate county dropdown
         } else {
             showBondDashboard();
         }
@@ -108,6 +109,29 @@ async function initializePage() {
         console.error('Page initialization error:', error);
         showError('Error loading page. Please refresh or call (239) 332-2245.');
         showLoading(false);
+    }
+}
+
+/**
+ * Load counties for dropdown
+ */
+async function loadCounties() {
+    try {
+        const results = await wixData.query('FloridaCounties')
+            .ascending('countyName')
+            .find();
+
+        const countyOptions = results.items.map(item => ({
+            label: item.countyName,
+            value: item.countyName // Using name as value to match backend expectation
+        }));
+
+        if ($w('#county').valid) {
+            $w('#county').options = countyOptions;
+            $w('#county').placeholder = "Select County";
+        }
+    } catch (error) {
+        console.error('Error loading counties:', error);
     }
 }
 
