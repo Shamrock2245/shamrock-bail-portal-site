@@ -553,6 +553,7 @@ function sendStaffNotification(caseId, intakeData) {
   try {
     const staffEmail = 'admin@shamrockbailbonds.biz';
     const subject = `New Bail Bond Intake: ${intakeData.defendantName}`;
+    const webAppUrl = ScriptApp.getService().getUrl();
     const body = `
 A new bail bond intake has been submitted.
 Case ID: ${caseId}
@@ -564,7 +565,7 @@ INDEMNITOR INFORMATION:
 Name: ${intakeData.indemnitorName}
 Phone: ${intakeData.indemnitorPhone}
 Please review this intake in the Dashboard Queue tab.
-https://script.google.com/macros/s/AKfycby_heMOPxvwdnsdd2vL6cQWVLKv5j6ziCPhSxUMBRUTdZxJ6mVTEShbuDrZvIsvY1ohew/exec
+${webAppUrl}
     `.trim();
     MailApp.sendEmail(staffEmail, subject, body);
     Logger.log(`Staff notification sent for case ${caseId}`);

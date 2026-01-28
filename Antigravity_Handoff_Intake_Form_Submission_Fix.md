@@ -1,30 +1,36 @@
-# Antigravity Handoff: Intake Form & Magic Link Fixes
 
-## 1. Intake Form Submission
-*   **Permissions**: `src/backend/intakeQueue.jsw` now uses `{ suppressAuth: true }` for all database interactions. This ensures `submitIntakeForm` works regardless of the user's login state or collection permissions.
-*   **GAS Sync**: The `notifyGASOfNewIntake` function is correctly called after submission.
-*   **Robustness**: `src/backend/gasIntegration.jsw` also uses `suppressAuth` to prevent permission errors during GAS queries.
+# Antigravity Handoff: Intake Form & Magic Link Fixes (FINAL)
 
-## 2. Magic Link Login
-*   **Backend Logic**: `src/backend/portal-auth.jsw` generates a token and sends an email via GAS.
-*   **GAS Handler**: Added `action: 'sendEmail'` support to `backend-gas/Code.js`. This is **crucial** for magic links to be delivered.
-*   **URL Update**: Updated all GAS URL references to the new deployment.
+## 🚨 IMMEDIATE ACTION REQUIRED 🚨
 
-## 3. Deployment Instructions (CRITICAL)
+You must update your Google Apps Script project **NOW** to enable the Magic Link emails and the new Intake functionality.
 
-### GAS Project Update
-You **must** update your Google Apps Script project with the latest code from this repo:
+### 1. Update GAS Files
+Go to your [GAS Project](https://script.google.com/home), open the project, and update the following files by copy-pasting the content from this repository:
 
-1.  **Open** your GAS project: `https://script.google.com/home`
-2.  **Update `Code.gs`**: Copy content from `backend-gas/Code.js`. (Ensure `handleSendEmail` is present at the bottom and linked in `handleAction`).
-3.  **Update `WixPortalIntegration.gs`**: Copy content from `backend-gas/WixPortalIntegration.js`.
-4.  **Deploy**: Click "Deploy" -> "New Deployment" -> type "Web App" -> **Execute as: Me** -> **Who has access: Anyone**.
-5.  **Copy URL**: Get the new Web App URL.
+| Local File (in repo) | GAS File (in Script Editor) | Status |
+| :--- | :--- | :--- |
+| `backend-gas/Code.js` | **`Code.gs`** | **UPDATED (v5.7)** - Handles email sending & versioning. |
+| `backend-gas/WixPortalIntegration.js` | **`WixPortalIntegration.gs`** | **UPDATED** - Uses dynamic URL for emails. |
+| `backend-gas/Dashboard.html` | **`Dashboard.html`** | **UPDATED** - Accepts dynamic URL injection. |
 
-### Wix Secrets Update
-1.  Go to Wix Dashboard -> Settings -> **Secrets Manager**.
-2.  Update `GAS_WEB_APP_URL` with the URL you just copied.
+### 2. Deploy Web App
+1.  Click **Deploy** -> **New Deployment**.
+2.  Select **Type**: Web App.
+3.  **Description**: `v5.7 - Magic Links & Intake Fixes`.
+4.  **Execute as**: `Me` (your email).
+5.  **Who has access**: `Anyone`.
+6.  Click **Deploy**.
 
-### Testing
-1.  **Intake**: Submit a form on `/portal-indemnitor`. Verify it appears in Wix Collection `IntakeQueue` and the GAS `IntakeQueue` sheet.
-2.  **Magic Link**: Go to `/portal-landing`, enter your email. Verify you receive the "Access Your Portal" email.
+### 3. Update Wix Secrets (If URL Changed)
+1.  Copy the **Web App URL** from the deployment success screen.
+2.  Go to Wix Dashboard -> Settings -> **Secrets Manager**.
+3.  Update the secret `GAS_WEB_APP_URL` with the new URL.
+    *   *Note: If you used "Manage Deployments" -> "Edit" -> "New Version", the URL might remain the same. Always double-check.*
+
+### 4. Verify
+1.  **Magic Link**: Go to `/portal-landing`, enter your email. You should receive an email with a link.
+2.  **Intake**: Submit a form on `/portal-indemnitor`. Check the GAS `IntakeQueue` sheet.
+
+---
+**Status**: All code is locally synced and ready for deployment.

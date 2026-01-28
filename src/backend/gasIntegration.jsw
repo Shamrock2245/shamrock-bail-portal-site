@@ -12,7 +12,7 @@
 import wixData from 'wix-data';
 import wixSecretsBackend from 'wix-secrets-backend';
 
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby_heMOPxvwdnsdd2vL6cQWVLKv5j6ziCPhSxUMBRUTdZxJ6mVTEShbuDrZvIsvY1ohew/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzh6V4gfIGz-_vO_x8YUN8rx-hw_YaBUqHtsO-D3BB2K-OdygdGTML7O_ekHx4wBj5b6A/exec';
 
 /**
  * Get all pending intake submissions for GAS Dashboard
