@@ -11,7 +11,7 @@
  * - Device and IP fingerprinting
  */
 
-import { detectCounty } from 'backend/geocoding';
+import { detectCounty } from 'backend/geocoding'; // Uses Google Maps API or internal Bounding Box logic (Plan Phase 2)
 import wixWindow from 'wix-window';
 import { session } from 'wix-storage';
 
