@@ -4,7 +4,7 @@
 // Backend, page code, and site code environments.
 
 // backend/bookingSheetHandler.jsw
-import { fetch } from 'wix-fetch';
+// import { fetch } from 'wix-fetch'; // rely on global fetch
 
 // Function to fetch data from an external booking sheet URL
 export async function getBailData(url) {
