@@ -4,9 +4,11 @@
 
 ### 🟢 Priority: Verification
 - [ ] **Run the "Lee County" Test**
-    - [ ] Go to Live Site -> Submit Indentor Form.
+    - [ ] Go to Live Site -> Submit **Indemnitor Form**.
     - [ ] Wait for SMS (Gemini).
-    - [ ] Reply to SMS (optional) or checking SignNow email.
+    - [ ] **Twilio Check:** If SMS does not arrive, check Twilio Logs.
+        - *Note:* If A2P 10DLC Campaign is "Pending", messages might be filtered.
+        - *Action:* Log in to Twilio Console -> Monitor -> Logs -> Messaging -> Delivery Status.
 - [ ] **Run the "Manatee" Test**
     - [ ] Submit lead for Manatee County.
     - [ ] Verify SMS mentions "Bradenton" or specific local tip.
