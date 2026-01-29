@@ -10,9 +10,10 @@
  */
 
 import wixData from 'wix-data';
-import { getGasApiKey } from 'backend/utils';
+import { getGasWebAppUrl, getGasApiKey } from 'backend/secretsManager';
+import { normalizeIntakeData } from 'backend/normalization';
 
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx73fNh4tA3jus4tOWLwmghpCpQ04xl9_qBz0hWPQjL0IcYNsTEfeYBhqiB9RAkzzvOUQ/exec';
+// URL is now dynamic via getGasWebAppUrl(), fallback removed for security.
 
 /**
  * Get all pending intake submissions for GAS Dashboard
@@ -354,10 +355,16 @@ export async function notifyGASOfNewIntake(caseId) {
             throw new Error('Intake not found');
         }
 
-        const apiKey = await getGasApiKey();
+        const [apiKey, gasUrl] = await Promise.all([
+            getGasApiKey(),
+            getGasWebAppUrl()
+        ]);
+
+        // Normalize Data (Sanitize Inputs)
+        const cleanData = normalizeIntakeData(intakeResult.intake);
 
         // Send webhook to GAS
-        const response = await fetch(GAS_WEB_APP_URL, {
+        const response = await fetch(gasUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -366,12 +373,28 @@ export async function notifyGASOfNewIntake(caseId) {
                 action: 'newIntake',
                 apiKey: apiKey,
                 caseId: caseId,
-                data: intakeResult.intake
+                data: cleanData
             })
         });
 
         if (!response.ok) {
             throw new Error(`GAS notification failed: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        // Skill: Error Handling Patterns
+        if (!result.success) {
+            const errorInfo = result.error || {};
+            console.error(`GAS Error [${errorInfo.code || 'UNKNOWN'}]: ${errorInfo.message}`);
+
+            // Check if user-friendly message exists
+            if (errorInfo.userMessage) {
+                throw new Error(errorInfo.userMessage);
+            }
+
+            // Fallback
+            throw new Error(`GAS Error: ${errorInfo.message || 'Unknown backend error'}`);
         }
 
         console.log(`GAS notified of new intake: ${caseId}`);

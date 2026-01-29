@@ -23,6 +23,8 @@ import { session } from 'wix-storage';
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 
+import { validateStickyFooter } from 'public/uiValidator';
+
 // Critical: Load immediately
 $w.onReady(function () {
     // Only essential above-the-fold operations here
@@ -39,6 +41,9 @@ $w.onReady(function () {
 function initCriticalUI() {
     // Setup sticky header
     setupStickyHeader();
+
+    // UI Validator (Automated check for Mobile CTA)
+    validateStickyFooter('#boxStickyFooter');
 
     // Setup emergency call button (critical for bail bonds)
     setupEmergencyCallButton();

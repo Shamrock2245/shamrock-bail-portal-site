@@ -60,11 +60,19 @@ function getConfig() {
 // WEB APP HANDLERS
 // ============================================================================
 const ERROR_CODES = {
+  // Standard System Codes
   INVALID_JSON: 'INVALID_JSON',
   MISSING_ACTION: 'MISSING_ACTION',
   UNKNOWN_ACTION: 'UNKNOWN_ACTION',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
-  UNAUTHORIZED: 'UNAUTHORIZED'
+  UNAUTHORIZED: 'UNAUTHORIZED',
+
+  // Service Specific Codes (From Agentic Skill)
+  AUTH_FAIL: 'AUTH_FAIL',
+  VALIDATION_FAIL: 'VALIDATION_FAIL',
+  SIGNNOW_API_FAIL: 'SIGNNOW_API_FAIL',
+  SHEET_ACCESS_FAIL: 'SHEET_ACCESS_FAIL',
+  TWILIO_API_FAIL: 'TWILIO_API_FAIL'
 };
 
 function doGet(e) {
@@ -254,13 +262,15 @@ function createResponse(data, callback) {
   return output;
 }
 
-function createErrorResponse(message, code = 'INTERNAL_ERROR', details = null) {
+function createErrorResponse(message, code = 'INTERNAL_ERROR', details = null, userMessage = null, retryable = false) {
   return createResponse({
     success: false,
     error: {
       code: code,
       message: message,
-      details: details
+      userMessage: userMessage || "An unexpected error occurred. Please try again or contact support.",
+      details: details,
+      retryable: retryable
     }
   });
 }
