@@ -10,7 +10,7 @@
 
 import { currentMember } from 'wix-members-backend';
 import { getSecret } from 'wix-secrets-backend';
-import { notifyGAS } from 'backend/gasIntegration'; // Re-use our bridge!
+import { callGasAction } from 'backend/gasIntegration'; // Re-use our bridge!
 
 /**
  * Notifies GAS that a student has completed a course, requesting a certificate.
@@ -34,20 +34,14 @@ export async function notifyGASOfCompletion(courseId, studentName) {
             courseId: courseId,
             studentId: member._id,
             studentName: studentName, // Or fetch from Contact Info
+            studentEmail: member.loginEmail, // Crucial for backend notification
             completionDate: new Date().toISOString()
         };
 
         // 3. Send to GAS (Using our existing reliable bridge)
-        // We reuse the mechanics from gasIntegration but might need a specific handling there
-        // For now, simpler to call logic directly if gasIntegration exposes a generic 'send' 
-        // or just implement the fetch here securely.
+        const result = await callGasAction('generateCertificate', payload);
 
-        // Note: Ideally 'notifyGAS' is a generic helper. If not, we'd copy the secure fetch pattern here.
-        // Assuming we implement a generic helper in gasIntegration named 'sendToGAS':
-        // return await sendToGAS(payload);
-
-        // Placeholder return until GAS endpoint is updated for this action:
-        return { success: true, message: "Certificate request queued." };
+        return result;
 
     } catch (error) {
         console.error("🎓 Bail School Error:", error);

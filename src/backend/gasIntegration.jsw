@@ -341,79 +341,78 @@ export async function getIntakeByCaseId(caseId) {
 
 /**
  * Send notification to GAS that new intake is available
- * This can be called after intake submission to trigger GAS to pull data
- * 
- * @param {string} caseId - Case ID of new submission
- * @returns {Promise<Object>} - Notification result
+ * Generic Helper to call any GAS Action
+ * @param {string} action - The action name (e.g., 'generateCertificate')
+ * @param {Object} payload - The data to send
+ */
+export async function callGasAction(action, payload) {
+    const [apiKey, gasUrl] = await Promise.all([
+        getGasApiKey(),
+        getGasWebAppUrl()
+    ]);
+
+    const body = {
+        action: action,
+        apiKey: apiKey,
+        ...payload
+    };
+
+    const response = await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+        throw new Error(`GAS HTTP Error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+}
+
+/**
+ * Notify GAS that a new intake has been processed successfully in Wix
+ * @param {string} caseId - The Wix Item ID
  */
 export async function notifyGASOfNewIntake(caseId) {
     try {
-        // Get the intake data
-        const intakeResult = await getIntakeByCaseId(caseId);
+        const intakeResult = await wixData.query("IntakeQueue")
+            .eq("_id", caseId)
+            .find({ suppressAuth: true });
 
-        if (!intakeResult.success) {
+        if (intakeResult.items.length === 0) {
             throw new Error('Intake not found');
         }
 
-        const [apiKey, gasUrl] = await Promise.all([
-            getGasApiKey(),
-            getGasWebAppUrl()
-        ]);
+        const cleanData = normalizeIntakeData(intakeResult.items[0]);
 
-        // Normalize Data (Sanitize Inputs)
-        const cleanData = normalizeIntakeData(intakeResult.intake);
-
-        // Send webhook to GAS
-        const response = await fetch(gasUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                action: 'newIntake',
-                apiKey: apiKey,
-                caseId: caseId,
-                data: cleanData
-            })
+        const result = await callGasAction('newIntake', {
+            caseId: caseId,
+            data: cleanData
         });
 
-        if (!response.ok) {
-            throw new Error(`GAS notification failed: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-
-        // Skill: Error Handling Patterns
-        if (!result.success) {
-            const errorInfo = result.error || {};
-            console.error(`GAS Error [${errorInfo.code || 'UNKNOWN'}]: ${errorInfo.message}`);
-
-            // Check if user-friendly message exists
-            if (errorInfo.userMessage) {
-                throw new Error(errorInfo.userMessage);
-            }
-
-            // Fallback
-            throw new Error(`GAS Error: ${errorInfo.message || 'Unknown backend error'}`);
-        }
+        // Fallback
+        throw new Error(`GAS Error: ${errorInfo.message || 'Unknown backend error'}`);
+    }
 
         console.log(`GAS notified of new intake: ${caseId}`);
 
-        return {
-            success: true,
-            caseId: caseId
-        };
+    return {
+        success: true,
+        caseId: caseId
+    };
 
-    } catch (error) {
-        console.error('Error notifying GAS:', error);
+} catch (error) {
+    console.error('Error notifying GAS:', error);
 
-        // Don't fail the intake submission if notification fails
-        return {
-            success: false,
-            error: error.message,
-            note: 'Intake saved but GAS notification failed'
-        };
-    }
+    // Don't fail the intake submission if notification fails
+    return {
+        success: false,
+        error: error.message,
+        note: 'Intake saved but GAS notification failed'
+    };
+}
 }
 
 /**

@@ -221,6 +221,9 @@ function handleAction(data) {
   // 1.5. NOTIFICATIONS
   if (action === 'sendEmail') return handleSendEmail(data);
 
+  // 1.6. BAIL SCHOOL
+  if (action === 'generateCertificate') return handleCertificateGeneration(data);
+
   // 2. SIGNING & DOCS
   if (action === 'sendForSignature') return handleSendForSignature(data);
   if (action === 'createPortalSigningSession') return createPortalSigningSession(data);
@@ -318,6 +321,35 @@ function sendSmsViaTwilio(to, body) {
     return { success: false, error: e.toString() };
   }
 }
+// ============================================================================
+// SUB: BAIL SCHOOL CERTIFICATES
+// ============================================================================
+function handleCertificateGeneration(data) {
+  // data: { courseId, studentName, completionDate, studentId }
+  const studentEmail = data.studentEmail; // Ensure this is passed from frontend!
+
+  console.log(`🎓 Generating Certificate for ${data.studentName}`);
+
+  // TODO: Generate actual PDF using Google Docs Template + DriveApp
+
+  // For now: Send Confirmation Email
+  if (studentEmail) {
+    MailApp.sendEmail({
+      to: studentEmail,
+      subject: `Course Completion: ${data.courseId}`,
+      htmlBody: `
+        <h1>Congratulations, ${data.studentName}!</h1>
+        <p>We have received your completion record for <strong>${data.courseId}</strong>.</p>
+        <p>Your official certificate is being generated and will be emailed shortly.</p>
+        <br>
+        <p>Shamrock Bail Scool</p>
+      `
+    });
+  }
+
+  return { success: true, message: "Certificate Request Processed", status: "queued" };
+}
+
 // ============================================================================
 // SUB: WEBHOOK & ARCHIVING
 // ============================================================================

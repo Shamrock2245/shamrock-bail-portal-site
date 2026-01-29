@@ -107,7 +107,8 @@ function processConciergeQueue() {
 
                 sendSlackAlert_(lead);
 
-                // (Stub) sendTwilioIntro_(lead);
+                // Activate SMS Agent
+                sendTwilioIntro_(lead);
             }
 
             processedCount++;
@@ -188,12 +189,49 @@ function sendSlackAlert_(lead) {
 }
 
 /**
- * (Stub) Send SMS Intro
+ * Send SMS Intro (Powered by RAG)
  */
 function sendTwilioIntro_(lead) {
-    // TODO: Check if number exists and is mobile
-    // TODO: Send robust intro text:
-    // "Hi ${Name}, this is Shamrock Bail Bonds. We saw you were just booked. Do you need help?"
+    if (!lead.phone) {
+        console.warn("Skipping Twilio: No phone for " + lead.name);
+        return;
+    }
+
+    try {
+        const props = PropertiesService.getScriptProperties();
+        const sid = props.getProperty('TWILIO_SID');
+        const token = props.getProperty('TWILIO_TOKEN');
+        const fromNum = props.getProperty('TWILIO_FROM_NUMBER'); // Add this to secrets
+
+        if (!sid || !token || !fromNum) {
+            console.error("Missing Twilio Credentials in Script Properties");
+            return;
+        }
+
+        // RAG Generation
+        const bodyContent = RAG_generateIntroSMS(lead);
+
+        const payload = {
+            To: lead.phone,
+            From: fromNum,
+            Body: bodyContent
+        };
+
+        const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+        const options = {
+            method: 'post',
+            headers: {
+                'Authorization': 'Basic ' + Utilities.base64Encode(`${sid}:${token}`)
+            },
+            payload: payload
+        };
+
+        UrlFetchApp.fetch(url, options);
+        console.log(`✅ SMS Sent to ${lead.name} (${lead.county}) via Twilio`);
+
+    } catch (e) {
+        console.error("Twilio Error: " + e.message);
+    }
 }
 
 function buildHeaderMap_(headers) {
