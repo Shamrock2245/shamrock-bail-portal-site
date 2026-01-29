@@ -18,7 +18,7 @@ export const COLLECTIONS = {
   CASES: 'Cases',                              // Bail bond cases - main data
   INTAKE_QUEUE: 'IntakeQueue',                 // Indemnitor intake submissions
   DEFENDANTS: 'Defendants',                    // Defendant records
-  DEFENDANTS: 'Defendants',                    // Defendant records
+
   INDEMNITORS: 'Indemnitors',                  // Indemnitor/co-signer records
   PERSONS: 'Persons',                          // Person records (general)
 

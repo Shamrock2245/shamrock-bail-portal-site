@@ -36,8 +36,8 @@ $w.onReady(async function () {
     const query = wixLocation.query;
     if (query.st) {
         console.log("🔗 Indemnitor Portal: Found session token in URL, storing...");
-        setSessionToken(query.st);
-        // Optional: clear query param to clean URL, but wixLocation doesn't support replaceState easily without reload
+        // Wait for storage to ensure it's set before initialization reads it
+        await setSessionToken(query.st);
     }
 
     await initializePage();
@@ -133,6 +133,20 @@ async function loadCounties() {
         }
     } catch (error) {
         console.error('Error loading counties:', error);
+
+        // Audit Fix: User Feedback & Fallback
+        if ($w('#county').valid) {
+            const fallbackCounties = [
+                { label: "Lee", value: "Lee" },
+                { label: "Collier", value: "Collier" },
+                { label: "Charlotte", value: "Charlotte" },
+                { label: "Hendry", value: "Hendry" },
+                { label: "Glades", value: "Glades" }
+            ];
+            $w('#county').options = fallbackCounties;
+            $w('#county').placeholder = "Select County (Offline Mode)";
+            showError("Network warning: Using offline county list.");
+        }
     }
 }
 
@@ -212,9 +226,9 @@ function showBondDashboard() {
 
     if (currentIntake.premiumAmount) {
         safeSetText('#remainingBalanceDisplay', `$${currentIntake.premiumAmount.toFixed(2)}`);
-        safeSetText('#paymentTermsDisplay', currentIntake.paymentTerms || '250.00');
-        safeSetText('#paymentFrequencyDisplay', currentIntake.paymentFrequency || 'weekly');
-        safeSetText('#nextPaymentDateDisplay', formatDate(currentIntake.nextPaymentDate) || 'Jan 8, 2026');
+        safeSetText('#paymentTermsDisplay', currentIntake.paymentTerms || 'TBD');
+        safeSetText('#paymentFrequencyDisplay', currentIntake.paymentFrequency || 'Contact Office');
+        safeSetText('#nextPaymentDateDisplay', formatDate(currentIntake.nextPaymentDate) || 'TBD');
         safeShow('#makePaymentBtn');
     }
 }
