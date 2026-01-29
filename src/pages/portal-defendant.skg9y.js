@@ -258,6 +258,19 @@ function setupLogoutButton() {
     } catch (e) {
         console.warn('Defendant Portal: No logout button configured');
     }
+
+    // Payment Button (Added per request)
+    try {
+        const payBtn = $w('#makePaymentBtn'); // Assuming ID based on Indemnitor portal pattern
+        if (payBtn) {
+            payBtn.onClick(() => {
+                wixLocation.to('https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd');
+            });
+            console.log('Defendant Portal: Payment button configured');
+        }
+    } catch (e) {
+        // Ignore if button doesn't exist
+    }
 }
 
 async function handleLogout() {

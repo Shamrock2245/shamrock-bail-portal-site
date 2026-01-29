@@ -433,10 +433,8 @@ function handleSignPaperwork() {
 }
 
 function handleMakePayment() {
-    wixWindow.openLightbox('payment-lightbox', {
-        caseId: currentIntake?.caseId,
-        amount: currentIntake?.premiumAmount
-    });
+    // Redirect to SwipeSimple Payment Link
+    wixLocation.to('https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd');
 }
 
 async function handleSendMessage() {

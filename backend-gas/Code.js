@@ -1,6 +1,6 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 5.8 - RAG, AI Concierge, & Bail School Certificates (Updated 2026-01-29)
+// Version: 5.8 - RAG, AI Concierge, & Bail School Certificates (Updated 2026-01-29 11:58 AM)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
@@ -50,9 +50,10 @@ function getConfig() {
     GOOGLE_DRIVE_FOLDER_ID: props.getProperty('GOOGLE_DRIVE_FOLDER_ID') || '1ZyTCodt67UAxEbFdGqE3VNua-9TlblR3',
     GOOGLE_DRIVE_OUTPUT_FOLDER_ID: props.getProperty('GOOGLE_DRIVE_OUTPUT_FOLDER_ID') || '1WnjwtxoaoXVW8_B6s-0ftdCPf_5WfKgs',
     CURRENT_RECEIPT_NUMBER: parseInt(props.getProperty('CURRENT_RECEIPT_NUMBER') || '201204'),
-    WIX_API_KEY: props.getProperty('GAS_API_KEY') || '',
+    Wix_API_KEY: props.getProperty('GAS_API_KEY') || '',
     WIX_SITE_URL: props.getProperty('WIX_SITE_URL') || 'https://www.shamrockbailbonds.biz',
-    WEBHOOK_URL: props.getProperty('WEBHOOK_URL') || ''
+    WEBHOOK_URL: props.getProperty('WEBHOOK_URL') || '',
+    PAYMENT_LINK: 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
   };
   return _CONFIG_CACHE;
 }
@@ -912,6 +913,29 @@ function handleIntakeSubmission(data) {
     const timestamp = new Date();
     const intakeId = 'INT-' + timestamp.getTime();
 
+    // Construct References Array (Handle both array and flat fields)
+    var references = data.references;
+    if (!references || !Array.isArray(references) || references.length === 0) {
+      references = [];
+      // Attempt to build from flat fields (reference1Name, etc.)
+      if (data.reference1Name) {
+        references.push({
+          name: data.reference1Name,
+          phone: data.reference1Phone,
+          relation: data.reference1Relation || 'Reference 1',
+          address: (data.reference1Address || '') + ' ' + (data.reference1City || '') + ' ' + (data.reference1State || '')
+        });
+      }
+      if (data.reference2Name) {
+        references.push({
+          name: data.reference2Name,
+          phone: data.reference2Phone,
+          relation: data.reference2Relation || 'Reference 2',
+          address: (data.reference2Address || '') + ' ' + (data.reference2City || '') + ' ' + (data.reference2State || '')
+        });
+      }
+    }
+
     // Extract data from the intake payload
     const row = [
       timestamp,
@@ -924,7 +948,7 @@ function handleIntakeSubmission(data) {
       data.defendantPhone || '',
       data.caseNumber || '',
       'pending',
-      JSON.stringify(data.references || []),
+      JSON.stringify(references),
       JSON.stringify({
         employer: data.indemnitorEmployerName,
         employerCity: data.indemnitorEmployerCity,

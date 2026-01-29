@@ -23,6 +23,13 @@
 - [x] **Config:** Secure API Key rotation (`SAFE_updateGeminiKey`).
 
 ---
+## ✅ Phase 3.5: Maintenance & Payment Features (Complete)
+- [x] **GAS Project Guide:** Definitive documentation (`GAS_Project_Guide.md`).
+- [x] **Backend Fixes:** `IntakeQueue` reference logic & Tab Routing cleanup.
+- [x] **Universal Payment Link:** Integrated SwipeSimple into Portals, SMS, and Email workflows.
+- [x] **Dashboard:** Repaired tab structure and added headers.
+
+---
 
 ## 🚧 Phase 4: System Verification (Current Focus)
 *Ref: [TESTING_GUIDE.md](./TESTING_GUIDE.md)*

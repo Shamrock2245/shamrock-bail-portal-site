@@ -97,10 +97,29 @@ function SN_processCompleteWorkflow(params) {
     } else {
       // Handle Email/SMS
       const signers = buildSignersFromFormData(params.formData);
+      const payLink = SN_getPaymentLink();
+
       if (params.deliveryMethod === 'sms') {
         SN_sendSmsInvite(documentId, signers);
+
+        // Follow-up with Payment Link via Twilio (since SignNow SMS is generic)
+        if (payLink && typeof sendSmsViaTwilio === 'function') {
+          signers.forEach(s => {
+            if (s.phone) {
+              try {
+                sendSmsViaTwilio(s.phone, `Shamrock Bail Bonds: Please sign the document sent to you.\n\nMake a Payment: ${payLink}`);
+              } catch (e) { console.warn('Twilio follow-up failed:', e); }
+            }
+          });
+        }
+
       } else {
-        SN_sendEmailInvite(documentId, signers);
+        // Email: Append to message
+        const options = {
+          subject: 'Please sign this document',
+          message: 'Sent via Shamrock Bail Bonds Portal' + (payLink ? `\n\nMake a Payment: ${payLink}` : '')
+        };
+        SN_sendEmailInvite(documentId, signers, options);
       }
       return { success: true, documentId: documentId, signingLinks: [] };
     }
@@ -444,4 +463,12 @@ function fetchWithRetry(url, options, maxRetries = 3) {
     }
   }
   throw new Error(`Request failed after ${maxRetries} attempts: ${url}`);
+}
+
+function SN_getPaymentLink() {
+  // Use global config if available, otherwise fallback
+  if (typeof getConfig === 'function') return getConfig().PAYMENT_LINK;
+
+  // Direct fallback
+  return 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
 }

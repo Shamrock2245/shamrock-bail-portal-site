@@ -240,30 +240,35 @@ function notifyParties(data) {
   const subject = `Court Date Reminder: ${data.defendant}`;
   const body = `Shamrock Bail Bonds Reminder:\n\nCourt Date: ${data.courtDate.toLocaleString()}\nCase: ${data.caseNumber}\nLocation: Courtroom ${data.courtroom}\n\nPlease arrive 30 minutes early. Call us if you need transportation.`;
 
+  // Payment Link Helper
+  const paymentLink = (typeof getConfig === 'function' && getConfig().PAYMENT_LINK)
+    ? `\n\nMake a Payment: ${getConfig().PAYMENT_LINK}`
+    : '';
+
   // 1. Notify Defendant
   if (data.contacts.defendantPhone) {
     // Assuming sendSmsViaTwilio is available globally in GAS
     if (typeof sendSmsViaTwilio === 'function') {
-      sendSmsViaTwilio(data.contacts.defendantPhone, body);
+      sendSmsViaTwilio(data.contacts.defendantPhone, body + paymentLink);
       Logger.log(`📱 SMS sent to Defendant: ${data.contacts.defendantPhone}`);
     } else {
       Logger.log('⚠️ sendSmsViaTwilio function not found');
     }
   }
   if (data.contacts.defendantEmail) {
-    MailApp.sendEmail(data.contacts.defendantEmail, subject, body);
+    MailApp.sendEmail(data.contacts.defendantEmail, subject, body + paymentLink);
     Logger.log(`📧 Email sent to Defendant: ${data.contacts.defendantEmail}`);
   }
 
   // 2. Notify Indemnitor
   if (data.contacts.indemnitorPhone && typeof sendSmsViaTwilio === 'function') {
-    const indBody = `Shamrock Bail Bonds Update:\n\nCourt Date scheduled for ${data.defendant}.\nDate: ${data.courtDate.toLocaleString()}\n\nPlease ensure they attend to avoid bond forfeiture.`;
+    const indBody = `Shamrock Bail Bonds Update:\n\nCourt Date scheduled for ${data.defendant}.\nDate: ${data.courtDate.toLocaleString()}\n\nPlease ensure they attend to avoid bond forfeiture.` + paymentLink;
     sendSmsViaTwilio(data.contacts.indemnitorPhone, indBody);
     Logger.log(`📱 SMS sent to Indemnitor: ${data.contacts.indemnitorPhone}`);
   }
   if (data.contacts.indemnitorEmail) {
     const indSubject = `URGENT: Court Date for ${data.defendant}`;
-    const indEmailBody = `Shamrock Bail Bonds Notification\n\nA new court date has been scheduled for ${data.defendant}.\n\nWhen: ${data.courtDate.toLocaleString()}\nWhere: Courtroom ${data.courtroom}\nCase: ${data.caseNumber}\n\nIt is your responsibility as Indemnitor to ensure their appearance. Failure to appear will result in bond forfeiture.\n\nThank you,\nShamrock Bail Bonds`;
+    const indEmailBody = `Shamrock Bail Bonds Notification\n\nA new court date has been scheduled for ${data.defendant}.\n\nWhen: ${data.courtDate.toLocaleString()}\nWhere: Courtroom ${data.courtroom}\nCase: ${data.caseNumber}\n\nIt is your responsibility as Indemnitor to ensure their appearance. Failure to appear will result in bond forfeiture.\n\nThank you,\nShamrock Bail Bonds${paymentLink}`;
     MailApp.sendEmail(data.contacts.indemnitorEmail, indSubject, indEmailBody);
     Logger.log(`📧 Email sent to Indemnitor: ${data.contacts.indemnitorEmail}`);
   }
