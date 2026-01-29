@@ -392,28 +392,20 @@ export async function notifyGASOfNewIntake(caseId) {
             data: cleanData
         });
 
-        // Fallback
-        throw new Error(`GAS Error: ${errorInfo.message || 'Unknown backend error'}`);
-    }
+        if (!result.success) {
+            throw new Error(`GAS Error: ${result.error?.message || 'Unknown backend error'}`);
+        }
 
         console.log(`GAS notified of new intake: ${caseId}`);
+        return result;
 
-    return {
-        success: true,
-        caseId: caseId
-    };
-
-} catch (error) {
-    console.error('Error notifying GAS:', error);
-
-    // Don't fail the intake submission if notification fails
-    return {
-        success: false,
-        error: error.message,
-        note: 'Intake saved but GAS notification failed'
-    };
+    } catch (error) {
+        console.error("Failed to notify GAS:", error);
+        // We do not throw here to prevent blocking the Wix UI flow
+        return { success: false, error: error.message };
+    }
 }
-}
+
 
 /**
  * Health check endpoint for GAS to verify connection
