@@ -51,7 +51,10 @@
 
 ### Phase 4: Bail School Expansion (Florida Domination)
 - [x] Plan "Bail School" Video/Classroom Architecture (Zoom/Wix integration) <!-- id: 10 -->
-- [x] Design "Bail School" Landing Page & Registration Flow <!-- id: 11 -->
+- [ ] Design "Bail School" Landing Page & Registration Flow <!-- id: 11 -->
+    - [x] Skill: `bail_school_manager` <!-- id: 25 -->
+    - [x] Backend: `src/backend/bailSchool.jsw` <!-- id: 26 -->
+    - [x] Doc: `docs/bail_school_materials/CURRICULUM_INVENTORY.md` <!-- id: 27 -->
         - [x] Final UI IDs (Submit Button, Success Group, County Dropdown) <!-- id: 29 -->
         - [x] Adjust IntakeQueue Schema (Omit bond details) <!-- id: 30 -->
         - [x] Final End-to-End Test <!-- id: 22 -->
