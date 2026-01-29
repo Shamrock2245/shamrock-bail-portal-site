@@ -199,9 +199,10 @@ function sendTwilioIntro_(lead) {
 
     try {
         const props = PropertiesService.getScriptProperties();
-        const sid = props.getProperty('TWILIO_SID');
-        const token = props.getProperty('TWILIO_TOKEN');
-        const fromNum = props.getProperty('TWILIO_FROM_NUMBER'); // Add this to secrets
+        // Updated to match your actual Script Properties (Code.js standard)
+        const sid = props.getProperty('TWILIO_ACCOUNT_SID');
+        const token = props.getProperty('TWILIO_AUTH_TOKEN');
+        const fromNum = props.getProperty('TWILIO_PHONE_NUMBER');
 
         if (!sid || !token || !fromNum) {
             console.error("Missing Twilio Credentials in Script Properties");

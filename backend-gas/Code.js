@@ -1,6 +1,6 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 5.7 - Magic Link & Intake Fixes (Updated 2026-01-28)
+// Version: 5.8 - RAG, AI Concierge, & Bail School Certificates (Updated 2026-01-29)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
@@ -235,7 +235,7 @@ function handleAction(data) {
 
   // 4. UTILS
   if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
-  if (action === 'health') return { success: true, version: '5.7', timestamp: new Date().toISOString() };
+  if (action === 'health') return { success: true, version: '5.8', timestamp: new Date().toISOString() };
 
   // --- EMERGENCY ADMIN ACTION ---
   if (action === 'RESET_KEYS_ADMIN_OVERRIDE') {
@@ -252,7 +252,7 @@ function handleGetAction(e) {
   const action = e.parameter.action;
   const callback = e.parameter.callback;
 
-  if (action === 'health') return createResponse({ success: true, version: '5.7', timestamp: new Date().toISOString() }, callback);
+  if (action === 'health') return createResponse({ success: true, version: '5.8', timestamp: new Date().toISOString() }, callback);
   if (action === 'getNextReceiptNumber') return createResponse(getNextReceiptNumber(), callback);
 
   return createErrorResponse('Unknown action', ERROR_CODES.UNKNOWN_ACTION);
