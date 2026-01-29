@@ -310,7 +310,7 @@ async function handleSubmitIntake() {
             $w('#groupSuccess').expand();
 
             // Show Case ID in success message
-            $w('#textSuccessMessage').text = `Success! Your Case ID is: ${result.caseId}\n(Please write this down)`;
+            $w('#textSuccessMessage').text = `Success! Your Case ID is: ${result.caseId}\n\nStand by. Our AI Agent is reviewing your file and will text you in a moment.`;
             console.warn(`CONFIRMATION: Case ID ${result.caseId} created.`);
 
             wixWindow.scrollTo(0, 0);
