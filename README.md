@@ -1,121 +1,87 @@
 # Shamrock Bail Bonds Portal (Wix + External API)
 
-This project is the official Shamrock Bail Bonds Portal. It runs on Wix (Velo + Members Area) for the client-facing front end, and connects to an external API backend (Node/FastAPI) for secure workflows (PDF rendering, signatures, payments, check-ins).
+This project is the official Shamrock Bail Bonds Portal. It runs on **Wix Velo** (Frontend) and connects to a **Google Apps Script (GAS)** backend for secure workflows (AI Concierge, PDFs, Signatures).
 
-⸻
+**Current Status:** Phase 3 Complete (AI Concierge Live). 🟢
+
+---
 
 ## 📌 Goals
-	•	Automate all bail bond paperwork (Financial Indemnity, Appearance Application, Collateral/Promissory Note, Bond Info Sheet, Waivers, SSA-3288, Credit Card Authorization).
-	•	Minimize repetitive data entry with shared schemas.
-	•	Enable role-based portals:
-	•	Defendant: application, waivers, check-in, optional payment.
-	•	Indemnitor/Cosignor: financials, indemnity, collateral, payment.
-	•	Staff: dashboard for prefill, tracking, case management.
-	•	Collect legally valid e-signatures with audit trails.
-	•	Support payments via Wix Payments (Stripe/PayPal).
-	•	Allow GPS + selfie check-ins for defendants with certified audit.
-	•	Export court-ready PDFs that mirror official packet forms.
+*   **AI-Powered Concierge:** Intelligent SMS responses via Gemini 1.5 Flash using RAG (Retention Augmented Generation) for 12+ Florida counties.
+*   **Automated Paperwork:** Digital intake for Indemnitors and Defendants.
+*   **Role-Based Portals:** Secure access for Defendants (Check-ins), Indemnitors (Financing), and Staff.
+*   **Compliance:** SOC II aligned, SignNow integration for audit trails.
 
-⸻
+---
 
 ## 🛠 Tech Stack
-	•	Front End: Wix + Velo (JS), Members Area, Forms, Camera/GPS APIs.
-	•	Backend API: Google Apps Script (GAS) Web App (Serverless).
-	•	Database: Wix Collections (MagicLinks, Sessions, Cases) + Google Sheets (Backups).
-	•	Storage: Google Drive (PDFs, Signatures) + Wix Media Manager.
-	•	Payments: Wix Payments / Stripe.
-	•	Deployment: GitHub integration (Wix) + Clasp (GAS).
+*   **Frontend:** Wix Velo (JS), Members Area, Wix Forms.
+*   **Backend:** Google Apps Script (GAS) Web App (Serverless).
+*   **AI/LLM:** Google Gemini 1.5 Flash (via GAS `UrlFetchApp`).
+*   **Database:** Wix Collections (`IntakeQueue`, `Cases`) + Google Sheets (Backups).
+*   **Signatures:** SignNow API.
+*   **Deployment:** `clasp` (GAS) + GitHub Integration (Wix).
 
-⸻
+---
 
-## 🔐 Security & Compliance
-	•	PII encrypted at rest, TLS in transit.
-	•	PCI DSS compliance (never store raw PAN/CVV).
-	•	Custom Session Auth (Magic Links) + Wix Portal Integration.
-	•	Audit logs for all signatures, payments, check-ins.
+## 🤖 AI Concierge & RAG System
+The system now includes a "Headless" AI Agent that monitors leads and sends intelligent SMS.
 
-⸻
+*   **Brain:** `backend-gas/RAGService.js` (Gemini Integration).
+*   **Knowledge Base:** `backend-gas/KnowledgeBase.js` (Protocols for Lee, Collier, Miami-Dade, etc.).
+*   **Trigger:** New row in "Hot Leads" sheet -> AI analyzes context -> Generates SMS.
+*   **Fallback:** If the API Key is missing, it reverts to rule-based templates.
+
+---
 
 ## 🚀 Workflows
 
-**Defendant**
-	1.	Log in via magic link (SMS/Email).
-	2.	Complete Appearance Application, Waivers.
-	3.	Perform GPS/selfie check-in.
-	4.	Receive PDF + email copy.
+### 1. AI Concierge (New)
+1.  **Lead Capture:** User submits form on Wix.
+2.  **Scoring:** Lead score calculated based on urgency/county.
+3.  **AI Response:** Gemini generates a custom SMS based on the specific County Jail protocol (e.g., "Park at Gun Club Rd," "Signatures must be wet").
+4.  **Handoff:** If user accepts, link to `indemnitor-portal` is sent.
 
-**Indemnitor**
-	1.	Log in via magic link.
-	2.	Complete Financial Indemnity, Collateral fields.
-	3.	E-sign documents via SignNow Lightbox.
-	4.	Receive receipt + signed packet.
+### 2. Defendant Portal
+1.  Log in via magic link.
+2.  Complete Appearance Application.
+3.  GPS/Selfie Check-in (verified via browser geolocation).
 
-**Staff**
-	1.	Log in (Admin/Staff role).
-	2.	Create Case + pre-fill details.
-	3.	Generate Magic Links for Defendant/Indemnitor.
-	4.	Monitor progress in Google Sheets / Dashboard.
-	5.	Export signed packet PDFs.
+### 3. Indemnitor Portal
+1.  Log in via magic link.
+2.  Complete Financial Indemnity.
+3.  SignNow Lightbox session (embedded).
 
-⸻
+---
 
-## 🔗 API Endpoints
+## 📦 Setup & Configuration
 
-The backend is hosted on Google Apps Script.
-Key Actions (via `doPost` router):
-	•	`submitIntake`: Handle form submissions.
-	•	`createEmbeddedLink`: Generate SignNow signing sessions.
-	•	`sendEmail`: Send magic links or notifications.
-	•	`logCheckIn`: Handle GPS check-ins.
+### Wix Side
+*   **Secrets Manager:**
+    *   `GAS_WEB_APP_URL`: The deployed executable URL.
+    *   `TWILIO_ACCOUNT_SID` / `AUTH_TOKEN`.
+    *   `GOOGLE_MAPS_API_KEY`.
 
-⸻
+### GAS Side (Backend)
+The backend is in `backend-gas/`.
+1.  **Deploy:** `clasp push` -> `clasp deploy`.
+2.  **Config:** Run `SetProperties.js` functions to set keys.
+    *   `SAFE_updateGeminiKey()`: Sets `GEMINI_API_KEY` securely.
+    *   `forceUpdateConfig()`: Sets basic infrastructure keys.
 
-## 📄 Documents & Schemas
+---
 
-All forms are digitized via JSON Schema.
-See `docs/` for detailed breakdown.
+## 📂 Documentation Index
+*   **[TESTING_GUIDE.md](./TESTING_GUIDE.md):** Protocols for Phase 4 verification.
+*   **[AGENTS.md](./AGENTS.md):** Persona definitions for development.
+*   **[SCHEMAS.md](./docs/SCHEMAS.md):** Data models for collections.
 
-⸻
+---
 
-## 📦 Setup
-	1.	Wix Side
-	•	Connect Wix to this repo via GitHub integration.
-	•	Enable Velo developer mode.
-	•	Set up distinct Pages for Defendant/Indemnitor portals.
-	•	Configure Wix Secrets (`GAS_WEB_APP_URL`, `GOOGLE_MAPS_API_KEY`).
-	2.	API Side (GAS)
-	•	Code stored in `backend-gas/`.
-	•	Deploy using `clasp push`.
-	•	Update `gasWebAppUrl` in `utils.jsw`.
+## 👮 code-security-advisor says:
+*   PII is encrypted at rest.
+*   API Keys are never committed to code (use ScriptProperties).
+*   `SetProperties.js` must be kept clean of secrets after running.
 
-⸻
-
-## 🤖 For AI Builders (Manus, Copilot, etc.)
-	•	Stay Wix-aware: all UI code = Velo JS. Use wix-users, wix-data, wix-fetch, wix-pay.
-	•	Backend = external API: never embed heavy logic in Wix, call /api/v1.
-	•	Render PDFs externally: match uploaded packet layout.
-	•	Respect schemas: see SCHEMAS.md.
-	•	Follow security rules above.
-
-⸻
-
-## Additional Markdown Files
-
-**API_SPEC.md**
-	•	Embed the OpenAPI 3.1 YAML (shamrock_openapi.yaml).
-	•	Summarize endpoints with example requests/responses.
-	•	Helps Manus wire frontend → backend cleanly.
-
-**SCHEMAS.md**
-	•	Contain all JSON Schemas (Person, Case, Documents).
-	•	List conditionals (e.g., real estate requires deed upload).
-	•	Helps Manus auto-generate validation logic.
-
-**PDF_TEMPLATES.md**
-	•	Describe page-by-page packet anchors for signature fields and inputs.
-	•	E.g., Page 1: “NAME OF INDEMNITOR” at x=120, y=640.
-	•	Guides Manus when wiring form → PDF render.
-
-**MANUS.md**
-	•	A stripped-down copy of your “master prompt” (the one we built earlier).
-	•	Makes it explicit what Manus should always optimize for.
+---
+*Maintained by the Shamrock Dev Team & Antigravity Agents.*
