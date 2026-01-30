@@ -186,22 +186,40 @@ function populateMainUI(county) {
     try { $w('#jailAddress').collapse(); } catch (e) { }
 
     // POPULATE FAQs (Repeater)
-    const faqRep = $w('#faqRepeater');
+    const faqRep = $w('#repeaterFAQ');
     const faqs = county.content.faq || [];
     try {
         if (faqs.length > 0) {
+
             // FIX: onItemReady MUST be defined before setting .data
             faqRep.onItemReady(($item, itemData) => {
-                $item('#faqQuestion').text = itemData.question;
-                $item('#faqAnswer').text = itemData.answer;
+                // Set Text Content
+                $item('#textQuestion').text = itemData.question;
+                $item('#textAnswer').text = itemData.answer;
+
+                // Handle Accordion Interaction (Clean Toggle)
+                $item('#containerQuestion').onClick(() => {
+                    const answerGroup = $item('#groupAnswer');
+                    if (answerGroup.collapsed) {
+                        answerGroup.expand();
+                        // Optional: Rotate arrow if you have one
+                        // $item('#iconArrow').style.transform = "rotate(180deg)"; 
+                    } else {
+                        answerGroup.collapse();
+                        // $item('#iconArrow').style.transform = "rotate(0deg)";
+                    }
+                });
             });
+
             // Ensure unique IDs
             faqRep.data = faqs.map((f, i) => ({ ...f, _id: `faq-${i}-${Date.now()}` }));
             faqRep.expand();
         } else {
             faqRep.collapse();
         }
-    } catch (e) { }
+    } catch (e) {
+        console.warn("FAQ Repeater Error:", e);
+    }
 }
 
 async function loadNearbyCounties(region, currentSlug) {

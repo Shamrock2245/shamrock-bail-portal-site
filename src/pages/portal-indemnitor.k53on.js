@@ -216,12 +216,17 @@ function showBondDashboard() {
     const paperworkStatus = currentIntake.documentStatus || 'pending';
     safeSetText('#paperworkStatusDisplay', formatDocumentStatus(paperworkStatus));
 
-    // --- Financial Liability Section (New) ---
-    // Defaults to 0 or TBD if data not yet synced from GAS
-    safeSetText('#textTotalLiability', formatCurrency(currentIntake.totalLiability || 0));
-    safeSetText('#textTotalPremium', formatCurrency(currentIntake.totalPremium || 0)); // Total Premium
-    safeSetText('#textDownPayment', formatCurrency(currentIntake.downPayment || 0));   // Down Payment
-    safeSetText('#textChargesCount', (currentIntake.chargesCount || 0).toString());   // Count of charges
+    // --- Financial Liability Section (Expanded) ---
+    // Populate with real data or defaults
+    const liability = currentIntake.totalLiability || 0;
+    const premium = currentIntake.totalPremium || 0;
+    const downPayment = currentIntake.downPayment || 0;
+    const chargesCount = currentIntake.chargesCount || 0;
+
+    safeSetText('#textTotalLiability', formatCurrency(liability));
+    safeSetText('#textTotalPremium', formatCurrency(premium));
+    safeSetText('#textDownPayment', formatCurrency(downPayment));
+    safeSetText('#textChargesCount', chargesCount.toString());
 
     // Check specific specific logic for Balance Due vs. Premium Amount
     // If we have specific balance due, use it, otherwise fallback to premiumAmount (legacy field)
