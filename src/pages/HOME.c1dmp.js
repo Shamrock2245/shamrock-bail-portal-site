@@ -176,7 +176,7 @@ function handleGetStarted() {
 }
 
 async function navigateToCounty(selectedCounty) {
-    wixLocation.to(`/bail-bonds/${selectedCounty}`);
+    wixLocation.to(`/florida-bail-bonds/${selectedCounty}`);
 }
 
 /**
