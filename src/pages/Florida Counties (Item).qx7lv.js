@@ -140,47 +140,87 @@ function setupSEO(county) {
     wixSeo.setStructuredData(schemas).catch(e => { });
 }
 
-function populateMainUI(county) {
-    // Header & Hero
-    setText('#countyName', county.county_name);
-    setText('#dynamicHeader', `Bail Bonds in ${county.county_name} County`);
-    setText('#heroSubtitle', county.content.hero_subheadline);
 
-    // Contact Info
-    setText('#sheriffPhone', county.jail.booking_phone);
-    setText('#jailName', county.jail.name);
-    setText('#clerkPhone', county.clerk.phone);
-
-    // Links / Buttons
-    setLink('#callSheriffBtn', county.jail.booking_url, "Jail / Sheriff Website");
-    setLink('#sheriffWebsite', county.jail.booking_url, "Jail / Sheriff Website");
-
-    setLink('#callClerkBtn', county.clerk.website, "Clerk of Court");
-    setLink('#clerkWebsite', county.clerk.website, "Clerk of Court");
-
-    // Content Sections
-    setText('#aboutHeader', `About Bail Bonds in ${county.county_name} County`);
-    setText('#aboutBody', county.content.about_county);
-    setText('#whyChooseHeader', `Why Choose Us in ${county.county_name}`);
-    setText('#whyChooseBody', county.content.why_choose_us);
-
-    // Sticky/Main Call Buttons
-    let callBtn = $w('#callShamrockBtn');
-
-    // Try binding primary button
-    try {
-        callBtn.label = county.content.hero_cta_primary || "Call Now";
-        callBtn.onClick(() => wixLocation.to(`tel:${county.contact.primary_phone_display.replace(/[^0-9]/g, '')}`));
-        callBtn.expand();
-    } catch (e) {
-        // Try fallback button
+// --- HELPER UI FUNCTIONS ---
+function setText(selectorOrArray, value) {
+    const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
+    let found = false;
+    for (const selector of selectors) {
         try {
-            const fallbackBtn = Select('#callCountiesBtn');
-            fallbackBtn.label = county.content.hero_cta_primary || "Call Now";
-            fallbackBtn.onClick(() => wixLocation.to(`tel:${county.contact.primary_phone_display.replace(/[^0-9]/g, '')}`));
-            fallbackBtn.expand();
-        } catch (e2) { }
+            const el = $w(selector);
+            if (el && el.type === '$w.Text') {
+                el.text = value || "";
+                el.expand();
+                found = true;
+                // console.log(`✅ Set text for ${selector}`);
+            }
+        } catch (e) { }
     }
+    if (!found) {
+        // console.warn(`⚠️ Text element not found for value: "${value?.substring(0, 20)}..." in selectors: ${selectors.join(', ')}`);
+    }
+}
+
+function setLink(selectorOrArray, url, label) {
+    const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
+    for (const selector of selectors) {
+        try {
+            const el = $w(selector);
+            if (url) {
+                if (el.type === '$w.Button') {
+                    el.label = label || el.label;
+                    el.link = url;
+                    el.target = "_blank";
+                } else if (el.type === '$w.Text') {
+                    // If it's text, we can't link it easily without HTML, skip
+                    el.text = label || el.text;
+                }
+                el.expand();
+            } else {
+                el.collapse();
+            }
+        } catch (e) { }
+    }
+}
+
+function populateMainUI(county) {
+    // Header & Hero (Support both old and new IDs from Screenshot)
+    // Old: #countyName, #dynamicHeader, #heroSubtitle
+    // New: #countyNameHeadline, #aboutCountyText (Maybe hero text?), #heroCallButton
+    setText(['#countyName', '#countyNameHeadline', '#dynamicHeader'], county.county_name);
+
+    // Subtitle / About Text in Hero
+    setText(['#heroSubtitle', '#aboutCountyText', '#heroDescription'], county.content.hero_subheadline);
+
+    // About Section Headers
+    setText(['#aboutHeader', '#aboutTitle'], `About Bail Bonds in ${county.county_name} County`);
+    setText(['#aboutBody', '#aboutText', '#aboutDescription'], county.content.about_county);
+
+    // Why Choose Us
+    setText(['#whyChooseHeader', '#whyChooseTitle'], `Why Choose Us in ${county.county_name}`);
+    setText(['#whyChooseBody', '#whyChooseText'], county.content.why_choose_us);
+
+    // Contact Info (Jail/Clerk)
+    setText(['#sheriffPhone', '#jailPhone'], county.jail.booking_phone);
+    setText(['#jailName', '#jailTitle'], county.jail.name);
+    setText(['#clerkPhone', '#clerkContact'], county.clerk.phone);
+
+    // Links / Buttons (Sheriff/Clerk)
+    setLink(['#callSheriffBtn', '#btnCallJail'], county.jail.booking_phone ? `tel:${county.jail.booking_phone.replace(/[^0-9]/g, '')}` : null, "Call Jail");
+    setLink(['#sheriffWebsite', '#btnJailWeb'], county.jail.booking_url, "Jail Website");
+
+    setLink(['#callClerkBtn', '#btnCallClerk'], county.clerk.phone ? `tel:${county.clerk.phone.replace(/[^0-9]/g, '')}` : null, "Call Clerk");
+    setLink(['#clerkWebsite', '#btnClerkWeb'], county.clerk.website, "Clerk Website");
+
+    // Primary Call Button (Sticky or Hero)
+    // Screenshot 1 shows: #heroCallButton, #heroStartButton
+    const primaryPhoneLink = `tel:${county.contact.primary_phone_display.replace(/[^0-9]/g, '')}`;
+
+    // 1. Hero Call Button
+    setLink(['#heroCallButton', '#callShamrockBtn', '#callCountiesBtn'], primaryPhoneLink, county.content.hero_cta_primary || "Call Now");
+
+    // 2. Secondary/Start Button (Link to specific start page or process)
+    setLink(['#heroStartButton', '#startBailBtn'], "/bail-bonds", "Start Bail Bond");
 
     // Jail Address (if element exists and data provided)
     try { $w('#jailAddress').collapse(); } catch (e) { }
@@ -190,93 +230,30 @@ function populateMainUI(county) {
     const faqs = county.content.faq || [];
     try {
         if (faqs.length > 0) {
-
-            // FIX: onItemReady MUST be defined before setting .data
             faqRep.onItemReady(($item, itemData) => {
                 // Set Text Content
                 $item('#textQuestion').text = itemData.question;
                 $item('#textAnswer').text = itemData.answer;
 
-                // Handle Accordion Interaction (Clean Toggle)
+                // Handle Accordion Interaction
                 $item('#containerQuestion').onClick(() => {
                     const answerGroup = $item('#groupAnswer');
                     if (answerGroup.collapsed) {
                         answerGroup.expand();
-                        // Optional: Rotate arrow if you have one
-                        // $item('#iconArrow').style.transform = "rotate(180deg)"; 
                     } else {
                         answerGroup.collapse();
-                        // $item('#iconArrow').style.transform = "rotate(0deg)";
                     }
                 });
             });
 
-            // Ensure unique IDs
             faqRep.data = faqs.map((f, i) => ({ ...f, _id: `faq-${i}-${Date.now()}` }));
             faqRep.expand();
+            try { $w('#sectionFAQ').expand(); } catch (e) { }
         } else {
             faqRep.collapse();
+            try { $w('#sectionFAQ').collapse(); } catch (e) { }
         }
     } catch (e) {
         console.warn("FAQ Repeater Error:", e);
-    }
-}
-
-async function loadNearbyCounties(region, currentSlug) {
-    const nearbyRep = Select('#nearbyCountiesRepeater');
-    if (!nearbyRep || nearbyRep.length === 0) return; // Don't fetch if no repeater
-
-    // Default region if missing
-    if (!region) region = "Southwest";
-
-    try {
-        const nearby = await getCountiesByRegion(region);
-
-        if (Array.isArray(nearby) && nearby.length > 0) {
-            // Filter out current county
-            const neighbors = nearby.filter(n => n.slug !== currentSlug);
-
-            // FIX: onItemReady MUST be defined before setting .data
-            nearbyRep.onItemReady(($item, itemData) => {
-                try { $item('#neighborName').text = itemData.county_name || itemData.name; } catch (e) { }
-                try {
-                    $item('#neighborContainer').onClick(() => wixLocation.to(`/bail-bonds/${itemData.slug}`));
-                } catch (e) { }
-            });
-
-            // Ensure unique IDs
-            nearbyRep.data = neighbors.map((n, i) => ({
-                ...n,
-                _id: n._id || `neighbor-${i}-${Date.now()}`
-            }));
-            nearbyRep.expand();
-        }
-    } catch (e) {
-        console.warn("Error loading nearby counties", e);
-    }
-}
-
-// --- HELPER UI FUNCTIONS ---
-function setText(selector, value) {
-    try {
-        $w(selector).text = value || "";
-    } catch (e) { }
-}
-
-function setLink(selector, url, label) {
-    const el = $w(selector);
-    if (url) {
-        try {
-            if (el.type === '$w.Button') {
-                el.label = label || el.label;
-                el.link = url;
-                el.target = "_blank";
-            } else {
-                el.text = label || el.text;
-            }
-            el.expand();
-        } catch (e) { }
-    } else {
-        try { el.collapse(); } catch (e) { }
     }
 }
