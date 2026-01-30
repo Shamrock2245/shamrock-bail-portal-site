@@ -80,7 +80,7 @@ function callGeminiAPI_(apiKey, lead, context) {
         const response = UrlFetchApp.fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            payload: JSON.stringify(payload),
+            body: JSON.stringify(payload),
             muteHttpExceptions: true
         });
 
