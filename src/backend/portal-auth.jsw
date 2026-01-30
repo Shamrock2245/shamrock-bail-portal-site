@@ -581,8 +581,18 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
         console.log('📥 GAS Response Body:', responseText);
 
         if (!response.ok) {
+<<<<<<< Updated upstream
             console.error('❌ Email send failed with status:', response.status);
             throw new Error('Email send failed: ' + response.status + ' - ' + responseText);
+=======
+            const maskedUrl = gasUrl.length > 20 ? '...' + gasUrl.slice(-20) : gasUrl;
+            throw new Error(`GAS Network Error (${response.status} ${response.statusText}) at [${maskedUrl}]`);
+        }
+
+        const data = await response.json();
+        if (!data || !data.success) {
+            throw new Error(`GAS Error: ${data && data.error ? data.error : 'Unknown backend error'}`);
+>>>>>>> Stashed changes
         }
 
         // Try to parse response as JSON

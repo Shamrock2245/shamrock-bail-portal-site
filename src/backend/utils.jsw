@@ -17,8 +17,9 @@ export async function getGasUrl() {
     try {
         const url = await getSecret("GAS_WEB_APP_URL");
         if (url) {
-            CACHED_GAS_URL = url;
-            return url;
+            const cleanUrl = url.trim();
+            CACHED_GAS_URL = cleanUrl;
+            return cleanUrl;
         }
     } catch (e) {
         console.warn("GAS_WEB_APP_URL secret not found, using fallback.");
@@ -37,8 +38,9 @@ export async function getGasApiKey() {
     try {
         const key = await getSecret("GAS_API_KEY");
         if (key) {
-            CACHED_GAS_API_KEY = key;
-            return key;
+            const cleanKey = key.trim();
+            CACHED_GAS_API_KEY = cleanKey;
+            return cleanKey;
         }
     } catch (e) {
         console.warn("GAS_API_KEY secret not found.");
