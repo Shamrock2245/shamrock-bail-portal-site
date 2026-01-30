@@ -37,6 +37,7 @@ const NOTIFICATION_TYPES = {
     DOCUMENT_NEEDS_REVIEW: 'document_needs_review',
     SIGNING_DECLINED: 'signing_declined',
     URGENT_CASE: 'urgent_case',
+    CASE_DISCHARGED: 'case_discharged',
     SYSTEM_ERROR: 'system_error',
     NEW_CONTACT_INQUIRY: 'new_contact_inquiry'
 };
@@ -116,6 +117,9 @@ async function sendSmsNotificationIfNeeded(type, data) {
         NOTIFICATION_TYPES.PAPERWORK_READY,
         NOTIFICATION_TYPES.PAPERWORK_SENT,
         NOTIFICATION_TYPES.PAPERWORK_DECLINED,
+        NOTIFICATION_TYPES.PAPERWORK_DECLINED,
+        NOTIFICATION_TYPES.PAPERWORK_COMPLETE,
+        NOTIFICATION_TYPES.CASE_DISCHARGED,
         NOTIFICATION_TYPES.URGENT_CASE
     ];
 
@@ -128,6 +132,8 @@ async function sendSmsNotificationIfNeeded(type, data) {
         [NOTIFICATION_TYPES.PAPERWORK_READY]: `Shamrock Bail: Your paperwork is ready. Login to sign: https://www.shamrockbailbonds.biz/portal-landing. Pay Bail: https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd`,
         [NOTIFICATION_TYPES.PAPERWORK_SENT]: `Shamrock Bail: Documents sent for signature. Pay Bail here: https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd`,
         [NOTIFICATION_TYPES.PAPERWORK_DECLINED]: `Shamrock Bail: Providing documents was declined/failed. Please contact us.`,
+        [NOTIFICATION_TYPES.PAPERWORK_COMPLETE]: `Shamrock Bail: Paperwork received! If you haven't paid yet, please do so here: https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd`,
+        [NOTIFICATION_TYPES.CASE_DISCHARGED]: `Shamrock Bail: Good news! Your bond has been DISCHARGED. You have no further obligations for this case.`,
         [NOTIFICATION_TYPES.URGENT_CASE]: `Shamrock Bail: URGENT update on your case. Please contact us immediately.`
     };
 

@@ -4,6 +4,7 @@
  */
 
 import wixData from "wix-data";
+import { sendMemberNotification, NOTIFICATION_TYPES } from 'backend/notificationService';
 
 /**
  * Syncs full case data payload from GAS into Wix Collections.
@@ -63,11 +64,36 @@ async function upsertCase(data) {
     const rs = await q.find({ suppressAuth: true });
     let item = rs.items[0] || {};
 
+    // Check for status change (Discharge)
+    const oldStatus = item.status;
+    const newStatus = data.status;
+
     // Merge
     item = { ...item, ...data, _updatedDate: new Date() };
     if (!item._createdDate) item._createdDate = new Date();
 
-    return (await wixData.save("Cases", item, { suppressAuth: true }))._id;
+    const savedId = (await wixData.save("Cases", item, { suppressAuth: true }))._id;
+
+    // Trigger Notification if discharged
+    if (oldStatus !== 'Discharged' && newStatus === 'Discharged') {
+        console.log(`⚖️ Case ${item.caseNumber} Discharged. Sending notification...`);
+        try {
+            await sendMemberNotification(NOTIFICATION_TYPES.CASE_DISCHARGED, {
+                memberId: item.memberId, // Might be null for custom auth, implies no email
+                memberEmail: item.defendantEmail,
+                memberPhone: item.defendantPhone,
+                memberName: item.defendantName,
+                variables: {
+                    caseNumber: item.caseNumber,
+                    county: item.county
+                }
+            });
+        } catch (err) {
+            console.error('Failed to send discharge notification:', err);
+        }
+    }
+
+    return savedId;
 }
 
 async function upsertDefendant(data) {

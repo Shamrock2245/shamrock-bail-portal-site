@@ -304,7 +304,9 @@ function processDischargeEmail(message) {
   if (!data) return { success: false, error: 'Extraction failed' };
 
   createDischargeEvent(data);
+  createDischargeEvent(data);
   addDischargeToSheet(data); // Added from Utils.gs
+  notifyDischargeParties(data);
 
   if (CONFIG.slackWebhooks.discharges) {
     postToSlack(CONFIG.slackWebhooks.discharges, formatDischargeSlackMessage(data));
@@ -312,6 +314,41 @@ function processDischargeEmail(message) {
 
   labelEmail(message, CONFIG.labels.discharge);
   return { success: true };
+}
+
+/**
+ * Notify parties of Discharge
+ */
+function notifyDischargeParties(data) {
+  // Lookup contacts first (if not already found)
+  if (!data.contacts) {
+    if (typeof lookupCaseContacts === 'function') {
+      data.contacts = lookupCaseContacts(data.defendant, data.caseNumber);
+    }
+  }
+
+  if (!data.contacts || !data.contacts.found) {
+    Logger.log('⚠️ No contacts found for discharge notification.');
+    return;
+  }
+
+  const powerInfo = data.powerNumber ? `Bond ${data.powerNumber}` : 'Bond';
+  const chargeInfo = data.charge ? `(${data.charge})` : '';
+  const disclaimer = "Note: The entire case may not be discharged. Please check with the official clerk record.";
+
+  const smsBody = `Shamrock Bail Bonds Good News!\n\n${powerInfo} ${chargeInfo} for ${data.defendant} has been DISCHARGED.\n\n${disclaimer}`;
+
+  // 1. Notify Indemnitor (Priority)
+  if (data.contacts.indemnitorPhone && typeof sendSmsViaTwilio === 'function') {
+    sendSmsViaTwilio(data.contacts.indemnitorPhone, smsBody);
+    Logger.log(`📱 Discharge SMS sent to Indemnitor: ${data.contacts.indemnitorPhone}`);
+  }
+
+  // 2. Notify Defendant
+  if (data.contacts.defendantPhone && typeof sendSmsViaTwilio === 'function') {
+    sendSmsViaTwilio(data.contacts.defendantPhone, smsBody);
+    Logger.log(`📱 Discharge SMS sent to Defendant: ${data.contacts.defendantPhone}`);
+  }
 }
 
 // ============================================================================
@@ -458,6 +495,22 @@ function extractDischargeData(message) {
       caseNumber: caseMatch ? caseMatch[1] : 'Unknown',
       defendant: defendant,
       dischargeDate: dateMatch ? new Date(dateMatch[1]) : new Date(),
+      info: 'Discharge of Bond'
+    };
+
+    // Power Number & Charge
+    // Look for Power Number (e.g. S100-..., Power No:, etc)
+    const powerMatch = combinedText.match(/Power\s*(?:No|Number)?\.?[:\s]*([A-Z0-9-]+)/i) || combinedText.match(/Bond\s*(?:No|Number)?\.?[:\s]*([A-Z0-9-]+)/i);
+
+    // Charge (Often labeled as Charge: or Offense:)
+    const chargeMatch = combinedText.match(/(?:Charge|Offense)[:\s]+([^\n\r]+)/i);
+
+    return {
+      caseNumber: caseMatch ? caseMatch[1] : 'Unknown',
+      defendant: defendant,
+      dischargeDate: dateMatch ? new Date(dateMatch[1]) : new Date(),
+      powerNumber: powerMatch ? powerMatch[1] : null,
+      charge: chargeMatch ? chargeMatch[1].trim() : null,
       info: 'Discharge of Bond'
     };
 

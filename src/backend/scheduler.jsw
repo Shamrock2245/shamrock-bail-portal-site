@@ -71,6 +71,68 @@ export async function sendCourtDateReminders() {
     return { sent: sentCount, errors: errorCount };
 }
 
+/**
+ * Job: Send Payment Reminders
+ * intended to run daily
+ * Sends SMS to defendants/indemnitors with payments due in 3 days
+ */
+export async function sendPaymentReminders() {
+    console.log('💰 Scheduler: Starting Payment Reminders...');
+    let sentCount = 0;
+
+    try {
+        const now = new Date();
+        const targetDate = new Date();
+        targetDate.setDate(now.getDate() + 3); // 3 days in advance
+
+        const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+
+        // Query Payment Plans collection
+        const query = wixData.query("Payment Plans")
+            .eq('status', 'Active')
+            .ge('nextPaymentDate', startOfDay)
+            .le('nextPaymentDate', endOfDay);
+
+        const results = await query.find({ suppressAuth: true });
+
+        if (results.totalCount === 0) {
+            console.log('✅ No payments due in 3 days.');
+            return;
+        }
+
+        console.log(`Found ${results.totalCount} payments due on ${startOfDay.toLocaleDateString()}`);
+
+        for (const plan of results.items) {
+            // Determine recipient (Prioritize Indemnitor, then Defendant)
+            const recipientPhone = plan.indemnitorPhone || plan.defendantPhone;
+            const recipientName = plan.indemnitorName || plan.defendantName || 'Customer';
+
+            if (!recipientPhone) {
+                console.warn(`Skipping payment reminder for Plan ${plan._id}: No phone number.`);
+                continue;
+            }
+
+            const amountStr = plan.installmentAmount ? `$${plan.installmentAmount}` : 'your installment';
+            const message = `Shamrock Bail: Reminder - Payment of ${amountStr} is due on ${startOfDay.toLocaleDateString()}. Pay here: https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd`;
+
+            const res = await sendSms(recipientPhone, message);
+            if (res.success) {
+                console.log(`✅ Payment SMS sent to ${recipientName}`);
+                sentCount++;
+            } else {
+                console.error(`❌ Failed to send Payment SMS to ${recipientName}:`, res.error);
+            }
+        }
+
+    } catch (error) {
+        console.error('Payment Reminder Job Error:', error);
+    }
+
+    console.log(`💰 Payment Reminder Job Complete. Sent: ${sentCount}`);
+    return { sent: sentCount };
+}
+
 // ... existing code ...
 
 /**
