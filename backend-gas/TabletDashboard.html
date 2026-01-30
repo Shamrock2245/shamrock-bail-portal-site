@@ -1,1187 +1,394 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Shamrock Bail Bonds - Tablet Dashboard</title>
-    
-    <!-- Server-side data injection -->
-    <div id="server-data-injection" style="display:none;"
-        data-json='<?!= (typeof data !== "undefined") ? JSON.stringify(data) : "null" ?>'></div>
-    <script>
-        (function () {
-            var dataDiv = document.getElementById('server-data-injection');
-            window.INJECTED_DATA = JSON.parse(dataDiv.getAttribute('data-json') || 'null');
-        })();
-    </script>
-    
-    <!-- Google Places API for Address Autocomplete -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAB7IgKfDSbkrbmHrhqrCshPhAl-Ev0K4U&libraries=places"></script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shamrock Bail - Tablet Command</title>
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
     <style>
-        /* =========================================================
-           TABLET DASHBOARD - iPad Optimized
-           ========================================================= */
         :root {
-            --bg: #f8f9fc;
-            --surface: #ffffff;
-            --surface-2: #f1f3f9;
-            --text: #0f172a;
-            --text-secondary: #475569;
-            --muted: #64748b;
-            --border: rgba(15, 23, 42, 0.08);
-            --brand: #0f172a;
-            --accent: #d4af37;
-            --accent-light: rgba(212, 175, 55, 0.1);
-            --success: #10b981;
-            --error: #ef4444;
-            --warning: #f59e0b;
-            --radius: 16px;
-            --radius-sm: 10px;
-            --shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            --transition: all 0.2s ease;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --primary: #d4af37;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --sidebar-width: 240px;
         }
 
         * {
             box-sizing: border-box;
+        }
+
+        body {
             margin: 0;
             padding: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        html, body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
             color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* =========================================================
-           HEADER
-           ========================================================= */
-        .header {
-            background: linear-gradient(135deg, var(--brand) 0%, #1e293b 100%);
-            color: white;
-            padding: 20px 24px;
+            font-family: 'Inter', sans-serif;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: var(--shadow);
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--accent);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .header-btn {
-            background: rgba(255, 255, 255, 0.15);
-            border: none;
-            color: white;
-            padding: 12px 20px;
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .header-btn:active {
-            transform: scale(0.96);
-            background: rgba(255, 255, 255, 0.25);
-        }
-
-        .header-btn.primary {
-            background: var(--accent);
-            color: var(--brand);
-        }
-
-        /* =========================================================
-           MAIN LAYOUT - Two Column for Tablet
-           ========================================================= */
-        .main-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        @media (max-width: 900px) {
-            .main-container {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* =========================================================
-           CARDS
-           ========================================================= */
-        .card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
+            height: 100vh;
             overflow: hidden;
         }
 
-        .card-header {
-            background: var(--surface-2);
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
+        /* Sidebar Navigation */
+        aside {
+            width: 80px;
+            /* Collapsed by default on tablet portrait, expand on landscape? Keep simple icon rail */
+            background: rgba(17, 24, 39, 0.95);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 24px;
+            z-index: 20;
+        }
+
+        .nav-item {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active {
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--primary);
+        }
+
+        .nav-item:hover:not(.active) {
+            background: var(--surface-hover);
+            color: var(--text);
+        }
+
+        .nav-item span {
+            font-size: 28px;
+        }
+
+        .nav-label {
+            font-size: 9px;
+            margin-top: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            /* Main area + Side Panel */
+            gap: 24px;
+        }
+
+        /* Header (in Main) */
+        .tablet-header {
+            grid-column: 1 / -1;
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .card-header h2 {
-            font-size: 16px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card-header .icon {
-            font-size: 20px;
-        }
-
-        .card-body {
-            padding: 20px;
-        }
-
-        /* =========================================================
-           FORM ELEMENTS - Touch Optimized
-           ========================================================= */
-        .form-section {
             margin-bottom: 24px;
         }
 
-        .form-section-title {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--muted);
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid var(--accent-light);
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--text);
         }
 
-        .form-grid {
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 16px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 16px;
+            margin-bottom: 24px;
         }
 
-        .form-grid.three-col {
-            grid-template-columns: repeat(3, 1fr);
+        .stat-box {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
         }
 
-        .form-group {
+        .stat-val {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* List Items */
+        .list-row {
+            display: grid;
+            grid-template-columns: 40px 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--surface-hover);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        /* Side Panel (Right) */
+        .side-panel {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 20px;
         }
 
-        .form-group.full-width {
-            grid-column: span 2;
-        }
-
-        .form-group label {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-
-        .form-group label.required::after {
-            content: " *";
-            color: var(--error);
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            padding: 14px 16px;
-            font-size: 16px;
-            border: 2px solid var(--border);
-            border-radius: var(--radius-sm);
-            background: var(--surface);
-            color: var(--text);
-            transition: var(--transition);
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px var(--accent-light);
-        }
-
-        .form-group select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 20px;
-            padding-right: 44px;
-        }
-
-        /* =========================================================
-           CHARGES TABLE
-           ========================================================= */
-        .charges-container {
-            margin-top: 16px;
-        }
-
-        .charge-row {
-            display: grid;
-            grid-template-columns: 1fr 120px 100px 50px;
-            gap: 12px;
-            padding: 12px;
-            background: var(--surface-2);
-            border-radius: var(--radius-sm);
-            margin-bottom: 8px;
-            align-items: center;
-        }
-
-        .charge-row input {
-            padding: 10px 12px;
-            font-size: 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--surface);
-        }
-
-        .charge-row .remove-btn {
-            width: 40px;
-            height: 40px;
-            border: none;
-            background: var(--error);
-            color: white;
-            border-radius: 8px;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .add-charge-btn {
+        .action-button {
             width: 100%;
-            padding: 14px;
-            background: var(--accent-light);
-            border: 2px dashed var(--accent);
-            border-radius: var(--radius-sm);
-            color: var(--accent);
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            margin-top: 12px;
-        }
-
-        .add-charge-btn:active {
-            background: var(--accent);
-            color: var(--brand);
-        }
-
-        /* =========================================================
-           INDEMNITOR CARDS
-           ========================================================= */
-        .indemnitor-card {
-            background: var(--surface-2);
-            border-radius: var(--radius);
-            padding: 20px;
-            margin-bottom: 16px;
-            border-left: 4px solid var(--accent);
-        }
-
-        .indemnitor-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .indemnitor-header h3 {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-        .indemnitor-remove {
-            background: var(--error);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        /* =========================================================
-           PAYMENT SECTION
-           ========================================================= */
-        .payment-summary {
-            background: linear-gradient(135deg, var(--brand) 0%, #1e293b 100%);
-            color: white;
-            padding: 24px;
-            border-radius: var(--radius);
-            margin-top: 20px;
-        }
-
-        .payment-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .payment-row:last-child {
-            border-bottom: none;
-        }
-
-        .payment-row.total {
-            font-size: 20px;
-            font-weight: 700;
-            padding-top: 16px;
-            margin-top: 8px;
-            border-top: 2px solid var(--accent);
-        }
-
-        .payment-link-btn {
-            width: 100%;
-            padding: 18px;
-            background: var(--accent);
-            color: var(--brand);
-            border: none;
-            border-radius: var(--radius-sm);
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: var(--transition);
-        }
-
-        .payment-link-btn:active {
-            transform: scale(0.98);
-        }
-
-        /* =========================================================
-           ACTION BUTTONS
-           ========================================================= */
-        .action-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--surface);
-            padding: 16px 24px;
-            display: flex;
-            gap: 12px;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-            z-index: 100;
-        }
-
-        .action-btn {
-            flex: 1;
             padding: 16px;
+            background: var(--primary);
+            color: black;
             border: none;
-            border-radius: var(--radius-sm);
-            font-size: 15px;
-            font-weight: 700;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: var(--transition);
+            transition: transform 0.1s;
         }
 
-        .action-btn.secondary {
-            background: var(--surface-2);
+        .action-button:active {
+            transform: scale(0.98);
+        }
+
+        .action-button.secondary {
+            background: var(--surface-hover);
             color: var(--text);
+            border: 1px solid var(--border);
         }
 
-        .action-btn.primary {
-            background: var(--accent);
-            color: var(--brand);
+        /* Utility */
+        .text-success {
+            color: #10b981;
         }
 
-        .action-btn.success {
-            background: var(--success);
-            color: white;
+        .text-warning {
+            color: #f59e0b;
         }
 
-        .action-btn:active {
-            transform: scale(0.96);
+        .text-danger {
+            color: #ef4444;
         }
 
-        /* Spacer for fixed action bar */
-        .action-bar-spacer {
-            height: 100px;
-        }
+        @media (orientation: portrait) {
+            main {
+                grid-template-columns: 1fr;
+            }
 
-        /* =========================================================
-           TOAST NOTIFICATIONS
-           ========================================================= */
-        .toast {
-            position: fixed;
-            top: 100px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-20px);
-            background: var(--brand);
-            color: white;
-            padding: 16px 24px;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .toast.success {
-            background: var(--success);
-        }
-
-        .toast.error {
-            background: var(--error);
-        }
-
-        /* =========================================================
-           LOADING OVERLAY
-           ========================================================= */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-
-        .loading-overlay.show {
-            display: flex;
-        }
-
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+            .side-panel {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="header-left">
-            <div class="logo">
-                <div class="logo-icon">☘️</div>
-                <span>Shamrock</span>
-            </div>
+    <aside>
+        <div class="nav-item active" title="Dashboard">
+            <span class="material-icons-round">dashboard</span>
+            <div class="nav-label">Home</div>
         </div>
-        <div class="header-actions">
-            <button class="header-btn" onclick="pasteFromClipboard()">
-                📋 Paste Data
-            </button>
-            <button class="header-btn" onclick="clearForm()">
-                🗑️ Clear
-            </button>
-            <button class="header-btn primary" onclick="saveCase()">
-                💾 Save
-            </button>
+        <div class="nav-item" title="Intake Queue">
+            <span class="material-icons-round">assignment</span>
+            <div class="nav-label">Intake</div>
         </div>
-    </header>
+        <div class="nav-item" title="Defendants">
+            <span class="material-icons-round">people</span>
+            <div class="nav-label">Clients</div>
+        </div>
+        <div class="nav-item" title="Calendar">
+            <span class="material-icons-round">calendar_today</span>
+            <div class="nav-label">Court</div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="nav-item" title="Settings">
+            <span class="material-icons-round">settings</span>
+        </div>
+    </aside>
 
-    <!-- Main Content -->
-    <div class="main-container">
-        <!-- LEFT COLUMN: Defendant Info -->
-        <div class="card">
-            <div class="card-header">
-                <h2><span class="icon">👤</span> Defendant Information</h2>
+    <main>
+        <div class="tablet-header">
+            <div>
+                <h1>Command Center</h1>
+                <div style="font-size:14px; color:var(--text-muted)" id="date-display">Today</div>
             </div>
-            <div class="card-body">
-                <!-- Personal Info -->
-                <div class="form-section">
-                    <div class="form-section-title">Personal Information</div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="required">First Name</label>
-                            <input type="text" id="defendant-first-name" placeholder="John">
-                        </div>
-                        <div class="form-group">
-                            <label class="required">Last Name</label>
-                            <input type="text" id="defendant-last-name" placeholder="Doe">
-                        </div>
-                        <div class="form-group">
-                            <label>Middle Name</label>
-                            <input type="text" id="defendant-middle-name" placeholder="Michael">
-                        </div>
-                        <div class="form-group">
-                            <label>Suffix</label>
-                            <select id="defendant-suffix">
-                                <option value="">None</option>
-                                <option value="Jr.">Jr.</option>
-                                <option value="Sr.">Sr.</option>
-                                <option value="II">II</option>
-                                <option value="III">III</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="required">Date of Birth</label>
-                            <input type="date" id="defendant-dob">
-                        </div>
-                        <div class="form-group">
-                            <label>SSN (Last 4)</label>
-                            <input type="text" id="defendant-ssn" placeholder="XXXX" maxlength="4">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Contact Info -->
-                <div class="form-section">
-                    <div class="form-section-title">Contact Information</div>
-                    <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label>Street Address</label>
-                            <input type="text" id="defendant-address" placeholder="123 Main Street">
-                        </div>
-                        <div class="form-group">
-                            <label>City</label>
-                            <input type="text" id="defendant-city" placeholder="Fort Myers">
-                        </div>
-                        <div class="form-group">
-                            <label>State</label>
-                            <select id="defendant-state">
-                                <option value="FL">Florida</option>
-                                <option value="GA">Georgia</option>
-                                <option value="AL">Alabama</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>ZIP Code</label>
-                            <input type="text" id="defendant-zip" placeholder="33901">
-                        </div>
-                        <div class="form-group">
-                            <label>Phone</label>
-                            <input type="tel" id="defendant-phone" placeholder="(239) 555-1234">
-                        </div>
-                        <div class="form-group full-width">
-                            <label>Email</label>
-                            <input type="email" id="defendant-email" placeholder="defendant@email.com">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Booking Info -->
-                <div class="form-section">
-                    <div class="form-section-title">Booking Information</div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Booking Number</label>
-                            <input type="text" id="defendant-booking" placeholder="2024-123456">
-                        </div>
-                        <div class="form-group">
-                            <label>County</label>
-                            <select id="defendant-county">
-                                <option value="Lee">Lee County</option>
-                                <option value="Collier">Collier County</option>
-                                <option value="Charlotte">Charlotte County</option>
-                                <option value="Hendry">Hendry County</option>
-                                <option value="Glades">Glades County</option>
-                                <option value="Sarasota">Sarasota County</option>
-                                <option value="Manatee">Manatee County</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Arrest Date</label>
-                            <input type="date" id="defendant-arrest-date">
-                        </div>
-                        <div class="form-group">
-                            <label>Jail Facility</label>
-                            <input type="text" id="defendant-facility" placeholder="Lee County Jail">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charges -->
-                <div class="form-section">
-                    <div class="form-section-title">Charges & Bond</div>
-                    <div class="charges-container" id="charges-container">
-                        <div class="charge-row" data-charge-id="1">
-                            <input type="text" placeholder="Charge Description" class="charge-desc">
-                            <input type="text" placeholder="$0.00" class="charge-bond">
-                            <select class="charge-type">
-                                <option value="M">Misd</option>
-                                <option value="F">Felony</option>
-                            </select>
-                            <button class="remove-btn" onclick="removeCharge(this)">×</button>
-                        </div>
-                    </div>
-                    <button class="add-charge-btn" onclick="addCharge()">+ Add Charge</button>
-                </div>
-            </div>
+            <div><!-- User Profile --></div>
         </div>
 
-        <!-- RIGHT COLUMN: Indemnitor & Payment -->
+        <!-- Left Column -->
         <div>
-            <!-- Indemnitor Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h2><span class="icon">🤝</span> Indemnitor / Co-Signer</h2>
-                    <button class="header-btn" onclick="addIndemnitor()">+ Add</button>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-val" id="stat-active">-</div>
+                    <div class="stat-label">Active Bonds</div>
                 </div>
-                <div class="card-body">
-                    <div id="indemnitors-container">
-                        <div class="indemnitor-card" data-indemnitor-id="1">
-                            <div class="indemnitor-header">
-                                <h3>Indemnitor #1 (Primary)</h3>
-                            </div>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label class="required">Full Name</label>
-                                    <input type="text" class="ind-name" placeholder="Jane Doe">
-                                </div>
-                                <div class="form-group">
-                                    <label class="required">Phone</label>
-                                    <input type="tel" class="ind-phone" placeholder="(239) 555-5678">
-                                </div>
-                                <div class="form-group">
-                                    <label class="required">Email</label>
-                                    <input type="email" class="ind-email" placeholder="indemnitor@email.com">
-                                </div>
-                                <div class="form-group">
-                                    <label>Relationship</label>
-                                    <select class="ind-relationship">
-                                        <option value="spouse">Spouse</option>
-                                        <option value="parent">Parent</option>
-                                        <option value="sibling">Sibling</option>
-                                        <option value="friend">Friend</option>
-                                        <option value="employer">Employer</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-                                <div class="form-group full-width">
-                                    <label>Address</label>
-                                    <input type="text" class="ind-address" placeholder="456 Oak Avenue, Fort Myers, FL 33901">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="stat-box">
+                    <div class="stat-val text-warning" id="stat-pending">-</div>
+                    <div class="stat-label">Pending Intakes</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val" id="stat-checkins">-</div>
+                    <div class="stat-label">Check-ins Due</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val text-success" id="stat-rev">$0</div>
+                    <div class="stat-label">Daily Revenue</div>
                 </div>
             </div>
 
-            <!-- Payment Card -->
-            <div class="card" style="margin-top: 20px;">
-                <div class="card-header">
-                    <h2><span class="icon">💰</span> Payment</h2>
-                </div>
-                <div class="card-body">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Premium Rate</label>
-                            <select id="premium-rate" onchange="calculatePayment()">
-                                <option value="10">10% (Standard)</option>
-                                <option value="8">8% (Preferred)</option>
-                                <option value="15">15% (High Risk)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Down Payment</label>
-                            <input type="number" id="down-payment" placeholder="0.00" step="0.01" onchange="calculatePayment()">
-                        </div>
-                        <div class="form-group">
-                            <label>Payment Method</label>
-                            <select id="payment-method">
-                                <option value="cash">Cash</option>
-                                <option value="credit">Credit Card</option>
-                                <option value="debit">Debit Card</option>
-                                <option value="financing">Financing</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Agent</label>
-                            <input type="text" id="agent-name" value="Shamrock Bail Bonds">
-                        </div>
-                    </div>
-
-                    <div class="payment-summary">
-                        <div class="payment-row">
-                            <span>Total Bond Amount</span>
-                            <span id="total-bond">$0.00</span>
-                        </div>
-                        <div class="payment-row">
-                            <span>Premium (<span id="rate-display">10</span>%)</span>
-                            <span id="premium-amount">$0.00</span>
-                        </div>
-                        <div class="payment-row">
-                            <span>Down Payment</span>
-                            <span id="down-display">$0.00</span>
-                        </div>
-                        <div class="payment-row total">
-                            <span>Balance Due</span>
-                            <span id="balance-due">$0.00</span>
-                        </div>
-                    </div>
-
-                    <!-- SwipeSimple Payment Link -->
-                    <button class="payment-link-btn" onclick="openPaymentLink()">
-                        💳 Send Payment Link
-                    </button>
+            <div class="card">
+                <h2>Recent Activity <span class="material-icons-round" style="font-size:16px">refresh</span></h2>
+                <div id="activity-list">
+                    <!-- Dynamic -->
+                    <div style="padding:24px; text-align:center; color:var(--text-muted)">Loading activity...</div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Action Bar Spacer -->
-    <div class="action-bar-spacer"></div>
+        <!-- Right Column (Side Panel) -->
+        <div class="side-panel">
+            <button class="action-button" onclick="openIntake()">
+                <span class="material-icons-round">add</span> New Intake
+            </button>
+            <button class="action-button secondary" onclick="sendLink()">
+                <span class="material-icons-round">send</span> Magic Link
+            </button>
 
-    <!-- Fixed Action Bar -->
-    <div class="action-bar">
-        <button class="action-btn secondary" onclick="saveDraft()">
-            📝 Save Draft
-        </button>
-        <button class="action-btn primary" onclick="generatePacket()">
-            📄 Generate Packet
-        </button>
-        <button class="action-btn success" onclick="sendForSigning()">
-            ✍️ Send for Signing
-        </button>
-    </div>
-
-    <!-- Toast Notification -->
-    <div class="toast" id="toast"></div>
-
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loading">
-        <div class="loading-spinner"></div>
-    </div>
+            <div class="card">
+                <h2>Notifications</h2>
+                <div id="alert-list">
+                    <div class="list-row">
+                        <span class="material-icons-round text-warning">warning</span>
+                        <div style="font-size:13px">System Check Recommended</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 
     <script>
-        // =========================================================
-        // STATE MANAGEMENT
-        // =========================================================
-        let chargeCounter = 1;
-        let indemnitorCounter = 1;
-        
-        // SwipeSimple Payment Link - UPDATE THIS WITH YOUR ACTUAL LINK
-        const SWIPESIMPLE_PAYMENT_LINK = 'https://checkout.swipesimple.com/v2/pay/shamrock-bail-llc';
+        document.getElementById('date-display').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-        // =========================================================
-        // CHARGE MANAGEMENT
-        // =========================================================
-        function addCharge() {
-            chargeCounter++;
-            const container = document.getElementById('charges-container');
-            const chargeHtml = `
-                <div class="charge-row" data-charge-id="${chargeCounter}">
-                    <input type="text" placeholder="Charge Description" class="charge-desc">
-                    <input type="text" placeholder="$0.00" class="charge-bond" onchange="calculatePayment()">
-                    <select class="charge-type">
-                        <option value="M">Misd</option>
-                        <option value="F">Felony</option>
-                    </select>
-                    <button class="remove-btn" onclick="removeCharge(this)">×</button>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', chargeHtml);
+        // Logic
+        function openIntake() {
+            if (window.google) google.script.run.doPostFromClient({ action: 'nav', target: 'intake' });
         }
 
-        function removeCharge(btn) {
-            const rows = document.querySelectorAll('.charge-row');
-            if (rows.length > 1) {
-                btn.closest('.charge-row').remove();
-                calculatePayment();
-            } else {
-                showToast('At least one charge is required', 'error');
+        // Data Binding
+        window.addEventListener('load', function () {
+            if (window.google) {
+                google.script.run
+                    .withSuccessHandler(updateTablet)
+                    .withFailureHandler(console.error)
+                    .handleMobileAction({ action: 'fetchMobileData' }); // Use same handler as mobile
             }
-        }
-
-        // =========================================================
-        // INDEMNITOR MANAGEMENT
-        // =========================================================
-        function addIndemnitor() {
-            indemnitorCounter++;
-            const container = document.getElementById('indemnitors-container');
-            const indHtml = `
-                <div class="indemnitor-card" data-indemnitor-id="${indemnitorCounter}">
-                    <div class="indemnitor-header">
-                        <h3>Indemnitor #${indemnitorCounter}</h3>
-                        <button class="indemnitor-remove" onclick="removeIndemnitor(this)">Remove</button>
-                    </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="required">Full Name</label>
-                            <input type="text" class="ind-name" placeholder="Full Name">
-                        </div>
-                        <div class="form-group">
-                            <label class="required">Phone</label>
-                            <input type="tel" class="ind-phone" placeholder="(239) 555-5678">
-                        </div>
-                        <div class="form-group">
-                            <label class="required">Email</label>
-                            <input type="email" class="ind-email" placeholder="email@example.com">
-                        </div>
-                        <div class="form-group">
-                            <label>Relationship</label>
-                            <select class="ind-relationship">
-                                <option value="spouse">Spouse</option>
-                                <option value="parent">Parent</option>
-                                <option value="sibling">Sibling</option>
-                                <option value="friend">Friend</option>
-                                <option value="employer">Employer</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group full-width">
-                            <label>Address</label>
-                            <input type="text" class="ind-address" placeholder="Full Address">
-                        </div>
-                    </div>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', indHtml);
-        }
-
-        function removeIndemnitor(btn) {
-            const cards = document.querySelectorAll('.indemnitor-card');
-            if (cards.length > 1) {
-                btn.closest('.indemnitor-card').remove();
-            } else {
-                showToast('At least one indemnitor is required', 'error');
-            }
-        }
-
-        // =========================================================
-        // PAYMENT CALCULATION
-        // =========================================================
-        function calculatePayment() {
-            // Get all bond amounts
-            const bondInputs = document.querySelectorAll('.charge-bond');
-            let totalBond = 0;
-            bondInputs.forEach(input => {
-                const val = parseFloat(input.value.replace(/[^0-9.]/g, '')) || 0;
-                totalBond += val;
-            });
-
-            // Get premium rate
-            const rate = parseFloat(document.getElementById('premium-rate').value) / 100;
-            const premium = totalBond * rate;
-
-            // Apply minimum $100 per charge rule
-            const chargeCount = bondInputs.length;
-            const minPremium = chargeCount * 100;
-            const finalPremium = Math.max(premium, minPremium);
-
-            // Get down payment
-            const downPayment = parseFloat(document.getElementById('down-payment').value) || 0;
-            const balance = finalPremium - downPayment;
-
-            // Update display
-            document.getElementById('total-bond').textContent = formatCurrency(totalBond);
-            document.getElementById('rate-display').textContent = document.getElementById('premium-rate').value;
-            document.getElementById('premium-amount').textContent = formatCurrency(finalPremium);
-            document.getElementById('down-display').textContent = formatCurrency(downPayment);
-            document.getElementById('balance-due').textContent = formatCurrency(Math.max(0, balance));
-        }
-
-        function formatCurrency(amount) {
-            return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-        }
-
-        // =========================================================
-        // PAYMENT LINK
-        // =========================================================
-        function openPaymentLink() {
-            const balance = document.getElementById('balance-due').textContent;
-            const defendantName = document.getElementById('defendant-first-name').value + ' ' + 
-                                  document.getElementById('defendant-last-name').value;
-            
-            // Open SwipeSimple payment link
-            window.open(SWIPESIMPLE_PAYMENT_LINK, '_blank');
-            showToast('Payment link opened', 'success');
-        }
-
-        // =========================================================
-        // CLIPBOARD PASTE
-        // =========================================================
-        async function pasteFromClipboard() {
-            try {
-                const text = await navigator.clipboard.readText();
-                if (text.includes('bookingData=')) {
-                    const jsonStr = text.replace('bookingData=', '');
-                    const data = JSON.parse(jsonStr);
-                    populateFromBookingData(data);
-                    showToast('Data pasted successfully!', 'success');
-                } else {
-                    showToast('No booking data found in clipboard', 'error');
-                }
-            } catch (err) {
-                showToast('Failed to read clipboard', 'error');
-            }
-        }
-
-        function populateFromBookingData(data) {
-            if (data['defendant-first-name']) document.getElementById('defendant-first-name').value = data['defendant-first-name'];
-            if (data['defendant-last-name']) document.getElementById('defendant-last-name').value = data['defendant-last-name'];
-            if (data['defendant-dob']) document.getElementById('defendant-dob').value = data['defendant-dob'];
-            if (data['defendant-booking-number']) document.getElementById('defendant-booking').value = data['defendant-booking-number'];
-            // Add more field mappings as needed
-            calculatePayment();
-        }
-
-        // =========================================================
-        // FORM ACTIONS
-        // =========================================================
-        function clearForm() {
-            if (confirm('Are you sure you want to clear all data?')) {
-                document.querySelectorAll('input').forEach(input => {
-                    if (input.type !== 'button' && input.type !== 'submit') {
-                        input.value = '';
-                    }
-                });
-                document.querySelectorAll('select').forEach(select => {
-                    select.selectedIndex = 0;
-                });
-                calculatePayment();
-                showToast('Form cleared', 'success');
-            }
-        }
-
-        function saveDraft() {
-            showLoading(true);
-            const formData = collectFormData();
-            
-            // Call GAS backend to save draft
-            google.script.run
-                .withSuccessHandler(() => {
-                    showLoading(false);
-                    showToast('Draft saved!', 'success');
-                })
-                .withFailureHandler((err) => {
-                    showLoading(false);
-                    showToast('Failed to save: ' + err.message, 'error');
-                })
-                .saveDraft(formData);
-        }
-
-        function saveCase() {
-            showLoading(true);
-            const formData = collectFormData();
-            
-            google.script.run
-                .withSuccessHandler(() => {
-                    showLoading(false);
-                    showToast('Case saved!', 'success');
-                })
-                .withFailureHandler((err) => {
-                    showLoading(false);
-                    showToast('Failed to save: ' + err.message, 'error');
-                })
-                .saveCase(formData);
-        }
-
-        function generatePacket() {
-            showLoading(true);
-            const formData = collectFormData();
-            
-            google.script.run
-                .withSuccessHandler((result) => {
-                    showLoading(false);
-                    if (result.success) {
-                        showToast('Packet generated!', 'success');
-                        if (result.pdfUrl) {
-                            window.open(result.pdfUrl, '_blank');
-                        }
-                    } else {
-                        showToast(result.error || 'Failed to generate packet', 'error');
-                    }
-                })
-                .withFailureHandler((err) => {
-                    showLoading(false);
-                    showToast('Error: ' + err.message, 'error');
-                })
-                .generatePacketFromMobile(formData);
-        }
-
-        function sendForSigning() {
-            showLoading(true);
-            const formData = collectFormData();
-            
-            google.script.run
-                .withSuccessHandler((result) => {
-                    showLoading(false);
-                    if (result.success) {
-                        showToast('Sent for signing!', 'success');
-                    } else {
-                        showToast(result.error || 'Failed to send', 'error');
-                    }
-                })
-                .withFailureHandler((err) => {
-                    showLoading(false);
-                    showToast('Error: ' + err.message, 'error');
-                })
-                .sendForSigningFromMobile(formData);
-        }
-
-        // =========================================================
-        // DATA COLLECTION
-        // =========================================================
-        function collectFormData() {
-            // Defendant data
-            const defendant = {
-                firstName: document.getElementById('defendant-first-name').value,
-                lastName: document.getElementById('defendant-last-name').value,
-                middleName: document.getElementById('defendant-middle-name').value,
-                suffix: document.getElementById('defendant-suffix').value,
-                dob: document.getElementById('defendant-dob').value,
-                ssn: document.getElementById('defendant-ssn').value,
-                address: document.getElementById('defendant-address').value,
-                city: document.getElementById('defendant-city').value,
-                state: document.getElementById('defendant-state').value,
-                zip: document.getElementById('defendant-zip').value,
-                phone: document.getElementById('defendant-phone').value,
-                email: document.getElementById('defendant-email').value,
-                bookingNumber: document.getElementById('defendant-booking').value,
-                county: document.getElementById('defendant-county').value,
-                arrestDate: document.getElementById('defendant-arrest-date').value,
-                facility: document.getElementById('defendant-facility').value
-            };
-
-            // Charges
-            const charges = [];
-            document.querySelectorAll('.charge-row').forEach(row => {
-                charges.push({
-                    description: row.querySelector('.charge-desc').value,
-                    bondAmount: row.querySelector('.charge-bond').value,
-                    type: row.querySelector('.charge-type').value
-                });
-            });
-
-            // Indemnitors
-            const indemnitors = [];
-            document.querySelectorAll('.indemnitor-card').forEach(card => {
-                indemnitors.push({
-                    name: card.querySelector('.ind-name').value,
-                    phone: card.querySelector('.ind-phone').value,
-                    email: card.querySelector('.ind-email').value,
-                    relationship: card.querySelector('.ind-relationship').value,
-                    address: card.querySelector('.ind-address').value
-                });
-            });
-
-            // Payment
-            const payment = {
-                premiumRate: document.getElementById('premium-rate').value,
-                downPayment: document.getElementById('down-payment').value,
-                method: document.getElementById('payment-method').value,
-                agent: document.getElementById('agent-name').value
-            };
-
-            return {
-                defendant,
-                charges,
-                indemnitors,
-                payment,
-                timestamp: new Date().toISOString()
-            };
-        }
-
-        // =========================================================
-        // UI HELPERS
-        // =========================================================
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast ' + type + ' show';
-            setTimeout(() => {
-                toast.className = 'toast';
-            }, 3000);
-        }
-
-        function showLoading(show) {
-            document.getElementById('loading').className = show ? 'loading-overlay show' : 'loading-overlay';
-        }
-
-        // =========================================================
-        // INITIALIZATION
-        // =========================================================
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize with injected data if available
-            if (window.INJECTED_DATA) {
-                populateFromBookingData(window.INJECTED_DATA);
-            }
-            
-            // Set today's date as default for arrest date
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('defendant-arrest-date').value = today;
-            
-            // Initial payment calculation
-            calculatePayment();
         });
+
+        function updateTablet(data) {
+            console.log("Tablet Data:", data);
+
+            if (data.stats) {
+                setText('stat-active', data.stats.activeBonds);
+                setText('stat-pending', data.stats.pendingIntakes);
+                setText('stat-checkins', data.stats.checkInsDue);
+                setText('stat-rev', data.stats.collections);
+            }
+
+            const listContainer = document.getElementById('activity-list');
+            if (data.recentActivity && data.recentActivity.length > 0) {
+                listContainer.innerHTML = '';
+                data.recentActivity.forEach(item => {
+                    const html = `
+                        <div class="list-row">
+                            <div class="avatar">${item.initials}</div>
+                            <div>
+                                <div style="font-weight:600">${item.name}</div>
+                                <div style="font-size:12px; color:var(--text-muted)">${formatDate(item.date)}</div>
+                            </div>
+                            <div style="font-size:12px;" class="${getStatusColor(item.status)}">${formatStatus(item.status)}</div>
+                        </div>
+                    `;
+                    listContainer.insertAdjacentHTML('beforeend', html);
+                });
+            } else {
+                listContainer.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">No recent activity</div>';
+            }
+        }
+
+        function setText(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        }
+        function getStatusColor(s) {
+            if (!s) return '';
+            if (s.includes('active')) return 'text-success';
+            if (s.includes('pending')) return 'text-warning';
+            return '';
+        }
+        function formatStatus(s) { return s ? s.replace(/_/g, ' ') : ''; }
+        function formatDate(d) { return d ? new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''; }
+
     </script>
 </body>
+
 </html>

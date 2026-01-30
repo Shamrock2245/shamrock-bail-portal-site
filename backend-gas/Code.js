@@ -102,6 +102,23 @@ function doGet(e) {
     const VERSION = '5.7';
     const page = e.parameter.page || 'Dashboard';
 
+    // --- NEW: Mobile & Tablet Routing (User Request) ---
+    if (page === 'mobile') {
+      return HtmlService.createTemplateFromFile('MobileDashboard')
+        .evaluate()
+        .setTitle('Shamrock Mobile')
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+    if (page === 'tablet') {
+      return HtmlService.createTemplateFromFile('TabletDashboard')
+        .evaluate()
+        .setTitle('Shamrock Tablet')
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+    // ---------------------------------------------------
+
     // ALWAYS use template to support Dynamic URL Injection
     const template = HtmlService.createTemplateFromFile(page);
 
