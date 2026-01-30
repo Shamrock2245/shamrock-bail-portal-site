@@ -347,7 +347,9 @@ function filterData() {
  */
 function setupMagicLinkGenerator() {
     try {
-        const dashboardBtn = $w('#btnGenerateMagicLink');
+        // robust check: prioritize user's requested ID 'btnOpenDashboard', fallback to original
+        const dashboardBtn = $w('#btnOpenDashboard').uniqueId ? $w('#btnOpenDashboard') : $w('#btnGenerateMagicLink');
+
         if (dashboardBtn && typeof dashboardBtn.onClick === 'function') {
             console.log('Staff Portal: Dashboard button found');
             dashboardBtn.label = "Open Dashboard"; // Update label to reflect action
