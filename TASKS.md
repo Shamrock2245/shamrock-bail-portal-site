@@ -28,6 +28,7 @@
 - [x] **Backend Fixes:** `IntakeQueue` reference logic & Tab Routing cleanup.
 - [x] **Universal Payment Link:** Integrated SwipeSimple into Portals, SMS, and Email workflows.
 - [x] **Dashboard:** Repaired tab structure and added headers.
+- [x] **Liability Display:** Fixed hardcoded $50k placeholder; made dynamic.
 
 ---
 

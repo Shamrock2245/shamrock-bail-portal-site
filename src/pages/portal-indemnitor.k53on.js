@@ -207,8 +207,7 @@ function showBondDashboard() {
     safeShow('#bondDashboardSection');
     safeShow('#bondDashboardSection');
 
-    // Populate defendant status from Intake or Live Data?
-    // Using Intake as primary source for now, but could enhance with live lookup later
+    // Populate defendant status from Intake or Live Data
     safeSetText('#defendantNameDisplay', currentIntake.defendantName || 'Unknown');
     safeSetText('#defendantStatusDisplay', formatStatus(currentIntake.status));
     safeSetText('#lastCheckInDisplay', formatDate(currentIntake._updatedDate));
@@ -217,20 +216,43 @@ function showBondDashboard() {
     const paperworkStatus = currentIntake.documentStatus || 'pending';
     safeSetText('#paperworkStatusDisplay', formatDocumentStatus(paperworkStatus));
 
-    if (paperworkStatus === 'sent_for_signature' && currentIntake.signNowIndemnitorLink) {
-        safeShow('#signPaperworkBtn');
-        // Link removed to force use of onClick handler (Lightbox)
-    } else {
-        safeHide('#signPaperworkBtn');
-    }
+    // --- Financial Liability Section (New) ---
+    // Defaults to 0 or TBD if data not yet synced from GAS
+    safeSetText('#textTotalLiability', formatCurrency(currentIntake.totalLiability || 0));
+    safeSetText('#textTotalPremium', formatCurrency(currentIntake.totalPremium || 0)); // Total Premium
+    safeSetText('#textDownPayment', formatCurrency(currentIntake.downPayment || 0));   // Down Payment
+    safeSetText('#textChargesCount', (currentIntake.chargesCount || 0).toString());   // Count of charges
 
-    if (currentIntake.premiumAmount) {
-        safeSetText('#remainingBalanceDisplay', `$${currentIntake.premiumAmount.toFixed(2)}`);
+    // Check specific specific logic for Balance Due vs. Premium Amount
+    // If we have specific balance due, use it, otherwise fallback to premiumAmount (legacy field)
+    const balanceDue = currentIntake.balanceDue !== undefined ? currentIntake.balanceDue : currentIntake.premiumAmount;
+
+    if (balanceDue !== undefined) {
+        safeSetText('#remainingBalanceDisplay', formatCurrency(balanceDue));
         safeSetText('#paymentTermsDisplay', currentIntake.paymentTerms || 'TBD');
         safeSetText('#paymentFrequencyDisplay', currentIntake.paymentFrequency || 'Contact Office');
         safeSetText('#nextPaymentDateDisplay', formatDate(currentIntake.nextPaymentDate) || 'TBD');
         safeShow('#makePaymentBtn');
     }
+
+    if (paperworkStatus === 'sent_for_signature' && currentIntake.signNowIndemnitorLink) {
+        safeShow('#signPaperworkBtn');
+    } else {
+        safeHide('#signPaperworkBtn');
+    }
+}
+
+/**
+ * Format currency
+ */
+function formatCurrency(amount) {
+    if (amount === undefined || amount === null) return '$0';
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount);
 }
 
 /**

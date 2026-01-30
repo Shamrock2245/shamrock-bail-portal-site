@@ -8,9 +8,32 @@
  * - Most functions should be Admin or Member-Auth only.
  */
 
+import wixData from 'wix-data';
 import { currentMember } from 'wix-members-backend';
 import { getSecret } from 'wix-secrets-backend';
 import { callGasAction } from 'backend/gasIntegration'; // Re-use our bridge!
+
+/**
+ * Get all available bail classes.
+ * useful for backend-side validation or admin dashboards.
+ */
+export async function getBailClasses() {
+    try {
+        const results = await wixData.query("BailClasses")
+            .ascending("title")
+            .find();
+        return {
+            success: true,
+            classes: results.items
+        };
+    } catch (error) {
+        console.error("Error fetching bail classes:", error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
 
 /**
  * Notifies GAS that a student has completed a course, requesting a certificate.
