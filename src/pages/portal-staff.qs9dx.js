@@ -105,6 +105,7 @@ $w.onReady(async function () {
     // 2. Setup Event Handlers
     initFilters();
     setupLogoutButton();
+    setupMagicLinkGenerator(); // Setup "Open Dashboard" button
 
     try {
         if ($w('#searchBar').type) {
@@ -341,22 +342,43 @@ function filterData() {
 // ==================== MAGIC LINK GENERATION ====================
 
 /**
- * Setup magic link generation button
- * Call this in $w.onReady after authentication
+ * Setup dashboard button (formerly magic link generator)
+ * Now opens the Google Apps Script Dashboard
  */
 function setupMagicLinkGenerator() {
     try {
-        const generateBtn = $w('#btnGenerateMagicLink');
-        if (generateBtn && typeof generateBtn.onClick === 'function') {
-            console.log('Staff Portal: Magic link generator button found');
-            generateBtn.onClick(() => {
-                openMagicLinkLightbox();
+        const dashboardBtn = $w('#btnGenerateMagicLink');
+        if (dashboardBtn && typeof dashboardBtn.onClick === 'function') {
+            console.log('Staff Portal: Dashboard button found');
+            dashboardBtn.label = "Open Dashboard"; // Update label to reflect action
+
+            dashboardBtn.onClick(async () => {
+                try {
+                    dashboardBtn.disable();
+                    dashboardBtn.label = "Loading...";
+
+                    // distinct import to avoid conflict with local function names
+                    const { getDashboardUrl } = await import('backend/gasIntegration');
+                    const result = await getDashboardUrl();
+
+                    if (result.success && result.url) {
+                        console.log("Opening dashboard:", result.url);
+                        wixLocation.to(result.url);
+                    } else {
+                        console.error("Failed to get dashboard URL:", result.error);
+                        showStaffMessage("Error loading dashboard URL", "error");
+                    }
+                } catch (err) {
+                    console.error("Error opening dashboard:", err);
+                    showStaffMessage("Error opening dashboard", "error");
+                } finally {
+                    dashboardBtn.label = "Open Dashboard";
+                    dashboardBtn.enable();
+                }
             });
-        } else {
-            console.warn('Staff Portal: Magic link generator button (#btnGenerateMagicLink) not found');
         }
     } catch (e) {
-        console.warn('Staff Portal: No magic link generator configured');
+        console.warn('Staff Portal: No dashboard button configured');
     }
 }
 

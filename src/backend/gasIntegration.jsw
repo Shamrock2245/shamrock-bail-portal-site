@@ -426,11 +426,24 @@ export async function healthCheck() {
             intakeQueueAccessible: true
         };
 
-    } catch (error) {
         return {
             success: false,
             status: 'unhealthy',
             error: error.message
         };
+    }
+}
+
+/**
+ * Get GAS Web App URL for Dashboard Access
+ * Used by Staff Portal
+ */
+export async function getDashboardUrl() {
+    try {
+        const url = await getGasWebAppUrl();
+        return { success: true, url: url };
+    } catch (e) {
+        console.error("Error getting dashboard URL", e);
+        return { success: false, error: e.message };
     }
 }
