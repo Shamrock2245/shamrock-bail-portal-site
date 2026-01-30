@@ -124,7 +124,7 @@ function setupEmergencyCallButton() {
  * Setup "Find My Jail" button (Automatic redirection to nearest county)
  */
 function setupFindJailButton() {
-    const btn = $w('#findJailBtn');
+    const btn = $w('#navFindJail');
     if (btn.uniqueId) {
         btn.onClick(() => {
             handleFindJailClick(btn);
@@ -133,8 +133,8 @@ function setupFindJailButton() {
 }
 
 async function handleFindJailClick(btn) {
+    let originalLabel = btn.label;
     try {
-        const originalLabel = btn.label;
         btn.label = "Locating...";
         btn.disable();
 
@@ -159,7 +159,8 @@ async function handleFindJailClick(btn) {
         // Fallback to general list if location denied
         wixLocation.to('/bail-bonds');
     } finally {
-        btn.label = "Find My Jail";
+        // Reset label
+        btn.label = originalLabel || "Find My Jail";
         btn.enable();
     }
 }
