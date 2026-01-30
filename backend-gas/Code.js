@@ -325,7 +325,8 @@ function sendSmsViaTwilio(to, body) {
     const payload = {
       "To": formattedTo,
       "From": config.TWILIO_PHONE_NUMBER,
-      "Body": body
+      "Body": body,
+      "StatusCallback": "https://www.shamrockbailbonds.biz/_functions/twilio/status"
     };
     // UrlFetchApp doesn't support URLSearchParams automatically like node
     // We construct the form data string manually or use payload object which UrlFetchApp handles for POST

@@ -46,6 +46,8 @@ export async function sendSms(to, body) {
         params.append('To', to);
         params.append('From', from);
         params.append('Body', body);
+        // Add StatusCallback for delivery tracking
+        params.append('StatusCallback', 'https://www.shamrockbailbonds.biz/_functions/twilio/status');
 
         const response = await fetch(url, {
             method: 'POST',
