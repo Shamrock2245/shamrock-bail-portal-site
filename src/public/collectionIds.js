@@ -41,7 +41,7 @@ export const COLLECTIONS = {
 
   // Location & County Data
   FLORIDA_COUNTIES: 'FloridaCounties',         // Florida county data (Verified: No space in ID)
-  COUNTIES: 'Counties',                        // General county data
+  COUNTIES: 'Import21',                        // General county data (Alias from screenshot)
   GEOLOCATION_CACHE: 'Geolocationcache',       // Cached geolocation lookups
   USER_LOCATIONS: 'Userlocations',             // User location check-ins
 
@@ -54,7 +54,7 @@ export const COLLECTIONS = {
   MEMBER_PROFILES: 'Memberprofiles',           // Member profile information
 
   // Supporting Collections
-  FAQS: 'Faqs',                                // Frequently asked questions
+  FAQS: 'Import22',                            // Frequently asked questions (Alias from screenshot)
   TESTIMONIALS: 'Testimonials',                // Client testimonials
   CONTACT_SUBMISSIONS: 'Contactsubmissions',   // Contact form submissions
   BAIL_SCHOOL_SIGNUPS: 'Bailschoolsignups',    // Bail school interest signups
