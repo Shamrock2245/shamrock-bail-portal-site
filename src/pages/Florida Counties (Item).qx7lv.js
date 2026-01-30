@@ -192,7 +192,8 @@ function populateMainUI(county) {
     setText(['#heroSubtitle', '#aboutCountyText', '#heroDescription'], county.content.hero_subheadline);
 
     // About Section Headers
-    setText(['#aboutHeader', '#aboutTitle'], `About Bail Bonds in ${county.county_name} County`);
+    // Header often has IDs like: #aboutHeader, #aboutTitle, #textAboutCounty
+    setText(['#aboutHeader', '#aboutTitle', '#textAboutCounty', '#aboutSectionTitle'], `About Bail Bonds in ${county.county_name} County`);
     setText(['#aboutBody', '#aboutText', '#aboutDescription'], county.content.about_county);
 
     // Why Choose Us
@@ -200,9 +201,18 @@ function populateMainUI(county) {
     setText(['#whyChooseBody', '#whyChooseText'], county.content.why_choose_us);
 
     // Contact Info (Jail/Clerk)
-    setText(['#sheriffPhone', '#jailPhone'], county.jail.booking_phone);
-    setText(['#jailName', '#jailTitle'], county.jail.name);
-    setText(['#clerkPhone', '#clerkContact'], county.clerk.phone);
+    // Jail Name & Phone
+    setText(['#jailName', '#jailTitle', '#textJailName'], county.jail.name);
+    setText(['#sheriffPhone', '#jailPhone', '#textJailPhone'], county.jail.booking_phone);
+
+    // Clerk Name & Phone (Added Clerk Name mapping)
+    setText(['#clerkName', '#clerkTitle', '#textClerkName'], "Clerk of Court"); // Fixed Label or data if available
+    setText(['#clerkPhone', '#clerkContact', '#textClerkPhone'], county.clerk.phone);
+
+    // Sheriff Name & Phone (Added Sheriff Name mapping)
+    setText(['#sheriffName', '#sheriffTitle', '#textSheriffName'], "Sheriff's Office");
+    // Reuse booking phone or specific sheriff phone if available
+    setText(['#sheriffContactPhone', '#textSheriffPhone'], county.contact.primary_phone);
 
     // Links / Buttons (Sheriff/Clerk)
     setLink(['#callSheriffBtn', '#btnCallJail'], county.jail.booking_url, "Jail / Sheriff Website");
