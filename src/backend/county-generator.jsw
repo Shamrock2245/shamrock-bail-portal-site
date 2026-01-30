@@ -47,11 +47,8 @@ export async function generateCountyPage(countySlug) {
       };
     }
 
-    // NEW: Fetch Dynamic FAQs from CMS
-    const faqData = await getFaqsForCounty(countySlug, countyData.countyName);
-
     // Transform to expected page format
-    const pageData = transformCountyData(countyData, faqData);
+    const pageData = transformCountyData(countyData);
 
     const result = {
       success: true,
