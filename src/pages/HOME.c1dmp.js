@@ -12,6 +12,7 @@
 import { session } from 'wix-storage';
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
+import wixSeo from 'wix-seo';
 import { getCounties } from 'backend/counties';
 
 // State
@@ -19,6 +20,9 @@ let countiesData = null;
 let countiesLoaded = false;
 
 $w.onReady(function () {
+    // Setup SEO and structured data
+    setupOrganizationSchema();
+    
     // Critical: Setup above-the-fold elements only
     setupHeroSection();
     setupCTAButtons();
@@ -257,6 +261,147 @@ function loadTestimonials() {
         const bodyTxt = $item('#testimonialText').uniqueId ? $item('#testimonialText') : $item('#quoteText');
         if (bodyTxt.uniqueId) bodyTxt.text = itemData.text;
     });
+}
+
+/**
+ * Setup Organization Schema for SEO
+ */
+function setupOrganizationSchema() {
+    const schemas = [
+        // 1. Organization Schema
+        {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "@id": "https://www.shamrockbailbonds.biz/#organization",
+            "name": "Shamrock Bail Bonds",
+            "legalName": "Shamrock Bail Bonds LLC",
+            "url": "https://www.shamrockbailbonds.biz",
+            "logo": "https://www.shamrockbailbonds.biz/logo.png",
+            "foundingDate": "2012",
+            "description": "Professional 24/7 bail bond services throughout Florida since 2012. Fast, reliable, and confidential bail bonds with bilingual support.",
+            "slogan": "Fort Myers Since 2012",
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "1528 Broadway",
+                "addressLocality": "Fort Myers",
+                "addressRegion": "FL",
+                "postalCode": "33901",
+                "addressCountry": "US"
+            },
+            "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": "26.6406",
+                "longitude": "-81.8723"
+            },
+            "telephone": "+1-239-332-2245",
+            "contactPoint": [
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-239-332-2245",
+                    "contactType": "Customer Service",
+                    "areaServed": "FL",
+                    "availableLanguage": ["English", "Spanish"],
+                    "hoursAvailable": {
+                        "@type": "OpeningHoursSpecification",
+                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                        "opens": "00:00",
+                        "closes": "23:59"
+                    }
+                },
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-239-332-5245",
+                    "contactType": "Emergency",
+                    "areaServed": "FL",
+                    "availableLanguage": ["English", "Spanish"]
+                },
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-239-955-0301",
+                    "contactType": "Customer Service",
+                    "areaServed": "FL",
+                    "availableLanguage": "Spanish"
+                }
+            ],
+            "areaServed": {
+                "@type": "State",
+                "name": "Florida",
+                "@id": "https://en.wikipedia.org/wiki/Florida"
+            },
+            "openingHoursSpecification": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "opens": "00:00",
+                "closes": "23:59"
+            },
+            "priceRange": "$$",
+            "paymentAccepted": "Cash, Credit Card, Debit Card"
+        },
+        // 2. LocalBusiness Schema
+        {
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            "@id": "https://www.shamrockbailbonds.biz/#localbusiness",
+            "name": "Shamrock Bail Bonds",
+            "image": "https://www.shamrockbailbonds.biz/logo.png",
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "1528 Broadway",
+                "addressLocality": "Fort Myers",
+                "addressRegion": "FL",
+                "postalCode": "33901",
+                "addressCountry": "US"
+            },
+            "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": "26.6406",
+                "longitude": "-81.8723"
+            },
+            "url": "https://www.shamrockbailbonds.biz",
+            "telephone": "+1-239-332-2245",
+            "priceRange": "$$",
+            "openingHoursSpecification": [
+                {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                }
+            ]
+        },
+        // 3. Service Schema
+        {
+            "@context": "https://schema.org",
+            "@type": "Service",
+            "serviceType": "Bail Bonds",
+            "provider": {
+                "@id": "https://www.shamrockbailbonds.biz/#organization"
+            },
+            "areaServed": [
+                {
+                    "@type": "State",
+                    "name": "Florida"
+                }
+            ],
+            "availableChannel": {
+                "@type": "ServiceChannel",
+                "servicePhone": {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-239-332-2245",
+                    "availableLanguage": ["English", "Spanish"]
+                },
+                "serviceUrl": "https://www.shamrockbailbonds.biz"
+            },
+            "hoursAvailable": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "opens": "00:00",
+                "closes": "23:59"
+            }
+        }
+    ];
+
+    wixSeo.setStructuredData(schemas).catch(e => console.error('Schema error:', e));
 }
 
 /**

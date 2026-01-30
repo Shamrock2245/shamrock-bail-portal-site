@@ -103,25 +103,70 @@ function setupSEO(county) {
         ]
     });
 
-    // B. LocalBusiness
+    // B. LocalBusiness (Enhanced with full address and contact details)
     schemas.push({
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
-        "name": `Shamrock Bail Bonds - ${county.county_name}`,
+        "@id": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}#localbusiness`,
+        "name": `Shamrock Bail Bonds - ${county.county_name} County`,
         "description": county.seo.meta_description,
         "url": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}`,
-        "telephone": county.contact.primary_phone,
+        "telephone": "+1-239-332-2245",
         "image": "https://www.shamrockbailbonds.biz/logo.png",
-        "areaServed": {
-            "@type": "AdministrativeArea",
-            "name": `${county.county_name} County, Florida`
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "1528 Broadway",
+            "addressLocality": "Fort Myers",
+            "addressRegion": "FL",
+            "postalCode": "33901",
+            "addressCountry": "US"
         },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": "26.6406",
+            "longitude": "-81.8723"
+        },
+        "contactPoint": [
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-239-332-2245",
+                "contactType": "Customer Service",
+                "areaServed": "FL",
+                "availableLanguage": ["English", "Spanish"]
+            },
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-239-332-5245",
+                "contactType": "Emergency",
+                "areaServed": "FL",
+                "availableLanguage": ["English", "Spanish"]
+            },
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-239-955-0301",
+                "contactType": "Customer Service",
+                "areaServed": "FL",
+                "availableLanguage": "Spanish"
+            }
+        ],
+        "areaServed": [
+            {
+                "@type": "AdministrativeArea",
+                "name": `${county.county_name} County, Florida`
+            },
+            {
+                "@type": "State",
+                "name": "Florida"
+            }
+        ],
         "openingHoursSpecification": {
             "@type": "OpeningHoursSpecification",
             "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
             "opens": "00:00",
             "closes": "23:59"
-        }
+        },
+        "priceRange": "$$",
+        "paymentAccepted": "Cash, Credit Card, Debit Card"
     });
 
     // C. FAQPage
@@ -136,6 +181,53 @@ function setupSEO(county) {
             }))
         });
     }
+
+    // D. Service Schema (County-Specific Bail Bonds Service)
+    schemas.push({
+        "@context": "https://schema.org",
+        "@type": "Service",
+        "serviceType": "Bail Bonds",
+        "name": `Bail Bonds in ${county.county_name} County, Florida`,
+        "description": `24/7 professional bail bond services in ${county.county_name} County. Fast, confidential, and reliable bail bonds with bilingual support.`,
+        "provider": {
+            "@type": "Organization",
+            "name": "Shamrock Bail Bonds",
+            "telephone": "+1-239-332-2245",
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "1528 Broadway",
+                "addressLocality": "Fort Myers",
+                "addressRegion": "FL",
+                "postalCode": "33901",
+                "addressCountry": "US"
+            }
+        },
+        "areaServed": {
+            "@type": "AdministrativeArea",
+            "name": `${county.county_name} County, Florida`
+        },
+        "availableChannel": {
+            "@type": "ServiceChannel",
+            "servicePhone": {
+                "@type": "ContactPoint",
+                "telephone": "+1-239-332-2245",
+                "availableLanguage": ["English", "Spanish"]
+            },
+            "serviceUrl": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}`
+        },
+        "hoursAvailable": {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            "opens": "00:00",
+            "closes": "23:59"
+        },
+        "offers": {
+            "@type": "Offer",
+            "availability": "https://schema.org/InStock",
+            "availabilityStarts": "2012-01-01",
+            "priceRange": "$$"
+        }
+    });
 
     wixSeo.setStructuredData(schemas).catch(e => { });
 }
