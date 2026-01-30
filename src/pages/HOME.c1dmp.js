@@ -83,7 +83,8 @@ async function loadCountyDropdown() {
     if (countiesLoaded) return;
 
     try {
-        const dropdown = $w('#countyDropdown');
+        // Confirmed ID from screenshot is #countySelector
+        const dropdown = $w('#countySelector').uniqueId ? $w('#countySelector') : $w('#countyDropdown');
         if (dropdown.uniqueId) {
             dropdown.placeholder = 'Loading counties...';
         }
@@ -131,8 +132,10 @@ async function loadCountyDropdown() {
 
     } catch (error) {
         console.error('Error loading counties:', error);
-        if ($w('#countyDropdown').uniqueId) {
-            $w('#countyDropdown').placeholder = 'Error loading counties';
+        // Try both potential IDs for error handling
+        const dropdown = $w('#countySelector').uniqueId ? $w('#countySelector') : $w('#countyDropdown');
+        if (dropdown.uniqueId) {
+            dropdown.placeholder = 'Error loading counties';
         }
     }
 }
@@ -141,7 +144,9 @@ async function loadCountyDropdown() {
  * Handle county selection
  */
 function handleCountySelection() {
-    const selectedCounty = $w('#countyDropdown').value;
+    // Support both ID conventions
+    const dropdown = $w('#countyDropdown').uniqueId ? $w('#countyDropdown') : $w('#countySelector');
+    const selectedCounty = dropdown.value;
 
     if (selectedCounty) {
         const getStartedBtn = $w('#getStartedButton').uniqueId ? $w('#getStartedButton') : $w('#getStartedBtn');
@@ -160,7 +165,8 @@ function handleCountySelection() {
  * Handle Get Started button click
  */
 function handleGetStarted() {
-    const selectedCounty = $w('#countyDropdown').value;
+    const dropdown = $w('#countySelector').uniqueId ? $w('#countySelector') : $w('#countyDropdown');
+    const selectedCounty = dropdown.value;
 
     if (!selectedCounty) {
         const errorText = $w('#countyError');
