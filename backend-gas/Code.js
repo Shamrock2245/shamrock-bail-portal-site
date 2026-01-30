@@ -1,6 +1,6 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 5.8 - RAG, AI Concierge, & Bail School Certificates (Updated 2026-01-29 11:58 AM)
+// Version: 5.9 - Staff Portal Dashboard Button & Fixes (Updated 2026-01-30)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
@@ -99,7 +99,7 @@ function doGet(e) {
     }
     // ---------------------------------------------
 
-    const VERSION = '5.7';
+    const VERSION = '5.9';
     const page = e.parameter.page || 'Dashboard';
 
     // --- NEW: Mobile & Tablet Routing (User Request) ---
@@ -253,7 +253,7 @@ function handleAction(data) {
 
   // 4. UTILS
   if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
-  if (action === 'health') return { success: true, version: '5.8', timestamp: new Date().toISOString() };
+  if (action === 'health') return { success: true, version: '5.9', timestamp: new Date().toISOString() };
 
   // --- EMERGENCY ADMIN ACTION ---
   if (action === 'RESET_KEYS_ADMIN_OVERRIDE') {
@@ -277,7 +277,7 @@ function handleGetAction(e) {
   const action = e.parameter.action;
   const callback = e.parameter.callback;
 
-  if (action === 'health') return createResponse({ success: true, version: '5.8', timestamp: new Date().toISOString() }, callback);
+  if (action === 'health') return createResponse({ success: true, version: '5.9', timestamp: new Date().toISOString() }, callback);
   if (action === 'getNextReceiptNumber') return createResponse(getNextReceiptNumber(), callback);
 
   return createErrorResponse('Unknown action', ERROR_CODES.UNKNOWN_ACTION);
