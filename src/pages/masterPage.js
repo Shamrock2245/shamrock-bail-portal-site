@@ -22,6 +22,7 @@
 import { session } from 'wix-storage';
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
+import { getNearestCounties } from 'backend/counties';
 
 import { validateStickyFooter } from 'public/uiValidator';
 
@@ -47,6 +48,9 @@ function initCriticalUI() {
 
     // Setup emergency call button (critical for bail bonds)
     setupEmergencyCallButton();
+
+    // Setup "Find My Jail" button
+    setupFindJailButton();
 
     // Check if user is logged in (for portal access)
     // We do this non-blockingly
@@ -113,6 +117,50 @@ function setupEmergencyCallButton() {
             // Track call button click - fire and forget
             trackEvent('emergency_call_clicked');
         });
+    }
+}
+
+/**
+ * Setup "Find My Jail" button (Automatic redirection to nearest county)
+ */
+function setupFindJailButton() {
+    const btn = $w('#findJailBtn');
+    if (btn.uniqueId) {
+        btn.onClick(() => {
+            handleFindJailClick(btn);
+        });
+    }
+}
+
+async function handleFindJailClick(btn) {
+    try {
+        const originalLabel = btn.label;
+        btn.label = "Locating...";
+        btn.disable();
+
+        // 1. Get Location
+        const location = await wixWindow.getCurrentGeolocation();
+        const { latitude, longitude } = location.coords;
+
+        // 2. Find Nearest County
+        const nearest = await getNearestCounties(latitude, longitude, 1);
+
+        if (nearest && nearest.length > 0) {
+            const targetSlug = nearest[0].slug;
+            // 3. Redirect
+            wixLocation.to(`/florida-bail-bonds/${targetSlug}`);
+        } else {
+            // Fallback
+            wixLocation.to('/bail-bonds');
+        }
+
+    } catch (error) {
+        console.warn("Geolocation failed or denied:", error);
+        // Fallback to general list if location denied
+        wixLocation.to('/bail-bonds');
+    } finally {
+        btn.label = "Find My Jail";
+        btn.enable();
     }
 }
 
