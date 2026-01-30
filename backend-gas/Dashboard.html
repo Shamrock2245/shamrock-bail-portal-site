@@ -29,6 +29,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
+    <!-- Device Auto-Detection -->
+    <script>
+        (function () {
+            try {
+                // Auto-redirect to Mobile/Tablet if not already set
+                var params = new URLSearchParams(window.location.search);
+                if (!params.has('page')) {
+                    var width = window.innerWidth;
+                    if (width <= 600) {
+                        params.set('page', 'mobile');
+                        window.location.search = params.toString();
+                    } else if (width <= 1024) {
+                        params.set('page', 'tablet');
+                        window.location.search = params.toString();
+                    }
+                }
+            } catch (e) {
+                console.warn("Device detection failed:", e);
+            }
+        })();
+    </script>
+
     <style>
         /* =========================================================
        ENTERPRISE THEME SYSTEM - Fortune 50 Grade
