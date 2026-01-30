@@ -22,7 +22,7 @@ let countiesLoaded = false;
 $w.onReady(function () {
     // Setup SEO and structured data
     setupOrganizationSchema();
-    
+
     // Critical: Setup above-the-fold elements only
     setupHeroSection();
     setupCTAButtons();
@@ -120,7 +120,8 @@ async function loadCountyDropdown() {
         if (dropdown.uniqueId && Array.isArray(countiesData)) {
             dropdown.options = countiesData.map(county => ({
                 label: county.county_name || county.name,  // Handle likely field names
-                value: county.slug
+                // FIX: Strip '-county' suffix from slug to match dynamic page URL
+                value: (county.slug || '').replace(/-county$/i, '')
             }));
             dropdown.placeholder = 'Select County Name';
             dropdown.onChange(() => handleCountySelection());
