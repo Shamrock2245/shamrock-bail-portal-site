@@ -30,7 +30,8 @@ export async function getGoogleAuthUrl() {
             response_type: "code",
             scope: scopes.join(" "),
             access_type: "offline",
-            prompt: "consent"
+            prompt: "consent",
+            state: "google"
         });
 
         return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -53,7 +54,8 @@ export async function getFacebookAuthUrl() {
             client_id: appId,
             redirect_uri: REDIRECT_URI,
             scope: "email,public_profile",
-            response_type: "code"
+            response_type: "code",
+            state: "facebook"
         });
 
         return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
