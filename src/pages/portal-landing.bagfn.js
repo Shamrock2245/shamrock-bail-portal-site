@@ -189,7 +189,8 @@ function setupSimplifiedLogin() {
     }
 
     if (fbBtn) {
-        fbBtn.onClick(() => startSocialLogin('facebook'));
+        // fbBtn.onClick(() => startSocialLogin('facebook'));
+        fbBtn.collapse(); // User requested removal from frontend
     }
 
     console.log("✅ Simplified login ready!");
@@ -360,7 +361,7 @@ async function handleSocialSession(sessionToken, role) {
             // Store in browser and VERIFY
             const stored = setSessionToken(sessionToken);
             console.log("📦 Session storage result:", stored);
-            
+
             // Double-check it was stored
             const retrieved = getSessionToken();
             if (retrieved !== sessionToken) {
@@ -369,7 +370,7 @@ async function handleSocialSession(sessionToken, role) {
                 hideLoading();
                 return;
             }
-            
+
             console.log("✅ Session stored and verified");
 
             showMessage("Welcome back! Redirecting...", "success");
