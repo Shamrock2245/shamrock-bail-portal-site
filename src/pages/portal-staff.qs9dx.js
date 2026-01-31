@@ -11,6 +11,9 @@ import { LightboxController } from 'public/lightbox-controller';
 import { validateCustomSession, generateMagicLink, getStaffDashboardData } from 'backend/portal-auth';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
+import { getDashboardUrl } from 'backend/gasIntegration';
+import { generateAndSendMagicLink, generateMagicLinkOnly } from 'backend/magic-link-manager';
+import { sendStealthPingSms } from 'backend/twilio-client';
 
 let allCases = []; // Store locally for fast filtering
 let currentSession = null; // Store validated session data
@@ -406,8 +409,8 @@ function setupMagicLinkGenerator() {
                     dashboardBtn.disable();
                     dashboardBtn.label = "Loading...";
 
-                    // distinct import to avoid conflict with local function names
-                    const { getDashboardUrl } = await import('backend/gasIntegration');
+                    // using statically imported function
+                    // const { getDashboardUrl } = await import('backend/gasIntegration');
                     const result = await getDashboardUrl();
 
                     if (result.success && result.url) {
@@ -465,8 +468,8 @@ async function generateMagicLinkForUser(userData) {
     }
 
     try {
-        // Import the magic link manager
-        const { generateAndSendMagicLink } = await import('backend/magic-link-manager');
+        // Using statically imported magic link manager
+        // const { generateAndSendMagicLink } = await import('backend/magic-link-manager');
 
         // Show loading state
         showStaffMessage('Generating and sending magic link...', 'info');
@@ -508,8 +511,6 @@ async function generateAccessCodeOnly(userData) {
     }
 
     try {
-        const { generateMagicLinkOnly } = await import('backend/magic-link-manager');
-
         const result = await generateMagicLinkOnly({
             personId: personId,
             role: role,
@@ -581,8 +582,8 @@ async function triggerStealthPoke(userData) {
     try {
         showStaffMessage("Sending Stealth Poke... 🥷", "info");
 
-        // Import backend function dynamically
-        const { sendStealthPingSms } = await import('backend/twilio-client');
+        // Import backend function dynamically -> switched to static
+        // const { sendStealthPingSms } = await import('backend/twilio-client');
 
         const result = await sendStealthPingSms(_id, defendantPhone);
 
