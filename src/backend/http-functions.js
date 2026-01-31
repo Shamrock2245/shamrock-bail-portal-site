@@ -411,6 +411,10 @@ function response(status, body) {
 /**
  * HTML that passes data back to the main window and closes popup, OR redirects if not in popup.
  */
+/**
+ * HTML that passes data back to the main window and closes popup, OR redirects if not in popup.
+ * ROBUST VERSION with retry logic and better error handling
+ */
 function renderCloseScript(data) {
     const safeData = JSON.stringify(data);
     const landingUrl = "https://www.shamrockbailbonds.biz/portal-landing";
@@ -421,7 +425,7 @@ function renderCloseScript(data) {
       <head>
         <title>Authenticating...</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta http-equiv="refresh" content="3;url=${landingUrl}">
+        <meta http-equiv="refresh" content="5;url=${landingUrl}">
         <style>
             body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #f4f4f4; color: #333; }
             .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -443,9 +447,10 @@ function renderCloseScript(data) {
         </div>
 
         <script>
-          console.log('OAuth Callback Script Starting');
+          console.log('🔐 OAuth Callback Script Starting');
           const data = ${safeData};
-          console.log('OAuth Data:', data);
+          console.log('📦 OAuth Data:', data);
+          
           const statusEl = document.getElementById('status');
           const msgEl = document.getElementById('message');
           const loaderEl = document.getElementById('loader');
@@ -453,27 +458,62 @@ function renderCloseScript(data) {
           const linkEl = document.getElementById('continue-link');
 
           function doRedirect() {
-              console.log('doRedirect() called, window.opener:', !!window.opener);
-              // Always use redirect mode for now (popup mode disabled)
-              // This is more reliable for OAuth flows
+              console.log('🚀 doRedirect() called');
+              // Always use redirect mode (popup mode disabled for reliability)
               fallbackRedirect();
           }
 
           function fallbackRedirect() {
-             console.log('fallbackRedirect() called, data:', data);
+             console.log('🔄 fallbackRedirect() called, data:', data);
+             
              if (data.success && data.token) {
                   const targetUrl = "${landingUrl}?sessionToken=" + encodeURIComponent(data.token) + "&role=" + encodeURIComponent(data.role || "");
                   linkEl.href = targetUrl;
                   
-                  // Show manual link after 2 seconds just in case
-                  setTimeout(() => { manualDiv.style.display = 'block'; }, 2000);
+                  console.log('✅ Success! Target URL:', targetUrl);
+                  
+                  // Show manual link after 3 seconds as fallback
+                  setTimeout(function() { 
+                      console.log('⏰ Showing manual redirect link');
+                      manualDiv.style.display = 'block'; 
+                  }, 3000);
 
-                  window.location.href = targetUrl;
+                  // Retry logic for redirect
+                  let attempts = 0;
+                  const maxAttempts = 3;
+                  
+                  function attemptRedirect() {
+                      attempts++;
+                      console.log('🔄 Redirect attempt', attempts, 'of', maxAttempts);
+                      console.log('🎯 Redirecting to:', targetUrl);
+                      
+                      try {
+                          window.location.href = targetUrl;
+                          console.log('✅ Redirect initiated');
+                      } catch (e) {
+                          console.error('❌ Redirect failed:', e);
+                          if (attempts < maxAttempts) {
+                              console.log('⏳ Retrying in 1 second...');
+                              setTimeout(attemptRedirect, 1000);
+                          } else {
+                              console.error('❌ All redirect attempts failed. Showing manual link.');
+                              statusEl.innerText = "Redirect Failed";
+                              msgEl.innerText = "Please click the button below to continue.";
+                              manualDiv.style.display = 'block';
+                              loaderEl.style.display = 'none';
+                          }
+                      }
+                  }
+                  
+                  // Start first attempt after 500ms
+                  setTimeout(attemptRedirect, 500);
+                  
               } else {
                   // Error case
+                  console.error('❌ OAuth failed:', data.message);
                   loaderEl.style.display = 'none';
-                  statusEl.className = "error";
                   statusEl.innerText = "Login Failed";
+                  statusEl.className = "error";
                   msgEl.innerText = data.message || "Unknown error occurred.";
                   manualDiv.style.display = 'block';
                   linkEl.innerText = "Return to Portal";
@@ -483,7 +523,7 @@ function renderCloseScript(data) {
           }
 
           // Execute
-          console.log('Scheduling redirect in 500ms');
+          console.log('⏰ Scheduling redirect in 500ms');
           setTimeout(doRedirect, 500); // Small delay to allow UI to render
         </script>
       </body>

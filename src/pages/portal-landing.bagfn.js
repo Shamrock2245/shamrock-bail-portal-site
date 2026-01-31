@@ -357,8 +357,20 @@ async function handleSocialSession(sessionToken, role) {
         if (session && session.role) {
             console.log("✅ Social Session Valid:", session.role);
 
-            // Store in browser
-            setSessionToken(sessionToken);
+            // Store in browser and VERIFY
+            const stored = setSessionToken(sessionToken);
+            console.log("📦 Session storage result:", stored);
+            
+            // Double-check it was stored
+            const retrieved = getSessionToken();
+            if (retrieved !== sessionToken) {
+                console.error("❌ Session storage failed! Stored:", stored, "Retrieved:", retrieved);
+                showMessage("Storage error. Please enable cookies and try again.", "error");
+                hideLoading();
+                return;
+            }
+            
+            console.log("✅ Session stored and verified");
 
             showMessage("Welcome back! Redirecting...", "success");
 
