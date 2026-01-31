@@ -2,7 +2,7 @@
 
 This project is the official Shamrock Bail Bonds Portal. It runs on **Wix Velo** (Frontend) and connects to a **Google Apps Script (GAS)** backend for secure workflows (AI Concierge, PDFs, Signatures).
 
-**Current Status:** Phase 3 Complete (AI Concierge Live). 🟢
+**Current Status:** Phase 4 Complete (Performance & AI Optimization). 🟢
 
 ---
 
@@ -31,6 +31,11 @@ The system now includes a "Headless" AI Agent that monitors leads and sends inte
 *   **Knowledge Base:** `backend-gas/KnowledgeBase.js` (Protocols for Lee, Collier, Miami-Dade, etc.).
 *   **Trigger:** New row in "Hot Leads" sheet -> AI analyzes context -> Generates SMS.
 *   **Fallback:** If the API Key is missing, it reverts to rule-based templates.
+
+## 💳 SwipeSimple Integration
+The dashboard now includes a direct integration with **SwipeSimple** for payment processing.
+*   **Virtual Terminal:** Embedded credentials and direct link mechanism.
+*   **Credentials:** Managed securely via UI (non-hardcoded in repo).
 
 ---
 
@@ -73,6 +78,7 @@ The backend is in `backend-gas/`.
 
 ## 📂 Documentation Index
 *   **[TESTING_GUIDE.md](./TESTING_GUIDE.md):** Protocols for Phase 4 verification.
+*   **[AI_CAPABILITIES.md](./docs/AI_CAPABILITIES.md):** 🦾 Guide to the 5 AI Agents (Clerk, Analyst, etc.).
 *   **[AGENTS.md](./AGENTS.md):** Persona definitions for development.
 *   **[SCHEMAS.md](./docs/SCHEMAS.md):** Data models for collections.
 

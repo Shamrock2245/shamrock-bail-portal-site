@@ -19,7 +19,17 @@ This guide explains how and when to use the newly installed Agentic Capabilities
 *   **Velo Logs:** Look for `✅ UI Validator: Sticky Footer is present and visible`.
 *   **Actionable:** If you see `❌ UI Validator...`, the footer is broken.
 
-## 2. Document & Secrets Management
+## 2. AI Automation Usage
+
+### A. The Clerk (Booking Parser)
+**When to use:** When you have a new Booking Sheet.
+**How to use:**
+1.  Go to `Dashboard.html` > **AI Agent** Tab.
+2.  Paste the URL or Text of the booking sheet.
+3.  **Watch:** The "Defendant" tab will auto-populate with the extracted data.
+4.  **Action:** Verify the data and click "Save".
+
+## 3. Document & Secrets Management
 
 ### A. Adding New Secrets
 **Rule:** Never hardcode keys.
