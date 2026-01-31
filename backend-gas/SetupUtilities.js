@@ -278,6 +278,39 @@ function setupBookingsSheet() {
 }
 
 /**
+ * Creates or retrieves the 'Defendant_CheckIns' sheet for GPS/Selfie logs.
+ */
+function setupCheckInsSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('Defendant_CheckIns');
+
+  if (sheet) {
+    console.log(`✅ Defendant_CheckIns Sheet already exists.`);
+  } else {
+    sheet = ss.insertSheet('Defendant_CheckIns');
+    // Schema matches saveUserLocation() in Wix backend
+    sheet.appendRow([
+      'Timestamp',
+      'Member ID',
+      'Email',
+      'Phone',
+      'Latitude',
+      'Longitude',
+      'Address',
+      'Intersection',
+      'Notes',
+      'Selfie URL',
+      'Risk Level',
+      'IP Address',
+      'Device'
+    ]);
+    sheet.setFrozenRows(1);
+    console.log(`Created new 'Defendant_CheckIns' sheet.`);
+  }
+  return sheet;
+}
+
+/**
  * Generates a secure random key for Wix Integration.
  * Use this key in Wix Secrets Manager as well.
  */

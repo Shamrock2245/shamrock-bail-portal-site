@@ -578,7 +578,7 @@ export async function post_smsSigningLink(request) {
 }
 
 /**
- * POST /_functions/twilio/status
+ * POST /_functions/twilioStatus
  * Twilio SMS Status Callback Endpoint
  * 
  * Twilio will POST to this endpoint when SMS status changes:
@@ -638,11 +638,54 @@ export async function post_twilioStatus(request) {
             body: { received: true, status: statusData.messageStatus }
         });
 
-    } catch (error) {
-        console.error('Twilio status callback error:', error);
-        // Still return 200 to prevent Twilio from retrying
         return ok({
             body: { received: true, error: 'Processing error' }
+        });
+    }
+}
+
+/**
+ * POST /_functions/twilioInbound
+ * Handles incoming SMS from Twilio (Replies)
+ * Forwards the message to Office Cell Phones via TwiML
+ */
+export async function post_twilioInbound(request) {
+    try {
+        const bodyText = await request.body.text();
+        const params = new URLSearchParams(bodyText);
+
+        const fromNumber = params.get('From');
+        const messageBody = params.get('Body');
+
+        // Office Phones to forward to
+        const FORWARD_TO = ['+12399550178', '+12399550301'];
+
+        // Construct TwiML
+        // TwiML allows multiple <Message> tags to send to multiple people
+        let twiml = '<?xml version="1.0" encoding="UTF-8"?>';
+        twiml += '<Response>';
+
+        FORWARD_TO.forEach(phone => {
+            twiml += `<Message to="${phone}">`;
+            twiml += `Shamrock Reply from ${fromNumber}: ${messageBody}`;
+            twiml += '</Message>';
+        });
+
+        twiml += '</Response>';
+
+        return ok({
+            headers: {
+                "Content-Type": "text/xml"
+            },
+            body: twiml
+        });
+
+    } catch (error) {
+        console.error('Twilio Inbound Error:', error);
+        // Return empty response to stop Twilio from retrying indefinitely on code error
+        return ok({
+            headers: { "Content-Type": "text/xml" },
+            body: '<Response></Response>'
         });
     }
 }

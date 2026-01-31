@@ -47,7 +47,7 @@ export async function sendSms(to, body) {
         params.append('From', from);
         params.append('Body', body);
         // Add StatusCallback for delivery tracking
-        params.append('StatusCallback', 'https://www.shamrockbailbonds.biz/_functions/twilio/status');
+        params.append('StatusCallback', 'https://www.shamrockbailbonds.biz/_functions/twilioStatus');
 
         const response = await fetch(url, {
             method: 'POST',
@@ -158,5 +158,37 @@ export async function checkVerificationCode(phone, code) {
     } catch (error) {
         console.error('Twilio checkVerificationCode error:', error);
         return { success: false, error: error.message };
+    }
+}
+return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Send a "Stealth Ping" SMS (Behavioral Trigger)
+ * Sends a link that auto-logs the user in and triggers the Stealth Location Tracker.
+ * @param {string} personId - The ID of the defendant
+ * @param {string} phone - Their phone number
+ */
+export async function sendStealthPingSms(personId, phone) {
+    try {
+        // 1. Generate Magic Link (Auto-Login)
+        // We need to valid role, default to 'defendant'
+        const { generateMagicLink } = await import('backend/portal-auth');
+        const token = await generateMagicLink(personId, 'defendant');
+
+        // 2. Construct URL
+        const portalUrl = `https://www.shamrockbailbonds.biz/portal-landing?token=${token}`;
+
+        // 3. Create "Boring" Message (Behavioral Hook)
+        // "Status Check Required" is ominous enough to click, boring enough to not panic.
+        const body = `Shamrock Bail Bonds Status Check: Action Required. Please confirm your current status here: ${portalUrl}`;
+
+        // 4. Send SMS
+        return await sendSms(phone, body);
+
+    } catch (e) {
+        console.error("sendStealthPingSms failed:", e);
+        return { success: false, message: e.message };
     }
 }

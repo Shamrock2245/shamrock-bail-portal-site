@@ -246,6 +246,9 @@ function handleAction(data) {
   if (action === 'sendForSignature') return handleSendForSignature(data);
   if (action === 'createPortalSigningSession') return createPortalSigningSession(data);
 
+  // 4. CHECK-INS
+  if (action === 'logDefendantLocation') return handleLocationLog(data.data);
+
   // 3. PROFILES (Stub/Future)
   if (action === 'fetchIndemnitorProfile') {
     return { success: false, error: 'Profile lookup not yet implemented' };
@@ -326,7 +329,7 @@ function sendSmsViaTwilio(to, body) {
       "To": formattedTo,
       "From": config.TWILIO_PHONE_NUMBER,
       "Body": body,
-      "StatusCallback": "https://www.shamrockbailbonds.biz/_functions/twilio/status"
+      "StatusCallback": "https://www.shamrockbailbonds.biz/_functions/twilioStatus"
     };
     // UrlFetchApp doesn't support URLSearchParams automatically like node
     // We construct the form data string manually or use payload object which UrlFetchApp handles for POST
@@ -1257,5 +1260,34 @@ function testEmailSimple() {
   } catch (e) {
     Logger.log("Error sending email: " + e.message);
     return "Error: " + e.message;
+  }
+}
+/**
+ * Handles incoming location logs from the Wix Portal
+ */
+function handleLocationLog(data) {
+  try {
+    const sheet = setupCheckInsSheet(); // Auto-create if needed
+
+    sheet.appendRow([
+      data.timestamp || new Date(),
+      data.memberId,
+      data.memberEmail,
+      data.phoneNumber,
+      data.latitude,
+      data.longitude,
+      data.address,
+      data.intersection,
+      data.notes,
+      data.imageUrl,
+      data.riskLevel,
+      data.ipAddress,
+      data.deviceModel || data.device
+    ]);
+
+    return { success: true, message: 'Location Logged in Sheet' };
+  } catch (e) {
+    console.error('Location Log Error', e);
+    return { success: false, message: e.message };
   }
 }
