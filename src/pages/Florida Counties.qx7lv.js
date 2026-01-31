@@ -328,13 +328,13 @@ async function populateMainUI(county) {
 
     // POPULATE FAQs (Repeater) - Now pulls from CMS Faqs collection
     const faqRep = $w('#repeaterFAQ');
-    
+
     // First try to load from CMS Faqs collection filtered by relatedCounty
     let faqs = [];
     try {
-        const countyName = county.name || county.countyName || countySlug;
+        const countyName = county.name || county.countyName || county.county_name || "Unknown County";
         console.log(`📝 Loading FAQs for county: ${countyName}`);
-        
+
         // Query Faqs collection filtered by relatedCounty and isActive
         const faqResult = await wixData.query('Faqs')
             .eq('isActive', true)
@@ -342,7 +342,7 @@ async function populateMainUI(county) {
             .ascending('sortOrder')
             .limit(15)
             .find();
-        
+
         if (faqResult.items.length > 0) {
             console.log(`✅ Loaded ${faqResult.items.length} FAQs from CMS for ${countyName}`);
             // Map CMS fields to expected format
@@ -361,14 +361,14 @@ async function populateMainUI(county) {
         // Fallback to embedded data on error
         faqs = (county.content && county.content.faq) || [];
     }
-    
+
     try {
         if (faqs.length > 0) {
             faqRep.onItemReady(($item, itemData) => {
                 // Set Text Content - support both CMS and embedded field names
                 const question = itemData.question || itemData.title || 'Question';
                 const answer = itemData.answer || itemData.a || 'Answer';
-                
+
                 $item('#textQuestion').text = question;
                 $item('#textAnswer').text = answer;
 
