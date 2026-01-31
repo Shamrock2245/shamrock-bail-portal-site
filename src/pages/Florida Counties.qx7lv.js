@@ -59,7 +59,7 @@ $w.onReady(async function () {
         setupSEO(county);
 
         // 4. POPULATE UI - Critical for LCP
-        populateMainUI(county);
+        await populateMainUI(county);
 
         // 5. DEFER NON-CRITICAL (Nearby Counties)
         setTimeout(() => {
@@ -274,7 +274,7 @@ function setLink(selectorOrArray, url, label) {
     }
 }
 
-function populateMainUI(county) {
+async function populateMainUI(county) {
     // Header & Hero (Support both old and new IDs from Screenshot)
     // Old: #countyName, #dynamicHeader, #heroSubtitle
     // New: #countyNameHeadline, #aboutCountyText (Maybe hero text?), #heroCallButton
