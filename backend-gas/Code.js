@@ -266,6 +266,52 @@ function client_runInvestigator(payload) {
   return AI_deepAnalyzeReports(payload);
 }
 
+function client_getCountyStats(countyName) {
+  // "The Dashboard"
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
+
+  return getCountyStats(countyName);
+}
+
+function client_getSystemStatus() {
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const logs = [];
+
+  ['Lee', 'Collier'].forEach(c => {
+    const sh = ss.getSheetByName(c);
+    if (sh && sh.getLastRow() > 1) {
+      const lastDate = sh.getRange(sh.getLastRow(), 1).getValue(); // Col 1 is Timestamp
+      let timeStr = 'Unknown';
+      if (lastDate instanceof Date) {
+        timeStr = Utilities.formatDate(lastDate, 'America/New_York', 'h:mm a');
+      }
+      logs.push(`${c}: Scraped ${timeStr}`);
+    } else {
+      logs.push(`${c}: No Data`);
+    }
+  });
+
+  return {
+    status: 'active',
+    logs: logs
+  };
+}
+
+
+function runCollierArrestsNow() {
+  // Wrapper for the new Collier Scraper module
+  if (typeof ArrestScraper_CollierCounty !== 'undefined' && ArrestScraper_CollierCounty.runCollierArrestsNow) {
+    return ArrestScraper_CollierCounty.runCollierArrestsNow();
+  } else {
+    // If mapped globally by the GAS runtime
+    return runCollierArrestsNow();
+  }
+}
+
 /**
  * CENTRAL ACTION DISPATCHER
  */
@@ -284,6 +330,9 @@ function handleAction(data) {
 
   // 1.6. BAIL SCHOOL
   if (action === 'generateCertificate') return handleCertificateGeneration(data);
+
+  // 1.7 SYSTEM
+  if (action === 'getSystemStatus') return client_getSystemStatus();
 
   // 2. SIGNING & DOCS
   if (action === 'sendForSignature') return handleSendForSignature(data);

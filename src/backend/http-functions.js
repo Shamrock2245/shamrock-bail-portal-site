@@ -422,31 +422,74 @@ function renderCloseScript(data) {
         <title>Authenticating...</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-          body { font-family: sans-serif; text-align: center; padding-top: 50px; }
-          .loader { border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto; }
-          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #f4f4f4; color: #333; }
+            .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2ecc71; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            .btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #2ecc71; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; }
+            .error { color: #e74c3c; }
         </style>
       </head>
       <body>
-        <div class="loader"></div>
-        <h3>Finishing secure login...</h3>
+        <div class="container">
+            <div id="loader" class="loader"></div>
+            <h3 id="status">Finishing secure login...</h3>
+            <p id="message">Please wait while we redirect you.</p>
+            <div id="manual-redirect" style="display:none;">
+                <p>If you are not redirected automatically:</p>
+                <a id="continue-link" href="#" class="btn">Click here to continue</a>
+            </div>
+        </div>
+
         <script>
           const data = ${safeData};
-          
-          if (window.opener) {
-            // Popup Mode
-            window.opener.postMessage(data, "*");
-            window.close();
-          } else {
-            // Redirect Mode
-            if (data.success && data.token) {
-              // Redirect back with session token
-              window.location.href = "${landingUrl}?sessionToken=" + encodeURIComponent(data.token) + "&role=" + encodeURIComponent(data.role || "");
-            } else {
-              // Error case
-              document.body.innerHTML = "<h3>Login Failed: " + (data.message || "Unknown error") + "</h3><p><a href='${landingUrl}'>Return to Portal</a></p>";
-            }
+          const statusEl = document.getElementById('status');
+          const msgEl = document.getElementById('message');
+          const loaderEl = document.getElementById('loader');
+          const manualDiv = document.getElementById('manual-redirect');
+          const linkEl = document.getElementById('continue-link');
+
+          function doRedirect() {
+              if (window.opener) {
+                // Popup Mode
+                try {
+                    window.opener.postMessage(data, "*");
+                    window.close();
+                } catch(e) {
+                    console.error("Popup communication failed", e);
+                    // Fallback to redirect if popup comms fail (unlikely but possible)
+                    fallbackRedirect();
+                }
+              } else {
+                // Redirect Mode
+                fallbackRedirect();
+              }
           }
+
+          function fallbackRedirect() {
+             if (data.success && data.token) {
+                  const targetUrl = "${landingUrl}?sessionToken=" + encodeURIComponent(data.token) + "&role=" + encodeURIComponent(data.role || "");
+                  linkEl.href = targetUrl;
+                  
+                  // Show manual link after 2 seconds just in case
+                  setTimeout(() => { manualDiv.style.display = 'block'; }, 2000);
+
+                  window.location.href = targetUrl;
+              } else {
+                  // Error case
+                  loaderEl.style.display = 'none';
+                  statusEl.className = "error";
+                  statusEl.innerText = "Login Failed";
+                  msgEl.innerText = data.message || "Unknown error occurred.";
+                  manualDiv.style.display = 'block';
+                  linkEl.innerText = "Return to Portal";
+                  linkEl.href = "${landingUrl}";
+                  linkEl.style.background = "#95a5a6";
+              }
+          }
+
+          // Execute
+          setTimeout(doRedirect, 500); // Small delay to allow UI to render
         </script>
       </body>
       </html>

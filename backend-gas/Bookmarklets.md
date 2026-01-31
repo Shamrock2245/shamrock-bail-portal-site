@@ -6,9 +6,38 @@ These bookmarklets extract arrest data from county websites and populate the Sha
 
 **Important**: Replace `AKfycbxdKuWmcBo7Cu0RXsBgongINERqFoPE8CmfcdxtLdnJoM3SxuqBHGJY-pIrMbRi72_rnQ` with your actual Apps Script web app deployment ID.
 
+
 ---
 
-## Installation Instructions
+## 🚀 Universal AI Bookmarklet (Recommended)
+
+This single bookmarklet works on **ANY** Sheriff's website or arrest page. It sends the URL to the Shamrock Portal, where "The Clerk" AI Agent will automatically parse it.
+
+**Why use this?**
+- Works on every county (Lee, Collier, Charlotte, etc.)
+- No need to install different buttons for every county.
+- Uses Gemini AI for smarter extraction.
+
+### Installation
+1. Create a new bookmark named **"Shamrock AI Import"**.
+2. Paste the code below as the URL.
+3. Replace `YOUR_DEPLOYMENT_ID` with your actual ID.
+
+```javascript
+javascript:(function(){
+  const deploymentId = 'AKfycbybvb6EpI6Aop5RSDvweHceD1LQpjMoomEHro5zH9fNbR_-OVCqISX5lTa4lMuNR6EXYw'; // UPDATE THIS IF DEPLOYMENT CHANGES
+  const portalUrl = `https://script.google.com/macros/s/${deploymentId}/exec`;
+  window.open(`${portalUrl}?agent=clerk&url=${encodeURIComponent(window.location.href)}`, 'ShamrockPortal');
+})();
+```
+
+---
+
+## Legacy Site-Specific Bookmarklets
+*(Use these only if the Universal one fails)*
+
+---
+
 
 1. **Get your deployment ID:**
    - Open Apps Script project

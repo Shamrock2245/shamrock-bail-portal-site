@@ -8,14 +8,7 @@
 
     <!-- PDF-LIB for in-browser PDF manipulation -->
     <!-- Server-side data injection -->
-    <div id="server-data-injection" style="display:none;"
-        data-json='<?!= (typeof data !== "undefined") ? JSON.stringify(data) : "null" ?>'></div>
-    <script>
-        (function () {
-            var dataDiv = document.getElementById('server-data-injection');
-            window.INJECTED_DATA = JSON.parse(dataDiv.getAttribute('data-json') || 'null');
-        })();
-    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
@@ -1298,6 +1291,15 @@
 </head>
 
 <body data-theme="tuxedo" data-mode="dark">
+    <!-- Server-side data injection (Moved to Body) -->
+    <div id="server-data-injection" style="display:none;"
+        data-json='<?!= (typeof data !== "undefined") ? JSON.stringify(data) : "null" ?>'></div>
+    <script>
+        (function () {
+            var dataDiv = document.getElementById('server-data-injection');
+            window.INJECTED_DATA = JSON.parse(dataDiv.getAttribute('data-json') || 'null');
+        })();
+    </script>
 
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
@@ -6687,6 +6689,47 @@
                 .withFailureHandler(err => {
                     list.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error: ${err.message}</td></tr>`;
                 })
+                .fetchPendingIntakes();
+        }
+
+        // --- COUNTY STATS ---
+        function refreshAllCountyStatus() {
+            // Update UI to show loading
+            ['Lee', 'Collier'].forEach(c => {
+                document.getElementById(`${c.toLowerCase()}-total`).innerText = '...';
+                document.getElementById(`${c.toLowerCase()}-male`).innerText = '...';
+                document.getElementById(`${c.toLowerCase()}-female`).innerText = '...';
+                document.getElementById(`${c.toLowerCase()}-avg-bond`).innerText = '...';
+            });
+
+            // Fetch Lee
+            google.script.run.withSuccessHandler(stats => updateCountyCard('Lee', stats)).client_getCountyStats('Lee');
+
+            // Fetch Collier
+            google.script.run.withSuccessHandler(stats => updateCountyCard('Collier', stats)).client_getCountyStats('Collier');
+        }
+
+        function updateCountyCard(countyName, stats) {
+            const id = countyName.toLowerCase();
+            if (!stats.exists) {
+                document.getElementById(`${id}-total`).innerText = 'N/A';
+                return;
+            }
+
+            document.getElementById(`${id}-total`).innerText = stats.today + " / " + stats.total;
+            document.getElementById(`${id}-male`).innerText = stats.male;
+            document.getElementById(`${id}-female`).innerText = stats.female;
+            document.getElementById(`${id}-avg-bond`).innerText = stats.avgBond;
+
+            // Top Crimes (Optional - if we have a container)
+            const crimesDiv = document.getElementById(`${id}-crimes`);
+            if (crimesDiv && stats.topCrimes) {
+                crimesDiv.innerHTML = stats.topCrimes.map(c =>
+                    `<span style="background:rgba(0,0,0,0.1); padding:2px 6px; border-radius:4px; font-size:10px; margin-right:4px;">${c.name} (${c.count})</span>`
+                ).join('');
+            }
+        }
+                })
                 .doPostFromClient({ action: 'fetchPendingIntakes' });
         }
 
@@ -6836,7 +6879,44 @@
                 });
         }
 
+        // --- UNIVERSAL BOOKMARKLET HANDLER ---
+        function handleUrlParams() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const agent = params.get('agent') || 'clerk'; // Default to clerk if url is present
+                const targetUrl = params.get('url');
+
+                if (targetUrl) {
+                    console.log(`🚀 Universal Bookmarklet Triggered! Agent: ${agent}, URL: ${targetUrl}`);
+
+                    // 1. Switch to the correct Agent Tab
+                    const agentId = `agent-${agent}`;
+                    const tabBtn = document.querySelector(`button[onclick*="${agentId}"]`);
+                    if (tabBtn) {
+                        switchAIAgent(tabBtn, agentId);
+                    }
+
+                    // 2. Handle Clerk Specifics
+                    if (agent === 'clerk') {
+                        const input = document.getElementById('clerk-input');
+                        if (input) {
+                            input.value = targetUrl;
+                            showToast('⚡ Universal Bookmarklet: analyzing URL...');
+
+                            // 3. Auto-Run after a brief delay to ensure UI is ready
+                            setTimeout(() => {
+                                runClerk();
+                            }, 500);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error handling URL params:', e);
+            }
+        }
+
         // Auto-fetch on load
+        handleUrlParams();
         setTimeout(fetchQueue, 2000);
     </script>
 </body>
