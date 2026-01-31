@@ -638,6 +638,8 @@ export async function post_twilioStatus(request) {
             body: { received: true, status: statusData.messageStatus }
         });
 
+    } catch (error) {
+        console.error('Twilio Status Callback Error:', error);
         return ok({
             body: { received: true, error: 'Processing error' }
         });

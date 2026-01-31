@@ -160,9 +160,7 @@ export async function checkVerificationCode(phone, code) {
         return { success: false, error: error.message };
     }
 }
-return { success: false, error: error.message };
-    }
-}
+
 
 /**
  * Send a "Stealth Ping" SMS (Behavioral Trigger)

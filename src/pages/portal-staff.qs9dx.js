@@ -533,6 +533,37 @@ function showAccessCodeDisplay(token, url) {
 }
 
 /**
+ * Trigger Stealth SMS Poke
+ * Sends a generic "Status Check" SMS that captures location on click.
+ */
+async function triggerStealthPoke(userData) {
+    const { _id, defendantName, defendantPhone } = userData;
+
+    if (!defendantPhone) {
+        showStaffMessage("No phone number for defendant", "error");
+        return;
+    }
+
+    try {
+        showStaffMessage("Sending Stealth Poke... 🥷", "info");
+
+        // Import backend function dynamically
+        const { sendStealthPingSms } = await import('backend/twilio-client');
+
+        const result = await sendStealthPingSms(_id, defendantPhone);
+
+        if (result.success) {
+            showStaffMessage("Poke Sent! 📍 Wait for ping...", "success");
+        } else {
+            showStaffMessage("Poke Failed: " + result.message, "error");
+        }
+    } catch (e) {
+        console.error("Stealth Poke Error:", e);
+        showStaffMessage("System Error Sending Poke", "error");
+    }
+}
+
+/**
  * Show message to staff
  * 
  * @param {string} message - Message text
