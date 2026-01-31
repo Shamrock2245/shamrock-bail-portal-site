@@ -100,10 +100,20 @@ function processConciergeQueue() {
                     booking: row[map.Booking_Number],
                     county: row[map.County] || row[map.Source_Tab] || 'Unknown', // Fallback
                     charges: row[map.Charges],
+                    agency: row[map.Agency] || 'Unknown',
                     bond: row[map.Bond_Amount],
+                    notes: row[map.Notes] || '', // If available
                     score: score,
                     row: rowNum
                 };
+
+                // 🧠 AI ANALYST: Get Second Opinion
+                const aiAnalysis = AI_analyzeFlightRisk(lead);
+
+                // Add AI Data to Lead Object for Alerts
+                lead.aiRisk = aiAnalysis.riskLevel;
+                lead.aiRationale = aiAnalysis.rationale;
+                lead.aiScore = aiAnalysis.score;
 
                 sendSlackAlert_(lead);
 
@@ -126,7 +136,7 @@ function processConciergeQueue() {
 }
 
 /**
- * Send Slack Notification
+ * Send Slack Notification (Enriched with AI)
  */
 function sendSlackAlert_(lead) {
     const url = PropertiesService.getScriptProperties().getProperty(CONCIERGE_CONFIG.SLACK_WEBHOOK_PROP);
@@ -136,45 +146,63 @@ function sendSlackAlert_(lead) {
         return;
     }
 
-    const payload = {
-        blocks: [
+    const blocks = [
+        {
+            type: "header",
+            text: {
+                type: "plain_text",
+                text: "🔥 New HOT Lead Detected",
+                emoji: true
+            }
+        },
+        {
+            type: "section",
+            fields: [
+                { type: "mrkdwn", text: `*Name:*\n${lead.name}` },
+                { type: "mrkdwn", text: `*Math Score:*\n${lead.score}/100` },
+                { type: "mrkdwn", text: `*County:*\n${lead.county}` },
+                { type: "mrkdwn", text: `*Bond:*\n${lead.bond}` }
+            ]
+        },
+        {
+            type: "section",
+            text: {
+                type: "mrkdwn",
+                text: `*Charges:*\n${lead.charges}`
+            }
+        }
+    ];
+
+    // AI Insight Block
+    if (lead.aiRisk) {
+        let icon = "⚪️";
+        if (lead.aiRisk === 'High' || lead.aiRisk === 'Critical') icon = "🔴";
+        if (lead.aiRisk === 'Medium') icon = "🟡";
+        if (lead.aiRisk === 'Low') icon = "🟢";
+
+        blocks.push({
+            type: "section",
+            text: {
+                type: "mrkdwn",
+                text: `*🤖 AI Analyst Opinion:*\n${icon} *${lead.aiRisk} Risk* (${lead.aiScore}/100)\n_${lead.aiRationale}_`
+            }
+        });
+    }
+
+    // Action Buttons
+    blocks.push({
+        type: "actions",
+        elements: [
             {
-                type: "header",
-                text: {
-                    type: "plain_text",
-                    text: "🔥 New HOT Lead Detected",
-                    emoji: true
-                }
-            },
-            {
-                type: "section",
-                fields: [
-                    { type: "mrkdwn", text: `*Name:*\n${lead.name}` },
-                    { type: "mrkdwn", text: `*Score:*\n${lead.score}/100` },
-                    { type: "mrkdwn", text: `*County:*\n${lead.county}` },
-                    { type: "mrkdwn", text: `*Bond:*\n${lead.bond}` }
-                ]
-            },
-            {
-                type: "section",
-                text: {
-                    type: "mrkdwn",
-                    text: `*Charges:*\n${lead.charges}`
-                }
-            },
-            {
-                type: "actions",
-                elements: [
-                    {
-                        type: "button",
-                        text: { type: "plain_text", text: "View Dashboard" },
-                        url: "https://www.shamrockbailbonds.net/dashboard", // Update with real link
-                        style: "primary"
-                    }
-                ]
+                type: "button",
+                text: { type: "plain_text", text: "View Dashboard" },
+                url: "https://www.shamrockbailbonds.biz/portal-staff",
+                style: "primary"
             }
         ]
-    };
+    });
+
+    const payload = { blocks: blocks };
 
     try {
         const options = {

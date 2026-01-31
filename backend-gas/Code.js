@@ -1285,6 +1285,15 @@ function handleLocationLog(data) {
       data.deviceModel || data.device
     ]);
 
+    // 🧠 AI MONITOR: Analyze Notes for Risk/Sentiment
+    if (data.notes) {
+      try {
+        AI_analyzeCheckIn(data); // "The Parole Officer"
+      } catch (aiError) {
+        console.error("AI Monitor Error:", aiError);
+      }
+    }
+
     return { success: true, message: 'Location Logged in Sheet' };
   } catch (e) {
     console.error('Location Log Error', e);
