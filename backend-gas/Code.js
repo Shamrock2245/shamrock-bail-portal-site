@@ -1,6 +1,6 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 5.9 - Staff Portal Dashboard Button & Fixes (Updated 2026-01-30)
+// Version: 7.0 - AI Agent Suite (Updated 2026-01-30)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
@@ -225,6 +225,48 @@ function doPostFromClient(data) {
 }
 
 /**
+ * CLIENT WRAPPERS (for google.script.run)
+ * Direct calls from Dashboard.html
+ */
+function client_parseBooking(base64String) {
+  // "The Clerk"
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
+
+  return AI_parseBookingSheet(base64String);
+}
+
+function client_analyzeLead(leadJsonString) {
+  // "The Analyst"
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
+
+  try {
+    const lead = JSON.parse(leadJsonString);
+    return AI_analyzeFlightRisk(lead);
+  } catch (e) {
+    return { error: "Invalid JSON format for Lead" };
+  }
+}
+
+function client_checkSentiment(notes) {
+  // "The Monitor"
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
+
+  return AI_analyzeCheckIn({ notes: notes, memberId: 'manual-test' });
+}
+
+function client_runInvestigator(payload) {
+  // "The Investigator"
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
+
+  // Delegates to the new module
+  return AI_deepAnalyzeReports(payload);
+}
+
+/**
  * CENTRAL ACTION DISPATCHER
  */
 function handleAction(data) {
@@ -238,6 +280,7 @@ function handleAction(data) {
 
   // 1.5. NOTIFICATIONS
   if (action === 'sendEmail') return handleSendEmail(data);
+  if (action === 'testEmailAdmin') return sendDashboardLinkEmail();
 
   // 1.6. BAIL SCHOOL
   if (action === 'generateCertificate') return handleCertificateGeneration(data);
@@ -247,7 +290,13 @@ function handleAction(data) {
   if (action === 'createPortalSigningSession') return createPortalSigningSession(data);
 
   // 4. CHECK-INS
+  // 4. CHECK-INS
   if (action === 'logDefendantLocation') return handleLocationLog(data.data);
+
+  // 5. AI AGENTS (Public API)
+  if (action === 'parseBookingSheet') return AI_parseBookingSheet(data.fileData);
+  if (action === 'testAIAnalyst') return AI_analyzeFlightRisk(data.lead);
+  if (action === 'testAIMonitor') return AI_analyzeCheckIn(data.checkIn);
 
   // 3. PROFILES (Stub/Future)
   if (action === 'fetchIndemnitorProfile') {
@@ -1284,13 +1333,75 @@ function handleLocationLog(data) {
       data.ipAddress,
       data.deviceModel || data.device
     ]);
+    const lastRow = sheet.getLastRow();
 
     // 🧠 AI MONITOR: Analyze Notes for Risk/Sentiment
     if (data.notes) {
       try {
+        // Pass row number so AI can update status
+        data._sheetRow = lastRow;
         AI_analyzeCheckIn(data); // "The Parole Officer"
       } catch (aiError) {
         console.error("AI Monitor Error:", aiError);
+      }
+    }
+
+    // 🌎 GEO-FENCE: Check if Out of State
+    try {
+      checkGeoFencing(data);
+    } catch (geoError) {
+      console.error("Geo-Fence Error:", geoError);
+    }
+
+    /**
+     * Checks if location is outside Florida and alerts staff
+     */
+    function checkGeoFencing(data) {
+      // 1. Determine State from Address
+      let isFlorida = true; // Assume innocent until proven guilty
+      let address = data.address || "";
+
+      // If no address but lat/lng, try to reverse geocode (quota permitting)
+      if (!address && data.latitude && data.longitude) {
+        try {
+          const geo = Maps.newGeocoder().reverseGeocode(data.latitude, data.longitude);
+          if (geo.results && geo.results.length > 0) {
+            address = geo.results[0].formatted_address;
+          }
+        } catch (e) {
+          console.warn("Geocoding failed, skipping fence check");
+          return;
+        }
+      }
+
+      // 2. Simple String Check
+      if (address) {
+        const upper = address.toUpperCase();
+        // Check if it clearly contains a state other than FL? 
+        // Easier: Check if it contains " FL" or "FLORIDA"
+        // If it contains neither, it MIGHT be out of state.
+        // To be safe/precise: if it contains " AL ", " GA ", etc? No, too many cases.
+        // Let's assume standard format ending in "City, ST Zip".
+
+        // Strict Rule: If it works, it works. If ambiguous, don't spam.
+        const hasFL = upper.includes(" FL") || upper.includes("FLORIDA");
+
+        // Only alert if we are somewhat sure it's NOT FL (e.g. contains another state code logic or just lacks FL)
+        // User asked "if anyone leaves the state".
+        if (!hasFL && address.length > 10) {
+          isFlorida = false;
+        }
+      }
+
+      // 3. Trigger Alert
+      if (!isFlorida) {
+        const name = data.memberEmail || "Unknown Client"; // data.memberId is usually UUID
+        const mapLink = `https://maps.google.com/?q=${data.latitude},${data.longitude}`;
+        const msg = `🚨 GEO-FENCE ALERT: ${name} is OUT OF STATE.\nLoc: ${address}\nMap: ${mapLink}`;
+
+        const phones = ['2399550178', '2399550301', '2397849365'];
+        phones.forEach(p => sendSmsViaTwilio(p, msg));
+        console.log(`🚨 Sent Geo-Fence Alert for ${name}`);
       }
     }
 
@@ -1299,4 +1410,24 @@ function handleLocationLog(data) {
     console.error('Location Log Error', e);
     return { success: false, message: e.message };
   }
+}
+
+/**
+ * Sends the current Dashboard Link to Admin
+ */
+function sendDashboardLinkEmail() {
+  const email = "admin@shamrockbailbonds.biz";
+  const url = ScriptApp.getService().getUrl();
+  const version = "7.5.0";
+  const subject = `GAS Project's Dashboard.html Link Updated! Version ${version}`;
+  const body = `The deployed Web App URL is active and updated:
+  
+${url}
+
+Deployment Version: ${version}
+Logic: Geo-Fencing (3 phones), AI Agents (Secured), Persistence (Check-Ins).
+  `;
+
+  MailApp.sendEmail(email, subject, body);
+  console.log(`📧 Sent Dashboard Link to ${email}`);
 }

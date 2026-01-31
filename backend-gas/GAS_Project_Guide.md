@@ -32,7 +32,7 @@ This document serves as the master reference for the Google Apps Script (GAS) ba
     3.  **Deduplicates** based on `County + Booking Number`.
     4.  **Normalizes** data into a strict 35-column schema.
     5.  **Splits Charges** into `Charge_1`...`Charge_3` columns.
-    6.  **Exceptions:** If a lead has >3 charges or comma-separated Case Numbers, it routes to `Qualified_exceptions` instead.
+    6.  **Exceptions:** If a lead has >3 charges or comma-separated Case Numbers, or if an lead/arrestee has multiple case numbers on the same arrest, it routes to `Qualified_exceptions` instead.
 
 ### B. IntakeQueue
 *   **Logic:** `Code.js` -> `handleIntakeSubmission(payload)`
@@ -68,3 +68,14 @@ This document serves as the master reference for the Google Apps Script (GAS) ba
 1.  **Fix Dashboard Headers:** Run `setDashboardHeaders()` in GAS (added to `QualifiedTabRouter.js`).
 2.  **Verify Intake References:** We will inspect the Wix frontend payload to ensure references are sent.
 3.  **Improve Discharges:** Future task to upgrade PDF parsing logic.
+
+## 5. Critical Rules
+> [!IMPORTANT]
+> **GAS Web App URL Notification**
+> If any change requires a **New Deployment** (generating a new Web App URL), the User MUST be notified immediately.
+> *   **Scenario 1 (Standard):** Updating existing deployment (`clasp deploy -i ...`). URL stays same. No notification needed.
+> *   **Scenario 2 (New Version):** Creating fresh deployment. URL changes. **Notify User to update Wix Secret `GAS_WEB_APP_URL`.**
+>
+> **Deployment Email Notification**
+> Whenever the Dashboard.html logic or URL is updated, send an email to `admin@shamrockbailbonds.biz` with the subject:
+> **"GAS Project's Dashboard.html Link Updated! Version X.x.x"**

@@ -15,15 +15,15 @@
 function AI_analyzeFlightRisk(lead) {
     const systemPrompt = `
     You are a Senior Underwriter for a Bail Bonds agency in Florida.
-    Your job is to analyze arrest records and determine the "Flight Risk" and "Business Viability" of a potential client.
+    Your job is to analyze arrest records and applicant details to determine the "Flight Risk" and "Business Viability" of a potential client.
 
     **Risk Factors (Nuance):**
-    - High Risk: Out of State/County Warrants, "Fugitive", "Escape", "Violent Felonies", "Trafficking".
-    - Low Risk: DUI, Petty Theft, Traffic violations, Locals.
+    - High Risk: Out of State/County Warrants, "Fugitive", "Escape", "Violent Felonies", "Trafficking", History of FTAs (Failure to Appear), Unemployed, No local ties.
+    - Low Risk: DUI, Petty Theft, Traffic violations, Locals, Employed, Strong community ties (family).
 
     **Business Rules:**
     - We WANT: High bond amounts ($5k+), local residents, first-time offenders.
-    - We AVOID: Extradition cases, "No Bond", "Hold for ICE/Marshall".
+    - We AVOID: Extradition cases, "No Bond", "Hold for ICE/Marshall", Multiple recent FTAs.
 
     **Task:**
     Analyze the provided JSON data.
@@ -41,11 +41,15 @@ function AI_analyzeFlightRisk(lead) {
         charges: lead.charges,
         agency: lead.agency || "Unknown",
         bond: lead.bond,
-        residency: lead.address && lead.address.toLowerCase().includes("fl") ? "Local (FL)" : "Unknown/Out of State",
+        // Detailed Factors
+        residency: lead.residency || (lead.address && lead.address.toLowerCase().includes("fl") ? "Local (FL)" : "Unknown/Out of State"),
+        employment: lead.employment || "Unknown",
+        history: lead.history || "Unknown (No FTA info provided)",
+        ties: lead.ties || "Unknown",
         notes: lead.notes || ""
     });
 
-    console.log(`🤖 Analyst: Reviewing ${lead.name}...`);
+    console.log(`🤖 Analyst: Reviewing ${lead.name || 'Anonymous'}...`);
 
     const result = callGemini(systemPrompt, leadData, { jsonMode: true });
 

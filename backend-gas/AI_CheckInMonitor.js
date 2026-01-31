@@ -44,6 +44,17 @@ function AI_analyzeCheckIn(checkInData) {
     const result = callGemini(systemPrompt, userContent, { jsonMode: true });
 
     if (result && result.alert_staff) {
+        // Persist to Sheet if context provided
+        if (checkInData._sheetRow) {
+            try {
+                const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Defendant_CheckIns');
+                // Column 11 = Risk Level (Indices: 0..10)
+                sheet.getRange(checkInData._sheetRow, 11).setValue(result.status);
+            } catch (e) {
+                console.error("Failed to update Sheet status: " + e.message);
+            }
+        }
+
         // Send Alert immediately
         sendCheckInAlert_(checkInData, result);
         return result;

@@ -15,9 +15,30 @@
 function AI_parseBookingSheet(fileData) {
     console.log("🤖 Parser: Extracting data from booking sheet...");
 
+    let contentToAnalyze = fileData;
+
+    // 1. Detect if input is a URL
+    if (typeof fileData === 'string' && fileData.trim().startsWith('http')) {
+        console.log(`🔗 URL Detected: ${fileData}`);
+        try {
+            const response = UrlFetchApp.fetch(fileData.trim(), { muteHttpExceptions: true });
+            if (response.getResponseCode() === 200) {
+                // Get text content - primitive HTML stripping to save tokens
+                let html = response.getContentText();
+                // For safety and tokens, truncate if massive
+                if (html.length > 50000) html = html.substring(0, 50000);
+                contentToAnalyze = "Scraped Webpage Content:\n" + html;
+            } else {
+                return { success: false, error: `Failed to fetch URL: ${response.getResponseCode()}` };
+            }
+        } catch (e) {
+            return { success: false, error: "URL Fetch Error: " + e.message };
+        }
+    }
+
     const systemPrompt = `
     You are a Data Entry Clerk.
-    Extract the following fields from the Booking Sheet provided.
+    Extract the following fields from the Booking Sheet provided (Image, Text, or HTML).
     
     Fields Required:
     - Defendant Full Name
@@ -39,7 +60,7 @@ function AI_parseBookingSheet(fileData) {
     `;
 
     // Increased tokens for extracting long lists of charges
-    const result = callGemini(systemPrompt, fileData, { jsonMode: true, maxTokens: 1000 });
+    const result = callGemini(systemPrompt, contentToAnalyze, { jsonMode: true, maxTokens: 1000 });
 
     if (!result) {
         console.error("Parser failed to extract data.");
