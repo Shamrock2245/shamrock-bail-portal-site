@@ -2066,16 +2066,20 @@
                         <div style="flex: 1; min-width: 250px;">
                             <h4
                                 style="color: #0056b3; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <span style="font-size: 20px;">💳</span> SwipeSimple Virtual Terminal
+                                <span style="font-size: 20px;">💳</span> SwipeSimple Payment Terminal
                             </h4>
                             <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
                                 Use SwipeSimple to process credit cards, send invoices, or create payment links.
                             </p>
                             <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
-                                <a href="https://swipesimple.com/payment_forms/new" target="_blank"
-                                    class="btn btn-primary"
+                                <a href="https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd"
+                                    target="_blank" class="btn btn-success"
+                                    style="background-color: #10b981; border-color: #10b981; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                    💸 Direct Pay Link
+                                </a>
+                                <a href="https://swipesimple.com/login" target="_blank" class="btn btn-primary"
                                     style="background-color: #0056b3; border-color: #0056b3; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-                                    🚀 Open Virtual Terminal
+                                    🚀 Open Terminal
                                 </a>
                                 <button onclick="generateAutoFillScript()" class="btn btn-warning"
                                     style="display: inline-flex; align-items: center; gap: 6px;">
@@ -2089,8 +2093,6 @@
                                     class="btn btn-sm btn-secondary">Copy Email</button>
                                 <button onclick="copyToClipboard('payment-premium-due')"
                                     class="btn btn-sm btn-secondary">Copy Amount</button>
-                                <button onclick="copyToClipboard('defendant-phone')"
-                                    class="btn btn-sm btn-secondary">Copy Phone</button>
                             </div>
                             <p style="font-size: 12px; color: var(--muted); margin-top: 12px;">
                                 <strong>Auto-Fill:</strong> 1. Click "Copy Auto-Fill Script". 2. Go to SwipeSimple tab.
@@ -2108,14 +2110,14 @@
                                     <span style="color: var(--text-secondary);">Email:</span>
                                     <code
                                         style="background: var(--bg); padding: 2px 6px; border-radius: 4px; user-select: all;"
-                                        onclick="navigator.clipboard.writeText(this.innerText); showToast('Email copied', 'info')">shamrockbailbonds1528@gmail.com</code>
+                                        onclick="navigator.clipboard.writeText(this.innerText); showToast('Email copied', 'info')">shamrockbail1528@gmail.com</code>
                                 </div>
                                 <div
                                     style="display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
                                     <span style="color: var(--text-secondary);">Pass:</span>
                                     <code
                                         style="background: var(--bg); padding: 2px 6px; border-radius: 4px; user-select: all;"
-                                        onclick="navigator.clipboard.writeText(this.innerText); showToast('Password copied', 'info')">Stormy$K9</code>
+                                        onclick="navigator.clipboard.writeText(this.innerText); showToast('Password copied', 'info')">WelcomeTFlorida1520!</code>
                                 </div>
                             </div>
                         </div>
@@ -6521,6 +6523,55 @@
                     const formatted = JSON.stringify(res, null, 2);
                     output.innerHTML = `<pre style="white-space:pre-wrap; font-family:monospace; background:var(--surface-3); padding:16px; border-radius:var(--radius-sm); user-select:all;">${formatted}</pre>`;
                     document.getElementById('copy-clerk-btn').style.display = 'inline-block';
+
+                    // --- AUTO-POPULATE DEFENDANT TAB (User Request) ---
+                    try {
+                        // 1. Names
+                        if (res.firstName) document.getElementById('defendant-first-name').value = res.firstName;
+                        if (res.lastName) document.getElementById('defendant-last-name').value = res.lastName;
+                        if (res.middleName) document.getElementById('defendant-middle-name').value = res.middleName;
+
+                        // 2. Dates
+                        // AI often returns YYYY-MM-DD or MM/DD/YYYY. HTML date input requires YYYY-MM-DD.
+                        if (res.dob) {
+                            // Simple normalizer if needed, or rely on AI format
+                            document.getElementById('defendant-dob').value = res.dob;
+                        }
+
+                        // 3. Address
+                        if (res.address) document.getElementById('defendant-street-address').value = res.address;
+                        if (res.city) document.getElementById('defendant-city').value = res.city;
+                        if (res.state) document.getElementById('defendant-state').value = res.state;
+                        if (res.zip) document.getElementById('defendant-zipcode').value = res.zip;
+
+                        // 4. Booking Info
+                        // Note: If ID doesn't exist, we skip safely
+                        if (res.bookingNumber) {
+                            const bnEl = document.getElementById('defendant-booking-number');
+                            if (bnEl) bnEl.value = res.bookingNumber;
+                            else {
+                                // Fallback: Append to notes
+                                const notesEl = document.getElementById('defendant-notes');
+                                if (notesEl && !notesEl.value.includes(res.bookingNumber)) {
+                                    notesEl.value += `\nBooking #: ${res.bookingNumber}`;
+                                }
+                            }
+                        }
+
+                        // 5. Charges (Optional - simple append)
+                        if (res.charges && Array.isArray(res.charges)) {
+                            // Advanced: Could iterate and 'addCharge()'. For now, let's just toast.
+                            // Implementing auto-charge add might be too aggressive without review.
+                        }
+
+                        // Trigger visual updates
+                        if (typeof updateSummary === 'function') updateSummary();
+                        showToast('✅ Defendant data auto-populated!', 'success');
+
+                    } catch (popErr) {
+                        console.warn("Auto-populate partial error:", popErr);
+                    }
+                    // --------------------------------------------------
                 })
                 .withFailureHandler(err => {
                     loading.style.display = 'none';
