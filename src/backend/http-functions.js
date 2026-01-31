@@ -454,20 +454,9 @@ function renderCloseScript(data) {
 
           function doRedirect() {
               console.log('doRedirect() called, window.opener:', !!window.opener);
-              if (window.opener) {
-                // Popup Mode
-                try {
-                    window.opener.postMessage(data, "*");
-                    window.close();
-                } catch(e) {
-                    console.error("Popup communication failed", e);
-                    // Fallback to redirect if popup comms fail (unlikely but possible)
-                    fallbackRedirect();
-                }
-              } else {
-                // Redirect Mode
-                fallbackRedirect();
-              }
+              // Always use redirect mode for now (popup mode disabled)
+              // This is more reliable for OAuth flows
+              fallbackRedirect();
           }
 
           function fallbackRedirect() {
