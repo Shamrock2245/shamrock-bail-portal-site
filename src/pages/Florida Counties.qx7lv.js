@@ -63,15 +63,20 @@ $w.onReady(async function () {
 
         // 5. DEFER NON-CRITICAL (Nearby Counties)
         setTimeout(() => {
-            loadNearbyCounties(county.region, countySlug);
-        }, 800);
+            loadNearbyCounties(county);
+        }, 500);
+
+        // 6. DEBUG CMS (User Request)
+        debugCMS();
 
         // Hide loader / Show content
         try { Select('#loadingIndicator').hide(); } catch (e) { }
         try { Select('#countyContent').expand(); } catch (e) { }
 
     } catch (err) {
-        console.error("❌ Critical Page Error:", err);
+        console.error("CRITICAL ERROR in Florida Counties Page:", err);
+        // Fallback: If everything fails, try to show SOMETHING
+        $w('#countyName').text = "Bail Bonds in Florida";
         try { Select('#loadingIndicator').hide(); } catch (e) { }
     }
 });
@@ -335,15 +340,32 @@ async function populateMainUI(county) {
         const countyName = county.name || county.countyName || county.county_name || "Unknown County";
         console.log(`📝 Loading FAQs for county: ${countyName}`);
 
-        // Query Faqs collection filtered by relatedCounty and isActive
-        const faqResult = await wixData.query('Faqs')
-            .eq('isActive', true)
-            .contains('relatedCounty', countyName)  // Match county name
-            .ascending('sortOrder')
-            .limit(15)
-            .find();
+        let faqResult;
 
-        if (faqResult.items.length > 0) {
+        // 1. Try 'Import 22' (Exact ID from Screenshot) first
+        try {
+            console.log("Checking Import 22 for County...");
+            faqResult = await wixData.query('Import 22')
+                .eq('isActive', true)
+                .contains('relatedCounty', countyName)
+                .ascending('sortOrder')
+                .limit(15)
+                .find();
+        } catch (e) { console.warn("Import 22 failed, trying 'Faqs'..."); }
+
+        // 2. Try 'Faqs' if Import 22 failed or empty
+        if (!faqResult || faqResult.items.length === 0) {
+            try {
+                faqResult = await wixData.query('Faqs')
+                    .eq('isActive', true)
+                    .contains('relatedCounty', countyName)
+                    .ascending('sortOrder')
+                    .limit(15)
+                    .find();
+            } catch (e) { console.warn("Faqs query failed."); }
+        }
+
+        if (faqResult && faqResult.items.length > 0) {
             console.log(`✅ Loaded ${faqResult.items.length} FAQs from CMS for ${countyName}`);
             // Map CMS fields to expected format
             faqs = faqResult.items.map(item => ({
@@ -353,7 +375,7 @@ async function populateMainUI(county) {
             }));
         } else {
             // Fallback to embedded county.content.faq if no CMS FAQs found
-            console.warn(`⚠️ No CMS FAQs for ${countyName}, checking embedded data...`);
+            console.warn(`⚠️ No CMS FAQs for ${countyName} (checked Import 22 & Faqs), checking embedded data...`);
             faqs = (county.content && county.content.faq) || [];
         }
     } catch (err) {
@@ -429,5 +451,19 @@ async function loadNearbyCounties(region, currentSlug) {
         }
     } catch (e) {
         console.warn("Error loading nearby counties", e);
+    }
+}
+
+async function debugCMS() {
+    console.log("🕵️‍♀️ STARTING CMS DIAGNOSTIC CHECK (County Page)...");
+    const collectionsToCheck = ['Faqs', 'Import 22'];
+
+    for (const colId of collectionsToCheck) {
+        try {
+            const count = await wixData.query(colId).limit(1).count();
+            console.log(`🔎 Collection '${colId}': Found ${count} items.`);
+        } catch (e) {
+            console.warn(`❌ Collection '${colId}': Query failed. Error: ${e.message}`);
+        }
     }
 }
