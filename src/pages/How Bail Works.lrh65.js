@@ -179,19 +179,23 @@ async function setupCommonBailAmounts() {
         } else {
             // It's a Repeater
             console.log("🔄 #amountsRepeater is a Repeater. Binding items.");
-            element.data = data;
+
+            // FIX: Set onItemReady BEFORE setting data
             element.onItemReady(($item, itemData) => {
                 // Map CMS field names (may have spaces or different casing)
-                const offense = itemData.offense || itemData.Offense || itemData.title || "Unknown Offense";
-                const range = itemData.bailRange || itemData['Bail Range'] || itemData.range || "Varies";
+                const offense = itemData.offense || itemData.Offense || itemData.title || itemData.offenseName || "Unknown Offense";
+                const range = itemData.bailRange || itemData['Bail Range'] || itemData.range || itemData.amount || "Varies";
 
                 // Try multiple possible element IDs for flexibility
-                const offenseEl = $item('#offenseName') || $item('#offense') || $item('#chargeName');
-                const rangeEl = $item('#bailRange') || $item('#range') || $item('#amount');
+                // User mentioned "first field offense, second field range"
+                const offenseEl = $item('#offenseName') || $item('#offense') || $item('#chargeName') || $item('#textOffense');
+                const rangeEl = $item('#bailRange') || $item('#range') || $item('#amount') || $item('#textRange');
 
                 if (offenseEl && offenseEl.valid) offenseEl.text = offense;
                 if (rangeEl && rangeEl.valid) rangeEl.text = range;
             });
+
+            element.data = data;
         }
     } else {
         console.error('❌ #amountsRepeater not found on page');
@@ -235,7 +239,7 @@ async function setupFAQ() {
                 .ascending('sortOrder')
                 .limit(10)
                 .find();
-            
+
             if (generalResult.items.length > 0) {
                 console.log(`✅ Loaded ${generalResult.items.length} general FAQs from CMS.`);
                 data = generalResult.items;
@@ -250,7 +254,9 @@ async function setupFAQ() {
     // Bind data to the FAQ repeater
     const rep = $w('#faqRepeater');
     if (rep && rep.valid) {
-        rep.data = data;
+        console.log(`📝 Binding ${data.length} items to #faqRepeater`);
+
+        // FIX: Set onItemReady BEFORE setting data
         rep.onItemReady(($item, itemData) => {
             // Map CMS field names to repeater elements
             // CMS uses: title (question), answer
@@ -258,13 +264,21 @@ async function setupFAQ() {
             const answerText = itemData.answer || itemData.a || "No Answer";
 
             // Try multiple possible element IDs for flexibility
-            const questionEl = $item('#faqQuestion') || $item('#question') || $item('#title');
-            const answerEl = $item('#faqAnswer') || $item('#answer') || $item('#text');
+            const questionEl = $item('#faqQuestion') || $item('#question') || $item('#title') || $item('#textQuestion');
+            const answerEl = $item('#faqAnswer') || $item('#answer') || $item('#text') || $item('#textAnswer');
+            // Support user provided IDs if they used standard names
+            const userQ = $item('#textQuestion');
+            const userA = $item('#textAnswer');
 
             if (questionEl && questionEl.valid) questionEl.text = question;
             if (answerEl && answerEl.valid) answerEl.text = answerText;
+
+            // Expand item if collapsed (sometimes happens)
+            if ($item('#faqAnswer').collapsed) $item('#faqAnswer').expand();
         });
-        console.log(`📝 FAQ Repeater populated with ${data.length} items.`);
+
+        rep.data = data;
+        console.log(`✅ FAQ Repeater populated.`);
     } else {
         console.error('❌ #faqRepeater not found on page');
     }
