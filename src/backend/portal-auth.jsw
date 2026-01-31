@@ -19,6 +19,7 @@ import { generateToken, hashPassword, verifyPassword } from 'backend/auth-utils'
 import { getGasUrl, getGasApiKey } from 'backend/utils';
 import { sendSms } from 'backend/twilio-client';
 import { fetch } from 'wix-fetch';
+import { fetchWithRetry } from 'backend/utils';
 import crypto from 'crypto';
 
 // ============================================================================
@@ -569,7 +570,7 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
 
         console.log('📤 Sending email request to GAS...');
 
-        const response = await fetch(gasUrl, {
+        const response = await fetchWithRetry(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -632,7 +633,8 @@ export async function getStaffDashboardData() {
         // Get all cases
         const casesResult = await wixData.query(CONFIG.CASES_COLLECTION)
             .descending('_createdDate')
-            .limit(100)
+            .descending('_createdDate')
+            .limit(1000)
             .find({ suppressAuth: true });
 
         const cases = casesResult.items;
@@ -663,9 +665,34 @@ export async function getStaffDashboardData() {
             createdAt: c._createdDate
         }));
 
+        // Fetch System Status from GAS
+        let systemLogs = [];
+        try {
+            const gasUrl = await getGasUrl();
+            const apiKey = await getGasApiKey();
+            // 3-second timeout for status check
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+            const statusResp = await fetch(gasUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'getSystemStatus', apiKey: apiKey }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (statusResp.ok) {
+                const statusJson = await statusResp.json();
+                if (statusJson.logs) systemLogs = statusJson.logs;
+            }
+        } catch (e) {
+            console.warn("Failed to fetch GAS status:", e);
+        }
+
         return {
             stats: stats,
-            cases: formattedCases
+            cases: formattedCases,
+            systemLogs: systemLogs
         };
 
     } catch (error) {

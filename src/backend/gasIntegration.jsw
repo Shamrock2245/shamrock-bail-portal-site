@@ -4,7 +4,7 @@
  * This module handles communication between Wix and the GAS backend.
  * It provides endpoints for GAS to query IntakeQueue and update records.
  * 
- * GAS Web App URL: https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzM87__8sLZhhvWyUif2VN3u48LND7UldEbxMhhklttd3ikrW-jfbPEHWKMcLWWx-RNSQ/exec
+ * GAS Web App URL: https://script.google.com/macros/s/AKfycbyfvMdssfOjVOrweNG44uaTwEgCitncHoC2fPXEAB14f47OFKTF5KhJJavS_tLZi_1YOg/exec
  * 
  * File: backend/gasIntegration.jsw
  */
@@ -12,6 +12,7 @@
 import wixData from 'wix-data';
 import { getGasWebAppUrl, getGasApiKey } from 'backend/secretsManager';
 import { normalizeIntakeData } from 'backend/normalization';
+import { fetchWithRetry } from 'backend/utils';
 
 // URL is now dynamic via getGasWebAppUrl(), fallback removed for security.
 
@@ -357,7 +358,7 @@ export async function callGasAction(action, payload) {
         ...payload
     };
 
-    const response = await fetch(gasUrl, {
+    const response = await fetchWithRetry(gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)

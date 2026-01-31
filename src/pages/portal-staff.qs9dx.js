@@ -14,6 +14,7 @@ import wixSeo from 'wix-seo';
 
 let allCases = []; // Store locally for fast filtering
 let currentSession = null; // Store validated session data
+let lastStats = null; // Cache stats for status restoration
 
 $w.onReady(async function () {
     try {
@@ -59,7 +60,8 @@ $w.onReady(async function () {
     // 1. Load Data
     try {
         const result = await getStaffDashboardData();
-        const { stats, cases } = result;
+
+        const { stats, cases, systemLogs } = result;
         allCases = cases;
 
         // A. Populate Stats
@@ -79,6 +81,14 @@ $w.onReady(async function () {
             if ($w('#welcomeText').type) {
                 $w('#welcomeText').text = "Welcome, Staff";
             }
+
+            // C. Update Actionable Insights
+            lastStats = stats;
+            // Attach logs to stats object for the helper
+            if (systemLogs) stats.systemLogs = systemLogs;
+
+            updateActionableInsights(stats);
+
         } catch (e) {
             console.error('Error populating stats:', e);
         }
@@ -563,41 +573,100 @@ async function triggerStealthPoke(userData) {
     }
 }
 
+
+
 /**
- * Show message to staff
- * 
- * @param {string} message - Message text
- * @param {string} type - Message type (success, error, info)
+ * Updates the repurposed "Status" fields with actionable intelligence
+ */
+function updateActionableInsights(stats) {
+    if (!stats) return;
+
+    // Elements
+    const msgEl = $w('#staffMessage');
+    const codeEl = $w('#accessCodeDisplay'); // Repurposing as "Alert Detail"
+    const urlEl = $w('#accessCodeUrl');      // Repurposing as "Timestamp/Sync"
+
+    if (!msgEl || !codeEl || !urlEl) return;
+
+    // Default Good State
+    let statusTitle = "🟢 System Active";
+    let statusDetail = "All systems operational.";
+    let statusColor = "#28a745"; // Green
+
+    // 1. Check Failures (Critical)
+    if (stats.failedChecks > 0) {
+        statusTitle = "🔴 Action Required";
+        statusDetail = `${stats.failedChecks} Failed Background Check(s)`;
+        statusColor = "#dc3545"; // Red
+    }
+    // 2. Check Pending High Load (Warning)
+    else if (stats.pendingSignatures > 5) {
+        statusTitle = "🟠 High Load";
+        statusDetail = `${stats.pendingSignatures} Signatures Pending`;
+        statusColor = "#ffc107"; // Amber
+    }
+
+
+
+    // 3. Info/Logs (Normal State)
+    else {
+        // Line 2: First Log (Lee)
+        if (stats.systemLogs && stats.systemLogs[0]) {
+            statusDetail = stats.systemLogs[0];
+        }
+
+        // Line 3: Second Log (Collier) or Timestamp
+        if (stats.systemLogs && stats.systemLogs[1]) {
+            urlEl.text = stats.systemLogs[1];
+        } else {
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            urlEl.text = `Synced: ${time}`;
+        }
+        urlEl.show();
+    }
+
+    // Apply
+    msgEl.text = statusTitle;
+    msgEl.style.color = statusColor;
+    msgEl.show();
+
+    codeEl.text = statusDetail;
+    codeEl.show();
+}
+
+/**
+ * Modified helper to handle transient messages vs persistent status
  */
 function showStaffMessage(message, type = 'info') {
-    console.log(`[Staff Portal ${type.toUpperCase()}]:`, message);
+    const msgEl = $w('#staffMessage');
+    const codeEl = $w('#accessCodeDisplay');
+    const urlEl = $w('#accessCodeUrl');
 
-    try {
-        const messageElement = $w('#staffMessage');
-        if (messageElement && messageElement.type) {
-            messageElement.text = message;
+    if (!msgEl) return;
 
-            // Set color based on type
-            if (type === 'success') {
-                messageElement.style.color = '#28a745';
-            } else if (type === 'error') {
-                messageElement.style.color = '#dc3545';
-            } else {
-                messageElement.style.color = '#17a2b8';
-            }
+    // Override for temporary message
+    msgEl.text = message;
 
-            messageElement.show();
+    // Hide details during message (cleaner look)
+    if (codeEl) codeEl.collapse();
+    if (urlEl) urlEl.collapse();
 
-            // Auto-hide after 5 seconds
-            setTimeout(() => {
-                try {
-                    messageElement.hide();
-                } catch (e) { }
-            }, 5000);
+    if (type === 'success') msgEl.style.color = '#28a745';
+    else if (type === 'error') msgEl.style.color = '#dc3545';
+    else msgEl.style.color = '#17a2b8';
+
+    msgEl.show();
+
+    // Auto-restore Dashboard Status after 4s
+    setTimeout(() => {
+        if (lastStats) {
+            updateActionableInsights(lastStats);
+            if (codeEl) codeEl.expand();
+            if (urlEl) urlEl.expand();
+        } else {
+            msgEl.hide();
         }
-    } catch (e) {
-        // Element doesn't exist, message already logged to console
-    }
+    }, 4000);
 }
 
 // Export for use in other parts of the staff portal
