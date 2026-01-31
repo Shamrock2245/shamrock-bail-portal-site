@@ -143,6 +143,7 @@ $w.onReady(async function () {
     initFilters();
     setupLogoutButton();
     setupMagicLinkGenerator(); // Setup "Open Dashboard" button
+    setupStartPaperworkButton(); // Setup "Start Paperwork" button (CRITICAL)
 
     try {
         if ($w('#searchBar').type) {
@@ -694,5 +695,67 @@ function showStaffMessage(message, type = 'info') {
     }, 4000);
 }
 
+/**
+ * Setup Start Paperwork Button (CRITICAL MONEY BUTTON)
+ * This button should be prominently displayed on the staff dashboard
+ * and trigger the signing workflow immediately with zero extra clicks.
+ */
+function setupStartPaperworkButton() {
+    try {
+        const startBtn = $w('#startPaperworkBtn');
+        if (!startBtn || typeof startBtn.onClick !== 'function') {
+            console.warn('Staff Portal: #startPaperworkBtn not found or not clickable');
+            return;
+        }
+
+        console.log('✅ Staff Portal: #startPaperworkBtn found and configured');
+
+        startBtn.onClick(async () => {
+            try {
+                console.log('🚀 Start Paperwork clicked');
+                startBtn.disable();
+                startBtn.label = "Loading...";
+
+                // Check if we have a selected case from the repeater
+                // If not, we'll need to prompt the user to select a case first
+                // For now, let's open the DefendantDetails lightbox for the first pending case
+                
+                const pendingCases = allCases.filter(c => 
+                    c.paperworkStatus === 'Pending' || 
+                    c.paperworkStatus === 'Not Started' ||
+                    !c.paperworkStatus
+                );
+
+                if (pendingCases.length === 0) {
+                    showStaffMessage('No pending cases found. All paperwork is in progress or completed.', 'info');
+                    startBtn.enable();
+                    startBtn.label = "Start Paperwork";
+                    return;
+                }
+
+                // Open DefendantDetails lightbox for the first pending case
+                // This gives staff the option to choose signing method (Email/SMS/Kiosk)
+                const firstCase = pendingCases[0];
+                console.log(`Opening DefendantDetails for: ${firstCase.defendantName}`);
+                
+                LightboxController.setupDefendantDetailsLightbox(firstCase);
+
+                // Reset button state
+                startBtn.enable();
+                startBtn.label = "Start Paperwork";
+
+            } catch (error) {
+                console.error('Error in Start Paperwork:', error);
+                showStaffMessage('Error starting paperwork. Please try again.', 'error');
+                startBtn.enable();
+                startBtn.label = "Start Paperwork";
+            }
+        });
+
+    } catch (e) {
+        console.error('Error setting up Start Paperwork button:', e);
+    }
+}
+
 // Export for use in other parts of the staff portal
-export { generateMagicLinkForUser, generateAccessCodeOnly, setupMagicLinkGenerator };
+export { generateMagicLinkForUser, generateAccessCodeOnly, setupMagicLinkGenerator, setupStartPaperworkButton };
