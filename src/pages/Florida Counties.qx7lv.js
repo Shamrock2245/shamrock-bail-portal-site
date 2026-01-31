@@ -326,37 +326,72 @@ function populateMainUI(county) {
     // Jail Address (if element exists and data provided)
     try { $w('#jailAddress').collapse(); } catch (e) { }
 
-    // POPULATE FAQs (Repeater)
+    // POPULATE FAQs (Repeater) - Now pulls from CMS Faqs collection
     const faqRep = $w('#repeaterFAQ');
-    const faqs = county.content.faq || [];
+    
+    // First try to load from CMS Faqs collection filtered by relatedCounty
+    let faqs = [];
+    try {
+        const countyName = county.name || county.countyName || countySlug;
+        console.log(`📝 Loading FAQs for county: ${countyName}`);
+        
+        // Query Faqs collection filtered by relatedCounty and isActive
+        const faqResult = await wixData.query('Faqs')
+            .eq('isActive', true)
+            .contains('relatedCounty', countyName)  // Match county name
+            .ascending('sortOrder')
+            .limit(15)
+            .find();
+        
+        if (faqResult.items.length > 0) {
+            console.log(`✅ Loaded ${faqResult.items.length} FAQs from CMS for ${countyName}`);
+            // Map CMS fields to expected format
+            faqs = faqResult.items.map(item => ({
+                _id: item._id,
+                question: item.title || item.question,
+                answer: item.answer
+            }));
+        } else {
+            // Fallback to embedded county.content.faq if no CMS FAQs found
+            console.warn(`⚠️ No CMS FAQs for ${countyName}, checking embedded data...`);
+            faqs = (county.content && county.content.faq) || [];
+        }
+    } catch (err) {
+        console.error('❌ Error loading FAQs from CMS:', err);
+        // Fallback to embedded data on error
+        faqs = (county.content && county.content.faq) || [];
+    }
+    
     try {
         if (faqs.length > 0) {
             faqRep.onItemReady(($item, itemData) => {
-                // Set Text Content
-                $item('#textQuestion').text = itemData.question;
-                $item('#textAnswer').text = itemData.answer;
+                // Set Text Content - support both CMS and embedded field names
+                const question = itemData.question || itemData.title || 'Question';
+                const answer = itemData.answer || itemData.a || 'Answer';
+                
+                $item('#textQuestion').text = question;
+                $item('#textAnswer').text = answer;
 
                 // Handle Accordion Interaction (Clean Toggle)
                 $item('#containerQuestion').onClick(() => {
                     const answerGroup = $item('#groupAnswer');
                     if (answerGroup.collapsed) {
                         answerGroup.expand();
-                        // Optional: Rotate arrow if you have one
-                        // $item('#iconArrow').style.transform = "rotate(180deg)"; 
                     } else {
                         answerGroup.collapse();
-                        // $item('#iconArrow').style.transform = "rotate(0deg)";
                     }
                 });
             });
 
             // Ensure unique IDs
-            faqRep.data = faqs.map((f, i) => ({ ...f, _id: `faq-${i}-${Date.now()}` }));
+            faqRep.data = faqs.map((f, i) => ({ ...f, _id: f._id || `faq-${i}-${Date.now()}` }));
             faqRep.expand();
             try { $w('#sectionFAQ').expand(); } catch (e) { }
+            console.log(`📝 FAQ Repeater populated with ${faqs.length} items`);
         } else {
             faqRep.collapse();
             try { $w('#sectionFAQ').collapse(); } catch (e) { }
+            console.log('📝 No FAQs available for this county');
         }
     } catch (e) {
         console.warn("FAQ Repeater Error:", e);

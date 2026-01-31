@@ -54,7 +54,7 @@ export const COLLECTIONS = {
   MEMBER_PROFILES: 'Memberprofiles',           // Member profile information
 
   // Supporting Collections
-  FAQS: 'Import22',                            // Frequently asked questions (Alias from screenshot)
+  FAQS: 'Faqs',                            // Frequently asked questions (Alias from screenshot)
   TESTIMONIALS: 'Testimonials',                // Client testimonials
   CONTACT_SUBMISSIONS: 'Contactsubmissions',   // Contact form submissions
   BAIL_SCHOOL_SIGNUPS: 'Bailschoolsignups',    // Bail school interest signups

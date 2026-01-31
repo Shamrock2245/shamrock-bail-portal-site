@@ -129,30 +129,34 @@ function setupBailAmounts() {
 }
 
 // --- 5. Common Bail Amounts (Table) ---
+// Connects to CMS collection: "CommonCharges" (Common Charges)
+// CMS Fields: Offense (text), Bail Range (text)
 async function setupCommonBailAmounts() {
     const fallbackData = [
-        { _id: "1", offense: "DUI (First Offense)", range: "$500 - $2,500" },
-        { _id: "2", offense: "Domestic Violence", range: "$2,500 - $10,000" },
-        { _id: "3", offense: "Drug Possession", range: "$1,000 - $25,000" },
-        { _id: "4", offense: "Assault", range: "$5,000 - $25,000" },
-        { _id: "5", offense: "Burglary", range: "$10,000 - $50,000" }
+        { _id: "1", offense: "DUI (First Offense)", bailRange: "$500 - $2,500" },
+        { _id: "2", offense: "Domestic Violence", bailRange: "$2,500 - $10,000" },
+        { _id: "3", offense: "Drug Possession", bailRange: "$1,000 - $25,000" },
+        { _id: "4", offense: "Assault", bailRange: "$5,000 - $25,000" },
+        { _id: "5", offense: "Burglary", bailRange: "$10,000 - $50,000" }
     ];
 
     let data = fallbackData;
 
     try {
-        const result = await wixData.query(COLLECTIONS.COMMON_CHARGES)
-            .limit(20)
+        // Query the CommonCharges collection directly by ID
+        const result = await wixData.query('CommonCharges')
+            .ascending('sortOrder')  // Sort by sortOrder if available
+            .limit(50)
             .find();
 
         if (result.items.length > 0) {
-            console.log(`DEBUG: Loaded ${result.items.length} Common Charges from CMS.`);
+            console.log(`✅ Loaded ${result.items.length} Common Charges from CMS.`);
             data = result.items;
         } else {
-            console.warn("DEBUG: No Common Charges in CMS, using fallback.");
+            console.warn("⚠️ No Common Charges in CMS, using fallback data.");
         }
     } catch (err) {
-        console.error("ERROR: Failed to load Common Charges from CMS", err);
+        console.error("❌ Failed to load Common Charges from CMS:", err);
     }
 
     const element = $w('#amountsRepeater');
@@ -160,90 +164,112 @@ async function setupCommonBailAmounts() {
     if (element && element.valid) {
         // DETECT ELEMENT TYPE: Check if it's a Table or a Repeater
         if (element.type === '$w.Table') {
-            console.log("DEBUG: #amountsRepeater is a Table. Setting rows.");
+            console.log("📊 #amountsRepeater is a Table. Setting rows.");
 
-            // For Tables, we just match the data to the column keys.
-            // Ensure data has the correct keys expected by the table columns.
-            // Assuming table columns are set to 'offense' and 'range' in the Editor.
-            // We map fallback data or CMS data to ensure these keys exist.
+            // Map CMS fields to table columns
+            // CMS uses: "Offense" and "Bail Range" (with space)
             const tableRows = data.map(item => ({
-                offense: item.offense || item.chargeName || item.title || "Unknown Offense",
-                range: item.range || item.bondAmount || item.amount || "Varies",
-                // Keep original data accessible if needed
-                ...item
+                // Map to column keys expected by the table
+                offense: item.offense || item.Offense || item.title || "Unknown Offense",
+                range: item.bailRange || item['Bail Range'] || item.range || "Varies"
             }));
 
             element.rows = tableRows;
 
         } else {
             // It's a Repeater
-            console.log("DEBUG: #amountsRepeater is a Repeater. Binding items.");
+            console.log("🔄 #amountsRepeater is a Repeater. Binding items.");
             element.data = data;
             element.onItemReady(($item, itemData) => {
-                const offense = itemData.offense || itemData.chargeName || itemData.title || "Unknown Offense";
-                const range = itemData.range || itemData.bondAmount || itemData.amount || "Varies";
+                // Map CMS field names (may have spaces or different casing)
+                const offense = itemData.offense || itemData.Offense || itemData.title || "Unknown Offense";
+                const range = itemData.bailRange || itemData['Bail Range'] || itemData.range || "Varies";
 
-                const offenseEl = $item('#offenseName');
-                const rangeEl = $item('#bailRange');
+                // Try multiple possible element IDs for flexibility
+                const offenseEl = $item('#offenseName') || $item('#offense') || $item('#chargeName');
+                const rangeEl = $item('#bailRange') || $item('#range') || $item('#amount');
 
                 if (offenseEl && offenseEl.valid) offenseEl.text = offense;
                 if (rangeEl && rangeEl.valid) rangeEl.text = range;
             });
         }
     } else {
-        console.error('ERROR: #amountsRepeater not found on page');
+        console.error('❌ #amountsRepeater not found on page');
     }
 }
 
 // --- 6. FAQ Section ---
-// --- 6. FAQ Section ---
+// Connects to CMS collection: "Faqs"
+// CMS Fields: title (question), answer, category, sortOrder, isActive, relatedPage
 async function setupFAQ() {
     const fallbackData = [
-        { _id: "1", q: "Can bail be reduced?", a: "Yes. An attorney can file a motion to reduce bail if it is excessive or circumstances change." },
-        { _id: "2", q: "Can I get my premium back?", a: "No. The 10% premium is a non-refundable service fee earned by the bondsman." },
-        { _id: "3", q: "What if I can't afford 10%?", a: "We offer flexible payment plans. Call us to discuss options." },
-        { _id: "4", q: "How long does release take?", a: "Typical release times are 2-8 hours after we post the bond, depending on the jail." },
-        { _id: "5", q: "Difference between Bail and Bond?", a: "Bail is the full amount set by court. Bond is the 10% service we provide." },
-        { _id: "6", q: "Can anyone be denied bail?", a: "Yes. Bail can be denied for capital offenses, flight risks, or danger to the community." }
+        { _id: "1", title: "Can bail be reduced?", answer: "Yes. An attorney can file a motion to reduce bail if it is excessive or circumstances change." },
+        { _id: "2", title: "Can I get my premium back?", answer: "No. The 10% premium is a non-refundable service fee earned by the bondsman." },
+        { _id: "3", title: "What if I can't afford 10%?", answer: "We offer flexible payment plans. Call us to discuss options." },
+        { _id: "4", title: "How long does release take?", answer: "Typical release times are 2-8 hours after we post the bond, depending on the jail." },
+        { _id: "5", title: "Difference between Bail and Bond?", answer: "Bail is the full amount set by court. Bond is the 10% service we provide." },
+        { _id: "6", title: "Can anyone be denied bail?", answer: "Yes. Bail can be denied for capital offenses, flight risks, or danger to the community." }
     ];
 
     let data = fallbackData;
 
     try {
-        const result = await wixData.query(COLLECTIONS.FAQS)
-            .limit(10)
+        // Query the Faqs collection directly by ID
+        // Filter by isActive=true and sort by sortOrder
+        // Filter by relatedPage to show page-specific FAQs
+        const result = await wixData.query('Faqs')
+            .eq('isActive', true)  // Only show active FAQs
+            .contains('relatedPage', '/how-bail-works')  // Filter for this page (or show all if not set)
+            .ascending('sortOrder')  // Sort by order
+            .limit(20)
             .find();
 
         if (result.items.length > 0) {
-            console.log(`DEBUG: Loaded ${result.items.length} FAQs from CMS.`);
+            console.log(`✅ Loaded ${result.items.length} FAQs from CMS for How Bail Works page.`);
             data = result.items;
         } else {
-            console.warn("DEBUG: No FAQs in CMS, using fallback.");
+            // Fallback: Try loading all active FAQs without page filter
+            console.warn("⚠️ No page-specific FAQs found, trying general FAQs...");
+            const generalResult = await wixData.query('Faqs')
+                .eq('isActive', true)
+                .ascending('sortOrder')
+                .limit(10)
+                .find();
+            
+            if (generalResult.items.length > 0) {
+                console.log(`✅ Loaded ${generalResult.items.length} general FAQs from CMS.`);
+                data = generalResult.items;
+            } else {
+                console.warn("⚠️ No FAQs in CMS, using fallback data.");
+            }
         }
     } catch (err) {
-        console.error("ERROR: Failed to load FAQs from CMS", err);
+        console.error("❌ Failed to load FAQs from CMS:", err);
     }
 
-    // Using Native Wix Collapsible Text
+    // Bind data to the FAQ repeater
     const rep = $w('#faqRepeater');
     if (rep && rep.valid) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            // Primary field names from CMS: title (question text), answer
+            // Map CMS field names to repeater elements
+            // CMS uses: title (question), answer
             const question = itemData.title || itemData.question || itemData.q || "No Question";
             const answerText = itemData.answer || itemData.a || "No Answer";
 
-            const questionEl = $item('#faqQuestion');
-            const answerEl = $item('#faqAnswer');
+            // Try multiple possible element IDs for flexibility
+            const questionEl = $item('#faqQuestion') || $item('#question') || $item('#title');
+            const answerEl = $item('#faqAnswer') || $item('#answer') || $item('#text');
 
             if (questionEl && questionEl.valid) questionEl.text = question;
             if (answerEl && answerEl.valid) answerEl.text = answerText;
         });
+        console.log(`📝 FAQ Repeater populated with ${data.length} items.`);
     } else {
-        console.error('ERROR: #faqRepeater not found on page');
+        console.error('❌ #faqRepeater not found on page');
     }
 
-    // Trigger SEO Update
+    // Trigger SEO Update with FAQ structured data
     updatePageSEO(data);
 }
 
