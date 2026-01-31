@@ -443,7 +443,9 @@ function renderCloseScript(data) {
         </div>
 
         <script>
+          console.log('OAuth Callback Script Starting');
           const data = ${safeData};
+          console.log('OAuth Data:', data);
           const statusEl = document.getElementById('status');
           const msgEl = document.getElementById('message');
           const loaderEl = document.getElementById('loader');
@@ -451,6 +453,7 @@ function renderCloseScript(data) {
           const linkEl = document.getElementById('continue-link');
 
           function doRedirect() {
+              console.log('doRedirect() called, window.opener:', !!window.opener);
               if (window.opener) {
                 // Popup Mode
                 try {
@@ -468,6 +471,7 @@ function renderCloseScript(data) {
           }
 
           function fallbackRedirect() {
+             console.log('fallbackRedirect() called, data:', data);
              if (data.success && data.token) {
                   const targetUrl = "${landingUrl}?sessionToken=" + encodeURIComponent(data.token) + "&role=" + encodeURIComponent(data.role || "");
                   linkEl.href = targetUrl;
@@ -490,6 +494,7 @@ function renderCloseScript(data) {
           }
 
           // Execute
+          console.log('Scheduling redirect in 500ms');
           setTimeout(doRedirect, 500); // Small delay to allow UI to render
         </script>
       </body>
