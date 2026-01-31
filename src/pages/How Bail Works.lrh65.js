@@ -23,7 +23,28 @@ $w.onReady(function () {
 
     const bottomCall = $w('#bottomCallBtn');
     if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:12393322245')); // Real Shamrock number
+    // 3. DEBUG CMS (User Request)
+    debugCMS();
 });
+
+async function debugCMS() {
+    console.log("🕵️‍♀️ STARTING CMS DIAGNOSTIC CHECK...");
+
+    const collectionsToCheck = [
+        'Faqs', 'Import 22', 'Import22', // Potential FAQ IDs (Screenshot showed 'Import 22')
+        'CommonCharges', 'Common Charges'
+    ];
+
+    for (const colId of collectionsToCheck) {
+        try {
+            const count = await wixData.query(colId).limit(1).count();
+            console.log(`🔎 Collection '${colId}': Found ${count} items.`);
+        } catch (e) {
+            console.warn(`❌ Collection '${colId}': Query failed (might not exist). Error: ${e.message}`);
+        }
+    }
+    console.log("🕵️‍♀️ DIAGNOSTIC CHECK COMPLETE.");
+}
 
 // --- 1. The Arrest Process ---
 function setupBailProcess() {
@@ -143,17 +164,28 @@ async function setupCommonBailAmounts() {
     let data = fallbackData;
 
     try {
-        // Query the CommonCharges collection directly by ID
-        const result = await wixData.query('CommonCharges')
-            .ascending('sortOrder')  // Sort by sortOrder if available
-            .limit(50)
-            .find();
+        // Query CommonCharges OR Common Charges
+        let result;
 
-        if (result.items.length > 0) {
+        try {
+            result = await wixData.query('CommonCharges').ascending('sortOrder').limit(50).find();
+        } catch (e) {
+            console.warn("CommonCharges failed, trying 'Common Charges'...");
+            result = await wixData.query('Common Charges').ascending('sortOrder').limit(50).find();
+        }
+
+        if (result && result.items.length > 0) {
             console.log(`✅ Loaded ${result.items.length} Common Charges from CMS.`);
             data = result.items;
         } else {
-            console.warn("⚠️ No Common Charges in CMS, using fallback data.");
+            // Second try specifically if first returned empty (not error, but empty)
+            const result2 = await wixData.query('Common Charges').ascending('sortOrder').limit(50).find();
+            if (result2.items.length > 0) {
+                console.log(`✅ Loaded ${result2.items.length} from 'Common Charges'.`);
+                data = result2.items;
+            } else {
+                console.warn("⚠️ No Common Charges in CMS (checked both aliases), using fallback data.");
+            }
         }
     } catch (err) {
         console.error("❌ Failed to load Common Charges from CMS:", err);
@@ -223,37 +255,41 @@ async function setupFAQ() {
     let data = fallbackData;
 
     try {
-        // Query the Faqs collection directly by ID
-        // Filter by isActive=true and sort by sortOrder
-        // Filter by relatedPage to show page-specific FAQs
-        const result = await wixData.query('Faqs')
-            .eq('isActive', true)  // Only show active FAQs
-            .contains('relatedPage', '/how-bail-works')  // Filter for this page (or show all if not set)
-            .ascending('sortOrder')  // Sort by order
-            .limit(20)
-            .find();
+        // Query Import 22 OR Faqs
+        let result;
+        const pagePath = '/how-bail-works';
 
-        if (result.items.length > 0) {
-            console.log(`✅ Loaded ${result.items.length} FAQs from CMS for How Bail Works page.`);
+        // 1. Try 'Import 22' (Exact ID from Screenshot)
+        try {
+            console.log("Checking Import 22...");
+            result = await wixData.query('Import 22').eq('isActive', true).contains('relatedPage', pagePath).ascending('sortOrder').limit(20).find();
+            if (result.items.length === 0) {
+                // Try general if page specific not found
+                result = await wixData.query('Import 22').eq('isActive', true).ascending('sortOrder').limit(10).find();
+            }
+        } catch (e) {
+            console.warn("Import 22 failed, trying 'Faqs'...");
+        }
+
+        // 2. Try 'Faqs' (Standard ID)
+        if (!result || result.items.length === 0) {
+            try {
+                result = await wixData.query('Faqs').eq('isActive', true).contains('relatedPage', pagePath).ascending('sortOrder').limit(20).find();
+                if (result.items.length === 0) {
+                    result = await wixData.query('Faqs').eq('isActive', true).ascending('sortOrder').limit(10).find();
+                }
+            } catch (e) { console.warn("Faqs query failed."); }
+        }
+
+        if (result && result.items.length > 0) {
+            console.log(`✅ Loaded ${result.items.length} FAQs from CMS.`);
             data = result.items;
         } else {
-            // Fallback: Try loading all active FAQs without page filter
-            console.warn("⚠️ No page-specific FAQs found, trying general FAQs...");
-            const generalResult = await wixData.query('Faqs')
-                .eq('isActive', true)
-                .ascending('sortOrder')
-                .limit(10)
-                .find();
-
-            if (generalResult.items.length > 0) {
-                console.log(`✅ Loaded ${generalResult.items.length} general FAQs from CMS.`);
-                data = generalResult.items;
-            } else {
-                console.warn("⚠️ No FAQs in CMS, using fallback data.");
-            }
+            console.warn("⚠️ No FAQs found in either Import22 or Faqs.");
         }
+
     } catch (err) {
-        console.error("❌ Failed to load FAQs from CMS:", err);
+        console.error("❌ Failed to load FAQs from CMS (All attempts failed):", err);
     }
 
     // Bind data to the FAQ repeater
