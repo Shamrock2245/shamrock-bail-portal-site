@@ -188,11 +188,16 @@ async function setupCommonBailAmounts() {
 
                 // Try multiple possible element IDs for flexibility
                 // User mentioned "first field offense, second field range"
-                const offenseEl = $item('#offenseName') || $item('#offense') || $item('#chargeName') || $item('#textOffense');
-                const rangeEl = $item('#bailRange') || $item('#range') || $item('#amount') || $item('#textRange');
+                // Added: #text1, #text2 (common defaults), #offenseText, #rangeText
+                const offenseEl = $item('#offenseName') || $item('#offense') || $item('#chargeName') || $item('#textOffense') || $item('#offenseText') || $item('#title');
+                const rangeEl = $item('#bailRange') || $item('#range') || $item('#amount') || $item('#textRange') || $item('#rangeText') || $item('#subtitle');
 
                 if (offenseEl && offenseEl.valid) offenseEl.text = offense;
                 if (rangeEl && rangeEl.valid) rangeEl.text = range;
+
+                // Debug log if elements missing
+                if (!offenseEl || !offenseEl.valid) console.warn("⚠️ Could not find 'Offense' text element in #amountsRepeater item");
+                if (!rangeEl || !rangeEl.valid) console.warn("⚠️ Could not find 'Range' text element in #amountsRepeater item");
             });
 
             element.data = data;
@@ -264,14 +269,16 @@ async function setupFAQ() {
             const answerText = itemData.answer || itemData.a || "No Answer";
 
             // Try multiple possible element IDs for flexibility
-            const questionEl = $item('#faqQuestion') || $item('#question') || $item('#title') || $item('#textQuestion');
-            const answerEl = $item('#faqAnswer') || $item('#answer') || $item('#text') || $item('#textAnswer');
-            // Support user provided IDs if they used standard names
-            const userQ = $item('#textQuestion');
-            const userA = $item('#textAnswer');
+            // Added: #textQuestion, #textAnswer, #description (standard Wix List), #content
+            const questionEl = $item('#faqQuestion') || $item('#question') || $item('#title') || $item('#textQuestion') || $item('#questionText');
+            const answerEl = $item('#faqAnswer') || $item('#answer') || $item('#text') || $item('#textAnswer') || $item('#answerText') || $item('#description') || $item('#content');
 
             if (questionEl && questionEl.valid) questionEl.text = question;
             if (answerEl && answerEl.valid) answerEl.text = answerText;
+
+            // Debug log if elements missing
+            if (!questionEl || !questionEl.valid) console.warn("⚠️ Could not find 'Question' text element in #faqRepeater item");
+            if (!answerEl || !answerEl.valid) console.warn("⚠️ Could not find 'Answer' text element in #faqRepeater item");
 
             // Expand item if collapsed (sometimes happens)
             if ($item('#faqAnswer').collapsed) $item('#faqAnswer').expand();
