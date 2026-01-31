@@ -594,10 +594,8 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
             throw new Error(`GAS Network Error (${response.status} ${response.statusText}) at [${maskedUrl}]`);
         }
 
-        const data = await response.json();
-        if (!data || !data.success) {
-            throw new Error(`GAS Error: ${data && data.error ? data.error : 'Unknown backend error'}`);
-        }
+        // const data = await response.json(); // REMOVED: Body already read as text
+        // if (!data || !data.success) { ... } // Logic moved below after parsing text
 
         // Try to parse response as JSON
         let responseData;
