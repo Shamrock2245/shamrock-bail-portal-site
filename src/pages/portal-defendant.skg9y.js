@@ -54,14 +54,36 @@ $w.onReady(async function () {
             return;
         }
 
-        // Validate session with backend
-        const session = await validateCustomSession(sessionToken);
+        // Validate session with backend (ROBUST PATTERN)
+        let session = null;
+        try {
+            const validationResult = await validateCustomSession(sessionToken);
+
+            if (validationResult && validationResult.valid) {
+                session = validationResult;
+            } else if (validationResult && validationResult.reason === 'error') {
+                // DATABASE/NETWORK ERROR - DO NOT LOGOUT
+                console.error("⚠️ Session validation failed due to network/DB error:", validationResult.message);
+                $w('#textUserWelcome').text = "Connection Error. Please check your internet and refresh.";
+                $w('#textUserWelcome').show();
+                return;
+            } else {
+                // DEFINITELY INVALID or EXPIRED
+                console.warn("⛔ Defendant session invalid/expired. Redirecting.", validationResult);
+                // clearSessionToken(); // Optional: keep for debugging if needed, but safer to clear here
+                wixLocation.to('/portal-landing');
+                return;
+            }
+        } catch (err) {
+            console.error("❌ Critical error during session validation:", err);
+            $w('#textUserWelcome').text = "System Error. Please refresh.";
+            $w('#textUserWelcome').show();
+            return;
+        }
 
         if (!session) {
-            console.warn("⛔ Session validation returned null.");
-            $w('#textUserWelcome').text = "Authentication Failed: Session invalid or not found in DB.";
-            $w('#textUserWelcome').show();
-            // clearSessionToken(); // Keep token for debugging
+            // Should be caught above, but safety check
+            console.warn("⛔ Session is null after validation checks.");
             return;
         }
 

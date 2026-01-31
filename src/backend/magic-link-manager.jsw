@@ -77,6 +77,8 @@ export async function generateAndSendMagicLink(params) {
     // Log the action
     await logMagicLinkSent(email, personId, role, caseId, token);
 
+    console.log(`✅ Magic Link Success: Sent to ${email} (Role: ${role})`);
+
     return {
       success: true,
       token: token,

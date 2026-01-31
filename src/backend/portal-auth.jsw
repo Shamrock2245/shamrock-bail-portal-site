@@ -126,10 +126,11 @@ export async function lookupUserByContact(contact) {
         // 1. Check if it's a hardcoded staff account
         if (isEmail(contact) && isStaffAccount(contact)) {
             const staffDetails = getStaffAccountDetails(contact);
+            console.log(`✅ Staff account identified: ${staffDetails.name} (${staffDetails.role})`);
             return {
                 found: true,
                 personId: staffDetails.personId,
-                role: staffDetails.role,
+                role: staffDetails.role, // This will be 'admin' or 'staff'
                 email: normalized,
                 name: staffDetails.name,
                 isStaff: true
@@ -242,10 +243,14 @@ export async function createCustomSession(personId, role, caseId = null, contact
 /**
  * Validate a custom session token
  */
+/**
+ * Validate a custom session token
+ * Returns distinct error states for frontend handling
+ */
 export async function validateCustomSession(sessionToken) {
     try {
         if (!sessionToken) {
-            return null;
+            return { valid: false, reason: 'no_token' };
         }
 
         const results = await wixData.query(CONFIG.SESSIONS_COLLECTION)
@@ -255,7 +260,7 @@ export async function validateCustomSession(sessionToken) {
 
         if (results.items.length === 0) {
             console.log('⚠️ Session not found or inactive');
-            return null;
+            return { valid: false, reason: 'invalid' };
         }
 
         const session = results.items[0];
@@ -266,10 +271,11 @@ export async function validateCustomSession(sessionToken) {
             // Mark as inactive
             session.isActive = false;
             await wixData.update(CONFIG.SESSIONS_COLLECTION, session, { suppressAuth: true });
-            return null;
+            return { valid: false, reason: 'expired' };
         }
 
         return {
+            valid: true,
             personId: session.personId,
             role: session.role,
             caseId: session.caseId,
@@ -282,7 +288,9 @@ export async function validateCustomSession(sessionToken) {
 
     } catch (error) {
         console.error('Error validating session:', error);
-        return null;
+        // CRITICAL FIX: Return 'error' reason so frontend knows it's a system/network issue
+        // and doesn't immediately log the user out.
+        return { valid: false, reason: 'error', message: error.message };
     }
 }
 

@@ -39,11 +39,35 @@ $w.onReady(async function () {
     }
 
     // Validate session with backend
-    const session = await validateCustomSession(sessionToken);
-    if (!session || !session.role) {
-        console.warn("⛔ Invalid or expired session. Redirecting to Portal Landing.");
-        clearSessionToken();
-        wixLocation.to('/portal-landing');
+    // ROBUSTNESS FIX: Handle database connection errors gracefully
+    let session = null;
+    try {
+        const validationResult = await validateCustomSession(sessionToken);
+
+        // Handle new response structure { valid: boolean, reason: string }
+        // Or fallback to old structure (object = valid, null = invalid)
+
+        if (validationResult && validationResult.valid) {
+            session = validationResult;
+        } else if (validationResult && validationResult.reason === 'error') {
+            // DATABASE/NETWORK ERROR - DO NOT LOGOUT
+            console.error("⚠️ Session validation failed due to network/DB error:", validationResult.message);
+            $w('#welcomeText').text = "Connection Error. Retrying...";
+            // Optional: Add a retry button or auto-retry logic here? 
+            // For now, let's STOP execution but NOT redirect, allowing user to refresh.
+            return;
+        } else {
+            // DEFINITELY INVALID or EXPIRED
+            console.warn("⛔ Invalid or expired session. Redirecting.", validationResult);
+            clearSessionToken();
+            wixLocation.to('/portal-landing');
+            return;
+        }
+
+    } catch (err) {
+        console.error("❌ Critical error during session validation:", err);
+        // Do not aggressively logout on unhandled errors
+        $w('#welcomeText').text = "System Error. Please refresh.";
         return;
     }
 
