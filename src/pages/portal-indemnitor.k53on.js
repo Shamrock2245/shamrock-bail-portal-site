@@ -53,7 +53,7 @@ async function initializePage() {
 
         console.log("🚀 Indemnitor Portal: Initializing...");
 
-        // 2. Custom Authentication Check
+        // 2. Custom Authentication Check (ROBUST)
         const sessionToken = getSessionToken();
         console.log("🔍 Session Token Present:", !!sessionToken);
 
@@ -64,13 +64,29 @@ async function initializePage() {
         }
 
         console.log("🔍 Validating Session...");
-        const session = await validateCustomSession(sessionToken);
+        let session = null;
+        try {
+            const validationResult = await validateCustomSession(sessionToken);
 
-        if (!session) {
-            console.warn("⛔ Indemnitor Portal: Invalid or expired session. Redirecting to Landing.");
-            console.warn("Debug: Validation returned null. Token may be expired or not in database.");
-            clearSessionToken();
-            wixLocation.to('/portal-landing?auth_error=1');
+            if (validationResult && validationResult.valid) {
+                session = validationResult;
+            } else if (validationResult && validationResult.reason === 'error') {
+                // DATABASE/NETWORK ERROR - DO NOT LOGOUT
+                console.error("⚠️ Session validation failed due to network/DB error:", validationResult.message);
+                showError("Connection Error. Please check your internet and refresh.");
+                showLoading(false);
+                return; // Stop loading but don't logout
+            } else {
+                // DEFINITELY INVALID or EXPIRED
+                console.warn("⛔ Indemnitor session invalid/expired. Redirecting.", validationResult);
+                clearSessionToken();
+                wixLocation.to('/portal-landing?auth_error=1');
+                return;
+            }
+        } catch (err) {
+            console.error("❌ Critical error during session validation:", err);
+            showError("System Error. Please refresh.");
+            showLoading(false);
             return;
         }
 
