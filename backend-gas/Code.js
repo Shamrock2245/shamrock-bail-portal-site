@@ -100,20 +100,54 @@ function doGet(e) {
     // ---------------------------------------------
 
     const VERSION = '5.9';
-    const page = e.parameter.page || 'Dashboard';
+    
+    // --- AUTOMATIC DEVICE DETECTION ---
+    // Get user agent from request headers (if available)
+    let userAgent = '';
+    try {
+      // In GAS, user agent is not directly available in doGet()
+      // We'll use the page parameter with fallback to auto-detection via client-side
+      userAgent = e.parameter.userAgent || '';
+    } catch (err) {
+      userAgent = '';
+    }
+    
+    // Determine page based on explicit parameter OR auto-detection
+    let page = e.parameter.page || 'Dashboard';
+    
+    // Auto-detect device type if no explicit page parameter
+    if (!e.parameter.page) {
+      // Check for mobile/tablet indicators in userAgent (if provided)
+      const ua = userAgent.toLowerCase();
+      
+      // Mobile detection (phones)
+      if (ua.includes('iphone') || ua.includes('android') && ua.includes('mobile')) {
+        page = 'mobile';
+      }
+      // Tablet detection (iPads, Android tablets)
+      else if (ua.includes('ipad') || ua.includes('tablet') || 
+               (ua.includes('android') && !ua.includes('mobile'))) {
+        page = 'tablet';
+      }
+      // Desktop (default)
+      else {
+        page = 'Dashboard';
+      }
+    }
+    // -----------------------------------
 
-    // --- NEW: Mobile & Tablet Routing (User Request) ---
+    // --- Mobile & Tablet Routing ---
     if (page === 'mobile') {
       return HtmlService.createTemplateFromFile('MobileDashboard')
         .evaluate()
-        .setTitle('Shamrock Mobile')
+        .setTitle('Shamrock Mobile Dashboard')
         .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
     if (page === 'tablet') {
       return HtmlService.createTemplateFromFile('TabletDashboard')
         .evaluate()
-        .setTitle('Shamrock Tablet')
+        .setTitle('Shamrock Tablet Dashboard')
         .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
