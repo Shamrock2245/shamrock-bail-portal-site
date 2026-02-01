@@ -20,25 +20,81 @@
  * Creates and sends a SignNow packet (wrapper for existing functions)
  * This function should call your existing SignNow integration code
  */
+/**
+ * Creates and sends a SignNow packet (wrapper for existing functions)
+ * This function calls the robust handleSendForSignature workflow in Code.gs
+ */
 function createAndSendSignNowPacket(formData) {
-  // TODO: This should call your existing SignNow packet creation function
-  // For now, returning a mock structure - replace with actual implementation
-  
   try {
-    // Example: Call existing function from SignNowAPI.gs or SignNow_Integration_Complete.gs
-    // const result = createSignNowDocument(formData);
-    
-    // Mock return for testing - replace with actual implementation
-    return {
-      documentId: 'mock_doc_' + new Date().getTime(),
-      signingLinks: formData.indemnitorEmails.map(email => ({
-        email: email,
-        link: 'https://shamrockbailbonds.biz/sign?link=mock_' + email
-      })),
-      receiptNumber: 'RECEIPT-' + new Date().getTime()
+    console.log('MCP: Creating SignNow Packet for', formData.defendantName || formData['defendant-last-name']);
+
+    // Map MCP/Form structure to handleSendForSignature structure
+    // handleSendForSignature expects { bookingData: ..., method: ..., signers: ... }
+
+    // 1. Build Signers List
+    const signers = [];
+    if (formData.defendantEmail) {
+      signers.push({
+        email: formData.defendantEmail,
+        role: 'Defendant',
+        order: 1
+      });
+    }
+
+    // Handle multiple indemnitors if present, or single
+    if (formData.indemnitors && Array.isArray(formData.indemnitors)) {
+      formData.indemnitors.forEach((ind, i) => {
+        signers.push({
+          email: ind.email,
+          role: i === 0 ? 'Indemnitor' : 'Co-Indemnitor',
+          order: 1
+        });
+      });
+    } else if (formData.indemnitorEmail) {
+      signers.push({
+        email: formData.indemnitorEmail,
+        role: 'Indemnitor',
+        order: 1
+      });
+    }
+
+    // 2. Prepare Payload
+    const payload = {
+      bookingData: formData,
+      method: formData.deliveryMethod || 'email', // Default to email invite
+      signers: signers,
+      templateId: formData.templateId // Optional override
     };
+
+    // 3. Call The Real Logic (Code.gs)
+    // In GAS, global functions are available directly
+    if (typeof handleSendForSignature !== 'function') {
+      throw new Error('Core function handleSendForSignature not found in project.');
+    }
+
+    const result = handleSendForSignature(payload);
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to generate packet');
+    }
+
+    // 4. Transform Result for MCP
+    // logic in handleSendForSignature returns { success, documentId, signingLinks (if sms) }
+    // for Email, it returns creation result.
+
+    // If SMS, we have links immediately. If Email, they are sent via SignNow.
+    // We'll return what we have.
+
+    return {
+      documentId: result.documentId,
+      status: 'created',
+      deliveryMethod: payload.method,
+      signingLinks: result.results || [], // if SMS
+      message: 'Packet created successfully'
+    };
+
   } catch (error) {
-    Logger.log('Error in createAndSendSignNowPacket: ' + error.toString());
+    console.error('Error in createAndSendSignNowPacket:', error);
     throw error;
   }
 }
@@ -50,7 +106,7 @@ function checkSignNowDocumentStatus(documentId) {
   try {
     const config = getConfig();
     const url = config.SIGNNOW_API_BASE + '/document/' + documentId;
-    
+
     const options = {
       method: 'get',
       headers: {
@@ -58,14 +114,14 @@ function checkSignNowDocumentStatus(documentId) {
       },
       muteHttpExceptions: true
     };
-    
+
     const response = UrlFetchApp.fetch(url, options);
     const data = JSON.parse(response.getContentText());
-    
+
     // Parse signing status
     const signedBy = [];
     const pendingSigners = [];
-    
+
     if (data.signatures) {
       data.signatures.forEach(sig => {
         if (sig.signed) {
@@ -81,16 +137,16 @@ function checkSignNowDocumentStatus(documentId) {
         }
       });
     }
-    
+
     const allSigned = pendingSigners.length === 0;
-    
+
     return {
       status: allSigned ? 'completed' : 'pending',
       signedBy: signedBy,
       pendingSigners: pendingSigners,
       completedDate: allSigned ? (data.updated || new Date().toISOString()) : null
     };
-    
+
   } catch (error) {
     Logger.log('Error checking SignNow status: ' + error.toString());
     return {
@@ -113,26 +169,26 @@ function checkSignNowDocumentStatus(documentId) {
 function searchCaseByBookingNumber(bookingNumber, county) {
   try {
     const ss = SpreadsheetApp.openById(TARGET_SPREADSHEET_ID || '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E');
-    
+
     // Define counties to search
     const countiesToSearch = county ? [county] : COUNTY_TABS || [
-      "Lee", "Collier", "Hendry", "Charlotte", "Manatee", "DeSoto", "Sarasota", 
+      "Lee", "Collier", "Hendry", "Charlotte", "Manatee", "DeSoto", "Sarasota",
       "Hillsborough", "Palm Beach", "Seminole", "Orange", "Pinellas", "Broward", "Polk", "Osceola"
     ];
-    
+
     for (let i = 0; i < countiesToSearch.length; i++) {
       const countyName = countiesToSearch[i];
       const sheet = ss.getSheetByName(countyName);
-      
+
       if (!sheet) continue;
-      
+
       const data = sheet.getDataRange().getValues();
       const headers = data[0];
-      
+
       // Find booking number column
       const bookingCol = headers.indexOf('Booking_Number');
       if (bookingCol === -1) continue;
-      
+
       // Search for matching booking number
       for (let row = 1; row < data.length; row++) {
         if (data[row][bookingCol] === bookingNumber) {
@@ -146,10 +202,10 @@ function searchCaseByBookingNumber(bookingNumber, county) {
         }
       }
     }
-    
+
     // Not found
     return null;
-    
+
   } catch (error) {
     Logger.log('Error searching for case: ' + error.toString());
     return null;
@@ -183,7 +239,7 @@ function mapSheetDataToForm_(sheetData) {
 function parseChargesFromSheet_(sheetData) {
   const charges = [];
   const chargesField = sheetData['Charges'] || '';
-  
+
   if (chargesField) {
     try {
       const parsed = JSON.parse(chargesField);
@@ -191,7 +247,7 @@ function parseChargesFromSheet_(sheetData) {
     } catch (e) {
       // Not JSON, parse as text
     }
-    
+
     // Parse as delimited text
     const chargesList = chargesField.split(/[;,\n]/).map(c => c.trim()).filter(Boolean);
     chargesList.forEach(charge => {
@@ -202,7 +258,7 @@ function parseChargesFromSheet_(sheetData) {
       });
     });
   }
-  
+
   return charges;
 }
 
@@ -223,14 +279,14 @@ function formatDate_(dateValue) {
  */
 function getSlackWebhookForChannel(channel) {
   const props = PropertiesService.getScriptProperties();
-  
+
   const webhookMap = {
     'court-dates': props.getProperty('SLACK_WEBHOOK_COURT_DATES'),
     'forfeitures': props.getProperty('SLACK_WEBHOOK_FORFEITURES'),
     'new-cases': props.getProperty('SLACK_WEBHOOK_NEW_CASES'),
     'general': props.getProperty('SLACK_WEBHOOK_GENERAL')
   };
-  
+
   return webhookMap[channel] || null;
 }
 
@@ -242,26 +298,26 @@ function postToSlack(webhookUrl, payload) {
     if (!webhookUrl) {
       throw new Error('Slack webhook URL not configured');
     }
-    
+
     const options = {
       method: 'post',
       contentType: 'application/json',
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     };
-    
+
     const response = UrlFetchApp.fetch(webhookUrl, options);
     const responseCode = response.getResponseCode();
-    
+
     if (responseCode !== 200) {
       throw new Error('Slack API returned status: ' + responseCode);
     }
-    
+
     return {
       success: true,
       response: response.getContentText()
     };
-    
+
   } catch (error) {
     Logger.log('Error posting to Slack: ' + error.toString());
     throw error;
@@ -281,7 +337,7 @@ function runLeeScraper() {
     if (typeof scrapeLeeCounty === 'function') {
       return scrapeLeeCounty();
     }
-    
+
     // Mock return if function doesn't exist yet
     return {
       recordsFound: 0,
@@ -304,7 +360,7 @@ function runCollierScraper() {
     if (typeof scrapeCollierCounty === 'function') {
       return scrapeCollierCounty();
     }
-    
+
     // Mock return if function doesn't exist yet
     return {
       recordsFound: 0,
@@ -328,12 +384,12 @@ function runCollierScraper() {
 function calculateDashboardStatistics(dateRange) {
   try {
     const ss = SpreadsheetApp.openById(TARGET_SPREADSHEET_ID || '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E');
-    
+
     // Get date filter
     const now = new Date();
     let startDate;
-    
-    switch(dateRange) {
+
+    switch (dateRange) {
       case 'today':
         startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         break;
@@ -346,41 +402,41 @@ function calculateDashboardStatistics(dateRange) {
       default:
         startDate = null; // All time
     }
-    
+
     // Initialize counters
     let totalCases = 0;
     let signnowLaunches = 0;
     let totalPremium = 0;
     let pendingSignatures = 0;
     let completedBonds = 0;
-    
+
     // Count across all county tabs
     const countyTabs = COUNTY_TABS || ["Lee", "Collier", "Hendry", "Charlotte", "Manatee", "DeSoto", "Sarasota"];
-    
+
     countyTabs.forEach(county => {
       const sheet = ss.getSheetByName(county);
       if (!sheet) return;
-      
+
       const data = sheet.getDataRange().getValues();
       const headers = data[0];
-      
+
       // Find relevant columns
       const bookingDateCol = headers.indexOf('Booking_Date');
       const statusCol = headers.indexOf('Status');
       const bondAmountCol = headers.indexOf('Bond_Amount');
-      
+
       // Count records
       for (let i = 1; i < data.length; i++) {
         const row = data[i];
-        
+
         // Apply date filter if specified
         if (startDate && bookingDateCol !== -1) {
           const bookingDate = new Date(row[bookingDateCol]);
           if (bookingDate < startDate) continue;
         }
-        
+
         totalCases++;
-        
+
         // Parse bond amount
         if (bondAmountCol !== -1 && row[bondAmountCol]) {
           const amount = parseFloat(row[bondAmountCol].toString().replace(/[^0-9.]/g, ''));
@@ -388,7 +444,7 @@ function calculateDashboardStatistics(dateRange) {
             totalPremium += amount * 0.10; // Assume 10% premium
           }
         }
-        
+
         // Check status
         if (statusCol !== -1) {
           const status = row[statusCol].toString().toLowerCase();
@@ -397,7 +453,7 @@ function calculateDashboardStatistics(dateRange) {
         }
       }
     });
-    
+
     // Get active forfeitures
     const forfeituresSheet = ss.getSheetByName('Forfeitures');
     let activeForfeitures = 0;
@@ -405,7 +461,7 @@ function calculateDashboardStatistics(dateRange) {
       const forfeitureData = forfeituresSheet.getDataRange().getValues();
       activeForfeitures = forfeitureData.length - 1; // Subtract header row
     }
-    
+
     return {
       totalCases: totalCases,
       signnowLaunches: signnowLaunches,
@@ -414,7 +470,7 @@ function calculateDashboardStatistics(dateRange) {
       completedBonds: completedBonds,
       activeForfeitures: activeForfeitures
     };
-    
+
   } catch (error) {
     Logger.log('Error calculating statistics: ' + error.toString());
     return {
@@ -437,7 +493,7 @@ function updateInCustodyStatusForCounty(county) {
     if (typeof updateInCustodyStatus === 'function') {
       return updateInCustodyStatus(county);
     }
-    
+
     // Mock return if function doesn't exist yet
     return {
       recordsChecked: 0,
@@ -464,7 +520,7 @@ function getMCPConfig() {
   if (typeof getConfig === 'function') {
     return getConfig();
   }
-  
+
   // Fallback: read from Script Properties directly
   const props = PropertiesService.getScriptProperties();
   return {

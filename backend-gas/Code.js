@@ -1,6 +1,6 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 7.0 - AI Agent Suite (Updated 2026-01-30)
+// Version: 7.1 - AI Agent Suite (Updated 2026-02-01)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
@@ -100,7 +100,14 @@ function doGet(e) {
     // ---------------------------------------------
 
     const VERSION = '5.9';
-    
+
+    // --- SLACK ALERT ---
+    if (e.parameter.action === 'sendSlackAlert') {
+      const result = sendSlackMessage(e.parameter.channel || '#alerts', e.parameter.text, e.parameter.blocks);
+      return ContentService.createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // --- AUTOMATIC DEVICE DETECTION ---
     // Get user agent from request headers (if available)
     let userAgent = '';
@@ -111,22 +118,22 @@ function doGet(e) {
     } catch (err) {
       userAgent = '';
     }
-    
+
     // Determine page based on explicit parameter OR auto-detection
     let page = e.parameter.page || 'Dashboard';
-    
+
     // Auto-detect device type if no explicit page parameter
     if (!e.parameter.page) {
       // Check for mobile/tablet indicators in userAgent (if provided)
       const ua = userAgent.toLowerCase();
-      
+
       // Mobile detection (phones)
       if (ua.includes('iphone') || ua.includes('android') && ua.includes('mobile')) {
         page = 'mobile';
       }
       // Tablet detection (iPads, Android tablets)
-      else if (ua.includes('ipad') || ua.includes('tablet') || 
-               (ua.includes('android') && !ua.includes('mobile'))) {
+      else if (ua.includes('ipad') || ua.includes('tablet') ||
+        (ua.includes('android') && !ua.includes('mobile'))) {
         page = 'tablet';
       }
       // Desktop (default)
@@ -360,6 +367,7 @@ function handleAction(data) {
 
   // 1.5. NOTIFICATIONS
   if (action === 'sendEmail') return handleSendEmail(data);
+  if (action === 'sendSlackAlert') return sendSlackMessage(data.channel, data.text, data.blocks);
   if (action === 'testEmailAdmin') return sendDashboardLinkEmail();
 
   // 1.6. BAIL SCHOOL
@@ -482,6 +490,99 @@ function sendSmsViaTwilio(to, body) {
     return { success: false, error: e.toString() };
   }
 }
+
+/**
+ * Sends a message to Slack via Webhook
+ * @param {string} channel - Channel/User to send to (optional override if webhook supports it)
+ * @param {string} text - Fallback text
+ * @param {Array} blocks - Block Kit blocks
+ */
+/**
+ * Sends a message to Slack via Bot API or Webhook
+ * @param {string} channel - Channel ID (C12345) or Name (#general)
+ * @param {string} text - Fallback text
+ * @param {Array} blocks - Block Kit blocks
+ */
+function sendSlackMessage(channel, text, blocks) {
+  const config = getConfig();
+  const botToken = PropertiesService.getScriptProperties().getProperty('SLACK_BOT_TOKEN');
+  const webhookUrl = config.WEBHOOK_URL;
+
+  // MODE 1: BOT API (Preferred)
+  if (botToken && botToken.startsWith('xoxb-')) {
+    const apiEndpoint = 'https://slack.com/api/chat.postMessage';
+
+    // Default to #general if no channel provided
+    const targetChannel = channel || '#general';
+
+    const payload = {
+      channel: targetChannel,
+      text: text,
+      blocks: blocks
+      // icon_emoji and username are controlled by App Configuration in Slack
+    };
+
+    try {
+      const response = UrlFetchApp.fetch(apiEndpoint, {
+        method: 'post',
+        contentType: 'application/json',
+        headers: {
+          'Authorization': 'Bearer ' + botToken
+        },
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+
+      const result = JSON.parse(response.getContentText());
+      if (result.ok) {
+        return { success: true, ts: result.ts };
+      } else {
+        console.error('Slack Bot API Error:', result.error);
+        return { success: false, error: 'Bot API Failed: ' + result.error };
+      }
+    } catch (e) {
+      console.error('Slack Bot Exception:', e);
+      return { success: false, error: e.message };
+    }
+  }
+
+  // MODE 2: WEBHOOK (Legacy)
+  if (!webhookUrl) {
+    console.warn('Slack Config Missing: No Bot Token and No Webhook');
+    return { success: false, error: 'Slack not configured' };
+  }
+
+  // Create Payload for Webhook
+  const payload = {
+    text: text,
+    username: 'Shamrock Portal',
+    icon_emoji: ':shamrock:'
+  };
+
+  if (channel) payload.channel = channel;
+  if (blocks) payload.blocks = blocks;
+
+  try {
+    const response = UrlFetchApp.fetch(webhookUrl, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+
+    if (response.getResponseCode() !== 200) {
+      console.error('Slack Webhook Error:', response.getContentText());
+      return { success: false, error: response.getContentText() };
+    }
+
+    return { success: true };
+
+  } catch (e) {
+    console.error('Slack Send Exception:', e);
+    return { success: false, error: e.message };
+  }
+}
+
 // ============================================================================
 // SUB: BAIL SCHOOL CERTIFICATES
 // ============================================================================
@@ -491,21 +592,64 @@ function handleCertificateGeneration(data) {
 
   console.log(`🎓 Generating Certificate for ${data.studentName}`);
 
-  // TODO: Generate actual PDF using Google Docs Template + DriveApp
+  // 1. Get Template ID
+  const props = PropertiesService.getScriptProperties();
+  const templateId = props.getProperty('CERTIFICATE_TEMPLATE_ID'); // Ensure this property is set in GAS
+  if (!templateId) {
+    console.warn('Certificate Generation Skipped: No Template ID');
+    // Still send email but warn admin
+    if (studentEmail) {
+      MailApp.sendEmail({
+        to: studentEmail,
+        subject: `Course Completion: ${data.courseId}`,
+        htmlBody: `<h1>Congratulations, ${data.studentName}!</h1><p>You have completed <strong>${data.courseId}</strong>.</p><p>Contact admin for your certificate.</p>`
+      });
+    }
+    return { success: true, message: "Course recorded, certificate pending config." };
+  }
 
-  // For now: Send Confirmation Email
-  if (studentEmail) {
-    MailApp.sendEmail({
-      to: studentEmail,
-      subject: `Course Completion: ${data.courseId}`,
-      htmlBody: `
-        <h1>Congratulations, ${data.studentName}!</h1>
-        <p>We have received your completion record for <strong>${data.courseId}</strong>.</p>
-        <p>Your official certificate is being generated and will be emailed shortly.</p>
-        <br>
-        <p>Shamrock Bail Scool</p>
-      `
-    });
+  try {
+    // 2. Clone Template
+    const templateFile = DriveApp.getFileById(templateId);
+    const folderId = getConfig().GOOGLE_DRIVE_OUTPUT_FOLDER_ID;
+    const folder = DriveApp.getFolderById(folderId);
+
+    const copy = templateFile.makeCopy(`Certificate - ${data.studentName} - ${data.courseId}`, folder);
+    const doc = DocumentApp.openById(copy.getId());
+    const body = doc.getBody();
+
+    // 3. Replace Placeholders
+    body.replaceText('{{StudentName}}', data.studentName || 'Student');
+    body.replaceText('{{CourseName}}', data.courseId || 'Bail Agent Course');
+    body.replaceText('{{Date}}', new Date().toLocaleDateString());
+
+    doc.saveAndClose();
+
+    // 4. Export PDF
+    const pdfBlob = copy.getAs('application/pdf');
+
+    // 5. Send Email with Attachment
+    if (studentEmail) {
+      MailApp.sendEmail({
+        to: studentEmail,
+        subject: `Certificate of Completion: ${data.courseId}`,
+        htmlBody: `
+                <h1>Congratulations!</h1>
+                <p>Attached is your official certificate for <strong>${data.courseId}</strong>.</p>
+                <br><p>Shamrock Bail School</p>
+            `,
+        attachments: [pdfBlob]
+      });
+    }
+
+    // Cleanup temp doc (optional, keeps Drive clean)
+    copy.setTrashed(true);
+
+    return { success: true, message: "Certificate Generated and Emailed" };
+
+  } catch (e) {
+    console.error("Certificate Error: " + e.message);
+    return { success: false, error: "Failed to generate certificate: " + e.message };
   }
 
   return { success: true, message: "Certificate Request Processed", status: "queued" };
@@ -619,6 +763,33 @@ function handleSendForSignature(data) {
       }
       return { success: true, method: 'sms', results: results, documentId: documentId };
     }
+
+    // --- NEW: Generate URL for Download (Unsigned Packet) ---
+    if (data.method === 'download_url') {
+      // We need to return a download URL for the document we just filled
+      // SignNow API: Get Download Link or manual download
+      // Since 'downloadSignedPdf' exists, we can reuse it to get blob, then what?
+      // We can't return a blob to Wix easily. 
+      // Better: Generate a specialized "Singing Link" for "Self" or just "Download Link"
+      // Actually, SignNow has a "Download Document" endpoint. 
+      // But we need a public URL? No, we return Base64 to frontend, frontend handles download?
+      // Or upload to Wix Media? 
+      // Simplest: Return Base64 of the filled PDF.
+
+      const pdfBlob = downloadSignedPdf(documentId); // It's not signed yet, but it's filled. API allows download of draft? Yes.
+      if (pdfBlob) {
+        return {
+          success: true,
+          method: 'download_url',
+          fileData: Utilities.base64Encode(pdfBlob.getBytes()),
+          fileName: `${docName}.pdf`
+        };
+      } else {
+        return { success: false, error: "Failed to download generated PDF from SignNow" };
+      }
+    }
+    // --------------------------------------------------------
+
     // Default: Email Invite via SignNow
     const defName = formData.defendantFullName || formData['defendant-first-name'] + ' ' + formData['defendant-last-name'] || 'Defendant';
     const emailSubject = data.subject || `Action Required: Bond Application for ${defName}`;
@@ -1046,6 +1217,79 @@ function sendEmailBasic(data) {
 // ============================================================================
 // NEW IN V5.1.0: WIX PORTAL INTAKE HANDLERS
 // ============================================================================
+
+/**
+ * Handles 'newIntake' action from Wix
+ * Preserves the Wix-generated Case ID for 2-way sync
+ */
+function handleNewIntake(caseId, data) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('IntakeQueue');
+
+    if (!sheet) {
+      sheet = ss.insertSheet('IntakeQueue');
+      sheet.appendRow([
+        'Timestamp', 'IntakeID', 'Role', 'Email', 'Phone', 'FullName',
+        'DefendantName', 'DefendantPhone', 'CaseNumber', 'Status',
+        'References', 'EmployerInfo', 'ResidenceType', 'ProcessedAt'
+      ]);
+      sheet.setFrozenRows(1);
+    }
+
+    const timestamp = new Date();
+    // CRITICAL: Use the passed caseId as the IntakeID (Col 1)
+    // This allows approveIntake() to send this ID back to Wix
+    const intakeId = caseId || ('INT-' + timestamp.getTime());
+
+    // Construct References
+    var references = data.references || [];
+    if (references.length === 0) {
+      if (data.reference1Name) {
+        references.push({
+          name: data.reference1Name,
+          phone: data.reference1Phone,
+          relation: data.reference1Relation || 'Ref 1',
+          address: (data.reference1Address || '')
+        });
+      }
+    }
+
+    const row = [
+      timestamp,
+      intakeId, // <--- SYNC KEY
+      data.role || 'indemnitor',
+      data.indemnitorEmail || data.email || '',
+      data.indemnitorPhone || data.phone || '',
+      data.indemnitorFullName || data.fullName || '',
+      data.defendantFullName || data.defendantName || '',
+      data.defendantPhone || '',
+      data.caseNumber || '',
+      'pending',
+      JSON.stringify(references),
+      JSON.stringify({
+        employer: data.indemnitorEmployerName,
+        employerPhone: data.indemnitorEmployerPhone
+      }),
+      data.residenceType || '',
+      ''
+    ];
+
+    sheet.appendRow(row);
+    const lastRow = sheet.getLastRow();
+    console.log(`✅ New Intake Synced: ${intakeId}`);
+    return { success: true, message: 'Intake synced', intakeId: intakeId, row: lastRow };
+
+  } catch (e) {
+    console.error('handleNewIntake failed: ' + e.message);
+    return { success: false, error: e.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
 
 /**
  * Handles intake submission from Wix Portal (Indemnitor/Defendant forms)
@@ -1513,4 +1757,69 @@ Logic: Geo-Fencing (3 phones), AI Agents (Secured), Persistence (Check-Ins).
 
   MailApp.sendEmail(email, subject, body);
   console.log(`📧 Sent Dashboard Link to ${email}`);
+}
+
+/**
+ * Changes intake status to "Approved" and syncs to Wix
+ * Called from Dashboard
+ */
+function approveIntake(intakeId) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('IntakeQueue');
+    const data = sheet.getDataRange().getValues();
+
+    // 1. Find the row
+    // IntakeID is Col 1 (Index 0)
+    let rowIndex = -1;
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(intakeId)) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      return { success: false, error: 'Intake ID not found' };
+    }
+
+    // 2. Update Status locally (Col 10 => J)
+    // Status is Col 10 (J). Check header to be sure? Index 9.
+    // getRange(row, col). col is 1-indexed. J is 10.
+    sheet.getRange(rowIndex, 10).setValue('Approved');
+
+    // 3. Sync to Wix
+    const wixUrl = 'https://www.shamrockbailbonds.biz/_functions/updateIntakeStatus';
+    const apiKey = PropertiesService.getScriptProperties().getProperty('GAS_API_KEY') || 'shamrock-secret-key';
+
+    const payload = {
+      apiKey: apiKey,
+      caseId: intakeId,
+      status: 'Approved'
+    };
+
+    // Call Wix
+    const response = UrlFetchApp.fetch(wixUrl, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+
+    const resText = response.getContentText();
+    const resJson = JSON.parse(resText);
+
+    if (response.getResponseCode() === 200 && resJson.success) {
+      return { success: true, message: 'Approved and synced to Wix' };
+    } else {
+      console.error('Wix Sync Failed:', resText);
+      // Return success true anyway because local approval worked? 
+      // User might want to know sync failed.
+      return { success: true, warning: 'Approved locally, but Wix sync failed: ' + (resJson.message || 'Unknown') };
+    }
+
+  } catch (e) {
+    console.error('approveIntake Error:', e);
+    return { success: false, error: e.message };
+  }
 }

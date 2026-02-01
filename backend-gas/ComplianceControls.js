@@ -31,25 +31,25 @@ const RETENTION_SCHEDULE = {
  */
 function recordConsent(personId, consentType, consentGiven) {
   try {
-      const sheetId = getSecureCredential('CONSENT_LOG_SHEET_ID');
-      const sheet = SpreadsheetApp.openById(sheetId).getSheetByName('ConsentLog');
-      
-      if (!sheet) {
-          throw new Error('ConsentLog sheet not found');
-      }
+    const sheetId = getSecureCredential('CONSENT_LOG_SHEET_ID');
+    const sheet = SpreadsheetApp.openById(sheetId).getSheetByName('ConsentLog');
 
-      sheet.appendRow([
-        new Date().toISOString(),
-        personId,
-        consentType,
-        consentGiven,
-        Session.getActiveUser() ? Session.getActiveUser().getEmail() : 'anonymous'
-      ]);
-      
-      logAccessEvent(personId, 'consent', 'record', { consentType: consentType, consentGiven: consentGiven });
+    if (!sheet) {
+      throw new Error('ConsentLog sheet not found');
+    }
+
+    sheet.appendRow([
+      new Date().toISOString(),
+      personId,
+      consentType,
+      consentGiven,
+      Session.getActiveUser() ? Session.getActiveUser().getEmail() : 'anonymous'
+    ]);
+
+    logAccessEvent(personId, 'consent', 'record', { consentType: consentType, consentGiven: consentGiven });
   } catch (e) {
-      logSecurityEvent('CONSENT_LOG_FAILURE', { error: e.toString() });
-      throw e;
+    logSecurityEvent('CONSENT_LOG_FAILURE', { error: e.toString() });
+    throw e;
   }
 }
 
@@ -60,33 +60,125 @@ function recordConsent(personId, consentType, consentGiven) {
  * @returns {boolean} True if consent has been given.
  */
 function hasConsent(personId, consentType) {
-  // TODO: Connect this to the actual ConsentLog sheet or database.
-  // For now, returning true to NOT BLOCK operations during the transition phase,
-  // unless explicitly requiring strict mode.
-  // Ideally: Query 'ConsentLog' for the latest entry for this personId + consentType.
-  
-  // Implementation stub:
-  /*
-  const sheetId = getSecureCredential('CONSENT_LOG_SHEET_ID');
-  const sheet = SpreadsheetApp.openById(sheetId).getSheetByName('ConsentLog');
-  const data = sheet.getDataRange().getValues();
-  // ... filter logic ...
-  */
-  
-  return true; // Placeholder for non-blocking deployment
+  try {
+    const sheetId = getSecureCredential('CONSENT_LOG_SHEET_ID');
+    if (!sheetId) {
+      console.warn('hasConsent: Missing CONSENT_LOG_SHEET_ID');
+      return false;
+    }
+
+    const sheet = SpreadsheetApp.openById(sheetId).getSheetByName('ConsentLog');
+    if (!sheet) return false;
+
+    // Get all data (Optimization: In a real high-volume app, we'd use a filter or temporary cache)
+    const data = sheet.getDataRange().getValues();
+
+    // Columns: [Timestamp, PersonId, ConsentType, ConsentGiven, UserEmail]
+    // We search from bottom up for the latest entry
+    for (let i = data.length - 1; i >= 0; i--) {
+      const row = data[i];
+      if (String(row[1]) === String(personId) && row[2] === consentType) {
+        return row[3] === true || row[3] === 'true';
+      }
+    }
+
+    return false;
+  } catch (e) {
+    console.error('Error in hasConsent:', e);
+    return false; // Fail safe
+  }
 }
 
 /**
  * Applies retention policies to data.
  */
+/**
+ * Applies retention policies to data.
+ * - Archives/Deletes old rows from Audit Sheets.
+ * - Deletes old files from Drive Output Folder.
+ */
 function applyRetentionPolicies() {
+  console.log('🛡️ Starting Retention Policy Enforcement...');
+
   for (const dataType in RETENTION_SCHEDULE) {
     const retention = RETENTION_SCHEDULE[dataType];
     const cutoffDate = new Date();
     cutoffDate.setFullYear(cutoffDate.getFullYear() - retention.years);
 
-    // TODO: Implement logic to find and delete data older than the cutoff date
-    logProcessingEvent('RETENTION_POLICY_APPLIED', { dataType: dataType, cutoff: cutoffDate.toISOString() });
+    console.log(`Checking ${dataType} (Retention: ${retention.years} years, Cutoff: ${cutoffDate.toISOString()})`);
+
+    try {
+      if (dataType === 'security_logs') {
+        purgeSheetRows('SecurityEvents', 0, cutoffDate); // Date is Col 0 (A)
+        purgeSheetRows('AccessEvents', 0, cutoffDate);
+        purgeSheetRows('ProcessingEvents', 0, cutoffDate);
+      }
+      else if (dataType === 'consent_logs') {
+        purgeSheetRows('ConsentLog', 0, cutoffDate);
+      }
+      else if (dataType === 'bail_bond_documents') {
+        purgeOldFiles(cutoffDate);
+      }
+
+    } catch (e) {
+      console.error(`Failed retention for ${dataType}: ${e.message}`);
+      logSecurityEvent('RETENTION_FAILURE', { dataType: dataType, error: e.message });
+    }
+  }
+}
+
+/**
+ * Helper: Deletes rows older than cutoff date from a specific tab in the Audit Log Sheet.
+ */
+function purgeSheetRows(tabName, dateColIndex, cutoffDate) {
+  const sheetId = getSecureCredential('AUDIT_LOG_SHEET_ID');
+  if (!sheetId) return;
+
+  const ss = SpreadsheetApp.openById(sheetId);
+  const sheet = ss.getSheetByName(tabName);
+  if (!sheet) return;
+
+  const rows = sheet.getDataRange().getValues();
+  // Start from bottom to delete safely
+  let deleted = 0;
+
+  // Skip header (row 0)
+  for (let i = rows.length - 1; i > 0; i--) {
+    const rowDate = new Date(rows[i][dateColIndex]);
+    if (rowDate < cutoffDate) {
+      sheet.deleteRow(i + 1); // deleteRow is 1-indexed
+      deleted++;
+    }
+  }
+
+  if (deleted > 0) {
+    console.log(`🗑️ Purged ${deleted} rows from ${tabName}`);
+    logProcessingEvent('DATA_PURGED', { source: tabName, count: deleted });
+  }
+}
+
+/**
+ * Helper: Deletes old files from the "Shamrock Completed Bonds" folder.
+ */
+function purgeOldFiles(cutoffDate) {
+  const folderId = getSecureCredential('GOOGLE_DRIVE_OUTPUT_FOLDER_ID');
+  if (!folderId) return;
+
+  const folder = DriveApp.getFolderById(folderId);
+  const files = folder.getFiles();
+  let deleted = 0;
+
+  while (files.hasNext()) {
+    const file = files.next();
+    if (file.getDateCreated() < cutoffDate) {
+      file.setTrashed(true);
+      deleted++;
+    }
+  }
+
+  if (deleted > 0) {
+    console.log(`🗑️ Trashed ${deleted} old files from Drive.`);
+    logProcessingEvent('FILES_PURGED', { count: deleted });
   }
 }
 
@@ -114,7 +206,7 @@ function generateAndSendWithWixPortal_Safe(formData) {
     if (typeof generateAndSendWithWixPortal !== 'function') {
       throw new Error("Core function generateAndSendWithWixPortal not found");
     }
-    
+
     const result = generateAndSendWithWixPortal(formData);
 
     // 4. Log Success/Failure
@@ -124,7 +216,7 @@ function generateAndSendWithWixPortal_Safe(formData) {
       }
     } else {
       if (typeof logSecurityEvent === 'function') {
-         logSecurityEvent('WIX_SYNC_FAILURE', { caseId: caseId, error: result.message });
+        logSecurityEvent('WIX_SYNC_FAILURE', { caseId: caseId, error: result.message });
       }
     }
 

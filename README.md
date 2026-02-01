@@ -2,7 +2,7 @@
 
 This project is the official Shamrock Bail Bonds Portal. It runs on **Wix Velo** (Frontend) and connects to a **Google Apps Script (GAS)** backend for secure workflows (AI Concierge, PDFs, Signatures).
 
-**Current Status:** Phase 4 Complete (Performance & AI Optimization). 🟢
+**Current Status:** Phase 4: System Verification (Current Focus). 🟡
 
 ---
 
@@ -77,10 +77,13 @@ The backend is in `backend-gas/`.
 ---
 
 ## 📂 Documentation Index
-*   **[TESTING_GUIDE.md](./TESTING_GUIDE.md):** Protocols for Phase 4 verification.
-*   **[AI_CAPABILITIES.md](./docs/AI_CAPABILITIES.md):** 🦾 Guide to the 5 AI Agents (Clerk, Analyst, etc.).
+*   **[ANTIGRAVITY-FOUNDATION-SPEC.md](./docs/ANTIGRAVITY-FOUNDATION-SPEC.md):** 📜 The Supreme Authority for the system.
+*   **[TESTING_GUIDE.md](./TESTING_GUIDE.md):** Protocols for verification.
+*   **[AI_CAPABILITIES.md](./docs/AI_CAPABILITIES.md):** 🦾 Guide to the 5 AI Agents.
 *   **[AGENTS.md](./AGENTS.md):** Persona definitions for development.
 *   **[SCHEMAS.md](./docs/SCHEMAS.md):** Data models for collections.
+*   **[API_SPEC.md](./docs/API_SPEC.md):** Backend interfaces.
+*   **[More Docs...](./docs/INDEX.md):** Full documentation index.
 
 ---
 

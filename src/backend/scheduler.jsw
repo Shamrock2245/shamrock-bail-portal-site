@@ -284,3 +284,53 @@ async function sendAdminAlert(missingList) {
         console.error('Failed to send admin alert:', err);
     }
 }
+
+/**
+ * Job: Clean up expired sessions and magic links
+ * Intended to run daily (e.g., at 03:00 AM)
+ */
+export async function cleanupExpiredData() {
+    console.log('🧹 Scheduler: Starting Data Cleanup...');
+    const now = new Date();
+    let deletedSessions = 0;
+    let deletedLinks = 0;
+
+    try {
+        // 1. Clean up Expired Sessions
+        // Query for sessions expired more than 24 hours ago (buffer safety)
+        const sessionBuffer = new Date();
+        sessionBuffer.setDate(now.getDate() - 1);
+
+        // Important: wix-data bulkRemove limits are 1000. Loop if needed in future.
+        const expiredSessions = await wixData.query(COLLECTIONS.PORTAL_SESSIONS)
+            .lt('expiresAt', now) // Strict cleanup
+            .limit(1000)
+            .find({ suppressAuth: true });
+
+        if (expiredSessions.items.length > 0) {
+            const ids = expiredSessions.items.map(s => s._id);
+            const res = await wixData.bulkRemove(COLLECTIONS.PORTAL_SESSIONS, ids, { suppressAuth: true });
+            deletedSessions = res.removed;
+            console.log(`✅ Removed ${deletedSessions} expired sessions.`);
+        }
+
+        // 2. Clean up Expired Magic Links
+        // These are one-time use or short lived. Safe to delete after expiry.
+        const expiredLinks = await wixData.query(COLLECTIONS.MAGIC_LINKS)
+            .lt('expiresAt', now)
+            .limit(1000)
+            .find({ suppressAuth: true });
+
+        if (expiredLinks.items.length > 0) {
+            const ids = expiredLinks.items.map(l => l._id);
+            const res = await wixData.bulkRemove(COLLECTIONS.MAGIC_LINKS, ids, { suppressAuth: true });
+            deletedLinks = res.removed;
+            console.log(`✅ Removed ${deletedLinks} expired magic links.`);
+        }
+
+    } catch (error) {
+        console.error('Cleanup Job Error:', error);
+    }
+
+    return { deletedSessions, deletedLinks };
+}

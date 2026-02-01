@@ -345,84 +345,133 @@
     </nav>
 
     <script>
-        // CLIENT SIDE LOGIC
-        function openIntake() {
-            if (window.google) google.script.run.doPostFromClient({ action: 'nav', target: 'intake' });
-        }
+        /**
+         * ShamrockMobile - Mobile Dashboard Logic
+         * Encapsulated for clarity and performance.
+         */
+        const ShamrockMobile = (function () {
+            // Private State
+            const state = {
+                user: null,
+                isLoading: false
+            };
 
-        // Dynamic Data Injection
-        window.addEventListener('load', function () {
-            if (window.google) {
-                // Show loading state if needed
+            // --- Public API ---
+            function init() {
+                console.log('📱 Shamrock Mobile Initializing...');
+                setupEventHandlers();
+                fetchInitialData();
+            }
+
+            // --- Internal Method: Event Wiring ---
+            function setupEventHandlers() {
+                // Global exposure for HTML onclick attributes (legacy compatibility)
+                window.openIntake = function () { triggerNav('intake'); };
+                window.openSearch = function () { triggerNav('search'); };
+                window.sendLink = function () { triggerNav('magicLink'); };
+                window.viewCalendar = function () { triggerNav('calendar'); };
+            }
+
+            // --- Internal Method: Data Fetching ---
+            function fetchInitialData() {
+                if (typeof google === 'undefined' || !google.script) {
+                    console.warn('Google Script context missing (Dev Mode)');
+                    return;
+                }
+
                 google.script.run
-                    .withSuccessHandler(updateDashboard)
-                    .withFailureHandler(function (e) { console.error(e); })
+                    .withSuccessHandler(updateUI)
+                    .withFailureHandler(handleError)
                     .handleMobileAction({ action: 'fetchMobileData' });
             }
-        });
 
-        function updateDashboard(data) {
-            console.log("Data received", data);
-
-            // 1. Update KPI Cards
-            if (data.stats) {
-                safeSetText('.kpi-card:nth-child(1) .kpi-val', data.stats.activeBonds);
-                safeSetText('.kpi-card:nth-child(2) .kpi-val', data.stats.pendingIntakes);
-                safeSetText('.kpi-card:nth-child(3) .kpi-val', data.stats.checkInsDue);
-                safeSetText('.kpi-card:nth-child(4) .kpi-val', data.stats.collections);
+            function triggerNav(target) {
+                if (window.google) {
+                    google.script.run.doPostFromClient({ action: 'nav', target: target });
+                }
             }
 
-            // 2. Update Recent Activity List
-            const listContainer = document.getElementById('recent-list');
-            if (data.recentActivity && data.recentActivity.length > 0) {
-                listContainer.innerHTML = ''; // Clear placeholders
-                data.recentActivity.forEach(item => {
-                    const statusColor = getStatusColor(item.status);
-                    const html = `
-                        <div class="list-item">
-                            <div class="item-main">
-                                <div class="avatar">${item.initials}</div>
-                                <div class="item-info">
-                                    <div>${item.name}</div>
-                                    <div>${formatStatus(item.status)}</div>
+            // --- Internal Method: UI Updates ---
+            function updateUI(data) {
+                console.log("Data received", data);
+
+                // 1. Update KPI Cards
+                if (data.stats) {
+                    safeSetText('.kpi-card:nth-child(1) .kpi-val', data.stats.activeBonds);
+                    safeSetText('.kpi-card:nth-child(2) .kpi-val', data.stats.pendingIntakes);
+                    safeSetText('.kpi-card:nth-child(3) .kpi-val', data.stats.checkInsDue);
+                    safeSetText('.kpi-card:nth-child(4) .kpi-val', data.stats.collections);
+                }
+
+                // 2. Update Recent Activity List
+                renderRecentActivity(data.recentActivity);
+            }
+
+            function renderRecentActivity(items) {
+                const listContainer = document.getElementById('recent-list');
+                if (!listContainer) return;
+
+                if (items && items.length > 0) {
+                    listContainer.innerHTML = '';
+                    items.forEach(item => {
+                        const statusColor = getStatusColor(item.status);
+                        const html = `
+                            <div class="list-item">
+                                <div class="item-main">
+                                    <div class="avatar">${item.initials}</div>
+                                    <div class="item-info">
+                                        <div>${item.name}</div>
+                                        <div>${formatStatus(item.status)}</div>
+                                    </div>
                                 </div>
+                                <div class="${statusColor}">${formatStatusShort(item.status)}</div>
                             </div>
-                            <div class="${statusColor}">${formatStatusShort(item.status)}</div>
-                        </div>
-                    `;
-                    listContainer.insertAdjacentHTML('beforeend', html);
-                });
-            } else {
-                listContainer.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">No recent activity</div>';
+                        `;
+                        listContainer.insertAdjacentHTML('beforeend', html);
+                    });
+                } else {
+                    listContainer.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">No recent activity</div>';
+                }
             }
-        }
 
-        // Helpers
-        function safeSetText(selector, value) {
-            const el = document.querySelector(selector);
-            if (el) el.textContent = value;
-        }
+            function handleError(err) {
+                console.error("Mobile Dashboard Error:", err);
+                const list = document.getElementById('recent-list');
+                if (list) list.innerHTML = `<div class="text-danger" style="text-align:center; padding:20px;">Error: ${err.message}</div>`;
+            }
 
-        function getStatusColor(status) {
-            status = (status || '').toLowerCase();
-            if (status.includes('active') || status.includes('completed') || status.includes('synced')) return 'text-success';
-            if (status.includes('pending') || status.includes('intake') || status.includes('progress')) return 'text-warning';
-            if (status.includes('missed') || status.includes('warrant') || status.includes('error')) return 'text-danger';
-            return 'text-muted';
-        }
+            // --- Helpers ---
+            function safeSetText(selector, value) {
+                const el = document.querySelector(selector);
+                if (el) el.textContent = value;
+            }
 
-        function formatStatus(status) {
-            if (!status) return 'Unknown';
-            return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        }
+            function getStatusColor(status) {
+                status = (status || '').toLowerCase();
+                if (status.includes('active') || status.includes('completed') || status.includes('synced')) return 'text-success';
+                if (status.includes('pending') || status.includes('intake') || status.includes('progress')) return 'text-warning';
+                if (status.includes('missed') || status.includes('warrant') || status.includes('error')) return 'text-danger';
+                return 'text-muted';
+            }
 
-        function formatStatusShort(status) {
-            if (!status) return '?';
-            if (status === 'ready_for_documents') return 'Docs';
-            if (status === 'awaiting_signatures') return 'Sign';
-            if (status === 'in_progress') return 'WIP';
-            return 'View';
-        }
+            function formatStatus(status) {
+                if (!status) return 'Unknown';
+                return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }
+
+            function formatStatusShort(status) {
+                if (!status) return '?';
+                if (status === 'ready_for_documents') return 'Docs';
+                if (status === 'awaiting_signatures') return 'Sign';
+                if (status === 'in_progress') return 'WIP';
+                return 'View';
+            }
+
+            return { init: init };
+        })();
+
+        // Start Application
+        window.addEventListener('load', ShamrockMobile.init);
     </script>
 </body>
 

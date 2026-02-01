@@ -93,9 +93,14 @@ function setupEventListeners() {
     // Help button
     if ($w('#helpBtn')) {
         $w('#helpBtn').onClick(() => {
-            // TODO: Create SigningHelpLightbox
             console.log('Help button clicked');
-            // wixWindow.openLightbox('SigningHelpLightbox');
+            // Check if Help Lightbox exists, otherwise show inline help
+            wixWindow.openLightbox('SigningHelpLightbox')
+                .catch(() => {
+                    // Fallback: Show help query inline
+                    $w('#signingInstructions').text = "Need help? Ensure pop-ups are allowed. For support, call (239) 332-2245.";
+                    $w('#signingInstructions').show();
+                });
         });
     }
 

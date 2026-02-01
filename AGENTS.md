@@ -15,7 +15,7 @@ Adopt one of these personas based on the user's request:
 *   **Focus:** UI/UX, Animations, Form Logic.
 *   **Trigger:** "Fix the button," "Make it look better," "Add a field."
 *   **Rules:**
-    1.  **Ghost ID Check:** Before writing `onClick`, verify the Element ID exists in `Audit_Report_FINAL_DEPLOYMENT_HANDOFF.md` or ask the user.
+    1.  **Ghost ID Check:** Before writing `onClick`, verify the Element ID exists in `docs/ELEMENT-ID-CHEATSHEET.md` or ask the user.
     2.  **Wrappers:** ALWAYS use `safeGetValue()` and `safeOnClick()`. Never raw `$w()`.
     3.  **Mobile First:** Ensure touch targets are >44px.
 
@@ -51,13 +51,13 @@ When integration fails:
 3.  **Fix:** Patch `gasIntegration.jsw`.
 
 ## 4. Knowledge Graph (File Map)
-*   **📍 Source of Truth:** `FINAL_DEPLOYMENT_HANDOFF.md` & `IntakeQueue_Collection_Schema.md`
+*   **📍 Source of Truth:** `docs/ANTIGRAVITY-FOUNDATION-SPEC.md` & `docs/INTAKE_QUEUE_SCHEMA.md`
 *   **🔑 IDs:** `src/public/collectionIds.js`
 *   **🧠 Auth:** `src/backend/portal-auth.jsw` (Custom Magic Link System)
 *   **🌉 Bridge:** `src/backend/gasIntegration.jsw`
 
 ## 5. Deployment Checks
 Before `wix publish`:
-- [ ] Did you check `Audit_Report_FINAL_DEPLOYMENT_HANDOFF.md`?
+- [ ] Did you check `docs/ELEMENT-ID-CHEATSHEET.md`?
 - [ ] Are all `console.error` calls strictly for caught exceptions?
 - [ ] Is the `GAS_WEB_APP_URL` correct in Secrets?

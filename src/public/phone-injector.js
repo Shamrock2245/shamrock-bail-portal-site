@@ -326,13 +326,16 @@ function generateSessionId() {
  */
 export async function trackPhoneImpression(phoneNumber, county, source) {
   try {
-    // TODO: Implement impression tracking
-    // This can be used to calculate call-to-impression ratio
-    console.log('Phone impression:', {
+    wixWindow.trackEvent('PhoneImpression', {
       phoneNumber,
       county,
-      source
+      source: source || 'unknown',
+      page: wixLocation.url,
+      timestamp: new Date().toISOString()
     });
+
+    // Also log to console for debugging
+    console.log('Phone impression tracked:', { phoneNumber, county });
 
   } catch (error) {
     console.error('Error tracking phone impression:', error);

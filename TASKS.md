@@ -44,6 +44,15 @@
 
 ---
 
+## 🧹 Technical Debt & Compliance (Consolidated)
+- [ ] **Audit Element IDs**: Check `masterPage.js` and `Home` against canonical IDs.
+- [ ] **Schema Verify**: Check `FloridaCounties` against Foundation Spec.
+- [ ] **SignNow Wiring**: Confirm "Start Bail" button ONLY activates after Consent + Login.
+- [ ] **Mobile Sticky CTA**: Verify `#stickyMobileCTA` behavior.
+- [ ] **Error Boundaries**: Add UI for "County Not Found".
+
+---
+
 ## 🔮 Phase 5: "Bail School" & Scale
 - [ ] **Landing Page:** Design high-converting registration page (`/bail-school`).
 - [ ] **Video Integration:** Embed verified educational content.

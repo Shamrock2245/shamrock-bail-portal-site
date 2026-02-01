@@ -327,67 +327,123 @@
     </main>
 
     <script>
-        document.getElementById('date-display').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        /**
+         * ShamrockTablet - Tablet Command Center Logic
+         * Encapsulated for clarity and performance.
+         */
+        const ShamrockTablet = (function () {
+            // Private State
+            const state = {
+                isLoading: false
+            };
 
-        // Logic
-        function openIntake() {
-            if (window.google) google.script.run.doPostFromClient({ action: 'nav', target: 'intake' });
-        }
+            // --- Public API ---
+            function init() {
+                console.log('📟 Shamrock Tablet Initializing...');
+                setupDate();
+                setupEventHandlers();
+                fetchInitialData();
+            }
 
-        // Data Binding
-        window.addEventListener('load', function () {
-            if (window.google) {
+            // --- Internal Methods ---
+            function setupDate() {
+                const dateEl = document.getElementById('date-display');
+                if (dateEl) {
+                    dateEl.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+                }
+            }
+
+            function setupEventHandlers() {
+                // Global exposure for specific onclick handlers
+                window.openIntake = function () { triggerNav('intake'); };
+                window.sendLink = function () { triggerNav('magicLink'); };
+            }
+
+            function triggerNav(target) {
+                if (window.google) {
+                    google.script.run.doPostFromClient({ action: 'nav', target: target });
+                }
+            }
+
+            function fetchInitialData() {
+                if (typeof google === 'undefined' || !google.script) {
+                    console.warn('Google Script context missing (Dev Mode)');
+                    return;
+                }
+
                 google.script.run
-                    .withSuccessHandler(updateTablet)
-                    .withFailureHandler(console.error)
-                    .handleMobileAction({ action: 'fetchMobileData' }); // Use same handler as mobile
-            }
-        });
-
-        function updateTablet(data) {
-            console.log("Tablet Data:", data);
-
-            if (data.stats) {
-                setText('stat-active', data.stats.activeBonds);
-                setText('stat-pending', data.stats.pendingIntakes);
-                setText('stat-checkins', data.stats.checkInsDue);
-                setText('stat-rev', data.stats.collections);
+                    .withSuccessHandler(updateUI)
+                    .withFailureHandler(handleError)
+                    .handleMobileAction({ action: 'fetchMobileData' });
             }
 
-            const listContainer = document.getElementById('activity-list');
-            if (data.recentActivity && data.recentActivity.length > 0) {
-                listContainer.innerHTML = '';
-                data.recentActivity.forEach(item => {
-                    const html = `
-                        <div class="list-row">
-                            <div class="avatar">${item.initials}</div>
-                            <div>
-                                <div style="font-weight:600">${item.name}</div>
-                                <div style="font-size:12px; color:var(--text-muted)">${formatDate(item.date)}</div>
+            function updateUI(data) {
+                console.log("Tablet Data:", data);
+
+                if (data.stats) {
+                    setText('stat-active', data.stats.activeBonds);
+                    setText('stat-pending', data.stats.pendingIntakes);
+                    setText('stat-checkins', data.stats.checkInsDue);
+                    setText('stat-rev', data.stats.collections);
+                }
+
+                renderActivityList(data.recentActivity);
+            }
+
+            function renderActivityList(items) {
+                const listContainer = document.getElementById('activity-list');
+                if (!listContainer) return;
+
+                if (items && items.length > 0) {
+                    listContainer.innerHTML = '';
+                    items.forEach(item => {
+                        const html = `
+                            <div class="list-row">
+                                <div class="avatar">${item.initials}</div>
+                                <div>
+                                    <div style="font-weight:600">${item.name}</div>
+                                    <div style="font-size:12px; color:var(--text-muted)">${formatDate(item.date)}</div>
+                                </div>
+                                <div style="font-size:12px;" class="${getStatusColor(item.status)}">${formatStatus(item.status)}</div>
                             </div>
-                            <div style="font-size:12px;" class="${getStatusColor(item.status)}">${formatStatus(item.status)}</div>
-                        </div>
-                    `;
-                    listContainer.insertAdjacentHTML('beforeend', html);
-                });
-            } else {
-                listContainer.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">No recent activity</div>';
+                        `;
+                        listContainer.insertAdjacentHTML('beforeend', html);
+                    });
+                } else {
+                    listContainer.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">No recent activity</div>';
+                }
             }
-        }
 
-        function setText(id, val) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = val;
-        }
-        function getStatusColor(s) {
-            if (!s) return '';
-            if (s.includes('active')) return 'text-success';
-            if (s.includes('pending')) return 'text-warning';
-            return '';
-        }
-        function formatStatus(s) { return s ? s.replace(/_/g, ' ') : ''; }
-        function formatDate(d) { return d ? new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''; }
+            function handleError(err) {
+                console.error("Tablet Dashboard Error:", err);
+                const list = document.getElementById('activity-list');
+                if (list) list.innerHTML = `<div class="text-danger" style="text-align:center; padding:20px;">Error: ${err.message}</div>`;
+            }
 
+            // --- Helpers ---
+            function setText(id, val) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            }
+
+            function getStatusColor(s) {
+                if (!s) return '';
+                if (s.includes('active')) return 'text-success';
+                if (s.includes('pending')) return 'text-warning';
+                return '';
+            }
+
+            function formatStatus(s) { return s ? s.replace(/_/g, ' ') : ''; }
+
+            function formatDate(d) {
+                return d ? new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            }
+
+            return { init: init };
+        })();
+
+        // Start Application
+        window.addEventListener('load', ShamrockTablet.init);
     </script>
 </body>
 

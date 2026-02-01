@@ -74,11 +74,41 @@ function handleTwilioWebhookSOC2(e) {
     const payload = e.parameter;
     logProcessingEvent("TWILIO_WEBHOOK_RECEIVED", payload);
 
-    // TODO: Add business logic to process the incoming SMS or call
+    // Business Logic: Log to Slack and Reply
+    try {
+        const from = payload.From || 'Unknown';
+        const body = payload.Body || '';
 
-    // Return TwiML
-    // Note: 'Twilio' object might need a library or manual XML construction
-    // Manual XML construction for minimal dependency:
-    const xml = '<?xml version="1.0" encoding="UTF-8"?><Response><Message>Thanks for your message!</Message></Response>';
+        // 1. Notify Slack (Office)
+        if (typeof sendSlackMessage === 'function') {
+            sendSlackMessage('#incoming-sms', `📱 *SMS from ${from}*\n>${body}`);
+        } else if (typeof postToSlack === 'function') {
+            // Fallback to helper if global function unavailable
+            const webhook = getSlackWebhookForChannel('general');
+            if (webhook) {
+                postToSlack(webhook, { text: `📱 *SMS from ${from}*: ${body}` });
+            }
+        }
+
+        // 2. Log to Sheet (if applicable)
+        // logCommunication(from, 'inbound', body); // Hypothetical helper
+
+    } catch (err) {
+        console.error('Error processing SMS logic:', err);
+    }
+
+    // Return TwiML (Auto-Reply)
+    // We could make this dynamic based on keywords (e.g. "STOP", "HELP")
+    // Twilio handles STOP/HELP automatically if configured, but explicit handling is good.
+
+    let replyMsg = "Thank you for contacting Shamrock Bail Bonds. An agent will be with you shortly. If this is an emergency, please call 239-332-2245.";
+
+    // Simple Keyword Matching
+    const lowerBody = (payload.Body || '').toLowerCase();
+    if (lowerBody.includes('check in') || lowerBody.includes('checkin')) {
+        replyMsg = "To check in, please visit: https://shamrockbailbonds.biz/check-in";
+    }
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${replyMsg}</Message></Response>`;
     return ContentService.createTextOutput(xml).setMimeType(ContentService.MimeType.XML);
 }

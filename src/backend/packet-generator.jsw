@@ -1,0 +1,65 @@
+/**
+ * packet-generator.jsw
+ * Backend module to generate PDF packets via Google Apps Script (SignNow).
+ */
+
+import { getGasUrl, getGasApiKey, fetchWithRetry } from 'backend/utils';
+
+/**
+ * Generates a full bond packet (unsigned) for download.
+ * @param {string} caseId - The case identifier (used to lookup defaults if needed, though we primarily pass user data)
+ * @param {Object} defendantInfo - { email, phone, name }
+ * @returns {Promise<Object>} - { success: true, fileData: "base64...", fileName: "..." }
+ */
+export async function generatePDFPacket(caseId, defendantInfo) {
+    try {
+        const gasUrl = await getGasUrl();
+        const apiKey = await getGasApiKey();
+
+        if (!gasUrl || !apiKey) {
+            throw new Error("Missing GAS configuration");
+        }
+
+        // Payload for GAS handleSendForSignature -> download_url flow
+        const payload = {
+            action: 'sendForSignature',
+            apiKey: apiKey,
+            method: 'download_url', // Triggers the Base64 return flow
+            templateId: null, // Use default configured in GAS
+            bookingData: {
+                defendantFullName: defendantInfo.name,
+                defendantEmail: defendantInfo.email,
+                defendantPhone: defendantInfo.phone
+                // Add other mapped fields here if we pull from Case ID
+            }
+        };
+
+        console.log(`📤 Requesting PDF Packet for ${defendantInfo.name}...`);
+
+        const response = await fetchWithRetry(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`GAS Error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || "Unknown GAS Error");
+        }
+
+        return {
+            success: true,
+            fileData: data.fileData, // Base64 string
+            fileName: data.fileName || 'BondPacket.pdf'
+        };
+
+    } catch (error) {
+        console.error("❌ PDF Packet Generation Failed:", error);
+        return { success: false, error: error.message };
+    }
+}

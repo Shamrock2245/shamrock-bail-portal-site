@@ -24,7 +24,7 @@ export async function trackEvent(eventType, properties = {}) {
     let member = null;
     let memberId = null;
     let memberEmail = null;
-    
+
     try {
       member = await currentMember.getMember();
       if (member) {
@@ -34,7 +34,7 @@ export async function trackEvent(eventType, properties = {}) {
     } catch (error) {
       // User not logged in
     }
-    
+
     // Prepare event data
     const eventData = {
       eventType,
@@ -48,21 +48,21 @@ export async function trackEvent(eventType, properties = {}) {
       userAgent: properties.userAgent || null,
       properties: JSON.stringify(properties)
     };
-    
+
     // Save to AnalyticsEvents collection
     const result = await wixData.insert('AnalyticsEvents', eventData);
-    
+
     // Check if this is a high-value event
     if (isHighValueEvent(eventType, properties)) {
       await triggerHighValueAlert(eventType, properties);
     }
-    
+
     return {
       success: true,
       eventId: result._id,
       message: 'Event tracked successfully'
     };
-    
+
   } catch (error) {
     console.error('Error tracking event:', error);
     return {
@@ -105,15 +105,15 @@ export async function getEventsByType(eventType, daysBack = 7) {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysBack);
-    
+
     const results = await wixData.query('AnalyticsEvents')
       .eq('eventType', eventType)
       .ge('timestamp', cutoffDate)
       .descending('timestamp')
       .find();
-    
+
     return results.items;
-    
+
   } catch (error) {
     console.error('Error getting events by type:', error);
     return [];
@@ -129,11 +129,11 @@ export async function getAnalyticsSummary(daysBack = 30) {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysBack);
-    
+
     const results = await wixData.query('AnalyticsEvents')
       .ge('timestamp', cutoffDate)
       .find();
-    
+
     // Aggregate statistics
     const summary = {
       totalEvents: results.totalCount,
@@ -145,50 +145,50 @@ export async function getAnalyticsSummary(daysBack = 30) {
       uniqueMembers: new Set(),
       conversions: 0
     };
-    
+
     for (const event of results.items) {
       // By event type
       const eventType = event.eventType || 'unknown';
       summary.byEventType[eventType] = (summary.byEventType[eventType] || 0) + 1;
-      
+
       // By county
       const county = event.county || 'unknown';
       summary.byCounty[county] = (summary.byCounty[county] || 0) + 1;
-      
+
       // By device
       const device = event.device || 'unknown';
       summary.byDevice[device] = (summary.byDevice[device] || 0) + 1;
-      
+
       // By page
       const page = event.page || 'unknown';
       summary.byPage[page] = (summary.byPage[page] || 0) + 1;
-      
+
       // Unique sessions
       if (event.sessionId) {
         summary.uniqueSessions.add(event.sessionId);
       }
-      
+
       // Unique members
       if (event.memberId) {
         summary.uniqueMembers.add(event.memberId);
       }
-      
+
       // Conversions
       if (eventType.startsWith('conversion_')) {
         summary.conversions++;
       }
     }
-    
+
     // Convert Sets to counts
     summary.uniqueSessions = summary.uniqueSessions.size;
     summary.uniqueMembers = summary.uniqueMembers.size;
-    
+
     return {
       success: true,
       summary,
       daysAnalyzed: daysBack
     };
-    
+
   } catch (error) {
     console.error('Error getting analytics summary:', error);
     return {
@@ -207,11 +207,11 @@ export async function getConversionFunnel(daysBack = 30) {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysBack);
-    
+
     const results = await wixData.query('AnalyticsEvents')
       .ge('timestamp', cutoffDate)
       .find();
-    
+
     // Track funnel stages
     const funnel = {
       page_view: 0,
@@ -221,18 +221,18 @@ export async function getConversionFunnel(daysBack = 30) {
       member_login: 0,
       bail_started: 0
     };
-    
+
     const sessionStages = {};
-    
+
     for (const event of results.items) {
       const eventType = event.eventType;
       const sessionId = event.sessionId;
-      
+
       // Count total events by type
       if (funnel.hasOwnProperty(eventType)) {
         funnel[eventType]++;
       }
-      
+
       // Track session progression
       if (sessionId) {
         if (!sessionStages[sessionId]) {
@@ -241,10 +241,10 @@ export async function getConversionFunnel(daysBack = 30) {
         sessionStages[sessionId].add(eventType);
       }
     }
-    
+
     // Calculate conversion rates
     const totalSessions = Object.keys(sessionStages).length;
-    
+
     const conversionRates = {
       page_view_to_county: funnel.county_selected / funnel.page_view,
       county_to_phone: funnel.phone_clicked / funnel.county_selected,
@@ -252,7 +252,7 @@ export async function getConversionFunnel(daysBack = 30) {
       form_to_login: funnel.member_login / funnel.form_submitted,
       login_to_bail: funnel.bail_started / funnel.member_login
     };
-    
+
     return {
       success: true,
       funnel,
@@ -260,7 +260,7 @@ export async function getConversionFunnel(daysBack = 30) {
       totalSessions,
       daysAnalyzed: daysBack
     };
-    
+
   } catch (error) {
     console.error('Error getting conversion funnel:', error);
     return {
@@ -279,19 +279,19 @@ export async function getConversionFunnel(daysBack = 30) {
 export async function getTopPages(daysBack = 30, limit = 10) {
   try {
     const summary = await getAnalyticsSummary(daysBack);
-    
+
     if (!summary.success) {
       return [];
     }
-    
+
     // Convert to array and sort
     const pages = Object.entries(summary.summary.byPage)
       .map(([page, count]) => ({ page, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, limit);
-    
+
     return pages;
-    
+
   } catch (error) {
     console.error('Error getting top pages:', error);
     return [];
@@ -308,12 +308,12 @@ export async function getCountyMetrics(county, daysBack = 30) {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysBack);
-    
+
     const results = await wixData.query('AnalyticsEvents')
       .eq('county', county)
       .ge('timestamp', cutoffDate)
       .find();
-    
+
     const metrics = {
       totalEvents: results.totalCount,
       pageViews: 0,
@@ -322,32 +322,32 @@ export async function getCountyMetrics(county, daysBack = 30) {
       bailsStarted: 0,
       uniqueSessions: new Set()
     };
-    
+
     for (const event of results.items) {
       const eventType = event.eventType;
-      
+
       if (eventType === 'page_view') metrics.pageViews++;
       if (eventType === 'phone_clicked') metrics.phoneClicks++;
       if (eventType === 'form_submitted') metrics.formSubmissions++;
       if (eventType === 'bail_started') metrics.bailsStarted++;
-      
+
       if (event.sessionId) {
         metrics.uniqueSessions.add(event.sessionId);
       }
     }
-    
+
     metrics.uniqueSessions = metrics.uniqueSessions.size;
-    metrics.conversionRate = metrics.uniqueSessions > 0 
-      ? metrics.phoneClicks / metrics.uniqueSessions 
+    metrics.conversionRate = metrics.uniqueSessions > 0
+      ? metrics.phoneClicks / metrics.uniqueSessions
       : 0;
-    
+
     return {
       success: true,
       county,
       metrics,
       daysAnalyzed: daysBack
     };
-    
+
   } catch (error) {
     console.error('Error getting county metrics:', error);
     return {
@@ -370,21 +370,29 @@ function isHighValueEvent(eventType, properties) {
     'member_signup',
     'phone_clicked'
   ];
-  
+
   const tier1Counties = ['lee', 'collier', 'charlotte', 'hendry', 'desoto', 'sarasota', 'manatee'];
-  
+
   // High-value if it's a conversion event
   if (highValueEvents.includes(eventType)) {
     return true;
   }
-  
+
   // High-value if from Tier 1 county
   if (properties.county && tier1Counties.includes(properties.county)) {
     return true;
   }
-  
+
   return false;
 }
+
+/**
+ * Trigger high-value alert
+ * @param {string} eventType - Event type
+ * @param {Object} properties - Event properties
+ * @returns {Promise<void>}
+ */
+import { callGasAction } from 'backend/gasIntegration';
 
 /**
  * Trigger high-value alert
@@ -400,10 +408,46 @@ async function triggerHighValueAlert(eventType, properties) {
       page: properties.page,
       device: properties.device
     });
-    
-    // TODO: Integrate with Slack webhook
-    // Future implementation for real-time notifications
-    
+
+    // Construct Slack Payload
+    const title = `🔥 High Value Event: ${eventType}`;
+    const text = `New activity detected in ${properties.county || 'unknown'} county.`;
+
+    const blocks = [
+      {
+        "type": "header",
+        "text": {
+          "type": "plain_text",
+          "text": title,
+          "emoji": true
+        }
+      },
+      {
+        "type": "section",
+        "fields": [
+          { "type": "mrkdwn", "text": `*Type:*\n${eventType}` },
+          { "type": "mrkdwn", "text": `*County:*\n${properties.county || 'N/A'}` },
+          { "type": "mrkdwn", "text": `*Device:*\n${properties.device || 'N/A'}` },
+          { "type": "mrkdwn", "text": `*Page:*\n${properties.page || 'N/A'}` }
+        ]
+      }
+    ];
+
+    if (properties.memberEmail) {
+      blocks.push({
+        "type": "section",
+        "text": { "type": "mrkdwn", "text": `*User:*\n${properties.memberEmail}` }
+      });
+    }
+
+    // Call GAS to send to Slack
+    // We send this as a fire-and-forget (no await needed to block user, but await is safer for Lambda execution context)
+    await callGasAction('sendSlackAlert', {
+      channel: '#alerts',
+      text: `${title} - ${text}`,
+      blocks: blocks
+    });
+
   } catch (error) {
     console.error('Error triggering high-value alert:', error);
   }
@@ -414,7 +458,7 @@ async function triggerHighValueAlert(eventType, properties) {
  * @returns {string} - UUID v4
  */
 function generateSessionId() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
@@ -430,24 +474,24 @@ export async function cleanupOldEvents(daysOld = 90) {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-    
+
     const results = await wixData.query('AnalyticsEvents')
       .lt('timestamp', cutoffDate)
       .find();
-    
+
     let deletedCount = 0;
-    
+
     for (const event of results.items) {
       await wixData.remove('AnalyticsEvents', event._id);
       deletedCount++;
     }
-    
+
     return {
       success: true,
       deletedCount,
       message: `Deleted ${deletedCount} old analytics events`
     };
-    
+
   } catch (error) {
     console.error('Error cleaning up old events:', error);
     return {

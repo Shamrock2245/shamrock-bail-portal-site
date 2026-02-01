@@ -1387,3 +1387,61 @@ export async function get_pendingIntakes(request) {
         });
     }
 }
+/**
+ * POST /api/intakes/status
+ * Update the status of an intake record (e.g. "Approved")
+ * Called by GAS Dashboard when staff clicks "Approve"
+ * 
+ * Request body:
+ * {
+ *   "apiKey": "your-api-key",
+ *   "caseId": "CASE-123456",
+ *   "status": "Approved"
+ * }
+ */
+export async function post_updateIntakeStatus(request) {
+    try {
+        const body = await request.body.json();
+
+        // Validate API key
+        if (!body.apiKey) return badRequest({ body: { success: false, message: 'Missing apiKey' } });
+
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (body.apiKey !== validApiKey) return forbidden({ body: { success: false, message: 'Invalid API key' } });
+
+        if (!body.caseId || !body.status) {
+            return badRequest({ body: { success: false, message: 'Missing caseId or status' } });
+        }
+
+        // Update IntakeQueue
+        const queueRes = await wixData.query("IntakeQueue").eq("caseId", body.caseId).find({ suppressAuth: true });
+        if (queueRes.items.length > 0) {
+            const item = queueRes.items[0];
+            item.status = body.status;
+            item.paperworkStatus = body.status; // Sync both status fields
+            await wixData.update("IntakeQueue", item, { suppressAuth: true });
+        } else {
+            return badRequest({ body: { success: false, message: 'Case not found in IntakeQueue' } });
+        }
+
+        // Also Update Cases if it exists
+        const caseRes = await wixData.query("Cases").eq("caseNumber", body.caseId).find({ suppressAuth: true });
+        if (caseRes.items.length > 0) {
+            const caseItem = caseRes.items[0];
+            caseItem.status = body.status;
+            caseItem.paperworkStatus = body.status;
+            await wixData.update("Cases", caseItem, { suppressAuth: true });
+        }
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: { success: true, message: `Intake ${body.caseId} updated to ${body.status}` }
+        });
+
+    } catch (error) {
+        console.error('Error updating intake status:', error);
+        return serverError({
+            body: { success: false, message: error.message }
+        });
+    }
+}

@@ -4,7 +4,7 @@
  * This module handles communication between Wix and the GAS backend.
  * It provides endpoints for GAS to query IntakeQueue and update records.
  * 
- * GAS Web App URL: https://script.google.com/macros/s/AKfycbyfvMdssfOjVOrweNG44uaTwEgCitncHoC2fPXEAB14f47OFKTF5KhJJavS_tLZi_1YOg/exec
+ * GAS Web App URL: https://script.google.com/macros/s/AKfycbw1V0vi6O5iWxv7CTEzHTs_cCe1wMh-nlcxWamR6h6OW9RtssiSk8CR405o3OHUaRffXA/exec
  * 
  * File: backend/gasIntegration.jsw
  */

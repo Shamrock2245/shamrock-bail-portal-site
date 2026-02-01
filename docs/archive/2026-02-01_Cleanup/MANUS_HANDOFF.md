@@ -25,7 +25,25 @@ We are technically "done" with the core build. The focus now shifts to:
 *   **Expansion:** Adding more counties to `KnowledgeBase.js` as needed.
 *   **Bail School:** Building out the landing pages (future task).
 
+
+### Update: Phase 4.1 - Critical Fixes (Jan 31 Late Night)
+We encountered and flattened a few bugs during the handoff:
+
+1.  **Gemini API 404:** The legacy `gemini-1.5-flash` model endpoint was deprecated/moved.
+    *   **Fix:** Updated `GeminiClient.js` and `RAGService.js` to use `gemini-1.5-flash-001`.
+    *   **Tool:** Added `SAFE_updateGeminiKey` and `DIAGNOSE_AGENTS` to `SetProperties.js` for easier debugging.
+
+2.  **Dashboard.html Syntax:** Use of `var(--css-var)` in inline JS attributes caused errors.
+    *   **Fix:** Quoted the variable strings correctly.
+    *   **Cleanup:** Removed orphaned code blocks.
+
+3.  **IDE Configuration:** Local VSCode was throwing "Cannot find module" errors.
+    *   **Fix:** Updated `jsconfig.json` with `moduleResolution: "node"` and explicitly added `.jsw` extensions to imports in `data.js`.
+
+**System is now truly Green.** 🟢
+
 ---
+
 
 ## 🤖 The "Manus" Prompt (Copy/Paste this to start)
 
@@ -37,6 +55,8 @@ CURRENT STATE:
 - AI Suite: Active (Clerk Auto-Populate, Concierge, Analyst).
 - Payments: SwipeSimple integrated.
 - Performance: Lighthouse optimizations verified.
+- **Environment:** Clasp & Git 100% Synced.
+- **Critical Fix:** Gemini Model updated to `gemini-1.5-flash-001` (Fixed 404s).
 
 YOUR MISSION:
 1. Review `docs/AI_CAPABILITIES.md` to understand the full agent suite.

@@ -10,7 +10,7 @@
 import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
 
-import { notifyGASOfNewIntake } from './gasIntegration.jsw';
+import { notifyGASOfNewIntake, callGasAction } from './gasIntegration.jsw';
 
 /**
  * Submit indemnitor intake form to IntakeQueue
@@ -322,20 +322,65 @@ async function generateCaseId() {
  */
 async function notifyStaffOfNewIntake(intakeRecord) {
     try {
-        // This could send an email or SMS to staff
-        // For now, just log it
-        console.log('New intake submission:', {
-            caseId: intakeRecord.caseId,
-            defendantName: intakeRecord.defendantName,
-            indemnitorName: intakeRecord.indemnitorName,
-            county: intakeRecord.county
+        console.log('🔔 Notifying staff of new intake:', intakeRecord.caseId);
+
+        // Construct Slack Message
+        const title = "New Intake Submitted";
+        const text = `A new intake form has been received for ${intakeRecord.defendantName}.`;
+
+        const blocks = [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "📝 New Intake Received",
+                    "emoji": true
+                }
+            },
+            {
+                "type": "section",
+                "fields": [
+                    { "type": "mrkdwn", "text": `*Case ID:*\n${intakeRecord.caseId}` },
+                    { "type": "mrkdwn", "text": `*Defendant:*\n${intakeRecord.defendantName}` },
+                    { "type": "mrkdwn", "text": `*Indemnitor:*\n${intakeRecord.indemnitorName}` },
+                    { "type": "mrkdwn", "text": `*County:*\n${intakeRecord.county}` }
+                ]
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": `*Notes:*\n${intakeRecord.notes || 'No notes provided.'}`
+                }
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "View in Dashboard",
+                            "emoji": true
+                        },
+                        "url": "https://www.shamrockbailbonds.biz/staff-portal",  // Adjust URL as needed
+                        "style": "primary"
+                    }
+                ]
+            }
+        ];
+
+        // Send to Office Channel (e.g. #intakes or #general)
+        // Using callGasAction helper which is already imported from ./gasIntegration.jsw
+        await callGasAction('sendSlackAlert', {
+            channel: '#intakes', // Can be configured via secrets/properties if needed
+            text: `New Intake: ${intakeRecord.defendantName}`,
+            blocks: blocks
         });
 
-        // TODO: Implement email/SMS notification using Wix Triggers or external service
-
+        console.log('✅ Slack notification sent for new intake.');
     } catch (error) {
         console.error('Error notifying staff:', error);
-        // Don't throw - notification failure shouldn't block the submission
     }
 }
 
