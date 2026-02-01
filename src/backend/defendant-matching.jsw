@@ -1,0 +1,347 @@
+/**
+ * backend/defendant-matching.jsw
+ * 
+ * Defendant Matching System - Auto-match + Manual Confirmation
+ * 
+ * Features:
+ * - Auto-match defendants based on booking number
+ * - Manual "Match" button for staff confirmation
+ * - Creates Cases from matched IntakeQueue records
+ * - Role-based permissions (staff read-only, admin can edit)
+ */
+
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'public/collectionIds';
+
+/**
+ * Auto-match defendant from IntakeQueue based on booking number
+ * Searches for existing defendants with matching booking number
+ * 
+ * @param {string} intakeQueueId - IntakeQueue record ID
+ * @returns {Promise<Object>} - { success, matched, defendantId, confidence }
+ */
+export async function autoMatchDefendant(intakeQueueId) {
+    try {
+        // Get IntakeQueue record
+        const intakeRecord = await wixData.get(COLLECTIONS.INTAKE_QUEUE, intakeQueueId, {
+            suppressAuth: true
+        });
+
+        if (!intakeRecord) {
+            return { success: false, error: 'IntakeQueue record not found' };
+        }
+
+        const bookingNumber = intakeRecord.defendantBookingNumber;
+        if (!bookingNumber) {
+            return { success: false, matched: false, reason: 'No booking number provided' };
+        }
+
+        // Search for existing defendants with this booking number
+        const defendantResults = await wixData.query(COLLECTIONS.DEFENDANTS)
+            .eq('bookingNumber', bookingNumber)
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (defendantResults.items.length > 0) {
+            const defendant = defendantResults.items[0];
+            
+            // Calculate confidence score based on additional field matches
+            let confidence = 70; // Base confidence for booking number match
+            
+            if (intakeRecord.defendantName && 
+                intakeRecord.defendantName.toLowerCase() === defendant.fullName?.toLowerCase()) {
+                confidence += 20;
+            }
+            
+            if (intakeRecord.defendantEmail && 
+                intakeRecord.defendantEmail.toLowerCase() === defendant.email?.toLowerCase()) {
+                confidence += 10;
+            }
+
+            // Update IntakeQueue with match info
+            await wixData.update(COLLECTIONS.INTAKE_QUEUE, {
+                _id: intakeQueueId,
+                matchedDefendantId: defendant._id,
+                matchStatus: 'auto-matched',
+                matchConfidence: confidence,
+                matchedAt: new Date()
+            }, { suppressAuth: true });
+
+            return {
+                success: true,
+                matched: true,
+                defendantId: defendant._id,
+                confidence,
+                defendantName: defendant.fullName
+            };
+        }
+
+        // No match found
+        return {
+            success: true,
+            matched: false,
+            reason: 'No defendant found with matching booking number'
+        };
+
+    } catch (error) {
+        console.error('Error in autoMatchDefendant:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Manual match confirmation by staff
+ * Creates or confirms the defendant match and prepares for Case creation
+ * 
+ * @param {string} intakeQueueId - IntakeQueue record ID
+ * @param {string} defendantId - Defendant record ID (optional, creates new if not provided)
+ * @param {Object} staffInfo - { staffEmail, staffName }
+ * @returns {Promise<Object>} - { success, defendantId, caseId }
+ */
+export async function confirmDefendantMatch(intakeQueueId, defendantId = null, staffInfo = {}) {
+    try {
+        // Get IntakeQueue record
+        const intakeRecord = await wixData.get(COLLECTIONS.INTAKE_QUEUE, intakeQueueId, {
+            suppressAuth: true
+        });
+
+        if (!intakeRecord) {
+            return { success: false, error: 'IntakeQueue record not found' };
+        }
+
+        let finalDefendantId = defendantId;
+
+        // If no defendantId provided, create new defendant record
+        if (!finalDefendantId) {
+            const newDefendant = {
+                fullName: intakeRecord.defendantName,
+                email: intakeRecord.defendantEmail || `defendant_${Date.now()}@shamrock.local`,
+                phone: intakeRecord.defendantPhone,
+                bookingNumber: intakeRecord.defendantBookingNumber,
+                dateOfBirth: intakeRecord.defendantDOB,
+                address: {
+                    street: intakeRecord.defendantStreetAddress || '',
+                    city: intakeRecord.defendantCity || '',
+                    state: intakeRecord.defendantState || 'FL',
+                    zipCode: intakeRecord.defendantZipCode || ''
+                },
+                status: 'active',
+                createdFrom: 'intake-queue',
+                createdBy: staffInfo.staffEmail || 'system'
+            };
+
+            const defendantResult = await wixData.insert(COLLECTIONS.DEFENDANTS, newDefendant, {
+                suppressAuth: true
+            });
+            finalDefendantId = defendantResult._id;
+        }
+
+        // Update IntakeQueue with confirmed match
+        await wixData.update(COLLECTIONS.INTAKE_QUEUE, {
+            _id: intakeQueueId,
+            matchedDefendantId: finalDefendantId,
+            matchStatus: 'manually-confirmed',
+            matchConfidence: 100,
+            matchedAt: new Date(),
+            matchedBy: staffInfo.staffEmail || 'staff'
+        }, { suppressAuth: true });
+
+        // Create preliminary Case record (will be finalized after power#/case# confirmed)
+        const caseRecord = await createCaseFromIntake(intakeRecord, finalDefendantId, staffInfo);
+
+        return {
+            success: true,
+            defendantId: finalDefendantId,
+            caseId: caseRecord._id,
+            message: 'Defendant matched and case created successfully'
+        };
+
+    } catch (error) {
+        console.error('Error in confirmDefendantMatch:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Create Case record from IntakeQueue (after matching)
+ * Case remains editable until power#/case# confirmed and defendant released
+ * 
+ * @param {Object} intakeRecord - IntakeQueue record
+ * @param {string} defendantId - Matched defendant ID
+ * @param {Object} staffInfo - { staffEmail, staffName }
+ * @returns {Promise<Object>} - Created Case record
+ */
+async function createCaseFromIntake(intakeRecord, defendantId, staffInfo = {}) {
+    const caseData = {
+        // Core IDs
+        defendantId: defendantId,
+        intakeQueueId: intakeRecord._id,
+        caseNumber: null, // Set later by staff
+        powerNumber: null, // Set later by staff
+        
+        // Defendant Info (copied for quick access)
+        defendantName: intakeRecord.defendantName,
+        defendantEmail: intakeRecord.defendantEmail,
+        defendantPhone: intakeRecord.defendantPhone,
+        defendantBookingNumber: intakeRecord.defendantBookingNumber,
+        
+        // Indemnitor Info
+        indemnitorName: intakeRecord.indemnitorName,
+        indemnitorEmail: intakeRecord.indemnitorEmail,
+        indemnitorPhone: intakeRecord.indemnitorPhone,
+        indemnitorAddress: intakeRecord.indemnitorStreetAddress,
+        indemnitorEmployer: intakeRecord.indemnitorEmployer,
+        
+        // References
+        reference1Name: intakeRecord.reference1Name,
+        reference1Phone: intakeRecord.reference1Phone,
+        reference1Address: intakeRecord.reference1Address,
+        reference2Name: intakeRecord.reference2Name,
+        reference2Phone: intakeRecord.reference2Phone,
+        reference2Address: intakeRecord.reference2Address,
+        
+        // Jail/Court Info
+        county: intakeRecord.county,
+        jailFacility: intakeRecord.jailFacility,
+        arrestDate: intakeRecord.arrestDate,
+        nextCourtDate: intakeRecord.nextCourtDate,
+        
+        // Financial
+        totalBond: intakeRecord.totalBond,
+        premium: intakeRecord.premium,
+        paymentMethod: intakeRecord.paymentMethod,
+        
+        // Status Tracking
+        status: 'pending-confirmation', // Until power#/case# confirmed
+        paperworkStatus: intakeRecord.documentStatus || 'pending',
+        signingStatus: intakeRecord.signNowStatus || 'not-started',
+        paymentStatus: 'pending',
+        custodyStatus: 'in-custody', // Updated when defendant released
+        
+        // Permissions
+        isEditable: true, // Editable until posted
+        editableBy: ['admin'], // Only admin can edit after creation
+        
+        // Metadata
+        createdFrom: 'intake-queue',
+        createdBy: staffInfo.staffEmail || 'system',
+        createdAt: new Date(),
+        lastModifiedBy: staffInfo.staffEmail || 'system',
+        lastModifiedAt: new Date()
+    };
+
+    const caseResult = await wixData.insert(COLLECTIONS.CASES, caseData, {
+        suppressAuth: true
+    });
+
+    return caseResult;
+}
+
+/**
+ * Finalize case and remove from IntakeQueue
+ * Called after power#/case# confirmed and defendant released
+ * 
+ * @param {string} caseId - Case record ID
+ * @param {Object} finalData - { powerNumber, caseNumber, custodyStatus }
+ * @param {Object} staffInfo - { staffEmail, role }
+ * @returns {Promise<Object>} - { success, message }
+ */
+export async function finalizeCase(caseId, finalData = {}, staffInfo = {}) {
+    try {
+        // Verify staff has permission (admin only)
+        if (staffInfo.role !== 'admin') {
+            return { success: false, error: 'Only admin can finalize cases' };
+        }
+
+        // Get case record
+        const caseRecord = await wixData.get(COLLECTIONS.CASES, caseId, {
+            suppressAuth: true
+        });
+
+        if (!caseRecord) {
+            return { success: false, error: 'Case not found' };
+        }
+
+        // Update case with final info
+        await wixData.update(COLLECTIONS.CASES, {
+            _id: caseId,
+            powerNumber: finalData.powerNumber,
+            caseNumber: finalData.caseNumber,
+            custodyStatus: finalData.custodyStatus || 'released',
+            status: 'active',
+            isEditable: false, // Lock editing after posting
+            finalizedAt: new Date(),
+            finalizedBy: staffInfo.staffEmail
+        }, { suppressAuth: true });
+
+        // Remove from IntakeQueue (migration complete)
+        if (caseRecord.intakeQueueId) {
+            await wixData.remove(COLLECTIONS.INTAKE_QUEUE, caseRecord.intakeQueueId, {
+                suppressAuth: true
+            });
+        }
+
+        return {
+            success: true,
+            message: 'Case finalized and IntakeQueue record removed'
+        };
+
+    } catch (error) {
+        console.error('Error in finalizeCase:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get all pending matches (IntakeQueue records ready for matching)
+ * 
+ * @returns {Promise<Object>} - { success, pendingMatches[] }
+ */
+export async function getPendingMatches() {
+    try {
+        const results = await wixData.query(COLLECTIONS.INTAKE_QUEUE)
+            .hasSome('matchStatus', ['pending', 'auto-matched'])
+            .descending('_createdDate')
+            .find({ suppressAuth: true });
+
+        return {
+            success: true,
+            pendingMatches: results.items,
+            totalCount: results.totalCount
+        };
+
+    } catch (error) {
+        console.error('Error in getPendingMatches:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Check if user can edit a case
+ * 
+ * @param {string} caseId - Case record ID
+ * @param {Object} userInfo - { email, role }
+ * @returns {Promise<boolean>} - Can edit
+ */
+export async function canEditCase(caseId, userInfo = {}) {
+    try {
+        const caseRecord = await wixData.get(COLLECTIONS.CASES, caseId, {
+            suppressAuth: true
+        });
+
+        if (!caseRecord) return false;
+
+        // Case is locked after finalization
+        if (!caseRecord.isEditable) {
+            // Only admin can edit locked cases
+            return userInfo.role === 'admin';
+        }
+
+        // Before finalization, admin can edit
+        return userInfo.role === 'admin';
+
+    } catch (error) {
+        console.error('Error in canEditCase:', error);
+        return false;
+    }
+}

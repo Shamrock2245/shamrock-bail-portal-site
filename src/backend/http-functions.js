@@ -1192,3 +1192,186 @@ async function handleIntakeAction(request, actionFunction, idField = 'caseId') {
         return serverError({ body: { success: false, message: error.message } });
     }
 }
+
+
+/**
+ * POST /_functions/intakeWebhook
+ * 
+ * Webhook endpoint triggered when new IntakeQueue record is created
+ * Notifies GAS Dashboard immediately for real-time updates
+ * 
+ * This provides real-time notification to GAS when a new intake is submitted
+ * Polling backup (every 30 minutes) ensures no intakes are missed
+ * 
+ * Request body (from Wix Data Hook):
+ * {
+ *   "data": {
+ *     "_id": "intake-id",
+ *     "defendantName": "John Doe",
+ *     "defendantBookingNumber": "2024-001234",
+ *     "indemnitorName": "Jane Doe",
+ *     "county": "Lee",
+ *     "totalBond": 10000,
+ *     "_createdDate": "2024-01-31T..."
+ *   }
+ * }
+ */
+export async function post_intakeWebhook(request) {
+    try {
+        // Parse webhook payload
+        const payload = await request.body.json();
+        
+        // Extract intake data
+        const intakeData = payload.data || payload;
+        const intakeId = intakeData._id;
+
+        if (!intakeId) {
+            return badRequest({
+                body: { success: false, error: 'Missing intake ID' }
+            });
+        }
+
+        console.log(`📥 Intake Webhook received for: ${intakeId}`);
+
+        // Get GAS configuration
+        const gasApiKey = await getSecret('GAS_API_KEY');
+        const gasUrl = process.env.GAS_WEB_APP_URL || 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzc0XYqz0rN5jPZ3yRIh--Z3izfO1qiXyy64HVHRouLWmi3WHL2ZwJrMKA1xl-uwyg2Vg/exec';
+
+        // Prepare notification payload for GAS
+        const gasPayload = {
+            action: 'newIntakeNotification',
+            apiKey: gasApiKey,
+            intakeId: intakeId,
+            intakeData: {
+                defendantName: intakeData.defendantName,
+                defendantBookingNumber: intakeData.defendantBookingNumber,
+                indemnitorName: intakeData.indemnitorName,
+                indemnitorEmail: intakeData.indemnitorEmail,
+                indemnitorPhone: intakeData.indemnitorPhone,
+                county: intakeData.county,
+                totalBond: intakeData.totalBond,
+                premium: intakeData.premium,
+                submittedAt: intakeData._createdDate
+            }
+        };
+
+        // Notify GAS Dashboard (non-blocking)
+        fetch(gasUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(gasPayload)
+        }).then(response => {
+            if (response.ok) {
+                console.log('✅ GAS notified successfully');
+            } else {
+                console.error('⚠️ Failed to notify GAS:', response.statusText);
+                // Polling backup will catch it
+            }
+        }).catch(error => {
+            console.error('⚠️ Error notifying GAS:', error);
+            // Polling backup will catch it
+        });
+
+        // Update IntakeQueue with webhook status
+        await wixData.update('IntakeQueue', {
+            _id: intakeId,
+            webhookNotified: true,
+            webhookNotifiedAt: new Date()
+        }, { suppressAuth: true });
+
+        return ok({
+            body: {
+                success: true,
+                message: 'Webhook processed successfully',
+                intakeId: intakeId
+            }
+        });
+
+    } catch (error) {
+        console.error('Error processing intake webhook:', error);
+        return serverError({
+            body: {
+                success: false,
+                error: error.message
+            }
+        });
+    }
+}
+
+/**
+ * GET /_functions/pendingIntakes
+ * 
+ * Polling endpoint for GAS Dashboard to check for new intakes
+ * Called every 30 minutes as backup to webhook notifications
+ * 
+ * Query params:
+ * ?apiKey=xxx&since=2024-01-31T12:00:00Z
+ * 
+ * Returns:
+ * {
+ *   "success": true,
+ *   "intakes": [
+ *     {
+ *       "_id": "intake-id",
+ *       "defendantName": "John Doe",
+ *       ...
+ *     }
+ *   ],
+ *   "count": 5
+ * }
+ */
+export async function get_pendingIntakes(request) {
+    try {
+        const { apiKey, since } = request.query;
+
+        // Validate API key
+        if (!apiKey) {
+            return badRequest({
+                body: { success: false, error: 'Missing apiKey' }
+            });
+        }
+
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (apiKey !== validApiKey) {
+            return forbidden({
+                body: { success: false, error: 'Invalid API key' }
+            });
+        }
+
+        // Query IntakeQueue for new/pending records
+        let query = wixData.query('IntakeQueue')
+            .hasSome('matchStatus', ['pending', null]);
+
+        // Filter by timestamp if provided
+        if (since) {
+            const sinceDate = new Date(since);
+            query = query.gt('_createdDate', sinceDate);
+        }
+
+        const results = await query
+            .descending('_createdDate')
+            .limit(100)
+            .find({ suppressAuth: true });
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+                success: true,
+                intakes: results.items,
+                count: results.length,
+                timestamp: new Date().toISOString()
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching pending intakes:', error);
+        return serverError({
+            body: {
+                success: false,
+                error: error.message
+            }
+        });
+    }
+}
