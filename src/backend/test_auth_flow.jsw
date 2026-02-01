@@ -1,5 +1,5 @@
 
-import { generateMagicLink, onMagicLinkLoginV2, validateCustomSession } from 'backend/portal-auth';
+import { generateMagicLink, onMagicLinkLoginV2, validateCustomSession, lookupUserByContact } from 'backend/portal-auth';
 import wixData from 'wix-data';
 
 export async function testFullAuthFlow() {
