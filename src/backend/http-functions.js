@@ -146,6 +146,19 @@ export async function post_apiSyncCaseData(request) {
 }
 
 /**
+ * GET /_functions/testAuth
+ * Triggers the full auth flow test
+ */
+export async function get_testAuth(request) {
+    const { testFullAuthFlow } = await import('backend/test_auth_flow');
+    const result = await testFullAuthFlow();
+    return ok({
+        headers: { 'Content-Type': 'application/json' },
+        body: result
+    });
+}
+
+/**
  * POST /api/documents/add
  * Add a single pending document
  * 
@@ -1220,7 +1233,7 @@ export async function post_intakeWebhook(request) {
     try {
         // Parse webhook payload
         const payload = await request.body.json();
-        
+
         // Extract intake data
         const intakeData = payload.data || payload;
         const intakeId = intakeData._id;

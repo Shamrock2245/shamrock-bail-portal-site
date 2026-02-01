@@ -20,7 +20,10 @@ const RAG_KNOWLEDGE_BASE = {
             "Wait times at Ortiz can be 2-4 hours after bond is posted.",
             "Parking is free at the jail but paid at the court.",
             "Inmates are released 24/7, but shift change is 6PM-7PM (expect delays)."
-        ]
+        ],
+        resources: {
+            fallback_search: "https://www.sheriffleefl.org/booking-search/"
+        }
     },
     'collier': {
         name: "Collier County",
@@ -31,7 +34,10 @@ const RAG_KNOWLEDGE_BASE = {
             "Collier usually processes releases very quickly (1-2 hours).",
             "Ensure the Defendant has a ride; taxis are scarce at night.",
             "Video visitation is available in the lobby."
-        ]
+        ],
+        resources: {
+            fallback_search: "https://www2.colliersheriff.org/arrestsearch/"
+        }
     },
     'charlotte': {
         name: "Charlotte County",
@@ -41,7 +47,10 @@ const RAG_KNOWLEDGE_BASE = {
         tips: [
             "The jail lobby closes at 10 PM, but the bond window is 24/7.",
             "Do not park in the 'Official Use Only' spots."
-        ]
+        ],
+        resources: {
+            fallback_search: "https://www.ccso.org/forms/arrestdb.cfm"
+        }
     },
     'hendry': {
         name: "Hendry County",
@@ -92,7 +101,10 @@ const RAG_KNOWLEDGE_BASE = {
             "Expect long release times (8-12 hours).",
             "Parking at TGK is strictly enforced.",
             "Check for 'Magistrate Hold' before posting."
-        ]
+        ],
+        resources: {
+            fallback_search: "https://www.miamidade.gov/global/service.page?Mduid_service=ser1491494549439906"
+        }
     },
     'broward': {
         name: "Broward County",
@@ -102,7 +114,10 @@ const RAG_KNOWLEDGE_BASE = {
         tips: [
             "Inmates are released through the 'Release Center' on the side.",
             "Dress code enforced for court (No shorts)."
-        ]
+        ],
+        resources: {
+            fallback_search: "https://www.sheriff.org/DOD/Pages/ArrestSearch.aspx"
+        }
     },
     'palm-beach': {
         name: "Palm Beach County",
@@ -142,7 +157,10 @@ const RAG_KNOWLEDGE_BASE = {
         tips: [
             "Wait in the visitor lot; do not idle in the release lane.",
             "Releases are processed in batches."
-        ]
+        ],
+        resources: {
+            fallback_search: "https://www.pcsoweb.com/whos-in-jail/"
+        }
     },
     'pasco': {
         name: "Pasco County",
@@ -161,7 +179,10 @@ const RAG_KNOWLEDGE_BASE = {
         tips: [
             "Sheriff Grady Judd's policies are strict; ensure all ID info matches perfectly.",
             "Video visitation must be scheduled in advance."
-        ]
+        ],
+        resources: {
+            fallback_search: "https://www.polksheriff.org/detention/jail-inquiry"
+        }
     },
     'orange': {
         name: "Orange County",

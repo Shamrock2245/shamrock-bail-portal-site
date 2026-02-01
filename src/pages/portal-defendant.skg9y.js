@@ -47,9 +47,11 @@ $w.onReady(async function () {
 
         if (!sessionToken) {
             console.warn("⛔ No session token found. Redirecting to Portal Landing.");
-            $w('#textUserWelcome').text = "Authentication Error: No session token found locally.";
+            console.warn("⛔ No session token found. Redirecting to Portal Landing.");
+            $w('#textUserWelcome').text = "Authentication Error: No session found. Please try logging in again.";
             $w('#textUserWelcome').show();
-            // DEBUG MODE: Don't redirect immediately so we can see the error
+            console.log("DEBUG: Query args:", wixLocation.query);
+            console.log("DEBUG: Storage token:", getSessionToken());
             // wixLocation.to('/portal-landing'); 
             return;
         }

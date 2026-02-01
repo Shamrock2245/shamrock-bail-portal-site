@@ -117,6 +117,30 @@ function getStaffAccountDetails(email) {
  * Look up user by email or phone in Cases collection
  * Returns role and person info if found
  */
+
+
+/**
+ * Helper: Build a robust phone query
+ * Checks multiple formats: E.164, Raw 10-digit, Formatted
+ */
+function buildPhoneQuery(collection, field, phoneInput) {
+    const clean = phoneInput.replace(/\D/g, ''); // 2395551234
+    const e164 = clean.length === 10 ? '+1' + clean : '+' + clean;
+    const formatted = clean.length === 10 ?
+        `(${clean.substring(0, 3)}) ${clean.substring(3, 6)}-${clean.substring(6)}` : phoneInput;
+
+    // Create an OR query for all variants
+    return wixData.query(collection)
+        .eq(field, e164)
+        .or(wixData.query(collection).eq(field, clean))
+        .or(wixData.query(collection).eq(field, formatted))
+        .or(wixData.query(collection).contains(field, clean.substring(clean.length - 7))); // Last 7 digits backup
+}
+
+/**
+ * Look up user by email or phone in Cases collection
+ * Returns role and person info if found
+ */
 export async function lookupUserByContact(contact) {
     try {
         const normalized = isEmail(contact)
@@ -130,7 +154,7 @@ export async function lookupUserByContact(contact) {
             return {
                 found: true,
                 personId: staffDetails.personId,
-                role: staffDetails.role, // This will be 'admin' or 'staff'
+                role: staffDetails.role,
                 email: normalized,
                 name: staffDetails.name,
                 isStaff: true
@@ -138,17 +162,18 @@ export async function lookupUserByContact(contact) {
         }
 
         // 2. Search in Cases collection
-        let query = wixData.query(CONFIG.CASES_COLLECTION);
+        let results = { items: [] };
 
         if (isEmail(contact)) {
             // Check defendant email
-            query = query.eq('defendantEmail', normalized);
+            results = await wixData.query(CONFIG.CASES_COLLECTION)
+                .eq('defendantEmail', normalized)
+                .find({ suppressAuth: true });
         } else {
-            // Check defendant phone
-            query = query.eq('defendantPhone', normalized);
+            // Check defendant phone (Fuzzy Match)
+            const query = buildPhoneQuery(CONFIG.CASES_COLLECTION, 'defendantPhone', contact);
+            results = await query.find({ suppressAuth: true });
         }
-
-        let results = await query.find({ suppressAuth: true });
 
         if (results.items.length > 0) {
             const caseData = results.items[0];
@@ -165,14 +190,14 @@ export async function lookupUserByContact(contact) {
 
         // 3. Check indemnitor fields
         if (isEmail(contact)) {
-            query = wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('indemnitorEmail', normalized);
+            results = await wixData.query(CONFIG.CASES_COLLECTION)
+                .eq('indemnitorEmail', normalized)
+                .find({ suppressAuth: true });
         } else {
-            query = wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('indemnitorPhone', normalized);
+            // Check indemnitor phone (Fuzzy Match)
+            const query = buildPhoneQuery(CONFIG.CASES_COLLECTION, 'indemnitorPhone', contact);
+            results = await query.find({ suppressAuth: true });
         }
-
-        results = await query.find({ suppressAuth: true });
 
         if (results.items.length > 0) {
             const caseData = results.items[0];

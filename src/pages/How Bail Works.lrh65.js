@@ -198,13 +198,27 @@ async function setupCommonBailAmounts() {
         if (element.type === '$w.Table') {
             console.log("📊 #amountsRepeater is a Table. Setting rows.");
 
-            // Map CMS fields to table columns
-            // CMS uses: "Offense" and "Bail Range" (with space)
-            const tableRows = data.map(item => ({
-                // Map to column keys expected by the table
-                offense: item.offense || item.Offense || item.title || "Unknown Offense",
-                range: item.bailRange || item['Bail Range'] || item.range || "Varies"
-            }));
+            // Map CMS fields to table columns - BE ROBUST
+            // The table likely expects columns 'offense' and 'range' OR 'bailRange'
+            // We should inspect the first item keys to be sure, but we can't see the table config from here.
+            // Best approach: Send comprehensive object.
+            const tableRows = data.map(item => {
+                // Find best candidates for Offense
+                const offenseVal = item.offense || item.Offense || item.title || item['Charge'] || item['charge'] || "Unknown Offense";
+                // Find best candidates for Range
+                const rangeVal = item.bailRange || item['Bail Range'] || item.range || item['Bail Amount'] || item['amount'] || "Varies";
+
+                return {
+                    // Standard keys
+                    offense: offenseVal,
+                    range: rangeVal,
+                    // Fallback keys in case table columns are named differently
+                    title: offenseVal,
+                    amount: rangeVal,
+                    // Pass original just in case
+                    ...item
+                };
+            });
 
             element.rows = tableRows;
 
@@ -212,24 +226,17 @@ async function setupCommonBailAmounts() {
             // It's a Repeater
             console.log("🔄 #amountsRepeater is a Repeater. Binding items.");
 
-            // FIX: Set onItemReady BEFORE setting data
             element.onItemReady(($item, itemData) => {
                 // Map CMS field names (may have spaces or different casing)
-                const offense = itemData.offense || itemData.Offense || itemData.title || itemData.offenseName || "Unknown Offense";
+                const offense = itemData.offense || itemData.Offense || itemData.title || itemData.offenseName || itemData.charge || "Unknown Offense";
                 const range = itemData.bailRange || itemData['Bail Range'] || itemData.range || itemData.amount || "Varies";
 
                 // Try multiple possible element IDs for flexibility
-                // User mentioned "first field offense, second field range"
-                // Added: #text1, #text2 (common defaults), #offenseText, #rangeText
-                const offenseEl = $item('#offenseName') || $item('#offense') || $item('#chargeName') || $item('#textOffense') || $item('#offenseText') || $item('#title');
-                const rangeEl = $item('#bailRange') || $item('#range') || $item('#amount') || $item('#textRange') || $item('#rangeText') || $item('#subtitle');
+                const offenseEl = $item('#offenseName') || $item('#offense') || $item('#textOffense') || $item('#chargeName') || $item('#text1'); // Added text1
+                const rangeEl = $item('#bailRange') || $item('#range') || $item('#textRange') || $item('#bailAmount') || $item('#text2'); // Added text2
 
                 if (offenseEl && offenseEl.valid) offenseEl.text = offense;
                 if (rangeEl && rangeEl.valid) rangeEl.text = range;
-
-                // Debug log if elements missing
-                if (!offenseEl || !offenseEl.valid) console.warn("⚠️ Could not find 'Offense' text element in #amountsRepeater item");
-                if (!rangeEl || !rangeEl.valid) console.warn("⚠️ Could not find 'Range' text element in #amountsRepeater item");
             });
 
             element.data = data;
@@ -260,23 +267,35 @@ async function setupFAQ() {
         const pagePath = '/how-bail-works';
 
         // 1. Try 'Import 22' (Exact ID from Screenshot)
+        // STRATEGY: Try specific first, then broad (removing active/page filters)
         try {
             console.log("Checking Import 22...");
+            // Attempt 1: Strict (Active + Page)
             result = await wixData.query('Import 22').eq('isActive', true).contains('relatedPage', pagePath).ascending('sortOrder').limit(20).find();
+
+            // Attempt 2: Active only
             if (result.items.length === 0) {
-                // Try general if page specific not found
-                result = await wixData.query('Import 22').eq('isActive', true).ascending('sortOrder').limit(10).find();
+                console.log("...Strict search empty. Trying active items...");
+                result = await wixData.query('Import 22').eq('isActive', true).limit(20).find();
             }
+
+            // Attempt 3: ANYTHING (Just to get data on screen)
+            if (result.items.length === 0) {
+                console.log("...Active search empty. Fetching ANY items from Import 22...");
+                result = await wixData.query('Import 22').limit(20).find();
+            }
+
         } catch (e) {
-            console.warn("Import 22 failed, trying 'Faqs'...");
+            console.warn("Import 22 query failed, trying 'Faqs'...", e);
         }
 
-        // 2. Try 'Faqs' (Standard ID)
+        // 2. Try 'Faqs' (Standard ID) if Import 22 failed
         if (!result || result.items.length === 0) {
             try {
+                // Same fallback strategy
                 result = await wixData.query('Faqs').eq('isActive', true).contains('relatedPage', pagePath).ascending('sortOrder').limit(20).find();
                 if (result.items.length === 0) {
-                    result = await wixData.query('Faqs').eq('isActive', true).ascending('sortOrder').limit(10).find();
+                    result = await wixData.query('Faqs').limit(10).find();
                 }
             } catch (e) { console.warn("Faqs query failed."); }
         }
@@ -285,7 +304,7 @@ async function setupFAQ() {
             console.log(`✅ Loaded ${result.items.length} FAQs from CMS.`);
             data = result.items;
         } else {
-            console.warn("⚠️ No FAQs found in either Import22 or Faqs.");
+            console.warn("⚠️ No FAQs found in either Import 22 or Faqs collections.");
         }
 
     } catch (err) {
