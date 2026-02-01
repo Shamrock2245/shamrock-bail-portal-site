@@ -389,12 +389,11 @@ export async function get_authCallback(request) {
             role = lookup.role;
             sessionToken = await createCustomSession(lookup.personId, lookup.role, lookup.caseId);
         } else {
-            // New User (Default to Defendant)
-            // CREATE NEW USER RECORD HERE IF NEEDED? 
-            // For now, follow "Magic Link" logic: treating new emails as "New Defendant"
-            role = 'defendant';
+            // New User (Default to Indemnitor, matching Magic Link flow)
+            // Strangers are more likely to be Indemnitors/Signers than Defendants
+            role = 'indemnitor';
             const newPersonId = `social_${userProfile.provider}_${userProfile.providerId}`;
-            sessionToken = await createCustomSession(newPersonId, 'defendant');
+            sessionToken = await createCustomSession(newPersonId, 'indemnitor');
         }
 
         // 4. Return Success HTML

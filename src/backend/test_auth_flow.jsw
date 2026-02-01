@@ -47,10 +47,20 @@ export async function testFullAuthFlow() {
         if (!sessionRecord.items[0].isActive) throw new Error('Session is not ACTIVE');
         log('✅ Session record exists and is active.');
 
+
         log('🎉 TEST PASSED: Full flow is healthy.');
+
+        // 5. Extra: Test Email Lookup (Simulate Social Login)
+        log('5. Testing Email Lookup (Social Simulation)...');
+        const emailLookup = await lookupUserByContact('test@example.com');
+        // We expect it to be NOT FOUND unless we seeded it, or FOUND if seeded. 
+        // Just checking it doesn't crash.
+        log(`   - Lookup result for 'test@example.com': ${emailLookup.found ? 'FOUND' : 'NOT FOUND'} (OK)`);
+
         return { success: true, logs: logs };
 
     } catch (error) {
+
         log(`❌ TEST FAILED: ${error.message}`);
         console.error("Auth Test Failed:", error);
         return { success: false, logs: logs, error: error.message };
