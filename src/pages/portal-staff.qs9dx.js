@@ -20,6 +20,9 @@ let currentSession = null; // Store validated session data
 let lastStats = null; // Cache stats for status restoration
 
 $w.onReady(async function () {
+    // SEO: Prevent Indexing (Protected Page)
+    wixSeo.setMetaTags([{ "name": "robots", "content": "noindex, nofollow" }]);
+
     try {
         if ($w('#welcomeText').type) {
             $w('#welcomeText').text = "Loading Dashboard...";
@@ -719,9 +722,9 @@ function setupStartPaperworkButton() {
                 // Check if we have a selected case from the repeater
                 // If not, we'll need to prompt the user to select a case first
                 // For now, let's open the DefendantDetails lightbox for the first pending case
-                
-                const pendingCases = allCases.filter(c => 
-                    c.paperworkStatus === 'Pending' || 
+
+                const pendingCases = allCases.filter(c =>
+                    c.paperworkStatus === 'Pending' ||
                     c.paperworkStatus === 'Not Started' ||
                     !c.paperworkStatus
                 );
@@ -737,7 +740,7 @@ function setupStartPaperworkButton() {
                 // This gives staff the option to choose signing method (Email/SMS/Kiosk)
                 const firstCase = pendingCases[0];
                 console.log(`Opening DefendantDetails for: ${firstCase.defendantName}`);
-                
+
                 LightboxController.setupDefendantDetailsLightbox(firstCase);
 
                 // Reset button state

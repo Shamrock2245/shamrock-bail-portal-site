@@ -24,7 +24,10 @@ import { captureFullLocationSnapshot } from 'public/geolocation-client';
 let currentSession = null; // Store validated session data
 
 $w.onReady(async function () {
-    console.log("🚀 Defendant Portal: Page Code Loaded");
+    // SEO: Prevent Indexing (Protected Page)
+    wixSeo.setMetaTags([{ "name": "robots", "content": "noindex, nofollow" }]);
+
+    console.log("🚀 Portal Defendant v2.0 Loaded (Simplified Auth)");
 
     // 0. Setup Listeners IMMEDIATELY
     LightboxController.init($w);

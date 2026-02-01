@@ -6,8 +6,8 @@
  */
 
 const GEMINI_CONFIG = {
-    MODEL: 'gemini-1.5-flash',
-    API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+    MODEL: 'gemini-1.5-flash-001',
+    API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent',
     MAX_RETRIES: 2
 };
 

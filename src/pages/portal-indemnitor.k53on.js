@@ -18,6 +18,7 @@ import wixWindow from 'wix-window';
 import wixData from 'wix-data';
 import { validateCustomSession, getIndemnitorDetails } from 'backend/portal-auth';
 import { submitIntakeForm } from 'backend/intakeQueue.jsw';
+import wixSeo from 'wix-seo';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 
 // Page state
@@ -27,6 +28,9 @@ let currentIntake = null;
 let isSubmitting = false;
 
 $w.onReady(async function () {
+    // SEO: Prevent Indexing (Protected Page)
+    wixSeo.setMetaTags([{ "name": "robots", "content": "noindex, nofollow" }]);
+
     console.log("🚀 Indemnitor Portal: Page Code Loaded");
 
     // 0. Setup Listeners IMMEDIATELY (so buttons work even if data loads slowly)

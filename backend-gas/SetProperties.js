@@ -44,3 +44,51 @@ function forceUpdateConfig() {
 
     return 'Success - Properties Saved';
 }
+
+/**
+ * Safely updates the Gemini API Key.
+ * Run this function in the Apps Script Editor to set the key.
+ */
+function SAFE_updateGeminiKey() {
+    const props = PropertiesService.getScriptProperties();
+
+    // REPLACE WITH ACTUAL KEY BEFORE RUNNING
+    // We use a variable here to avoid committing the actual key to git if possible,
+    // but for now, the user can edit this in the GAS editor.
+    const NEW_GEMINI_KEY = 'YOUR_GEMINI_API_KEY_HERE';
+
+    if (NEW_GEMINI_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+        throw new Error("⚠️ Please replace 'YOUR_GEMINI_API_KEY_HERE' with the actual key in the script before running.");
+    }
+
+    props.setProperty('GEMINI_API_KEY', NEW_GEMINI_KEY);
+    console.log('✅ GEMINI_API_KEY updated successfully.');
+
+    // Verify
+    const verify = props.getProperty('GEMINI_API_KEY');
+    console.log('Verifying... Key length: ' + (verify ? verify.length : 0));
+}
+
+/**
+ * Diagnostic: Check all AI Agents configuration
+ */
+function DIAGNOSE_AGENTS() {
+    const props = PropertiesService.getScriptProperties();
+    const geminiKey = props.getProperty('GEMINI_API_KEY');
+
+    console.log("--- AGENT DIAGNOSTIC ---");
+    console.log(`Gemini Key Present: ${!!geminiKey} (Length: ${geminiKey ? geminiKey.length : 0})`);
+
+    try {
+        if (typeof testGeminiConnection === 'function') {
+            console.log("Testing Connection...");
+            const result = testGeminiConnection();
+            console.log(`Connection Test: ${result ? 'PASSED ✅' : 'FAILED ❌'}`);
+        } else {
+            console.warn("testGeminiConnection function not found.");
+        }
+    } catch (e) {
+        console.error("Connection Test Error: " + e.message);
+    }
+    console.log("------------------------");
+}
