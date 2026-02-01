@@ -48,7 +48,7 @@ function RAG_generateIntroSMS(lead) {
  * Calls Google Gemini 1.5 Flash to generate natural text
  */
 function callGeminiAPI_(apiKey, lead, context) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${apiKey}`;
 
     // Robust Prompt Engineering
     const systemPrompt = `You are "Shamrock", a helpful, empathetic, and professional bail bond agent assistant. 
