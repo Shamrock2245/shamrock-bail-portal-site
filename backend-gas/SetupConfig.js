@@ -16,10 +16,10 @@ function setupSlackProperties() {
     const SLACK_CONFIG = {
         'SLACK_APP_ID': 'A09NLQOG8QN',
         'SLACK_CLIENT_ID': '9768679556864.9768016552630',
-        'SLACK_CLIENT_SECRET': 'YOUR_CLIENT_SECRET_HERE', // From Screenshot (masked)
-        'SLACK_SIGNING_SECRET': 'YOUR_SIGNING_SECRET_HERE', // From Screenshot (masked)
-        'SLACK_VERIFICATION_TOKEN': 'YOUR_VERIFICATION_TOKEN_HERE', // From Screenshot (masked)
-        'SLACK_BOT_TOKEN': 'xoxb-YOUR-BOT-TOKEN-HERE' // Need this for posting messages!
+        'SLACK_CLIENT_SECRET': 'YOUR_SLACK_CLIENT_SECRET',
+        'SLACK_SIGNING_SECRET': 'YOUR_SLACK_SIGNING_SECRET',
+        'SLACK_VERIFICATION_TOKEN': 'YOUR_SLACK_VERIFICATION_TOKEN',
+        'SLACK_BOT_TOKEN': 'YOUR_SLACK_BOT_TOKEN'
     };
 
     // 2. Save to Properties
@@ -34,3 +34,22 @@ function setupSlackProperties() {
 
     console.log("Slack Configuration Check Complete.");
 }
+
+/**
+ * Configures Twilio API Credentials.
+ * Replace placeholders with your actual Twilio Account SID, Auth Token, and Phone Number.
+ */
+function setupTwilioProperties() {
+    const props = PropertiesService.getScriptProperties();
+
+    // 1. Twilio Credentials
+    // Replace 'YOUR_TWILIO_ACCOUNT_SID' with your actual Account SID
+    props.setProperty('TWILIO_ACCOUNT_SID', 'YOUR_TWILIO_ACCOUNT_SID');
+    // Replace 'YOUR_TWILIO_AUTH_TOKEN' with your actual Auth Token
+    props.setProperty('TWILIO_AUTH_TOKEN', 'YOUR_TWILIO_AUTH_TOKEN');
+    // Replace '+17272952245' with your actual Twilio Phone Number
+    props.setProperty('TWILIO_PHONE_NUMBER', '+17272952245');
+
+    console.log("Twilio Configuration Check Complete.");
+}
+```

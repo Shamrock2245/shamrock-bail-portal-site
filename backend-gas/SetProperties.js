@@ -23,18 +23,18 @@ function ADMIN_UpdateAllProperties() {
         'SLACK_WEBHOOK_COURT_DATES': '',
         'SLACK_WEBHOOK_FORFEITURES': '',
         'SLACK_WEBHOOK_NEW_CASES': '',
-        'SLACK_BOT_TOKEN': 'REPLACE_WITH_BOT_TOKEN', // Optional if using Bot API
+        'SLACK_BOT_TOKEN': 'YOUR_SLACK_BOT_TOKEN', // Optional if using Bot API
 
         // --- SIGNNOW INTEGRATION ---
         'SIGNNOW_API_BASE_URL': 'https://api.signnow.com',
-        'SIGNNOW_API_TOKEN': 'REPLACE_WITH_SIGNNOW_TOKEN', // Bearer Token
+        'SIGNNOW_API_TOKEN': 'YOUR_SIGNNOW_BEARER_TOKEN', // Bearer Token
         'SIGNNOW_FOLDER_ID': '79a05a382b38460b95a78d94a6d79a5ad55e89e6', // "Bail Bonds" Folder
         'SIGNNOW_TEMPLATE_ID': 'REPLACE_WITH_TEMPLATE_ID', // Default Template
 
         // --- TWILIO INTEGRATION ---
-        'TWILIO_ACCOUNT_SID': 'REPLACE_WITH_SID',
-        'TWILIO_AUTH_TOKEN': 'REPLACE_WITH_AUTH_TOKEN',
-        'TWILIO_PHONE_NUMBER': '+15555555555',
+        'TWILIO_ACCOUNT_SID': 'YOUR_TWILIO_ACCOUNT_SID',
+        'TWILIO_AUTH_TOKEN': 'YOUR_TWILIO_AUTH_TOKEN',
+        'TWILIO_PHONE_NUMBER': '+17272952245',
         'TWILIO_VERIFY_SERVICE_SID': '',
 
         // --- GOOGLE DRIVE & SHEETS ---
