@@ -1,7 +1,7 @@
 import wixData from 'wix-data';
-import { sendMemberNotification, sendAdminNotification, NOTIFICATION_TYPES } from 'backend/notificationService';
+import { sendMemberNotification, sendAdminNotification, NOTIFICATION_TYPES } from 'backend/notificationService.jsw';
 import { COLLECTIONS } from 'public/collectionIds';
-import { notifyGASOfNewIntake } from './gasIntegration.jsw';
+import { notifyGASOfNewIntake } from 'backend/gasIntegration.jsw';
 
 /**
  * Hook: Cases - After Insert
