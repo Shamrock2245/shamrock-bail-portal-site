@@ -6211,8 +6211,8 @@
                         <div id="drop-zone"
                             style="border: 2px dashed var(--border-strong); padding: 32px; text-align: center; border-radius: var(--radius); cursor:pointer; background: var(--surface-2); margin-bottom:20px; transition: all 0.3s ease;"
                             onclick="document.getElementById('clerk-file').click()"
-                            ondragover="event.preventDefault(); this.style.borderColor=var(--accent); this.style.background=var(--surface-3);"
-                            ondragleave="this.style.borderColor=var(--border-strong); this.style.background=var(--surface-2);"
+                            ondragover="event.preventDefault(); this.style.borderColor='var(--accent)'; this.style.background='var(--surface-3)';"
+                            ondragleave="this.style.borderColor='var(--border-strong)'; this.style.background='var(--surface-2)';"
                             ondrop="handleDrop(event)">
                             <div style="font-size: 42px; margin-bottom: 12px; opacity: 0.8;">📸</div>
                             <strong style="display:block; font-size:16px; margin-bottom:4px;">Upload Booking Image or
@@ -6826,9 +6826,6 @@
                     `<span style="background:rgba(0,0,0,0.1); padding:2px 6px; border-radius:4px; font-size:10px; margin-right:4px;">${c.name} (${c.count})</span>`
                 ).join('');
             }
-        }
-                })
-                .doPostFromClient({ action: 'fetchPendingIntakes' });
         }
 
         function renderQueue(response) {
