@@ -597,7 +597,8 @@ function safeEnable(selector) { try { if ($w(selector).valid) $w(selector).enabl
 function safeOnClick(selector, handler) { try { if ($w(selector).valid) $w(selector).onClick(handler); } catch (e) { } }
 function safeOnInput(selector, handler) { try { if ($w(selector).valid) $w(selector).onInput(handler); } catch (e) { } }
 
-initializePage,
+export {
+    initializePage,
     handleSubmitIntake,
     validateIntakeForm,
     collectIntakeFormData
