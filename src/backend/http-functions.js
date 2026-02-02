@@ -382,25 +382,23 @@ export async function get_authCallback(request) {
         if (lookup.found) {
             // Existing User
             role = lookup.role;
-            const sessionResult = await createCustomSession(
+            sessionToken = await createCustomSession(
                 lookup.personId,
                 lookup.role,
                 lookup.caseId,
                 { email: userProfile.email, name: userProfile.name }
             );
-            sessionToken = sessionResult.sessionToken;
-            wixSessionToken = sessionResult.wixSessionToken;
+            wixSessionToken = null; // API bypasses Wix Members
         } else {
             // New User (Default to Indemnitor)
             const newPersonId = `social_${state}_${userProfile.id || Date.now()}`;
-            const sessionResult = await createCustomSession(
+            sessionToken = await createCustomSession(
                 newPersonId,
                 'indemnitor',
                 null,
                 { email: userProfile.email, name: userProfile.name }
             );
-            sessionToken = sessionResult.sessionToken;
-            wixSessionToken = sessionResult.wixSessionToken;
+            wixSessionToken = null; // API bypasses Wix Members
         }
 
         // 4. Return Success HTML with token
