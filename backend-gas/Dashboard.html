@@ -2533,7 +2533,7 @@
            CONFIGURATION
            ========================================================= */
         const CONFIG = {
-            gasWebAppUrl: '<?= gasUrl ?>' || 'https://script.google.com/macros/s/AKfycbw4ckljcDfPBRFJAcQ-nA14VIWXFxnWZNH2ik4nXJdplqAxZdE8UGGYg6QSqum7Gcw6AQ/exec', // AUTO-INJECTED v113
+            gasWebAppUrl: '<?= gasUrl ?>' || 'https://script.google.com/macros/s/AKfycbxAX1e0IXapfxIQ8sPPEOujZGSSi1-WDSze94W9W8AWCVGk_MQf6aQwsbu85Pcuq0IITQ/exec', // AUTO-INJECTED v113
             signNowApiBase: 'https://api.signnow.com',
             // signNowToken moved to Script Properties for security
 
@@ -6609,7 +6609,7 @@
                     google.script.run
                         .withSuccessHandler(Queue.render)
                         .withFailureHandler(err => UI.setHTML('intake-queue-body', `<tr><td colspan="7" class="text-error" style="padding:20px; text-align:center;">Error: ${err.message}</td></tr>`))
-                        .getWixIntakeQueue(); // ← FIXED: Now queries Wix CMS instead of Sheet
+                        .getWixIntakeQueue();
                 },
 
                 render: function (intakes) {
@@ -6650,91 +6650,84 @@
                 },
 
                 load: function (item) {
-                    if (!confirm(`Load IntakeQueue data for ${item.DefendantName}?\n\nThis will auto-fill all form fields.`)) return;
+                    if (!confirm(`Load data for ${item.DefendantName}? Data will overwrite current "Generate Packet" form.`)) return;
 
-                    console.log('Loading IntakeQueue item:', item);
-
+                    // 1. Switch to "Generate" tab
+                    // Check if switchTab global exists, else try UI.switchTab or manual trigger
                     try {
-                        // STEP 1: Populate Defendant Fields (if defendant info is in IntakeQueue)
-                        if (item._defendantName) {
-                            const nameParts = (item._defendantName || '').split(' ');
-                            if (nameParts.length > 0) UI.setValue('defendant-first-name', nameParts[0]);
-                            if (nameParts.length > 1) UI.setValue('defendant-last-name', nameParts.slice(1).join(' '));
-                        }
-                        if (item._defendantEmail) UI.setValue('defendant-email', item._defendantEmail);
-                        if (item._defendantPhone) UI.setValue('defendant-phone', item._defendantPhone);
-                        if (item._defendantDOB) UI.setValue('defendant-dob', item._defendantDOB);
-                        if (item._county) UI.setValue('defendant-county', item._county);
-                        if (item._jailFacility) UI.setValue('defendant-jail-facility', item._jailFacility);
+                        if (typeof switchTab === 'function') switchTab(null, 'generate');
+                        else if (UI && UI.switchTab) UI.switchTab('generate');
+                        else document.querySelector('[onclick*="generate"]').click();
+                    } catch (e) { console.warn("Could not switch tab automatically", e); }
 
-                        // STEP 2: Add Indemnitor with ALL fields
-                        // Parse indemnitor name
-                        const indemnitorNameParts = (item._indemnitorName || '').split(' ');
-                        const indemnitorFirstName = indemnitorNameParts[0] || '';
-                        const indemnitorLastName = indemnitorNameParts.slice(1).join(' ') || '';
+                    const data = item._original || {}; // Raw Wix Data
 
-                        const indemnitorData = {
-                            firstName: indemnitorFirstName,
-                            lastName: indemnitorLastName,
-                            phone: item._indemnitorPhone || '',
-                            email: item._indemnitorEmail || '',
-                            address: item._indemnitorStreetAddress || '',
-                            city: item._indemnitorCity || '',
-                            zip: item._indemnitorZipCode || '',
-                            employer: item._indemnitorEmployer || '',
-                            employerPhone: item._indemnitorEmployerPhone || '',
-                            employerCity: item._indemnitorEmployerCity || '',
-                            employerState: item._indemnitorEmployerState || '',
-                            supervisor: item._indemnitorSupervisorName || '',
-                            supervisorPhone: item._indemnitorSupervisorPhone || '',
-                            ref1Name: item._reference1Name || '',
-                            ref1Phone: item._reference1Phone || '',
-                            ref1Address: `${item._reference1Address || ''} ${item._reference1City || ''} ${item._reference1State || ''} ${item._reference1Zip || ''}`.trim(),
-                            ref2Name: item._reference2Name || '',
-                            ref2Phone: item._reference2Phone || '',
-                            ref2Address: `${item._reference2Address || ''} ${item._reference2City || ''} ${item._reference2State || ''} ${item._reference2Zip || ''}`.trim()
-                        };
+                    // Helper for Dates (YYYY-MM-DD)
+                    const toDateInput = (d) => {
+                        if (!d) return '';
+                        try { return new Date(d).toISOString().split('T')[0]; } catch (e) { return ''; }
+                    };
 
-                        // Use addIndemnitor function if available
-                        if (typeof addIndemnitor === 'function') {
-                            console.log('Adding indemnitor with data:', indemnitorData);
-                            addIndemnitor(indemnitorData);
-                        } else {
-                            console.warn('addIndemnitor function not found, attempting manual population');
-                            // Fallback: try to populate indemnitor-1 fields directly
-                            UI.setValue('indemnitor-1-first', indemnitorFirstName);
-                            UI.setValue('indemnitor-1-last', indemnitorLastName);
-                            UI.setValue('indemnitor-1-phone', item._indemnitorPhone);
-                            UI.setValue('indemnitor-1-email', item._indemnitorEmail);
-                            UI.setValue('indemnitor-1-address', item._indemnitorStreetAddress);
-                            UI.setValue('indemnitor-1-city', item._indemnitorCity);
-                            UI.setValue('indemnitor-1-zip', item._indemnitorZipCode);
-                            UI.setValue('indemnitor-1-employer', item._indemnitorEmployer);
-                            UI.setValue('indemnitor-1-employer-phone', item._indemnitorEmployerPhone);
-                            UI.setValue('indemnitor-1-employer-city', item._indemnitorEmployerCity);
-                            UI.setValue('indemnitor-1-employer-state', item._indemnitorEmployerState);
-                            UI.setValue('indemnitor-1-supervisor', item._indemnitorSupervisorName);
-                            UI.setValue('indemnitor-1-supervisor-phone', item._indemnitorSupervisorPhone);
-                            UI.setValue('indemnitor-1-ref1-name', item._reference1Name);
-                            UI.setValue('indemnitor-1-ref1-phone', item._reference1Phone);
-                            UI.setValue('indemnitor-1-ref1-address', indemnitorData.ref1Address);
-                            UI.setValue('indemnitor-1-ref2-name', item._reference2Name);
-                            UI.setValue('indemnitor-1-ref2-phone', item._reference2Phone);
-                            UI.setValue('indemnitor-1-ref2-address', indemnitorData.ref2Address);
-                        }
+                    // Helper for Phones (Strip non-numeric)
+                    const toPhone = (p) => (p || '').replace(/[^\d]/g, '');
 
-                        // STEP 3: Switch to Generate tab to show populated form
-                        if (typeof switchTab === 'function') {
-                            switchTab(null, 'generate');
-                        }
+                    console.log("📥 Loading Intake Data:", data);
 
-                        UI.showToast('✅ IntakeQueue data loaded! All fields populated.', 'success');
-                        console.log('IntakeQueue load complete');
+                    // 2. Populate Defendant
+                    UI.setValue('defendant-first-name', data.defendantFirstName);
+                    UI.setValue('defendant-middle-name', data.defendantMiddleName);
+                    UI.setValue('defendant-last-name', data.defendantLastName);
+                    UI.setValue('defendant-dob', toDateInput(data.defendantDOB));
+                    UI.setValue('defendant-ssn', data.defendantSSN);
+                    UI.setValue('defendant-dl-number', data.defendantDL || ''); // Mapping check
+                    UI.setValue('defendant-street-address', data.defendantAddress || data.defendantStreetAddress);
+                    UI.setValue('defendant-city', data.defendantCity);
+                    UI.setValue('defendant-state', data.defendantState);
+                    UI.setValue('defendant-zipcode', data.defendantZipCode);
+                    UI.setValue('defendant-phone', toPhone(data.defendantPhone));
+                    UI.setValue('defendant-email', data.defendantEmail);
+                    UI.setValue('defendant-booking-number', data.defendantBookingNumber);
+                    UI.setValue('defendant-county', data.county);
+                    UI.setValue('defendant-jail-facility', data.jailFacility);
 
-                    } catch (e) {
-                        console.error('Error loading IntakeQueue data:', e);
-                        UI.showToast('⚠️ Error loading data: ' + e.message, 'error');
-                    }
+                    // 3. Populate Indemnitor 1
+                    UI.setValue('indemnitor-1-first', data.indemnitorFirstName);
+                    UI.setValue('indemnitor-1-middle', data.indemnitorMiddleName);
+                    UI.setValue('indemnitor-1-last', data.indemnitorLastName);
+                    UI.setValue('indemnitor-1-dob', toDateInput(data.indemnitorDOB));
+                    UI.setValue('indemnitor-1-ssn', data.indemnitorSSN);
+                    UI.setValue('indemnitor-1-dl', data.indemnitorDL);
+                    UI.setValue('indemnitor-1-address', data.indemnitorStreetAddress || data.indemnitorAddress);
+                    UI.setValue('indemnitor-1-city', data.indemnitorCity);
+                    UI.setValue('indemnitor-1-state', data.indemnitorState);
+                    UI.setValue('indemnitor-1-zip', data.indemnitorZipCode);
+                    UI.setValue('indemnitor-1-phone', toPhone(data.indemnitorPhone));
+                    UI.setValue('indemnitor-1-email', data.indemnitorEmail);
+                    UI.setValue('indemnitor-1-relation', data.indemnitorRelation || 'Self/Friend');
+
+                    // Employment
+                    UI.setValue('indemnitor-1-employer', data.indemnitorEmployer);
+                    UI.setValue('indemnitor-1-employer-phone', toPhone(data.indemnitorEmployerPhone));
+                    UI.setValue('indemnitor-1-supervisor', data.indemnitorSupervisorName);
+                    UI.setValue('indemnitor-1-supervisor-phone', toPhone(data.indemnitorSupervisorPhone));
+
+                    // References
+                    UI.setValue('indemnitor-1-ref1-name', data.reference1Name);
+                    UI.setValue('indemnitor-1-ref1-phone', toPhone(data.reference1Phone));
+                    UI.setValue('indemnitor-1-ref1-relation', data.reference1Relation || 'Reference');
+                    UI.setValue('indemnitor-1-ref1-address', data.reference1Address);
+
+                    UI.setValue('indemnitor-1-ref2-name', data.reference2Name);
+                    UI.setValue('indemnitor-1-ref2-phone', toPhone(data.reference2Phone));
+                    UI.setValue('indemnitor-1-ref2-relation', data.reference2Relation || 'Reference');
+                    UI.setValue('indemnitor-1-ref2-address', data.reference2Address);
+
+                    // 4. Case / Financials (if available)
+                    if (data.bondAmount) UI.setValue('bond-amount', data.bondAmount);
+                    if (data.premiumAmount) UI.setValue('premium-amount', data.premiumAmount);
+                    if (data.paymentPlan) UI.setValue('payment-terms', data.paymentPlan);
+
+                    UI.showToast(`✅ Loaded ${item.DefendantName} into form!`);
                 }
             };
 

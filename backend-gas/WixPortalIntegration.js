@@ -434,56 +434,19 @@ function getWixIntakeQueue() {
     }
 
     const result = JSON.parse(responseText);
-    const dataItems = result.dataItems || [];
-    
-    // Transform Wix field names to Dashboard schema
-    return dataItems.map(item => ({
-      // Dashboard expected fields (for Queue.render)
-      IntakeID: item.data.caseId || item._id,
-      DefendantName: item.data.defendantName || '',
-      FullName: item.data.indemnitorName || '',
-      Email: item.data.indemnitorEmail || '',
-      Phone: item.data.indemnitorPhone || '',
+    const validItems = result.dataItems || [];
+
+    // TRANSFORM for Dashboard.html Schema
+    return validItems.map(item => ({
+      IntakeID: item.caseId || item._id,
+      DefendantName: item.defendantName || 'Unknown',
+      FullName: item.indemnitorName || 'Unknown',
+      Email: item.indemnitorEmail || '',
+      Phone: item.indemnitorPhone || '',
       Role: 'indemnitor',
-      Status: item.data.status || 'pending',
+      Status: item.status || 'pending',
       Timestamp: item._createdDate,
-      
-      // Keep all original fields for Queue.load() (prefixed with underscore)
-      _caseId: item.data.caseId,
-      _defendantName: item.data.defendantName,
-      _defendantEmail: item.data.defendantEmail,
-      _defendantPhone: item.data.defendantPhone,
-      _defendantDOB: item.data.defendantDOB,
-      _indemnitorName: item.data.indemnitorName,
-      _indemnitorEmail: item.data.indemnitorEmail,
-      _indemnitorPhone: item.data.indemnitorPhone,
-      _indemnitorStreetAddress: item.data.indemnitorStreetAddress,
-      _indemnitorCity: item.data.indemnitorCity,
-      _indemnitorState: item.data.indemnitorState,
-      _indemnitorZipCode: item.data.indemnitorZipCode,
-      _residenceType: item.data.residenceType,
-      _indemnitorEmployer: item.data.indemnitorEmployer,
-      _indemnitorEmployerCity: item.data.indemnitorEmployerCity,
-      _indemnitorEmployerState: item.data.indemnitorEmployerState,
-      _indemnitorEmployerZip: item.data.indemnitorEmployerZip,
-      _indemnitorEmployerPhone: item.data.indemnitorEmployerPhone,
-      _indemnitorSupervisorName: item.data.indemnitorSupervisorName,
-      _indemnitorSupervisorPhone: item.data.indemnitorSupervisorPhone,
-      _reference1Name: item.data.reference1Name,
-      _reference1Phone: item.data.reference1Phone,
-      _reference1Address: item.data.reference1Address,
-      _reference1City: item.data.reference1City,
-      _reference1State: item.data.reference1State,
-      _reference1Zip: item.data.reference1Zip,
-      _reference2Name: item.data.reference2Name,
-      _reference2Phone: item.data.reference2Phone,
-      _reference2Address: item.data.reference2Address,
-      _reference2City: item.data.reference2City,
-      _reference2State: item.data.reference2State,
-      _reference2Zip: item.data.reference2Zip,
-      _county: item.data.county,
-      _jailFacility: item.data.jailFacility,
-      _notes: item.data.notes
+      _original: item // Critical for Queue.load()
     }));
 
   } catch (error) {

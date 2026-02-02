@@ -7,7 +7,7 @@ import { getSecret } from 'wix-secrets-backend';
 
 // Cached URL so we don't hit Secrets Manager on every single call
 let CACHED_GAS_URL = null;
-const FALLBACK_GAS_URL = 'https://script.google.com/macros/s/AKfycbwTCVppfJIGcYcbjocK-Z6eKsDaz3FZDvif7mTOo6ElOgxfnS8zDAoMndjJLxFxKTatpg/exec';
+const FALLBACK_GAS_URL = 'https://script.google.com/macros/s/AKfycbxAX1e0IXapfxIQ8sPPEOujZGSSi1-WDSze94W9W8AWCVGk_MQf6aQwsbu85Pcuq0IITQ/exec';
 
 /**
  * Get GAS Web App URL with Caching & Fallback

@@ -11,34 +11,69 @@
 const PDF_TAG_DEFINITIONS = {
     // Default Bond Package Map
     'BOND_PACKAGE': {
-        // Defendant
-        'DefName': ['defendantFullName', 'defendant-full-name'], // Tries first, then second
-        'DefDOB': 'defendantDOB',
-        'DefSSN': 'defendantSSN',
-        'DefAddress': 'defendantStreetAddress',
-        'DefCity': 'defendantCity',
-        'DefState': 'defendantState', // Defaults to FL if missing in logic
-        'DefZip': 'defendantZip',
-        'DefPhone': 'defendantPhone',
+        // --- DEFENDANT ---
+        'DefName': ['defendantFullName', 'defendant-full-name'],
+        'DefFirstName': ['defendantFirstName', 'defendant-first-name'],
+        'DefLastName': ['defendantLastName', 'defendant-last-name'],
+        'DefMiddle': ['defendantMiddleName', 'defendant-middle-name'],
+        'DefDOB': ['defendantDOB', 'defendant-dob'],
+        'DefSSN': ['defendantSSN', 'defendant-ssn'],
+        'DefAddress': ['defendantStreetAddress', 'defendant-street-address'],
+        'DefCity': ['defendantCity', 'defendant-city'],
+        'DefState': ['defendantState', 'defendant-state'],
+        'DefZip': ['defendantZip', 'defendantZipCode', 'defendant-zipcode'],
+        'DefPhone': ['defendantPhone', 'defendant-phone'],
+        'DefEmail': ['defendantEmail', 'defendant-email'],
+        'DefDL': ['defendantDL', 'defendant-dl-number'],
+        'DefBookingNum': ['defendantBookingNumber', 'defendant-booking-number'],
+        'DefFacility': ['jailFacility', 'defendant-jail-facility'],
+        'DefCounty': ['county', 'defendant-county'],
+        'DefCharges': ['charges', 'defendant-charges'],
+        'DefArrestDate': ['arrestDate', 'defendant-arrest-date'],
+        'DefCourtDate': ['nextCourtDate', 'defendant-court-date'],
 
-        // Indemnitor
-        'IndName': 'indemnitorFullName',
-        'IndPhone': 'indemnitorPhone',
-        'IndEmail': 'indemnitorEmail',
-        'IndAddress': 'indemnitorStreetAddress',
-        'IndCity': 'indemnitorCity',
-        'IndState': 'indemnitorState',
-        'IndZip': 'indemnitorZip',
+        // --- INDEMNITOR (Primary) ---
+        'IndName': ['indemnitorFullName', 'indemnitorName'],
+        'IndFirstName': ['indemnitorFirstName', 'indemnitor-1-first'],
+        'IndLastName': ['indemnitorLastName', 'indemnitor-1-last'],
+        'IndMiddle': ['indemnitorMiddleName', 'indemnitor-1-middle'],
+        'IndDOB': ['indemnitorDOB', 'indemnitor-1-dob'],
+        'IndSSN': ['indemnitorSSN', 'indemnitor-1-ssn'],
+        'IndDL': ['indemnitorDL', 'indemnitor-1-dl'],
+        'IndPhone': ['indemnitorPhone', 'indemnitor-1-phone'],
+        'IndEmail': ['indemnitorEmail', 'indemnitor-1-email'],
+        'IndAddress': ['indemnitorStreetAddress', 'indemnitor-1-address'],
+        'IndCity': ['indemnitorCity', 'indemnitor-1-city'],
+        'IndState': ['indemnitorState', 'indemnitor-1-state'],
+        'IndZip': ['indemnitorZipCode', 'indemnitor-1-zip'],
+        'IndRelation': ['indemnitorRelation', 'indemnitor-1-relation'],
 
-        // Employer
-        'IndEmployer': 'indemnitorEmployerName',
-        'IndEmpPhone': 'indemnitorEmployerPhone',
-        // Complex fields handled by logic below, but defined here for reference
+        // --- EMPLOYER (Indemnitor) ---
+        'IndEmployer': ['indemnitorEmployerName', 'indemnitor-1-employer'],
+        'IndEmpPhone': ['indemnitorEmployerPhone', 'indemnitor-1-employer-phone'],
+        'IndEmpAddress': ['indemnitorEmployerAddress'], // Logic handles composite
+        'IndSupervisor': ['indemnitorSupervisorName', 'indemnitor-1-supervisor'],
 
-        // Financials
-        'TotalBond': ['totalBond', 'payment-total-bond'],
-        'Premium': ['totalPremium', 'payment-premium-due'],
-        'BookingNum': ['bookingNumber', 'defendant-booking-number']
+        // --- REFERENCE 1 ---
+        'Ref1Name': ['reference1Name', 'indemnitor-1-ref1-name'],
+        'Ref1Phone': ['reference1Phone', 'indemnitor-1-ref1-phone'],
+        'Ref1Relation': ['reference1Relation', 'indemnitor-1-ref1-relation'],
+        'Ref1Address': ['reference1Address', 'indemnitor-1-ref1-address'],
+
+        // --- REFERENCE 2 ---
+        'Ref2Name': ['reference2Name', 'indemnitor-1-ref2-name'],
+        'Ref2Phone': ['reference2Phone', 'indemnitor-1-ref2-phone'],
+        'Ref2Relation': ['reference2Relation', 'indemnitor-1-ref2-relation'],
+        'Ref2Address': ['reference2Address', 'indemnitor-1-ref2-address'],
+
+        // --- FINANCIAL / CASE ---
+        'TotalBond': ['totalBond', 'payment-total-bond', 'bondAmount'],
+        'Premium': ['totalPremium', 'payment-premium-due', 'premiumAmount'],
+        'PremiumPaid': ['downPayment', 'payment-down-payment'],
+        'BalanceDue': ['balanceDue', 'remainingBalance'],
+        'CaseNum': ['caseNumber', 'case-number'],
+        'PowerNum': ['powerNumber', 'power-number'],
+        'Date': ['todaysDate', 'submissionDate'] // Logic to default present
     }
 };
 

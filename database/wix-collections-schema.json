@@ -110,6 +110,103 @@
           "key": "lastSyncedAt",
           "displayName": "Last Synced At",
           "type": "datetime"
+        },
+        {
+          "key": "courtDate",
+          "displayName": "Next Court Date",
+          "type": "datetime"
+        },
+        {
+          "key": "judge",
+          "displayName": "Judge Name",
+          "type": "text"
+        },
+        {
+          "key": "courtroom",
+          "displayName": "Courtroom",
+          "type": "text"
+        },
+        {
+          "key": "collateral",
+          "displayName": "Collateral Details",
+          "type": "richText"
+        },
+        {
+          "key": "paymentStatus",
+          "displayName": "Payment Status",
+          "type": "text"
+        },
+        {
+          "key": "isActive",
+          "displayName": "Is Active?",
+          "type": "boolean"
+        },
+        {
+          "key": "closedDate",
+          "displayName": "Closed Date",
+          "type": "datetime"
+        }
+      ]
+    },
+    {
+      "id": "IntakeQueue",
+      "displayName": "Intake Queue",
+      "permissions": {
+        "insert": "Admin",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Admin"
+      },
+      "fields": [
+        {
+          "key": "caseId",
+          "displayName": "Case ID",
+          "type": "text"
+        },
+        {
+          "key": "defendantName",
+          "displayName": "Defendant Name",
+          "type": "text"
+        },
+        {
+          "key": "indemnitorName",
+          "displayName": "Indemnitor Name",
+          "type": "text"
+        },
+        {
+          "key": "indemnitorEmail",
+          "displayName": "Indemnitor Email",
+          "type": "text"
+        },
+        {
+          "key": "indemnitorPhone",
+          "displayName": "Indemnitor Phone",
+          "type": "text"
+        },
+        {
+          "key": "status",
+          "displayName": "Status",
+          "type": "text"
+        },
+        {
+          "key": "gasSyncStatus",
+          "displayName": "GAS Sync Status",
+          "type": "text"
+        },
+        {
+          "key": "gasSyncTimestamp",
+          "displayName": "GAS Sync Time",
+          "type": "datetime"
+        },
+        {
+          "key": "county",
+          "displayName": "County",
+          "type": "text"
+        },
+        {
+          "key": "rawData",
+          "displayName": "Raw Data JSON",
+          "type": "richText"
         }
       ]
     },
