@@ -336,8 +336,6 @@ export async function post_webhookSignnow(request) {
 
 // Social Auth Imports
 import { verifyGoogleUser, verifyFacebookUser } from 'backend/social-auth';
-import { lookupUserByContact, createCustomSession } from 'backend/portal-auth';
-import { authentication } from 'wix-members-backend';
 
 /**
  * GET /_functions/authCallback
