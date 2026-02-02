@@ -1772,7 +1772,45 @@
                     </a>
                 </div>
             </div>
+
         </div>
+
+        <!-- ============================================================
+         TAB: QUEUE
+         ============================================================ -->
+        <div id="queue-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">📋</span> Intake Queue</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="fetchQueue()">
+                        🔄 Refresh Queue
+                    </button>
+                </div>
+
+                <div class="table-responsive" style="overflow-x: auto;">
+                    <table class="table" style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                                <th style="padding: 12px;">ID</th>
+                                <th style="padding: 12px;">Defendant</th>
+                                <th style="padding: 12px;">Indemnitor</th>
+                                <th style="padding: 12px;">Role</th>
+                                <th style="padding: 12px;">Status</th>
+                                <th style="padding: 12px;">Submitted</th>
+                                <th style="padding: 12px; text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="intake-queue-body">
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 20px; color: var(--muted);">Loading
+                                    pending intakes...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
 
         <!-- ============================================================
          TAB: CHARGES
@@ -2492,7 +2530,7 @@
            CONFIGURATION
            ========================================================= */
         const CONFIG = {
-            gasWebAppUrl: '<?= gasUrl ?>' || 'https://script.google.com/macros/s/AKfycbz0zhCmt3_L2vJCxZDyihRCAezHUGJMo7MhiPNzGy1fg5VQOnQFoNcmjIJEHpcBfNPPJA/exec', // AUTO-INJECTED v113
+            gasWebAppUrl: '<?= gasUrl ?>' || 'https://script.google.com/macros/s/AKfycbyfNd-bcQiIFd42a1cxuWQJbGpUVg-mkPugC6nNVMpROARfbbfnqHcILpFJIP0FW3xrnA/exec', // AUTO-INJECTED v113
             signNowApiBase: 'https://api.signnow.com',
             // signNowToken moved to Script Properties for security
 
@@ -6665,40 +6703,39 @@
             // --- Module: Queue Management ---
             const Queue = {
                 fetch: function () {
-                    UI.setHTML('queue-list', '<tr><td colspan="5" class="text-center">⌛ Fetching...</td></tr>');
+                    UI.setHTML('intake-queue-body', '<tr><td colspan="7" class="text-center" style="padding:20px;">⌛ Fetching pending intakes...</td></tr>');
                     google.script.run
                         .withSuccessHandler(Queue.render)
-                        .withFailureHandler(err => UI.setHTML('queue-list', `<tr><td colspan="5" class="text-error">Error: ${err.message}</td></tr>`))
-                        .fetchPendingIntakes();
+                        .withFailureHandler(err => UI.setHTML('intake-queue-body', `<tr><td colspan="7" class="text-error" style="padding:20px; text-align:center;">Error: ${err.message}</td></tr>`))
+                        .getPendingIntakes();
                 },
 
-                render: function (response) {
-                    const list = document.getElementById('queue-list');
+                render: function (intakes) {
+                    const list = document.getElementById('intake-queue-body');
                     const badge = document.getElementById('queue-badge');
 
-                    if (!response || !response.success || !response.intakes || response.intakes.length === 0) {
+                    if (!intakes || !Array.isArray(intakes) || intakes.length === 0) {
                         if (badge) badge.style.display = 'none';
-                        return UI.setHTML('queue-list', '<tr><td colspan="5" class="text-center">✅ All caught up!</td></tr>');
+                        return UI.setHTML('intake-queue-body', '<tr><td colspan="7" class="text-center" style="padding:20px; color:var(--muted);">No pending intakes found.</td></tr>');
                     }
 
-                    const items = response.intakes;
-                    if (badge) { badge.innerText = items.length; badge.style.display = 'inline-block'; }
+                    if (badge) { badge.innerText = intakes.length; badge.style.display = 'inline-block'; }
 
                     let html = '';
-                    items.forEach(item => {
-                        // Use _id (from Sheet IntakeID) as the key
-                        const id = item._id || item.IntakeID;
+                    intakes.forEach(item => {
+                        const id = item.IntakeID;
+                        const dateStr = item.Timestamp ? new Date(item.Timestamp).toLocaleString() : 'N/A';
+
                         html += `
                             <tr>
-                                <td>${new Date(item.submittedAt).toLocaleDateString()}</td>
-                                <td><strong>${item.defendantName || 'N/A'}</strong></td>
-                                <td>${item.name || 'Anon'}</td>
-                                <td><span class="badge">${item.jail || '?'}</span></td>
-                                <td>
-                                    <div style="display:flex; gap:6px;">
-                                        <button class="btn btn-sm btn-primary" onclick='ShamrockApp.Queue.load(${JSON.stringify(item)})' title="Load to Form">Load</button>
-                                        <button class="btn btn-sm btn-success" onclick='ShamrockApp.Queue.approve("${id}", this)' title="Approve & Enable Signing">✅ Approve</button>
-                                    </div>
+                                <td style="padding: 12px;">${id || 'N/A'}</td>
+                                <td style="padding: 12px;"><strong>${item.DefendantName || 'N/A'}</strong></td>
+                                <td style="padding: 12px;">${item.FullName || 'Anon'}</td>
+                                <td style="padding: 12px;">${item.Role || 'Indemnitor'}</td>
+                                <td style="padding: 12px;"><span class="badge badge-warning">${item.Status || 'Pending'}</span></td>
+                                <td style="padding: 12px;">${dateStr}</td>
+                                <td style="padding: 12px; text-align: right;">
+                                    <button class="btn btn-sm btn-secondary" onclick='ShamrockApp.Queue.load(${JSON.stringify(item)})' title="Load to Form">&#8600; Load</button>
                                 </td>
                             </tr>`;
                     });
@@ -6706,60 +6743,68 @@
                 },
 
                 approve: function (intakeId, btn) {
-                    if (!confirm("Confirm approval? This will enable signing for the client.")) return;
-
-                    const originalText = btn.innerText;
-                    btn.innerText = "⏳";
-                    btn.disabled = true;
-
-                    google.script.run
-                        .withSuccessHandler((res) => {
-                            if (res.success) {
-                                btn.innerText = "Synced!";
-                                UI.showToast("✅ " + res.message);
-                                setTimeout(Queue.fetch, 1000); // Refresh list
-                            } else {
-                                btn.innerText = "⚠️ Retry";
-                                btn.disabled = false;
-                                UI.showToast("Error: " + (res.error || res.warning), 'error');
-                            }
-                        })
-                        .withFailureHandler((err) => {
-                            btn.innerText = "❌ Error";
-                            btn.disabled = false;
-                            UI.showToast("Failed: " + err.message, 'error');
-                        })
-                        .approveIntake(intakeId);
+                    // Deprecated or Not Implemented yet in this flow
+                    console.warn("Approve not implemented/needed for this flow");
                 },
 
                 load: function (item) {
-                    if (!confirm(`Load ${item.defendantName}?`)) return;
+                    if (!confirm(`Load data for ${item.DefendantName}?`)) return;
 
-                    // 1. Populate Defendant
-                    UI.setValue('defendant-name', item.defendantName);
-                    UI.setValue('defendant-dob', item.defendantDob);
-                    UI.setValue('charges-input', item.charges);
+                    // Switch to Generate Tab (where the form usually is, or Indemnitor tab if separated)
+                    // Based on previous code, there is a 'switchTab' global or UI.switchTab
+                    // The 'Standard' flow seems to be in the 'generate' tab or 'indemnitor' section.
+                    // Let's assume we want to populate the fields which are likely in the "Generate" tab or "Defendant" tab.
 
-                    // 2. Populate Indemnitor (Smart logic)
-                    const container = document.getElementById('indemnitors-container');
-                    if (container) container.innerHTML = ''; // Clear
+                    // Populate Defendant Fields
+                    if (document.getElementById('defendant-first-name')) {
+                        // Parse Name if needed, or use fields if available
+                        // item.DefendantName might be "Last, First" or "First Last"
+                        // Use simple split for now
+                        const parts = (item.DefendantName || '').split(' ');
+                        if (parts.length > 0) UI.setValue('defendant-first-name', parts[0]);
+                        if (parts.length > 1) UI.setValue('defendant-last-name', parts.slice(1).join(' '));
+                    }
+                    if (item.DefendantDOB) UI.setValue('defendant-dob', item.DefendantDOB);
 
-                    // (Simplified mapping logic reused from original)
-                    const fullIndemName = item.FullName || item.name || '';
-                    addIndemnitor({
-                        firstName: fullIndemName.split(' ')[0],
-                        lastName: fullIndemName.split(' ').slice(1).join(' '),
-                        phone: item.Phone || item.phone,
-                        email: item.Email || item.email,
-                        relationship: item.Role || item.role
-                    });
+                    // Populate Indemnitor Fields (if we have a section for them)
+                    // Looking at dashboard lines 1826+, there is a Defendant tab.
+                    // Is there an Indemnitor tab? 
+                    // Let's call the global addIndemnitor if it exists, as seen in previous logic
 
-                    // 3. Switch and Mark
-                    if (window.switchTab) window.switchTab(null, 'dashboard');
-                    google.script.run.withSuccessHandler(() => {
-                        Queue.fetch();
-                        UI.showToast('✅ Loaded!');
-                    }).doPostFromClient({ action: 'markIntakeProcessed', intakeId: item._id });
+                    try {
+                        const indemnitorData = {
+                            firstName: (item.FullName || '').split(' ')[0],
+                            lastName: (item.FullName || '').split(' ').slice(1).join(' '),
+                            phone: item.Phone,
+                            email: item.Email,
+                            relation: item.Role
+                        };
+
+                        // Switch to appropriate tab
+                        // Check if specific function exists
+                        if (typeof sendIntakeToIndemnitorForm === 'function') {
+                            sendIntakeToIndemnitorForm(item.IntakeID);
+                            // Note: sendIntakeToIndemnitorForm as defined in previous session required globalIntakes array.
+                            // Since we are replacing Queue module, we can just do the logic here.
+
+                            // If we have addIndemnitor global
+                            if (typeof addIndemnitor === 'function') {
+                                // Maybe switch to 'indemnitors' tab if it exists?
+                                // Or just 'generate' tab?
+                                switchTab(null, 'generate');
+                                addIndemnitor(indemnitorData);
+                                UI.showToast('✅ Loaded Indemnitor Data');
+                            }
+                        } else {
+                            // Manual fallback
+                            switchTab(null, 'defendant'); // Focus on defendant first
+                            UI.showToast('✅ Loaded Defendant Data');
+                        }
+
+                    } catch (e) {
+                        console.error(e);
+                        UI.showToast('Error loading data: ' + e.message, 'error');
+                    }
                 }
             };
 

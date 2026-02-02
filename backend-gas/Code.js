@@ -1,6 +1,6 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 7.2 - AI Agent Suite (Updated 2026-02-01)
+// Version: 6.1 - AI Agent Suite (Updated 2026-02-02)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
@@ -142,7 +142,7 @@ function doGet(e) {
     }
     // ---------------------------------------------
 
-    const VERSION = '5.9';
+    const VERSION = '6.0';
 
     // --- SLACK ALERT ---
     if (e.parameter.action === 'sendSlackAlert') {
@@ -358,6 +358,7 @@ function client_getCountyStats(countyName) {
   return getCountyStats(countyName);
 }
 
+
 function client_getSystemStatus() {
   const email = Session.getActiveUser().getEmail();
   if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
@@ -384,6 +385,53 @@ function client_getSystemStatus() {
     logs: logs
   };
 }
+
+/**
+ * Retrieves pending intakes from the IntakeQueue sheet
+ * Used by Dashboard.html to populate the intake queue
+ */
+function getPendingIntakes() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('IntakeQueue');
+  if (!sheet) return [];
+
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const pending = [];
+
+  // Indices
+  const idxStatus = headers.indexOf('Status');
+  const idxId = headers.indexOf('IntakeID');
+
+  if (idxStatus === -1) return [];
+
+  // Iterate rows (skip header)
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (row[idxStatus] === 'pending') {
+      // Map row to object based on headers
+      const item = {};
+      headers.forEach((header, index) => {
+        item[header] = row[index];
+      });
+      // Parse JSON fields if necessary
+      try {
+        if (item.EmployerInfo && typeof item.EmployerInfo === 'string') {
+          item.EmployerInfo = JSON.parse(item.EmployerInfo);
+        }
+        if (item.References && typeof item.References === 'string') {
+          item.References = JSON.parse(item.References);
+        }
+      } catch (e) {
+        console.warn('Failed to parse JSON for intake ' + item.IntakeID);
+      }
+
+      pending.push(item);
+    }
+  }
+
+  return pending.reverse(); // Newest first
+}
+
 
 
 function runCollierArrestsNow() {
@@ -1336,7 +1384,41 @@ function handleNewIntake(caseId, data) {
     sheet.appendRow(row);
     const lastRow = sheet.getLastRow();
     console.log(`✅ New Intake Synced: ${intakeId}`);
-    return { success: true, message: 'Intake synced', intakeId: intakeId, row: lastRow };
+
+    // --- CRITICAL FIX: TRIGGER DOCUMENT GENERATION ---
+    // The intake is saved, now we MUST trigger the SignNow flow
+    let docResult = { success: false, message: 'Doc gen skipped' };
+
+    try {
+      // Merge caseId into data for the generator
+      const docData = {
+        ...data,
+        caseNumber: data.caseNumber || intakeId, // Fallback if no case number yet
+        caseId: intakeId,
+        // Ensure required fields for generator are present or mapped
+        'defendant-first-name': data.defendantFirstName || data.defendantName.split(' ')[0],
+        'defendant-last-name': data.defendantLastName || data.defendantName.split(' ').slice(1).join(' '),
+        signingMethod: data.signingMethod || 'email', // Default to email invites
+        selectedDocs: data.selectedDocs || ['bail_application', 'indemnity_agreement'] // Default package
+      };
+
+      console.log(`🚀 Triggering Auto-Docs for ${intakeId}`);
+      docResult = generateAndSendWithWixPortal_Safe(docData);
+      console.log(`📄 Auto-Docs Result: ${docResult.success ? 'SUCCESS' : 'FAILED'} - ${docResult.message}`);
+
+    } catch (docErr) {
+      console.error(`❌ Auto-Docs Failed completely: ${docErr.message}`);
+      docResult = { success: false, error: docErr.message };
+    }
+    // -----------------------------------------------
+
+    return {
+      success: true,
+      message: 'Intake linked & Docs triggering...',
+      intakeId: intakeId,
+      row: lastRow,
+      docGen: docResult
+    };
 
   } catch (e) {
     console.error('handleNewIntake failed: ' + e.message);
