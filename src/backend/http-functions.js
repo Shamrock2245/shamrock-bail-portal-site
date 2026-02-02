@@ -966,30 +966,27 @@ export async function get_getIndemnitorProfile(request) {
             return badRequest({ body: { success: false, message: 'Missing email' } });
         }
 
-        // 2. Query Members/PrivateData OR Contacts
-        // We'll try "Members/PrivateData" first (standard Wix Members)
-        // If you store custom profiles in "Cases" or "Users", query that instead.
-        // Assuming "Members/PrivateData" for generic member info.
+        // 2. Query Portal Users (our custom user collection)
+        // We use Portal Users instead of native Wix Members
+        // This maintains our custom authentication system
 
         let member = null;
 
-        // Strategy: Query 'Members/PrivateData' which has PII
-        // Note: This requires suppressing auth if not called by admin, but http-functions run as admin-ish if configured?
-        // Actually, http-functions run as 'Anyone' usually unless suppressed.
-        // We use wixData.query("Members/PrivateData") with options.
+        // Strategy: Query 'Portal Users' which has our custom user data
+        // We use suppressAuth: true to bypass Wix permissions
 
         const options = { suppressAuth: true };
-        const results = await wixData.query("Members/PrivateData")
-            .eq("loginEmail", email)
+        const results = await wixData.query("Portal Users")
+            .eq("email", email)
             .find(options);
 
         if (results.items.length > 0) {
             const m = results.items[0];
             member = {
-                firstName: m.firstName,
-                lastName: m.lastName,
-                phone: m.mainPhone,
-                email: m.loginEmail,
+                firstName: m.firstName || m.name?.split(' ')[0] || '',
+                lastName: m.lastName || m.name?.split(' ').slice(1).join(' ') || '',
+                phone: m.phone || '',
+                email: m.email,
                 address: m.address, // Object usually
                 city: (m.address && m.address.city) ? m.address.city : '',
                 state: (m.address && m.address.state) ? m.address.state : '',

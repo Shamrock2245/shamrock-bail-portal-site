@@ -59,14 +59,13 @@ export const COLLECTIONS = {
   CONTACT_SUBMISSIONS: 'Contactsubmissions',   // Contact form submissions
   BAIL_SCHOOL_SIGNUPS: 'Bailschoolsignups',    // Bail school interest signups
 
-  // System Collections (Wix-managed)
+  // System Collections (Wix-managed) - REMOVED NATIVE WIX MEMBERS
+  // We use custom Portal Users, Portal Sessions, and Magiclinks instead
   BLOG_POSTS: 'Blog/Posts',
   BLOG_CATEGORIES: 'Blog/Categories',
   BLOG_TAGS: 'Blog/Tags',
-  MEMBERS_BADGES: 'Members/Badges',
-  MEMBERS_FULL_DATA: 'Members/FullData',
-  MEMBERS_PRIVATE_DATA: 'Members/PrivateMembersData',
-  MEMBERS_PUBLIC_DATA: 'Members/PublicData',
+  // REMOVED: MEMBERS_BADGES, MEMBERS_FULL_DATA, MEMBERS_PRIVATE_DATA, MEMBERS_PUBLIC_DATA
+  // These are native Wix Members collections that conflict with our custom auth
   STORES_COLLECTIONS: 'Stores/Collections',
   STORES_INVENTORY: 'Stores/InventoryItems',
   STORES_ORDERS: 'Stores/Orders',

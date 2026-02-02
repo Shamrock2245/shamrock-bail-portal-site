@@ -1,0 +1,137 @@
+/**
+ * Test Collections Module
+ * backend/test-collections.jsw
+ * 
+ * Test functions to verify Portal Sessions and Magiclinks collections exist and work
+ * 
+ * @version 1.0.0
+ * @created 2026-02-02
+ */
+
+import wixData from 'wix-data';
+
+/**
+ * Test if Portal Sessions collection exists and is functional
+ */
+export async function testPortalSessionsCollection() {
+    try {
+        console.log('🧪 Testing Portal Sessions collection...');
+        
+        // Try to insert a test session
+        const testSession = {
+            sessionToken: `test_${Date.now()}`,
+            personId: 'test@example.com',
+            role: 'indemnitor',
+            createdAt: new Date(),
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            isActive: true
+        };
+        
+        const insertResult = await wixData.insert('Portal Sessions', testSession, { suppressAuth: true });
+        console.log('✅ Insert successful:', insertResult._id);
+        
+        // Try to query it back
+        const queryResult = await wixData.query('Portal Sessions')
+            .eq('sessionToken', testSession.sessionToken)
+            .find({ suppressAuth: true });
+        
+        if (queryResult.items.length > 0) {
+            console.log('✅ Query successful: Found', queryResult.items.length, 'item(s)');
+        } else {
+            console.warn('⚠️ Query returned 0 results (unexpected)');
+        }
+        
+        // Clean up test data
+        await wixData.remove('Portal Sessions', insertResult._id, { suppressAuth: true });
+        console.log('✅ Cleanup successful');
+        
+        return { 
+            success: true, 
+            message: 'Portal Sessions collection is working correctly',
+            testId: insertResult._id
+        };
+        
+    } catch (error) {
+        console.error('❌ Portal Sessions collection error:', error);
+        return { 
+            success: false, 
+            error: error.message,
+            hint: 'Collection might not exist. Create it in Wix CMS using Portal_Sessions_Template.csv'
+        };
+    }
+}
+
+/**
+ * Test if Magiclinks collection exists and is functional
+ */
+export async function testMagiclinksCollection() {
+    try {
+        console.log('🧪 Testing Magiclinks collection...');
+        
+        // Try to insert a test magic link
+        const testLink = {
+            token: `test_${Date.now()}`,
+            contact: 'test@example.com',
+            role: 'indemnitor',
+            createdAt: new Date(),
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            used: false
+        };
+        
+        const insertResult = await wixData.insert('Magiclinks', testLink, { suppressAuth: true });
+        console.log('✅ Insert successful:', insertResult._id);
+        
+        // Try to query it back
+        const queryResult = await wixData.query('Magiclinks')
+            .eq('token', testLink.token)
+            .find({ suppressAuth: true });
+        
+        if (queryResult.items.length > 0) {
+            console.log('✅ Query successful: Found', queryResult.items.length, 'item(s)');
+        } else {
+            console.warn('⚠️ Query returned 0 results (unexpected)');
+        }
+        
+        // Clean up test data
+        await wixData.remove('Magiclinks', insertResult._id, { suppressAuth: true });
+        console.log('✅ Cleanup successful');
+        
+        return { 
+            success: true, 
+            message: 'Magiclinks collection is working correctly',
+            testId: insertResult._id
+        };
+        
+    } catch (error) {
+        console.error('❌ Magiclinks collection error:', error);
+        return { 
+            success: false, 
+            error: error.message,
+            hint: 'Collection might not exist. Create it in Wix CMS using Magiclinks_Template.csv'
+        };
+    }
+}
+
+/**
+ * Test both collections at once
+ */
+export async function testAllAuthCollections() {
+    console.log('🧪 Testing all authentication collections...\n');
+    
+    const results = {
+        portalSessions: await testPortalSessionsCollection(),
+        magiclinks: await testMagiclinksCollection()
+    };
+    
+    const allPassed = results.portalSessions.success && results.magiclinks.success;
+    
+    console.log('\n📊 Test Summary:');
+    console.log('Portal Sessions:', results.portalSessions.success ? '✅ PASS' : '❌ FAIL');
+    console.log('Magiclinks:', results.magiclinks.success ? '✅ PASS' : '❌ FAIL');
+    console.log('\nOverall:', allPassed ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED');
+    
+    return {
+        allPassed,
+        results
+    };
+}

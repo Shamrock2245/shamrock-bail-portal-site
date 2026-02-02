@@ -1,0 +1,2 @@
+sessionToken,personId,role,caseId,email,phone,name,createdAt,expiresAt,isActive,invalidatedAt
+example_token_123,admin@shamrockbailbonds.biz,admin,,admin@shamrockbailbonds.biz,,Admin User,2026-02-02T12:00:00Z,2026-02-03T12:00:00Z,TRUE,
