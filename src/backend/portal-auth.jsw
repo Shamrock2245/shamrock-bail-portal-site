@@ -664,38 +664,39 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
             const maskedUrl = gasUrl.length > 20 ? '...' + gasUrl.slice(-20) : gasUrl;
             throw new Error(`GAS Network Error (${response.status} ${response.statusText}) at [${maskedUrl}]`);
         }
+    }
 
         // const data = await response.json(); // REMOVED: Body already read as text
         // if (!data || !data.success) { ... } // Logic moved below after parsing text
 
         // Try to parse response as JSON
         let responseData;
-        try {
-            responseData = JSON.parse(responseText);
-            console.log('✅ Parsed GAS response:', responseData);
-        } catch (e) {
-            console.warn('⚠️ Could not parse GAS response as JSON');
-            responseData = { success: true }; // Assume success if we got 200 OK
-        }
-
-        if (responseData.success === false) {
-            const errorMsg = typeof responseData.error === 'object' ?
-                JSON.stringify(responseData.error) :
-                (responseData.error || 'Unknown error');
-
-            console.error('❌ GAS returned success: false:', errorMsg);
-            throw new Error('GAS error: ' + errorMsg);
-        }
-
-        console.log('✅ Email sent successfully!');
-        return { success: true };
-
-    } catch (error) {
-        console.error('❌ CRITICAL ERROR in sendMagicLinkEmail:', error);
-        console.error('   Error message:', error.message);
-        console.error('   Error stack:', error.stack);
-        return { success: false, error: error.message };
+    try {
+        responseData = JSON.parse(responseText);
+        console.log('✅ Parsed GAS response:', responseData);
+    } catch (e) {
+        console.warn('⚠️ Could not parse GAS response as JSON');
+        responseData = { success: true }; // Assume success if we got 200 OK
     }
+
+    if (responseData.success === false) {
+        const errorMsg = typeof responseData.error === 'object' ?
+            JSON.stringify(responseData.error) :
+            (responseData.error || 'Unknown error');
+
+        console.error('❌ GAS returned success: false:', errorMsg);
+        throw new Error('GAS error: ' + errorMsg);
+    }
+
+    console.log('✅ Email sent successfully!');
+    return { success: true };
+
+} catch (error) {
+    console.error('❌ CRITICAL ERROR in sendMagicLinkEmail:', error);
+    console.error('   Error message:', error.message);
+    console.error('   Error stack:', error.stack);
+    return { success: false, error: error.message };
+}
 }
 
 // ============================================================================
