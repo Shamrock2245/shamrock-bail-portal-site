@@ -60,11 +60,14 @@ function AI_parseBookingSheet(fileData) {
     `;
 
     // Increased tokens for extracting long lists of charges
-    const result = callGemini(systemPrompt, contentToAnalyze, { jsonMode: true, maxTokens: 1000 });
+    const result = callOpenAI(systemPrompt, contentToAnalyze, { jsonMode: true, maxTokens: 1000 });
 
     if (!result) {
-        console.error("Parser failed to extract data.");
-        return { success: false, error: "AI Extraction Failed" };
+        console.error("Parser failed to extract data. Check OPENAI_API_KEY in Script Properties.");
+        return { 
+            success: false, 
+            error: "AI Extraction Failed - Verify OPENAI_API_KEY is set (run setupOpenAIKey() in OpenAIClient.js)" 
+        };
     }
 
     return { success: true, data: result };

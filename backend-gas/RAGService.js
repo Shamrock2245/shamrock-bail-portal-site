@@ -48,12 +48,12 @@ function RAG_generateIntroSMS(lead) {
         };
 
         // Use the centralized GeminiClient
-        // Ensure callGemini is available (global in GAS)
-        if (typeof callGemini === 'function') {
-            const aiResponse = callGemini(systemPrompt, JSON.stringify(userData));
+        // Ensure callOpenAI is available (global in GAS)
+        if (typeof callOpenAI === 'function') {
+            const aiResponse = callOpenAI(systemPrompt, JSON.stringify(userData));
             if (aiResponse) return aiResponse;
         } else {
-            console.warn("GeminiClient (callGemini) not found. Using fallback.");
+            console.warn("GeminiClient (callOpenAI) not found. Using fallback.");
         }
 
     } catch (e) {

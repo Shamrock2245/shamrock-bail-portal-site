@@ -41,7 +41,7 @@ function AI_analyzeCheckIn(checkInData) {
 
     const userContent = `Message: "${text}"\nTime: ${new Date().toISOString()}`;
 
-    const result = callGemini(systemPrompt, userContent, { jsonMode: true });
+    const result = callOpenAI(systemPrompt, userContent, { jsonMode: true });
 
     if (result && result.alert_staff) {
         // Persist to Sheet if context provided

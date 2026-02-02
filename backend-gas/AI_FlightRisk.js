@@ -3,7 +3,7 @@
  * 
  * " The Analyst "
  * 
- * Uses Gemini 1.5 Flash to score leads based on flight risk and business logic.
+ * Uses OpenAI GPT-4o-mini to score leads based on flight risk and business logic.
  * Replaces rigid "if/else" math with semantic understanding of charges.
  */
 
@@ -51,7 +51,7 @@ function AI_analyzeFlightRisk(lead) {
 
     console.log(`🤖 Analyst: Reviewing ${lead.name || 'Anonymous'}...`);
 
-    const result = callGemini(systemPrompt, leadData, { jsonMode: true });
+    const result = callOpenAI(systemPrompt, leadData, { jsonMode: true });
 
     if (!result) {
         console.warn("Analyst failed to generate. Returning fallback neutral score.");

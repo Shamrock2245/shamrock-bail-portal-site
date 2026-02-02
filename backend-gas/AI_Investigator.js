@@ -69,7 +69,7 @@ function AI_deepAnalyzeReports(payload) {
     ${indSafe}
     `;
 
-    const result = callGemini(systemPrompt, userContent, { jsonMode: true });
+    const result = callOpenAI(systemPrompt, userContent, { jsonMode: true });
 
     if (!result) {
         return { error: "AI Analysis Failed to generate response." };
