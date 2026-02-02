@@ -235,15 +235,52 @@ export async function lookupUserByContact(contact) {
  * @param {string} caseId
  * @param {Object} contactInfo - { email, phone, name } (optional)
  */
+/**
+ * Create a custom session for a user
+ * IMPROVED: Reuses existing active session if valid to prevent duplicates
+ * @param {string} personId
+ * @param {string} role
+ * @param {string} caseId
+ * @param {Object} contactInfo - { email, phone, name } (optional)
+ */
 export async function createCustomSession(personId, role, caseId = null, contactInfo = {}) {
     try {
+        console.log(`🔐 Creating session for ${role} (${personId})...`);
+
         // HARDENING: Enforce Allowlisted Roles
         const ALLOWED_ROLES = ['indemnitor', 'defendant', 'staff', 'admin', 'coindemnitor'];
-        if (!ALLOWED_ROLES.includes(role)) {
+        let targetRole = role;
+        if (!ALLOWED_ROLES.includes(targetRole)) {
             console.warn(`SECURITY WARNING: Attempted to create session with invalid role '${role}'. Defaulting to 'indemnitor'.`);
-            role = 'indemnitor';
+            targetRole = 'indemnitor';
         }
 
+        // 1. Check for existing active session to REUSE
+        try {
+            const existingSessions = await wixData.query(CONFIG.SESSIONS_COLLECTION)
+                .eq('personId', personId)
+                .eq('role', targetRole)
+                .eq('isActive', true)
+                .gt('expiresAt', new Date()) // Must be valid
+                .descending('createdAt')
+                .limit(1)
+                .find({ suppressAuth: true });
+
+            if (existingSessions.items.length > 0) {
+                const activeSession = existingSessions.items[0];
+                // Check if it has enough time remaining (e.g., > 4 hours)
+                const remainingTime = new Date(activeSession.expiresAt).getTime() - new Date().getTime();
+                if (remainingTime > 4 * 60 * 60 * 1000) {
+                    console.log(`♻️ Reusing existing valid session: ${activeSession._id}`);
+                    return activeSession.sessionToken;
+                }
+            }
+        } catch (checkErr) {
+            console.warn("⚠️ Error checking existing sessions:", checkErr);
+            // Continue to create new one if check fails
+        }
+
+        // 2. Create New Session
         const sessionToken = generateToken(48);
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + CONFIG.SESSION_DURATION_HOURS);
@@ -251,7 +288,7 @@ export async function createCustomSession(personId, role, caseId = null, contact
         const sessionData = {
             sessionToken: sessionToken,
             personId: personId,
-            role: role,
+            role: targetRole,
             caseId: caseId,
             email: contactInfo.email || null,
             phone: contactInfo.phone || null,
@@ -263,7 +300,7 @@ export async function createCustomSession(personId, role, caseId = null, contact
 
         await wixData.insert(CONFIG.SESSIONS_COLLECTION, sessionData, { suppressAuth: true });
 
-        console.log(`✅ Session created for ${personId} with role ${role}`);
+        console.log(`✅ New Session created for ${personId} with role ${targetRole}`);
         return sessionToken;
 
     } catch (error) {
@@ -292,7 +329,7 @@ export async function validateCustomSession(sessionToken) {
             .find({ suppressAuth: true });
 
         if (results.items.length === 0) {
-            console.log('⚠️ Session not found or inactive');
+            console.warn(`⚠️ Session validation failed: Token not found or inactive. Token: ${sessionToken.substring(0, 10)}...`);
             return { valid: false, reason: 'invalid' };
         }
 
@@ -300,7 +337,7 @@ export async function validateCustomSession(sessionToken) {
 
         // Check expiration
         if (new Date(session.expiresAt) < new Date()) {
-            console.log('⚠️ Session expired');
+            console.warn(`⚠️ Session expired. Expiry: ${session.expiresAt}, Now: ${new Date()}`);
             // Mark as inactive
             session.isActive = false;
             await wixData.update(CONFIG.SESSIONS_COLLECTION, session, { suppressAuth: true });
@@ -316,11 +353,12 @@ export async function validateCustomSession(sessionToken) {
             phone: session.phone,
             name: session.name,
             createdAt: session.createdAt,
-            expiresAt: session.expiresAt
+            expiresAt: session.expiresAt,
+            sessionToken: session.sessionToken // Return for robust checks
         };
 
     } catch (error) {
-        console.error('Error validating session:', error);
+        console.error('❌ Error validating session:', error);
         // CRITICAL FIX: Return 'error' reason so frontend knows it's a system/network issue
         // and doesn't immediately log the user out.
         return { valid: false, reason: 'error', message: error.message };
