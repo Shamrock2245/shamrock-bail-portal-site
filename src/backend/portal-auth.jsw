@@ -250,8 +250,6 @@ export async function createCustomSession(personId, role, caseId = null, contact
 
         const sessionData = {
             sessionToken: sessionToken,
-            token: sessionToken, // IDEMPOTENCY FIX: Fallback field key
-            title: sessionToken, // IDEMPOTENCY FIX: Primary field key
             personId: personId,
             role: role,
             caseId: caseId,
@@ -289,14 +287,8 @@ export async function validateCustomSession(sessionToken) {
 
         // Query multiple potential field keys to be safe
         const results = await wixData.query(CONFIG.SESSIONS_COLLECTION)
+            .eq('sessionToken', sessionToken)
             .eq('isActive', true)
-            .and(
-                wixData.query(CONFIG.SESSIONS_COLLECTION)
-                    .eq('sessionToken', sessionToken)
-                    .or(wixData.query(CONFIG.SESSIONS_COLLECTION).eq('token', sessionToken))
-                    .or(wixData.query(CONFIG.SESSIONS_COLLECTION).eq('title', sessionToken))
-                    .or(wixData.query(CONFIG.SESSIONS_COLLECTION).eq('_id', sessionToken))
-            )
             .find({ suppressAuth: true });
 
         if (results.items.length === 0) {
