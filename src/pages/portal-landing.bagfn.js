@@ -24,6 +24,7 @@ import wixLocation from 'wix-location';
 import { sendMagicLinkSimplified, onMagicLinkLoginV2, validateCustomSession } from 'backend/portal-auth';
 import { getGoogleAuthUrl, getFacebookAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
+import { authentication } from 'wix-members-frontend';
 import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
 
@@ -284,6 +285,8 @@ async function handleGetStarted() {
 /**
  * Handle magic link login from URL
  * Called when user clicks link from email/SMS
+ * FIXED: Now calls applySessionToken() to create Wix member session
+ * FIXED: Defaults all users to indemnitor role (defendants use case lookup)
  */
 async function handleMagicLinkLogin(token) {
     console.log("🔐 Processing magic link token...");
@@ -300,24 +303,27 @@ async function handleMagicLinkLogin(token) {
         if (result.ok && result.sessionToken) {
             console.log("✅ Token valid! Session token received");
 
-            // Try to store session token in browser storage
+            // ✅ CRITICAL FIX: Apply Wix member session token
+            console.log("🔑 Applying Wix member session token...");
+            await authentication.applySessionToken(result.sessionToken);
+            console.log("✅ Wix member session created successfully!");
+
+            // Store in browser for custom session tracking
             const stored = setSessionToken(result.sessionToken);
-            console.log("📦 Session storage result:", stored);
+            console.log("📦 Custom session stored:", stored);
 
-            // Show success message
-            const roleNames = {
-                'defendant': 'Defendant',
-                'indemnitor': 'Indemnitor',
-                'staff': 'Staff'
-            };
-            const roleName = roleNames[result.role] || 'User';
-            showMessage("Welcome! Redirecting to your " + roleName + " Portal...", "success");
+            // ✅ SIMPLIFIED: Default everyone to indemnitor
+            // Defendants can use case lookup at top of portal
+            const targetRole = 'indemnitor';
+            console.log("✅ Defaulting to indemnitor role (defendants use case lookup)");
+            
+            showMessage("Welcome! Redirecting to your portal...", "success");
 
-            // Redirect with session token in URL as backup
-            // The destination page will store it in browser storage
-            setTimeout(() => {
-                redirectToPortalWithToken(result.role, result.sessionToken);
-            }, 1000);
+            // Small delay to show success message
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Redirect to indemnitor portal
+            redirectToPortalWithToken(targetRole, result.sessionToken);
 
         } else {
             console.error("❌ Token validation failed:", result.message);
@@ -336,6 +342,9 @@ async function handleMagicLinkLogin(token) {
         console.error("❌ CRITICAL ERROR validating token:", error);
         showMessage("System error. Please try again or call us at 239-332-2245.", "error");
         hideLoading();
+        
+        // Clear any partial session
+        clearSessionToken();
 
         setTimeout(() => {
             wixLocation.to('/portal-landing');
@@ -345,75 +354,48 @@ async function handleMagicLinkLogin(token) {
 
 /**
  * Handle direct session token (from Social OAuth Redirect)
- */
-/**
- * Handle direct session token (from Social OAuth Redirect)
- * Includes Retry Logic to handle eventual consistency in DB
+ * FIXED: Now calls applySessionToken() to create Wix member session
+ * FIXED: Defaults all users to indemnitor role (defendants use case lookup)
  */
 async function handleSocialSession(sessionToken, role) {
     console.log("🔐 Processing social session...");
     showMessage("Finalizing login...", "info");
     showLoading();
 
-    const maxRetries = 3;
-    let attempt = 0;
-    let session = null;
-    let isValid = false;
+    try {
+        // ✅ CRITICAL FIX: Apply Wix member session token
+        console.log("🔑 Applying Wix member session token...");
+        await authentication.applySessionToken(sessionToken);
+        console.log("✅ Wix member session created successfully!");
 
-    while (attempt < maxRetries && !isValid) {
-        attempt++;
-        try {
-            console.log(`🔍 Validation Attempt ${attempt}/${maxRetries}...`);
-            session = await validateCustomSession(sessionToken);
-
-            if (session && session.valid) { // Check .valid property explicitly
-                isValid = true;
-                console.log("✅ Social Session Validated!");
-            } else {
-                console.warn(`⚠️ Validation failed (Attempt ${attempt}):`, session);
-                if (attempt < maxRetries) {
-                    console.log("⏳ Waiting 1s before retry...");
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
-        } catch (err) {
-            console.error(`❌ Attempt ${attempt} Error:`, err);
-            if (attempt < maxRetries) await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-    }
-
-    if (isValid && session) {
-        // Store in browser and VERIFY
+        // Store in browser for custom session tracking
         const stored = setSessionToken(sessionToken);
-        console.log("📦 Session storage success:", stored);
+        console.log("📦 Custom session stored:", stored);
 
-        // Double-check it was stored
-        const retrieved = getSessionToken();
-        if (retrieved !== sessionToken) {
-            console.error("❌ CRITICAL: Session storage failed! Stored != Retrieved");
-            console.error("Stored:", stored, "Retrieved:", retrieved);
-            showMessage("Browser storage error. Please enable cookies and try again.", "error");
-            hideLoading();
-            return;
-        }
-
-        console.log("✅ Session stored and verified. Redirecting...");
-        showMessage("Welcome back! Redirecting...", "success");
-
-        // Redirect based on role
-        const targetRole = role || session.role || 'defendant';
+        // ✅ SIMPLIFIED: Default everyone to indemnitor
+        // Defendants can use case lookup at top of portal
+        const targetRole = 'indemnitor';
+        console.log("✅ Defaulting to indemnitor role (defendants use case lookup)");
+        
+        showMessage("Welcome! Redirecting to your portal...", "success");
+        
+        // Small delay to show success message
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Redirect to indemnitor portal
         redirectToPortalWithToken(targetRole, sessionToken);
 
-    } else {
-        // Final Failure
-        console.error("❌ Social Session Invalid after retries. Final Result:", session);
-        const reason = session && session.reason ? session.reason : 'unknown';
-        const msg = session && session.message ? session.message : 'Login validation failed.';
-
-        showMessage(`Login Error: ${msg} (${reason}). Please try again.`, "error");
+    } catch (error) {
+        // Handle errors
+        console.error("❌ Social login failed:", error);
+        showMessage("Login failed. Please try again or contact support.", "error");
         hideLoading();
-        // Allow them to read the error before wiping
-        setTimeout(() => wixLocation.to('/portal-landing'), 4000);
+        
+        // Clear any partial session
+        clearSessionToken();
+        
+        // Allow user to retry
+        setTimeout(() => wixLocation.to('/portal-landing'), 3000);
     }
 }
 

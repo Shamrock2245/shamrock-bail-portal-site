@@ -336,6 +336,7 @@ export async function post_webhookSignnow(request) {
 // Social Auth Imports
 import { verifyGoogleUser, verifyFacebookUser } from 'backend/social-auth';
 import { lookupUserByContact, createCustomSession } from 'backend/portal-auth';
+import { authentication } from 'wix-members-backend';
 
 /**
  * GET /_functions/authCallback
@@ -372,31 +373,26 @@ export async function get_authCallback(request) {
             return response(200, renderCloseScript({ success: false, message: "Could not verify email address." }));
         }
 
-        // 3. Reuse "Magic Link" Logic to Find User & Role
-        // We use the internal logic of sendMagicLinkSimplified but stop short of sending email
-        // We just need the "User Lookup" part. 
-        // OPTIMIZATION: We can just use the lookup logic directly here or refactor.
-        // For now, let's replicate the lookup logic for safety/speed without touching shared code heavily.
-
-        // (A) Lookup User (using imported function)
-        const lookup = await lookupUserByContact(userProfile.email);
-
+        // 3. ✅ SIMPLIFIED: Default everyone to indemnitor role
+        // Defendants can use case lookup at top of portal
+        const role = 'indemnitor';
+        
+        // 4. ✅ CRITICAL FIX: Use Wix authentication.generateSessionToken()
+        // This creates a proper Wix member session token
         let sessionToken = null;
-        let role = null;
-
-        if (lookup.found) {
-            // Existing User
-            role = lookup.role;
-            sessionToken = await createCustomSession(lookup.personId, lookup.role, lookup.caseId);
-        } else {
-            // New User (Default to Indemnitor, matching Magic Link flow)
-            // Strangers are more likely to be Indemnitors/Signers than Defendants
-            role = 'indemnitor';
-            const newPersonId = `social_${userProfile.provider}_${userProfile.providerId}`;
-            sessionToken = await createCustomSession(newPersonId, 'indemnitor');
+        
+        try {
+            sessionToken = await authentication.generateSessionToken(userProfile.email);
+            console.log("✅ Wix session token generated for:", userProfile.email);
+        } catch (error) {
+            console.error("❌ Failed to generate session token:", error);
+            return response(200, renderCloseScript({
+                success: false,
+                message: "Unable to create session. Please try again."
+            }));
         }
 
-        // 4. Return Success HTML
+        // 5. Return Success HTML with token
         return response(200, renderCloseScript({
             success: true,
             token: sessionToken,
