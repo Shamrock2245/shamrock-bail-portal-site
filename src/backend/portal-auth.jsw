@@ -458,7 +458,7 @@ export async function onMagicLinkLoginV2(token) {
             if (timeDiff < 60000) { // 60 second grace period
                 console.log('⚠️ Token reused within grace period (Scanner defense)');
                 // Create session anyway
-                const sessionToken = await createCustomSession(
+                const sessionResult = await createCustomSession(
                     linkData.personId,
                     linkData.role,
                     linkData.caseId,
@@ -470,7 +470,8 @@ export async function onMagicLinkLoginV2(token) {
                 );
                 return {
                     ok: true,
-                    sessionToken: sessionToken,
+                    sessionToken: sessionResult.sessionToken,
+                    wixSessionToken: sessionResult.wixSessionToken,
                     role: linkData.role,
                     personId: linkData.personId
                 };
@@ -491,7 +492,7 @@ export async function onMagicLinkLoginV2(token) {
         await wixData.update(CONFIG.MAGIC_LINKS_COLLECTION, linkData, { suppressAuth: true });
 
         // Create session
-        const sessionToken = await createCustomSession(
+        const sessionResult = await createCustomSession(
             linkData.personId,
             linkData.role,
             linkData.caseId,
@@ -504,7 +505,8 @@ export async function onMagicLinkLoginV2(token) {
 
         return {
             ok: true,
-            sessionToken: sessionToken,
+            sessionToken: sessionResult.sessionToken,
+            wixSessionToken: sessionResult.wixSessionToken,
             role: linkData.role,
             personId: linkData.personId
         };
@@ -944,7 +946,7 @@ export async function linkDefendantToCase(caseNumber, indemnitorName) {
         console.log(`🎯 Matched Case: ${caseData.caseNumber}`);
 
         // Success! Generate a Session Token for the DEFENDANT role on this case
-        const sessionToken = await createCustomSession(
+        const sessionResult = await createCustomSession(
             caseData._id, // Use CaseID as PersonID for defendant
             'defendant',
             caseData._id,
@@ -957,7 +959,8 @@ export async function linkDefendantToCase(caseNumber, indemnitorName) {
 
         return {
             success: true,
-            sessionToken: sessionToken,
+            sessionToken: sessionResult.sessionToken,
+            wixSessionToken: sessionResult.wixSessionToken,
             message: 'Case found! Redirecting to your paperwork...'
         };
 
