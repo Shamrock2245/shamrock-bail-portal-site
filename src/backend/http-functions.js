@@ -14,6 +14,7 @@ import {
 import * as gasIntegration from 'backend/gasIntegration.jsw';
 import wixData from 'wix-data';
 import { getSecret } from 'wix-secrets-backend';
+import { createCustomSession, lookupUserByContact } from 'backend/portal-auth';
 
 /**
  * POST /api/syncCaseData
@@ -373,29 +374,42 @@ export async function get_authCallback(request) {
             return response(200, renderCloseScript({ success: false, message: "Could not verify email address." }));
         }
 
-        // 3. ✅ SIMPLIFIED: Default everyone to indemnitor role
-        // Defendants can use case lookup at top of portal
-        const role = 'indemnitor';
-        
-        // 4. ✅ CRITICAL FIX: Use Wix authentication.generateSessionToken()
-        // This creates a proper Wix member session token
+        // 3. Lookup User (Wiring Finisher Logic)
+        const lookup = await lookupUserByContact(userProfile.email);
+
         let sessionToken = null;
-        
-        try {
-            sessionToken = await authentication.generateSessionToken(userProfile.email);
-            console.log("✅ Wix session token generated for:", userProfile.email);
-        } catch (error) {
-            console.error("❌ Failed to generate session token:", error);
-            return response(200, renderCloseScript({
-                success: false,
-                message: "Unable to create session. Please try again."
-            }));
+        let wixSessionToken = null;
+        let role = 'indemnitor';
+
+        if (lookup.found) {
+            // Existing User
+            role = lookup.role;
+            const sessionResult = await createCustomSession(
+                lookup.personId,
+                lookup.role,
+                lookup.caseId,
+                { email: userProfile.email, name: userProfile.name }
+            );
+            sessionToken = sessionResult.sessionToken;
+            wixSessionToken = sessionResult.wixSessionToken;
+        } else {
+            // New User (Default to Indemnitor)
+            const newPersonId = `social_${state}_${userProfile.id || Date.now()}`;
+            const sessionResult = await createCustomSession(
+                newPersonId,
+                'indemnitor',
+                null,
+                { email: userProfile.email, name: userProfile.name }
+            );
+            sessionToken = sessionResult.sessionToken;
+            wixSessionToken = sessionResult.wixSessionToken;
         }
 
-        // 5. Return Success HTML with token
+        // 4. Return Success HTML with token
         return response(200, renderCloseScript({
             success: true,
             token: sessionToken,
+            wixSessionToken: wixSessionToken,
             role: role,
             message: "Login successful!"
         }));
