@@ -346,48 +346,74 @@ async function handleMagicLinkLogin(token) {
 /**
  * Handle direct session token (from Social OAuth Redirect)
  */
+/**
+ * Handle direct session token (from Social OAuth Redirect)
+ * Includes Retry Logic to handle eventual consistency in DB
+ */
 async function handleSocialSession(sessionToken, role) {
     console.log("🔐 Processing social session...");
     showMessage("Finalizing login...", "info");
     showLoading();
 
-    try {
-        // Validate the session token
-        const session = await validateCustomSession(sessionToken);
+    const maxRetries = 3;
+    let attempt = 0;
+    let session = null;
+    let isValid = false;
 
-        if (session && session.role) {
-            console.log("✅ Social Session Valid:", session.role);
+    while (attempt < maxRetries && !isValid) {
+        attempt++;
+        try {
+            console.log(`🔍 Validation Attempt ${attempt}/${maxRetries}...`);
+            session = await validateCustomSession(sessionToken);
 
-            // Store in browser and VERIFY
-            const stored = setSessionToken(sessionToken);
-            console.log("📦 Session storage result:", stored);
-
-            // Double-check it was stored
-            const retrieved = getSessionToken();
-            if (retrieved !== sessionToken) {
-                console.error("❌ Session storage failed! Stored:", stored, "Retrieved:", retrieved);
-                showMessage("Storage error. Please enable cookies and try again.", "error");
-                hideLoading();
-                return;
+            if (session && session.valid) { // Check .valid property explicitly
+                isValid = true;
+                console.log("✅ Social Session Validated!");
+            } else {
+                console.warn(`⚠️ Validation failed (Attempt ${attempt}):`, session);
+                if (attempt < maxRetries) {
+                    console.log("⏳ Waiting 1s before retry...");
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             }
-
-            console.log("✅ Session stored and verified");
-
-            showMessage("Welcome back! Redirecting...", "success");
-
-            // Redirect based on role
-            const targetRole = role || session.role || 'defendant';
-            redirectToPortalWithToken(targetRole, sessionToken);
-        } else {
-            console.error("❌ Social Session Invalid");
-            showMessage("Login expired. Please try again.", "error");
-            hideLoading();
-            setTimeout(() => wixLocation.to('/portal-landing'), 2000);
+        } catch (err) {
+            console.error(`❌ Attempt ${attempt} Error:`, err);
+            if (attempt < maxRetries) await new Promise(resolve => setTimeout(resolve, 1000));
         }
-    } catch (e) {
-        console.error("Social Session Error:", e);
-        showMessage("Login error. Please try again.", "error");
+    }
+
+    if (isValid && session) {
+        // Store in browser and VERIFY
+        const stored = setSessionToken(sessionToken);
+        console.log("📦 Session storage success:", stored);
+
+        // Double-check it was stored
+        const retrieved = getSessionToken();
+        if (retrieved !== sessionToken) {
+            console.error("❌ CRITICAL: Session storage failed! Stored != Retrieved");
+            console.error("Stored:", stored, "Retrieved:", retrieved);
+            showMessage("Browser storage error. Please enable cookies and try again.", "error");
+            hideLoading();
+            return;
+        }
+
+        console.log("✅ Session stored and verified. Redirecting...");
+        showMessage("Welcome back! Redirecting...", "success");
+
+        // Redirect based on role
+        const targetRole = role || session.role || 'defendant';
+        redirectToPortalWithToken(targetRole, sessionToken);
+
+    } else {
+        // Final Failure
+        console.error("❌ Social Session Invalid after retries. Final Result:", session);
+        const reason = session && session.reason ? session.reason : 'unknown';
+        const msg = session && session.message ? session.message : 'Login validation failed.';
+
+        showMessage(`Login Error: ${msg} (${reason}). Please try again.`, "error");
         hideLoading();
+        // Allow them to read the error before wiping
+        setTimeout(() => wixLocation.to('/portal-landing'), 4000);
     }
 }
 
