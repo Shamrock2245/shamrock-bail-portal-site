@@ -848,39 +848,60 @@ export async function getIndemnitorPortalData(personId, caseId) {
  */
 export async function linkDefendantToCase(caseNumber, indemnitorName) {
     try {
-        if (!caseNumber || !indemnitorName) {
-            return { success: false, message: 'Missing required fields' };
+        if (!caseNumber && !indemnitorName) {
+            return { success: false, message: 'Please enter a Case Number OR Indemnitor Last Name.' };
         }
 
-        // Clean inputs
-        const targetCase = caseNumber.trim();
-        const targetName = indemnitorName.trim().toLowerCase();
+        const targetCase = caseNumber ? caseNumber.trim() : null;
+        const targetName = indemnitorName ? indemnitorName.trim().toLowerCase() : null;
 
-        console.log(`🔍 Searching for case: ${targetCase} with Indemnitor: ${targetName}`);
+        console.log(`🔍 Searching for case. Number: ${targetCase}, Indemnitor: ${targetName}`);
 
-        // Search Case
-        const results = await wixData.query(CONFIG.CASES_COLLECTION)
-            .eq('caseNumber', targetCase)
-            .find({ suppressAuth: true });
+        let matches = [];
 
-        if (results.items.length === 0) {
-            return { success: false, message: 'Case not found' };
+        // 1. Search by Case Number (Exact) - Highest Priority
+        if (targetCase) {
+            const caseResults = await wixData.query(CONFIG.CASES_COLLECTION)
+                .eq('caseNumber', targetCase)
+                .find({ suppressAuth: true });
+
+            if (caseResults.items.length > 0) {
+                matches = caseResults.items;
+                console.log(`✅ Found by Case Number: ${matches.length}`);
+            }
         }
 
-        const caseData = results.items[0];
+        // 2. Search by Indemnitor Name (Partial) - Fallback or "OR" logic
+        // Only search if we haven't found a match yet, OR if the user wants "Either" (and case lookup failed)
+        // If the user provided a name but the case lookup failed (or wasn't provided), we search by name.
+        if (matches.length === 0 && targetName) {
+            console.log(`🔍 Searching by Indemnitor Name: ${targetName}`);
+            // Use contains for "Last Name" matching "First Middle Last"
+            const nameResults = await wixData.query(CONFIG.CASES_COLLECTION)
+                .contains('indemnitorName', targetName) // Case-insensitive in Wix usually, but good to check
+                .descending('_createdDate') // Get latest first
+                .limit(5) // Limit results for safety
+                .find({ suppressAuth: true });
 
-        // Verify Indemnitor Name (Fuzzy Match - Contains parts of name)
-        // Split input name into parts
-        const nameParts = targetName.split(' ');
-        const storedName = (caseData.indemnitorName || '').toLowerCase();
-
-        // Check if ANY part of the input name is in the stored name (e.g. "Smith" in "John Smith")
-        const nameMatch = nameParts.some(part => part.length > 2 && storedName.includes(part));
-
-        if (!nameMatch) {
-            console.warn(`❌ Link failed: Name mismatch. Input: ${targetName}, Stored: ${storedName}`);
-            return { success: false, message: 'Indemnitor name does not match our records' };
+            // Refine: Ensure the user typed at least 3 chars to avoid "a" returning everything
+            if (nameResults.items.length > 0 && targetName.length >= 2) {
+                // Secondary check: ensure the search term is actually part of the name (JavaScript check for robust matching)
+                matches = nameResults.items.filter(item =>
+                    (item.indemnitorName || '').toLowerCase().includes(targetName)
+                );
+                console.log(`✅ Found by Indemnitor Name: ${matches.length}`);
+            }
         }
+
+        if (matches.length === 0) {
+            return { success: false, message: 'No case found matching your details.' };
+        }
+
+        // 3. Selection Strategy: First Match (Most Recent by default due to push/query)
+        // If we found multiple by name, we take the top one (latest).
+        const caseData = matches[0];
+
+        console.log(`🎯 Matched Case: ${caseData.caseNumber}`);
 
         // Success! Generate a Session Token for the DEFENDANT role on this case
         const sessionToken = await createCustomSession(

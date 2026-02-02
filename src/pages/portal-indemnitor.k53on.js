@@ -642,8 +642,8 @@ function setupDefendantLink() {
         const caseNum = safeGetValue('#inputLinkCaseNumber');
         const indemName = safeGetValue('#inputLinkIndemnitorName');
 
-        if (!caseNum || !indemName) {
-            showError("Please enter both Case Number and Indemnitor's Last Name.");
+        if (!caseNum && !indemName) {
+            showError("Please enter either a Case Number OR Indemnitor's Last Name.");
             return;
         }
 

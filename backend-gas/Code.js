@@ -1,6 +1,6 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 6.1 - AI Agent Suite (Updated 2026-02-02)
+// Version: 6.2 - AI Agent Suite (Updated 2026-02-02)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
@@ -305,6 +305,12 @@ function doPost(e) {
  * CLIENT BRIDGE for google.script.run
  */
 function doPostFromClient(data) {
+  if (data.action === 'sendToWixPortal') {
+    return client_sendToWixPortal(data);
+  }
+  if (data.action === 'batchSaveToWixPortal') {
+    return client_batchSaveToWixPortal(data);
+  }
   return handleAction(data);
 }
 
@@ -1984,4 +1990,102 @@ function client_forceCleanup() {
   } catch (e) {
     return { success: false, error: e.message };
   }
+}
+
+function client_batchSaveToWixPortal(data) {
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized" };
+  return batchSaveToWixPortal(data);
+}
+
+function client_sendToWixPortal(data) {
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized" };
+
+  console.log('client_sendToWixPortal started');
+
+  // 1. Process with SignNow (Upload + Invite)
+  // Ensure delivery method is 'embedded' for portal use if not specified
+  if (!data.deliveryMethod) data.deliveryMethod = 'embedded';
+
+  const snResult = SN_processCompleteWorkflow(data);
+
+  if (!snResult.success) {
+    console.error('SignNow Workflow Failed:', snResult.error);
+    return snResult;
+  }
+
+  // 2. Save Links to Wix Portal
+  if (snResult.signingLinks && snResult.signingLinks.length > 0) {
+    const defendantName = `${data['defendant-first-name']} ${data['defendant-last-name']}`;
+    const caseNumber = data.charges && data.charges[0] ? data.charges[0].caseNumber : '';
+
+    // Transform to Wix Portal Format
+    const documents = snResult.signingLinks.map(link => ({
+      signerEmail: link.email,
+      signerName: link.firstName + ' ' + link.lastName,
+      signerPhone: link.phone,
+      signerRole: link.role,
+      signingLink: link.link, // SignNow returns 'link'
+      documentId: snResult.documentId,
+      defendantName: defendantName,
+      caseNumber: caseNumber,
+      documentName: data.fileName || 'Bail Bond Packet',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    }));
+
+    const wixResult = batchSaveToWixPortal({ documents: documents });
+    return { success: true, documentId: snResult.documentId, wixResult: wixResult };
+  }
+
+  return { success: true, documentId: snResult.documentId, message: "No signing links generated (download mode?)" };
+}
+
+function client_batchSaveToWixPortal(data) {
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized" };
+  return batchSaveToWixPortal(data);
+}
+
+function client_sendToWixPortal(data) {
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized" };
+
+  console.log('client_sendToWixPortal started');
+
+  // 1. Process with SignNow (Upload + Invite)
+  // Ensure delivery method is 'embedded' for portal use if not specified
+  if (!data.deliveryMethod) data.deliveryMethod = 'embedded';
+
+  const snResult = SN_processCompleteWorkflow(data);
+
+  if (!snResult.success) {
+    console.error('SignNow Workflow Failed:', snResult.error);
+    return snResult;
+  }
+
+  // 2. Save Links to Wix Portal
+  if (snResult.signingLinks && snResult.signingLinks.length > 0) {
+    const defendantName = `${data['defendant-first-name']} ${data['defendant-last-name']}`;
+    const caseNumber = data.charges && data.charges[0] ? data.charges[0].caseNumber : '';
+
+    // Transform to Wix Portal Format
+    const documents = snResult.signingLinks.map(link => ({
+      signerEmail: link.email,
+      signerName: link.firstName + ' ' + link.lastName,
+      signerPhone: link.phone,
+      signerRole: link.role,
+      signingLink: link.link, // SignNow returns 'link'
+      documentId: snResult.documentId,
+      defendantName: defendantName,
+      caseNumber: caseNumber,
+      documentName: data.fileName || 'Bail Bond Packet',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    }));
+
+    const wixResult = batchSaveToWixPortal({ documents: documents });
+    return { success: true, documentId: snResult.documentId, wixResult: wixResult };
+  }
+
+  return { success: true, documentId: snResult.documentId, message: "No signing links generated (download mode?)" };
 }
