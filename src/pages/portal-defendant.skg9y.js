@@ -51,12 +51,11 @@ $w.onReady(async function () {
 
         if (!sessionToken) {
             console.warn("⛔ No session token found. Redirecting to Portal Landing.");
-            console.warn("⛔ No session token found. Redirecting to Portal Landing.");
             $w('#textUserWelcome').text = "Authentication Error: No session found. Please try logging in again.";
             $w('#textUserWelcome').show();
             console.log("DEBUG: Query args:", wixLocation.query);
             console.log("DEBUG: Storage token:", getSessionToken());
-            // wixLocation.to('/portal-landing'); 
+            wixLocation.to('/portal-landing'); 
             return;
         }
 

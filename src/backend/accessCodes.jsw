@@ -46,16 +46,17 @@ export async function validateCode(accessCode) {
 
         switch (role) {
             case 'defendant':
-                redirectUrl = '/members/defendant-dashboard';
+                redirectUrl = '/portal-defendant';
                 break;
             case 'indemnitor':
-                redirectUrl = '/members/indemnitor-dashboard';
+                redirectUrl = '/portal-indemnitor';
                 break;
             case 'staff':
-                redirectUrl = '/members/staff-dashboard';
+            case 'admin':
+                redirectUrl = '/portal-staff';
                 break;
             default:
-                redirectUrl = '/members/start-bail';
+                redirectUrl = '/portal-landing';
         }
 
         // Log access code usage (custom logging)

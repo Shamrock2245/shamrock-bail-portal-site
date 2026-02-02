@@ -68,9 +68,9 @@ function setupEventListeners() {
         const selectedCounty = $w('#countySelect')?.value;
         
         if (selectedCounty && selectedCounty !== 'select') {
-            wixLocation.to(`/members/start-bail?county=${selectedCounty}`);
+            wixLocation.to(`/portal-landing?county=${selectedCounty}`);
         } else {
-            wixLocation.to('/members/start-bail');
+            wixLocation.to('/portal-landing');
         }
         
         wixWindow.lightbox.close();

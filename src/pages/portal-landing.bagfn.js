@@ -24,7 +24,6 @@ import wixLocation from 'wix-location';
 import { sendMagicLinkSimplified, onMagicLinkLoginV2, validateCustomSession } from 'backend/portal-auth';
 import { getGoogleAuthUrl, getFacebookAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
-import { authentication } from 'wix-members-frontend';
 import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
 
@@ -32,7 +31,6 @@ $w.onReady(async function () {
     console.log("🚀 Portal Landing v2.2: Fix Query Scope");
     const query = wixLocation.query;
 
-    // 1. PRIORITY: Check for magic link token in URL (returning from email/SMS)
     // 1. PRIORITY: Check for magic link token in URL (returning from email/SMS)
     // ONLY run on client-side to prevent SSR from consuming the token
     if (query.token && wixWindow.rendering.env === 'browser') {
@@ -59,11 +57,10 @@ $w.onReady(async function () {
     // 3. Check for social login result
     if (query.sessionToken) {
         console.log("🔗 Social login session detected, validating...");
-        await handleSocialSession(query.sessionToken, query.role);
+        await handleSocialSession(query.sessionToken);
         return;
     }
 
-    // 4. LAST: Check if user already has a valid session in storage
     // 4. LAST: Check if user already has a valid session in storage
     // Loop Breaker: If we just came from a failed auth redirect, DO NOT auto-redirect again
     if (query.auth_error || query.reason === 'logout') {
@@ -285,8 +282,8 @@ async function handleGetStarted() {
 /**
  * Handle magic link login from URL
  * Called when user clicks link from email/SMS
- * FIXED: Now calls applySessionToken() to create Wix member session
- * FIXED: Defaults all users to indemnitor role (defendants use case lookup)
+ * Uses custom session tokens only (no Wix member sessions)
+ * Defaults all users to indemnitor role (defendants use case lookup)
  */
 async function handleMagicLinkLogin(token) {
     console.log("🔐 Processing magic link token...");
@@ -303,12 +300,7 @@ async function handleMagicLinkLogin(token) {
         if (result.ok && result.sessionToken) {
             console.log("✅ Token valid! Session token received");
 
-            // ✅ CRITICAL FIX: Apply Wix member session token
-            console.log("🔑 Applying Wix member session token...");
-            await authentication.applySessionToken(result.sessionToken);
-            console.log("✅ Wix member session created successfully!");
-
-            // Store in browser for custom session tracking
+            // Store custom session token in browser
             const stored = setSessionToken(result.sessionToken);
             console.log("📦 Custom session stored:", stored);
 
@@ -354,21 +346,16 @@ async function handleMagicLinkLogin(token) {
 
 /**
  * Handle direct session token (from Social OAuth Redirect)
- * FIXED: Now calls applySessionToken() to create Wix member session
- * FIXED: Defaults all users to indemnitor role (defendants use case lookup)
+ * Uses custom session tokens only (no Wix member sessions)
+ * Defaults all users to indemnitor role (defendants use case lookup)
  */
-async function handleSocialSession(sessionToken, role) {
+async function handleSocialSession(sessionToken) {
     console.log("🔐 Processing social session...");
     showMessage("Finalizing login...", "info");
     showLoading();
 
     try {
-        // ✅ CRITICAL FIX: Apply Wix member session token
-        console.log("🔑 Applying Wix member session token...");
-        await authentication.applySessionToken(sessionToken);
-        console.log("✅ Wix member session created successfully!");
-
-        // Store in browser for custom session tracking
+        // Store custom session token in browser
         const stored = setSessionToken(sessionToken);
         console.log("📦 Custom session stored:", stored);
 
