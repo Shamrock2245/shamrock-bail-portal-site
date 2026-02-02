@@ -1,0 +1,79 @@
+{
+  "collection": {
+    "id": "PortalUsers",
+    "displayName": "Portal Users",
+    "fields": [
+      {
+        "key": "email",
+        "displayName": "Email",
+        "type": "TEXT"
+      },
+      {
+        "key": "phone",
+        "displayName": "Phone",
+        "type": "TEXT"
+      },
+      {
+        "key": "name",
+        "displayName": "Name",
+        "type": "TEXT"
+      },
+      {
+        "key": "firstName",
+        "displayName": "First Name",
+        "type": "TEXT"
+      },
+      {
+        "key": "lastName",
+        "displayName": "Last Name",
+        "type": "TEXT"
+      },
+      {
+        "key": "role",
+        "displayName": "Role",
+        "type": "TEXT"
+      },
+      {
+        "key": "caseId",
+        "displayName": "Case ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "address",
+        "displayName": "Address",
+        "type": "TEXT"
+      },
+      {
+        "key": "city",
+        "displayName": "City",
+        "type": "TEXT"
+      },
+      {
+        "key": "state",
+        "displayName": "State",
+        "type": "TEXT"
+      },
+      {
+        "key": "zip",
+        "displayName": "ZIP",
+        "type": "TEXT"
+      },
+      {
+        "key": "createdAt",
+        "displayName": "Created At",
+        "type": "DATETIME"
+      },
+      {
+        "key": "lastLoginAt",
+        "displayName": "Last Login",
+        "type": "DATETIME"
+      }
+    ],
+    "permissions": {
+      "insert": "ADMIN",
+      "update": "ADMIN",
+      "remove": "ADMIN",
+      "read": "ADMIN"
+    }
+  }
+}

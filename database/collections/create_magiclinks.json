@@ -1,0 +1,54 @@
+{
+  "collection": {
+    "id": "Magiclinks",
+    "displayName": "Magiclinks",
+    "fields": [
+      {
+        "key": "token",
+        "displayName": "Token",
+        "type": "TEXT"
+      },
+      {
+        "key": "contact",
+        "displayName": "Contact",
+        "type": "TEXT"
+      },
+      {
+        "key": "role",
+        "displayName": "Role",
+        "type": "TEXT"
+      },
+      {
+        "key": "caseId",
+        "displayName": "Case ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "createdAt",
+        "displayName": "Created At",
+        "type": "DATETIME"
+      },
+      {
+        "key": "expiresAt",
+        "displayName": "Expires At",
+        "type": "DATETIME"
+      },
+      {
+        "key": "used",
+        "displayName": "Used",
+        "type": "BOOLEAN"
+      },
+      {
+        "key": "usedAt",
+        "displayName": "Used At",
+        "type": "DATETIME"
+      }
+    ],
+    "permissions": {
+      "insert": "ADMIN",
+      "update": "ADMIN",
+      "remove": "ADMIN",
+      "read": "ADMIN"
+    }
+  }
+}

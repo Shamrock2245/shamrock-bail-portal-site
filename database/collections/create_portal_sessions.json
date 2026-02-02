@@ -1,0 +1,69 @@
+{
+  "collection": {
+    "id": "PortalSessions",
+    "displayName": "Portal Sessions",
+    "fields": [
+      {
+        "key": "sessionToken",
+        "displayName": "Session Token",
+        "type": "TEXT"
+      },
+      {
+        "key": "personId",
+        "displayName": "Person ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "role",
+        "displayName": "Role",
+        "type": "TEXT"
+      },
+      {
+        "key": "caseId",
+        "displayName": "Case ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "email",
+        "displayName": "Email",
+        "type": "TEXT"
+      },
+      {
+        "key": "phone",
+        "displayName": "Phone",
+        "type": "TEXT"
+      },
+      {
+        "key": "name",
+        "displayName": "Name",
+        "type": "TEXT"
+      },
+      {
+        "key": "createdAt",
+        "displayName": "Created At",
+        "type": "DATETIME"
+      },
+      {
+        "key": "expiresAt",
+        "displayName": "Expires At",
+        "type": "DATETIME"
+      },
+      {
+        "key": "isActive",
+        "displayName": "Is Active",
+        "type": "BOOLEAN"
+      },
+      {
+        "key": "invalidatedAt",
+        "displayName": "Invalidated At",
+        "type": "DATETIME"
+      }
+    ],
+    "permissions": {
+      "insert": "ADMIN",
+      "update": "ADMIN",
+      "remove": "ADMIN",
+      "read": "ADMIN"
+    }
+  }
+}
