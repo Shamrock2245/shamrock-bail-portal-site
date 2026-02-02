@@ -6609,7 +6609,7 @@
                     google.script.run
                         .withSuccessHandler(Queue.render)
                         .withFailureHandler(err => UI.setHTML('intake-queue-body', `<tr><td colspan="7" class="text-error" style="padding:20px; text-align:center;">Error: ${err.message}</td></tr>`))
-                        .getPendingIntakes();
+                        .getWixIntakeQueue(); // ← FIXED: Now queries Wix CMS instead of Sheet
                 },
 
                 render: function (intakes) {
@@ -6650,62 +6650,90 @@
                 },
 
                 load: function (item) {
-                    if (!confirm(`Load data for ${item.DefendantName}?`)) return;
+                    if (!confirm(`Load IntakeQueue data for ${item.DefendantName}?\n\nThis will auto-fill all form fields.`)) return;
 
-                    // Switch to Generate Tab (where the form usually is, or Indemnitor tab if separated)
-                    // Based on previous code, there is a 'switchTab' global or UI.switchTab
-                    // The 'Standard' flow seems to be in the 'generate' tab or 'indemnitor' section.
-                    // Let's assume we want to populate the fields which are likely in the "Generate" tab or "Defendant" tab.
-
-                    // Populate Defendant Fields
-                    if (document.getElementById('defendant-first-name')) {
-                        // Parse Name if needed, or use fields if available
-                        // item.DefendantName might be "Last, First" or "First Last"
-                        // Use simple split for now
-                        const parts = (item.DefendantName || '').split(' ');
-                        if (parts.length > 0) UI.setValue('defendant-first-name', parts[0]);
-                        if (parts.length > 1) UI.setValue('defendant-last-name', parts.slice(1).join(' '));
-                    }
-                    if (item.DefendantDOB) UI.setValue('defendant-dob', item.DefendantDOB);
-
-                    // Populate Indemnitor Fields (if we have a section for them)
-                    // Looking at dashboard lines 1826+, there is a Defendant tab.
-                    // Is there an Indemnitor tab? 
-                    // Let's call the global addIndemnitor if it exists, as seen in previous logic
+                    console.log('Loading IntakeQueue item:', item);
 
                     try {
+                        // STEP 1: Populate Defendant Fields (if defendant info is in IntakeQueue)
+                        if (item._defendantName) {
+                            const nameParts = (item._defendantName || '').split(' ');
+                            if (nameParts.length > 0) UI.setValue('defendant-first-name', nameParts[0]);
+                            if (nameParts.length > 1) UI.setValue('defendant-last-name', nameParts.slice(1).join(' '));
+                        }
+                        if (item._defendantEmail) UI.setValue('defendant-email', item._defendantEmail);
+                        if (item._defendantPhone) UI.setValue('defendant-phone', item._defendantPhone);
+                        if (item._defendantDOB) UI.setValue('defendant-dob', item._defendantDOB);
+                        if (item._county) UI.setValue('defendant-county', item._county);
+                        if (item._jailFacility) UI.setValue('defendant-jail-facility', item._jailFacility);
+
+                        // STEP 2: Add Indemnitor with ALL fields
+                        // Parse indemnitor name
+                        const indemnitorNameParts = (item._indemnitorName || '').split(' ');
+                        const indemnitorFirstName = indemnitorNameParts[0] || '';
+                        const indemnitorLastName = indemnitorNameParts.slice(1).join(' ') || '';
+
                         const indemnitorData = {
-                            firstName: (item.FullName || '').split(' ')[0],
-                            lastName: (item.FullName || '').split(' ').slice(1).join(' '),
-                            phone: item.Phone,
-                            email: item.Email,
-                            relation: item.Role
+                            firstName: indemnitorFirstName,
+                            lastName: indemnitorLastName,
+                            phone: item._indemnitorPhone || '',
+                            email: item._indemnitorEmail || '',
+                            address: item._indemnitorStreetAddress || '',
+                            city: item._indemnitorCity || '',
+                            zip: item._indemnitorZipCode || '',
+                            employer: item._indemnitorEmployer || '',
+                            employerPhone: item._indemnitorEmployerPhone || '',
+                            employerCity: item._indemnitorEmployerCity || '',
+                            employerState: item._indemnitorEmployerState || '',
+                            supervisor: item._indemnitorSupervisorName || '',
+                            supervisorPhone: item._indemnitorSupervisorPhone || '',
+                            ref1Name: item._reference1Name || '',
+                            ref1Phone: item._reference1Phone || '',
+                            ref1Address: `${item._reference1Address || ''} ${item._reference1City || ''} ${item._reference1State || ''} ${item._reference1Zip || ''}`.trim(),
+                            ref2Name: item._reference2Name || '',
+                            ref2Phone: item._reference2Phone || '',
+                            ref2Address: `${item._reference2Address || ''} ${item._reference2City || ''} ${item._reference2State || ''} ${item._reference2Zip || ''}`.trim()
                         };
 
-                        // Switch to appropriate tab
-                        // Check if specific function exists
-                        if (typeof sendIntakeToIndemnitorForm === 'function') {
-                            sendIntakeToIndemnitorForm(item.IntakeID);
-                            // Note: sendIntakeToIndemnitorForm as defined in previous session required globalIntakes array.
-                            // Since we are replacing Queue module, we can just do the logic here.
-
-                            // If we have addIndemnitor global
-                            if (typeof addIndemnitor === 'function') {
-                                // Maybe switch to 'indemnitors' tab if it exists?
-                                // Or just 'generate' tab?
-                                switchTab(null, 'generate');
-                                addIndemnitor(indemnitorData);
-                                UI.showToast('✅ Loaded Indemnitor Data');
-                            }
+                        // Use addIndemnitor function if available
+                        if (typeof addIndemnitor === 'function') {
+                            console.log('Adding indemnitor with data:', indemnitorData);
+                            addIndemnitor(indemnitorData);
                         } else {
-                            // Manual fallback
-                            switchTab(null, 'defendant'); // Focus on defendant first
-                            UI.showToast('✅ Loaded Defendant Data');
+                            console.warn('addIndemnitor function not found, attempting manual population');
+                            // Fallback: try to populate indemnitor-1 fields directly
+                            UI.setValue('indemnitor-1-first', indemnitorFirstName);
+                            UI.setValue('indemnitor-1-last', indemnitorLastName);
+                            UI.setValue('indemnitor-1-phone', item._indemnitorPhone);
+                            UI.setValue('indemnitor-1-email', item._indemnitorEmail);
+                            UI.setValue('indemnitor-1-address', item._indemnitorStreetAddress);
+                            UI.setValue('indemnitor-1-city', item._indemnitorCity);
+                            UI.setValue('indemnitor-1-zip', item._indemnitorZipCode);
+                            UI.setValue('indemnitor-1-employer', item._indemnitorEmployer);
+                            UI.setValue('indemnitor-1-employer-phone', item._indemnitorEmployerPhone);
+                            UI.setValue('indemnitor-1-employer-city', item._indemnitorEmployerCity);
+                            UI.setValue('indemnitor-1-employer-state', item._indemnitorEmployerState);
+                            UI.setValue('indemnitor-1-supervisor', item._indemnitorSupervisorName);
+                            UI.setValue('indemnitor-1-supervisor-phone', item._indemnitorSupervisorPhone);
+                            UI.setValue('indemnitor-1-ref1-name', item._reference1Name);
+                            UI.setValue('indemnitor-1-ref1-phone', item._reference1Phone);
+                            UI.setValue('indemnitor-1-ref1-address', indemnitorData.ref1Address);
+                            UI.setValue('indemnitor-1-ref2-name', item._reference2Name);
+                            UI.setValue('indemnitor-1-ref2-phone', item._reference2Phone);
+                            UI.setValue('indemnitor-1-ref2-address', indemnitorData.ref2Address);
                         }
 
+                        // STEP 3: Switch to Generate tab to show populated form
+                        if (typeof switchTab === 'function') {
+                            switchTab(null, 'generate');
+                        }
+
+                        UI.showToast('✅ IntakeQueue data loaded! All fields populated.', 'success');
+                        console.log('IntakeQueue load complete');
+
                     } catch (e) {
-                        console.error(e);
-                        UI.showToast('Error loading data: ' + e.message, 'error');
+                        console.error('Error loading IntakeQueue data:', e);
+                        UI.showToast('⚠️ Error loading data: ' + e.message, 'error');
                     }
                 }
             };

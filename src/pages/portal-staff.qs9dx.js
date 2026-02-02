@@ -299,6 +299,25 @@ function setupRepeater() {
             } catch (e) {
                 // Ignore if button not exists
             }
+
+            // Actions - Finalize Paperwork Button (CRITICAL - GAP #4 FIX)
+            try {
+                const finalizeBtn = $item('#btnFinalizePaperwork');
+                if (finalizeBtn) {
+                    // Only show for intake records (status = 'intake' or 'pending')
+                    if (itemData.status === 'intake' || itemData.status === 'pending' || itemData.paperworkStatus === 'signed') {
+                        finalizeBtn.show();
+                        finalizeBtn.onClick(async () => {
+                            console.log("Finalize Paperwork clicked for", itemData.defendantName);
+                            await handleFinalizePaperwork(itemData);
+                        });
+                    } else {
+                        finalizeBtn.hide();
+                    }
+                }
+            } catch (e) {
+                console.error('Error setting up finalize button:', e);
+            }
         });
     } catch (e) {
         console.error('Error setting up repeater:', e);
@@ -760,5 +779,92 @@ function setupStartPaperworkButton() {
     }
 }
 
+/**
+ * Handle Finalize Paperwork - Transition IntakeQueue → Cases
+ * Called when staff clicks "Finalize Paperwork" button
+ * 
+ * @param {Object} itemData - Case/Intake record from repeater
+ */
+async function handleFinalizePaperwork(itemData) {
+    try {
+        console.log('🎯 Finalizing paperwork for:', itemData.defendantName);
+
+        // Step 1: Verify signatures are complete
+        if (itemData.paperworkStatus !== 'signed' && itemData.paperworkStatus !== 'completed') {
+            const proceed = await $w('#lightbox1').show(); // TODO: Create confirmation lightbox
+            if (!proceed) return;
+        }
+
+        // Step 2: Prompt for Power Number & Case Number
+        const powerNumber = await promptForInput('Enter Power Number', 'Power #');
+        if (!powerNumber) {
+            showStaffMessage('Power Number is required to finalize case', 'error');
+            return;
+        }
+
+        const caseNumber = await promptForInput('Enter Court Case Number', 'Case #');
+        if (!caseNumber) {
+            showStaffMessage('Case Number is required to finalize case', 'error');
+            return;
+        }
+
+        // Step 3: Confirm custody status
+        const custodyStatus = await promptForSelect('Defendant Custody Status', ['released', 'in_custody']);
+        if (!custodyStatus) {
+            showStaffMessage('Custody status is required', 'error');
+            return;
+        }
+
+        // Step 4: Call backend to finalize
+        showStaffMessage('Finalizing case...', 'info');
+
+        const { finalizeCase } = await import('backend/defendant-matching');
+        const result = await finalizeCase(itemData._id, {
+            powerNumber: powerNumber,
+            caseNumber: caseNumber,
+            custodyStatus: custodyStatus
+        }, {
+            staffEmail: currentSession.email,
+            role: currentSession.role
+        });
+
+        if (result.success) {
+            showStaffMessage('✅ Case finalized! IntakeQueue → Cases complete.', 'success');
+            
+            // Refresh dashboard data
+            const dashboardData = await getStaffDashboardData();
+            allCases = dashboardData.cases;
+            $w('#caseListRepeater').data = allCases;
+            
+            console.log('✅ Case finalized:', result);
+        } else {
+            showStaffMessage('❌ Failed to finalize: ' + result.error, 'error');
+        }
+
+    } catch (error) {
+        console.error('Error finalizing paperwork:', error);
+        showStaffMessage('Error: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Prompt user for text input (simple implementation)
+ * TODO: Replace with proper Wix lightbox
+ */
+async function promptForInput(title, placeholder) {
+    // For now, use browser prompt (replace with Wix lightbox later)
+    return prompt(title + ':', placeholder);
+}
+
+/**
+ * Prompt user for select option
+ * TODO: Replace with proper Wix lightbox
+ */
+async function promptForSelect(title, options) {
+    // For now, use browser prompt (replace with Wix lightbox later)
+    const choice = prompt(title + ' (' + options.join('/') + '):', options[0]);
+    return options.includes(choice) ? choice : null;
+}
+
 // Export for use in other parts of the staff portal
-export { generateMagicLinkForUser, generateAccessCodeOnly, setupMagicLinkGenerator, setupStartPaperworkButton };
+export { generateMagicLinkForUser, generateAccessCodeOnly, setupMagicLinkGenerator, setupStartPaperworkButton, handleFinalizePaperwork };

@@ -1,0 +1,498 @@
+{
+  "id": "Cases",
+  "displayName": "Cases (Full Lifecycle)",
+  "description": "Active bail bond cases from posting through discharge/forfeiture",
+  "permissions": {
+    "insert": "Admin",
+    "update": "Admin",
+    "remove": "Admin",
+    "read": "Anyone"
+  },
+  "fields": [
+    {
+      "key": "caseId",
+      "displayName": "Case ID",
+      "type": "text",
+      "required": true,
+      "description": "Internal case ID (e.g., CASE-2026-001)"
+    },
+    {
+      "key": "powerNumber",
+      "displayName": "Power Number",
+      "type": "text",
+      "required": true,
+      "description": "Bond power number from surety"
+    },
+    {
+      "key": "caseNumber",
+      "displayName": "Court Case Number",
+      "type": "text",
+      "required": true,
+      "description": "Court case number"
+    },
+    {
+      "key": "bookingNumber",
+      "displayName": "Booking Number",
+      "type": "text",
+      "description": "Jail booking number"
+    },
+    {
+      "key": "receiptNumber",
+      "displayName": "Receipt Number",
+      "type": "text",
+      "description": "Payment receipt number"
+    },
+    {
+      "key": "status",
+      "displayName": "Status",
+      "type": "text",
+      "required": true,
+      "description": "intake | active | discharged | forfeited | surrendered | exonerated"
+    },
+    {
+      "key": "custodyStatus",
+      "displayName": "Custody Status",
+      "type": "text",
+      "required": true,
+      "description": "in_custody | released | surrendered"
+    },
+    {
+      "key": "paperworkStatus",
+      "displayName": "Paperwork Status",
+      "type": "text",
+      "required": true,
+      "description": "pending | sent | signed | completed"
+    },
+    {
+      "key": "paymentStatus",
+      "displayName": "Payment Status",
+      "type": "text",
+      "required": true,
+      "description": "unpaid | partial | paid | refunded"
+    },
+    {
+      "key": "defendantId",
+      "displayName": "Defendant ID",
+      "type": "reference",
+      "referencedCollection": "Defendants",
+      "description": "Link to Defendants collection"
+    },
+    {
+      "key": "defendantName",
+      "displayName": "Defendant Name",
+      "type": "text",
+      "required": true
+    },
+    {
+      "key": "defendantFirstName",
+      "displayName": "Defendant First Name",
+      "type": "text"
+    },
+    {
+      "key": "defendantLastName",
+      "displayName": "Defendant Last Name",
+      "type": "text"
+    },
+    {
+      "key": "defendantDOB",
+      "displayName": "Defendant DOB",
+      "type": "date"
+    },
+    {
+      "key": "defendantSSN",
+      "displayName": "Defendant SSN (Last 4)",
+      "type": "text"
+    },
+    {
+      "key": "defendantDLNumber",
+      "displayName": "Defendant DL Number",
+      "type": "text"
+    },
+    {
+      "key": "defendantDLState",
+      "displayName": "Defendant DL State",
+      "type": "text"
+    },
+    {
+      "key": "defendantAddress",
+      "displayName": "Defendant Address",
+      "type": "text"
+    },
+    {
+      "key": "defendantCity",
+      "displayName": "Defendant City",
+      "type": "text"
+    },
+    {
+      "key": "defendantState",
+      "displayName": "Defendant State",
+      "type": "text"
+    },
+    {
+      "key": "defendantZipCode",
+      "displayName": "Defendant ZIP",
+      "type": "text"
+    },
+    {
+      "key": "defendantPhone",
+      "displayName": "Defendant Phone",
+      "type": "text"
+    },
+    {
+      "key": "defendantEmail",
+      "displayName": "Defendant Email",
+      "type": "text"
+    },
+    {
+      "key": "indemnitorId",
+      "displayName": "Indemnitor ID",
+      "type": "reference",
+      "referencedCollection": "Indemnitors",
+      "description": "Link to Indemnitors collection"
+    },
+    {
+      "key": "indemnitorName",
+      "displayName": "Indemnitor Name",
+      "type": "text",
+      "required": true
+    },
+    {
+      "key": "indemnitorFirstName",
+      "displayName": "Indemnitor First Name",
+      "type": "text"
+    },
+    {
+      "key": "indemnitorLastName",
+      "displayName": "Indemnitor Last Name",
+      "type": "text"
+    },
+    {
+      "key": "indemnitorPhone",
+      "displayName": "Indemnitor Phone",
+      "type": "text",
+      "required": true
+    },
+    {
+      "key": "indemnitorEmail",
+      "displayName": "Indemnitor Email",
+      "type": "text",
+      "required": true
+    },
+    {
+      "key": "indemnitorAddress",
+      "displayName": "Indemnitor Address",
+      "type": "text"
+    },
+    {
+      "key": "indemnitorCity",
+      "displayName": "Indemnitor City",
+      "type": "text"
+    },
+    {
+      "key": "indemnitorState",
+      "displayName": "Indemnitor State",
+      "type": "text"
+    },
+    {
+      "key": "indemnitorZipCode",
+      "displayName": "Indemnitor ZIP",
+      "type": "text"
+    },
+    {
+      "key": "indemnitorRelationship",
+      "displayName": "Indemnitor Relationship",
+      "type": "text"
+    },
+    {
+      "key": "indemnitorEmployer",
+      "displayName": "Indemnitor Employer",
+      "type": "text"
+    },
+    {
+      "key": "indemnitorEmployerPhone",
+      "displayName": "Indemnitor Employer Phone",
+      "type": "text"
+    },
+    {
+      "key": "bondAmount",
+      "displayName": "Bond Amount",
+      "type": "number",
+      "required": true
+    },
+    {
+      "key": "premiumAmount",
+      "displayName": "Premium Amount",
+      "type": "number",
+      "required": true
+    },
+    {
+      "key": "premiumRate",
+      "displayName": "Premium Rate (%)",
+      "type": "number"
+    },
+    {
+      "key": "premiumPaid",
+      "displayName": "Premium Paid",
+      "type": "number",
+      "required": true
+    },
+    {
+      "key": "premiumBalance",
+      "displayName": "Premium Balance",
+      "type": "number",
+      "required": true
+    },
+    {
+      "key": "downPayment",
+      "displayName": "Down Payment",
+      "type": "number"
+    },
+    {
+      "key": "paymentPlanId",
+      "displayName": "Payment Plan ID",
+      "type": "reference",
+      "referencedCollection": "PaymentPlans"
+    },
+    {
+      "key": "paymentMethod",
+      "displayName": "Payment Method",
+      "type": "text",
+      "description": "cash | card | check | wire | plan"
+    },
+    {
+      "key": "collateralRequired",
+      "displayName": "Collateral Required",
+      "type": "boolean"
+    },
+    {
+      "key": "collateralDescription",
+      "displayName": "Collateral Description",
+      "type": "richText"
+    },
+    {
+      "key": "collateralValue",
+      "displayName": "Collateral Value",
+      "type": "number"
+    },
+    {
+      "key": "county",
+      "displayName": "County",
+      "type": "text",
+      "required": true
+    },
+    {
+      "key": "courtType",
+      "displayName": "Court Type",
+      "type": "text",
+      "description": "circuit | county | federal"
+    },
+    {
+      "key": "arrestDate",
+      "displayName": "Arrest Date",
+      "type": "dateTime"
+    },
+    {
+      "key": "releaseDate",
+      "displayName": "Release Date",
+      "type": "dateTime"
+    },
+    {
+      "key": "nextCourtDate",
+      "displayName": "Next Court Date",
+      "type": "dateTime"
+    },
+    {
+      "key": "courtDates",
+      "displayName": "All Court Dates",
+      "type": "richText",
+      "description": "JSON array of court dates"
+    },
+    {
+      "key": "charges",
+      "displayName": "Charges",
+      "type": "richText"
+    },
+    {
+      "key": "jailFacility",
+      "displayName": "Jail Facility",
+      "type": "text"
+    },
+    {
+      "key": "signNowDocumentId",
+      "displayName": "SignNow Document ID",
+      "type": "text"
+    },
+    {
+      "key": "driveFileId",
+      "displayName": "Google Drive File ID",
+      "type": "text"
+    },
+    {
+      "key": "driveFolderUrl",
+      "displayName": "Google Drive Folder URL",
+      "type": "url"
+    },
+    {
+      "key": "documentsSignedDate",
+      "displayName": "Documents Signed Date",
+      "type": "dateTime"
+    },
+    {
+      "key": "allSignaturesComplete",
+      "displayName": "All Signatures Complete",
+      "type": "boolean"
+    },
+    {
+      "key": "documentLinks",
+      "displayName": "Document Links",
+      "type": "richText",
+      "description": "JSON array of document links"
+    },
+    {
+      "key": "intakeSubmittedAt",
+      "displayName": "Intake Submitted At",
+      "type": "dateTime"
+    },
+    {
+      "key": "postedDate",
+      "displayName": "Posted Date",
+      "type": "dateTime"
+    },
+    {
+      "key": "finalizedAt",
+      "displayName": "Finalized At",
+      "type": "dateTime",
+      "required": true
+    },
+    {
+      "key": "finalizedBy",
+      "displayName": "Finalized By",
+      "type": "text",
+      "required": true
+    },
+    {
+      "key": "dischargedDate",
+      "displayName": "Discharged Date",
+      "type": "dateTime"
+    },
+    {
+      "key": "forfeitedDate",
+      "displayName": "Forfeited Date",
+      "type": "dateTime"
+    },
+    {
+      "key": "surrenderedDate",
+      "displayName": "Surrendered Date",
+      "type": "dateTime"
+    },
+    {
+      "key": "exoneratedDate",
+      "displayName": "Exonerated Date",
+      "type": "dateTime"
+    },
+    {
+      "key": "closedDate",
+      "displayName": "Closed Date",
+      "type": "dateTime"
+    },
+    {
+      "key": "intakeQueueId",
+      "displayName": "IntakeQueue ID",
+      "type": "text",
+      "description": "Reference to original IntakeQueue record for audit"
+    },
+    {
+      "key": "isEditable",
+      "displayName": "Is Editable",
+      "type": "boolean",
+      "required": true,
+      "description": "Lock editing after posting"
+    },
+    {
+      "key": "editableBy",
+      "displayName": "Editable By",
+      "type": "text",
+      "description": "Who can edit (e.g., admin)"
+    },
+    {
+      "key": "gasSheetRow",
+      "displayName": "GAS Sheet Row",
+      "type": "number",
+      "description": "GAS sync reference"
+    },
+    {
+      "key": "lastSyncedAt",
+      "displayName": "Last Synced At",
+      "type": "dateTime"
+    },
+    {
+      "key": "notes",
+      "displayName": "Notes",
+      "type": "richText"
+    },
+    {
+      "key": "internalNotes",
+      "displayName": "Internal Notes",
+      "type": "richText",
+      "description": "Not visible to clients"
+    },
+    {
+      "key": "flagged",
+      "displayName": "Flagged",
+      "type": "boolean"
+    },
+    {
+      "key": "flagReason",
+      "displayName": "Flag Reason",
+      "type": "text"
+    },
+    {
+      "key": "lastContactDate",
+      "displayName": "Last Contact Date",
+      "type": "dateTime"
+    },
+    {
+      "key": "lastContactMethod",
+      "displayName": "Last Contact Method",
+      "type": "text",
+      "description": "email | sms | phone | in_person"
+    },
+    {
+      "key": "checkInFrequency",
+      "displayName": "Check-In Frequency",
+      "type": "text"
+    },
+    {
+      "key": "missedCheckIns",
+      "displayName": "Missed Check-Ins",
+      "type": "number"
+    },
+    {
+      "key": "communicationLog",
+      "displayName": "Communication Log",
+      "type": "richText",
+      "description": "JSON array of communication history"
+    },
+    {
+      "key": "riskLevel",
+      "displayName": "Risk Level",
+      "type": "text",
+      "description": "low | medium | high"
+    },
+    {
+      "key": "flightRisk",
+      "displayName": "Flight Risk",
+      "type": "boolean"
+    },
+    {
+      "key": "gpsMonitoring",
+      "displayName": "GPS Monitoring",
+      "type": "boolean"
+    },
+    {
+      "key": "travelRestrictions",
+      "displayName": "Travel Restrictions",
+      "type": "text"
+    }
+  ]
+}
