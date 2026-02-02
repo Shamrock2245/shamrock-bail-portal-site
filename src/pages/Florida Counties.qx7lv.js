@@ -309,7 +309,7 @@ async function populateMainUI(county) {
     // Sheriff Name & Phone (Added Sheriff Name mapping)
     setText(['#sheriffName', '#sheriffTitle', '#textSheriffName'], "Sheriff's Office");
     // Reuse booking phone or specific sheriff phone if available
-    setText(['#sheriffContactPhone', '#textSheriffPhone'], county.contact.primary_phone);
+    setText(['#sheriffContactPhone', '#textSheriffPhone'], county.jail.booking_phone);
 
     // Links / Buttons (Sheriff/Clerk)
     setLink(['#callSheriffBtn', '#btnCallJail'], county.jail.booking_url, "Jail / Sheriff Website");

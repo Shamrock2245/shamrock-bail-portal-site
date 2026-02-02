@@ -15,25 +15,20 @@ function ADMIN_UpdateAllProperties() {
 
         // --- URLS ---
         'WIX_SITE_URL': 'https://www.shamrockbailbonds.biz',
-        'WEBHOOK_URL': 'REPLACE_WITH_SLACK_WEBHOOK_URL', // <--- IMPORTANT: Fill this in!
+        'WEBHOOK_URL': 'https://hooks.slack.com/services/T08N11G5WJC/B08MY450U8N/...', // Needs full webhook if known, otherwise keep placeholder or use Bot Token
 
-        // --- SLACK WEBHOOKS (Can be same as above or distinct) ---
-        'SLACK_WEBHOOK_GENERAL': 'shamrock-bail-bonds.slack.com',
-        'SLACK_WEBHOOK_LEADS': '',
-        'SLACK_WEBHOOK_COURT_DATES': '',
-        'SLACK_WEBHOOK_FORFEITURES': '',
-        'SLACK_WEBHOOK_NEW_CASES': '',
-        'SLACK_BOT_TOKEN': 'YOUR_SLACK_BOT_TOKEN', // Optional if using Bot API
+        // --- SLACK WEBHOOKS ---
+        'SLACK_BOT_TOKEN': '[REDACTED]',
 
         // --- SIGNNOW INTEGRATION ---
         'SIGNNOW_API_BASE_URL': 'https://api.signnow.com',
-        'SIGNNOW_API_TOKEN': 'YOUR_SIGNNOW_BEARER_TOKEN', // Bearer Token
-        'SIGNNOW_FOLDER_ID': '79a05a382b38460b95a78d94a6d79a5ad55e89e6', // "Bail Bonds" Folder
-        'SIGNNOW_TEMPLATE_ID': 'REPLACE_WITH_TEMPLATE_ID', // Default Template
+        'SIGNNOW_API_TOKEN': '0c35edbbf6823555a8434624aaec4830fd4477bb5befee3da2fa29e2b258913d', // Using API Key as Token
+        'SIGNNOW_FOLDER_ID': '79a05a382b38460b95a78d94a6d79a5ad55e89e6',
+        'SIGNNOW_TEMPLATE_ID': 'REPLACE_WITH_TEMPLATE_ID',
 
         // --- TWILIO INTEGRATION ---
-        'TWILIO_ACCOUNT_SID': 'YOUR_TWILIO_ACCOUNT_SID',
-        'TWILIO_AUTH_TOKEN': 'YOUR_TWILIO_AUTH_TOKEN',
+        'TWILIO_ACCOUNT_SID': '[REDACTED]',
+        'TWILIO_AUTH_TOKEN': '26d7f55f69f8d55ee4579c80d4f40f0d',
         'TWILIO_PHONE_NUMBER': '+17272952245',
         'TWILIO_VERIFY_SERVICE_SID': '',
 

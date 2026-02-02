@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../Downloads/Improving Website Lighthouse Score and Load Times"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.jsw": "javascript"
+		}
+	}
+}

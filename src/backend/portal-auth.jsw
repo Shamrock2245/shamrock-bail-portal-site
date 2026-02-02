@@ -45,12 +45,12 @@ const CONFIG = {
         'admin@shamrockbailbonds.biz': {
             role: 'admin',
             personId: 'staff_admin_primary',
-            name: 'Admin'
+            name: 'Brendan (Admin)'
         },
         'shamrockbailoffice@gmail.com': {
             role: 'staff',
             personId: 'staff_office_secondary',
-            name: 'Staff'
+            name: 'Office Staff'
         }
     }
 };
@@ -237,6 +237,13 @@ export async function lookupUserByContact(contact) {
  */
 export async function createCustomSession(personId, role, caseId = null, contactInfo = {}) {
     try {
+        // HARDENING: Enforce Allowlisted Roles
+        const ALLOWED_ROLES = ['indemnitor', 'defendant', 'staff', 'admin', 'coindemnitor'];
+        if (!ALLOWED_ROLES.includes(role)) {
+            console.warn(`SECURITY WARNING: Attempted to create session with invalid role '${role}'. Defaulting to 'indemnitor'.`);
+            role = 'indemnitor';
+        }
+
         const sessionToken = generateToken(48);
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + CONFIG.SESSION_DURATION_HOURS);
@@ -831,6 +838,70 @@ export async function getIndemnitorPortalData(personId, caseId) {
 
     } catch (error) {
         console.error('Error getting indemnitor portal data:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * BACKEND: Link Defendant to Existing Case (e.g., from Indemnitor Portal)
+ * Allows a user (Defendant) to find their case via Case Number + Indemnitor Name
+ */
+export async function linkDefendantToCase(caseNumber, indemnitorName) {
+    try {
+        if (!caseNumber || !indemnitorName) {
+            return { success: false, message: 'Missing required fields' };
+        }
+
+        // Clean inputs
+        const targetCase = caseNumber.trim();
+        const targetName = indemnitorName.trim().toLowerCase();
+
+        console.log(`🔍 Searching for case: ${targetCase} with Indemnitor: ${targetName}`);
+
+        // Search Case
+        const results = await wixData.query(CONFIG.CASES_COLLECTION)
+            .eq('caseNumber', targetCase)
+            .find({ suppressAuth: true });
+
+        if (results.items.length === 0) {
+            return { success: false, message: 'Case not found' };
+        }
+
+        const caseData = results.items[0];
+
+        // Verify Indemnitor Name (Fuzzy Match - Contains parts of name)
+        // Split input name into parts
+        const nameParts = targetName.split(' ');
+        const storedName = (caseData.indemnitorName || '').toLowerCase();
+
+        // Check if ANY part of the input name is in the stored name (e.g. "Smith" in "John Smith")
+        const nameMatch = nameParts.some(part => part.length > 2 && storedName.includes(part));
+
+        if (!nameMatch) {
+            console.warn(`❌ Link failed: Name mismatch. Input: ${targetName}, Stored: ${storedName}`);
+            return { success: false, message: 'Indemnitor name does not match our records' };
+        }
+
+        // Success! Generate a Session Token for the DEFENDANT role on this case
+        const sessionToken = await createCustomSession(
+            caseData._id, // Use CaseID as PersonID for defendant
+            'defendant',
+            caseData._id,
+            {
+                email: caseData.defendantEmail,
+                phone: caseData.defendantPhone,
+                name: caseData.defendantName
+            }
+        );
+
+        return {
+            success: true,
+            sessionToken: sessionToken,
+            message: 'Case found! Redirecting to your paperwork...'
+        };
+
+    } catch (error) {
+        console.error('Error linking defendant:', error);
         return { success: false, message: error.message };
     }
 }

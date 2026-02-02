@@ -115,10 +115,13 @@ function processConciergeQueue() {
                 lead.aiRationale = aiAnalysis.rationale;
                 lead.aiScore = aiAnalysis.score;
 
-                sendSlackAlert_(lead);
+                // Generate RAG Content ONCE
+                const smsBody = RAG_generateIntroSMS(lead);
+
+                sendSlackAlert_(lead, smsBody);
 
                 // Activate SMS Agent
-                sendTwilioIntro_(lead);
+                sendTwilioIntro_(lead, smsBody);
             }
 
             processedCount++;
@@ -138,7 +141,7 @@ function processConciergeQueue() {
 /**
  * Send Slack Notification (Enriched with AI)
  */
-function sendSlackAlert_(lead) {
+function sendSlackAlert_(lead, smsBody) {
     const url = PropertiesService.getScriptProperties().getProperty(CONCIERGE_CONFIG.SLACK_WEBHOOK_PROP);
 
     if (!url) {
@@ -189,6 +192,16 @@ function sendSlackAlert_(lead) {
         });
     }
 
+    if (smsBody) {
+        blocks.push({
+            type: "section",
+            text: {
+                type: "mrkdwn",
+                text: `*💬 SMS Sent:*\n_${smsBody}_`
+            }
+        });
+    }
+
     // Action Buttons
     blocks.push({
         type: "actions",
@@ -219,47 +232,24 @@ function sendSlackAlert_(lead) {
 /**
  * Send SMS Intro (Powered by RAG)
  */
-function sendTwilioIntro_(lead) {
+function sendTwilioIntro_(lead, preGeneratedBody) {
     if (!lead.phone) {
         console.warn("Skipping Twilio: No phone for " + lead.name);
         return;
     }
 
-    try {
-        const props = PropertiesService.getScriptProperties();
-        // Updated to match your actual Script Properties (Code.js standard)
-        const sid = props.getProperty('TWILIO_ACCOUNT_SID');
-        const token = props.getProperty('TWILIO_AUTH_TOKEN');
-        const fromNum = props.getProperty('TWILIO_PHONE_NUMBER');
+    // RAG Generation (Use pre-generated if available)
+    const bodyContent = preGeneratedBody || RAG_generateIntroSMS(lead);
 
-        if (!sid || !token || !fromNum) {
-            console.error("Missing Twilio Credentials in Script Properties");
-            return;
+    if (typeof sendSmsViaTwilio === 'function') {
+        const result = sendSmsViaTwilio(lead.phone, bodyContent);
+        if (result.success) {
+            console.log(`🤖 Concierge SMS Sent to ${lead.name} (${result.sid})`);
+        } else {
+            console.error(`🤖 Concierge SMS Failed: ${result.error}`);
         }
-
-        // RAG Generation
-        const bodyContent = RAG_generateIntroSMS(lead);
-
-        const payload = {
-            To: lead.phone,
-            From: fromNum,
-            Body: bodyContent
-        };
-
-        const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
-        const options = {
-            method: 'post',
-            headers: {
-                'Authorization': 'Basic ' + Utilities.base64Encode(`${sid}:${token}`)
-            },
-            payload: payload
-        };
-
-        UrlFetchApp.fetch(url, options);
-        console.log(`✅ SMS Sent to ${lead.name} (${lead.county}) via Twilio`);
-
-    } catch (e) {
-        console.error("Twilio Error: " + e.message);
+    } else {
+        console.error("sendSmsViaTwilio function not found in global scope.");
     }
 }
 

@@ -16,7 +16,7 @@
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import wixData from 'wix-data';
-import { validateCustomSession, getIndemnitorDetails } from 'backend/portal-auth';
+import { validateCustomSession, getIndemnitorDetails, linkDefendantToCase } from 'backend/portal-auth';
 import { submitIntakeForm } from 'backend/intakeQueue.jsw';
 import wixSeo from 'wix-seo';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
@@ -224,6 +224,7 @@ function showBondDashboard() {
     if (!currentIntake) return;
 
     safeHide('#mainContent');
+    safeHide('#groupDefendantLink'); // Also hide the defendant link prompt
     safeShow('#bondDashboardSection');
     safeShow('#bondDashboardSection');
 
@@ -311,6 +312,9 @@ function setupEventListeners() {
 
     // Logout Button (New for Custom Auth)
     safeOnClick('#logoutBtn', handleLogout);
+
+    // Setup Defendant Link Feature (New)
+    setupDefendantLink();
 }
 
 /**
@@ -593,9 +597,75 @@ function safeEnable(selector) { try { if ($w(selector).valid) $w(selector).enabl
 function safeOnClick(selector, handler) { try { if ($w(selector).valid) $w(selector).onClick(handler); } catch (e) { } }
 function safeOnInput(selector, handler) { try { if ($w(selector).valid) $w(selector).onInput(handler); } catch (e) { } }
 
-export {
-    initializePage,
+initializePage,
     handleSubmitIntake,
     validateIntakeForm,
     collectIntakeFormData
 };
+
+// ============================================================================
+// DEFENDANT LINKING FEATURE (New Request)
+// ============================================================================
+
+/**
+ * Setup "Are you the Defendant?" Link Logic
+ *
+ * ⚠️ UI CONFIGURATION REQUIRED ⚠️
+ * You MUST rename your elements in the Wix Editor Layers Panel to match these IDs:
+ *
+ * 1. The Container Box   => #groupDefendantLink  (Was: group22)
+ * 2. Case Number Input   => #inputLinkCaseNumber (Was: input1)
+ * 3. Last Name Input     => #inputLinkIndemnitorName (Was: input2)
+ * 4. Finding Button      => #btnSubmitLink       (Was: button14)
+ *
+ * SETTINGS:
+ * - Ensure #groupDefendantLink is **NOT** "Collapsed on Load" (Visible by default).
+ * - This box will automatically disappear when they start typing in the main form.
+ */
+function setupDefendantLink() {
+    // 1. Auto-Collapse Logic (When user commits to being an Indemnitor)
+    // If they start typing in the main form, hide the "Defendant?" question.
+    const triggerFields = ['#indemnitorFirstName', '#indemnitorLastName', '#indemnitorPhone'];
+
+    triggerFields.forEach(selector => {
+        safeOnInput(selector, () => {
+            // Check availability to prevent errors
+            if ($w('#groupDefendantLink').valid && !$w('#groupDefendantLink').collapsed) {
+                console.log("🙈 Hiding Defendant Link (User is Indemnitor)");
+                $w('#groupDefendantLink').collapse();
+            }
+        });
+    });
+
+    // 2. Submit Logic (If they ARE the Defendant)
+    safeOnClick('#btnSubmitLink', async () => {
+        const caseNum = safeGetValue('#inputLinkCaseNumber');
+        const indemName = safeGetValue('#inputLinkIndemnitorName');
+
+        if (!caseNum || !indemName) {
+            showError("Please enter both Case Number and Indemnitor's Last Name.");
+            return;
+        }
+
+        safeSetText('#btnSubmitLink', 'Searching...');
+        safeDisable('#btnSubmitLink');
+
+        try {
+            const result = await linkDefendantToCase(caseNum, indemName);
+
+            if (result.success && result.sessionToken) {
+                showSuccess(result.message);
+                // Redirect to Defendant Portal with new token
+                wixLocation.to(`/portal-defendant?st=${encodeURIComponent(result.sessionToken)}`);
+            } else {
+                showError(result.message || 'Could not find case. Check details.');
+                safeSetText('#btnSubmitLink', 'Find My Paperwork');
+                safeEnable('#btnSubmitLink');
+            }
+        } catch (e) {
+            console.error(e);
+            showError("System Error.");
+            safeEnable('#btnSubmitLink');
+        }
+    });
+}

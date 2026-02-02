@@ -59,3 +59,19 @@ jobs:
           uploadArtifacts: true
           temporaryPublicStorage: true
           budgetPath: .github/lighthouse-budget.json
+
+  # 4. Notifications: Alert Slack on status
+  notify:
+    name: Slack Notification
+    runs-on: ubuntu-latest
+    needs: [lint, link-check, lighthouse] # Run after all jobs
+    if: always() # Run regardless of success/failure
+    steps:
+      - name: Send Slack Message
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          # Use Bot Token (preferred) - Replace 'YOUR_CHANNEL_ID' with the ID for #alerts (Right click channel -> Copy details)
+          channel-id: 'YOUR_CHANNEL_ID_HERE' 
+          slack-message: "GitHub Action Health Check: ${{ job.status }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

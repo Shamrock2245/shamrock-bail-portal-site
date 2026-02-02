@@ -109,15 +109,8 @@ export async function submitIntakeForm(intakeData) {
             throw insertError; // Re-throw to be caught by outer block
         }
 
-        // Send notification to staff (optional)
-        await notifyStaffOfNewIntake(result);
-
-        // Notify GAS of new intake submission (don't block on failure)
-        notifyGASOfNewIntake(result.caseId)
-            .then(() => console.log('📡 GAS notification sent (async)'))
-            .catch(err => {
-                console.error('⚠️ GAS notification warning (non-blocking):', err);
-            });
+        // Side-effects (Notifications & Sync) are handled by data.js hooks
+        // to prevent duplication and ensure consistency.
 
         return {
             success: true,

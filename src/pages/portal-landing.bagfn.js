@@ -473,7 +473,7 @@ function redirectToPortal(role) {
         'admin': '/portal-staff'
     };
 
-    const destination = portalMap[role] || '/portal-defendant';
+    const destination = portalMap[role] || '/portal-indemnitor';
 
     console.log("🚀 Redirecting to: " + destination);
     wixLocation.to(destination);
@@ -492,7 +492,7 @@ function redirectToPortalWithToken(role, sessionToken) {
         'admin': '/portal-staff'
     };
 
-    const destination = portalMap[role] || '/portal-defendant';
+    const destination = portalMap[role] || '/portal-indemnitor';
 
     // Pass session token as URL parameter (st = session token)
     const urlWithToken = destination + "?st=" + encodeURIComponent(sessionToken);

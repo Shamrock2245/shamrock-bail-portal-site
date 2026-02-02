@@ -1,6 +1,6 @@
 // ============================================================================
 // Shamrock Bail Bonds - Unified Production Backend (Code.gs)
-// Version: 7.1 - AI Agent Suite (Updated 2026-02-01)
+// Version: 7.2 - AI Agent Suite (Updated 2026-02-01)
 // ============================================================================
 /**
  * SINGLE ENTRY POINT for all GAS Web App requests.
@@ -60,6 +60,49 @@ function getConfig() {
 // ============================================================================
 // WEB APP HANDLERS
 // ============================================================================
+// ============================================================================
+// TEMPLATE CONFIGURATION
+// ============================================================================
+const TEMPLATE_DRIVE_IDS = {
+  'paperwork-header': '15sTaIIwhzHk96I8X3rxz7GtLMU-F5zo1',
+  'faq-cosigners': '1bjmH2w-XS5Hhe828y_Jmv9DqaS_gSZM7',
+  'faq-defendants': '16j9Z8eTii-J_p4o6A2LrzgzptGB8aOhR',
+  'indemnity-agreement': '1p4bYIiZ__JnJHhlmVwLyPJZpsmSdGq12',
+  'defendant-application': '1cokWm8qCDpiGxYD6suZEjm9i8MoABeVe',
+  'promissory-note': '104-ArZiCm3cgfQcT5rIO0x_OWiaw6Ddt',
+  'disclosure-form': '1qIIDudp7r3J7-6MHlL2US34RcrU9KZKY',
+  'surety-terms': '1VfmyUTpchfwJTlENlR72JxmoE_NCF-uf',
+  'master-waiver': '181mgKQN-VxvQOyzDquFs8cFHUN0tjrMs',
+  'ssa-release': '1govKv_N1wl0FIePV8Xfa8mFmZ9JT8mNu',
+  'collateral-receipt': '1IAYq4H2b0N0vPnJN7b2vZPaHg_RNKCmP',
+  'payment-plan': '1v-qkaegm6MDymiaPK45JqfXXX2_KOj8A',
+  'appearance-bond': '15SDM1oBysTw76bIL7Xt0Uhti8uRZKABs'
+};
+
+function getPDFTemplates(data) {
+  if (!data || !data.templateIds || !Array.isArray(data.templateIds)) {
+    return { success: false, error: 'Invalid templateIds' };
+  }
+  const result = { success: true, templates: {} };
+  data.templateIds.forEach(key => {
+    const driveId = TEMPLATE_DRIVE_IDS[key];
+    if (driveId) {
+      try {
+        const blob = DriveApp.getFileById(driveId).getBlob();
+        result.templates[key] = {
+          success: true,
+          pdfBase64: Utilities.base64Encode(blob.getBytes())
+        };
+      } catch (e) {
+        result.templates[key] = { success: false, error: e.message };
+      }
+    } else {
+      result.templates[key] = { success: false, error: 'Template key not found: ' + key };
+    }
+  });
+  return result;
+}
+
 const ERROR_CODES = {
   // Standard System Codes
   INVALID_JSON: 'INVALID_JSON',
@@ -376,9 +419,21 @@ function handleAction(data) {
   // 1.7 SYSTEM
   if (action === 'getSystemStatus') return client_getSystemStatus();
 
+  // New action to handle PDF template requests
+  if (action === 'getPDFTemplates') return getPDFTemplates(data);
+
+  // --- Granular SignNow Actions (Supported by Dashboard.html) ---
+  if (action === 'uploadToSignNow') return SN_uploadDocument(data.pdfBase64, data.fileName);
+  if (action === 'addSignatureFields') return SN_addFields(data.documentId, data.fields);
+  if (action === 'sendEmailInvite') return SN_sendEmailInvite(data.documentId, data.signers, data.options);
+  if (action === 'sendSmsInvite') return SN_sendSmsInvite(data.documentId, data.signers, data.options);
+  if (action === 'createEmbeddedLink') return SN_createEmbeddedLink(data.documentId, data.email, data.role);
+  if (action === 'batchSaveToWixPortal') return batchSaveToWixPortal(data);
+
   // 2. SIGNING & DOCS
   if (action === 'sendForSignature') return handleSendForSignature(data);
   if (action === 'createPortalSigningSession') return createPortalSigningSession(data);
+  if (action === 'getPDFTemplates') return getPDFTemplates(data);
 
   // 4. CHECK-INS
   // 4. CHECK-INS
@@ -1822,4 +1877,13 @@ function approveIntake(intakeId) {
     console.error('approveIntake Error:', e);
     return { success: false, error: e.message };
   }
+}
+
+/**
+ * Handles batch usage of documents from Portal
+ * (Placeholder for full sync logic)
+ */
+function batchSaveToWixPortal(data) {
+  console.log('Batch Save Requested:', data);
+  return { success: true, processed: data.documents ? data.documents.length : 0 };
 }
