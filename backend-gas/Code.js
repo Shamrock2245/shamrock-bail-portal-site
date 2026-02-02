@@ -1969,3 +1969,19 @@ function batchSaveToWixPortal(data) {
   console.log('Batch Save Requested:', data);
   return { success: true, processed: data.documents ? data.documents.length : 0 };
 }
+
+/**
+ * Triggers the Qualified Router's cleanup and re-sync logic.
+ * Call from Dashboard.
+ */
+function client_forceCleanup() {
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized" };
+
+  try {
+    forceFullCleanup(); // Defined in QualifiedTabRouter.gs
+    return { success: true, message: "Qualified data cleared and re-synced." };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}

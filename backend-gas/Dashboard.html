@@ -1418,6 +1418,9 @@
                     <button class="btn btn-secondary btn-sm" onclick="refreshAllCountyStatus()">
                         &#128260; Refresh Status
                     </button>
+                    <button class="btn btn-sm btn-error" onclick="forceQualifiedCleanup()" style="margin-left: 8px;">
+                        🗑️ Clear Qualified Data
+                    </button>
                 </div>
 
                 <p style="margin-bottom: 24px; color: var(--text-secondary); font-size: 15px;">
@@ -2530,7 +2533,7 @@
            CONFIGURATION
            ========================================================= */
         const CONFIG = {
-            gasWebAppUrl: '<?= gasUrl ?>' || 'https://script.google.com/macros/s/AKfycbyfNd-bcQiIFd42a1cxuWQJbGpUVg-mkPugC6nNVMpROARfbbfnqHcILpFJIP0FW3xrnA/exec', // AUTO-INJECTED v113
+            gasWebAppUrl: '<?= gasUrl ?>' || 'https://script.google.com/macros/s/AKfycbw4ckljcDfPBRFJAcQ-nA14VIWXFxnWZNH2ik4nXJdplqAxZdE8UGGYg6QSqum7Gcw6AQ/exec', // AUTO-INJECTED v113
             signNowApiBase: 'https://api.signnow.com',
             // signNowToken moved to Script Properties for security
 
@@ -6861,6 +6864,23 @@
                     window.loadIntake = Queue.load;
                     window.refreshAllCountyStatus = Stats.refreshAll;
                     window.toggleAgentTab = UI.toggleAgentTab;
+
+                    window.forceQualifiedCleanup = function () {
+                        if (!confirm('⚠️ ARE YOU SURE?\n\nThis will CLEAR ALL DATA in the "Shamrock_Arrests_Master" and "Qualified_exceptions" tabs and re-sync from source counties.\n\nThis process cannot be undone.')) return;
+
+                        UI.showToast('🧹 Starting cleanup... this may take a minute.', 'info');
+                        google.script.run
+                            .withSuccessHandler(res => {
+                                if (res.success) {
+                                    UI.showToast('✅ ' + res.message, 'success');
+                                } else {
+                                    UI.showToast('❌ Error: ' + res.error, 'error');
+                                }
+                            })
+                            .withFailureHandler(err => UI.showToast('❌ Failed: ' + err.message, 'error'))
+                            .client_forceCleanup();
+                    };
+
                     // Deprecated
                     window.switchAIAgent = UI.toggleAgentTab;
                 },
