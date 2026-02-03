@@ -172,6 +172,29 @@ export async function get_testAuth(request) {
 }
 
 /**
+ * GET /_functions/debugCollections
+ * Diagnostic endpoint to verify collection access in Live environment
+ */
+export async function get_debugCollections(request) {
+    try {
+        const { testAllAuthCollections } = await import('backend/test-collections');
+        const result = await testAllAuthCollections();
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: result
+        });
+    } catch (error) {
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+                allPassed: false,
+                error: error.message
+            }
+        });
+    }
+}
+
+/**
  * POST /api/documents/add
  * Add a single pending document
  * 
