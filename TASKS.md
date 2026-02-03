@@ -45,11 +45,11 @@
 ---
 
 ## 🧹 Technical Debt & Compliance (Consolidated)
-- [ ] **Audit Element IDs**: Check `masterPage.js` and `Home` against canonical IDs.
-- [ ] **Schema Verify**: Check `FloridaCounties` against Foundation Spec.
-- [ ] **SignNow Wiring**: Confirm "Start Bail" button ONLY activates after Consent + Login.
-- [ ] **Mobile Sticky CTA**: Verify `#stickyMobileCTA` behavior.
-- [ ] **Error Boundaries**: Add UI for "County Not Found".
+- [x] **Audit Element IDs**: Check `masterPage.js` and `Home` against canonical IDs.
+- [x] **Schema Verify**: Check `FloridaCounties` against Foundation Spec.
+- [x] **SignNow Wiring**: Confirm "Start Bail" button ONLY activates after Consent + Login.
+- [x] **Mobile Sticky CTA**: Verify `#stickyMobileCTA` behavior (Updated ID to canonical).
+- [x] **Error Boundaries**: Add UI for "County Not Found".
 
 ---
 

@@ -402,6 +402,11 @@ function validateIntakeForm() {
     if (!safeGetValue('#indemnitorState')?.trim()) errors.push('Your state is required');
     if (!safeGetValue('#indemnitorZipCode')?.trim()) errors.push('Your zip code is required');
 
+    // Consent Check
+    if ($w('#checkboxConsent').valid && !$w('#checkboxConsent').checked) {
+        errors.push('You must agree to the Terms & Conditions.');
+    }
+
     if (errors.length > 0) {
         return {
             valid: false,

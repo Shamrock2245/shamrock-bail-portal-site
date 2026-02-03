@@ -49,6 +49,15 @@ $w.onReady(async function () {
 
         if (!success || !data) {
             console.warn(`⚠️ County data not found for slug: ${countySlug}.`);
+            try { Select('#loadingIndicator').hide(); } catch (e) { }
+            try {
+                Select('#countyName').text = "County Not Found";
+                Select('#countyName').expand();
+                Select('#heroSubtitle').text = "We serve all of Florida, but this specific page is unavailable. Call us now for immediate help.";
+                Select('#heroSubtitle').expand();
+                Select('#heroCallButton').expand(); // Always give them a way to call
+                Select('#countyContent').collapse(); // Hide broken sections
+            } catch (e) { }
             return;
         }
 

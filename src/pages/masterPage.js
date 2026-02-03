@@ -44,7 +44,7 @@ function initCriticalUI() {
     setupStickyHeader();
 
     // UI Validator (Automated check for Mobile CTA)
-    validateStickyFooter('#boxStickyFooter');
+    validateStickyFooter('#stickyMobileCTA');
 
     // Setup emergency call button (critical for bail bonds)
     setupEmergencyCallButton();

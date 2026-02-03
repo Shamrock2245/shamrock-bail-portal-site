@@ -41,7 +41,11 @@ export async function syncCountiesToCms() {
                 // Defaults for required schema fields if missing in JSON
                 metaTitle: `Bail Bonds in ${countyData.name} | ${config.brand.name}`,
                 metaDescription: `24/7 Bail Bonds in ${countyData.name}. Call ${countyData.agentPhone || config.brand.phone} for immediate release.`,
-                tier: 2 // Default to Tier 2 until manually promoted
+                tier: 2, // Default to Tier 2 until manually promoted
+
+                // Jail Data (Mapped from Tenant Config)
+                jailAddress: countyData.jailLocation,
+                jailPhone: countyData.jailPhone
             };
 
             // 2. Upsert Logic
