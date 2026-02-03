@@ -58,12 +58,8 @@ $w.onReady(async function () {
     // 3. Check for social login result
     if (query.sessionToken) {
         console.log("🔗 Social login session detected, validating...");
-<<<<<<< Updated upstream
-        await handleSocialSession(query.sessionToken);
-=======
         // Pass wixSessionToken from query if present
         await handleSocialSession(query.sessionToken, query.role, query.wixSessionToken);
->>>>>>> Stashed changes
         return;
     }
 
@@ -330,12 +326,12 @@ async function handleMagicLinkLogin(token) {
             // Defendants can use case lookup at top of portal
             const targetRole = 'indemnitor';
             console.log("✅ Defaulting to indemnitor role (defendants use case lookup)");
-            
+
             showMessage("Welcome! Redirecting to your portal...", "success");
 
             // Small delay to show success message
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             // Redirect to indemnitor portal
             redirectToPortalWithToken(targetRole, result.sessionToken);
 
@@ -356,7 +352,7 @@ async function handleMagicLinkLogin(token) {
         console.error("❌ CRITICAL ERROR validating token:", error);
         showMessage("System error. Please try again or call us at 239-332-2245.", "error");
         hideLoading();
-        
+
         // Clear any partial session
         clearSessionToken();
 
@@ -436,12 +432,12 @@ async function handleSocialSession(sessionToken, role, wixSessionToken) {
         // Defendants can use case lookup at top of portal
         const targetRole = 'indemnitor';
         console.log("✅ Defaulting to indemnitor role (defendants use case lookup)");
-        
+
         showMessage("Welcome! Redirecting to your portal...", "success");
-        
+
         // Small delay to show success message
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         // Redirect to indemnitor portal
         redirectToPortalWithToken(targetRole, sessionToken);
 
@@ -450,10 +446,10 @@ async function handleSocialSession(sessionToken, role, wixSessionToken) {
         console.error("❌ Social login failed:", error);
         showMessage("Login failed. Please try again or contact support.", "error");
         hideLoading();
-        
+
         // Clear any partial session
         clearSessionToken();
-        
+
         // Allow user to retry
         setTimeout(() => wixLocation.to('/portal-landing'), 3000);
     }

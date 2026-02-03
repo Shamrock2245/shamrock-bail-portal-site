@@ -417,16 +417,11 @@ export async function get_authCallback(request) {
 
         let sessionToken = null;
         let wixSessionToken = null;
-<<<<<<< Updated upstream
         let role = 'indemnitor';
-=======
-        let role = null;
->>>>>>> Stashed changes
 
         if (lookup.found) {
             // Existing User
             role = lookup.role;
-<<<<<<< Updated upstream
             sessionToken = await createCustomSession(
                 lookup.personId,
                 lookup.role,
@@ -444,19 +439,6 @@ export async function get_authCallback(request) {
                 { email: userProfile.email, name: userProfile.name }
             );
             wixSessionToken = null; // API bypasses Wix Members
-=======
-            const sessionResult = await createCustomSession(lookup.personId, lookup.role, lookup.caseId);
-            sessionToken = sessionResult.sessionToken;
-            wixSessionToken = sessionResult.wixSessionToken;
-        } else {
-            // New User (Default to Indemnitor, matching Magic Link flow)
-            // Strangers are more likely to be Indemnitors/Signers than Defendants
-            role = 'indemnitor';
-            const newPersonId = `social_${userProfile.provider}_${userProfile.providerId}`;
-            const sessionResult = await createCustomSession(newPersonId, 'indemnitor');
-            sessionToken = sessionResult.sessionToken;
-            wixSessionToken = sessionResult.wixSessionToken;
->>>>>>> Stashed changes
         }
 
         // 4. Return Success HTML with token
