@@ -309,18 +309,22 @@ function buildWixSigningUrl(link, signer) {
 function SN_getConfig() {
   const props = PropertiesService.getScriptProperties();
 
-  // PREFERRED: Use Basic Token (from Screenshot) to auto-generate Access Token
+  // 1. Try Basic Token Exchange (Preferred)
   const basicToken = props.getProperty('SIGNNOW_BASIC_TOKEN');
   if (basicToken) {
-    return {
-      API_BASE: 'https://api.signnow.com',
-      ACCESS_TOKEN: SN_exchangeBasicToken(basicToken)
-    };
+    try {
+      return {
+        API_BASE: 'https://api.signnow.com',
+        ACCESS_TOKEN: SN_exchangeBasicToken(basicToken)
+      };
+    } catch (e) {
+      console.warn("⚠️ Basic Token Exchange failed, attempting fallback to API Token...", e);
+    }
   }
 
-  // LEGACY: Use manual Access Token (Expires manually)
-  const token = props.getProperty('SIGNNOW_API_TOKEN');
-  if (!token) throw new Error('Configuration Error: Please set SIGNNOW_BASIC_TOKEN (preferred) or SIGNNOW_API_TOKEN in Script Properties.');
+  // 2. Fallback: Use manual Access Token / API Key
+  const token = props.getProperty('SIGNNOW_API_TOKEN') || props.getProperty('SIGNNOW_API_KEY');
+  if (!token) throw new Error('Configuration Error: No valid SIGNNOW credential found.');
 
   return { API_BASE: 'https://api.signnow.com', ACCESS_TOKEN: token };
 }

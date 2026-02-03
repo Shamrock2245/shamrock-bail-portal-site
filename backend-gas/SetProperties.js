@@ -10,7 +10,7 @@ function ADMIN_UpdateAllProperties() {
     // -------------------------------------------------------------------------
     const config = {
         // --- API SECURITY ---
-        'GAS_API_KEY': 'REPLACE_WITH_GAS_API_KEY', // Shared secret with Wix
+        'GAS_API_KEY': 'shamrock_gas_2026_secure_key_aqhrvpytqw', // Shared secret with Wix
         'MCP_API_KEY': 'REPLACE_WITH_MCP_API_KEY',  // Shared secret with Cursor/Context
 
         // --- URLS ---
