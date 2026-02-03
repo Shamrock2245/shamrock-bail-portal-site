@@ -1,7 +1,7 @@
 import wixData from 'wix-data';
 // REMOVED: import { currentMember } from 'wix-members-backend';
 import { fetch } from 'wix-fetch';
-import { getGasUrl } from 'backend/utils';
+import { getGasWebAppUrl } from 'backend/secretsManager';
 import { getSecret } from 'wix-secrets-backend';
 import { fetchWithRetry } from 'backend/utils';
 import { validateCustomSession } from 'backend/portal-auth';
@@ -102,7 +102,7 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
 
         // 5. Sync to GAS
         try {
-            const gasUrl = await getGasUrl();
+            const gasUrl = await getGasWebAppUrl();
             if (gasUrl) {
                 await fetchWithRetry(gasUrl, {
                     method: 'POST',

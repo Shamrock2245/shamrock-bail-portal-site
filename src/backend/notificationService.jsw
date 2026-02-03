@@ -7,10 +7,11 @@
  */
 
 import { fetch } from 'wix-fetch';
-import { getGasUrl } from 'backend/utils';
+import { getGasWebAppUrl } from 'backend/secretsManager';
 import { triggeredEmails } from 'wix-crm-backend';
 import wixData from 'wix-data';
 import { sendSms } from 'backend/twilio-client';
+import { getConfig } from 'backend/config-loader';
 
 /**
  * Notification types
@@ -111,6 +112,9 @@ export async function sendMemberNotification(type, data) {
  * based on notification type and data availability.
  */
 async function sendSmsNotificationIfNeeded(type, data) {
+    const config = await getConfig();
+    const { domain, paymentLink, name } = config.brand;
+
     // List of types that warrant an SMS
     const SMS_TYPES = [
         NOTIFICATION_TYPES.ID_REJECTED,
@@ -128,13 +132,13 @@ async function sendSmsNotificationIfNeeded(type, data) {
 
     // Simple templates for SMS
     const smsTemplates = {
-        [NOTIFICATION_TYPES.ID_REJECTED]: `Shamrock Bail: Your ID was rejected. Please log in to upload a new one.`,
-        [NOTIFICATION_TYPES.PAPERWORK_READY]: `Shamrock Bail: Your paperwork is ready. Login to sign: https://www.shamrockbailbonds.biz/portal-landing. Pay Bail: https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd`,
-        [NOTIFICATION_TYPES.PAPERWORK_SENT]: `Shamrock Bail: Documents sent for signature. Pay Bail here: https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd`,
-        [NOTIFICATION_TYPES.PAPERWORK_DECLINED]: `Shamrock Bail: Providing documents was declined/failed. Please contact us.`,
-        [NOTIFICATION_TYPES.PAPERWORK_COMPLETE]: `Shamrock Bail: Paperwork received! If you haven't paid yet, please do so here: https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd`,
-        [NOTIFICATION_TYPES.CASE_DISCHARGED]: `Shamrock Bail: Good news! Your bond has been DISCHARGED. You have no further obligations for this case.`,
-        [NOTIFICATION_TYPES.URGENT_CASE]: `Shamrock Bail: URGENT update on your case. Please contact us immediately.`
+        [NOTIFICATION_TYPES.ID_REJECTED]: `${name}: Your ID was rejected. Please log in to upload a new one.`,
+        [NOTIFICATION_TYPES.PAPERWORK_READY]: `${name}: Your paperwork is ready. Login to sign: ${domain}/portal-landing. Pay Bail: ${paymentLink}`,
+        [NOTIFICATION_TYPES.PAPERWORK_SENT]: `${name}: Documents sent for signature. Pay Bail here: ${paymentLink}`,
+        [NOTIFICATION_TYPES.PAPERWORK_DECLINED]: `${name}: Providing documents was declined/failed. Please contact us.`,
+        [NOTIFICATION_TYPES.PAPERWORK_COMPLETE]: `${name}: Paperwork received! If you haven't paid yet, please do so here: ${paymentLink}`,
+        [NOTIFICATION_TYPES.CASE_DISCHARGED]: `${name}: Good news! Your bond has been DISCHARGED. You have no further obligations for this case.`,
+        [NOTIFICATION_TYPES.URGENT_CASE]: `${name}: URGENT update on your case. Please contact us immediately.`
     };
 
     const body = smsTemplates[type];
@@ -166,8 +170,9 @@ export async function sendAdminNotification(type, data) {
             await sendAdminEmail(type, data);
         }
 
+        const config = await getConfig();
         // Log notification
-        await logNotification(type, 'admin', 'admin@shamrockbailbonds.biz', data);
+        await logNotification(type, 'admin', config.brand.supportEmail, data);
 
         return { success: true };
 
@@ -185,7 +190,10 @@ export async function sendAdminNotification(type, data) {
  */
 async function sendSlackNotification(type, data) {
     try {
-        const gasUrl = await getGasUrl();
+        const [gasUrl, config] = await Promise.all([
+            getGasWebAppUrl(),
+            getConfig()
+        ]);
 
         if (!gasUrl) {
             console.log('GAS URL not configured, skipping Slack notification');
@@ -200,7 +208,7 @@ async function sendSlackNotification(type, data) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'sendSlackNotification',
-                channel: getSlackChannel(type),
+                channel: getSlackChannel(type, config.integrations.slack.channels),
                 message: message,
                 type: type,
                 data: data
@@ -245,18 +253,20 @@ function formatSlackMessage(type, data) {
 /**
  * Get appropriate Slack channel for notification type
  */
-function getSlackChannel(type) {
+function getSlackChannel(type, channels) {
+    if (!channels) return '#general';
+
     const channelMap = {
-        [NOTIFICATION_TYPES.NEW_MEMBER]: '#new-members',
-        [NOTIFICATION_TYPES.NEW_CASE]: '#cases',
-        [NOTIFICATION_TYPES.DOCUMENT_NEEDS_REVIEW]: '#documents',
-        [NOTIFICATION_TYPES.SIGNING_DECLINED]: '#urgent',
-        [NOTIFICATION_TYPES.URGENT_CASE]: '#urgent',
-        [NOTIFICATION_TYPES.SYSTEM_ERROR]: '#system-logs',
-        [NOTIFICATION_TYPES.NEW_CONTACT_INQUIRY]: '#inquiries'
+        [NOTIFICATION_TYPES.NEW_MEMBER]: channels.newMembers,
+        [NOTIFICATION_TYPES.NEW_CASE]: channels.cases,
+        [NOTIFICATION_TYPES.DOCUMENT_NEEDS_REVIEW]: channels.documents,
+        [NOTIFICATION_TYPES.SIGNING_DECLINED]: channels.urgent,
+        [NOTIFICATION_TYPES.URGENT_CASE]: channels.urgent,
+        [NOTIFICATION_TYPES.SYSTEM_ERROR]: channels.systemLogs,
+        [NOTIFICATION_TYPES.NEW_CONTACT_INQUIRY]: channels.inquiries
     };
 
-    return channelMap[type] || '#general';
+    return channelMap[type] || channels.alerts || '#general';
 }
 
 /**
@@ -264,7 +274,10 @@ function getSlackChannel(type) {
  */
 async function sendAdminEmail(type, data) {
     try {
-        const gasUrl = await getGasUrl();
+        const [gasUrl, config] = await Promise.all([
+            getGasWebAppUrl(),
+            getConfig()
+        ]);
 
         if (!gasUrl) return;
 
@@ -273,9 +286,9 @@ async function sendAdminEmail(type, data) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'sendAdminEmail',
-                to: 'admin@shamrockbailbonds.biz',
-                subject: `[Shamrock Bail] ${type.replace(/_/g, ' ').toUpperCase()}`,
-                body: formatEmailBody(type, data)
+                to: config.brand.supportEmail,
+                subject: `[${config.brand.name}] ${type.replace(/_/g, ' ').toUpperCase()}`,
+                body: formatEmailBody(type, data, config)
             })
         });
 
@@ -287,9 +300,13 @@ async function sendAdminEmail(type, data) {
 /**
  * Format email body for admin notifications
  */
-function formatEmailBody(type, data) {
+function formatEmailBody(type, data, config) {
+    // If config not passed (from legacy call?), fallback safe but try to use it
+    const brandName = config?.brand?.name || 'Shamrock Bail Bonds';
+    const adminLink = config?.brand?.domain ? `${config.brand.domain}/admin` : 'https://www.shamrockbailbonds.biz/admin';
+
     return `
-        <h2>Shamrock Bail Bonds - ${type.replace(/_/g, ' ')}</h2>
+        <h2>${brandName} - ${type.replace(/_/g, ' ')}</h2>
         <p>A notification requires your attention:</p>
         <ul>
             ${Object.entries(data).map(([key, value]) =>
@@ -297,7 +314,7 @@ function formatEmailBody(type, data) {
     ).join('')}
         </ul>
         <p>Time: ${new Date().toLocaleString()}</p>
-        <p><a href="https://www.shamrockbailbonds.biz/admin">Go to Admin Portal</a></p>
+        <p><a href="${adminLink}">Go to Admin Portal</a></p>
     `;
 }
 

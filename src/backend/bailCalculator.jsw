@@ -14,7 +14,7 @@
 
 import { fetch } from 'wix-fetch';
 import wixData from 'wix-data';
-import { getGasUrl } from 'backend/utils';
+import { getGasWebAppUrl } from 'backend/secretsManager';
 import { PRIMARY_COUNTIES, TRANSFER_FEE_BASE, BOND_FEE_PERCENTAGE, BOND_FEE_MINIMUM } from 'public/portal-config';
 
 // ============================================================================
@@ -49,7 +49,7 @@ export async function fetchBookingData(searchParams) {
         // Get the GAS endpoint URL from secrets
         let gasEndpoint;
         try {
-            gasEndpoint = await getGasUrl();
+            gasEndpoint = await getGasWebAppUrl();
         } catch (e) {
             // Fallback to default endpoint if secret not configured
             gasEndpoint = null;

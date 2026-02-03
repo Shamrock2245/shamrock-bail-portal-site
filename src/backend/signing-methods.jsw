@@ -13,7 +13,8 @@
  * This ensures Twilio credentials stay in Wix Secrets, not GAS
  */
 
-import { fetchWithRetry, getGasUrl, getGasApiKey } from 'backend/utils';
+import { fetchWithRetry } from 'backend/utils';
+import { getGasWebAppUrl, getGasApiKey } from 'backend/secretsManager';
 import { sendSms } from 'backend/twilio-client';
 import wixData from 'wix-data';
 
@@ -24,7 +25,7 @@ const PAYMENT_LINK = 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e29
  */
 async function callGasBackend(payload) {
     try {
-        const url = await getGasUrl();
+        const url = await getGasWebAppUrl();
         const apiKey = await getGasApiKey();
 
         // Inject API Key for Security

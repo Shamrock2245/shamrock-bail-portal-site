@@ -1,0 +1,67 @@
+import wixSecretsBackend from 'wix-secrets-backend';
+import tenantConfig from './config/tenant.json';
+
+/**
+ * Configuration Loader
+ * 
+ * Merges the static tenant.json configuration with secure secrets 
+ * fetched at runtime from Wix Secrets Manager.
+ * 
+ * Usage:
+ * import { getConfig } from 'backend/config-loader';
+ * const config = await getConfig();
+ */
+
+export async function getConfig() {
+    // 1. Load critical secrets in parallel
+    const [
+        gasWebAppUrl,
+        signNowToken,
+        twilioAuthToken,
+        googleMapsKey,
+        openAiKey
+    ] = await Promise.all([
+        wixSecretsBackend.getSecret('GAS_WEB_APP_URL').catch(() => ''),
+        wixSecretsBackend.getSecret('SIGNNOW_API_TOKEN').catch(() => ''),
+        wixSecretsBackend.getSecret('TWILIO_AUTH_TOKEN').catch(() => ''),
+        wixSecretsBackend.getSecret('GOOGLE_MAPS_API_KEY').catch(() => ''),
+        wixSecretsBackend.getSecret('OPENAI_API_KEY').catch(() => '')
+    ]);
+
+    // 2. Merge secrets into the config object
+    // We create a deep copy to avoid mutating the original import
+    const runtimeConfig = JSON.parse(JSON.stringify(tenantConfig));
+
+    // Inject Secrets
+    runtimeConfig.secrets = {
+        gasWebAppUrl,
+        signNowToken,
+        twilioAuthToken,
+        googleMapsKey,
+        openAiKey
+    };
+
+    // 3. Environment Overrides (Optional expansion point)
+    // e.g. if (wixWindow.formFactor === 'Mobile') ...
+
+    return runtimeConfig;
+}
+
+/**
+ * Helper to get just the GAS URL (most common requirement)
+ */
+export async function getGasWebAppUrl() {
+    return wixSecretsBackend.getSecret('GAS_WEB_APP_URL');
+}
+
+/**
+ * Helper to get a specific integration config
+ * @param {string} name - 'signNow', 'twilio', etc.
+ */
+export async function getIntegrationConfig(name) {
+    const config = await getConfig();
+    if (!config.integrations[name]) {
+        throw new Error(`Integration config not found for: ${name}`);
+    }
+    return config.integrations[name];
+}

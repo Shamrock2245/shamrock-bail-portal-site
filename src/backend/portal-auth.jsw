@@ -16,7 +16,8 @@
 
 import wixData from 'wix-data';
 import { generateToken, hashPassword, verifyPassword } from 'backend/auth-utils';
-import { getGasUrl, getGasApiKey } from 'backend/utils';
+import { getConfig } from 'backend/config-loader';
+import { getGasWebAppUrl, getGasApiKey } from 'backend/secretsManager';
 import { sendSms } from 'backend/twilio-client';
 import { fetch } from 'wix-fetch';
 import { fetchWithRetry } from 'backend/utils';
@@ -40,19 +41,7 @@ const CONFIG = {
     BASE_URL: 'https://www.shamrockbailbonds.biz',
     PORTAL_LANDING: '/portal-landing',
 
-    // Hardcoded Staff Accounts
-    STAFF_ACCOUNTS: {
-        'admin@shamrockbailbonds.biz': {
-            role: 'admin',
-            personId: 'staff_admin_primary',
-            name: 'Brendan (Admin)'
-        },
-        'shamrockbailoffice@gmail.com': {
-            role: 'staff',
-            personId: 'staff_office_secondary',
-            name: 'Office Staff'
-        }
-    }
+    // STAFF_ACCOUNTS removed as per instruction
 };
 
 // ============================================================================
@@ -96,17 +85,22 @@ function isEmail(input) {
 /**
  * Check if email is a hardcoded staff account
  */
-function isStaffAccount(email) {
+/**
+ * Check if email is a hardcoded staff account
+ */
+function isStaffAccount(email, staffConfig) {
+    if (!staffConfig) return false;
     const normalized = normalizeEmail(email);
-    return CONFIG.STAFF_ACCOUNTS.hasOwnProperty(normalized);
+    return staffConfig.hasOwnProperty(normalized);
 }
 
 /**
  * Get staff account details
  */
-function getStaffAccountDetails(email) {
+function getStaffAccountDetails(email, staffConfig) {
+    if (!staffConfig) return null;
     const normalized = normalizeEmail(email);
-    return CONFIG.STAFF_ACCOUNTS[normalized] || null;
+    return staffConfig[normalized] || null;
 }
 
 // ============================================================================
@@ -143,13 +137,16 @@ function buildPhoneQuery(collection, field, phoneInput) {
  */
 export async function lookupUserByContact(contact) {
     try {
+        const config = await getConfig();
+        const staffConfig = config.staffAccounts || {};
+
         const normalized = isEmail(contact)
             ? normalizeEmail(contact)
             : normalizePhone(contact);
 
-        // 1. Check if it's a hardcoded staff account
-        if (isEmail(contact) && isStaffAccount(contact)) {
-            const staffDetails = getStaffAccountDetails(contact);
+        // 1. Check if it's a staff account
+        if (isEmail(contact) && isStaffAccount(contact, staffConfig)) {
+            const staffDetails = getStaffAccountDetails(contact, staffConfig);
             console.log(`✅ Staff account identified: ${staffDetails.name} (${staffDetails.role})`);
             return {
                 found: true,
@@ -601,7 +598,7 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
 async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
     try {
         // Use GAS backend to send email
-        const gasUrl = await getGasUrl();
+        const gasUrl = await getGasWebAppUrl();
         const apiKey = await getGasApiKey();
 
         console.log('🔧 sendMagicLinkEmail DEBUG:');
@@ -748,7 +745,7 @@ export async function getStaffDashboardData() {
         // Fetch System Status from GAS
         let systemLogs = [];
         try {
-            const gasUrl = await getGasUrl();
+            const gasUrl = await getGasWebAppUrl();
             const apiKey = await getGasApiKey();
             // 3-second timeout for status check
             const controller = new AbortController();

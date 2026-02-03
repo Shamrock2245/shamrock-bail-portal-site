@@ -1,7 +1,7 @@
 import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
 import { fetch } from 'wix-fetch';
-import { getGasUrl } from 'backend/utils';
+import { getGasWebAppUrl } from 'backend/secretsManager';
 
 import { sendSms } from 'backend/twilio-client';
 
@@ -187,7 +187,7 @@ export async function sendCheckInComplianceReport() {
         `;
 
         // Send to Admin
-        await fetch(await getGasUrl(), {
+        await fetch(await getGasWebAppUrl(), {
             method: 'POST',
             body: JSON.stringify({
                 action: 'sendAdminEmail',
@@ -267,7 +267,7 @@ export async function checkMissedCheckIns() {
 
 async function sendAdminAlert(missingList) {
     try {
-        const gasUrl = await getGasUrl();
+        const gasUrl = await getGasWebAppUrl();
         if (!gasUrl) return;
 
         await fetch(gasUrl, {

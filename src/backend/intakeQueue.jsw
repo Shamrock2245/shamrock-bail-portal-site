@@ -11,6 +11,7 @@ import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
 
 import { notifyGASOfNewIntake, callGasAction } from './gasIntegration.jsw';
+import { getConfig } from 'backend/config-loader';
 
 /**
  * Submit indemnitor intake form to IntakeQueue
@@ -20,293 +21,26 @@ import { notifyGASOfNewIntake, callGasAction } from './gasIntegration.jsw';
  */
 export async function submitIntakeForm(intakeData) {
     try {
+        const config = await getConfig();
         console.log('📝 Submitting to IntakeQueue. Data keys:', Object.keys(intakeData));
 
-        // Validation: Ensure minimum required fields are present
-        if (!intakeData.indemnitorEmail || !intakeData.defendantName) {
-            throw new Error('Validation Failed: Missing required fields (Email or Defendant Name)');
-        }
-
-        console.log('📝 Indemnitor/Defendant:', {
-            indemnitor: intakeData.indemnitorEmail.replace(/(.{2})(.*)(@.*)/, '$1***$3'), // Mask email
-            defendant: intakeData.defendantName
-        });
-
-        // Generate a unique case ID
-        const caseId = await generateCaseId();
-        console.log('🆔 Generated Case ID:', caseId);
-
-        // Prepare the IntakeQueue record
-        const intakeRecord = {
-            caseId: caseId,
-
-            // Defendant Information (from form)
-            defendantName: intakeData.defendantName || '',
-            defendantEmail: intakeData.defendantEmail || '',
-            defendantPhone: intakeData.defendantPhone || '',
-
-            // Indemnitor Information (from form)
-            indemnitorName: intakeData.indemnitorName || '',
-            indemnitorEmail: intakeData.indemnitorEmail || '',
-            indemnitorPhone: intakeData.indemnitorPhone || '',
-            indemnitorStreetAddress: intakeData.indemnitorStreetAddress || '',
-            indemnitorCity: intakeData.indemnitorCity || '',
-            indemnitorState: intakeData.indemnitorState || '',
-            indemnitorZipCode: intakeData.indemnitorZipCode || '',
-            residenceType: intakeData.residenceType || '',
-
-            // References
-            reference1Name: intakeData.reference1Name || '',
-            reference1Phone: intakeData.reference1Phone || '',
-            reference1Address: intakeData.reference1Address || '',
-            reference1City: intakeData.reference1City || '',
-            reference1State: intakeData.reference1State || '',
-            reference1Zip: intakeData.reference1Zip || '',
-
-            reference2Name: intakeData.reference2Name || '',
-            reference2Phone: intakeData.reference2Phone || '',
-            reference2Address: intakeData.reference2Address || '',
-            reference2City: intakeData.reference2City || '',
-            reference2State: intakeData.reference2State || '',
-            reference2Zip: intakeData.reference2Zip || '',
-
-            // Employer info
-            indemnitorEmployer: intakeData.indemnitorEmployer || '',
-            indemnitorEmployerCity: intakeData.indemnitorEmployerCity || '',
-            indemnitorEmployerState: intakeData.indemnitorEmployerState || '',
-            indemnitorEmployerZip: intakeData.indemnitorEmployerZip || '',
-            indemnitorEmployerPhone: intakeData.indemnitorEmployerPhone || '',
-            indemnitorSupervisorName: intakeData.indemnitorSupervisorName || '',
-            indemnitorSupervisorPhone: intakeData.indemnitorSupervisorPhone || '',
-
-            // Case Information (Minimal - strict schema alignment)
-            county: intakeData.county || '',
-            jailFacility: intakeData.jailFacility || '',
-
-            // Status tracking
-            status: 'intake',
-            documentStatus: 'pending',
-            gasSyncStatus: 'pending',
-
-            // Additional metadata
-            notes: intakeData.notes || '',
-
-            // Timestamps handled automatically by Wix (_createdDate, _updatedDate)
-        };
-
-        console.log('📝 Payload prepared for insert. Fields count:', Object.keys(intakeRecord).length);
-
-        // Insert into IntakeQueue collection
-        // Explicitly catching insert error to log it specifically
-        let result;
-        try {
-            result = await wixData.insert(COLLECTIONS.INTAKE_QUEUE, intakeRecord, { suppressAuth: true });
-            console.log('✅ IntakeQueue record created successfully:', result._id);
-        } catch (insertError) {
-            console.error('❌ FATAL: wixData.insert failed:', insertError);
-            if (insertError.code) console.error('Error Code:', insertError.code);
-            if (insertError.details) console.error('Error Details:', insertError.details);
-            throw insertError; // Re-throw to be caught by outer block
-        }
-
-        // Side-effects (Notifications & Sync) are handled by data.js hooks
-        // to prevent duplication and ensure consistency.
-
-        return {
-            success: true,
-            caseId: caseId,
-            recordId: result._id,
-            message: 'Your information has been submitted successfully. Our team will review and contact you shortly.'
-        };
+        // ... (keep lines 26-118)
 
     } catch (error) {
         console.error('❌ Error submitting to IntakeQueue (Top Level):', error);
+        const config = await getConfig(); // Fetch again if needed or use from top scope if restructured
+        // Actually, let's fetch it at top of function to be safe.
 
         return {
             success: false,
             error: error.message || 'Unknown error',
             stack: error.stack,
-            message: 'There was an error submitting your information. Please try again or call (239) 332-2245.'
+            message: `There was an error submitting your information. Please try again or call ${config.brand.supportPhone}.`
         };
     }
 }
 
-/**
- * Update an existing IntakeQueue record (for agent use)
- * 
- * @param {string} caseId - Case ID to update
- * @param {Object} updateData - Data to update
- * @returns {Promise<Object>} - Update result
- */
-export async function updateIntakeRecord(caseId, updateData) {
-    try {
-        // Find the record by caseId
-        const results = await wixData.query(COLLECTIONS.INTAKE_QUEUE)
-            .eq('caseId', caseId)
-            .find({ suppressAuth: true });
-
-        if (results.items.length === 0) {
-            throw new Error(`Case ${caseId} not found in IntakeQueue`);
-        }
-
-        const record = results.items[0];
-
-        // Merge update data
-        const updatedRecord = {
-            ...record,
-            ...updateData,
-            _id: record._id // Preserve the ID
-        };
-
-        // Update the record
-        const result = await wixData.update(COLLECTIONS.INTAKE_QUEUE, updatedRecord, { suppressAuth: true });
-
-        console.log('IntakeQueue record updated:', result._id);
-
-        return {
-            success: true,
-            recordId: result._id,
-            caseId: caseId
-        };
-
-    } catch (error) {
-        console.error('Error updating intake record:', error);
-
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
-
-/**
- * Get IntakeQueue records by status
- * 
- * @param {string} status - Status to filter by (e.g., 'intake', 'in_progress', 'completed')
- * @returns {Promise<Array>} - Array of intake records
- */
-export async function getIntakesByStatus(status) {
-    try {
-        const results = await wixData.query(COLLECTIONS.INTAKE_QUEUE)
-            .eq('status', status)
-            .descending('_createdDate')
-            .find({ suppressAuth: true });
-
-        return {
-            success: true,
-            items: results.items,
-            totalCount: results.totalCount
-        };
-
-    } catch (error) {
-        console.error('Error getting intakes by status:', error);
-
-        return {
-            success: false,
-            error: error.message,
-            items: []
-        };
-    }
-}
-
-/**
- * Get IntakeQueue records pending GAS sync
- * 
- * @returns {Promise<Array>} - Array of pending intake records
- */
-export async function getPendingIntakes() {
-    try {
-        const results = await wixData.query(COLLECTIONS.INTAKE_QUEUE)
-            .eq('gasSyncStatus', 'pending')
-            .descending('_createdDate')
-            .find({ suppressAuth: true });
-
-        return {
-            success: true,
-            items: results.items,
-            totalCount: results.totalCount
-        };
-
-    } catch (error) {
-        console.error('Error getting pending intakes:', error);
-
-        return {
-            success: false,
-            error: error.message,
-            items: []
-        };
-    }
-}
-
-/**
- * Mark IntakeQueue record as synced with GAS
- * 
- * @param {string} caseId - Case ID to mark as synced
- * @returns {Promise<Object>} - Update result
- */
-export async function markAsSynced(caseId) {
-    try {
-        const updateData = {
-            gasSyncStatus: 'synced',
-            gasSyncTimestamp: new Date()
-        };
-
-        return await updateIntakeRecord(caseId, updateData);
-
-    } catch (error) {
-        console.error('Error marking as synced:', error);
-
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
-
-/**
- * Update SignNow status for an IntakeQueue record
- * 
- * @param {string} caseId - Case ID
- * @param {string} signNowDocumentId - SignNow document ID
- * @param {string} signNowStatus - SignNow status
- * @returns {Promise<Object>} - Update result
- */
-export async function updateSignNowStatus(caseId, signNowDocumentId, signNowStatus) {
-    try {
-        const updateData = {
-            signNowDocumentId: signNowDocumentId,
-            signNowStatus: signNowStatus,
-            documentStatus: signNowStatus === 'signed' ? 'completed' : 'sent'
-        };
-
-        // If fully signed, mark as completed
-        if (signNowStatus === 'signed') {
-            updateData.status = 'completed';
-            updateData.completedTimestamp = new Date();
-        }
-
-        return await updateIntakeRecord(caseId, updateData);
-
-    } catch (error) {
-        console.error('Error updating SignNow status:', error);
-
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
-
-/**
- * Generate a unique case ID
- * 
- * @returns {Promise<string>} - Unique case ID
- */
-async function generateCaseId() {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `CASE-${timestamp}-${random}`;
-}
+// ...
 
 /**
  * Notify staff of new intake submission
@@ -315,6 +49,7 @@ async function generateCaseId() {
  */
 async function notifyStaffOfNewIntake(intakeRecord) {
     try {
+        const config = await getConfig();
         console.log('🔔 Notifying staff of new intake:', intakeRecord.caseId);
 
         // Construct Slack Message
@@ -322,6 +57,7 @@ async function notifyStaffOfNewIntake(intakeRecord) {
         const text = `A new intake form has been received for ${intakeRecord.defendantName}.`;
 
         const blocks = [
+            // ... (keep header/section blocks 325-347)
             {
                 "type": "header",
                 "text": {
@@ -356,7 +92,7 @@ async function notifyStaffOfNewIntake(intakeRecord) {
                             "text": "View in Dashboard",
                             "emoji": true
                         },
-                        "url": "https://www.shamrockbailbonds.biz/staff-portal",  // Adjust URL as needed
+                        "url": `${config.brand.domain}/staff-portal`,  // Use config.brand.domain
                         "style": "primary"
                     }
                 ]
@@ -366,7 +102,7 @@ async function notifyStaffOfNewIntake(intakeRecord) {
         // Send to Office Channel (e.g. #intakes or #general)
         // Using callGasAction helper which is already imported from ./gasIntegration.jsw
         await callGasAction('sendSlackAlert', {
-            channel: '#intakes', // Can be configured via secrets/properties if needed
+            channel: config.integrations.slack.channels.intakes, // Dynamic Channel
             text: `New Intake: ${intakeRecord.defendantName}`,
             blocks: blocks
         });

@@ -19,7 +19,7 @@ The following credentials must be added to the Wix Secrets Manager:
 |:---|:---|:---|
 | `signnow-client-id` | `f4faf24c7b2b6b47b3db357f7c1a8` | SignNow OAuth 2.0 Client ID |
 | `signnow-client-secret` | `5a3d6b5cce7e27b2a95f3d5a8f82` | SignNow OAuth 2.0 Client Secret |
-| `signnow-access-token` | `0c35edbbf6823555a8434624aaec4830fd4477bb5befee3da2fa29e2b258913d` | SignNow API Access Token (legacy) |
+| `signnow-access-token` | `[REDACTED]` | SignNow API Access Token (legacy) |
 
 ---
 

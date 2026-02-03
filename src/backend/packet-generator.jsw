@@ -3,7 +3,8 @@
  * Backend module to generate PDF packets via Google Apps Script (SignNow).
  */
 
-import { getGasUrl, getGasApiKey, fetchWithRetry } from 'backend/utils';
+import { fetchWithRetry } from 'backend/utils';
+import { getGasWebAppUrl, getGasApiKey } from 'backend/secretsManager';
 
 /**
  * Generates a full bond packet (unsigned) for download.
@@ -13,7 +14,7 @@ import { getGasUrl, getGasApiKey, fetchWithRetry } from 'backend/utils';
  */
 export async function generatePDFPacket(caseId, defendantInfo) {
     try {
-        const gasUrl = await getGasUrl();
+        const gasUrl = await getGasWebAppUrl();
         const apiKey = await getGasApiKey();
 
         if (!gasUrl || !apiKey) {

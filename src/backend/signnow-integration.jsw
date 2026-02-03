@@ -12,7 +12,8 @@
 // Backend file: signnow-integration.jsw
 // Refactored to use Centralized GAS Backend for Unified Workflows
 
-import { getGasUrl, fetchWithRetry } from 'backend/utils';
+import { fetchWithRetry } from 'backend/utils';
+import { getGasWebAppUrl } from 'backend/secretsManager';
 
 /**
  * Core function to call the GAS Backend
@@ -20,7 +21,7 @@ import { getGasUrl, fetchWithRetry } from 'backend/utils';
  */
 async function callGasBackend(payload) {
     try {
-        const url = await getGasUrl();
+        const url = await getGasWebAppUrl();
         const response = await fetchWithRetry(url, {
             method: 'POST',
             headers: {
@@ -68,11 +69,11 @@ export async function sendForSignature(params) {
 export async function createEmbeddedLink(documentId, email, role, formData = {}) {
     // Check if we have form data that needs document generation
     const hasFormData = formData && Object.keys(formData).length > 0;
-    
+
     // If formData is provided, use the portal signing session action
     // This will generate documents from template and create embedded link
     const action = hasFormData ? 'createPortalSigningSession' : 'createEmbeddedLink';
-    
+
     const result = await callGasBackend({
         action: action,
         documentId,

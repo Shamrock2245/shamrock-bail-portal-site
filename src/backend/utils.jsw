@@ -3,50 +3,8 @@
  * Filename: backend/utils.jsw
  */
 import { fetch } from 'wix-fetch';
-import { getSecret } from 'wix-secrets-backend';
-
-// Cached URL so we don't hit Secrets Manager on every single call
-let CACHED_GAS_URL = null;
-const FALLBACK_GAS_URL = 'https://script.google.com/macros/s/AKfycbwq8mIx_yiGOwmXk-an2YKfDT7pgdduPQkcd2MmlrDooBXSxp7fzZxKELCLT_ecQDNfKg/exec';
-
-/**
- * Get GAS Web App URL with Caching & Fallback
- */
-export async function getGasUrl() {
-    if (CACHED_GAS_URL) return CACHED_GAS_URL;
-    try {
-        const url = await getSecret("GAS_WEB_APP_URL");
-        if (url) {
-            const cleanUrl = url.trim();
-            CACHED_GAS_URL = cleanUrl;
-            return cleanUrl;
-        }
-    } catch (e) {
-        console.warn("GAS_WEB_APP_URL secret not found, using fallback.");
-    }
-    return FALLBACK_GAS_URL;
-}
-
-// Cached API Key
-let CACHED_GAS_API_KEY = null;
-
-/**
- * Get GAS API Key from Secrets
- */
-export async function getGasApiKey() {
-    if (CACHED_GAS_API_KEY) return CACHED_GAS_API_KEY;
-    try {
-        const key = await getSecret("GAS_API_KEY");
-        if (key) {
-            const cleanKey = key.trim();
-            CACHED_GAS_API_KEY = cleanKey;
-            return cleanKey;
-        }
-    } catch (e) {
-        console.warn("GAS_API_KEY secret not found.");
-    }
-    return null;
-}
+// Secrets logic moved to backend/secretsManager.jsw
+// This file is now for generic utilities only.
 
 /**
  * Generate a cryptographically secure random token

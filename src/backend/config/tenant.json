@@ -1,0 +1,358 @@
+{
+    "brand": {
+        "name": "Shamrock Bail Bonds",
+        "legalName": "Shamrock Bail Bonds, LLC",
+        "domain": "https://www.shamrockbailbonds.biz",
+        "supportEmail": "admin@shamrockbailbonds.biz",
+        "supportPhone": "239-332-2245",
+        "paymentLink": "https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd",
+        "crmSource": "Wix_Portal"
+    },
+    "features": {
+        "enablePayments": true,
+        "enableBailSchool": false,
+        "enableAIConcierge": true,
+        "enableStickyMobileNav": true
+    },
+    "integrations": {
+        "signNow": {
+            "productionFolderId": "79a05a382b38460b95a78d94a6d79a5ad55e89e6",
+            "templates": {
+                "paperwork-header": "15sTaIIwhzHk96I8X3rxz7GtLMU-F5zo1",
+                "faq-cosigners": "1bjmH2w-XS5Hhe828y_Jmv9DqaS_gSZM7",
+                "faq-defendants": "16j9Z8eTii-J_p4o6A2LrzgzptGB8aOhR",
+                "indemnity-agreement": "1p4bYIiZ__JnJHhlmVwLyPJZpsmSdGq12",
+                "defendant-application": "1cokWm8qCDpiGxYD6suZEjm9i8MoABeVe",
+                "promissory-note": "104-ArZiCm3cgfQcT5rIO0x_OWiaw6Ddt",
+                "disclosure-form": "1qIIDudp7r3J7-6MHlL2US34RcrU9KZKY",
+                "surety-terms": "1VfmyUTpchfwJTlENlR72JxmoE_NCF-uf",
+                "master-waiver": "181mgKQN-VxvQOyzDquFs8cFHUN0tjrMs",
+                "ssa-release": "1govKv_N1wl0FIePV8Xfa8mFmZ9JT8mNu",
+                "collateral-receipt": "1IAYq4H2b0N0vPnJN7b2vZPaHg_RNKCmP",
+                "payment-plan": "1v-qkaegm6MDymiaPK45JqfXXX2_KOj8A",
+                "appearance-bond": "15SDM1oBysTw76bIL7Xt0Uhti8uRZKABs"
+            }
+        },
+        "twilio": {
+            "fromPhoneNumber": "+17272952245"
+        },
+        "slack": {
+            "channels": {
+                "alerts": "#signing-errors",
+                "intake": "#intake",
+                "bonds": "#bonds-live",
+                "newMembers": "#new-members",
+                "cases": "#cases",
+                "documents": "#documents",
+                "urgent": "#urgent",
+                "systemLogs": "#system-logs",
+                "inquiries": "#inquiries"
+            }
+        },
+        "googleDrive": {
+            "rootFolderId": "1ZyTCodt67UAxEbFdGqE3VNua-9TlblR3",
+            "uploadsFolderId": "1WnjwtxoaoXVW8_B6s-0ftdCPf_5WfKgs"
+        }
+    },
+    "staffAccounts": {
+        "admin@shamrockbailbonds.biz": {
+            "role": "admin",
+            "name": "Admin",
+            "personId": "staff_admin_primary"
+        },
+        "shamrockbailoffice@gmail.com": {
+            "role": "staff",
+            "name": "Office Staff",
+            "personId": "staff_office_secondary"
+        }
+    },
+    "routing": {
+        "defaultCounty": "lee",
+        "enableGeoRedirect": true,
+        "counties": {
+            "lee": {
+                "name": "Lee County",
+                "agentPhone": "239-332-2245",
+                "jailPhone": "239-477-1500",
+                "jailLocation": "2115 Dr Martin Luther King Jr Blvd, Fort Myers, FL 33901",
+                "courthouseLocation": "1700 Monroe St, Fort Myers, FL 33901"
+            },
+            "collier": {
+                "name": "Collier County",
+                "agentPhone": "239-332-2245",
+                "jailPhone": "239-252-9500",
+                "jailLocation": "3319 Tamiami Trail E, Naples, FL 34112",
+                "courthouseLocation": "3315 Tamiami Trail E, Naples, FL 34112"
+            },
+            "charlotte": {
+                "name": "Charlotte County",
+                "agentPhone": "239-332-2245",
+                "jailPhone": "941-833-6300",
+                "jailLocation": "26601 Airport Rd, Punta Gorda, FL 33982",
+                "courthouseLocation": "350 E Marion Ave, Punta Gorda, FL 33950"
+            },
+            "hendry": {
+                "name": "Hendry County",
+                "agentPhone": "239-332-2245",
+                "jailPhone": "863-674-5674",
+                "jailLocation": "101 S Main St, LaBelle, FL 33935",
+                "courthouseLocation": "25 E Hickpochee Ave, LaBelle, FL 33935"
+            },
+            "glades": {
+                "name": "Glades County",
+                "agentPhone": "239-332-2245",
+                "jailPhone": "863-946-0062",
+                "jailLocation": "1297 FL-78, Moore Haven, FL 33471",
+                "courthouseLocation": "500 Ave J, Moore Haven, FL 33471"
+            },
+            "alachua": {
+                "name": "Alachua County",
+                "agentPhone": "239-332-2245"
+            },
+            "baker": {
+                "name": "Baker County",
+                "agentPhone": "239-332-2245"
+            },
+            "bay": {
+                "name": "Bay County",
+                "agentPhone": "239-332-2245"
+            },
+            "bradford": {
+                "name": "Bradford County",
+                "agentPhone": "239-332-2245"
+            },
+            "brevard": {
+                "name": "Brevard County",
+                "agentPhone": "239-332-2245"
+            },
+            "broward": {
+                "name": "Broward County",
+                "agentPhone": "239-332-2245"
+            },
+            "calhoun": {
+                "name": "Calhoun County",
+                "agentPhone": "239-332-2245"
+            },
+            "citrus": {
+                "name": "Citrus County",
+                "agentPhone": "239-332-2245"
+            },
+            "clay": {
+                "name": "Clay County",
+                "agentPhone": "239-332-2245"
+            },
+            "columbia": {
+                "name": "Columbia County",
+                "agentPhone": "239-332-2245"
+            },
+            "desoto": {
+                "name": "DeSoto County",
+                "agentPhone": "239-332-2245"
+            },
+            "dixie": {
+                "name": "Dixie County",
+                "agentPhone": "239-332-2245"
+            },
+            "duval": {
+                "name": "Duval County",
+                "agentPhone": "239-332-2245"
+            },
+            "escambia": {
+                "name": "Escambia County",
+                "agentPhone": "239-332-2245"
+            },
+            "flagler": {
+                "name": "Flagler County",
+                "agentPhone": "239-332-2245"
+            },
+            "franklin": {
+                "name": "Franklin County",
+                "agentPhone": "239-332-2245"
+            },
+            "gadsden": {
+                "name": "Gadsden County",
+                "agentPhone": "239-332-2245"
+            },
+            "gilchrist": {
+                "name": "Gilchrist County",
+                "agentPhone": "239-332-2245"
+            },
+            "gulf": {
+                "name": "Gulf County",
+                "agentPhone": "239-332-2245"
+            },
+            "hamilton": {
+                "name": "Hamilton County",
+                "agentPhone": "239-332-2245"
+            },
+            "hardee": {
+                "name": "Hardee County",
+                "agentPhone": "239-332-2245"
+            },
+            "hernando": {
+                "name": "Hernando County",
+                "agentPhone": "239-332-2245"
+            },
+            "highlands": {
+                "name": "Highlands County",
+                "agentPhone": "239-332-2245"
+            },
+            "hillsborough": {
+                "name": "Hillsborough County",
+                "agentPhone": "239-332-2245"
+            },
+            "holmes": {
+                "name": "Holmes County",
+                "agentPhone": "239-332-2245"
+            },
+            "indian-river": {
+                "name": "Indian River County",
+                "agentPhone": "239-332-2245"
+            },
+            "jackson": {
+                "name": "Jackson County",
+                "agentPhone": "239-332-2245"
+            },
+            "jefferson": {
+                "name": "Jefferson County",
+                "agentPhone": "239-332-2245"
+            },
+            "lafayette": {
+                "name": "Lafayette County",
+                "agentPhone": "239-332-2245"
+            },
+            "lake": {
+                "name": "Lake County",
+                "agentPhone": "239-332-2245"
+            },
+            "leon": {
+                "name": "Leon County",
+                "agentPhone": "239-332-2245"
+            },
+            "levy": {
+                "name": "Levy County",
+                "agentPhone": "239-332-2245"
+            },
+            "liberty": {
+                "name": "Liberty County",
+                "agentPhone": "239-332-2245"
+            },
+            "madison": {
+                "name": "Madison County",
+                "agentPhone": "239-332-2245"
+            },
+            "manatee": {
+                "name": "Manatee County",
+                "agentPhone": "239-332-2245"
+            },
+            "marion": {
+                "name": "Marion County",
+                "agentPhone": "239-332-2245"
+            },
+            "martin": {
+                "name": "Martin County",
+                "agentPhone": "239-332-2245"
+            },
+            "miami-dade": {
+                "name": "Miami-Dade County",
+                "agentPhone": "239-332-2245"
+            },
+            "monroe": {
+                "name": "Monroe County",
+                "agentPhone": "239-332-2245"
+            },
+            "nassau": {
+                "name": "Nassau County",
+                "agentPhone": "239-332-2245"
+            },
+            "okaloosa": {
+                "name": "Okaloosa County",
+                "agentPhone": "239-332-2245"
+            },
+            "okeechobee": {
+                "name": "Okeechobee County",
+                "agentPhone": "239-332-2245"
+            },
+            "orange": {
+                "name": "Orange County",
+                "agentPhone": "239-332-2245"
+            },
+            "osceola": {
+                "name": "Osceola County",
+                "agentPhone": "239-332-2245"
+            },
+            "palm-beach": {
+                "name": "Palm Beach County",
+                "agentPhone": "239-332-2245"
+            },
+            "pasco": {
+                "name": "Pasco County",
+                "agentPhone": "239-332-2245"
+            },
+            "pinellas": {
+                "name": "Pinellas County",
+                "agentPhone": "239-332-2245"
+            },
+            "polk": {
+                "name": "Polk County",
+                "agentPhone": "239-332-2245"
+            },
+            "putnam": {
+                "name": "Putnam County",
+                "agentPhone": "239-332-2245"
+            },
+            "santa-rosa": {
+                "name": "Santa Rosa County",
+                "agentPhone": "239-332-2245"
+            },
+            "sarasota": {
+                "name": "Sarasota County",
+                "agentPhone": "239-332-2245"
+            },
+            "seminole": {
+                "name": "Seminole County",
+                "agentPhone": "239-332-2245"
+            },
+            "st-johns": {
+                "name": "St. Johns County",
+                "agentPhone": "239-332-2245"
+            },
+            "st-lucie": {
+                "name": "St. Lucie County",
+                "agentPhone": "239-332-2245"
+            },
+            "sumter": {
+                "name": "Sumter County",
+                "agentPhone": "239-332-2245"
+            },
+            "suwannee": {
+                "name": "Suwannee County",
+                "agentPhone": "239-332-2245"
+            },
+            "taylor": {
+                "name": "Taylor County",
+                "agentPhone": "239-332-2245"
+            },
+            "union": {
+                "name": "Union County",
+                "agentPhone": "239-332-2245"
+            },
+            "volusia": {
+                "name": "Volusia County",
+                "agentPhone": "239-332-2245"
+            },
+            "wakulla": {
+                "name": "Wakulla County",
+                "agentPhone": "239-332-2245"
+            },
+            "walton": {
+                "name": "Walton County",
+                "agentPhone": "239-332-2245"
+            },
+            "washington": {
+                "name": "Washington County",
+                "agentPhone": "239-332-2245"
+            }
+        }
+    }
+}

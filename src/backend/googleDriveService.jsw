@@ -6,7 +6,8 @@
  * Routes through GAS backend for OAuth handling.
  */
 
-import { getGasUrl, fetchWithRetry } from 'backend/utils';
+import { fetchWithRetry } from 'backend/utils';
+import { getGasWebAppUrl } from 'backend/secretsManager';
 import wixData from 'wix-data';
 
 /**
@@ -14,7 +15,7 @@ import wixData from 'wix-data';
  */
 async function callGasDrive(payload) {
     try {
-        const url = await getGasUrl();
+        const url = await getGasWebAppUrl();
         const response = await fetchWithRetry(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

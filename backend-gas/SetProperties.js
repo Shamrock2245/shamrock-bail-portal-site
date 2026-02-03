@@ -10,25 +10,25 @@ function ADMIN_UpdateAllProperties() {
     // -------------------------------------------------------------------------
     const config = {
         // --- API SECURITY ---
-        'GAS_API_KEY': 'shamrock-secure-2026', // Shared secret with Wix
-        'MCP_API_KEY': 'shamrock-mcp-secret',  // Shared secret with Cursor/Context
+        'GAS_API_KEY': 'REPLACE_WITH_GAS_API_KEY', // Shared secret with Wix
+        'MCP_API_KEY': 'REPLACE_WITH_MCP_API_KEY',  // Shared secret with Cursor/Context
 
         // --- URLS ---
         'WIX_SITE_URL': 'https://www.shamrockbailbonds.biz',
-        'WEBHOOK_URL': 'https://hooks.slack.com/services/T08N11G5WJC/B08MY450U8N/...', // Needs full webhook if known, otherwise keep placeholder or use Bot Token
+        'WEBHOOK_URL': 'REPLACE_WITH_SLACK_WEBHOOK_URL', // Needs full webhook if known, otherwise keep placeholder or use Bot Token
 
         // --- SLACK WEBHOOKS ---
-        'SLACK_BOT_TOKEN': '[REDACTED]',
+        'SLACK_BOT_TOKEN': 'REPLACE_WITH_SLACK_BOT_TOKEN',
 
         // --- SIGNNOW INTEGRATION ---
         'SIGNNOW_API_BASE_URL': 'https://api.signnow.com',
-        'SIGNNOW_API_TOKEN': '0c35edbbf6823555a8434624aaec4830fd4477bb5befee3da2fa29e2b258913d', // Using API Key as Token
+        'SIGNNOW_API_TOKEN': 'REPLACE_WITH_SIGNNOW_TOKEN', // Using API Key as Token
         'SIGNNOW_FOLDER_ID': '79a05a382b38460b95a78d94a6d79a5ad55e89e6',
         'SIGNNOW_TEMPLATE_ID': 'REPLACE_WITH_TEMPLATE_ID',
 
         // --- TWILIO INTEGRATION ---
-        'TWILIO_ACCOUNT_SID': '[REDACTED]',
-        'TWILIO_AUTH_TOKEN': '26d7f55f69f8d55ee4579c80d4f40f0d',
+        'TWILIO_ACCOUNT_SID': 'REPLACE_WITH_TWILIO_SID',
+        'TWILIO_AUTH_TOKEN': 'REPLACE_WITH_TWILIO_TOKEN',
         'TWILIO_PHONE_NUMBER': '+17272952245',
         'TWILIO_VERIFY_SERVICE_SID': '',
 
@@ -39,7 +39,9 @@ function ADMIN_UpdateAllProperties() {
         'TARGET_SPREADSHEET_ID': '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E', // Main Data Sheet
 
         // --- AI & EXTERNAL ---
-        'GEMINI_API_KEY': 'REPLACE_WITH_GEMINI_KEY',
+        'GOOGLE_MAPS_API_KEY': 'REPLACE_WITH_GOOGLE_MAPS_KEY', // Public key with Domain Restrictions
+        'OPENAI_API_KEY': 'REPLACE_WITH_OPENAI_KEY',
+
         'FORM_URL': '', // If using external form
         'FORM_PREFILL_DATA': '',
 

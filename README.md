@@ -83,6 +83,7 @@ The backend is in `backend-gas/`.
 *   **[AGENTS.md](./AGENTS.md):** Persona definitions for development.
 *   **[SCHEMAS.md](./docs/SCHEMAS.md):** Data models for collections.
 *   **[API_SPEC.md](./docs/API_SPEC.md):** Backend interfaces.
+*   **[PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md):** 🚀 Summary of Tenant Config & Secret Refactoring.
 *   **[More Docs...](./docs/INDEX.md):** Full documentation index.
 
 ---

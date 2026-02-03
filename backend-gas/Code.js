@@ -188,15 +188,17 @@ function doGet(e) {
 
     // --- Mobile & Tablet Routing ---
     if (page === 'mobile') {
-      return HtmlService.createTemplateFromFile('MobileDashboard')
-        .evaluate()
+      const template = HtmlService.createTemplateFromFile('MobileDashboard');
+      template.mapsApiKey = PropertiesService.getScriptProperties().getProperty('GOOGLE_MAPS_API_KEY') || '';
+      return template.evaluate()
         .setTitle('Shamrock Mobile Dashboard')
         .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
     if (page === 'tablet') {
-      return HtmlService.createTemplateFromFile('TabletDashboard')
-        .evaluate()
+      const template = HtmlService.createTemplateFromFile('TabletDashboard');
+      template.mapsApiKey = PropertiesService.getScriptProperties().getProperty('GOOGLE_MAPS_API_KEY') || '';
+      return template.evaluate()
         .setTitle('Shamrock Tablet Dashboard')
         .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -205,6 +207,7 @@ function doGet(e) {
 
     // ALWAYS use template to support Dynamic URL Injection
     const template = HtmlService.createTemplateFromFile(page);
+    template.mapsApiKey = PropertiesService.getScriptProperties().getProperty('GOOGLE_MAPS_API_KEY') || '';
 
     // 1. Inject Dynamic App URL (Self-Discovery)
     try {
