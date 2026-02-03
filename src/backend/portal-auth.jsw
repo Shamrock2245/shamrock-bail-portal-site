@@ -667,15 +667,17 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
         if (!response.ok) {
             const maskedUrl = gasUrl.length > 20 ? '...' + gasUrl.slice(-20) : gasUrl;
             throw new Error(`GAS Network Error (${response.status} ${response.statusText}) at [${maskedUrl}]`);
-<<<<<<< Updated upstream
-
-=======
         }
 
-        const data = await response.json();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            console.warn('Failed to parse GAS response as JSON', responseText);
+        }
+
         if (!data || !data.success) {
             throw new Error(`GAS Error: ${data && data.error ? data.error : 'Unknown backend error'}`);
->>>>>>> Stashed changes
         }
 
 

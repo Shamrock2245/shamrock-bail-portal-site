@@ -1805,7 +1805,7 @@ function testEmailSimple() {
     return "Error: " + e.message;
   }
 }
-<<<<<<< Updated upstream
+
 
 
 /**
@@ -2118,5 +2118,4 @@ function client_sendToWixPortal(data) {
 }
 
 
-=======
->>>>>>> Stashed changes
+
