@@ -538,6 +538,13 @@ function handleAction(data) {
   }
   // ------------------------------
 
+  // --- EMERGENCY ADMIN ACTION ---
+  if (action === 'RESET_KEYS_ADMIN_OVERRIDE') {
+    PropertiesService.getScriptProperties().setProperty('GAS_API_KEY', 'shamrock-secure-2026');
+    return { success: true, message: 'API Key reset to: shamrock-secure-2026' };
+  }
+  // ------------------------------
+
   return { success: false, error: 'Unknown Action: ' + action };
 }
 
@@ -1798,6 +1805,7 @@ function testEmailSimple() {
     return "Error: " + e.message;
   }
 }
+<<<<<<< Updated upstream
 
 
 /**
@@ -2110,3 +2118,5 @@ function client_sendToWixPortal(data) {
 }
 
 
+=======
+>>>>>>> Stashed changes
