@@ -451,6 +451,7 @@ export async function onMagicLinkLoginV2(token) {
         // Anti-Scanner Logic: If used < 60 seconds ago, allow it (idempotency)
         if (linkData.used) {
             const usedAt = new Date(linkData.usedAt);
+            const timeDiff = now - usedAt;
             if (timeDiff < 300000) { // 5 minute grace period to handle aggressive email scanners
                 console.log('⚠️ Token reused within grace period (Scanner defense)');
                 // Create session anyway
