@@ -284,13 +284,41 @@ function formatCurrency(amount) {
  * Setup all event listeners
  */
 function setupEventListeners() {
+    console.log("🔧 setupEventListeners: Starting...");
+    
+    // DIAGNOSTIC: List all buttons on page
+    try {
+        const allButtons = $w('Button');
+        console.log("📋 All buttons found on page:", allButtons.map(btn => `${btn.id} (${btn.label || btn.text || 'no label'})` ));
+    } catch (e) {
+        console.warn("Could not enumerate buttons:", e);
+    }
+    
     // CRITICAL: Check if submit button exists
+    console.log("🔍 Checking for #btnSubmitInfo...");
     if (!safeIsValid('#btnSubmitInfo')) {
         console.error("❌ CRITICAL ERROR: '#btnSubmitInfo' not found on page. Check Element ID in Editor!");
+        console.error("   Expected ID: btnSubmitInfo");
+        console.error("   Check Wix Editor → Properties Panel → Element ID");
         showError("Development Error: Submit button ID mismatch. Please check console.");
     } else {
+        console.log("✅ Found #btnSubmitInfo, attaching handler...");
         safeOnClick('#btnSubmitInfo', handleSubmitIntake);
         console.log("✅ Submit button handler attached to #btnSubmitInfo");
+        
+        // DIAGNOSTIC: Verify handler was attached
+        try {
+            const btn = $w('#btnSubmitInfo');
+            console.log("   Button properties:", {
+                id: btn.id,
+                label: btn.label,
+                enabled: btn.enabled,
+                visible: btn.visible,
+                collapsed: btn.collapsed
+            });
+        } catch (e) {
+            console.error("   Could not read button properties:", e);
+        }
     }
 
     safeOnClick('#signPaperworkBtn', handleSignPaperwork);
@@ -328,9 +356,16 @@ function handleLogout() {
  * Handle intake form submission
  */
 async function handleSubmitIntake() {
-    if (isSubmitting) return;
+    console.log("💆 handleSubmitIntake: Button clicked!");
+    console.log("   isSubmitting:", isSubmitting);
+    
+    if (isSubmitting) {
+        console.warn("⚠️ Already submitting, ignoring click");
+        return;
+    }
 
     try {
+        console.log("🚀 Starting submission process...");
         isSubmitting = true;
         safeDisable('#btnSubmitInfo');
         safeSetText('#btnSubmitInfo', 'Submitting...');
