@@ -59,11 +59,11 @@ $w.onReady(async function () {
         setupSEO(county);
 
         // 4. POPULATE UI - Critical for LCP
-        await populateMainUI(county);
+        await populateMainUI(county, countySlug);
 
         // 5. DEFER NON-CRITICAL (Nearby Counties)
         setTimeout(() => {
-            loadNearbyCounties(county);
+            loadNearbyCounties(county.region, countySlug);
         }, 500);
 
         // 6. DEBUG CMS (User Request)
@@ -279,7 +279,7 @@ function setLink(selectorOrArray, url, label) {
     }
 }
 
-async function populateMainUI(county) {
+async function populateMainUI(county, currentSlug) {
     // Header & Hero (Support both old and new IDs from Screenshot)
     // Old: #countyName, #dynamicHeader, #heroSubtitle
     // New: #countyNameHeadline, #aboutCountyText (Maybe hero text?), #heroCallButton
@@ -326,7 +326,7 @@ async function populateMainUI(county) {
     setLink(['#heroCallButton', '#callShamrockBtn', '#callCountiesBtn'], primaryPhoneLink, county.content.hero_cta_primary || "Call Now");
 
     // 2. Secondary/Start Button (Link to portal landing page with county context)
-    setLink(['#heroStartButton', '#startBailBtn'], `/portal-landing?county=${county.slug || county.countySlug || countySlug}`, "Start Bail Bond");
+    setLink(['#heroStartButton', '#startBailBtn'], `/portal-landing?county=${county.slug || county.countySlug || currentSlug}`, "Start Bail Bond");
 
     // Jail Address (if element exists and data provided)
     try { $w('#jailAddress').collapse(); } catch (e) { }
