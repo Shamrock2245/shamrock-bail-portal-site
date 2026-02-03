@@ -22,7 +22,7 @@ function ADMIN_UpdateAllProperties() {
 
         // --- SIGNNOW INTEGRATION ---
         'SIGNNOW_API_BASE_URL': 'https://api.signnow.com',
-        'SIGNNOW_API_TOKEN': 'REPLACE_WITH_SIGNNOW_TOKEN', // Using API Key as Token
+        'SIGNNOW_BASIC_TOKEN': 'REPLACE_WITH_YOUR_BASIC_TOKEN', // <--- PASTE TOKEN HERE
         'SIGNNOW_FOLDER_ID': '79a05a382b38460b95a78d94a6d79a5ad55e89e6',
         'SIGNNOW_TEMPLATE_ID': 'REPLACE_WITH_TEMPLATE_ID',
 
@@ -54,13 +54,6 @@ function ADMIN_UpdateAllProperties() {
     };
 
     // -------------------------------------------------------------------------
-    // 2. APPLY UPDATES
-    // -------------------------------------------------------------------------
-    // Note: setProperties(config, false) MERGES with existing. 
-    // setProperties(config, true) DELETES all others first.
-    // We use FALSE (Merge) to be safe, but you can switch to TRUE to clean house.
-
-    // -------------------------------------------------------------------------
     // 2. APPLY UPDATES (SMART MERGE)
     // -------------------------------------------------------------------------
     const currentProps = props.getProperties();
@@ -71,7 +64,6 @@ function ADMIN_UpdateAllProperties() {
         const newValue = config[key];
 
         // SAFETY CHECK: Don't overwrite existing good data with placeholders
-        // Also skip 'shamrock-bail-bonds.slack.com' as it's not a valid webhook
         if (!newValue || newValue.includes('REPLACE_WITH') || newValue.includes('slack.com')) {
             console.log(`Bypassing ${key} (Placeholder/Invalid) - Keeping existing value.`);
             skippedCount++;
@@ -117,6 +109,17 @@ function SETUP_SlackWebhook(url) {
     if (!url) throw new Error("Please provide a URL string");
     PropertiesService.getScriptProperties().setProperty('WEBHOOK_URL', url);
     return "Webhook Set";
+}
+
+/**
+ * Helper to set SignNow Basic Token specifically.
+ * Run this function in the editor with your token string.
+ */
+function SETUP_SignNowBasicToken(token) {
+    if (!token || token.length < 10) throw new Error("Please provide a valid Basic Token string");
+    PropertiesService.getScriptProperties().setProperty('SIGNNOW_BASIC_TOKEN', token);
+    console.log("✅ SIGNNOW_BASIC_TOKEN has been set.");
+    return "Token Set Successfully";
 }
 
 /**

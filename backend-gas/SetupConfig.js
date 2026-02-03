@@ -53,3 +53,25 @@ function setupTwilioProperties() {
     console.log("Twilio Configuration Check Complete.");
 }
 
+/**
+ * Configures SignNow Credentials.
+ * Uses the Basic Token for auto-refreshing access tokens.
+ */
+function setupSignNowProperties() {
+    const props = PropertiesService.getScriptProperties();
+
+    const SIGNNOW_CONFIG = {
+        'SIGNNOW_API_BASE_URL': 'https://api.signnow.com',
+        'SIGNNOW_BASIC_TOKEN': 'REPLACE_WITH_YOUR_BASIC_TOKEN' // Paster your Basic Token here
+    };
+
+    for (const [key, value] of Object.entries(SIGNNOW_CONFIG)) {
+        if (value.includes('REPLACE_WITH')) {
+            console.warn(`⚠️ Skipping ${key}: Placeholder value detected.`);
+            continue;
+        }
+        props.setProperty(key, value);
+        console.log(`✅ Set Property: ${key}`);
+    }
+    console.log("SignNow Configuration Check Complete.");
+}

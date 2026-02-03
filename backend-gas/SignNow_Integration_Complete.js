@@ -308,9 +308,56 @@ function buildWixSigningUrl(link, signer) {
 
 function SN_getConfig() {
   const props = PropertiesService.getScriptProperties();
+
+  // PREFERRED: Use Basic Token (from Screenshot) to auto-generate Access Token
+  const basicToken = props.getProperty('SIGNNOW_BASIC_TOKEN');
+  if (basicToken) {
+    return {
+      API_BASE: 'https://api.signnow.com',
+      ACCESS_TOKEN: SN_exchangeBasicToken(basicToken)
+    };
+  }
+
+  // LEGACY: Use manual Access Token (Expires manually)
   const token = props.getProperty('SIGNNOW_API_TOKEN');
-  if (!token) throw new Error('SIGNNOW_API_TOKEN is missing.');
+  if (!token) throw new Error('Configuration Error: Please set SIGNNOW_BASIC_TOKEN (preferred) or SIGNNOW_API_TOKEN in Script Properties.');
+
   return { API_BASE: 'https://api.signnow.com', ACCESS_TOKEN: token };
+}
+
+/**
+ * Exchanges Basic Auth Token for a Bearer Access Token
+ * Caches the token to respect API limits
+ */
+function SN_exchangeBasicToken(basicToken) {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get('sn_access_token');
+  if (cached) return cached;
+
+  const url = 'https://api.signnow.com/oauth2/token';
+  const response = UrlFetchApp.fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Basic ' + basicToken
+    },
+    payload: {
+      'grant_type': 'client_credentials',
+      'scope': '*'
+    },
+    muteHttpExceptions: true
+  });
+
+  const result = JSON.parse(response.getContentText());
+  if (!result.access_token) {
+    console.error('SignNow Auth Failed:', result);
+    throw new Error('Could not exchange Basic Token for Access Token. Check credentials.');
+  }
+
+  // Cache token (subtract 5 mins for safety buffer)
+  const expiresIn = result.expires_in || 3600;
+  cache.put('sn_access_token', result.access_token, expiresIn - 300);
+
+  return result.access_token;
 }
 
 function SN_log(action, msg) { Logger.log('[SignNow] ' + action + ': ' + JSON.stringify(msg)); }
