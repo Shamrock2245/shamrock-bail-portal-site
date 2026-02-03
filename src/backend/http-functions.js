@@ -14,7 +14,7 @@ import {
 } from 'backend/wixApi.jsw';
 import { getSecret } from 'wix-secrets-backend';
 import wixData from 'wix-data';
-import { logSafe } from 'backend/utils';
+import { logSafe } from 'backend/logging';
 import * as gasIntegration from 'backend/gasIntegration.jsw';
 import { syncCountiesToCms } from 'backend/cronJobs';
 
