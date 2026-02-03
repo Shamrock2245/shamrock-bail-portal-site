@@ -140,6 +140,7 @@ async function initializePage() {
 async function loadCounties() {
     try {
         const results = await wixData.query('FloridaCounties')
+            .eq('active', true)
             .ascending('countyName')
             .limit(100) // Ensure all 67 counties are loaded
             .find();
@@ -289,7 +290,7 @@ function setupEventListeners() {
         showError("Development Error: Submit button ID mismatch. Please check console.");
     } else {
         safeOnClick('#btnSubmitInfo', handleSubmitIntake);
-        console.log("✅ Submit button handler attached");
+        console.log("✅ Submit button handler attached to #btnSubmitInfo");
     }
 
     safeOnClick('#signPaperworkBtn', handleSignPaperwork);
