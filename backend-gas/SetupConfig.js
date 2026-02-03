@@ -61,8 +61,8 @@ function setupSignNowProperties() {
     const props = PropertiesService.getScriptProperties();
 
     const SIGNNOW_CONFIG = {
-        'SIGNNOW_API_BASE_URL': 'https://api.signnow.com',
-        'SIGNNOW_BASIC_TOKEN': 'REPLACE_WITH_YOUR_BASIC_TOKEN' // Paster your Basic Token here
+        'SIGNNOW_API_BASE_URL': 'https://api.signnow.com', // Production Environment
+        'SIGNNOW_BASIC_TOKEN': 'REPLACE_WITH_YOUR_BASIC_TOKEN' // Paste your Basic Token here
     };
 
     for (const [key, value] of Object.entries(SIGNNOW_CONFIG)) {

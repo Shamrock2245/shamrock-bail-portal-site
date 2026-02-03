@@ -12,7 +12,7 @@ async function testEmail() {
         const response = await fetch(GAS_URL, {
             method: 'POST',
             body: JSON.stringify({
-                action: 'sendEmail',
+                apiKey: 'shamrock-secure-2026', action: 'sendEmail',
                 to: 'shamrockbailoffice@gmail.com', // Sending to yourself
                 subject: 'TEST EMAIL from Node Script',
                 htmlBody: '<h1>It Works!</h1><p>The GAS backend is reachable.</p>'

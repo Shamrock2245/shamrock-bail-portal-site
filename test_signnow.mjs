@@ -36,6 +36,7 @@ async function testRobustFlow() {
         const res = await fetch(GAS_URL, {
             method: 'POST',
             body: JSON.stringify({
+                apiKey: 'shamrock-secure-2026',
                 action: 'uploadToSignNow',
                 pdfBase64: MOCK_PDF_BASE64,
                 fileName: 'Robust_Test_Doc.pdf'
@@ -55,6 +56,7 @@ async function testRobustFlow() {
     try {
         console.log("2. Adding Fields...");
         const fieldsPayload = {
+            apiKey: 'shamrock-secure-2026',
             action: 'addSignatureFields',
             documentId: docId,
             fields: [
@@ -74,6 +76,7 @@ async function testRobustFlow() {
     try {
         console.log("3. Sending Invite...");
         const invitePayload = {
+            apiKey: 'shamrock-secure-2026',
             action: 'createSigningRequest',
             documentId: docId,
             fromEmail: 'admin@shamrockbailbonds.biz',
@@ -92,6 +95,7 @@ async function testRobustFlow() {
     try {
         console.log("4. Creating Kiosk Link...");
         const linkPayload = {
+            apiKey: 'shamrock-secure-2026',
             action: 'createEmbeddedLink',
             documentId: docId,
             signerEmail: 'brendan@shamrockbailbonds.biz',
