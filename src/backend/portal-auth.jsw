@@ -667,53 +667,29 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
         if (!response.ok) {
             const maskedUrl = gasUrl.length > 20 ? '...' + gasUrl.slice(-20) : gasUrl;
             throw new Error(`GAS Network Error (${response.status} ${response.statusText}) at [${maskedUrl}]`);
-            let data;
-            try {
-                data = JSON.parse(responseText);
-            } catch (e) {
-                console.warn('Failed to parse GAS response as JSON', responseText);
-            }
+        }
 
-            if (!data || !data.success) {
-                throw new Error(`GAS Error: ${data && data.error ? data.error : 'Unknown backend error'}`);
-            }
+        // Try to parse response as JSON
+        let data;
+        try {
+            data = JSON.parse(responseText);
+            console.log('✅ Parsed GAS response:', data);
+        } catch (e) {
+            console.warn('⚠️ Could not parse GAS response as JSON');
+            data = { success: true }; // Assume success if we got 200 OK
+        }
 
-            let data;
-            try {
-                data = JSON.parse(responseText);
-            } catch (e) {
-                console.warn('Failed to parse GAS response as JSON', responseText);
-            }
+        if (data && data.success === false) {
+            const errorMsg = typeof data.error === 'object' ?
+                JSON.stringify(data.error) :
+                (data.error || 'Unknown error');
 
-            if (!data || !data.success) {
-                throw new Error(`GAS Error: ${data && data.error ? data.error : 'Unknown backend error'}`);
-            }
+            console.error('❌ GAS returned success: false:', errorMsg);
+            throw new Error('GAS error: ' + errorMsg);
+        }
 
-
-            // const data = await response.json(); // REMOVED: Body already read as text
-            // if (!data || !data.success) { ... } // Logic moved below after parsing text
-
-            // Try to parse response as JSON
-            let responseData;
-            try {
-                responseData = JSON.parse(responseText);
-                console.log('✅ Parsed GAS response:', responseData);
-            } catch (e) {
-                console.warn('⚠️ Could not parse GAS response as JSON');
-                responseData = { success: true }; // Assume success if we got 200 OK
-            }
-
-            if (responseData.success === false) {
-                const errorMsg = typeof responseData.error === 'object' ?
-                    JSON.stringify(responseData.error) :
-                    (responseData.error || 'Unknown error');
-
-                console.error('❌ GAS returned success: false:', errorMsg);
-                throw new Error('GAS error: ' + errorMsg);
-            }
-
-            console.log('✅ Email sent successfully!');
-            return { success: true };
+        console.log('✅ Email sent successfully!');
+        return { success: true };
 
         } catch (error) {
             console.error('❌ CRITICAL ERROR in sendMagicLinkEmail:', error);
