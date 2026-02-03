@@ -667,60 +667,61 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
         if (!response.ok) {
             const maskedUrl = gasUrl.length > 20 ? '...' + gasUrl.slice(-20) : gasUrl;
             throw new Error(`GAS Network Error (${response.status} ${response.statusText}) at [${maskedUrl}]`);
-<<<<<<< Updated upstream
-=======
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                console.warn('Failed to parse GAS response as JSON', responseText);
+            }
+
+            if (!data || !data.success) {
+                throw new Error(`GAS Error: ${data && data.error ? data.error : 'Unknown backend error'}`);
+            }
+
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                console.warn('Failed to parse GAS response as JSON', responseText);
+            }
+
+            if (!data || !data.success) {
+                throw new Error(`GAS Error: ${data && data.error ? data.error : 'Unknown backend error'}`);
+            }
+
+
+            // const data = await response.json(); // REMOVED: Body already read as text
+            // if (!data || !data.success) { ... } // Logic moved below after parsing text
+
+            // Try to parse response as JSON
+            let responseData;
+            try {
+                responseData = JSON.parse(responseText);
+                console.log('✅ Parsed GAS response:', responseData);
+            } catch (e) {
+                console.warn('⚠️ Could not parse GAS response as JSON');
+                responseData = { success: true }; // Assume success if we got 200 OK
+            }
+
+            if (responseData.success === false) {
+                const errorMsg = typeof responseData.error === 'object' ?
+                    JSON.stringify(responseData.error) :
+                    (responseData.error || 'Unknown error');
+
+                console.error('❌ GAS returned success: false:', errorMsg);
+                throw new Error('GAS error: ' + errorMsg);
+            }
+
+            console.log('✅ Email sent successfully!');
+            return { success: true };
+
+        } catch (error) {
+            console.error('❌ CRITICAL ERROR in sendMagicLinkEmail:', error);
+            console.error('   Error message:', error.message);
+            console.error('   Error stack:', error.stack);
+            return { success: false, error: error.message };
         }
-
-        const data = await response.json();
-        if (!data || !data.success) {
-            throw new Error(`GAS Error: ${data && data.error ? data.error : 'Unknown backend error'}`);
->>>>>>> Stashed changes
-        }
-
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (e) {
-            console.warn('Failed to parse GAS response as JSON', responseText);
-        }
-
-        if (!data || !data.success) {
-            throw new Error(`GAS Error: ${data && data.error ? data.error : 'Unknown backend error'}`);
-        }
-
-
-        // const data = await response.json(); // REMOVED: Body already read as text
-        // if (!data || !data.success) { ... } // Logic moved below after parsing text
-
-        // Try to parse response as JSON
-        let responseData;
-        try {
-            responseData = JSON.parse(responseText);
-            console.log('✅ Parsed GAS response:', responseData);
-        } catch (e) {
-            console.warn('⚠️ Could not parse GAS response as JSON');
-            responseData = { success: true }; // Assume success if we got 200 OK
-        }
-
-        if (responseData.success === false) {
-            const errorMsg = typeof responseData.error === 'object' ?
-                JSON.stringify(responseData.error) :
-                (responseData.error || 'Unknown error');
-
-            console.error('❌ GAS returned success: false:', errorMsg);
-            throw new Error('GAS error: ' + errorMsg);
-        }
-
-        console.log('✅ Email sent successfully!');
-        return { success: true };
-
-    } catch (error) {
-        console.error('❌ CRITICAL ERROR in sendMagicLinkEmail:', error);
-        console.error('   Error message:', error.message);
-        console.error('   Error stack:', error.stack);
-        return { success: false, error: error.message };
     }
-}
 
 // ============================================================================
 // STAFF DASHBOARD DATA
@@ -730,546 +731,529 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
  * Get staff dashboard data (stats and cases)
  */
 export async function getStaffDashboardData() {
-    try {
-        // Get all cases
-        const casesResult = await wixData.query(CONFIG.CASES_COLLECTION)
-            .descending('_createdDate')
-            .descending('_createdDate')
-            .limit(1000)
-            .find({ suppressAuth: true });
-
-        const cases = casesResult.items;
-
-        // Calculate stats
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const stats = {
-            activeCases: cases.filter(c => c.status === 'active' || c.status === 'pending').length,
-            pendingSignatures: cases.filter(c => c.paperworkStatus === 'pending').length,
-            completedToday: cases.filter(c => {
-                const created = new Date(c._createdDate);
-                return created >= today && c.status === 'completed';
-            }).length,
-            failedChecks: cases.filter(c => c.status === 'failed').length
-        };
-
-        // Format cases for display
-        const formattedCases = cases.map(c => ({
-            _id: c._id,
-            caseNumber: c.caseNumber || 'N/A',
-            defendantName: c.defendantName || 'Unknown',
-            bondAmount: c.bondAmount ? '$' + Number(c.bondAmount).toLocaleString() : 'N/A',
-            status: c.status || 'pending',
-            paperworkStatus: c.paperworkStatus || 'not_started',
-            county: c.county || 'N/A',
-            createdAt: c._createdDate
-        }));
-
-        // Fetch System Status from GAS
-        let systemLogs = [];
         try {
-            const gasUrl = await getGasWebAppUrl();
-            const apiKey = await getGasApiKey();
-            // 3-second timeout for status check
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-            const statusResp = await fetch(gasUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'getSystemStatus', apiKey: apiKey }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            if (statusResp.ok) {
-                const statusJson = await statusResp.json();
-                if (statusJson.logs) systemLogs = statusJson.logs;
-            }
-        } catch (e) {
-            console.warn("Failed to fetch GAS status:", e);
-        }
-
-        return {
-            stats: stats,
-            cases: formattedCases,
-            systemLogs: systemLogs
-        };
-
-    } catch (error) {
-        console.error('Error getting staff dashboard data:', error);
-        return {
-            stats: { activeCases: 0, pendingSignatures: 0, completedToday: 0, failedChecks: 0 },
-            cases: []
-        };
-    }
-}
-
-// ============================================================================
-// PORTAL DATA FUNCTIONS
-// ============================================================================
-
-/**
- * Get defendant portal data
- */
-export async function getDefendantPortalData(personId, caseId) {
-    try {
-        let caseData = null;
-
-        if (caseId) {
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, caseId, { suppressAuth: true });
-        } else if (personId) {
-            const results = await wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('_id', personId)
-                .find({ suppressAuth: true });
-            if (results.items.length > 0) {
-                caseData = results.items[0];
-            }
-        }
-
-        if (!caseData) {
-            return { success: false, message: 'Case not found' };
-        }
-
-        // Get pending documents
-        const pendingDocs = await wixData.query('PendingDocuments')
-            .eq('caseNumber', caseData.caseNumber)
-            .eq('status', 'pending')
-            .find({ suppressAuth: true });
-
-        return {
-            success: true,
-            case: {
-                caseNumber: caseData.caseNumber,
-                defendantName: caseData.defendantName,
-                bondAmount: caseData.bondAmount,
-                county: caseData.county,
-                status: caseData.status,
-                charges: caseData.charges
-            },
-            pendingDocuments: pendingDocs.items,
-            requiresIdUpload: !caseData.idUploaded
-        };
-
-    } catch (error) {
-        console.error('Error getting defendant portal data:', error);
-        return { success: false, message: error.message };
-    }
-}
-
-/**
- * Get indemnitor portal data
- */
-export async function getIndemnitorPortalData(personId, caseId) {
-    try {
-        let caseData = null;
-
-        if (caseId) {
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, caseId, { suppressAuth: true });
-        } else if (personId && personId.startsWith('indemnitor_')) {
-            const actualCaseId = personId.replace('indemnitor_', '');
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, actualCaseId, { suppressAuth: true });
-        }
-
-        if (!caseData) {
-            return { success: false, message: 'Case not found' };
-        }
-
-        // Get pending documents for indemnitor
-        const pendingDocs = await wixData.query('PendingDocuments')
-            .eq('memberEmail', caseData.indemnitorEmail)
-            .eq('status', 'pending')
-            .find({ suppressAuth: true });
-
-        return {
-            success: true,
-            case: {
-                caseNumber: caseData.caseNumber,
-                defendantName: caseData.defendantName,
-                bondAmount: caseData.bondAmount,
-                county: caseData.county,
-                status: caseData.status
-            },
-            indemnitor: {
-                name: caseData.indemnitorName,
-                email: caseData.indemnitorEmail,
-                phone: caseData.indemnitorPhone
-            },
-            pendingDocuments: pendingDocs.items,
-            requiresIdUpload: !caseData.indemnitorIdUploaded
-        };
-
-    } catch (error) {
-        console.error('Error getting indemnitor portal data:', error);
-        return { success: false, message: error.message };
-    }
-}
-
-/**
- * BACKEND: Link Defendant to Existing Case (e.g., from Indemnitor Portal)
- * Allows a user (Defendant) to find their case via Case Number + Indemnitor Name
- */
-export async function linkDefendantToCase(caseNumber, indemnitorName) {
-    try {
-        if (!caseNumber && !indemnitorName) {
-            return { success: false, message: 'Please enter a Case Number OR Indemnitor Last Name.' };
-        }
-
-        const targetCase = caseNumber ? caseNumber.trim() : null;
-        const targetName = indemnitorName ? indemnitorName.trim().toLowerCase() : null;
-
-        console.log(`🔍 Searching for case. Number: ${targetCase}, Indemnitor: ${targetName}`);
-
-        let matches = [];
-
-        // 1. Search by Case Number (Exact) - Highest Priority
-        if (targetCase) {
-            const caseResults = await wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('caseNumber', targetCase)
+            // Get all cases
+            const casesResult = await wixData.query(CONFIG.CASES_COLLECTION)
+                .descending('_createdDate')
+                .descending('_createdDate')
+                .limit(1000)
                 .find({ suppressAuth: true });
 
-            if (caseResults.items.length > 0) {
-                matches = caseResults.items;
-                console.log(`✅ Found by Case Number: ${matches.length}`);
+            const cases = casesResult.items;
+
+            // Calculate stats
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const stats = {
+                activeCases: cases.filter(c => c.status === 'active' || c.status === 'pending').length,
+                pendingSignatures: cases.filter(c => c.paperworkStatus === 'pending').length,
+                completedToday: cases.filter(c => {
+                    const created = new Date(c._createdDate);
+                    return created >= today && c.status === 'completed';
+                }).length,
+                failedChecks: cases.filter(c => c.status === 'failed').length
+            };
+
+            // Format cases for display
+            const formattedCases = cases.map(c => ({
+                _id: c._id,
+                caseNumber: c.caseNumber || 'N/A',
+                defendantName: c.defendantName || 'Unknown',
+                bondAmount: c.bondAmount ? '$' + Number(c.bondAmount).toLocaleString() : 'N/A',
+                status: c.status || 'pending',
+                paperworkStatus: c.paperworkStatus || 'not_started',
+                county: c.county || 'N/A',
+                createdAt: c._createdDate
+            }));
+
+            // Fetch System Status from GAS
+            let systemLogs = [];
+            try {
+                const gasUrl = await getGasWebAppUrl();
+                const apiKey = await getGasApiKey();
+                // 3-second timeout for status check
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+                const statusResp = await fetch(gasUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'getSystemStatus', apiKey: apiKey }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (statusResp.ok) {
+                    const statusJson = await statusResp.json();
+                    if (statusJson.logs) systemLogs = statusJson.logs;
+                }
+            } catch (e) {
+                console.warn("Failed to fetch GAS status:", e);
             }
-        }
 
-        // 2. Search by Indemnitor Name (Partial) - Fallback or "OR" logic
-        // Only search if we haven't found a match yet, OR if the user wants "Either" (and case lookup failed)
-        // If the user provided a name but the case lookup failed (or wasn't provided), we search by name.
-        if (matches.length === 0 && targetName) {
-            console.log(`🔍 Searching by Indemnitor Name: ${targetName}`);
-            // Use contains for "Last Name" matching "First Middle Last"
-            const nameResults = await wixData.query(CONFIG.CASES_COLLECTION)
-                .contains('indemnitorName', targetName) // Case-insensitive in Wix usually, but good to check
-                .descending('_createdDate') // Get latest first
-                .limit(5) // Limit results for safety
-                .find({ suppressAuth: true });
-
-            // Refine: Ensure the user typed at least 3 chars to avoid "a" returning everything
-            if (nameResults.items.length > 0 && targetName.length >= 2) {
-                // Secondary check: ensure the search term is actually part of the name (JavaScript check for robust matching)
-                matches = nameResults.items.filter(item =>
-                    (item.indemnitorName || '').toLowerCase().includes(targetName)
-                );
-                console.log(`✅ Found by Indemnitor Name: ${matches.length}`);
-            }
-        }
-
-        if (matches.length === 0) {
-            return { success: false, message: 'No case found matching your details.' };
-        }
-
-        // 3. Selection Strategy: First Match (Most Recent by default due to push/query)
-        // If we found multiple by name, we take the top one (latest).
-        const caseData = matches[0];
-
-        console.log(`🎯 Matched Case: ${caseData.caseNumber}`);
-
-        // Success! Generate a Session Token for the DEFENDANT role on this case
-        const sessionToken = await createCustomSession(
-            caseData._id, // Use CaseID as PersonID for defendant
-            'defendant',
-            caseData._id,
-            {
-                email: caseData.defendantEmail,
-                phone: caseData.defendantPhone,
-                name: caseData.defendantName
-            }
-        );
-
-        return {
-            success: true,
-            sessionToken: sessionToken,
-            wixSessionToken: null,
-            message: 'Case found! Redirecting to your paperwork...'
-        };
-
-    } catch (error) {
-        console.error('Error linking defendant:', error);
-        return { success: false, message: error.message };
-    }
-}
-
-// ============================================================================
-// DEFENDANT DETAILS (Required by portal-defendant.skg9y.js)
-// ============================================================================
-
-/**
- * Get defendant details by session token
- * Required by portal-defendant.skg9y.js
- */
-export async function getDefendantDetails(sessionToken) {
-    try {
-        const session = await validateCustomSession(sessionToken);
-        if (!session || !session.personId) {
-            return null;
-        }
-
-        // Get case data
-        let caseData = null;
-        if (session.caseId) {
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, session.caseId, { suppressAuth: true });
-        } else {
-            // Try to find by personId
-            const results = await wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('_id', session.personId)
-                .find({ suppressAuth: true });
-            if (results.items.length > 0) {
-                caseData = results.items[0];
-            }
-        }
-
-        if (!caseData) {
             return {
-                firstName: 'Client',
-                email: '',
-                caseNumber: 'Pending',
-                bondAmount: '$0.00',
-                nextCourtDate: 'TBD',
-                caseStatus: 'Pending',
-                paperworkStatus: 'Not Started',
-                signingStatus: 'Incomplete'
+                stats: stats,
+                cases: formattedCases,
+                systemLogs: systemLogs
+            };
+
+        } catch (error) {
+            console.error('Error getting staff dashboard data:', error);
+            return {
+                stats: { activeCases: 0, pendingSignatures: 0, completedToday: 0, failedChecks: 0 },
+                cases: []
             };
         }
-
-        // Format court date
-        let nextCourtDate = 'TBD';
-        if (caseData.courtDate) {
-            const date = new Date(caseData.courtDate);
-            nextCourtDate = date.toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
-
-        // Format bond amount
-        let bondAmount = '$0.00';
-        if (caseData.bondAmount) {
-            bondAmount = '$' + Number(caseData.bondAmount).toLocaleString();
-        }
-
-        return {
-            firstName: caseData.defendantName?.split(' ')[0] || 'Client',
-            lastName: caseData.defendantName?.split(' ').slice(1).join(' ') || '',
-            email: caseData.defendantEmail || '',
-            phone: caseData.defendantPhone || '',
-            caseNumber: caseData.caseNumber || 'Pending',
-            bondAmount: bondAmount,
-            nextCourtDate: nextCourtDate,
-            caseStatus: caseData.status || 'Active',
-            paperworkStatus: caseData.paperworkStatus || 'Pending',
-            signingStatus: caseData.signingStatus || 'Incomplete',
-            county: caseData.county || '',
-            charges: caseData.charges || ''
-        };
-
-    } catch (error) {
-        console.error('Error getting defendant details:', error);
-        return null;
     }
-}
+
+    // ============================================================================
+    // PORTAL DATA FUNCTIONS
+    // ============================================================================
+
+    /**
+     * Get defendant portal data
+     */
+    export async function getDefendantPortalData(personId, caseId) {
+        try {
+            let caseData = null;
+
+            if (caseId) {
+                caseData = await wixData.get(CONFIG.CASES_COLLECTION, caseId, { suppressAuth: true });
+            } else if (personId) {
+                const results = await wixData.query(CONFIG.CASES_COLLECTION)
+                    .eq('_id', personId)
+                    .find({ suppressAuth: true });
+                if (results.items.length > 0) {
+                    caseData = results.items[0];
+                }
+            }
+
+            if (!caseData) {
+                return { success: false, message: 'Case not found' };
+            }
+
+            // Get pending documents
+            const pendingDocs = await wixData.query('PendingDocuments')
+                .eq('caseNumber', caseData.caseNumber)
+                .eq('status', 'pending')
+                .find({ suppressAuth: true });
+
+            return {
+                success: true,
+                case: {
+                    caseNumber: caseData.caseNumber,
+                    defendantName: caseData.defendantName,
+                    bondAmount: caseData.bondAmount,
+                    county: caseData.county,
+                    status: caseData.status,
+                    charges: caseData.charges
+                },
+                pendingDocuments: pendingDocs.items,
+                requiresIdUpload: !caseData.idUploaded
+            };
+
+        } catch (error) {
+            console.error('Error getting defendant portal data:', error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Get indemnitor portal data
+     */
+    export async function getIndemnitorPortalData(personId, caseId) {
+        try {
+            let caseData = null;
+
+            if (caseId) {
+                caseData = await wixData.get(CONFIG.CASES_COLLECTION, caseId, { suppressAuth: true });
+            } else if (personId && personId.startsWith('indemnitor_')) {
+                const actualCaseId = personId.replace('indemnitor_', '');
+                caseData = await wixData.get(CONFIG.CASES_COLLECTION, actualCaseId, { suppressAuth: true });
+            }
+
+            if (!caseData) {
+                return { success: false, message: 'Case not found' };
+            }
+
+            // Get pending documents for indemnitor
+            const pendingDocs = await wixData.query('PendingDocuments')
+                .eq('memberEmail', caseData.indemnitorEmail)
+                .eq('status', 'pending')
+                .find({ suppressAuth: true });
+
+            return {
+                success: true,
+                case: {
+                    caseNumber: caseData.caseNumber,
+                    defendantName: caseData.defendantName,
+                    bondAmount: caseData.bondAmount,
+                    county: caseData.county,
+                    status: caseData.status
+                },
+                indemnitor: {
+                    name: caseData.indemnitorName,
+                    email: caseData.indemnitorEmail,
+                    phone: caseData.indemnitorPhone
+                },
+                pendingDocuments: pendingDocs.items,
+                requiresIdUpload: !caseData.indemnitorIdUploaded
+            };
+
+        } catch (error) {
+            console.error('Error getting indemnitor portal data:', error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * BACKEND: Link Defendant to Existing Case (e.g., from Indemnitor Portal)
+     * Allows a user (Defendant) to find their case via Case Number + Indemnitor Name
+     */
+    export async function linkDefendantToCase(caseNumber, indemnitorName) {
+        try {
+            if (!caseNumber && !indemnitorName) {
+                return { success: false, message: 'Please enter a Case Number OR Indemnitor Last Name.' };
+            }
+
+            const targetCase = caseNumber ? caseNumber.trim() : null;
+            const targetName = indemnitorName ? indemnitorName.trim().toLowerCase() : null;
+
+            console.log(`🔍 Searching for case. Number: ${targetCase}, Indemnitor: ${targetName}`);
+
+            let matches = [];
+
+            // 1. Search by Case Number (Exact) - Highest Priority
+            if (targetCase) {
+                const caseResults = await wixData.query(CONFIG.CASES_COLLECTION)
+                    .eq('caseNumber', targetCase)
+                    .find({ suppressAuth: true });
+
+                if (caseResults.items.length > 0) {
+                    matches = caseResults.items;
+                    console.log(`✅ Found by Case Number: ${matches.length}`);
+                }
+            }
+
+            // 2. Search by Indemnitor Name (Partial) - Fallback or "OR" logic
+            // Only search if we haven't found a match yet, OR if the user wants "Either" (and case lookup failed)
+            // If the user provided a name but the case lookup failed (or wasn't provided), we search by name.
+            if (matches.length === 0 && targetName) {
+                console.log(`🔍 Searching by Indemnitor Name: ${targetName}`);
+                // Use contains for "Last Name" matching "First Middle Last"
+                const nameResults = await wixData.query(CONFIG.CASES_COLLECTION)
+                    .contains('indemnitorName', targetName) // Case-insensitive in Wix usually, but good to check
+                    .descending('_createdDate') // Get latest first
+                    .limit(5) // Limit results for safety
+                    .find({ suppressAuth: true });
+
+                // Refine: Ensure the user typed at least 3 chars to avoid "a" returning everything
+                if (nameResults.items.length > 0 && targetName.length >= 2) {
+                    // Secondary check: ensure the search term is actually part of the name (JavaScript check for robust matching)
+                    matches = nameResults.items.filter(item =>
+                        (item.indemnitorName || '').toLowerCase().includes(targetName)
+                    );
+                    console.log(`✅ Found by Indemnitor Name: ${matches.length}`);
+                }
+            }
+
+            if (matches.length === 0) {
+                return { success: false, message: 'No case found matching your details.' };
+            }
+
+            // 3. Selection Strategy: First Match (Most Recent by default due to push/query)
+            // If we found multiple by name, we take the top one (latest).
+            const caseData = matches[0];
+
+            console.log(`🎯 Matched Case: ${caseData.caseNumber}`);
+
+            // Success! Generate a Session Token for the DEFENDANT role on this case
+            const sessionToken = await createCustomSession(
+                caseData._id, // Use CaseID as PersonID for defendant
+                'defendant',
+                caseData._id,
+                {
+                    email: caseData.defendantEmail,
+                    phone: caseData.defendantPhone,
+                    name: caseData.defendantName
+                }
+            );
+
+            return {
+                success: true,
+                sessionToken: sessionToken,
+                wixSessionToken: null,
+                message: 'Case found! Redirecting to your paperwork...'
+            };
+
+        } catch (error) {
+            console.error('Error linking defendant:', error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    // ============================================================================
+    // DEFENDANT DETAILS (Required by portal-defendant.skg9y.js)
+    // ============================================================================
+
+    /**
+     * Get defendant details by session token
+     * Required by portal-defendant.skg9y.js
+     */
+    export async function getDefendantDetails(sessionToken) {
+        try {
+            const session = await validateCustomSession(sessionToken);
+            if (!session || !session.personId) {
+                return null;
+            }
+
+            // Get case data
+            let caseData = null;
+            if (session.caseId) {
+                caseData = await wixData.get(CONFIG.CASES_COLLECTION, session.caseId, { suppressAuth: true });
+            } else {
+                // Try to find by personId
+                const results = await wixData.query(CONFIG.CASES_COLLECTION)
+                    .eq('_id', session.personId)
+                    .find({ suppressAuth: true });
+                if (results.items.length > 0) {
+                    caseData = results.items[0];
+                }
+            }
+
+            if (!caseData) {
+                return {
+                    firstName: 'Client',
+                    email: '',
+                    caseNumber: 'Pending',
+                    bondAmount: '$0.00',
+                    nextCourtDate: 'TBD',
+                    caseStatus: 'Pending',
+                    paperworkStatus: 'Not Started',
+                    signingStatus: 'Incomplete'
+                };
+            }
+
+            // Format court date
+            let nextCourtDate = 'TBD';
+            if (caseData.courtDate) {
+                const date = new Date(caseData.courtDate);
+                nextCourtDate = date.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            }
+
+            // Format bond amount
+            let bondAmount = '$0.00';
+            if (caseData.bondAmount) {
+                bondAmount = '$' + Number(caseData.bondAmount).toLocaleString();
+            }
+
+            return {
+                firstName: caseData.defendantName?.split(' ')[0] || 'Client',
+                lastName: caseData.defendantName?.split(' ').slice(1).join(' ') || '',
+                email: caseData.defendantEmail || '',
+                phone: caseData.defendantPhone || '',
+                caseNumber: caseData.caseNumber || 'Pending',
+                bondAmount: bondAmount,
+                nextCourtDate: nextCourtDate,
+                caseStatus: caseData.status || 'Active',
+                paperworkStatus: caseData.paperworkStatus || 'Pending',
+                signingStatus: caseData.signingStatus || 'Incomplete',
+                county: caseData.county || '',
+                charges: caseData.charges || ''
+            };
+
+        } catch (error) {
+            console.error('Error getting defendant details:', error);
+            return null;
+        }
+    }
 
 
-/**
- * Get user consent status
- * Required by portal-defendant.skg9y.js
- */
-export async function getUserConsentStatus(sessionToken) {
-    try {
-        const session = await validateCustomSession(sessionToken);
-        if (!session) {
+    /**
+     * Get user consent status
+     * Required by portal-defendant.skg9y.js
+     */
+    export async function getUserConsentStatus(sessionToken) {
+        try {
+            const session = await validateCustomSession(sessionToken);
+            if (!session) {
+                return { hasConsent: false };
+            }
+
+            // Check consent in Persons or Cases collection
+            let caseData = null;
+            if (session.caseId) {
+                caseData = await wixData.get(CONFIG.CASES_COLLECTION, session.caseId, { suppressAuth: true });
+            }
+
+            return {
+                hasConsent: caseData?.consentGiven || false,
+                consentDate: caseData?.consentDate || null,
+                locationConsent: caseData?.locationConsentGiven || false,
+                smsConsent: caseData?.smsConsentGiven || false
+            };
+
+        } catch (error) {
+            console.error('Error getting consent status:', error);
             return { hasConsent: false };
         }
-
-        // Check consent in Persons or Cases collection
-        let caseData = null;
-        if (session.caseId) {
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, session.caseId, { suppressAuth: true });
-        }
-
-        return {
-            hasConsent: caseData?.consentGiven || false,
-            consentDate: caseData?.consentDate || null,
-            locationConsent: caseData?.locationConsentGiven || false,
-            smsConsent: caseData?.smsConsentGiven || false
-        };
-
-    } catch (error) {
-        console.error('Error getting consent status:', error);
-        return { hasConsent: false };
     }
-}
 
-// ============================================================================
-// INDEMNITOR DETAILS (Required by portal-indemnitor.k53on.js)
-// ============================================================================
+    // ============================================================================
+    // INDEMNITOR DETAILS (Required by portal-indemnitor.k53on.js)
+    // ============================================================================
 
-/**
- * Get indemnitor details by session token
- * Required by portal-indemnitor.k53on.js
- */
-export async function getIndemnitorDetails(sessionToken) {
-    try {
-        const session = await validateCustomSession(sessionToken);
-        if (!session || !session.personId) {
+    /**
+     * Get indemnitor details by session token
+     * Required by portal-indemnitor.k53on.js
+     */
+    export async function getIndemnitorDetails(sessionToken) {
+        try {
+            const session = await validateCustomSession(sessionToken);
+            if (!session || !session.personId) {
+                return null;
+            }
+
+            // Get case data
+            let caseData = null;
+            if (session.caseId) {
+                caseData = await wixData.get(CONFIG.CASES_COLLECTION, session.caseId, { suppressAuth: true });
+            } else if (session.personId && session.personId.startsWith('indemnitor_')) {
+                const actualCaseId = session.personId.replace('indemnitor_', '');
+                caseData = await wixData.get(CONFIG.CASES_COLLECTION, actualCaseId, { suppressAuth: true });
+            }
+
+            if (!caseData) {
+                return {
+                    firstName: 'Cosigner',
+                    email: '',
+                    caseNumber: 'Pending',
+                    bondAmount: '$0.00',
+                    defendantName: 'Unknown',
+                    paperworkStatus: 'Not Started',
+                    signingStatus: 'Incomplete'
+                };
+            }
+
+            // Format bond amount
+            let bondAmount = '$0.00';
+            if (caseData.bondAmount) {
+                bondAmount = '$' + Number(caseData.bondAmount).toLocaleString();
+            }
+
+            // Calculate financial fields
+            const totalLiability = caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00';
+            const premiumRate = 0.10; // 10% premium rate
+            const totalPremium = caseData.bondAmount ? '$' + (Number(caseData.bondAmount) * premiumRate).toLocaleString() : '$0.00';
+            const downPayment = caseData.downPayment ? '$' + Number(caseData.downPayment).toLocaleString() : '$0.00';
+            const balanceDue = caseData.balanceDue ? '$' + Number(caseData.balanceDue).toLocaleString() :
+                (caseData.bondAmount && caseData.downPayment ?
+                    '$' + ((Number(caseData.bondAmount) * premiumRate) - Number(caseData.downPayment)).toLocaleString() : '$0.00');
+
+            // Count charges if available
+            let chargesCount = '0';
+            if (caseData.charges) {
+                if (Array.isArray(caseData.charges)) {
+                    chargesCount = String(caseData.charges.length);
+                } else if (typeof caseData.charges === 'string') {
+                    chargesCount = String(caseData.charges.split(',').length);
+                }
+            }
+
+            return {
+                // Basic info
+                firstName: caseData.indemnitorName?.split(' ')[0] || 'Cosigner',
+                lastName: caseData.indemnitorName?.split(' ').slice(1).join(' ') || '',
+                email: caseData.indemnitorEmail || '',
+                phone: caseData.indemnitorPhone || '',
+                caseNumber: caseData.caseNumber || 'Pending',
+                bondAmount: bondAmount,
+                defendantName: caseData.defendantName || 'Unknown',
+                caseStatus: caseData.status || 'Active',
+                paperworkStatus: caseData.paperworkStatus || 'Pending',
+                signingStatus: caseData.indemnitorSigningStatus || 'Incomplete',
+                county: caseData.county || '',
+                relationship: caseData.indemnitorRelationship || '',
+
+                // Financial fields for dashboard
+                totalLiability: totalLiability,
+                totalPremium: totalPremium,
+                downPayment: downPayment,
+                balanceDue: balanceDue,
+                chargesCount: chargesCount,
+
+                // Defendant status fields
+                defendantStatus: caseData.defendantStatus || 'In Custody',
+                lastCheckIn: caseData.lastCheckIn ? new Date(caseData.lastCheckIn).toLocaleDateString() : 'Never',
+                nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD'
+            };
+
+        } catch (error) {
+            console.error('Error getting indemnitor details:', error);
             return null;
         }
-
-        // Get case data
-        let caseData = null;
-        if (session.caseId) {
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, session.caseId, { suppressAuth: true });
-        } else if (session.personId && session.personId.startsWith('indemnitor_')) {
-            const actualCaseId = session.personId.replace('indemnitor_', '');
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, actualCaseId, { suppressAuth: true });
-        }
-
-        if (!caseData) {
-            return {
-                firstName: 'Cosigner',
-                email: '',
-                caseNumber: 'Pending',
-                bondAmount: '$0.00',
-                defendantName: 'Unknown',
-                paperworkStatus: 'Not Started',
-                signingStatus: 'Incomplete'
-            };
-        }
-
-        // Format bond amount
-        let bondAmount = '$0.00';
-        if (caseData.bondAmount) {
-            bondAmount = '$' + Number(caseData.bondAmount).toLocaleString();
-        }
-
-        // Calculate financial fields
-        const totalLiability = caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00';
-        const premiumRate = 0.10; // 10% premium rate
-        const totalPremium = caseData.bondAmount ? '$' + (Number(caseData.bondAmount) * premiumRate).toLocaleString() : '$0.00';
-        const downPayment = caseData.downPayment ? '$' + Number(caseData.downPayment).toLocaleString() : '$0.00';
-        const balanceDue = caseData.balanceDue ? '$' + Number(caseData.balanceDue).toLocaleString() :
-            (caseData.bondAmount && caseData.downPayment ?
-                '$' + ((Number(caseData.bondAmount) * premiumRate) - Number(caseData.downPayment)).toLocaleString() : '$0.00');
-
-        // Count charges if available
-        let chargesCount = '0';
-        if (caseData.charges) {
-            if (Array.isArray(caseData.charges)) {
-                chargesCount = String(caseData.charges.length);
-            } else if (typeof caseData.charges === 'string') {
-                chargesCount = String(caseData.charges.split(',').length);
-            }
-        }
-
-        return {
-            // Basic info
-            firstName: caseData.indemnitorName?.split(' ')[0] || 'Cosigner',
-            lastName: caseData.indemnitorName?.split(' ').slice(1).join(' ') || '',
-            email: caseData.indemnitorEmail || '',
-            phone: caseData.indemnitorPhone || '',
-            caseNumber: caseData.caseNumber || 'Pending',
-            bondAmount: bondAmount,
-            defendantName: caseData.defendantName || 'Unknown',
-            caseStatus: caseData.status || 'Active',
-            paperworkStatus: caseData.paperworkStatus || 'Pending',
-            signingStatus: caseData.indemnitorSigningStatus || 'Incomplete',
-            county: caseData.county || '',
-            relationship: caseData.indemnitorRelationship || '',
-
-            // Financial fields for dashboard
-            totalLiability: totalLiability,
-            totalPremium: totalPremium,
-            downPayment: downPayment,
-            balanceDue: balanceDue,
-            chargesCount: chargesCount,
-
-            // Defendant status fields
-            defendantStatus: caseData.defendantStatus || 'In Custody',
-            lastCheckIn: caseData.lastCheckIn ? new Date(caseData.lastCheckIn).toLocaleDateString() : 'Never',
-            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD'
-        };
-
-    } catch (error) {
-        console.error('Error getting indemnitor details:', error);
-        return null;
     }
-}
 
-// ============================================================================
-// MULTI-CASE LOOKUP FUNCTIONS
-// ============================================================================
+    // ============================================================================
+    // MULTI-CASE LOOKUP FUNCTIONS
+    // ============================================================================
 
-/**
- * Get ALL cases where the user appears as an indemnitor
- * Supports many-to-many relationship: one indemnitor can sign for multiple defendants
- * @param {string} sessionToken - The session token
- * @returns {Object} - { success, cases: [...], totalCases }
- */
-export async function getIndemnitorLinkedCases(sessionToken) {
-    try {
-        const session = await validateCustomSession(sessionToken);
-        if (!session) {
-            return { success: false, cases: [], totalCases: 0, error: 'Invalid session' };
-        }
+    /**
+     * Get ALL cases where the user appears as an indemnitor
+     * Supports many-to-many relationship: one indemnitor can sign for multiple defendants
+     * @param {string} sessionToken - The session token
+     * @returns {Object} - { success, cases: [...], totalCases }
+     */
+    export async function getIndemnitorLinkedCases(sessionToken) {
+        try {
+            const session = await validateCustomSession(sessionToken);
+            if (!session) {
+                return { success: false, cases: [], totalCases: 0, error: 'Invalid session' };
+            }
 
-        const email = normalizeEmail(session.email);
-        const phone = normalizePhone(session.phone);
+            const email = normalizeEmail(session.email);
+            const phone = normalizePhone(session.phone);
 
-        if (!email && !phone) {
-            return { success: false, cases: [], totalCases: 0, error: 'No contact info in session' };
-        }
+            if (!email && !phone) {
+                return { success: false, cases: [], totalCases: 0, error: 'No contact info in session' };
+            }
 
-        // Build queries to find all cases where this person is an indemnitor
-        let allCases = [];
+            // Build queries to find all cases where this person is an indemnitor
+            let allCases = [];
 
-        // Query 1: Check single indemnitorEmail field
-        if (email) {
-            const emailQuery = await wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('indemnitorEmail', email)
-                .find({ suppressAuth: true });
-            allCases = allCases.concat(emailQuery.items);
-        }
-
-        // Query 2: Check single indemnitorPhone field
-        if (phone) {
-            const phoneQuery = await wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('indemnitorPhone', phone)
-                .find({ suppressAuth: true });
-            // Avoid duplicates
-            phoneQuery.items.forEach(item => {
-                if (!allCases.find(c => c._id === item._id)) {
-                    allCases.push(item);
-                }
-            });
-        }
-
-        // Query 3: Check indemnitorEmails array (if exists)
-        if (email) {
-            try {
-                const arrayQuery = await wixData.query(CONFIG.CASES_COLLECTION)
-                    .hasSome('indemnitorEmails', [email])
+            // Query 1: Check single indemnitorEmail field
+            if (email) {
+                const emailQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                    .eq('indemnitorEmail', email)
                     .find({ suppressAuth: true });
-                arrayQuery.items.forEach(item => {
+                allCases = allCases.concat(emailQuery.items);
+            }
+
+            // Query 2: Check single indemnitorPhone field
+            if (phone) {
+                const phoneQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                    .eq('indemnitorPhone', phone)
+                    .find({ suppressAuth: true });
+                // Avoid duplicates
+                phoneQuery.items.forEach(item => {
                     if (!allCases.find(c => c._id === item._id)) {
                         allCases.push(item);
                     }
                 });
-            } catch (e) {
-                // Field may not exist, ignore
             }
-        }
 
-        // Query 4: Check indemnitor2Email, indemnitor3Email, etc. (numbered fields)
-        for (let i = 2; i <= 5; i++) {
+            // Query 3: Check indemnitorEmails array (if exists)
             if (email) {
                 try {
-                    const numberedQuery = await wixData.query(CONFIG.CASES_COLLECTION)
-                        .eq('indemnitor' + i + 'Email', email)
+                    const arrayQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                        .hasSome('indemnitorEmails', [email])
                         .find({ suppressAuth: true });
-                    numberedQuery.items.forEach(item => {
+                    arrayQuery.items.forEach(item => {
                         if (!allCases.find(c => c._id === item._id)) {
                             allCases.push(item);
                         }
@@ -1278,224 +1262,241 @@ export async function getIndemnitorLinkedCases(sessionToken) {
                     // Field may not exist, ignore
                 }
             }
-        }
 
-        // Format cases for frontend display
-        const formattedCases = allCases.map(caseData => ({
-            caseId: caseData._id,
-            caseNumber: caseData.caseNumber || 'Pending',
-            defendantName: caseData.defendantName || 'Unknown',
-            defendantStatus: caseData.defendantStatus || caseData.status || 'Active',
-            bondAmount: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
-            county: caseData.county || '',
-            arrestDate: caseData.arrestDate ? new Date(caseData.arrestDate).toLocaleDateString() : 'N/A',
-            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD',
-            paperworkStatus: caseData.paperworkStatus || 'Pending',
-            signingStatus: caseData.indemnitorSigningStatus || 'Incomplete',
-            charges: caseData.charges || '',
-            createdDate: caseData._createdDate ? new Date(caseData._createdDate).toLocaleDateString() : 'N/A'
-        }));
-
-        // Sort by created date (newest first)
-        formattedCases.sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
-
-        return {
-            success: true,
-            cases: formattedCases,
-            totalCases: formattedCases.length,
-            indemnitorEmail: email,
-            indemnitorPhone: phone
-        };
-
-    } catch (error) {
-        console.error('Error in getIndemnitorLinkedCases:', error);
-        return { success: false, cases: [], totalCases: 0, error: error.message };
-    }
-}
-
-/**
- * Get ALL cases where the user appears as a defendant
- * Supports the scenario where a person can be a defendant in some cases and indemnitor in others
- * @param {string} sessionToken - The session token
- * @returns {Object} - { success, cases: [...], totalCases }
- */
-export async function getDefendantLinkedCases(sessionToken) {
-    try {
-        const session = await validateCustomSession(sessionToken);
-        if (!session) {
-            return { success: false, cases: [], totalCases: 0, error: 'Invalid session' };
-        }
-
-        const email = normalizeEmail(session.email);
-        const phone = normalizePhone(session.phone);
-
-        if (!email && !phone) {
-            return { success: false, cases: [], totalCases: 0, error: 'No contact info in session' };
-        }
-
-        let allCases = [];
-
-        // Query by defendant email
-        if (email) {
-            const emailQuery = await wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('defendantEmail', email)
-                .find({ suppressAuth: true });
-            allCases = allCases.concat(emailQuery.items);
-        }
-
-        // Query by defendant phone
-        if (phone) {
-            const phoneQuery = await wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('defendantPhone', phone)
-                .find({ suppressAuth: true });
-            phoneQuery.items.forEach(item => {
-                if (!allCases.find(c => c._id === item._id)) {
-                    allCases.push(item);
-                }
-            });
-        }
-
-        // Format cases for frontend display
-        const formattedCases = allCases.map(caseData => ({
-            caseId: caseData._id,
-            caseNumber: caseData.caseNumber || 'Pending',
-            defendantName: caseData.defendantName || 'Unknown',
-            status: caseData.status || 'Active',
-            bondAmount: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
-            county: caseData.county || '',
-            arrestDate: caseData.arrestDate ? new Date(caseData.arrestDate).toLocaleDateString() : 'N/A',
-            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD',
-            paperworkStatus: caseData.paperworkStatus || 'Pending',
-            signingStatus: caseData.defendantSigningStatus || 'Incomplete',
-            charges: caseData.charges || '',
-            indemnitorName: caseData.indemnitorName || 'N/A',
-            createdDate: caseData._createdDate ? new Date(caseData._createdDate).toLocaleDateString() : 'N/A'
-        }));
-
-        formattedCases.sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
-
-        return {
-            success: true,
-            cases: formattedCases,
-            totalCases: formattedCases.length,
-            defendantEmail: email,
-            defendantPhone: phone
-        };
-
-    } catch (error) {
-        console.error('Error in getDefendantLinkedCases:', error);
-        return { success: false, cases: [], totalCases: 0, error: error.message };
-    }
-}
-
-/**
- * Get ALL roles and cases for a user (both as indemnitor AND defendant)
- * This is the master lookup function for users who may have multiple roles
- * @param {string} sessionToken - The session token
- * @returns {Object} - { success, indemnitorCases: [...], defendantCases: [...], totalCases }
- */
-export async function getAllUserCases(sessionToken) {
-    try {
-        const [indemnitorResult, defendantResult] = await Promise.all([
-            getIndemnitorLinkedCases(sessionToken),
-            getDefendantLinkedCases(sessionToken)
-        ]);
-
-        return {
-            success: true,
-            indemnitorCases: indemnitorResult.cases || [],
-            defendantCases: defendantResult.cases || [],
-            totalIndemnitorCases: indemnitorResult.totalCases || 0,
-            totalDefendantCases: defendantResult.totalCases || 0,
-            totalCases: (indemnitorResult.totalCases || 0) + (defendantResult.totalCases || 0)
-        };
-
-    } catch (error) {
-        console.error('Error in getAllUserCases:', error);
-        return {
-            success: false,
-            indemnitorCases: [],
-            defendantCases: [],
-            totalCases: 0,
-            error: error.message
-        };
-    }
-}
-
-/**
- * Get pending paperwork for an indemnitor across all their linked cases
- * @param {string} sessionToken - The session token
- * @returns {Object} - { success, pendingDocuments: [...] }
- */
-export async function getIndemnitorPendingPaperwork(sessionToken) {
-    try {
-        const casesResult = await getIndemnitorLinkedCases(sessionToken);
-        if (!casesResult.success) {
-            return { success: false, pendingDocuments: [], error: casesResult.error };
-        }
-
-        // Get pending documents for each case
-        const pendingDocuments = [];
-        for (const caseInfo of casesResult.cases) {
-            if (caseInfo.signingStatus !== 'Complete' && caseInfo.signingStatus !== 'Signed') {
-                // Query PendingDocuments collection for this case
-                try {
-                    const docsQuery = await wixData.query('PendingDocuments')
-                        .eq('caseId', caseInfo.caseId)
-                        .ne('status', 'signed')
-                        .find({ suppressAuth: true });
-
-                    docsQuery.items.forEach(doc => {
-                        pendingDocuments.push({
-                            documentId: doc._id,
-                            caseId: caseInfo.caseId,
-                            caseNumber: caseInfo.caseNumber,
-                            defendantName: caseInfo.defendantName,
-                            documentName: doc.documentName || 'Bail Bond Document',
-                            signingLink: doc.signingLink || '',
-                            status: doc.status || 'pending',
-                            createdDate: doc._createdDate ? new Date(doc._createdDate).toLocaleDateString() : 'N/A'
+            // Query 4: Check indemnitor2Email, indemnitor3Email, etc. (numbered fields)
+            for (let i = 2; i <= 5; i++) {
+                if (email) {
+                    try {
+                        const numberedQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                            .eq('indemnitor' + i + 'Email', email)
+                            .find({ suppressAuth: true });
+                        numberedQuery.items.forEach(item => {
+                            if (!allCases.find(c => c._id === item._id)) {
+                                allCases.push(item);
+                            }
                         });
-                    });
-                } catch (e) {
-                    console.warn('Could not query documents for case ' + caseInfo.caseId + ':', e);
+                    } catch (e) {
+                        // Field may not exist, ignore
+                    }
                 }
             }
+
+            // Format cases for frontend display
+            const formattedCases = allCases.map(caseData => ({
+                caseId: caseData._id,
+                caseNumber: caseData.caseNumber || 'Pending',
+                defendantName: caseData.defendantName || 'Unknown',
+                defendantStatus: caseData.defendantStatus || caseData.status || 'Active',
+                bondAmount: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
+                county: caseData.county || '',
+                arrestDate: caseData.arrestDate ? new Date(caseData.arrestDate).toLocaleDateString() : 'N/A',
+                nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD',
+                paperworkStatus: caseData.paperworkStatus || 'Pending',
+                signingStatus: caseData.indemnitorSigningStatus || 'Incomplete',
+                charges: caseData.charges || '',
+                createdDate: caseData._createdDate ? new Date(caseData._createdDate).toLocaleDateString() : 'N/A'
+            }));
+
+            // Sort by created date (newest first)
+            formattedCases.sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+
+            return {
+                success: true,
+                cases: formattedCases,
+                totalCases: formattedCases.length,
+                indemnitorEmail: email,
+                indemnitorPhone: phone
+            };
+
+        } catch (error) {
+            console.error('Error in getIndemnitorLinkedCases:', error);
+            return { success: false, cases: [], totalCases: 0, error: error.message };
         }
-
-        return {
-            success: true,
-            pendingDocuments: pendingDocuments,
-            totalPending: pendingDocuments.length
-        };
-
-    } catch (error) {
-        console.error('Error in getIndemnitorPendingPaperwork:', error);
-        return { success: false, pendingDocuments: [], error: error.message };
     }
-}
-// ============================================================================
-// EXPORTS
-// ============================================================================
 
-/**
- * Alias for sendMagicLinkSimplified for backward compatibility
- * Used by magic-link-manager.jsw
- */
-export async function sendMagicLink(email, token, role, personName = null) {
-    // This is a simplified alias that sends an email with an existing token
-    try {
-        const magicLinkUrl = `${CONFIG.BASE_URL}${CONFIG.PORTAL_LANDING}?token=${encodeURIComponent(token)}`;
-        const result = await sendMagicLinkEmail(email, magicLinkUrl, role, personName);
-        return result;
-    } catch (error) {
-        console.error('Error in sendMagicLink:', error);
-        return { success: false, error: error.message };
+    /**
+     * Get ALL cases where the user appears as a defendant
+     * Supports the scenario where a person can be a defendant in some cases and indemnitor in others
+     * @param {string} sessionToken - The session token
+     * @returns {Object} - { success, cases: [...], totalCases }
+     */
+    export async function getDefendantLinkedCases(sessionToken) {
+        try {
+            const session = await validateCustomSession(sessionToken);
+            if (!session) {
+                return { success: false, cases: [], totalCases: 0, error: 'Invalid session' };
+            }
+
+            const email = normalizeEmail(session.email);
+            const phone = normalizePhone(session.phone);
+
+            if (!email && !phone) {
+                return { success: false, cases: [], totalCases: 0, error: 'No contact info in session' };
+            }
+
+            let allCases = [];
+
+            // Query by defendant email
+            if (email) {
+                const emailQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                    .eq('defendantEmail', email)
+                    .find({ suppressAuth: true });
+                allCases = allCases.concat(emailQuery.items);
+            }
+
+            // Query by defendant phone
+            if (phone) {
+                const phoneQuery = await wixData.query(CONFIG.CASES_COLLECTION)
+                    .eq('defendantPhone', phone)
+                    .find({ suppressAuth: true });
+                phoneQuery.items.forEach(item => {
+                    if (!allCases.find(c => c._id === item._id)) {
+                        allCases.push(item);
+                    }
+                });
+            }
+
+            // Format cases for frontend display
+            const formattedCases = allCases.map(caseData => ({
+                caseId: caseData._id,
+                caseNumber: caseData.caseNumber || 'Pending',
+                defendantName: caseData.defendantName || 'Unknown',
+                status: caseData.status || 'Active',
+                bondAmount: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
+                county: caseData.county || '',
+                arrestDate: caseData.arrestDate ? new Date(caseData.arrestDate).toLocaleDateString() : 'N/A',
+                nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD',
+                paperworkStatus: caseData.paperworkStatus || 'Pending',
+                signingStatus: caseData.defendantSigningStatus || 'Incomplete',
+                charges: caseData.charges || '',
+                indemnitorName: caseData.indemnitorName || 'N/A',
+                createdDate: caseData._createdDate ? new Date(caseData._createdDate).toLocaleDateString() : 'N/A'
+            }));
+
+            formattedCases.sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+
+            return {
+                success: true,
+                cases: formattedCases,
+                totalCases: formattedCases.length,
+                defendantEmail: email,
+                defendantPhone: phone
+            };
+
+        } catch (error) {
+            console.error('Error in getDefendantLinkedCases:', error);
+            return { success: false, cases: [], totalCases: 0, error: error.message };
+        }
     }
-}
 
-export {
-    CONFIG as AUTH_CONFIG,
-    isStaffAccount,
-    getStaffAccountDetails
-};
+    /**
+     * Get ALL roles and cases for a user (both as indemnitor AND defendant)
+     * This is the master lookup function for users who may have multiple roles
+     * @param {string} sessionToken - The session token
+     * @returns {Object} - { success, indemnitorCases: [...], defendantCases: [...], totalCases }
+     */
+    export async function getAllUserCases(sessionToken) {
+        try {
+            const [indemnitorResult, defendantResult] = await Promise.all([
+                getIndemnitorLinkedCases(sessionToken),
+                getDefendantLinkedCases(sessionToken)
+            ]);
+
+            return {
+                success: true,
+                indemnitorCases: indemnitorResult.cases || [],
+                defendantCases: defendantResult.cases || [],
+                totalIndemnitorCases: indemnitorResult.totalCases || 0,
+                totalDefendantCases: defendantResult.totalCases || 0,
+                totalCases: (indemnitorResult.totalCases || 0) + (defendantResult.totalCases || 0)
+            };
+
+        } catch (error) {
+            console.error('Error in getAllUserCases:', error);
+            return {
+                success: false,
+                indemnitorCases: [],
+                defendantCases: [],
+                totalCases: 0,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Get pending paperwork for an indemnitor across all their linked cases
+     * @param {string} sessionToken - The session token
+     * @returns {Object} - { success, pendingDocuments: [...] }
+     */
+    export async function getIndemnitorPendingPaperwork(sessionToken) {
+        try {
+            const casesResult = await getIndemnitorLinkedCases(sessionToken);
+            if (!casesResult.success) {
+                return { success: false, pendingDocuments: [], error: casesResult.error };
+            }
+
+            // Get pending documents for each case
+            const pendingDocuments = [];
+            for (const caseInfo of casesResult.cases) {
+                if (caseInfo.signingStatus !== 'Complete' && caseInfo.signingStatus !== 'Signed') {
+                    // Query PendingDocuments collection for this case
+                    try {
+                        const docsQuery = await wixData.query('PendingDocuments')
+                            .eq('caseId', caseInfo.caseId)
+                            .ne('status', 'signed')
+                            .find({ suppressAuth: true });
+
+                        docsQuery.items.forEach(doc => {
+                            pendingDocuments.push({
+                                documentId: doc._id,
+                                caseId: caseInfo.caseId,
+                                caseNumber: caseInfo.caseNumber,
+                                defendantName: caseInfo.defendantName,
+                                documentName: doc.documentName || 'Bail Bond Document',
+                                signingLink: doc.signingLink || '',
+                                status: doc.status || 'pending',
+                                createdDate: doc._createdDate ? new Date(doc._createdDate).toLocaleDateString() : 'N/A'
+                            });
+                        });
+                    } catch (e) {
+                        console.warn('Could not query documents for case ' + caseInfo.caseId + ':', e);
+                    }
+                }
+            }
+
+            return {
+                success: true,
+                pendingDocuments: pendingDocuments,
+                totalPending: pendingDocuments.length
+            };
+
+        } catch (error) {
+            console.error('Error in getIndemnitorPendingPaperwork:', error);
+            return { success: false, pendingDocuments: [], error: error.message };
+        }
+    }
+    // ============================================================================
+    // EXPORTS
+    // ============================================================================
+
+    /**
+     * Alias for sendMagicLinkSimplified for backward compatibility
+     * Used by magic-link-manager.jsw
+     */
+    export async function sendMagicLink(email, token, role, personName = null) {
+        // This is a simplified alias that sends an email with an existing token
+        try {
+            const magicLinkUrl = `${CONFIG.BASE_URL}${CONFIG.PORTAL_LANDING}?token=${encodeURIComponent(token)}`;
+            const result = await sendMagicLinkEmail(email, magicLinkUrl, role, personName);
+            return result;
+        } catch (error) {
+            console.error('Error in sendMagicLink:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    export {
+        CONFIG as AUTH_CONFIG,
+        isStaffAccount,
+        getStaffAccountDetails
+    };
