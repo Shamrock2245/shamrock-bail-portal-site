@@ -171,76 +171,7 @@ export async function get_testAuth(request) {
     });
 }
 
-/**
- * GET /_functions/debugCollections
- * Diagnostic endpoint to verify collection access in Live environment
- */
-export async function get_debugCollections(request) {
-    try {
-        const { testAllAuthCollections } = await import('backend/test-collections');
-        const result = await testAllAuthCollections();
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: result
-        });
-    } catch (error) {
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: {
-                allPassed: false,
-                error: error.message
-            }
-        });
-    }
-}
-
-/**
- * GET /_functions/debugToken
- * Check specific token status in the DB
- * Usage: /_functions/debugToken?token=XYZ
- */
-export async function get_debugToken(request) {
-    const { token } = request.query;
-
-    if (!token) {
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: { error: "Token required" }
-        });
-    }
-
-    try {
-        const results = await wixData.query('Magiclinks')
-            .eq('token', token)
-            .find({ suppressAuth: true });
-
-        if (results.items.length === 0) {
-            return ok({
-                headers: { 'Content-Type': 'application/json' },
-                body: { found: false, message: "Token not found in DB" }
-            });
-        }
-
-        const link = results.items[0];
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: {
-                found: true,
-                used: link.used,
-                expiresAt: link.expiresAt,
-                role: link.role,
-                personId: link.personId,
-                now: new Date()
-            }
-        });
-
-    } catch (error) {
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: { error: error.message }
-        });
-    }
-}
+// Debug endpoints removed after verification
 
 /**
  * POST /api/documents/add
