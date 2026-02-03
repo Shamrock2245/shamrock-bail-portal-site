@@ -36,6 +36,9 @@ $w.onReady(async function () {
     // 0. Setup Listeners IMMEDIATELY (so buttons work even if data loads slowly)
     setupEventListeners();
 
+    // 0.5 Populate counties on page load
+    await loadCounties();
+
     // 1. Handle Magic Link Token from URL
     const query = wixLocation.query;
     if (query.st) {
@@ -114,7 +117,6 @@ async function initializePage() {
         // 5. Setup UI
         if (!currentIntake) {
             setupIntakeForm();
-            loadCounties(); // New: Populate county dropdown
         } else {
             showBondDashboard();
         }
@@ -397,6 +399,7 @@ function validateIntakeForm() {
     if (!safeGetValue('#indemnitorCity')?.trim()) errors.push('Your city is required');
     if (!safeGetValue('#indemnitorState')?.trim()) errors.push('Your state is required');
     if (!safeGetValue('#indemnitorZipCode')?.trim()) errors.push('Your zip code is required');
+    if (!safeGetValue('#county')?.trim()) errors.push('County is required');
 
     // Consent Check
     if ($w('#checkboxConsent').valid && !$w('#checkboxConsent').checked) {
@@ -644,8 +647,8 @@ function setupDefendantLink() {
 
     // 2. Submit Logic (If they ARE the Defendant)
     safeOnClick('#btnSubmitLink', async () => {
-        const caseNum = safeGetValue('#inputLinkCaseNumber');
-        const indemName = safeGetValue('#inputLinkIndemnitorName');
+        const caseNum = safeGetValue('#inputLinkCaseNumber')?.trim();
+        const indemName = safeGetValue('#inputLinkIndemnitorName')?.trim();
 
         if (!caseNum && !indemName) {
             showError("Please enter either a Case Number OR Indemnitor's Last Name.");
