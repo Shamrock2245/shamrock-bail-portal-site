@@ -1798,7 +1798,7 @@ function testEmailSimple() {
     return "Error: " + e.message;
   }
 }
-<<<<<<< Updated upstream
+
 
 /**
  * Handles incoming location logs from the Wix Portal
@@ -2109,5 +2109,4 @@ function client_sendToWixPortal(data) {
   return { success: true, documentId: snResult.documentId, message: "No signing links generated (download mode?)" };
 }
 
-=======
->>>>>>> Stashed changes
+
