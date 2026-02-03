@@ -22,7 +22,11 @@ function ADMIN_UpdateAllProperties() {
 
         // --- SIGNNOW INTEGRATION ---
         'SIGNNOW_API_BASE_URL': 'https://api.signnow.com',
-        'SIGNNOW_BASIC_TOKEN': 'REPLACE_WITH_YOUR_BASIC_TOKEN', // <--- PASTE TOKEN HERE
+        'SIGNNOW_API_KEY': 'd7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4', // Primary API Key
+        'SIGNNOW_API_TOKEN': 'd7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4', // Same as API Key for compatibility
+        'SIGNNOW_WEBHOOK_SECRET': 'b4633bfe7f90483abcf4801620aedc59', // For HMAC signature verification
+        'SIGNNOW_CLIENT_ID': '3b4dd51e0a07557e5b0e6b42415759db', // OAuth Client ID
+        'SIGNNOW_BASIC_TOKEN': 'M2I0ZGQ1MWUwYTA3NTU3ZTViMGU2YjQyNDE1NzU5ZGI6YjQ2MzNiZmU3ZjkwNDgzYWJjZjQ4MDE2MjBhZWRjNTk=', // Basic Auth Token
         'SIGNNOW_FOLDER_ID': '79a05a382b38460b95a78d94a6d79a5ad55e89e6',
         'SIGNNOW_TEMPLATE_ID': 'REPLACE_WITH_TEMPLATE_ID',
 
