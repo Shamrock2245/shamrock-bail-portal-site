@@ -26,6 +26,7 @@ import { getGoogleAuthUrl, getFacebookAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
+import { authentication } from 'wix-members-frontend'; // NEW: For persistent sessions
 
 $w.onReady(async function () {
     console.log("🚀 Portal Landing v2.2: Fix Query Scope");
@@ -57,7 +58,12 @@ $w.onReady(async function () {
     // 3. Check for social login result
     if (query.sessionToken) {
         console.log("🔗 Social login session detected, validating...");
+<<<<<<< Updated upstream
         await handleSocialSession(query.sessionToken);
+=======
+        // Pass wixSessionToken from query if present
+        await handleSocialSession(query.sessionToken, query.role, query.wixSessionToken);
+>>>>>>> Stashed changes
         return;
     }
 
@@ -300,7 +306,23 @@ async function handleMagicLinkLogin(token) {
         if (result.ok && result.sessionToken) {
             console.log("✅ Token valid! Session token received");
 
+<<<<<<< Updated upstream
             // Store custom session token in browser
+=======
+            // 1. Apply Persistent Wix Member Session (The Real Fix)
+            if (result.wixSessionToken) {
+                try {
+                    console.log("🔐 Applying persistent Wix Member token...");
+                    await authentication.applySessionToken(result.wixSessionToken);
+                    console.log("✅ Persistent session applied!");
+                } catch (authErr) {
+                    console.error("⚠️ Failed to apply persistent token:", authErr);
+                    // Non-blocking: continue with custom session
+                }
+            }
+
+            // Try to store session token in browser storage
+>>>>>>> Stashed changes
             const stored = setSessionToken(result.sessionToken);
             console.log("📦 Custom session stored:", stored);
 
@@ -349,13 +371,64 @@ async function handleMagicLinkLogin(token) {
  * Uses custom session tokens only (no Wix member sessions)
  * Defaults all users to indemnitor role (defendants use case lookup)
  */
+<<<<<<< Updated upstream
 async function handleSocialSession(sessionToken) {
+=======
+/**
+ * Handle direct session token (from Social OAuth Redirect)
+ * Includes Retry Logic to handle eventual consistency in DB
+ */
+async function handleSocialSession(sessionToken, role, wixSessionToken) {
+>>>>>>> Stashed changes
     console.log("🔐 Processing social session...");
     showMessage("Finalizing login...", "info");
     showLoading();
 
+<<<<<<< Updated upstream
     try {
         // Store custom session token in browser
+=======
+    // 1. Apply Persistent Wix Member Session if available
+    if (wixSessionToken) {
+        try {
+            console.log("🔐 Applying persistent Wix Member token from social login...");
+            await authentication.applySessionToken(wixSessionToken);
+            console.log("✅ Persistent session applied!");
+        } catch (authErr) {
+            console.error("⚠️ Failed to apply persistent token:", authErr);
+        }
+    }
+
+    const maxRetries = 3;
+    let attempt = 0;
+    let session = null;
+    let isValid = false;
+
+    while (attempt < maxRetries && !isValid) {
+        attempt++;
+        try {
+            console.log(`🔍 Validation Attempt ${attempt}/${maxRetries}...`);
+            session = await validateCustomSession(sessionToken);
+
+            if (session && session.valid) { // Check .valid property explicitly
+                isValid = true;
+                console.log("✅ Social Session Validated!");
+            } else {
+                console.warn(`⚠️ Validation failed (Attempt ${attempt}):`, session);
+                if (attempt < maxRetries) {
+                    console.log("⏳ Waiting 1s before retry...");
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        } catch (err) {
+            console.error(`❌ Attempt ${attempt} Error:`, err);
+            if (attempt < maxRetries) await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+
+    if (isValid && session) {
+        // Store in browser and VERIFY
+>>>>>>> Stashed changes
         const stored = setSessionToken(sessionToken);
         console.log("📦 Custom session stored:", stored);
 
