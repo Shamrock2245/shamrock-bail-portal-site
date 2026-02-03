@@ -33,7 +33,7 @@ const CONFIG = {
     MAGIC_LINK_EXPIRY_HOURS: 24,
 
     // Collections
-    SESSIONS_COLLECTION: 'Portal Sessions',
+    SESSIONS_COLLECTION: 'PortalSessions',
     MAGIC_LINKS_COLLECTION: 'Magiclinks',
     CASES_COLLECTION: 'Cases',
 

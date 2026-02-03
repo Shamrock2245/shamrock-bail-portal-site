@@ -10,7 +10,7 @@ function ADMIN_UpdateAllProperties() {
     // -------------------------------------------------------------------------
     const config = {
         // --- API SECURITY ---
-        'GAS_API_KEY': 'shamrock_gas_2026_secure_key_aqhrvpytqw', // Shared secret with Wix
+        'GAS_API_KEY': 'shamrock_placeholder_redacted_for_git', // Shared secret with Wix
         'MCP_API_KEY': 'REPLACE_WITH_MCP_API_KEY',  // Shared secret with Cursor/Context
 
         // --- URLS ---
@@ -44,7 +44,7 @@ function ADMIN_UpdateAllProperties() {
 
         // --- AI & EXTERNAL ---
         'GOOGLE_MAPS_API_KEY': 'REPLACE_WITH_GOOGLE_MAPS_KEY', // Public key with Domain Restrictions
-        'OPENAI_API_KEY': 'REPLACE_WITH_OPENAI_KEY',
+        'OPENAI_API_KEY': 'sk-proj-placeholder-redacted-for-git-security',
 
         'FORM_URL': '', // If using external form
         'FORM_PREFILL_DATA': '',

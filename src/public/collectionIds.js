@@ -24,7 +24,7 @@ export const COLLECTIONS = {
 
   // Portal & Authentication
   PORTAL_USERS: 'Portal Users',                // Portal user accounts (space in name!)
-  PORTAL_SESSIONS: 'Portal Sessions',          // Active portal sessions (space in name!)
+  PORTAL_SESSIONS: 'PortalSessions',           // Active portal sessions (ID: PortalSessions)
   MAGIC_LINKS: 'Magiclinks',                   // Magic link authentication tokens
 
   // Documents & Signing
