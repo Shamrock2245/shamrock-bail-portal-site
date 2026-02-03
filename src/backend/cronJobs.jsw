@@ -1,0 +1,77 @@
+/**
+ * Cron Jobs / Admin Tasks
+ * Filename: backend/cronJobs.jsw
+ * 
+ * Handles programmatic synchronization of the Tenant Config (JSON) 
+ * to the Live Wix CMS Collections.
+ */
+
+import wixData from 'wix-data';
+import { getConfig } from 'backend/config-loader';
+
+/**
+ * Syncs the 'routing.counties' from tenant.json to the 'FloridaCounties' collection.
+ * This ensures the Live DB always matches the codebase configuration.
+ * 
+ * Strategy: Upsert based on 'countySlug'.
+ */
+export async function syncCountiesToCms() {
+    console.log('🔄 Starting CMS County Sync...');
+
+    try {
+        const config = await getConfig();
+        const countiesMap = config.routing.counties;
+        const slugs = Object.keys(countiesMap); // e.g., ['lee', 'collier', 'miami-dade']
+
+        let added = 0;
+        let updated = 0;
+        let errors = 0;
+
+        for (const slug of slugs) {
+            const countyData = countiesMap[slug];
+
+            // 1. Construct the record object
+            // Required Schema Fields from ANTIGRAVITY-FOUNDATION-SPEC
+            const record = {
+                countySlug: slug,
+                countyName: countyData.name,
+                active: true, // If it's in config, it's active
+                primaryPhone: countyData.agentPhone || config.brand.phone, // Fallback to main brand phone
+
+                // Defaults for required schema fields if missing in JSON
+                metaTitle: `Bail Bonds in ${countyData.name} | ${config.brand.name}`,
+                metaDescription: `24/7 Bail Bonds in ${countyData.name}. Call ${countyData.agentPhone || config.brand.phone} for immediate release.`,
+                tier: 2 // Default to Tier 2 until manually promoted
+            };
+
+            // 2. Upsert Logic
+            try {
+                // Check if exists
+                const existing = await wixData.query('FloridaCounties')
+                    .eq('countySlug', slug)
+                    .find({ suppressAuth: true });
+
+                if (existing.items.length > 0) {
+                    // Update existing
+                    const itemToUpdate = { ...existing.items[0], ...record };
+                    await wixData.update('FloridaCounties', itemToUpdate, { suppressAuth: true });
+                    updated++;
+                } else {
+                    // Insert new
+                    await wixData.insert('FloridaCounties', record, { suppressAuth: true });
+                    added++;
+                }
+            } catch (err) {
+                console.error(`❌ Failed to sync county: ${slug}`, err);
+                errors++;
+            }
+        }
+
+        console.log(`✅ Sync Complete: ${added} added, ${updated} updated, ${errors} errors.`);
+        return { success: true, added, updated, errors };
+
+    } catch (globalError) {
+        console.error('CRITICAL: County Sync Failed', globalError);
+        return { success: false, error: globalError.message };
+    }
+}

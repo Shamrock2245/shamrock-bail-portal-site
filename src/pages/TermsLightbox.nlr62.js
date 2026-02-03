@@ -32,7 +32,7 @@ function setupEventHandlers() {
                 wixWindow.lightbox.close({ acknowledged: true });
             });
         }
-    } catch (e) {}
+    } catch (e) { }
 
     try {
         if ($w('#acceptBtn')) {
@@ -40,7 +40,7 @@ function setupEventHandlers() {
                 wixWindow.lightbox.close({ acknowledged: true, accepted: true });
             });
         }
-    } catch (e) {}
+    } catch (e) { }
 }
 
 function getTermsText() {
@@ -75,7 +75,7 @@ Florida law applies. Disputes resolved in Lee County courts.
 CONTACT:
 Shamrock Bail Bonds
 Phone: 239-332-2245
-Email: admin@shamrockbailbonds.biz
+For legal questions, please contact our support team.
 
 Last Updated: January 2026`;
 }

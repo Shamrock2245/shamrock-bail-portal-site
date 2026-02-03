@@ -66,7 +66,7 @@ Agents may:
 ### 2.2 Security Rules
 
 - **NO API keys in frontend code**
-- **Secrets Manager only**
+- **Secrets Manager only** (accessed via `src/backend/secretsManager.jsw`)
 - Backend logic goes in `.jsw` files only
 - Never store PII unnecessarily in Wix collections
 - Never duplicate data already handled by SignNow or external systems
@@ -107,6 +107,12 @@ No additional data capture, retries, previews, or interception is permitted.
   - scrapers
 
 Example: `lee`, `collier`, `charlotte`
+
+### 4.2 County Configuration Source (NEW)
+**Truth Source:** `src/backend/config/tenant.json`
+- All active counties must be defined here.
+- Controls routing, phone numbers, and features.
+- Hydrated at runtime via `config-loader.jsw`.
 
 ### 4.2 County Tier Model
 - **Tier 1**: Full operations, active scraping, priority routing, rich content

@@ -259,15 +259,15 @@ Code changes pushed to GitHub must be synced to Wix:
 3. Publish from Wix Editor
 
 ### Staff Email Configuration
-Hardcoded in `portal-auth.jsw` (line 885-888):
-```javascript
-const STAFF_EMAILS = [
-  'admin@shamrockbailbonds.biz',
-  'shamrockbailoffice@gmail.com'
-];
+Managed in `src/backend/config/tenant.json`:
+```json
+"staff": {
+  "adminEmail": "admin@shamrockbailbonds.biz",
+  "supportEmail": "shamrockbailoffice@gmail.com"
+}
 ```
 
-To add new staff, update this array and push to GitHub.
+To add new staff, update `tenant.json` and push to GitHub.
 
 ---
 

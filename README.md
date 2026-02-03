@@ -17,7 +17,7 @@ This project is the official Shamrock Bail Bonds Portal. It runs on **Wix Velo**
 ## 🛠 Tech Stack
 *   **Frontend:** Wix Velo (JS), Members Area, Wix Forms.
 *   **Backend:** Google Apps Script (GAS) Web App (Serverless).
-*   **AI/LLM:** Google Gemini 1.5 Flash (via GAS `UrlFetchApp`).
+*   **AI/LLM:** OpenAI 4o mini (via GAS `UrlFetchApp`). - this is actually openAI 4o mini (2/2/26) - Gemini is not available for use in GAS - please update this. 
 *   **Database:** Wix Collections (`IntakeQueue`, `Cases`) + Google Sheets (Backups).
 *   **Signatures:** SignNow API.
 *   **Deployment:** `clasp` (GAS) + GitHub Integration (Wix).
@@ -63,9 +63,10 @@ The dashboard now includes a direct integration with **SwipeSimple** for payment
 
 ### Wix Side
 *   **Secrets Manager:**
-    *   `GAS_WEB_APP_URL`: The deployed executable URL.
+    *   `GAS_WEB_APP_URL` (Managed via `backend/secretsManager.jsw`).
     *   `TWILIO_ACCOUNT_SID` / `AUTH_TOKEN`.
     *   `GOOGLE_MAPS_API_KEY`.
+    *   *Note: See `PHASE1_SUMMARY.md` for new centralized config details.*
 
 ### GAS Side (Backend)
 The backend is in `backend-gas/`.

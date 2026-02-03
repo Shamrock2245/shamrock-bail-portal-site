@@ -31,7 +31,7 @@ function setupEventHandlers() {
                 wixWindow.lightbox.close({ acknowledged: true });
             });
         }
-    } catch (e) {}
+    } catch (e) { }
 }
 
 function getPrivacyText() {
@@ -61,9 +61,7 @@ SECURITY:
 We use encryption and secure storage to protect your data.
 
 CONTACT:
-Shamrock Bail Bonds
-Phone: 239-332-2245
-Email: admin@shamrockbailbonds.biz
+We respect your privacy. All data is processed securely and is never sold to third parties. For inquiries, please contact our support team.
 
 Last Updated: January 2026`;
 }

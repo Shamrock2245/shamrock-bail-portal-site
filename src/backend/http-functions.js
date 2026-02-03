@@ -11,9 +11,12 @@ import {
     markIntakeProcessed,
     getIndemnitorProfile
 } from 'backend/wixApi.jsw';
-import * as gasIntegration from 'backend/gasIntegration.jsw';
-import wixData from 'wix-data';
 import { getSecret } from 'wix-secrets-backend';
+import wixData from 'wix-data';
+import { logSafe } from 'backend/utils';
+import * as gasIntegration from 'backend/gasIntegration.jsw';
+import { syncCountiesToCms } from 'backend/cronJobs';
+
 import { createCustomSession, lookupUserByContact } from 'backend/portal-auth';
 
 /**
@@ -55,8 +58,16 @@ export async function post_apiSyncCaseData(request) {
         }
 
         // Verify API key against stored secret
-        const validApiKey = await getSecret('GAS_API_KEY');
+        const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
+
+        // Fail closed if secret is missing
+        if (!validApiKey) {
+            console.error('CRITICAL: GAS_API_KEY secret is missing. Blocking request.');
+            return serverError({ body: { success: false, message: 'Server misconfiguration' } });
+        }
+
         if (body.apiKey !== validApiKey) {
+            logSafe('Invalid API Key attempt', { provided: body.apiKey }, 'warn');
             return forbidden({
                 body: { success: false, message: 'Invalid API key' }
             });
@@ -312,7 +323,7 @@ export async function post_webhookSignnow(request) {
         if (eventType === 'document.complete' || eventType === 'document_complete') {
             // Document has been fully signed
             // Use a stored API key for webhook authentication
-            const apiKey = process.env.GAS_API_KEY || 'webhook-internal';
+            const apiKey = await getSecret('GAS_API_KEY').catch(() => 'webhook-internal');
 
             await updateDocumentStatus(documentId, 'signed', apiKey);
 
@@ -574,6 +585,7 @@ export async function post_smsSend(request) {
 
         const validApiKey = await getSecret('GAS_API_KEY');
         if (body.apiKey !== validApiKey) {
+            logSafe('Invalid SMS API Key', { provided: body.apiKey }, 'warn');
             return forbidden({
                 body: { success: false, message: 'Invalid API key' }
             });
@@ -635,6 +647,7 @@ export async function post_smsSigningLink(request) {
 
         const validApiKey = await getSecret('GAS_API_KEY');
         if (body.apiKey !== validApiKey) {
+            logSafe('Invalid Link API Key', { provided: body.apiKey }, 'warn');
             return forbidden({
                 body: { success: false, message: 'Invalid API key' }
             });
@@ -700,16 +713,16 @@ export async function post_twilioStatus(request) {
             accountSid: params.get('AccountSid')
         };
 
-        console.log('📱 Twilio Status Callback:', statusData);
+        logSafe('📱 Twilio Status Callback:', statusData);
 
         // Log delivery status for tracking
         if (statusData.messageStatus === 'delivered') {
             console.log(`✅ SMS Delivered: ${statusData.messageSid} to ${statusData.to}`);
         } else if (statusData.messageStatus === 'undelivered' || statusData.messageStatus === 'failed') {
-            console.error(`❌ SMS Failed: ${statusData.messageSid} to ${statusData.to}`, {
+            logSafe(`❌ SMS Failed: ${statusData.messageSid} to ${statusData.to}`, {
                 errorCode: statusData.errorCode,
                 errorMessage: statusData.errorMessage
-            });
+            }, 'error');
 
             // Optionally store failed messages for retry or notification
             try {
@@ -1446,5 +1459,29 @@ export async function post_updateIntakeStatus(request) {
         return serverError({
             body: { success: false, message: error.message }
         });
+    }
+}
+
+/**
+ * GET /_functions/adminSyncCounties
+ * Trigger CMS sync for counties (Secure Admin only)
+ * Usage: /_functions/adminSyncCounties?apiKey=YOUR_GAS_KEY
+ */
+export async function get_adminSyncCounties(request) {
+    try {
+        const apiKey = request.query.apiKey;
+        const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
+
+        if (!validApiKey || apiKey !== validApiKey) {
+            return forbidden({ body: { error: 'Unauthorized' } });
+        }
+
+        const result = await syncCountiesToCms();
+        return ok({
+            headers: { "Content-Type": "application/json" },
+            body: result
+        });
+    } catch (error) {
+        return serverError({ body: { error: error.message } });
     }
 }
