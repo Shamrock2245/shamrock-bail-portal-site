@@ -147,26 +147,22 @@ async function loadCounties() {
             value: item.countyName // Using name as value to match backend expectation
         }));
 
-        if ($w('#county').valid) {
-            $w('#county').options = countyOptions;
-            $w('#county').placeholder = "Select County";
-        }
+        safeSetOptions('#county', countyOptions);
+        safeSetPlaceholder('#county', 'Select County');
     } catch (error) {
         console.error('Error loading counties:', error);
 
         // Audit Fix: User Feedback & Fallback
-        if ($w('#county').valid) {
-            const fallbackCounties = [
-                { label: "Lee", value: "Lee" },
-                { label: "Collier", value: "Collier" },
-                { label: "Charlotte", value: "Charlotte" },
-                { label: "Hendry", value: "Hendry" },
-                { label: "Glades", value: "Glades" }
-            ];
-            $w('#county').options = fallbackCounties;
-            $w('#county').placeholder = "Select County (Offline Mode)";
-            showError("Network warning: Using offline county list.");
-        }
+        const fallbackCounties = [
+            { label: "Lee", value: "Lee" },
+            { label: "Collier", value: "Collier" },
+            { label: "Charlotte", value: "Charlotte" },
+            { label: "Hendry", value: "Hendry" },
+            { label: "Glades", value: "Glades" }
+        ];
+        safeSetOptions('#county', fallbackCounties);
+        safeSetPlaceholder('#county', 'Select County (Offline Mode)');
+        showError("Network warning: Using offline county list.");
     }
 }
 
@@ -286,11 +282,11 @@ function formatCurrency(amount) {
  */
 function setupEventListeners() {
     // CRITICAL: Check if submit button exists
-    if (!$w('#btnSubmitForm').valid) {
-        console.error("❌ CRITICAL ERROR: '#btnSubmitForm' not found on page. Check Element ID in Editor!");
+    if (!safeIsValid('#btnSubmitInfo')) {
+        console.error("❌ CRITICAL ERROR: '#btnSubmitInfo' not found on page. Check Element ID in Editor!");
         showError("Development Error: Submit button ID mismatch. Please check console.");
     } else {
-        $w('#btnSubmitForm').onClick(handleSubmitIntake);
+        safeOnClick('#btnSubmitInfo', handleSubmitIntake);
         console.log("✅ Submit button handler attached");
     }
 
@@ -333,8 +329,8 @@ async function handleSubmitIntake() {
 
     try {
         isSubmitting = true;
-        safeDisable('#btnSubmitForm');
-        safeSetText('#btnSubmitForm', 'Submitting...');
+        safeDisable('#btnSubmitInfo');
+        safeSetText('#btnSubmitInfo', 'Submitting...');
         showLoading(true);
 
         const validation = validateIntakeForm();
@@ -378,8 +374,8 @@ async function handleSubmitIntake() {
         showError(error.message || 'Error submitting form.');
     } finally {
         isSubmitting = false;
-        safeEnable('#btnSubmitForm');
-        safeSetText('#btnSubmitForm', 'Submit Info');
+        safeEnable('#btnSubmitInfo');
+        safeSetText('#btnSubmitInfo', 'Submit Info');
         showLoading(false);
     }
 }
@@ -595,6 +591,9 @@ function showSuccess(message) {
 function safeSetValue(selector, value) { try { if ($w(selector).valid) $w(selector).value = value || ''; } catch (e) { } }
 function safeGetValue(selector) { try { return $w(selector).valid ? $w(selector).value : ''; } catch (e) { return ''; } }
 function safeSetText(selector, text) { try { if ($w(selector).valid) $w(selector).text = text || ''; } catch (e) { } }
+function safeSetOptions(selector, options) { try { if ($w(selector).valid) $w(selector).options = options || []; } catch (e) { } }
+function safeSetPlaceholder(selector, text) { try { if ($w(selector).valid) $w(selector).placeholder = text || ''; } catch (e) { } }
+function safeIsValid(selector) { try { return $w(selector).valid; } catch (e) { return false; } }
 function safeShow(selector) { try { if ($w(selector).valid) $w(selector).show(); } catch (e) { } }
 function safeHide(selector) { try { if ($w(selector).valid) $w(selector).hide(); } catch (e) { } }
 function safeDisable(selector) { try { if ($w(selector).valid) $w(selector).disable(); } catch (e) { } }
@@ -661,8 +660,9 @@ function setupDefendantLink() {
 
             if (result.success && result.sessionToken) {
                 showSuccess(result.message);
+                await setSessionToken(result.sessionToken);
                 // Redirect to Defendant Portal with new token
-                wixLocation.to(`/portal-defendant?st=${encodeURIComponent(result.sessionToken)}`);
+                wixLocation.to(`/portal-defendant?st=${encodeURIComponent(result.sessionToken)}&autoPaperwork=1`);
             } else {
                 showError(result.message || 'Could not find case. Check details.');
                 safeSetText('#btnSubmitLink', 'Find My Paperwork');

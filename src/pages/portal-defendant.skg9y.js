@@ -40,6 +40,7 @@ $w.onReady(async function () {
     try {
         // Check for session token in URL (passed from magic link redirect)
         const query = wixLocation.query;
+        const shouldAutoStartPaperwork = query.autoPaperwork === '1' || query.autoPaperwork === 'true';
         if (query.st) {
             console.log("🔗 Session token in URL, storing...");
             setSessionToken(query.st);
@@ -116,6 +117,7 @@ $w.onReady(async function () {
         const data = await getDefendantDetails(sessionToken);
         const name = data?.firstName || "Client";
         currentSession.email = data?.email || ""; // Store retrieved email
+        currentSession.paperworkStatus = data?.paperworkStatus || currentSession.paperworkStatus;
         // Glue Fix: Ensure SignNow flow uses the Case Number we just found
         if (data?.caseNumber && data.caseNumber !== "Pending") {
             currentSession.caseId = data.caseNumber;
@@ -148,6 +150,11 @@ $w.onReady(async function () {
             }
         } catch (e) {
             console.error('Error populating dashboard data:', e);
+        }
+
+        if (shouldAutoStartPaperwork) {
+            console.log("📄 Auto-starting defendant paperwork flow...");
+            await handlePaperworkStart();
         }
 
         // Listeners moved to top of onReady for eager loading

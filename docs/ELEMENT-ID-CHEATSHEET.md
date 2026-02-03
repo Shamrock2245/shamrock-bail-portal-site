@@ -74,6 +74,11 @@ Secure area for indemnitors and defendants.
 | `#pendingDocsRepeater` | List of unsigned documents. |
 | `#requiredDocsRepeater` | List of completed/required uploads. |
 | `#errorMessage` | Universal error feedback text. |
+| `#btnSubmitInfo` | Indemnitor portal intake submit button. |
+| `#btnSubmitLink` | Indemnitor portal "Find My Paperwork" button. |
+| `#inputLinkCaseNumber` | Indemnitor portal case number lookup input. |
+| `#inputLinkIndemnitorName` | Indemnitor portal indemnitor last name lookup input. |
+| `#county` | Indemnitor portal county dropdown. |
 
 ---
 
