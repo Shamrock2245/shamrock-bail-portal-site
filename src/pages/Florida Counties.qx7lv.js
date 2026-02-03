@@ -343,7 +343,6 @@ async function populateMainUI(county, currentSlug) {
     // POPULATE FAQs (Repeater) - Now pulls from CMS Faqs collection
     const faqRep = $w('#repeaterFAQ');
 
-    // First try to load from CMS Faqs collection filtered by relatedCounty
     let faqs = [];
     try {
         const countyName = county.name || county.countyName || county.county_name || "Unknown County";
@@ -351,18 +350,29 @@ async function populateMainUI(county, currentSlug) {
 
         let faqResult;
 
-        // 1. Try 'Import22' (Correct collection ID - no space) first
+        // 1. Try 'Import22' (Primary Collection)
+        // STRATEGY: Try strict match "Lee County" first, then "Lee"
         try {
-            console.log("Checking Import22 (Faqs) for County...");
+            // Attempt 1: "Lee County"
             faqResult = await wixData.query('Import22')
                 .eq('isActive', true)
                 .eq('relatedCounty', `${countyName} County`)
                 .ascending('sortOrder')
                 .limit(15)
                 .find();
-        } catch (e) { console.warn("Import22 failed, trying 'Faqs' display name..."); }
 
-        // 2. Try 'Faqs' display name if Import22 failed or empty
+            // Attempt 2: "Lee" (if no results)
+            if (faqResult.items.length === 0) {
+                faqResult = await wixData.query('Import22')
+                    .eq('isActive', true)
+                    .eq('relatedCounty', countyName)
+                    .ascending('sortOrder')
+                    .limit(15)
+                    .find();
+            }
+        } catch (e) { console.warn("Import22 failed, trying 'Faqs'..."); }
+
+        // 2. Fallback to 'Faqs' Collection
         if (!faqResult || faqResult.items.length === 0) {
             try {
                 faqResult = await wixData.query('Faqs')
@@ -371,43 +381,51 @@ async function populateMainUI(county, currentSlug) {
                     .ascending('sortOrder')
                     .limit(15)
                     .find();
-            } catch (e) { console.warn("Faqs display name query failed."); }
+            } catch (e) { }
         }
 
         if (faqResult && faqResult.items.length > 0) {
             console.log(`✅ Loaded ${faqResult.items.length} FAQs from CMS for ${countyName}`);
-            // Map CMS fields to expected format
             faqs = faqResult.items.map(item => ({
                 _id: item._id,
                 question: item.title || item.question,
                 answer: item.answer
             }));
         } else {
-            // Fallback to embedded county.content.faq if no CMS FAQs found
-            console.warn(`⚠️ No CMS FAQs for ${countyName} (checked Import22 & Faqs), checking embedded data...`);
+            console.warn(`⚠️ No CMS FAQs for ${countyName}, using embedded fallback...`);
             faqs = (county.content && county.content.faq) || [];
         }
     } catch (err) {
-        console.error('❌ Error loading FAQs from CMS:', err);
-        // Fallback to embedded data on error
+        console.error('❌ Error loading FAQs:', err);
         faqs = (county.content && county.content.faq) || [];
     }
 
     try {
         if (faqs.length > 0) {
+            faqRep.data = []; // Clear first to force redraw
+
             faqRep.onItemReady(($item, itemData) => {
-                // Set Text Content - support both CMS and embedded field names
                 const question = itemData.question || itemData.title || 'Question';
                 const answer = itemData.answer || itemData.a || 'Answer';
 
                 $item('#textQuestion').text = question;
                 $item('#textAnswer').text = answer;
 
-                // Handle Accordion Interaction (Clean Toggle)
+                // Initialize State
+                $item('#groupAnswer').collapse();
+                // If using an SVG arrow, set initial rotation if needed
+                // try { $item('#iconArrow').src = "wix:vector://v1/arrow_down.svg/..."; } catch(e){}
+
+                // Handle Accordion Interaction
+                // We click the CONTAINER (Header) to toggle the GROUP (Answer)
                 $item('#containerQuestion').onClick(() => {
                     const answerGroup = $item('#groupAnswer');
+                    const arrow = $item('#iconArrow'); // Assuming ID from standard UI kit
+
                     if (answerGroup.collapsed) {
                         answerGroup.expand();
+                        // Optional: Rotate arrow
+                        // if(arrow) arrow.style... (Wix Velo doesn't support style directly on vectors, usually switch src or rotate via animation)
                     } else {
                         answerGroup.collapse();
                     }
@@ -416,13 +434,12 @@ async function populateMainUI(county, currentSlug) {
 
             // Ensure unique IDs
             faqRep.data = faqs.map((f, i) => ({ ...f, _id: f._id || `faq-${i}-${Date.now()}` }));
+
             faqRep.expand();
             try { $w('#sectionFAQ').expand(); } catch (e) { }
-            console.log(`📝 FAQ Repeater populated with ${faqs.length} items`);
         } else {
             faqRep.collapse();
             try { $w('#sectionFAQ').collapse(); } catch (e) { }
-            console.log('📝 No FAQs available for this county');
         }
     } catch (e) {
         console.warn("FAQ Repeater Error:", e);
