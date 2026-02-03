@@ -26,6 +26,8 @@ let currentSession = null;
 let indemnitorData = null; // Replaces memberData
 let currentIntake = null;
 let isSubmitting = false;
+let submitHandlerAttached = false;
+let eventListenersReady = false;
 
 $w.onReady(async function () {
     // SEO: Prevent Indexing (Protected Page)
@@ -45,7 +47,7 @@ $w.onReady(async function () {
     }
 
     await initializePage();
-    
+
     // 2. Setup Listeners AFTER page initialization (when all containers are rendered)
     setupEventListeners();
 });
@@ -120,9 +122,6 @@ async function initializePage() {
         } else {
             showBondDashboard();
         }
-
-        // 6. Setup Listeners
-        setupEventListeners();
 
         // Hide loading
         showLoading(false);
@@ -284,6 +283,9 @@ function formatCurrency(amount) {
  * Setup all event listeners
  */
 function setupEventListeners() {
+    if (eventListenersReady) return;
+    eventListenersReady = true;
+
     console.log("🔧 setupEventListeners: Starting...");
     
     // DIAGNOSTIC: List all buttons on page
@@ -294,32 +296,8 @@ function setupEventListeners() {
         console.warn("Could not enumerate buttons:", e);
     }
     
-    // CRITICAL: Check if submit button exists
-    console.log("🔍 Checking for #btnSubmitInfo...");
-    if (!safeIsValid('#btnSubmitInfo')) {
-        console.error("❌ CRITICAL ERROR: '#btnSubmitInfo' not found on page. Check Element ID in Editor!");
-        console.error("   Expected ID: btnSubmitInfo");
-        console.error("   Check Wix Editor → Properties Panel → Element ID");
-        showError("Development Error: Submit button ID mismatch. Please check console.");
-    } else {
-        console.log("✅ Found #btnSubmitInfo, attaching handler...");
-        safeOnClick('#btnSubmitInfo', handleSubmitIntake);
-        console.log("✅ Submit button handler attached to #btnSubmitInfo");
-        
-        // DIAGNOSTIC: Verify handler was attached
-        try {
-            const btn = $w('#btnSubmitInfo');
-            console.log("   Button properties:", {
-                id: btn.id,
-                label: btn.label,
-                enabled: btn.enabled,
-                visible: btn.visible,
-                collapsed: btn.collapsed
-            });
-        } catch (e) {
-            console.error("   Could not read button properties:", e);
-        }
-    }
+    // CRITICAL: Attach submit handler once the intake button is actually rendered
+    attachSubmitHandler();
 
     safeOnClick('#signPaperworkBtn', handleSignPaperwork);
     safeOnClick('#makePaymentBtn', handleMakePayment);
@@ -342,6 +320,46 @@ function setupEventListeners() {
 
     // Setup Defendant Link Feature (New)
     setupDefendantLink();
+}
+
+function attachSubmitHandler(attempt = 0) {
+    if (submitHandlerAttached) return;
+
+    const maxAttempts = 20;
+    const delayMs = 250;
+
+    console.log(`🔍 Checking for #btnSubmitInfo... (attempt ${attempt + 1}/${maxAttempts})`);
+    if (!safeIsValid('#btnSubmitInfo')) {
+        if (attempt + 1 >= maxAttempts) {
+            console.error("❌ CRITICAL ERROR: '#btnSubmitInfo' not found on page. Check Element ID in Editor!");
+            console.error("   Expected ID: btnSubmitInfo");
+            console.error("   Check Wix Editor → Properties Panel → Element ID");
+            showError("Development Error: Submit button ID mismatch. Please check console.");
+            return;
+        }
+
+        setTimeout(() => attachSubmitHandler(attempt + 1), delayMs);
+        return;
+    }
+
+    console.log("✅ Found #btnSubmitInfo, attaching handler...");
+    safeOnClick('#btnSubmitInfo', handleSubmitIntake);
+    submitHandlerAttached = true;
+    console.log("✅ Submit button handler attached to #btnSubmitInfo");
+
+    // DIAGNOSTIC: Verify handler was attached
+    try {
+        const btn = $w('#btnSubmitInfo');
+        console.log("   Button properties:", {
+            id: btn.id,
+            label: btn.label,
+            enabled: btn.enabled,
+            visible: btn.visible,
+            collapsed: btn.collapsed
+        });
+    } catch (e) {
+        console.error("   Could not read button properties:", e);
+    }
 }
 
 /**
