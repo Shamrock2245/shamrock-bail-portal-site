@@ -41,7 +41,7 @@ export const COLLECTIONS = {
 
   // Location & County Data
   FLORIDA_COUNTIES: 'FloridaCounties',         // Florida county data (Verified: No space in ID)
-  COUNTIES: 'Import21',                        // General county data (Alias from screenshot)
+  // COUNTIES: 'Import21',                     // DEPRECATED: Empty collection, use FLORIDA_COUNTIES instead
   GEOLOCATION_CACHE: 'Geolocationcache',       // Cached geolocation lookups
   USER_LOCATIONS: 'Userlocations',             // User location check-ins
 
@@ -54,7 +54,7 @@ export const COLLECTIONS = {
   MEMBER_PROFILES: 'Memberprofiles',           // Member profile information
 
   // Supporting Collections
-  FAQS: 'Faqs',                            // Frequently asked questions (Alias from screenshot)
+  FAQS: 'Import22',                            // Frequently asked questions (Collection ID: Import22, Display: Faqs)
   TESTIMONIALS: 'Testimonials',                // Client testimonials
   CONTACT_SUBMISSIONS: 'Contactsubmissions',   // Contact form submissions
   BAIL_SCHOOL_SIGNUPS: 'Bailschoolsignups',    // Bail school interest signups
@@ -104,7 +104,7 @@ export const COLLECTION_DISPLAY_NAMES = {
   [COLLECTIONS.PAYMENT_PLANS]: 'Payment Plans',
   [COLLECTIONS.COMMON_CHARGES]: 'Common Charges',
   [COLLECTIONS.FLORIDA_COUNTIES]: 'Florida Counties',
-  [COLLECTIONS.COUNTIES]: 'Counties',
+  // [COLLECTIONS.COUNTIES]: 'Counties', // DEPRECATED: Import21 is empty
   [COLLECTIONS.GEOLOCATION_CACHE]: 'Geolocation Cache',
   [COLLECTIONS.USER_LOCATIONS]: 'User Locations',
   [COLLECTIONS.ANALYTICS_EVENTS]: 'Analytics Events',

@@ -31,7 +31,7 @@ async function debugCMS() {
     console.log("🕵️‍♀️ STARTING CMS DIAGNOSTIC CHECK...");
 
     const collectionsToCheck = [
-        'Faqs', 'Import 22', 'Import22', // Potential FAQ IDs (Screenshot showed 'Import 22')
+        'Import22', 'Faqs', // Potential FAQ IDs (Import22 is the correct collection ID)
         'CommonCharges', 'Common Charges'
     ];
 
@@ -266,30 +266,30 @@ async function setupFAQ() {
         let result;
         const pagePath = '/how-bail-works';
 
-        // 1. Try 'Import 22' (Exact ID from Screenshot)
+        // 1. Try 'Import22' (Correct Collection ID - no space)
         // STRATEGY: Try specific first, then broad (removing active/page filters)
         try {
-            console.log("Checking Import 22...");
+            console.log("Checking Import22 (Faqs collection)...");
             // Attempt 1: Strict (Active + Page)
-            result = await wixData.query('Import 22').eq('isActive', true).contains('relatedPage', pagePath).ascending('sortOrder').limit(20).find();
+            result = await wixData.query('Import22').eq('isActive', true).contains('relatedPage', pagePath).ascending('sortOrder').limit(20).find();
 
             // Attempt 2: Active only
             if (result.items.length === 0) {
                 console.log("...Strict search empty. Trying active items...");
-                result = await wixData.query('Import 22').eq('isActive', true).limit(20).find();
+                result = await wixData.query('Import22').eq('isActive', true).limit(20).find();
             }
 
             // Attempt 3: ANYTHING (Just to get data on screen)
             if (result.items.length === 0) {
-                console.log("...Active search empty. Fetching ANY items from Import 22...");
-                result = await wixData.query('Import 22').limit(20).find();
+                console.log("...Active search empty. Fetching ANY items from Import22...");
+                result = await wixData.query('Import22').limit(20).find();
             }
 
         } catch (e) {
-            console.warn("Import 22 query failed, trying 'Faqs'...", e);
+            console.warn("Import22 query failed, trying 'Faqs' display name...", e);
         }
 
-        // 2. Try 'Faqs' (Standard ID) if Import 22 failed
+        // 2. Try 'Faqs' display name if Import22 failed
         if (!result || result.items.length === 0) {
             try {
                 // Same fallback strategy
@@ -304,7 +304,7 @@ async function setupFAQ() {
             console.log(`✅ Loaded ${result.items.length} FAQs from CMS.`);
             data = result.items;
         } else {
-            console.warn("⚠️ No FAQs found in either Import 22 or Faqs collections.");
+            console.warn("⚠️ No FAQs found in either Import22 or Faqs collections.");
         }
 
     } catch (err) {

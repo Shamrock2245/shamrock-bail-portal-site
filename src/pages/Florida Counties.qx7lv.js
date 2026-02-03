@@ -290,7 +290,7 @@ async function populateMainUI(county) {
 
     // About Section Headers
     // Header often has IDs like: #aboutHeader, #aboutTitle, #textAboutCounty
-    setText(['#aboutHeader', '#aboutTitle', '#textAboutCounty', '#aboutSectionTitle'], `About Bail Bonds in ${county.county_name} County`);
+    setText(['#aboutHeader', '#aboutTitle', '#textAboutCounty', '#aboutSectionTitle'], `About Bail Bonds in ${county.county_name} County, Florida`);
     setText(['#aboutBody', '#aboutText', '#aboutDescription'], county.content.about_county);
 
     // Why Choose Us
@@ -325,8 +325,8 @@ async function populateMainUI(county) {
     // 1. Hero Call Button
     setLink(['#heroCallButton', '#callShamrockBtn', '#callCountiesBtn'], primaryPhoneLink, county.content.hero_cta_primary || "Call Now");
 
-    // 2. Secondary/Start Button (Link to specific start page or process)
-    setLink(['#heroStartButton', '#startBailBtn'], "/bail-bonds", "Start Bail Bond");
+    // 2. Secondary/Start Button (Link to portal landing page with county context)
+    setLink(['#heroStartButton', '#startBailBtn'], `/portal-landing?county=${county.slug || county.countySlug || countySlug}`, "Start Bail Bond");
 
     // Jail Address (if element exists and data provided)
     try { $w('#jailAddress').collapse(); } catch (e) { }
@@ -342,27 +342,27 @@ async function populateMainUI(county) {
 
         let faqResult;
 
-        // 1. Try 'Import 22' (Exact ID from Screenshot) first
+        // 1. Try 'Import22' (Correct collection ID - no space) first
         try {
-            console.log("Checking Import 22 for County...");
-            faqResult = await wixData.query('Import 22')
+            console.log("Checking Import22 (Faqs) for County...");
+            faqResult = await wixData.query('Import22')
                 .eq('isActive', true)
-                .contains('relatedCounty', countyName)
+                .eq('relatedCounty', `${countyName} County`)
                 .ascending('sortOrder')
                 .limit(15)
                 .find();
-        } catch (e) { console.warn("Import 22 failed, trying 'Faqs'..."); }
+        } catch (e) { console.warn("Import22 failed, trying 'Faqs' display name..."); }
 
-        // 2. Try 'Faqs' if Import 22 failed or empty
+        // 2. Try 'Faqs' display name if Import22 failed or empty
         if (!faqResult || faqResult.items.length === 0) {
             try {
                 faqResult = await wixData.query('Faqs')
                     .eq('isActive', true)
-                    .contains('relatedCounty', countyName)
+                    .eq('relatedCounty', `${countyName} County`)
                     .ascending('sortOrder')
                     .limit(15)
                     .find();
-            } catch (e) { console.warn("Faqs query failed."); }
+            } catch (e) { console.warn("Faqs display name query failed."); }
         }
 
         if (faqResult && faqResult.items.length > 0) {
@@ -375,7 +375,7 @@ async function populateMainUI(county) {
             }));
         } else {
             // Fallback to embedded county.content.faq if no CMS FAQs found
-            console.warn(`⚠️ No CMS FAQs for ${countyName} (checked Import 22 & Faqs), checking embedded data...`);
+            console.warn(`⚠️ No CMS FAQs for ${countyName} (checked Import22 & Faqs), checking embedded data...`);
             faqs = (county.content && county.content.faq) || [];
         }
     } catch (err) {
@@ -456,7 +456,7 @@ async function loadNearbyCounties(region, currentSlug) {
 
 async function debugCMS() {
     console.log("🕵️‍♀️ STARTING CMS DIAGNOSTIC CHECK (County Page)...");
-    const collectionsToCheck = ['Faqs', 'Import 22'];
+    const collectionsToCheck = ['Import22', 'Faqs', 'FloridaCounties'];
 
     for (const colId of collectionsToCheck) {
         try {
