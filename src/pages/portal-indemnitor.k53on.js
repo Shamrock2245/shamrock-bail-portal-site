@@ -33,10 +33,7 @@ $w.onReady(async function () {
 
     console.log("🚀 Indemnitor Portal: Page Code Loaded");
 
-    // 0. Setup Listeners IMMEDIATELY (so buttons work even if data loads slowly)
-    setupEventListeners();
-
-    // 0.5 Populate counties on page load
+    // 0.5 Populate counties on page load (safe to do early)
     await loadCounties();
 
     // 1. Handle Magic Link Token from URL
@@ -48,6 +45,9 @@ $w.onReady(async function () {
     }
 
     await initializePage();
+    
+    // 2. Setup Listeners AFTER page initialization (when all containers are rendered)
+    setupEventListeners();
 });
 
 /**
