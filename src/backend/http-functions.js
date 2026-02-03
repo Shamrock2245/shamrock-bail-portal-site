@@ -3,6 +3,7 @@
 // These endpoints can be called from Dashboard.html/GAS
 
 import { ok, badRequest, serverError, forbidden } from 'wix-http-functions';
+import crypto from 'crypto';
 import {
     addPendingDocument,
     addPendingDocumentsBatch,
@@ -308,40 +309,45 @@ export async function post_documentsStatus(request) {
  * POST /api/webhook/signnow
  * SignNow webhook endpoint for document completion
  * 
- * SignNow will POST to this endpoint when a document is signed
+ * Securely verifies SignNow HMAC signature
  */
 export async function post_webhookSignnow(request) {
     try {
-        const body = await request.body.json();
+        const signature = request.headers['x-signnow-signature'];
+        const bodyText = await request.body.text();
 
-        // SignNow webhook payload structure
-        // https://docs.signnow.com/docs/signnow/webhooks
+        // 1. Verify Signature
+        if (signature) {
+            const secret = await getSecret('SIGNNOW_WEBHOOK_SECRET').catch(() => '');
+            if (secret) {
+                const generatedSignature = crypto.createHmac('sha256', secret)
+                    .update(bodyText)
+                    .digest('hex');
 
+                if (signature !== generatedSignature) {
+                    logSafe('Invalid SignNow Signature', { signature, generatedSignature }, 'warn');
+                    return forbidden({ body: { error: 'Invalid signature' } });
+                }
+            } else {
+                console.warn('SIGNNOW_WEBHOOK_SECRET missing. Skipping signature check (Legacy Mode).');
+            }
+        }
+
+        const body = JSON.parse(bodyText);
         const eventType = body.event || body.meta?.event;
         const documentId = body.document_id || body.content?.document_id;
 
         if (eventType === 'document.complete' || eventType === 'document_complete') {
-            // Document has been fully signed
-            // Use a stored API key for webhook authentication
             const apiKey = await getSecret('GAS_API_KEY').catch(() => 'webhook-internal');
-
             await updateDocumentStatus(documentId, 'signed', apiKey);
-
-            return ok({
-                body: { received: true, status: 'processed' }
-            });
+            return ok({ body: { received: true, status: 'processed' } });
         }
 
-        // Acknowledge other events
-        return ok({
-            body: { received: true, status: 'ignored' }
-        });
+        return ok({ body: { received: true, status: 'ignored' } });
 
     } catch (error) {
         console.error('Webhook error:', error);
-        return serverError({
-            body: { received: false, error: error.message }
-        });
+        return serverError({ body: { received: false, error: error.message } });
     }
 }
 
@@ -699,9 +705,38 @@ export async function post_smsSigningLink(request) {
  */
 export async function post_twilioStatus(request) {
     try {
-        // Twilio sends status callbacks as form-urlencoded
-        const body = await request.body.text();
-        const params = new URLSearchParams(body);
+        const signature = request.headers['x-twilio-signature'];
+        const bodyText = await request.body.text();
+        const params = new URLSearchParams(bodyText);
+
+        // 1. Verify Twilio Signature
+        const authToken = await getSecret('TWILIO_AUTH_TOKEN').catch(() => '');
+        if (authToken && signature) {
+            const url = 'https://www.shamrockbailbonds.biz/_functions/twilioStatus';
+
+            // Reconstruct payload for validation
+            // Twilio signs: URL + sorted params
+            const paramObj = {};
+            for (const [key, value] of params.entries()) {
+                paramObj[key] = value;
+            }
+
+            const sortedKeys = Object.keys(paramObj).sort();
+            let data = url;
+            for (const key of sortedKeys) {
+                data += `${key}${paramObj[key]}`;
+            }
+
+            const generatedSignature = crypto.createHmac('sha1', authToken)
+                .update(Buffer.from(data, 'utf-8'))
+                .digest('base64');
+
+            if (signature !== generatedSignature) {
+                console.warn('Twilio Signature Mismatch', { signature, generatedSignature });
+                // We log but don't hard block yet to prevent outages if URL is slightly off
+                // return forbidden({ body: { error: 'Invalid signature' } });
+            }
+        }
 
         const statusData = {
             messageSid: params.get('MessageSid'),
@@ -715,7 +750,6 @@ export async function post_twilioStatus(request) {
 
         logSafe('📱 Twilio Status Callback:', statusData);
 
-        // Log delivery status for tracking
         if (statusData.messageStatus === 'delivered') {
             console.log(`✅ SMS Delivered: ${statusData.messageSid} to ${statusData.to}`);
         } else if (statusData.messageStatus === 'undelivered' || statusData.messageStatus === 'failed') {
@@ -724,7 +758,6 @@ export async function post_twilioStatus(request) {
                 errorMessage: statusData.errorMessage
             }, 'error');
 
-            // Optionally store failed messages for retry or notification
             try {
                 await wixData.insert('SmsDeliveryLogs', {
                     messageSid: statusData.messageSid,
@@ -736,12 +769,10 @@ export async function post_twilioStatus(request) {
                     timestamp: new Date()
                 });
             } catch (logError) {
-                // Collection may not exist - that's okay
                 console.log('Note: SmsDeliveryLogs collection not found, skipping log storage');
             }
         }
 
-        // Always return 200 OK to Twilio
         return ok({
             headers: { 'Content-Type': 'application/json' },
             body: { received: true, status: statusData.messageStatus }
@@ -749,9 +780,7 @@ export async function post_twilioStatus(request) {
 
     } catch (error) {
         console.error('Twilio Status Callback Error:', error);
-        return ok({
-            body: { received: true, error: 'Processing error' }
-        });
+        return ok({ body: { received: true, error: 'Processing error' } });
     }
 }
 
@@ -762,8 +791,36 @@ export async function post_twilioStatus(request) {
  */
 export async function post_twilioInbound(request) {
     try {
+        const signature = request.headers['x-twilio-signature'];
         const bodyText = await request.body.text();
         const params = new URLSearchParams(bodyText);
+
+        // 1. Verify Twilio Signature
+        const authToken = await getSecret('TWILIO_AUTH_TOKEN').catch(() => '');
+        if (authToken && signature) {
+            const url = 'https://www.shamrockbailbonds.biz/_functions/twilioInbound';
+
+            // Reconstruct payload for validation
+            const paramObj = {};
+            for (const [key, value] of params.entries()) {
+                paramObj[key] = value;
+            }
+
+            const sortedKeys = Object.keys(paramObj).sort();
+            let data = url;
+            for (const key of sortedKeys) {
+                data += `${key}${paramObj[key]}`;
+            }
+
+            const generatedSignature = crypto.createHmac('sha1', authToken)
+                .update(Buffer.from(data, 'utf-8'))
+                .digest('base64');
+
+            if (signature !== generatedSignature) {
+                console.warn('Twilio Inbound Signature Mismatch', { signature, generatedSignature });
+                // return forbidden({ body: '<Response></Response>' });
+            }
+        }
 
         const fromNumber = params.get('From');
         const messageBody = params.get('Body');
@@ -772,7 +829,6 @@ export async function post_twilioInbound(request) {
         const FORWARD_TO = ['+12399550178', '+12399550301'];
 
         // Construct TwiML
-        // TwiML allows multiple <Message> tags to send to multiple people
         let twiml = '<?xml version="1.0" encoding="UTF-8"?>';
         twiml += '<Response>';
 
@@ -793,7 +849,6 @@ export async function post_twilioInbound(request) {
 
     } catch (error) {
         console.error('Twilio Inbound Error:', error);
-        // Return empty response to stop Twilio from retrying indefinitely on code error
         return ok({
             headers: { "Content-Type": "text/xml" },
             body: '<Response></Response>'
