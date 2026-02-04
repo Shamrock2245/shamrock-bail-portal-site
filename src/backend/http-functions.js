@@ -421,17 +421,17 @@ export async function get_authCallback(request) {
         }
 
         // 4. Return Success HTML with token
+        const landingUrl = "https://www.shamrockbailbonds.biz/portal-landing";
+        const targetUrl = `${landingUrl}?sessionToken=${encodeURIComponent(sessionToken)}&role=${encodeURIComponent(role)}`;
+
         return response(200, renderCloseScript({
             success: true,
-            token: sessionToken,
-            wixSessionToken: wixSessionToken,
-            role: role,
             message: "Login successful!"
-        }));
+        }, targetUrl));
 
     } catch (err) {
         console.error("Auth Callback Error:", err);
-        return response(200, renderCloseScript({ success: false, message: "System error during login." }));
+        return response(200, renderCloseScript({ success: false, message: "System error during login." }, "https://www.shamrockbailbonds.biz/portal-landing"));
     }
 }
 
@@ -452,9 +452,10 @@ function response(status, body) {
  * HTML that passes data back to the main window and closes popup, OR redirects if not in popup.
  * ROBUST VERSION with retry logic and better error handling
  */
-function renderCloseScript(data) {
+function renderCloseScript(data, targetUrl) {
     const safeData = JSON.stringify(data);
-    const landingUrl = "https://www.shamrockbailbonds.biz/portal-landing";
+    // Default fallback if no target provided
+    const finalUrl = targetUrl || "https://www.shamrockbailbonds.biz/portal-landing";
 
     return `
       <!DOCTYPE html>
@@ -462,106 +463,41 @@ function renderCloseScript(data) {
       <head>
         <title>Authenticating...</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta http-equiv="refresh" content="5;url=${landingUrl}">
+        <!-- META REFRESH AS ROBUST FALLBACK -->
+        <meta http-equiv="refresh" content="2;url=${finalUrl}">
         <style>
             body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #f4f4f4; color: #333; }
             .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
             .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2ecc71; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
             @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            .btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #2ecc71; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; }
+            .btn { display: inline-block; margin-top: 20px; padding: 12px 24px; background: #2ecc71; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; }
             .error { color: #e74c3c; }
         </style>
       </head>
       <body>
         <div class="container">
             <div id="loader" class="loader"></div>
-            <h3 id="status">Finishing secure login...</h3>
-            <p id="message">Please wait while we redirect you.</p>
-            <div id="manual-redirect" style="display:none;">
-                <p>If you are not redirected automatically:</p>
-                <a id="continue-link" href="#" class="btn">Click here to continue</a>
+            <h3 id="status">Finishing login...</h3>
+            <p id="message">Redirecting you now...</p>
+            
+            <div id="manual-redirect">
+                <br>
+                <a id="continue-link" href="${finalUrl}" class="btn">Click here to continue</a>
             </div>
         </div>
 
         <script>
-          console.log('🔐 OAuth Callback Script Starting');
           const data = ${safeData};
-          console.log('📦 OAuth Data:', data);
+          const targetUrl = "${finalUrl}";
           
-          const statusEl = document.getElementById('status');
-          const msgEl = document.getElementById('message');
-          const loaderEl = document.getElementById('loader');
-          const manualDiv = document.getElementById('manual-redirect');
-          const linkEl = document.getElementById('continue-link');
-
-          function doRedirect() {
-              console.log('🚀 doRedirect() called');
-              // Always use redirect mode (popup mode disabled for reliability)
-              fallbackRedirect();
+          console.log('🚀 Redirecting to:', targetUrl);
+          
+          // Immediate JS Redirect using replace (better for history)
+          try {
+              window.location.replace(targetUrl);
+          } catch(e) {
+              window.location.href = targetUrl;
           }
-
-          function fallbackRedirect() {
-             console.log('🔄 fallbackRedirect() called, data:', data);
-             
-             if (data.success && data.token) {
-                  const targetUrl = "${landingUrl}?sessionToken=" + encodeURIComponent(data.token) + "&role=" + encodeURIComponent(data.role || "");
-                  linkEl.href = targetUrl;
-                  
-                  console.log('✅ Success! Target URL:', targetUrl);
-                  
-                  // Show manual link after 3 seconds as fallback
-                  setTimeout(function() { 
-                      console.log('⏰ Showing manual redirect link');
-                      manualDiv.style.display = 'block'; 
-                  }, 3000);
-
-                  // Retry logic for redirect
-                  let attempts = 0;
-                  const maxAttempts = 3;
-                  
-                  function attemptRedirect() {
-                      attempts++;
-                      console.log('🔄 Redirect attempt', attempts, 'of', maxAttempts);
-                      console.log('🎯 Redirecting to:', targetUrl);
-                      
-                      try {
-                          window.location.href = targetUrl;
-                          console.log('✅ Redirect initiated');
-                      } catch (e) {
-                          console.error('❌ Redirect failed:', e);
-                          if (attempts < maxAttempts) {
-                              console.log('⏳ Retrying in 1 second...');
-                              setTimeout(attemptRedirect, 1000);
-                          } else {
-                              console.error('❌ All redirect attempts failed. Showing manual link.');
-                              statusEl.innerText = "Redirect Failed";
-                              msgEl.innerText = "Please click the button below to continue.";
-                              manualDiv.style.display = 'block';
-                              loaderEl.style.display = 'none';
-                          }
-                      }
-                  }
-                  
-                  // Start first attempt after 500ms
-                  setTimeout(attemptRedirect, 500);
-                  
-              } else {
-                  // Error case
-                  console.error('❌ OAuth failed:', data.message);
-                  loaderEl.style.display = 'none';
-                  statusEl.innerText = "Login Failed";
-                  statusEl.className = "error";
-                  msgEl.innerText = data.message || "Unknown error occurred.";
-                  manualDiv.style.display = 'block';
-                  linkEl.innerText = "Return to Portal";
-                  linkEl.href = "${landingUrl}";
-                  linkEl.style.background = "#95a5a6";
-              }
-          }
-
-          // Execute
-          console.log('⏰ Scheduling redirect in 500ms');
-          setTimeout(doRedirect, 500); // Small delay to allow UI to render
         </script>
       </body>
       </html>
