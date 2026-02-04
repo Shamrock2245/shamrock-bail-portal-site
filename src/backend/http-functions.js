@@ -369,10 +369,14 @@ import { verifyGoogleUser, verifyFacebookUser } from 'backend/social-auth';
  */
 export async function get_authCallback(request) {
     const { code, state, error } = request.query;
+    const portalLandingBase = "https://www.shamrockbailbonds.biz/portal-landing";
 
     // 1. Handle Errors
     if (error || !code) {
-        return response(200, renderCloseScript({ success: false, message: "Login denied or failed." }));
+        return response(200, renderCloseScript({
+            success: false,
+            message: "Login denied or failed."
+        }, portalLandingBase));
     }
 
     try {
@@ -421,17 +425,24 @@ export async function get_authCallback(request) {
         }
 
         // 4. Return Success HTML with token
+        const portalLandingUrl = new URL(portalLandingBase);
+        portalLandingUrl.searchParams.set('sessionToken', sessionToken);
+        portalLandingUrl.searchParams.set('role', role);
+
         return response(200, renderCloseScript({
             success: true,
             token: sessionToken,
             wixSessionToken: wixSessionToken,
             role: role,
             message: "Login successful!"
-        }));
+        }, portalLandingUrl.toString()));
 
     } catch (err) {
         console.error("Auth Callback Error:", err);
-        return response(200, renderCloseScript({ success: false, message: "System error during login." }));
+        return response(200, renderCloseScript({
+            success: false,
+            message: "System error during login."
+        }, portalLandingBase));
     }
 }
 
@@ -452,9 +463,8 @@ function response(status, body) {
  * HTML that passes data back to the main window and closes popup, OR redirects if not in popup.
  * ROBUST VERSION with retry logic and better error handling
  */
-function renderCloseScript(data) {
+function renderCloseScript(data, targetUrl) {
     const safeData = JSON.stringify(data);
-    const landingUrl = "https://www.shamrockbailbonds.biz/portal-landing";
 
     return `
       <!DOCTYPE html>
@@ -462,7 +472,7 @@ function renderCloseScript(data) {
       <head>
         <title>Authenticating...</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta http-equiv="refresh" content="5;url=${landingUrl}">
+        <meta http-equiv="refresh" content="0;url=${targetUrl}">
         <style>
             body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #f4f4f4; color: #333; }
             .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -493,6 +503,7 @@ function renderCloseScript(data) {
           const loaderEl = document.getElementById('loader');
           const manualDiv = document.getElementById('manual-redirect');
           const linkEl = document.getElementById('continue-link');
+          const targetUrl = "${targetUrl}";
 
           function doRedirect() {
               console.log('🚀 doRedirect() called');
@@ -504,7 +515,6 @@ function renderCloseScript(data) {
              console.log('🔄 fallbackRedirect() called, data:', data);
              
              if (data.success && data.token) {
-                  const targetUrl = "${landingUrl}?sessionToken=" + encodeURIComponent(data.token) + "&role=" + encodeURIComponent(data.role || "");
                   linkEl.href = targetUrl;
                   
                   console.log('✅ Success! Target URL:', targetUrl);
@@ -554,7 +564,7 @@ function renderCloseScript(data) {
                   msgEl.innerText = data.message || "Unknown error occurred.";
                   manualDiv.style.display = 'block';
                   linkEl.innerText = "Return to Portal";
-                  linkEl.href = "${landingUrl}";
+                  linkEl.href = targetUrl;
                   linkEl.style.background = "#95a5a6";
               }
           }
