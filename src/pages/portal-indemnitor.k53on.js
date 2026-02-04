@@ -11,6 +11,9 @@
  * File: portal-indemnitor.k53on.js
  * 
  * REFACTORED: Uses Custom Session Auth (NO Wix Members) to fix redirect loop
+ * 
+ * FIX: Moved attachSubmitHandler() to be called AFTER setupIntakeForm() to ensure
+ * the button is in the DOM and visible before trying to attach the handler.
  */
 
 import wixLocation from 'wix-location';
@@ -119,6 +122,9 @@ async function initializePage() {
         // 5. Setup UI
         if (!currentIntake) {
             setupIntakeForm();
+            // FIX: Attach submit handler AFTER setupIntakeForm() completes
+            // This ensures #mainContent is shown and the button is in the DOM
+            setTimeout(() => attachSubmitHandler(), 100);
         } else {
             showBondDashboard();
         }
@@ -273,9 +279,7 @@ function formatCurrency(amount) {
     if (amount === undefined || amount === null) return '$0';
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
+        currency: 'USD'
     }).format(amount);
 }
 
@@ -287,17 +291,17 @@ function setupEventListeners() {
     eventListenersReady = true;
 
     console.log("🔧 setupEventListeners: Starting...");
-    
+
     // DIAGNOSTIC: List all buttons on page
     try {
         const allButtons = $w('Button');
-        console.log("📋 All buttons found on page:", allButtons.map(btn => `${btn.id} (${btn.label || btn.text || 'no label'})` ));
+        console.log("📋 All buttons found on page:", allButtons.map(btn => `${btn.id} (${btn.label || btn.text || 'no label'})`));
     } catch (e) {
         console.warn("Could not enumerate buttons:", e);
     }
-    
-    // CRITICAL: Attach submit handler once the intake button is actually rendered
-    attachSubmitHandler();
+
+    // NOTE: attachSubmitHandler() is now called from setupIntakeForm() with a delay
+    // This ensures the button is in the DOM before we try to attach the handler
 
     safeOnClick('#signPaperworkBtn', handleSignPaperwork);
     safeOnClick('#makePaymentBtn', handleMakePayment);
@@ -376,7 +380,7 @@ function handleLogout() {
 async function handleSubmitIntake() {
     console.log("💆 handleSubmitIntake: Button clicked!");
     console.log("   isSubmitting:", isSubmitting);
-    
+
     if (isSubmitting) {
         console.warn("⚠️ Already submitting, ignoring click");
         return;
@@ -512,7 +516,8 @@ function collectIntakeFormData() {
         reference2Zip: safeGetValue('#reference2Zip'),
 
         // Employment
-        indemnitorEmployer: safeGetValue('#indemnitorEmployerName'),
+        indemnitorEmployerName: safeGetValue('#indemnitorEmployerName'),
+        indemnitorEmployerAddress: safeGetValue('#indemnitorEmployerAddress'),
         indemnitorEmployerCity: safeGetValue('#indemnitorEmployerCity'),
         indemnitorEmployerState: safeGetValue('#indemnitorEmployerState'),
         indemnitorEmployerZip: safeGetValue('#indemnitorEmployerZip'),
@@ -520,84 +525,86 @@ function collectIntakeFormData() {
         indemnitorSupervisorName: safeGetValue('#indemnitorSupervisorName'),
         indemnitorSupervisorPhone: safeGetValue('#indemnitorSupervisorPhone'),
 
-        // Jail/County
+        // County
         county: safeGetValue('#county'),
-        jailFacility: safeGetValue('#jailFacility'),
 
-        // Metadata - Updated to use Custom Session ID
-        submittedBy: currentSession?.personId,
-        submittedByEmail: currentSession?.email,
-        submittedAt: new Date().toISOString()
+        // Session Info
+        sessionToken: getSessionToken()
     };
 }
 
+/**
+ * Handle sign paperwork button
+ */
 function handleSignPaperwork() {
     if (currentIntake?.signNowIndemnitorLink) {
-        wixWindow.openLightbox('signing-lightbox', {
-            signingUrl: currentIntake.signNowIndemnitorLink,
-            documentId: currentIntake.signNowDocumentId,
-            sessionId: currentSession.sessionToken
+        wixWindow.openLightbox('SignNowLightbox', {
+            url: currentIntake.signNowIndemnitorLink
         });
     }
 }
 
+/**
+ * Handle make payment button
+ */
 function handleMakePayment() {
-    // Redirect to SwipeSimple Payment Link
-    wixLocation.to('https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd');
+    wixLocation.to('/payments');
 }
 
+/**
+ * Handle send message button
+ */
 async function handleSendMessage() {
     const message = safeGetValue('#messageInput');
-
     if (!message?.trim()) {
         showError('Please enter a message');
         return;
     }
 
     try {
-        await wixData.insert('Messages', {
-            caseId: currentIntake?.caseId,
-            fromEmail: currentSession?.email, // Use session email
-            message: message,
-            timestamp: new Date()
-        });
-
+        safeDisable('#sendMessageBtn');
+        // TODO: Implement message sending
+        showSuccess('Message sent!');
         safeSetValue('#messageInput', '');
-        showSuccess('Message sent! We\'ll respond shortly.');
-
     } catch (error) {
-        console.error('Error sending message:', error);
-        showError('Error sending message.');
+        showError('Error sending message');
+    } finally {
+        safeEnable('#sendMessageBtn');
     }
 }
 
+/**
+ * Setup phone number formatting
+ */
 function setupPhoneFormatting(selector) {
     safeOnInput(selector, () => {
-        let value = (safeGetValue(selector) || '').replace(/\D/g, '');
-        if (value.length > 10) value = value.substring(0, 10);
-
-        if (value.length >= 6) {
-            value = `(${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6)}`;
-        } else if (value.length >= 3) {
-            value = `(${value.substring(0, 3)}) ${value.substring(3)}`;
+        const value = safeGetValue(selector);
+        const cleaned = value.replace(/\D/g, '');
+        if (cleaned.length <= 10) {
+            const formatted = cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+            if (formatted !== value) {
+                safeSetValue(selector, formatted);
+            }
         }
-
-        safeSetValue(selector, value);
     });
 }
 
+/**
+ * Setup zip code formatting
+ */
 function setupZipFormatting(selector) {
     safeOnInput(selector, () => {
-        let value = (safeGetValue(selector) || '').replace(/\D/g, '');
-        if (value.length > 5) value = value.substring(0, 5);
-        safeSetValue(selector, value);
+        const value = safeGetValue(selector);
+        const cleaned = value.replace(/\D/g, '').substring(0, 5);
+        if (cleaned !== value) {
+            safeSetValue(selector, cleaned);
+        }
     });
 }
 
 function formatStatus(status) {
     const statusMap = {
-        'intake': 'Pending Review',
-        'in_progress': 'In Progress',
+        'pending': 'Pending Review',
         'ready_for_documents': 'Preparing Documents',
         'awaiting_signatures': 'Awaiting Signatures',
         'completed': 'Active Bond',

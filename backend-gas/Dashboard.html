@@ -4505,35 +4505,11 @@
          * Excludes print-only documents (like appearance-bond)
          * @returns {Array} Array of document objects sorted by templateOrder
          */
+        /* DEPRECATED - Replaced by getSelectedDocuments at bottom
         function getSelectedDocuments(includePrintOnly = false) {
-            const selected = [];
-
-            // Get checked templates
-            const checkedTemplates = new Set();
-            document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
-                if (cb.dataset.template) {
-                    checkedTemplates.add(cb.dataset.template);
-                }
-            });
-
-            // Iterate through templates in specific order
-            CONFIG.templateOrder.forEach(templateKey => {
-                if (checkedTemplates.has(templateKey)) {
-                    // SignNow documents OR (Print-only documents IF requested)
-                    const isPrintOnly = CONFIG.printOnlyDocs.includes(templateKey);
-                    if (!isPrintOnly || includePrintOnly) {
-                        const cb = document.querySelector(`input[data-template="${templateKey}"]`);
-                        selected.push({
-                            key: templateKey,
-                            id: CONFIG.templates[templateKey],
-                            name: cb?.closest('.doc-item')?.querySelector('.doc-name')?.textContent || templateKey
-                        });
-                    }
-                }
-            });
-
-            return selected;
+             // ...
         }
+        */
 
         /**
          * Get print-only documents (like appearance bonds)
@@ -4721,7 +4697,7 @@
 
                 // BATCH REQUEST TO GAS
                 // We fetch all needed templates in one go to minimize execution time
-                const BATCH_SIZE = 5; // Fetch 5 at a time to prevent timeouts
+                const BATCH_SIZE = 1; // Fetch 1 at a time to prevent payload limits with large PDFs
                 for (let i = 0; i < uniqueMissingKeys.length; i += BATCH_SIZE) {
                     const batch = uniqueMissingKeys.slice(i, i + BATCH_SIZE);
                     try {
@@ -4993,6 +4969,51 @@
                         if (chargeField === 'power' || chargeField === 'power-number') return charge.powerNumber;
                         if (chargeField === 'bond' || chargeField === 'bond-amount') return charge.bondAmount;
                     }
+                }
+            }
+
+            // NEW: Handle Indemnity Agreement specific prefix "indemnityAgreement"
+            if (fieldName.startsWith('indemnityAgreement')) {
+                const subField = fieldName.replace('indemnityAgreement', '');
+
+                // General fallback: strip prefix and try standard mapping
+                const normalized = normalizeFieldName(subField);
+                if (mappings[normalized]) return mappings[normalized];
+
+                // Recursive attempt
+                const val = mapFieldToData(normalized, formData);
+                if (val !== null) return val;
+            }
+
+            // NEW: Handle Defendant Application specific prefix "defendantApplication"
+            // Example: defendantApplicationFirstName -> first-name
+            if (fieldName.startsWith('defendantApplication')) {
+                const subField = fieldName.replace('defendantApplication', '');
+
+                // Specific Overrides for Defendant Application
+                if (subField === 'BondPremiumWritten') {
+                    // Calculate text representation of premium
+                    const premium = calculateTotalPremium(formData);
+                    return numberToWords(Math.floor(premium)) + ' and ' + String(Math.round((premium % 1) * 100)).padStart(2, '0') + '/100 Dollars';
+                }
+                if (subField === 'Children1NameAge') return formData['children1'] || ''; // Future proofing
+                if (subField === 'Children2NameAge') return formData['children2'] || '';
+
+                // General fallback: strip prefix and try standard mapping
+                // e.g. defendantApplicationFirstName -> FirstName -> first-name
+                const normalized = normalizeFieldName(subField);
+                if (mappings[normalized]) return mappings[normalized];
+
+                // Recursive attempt with normalized lookup
+                const val = mapFieldToData(normalized, formData);
+                if (val !== null) return val;
+            }
+
+            // Handle PowerNo / BondNo aliases (User req: "able to be the same")
+            if (fieldName === 'powerNo' || fieldName === 'bondNo') {
+                // Try to get from first charge
+                if (formData.charges && formData.charges[0]) {
+                    return formData.charges[0].powerNumber || '';
                 }
             }
 
