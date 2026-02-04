@@ -71,7 +71,28 @@ function callOpenAI(systemPrompt, userContent, options = {}) {
             muteHttpExceptions: true
         };
 
-        const response = UrlFetchApp.fetch(OPENAI_CONFIG.API_URL, fetchOptions);
+        let response;
+        let lastError;
+
+        for (let attempt = 0; attempt <= OPENAI_CONFIG.MAX_RETRIES; attempt++) {
+            try {
+                if (attempt > 0) {
+                    console.log(`⚠️ OpenAI Retry Attempt ${attempt}/${OPENAI_CONFIG.MAX_RETRIES}...`);
+                    Utilities.sleep(1000 * attempt); // Simple backoff
+                }
+                response = UrlFetchApp.fetch(OPENAI_CONFIG.API_URL, fetchOptions);
+                break; // Success
+            } catch (e) {
+                lastError = e;
+                console.warn(`⚠️ OpenAI Fetch failed (Attempt ${attempt}): ${e.message}`);
+                // Don't retry on 4xx errors (client faults), only generic network or 5xx
+                if (e.message.includes('400') || e.message.includes('401') || e.message.includes('403')) {
+                    throw e;
+                }
+            }
+        }
+
+        if (!response && lastError) throw lastError;
         const json = JSON.parse(response.getContentText());
 
         if (json.error) {
@@ -113,16 +134,16 @@ function setupOpenAIKey() {
     // IMPORTANT: Replace 'YOUR_OPENAI_API_KEY_HERE' with your actual OpenAI API key
     // Get your API key from: https://platform.openai.com/api-keys
     const apiKey = 'YOUR_OPENAI_API_KEY_HERE';
-    
+
     if (!apiKey || !apiKey.startsWith('sk-')) {
         console.error('❌ Invalid API key format');
         return false;
     }
-    
+
     try {
         PropertiesService.getScriptProperties().setProperty('OPENAI_API_KEY', apiKey);
         console.log('✅ OPENAI_API_KEY set successfully');
-        
+
         // Test the connection
         const testResult = testOpenAIConnection();
         if (testResult) {

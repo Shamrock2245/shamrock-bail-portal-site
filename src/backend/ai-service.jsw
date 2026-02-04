@@ -43,14 +43,37 @@ async function callOpenAI(messages, tools = []) {
             payload.tools = tools;
         }
 
-        const response = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`
-            },
-            body: JSON.stringify(payload)
-        });
+        let response;
+        let error;
+
+        // Simple Retry Logic (3 Attempts)
+        for (let i = 0; i < 3; i++) {
+            try {
+                response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                // If 429 (Rate Limit) or 5xx (Server Error), we retry
+                if (response.status === 429 || response.status >= 500) {
+                    console.warn(`⚠️ OpenAI API Retry ${i + 1}/3 (Status: ${response.status})`);
+                    await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Linear backoff
+                    continue;
+                }
+
+                break; // Exit loop on 200 or 400 (client error)
+            } catch (err) {
+                error = err;
+                console.warn(`⚠️ OpenAI Network Retry ${i + 1}/3: ${err.message}`);
+                await new Promise(r => setTimeout(r, 1000));
+            }
+        }
+
+        if (!response && error) throw error;
 
         if (!response.ok) {
             const errText = await response.text();
