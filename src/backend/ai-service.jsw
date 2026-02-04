@@ -7,7 +7,7 @@ import { listCases } from 'backend/portal-api-client.jsw';
 // Configuration
 // ===================================
 
-const MODEL = "gemini-1.5-flash";
+const MODEL = "gpt-4o-mini";
 const SYSTEM_INSTRUCTION = `You are Shamrock Concierge, the AI assistant for Shamrock Bail Bonds.
 Your goal is to assist users (Indemnitors and Defendants) with information about bail bonds, generating generic advice, or looking up specific information from our database.
 
@@ -21,100 +21,100 @@ Privacy Rules:
 `;
 
 // ===================================
-// Helper: Gemini API Client
+// Helper: OpenAI API Client
 // ===================================
 
-async function callGemini(contents, tools = [], systemInstruction = "") {
+async function callOpenAI(messages, tools = []) {
     try {
-        const apiKey = await getSecret("GEMINI_API_KEY");
+        const apiKey = await getSecret("OPENAI_API_KEY");
         if (!apiKey) {
-            throw new Error("Missing GEMINI_API_KEY secret");
+            throw new Error("Missing OPENAI_API_KEY secret");
         }
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+        const url = "https://api.openai.com/v1/chat/completions";
 
         const payload = {
-            contents: contents,
-            system_instruction: {
-                parts: [{ text: systemInstruction }]
-            }
+            model: MODEL,
+            messages: messages,
+            temperature: 0.7
         };
 
         if (tools.length > 0) {
-            // Gemini expects tools in a specific "function_declarations" wrapper
-            payload.tools = [{ function_declarations: tools }];
+            payload.tools = tools;
         }
 
         const response = await fetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
             body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
             const errText = await response.text();
-            throw new Error(`Gemini API Error: ${response.status} - ${errText}`);
+            throw new Error(`OpenAI API Error: ${response.status} - ${errText}`);
         }
 
         const data = await response.json();
-
-        // Safety feedback check
-        if (data.promptFeedback && data.promptFeedback.blockReason) {
-            throw new Error(`Blocked by safety: ${data.promptFeedback.blockReason}`);
-        }
-
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error("No candidates returned from Gemini");
-        }
-
-        return data.candidates[0].content; // { role: "model", parts: [...] }
+        return data.choices[0].message; // { role: "assistant", content: "...", tool_calls: [...] }
 
     } catch (error) {
-        console.error("Error calling Gemini:", error);
+        console.error("Error calling OpenAI:", error);
         throw error;
     }
 }
 
 // ===================================
-// Tools Definition (Gemini Format)
+// Tools Definition (OpenAI Format)
 // ===================================
 
-const GEMINI_TOOLS = [
+const OPENAI_TOOLS = [
     {
-        name: "search_counties",
-        description: "Search for Florida counties to find phone numbers, addresses, or sheriff websites.",
-        parameters: {
-            type: "object",
-            properties: {
-                query: {
-                    type: "string",
-                    description: "The name of the county or city to search for (e.g., 'Lee', 'Miami')."
-                }
-            },
-            required: ["query"]
+        type: "function",
+        function: {
+            name: "search_counties",
+            description: "Search for Florida counties to find phone numbers, addresses, or sheriff websites.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: {
+                        type: "string",
+                        description: "The name of the county or city to search for (e.g., 'Lee', 'Miami')."
+                    }
+                },
+                required: ["query"]
+            }
         }
     },
     {
-        name: "get_county_details",
-        description: "Get detailed information about a specific county by its slug.",
-        parameters: {
-            type: "object",
-            properties: {
-                slug: {
-                    type: "string",
-                    description: "The exact slug of the county (e.g., 'lee', 'collier')."
-                }
-            },
-            required: ["slug"]
+        type: "function",
+        function: {
+            name: "get_county_details",
+            description: "Get detailed information about a specific county by its slug.",
+            parameters: {
+                type: "object",
+                properties: {
+                    slug: {
+                        type: "string",
+                        description: "The exact slug of the county (e.g., 'lee', 'collier')."
+                    }
+                },
+                required: ["slug"]
+            }
         }
     },
     {
-        name: "list_my_cases",
-        description: "List the active cases for the currently logged-in user.",
-        parameters: {
-            type: "object",
-            properties: {},
-            required: []
+        type: "function",
+        function: {
+            name: "list_my_cases",
+            description: "List the active cases for the currently logged-in user.",
+            parameters: {
+                type: "object",
+                properties: {},
+                required: []
+            }
         }
     }
 ];
@@ -123,8 +123,9 @@ const GEMINI_TOOLS = [
 // Tool Executors
 // ===================================
 
-async function executeToolCall(functionCall, context) {
-    const { name, args } = functionCall; // Gemini returns 'args' as an object directly
+async function executeToolCall(toolCall, context) {
+    const { name, arguments: argsString } = toolCall.function;
+    const args = JSON.parse(argsString);
 
     try {
         switch (name) {
@@ -152,68 +153,52 @@ async function executeToolCall(functionCall, context) {
 
 /**
  * Chat with the AI Agent.
- * @param {Array} history - Array of {role, parts: [{text: "..."}]} objects. 
- *                          Note: Frontend should convert "user"/"assistant" to "user"/"model".
+ * @param {Array} history - Array of {role, content} objects.
  * @param {Object} context - { authToken: "..." }
  * @returns {Promise<Object>} The AI's response content { role: "assistant", content: "..." }
  */
 export async function chatWithAgent(history, context = {}) {
-    // Ensure history roles are correct for Gemini (user/model)
-    const formattedHistory = history.map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : msg.role,
-        parts: msg.parts || [{ text: msg.content }] // Handle both text content and parts
-    }));
+    // OpenAI expects { role: "user" | "assistant" | "system", content: "..." }
+    // Ensure history is in correct format
+    const messages = [
+        { role: "system", content: SYSTEM_INSTRUCTION },
+        ...history.map(msg => ({
+            role: msg.role,
+            content: msg.content
+        }))
+    ];
 
     try {
-        // 2. First call to LLM
-        let responseContent = await callGemini(formattedHistory, GEMINI_TOOLS, SYSTEM_INSTRUCTION);
+        // 1. First call to LLM
+        let message = await callOpenAI(messages, OPENAI_TOOLS);
+        messages.push(message);
 
-        // 3. Loop for Tool Calls (Agentic Loop)
+        // 2. Loop for Tool Calls (Agentic Loop)
         let turns = 0;
         const MAX_TURNS = 3;
 
-        // Check if the response contains function calls
-        // Gemini: parts[0].functionCall
-        let functionCalls = responseContent.parts ? responseContent.parts.filter(p => p.functionCall).map(p => p.functionCall) : [];
-
-        while (functionCalls.length > 0 && turns < MAX_TURNS) {
+        while (message.tool_calls && message.tool_calls.length > 0 && turns < MAX_TURNS) {
             turns++;
 
-            // Add the model's request to history
-            formattedHistory.push(responseContent); // responseContent is { role: "model", parts: [...] }
-
             // Execute all tool calls
-            const functionResponses = [];
-            for (const call of functionCalls) {
-                const result = await executeToolCall(call, context);
+            for (const toolCall of message.tool_calls) {
+                const result = await executeToolCall(toolCall, context);
 
-                functionResponses.push({
-                    functionResponse: {
-                        name: call.name,
-                        response: { result: result } // Gemini expects 'response' object
-                    }
+                messages.push({
+                    role: "tool",
+                    tool_call_id: toolCall.id,
+                    content: JSON.stringify(result)
                 });
             }
 
-            // Add function responses to history
-            // Gemini expects a separate message with role "function" (v1beta)
-            formattedHistory.push({
-                role: "function",
-                parts: functionResponses
-            });
-
-            // Call LLM again
-            responseContent = await callGemini(formattedHistory, GEMINI_TOOLS, SYSTEM_INSTRUCTION);
-
-            // Check for next turn
-            functionCalls = responseContent.parts ? responseContent.parts.filter(p => p.functionCall).map(p => p.functionCall) : [];
+            // Call LLM again to generate final response
+            message = await callOpenAI(messages, OPENAI_TOOLS);
+            messages.push(message);
         }
 
-        // Extract text response
-        const textPart = responseContent.parts ? responseContent.parts.find(p => p.text) : null;
         return {
-            role: "assistant", // consistent for UI
-            content: textPart ? textPart.text : ""
+            role: "assistant",
+            content: message.content || ""
         };
 
     } catch (error) {

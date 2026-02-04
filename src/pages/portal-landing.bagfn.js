@@ -24,6 +24,7 @@ import wixLocation from 'wix-location';
 import { sendMagicLinkSimplified, onMagicLinkLoginV2, validateCustomSession } from 'backend/portal-auth';
 import { getGoogleAuthUrl, getFacebookAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
+import { initAIChat } from 'public/ai-concierge';
 import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
 import { authentication } from 'wix-members-frontend'; // NEW: For persistent sessions
@@ -92,6 +93,23 @@ $w.onReady(async function () {
 
     // Set up the simplified login form
     setupSimplifiedLogin();
+
+    // Initialize AI Concierge (Safely)
+    if ($w('#boxAIChat').valid && $w('#repChatMessages').valid) {
+        initAIChat({
+            chatBox: $w('#boxAIChat'),
+            repeater: $w('#repChatMessages'),
+            inputMap: {
+                input: $w('#inputAIMessage'),
+                sendBtn: $w('#btnAISend'),
+                minimizeBtn: $w('#btnAIMinimize'),
+                openBtn: $w('#btnAIOpen')
+            }
+        });
+        console.log("🤖 AI Concierge Initialized");
+    } else {
+        console.log("🤖 AI Concierge elements not found (Editor setup required)");
+    }
 
     updatePageSEO();
 });

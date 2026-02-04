@@ -1,0 +1,23 @@
+name: Notify on Push
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  notify:
+    name: Slack Push Notification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            {
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "text": "🚀 *New Push to Main*\n*Author:* ${{ github.actor }}\n*Message:* ${{ github.event.head_commit.message }}\n*Link:* ${{ github.event.head_commit.url }}"
+            }

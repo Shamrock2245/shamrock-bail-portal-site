@@ -28,6 +28,15 @@ let isProcessing = false;
 export function initAIChat({ chatBox, repeater, inputMap }) {
     const { input, sendBtn, minimizeBtn, openBtn } = inputMap;
 
+    // 0. Default Welcome Message
+    if (chatHistory.length === 0) {
+        chatHistory.push({
+            role: 'assistant',
+            content: "Hello! I'm the Shamrock AI Concierge. How can I help you regarding bail bonds, court dates, or warrant checks today?",
+            _id: 'welcome_msg'
+        });
+    }
+
     // 1. Setup Repeater
     repeater.onItemReady(($item, itemData) => {
         $item('#txtChatContent').text = itemData.content;
@@ -35,14 +44,26 @@ export function initAIChat({ chatBox, repeater, inputMap }) {
         // Simple styling based on role
         if (itemData.role === 'user') {
             $item('#boxChatMessage').style.backgroundColor = "#E6F4EA"; // Light Green
-            $item('#txtChatRole').text = "You";
-            $item('#boxChatMessage').style.borderRadius = "10px 10px 0px 10px";
+            $item('#boxChatMessage').style.borderRadius = "20px 20px 0px 20px"; // Rounded corners
+
+            // Safety check for role text
+            if ($item('#txtChatRole').valid) {
+                $item('#txtChatRole').text = "You";
+                $item('#txtChatRole').hide(); // Often cleaner to hide "You" role label
+            }
         } else {
             $item('#boxChatMessage').style.backgroundColor = "#F1F3F4"; // Gray
-            $item('#txtChatRole').text = "Shamrock AI";
-            $item('#boxChatMessage').style.borderRadius = "10px 10px 10px 0px";
+            $item('#boxChatMessage').style.borderRadius = "20px 20px 20px 0px"; // Rounded corners
+
+            if ($item('#txtChatRole').valid) {
+                $item('#txtChatRole').text = "Shamrock AI";
+                $item('#txtChatRole').show();
+            }
         }
     });
+
+    // Load initial data
+    repeater.data = chatHistory;
 
     // 2. Event Listeners
     sendBtn.onClick(() => sendMessage(input, repeater));

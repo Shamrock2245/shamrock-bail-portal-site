@@ -67,11 +67,26 @@ jobs:
     needs: [lint, link-check, lighthouse] # Run after all jobs
     if: always() # Run regardless of success/failure
     steps:
-      - name: Send Slack Message
-        uses: slackapi/slack-github-action@v1.26.0
+      - name: Send Slack Notification (Success)
+        if: success()
+        uses: slackapi/slack-github-action@v2.0.0
         with:
-          # Use Bot Token (preferred) - Replace 'YOUR_CHANNEL_ID' with the ID for #alerts (Right click channel -> Copy details)
-          channel-id: 'YOUR_CHANNEL_ID_HERE' 
-          slack-message: "GitHub Action Health Check: ${{ job.status }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            {
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "text": "✅ *Health Check Passed* for ${{ github.repository }}\nView Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+
+      - name: Send Slack Notification (Failure)
+        if: failure()
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            {
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "text": "❌ *Health Check Failed* for ${{ github.repository }}\nView Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
