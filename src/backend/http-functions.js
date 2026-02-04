@@ -422,7 +422,8 @@ export async function get_authCallback(request) {
 
         // 4. Return Success HTML with token
         const landingUrl = "https://www.shamrockbailbonds.biz/portal-landing";
-        const targetUrl = `${landingUrl}?sessionToken=${encodeURIComponent(sessionToken)}&role=${encodeURIComponent(role)}`;
+        // Prefer 'st' (standard token param) and avoid passing sensitive role info in URL if not needed (frontend validates)
+        const targetUrl = `${landingUrl}?st=${encodeURIComponent(sessionToken)}`;
 
         return response(200, renderCloseScript({
             success: true,

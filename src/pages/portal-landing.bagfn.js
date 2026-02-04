@@ -41,53 +41,42 @@ $w.onReady(async function () {
         return;
     }
 
-    // 2. Check for session token passed via URL (redirect)
-    if (query.st) {
-        console.log("🔗 Session token in URL detected, storing...");
-        const stored = setSessionToken(query.st);
-        console.log("📦 Session stored:", stored);
+    // 2. Unified Token Handling (Social Login & Redirects)
+    // Accept 'st' (preferred) or 'sessionToken' (legacy/social)
+    const token = query.st || query.sessionToken;
 
-        // Validate and redirect
-        const session = await validateCustomSession(query.st);
-        if (session && session.role) {
-            console.log("✅ Session valid, redirecting to portal");
-            redirectToPortal(session.role);
-            return;
-        }
-    }
+    if (token) {
+        console.log("🔗 Token detected in URL:", { token: token.substring(0, 10) + "..." });
 
-    // 3. Check for social login result
-    if (query.sessionToken) {
-        console.log("🔗 Social login session detected, validating...");
-        // Pass wixSessionToken from query if present
-        await handleSocialSession(query.sessionToken, query.role, query.wixSessionToken);
-        return;
-    }
+        // Save immediately
+        setSessionToken(token);
 
-    // 4. LAST: Check if user already has a valid session in storage
-    // Loop Breaker: If we just came from a failed auth redirect, DO NOT auto-redirect again
-    if (query.auth_error || query.reason === 'logout') {
-        console.log("🛑 Loop breaker active: Skipping auto-login check due to recent error/logout");
-        // Optionally clear session here to be safe
-        clearSessionToken();
-    } else {
-        const existingSession = getSessionToken();
-        if (existingSession) {
-            console.log("✅ Existing session found, validating...");
-            try {
-                const session = await validateCustomSession(existingSession);
-                if (session && session.role) {
-                    console.log("✅ Valid session, auto-redirecting to " + session.role + " portal");
-                    redirectToPortal(session.role);
-                    return;
-                } else {
-                    console.log("⚠️ Session invalid/expired, clearing...");
-                    clearSessionToken();
-                }
-            } catch (err) {
-                console.error("❌ Session validation crashed:", err);
-                clearSessionToken(); // Safety clear
+        try {
+            console.log("🔍 Validating session...");
+            const session = await validateCustomSession(token);
+
+            console.log("📄 Validation Result:", session);
+
+            if (session && session.role) {
+                console.log(`✅ Session Validified. Role: ${session.role}. Redirecting...`);
+                redirectToPortal(session.role);
+                return;
+            } else {
+                throw new Error("Session invalid or role missing");
             }
+
+        } catch (err) {
+            console.error("❌ Login Failed during validation:", err);
+
+            // Clear bad state
+            clearSessionToken();
+
+            // Show user visual feedback
+            showMessage("Login session expired. Please try again.", "error");
+
+            // Strip bad params from URL without reload (if possible) or just stop
+            // We don't want to infinite loop, so we stop here.
+            // wixLocation.to("/portal-landing"); // Optional: clean URL
         }
     }
 
@@ -364,47 +353,7 @@ async function handleMagicLinkLogin(token) {
     }
 }
 
-/**
- * Handle direct session token (from Social OAuth Redirect)
- * Uses custom session tokens only (no Wix member sessions)
- * Defaults all users to indemnitor role (defendants use case lookup)
- */
-async function handleSocialSession(sessionToken) {
-    console.log("🔐 Processing social session...");
-    showMessage("Finalizing login...", "info");
-    showLoading();
-
-    try {
-        // Store custom session token in browser
-        const stored = setSessionToken(sessionToken);
-        console.log("📦 Custom session stored:", stored);
-
-        // ✅ SIMPLIFIED: Default everyone to indemnitor
-        // Defendants can use case lookup at top of portal
-        const targetRole = 'indemnitor';
-        console.log("✅ Defaulting to indemnitor role (defendants use case lookup)");
-
-        showMessage("Welcome! Redirecting to your portal...", "success");
-
-        // Small delay to show success message
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Redirect to indemnitor portal
-        redirectToPortalWithToken(targetRole, sessionToken);
-
-    } catch (error) {
-        // Handle errors
-        console.error("❌ Social login failed:", error);
-        showMessage("Login failed. Please try again or contact support.", "error");
-        hideLoading();
-
-        // Clear any partial session
-        clearSessionToken();
-
-        // Allow user to retry
-        setTimeout(() => wixLocation.to('/portal-landing'), 3000);
-    }
-}
+// handleSocialSession removed - unified logic in onReady
 
 /**
  * Validate email or phone number format
