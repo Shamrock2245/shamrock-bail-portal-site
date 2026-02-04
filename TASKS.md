@@ -29,6 +29,8 @@
 - [x] **Universal Payment Link:** Integrated SwipeSimple into Portals, SMS, and Email workflows.
 - [x] **Dashboard:** Repaired tab structure and added headers.
 - [x] **Liability Display:** Fixed hardcoded $50k placeholder; made dynamic.
+- [x] **Submit Button Fix:** Robust ID detection (`#btnSubmitInfo` / `#btnSubmitForm`) for Indemnitor Portal.
+- [x] **Git Sync:** Full parity achieved between local desktop and remote repo.
 
 ---
 
