@@ -452,14 +452,12 @@ function response(status, body) {
 
 /**
  * HTML that passes data back to the main window and closes popup, OR redirects if not in popup.
- */
-/**
- * HTML that passes data back to the main window and closes popup, OR redirects if not in popup.
  * ROBUST VERSION with retry logic and better error handling
  */
 function renderCloseScript(data, targetUrl) {
     const safeData = JSON.stringify(data);
     const safeTargetUrl = JSON.stringify(targetUrl);
+    const metaTargetUrl = targetUrl.replace(/&/g, '&amp;');
 
     return `
       <!DOCTYPE html>
@@ -467,7 +465,7 @@ function renderCloseScript(data, targetUrl) {
       <head>
         <title>Authenticating...</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta http-equiv="refresh" content="0;url=${targetUrl}">
+        <meta http-equiv="refresh" content="0;url=${metaTargetUrl}">
         <style>
             body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #f4f4f4; color: #333; }
             .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
