@@ -31,6 +31,7 @@ let currentIntake = null;
 let isSubmitting = false;
 let submitHandlerAttached = false;
 let eventListenersReady = false;
+let activeSubmitBtnId = '#btnSubmitForm'; // Default, will be auto-detected
 
 $w.onReady(async function () {
     // SEO: Prevent Indexing (Protected Page)
@@ -332,12 +333,16 @@ function attachSubmitHandler(attempt = 0) {
     const maxAttempts = 20;
     const delayMs = 250;
 
-    console.log(`🔍 Checking for #btnSubmitInfo... (attempt ${attempt + 1}/${maxAttempts})`);
-    if (!safeIsValid('#btnSubmitInfo')) {
+    // Detect which ID is being used
+    if (safeIsValid('#btnSubmitInfo')) activeSubmitBtnId = '#btnSubmitInfo';
+    else if (safeIsValid('#btnSubmitForm')) activeSubmitBtnId = '#btnSubmitForm';
+
+    console.log(`🔍 Checking for submit button (${activeSubmitBtnId})... (attempt ${attempt + 1}/${maxAttempts})`);
+
+    if (!safeIsValid(activeSubmitBtnId)) {
         if (attempt + 1 >= maxAttempts) {
-            console.error("❌ CRITICAL ERROR: '#btnSubmitInfo' not found on page. Check Element ID in Editor!");
-            console.error("   Expected ID: btnSubmitInfo");
-            console.error("   Check Wix Editor → Properties Panel → Element ID");
+            console.error(`❌ CRITICAL ERROR: Submit button not found (tried ${activeSubmitBtnId}).`);
+            console.error("   Please ensure button ID is '#btnSubmitForm' or '#btnSubmitInfo'");
             showError("Development Error: Submit button ID mismatch. Please check console.");
             return;
         }
@@ -346,14 +351,14 @@ function attachSubmitHandler(attempt = 0) {
         return;
     }
 
-    console.log("✅ Found #btnSubmitInfo, attaching handler...");
-    safeOnClick('#btnSubmitInfo', handleSubmitIntake);
+    console.log(`✅ Found ${activeSubmitBtnId}, attaching handler...`);
+    safeOnClick(activeSubmitBtnId, handleSubmitIntake);
     submitHandlerAttached = true;
-    console.log("✅ Submit button handler attached to #btnSubmitInfo");
+    console.log(`✅ Submit button handler attached to ${activeSubmitBtnId}`);
 
     // DIAGNOSTIC: Verify handler was attached
     try {
-        const btn = $w('#btnSubmitInfo');
+        const btn = $w(activeSubmitBtnId);
         console.log("   Button properties:", {
             id: btn.id,
             label: btn.label,
@@ -389,8 +394,8 @@ async function handleSubmitIntake() {
     try {
         console.log("🚀 Starting submission process...");
         isSubmitting = true;
-        safeDisable('#btnSubmitInfo');
-        safeSetText('#btnSubmitInfo', 'Submitting...');
+        safeDisable(activeSubmitBtnId);
+        safeSetText(activeSubmitBtnId, 'Submitting...');
         showLoading(true);
 
         const validation = validateIntakeForm();
@@ -434,8 +439,8 @@ async function handleSubmitIntake() {
         showError(error.message || 'Error submitting form.');
     } finally {
         isSubmitting = false;
-        safeEnable('#btnSubmitInfo');
-        safeSetText('#btnSubmitInfo', 'Submit Info');
+        safeEnable(activeSubmitBtnId);
+        safeSetText(activeSubmitBtnId, 'Submit Info');
         showLoading(false);
     }
 }
