@@ -53,6 +53,11 @@ function getConfig() {
     WIX_API_KEY: props.getProperty('GAS_API_KEY') || '',
     WIX_SITE_URL: props.getProperty('WIX_SITE_URL') || 'https://www.shamrockbailbonds.biz',
     WEBHOOK_URL: props.getProperty('WEBHOOK_URL') || '',
+    SLACK_WEBHOOK_NEW_CASES: props.getProperty('SLACK_WEBHOOK_NEW_CASES') || '',
+    SLACK_WEBHOOK_COURT_DATES: props.getProperty('SLACK_WEBHOOK_COURT_DATES') || '',
+    SLACK_WEBHOOK_FORFEITURES: props.getProperty('SLACK_WEBHOOK_FORFEITURES') || '',
+    SLACK_WEBHOOK_DISCHARGES: props.getProperty('SLACK_WEBHOOK_DISCHARGES') || '',
+    SLACK_WEBHOOK_GENERAL: props.getProperty('SLACK_WEBHOOK_GENERAL') || '',
     PAYMENT_LINK: 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
   };
   return _CONFIG_CACHE;
@@ -1459,6 +1464,16 @@ function handleNewIntake(caseId, data) {
     sheet.appendRow(row);
     const lastRow = sheet.getLastRow();
     console.log(`✅ New Intake Synced: ${intakeId}`);
+
+    // --- NOTIFY SLACK ---
+    try {
+      const slackText = `🚨 *New Indemnitor Intake*\n*Case:* ${data.caseNumber || 'Pending'}\n*Def:* ${data.defendantName}\n*Indemnitor:* ${data.indemnitorFullName}\n*Risk:* ${aiRisk || 'N/A'}`;
+      if (typeof sendSlackMessage === 'function') {
+        sendSlackMessage('#new-cases', slackText);
+      }
+    } catch (slackErr) {
+      console.warn('Failed to send Slack alert:', slackErr);
+    }
 
     // --- SYNC AI DATA BACK TO WIX ---
     if (aiRisk) {

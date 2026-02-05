@@ -366,10 +366,16 @@ function attachSubmitHandler(attempt = 0) {
     }
 
     // Force enable and show
-    const btn = $w(activeSubmitBtnId);
-    if (btn.collapsed) btn.expand();
-    if (btn.hidden) btn.show();
-    if (!btn.enabled) btn.enable();
+    try {
+        const btn = $w(activeSubmitBtnId);
+        if (btn.collapsed) btn.expand();
+        if (btn.hidden) btn.show();
+        if (typeof btn.enable === 'function') {
+            if (!btn.enabled) btn.enable();
+        }
+    } catch (e) {
+        console.warn(`⚠️ Could not modify button visibility: ${e.message}`);
+    }
 
     submitHandlerAttached = true;
     console.log(`✅ Submit handler fully attached to ${activeSubmitBtnId}`);

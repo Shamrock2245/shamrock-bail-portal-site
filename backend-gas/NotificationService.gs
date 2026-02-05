@@ -68,6 +68,36 @@ var NotificationService = (function() {
     },
 
     /**
+     * Helper to route legacy calls to correct webhook based on channel name.
+     * @param {string} channel - The channel name (e.g. '#new-cases')
+     * @param {string} text - The message text
+     * @param {Array} blocks - Optional Block Kit blocks
+     */
+    sendSlack: function(channel, text, blocks) {
+      // 1. Determine Webhook Key based on Channel
+      let webhookKey = 'SLACK_WEBHOOK_GENERAL'; // Default fallback
+      
+      if (channel) {
+        const ch = channel.toLowerCase().trim();
+        if (ch === '#new-cases' || ch.includes('new-cases')) webhookKey = 'SLACK_WEBHOOK_NEW_CASES';
+        else if (ch === '#court-dates' || ch.includes('court')) webhookKey = 'SLACK_WEBHOOK_COURT_DATES';
+        else if (ch === '#forfeitures' || ch.includes('forfeit')) webhookKey = 'SLACK_WEBHOOK_FORFEITURES';
+        else if (ch === '#discharges' || ch.includes('discharge')) webhookKey = 'SLACK_WEBHOOK_DISCHARGES';
+      }
+
+      // 2. Construct Payload
+      const payload = {
+        text: text || 'Notification'
+      };
+      if (blocks && Array.isArray(blocks) && blocks.length > 0) {
+        payload.blocks = blocks;
+      }
+
+      // 3. Send
+      return this.notifySlack(webhookKey, payload);
+    },
+
+    /**
      * Send SMS via Twilio.
      * Uses Script Properties for credentials.
      */
