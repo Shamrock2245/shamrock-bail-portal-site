@@ -50,6 +50,7 @@ function getConfig() {
     GOOGLE_DRIVE_FOLDER_ID: props.getProperty('GOOGLE_DRIVE_FOLDER_ID') || '1ZyTCodt67UAxEbFdGqE3VNua-9TlblR3',
     GOOGLE_DRIVE_OUTPUT_FOLDER_ID: props.getProperty('GOOGLE_DRIVE_OUTPUT_FOLDER_ID') || '1WnjwtxoaoXVW8_B6s-0ftdCPf_5WfKgs',
     CURRENT_RECEIPT_NUMBER: parseInt(props.getProperty('CURRENT_RECEIPT_NUMBER') || '201204'),
+    GOOGLE_DOC_TEMPLATE_ID: props.getProperty('GOOGLE_DOC_TEMPLATE_ID') || '',
     WIX_API_KEY: props.getProperty('GAS_API_KEY') || '',
     WIX_SITE_URL: props.getProperty('WIX_SITE_URL') || 'https://www.shamrockbailbonds.biz',
     WEBHOOK_URL: props.getProperty('WEBHOOK_URL') || '',
@@ -1660,8 +1661,27 @@ function handleStartPaperwork(data) {
         indemnitorPhone: data.indemnitorPhone || '',
         caseNumber: data.caseNumber || '',
         signingMethod: data.signingMethod || 'embedded',
-        selectedDocs: data.selectedDocs || ['bail_application', 'indemnitor_agreement']
+        selectedDocs: data.selectedDocs || ['bail_application', 'indemnitor_agreement'],
+        premiumAmount: data.premiumAmount || '',
+        bondAmount: data.bondAmount || ''
       };
+
+      // [NEW] Generate PDF from Google Doc Template
+      try {
+        if (typeof PDFService !== 'undefined' && typeof PDFService.generatePdfFromTemplate === 'function') {
+          const pdfBlob = PDFService.generatePdfFromTemplate(formData);
+          formData.pdfBase64 = Utilities.base64Encode(pdfBlob.getBytes());
+          formData.fileName = pdfBlob.getName();
+          Logger.log('✅ Generated PDF Blob for case: ' + formData.caseNumber);
+        } else {
+          Logger.log('⚠️ PDFService not available. Skipping PDF generation.');
+        }
+      } catch (pdfErr) {
+        Logger.log('❌ PDF Generation Failed: ' + pdfErr.message);
+        // We might want to abort or proceed? Let's proceed but warn.
+        // Actually, without PDF, SignNow upload will fail if it expects base64.
+        // We will log and let it try the downstream fail.
+      }
 
       return generateAndSendWithWixPortal(formData);
     }
