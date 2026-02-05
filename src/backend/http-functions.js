@@ -1363,8 +1363,9 @@ export async function get_pendingIntakes(request) {
         }
 
         // Query IntakeQueue for new/pending records
+        // 'gasSyncStatus' is the correct status field for GAS synchronization
         let query = wixData.query('IntakeQueue')
-            .hasSome('matchStatus', ['pending', null]);
+            .hasSome('gasSyncStatus', ['pending', 'retry']);
 
         // Filter by timestamp if provided
         if (since) {

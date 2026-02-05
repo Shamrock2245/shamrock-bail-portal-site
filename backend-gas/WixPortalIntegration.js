@@ -22,7 +22,12 @@ function getWixPortalConfig() {
   const apiKey = scriptProps.getProperty('WIX_API_KEY');
 
   if (!apiKey) {
-    Logger.log('⚠️ CRITICAL: WIX_API_KEY is missing in Script Properties.');
+    // Fallback to GAS_API_KEY if WIX_API_KEY not found
+    apiKey = scriptProps.getProperty('GAS_API_KEY');
+  }
+
+  if (!apiKey) {
+    Logger.log('⚠️ CRITICAL: WIX_API_KEY and GAS_API_KEY are missing in Script Properties.');
   }
 
   return {
@@ -387,41 +392,20 @@ const WIX_API_BASE = 'https://www.wixapis.com/v2';
  */
 function getWixIntakeQueue() {
   try {
-    const apiKey = PropertiesService.getScriptProperties().getProperty('WIX_API_KEY');
+    const props = PropertiesService.getScriptProperties();
+    let apiKey = props.getProperty('WIX_API_KEY') || props.getProperty('GAS_API_KEY');
 
     if (!apiKey) {
-      throw new Error('WIX_API_KEY not configured in Script Properties');
+      throw new Error('WIX_API_KEY/GAS_API_KEY not configured in Script Properties');
     }
 
-    // Query Wix Data API for pending intakes
-    const url = `${WIX_API_BASE}/data/v2/collections/IntakeQueue/queryData`;
-
-    const payload = {
-      filter: {
-        gasSyncStatus: {
-          $eq: 'pending'
-        }
-      },
-      sort: [
-        {
-          fieldName: '_createdDate',
-          order: 'desc'
-        }
-      ],
-      paging: {
-        limit: 100,
-        offset: 0
-      }
-    };
+    // Query Wix HTTP Function (Custom Endpoint)
+    // NOTE: We use the custom _functions endpoint because we use a custom GAS_API_KEY
+    const config = getWixPortalConfig();
+    const url = `${config.baseUrl}/pendingIntakes?apiKey=${encodeURIComponent(apiKey)}`;
 
     const options = {
-      method: 'post',
-      headers: {
-        'Authorization': apiKey,
-        'wix-site-id': WIX_SITE_ID,
-        'Content-Type': 'application/json'
-      },
-      payload: JSON.stringify(payload),
+      method: 'get',
       muteHttpExceptions: true
     };
 
@@ -434,9 +418,10 @@ function getWixIntakeQueue() {
     }
 
     const result = JSON.parse(responseText);
-    const validItems = result.dataItems || [];
+    const validItems = result.intakes || []; // Endpoint returns { intakes: [] }
 
     // TRANSFORM for Dashboard.html Schema
+    // Maps Wix IntakeQueue fields to Dashboard fields
     return validItems.map(item => ({
       IntakeID: item.caseId || item._id,
       DefendantName: item.defendantName || 'Unknown',
@@ -465,7 +450,8 @@ function getWixIntakeQueue() {
  */
 function markWixIntakeAsSynced(caseId) {
   try {
-    const apiKey = PropertiesService.getScriptProperties().getProperty('WIX_API_KEY');
+    const props = PropertiesService.getScriptProperties();
+    let apiKey = props.getProperty('WIX_API_KEY') || props.getProperty('GAS_API_KEY');
     if (!apiKey) throw new Error('WIX_API_KEY not configured');
 
     // First fetch to get _id

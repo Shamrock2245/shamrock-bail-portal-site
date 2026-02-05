@@ -839,11 +839,12 @@ function showError(msg) {
 
 function showSuccess(msg) {
     // Try both UI patterns (Group vs Message)
+    // Try both UI patterns (Group vs Message)
     try {
-        $w('#textSuccessMessage').text = msg;
-        $w('#groupSuccess').expand();
+        if ($w('#textSuccessMessage').valid) $w('#textSuccessMessage').text = msg;
+        safeShow('#groupSuccess');
         safeHide('#errorGroup');
-        setTimeout(() => $w('#groupSuccess').collapse(), 5000);
+        setTimeout(() => safeHide('#groupSuccess'), 5000);
     } catch (e) {
         safeSetText('#successMessage', msg);
         safeShow('#successMessage');
@@ -952,7 +953,7 @@ function setupDefendantLink() {
             // Check availability to prevent errors
             if ($w('#groupDefendantLink').valid && !$w('#groupDefendantLink').collapsed) {
                 console.log("🙈 Hiding Defendant Link (User is Indemnitor)");
-                $w('#groupDefendantLink').collapse();
+                safeCollapse('#groupDefendantLink');
             }
         });
     });
@@ -990,3 +991,5 @@ function setupDefendantLink() {
         }
     });
 }
+
+function safeCollapse(selector) { try { if ($w(selector).valid) $w(selector).collapse(); } catch (e) { } }

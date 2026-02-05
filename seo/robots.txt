@@ -1,47 +1,20 @@
-# Robots.txt for Shamrock Bail Bonds
-# https://www.shamrockbailbonds.biz
-
 User-agent: *
 Allow: /
-# Disallow internal Wix paths and sensitive member areas
-Disallow: /_api/
+# Block protected portal pages to save crawl budget
+Disallow: /portal-defendant
+Disallow: /portal-staff
+Disallow: /portal-indemnitor
 Disallow: /_functions/
-Disallow: /_partials/
-Disallow: /editor/
-Disallow: /members/
-Disallow: /admin/
-Disallow: /account/
+# Block internal Wix parameters
+Disallow: *?lightbox=
 
-# Allow specific useful paths if blocked by above wildcards (Member areas usually 403 anyway)
-Allow: /blog/
-Allow: /bail-bonds/
-Allow: /county-directory
-
-# Sitemap location
-Sitemap: https://www.shamrockbailbonds.biz/sitemap.xml
-
-# Crawl delay (optional, usually ignored by Google but good for others)
-Crawl-delay: 2
-
-# Professional bot rules
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-# Block Aggressive SEO bots (Access to these tools is usually paid anyway)
-User-agent: AhrefsBot
-Disallow: /
-
-User-agent: SemrushBot
-Disallow: /
-
-User-agent: MJ12bot
-Disallow: /
-
-User-agent: DotBot
-Disallow: /
-
+# Block aggressive known spam bots
 User-agent: PetalBot
 Disallow: /
+User-agent: DotBot
+Disallow: /
+User-agent: GPTBot
+Disallow: /
+
+# Sitemap Location
+Sitemap: https://www.shamrockbailbonds.biz/sitemap.xml
