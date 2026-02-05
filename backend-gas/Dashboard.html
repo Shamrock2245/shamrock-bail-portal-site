@@ -6703,7 +6703,7 @@
 
                         // 4. Hydrate Charges (if available in AI analysis or raw data)
                         if (item.Charges && Array.isArray(item.Charges)) {
-                             item.Charges.forEach(c => addCharge(c));
+                            item.Charges.forEach(c => addCharge(c));
                         }
 
                         // 5. Switch to Defendant Tab to start work
@@ -6722,68 +6722,8 @@
                 }
             };
 
-                    // Helper for Phones (Strip non-numeric)
-                    const toPhone = (p) => (p || '').replace(/[^\d]/g, '');
-
-                    console.log("📥 Loading Intake Data:", data);
-
-                    // 2. Populate Defendant
-                    UI.setValue('defendant-first-name', data.defendantFirstName);
-                    UI.setValue('defendant-middle-name', data.defendantMiddleName);
-                    UI.setValue('defendant-last-name', data.defendantLastName);
-                    UI.setValue('defendant-dob', toDateInput(data.defendantDOB));
-                    UI.setValue('defendant-ssn', data.defendantSSN);
-                    UI.setValue('defendant-dl-number', data.defendantDL || ''); // Mapping check
-                    UI.setValue('defendant-street-address', data.defendantAddress || data.defendantStreetAddress);
-                    UI.setValue('defendant-city', data.defendantCity);
-                    UI.setValue('defendant-state', data.defendantState);
-                    UI.setValue('defendant-zipcode', data.defendantZipCode);
-                    UI.setValue('defendant-phone', toPhone(data.defendantPhone));
-                    UI.setValue('defendant-email', data.defendantEmail);
-                    UI.setValue('defendant-booking-number', data.defendantBookingNumber);
-                    UI.setValue('defendant-county', data.county);
-                    UI.setValue('defendant-jail-facility', data.jailFacility);
-
-                    // 3. Populate Indemnitor 1
-                    UI.setValue('indemnitor-1-first', data.indemnitorFirstName);
-                    UI.setValue('indemnitor-1-middle', data.indemnitorMiddleName);
-                    UI.setValue('indemnitor-1-last', data.indemnitorLastName);
-                    UI.setValue('indemnitor-1-dob', toDateInput(data.indemnitorDOB));
-                    UI.setValue('indemnitor-1-ssn', data.indemnitorSSN);
-                    UI.setValue('indemnitor-1-dl', data.indemnitorDL);
-                    UI.setValue('indemnitor-1-address', data.indemnitorStreetAddress || data.indemnitorAddress);
-                    UI.setValue('indemnitor-1-city', data.indemnitorCity);
-                    UI.setValue('indemnitor-1-state', data.indemnitorState);
-                    UI.setValue('indemnitor-1-zip', data.indemnitorZipCode);
-                    UI.setValue('indemnitor-1-phone', toPhone(data.indemnitorPhone));
-                    UI.setValue('indemnitor-1-email', data.indemnitorEmail);
-                    UI.setValue('indemnitor-1-relation', data.indemnitorRelation || 'Self/Friend');
-
-                    // Employment
-                    UI.setValue('indemnitor-1-employer', data.indemnitorEmployer);
-                    UI.setValue('indemnitor-1-employer-phone', toPhone(data.indemnitorEmployerPhone));
-                    UI.setValue('indemnitor-1-supervisor', data.indemnitorSupervisorName);
-                    UI.setValue('indemnitor-1-supervisor-phone', toPhone(data.indemnitorSupervisorPhone));
-
-                    // References
-                    UI.setValue('indemnitor-1-ref1-name', data.reference1Name);
-                    UI.setValue('indemnitor-1-ref1-phone', toPhone(data.reference1Phone));
-                    UI.setValue('indemnitor-1-ref1-relation', data.reference1Relation || 'Reference');
-                    UI.setValue('indemnitor-1-ref1-address', data.reference1Address);
-
-                    UI.setValue('indemnitor-1-ref2-name', data.reference2Name);
-                    UI.setValue('indemnitor-1-ref2-phone', toPhone(data.reference2Phone));
-                    UI.setValue('indemnitor-1-ref2-relation', data.reference2Relation || 'Reference');
-                    UI.setValue('indemnitor-1-ref2-address', data.reference2Address);
-
-                    // 4. Case / Financials (if available)
-                    if (data.bondAmount) UI.setValue('bond-amount', data.bondAmount);
-                    if (data.premiumAmount) UI.setValue('premium-amount', data.premiumAmount);
-                    if (data.paymentPlan) UI.setValue('payment-terms', data.paymentPlan);
-
-                    UI.showToast(`✅ Loaded ${item.DefendantName} into form!`);
-                }
-            };
+            // Backward Compatibility Alias
+            const fetchQueue = Queue.fetch;
 
             // --- Module: Stats ---
             const Stats = {
