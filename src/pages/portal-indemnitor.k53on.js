@@ -481,51 +481,54 @@ export function btnSubmitInfo_click(event) {
  */
 const FIELD_MAP = {
     // Defendant
-    defendantFirst: ['#defendantFirstName', '#defFirstName', '#firstName', '#input1'],
-    defendantLast: ['#defendantLastName', '#defLastName', '#lastName', '#input2'],
-    defendantFull: ['#defendantName', '#defName', '#defendantFullName', '#inputName'],
-    defendantPhone: ['#defendantPhone', '#defPhone', '#inputPhoneIndemnitor', '#input3'],
-    defendantEmail: ['#defendantEmail', '#defEmail', '#inputEmailIndemnitor', '#input4'],
+    // User Provided: inputDefendantName, inputDefendantPhone, inputDefendantEmail
+    defendantFirst: ['#inputDefendantFirstName', '#defendantFirstName', '#defFirstName', '#firstName', '#input1'],
+    defendantLast: ['#inputDefendantLastName', '#defendantLastName', '#defLastName', '#lastName', '#input2'],
+    defendantFull: ['#inputDefendantName', '#defendantName', '#defName', '#defendantFullName', '#inputName'],
+    defendantPhone: ['#inputDefendantPhone', '#defendantPhone', '#defPhone', '#inputPhoneIndemnitor', '#input3'],
+    defendantEmail: ['#inputDefendantEmail', '#defendantEmail', '#defEmail', '#inputEmailIndemnitor', '#input4'],
 
     // Indemnitor
-    indemnitorFirst: ['#indemnitorFirstName', '#indemFirstName', '#firstName1', '#input5'],
-    indemnitorLast: ['#indemnitorLastName', '#indemLastName', '#lastName1', '#input6'],
-    indemnitorFull: ['#indemnitorName', '#indemName', '#indemnitorFullName'],
-    indemnitorEmail: ['#indemnitorEmail', '#indemEmail', '#email1'],
-    indemnitorPhone: ['#indemnitorPhone', '#indemPhone', '#phone1'],
+    // User Provided: inputIndemnitorName, inputIndemnitorEmail
+    indemnitorFirst: ['#inputIndemnitorFirstName', '#indemnitorFirstName', '#indemFirstName', '#firstName1', '#input5'],
+    indemnitorLast: ['#inputIndemnitorLastName', '#indemnitorLastName', '#indemLastName', '#lastName1', '#input6'],
+    indemnitorFull: ['#inputIndemnitorName', '#indemnitorName', '#indemName', '#indemnitorFullName'],
+    indemnitorEmail: ['#inputIndemnitorEmail', '#indemnitorEmail', '#indemEmail', '#email1'],
+    indemnitorPhone: ['#inputIndemnitorPhone', '#indemnitorPhone', '#indemPhone', '#phone1'],
 
     // Address (Special Handling for AddressInputs)
-    indemnitorAddress: ['#indemnitorAddress', '#indemnitorStreetAddress', '#addressInput1', '#address1'],
-    indemnitorCity: ['#indemnitorCity', '#indemCity', '#city1', '#inputCity'],
-    indemnitorState: ['#indemnitorState', '#indemState', '#state1', '#inputState'],
-    indemnitorZip: ['#indemnitorZipCode', '#indemnitorZip', '#indemZip', '#zip1'],
+    indemnitorAddress: ['#inputIndemnitorAddress', '#indemnitorAddress', '#indemnitorStreetAddress', '#addressInput1', '#address1'],
+    indemnitorCity: ['#inputIndemnitorCity', '#indemnitorCity', '#indemCity', '#city1', '#inputCity'],
+    indemnitorState: ['#inputIndemnitorState', '#indemnitorState', '#indemState', '#state1', '#inputState'],
+    indemnitorZip: ['#inputIndemnitorZip', '#inputIndemnitorZipCode', '#indemnitorZipCode', '#indemnitorZip', '#indemZip', '#zip1'],
+    residenceType: ['#inputIndemnitorResidenceType', '#residenceType'],
 
     // County
     county: ['#county', '#countyDropdown', '#dropdownCounty', '#dropdown1'],
 
     // Emp / Refs (Adding generic fallbacks just in case)
-    employerName: ['#indemnitorEmployerName', '#employerName'],
-    employerAddress: ['#indemnitorEmployerAddress', '#employerAddress'],
-    employerCity: ['#indemnitorEmployerCity'],
-    employerState: ['#indemnitorEmployerState'],
-    employerZip: ['#indemnitorEmployerZip'],
-    employerPhone: ['#indemnitorEmployerPhone'],
-    supervisorName: ['#indemnitorSupervisorName'],
-    supervisorPhone: ['#indemnitorSupervisorPhone'],
+    employerName: ['#inputIndemnitorEmployerName', '#indemnitorEmployerName'],
+    employerAddress: ['#inputIndemnitorEmployerAddress', '#indemnitorEmployerAddress'],
+    employerCity: ['#inputIndemnitorEmployerCity', '#indemnitorEmployerCity'],
+    employerState: ['#inputIndemnitorEmployerState', '#indemnitorEmployerState'],
+    employerZip: ['#inputIndemnitorEmployerZip', '#indemnitorEmployerZip'],
+    employerPhone: ['#inputIndemnitorEmployerPhone', '#indemnitorEmployerPhone'],
+    supervisorName: ['#inputIndemnitorSupervisorName', '#indemnitorSupervisorName'],
+    supervisorPhone: ['#inputIndemnitorSupervisorPhone', '#indemnitorSupervisorPhone'],
 
-    ref1Name: ['#reference1Name', '#ref1Name'],
-    ref1Phone: ['#reference1Phone', '#ref1Phone'],
-    ref1Address: ['#reference1Address', '#ref1Address'],
-    ref1City: ['#reference1City'],
-    ref1State: ['#reference1State'],
-    ref1Zip: ['#reference1Zip'],
+    ref1Name: ['#inputRef1Name', '#reference1Name', '#ref1Name'],
+    ref1Phone: ['#inputRef1Phone', '#reference1Phone', '#ref1Phone'],
+    ref1Address: ['#inputRef1Address', '#reference1Address', '#ref1Address'],
+    ref1City: ['#inputRef1City', '#reference1City'],
+    ref1State: ['#inputRef1State', '#reference1State'],
+    ref1Zip: ['#inputRef1Zip', '#reference1Zip', '#ref1Zip'],
 
-    ref2Name: ['#reference2Name', '#ref2Name'],
-    ref2Phone: ['#reference2Phone', '#ref2Phone'],
-    ref2Address: ['#reference2Address', '#ref2Address'],
-    ref2City: ['#reference2City'],
-    ref2State: ['#reference2State'],
-    ref2Zip: ['#reference2Zip'],
+    ref2Name: ['#inputRef2Name', '#reference2Name', '#ref2Name'],
+    ref2Phone: ['#inputRef2Phone', '#reference2Phone', '#ref2Phone'],
+    ref2Address: ['#inputRef2Address', '#reference2Address', '#ref2Address'],
+    ref2City: ['#inputRef2City', '#reference2City'],
+    ref2State: ['#inputRef2State', '#reference2State'],
+    ref2Zip: ['#inputRef2Zip', '#reference2Zip', '#ref2Zip'],
 
     consent: ['#checkboxConsent', '#consentCheckbox', '#checkbox1']
 };
