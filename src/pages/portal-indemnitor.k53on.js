@@ -475,23 +475,48 @@ export function btnSubmitInfo_click(event) {
 }
 
 /**
- * Validate intake form
+ * Validation intake form
+ * 2026 UPDATE: Supports both "First/Last" split and "Full Name" single fields
  */
 function validateIntakeForm() {
     const errors = [];
 
-    if (!safeGetValue('#defendantFirstName')?.trim()) errors.push('Defendant first name is required');
-    if (!safeGetValue('#defendantLastName')?.trim()) errors.push('Defendant last name is required');
+    // DEFENDANT NAME: Check Split OR Full
+    const defFirst = safeGetValue('#defendantFirstName');
+    const defLast = safeGetValue('#defendantLastName');
+    const defFull = safeGetValue('#defendantName') || safeGetValue('#defName'); // Fallback IDs
 
-    if (!safeGetValue('#indemnitorFirstName')?.trim()) errors.push('Your first name is required');
-    if (!safeGetValue('#indemnitorLastName')?.trim()) errors.push('Your last name is required');
+    if ((!defFirst || !defLast) && !defFull) {
+        errors.push('Defendant Name is required');
+    }
+
+    // INDEMNITOR NAME: Check Split OR Full
+    const indemFirst = safeGetValue('#indemnitorFirstName');
+    const indemLast = safeGetValue('#indemnitorLastName');
+    const indemFull = safeGetValue('#indemnitorName') || safeGetValue('#indemName'); // Fallback IDs
+
+    if ((!indemFirst || !indemLast) && !indemFull) {
+        errors.push('Your Name is required');
+    }
+
     if (!safeGetValue('#indemnitorEmail')?.trim()) errors.push('Your email is required');
     if (!safeGetValue('#indemnitorPhone')?.trim()) errors.push('Your phone number is required');
-    if (!safeGetValue('#indemnitorAddress')?.trim()) errors.push('Your address is required');
+
+    // Auto-detect Address ID
+    const addressVal = safeGetValue('#indemnitorAddress') || safeGetValue('#indemnitorStreetAddress') || safeGetValue('#address');
+    if (!addressVal?.trim()) errors.push('Your address is required');
+
     if (!safeGetValue('#indemnitorCity')?.trim()) errors.push('Your city is required');
     if (!safeGetValue('#indemnitorState')?.trim()) errors.push('Your state is required');
-    if (!safeGetValue('#indemnitorZipCode')?.trim()) errors.push('Your zip code is required');
-    if (!safeGetValue('#county')?.trim()) errors.push('County is required');
+    if (!safeGetValue('#indemnitorZipCode')?.trim()) {
+        // Try common variants if main one fails
+        const zipVal = safeGetValue('#indemnitorZip') || safeGetValue('#zipCode');
+        if (!zipVal) errors.push('Your zip code is required');
+    }
+
+    // County is critical
+    const countyVal = safeGetValue('#county') || safeGetValue('#countyDropdown');
+    if (!countyVal?.trim()) errors.push('County is required');
 
     // Consent Check
     if ($w('#checkboxConsent').valid && !$w('#checkboxConsent').checked) {
@@ -510,28 +535,56 @@ function validateIntakeForm() {
 
 /**
  * Collect all intake form data
+ * 2026 UPDATE: Smart Name Parsing (Full -> First/Last)
  */
 function collectIntakeFormData() {
+    // Helper to parse names
+    const parseName = (full, first, last) => {
+        if (first && last) return { first, last, full: `${first} ${last}`.trim() };
+        if (full) {
+            const parts = full.trim().split(' ');
+            const pFirst = parts[0];
+            const pLast = parts.slice(1).join(' ') || '';
+            return { first: pFirst, last: pLast, full: full.trim() };
+        }
+        return { first: '', last: '', full: '' };
+    };
+
+    // Get Raw Values
+    const rawDefName = safeGetValue('#defendantName') || safeGetValue('#defName');
+    const rawDefFirst = safeGetValue('#defendantFirstName');
+    const rawDefLast = safeGetValue('#defendantLastName');
+
+    const rawIndemName = safeGetValue('#indemnitorName') || safeGetValue('#indemName');
+    const rawIndemFirst = safeGetValue('#indemnitorFirstName');
+    const rawIndemLast = safeGetValue('#indemnitorLastName');
+
+    // Parse
+    const def = parseName(rawDefName, rawDefFirst, rawDefLast);
+    const indem = parseName(rawIndemName, rawIndemFirst, rawIndemLast);
+
     return {
         // Defendant Information
-        defendantName: `${safeGetValue('#defendantFirstName')} ${safeGetValue('#defendantLastName')}`.trim(),
-        defendantFirstName: safeGetValue('#defendantFirstName'),
-        defendantLastName: safeGetValue('#defendantLastName'),
+        defendantName: def.full,
+        defendantFirstName: def.first,
+        defendantLastName: def.last,
         defendantEmail: safeGetValue('#defendantEmail'),
         defendantPhone: safeGetValue('#defendantPhone'),
         defendantBookingNumber: safeGetValue('#defendantBookingNumber'),
 
         // Indemnitor Information
-        indemnitorName: `${safeGetValue('#indemnitorFirstName')} ${safeGetValue('#indemnitorMiddleName')} ${safeGetValue('#indemnitorLastName')}`.replace(/\s+/g, ' ').trim(),
-        indemnitorFirstName: safeGetValue('#indemnitorFirstName'),
-        indemnitorMiddleName: safeGetValue('#indemnitorMiddleName'),
-        indemnitorLastName: safeGetValue('#indemnitorLastName'),
+        indemnitorName: indem.full,
+        indemnitorFirstName: indem.first,
+        indemnitorMiddleName: safeGetValue('#indemnitorMiddleName') || '',
+        indemnitorLastName: indem.last,
         indemnitorEmail: safeGetValue('#indemnitorEmail'),
         indemnitorPhone: safeGetValue('#indemnitorPhone'),
-        indemnitorStreetAddress: safeGetValue('#indemnitorAddress'),
+
+        // Address Handling (with fallbacks)
+        indemnitorStreetAddress: safeGetValue('#indemnitorAddress') || safeGetValue('#indemnitorStreetAddress') || safeGetValue('#address'),
         indemnitorCity: safeGetValue('#indemnitorCity'),
         indemnitorState: safeGetValue('#indemnitorState'),
-        indemnitorZipCode: safeGetValue('#indemnitorZipCode'),
+        indemnitorZipCode: safeGetValue('#indemnitorZipCode') || safeGetValue('#indemnitorZip'),
         residenceType: safeGetValue('#residenceType'),
 
         // References
@@ -560,7 +613,7 @@ function collectIntakeFormData() {
         indemnitorSupervisorPhone: safeGetValue('#indemnitorSupervisorPhone'),
 
         // County
-        county: safeGetValue('#county'),
+        county: safeGetValue('#county') || safeGetValue('#countyDropdown'),
 
         // Session Info
         sessionToken: getSessionToken()
@@ -598,13 +651,147 @@ async function handleSendMessage() {
     try {
         safeDisable('#sendMessageBtn');
         // TODO: Implement message sending
-        showSuccess('Message sent!');
-        safeSetValue('#messageInput', '');
-    } catch (error) {
-        showError('Error sending message');
+        // await sendMessage(message); 
+        showError('Message feature coming soon'); // Placeholder
+
+        // Clear logic
+        if ($w('#messageInput').type === '$w.TextInput') {
+            $w('#messageInput').value = '';
+        }
+    } catch (e) {
+        console.error("Message Error", e);
     } finally {
         safeEnable('#sendMessageBtn');
     }
+}
+
+/**
+ * Setup Defendant Link Feature
+ * - Shows "Link Defendant" button/section if status is 'Need Info' or similar
+ */
+function setupDefendantLink() {
+    // Implementation of checking status and showing the link UI
+    // For now, placeholder or hidden. 
+    // We assume there's a group '#groupDefendantLink' that we can toggle.
+}
+
+// --- UTILITIES ---
+
+function safeGetValue(selector) {
+    try {
+        const el = $w(selector);
+        if (!el) return null;
+        if (el.type === '$w.TextInput' || el.type === '$w.TextBox') return el.value;
+        if (el.type === '$w.Dropdown') return el.value;
+        if (el.type === '$w.AddressInput') return el.value ? el.value.formatted : '';
+        if (el.value !== undefined) return el.value;
+        return null; // Checkbox?
+    } catch (e) {
+        // Element might not exist
+        return null;
+    }
+}
+
+function safeSetValue(selector, value) {
+    try {
+        const el = $w(selector);
+        if (!el) return;
+        if (value === undefined || value === null) value = '';
+
+        if (el.type === '$w.TextInput' || el.type === '$w.TextBox') el.value = value;
+        else if (el.type === '$w.Dropdown') el.value = value;
+        else if (el.type === '$w.Text') el.text = value; // Check if text element
+        else if (el.value !== undefined) el.value = value;
+    } catch (e) {
+        // Ignore
+    }
+}
+
+function safeSetText(selector, text) {
+    try {
+        const el = $w(selector);
+        if (el) el.text = text;
+    } catch (e) { }
+}
+
+function safeShow(selector) {
+    try { $w(selector).expand().then(() => $w(selector).show()); } catch (e) { }
+}
+
+function safeHide(selector) {
+    try { $w(selector).hide().then(() => $w(selector).collapse()); } catch (e) { }
+}
+
+function safeEnable(selector) {
+    try { $w(selector).enable(); } catch (e) { }
+}
+
+function safeDisable(selector) {
+    try { $w(selector).disable(); } catch (e) { }
+}
+
+function safeSetPlaceholder(selector, text) {
+    try { $w(selector).placeholder = text; } catch (e) { }
+}
+
+function safeSetOptions(selector, options) {
+    try { $w(selector).options = options; } catch (e) { }
+}
+
+function safeOnClick(selector, handler) {
+    try { $w(selector).onClick(handler); } catch (e) { }
+}
+
+function showLoading(show) {
+    if (show) safeShow('#loadingIndicator');
+    else safeHide('#loadingIndicator');
+}
+
+function showError(msg) {
+    safeSetText('#errorMessage', msg);
+    safeShow('#errorGroup');
+    setTimeout(() => safeHide('#errorGroup'), 5000);
+}
+
+function formatStatus(status) {
+    if (!status) return 'Unknown';
+    return status.replace(/_/g, ' ').toUpperCase();
+}
+
+function formatDocumentStatus(status) {
+    if (!status) return 'Pending';
+    return status.replace(/_/g, ' ').toUpperCase();
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString();
+}
+
+function setupPhoneFormatting(selector) {
+    try {
+        const el = $w(selector);
+        if (el) {
+            el.onInput((event) => {
+                let val = event.target.value.replace(/\D/g, '');
+                if (val.length > 10) val = val.substring(0, 10);
+                if (val.length >= 6) event.target.value = `(${val.substring(0, 3)}) ${val.substring(3, 6)}-${val.substring(6)}`;
+                else if (val.length >= 3) event.target.value = `(${val.substring(0, 3)}) ${val.substring(3)}`;
+                else event.target.value = val;
+            });
+        }
+    } catch (e) { }
+}
+
+function setupZipFormatting(selector) {
+    // Similar to phone but for zip
+} showSuccess('Message sent!');
+safeSetValue('#messageInput', '');
+    } catch (error) {
+    showError('Error sending message');
+} finally {
+    safeEnable('#sendMessageBtn');
+}
 }
 
 /**
@@ -666,38 +853,7 @@ function formatDate(dateString) {
     } catch (error) { return null; }
 }
 
-function showLoading(show) {
-    if (show) safeShow('#loadingSpinner');
-    else safeHide('#loadingSpinner');
-}
-
-function showError(message) {
-    safeSetText('#errorMessage', message);
-    safeShow('#errorMessage');
-    safeHide('#successMessage');
-    setTimeout(() => safeHide('#errorMessage'), 5000);
-}
-
-function showSuccess(message) {
-    safeSetText('#successMessage', message);
-    safeShow('#successMessage');
-    safeHide('#errorMessage');
-    setTimeout(() => safeHide('#successMessage'), 5000);
-}
-
-// SAFE WRAPPERS
-function safeSetValue(selector, value) { try { if ($w(selector).valid) $w(selector).value = value || ''; } catch (e) { } }
-function safeGetValue(selector) { try { return $w(selector).valid ? $w(selector).value : ''; } catch (e) { return ''; } }
-function safeSetText(selector, text) { try { if ($w(selector).valid) $w(selector).text = text || ''; } catch (e) { } }
-function safeSetOptions(selector, options) { try { if ($w(selector).valid) $w(selector).options = options || []; } catch (e) { } }
-function safeSetPlaceholder(selector, text) { try { if ($w(selector).valid) $w(selector).placeholder = text || ''; } catch (e) { } }
-function safeIsValid(selector) { try { return $w(selector).valid; } catch (e) { return false; } }
-function safeShow(selector) { try { if ($w(selector).valid) $w(selector).show(); } catch (e) { } }
-function safeHide(selector) { try { if ($w(selector).valid) $w(selector).hide(); } catch (e) { } }
-function safeDisable(selector) { try { if ($w(selector).valid) $w(selector).disable(); } catch (e) { } }
-function safeEnable(selector) { try { if ($w(selector).valid) $w(selector).enable(); } catch (e) { } }
-function safeOnClick(selector, handler) { try { if ($w(selector).valid) $w(selector).onClick(handler); } catch (e) { } }
-function safeOnInput(selector, handler) { try { if ($w(selector).valid) $w(selector).onInput(handler); } catch (e) { } }
+// [Deleted duplicate functions]
 
 export {
     initializePage,
