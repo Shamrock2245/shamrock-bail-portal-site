@@ -334,7 +334,7 @@ function attachSubmitHandler(attempt = 0) {
     const delayMs = 500; // Increased delay for stability
 
     // AGGRESSIVE ID DISCOVERY
-    const candidateIds = ['#btnSubmitInfo', '#btnSubmitForm', '#button1', '#submitBtn'];
+    const candidateIds = ['#btnSubmitPortal', '#btnSubmitInfo', '#btnSubmitForm', '#button1', '#submitBtn'];
 
     // Find the first valid one
     for (const id of candidateIds) {
