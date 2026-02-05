@@ -19,7 +19,7 @@
 
 function getWixPortalConfig() {
   const scriptProps = PropertiesService.getScriptProperties();
-  const apiKey = scriptProps.getProperty('WIX_API_KEY');
+  let apiKey = scriptProps.getProperty('WIX_API_KEY');
 
   if (!apiKey) {
     // Fallback to GAS_API_KEY if WIX_API_KEY not found
@@ -406,6 +406,7 @@ function getWixIntakeQueue() {
 
     const options = {
       method: 'get',
+      followRedirects: true,
       muteHttpExceptions: true
     };
 
@@ -418,6 +419,9 @@ function getWixIntakeQueue() {
     }
 
     const result = JSON.parse(responseText);
+    if (!result || !Array.isArray(result.intakes)) {
+      throw new Error(`Unexpected Wix pendingIntakes response shape: ${responseText}`);
+    }
     const validItems = result.intakes || []; // Endpoint returns { intakes: [] }
 
     // TRANSFORM for Dashboard.html Schema
@@ -439,9 +443,52 @@ function getWixIntakeQueue() {
     }));
 
   } catch (error) {
-    Logger.log('Error querying Wix IntakeQueue:', error);
-    return [];
+    Logger.log(`Error querying Wix IntakeQueue: ${error && error.stack ? error.stack : error}`);
+    throw new Error(`Failed to fetch Wix IntakeQueue: ${error.message || error}`);
   }
+}
+
+
+/**
+ * Diagnostic helper for Apps Script editor (Run > debugWixIntakeQueueConnection)
+ * Validates Script Properties and logs raw endpoint response for troubleshooting.
+ */
+function debugWixIntakeQueueConnection() {
+  const props = PropertiesService.getScriptProperties();
+  const wixKey = props.getProperty('WIX_API_KEY');
+  const gasKey = props.getProperty('GAS_API_KEY');
+  const apiKey = wixKey || gasKey;
+
+  const maskedKey = apiKey
+    ? `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}`
+    : '(missing)';
+
+  Logger.log(`WIX_API_KEY present: ${Boolean(wixKey)}`);
+  Logger.log(`GAS_API_KEY present: ${Boolean(gasKey)}`);
+  Logger.log(`Using key: ${maskedKey}`);
+
+  if (!apiKey) {
+    throw new Error('Missing script property. Set WIX_API_KEY or GAS_API_KEY in Project Settings.');
+  }
+
+  const config = getWixPortalConfig();
+  const url = `${config.baseUrl}/pendingIntakes?apiKey=${encodeURIComponent(apiKey)}`;
+
+  const response = UrlFetchApp.fetch(url, {
+    method: 'get',
+    followRedirects: true,
+    muteHttpExceptions: true
+  });
+
+  const code = response.getResponseCode();
+  const body = response.getContentText();
+  Logger.log(`pendingIntakes status: ${code}`);
+  Logger.log(`pendingIntakes body: ${body}`);
+
+  return {
+    statusCode: code,
+    parsed: JSON.parse(body)
+  };
 }
 
 /**
