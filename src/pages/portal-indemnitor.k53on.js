@@ -475,51 +475,137 @@ export function btnSubmitInfo_click(event) {
 }
 
 /**
+ * FIELD MAPPING CONFIGURATION
+ * Maps logical data points to lists of potential UI Element IDs.
+ * The system will check each ID in order until it finds a value.
+ */
+const FIELD_MAP = {
+    // Defendant
+    defendantFirst: ['#defendantFirstName', '#defFirstName', '#firstName', '#input1'],
+    defendantLast: ['#defendantLastName', '#defLastName', '#lastName', '#input2'],
+    defendantFull: ['#defendantName', '#defName', '#defendantFullName', '#inputName'],
+    defendantPhone: ['#defendantPhone', '#defPhone', '#inputPhoneIndemnitor', '#input3'],
+    defendantEmail: ['#defendantEmail', '#defEmail', '#inputEmailIndemnitor', '#input4'],
+
+    // Indemnitor
+    indemnitorFirst: ['#indemnitorFirstName', '#indemFirstName', '#firstName1', '#input5'],
+    indemnitorLast: ['#indemnitorLastName', '#indemLastName', '#lastName1', '#input6'],
+    indemnitorFull: ['#indemnitorName', '#indemName', '#indemnitorFullName'],
+    indemnitorEmail: ['#indemnitorEmail', '#indemEmail', '#email1'],
+    indemnitorPhone: ['#indemnitorPhone', '#indemPhone', '#phone1'],
+
+    // Address (Special Handling for AddressInputs)
+    indemnitorAddress: ['#indemnitorAddress', '#indemnitorStreetAddress', '#addressInput1', '#address1'],
+    indemnitorCity: ['#indemnitorCity', '#indemCity', '#city1', '#inputCity'],
+    indemnitorState: ['#indemnitorState', '#indemState', '#state1', '#inputState'],
+    indemnitorZip: ['#indemnitorZipCode', '#indemnitorZip', '#indemZip', '#zip1'],
+
+    // County
+    county: ['#county', '#countyDropdown', '#dropdownCounty', '#dropdown1'],
+
+    // Emp / Refs (Adding generic fallbacks just in case)
+    employerName: ['#indemnitorEmployerName', '#employerName'],
+    employerAddress: ['#indemnitorEmployerAddress', '#employerAddress'],
+    employerCity: ['#indemnitorEmployerCity'],
+    employerState: ['#indemnitorEmployerState'],
+    employerZip: ['#indemnitorEmployerZip'],
+    employerPhone: ['#indemnitorEmployerPhone'],
+    supervisorName: ['#indemnitorSupervisorName'],
+    supervisorPhone: ['#indemnitorSupervisorPhone'],
+
+    ref1Name: ['#reference1Name', '#ref1Name'],
+    ref1Phone: ['#reference1Phone', '#ref1Phone'],
+    ref1Address: ['#reference1Address', '#ref1Address'],
+    ref1City: ['#reference1City'],
+    ref1State: ['#reference1State'],
+    ref1Zip: ['#reference1Zip'],
+
+    ref2Name: ['#reference2Name', '#ref2Name'],
+    ref2Phone: ['#reference2Phone', '#ref2Phone'],
+    ref2Address: ['#reference2Address', '#ref2Address'],
+    ref2City: ['#reference2City'],
+    ref2State: ['#reference2State'],
+    ref2Zip: ['#reference2Zip'],
+
+    consent: ['#checkboxConsent', '#consentCheckbox', '#checkbox1']
+};
+
+/**
+ * Resolver Helper
+ * Checks array of element IDs and returns the first non-empty value found.
+ */
+function resolveFieldValue(fieldKey) {
+    const candidates = FIELD_MAP[fieldKey] || [];
+    for (const selector of candidates) {
+        const val = safeGetValue(selector);
+        if (val && typeof val === 'string' && val.trim().length > 0) {
+            return { value: val, source: selector }; // Return value and where we found it
+        }
+        if (val && typeof val !== 'string') { // Checkbox or object
+            return { value: val, source: selector };
+        }
+    }
+    return { value: null, source: null };
+}
+
+/**
+ * Debugging Tool
+ * Logs what the form "sees" to help identify ID mismatches.
+ */
+function debugFormState() {
+    console.log("🕵️‍♂️ STARTING FORM DIAGNOSTIC 🕵️‍♂️");
+    const report = {};
+    Object.keys(FIELD_MAP).forEach(key => {
+        const res = resolveFieldValue(key);
+        report[key] = res.source ? `✅ Found in ${res.source} ("${String(res.value).substring(0, 15)}...")` : `❌ NOT FOUND (Checked: ${FIELD_MAP[key].join(', ')})`;
+    });
+    console.log(JSON.stringify(report, null, 2));
+    console.log("🕵️‍♂️ END DIAGNOSTIC 🕵️‍♂️");
+}
+
+/**
  * Validation intake form
- * 2026 UPDATE: Supports both "First/Last" split and "Full Name" single fields
+ * 2026 UPDATE: Uses FIELD_MAP Resolution
  */
 function validateIntakeForm() {
+    debugFormState(); // Run diagnostic on every attempt
+
     const errors = [];
 
-    // DEFENDANT NAME: Check Split OR Full
-    const defFirst = safeGetValue('#defendantFirstName');
-    const defLast = safeGetValue('#defendantLastName');
-    const defFull = safeGetValue('#defendantName') || safeGetValue('#defName'); // Fallback IDs
+    // Defendant Name
+    const defFirst = resolveFieldValue('defendantFirst').value;
+    const defLast = resolveFieldValue('defendantLast').value;
+    const defFull = resolveFieldValue('defendantFull').value;
 
     if ((!defFirst || !defLast) && !defFull) {
         errors.push('Defendant Name is required');
     }
 
-    // INDEMNITOR NAME: Check Split OR Full
-    const indemFirst = safeGetValue('#indemnitorFirstName');
-    const indemLast = safeGetValue('#indemnitorLastName');
-    const indemFull = safeGetValue('#indemnitorName') || safeGetValue('#indemName'); // Fallback IDs
+    // Indemnitor Name
+    const indemFirst = resolveFieldValue('indemnitorFirst').value;
+    const indemLast = resolveFieldValue('indemnitorLast').value;
+    const indemFull = resolveFieldValue('indemnitorFull').value;
 
     if ((!indemFirst || !indemLast) && !indemFull) {
         errors.push('Your Name is required');
     }
 
-    if (!safeGetValue('#indemnitorEmail')?.trim()) errors.push('Your email is required');
-    if (!safeGetValue('#indemnitorPhone')?.trim()) errors.push('Your phone number is required');
+    if (!resolveFieldValue('indemnitorEmail').value) errors.push('Your email is required');
+    if (!resolveFieldValue('indemnitorPhone').value) errors.push('Your phone number is required');
 
-    // Auto-detect Address ID
-    const addressVal = safeGetValue('#indemnitorAddress') || safeGetValue('#indemnitorStreetAddress') || safeGetValue('#address');
-    if (!addressVal?.trim()) errors.push('Your address is required');
+    if (!resolveFieldValue('indemnitorAddress').value) errors.push('Your address is required');
+    if (!resolveFieldValue('indemnitorCity').value) errors.push('Your city is required');
+    if (!resolveFieldValue('indemnitorState').value) errors.push('Your state is required');
+    if (!resolveFieldValue('indemnitorZip').value) errors.push('Your zip code is required');
 
-    if (!safeGetValue('#indemnitorCity')?.trim()) errors.push('Your city is required');
-    if (!safeGetValue('#indemnitorState')?.trim()) errors.push('Your state is required');
-    if (!safeGetValue('#indemnitorZipCode')?.trim()) {
-        // Try common variants if main one fails
-        const zipVal = safeGetValue('#indemnitorZip') || safeGetValue('#zipCode');
-        if (!zipVal) errors.push('Your zip code is required');
-    }
+    if (!resolveFieldValue('county').value) errors.push('County is required');
 
-    // County is critical
-    const countyVal = safeGetValue('#county') || safeGetValue('#countyDropdown');
-    if (!countyVal?.trim()) errors.push('County is required');
-
-    // Consent Check
-    if ($w('#checkboxConsent').valid && !$w('#checkboxConsent').checked) {
+    // Consent
+    const consent = resolveFieldValue('consent');
+    if (consent.source && !consent.value) { // Use .value (checked state)
+        errors.push('You must agree to the Terms & Conditions.');
+    } else if (!consent.source && $w('#checkboxConsent').valid && !$w('#checkboxConsent').checked) {
+        // Fallback explicit check
         errors.push('You must agree to the Terms & Conditions.');
     }
 
@@ -535,10 +621,10 @@ function validateIntakeForm() {
 
 /**
  * Collect all intake form data
- * 2026 UPDATE: Smart Name Parsing (Full -> First/Last)
+ * 2026 UPDATE: Uses FIELD_MAP Resolution
  */
 function collectIntakeFormData() {
-    // Helper to parse names
+    // Parser
     const parseName = (full, first, last) => {
         if (first && last) return { first, last, full: `${first} ${last}`.trim() };
         if (full) {
@@ -550,72 +636,71 @@ function collectIntakeFormData() {
         return { first: '', last: '', full: '' };
     };
 
-    // Get Raw Values
-    const rawDefName = safeGetValue('#defendantName') || safeGetValue('#defName');
-    const rawDefFirst = safeGetValue('#defendantFirstName');
-    const rawDefLast = safeGetValue('#defendantLastName');
+    // Resolve Values
+    const def = parseName(
+        resolveFieldValue('defendantFull').value,
+        resolveFieldValue('defendantFirst').value,
+        resolveFieldValue('defendantLast').value
+    );
 
-    const rawIndemName = safeGetValue('#indemnitorName') || safeGetValue('#indemName');
-    const rawIndemFirst = safeGetValue('#indemnitorFirstName');
-    const rawIndemLast = safeGetValue('#indemnitorLastName');
-
-    // Parse
-    const def = parseName(rawDefName, rawDefFirst, rawDefLast);
-    const indem = parseName(rawIndemName, rawIndemFirst, rawIndemLast);
+    const indem = parseName(
+        resolveFieldValue('indemnitorFull').value,
+        resolveFieldValue('indemnitorFirst').value,
+        resolveFieldValue('indemnitorLast').value
+    );
 
     return {
         // Defendant Information
         defendantName: def.full,
         defendantFirstName: def.first,
         defendantLastName: def.last,
-        defendantEmail: safeGetValue('#defendantEmail'),
-        defendantPhone: safeGetValue('#defendantPhone'),
-        defendantBookingNumber: safeGetValue('#defendantBookingNumber'),
+        defendantEmail: resolveFieldValue('defendantEmail').value,
+        defendantPhone: resolveFieldValue('defendantPhone').value,
+        defendantBookingNumber: safeGetValue('#defendantBookingNumber'), // Optional
 
         // Indemnitor Information
         indemnitorName: indem.full,
         indemnitorFirstName: indem.first,
         indemnitorMiddleName: safeGetValue('#indemnitorMiddleName') || '',
         indemnitorLastName: indem.last,
-        indemnitorEmail: safeGetValue('#indemnitorEmail'),
-        indemnitorPhone: safeGetValue('#indemnitorPhone'),
+        indemnitorEmail: resolveFieldValue('indemnitorEmail').value,
+        indemnitorPhone: resolveFieldValue('indemnitorPhone').value,
 
-        // Address Handling (with fallbacks)
-        indemnitorStreetAddress: safeGetValue('#indemnitorAddress') || safeGetValue('#indemnitorStreetAddress') || safeGetValue('#address'),
-        indemnitorCity: safeGetValue('#indemnitorCity'),
-        indemnitorState: safeGetValue('#indemnitorState'),
-        indemnitorZipCode: safeGetValue('#indemnitorZipCode') || safeGetValue('#indemnitorZip'),
+        indemnitorStreetAddress: resolveFieldValue('indemnitorAddress').value,
+        indemnitorCity: resolveFieldValue('indemnitorCity').value,
+        indemnitorState: resolveFieldValue('indemnitorState').value,
+        indemnitorZipCode: resolveFieldValue('indemnitorZip').value,
         residenceType: safeGetValue('#residenceType'),
 
         // References
-        reference1Name: safeGetValue('#reference1Name'),
-        reference1Phone: safeGetValue('#reference1Phone'),
-        reference1Address: safeGetValue('#reference1Address'),
-        reference1City: safeGetValue('#reference1City'),
-        reference1State: safeGetValue('#reference1State'),
-        reference1Zip: safeGetValue('#reference1Zip'),
+        reference1Name: resolveFieldValue('ref1Name').value,
+        reference1Phone: resolveFieldValue('ref1Phone').value,
+        reference1Address: resolveFieldValue('ref1Address').value,
+        reference1City: resolveFieldValue('ref1City').value,
+        reference1State: resolveFieldValue('ref1State').value,
+        reference1Zip: resolveFieldValue('ref1Zip').value,
 
-        reference2Name: safeGetValue('#reference2Name'),
-        reference2Phone: safeGetValue('#reference2Phone'),
-        reference2Address: safeGetValue('#reference2Address'),
-        reference2City: safeGetValue('#reference2City'),
-        reference2State: safeGetValue('#reference2State'),
-        reference2Zip: safeGetValue('#reference2Zip'),
+        reference2Name: resolveFieldValue('ref2Name').value,
+        reference2Phone: resolveFieldValue('ref2Phone').value,
+        reference2Address: resolveFieldValue('ref2Address').value,
+        reference2City: resolveFieldValue('ref2City').value,
+        reference2State: resolveFieldValue('ref2State').value,
+        reference2Zip: resolveFieldValue('ref2Zip').value,
 
         // Employment
-        indemnitorEmployerName: safeGetValue('#indemnitorEmployerName'),
-        indemnitorEmployerAddress: safeGetValue('#indemnitorEmployerAddress'),
-        indemnitorEmployerCity: safeGetValue('#indemnitorEmployerCity'),
-        indemnitorEmployerState: safeGetValue('#indemnitorEmployerState'),
-        indemnitorEmployerZip: safeGetValue('#indemnitorEmployerZip'),
-        indemnitorEmployerPhone: safeGetValue('#indemnitorEmployerPhone'),
-        indemnitorSupervisorName: safeGetValue('#indemnitorSupervisorName'),
-        indemnitorSupervisorPhone: safeGetValue('#indemnitorSupervisorPhone'),
+        indemnitorEmployerName: resolveFieldValue('employerName').value,
+        indemnitorEmployerAddress: resolveFieldValue('employerAddress').value,
+        indemnitorEmployerCity: resolveFieldValue('employerCity').value,
+        indemnitorEmployerState: resolveFieldValue('employerState').value,
+        indemnitorEmployerZip: resolveFieldValue('employerZip').value,
+        indemnitorEmployerPhone: resolveFieldValue('employerPhone').value,
+        indemnitorSupervisorName: resolveFieldValue('supervisorName').value,
+        indemnitorSupervisorPhone: resolveFieldValue('supervisorPhone').value,
 
         // County
-        county: safeGetValue('#county') || safeGetValue('#countyDropdown'),
+        county: resolveFieldValue('county').value,
 
-        // Session Info
+        // Session
         sessionToken: getSessionToken()
     };
 }
