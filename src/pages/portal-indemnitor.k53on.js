@@ -677,6 +677,8 @@ function setupDefendantLink() {
 
 // --- UTILITIES ---
 
+// --- UTILITIES ---
+
 function safeGetValue(selector) {
     try {
         const el = $w(selector);
@@ -685,9 +687,8 @@ function safeGetValue(selector) {
         if (el.type === '$w.Dropdown') return el.value;
         if (el.type === '$w.AddressInput') return el.value ? el.value.formatted : '';
         if (el.value !== undefined) return el.value;
-        return null; // Checkbox?
+        return null;
     } catch (e) {
-        // Element might not exist
         return null;
     }
 }
@@ -700,18 +701,13 @@ function safeSetValue(selector, value) {
 
         if (el.type === '$w.TextInput' || el.type === '$w.TextBox') el.value = value;
         else if (el.type === '$w.Dropdown') el.value = value;
-        else if (el.type === '$w.Text') el.text = value; // Check if text element
+        else if (el.type === '$w.Text') el.text = value;
         else if (el.value !== undefined) el.value = value;
-    } catch (e) {
-        // Ignore
-    }
+    } catch (e) { }
 }
 
 function safeSetText(selector, text) {
-    try {
-        const el = $w(selector);
-        if (el) el.text = text;
-    } catch (e) { }
+    try { $w(selector).text = text || ''; } catch (e) { }
 }
 
 function safeShow(selector) {
@@ -742,6 +738,10 @@ function safeOnClick(selector, handler) {
     try { $w(selector).onClick(handler); } catch (e) { }
 }
 
+function safeOnInput(selector, handler) {
+    try { $w(selector).onInput(handler); } catch (e) { }
+}
+
 function showLoading(show) {
     if (show) safeShow('#loadingIndicator');
     else safeHide('#loadingIndicator');
@@ -753,45 +753,49 @@ function showError(msg) {
     setTimeout(() => safeHide('#errorGroup'), 5000);
 }
 
+function showSuccess(msg) {
+    // Try both UI patterns (Group vs Message)
+    try {
+        $w('#textSuccessMessage').text = msg;
+        $w('#groupSuccess').expand();
+        safeHide('#errorGroup');
+        setTimeout(() => $w('#groupSuccess').collapse(), 5000);
+    } catch (e) {
+        safeSetText('#successMessage', msg);
+        safeShow('#successMessage');
+        safeHide('#errorMessage');
+        setTimeout(() => safeHide('#successMessage'), 5000);
+    }
+}
+
 function formatStatus(status) {
-    if (!status) return 'Unknown';
-    return status.replace(/_/g, ' ').toUpperCase();
+    const statusMap = {
+        'pending': 'Pending Review',
+        'ready_for_documents': 'Preparing Documents',
+        'awaiting_signatures': 'Awaiting Signatures',
+        'completed': 'Active Bond',
+        'discharged': 'Discharged'
+    };
+    return statusMap[status] || (status ? status.replace(/_/g, ' ').toUpperCase() : 'Unknown');
 }
 
 function formatDocumentStatus(status) {
-    if (!status) return 'Pending';
-    return status.replace(/_/g, ' ').toUpperCase();
+    const statusMap = {
+        'pending': 'Pending',
+        'sent_for_signature': 'Pending Signature(s)',
+        'completed': 'Signed',
+        'filed': 'Filed'
+    };
+    return statusMap[status] || (status ? status.replace(/_/g, ' ').toUpperCase() : 'Pending');
 }
 
 function formatDate(dateStr) {
     if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString();
-}
-
-function setupPhoneFormatting(selector) {
     try {
-        const el = $w(selector);
-        if (el) {
-            el.onInput((event) => {
-                let val = event.target.value.replace(/\D/g, '');
-                if (val.length > 10) val = val.substring(0, 10);
-                if (val.length >= 6) event.target.value = `(${val.substring(0, 3)}) ${val.substring(3, 6)}-${val.substring(6)}`;
-                else if (val.length >= 3) event.target.value = `(${val.substring(0, 3)}) ${val.substring(3)}`;
-                else event.target.value = val;
-            });
-        }
-    } catch (e) { }
-}
-
-function setupZipFormatting(selector) {
-    // Similar to phone but for zip
-} showSuccess('Message sent!');
-safeSetValue('#messageInput', '');
-    } catch (error) {
-    showError('Error sending message');
-} finally {
-    safeEnable('#sendMessageBtn');
-}
+        return new Date(dateStr).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric'
+        });
+    } catch (e) { return ''; }
 }
 
 /**
@@ -800,6 +804,8 @@ safeSetValue('#messageInput', '');
 function setupPhoneFormatting(selector) {
     safeOnInput(selector, () => {
         const value = safeGetValue(selector);
+        if (!value) return;
+
         const cleaned = value.replace(/\D/g, '');
         if (cleaned.length <= 10) {
             const formatted = cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
@@ -816,6 +822,8 @@ function setupPhoneFormatting(selector) {
 function setupZipFormatting(selector) {
     safeOnInput(selector, () => {
         const value = safeGetValue(selector);
+        if (!value) return;
+
         const cleaned = value.replace(/\D/g, '').substring(0, 5);
         if (cleaned !== value) {
             safeSetValue(selector, cleaned);
@@ -823,37 +831,6 @@ function setupZipFormatting(selector) {
     });
 }
 
-function formatStatus(status) {
-    const statusMap = {
-        'pending': 'Pending Review',
-        'ready_for_documents': 'Preparing Documents',
-        'awaiting_signatures': 'Awaiting Signatures',
-        'completed': 'Active Bond',
-        'discharged': 'Discharged'
-    };
-    return statusMap[status] || 'Unknown';
-}
-
-function formatDocumentStatus(status) {
-    const statusMap = {
-        'pending': 'Pending',
-        'sent_for_signature': 'Pending Signature(s)',
-        'completed': 'Signed',
-        'filed': 'Filed'
-    };
-    return statusMap[status] || status;
-}
-
-function formatDate(dateString) {
-    if (!dateString) return null;
-    try {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            month: 'short', day: 'numeric', year: 'numeric'
-        });
-    } catch (error) { return null; }
-}
-
-// [Deleted duplicate functions]
 
 export {
     initializePage,
