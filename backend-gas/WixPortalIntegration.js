@@ -392,8 +392,9 @@ const WIX_API_BASE = 'https://www.wixapis.com/v2';
  */
 function getWixIntakeQueue() {
   try {
-    const props = PropertiesService.getScriptProperties();
-    let apiKey = props.getProperty('WIX_API_KEY') || props.getProperty('GAS_API_KEY');
+    // Use centralized config for key - guaranteed to match other working functions
+    const config = getWixPortalConfig();
+    const apiKey = config.apiKey;
 
     if (!apiKey) {
       throw new Error('WIX_API_KEY/GAS_API_KEY not configured in Script Properties');
@@ -401,7 +402,6 @@ function getWixIntakeQueue() {
 
     // Query Wix HTTP Function (Custom Endpoint)
     // NOTE: We use the custom _functions endpoint because we use a custom GAS_API_KEY
-    const config = getWixPortalConfig();
     const url = `${config.baseUrl}/pendingIntakes?apiKey=${encodeURIComponent(apiKey)}`;
 
     const options = {

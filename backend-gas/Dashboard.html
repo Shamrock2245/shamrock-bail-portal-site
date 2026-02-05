@@ -6667,36 +6667,60 @@
                                 <td style="padding: 12px;"><span class="badge badge-warning">${item.Status || 'Pending'}</span></td>
                                 <td style="padding: 12px;">${dateStr}</td>
                                 <td style="padding: 12px; text-align: right;">
-                                    <button class="btn btn-sm btn-secondary" onclick='ShamrockApp.Queue.load(${JSON.stringify(item)})' title="Load to Form">&#8600; Load</button>
+                                    <button class="btn btn-sm btn-primary" onclick='ShamrockApp.Queue.process(${JSON.stringify(item)})' title="Load & Process">
+                                        ⬇️ Process
+                                    </button>
                                 </td>
                             </tr>`;
                     });
                     list.innerHTML = html;
                 },
 
-                approve: function (intakeId, btn) {
-                    // Deprecated or Not Implemented yet in this flow
-                    console.warn("Approve not implemented/needed for this flow");
-                },
+                process: function (item) {
+                    if (!confirm(`Process data for ${item.DefendantName}?\n\n⚠️ This will CLEAR and OVERWRITE the current form.`)) return;
 
-                load: function (item) {
-                    if (!confirm(`Load data for ${item.DefendantName}? Data will overwrite current "Generate Packet" form.`)) return;
-
-                    // 1. Switch to "Generate" tab
-                    // Check if switchTab global exists, else try UI.switchTab or manual trigger
                     try {
-                        if (typeof switchTab === 'function') switchTab(null, 'generate');
-                        else if (UI && UI.switchTab) UI.switchTab('generate');
-                        else document.querySelector('[onclick*="generate"]').click();
-                    } catch (e) { console.warn("Could not switch tab automatically", e); }
+                        // 1. Clear existing form to prevent ghost data
+                        clearAllFields();
 
-                    const data = item._original || {}; // Raw Wix Data
+                        // 2. Hydrate Defendant Info
+                        const defendantNameParts = (item.DefendantName || '').split(' ');
+                        UI.setValue('defendant-first-name', defendantNameParts[0]);
+                        UI.setValue('defendant-last-name', defendantNameParts.slice(1).join(' '));
+                        // Note: Wix Intake usually just has Name, Phone, Email for Indemnitor.
+                        // If Defendant info is available in raw data, map it here.
 
-                    // Helper for Dates (YYYY-MM-DD)
-                    const toDateInput = (d) => {
-                        if (!d) return '';
-                        try { return new Date(d).toISOString().split('T')[0]; } catch (e) { return ''; }
-                    };
+                        // 3. Hydrate Indemnitor Info
+                        // Map IntakeQueue item to Indemnitor Form Structure
+                        const indemnitorData = {
+                            firstName: item.FirstName || '',
+                            lastName: item.LastName || '',
+                            email: item.Email || '',
+                            phone: item.Phone || '',
+                            relationship: item.Relationship || 'Self'
+                        };
+                        addIndemnitor(indemnitorData);
+
+                        // 4. Hydrate Charges (if available in AI analysis or raw data)
+                        if (item.Charges && Array.isArray(item.Charges)) {
+                             item.Charges.forEach(c => addCharge(c));
+                        }
+
+                        // 5. Switch to Defendant Tab to start work
+                        // Use switchTab global if available, or click the button
+                        // Try programmatic switch first
+                        const defendantTabBtn = document.querySelector('button[onclick*="defendant"]');
+                        if (defendantTabBtn) defendantTabBtn.click();
+                        else if (typeof switchTab === 'function') switchTab(null, 'defendant');
+
+                        UI.showToast(`Loaded data for ${item.DefendantName}`, 'success');
+
+                    } catch (e) {
+                        console.error("Hydration Error:", e);
+                        UI.showToast("Error loading data: " + e.message, 'error');
+                    }
+                }
+            };
 
                     // Helper for Phones (Strip non-numeric)
                     const toPhone = (p) => (p || '').replace(/[^\d]/g, '');
