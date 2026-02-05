@@ -443,12 +443,26 @@ async function handleSubmitIntake() {
         showError(error.message || 'Error submitting form.');
     } finally {
         isSubmitting = false;
-        if ($w(activeSubmitBtnId).valid) {
+        if (activeSubmitBtnId && $w(activeSubmitBtnId).valid) {
             safeEnable(activeSubmitBtnId);
             safeSetText(activeSubmitBtnId, 'Submit Info');
         }
         showLoading(false);
     }
+}
+
+/**
+ * EXPORTED HANDLERS (Fallback for Editor Wiring)
+ * If dynamic attachment fails, user can wire 'onClick' in editor.
+ */
+export function btnSubmitPortal_click(event) {
+    if (!activeSubmitBtnId) activeSubmitBtnId = '#btnSubmitPortal';
+    handleSubmitIntake();
+}
+
+export function btnSubmitInfo_click(event) {
+    if (!activeSubmitBtnId) activeSubmitBtnId = '#btnSubmitInfo';
+    handleSubmitIntake();
 }
 
 /**
