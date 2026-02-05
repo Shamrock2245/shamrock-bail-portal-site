@@ -338,18 +338,26 @@ function attachSubmitHandler(attempt = 0) {
 
     // Find the first valid one
     for (const id of candidateIds) {
-        if ($w(id).valid) {
-            activeSubmitBtnId = id;
-            break;
+        // Just Try To Bind Everything (Brute Force)
+        try {
+            $w(id).onClick(handleSubmitIntake);
+            if ($w(id).valid) {
+                activeSubmitBtnId = id;
+                console.log(`✅ Bound to ${id} (valid=true)`);
+                break; // Found the Winner
+            } else {
+                console.log(`⚠️ Bound to ${id} (valid=false) - trying anyway`);
+            }
+        } catch (e) {
+            // Ignore
         }
     }
 
-    console.log(`🔍 Checking for submit button (Trying: ${activeSubmitBtnId})... (attempt ${attempt + 1}/${maxAttempts})`);
-
-    if (!safeIsValid(activeSubmitBtnId)) {
+    if (!activeSubmitBtnId) {
         if (attempt + 1 >= maxAttempts) {
-            console.error(`❌ CRITICAL UI ERROR: No submit button found. Checked: ${candidateIds.join(', ')}`);
-            showError("System Error: Submit button missing. Please refresh.");
+            console.error(`❌ CRITICAL UI ERROR: No VALID submit button found. Checked: ${candidateIds.join(', ')}`);
+            // Don't show confusing error to user if the brute force binding worked silently
+            // Just warn in console.
             return;
         }
 
@@ -363,13 +371,8 @@ function attachSubmitHandler(attempt = 0) {
     if (btn.hidden) btn.show();
     if (!btn.enabled) btn.enable();
 
-    console.log(`✅ Found ${activeSubmitBtnId}, attaching handler...`);
-
-    // Remove old handlers if possible (wix doesn't support off, so we just overwrite via onClick)
-    btn.onClick(handleSubmitIntake);
-
     submitHandlerAttached = true;
-    console.log(`✅ Submit handler attached to ${activeSubmitBtnId}`);
+    console.log(`✅ Submit handler fully attached to ${activeSubmitBtnId}`);
 }
 
 /**
