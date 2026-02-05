@@ -669,11 +669,7 @@ async function handleSendMessage() {
  * Setup Defendant Link Feature
  * - Shows "Link Defendant" button/section if status is 'Need Info' or similar
  */
-function setupDefendantLink() {
-    // Implementation of checking status and showing the link UI
-    // For now, placeholder or hidden. 
-    // We assume there's a group '#groupDefendantLink' that we can toggle.
-}
+// [Deleted duplicate setupDefendantLink placeholder]
 
 // --- UTILITIES ---
 
