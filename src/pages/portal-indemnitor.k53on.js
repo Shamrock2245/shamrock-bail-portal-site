@@ -429,12 +429,12 @@ async function handleSubmitIntake() {
             console.log('✅ Submission successful:', result);
             showLoading(false);
 
-            if ($w('#intakeFormGroup').valid) $w('#intakeFormGroup').collapse();
-            else if ($w('#groupStep3').valid) $w('#groupStep3').collapse();
+            // Use safe wrappers to prevent "is not a function" errors
+            safeHide('#intakeFormGroup');
+            safeHide('#groupStep3');
+            safeShow('#groupSuccess');
 
-            $w('#groupSuccess').expand();
-
-            $w('#textSuccessMessage').text = `Success! Your Case ID is: ${result.caseId}\n\nStand by. Our AI Agent is reviewing your file and will text you in a moment.`;
+            safeSetText('#textSuccessMessage', `Success! Your Case ID is: ${result.caseId}\n\nStand by. Our AI Agent is reviewing your file and will text you in a moment.`);
 
             wixWindow.scrollTo(0, 0);
 
