@@ -2,7 +2,7 @@
 import fetch from 'node-fetch';
 
 // 1. PASTE YOUR URL HERE (The one from the Deploy dialog)
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbw6rv8C3vDSSESiIUrJJ7Db8vAhKfuyoMNug7kdx_a37stdiqA5GPVWQwf5hFA5FzuRmg/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwAejGP73-cmF9Io50Pkyv9WUar5-gXWUM_1lgFjKvxxdYfs-PKQVYI4x-WYoeT8r8/exec';
 
 async function testEmail() {
     console.log("Testing GAS Email Endpoint...");

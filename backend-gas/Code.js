@@ -283,6 +283,11 @@ function doPost(e) {
       return createErrorResponse('Invalid JSON payload', ERROR_CODES.INVALID_JSON);
     }
 
+    // --- MERGE URL PARAMETERS (CRITICAL FOR WIX/3RD PARTY INTEGRATION) ---
+    // Allows passing apiKey/action in URL when body structure is fixed
+    if (e.parameter && e.parameter.apiKey && !data.apiKey) data.apiKey = e.parameter.apiKey;
+    if (e.parameter && e.parameter.action && !data.action) data.action = e.parameter.action;
+
     // --- WEBHOOK HANDLER (SOC II Aware) ---
     if (data.event && data.event.startsWith('document.')) {
       if (typeof handleSOC2Webhook === 'function') {
@@ -481,6 +486,7 @@ function handleAction(data) {
 
   // 1.7 SYSTEM
   if (action === 'getSystemStatus') return client_getSystemStatus();
+  if (action === 'logWixEvent') return handleWixLogEvent(data);
 
   // New action to handle PDF template requests
   if (action === 'getPDFTemplates') return getPDFTemplates(data);
@@ -2209,6 +2215,29 @@ function client_sendToWixPortal(data) {
   }
 
   return { success: true, documentId: snResult.documentId, message: "No signing links generated (download mode?)" };
+}
+
+/**
+ * Handles incoming logs from Wix "Advanced Log Tools"
+ * Expects: ?action=logWixEvent&apiKey=...
+ */
+function handleWixLogEvent(data) {
+  try {
+    // Log the entire payload to the processing log
+    // We strip apiKey/action to keep the log clean if possible, but data is fine
+    const logPayload = { ...data };
+    delete logPayload.apiKey;
+    delete logPayload.action;
+
+    if (typeof logProcessingEvent === 'function') {
+      logProcessingEvent('WIX_SYSTEM_LOG', logPayload);
+    } else {
+      console.log('WIX_SYSTEM_LOG:', JSON.stringify(logPayload));
+    }
+    return createResponse({ success: true });
+  } catch (e) {
+    return createErrorResponse(e.message);
+  }
 }
 
 
