@@ -873,7 +873,9 @@ function handleSendForSignature(data) {
     return { success: false, error: 'No template ID configured' };
   }
   const templateId = data.templateId || config.SIGNNOW_TEMPLATE_ID;
-  const docName = `Bond Application - ${formData.defendantFullName || 'Defendant'} - ${new Date().toISOString().split('T')[0]}`;
+  const cId = formData.caseNumber || formData.caseId || data.caseId || '';
+  const prefix = cId ? `[${cId}] ` : '';
+  const docName = `${prefix}Bond Application - ${formData.defendantFullName || 'Defendant'} - ${new Date().toISOString().split('T')[0]}`;
   try {
     // 1. Create Document
     const documentId = createDocumentFromTemplate(templateId, docName);
@@ -983,7 +985,9 @@ function createPortalSigningSession(data) {
   try {
     // 1. Create document from template
     const defendantName = data.defendantName || data.formData?.defendantName || 'Unknown';
-    const docName = `Bail Application - ${defendantName} - ${new Date().toISOString().split('T')[0]}`;
+    const cId = data.caseId || data.formData?.caseId || '';
+    const prefix = cId ? `[${cId}] ` : '';
+    const docName = `${prefix}Bail Application - ${defendantName} - ${new Date().toISOString().split('T')[0]}`;
     const documentId = createDocumentFromTemplate(templateId, docName);
 
     Logger.log('📄 Document created from template: ' + documentId);

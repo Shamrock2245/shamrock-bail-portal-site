@@ -1378,6 +1378,27 @@ export async function get_pendingIntakes(request) {
             .limit(100)
             .find({ suppressAuth: true });
 
+        // DEBUG HELPER (Added for GAS diagnostics)
+        if (request.query.debug === 'true') {
+            return ok({
+                headers: { 'Content-Type': 'application/json' },
+                body: {
+                    success: true,
+                    debug: true,
+                    collection: 'IntakeQueue',
+                    queryFilters: { hasSome: ['gasSyncStatus: pending, retry'], since: since || 'all' },
+                    foundCount: results.length,
+                    firstId: results.items.length > 0 ? results.items[0]._id : null,
+                    limit: 100,
+                    sample: results.items.length > 0 ? {
+                        id: results.items[0]._id,
+                        gasSyncStatus: results.items[0].gasSyncStatus,
+                        created: results.items[0]._createdDate
+                    } : null
+                }
+            });
+        }
+
         return ok({
             headers: { 'Content-Type': 'application/json' },
             body: {
