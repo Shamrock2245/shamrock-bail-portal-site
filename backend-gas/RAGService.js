@@ -47,13 +47,13 @@ function RAG_generateIntroSMS(lead) {
             JailLocation: context.jail_location
         };
 
-        // Use the centralized GeminiClient
+        // Use the centralized OpenAIClient
         // Ensure callOpenAI is available (global in GAS)
         if (typeof callOpenAI === 'function') {
             const aiResponse = callOpenAI(systemPrompt, JSON.stringify(userData));
             if (aiResponse) return aiResponse;
         } else {
-            console.warn("GeminiClient (callOpenAI) not found. Using fallback.");
+            console.warn("OpenAIClient (callOpenAI) not found. Using fallback.");
         }
 
     } catch (e) {

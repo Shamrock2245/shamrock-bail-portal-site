@@ -24,18 +24,58 @@ export async function submitIntakeForm(intakeData) {
         const config = await getConfig();
         console.log('📝 Submitting to IntakeQueue. Data keys:', Object.keys(intakeData));
 
-        // ... (keep lines 26-118)
+        // 1. Generate Case ID
+        const caseId = `CASE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+        // 2. Prepare Record
+        const newRecord = {
+            ...intakeData,
+            caseId: caseId,
+            status: 'pending', // Initial Status
+            gasSyncStatus: 'pending',
+            documentStatus: 'pending',
+            _createdDate: new Date(),
+            _updatedDate: new Date()
+        };
+
+        // 3. Insert into Wix Collection
+        const savedRecord = await wixData.insert(COLLECTIONS.INTAKE_QUEUE, newRecord, { suppressAuth: true });
+        console.log(`✅ Intake saved to Wix Collection: ${savedRecord._id} (Case: ${caseId})`);
+
+        // 4. Notify GAS (Async - don't block heavily, but wait for result to log)
+        try {
+            await notifyGASOfNewIntake(caseId);
+        } catch (gasError) {
+            console.error('⚠️ GAS Notification failed (non-fatal):', gasError);
+            // We continue, as the record is saved. A cron job can pick up pending syncs.
+        }
+
+        // 5. Notify Staff (Slack)
+        // Fire and forget to speed up response
+        notifyStaffOfNewIntake(savedRecord).catch(err => console.error('Slack Notification Failed:', err));
+
+        return {
+            success: true,
+            caseId: caseId,
+            recordId: savedRecord._id,
+            message: 'Intake submitted successfully.'
+        };
 
     } catch (error) {
         console.error('❌ Error submitting to IntakeQueue (Top Level):', error);
-        const config = await getConfig(); // Fetch again if needed or use from top scope if restructured
-        // Actually, let's fetch it at top of function to be safe.
+
+        // Fetch config safely if needed for error message
+        let supportPhone = "(239) 332-2245";
+        try {
+            const c = await getConfig();
+            if (c && c.brand) supportPhone = c.brand.supportPhone;
+        } catch (e) { }
 
         return {
             success: false,
             error: error.message || 'Unknown error',
             stack: error.stack,
-            message: `There was an error submitting your information. Please try again or call ${config.brand.supportPhone}.`
+            message: `There was an error submitting your information. Please try again or call ${supportPhone}.`
         };
     }
 }

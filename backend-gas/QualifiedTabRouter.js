@@ -60,7 +60,10 @@ var QUAL_ROUTER_CONFIG = {
     'Shamrock_Lead_Score',
     'Lead_Status',
     'Dashboard_Link',
-    'Action_Link' // Optional portal deep link
+    'Action_Link', // Optional portal deep link
+    'AI_Risk',
+    'AI_Rationale',
+    'AI_Score'
   ]
 };
 

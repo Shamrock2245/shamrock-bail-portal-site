@@ -5,6 +5,8 @@
         "Compliance.gs",
         "SecurityLogger.gs",
         "ComplianceControls.gs",
+        "Telemetry.gs",
+        "NotificationService.gs",
         "SetupUtilities.js",
         "Code.js",
         "Code_Helpers.js",
@@ -13,6 +15,8 @@
         "CourtEmailProcessor.js",
         "GoogleSearchConsole.js",
         "SOC2_WebhookHandler.js",
-        "SystemHealthCheck.js"
+        "SystemHealthCheck.js",
+        "ConfigBackend.js",
+        "Test_Suite.js"
     ]
 }

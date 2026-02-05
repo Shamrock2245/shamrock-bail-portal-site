@@ -6648,10 +6648,20 @@
                         const id = item.IntakeID;
                         const dateStr = item.Timestamp ? new Date(item.Timestamp).toLocaleString() : 'N/A';
 
+                        // AI Risk Badge Logic
+                        let riskBadge = '';
+                        if (item.AI_Risk) {
+                            const riskColor = item.AI_Risk === 'High' ? 'var(--error)' : (item.AI_Risk === 'Medium' ? 'var(--warning)' : 'var(--success)');
+                            riskBadge = `<span class="badge" style="background:${riskColor}; color:#fff; margin-left:8px; font-size:10px;" title="${item.AI_Rationale}">🤖 ${item.AI_Risk}</span>`;
+                        }
+
                         html += `
                             <tr>
                                 <td style="padding: 12px;">${id || 'N/A'}</td>
-                                <td style="padding: 12px;"><strong>${item.DefendantName || 'N/A'}</strong></td>
+                                <td style="padding: 12px;">
+                                    <strong>${item.DefendantName || 'N/A'}</strong>
+                                    ${riskBadge}
+                                </td>
                                 <td style="padding: 12px;">${item.FullName || 'Anon'}</td>
                                 <td style="padding: 12px;">${item.Role || 'Indemnitor'}</td>
                                 <td style="padding: 12px;"><span class="badge badge-warning">${item.Status || 'Pending'}</span></td>

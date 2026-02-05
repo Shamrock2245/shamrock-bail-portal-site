@@ -247,29 +247,24 @@ function notifyParties(data) {
 
   // 1. Notify Defendant
   if (data.contacts.defendantPhone) {
-    // Assuming sendSmsViaTwilio is available globally in GAS
-    if (typeof sendSmsViaTwilio === 'function') {
-      sendSmsViaTwilio(data.contacts.defendantPhone, body + paymentLink);
-      Logger.log(`📱 SMS sent to Defendant: ${data.contacts.defendantPhone}`);
-    } else {
-      Logger.log('⚠️ sendSmsViaTwilio function not found');
-    }
+    NotificationService.sendSms(data.contacts.defendantPhone, body + paymentLink);
+    Logger.log(`📱 SMS sent to Defendant: ${data.contacts.defendantPhone}`);
   }
   if (data.contacts.defendantEmail) {
-    MailApp.sendEmail(data.contacts.defendantEmail, subject, body + paymentLink);
+    NotificationService.sendEmail(data.contacts.defendantEmail, subject, body + paymentLink, body + paymentLink);
     Logger.log(`📧 Email sent to Defendant: ${data.contacts.defendantEmail}`);
   }
 
   // 2. Notify Indemnitor
-  if (data.contacts.indemnitorPhone && typeof sendSmsViaTwilio === 'function') {
+  if (data.contacts.indemnitorPhone) {
     const indBody = `Shamrock Bail Bonds Update:\n\nCourt Date scheduled for ${data.defendant}.\nDate: ${data.courtDate.toLocaleString()}\n\nPlease ensure they attend to avoid bond forfeiture.` + paymentLink;
-    sendSmsViaTwilio(data.contacts.indemnitorPhone, indBody);
+    NotificationService.sendSms(data.contacts.indemnitorPhone, indBody);
     Logger.log(`📱 SMS sent to Indemnitor: ${data.contacts.indemnitorPhone}`);
   }
   if (data.contacts.indemnitorEmail) {
     const indSubject = `URGENT: Court Date for ${data.defendant}`;
     const indEmailBody = `Shamrock Bail Bonds Notification\n\nA new court date has been scheduled for ${data.defendant}.\n\nWhen: ${data.courtDate.toLocaleString()}\nWhere: Courtroom ${data.courtroom}\nCase: ${data.caseNumber}\n\nIt is your responsibility as Indemnitor to ensure their appearance. Failure to appear will result in bond forfeiture.\n\nThank you,\nShamrock Bail Bonds${paymentLink}`;
-    MailApp.sendEmail(data.contacts.indemnitorEmail, indSubject, indEmailBody);
+    NotificationService.sendEmail(data.contacts.indemnitorEmail, indSubject, indEmailBody, indEmailBody);
     Logger.log(`📧 Email sent to Indemnitor: ${data.contacts.indemnitorEmail}`);
   }
 }
@@ -339,14 +334,14 @@ function notifyDischargeParties(data) {
   const smsBody = `Shamrock Bail Bonds Good News!\n\n${powerInfo} ${chargeInfo} for ${data.defendant} has been DISCHARGED.\n\n${disclaimer}`;
 
   // 1. Notify Indemnitor (Priority)
-  if (data.contacts.indemnitorPhone && typeof sendSmsViaTwilio === 'function') {
-    sendSmsViaTwilio(data.contacts.indemnitorPhone, smsBody);
+  if (data.contacts.indemnitorPhone) {
+    NotificationService.sendSms(data.contacts.indemnitorPhone, smsBody);
     Logger.log(`📱 Discharge SMS sent to Indemnitor: ${data.contacts.indemnitorPhone}`);
   }
 
   // 2. Notify Defendant
-  if (data.contacts.defendantPhone && typeof sendSmsViaTwilio === 'function') {
-    sendSmsViaTwilio(data.contacts.defendantPhone, smsBody);
+  if (data.contacts.defendantPhone) {
+    NotificationService.sendSms(data.contacts.defendantPhone, smsBody);
     Logger.log(`📱 Discharge SMS sent to Defendant: ${data.contacts.defendantPhone}`);
   }
 }
@@ -742,10 +737,14 @@ function setupLabels() {
 }
 
 function postToSlack(url, msg) {
-  if (!url) return;
-  try {
-    UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', payload: JSON.stringify(msg) });
-  } catch (e) { Logger.log(`Slack error: ${e.message}`); }
+  // REFACTORED: Use Unified NotificationService
+  // Note: msg in legacy code is { text: '...' }, NotificationService takes (channel, text, blocks)
+  // We can treat 'url' as a channel override if it's a webhook, or just pass the text.
+  // For compatibility with the legacy call structure, we extract the text.
+
+  if (msg && msg.text) {
+    NotificationService.sendSlack(null, msg.text, null);
+  }
 }
 
 function formatCourtDateSlackMessage(d) {

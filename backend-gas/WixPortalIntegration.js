@@ -446,7 +446,11 @@ function getWixIntakeQueue() {
       Role: 'indemnitor',
       Status: item.status || 'pending',
       Timestamp: item._createdDate,
-      _original: item // Critical for Queue.load()
+      _original: item, // Critical for Queue.load()
+      // 🧠 AI Fields (Synced from GAS)
+      AI_Risk: item.aiRisk || '',
+      AI_Score: item.aiScore || '',
+      AI_Rationale: item.aiRationale || ''
     }));
 
   } catch (error) {
@@ -665,7 +669,49 @@ function updateWixSignNowData(caseId, signNowData) {
     Logger.log(`SignNow data updated for case ${caseId}`);
     return true;
   } catch (error) {
-    Logger.log('Error updating SignNow data:', error);
+    return false;
+  }
+}
+
+/**
+ * Update Wix intake with AI Analysis (Risk, Score, Rationale)
+ */
+function updateWixIntakeWithAI(caseId, aiData) {
+  try {
+    const apiKey = PropertiesService.getScriptProperties().getProperty('WIX_API_KEY');
+    // First fetch to get _id
+    const intake = getWixIntakeByCaseId(caseId);
+    if (!intake) throw new Error(`Intake ${caseId} not found`);
+
+    const url = `${WIX_API_BASE}/data/v2/collections/IntakeQueue/dataItems/${intake._id}`;
+    const payload = {
+      dataItem: {
+        data: {
+          aiRisk: aiData.riskLevel,
+          aiScore: String(aiData.score),
+          aiRationale: aiData.rationale,
+          aiAnalyzedAt: new Date().toISOString()
+        }
+      }
+    };
+    const options = {
+      method: 'patch',
+      headers: { 'Authorization': apiKey, 'wix-site-id': WIX_SITE_ID, 'Content-Type': 'application/json' },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() !== 200) {
+      Logger.log(`Failed to update AI data: ${response.getContentText()}`);
+      return false;
+    }
+
+    Logger.log(`🤖 AI Data synced to Wix for case ${caseId}`);
+    return true;
+
+  } catch (e) {
+    Logger.log('Error updating AI data: ' + e.message);
     return false;
   }
 }

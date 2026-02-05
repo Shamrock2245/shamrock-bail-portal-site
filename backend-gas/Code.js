@@ -142,7 +142,8 @@ function doGet(e) {
     }
     // ---------------------------------------------
 
-    const VERSION = '6.0';
+    // --- APP VERSION CONTROL ---
+    const APP_VERSION = '7.1.0-EDITION-SYNCED';
 
     // --- SLACK ALERT ---
     if (e.parameter.action === 'sendSlackAlert') {
@@ -152,84 +153,61 @@ function doGet(e) {
     }
 
     // --- AUTOMATIC DEVICE DETECTION ---
-    // Get user agent from request headers (if available)
     let userAgent = '';
-    try {
-      // In GAS, user agent is not directly available in doGet()
-      // We'll use the page parameter with fallback to auto-detection via client-side
-      userAgent = e.parameter.userAgent || '';
-    } catch (err) {
-      userAgent = '';
-    }
+    try { userAgent = e.parameter.userAgent || ''; } catch (err) { }
 
-    // Determine page based on explicit parameter OR auto-detection
+    // Page Routing
     let page = e.parameter.page || 'Dashboard';
-
-    // Auto-detect device type if no explicit page parameter
     if (!e.parameter.page) {
-      // Check for mobile/tablet indicators in userAgent (if provided)
       const ua = userAgent.toLowerCase();
-
-      // Mobile detection (phones)
-      if (ua.includes('iphone') || ua.includes('android') && ua.includes('mobile')) {
-        page = 'mobile';
-      }
-      // Tablet detection (iPads, Android tablets)
-      else if (ua.includes('ipad') || ua.includes('tablet') ||
-        (ua.includes('android') && !ua.includes('mobile'))) {
-        page = 'tablet';
-      }
-      // Desktop (default)
-      else {
-        page = 'Dashboard';
-      }
+      if (ua.includes('iphone') || ua.includes('android') && ua.includes('mobile')) page = 'mobile';
+      else if (ua.includes('ipad') || ua.includes('tablet') || (ua.includes('android') && !ua.includes('mobile'))) page = 'tablet';
     }
-    // -----------------------------------
+
+    // Specialized Routing for Config Modal (if requested directly via URL)
+    if (page === 'ConfigModal') {
+      const template = HtmlService.createTemplateFromFile('ConfigModal');
+      template.appVersion = APP_VERSION;
+      return template.evaluate().setTitle('⚙️ Configuration').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
 
     // --- Mobile & Tablet Routing ---
-    if (page === 'mobile') {
-      const template = HtmlService.createTemplateFromFile('MobileDashboard');
+    if (page === 'mobile' || page === 'tablet') {
+      const templateName = page === 'mobile' ? 'MobileDashboard' : 'TabletDashboard';
+      const title = page === 'mobile' ? 'Shamrock Mobile' : 'Shamrock Tablet';
+
+      const template = HtmlService.createTemplateFromFile(templateName);
       template.mapsApiKey = PropertiesService.getScriptProperties().getProperty('GOOGLE_MAPS_API_KEY') || '';
+      template.appVersion = APP_VERSION; // Inject Version
+
       return template.evaluate()
-        .setTitle('Shamrock Mobile Dashboard')
+        .setTitle(title)
         .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
-    if (page === 'tablet') {
-      const template = HtmlService.createTemplateFromFile('TabletDashboard');
-      template.mapsApiKey = PropertiesService.getScriptProperties().getProperty('GOOGLE_MAPS_API_KEY') || '';
-      return template.evaluate()
-        .setTitle('Shamrock Tablet Dashboard')
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-    }
-    // ---------------------------------------------------
 
+    // --- STANDARD DASHBOARD ---
     // ALWAYS use template to support Dynamic URL Injection
-    const template = HtmlService.createTemplateFromFile(page);
+    const template = HtmlService.createTemplateFromFile(page); // Default 'Dashboard'
     template.mapsApiKey = PropertiesService.getScriptProperties().getProperty('GOOGLE_MAPS_API_KEY') || '';
+    template.appVersion = APP_VERSION; // Inject Version
 
     // 1. Inject Dynamic App URL (Self-Discovery)
     try {
       template.gasUrl = ScriptApp.getService().getUrl();
     } catch (err) {
-      console.warn('Failed to get service URL:', err);
-      template.gasUrl = ''; // Frontend will use fallback
+      template.gasUrl = '';
     }
 
-    // 2. Inject Prefill Data (if requested)
+    // 2. Inject Data (Robust)
+    template.data = getDashboardData();
     if (e.parameter.prefill === 'true') {
-      let prefillData = null;
       try {
         if (typeof getPrefillData === 'function') {
-          prefillData = getPrefillData();
+          const prefill = getPrefillData();
+          template.data = { ...template.data, ...prefill };
         }
-      } catch (err) {
-        console.warn('Failed to retrieve prefill data:', err);
-      }
-      template.data = prefillData;
-    } else {
-      template.data = null;
+      } catch (err) { console.warn('Prefill failed', err); }
     }
 
     return template.evaluate()
@@ -239,6 +217,28 @@ function doGet(e) {
 
   } catch (error) {
     return HtmlService.createHtmlOutput('<h1>Page Error</h1><p>' + error.message + '</p>');
+  }
+}
+
+/**
+ * Gather data for the Dashboard injection
+ */
+function getDashboardData() {
+  try {
+    const config = getConfig();
+    const user = Session.getActiveUser().getEmail();
+    return {
+      user: user,
+      env: 'production',
+      wixSiteUrl: config.WIX_SITE_URL || 'https://www.shamrockbailbonds.biz',
+      config: {
+        SIGNNOW_API_BASE: config.SIGNNOW_API_BASE,
+        // Don't expose secrets here
+      }
+    };
+  } catch (e) {
+    console.error("Error getting dashboard data: " + e.message);
+    return { error: e.message };
   }
 }
 
@@ -589,6 +589,11 @@ function createErrorResponse(message, code = 'INTERNAL_ERROR', details = null, u
 // SUB: TWILIO SMS
 // ============================================================================
 function sendSmsViaTwilio(to, body) {
+  // DEPRECATED: Use NotificationService.sendSms
+  if (typeof NotificationService !== 'undefined') {
+    return NotificationService.sendSms(to, body);
+  }
+
   const config = getConfig();
   if (!config.TWILIO_ACCOUNT_SID || !config.TWILIO_AUTH_TOKEN || !config.TWILIO_PHONE_NUMBER) {
     console.error("Twilio Secrets Missing");
@@ -611,8 +616,6 @@ function sendSmsViaTwilio(to, body) {
       "Body": body,
       "StatusCallback": "https://www.shamrockbailbonds.biz/_functions/twilioStatus"
     };
-    // UrlFetchApp doesn't support URLSearchParams automatically like node
-    // We construct the form data string manually or use payload object which UrlFetchApp handles for POST
 
     const response = UrlFetchApp.fetch(url, {
       method: "POST",
@@ -644,6 +647,12 @@ function sendSmsViaTwilio(to, body) {
  * @param {Array} blocks - Block Kit blocks
  */
 function sendSlackMessage(channel, text, blocks) {
+  // REFACTORED: Use Unified NotificationService
+  if (typeof NotificationService !== 'undefined') {
+    return NotificationService.sendSlack(channel, text, blocks);
+  }
+
+  // Fallback ( Legacy Logic )
   const config = getConfig();
   const botToken = PropertiesService.getScriptProperties().getProperty('SLACK_BOT_TOKEN');
   const webhookUrl = config.WEBHOOK_URL;
@@ -1340,16 +1349,22 @@ function getNextReceiptNumber() {
 }
 function sendEmailBasic(data) {
   // Simple email sender for Wix Magic Links fallback/integration
-  try {
-    MailApp.sendEmail({
-      to: data.to,
-      subject: data.subject,
-      htmlBody: data.htmlBody,
-      body: data.textBody
-    });
-    return { success: true };
-  } catch (e) {
-    return { success: false, error: e.toString() };
+  // REFACTORED: Now uses NotificationService for consistency
+  if (typeof NotificationService !== 'undefined') {
+    return NotificationService.sendEmail(data.to, data.subject, data.textBody, data.htmlBody);
+  } else {
+    // Fallback if Service is missing (should not happen in prod)
+    try {
+      MailApp.sendEmail({
+        to: data.to,
+        subject: data.subject,
+        htmlBody: data.htmlBody,
+        body: data.textBody
+      });
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.toString() };
+    }
   }
 }
 
@@ -1375,7 +1390,8 @@ function handleNewIntake(caseId, data) {
       sheet.appendRow([
         'Timestamp', 'IntakeID', 'Role', 'Email', 'Phone', 'FullName',
         'DefendantName', 'DefendantPhone', 'CaseNumber', 'Status',
-        'References', 'EmployerInfo', 'ResidenceType', 'ProcessedAt'
+        'References', 'EmployerInfo', 'ResidenceType', 'ProcessedAt',
+        'AI_Risk', 'AI_Rationale', 'AI_Score'
       ]);
       sheet.setFrozenRows(1);
     }
@@ -1398,6 +1414,25 @@ function handleNewIntake(caseId, data) {
       }
     }
 
+    // 🧠 AI ANALYST: Analyze Incoming Intake
+    let aiRisk = '', aiRationale = '', aiScore = '';
+    try {
+      const aiAnalysis = AI_analyzeFlightRisk({
+        name: data.defendantFullName || data.defendantName || '',
+        charges: '', // Charges often not in intake yet
+        bond: '',    // Bond often not in intake yet
+        residency: data.residenceType || 'Unknown',
+        employment: data.indemnitorEmployerName ? 'Employed' : 'Unknown',
+        history: 'Unknown',
+        ties: 'Family' // Inference based on indemnitor
+      });
+      aiRisk = aiAnalysis.riskLevel;
+      aiRationale = aiAnalysis.rationale;
+      aiScore = aiAnalysis.score;
+    } catch (aiErr) {
+      console.warn("AI Analysis failed for intake: " + aiErr.message);
+    }
+
     const row = [
       timestamp,
       intakeId, // <--- SYNC KEY
@@ -1415,12 +1450,24 @@ function handleNewIntake(caseId, data) {
         employerPhone: data.indemnitorEmployerPhone
       }),
       data.residenceType || '',
-      ''
+      '', // ProcessedAt
+      aiRisk,      // Col 15: AI Risk
+      aiRationale, // Col 16: AI Rationale
+      aiScore      // Col 17: AI Score
     ];
 
     sheet.appendRow(row);
     const lastRow = sheet.getLastRow();
     console.log(`✅ New Intake Synced: ${intakeId}`);
+
+    // --- SYNC AI DATA BACK TO WIX ---
+    if (aiRisk) {
+      updateWixIntakeWithAI(intakeId, {
+        riskLevel: aiRisk,
+        score: aiScore,
+        rationale: aiRationale
+      });
+    }
 
     // --- CRITICAL FIX: TRIGGER DOCUMENT GENERATION ---
     // The intake is saved, now we MUST trigger the SignNow flow

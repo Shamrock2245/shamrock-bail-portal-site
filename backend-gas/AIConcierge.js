@@ -115,6 +115,24 @@ function processConciergeQueue() {
                 lead.aiRationale = aiAnalysis.rationale;
                 lead.aiScore = aiAnalysis.score;
 
+                // --- PERSISTENCE START ---
+                try {
+                    // Write back to sheet if columns exist
+                    if (map.AI_Risk && map.AI_Score) {
+                        // Create array of values to update (Row is 1-indexed)
+                        const riskCell = sheet.getRange(rowNum, map.AI_Risk + 1);
+                        const scoreCell = sheet.getRange(rowNum, map.AI_Score + 1);
+                        const rationaleCell = map.AI_Rationale ? sheet.getRange(rowNum, map.AI_Rationale + 1) : null;
+
+                        riskCell.setValue(lead.aiRisk);
+                        scoreCell.setValue(lead.aiScore);
+                        if (rationaleCell) rationaleCell.setValue(lead.aiRationale);
+                    }
+                } catch (writeErr) {
+                    console.error("Failed to persist AI data: " + writeErr.toString());
+                }
+                // --- PERSISTENCE END ---
+
                 // Generate RAG Content ONCE
                 const smsBody = RAG_generateIntroSMS(lead);
 

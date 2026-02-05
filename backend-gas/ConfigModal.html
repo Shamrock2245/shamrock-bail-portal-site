@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <style>
+        :root {
+            --bg: #121212;
+            --surface: #1e1e1e;
+            --primary: #00e676;
+            /* Shamrock Green */
+            --primary-dim: #00b359;
+            --text: #e0e0e0;
+            --text-dim: #b0b0b0;
+            --border: #333;
+            --input-bg: #2c2c2c;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            color: var(--primary);
+            margin-top: 0;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: var(--text);
+            margin-top: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-dim);
+            font-size: 0.9em;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            box-sizing: border-box;
+            font-family: monospace;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(0, 230, 118, 0.1);
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dim);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .status-badge {
+            font-size: 0.8em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #333;
+            margin-left: auto;
+        }
+
+        .status-filled {
+            color: var(--primary);
+            background: rgba(0, 230, 118, 0.1);
+        }
+
+        .status-empty {
+            color: #ff5252;
+            background: rgba(255, 82, 82, 0.1);
+        }
+
+        .loader {
+            display: none;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .card-header h3 {
+            margin: 0;
+            font-size: 1.1em;
+            color: #fff;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot.success {
+            background-color: #2ecc71;
+            box-shadow: 0 0 5px #2ecc71;
+        }
+
+        .dot.error {
+            background-color: #e74c3c;
+            box-shadow: 0 0 5px #e74c3c;
+        }
+
+        .dot.pending {
+            background-color: #f1c40f;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>⚙️ System Configuration <span style="font-size:0.5em; color:var(--text-dim); float:right; margin-top:10px;">v
+            <?= appVersion ?>
+        </span></h2>
+
+    <!-- HEALTH DASHBOARD -->
+    <div class="card" style="margin-bottom: 20px; border-left: 4px solid #2ecc71;">
+        <div class="card-header">
+            <h3>🏥 System Health</h3>
+        </div>
+        <div class="form-group" style="display: flex; gap: 15px;">
+            <div id="status-slack" class="status-indicator">
+                <span class="dot pending"></span> Slack
+            </div>
+            <div id="status-twilio" class="status-indicator">
+                <span class="dot pending"></span> Twilio
+            </div>
+            <div id="status-gas" class="status-indicator">
+                <span class="dot success"></span> GAS Backend
+            </div>
+        </div>
+    </div>
+
+    <form id="configForm" onsubmit="event.preventDefault(); saveSettings();">
+
+        <!-- SLACK SECTION -->
+        <div class="card">
+            <h3>
+                <span style="font-size:1.5em">💬</span> Slack Webhooks
+            </h3>
+
+            <div class="form-group">
+                <label>New Cases (Lead Scoring)</label>
+                <input type="text" name="SLACK_WEBHOOK_NEW_CASES" placeholder="https://hooks.slack.com/..."
+                    autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>Court Dates (Daily)</label>
+                <input type="text" name="SLACK_WEBHOOK_COURT_DATES" placeholder="https://hooks.slack.com/...">
+            </div>
+
+            <div class="form-group">
+                <label>Forfeitures</label>
+                <input type="text" name="SLACK_WEBHOOK_FORFEITURES" placeholder="https://hooks.slack.com/...">
+            </div>
+
+            <div class="form-group">
+                <label>Discharges</label>
+                <input type="text" name="SLACK_WEBHOOK_DISCHARGES" placeholder="https://hooks.slack.com/...">
+            </div>
+
+            <div class="form-group">
+                <label>General (Fallback / Errors)</label>
+                <input type="text" name="SLACK_WEBHOOK_GENERAL" placeholder="https://hooks.slack.com/...">
+            </div>
+        </div>
+
+        <!-- TWILIO SECTION -->
+        <div class="card">
+            <h3>
+                <span style="font-size:1.5em">📱</span> Twilio SMS
+            </h3>
+
+            <div class="form-group">
+                <label>Account SID</label>
+                <input type="text" name="TWILIO_ACCOUNT_SID" placeholder="AC..." autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>Auth Token</label>
+                <input type="password" name="TWILIO_AUTH_TOKEN" placeholder="Token..." autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" name="TWILIO_PHONE_NUMBER" placeholder="+1234567890">
+            </div>
+        </div>
+
+        <div class="actions">
+            <div class="loader" id="loader"></div>
+            <button type="button" class="btn-secondary" onclick="google.script.host.close()">Cancel</button>
+            <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+
+    </form>
+
+    <script>
+        // Load config on start
+        window.onload = function () {
+            document.getElementById('loader').style.display = 'block';
+            google.script.run
+                .withSuccessHandler(populateForm)
+                .getConfigForUI();
+        };
+
+        function populateForm(config) {
+            document.getElementById('loader').style.display = 'none';
+            for (const [key, value] of Object.entries(config)) {
+                const input = document.getElementsByName(key)[0];
+                if (input) {
+                    input.value = value;
+                    // Visual feedback if value exists
+                    if (value) input.style.borderColor = '#00e676';
+                }
+            }
+
+            // Update Health Status
+            updateHealth('status-slack', config.SLACK_WEBHOOK_GENERAL);
+            updateHealth('status-twilio', config.TWILIO_ACCOUNT_SID && config.TWILIO_AUTH_TOKEN);
+        }
+
+        function updateHealth(elementId, isHealthy) {
+            const el = document.getElementById(elementId);
+            const dot = el.querySelector('.dot');
+            if (isHealthy) {
+                dot.className = 'dot success';
+            } else {
+                dot.className = 'dot error';
+            }
+        }
+        }
+
+        function saveSettings() {
+            const form = document.getElementById('configForm');
+            const formData = {};
+
+            // Collect specific fields
+            const inputs = form.querySelectorAll('input');
+            inputs.forEach(input => {
+                formData[input.name] = input.value;
+            });
+
+            const btn = document.querySelector('.btn-primary');
+            btn.innerText = 'Saving...';
+            btn.disabled = true;
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    btn.innerText = 'Saved!';
+                    setTimeout(() => google.script.host.close(), 1000);
+                })
+                .saveConfigFromUI(formData);
+        }
+    </script>
+
+</body>
+
+</html>

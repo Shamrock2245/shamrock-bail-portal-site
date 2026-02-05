@@ -331,19 +331,25 @@ function attachSubmitHandler(attempt = 0) {
     if (submitHandlerAttached) return;
 
     const maxAttempts = 20;
-    const delayMs = 250;
+    const delayMs = 500; // Increased delay for stability
 
-    // Detect which ID is being used
-    if (safeIsValid('#btnSubmitInfo')) activeSubmitBtnId = '#btnSubmitInfo';
-    else if (safeIsValid('#btnSubmitForm')) activeSubmitBtnId = '#btnSubmitForm';
+    // AGGRESSIVE ID DISCOVERY
+    const candidateIds = ['#btnSubmitInfo', '#btnSubmitForm', '#button1', '#submitBtn'];
 
-    console.log(`🔍 Checking for submit button (${activeSubmitBtnId})... (attempt ${attempt + 1}/${maxAttempts})`);
+    // Find the first valid one
+    for (const id of candidateIds) {
+        if ($w(id).valid) {
+            activeSubmitBtnId = id;
+            break;
+        }
+    }
+
+    console.log(`🔍 Checking for submit button (Trying: ${activeSubmitBtnId})... (attempt ${attempt + 1}/${maxAttempts})`);
 
     if (!safeIsValid(activeSubmitBtnId)) {
         if (attempt + 1 >= maxAttempts) {
-            console.error(`❌ CRITICAL ERROR: Submit button not found (tried ${activeSubmitBtnId}).`);
-            console.error("   Please ensure button ID is '#btnSubmitForm' or '#btnSubmitInfo'");
-            showError("Development Error: Submit button ID mismatch. Please check console.");
+            console.error(`❌ CRITICAL UI ERROR: No submit button found. Checked: ${candidateIds.join(', ')}`);
+            showError("System Error: Submit button missing. Please refresh.");
             return;
         }
 
@@ -351,24 +357,19 @@ function attachSubmitHandler(attempt = 0) {
         return;
     }
 
-    console.log(`✅ Found ${activeSubmitBtnId}, attaching handler...`);
-    safeOnClick(activeSubmitBtnId, handleSubmitIntake);
-    submitHandlerAttached = true;
-    console.log(`✅ Submit button handler attached to ${activeSubmitBtnId}`);
+    // Force enable and show
+    const btn = $w(activeSubmitBtnId);
+    if (btn.collapsed) btn.expand();
+    if (btn.hidden) btn.show();
+    if (!btn.enabled) btn.enable();
 
-    // DIAGNOSTIC: Verify handler was attached
-    try {
-        const btn = $w(activeSubmitBtnId);
-        console.log("   Button properties:", {
-            id: btn.id,
-            label: btn.label,
-            enabled: btn.enabled,
-            visible: btn.visible,
-            collapsed: btn.collapsed
-        });
-    } catch (e) {
-        console.error("   Could not read button properties:", e);
-    }
+    console.log(`✅ Found ${activeSubmitBtnId}, attaching handler...`);
+
+    // Remove old handlers if possible (wix doesn't support off, so we just overwrite via onClick)
+    btn.onClick(handleSubmitIntake);
+
+    submitHandlerAttached = true;
+    console.log(`✅ Submit handler attached to ${activeSubmitBtnId}`);
 }
 
 /**
@@ -400,47 +401,52 @@ async function handleSubmitIntake() {
 
         const validation = validateIntakeForm();
         if (!validation.valid) {
+            console.warn("⚠️ Validation failed:", validation.message);
             showError(validation.message);
+            isSubmitting = false; // Re-enable immediately
+            safeEnable(activeSubmitBtnId);
+            safeSetText(activeSubmitBtnId, 'Submit Info');
+            showLoading(false);
             return;
         }
 
         const formData = collectIntakeFormData();
+        console.log("📦 Payload prepared:", JSON.stringify(formData, null, 2));
 
         const result = await submitIntakeForm(formData);
+        console.log("📡 Backend response:", result);
 
         if (result.success) {
             console.log('✅ Submission successful:', result);
             showLoading(false);
 
-            // DEBUG: Show IDs to user to verify persistence
-            // wixWindow.openLightbox('Success', { message: `Case ID: ${result.caseId}` });
-
-            // Collapse the entire form group and show success
             if ($w('#intakeFormGroup').valid) $w('#intakeFormGroup').collapse();
-            else if ($w('#groupStep3').valid) $w('#groupStep3').collapse(); // Fallback
+            else if ($w('#groupStep3').valid) $w('#groupStep3').collapse();
 
             $w('#groupSuccess').expand();
 
-            // Show Case ID in success message
             $w('#textSuccessMessage').text = `Success! Your Case ID is: ${result.caseId}\n\nStand by. Our AI Agent is reviewing your file and will text you in a moment.`;
-            console.warn(`CONFIRMATION: Case ID ${result.caseId} created.`);
 
             wixWindow.scrollTo(0, 0);
 
             setTimeout(() => {
-                wixLocation.to(wixLocation.url);
-            }, 5000); // Increased delay to let them see the ID
+                const redirectUrl = wixLocation.url; // Reload same page to trigger dashboard view
+                console.log("🔄 Reloading page ->", redirectUrl);
+                wixLocation.to(redirectUrl);
+            }, 5000);
         } else {
             throw new Error(result.message || 'Submission failed');
         }
 
     } catch (error) {
-        console.error('Submit error:', error);
+        console.error('❌ Submit error stack:', error.stack);
         showError(error.message || 'Error submitting form.');
     } finally {
         isSubmitting = false;
-        safeEnable(activeSubmitBtnId);
-        safeSetText(activeSubmitBtnId, 'Submit Info');
+        if ($w(activeSubmitBtnId).valid) {
+            safeEnable(activeSubmitBtnId);
+            safeSetText(activeSubmitBtnId, 'Submit Info');
+        }
         showLoading(false);
     }
 }
