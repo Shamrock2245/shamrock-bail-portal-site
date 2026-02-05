@@ -542,7 +542,11 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
             // Existing user
             personId = lookup.personId;
             role = lookup.role;
-            caseId = lookup.caseId;
+
+            // Backfill Case ID for existing users (e.g. Staff or Data Anomaly)
+            // Ensures persistence even for legacy accounts or staff testing
+            caseId = lookup.caseId || ('CASE-' + Date.now() + '-' + generateToken(4).toUpperCase());
+
             email = lookup.email;
             phone = lookup.phone;
             name = lookup.name;
