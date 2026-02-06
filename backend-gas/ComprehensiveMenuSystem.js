@@ -190,8 +190,12 @@ function formatDate_(dateValue) {
 }
 
 function getFormUrl_() {
-  // Replace with your deployed web app URL (or store it in Script Properties as FORM_URL)
-  return 'https://script.google.com/macros/s/AKfycbybvb6EpI6Aop5RSDvweHceD1LQpjMoomEHro5zH9fNbR_-OVCqISX5lTa4lMuNR6EXYw/exec';
+  try {
+    return ScriptApp.getService().getUrl();
+  } catch (e) {
+    // Fallback if not published as webapp
+    return PropertiesService.getScriptProperties().getProperty('GAS_WEB_APP_URL') || '';
+  }
 }
 
 function getPrefillData() {

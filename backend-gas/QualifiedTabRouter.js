@@ -110,7 +110,7 @@ function syncQualifiedRows_(ss, masterSheet, exceptionSheet) {
     dashboardBaseUrl = ScriptApp.getService().getUrl();
   } catch (e) {
     // Fallback if not running as Web App
-    dashboardBaseUrl = 'https://script.google.com/macros/s/AKfycbzS4CPAp1yHguS-vmmz1pQ3AZ_hQlsE-VIM_m2FgUlSMpEJybD0vw3S0l-G-Eq31cy10A/exec';
+    dashboardBaseUrl = 'https://script.google.com/macros/s/AKfycbzV4rHGZlDXLvMgTHTHFV0u2yN1VTs1kjZVz38CA8pZv6sEcu6DD7S8owpw6Rbl7KtguA/exec';
   }
 
   QUAL_ROUTER_CONFIG.SOURCE_TABS.forEach(function (tabName) {

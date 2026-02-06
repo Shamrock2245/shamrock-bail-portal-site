@@ -1,7 +1,7 @@
 
 import fetch from 'node-fetch';
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyHlYTSYDU4CA3TtZCuaBkZE0bNNkKQ7pXUPgbEqKPB0nU8WXu0seyItVdnp_mkyIfRxQ/exec'; // v127 URL
+import { GAS_URL } from './test_config.mjs';
 
 async function testTemplateAccess() {
     console.log('Testing Drive Template Access...');

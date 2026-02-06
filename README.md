@@ -7,7 +7,7 @@ This project is the official Shamrock Bail Bonds Portal. It runs on **Wix Velo**
 ---
 
 ## 📌 Goals
-*   **AI-Powered Concierge:** Intelligent SMS responses via Gemini 1.5 Flash using RAG (Retention Augmented Generation) for 12+ Florida counties.
+*   **AI-Powered Concierge:** Intelligent SMS responses via Google Vertex AI using RAG (Retention Augmented Generation) for 12+ Florida counties.
 *   **Automated Paperwork:** Digital intake for Indemnitors and Defendants.
 *   **Role-Based Portals:** Secure access for Defendants (Check-ins), Indemnitors (Financing), and Staff.
 *   **Compliance:** SOC II aligned, SignNow integration for audit trails.
@@ -27,7 +27,7 @@ This project is the official Shamrock Bail Bonds Portal. It runs on **Wix Velo**
 ## 🤖 AI Concierge & RAG System
 The system now includes a "Headless" AI Agent that monitors leads and sends intelligent SMS.
 
-*   **Brain:** `backend-gas/RAGService.js` (Gemini Integration).
+*   **Brain:** `backend-gas/RAGService.js` (Vertex AI Integration).
 *   **Knowledge Base:** `backend-gas/KnowledgeBase.js` (Protocols for Lee, Collier, Miami-Dade, etc.).
 *   **Trigger:** New row in "Hot Leads" sheet -> AI analyzes context -> Generates SMS.
 *   **Fallback:** If the API Key is missing, it reverts to rule-based templates.
@@ -44,7 +44,7 @@ The dashboard now includes a direct integration with **SwipeSimple** for payment
 ### 1. AI Concierge (New)
 1.  **Lead Capture:** User submits form on Wix.
 2.  **Scoring:** Lead score calculated based on urgency/county.
-3.  **AI Response:** Gemini generates a custom SMS based on the specific County Jail protocol (e.g., "Park at Gun Club Rd," "Signatures must be wet").
+3.  **AI Response:** Generates a custom SMS based on the specific County Jail protocol (e.g., "Park at Gun Club Rd," "Signatures must be wet").
 4.  **Handoff:** If user accepts, link to `indemnitor-portal` is sent.
 
 ### 2. Defendant Portal
@@ -72,7 +72,7 @@ The dashboard now includes a direct integration with **SwipeSimple** for payment
 The backend is in `backend-gas/`.
 1.  **Deploy:** `clasp push` -> `clasp deploy`.
 2.  **Config:** Run `SetProperties.js` functions to set keys.
-    *   `SAFE_updateGeminiKey()`: Sets `GEMINI_API_KEY` securely.
+    *   `SAFE_updateVertexKey()`: Sets `VERTEX_API_KEY` securely.
     *   `forceUpdateConfig()`: Sets basic infrastructure keys.
 
 ---

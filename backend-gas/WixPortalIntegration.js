@@ -426,21 +426,50 @@ function getWixIntakeQueue() {
 
     // TRANSFORM for Dashboard.html Schema
     // Maps Wix IntakeQueue fields to Dashboard fields
-    return validItems.map(item => ({
-      IntakeID: item.caseId || item._id,
-      DefendantName: item.defendantName || 'Unknown',
-      FullName: item.indemnitorName || 'Unknown',
-      Email: item.indemnitorEmail || '',
-      Phone: item.indemnitorPhone || '',
-      Role: 'indemnitor',
-      Status: item.status || 'pending',
-      Timestamp: item._createdDate,
-      _original: item, // Critical for Queue.load()
-      // 🧠 AI Fields (Synced from GAS)
-      AI_Risk: item.aiRisk || '',
-      AI_Score: item.aiScore || '',
-      AI_Rationale: item.aiRationale || ''
-    }));
+    return validItems.map(item => {
+      // 1. Intelligent Charges Parsing
+      let parsedCharges = [];
+      try {
+        if (typeof item.charges === 'string') {
+          // Check for JSON string
+          if (item.charges.trim().startsWith('[')) {
+            parsedCharges = JSON.parse(item.charges);
+          } else if (item.charges.trim()) {
+            // Treat as single description
+            parsedCharges = [{ desc: item.charges }];
+          }
+        } else if (Array.isArray(item.charges)) {
+          parsedCharges = item.charges;
+        }
+      } catch (e) {
+        // Fallback
+        if (item.charges) parsedCharges = [{ desc: String(item.charges) }];
+      }
+
+      // 2. Indemnitor Name Splitting
+      const nameParts = (item.indemnitorName || '').trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      return {
+        IntakeID: item.caseId || item._id,
+        DefendantName: item.defendantName || 'Unknown',
+        FullName: item.indemnitorName || 'Unknown',
+        FirstName: firstName, // Critical for addIndemnitor hydration
+        LastName: lastName,   // Critical for addIndemnitor hydration
+        Email: item.indemnitorEmail || '',
+        Phone: item.indemnitorPhone || '',
+        Charges: parsedCharges, // Critical for addCharge hydration
+        Role: 'indemnitor',
+        Status: item.status || 'pending',
+        Timestamp: item._createdDate,
+        _original: item, // Critical for Queue.load()
+        // 🧠 AI Fields (Synced from GAS)
+        AI_Risk: item.aiRisk || '',
+        AI_Score: item.aiScore || '',
+        AI_Rationale: item.aiRationale || ''
+      };
+    });
 
   } catch (error) {
     Logger.log(`Error querying Wix IntakeQueue: ${error && error.stack ? error.stack : error}`);

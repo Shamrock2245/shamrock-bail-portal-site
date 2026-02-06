@@ -252,6 +252,34 @@ function getDashboardData() {
   }
 }
 
+
+/**
+ * PUBLIC API: Fetch statistics for all counties
+ * Called by Dashboard.html via google.script.run
+ */
+function getCountyStatistics() {
+  const counties = ['Lee', 'Collier', 'Charlotte', 'Sarasota', 'Hendry', 'DeSoto', 'Manatee', 'Palm Beach', 'Seminole', 'Orange', 'Pinellas', 'Broward', 'Hillsborough'];
+  const stats = {};
+
+  counties.forEach(county => {
+    // Normalize key for frontend (lowercase, dashes)
+    const key = county.toLowerCase().replace(/\s+/g, '-');
+    // Fetch stats using service
+    try {
+      if (typeof getCountyStats === 'function') {
+        stats[key] = getCountyStats(county);
+      } else {
+        stats[key] = { exists: false, error: 'StatsService missing' };
+      }
+    } catch (e) {
+      console.warn(`Failed to get stats for ${county}: ${e.message}`);
+      stats[key] = { exists: false, error: e.message };
+    }
+  });
+
+  return stats;
+}
+
 function doPost(e) {
   // 1. Log Incoming Request (Access Control)
   try {
@@ -346,6 +374,13 @@ function client_parseBooking(base64String) {
   if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
 
   return AI_parseBookingSheet(base64String);
+}
+
+function client_extractFromUrl(url) {
+  // "The Clerk"
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
+  return AI_extractBookingFromUrl(url);
 }
 
 function client_analyzeLead(leadJsonString) {
@@ -510,7 +545,6 @@ function handleAction(data) {
   // 2. SIGNING & DOCS
   if (action === 'sendForSignature') return handleSendForSignature(data);
   if (action === 'createPortalSigningSession') return createPortalSigningSession(data);
-  if (action === 'getPDFTemplates') return getPDFTemplates(data);
 
   // 4. CHECK-INS
   // 4. CHECK-INS

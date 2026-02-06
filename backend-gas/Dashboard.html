@@ -4,7 +4,21 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Shamrock Bail Bonds - Enterprise Control Center</title>
+    <title>Shamrock App V163</title>
+
+    <!-- GLOBAL ERROR TRAP (DEBUGGING) -->
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            const box = document.getElementById('debug-error-box');
+            if (box) {
+                box.style.display = 'block';
+                box.innerHTML += '<div><strong>Error:</strong> ' + msg + '<br>Line: ' + line + '</div><hr>';
+            }
+            // Also force overlay hide just in case
+            const overlay = document.getElementById('progress-overlay');
+            if (overlay) overlay.style.display = 'none';
+        };
+    </script>
 
     <!-- PDF-LIB for in-browser PDF manipulation -->
     <!-- Server-side data injection -->
@@ -13,7 +27,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
     <!-- Google Places API for Address Autocomplete -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=<?= mapsApiKey ?>&libraries=places"></script>
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=<?= mapsApiKey ?>&libraries=places&callback=onMapsApiLoaded"
+        async defer></script>
+    <script>
+        function onMapsApiLoaded() {
+            // Signal global readiness
+            window.isGoogleMapsLoaded = true;
+            console.log("📍 Google Maps API Loaded via Callback");
+            // If main app is already running, try to init maps
+            if (window.ShamrockApp && window.ShamrockApp.Maps) {
+                window.ShamrockApp.Maps.tryInit();
+            }
+        }
+    </script>
 
     <!-- Google Fonts for Enterprise Look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -397,23 +424,13 @@
 
         .tab-content {
             display: none;
-            animation: fadeIn .3s ease;
+            /* Animation Removed for Stability */
+            opacity: 1;
         }
 
         .tab-content.active {
             display: block;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            opacity: 1;
         }
 
         /* =========================================================
@@ -1336,6 +1353,12 @@
         </div>
     </div>
 
+    <!-- DEBUG ERROR BOX -->
+    <div id="debug-error-box"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:200px; background:rgba(200,0,0,0.9); color:white; z-index:100000; overflow:auto; padding:20px; font-family:monospace;">
+        <h3>⚠️ DEBUG MODE ACTIVE</h3>
+    </div>
+
     <div class="container">
 
         <!-- ENTERPRISE HEADER -->
@@ -1405,7 +1428,28 @@
             <button class="tab" onclick="switchTab(this, 'ai')">
                 <span class="tab-icon">🤖</span> AI Agents
             </button>
+            <button class="tab" onclick="switchTab(this, 'map')">
+                <span class="tab-icon">🗺️</span> Map
+            </button>
         </nav>
+
+        <!-- ============================================================
+         TAB: OPS MAP
+         ============================================================ -->
+        <div id="map-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🗺️</span> Operational Map</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="ShamrockApp.Maps.plotCurrentCase()">
+                            📍 Plot Current Case
+                        </button>
+                    </div>
+                </div>
+                <div id="ops-map-container"
+                    style="height: 600px; width: 100%; border-radius: 8px; border: 1px solid var(--border);"></div>
+            </div>
+        </div>
 
         <!-- ============================================================
          TAB: COUNTY SCRAPERS
@@ -1864,6 +1908,31 @@
          TAB: DEFENDANT
          ============================================================ -->
         <div id="defendant-tab" class="tab-content">
+            <!-- SMART IMPORT -->
+            <div class="card" style="border-left: 4px solid #8b5cf6;">
+                <div class="card-header" style="margin-bottom: 12px; border-bottom: none;">
+                    <h3><span class="icon">🔮</span> Smart Import</h3>
+                </div>
+                <div class="form-row" style="margin-bottom: 0;">
+                    <div class="form-group" style="flex: 2;">
+                        <input type="text" id="smart-import-url"
+                            placeholder="Paste URL (Jail View, Google Drive, or Image Link)..."
+                            onpaste="ShamrockApp.SmartImport.handlePaste(event)">
+                    </div>
+                    <div class="form-group" style="flex: 1; display: flex; flex-direction: row; gap: 8px;">
+                        <button class="btn btn-primary" onclick="ShamrockApp.SmartImport.run()"
+                            style="flex: 1;">Extract</button>
+                        <button class="btn btn-secondary"
+                            onclick="document.getElementById('smart-upload-hidden').click()"
+                            title="Upload Image">📁</button>
+                        <input type="file" id="smart-upload-hidden" style="display: none;" accept="image/*"
+                            onchange="ShamrockApp.SmartImport.handleFile(this)">
+                    </div>
+                </div>
+                <div class="text-hint" style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
+                    💡 Pro Tip: Press <strong>Cmd+V</strong> anywhere on this tab to paste a screenshot directly.
+                </div>
+            </div>
             <div class="card">
                 <div class="card-header">
                     <h3><span class="icon">&#128100;</span> Defendant Information</h3>
@@ -2497,24 +2566,52 @@
            UI NAVIGATION & CORE HELPERS (Defined first for reliability)
            ========================================================= */
         function switchTab(btn, tabId) {
-            console.log('Switching to tab:', tabId);
+            console.log(`🔘 switchTab called for: ${tabId}`);
+
             // Update tab buttons
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(t => t.classList.remove('active'));
+
             if (btn) {
                 btn.classList.add('active');
             } else {
                 const targetBtn = document.querySelector(`[onclick*="'${tabId}'"]`);
-                if (targetBtn) targetBtn.classList.add('active');
+                if (targetBtn) {
+                    targetBtn.classList.add('active');
+                } else {
+                    console.warn(`⚠️ Button for tab '${tabId}' not found.`);
+                }
             }
 
             // Update tab content
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const contents = document.querySelectorAll('.tab-content');
+            console.log(`Found ${contents.length} tab-content elements.`);
+
+            contents.forEach(c => {
+                c.classList.remove('active');
+                // Check if we accidentally hid everything
+                if (c.style.display === 'block') c.style.display = ''; // Reset inline styles
+            });
+
             const targetTab = document.getElementById(`${tabId}-tab`);
             if (targetTab) {
                 targetTab.classList.add('active');
+                // Force visibility in case of inline style interference
+                targetTab.style.display = 'block';
+                targetTab.style.opacity = '1';
+                console.log(`✅ Activated tab: ${tabId}-tab`);
+
+                // Lazy Load Map if switched to map tab
+                if (tabId === 'map' && window.ShamrockApp && window.ShamrockApp.Maps) {
+                    console.log("🗺️ Map Tab Activated - Triggering Init");
+                    // Short delay to ensure DOM paint
+                    setTimeout(() => window.ShamrockApp.Maps.tryInit(), 100);
+                }
+
                 window.scrollTo(0, 0);
             } else {
-                console.error('Tab not found:', tabId);
+                console.error(`❌ CRITICAL: Target tab not found: ${tabId}-tab`);
+                alert(`Error: Tab content for '${tabId}' is missing.`);
             }
         }
 
@@ -2532,7 +2629,7 @@
            CONFIGURATION
            ========================================================= */
         const CONFIG = {
-            gasWebAppUrl: '<?= gasUrl ?>' || 'https://script.google.com/macros/s/AKfycbzS4CPAp1yHguS-vmmz1pQ3AZ_hQlsE-VIM_m2FgUlSMpEJybD0vw3S0l-G-Eq31cy10A/exec', // AUTO-INJECTED v113
+            gasWebAppUrl: '<?= gasUrl ?>' || 'https://script.google.com/macros/s/AKfycbzV4rHGZlDXLvMgTHTHFV0u2yN1VTs1kjZVz38CA8pZv6sEcu6DD7S8owpw6Rbl7KtguA/exec', // AUTO-INJECTED v154
             signNowApiBase: 'https://api.signnow.com',
             // signNowToken moved to Script Properties for security
 
@@ -3152,154 +3249,165 @@
 
             if (noIndMsg) noIndMsg.style.display = 'none';
 
-            const indemnitorHtml = `
+            const indHtml = `
         <div class="entity-card indemnitor" id="indemnitor-${indemnitorCount}">
           <div class="entity-header">
             <h4>
-              <span class="entity-number" style="background: var(--success);">${indemnitorCount}</span>
+              <span class="entity-number">${indemnitorCount}</span>
               Indemnitor ${indemnitorCount}
             </h4>
             <button class="btn-remove" onclick="removeIndemnitor(${indemnitorCount})">×</button>
           </div>
+          
+          <h5>Personal Information</h5>
           <div class="form-row">
             <div class="form-group">
-              <label class="required">First Name</label>
-              <input type="text" id="indemnitor-${indemnitorCount}-first" placeholder="Jane" value="${data.firstName || ''}">
+                <label>First Name</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-first" value="${data.firstName || ''}">
             </div>
             <div class="form-group">
-              <label>Middle Name</label>
-              <input type="text" id="indemnitor-${indemnitorCount}-middle" placeholder="Marie" value="${data.middleName || ''}">
+                <label>Middle Name</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-middle" value="${data.middleName || ''}">
             </div>
             <div class="form-group">
-              <label class="required">Last Name</label>
-              <input type="text" id="indemnitor-${indemnitorCount}-last" placeholder="Smith" value="${data.lastName || ''}">
-            </div>
-            <div class="form-group">
-              <label>Relationship</label>
-              <select id="indemnitor-${indemnitorCount}-relationship">
-                <option value="spouse">Spouse</option>
-                <option value="parent">Parent</option>
-                <option value="sibling">Sibling</option>
-                <option value="friend">Friend</option>
-                <option value="employer">Employer</option>
-                <option value="other">Other</option>
-              </select>
+                <label>Last Name</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-last" value="${data.lastName || ''}">
             </div>
           </div>
+
           <div class="form-row">
-            <div class="form-group">
-              <label>Date of Birth</label>
-              <input type="date" id="indemnitor-${indemnitorCount}-dob" value="${data.dob || ''}">
-            </div>
-            <div class="form-group">
-              <label>SSN (Last 4)</label>
-              <input type="text" id="indemnitor-${indemnitorCount}-ssn" placeholder="XXXX" maxlength="4" value="${data.ssn || ''}">
-            </div>
-            <div class="form-group">
-              <label>Driver's License #</label>
-              <input type="text" id="indemnitor-${indemnitorCount}-dl" placeholder="D123-456-78-901" value="${data.dl || ''}">
-            </div>
-            <div class="form-group">
-              <label>DL State</label>
-              <select id="indemnitor-${indemnitorCount}-dl-state">
-                <option value="FL">Florida</option>
-                <option value="GA">Georgia</option>
-                <option value="AL">Alabama</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group" style="grid-column: span 2;">
-              <label>Street Address</label>
-              <input type="text" id="indemnitor-${indemnitorCount}-address" placeholder="456 Oak Street" value="${data.address || ''}">
-            </div>
-            <div class="form-group">
-              <label>City</label>
-              <input type="text" id="indemnitor-${indemnitorCount}-city" placeholder="Fort Myers" value="${data.city || ''}">
-            </div>
-            <div class="form-group">
-              <label>ZIP</label>
-              <input type="text" id="indemnitor-${indemnitorCount}-zip" placeholder="33901" value="${data.zip || ''}">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Phone</label>
-              <input type="tel" id="indemnitor-${indemnitorCount}-phone" placeholder="(239) 555-5678" value="${data.phone || ''}">
-            </div>
-            <div class="form-group">
-              <label>Email</label>
-              <input type="email" id="indemnitor-${indemnitorCount}-email" placeholder="indemnitor@email.com" value="${data.email || ''}">
-            </div>
-            <div class="form-group">
-              <label>Employer Name</label>
-              <input type="text" id="indemnitor-${indemnitorCount}-employer" placeholder="ABC Company" value="${data.employer || ''}">
-            </div>
-            <div class="form-group">
-              <label>Employer Phone</label>
-              <input type="tel" id="indemnitor-${indemnitorCount}-employer-phone" placeholder="(239) 555-9999" value="${data.employerPhone || ''}">
-            </div>
-            <div class="form-group">
-               <label>Employer City</label>
-               <input type="text" id="indemnitor-${indemnitorCount}-employer-city" placeholder="City" value="${data.employerCity || ''}">
-            </div>
-            <div class="form-group">
-               <label>Employer State</label>
-               <input type="text" id="indemnitor-${indemnitorCount}-employer-state" placeholder="FL" value="${data.employerState || ''}">
-            </div>
              <div class="form-group">
-              <label>Supervisor Name</label>
-              <input type="text" id="indemnitor-${indemnitorCount}-supervisor" placeholder="Boss Name" value="${data.supervisor || ''}">
-            </div>
-            <div class="form-group">
-              <label>Supervisor Phone</label>
-              <input type="tel" id="indemnitor-${indemnitorCount}-supervisor-phone" placeholder="(239) 555-8888" value="${data.supervisorPhone || ''}">
-            </div>
+                <label>Relationship</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-relationship" value="${data.relationship || ''}">
+             </div>
+             <div class="form-group">
+                <label>DOB</label>
+                <input type="date" id="indemnitor-${indemnitorCount}-dob" value="${data.dob || ''}">
+             </div>
+             <div class="form-group">
+                <label>SSN</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ssn" value="${data.ssn || ''}">
+             </div>
+          </div>
+
+          <div class="form-row">
+             <div class="form-group">
+                <label>DL Number</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-dl" value="${data.dl || ''}">
+             </div>
+             <div class="form-group">
+                <label>DL State</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-dl-state" value="${data.dlState || 'FL'}">
+             </div>
+             <div class="form-group">
+                <label>Phone</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-phone" value="${data.phone || ''}">
+             </div>
           </div>
           
-          <h5 style="margin: 16px 0 8px; color: var(--muted); font-size: 12px; text-transform: uppercase;">References</h5>
+          <div class="form-row" style="grid-template-columns: 2fr 1fr 1fr;">
+             <div class="form-group">
+                <label>Address</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-address" value="${data.address || ''}">
+             </div>
+             <div class="form-group">
+                <label>City</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-city" value="${data.city || ''}">
+             </div>
+             <div class="form-group">
+                <label>Zip</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-zip" value="${data.zip || ''}">
+             </div>
+          </div>
+           <div class="form-row">
+             <div class="form-group full-width">
+                <label>Email</label>
+                <input type="email" id="indemnitor-${indemnitorCount}-email" value="${data.email || ''}">
+             </div>
+          </div>
           
-          <div class="form-row" style="background: var(--surface); padding: 12px; border-radius: 8px;">
-            <div class="form-group">
+          <hr>
+          <h5>Employment</h5>
+          <div class="form-row">
+             <div class="form-group">
+                <label>Employer</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-employer" value="${data.employer || ''}">
+             </div>
+             <div class="form-group">
+                <label>Employer Phone</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-employer-phone" value="${data.employerPhone || ''}">
+             </div>
+          </div>
+           <div class="form-row">
+             <div class="form-group">
+                <label>Employer City</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-employer-city" value="${data.employerCity || ''}">
+             </div>
+             <div class="form-group">
+                <label>Employer State</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-employer-state" value="${data.employerState || ''}">
+             </div>
+          </div>
+          <div class="form-row">
+             <div class="form-group">
+                <label>Supervisor</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-supervisor" value="${data.supervisor || ''}">
+             </div>
+             <div class="form-group">
+                <label>Supervisor Phone</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-supervisor-phone" value="${data.supervisorPhone || ''}">
+             </div>
+          </div>
+
+          <hr>
+          <h5>References</h5>
+          <!-- Reference 1 -->
+          <div class="form-row">
+              <div class="form-group">
                 <label>Ref 1 Name</label>
-                <input type="text" id="indemnitor-${indemnitorCount}-ref1-name" placeholder="Name" value="${data.ref1Name || ''}">
-            </div>
-            <div class="form-group">
-                <label>Ref 1 Relation</label>
-                <input type="text" id="indemnitor-${indemnitorCount}-ref1-relation" placeholder="Friend" value="${data.ref1Relation || ''}">
-            </div>
-             <div class="form-group">
-                <label>Ref 1 Phone</label>
-                <input type="tel" id="indemnitor-${indemnitorCount}-ref1-phone" placeholder="Phone" value="${data.ref1Phone || ''}">
-            </div>
-             <div class="form-group">
+                <input type="text" id="indemnitor-${indemnitorCount}-ref1-name" value="${data.ref1Name || ''}">
+              </div>
+              <div class="form-group">
+                <label>Relation</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref1-relation" value="${data.ref1Relation || ''}">
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref1-phone" value="${data.ref1Phone || ''}">
+              </div>
+          </div>
+          <div class="form-row">
+             <div class="form-group full-width">
                 <label>Ref 1 Address</label>
-                <input type="text" id="indemnitor-${indemnitorCount}-ref1-address" placeholder="Address" value="${data.ref1Address || ''}">
-            </div>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref1-address" value="${data.ref1Address || ''}">
+             </div>
           </div>
-
-          <div class="form-row" style="background: var(--surface); padding: 12px; border-radius: 8px; margin-top: 8px;">
-            <div class="form-group">
+          
+          <!-- Reference 2 -->
+          <div class="form-row" style="margin-top: 10px;">
+              <div class="form-group">
                 <label>Ref 2 Name</label>
-                <input type="text" id="indemnitor-${indemnitorCount}-ref2-name" placeholder="Name" value="${data.ref2Name || ''}">
-            </div>
-            <div class="form-group">
-                <label>Ref 2 Relation</label>
-                <input type="text" id="indemnitor-${indemnitorCount}-ref2-relation" placeholder="Friend" value="${data.ref2Relation || ''}">
-            </div>
-             <div class="form-group">
-                <label>Ref 2 Phone</label>
-                <input type="tel" id="indemnitor-${indemnitorCount}-ref2-phone" placeholder="Phone" value="${data.ref2Phone || ''}">
-            </div>
-             <div class="form-group">
-                <label>Ref 2 Address</label>
-                <input type="text" id="indemnitor-${indemnitorCount}-ref2-address" placeholder="Address" value="${data.ref2Address || ''}">
-            </div>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref2-name" value="${data.ref2Name || ''}">
+              </div>
+              <div class="form-group">
+                <label>Relation</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref2-relation" value="${data.ref2Relation || ''}">
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref2-phone" value="${data.ref2Phone || ''}">
+              </div>
           </div>
-        </div>
-      `;
+          <div class="form-row">
+             <div class="form-group full-width">
+                <label>Ref 2 Address</label>
+                <input type="text" id="indemnitor-${indemnitorCount}-ref2-address" value="${data.ref2Address || ''}">
+             </div>
+          </div>
 
-            container.insertAdjacentHTML('beforeend', indemnitorHtml);
+        </div>
+            `;
+            container.insertAdjacentHTML('beforeend', indHtml);
             updateBadges();
         }
 
@@ -5095,19 +5203,16 @@
                 // If SSA Release is selected, we want one for Defendant (added above) 
                 // AND one for each Indemnitor.
                 if (includeCopies && templateKey === 'ssa-release') {
-                    // Check for indemnitors
-                    // We can use the DOM or collectFormData. using DOM for speed/simplicity here as this is UI logic
                     const indemnitors = document.querySelectorAll('.entity-card.indemnitor');
                     if (indemnitors.length > 0) {
                         console.log(`Adding SSA Release copies for ${indemnitors.length} indemnitors`);
                         indemnitors.forEach((ind, index) => {
                             // Use a unique key for the file, but alias it to the same template
-                            // Indices are 0-based for array access
                             selected.push({
-                                key: `ssa-release-indemnitor-${index + 1}`,
-                                name: `SSA Release (Indemnitor ${index + 1})`,
-                                templateKey: 'ssa-release', // Instructs fetcher to use base template
-                                indices: { indemnitorIndex: index } // Metadata for filler
+                                key: templateKey,
+                                name: `${docName} (Indemnitor ${index + 1})`,
+                                isCopy: true,
+                                indemnitorIndex: index
                             });
                         });
                     }
@@ -6127,8 +6232,7 @@
             <div class="card-header">
                 <h3><span class="icon">🤖</span> AI Agent Console</h3>
                 <div style="display:flex; gap:10px; align-items:center;">
-                    <span style="font-size:12px; color:var(--text-secondary);"><span
-                            style="color:var(--success);">●</span> Online</span>
+                    <span style="font-size:12px; color:var(--success);">●</span> Online</span>
                     <div class="badge"
                         style="background:var(--surface-2); color:var(--text); padding:6px 14px; border-radius:20px; font-size:12px; border:1px solid var(--border);">
                         Powered by OpenAI GPT-4o-mini</div>
@@ -6411,6 +6515,33 @@
 
             // --- Module: UI Utilities ---
             const UI = {
+                switchTab: function (btn, tabId) {
+                    // Harmonize with global switchTab logic (append -tab)
+                    const targetId = tabId.endsWith('-tab') ? tabId : `${tabId}-tab`;
+
+                    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => {
+                        c.classList.remove('active');
+                        c.style.display = 'none'; // Enforce hide
+                    });
+
+                    if (btn) btn.classList.add('active');
+                    else {
+                        // Try to find matching button to activate it visually
+                        const targetBtn = document.querySelector(`[onclick*="'${tabId}'"]`);
+                        if (targetBtn) targetBtn.classList.add('active');
+                    }
+
+                    const content = document.getElementById(targetId);
+                    if (content) {
+                        content.classList.add('active');
+                        content.style.display = 'block';
+                        if (targetId === 'ops-map-tab' && window.Maps && window.Maps.resize) window.Maps.resize();
+                    } else {
+                        console.warn(`UI.switchTab: Target '${targetId}' not found.`);
+                    }
+                },
+
                 showToast: function (msg, type = 'success') {
                     if (typeof window.showToast === 'function') window.showToast(msg, type);
                     else console.log(`[${type}] ${msg}`);
@@ -6625,20 +6756,20 @@
             // --- Module: Queue Management ---
             const Queue = {
                 fetch: function () {
-                    UI.setHTML('intake-queue-body', '<tr><td colspan="7" class="text-center" style="padding:20px;">⌛ Fetching pending intakes...</td></tr>');
+                    UI.setHTML('queue-list', '<tr><td colspan="7" class="text-center" style="padding:20px;">⌛ Fetching pending intakes...</td></tr>');
                     google.script.run
                         .withSuccessHandler(Queue.render)
-                        .withFailureHandler(err => UI.setHTML('intake-queue-body', `<tr><td colspan="7" class="text-error" style="padding:20px; text-align:center;">Error: ${err.message}</td></tr>`))
+                        .withFailureHandler(err => UI.setHTML('queue-list', `<tr><td colspan="7" class="text-error" style="padding:20px; text-align:center;">Error: ${err.message}</td></tr>`))
                         .getWixIntakeQueue();
                 },
 
                 render: function (intakes) {
-                    const list = document.getElementById('intake-queue-body');
+                    const list = document.getElementById('queue-list');
                     const badge = document.getElementById('queue-badge');
 
                     if (!intakes || !Array.isArray(intakes) || intakes.length === 0) {
                         if (badge) badge.style.display = 'none';
-                        return UI.setHTML('intake-queue-body', '<tr><td colspan="7" class="text-center" style="padding:20px; color:var(--muted);">No pending intakes found.</td></tr>');
+                        return UI.setHTML('queue-list', '<tr><td colspan="7" class="text-center" style="padding:20px; color:var(--muted);">No pending intakes found.</td></tr>');
                     }
 
                     if (badge) { badge.innerText = intakes.length; badge.style.display = 'inline-block'; }
@@ -6646,6 +6777,11 @@
                     let html = '';
                     intakes.forEach(item => {
                         const id = item.IntakeID;
+                        // Cache the item for safe retrieval
+                        if (window.ShamrockApp && window.ShamrockApp.IntakeCache) {
+                            window.ShamrockApp.IntakeCache.set(id, item);
+                        }
+
                         const dateStr = item.Timestamp ? new Date(item.Timestamp).toLocaleString() : 'N/A';
 
                         // AI Risk Badge Logic
@@ -6660,23 +6796,76 @@
                                 <td style="padding: 12px;">${id || 'N/A'}</td>
                                 <td style="padding: 12px;">
                                     <strong>${item.DefendantName || 'N/A'}</strong>
-                                    ${riskBadge}
+                                    <span id="badge-${id}">${riskBadge}</span>
                                 </td>
                                 <td style="padding: 12px;">${item.FullName || 'Anon'}</td>
                                 <td style="padding: 12px;">${item.Role || 'Indemnitor'}</td>
                                 <td style="padding: 12px;"><span class="badge badge-warning">${item.Status || 'Pending'}</span></td>
                                 <td style="padding: 12px;">${dateStr}</td>
                                 <td style="padding: 12px; text-align: right;">
-                                    <button class="btn btn-sm btn-primary" onclick='ShamrockApp.Queue.process(${JSON.stringify(item)})' title="Load & Process">
+                                    <button class="btn btn-sm btn-primary" onclick="loadIntake('${id}')" title="Load & Process">
                                         ⬇️ Process
                                     </button>
                                 </td>
                             </tr>`;
                     });
                     list.innerHTML = html;
+
+                    // Trigger AI Scan
+                    setTimeout(() => Queue.scanRisks(intakes), 500);
                 },
 
-                process: function (item) {
+
+
+                scanRisks: function (intakes) {
+                    // Limit to top 5 to prevent rate limits
+                    const scanList = intakes.slice(0, 5);
+                    console.log(`🤖 Auto-Scan: Analyzing ${scanList.length} leads...`);
+
+                    scanList.forEach(item => {
+                        if (item.AI_Risk) return; // Already has score
+
+                        const leadPayload = {
+                            name: item.DefendantName || "Unknown",
+                            charges: item.Charges || "Pending",
+                            bond: item.BondAmount || "0",
+                            agency: item.County || "Unknown",
+                            county: item.County || "Lee"
+                        };
+
+                        google.script.run
+                            .withSuccessHandler(result => {
+                                if (result && result.riskLevel) {
+                                    // 1. Update Cache
+                                    item.AI_Risk = result.riskLevel;
+                                    item.AI_Rationale = result.rationale || "AI Analysis";
+                                    if (window.ShamrockApp && window.ShamrockApp.IntakeCache) {
+                                        window.ShamrockApp.IntakeCache.set(item.IntakeID, item);
+                                    }
+
+                                    // 2. Update DOM
+                                    const badgeEl = document.getElementById(`badge-${item.IntakeID}`);
+                                    if (badgeEl) {
+                                        const riskColor = result.riskLevel === 'High' ? 'var(--error)' : (result.riskLevel === 'Medium' ? 'var(--warning)' : 'var(--success)');
+                                        badgeEl.innerHTML = `<span class="badge" style="background:${riskColor}; color:#fff; margin-left:8px; font-size:10px;" title="${result.rationale}">🤖 ${result.riskLevel}</span>`;
+                                    }
+                                }
+                            })
+                            .withFailureHandler(err => console.warn("AI Scan Failed:", err))
+                            .client_analyzeLead(JSON.stringify(leadPayload));
+                    });
+                },
+
+                process: function (intakeId) {
+                    // Retrieve from Cache
+                    const item = window.ShamrockApp.IntakeCache.get(intakeId);
+
+                    if (!item) {
+                        console.error('Intake not found in cache:', intakeId);
+                        UI.showToast('Error: Could not load intake data (Cache Miss)', 'error');
+                        return;
+                    }
+
                     if (!confirm(`Process data for ${item.DefendantName}?\n\n⚠️ This will CLEAR and OVERWRITE the current form.`)) return;
 
                     try {
@@ -6725,24 +6914,185 @@
             // Backward Compatibility Alias
             const fetchQueue = Queue.fetch;
 
+            // --- Module: Maps ---
+            const Maps = {
+                map: null,
+                isInitialized: false,
+                markers: [],
+
+                // Safe Init: Can be called multiple times
+                tryInit: function () {
+                    if (this.isInitialized) return;
+
+                    if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+                        console.warn("⏳ Google Maps API not ready yet (will retry)");
+                        return; // Will be called again by callback
+                    }
+
+                    const container = document.getElementById("ops-map-container");
+                    if (!container) {
+                        console.warn("❌ Map Container missing from DOM");
+                        return;
+                    }
+
+                    // Check visibility: Map cannot init properly if display:none
+                    if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+                        console.log("💤 Map container hidden, deferring init until tab switch");
+                        return;
+                    }
+
+                    try {
+                        console.log("🗺️ Initializing Google Map...");
+                        this.map = new google.maps.Map(container, {
+                            center: { lat: 26.6406, lng: -81.8723 }, // Fort Myers
+                            zoom: 10,
+                            styles: [{
+                                "elementType": "geometry",
+                                "stylers": [{ "color": "#242f3e" }]
+                            },
+                            {
+                                "elementType": "labels.text.fill",
+                                "stylers": [{ "color": "#746855" }]
+                            },
+                            {
+                                "elementType": "labels.text.stroke",
+                                "stylers": [{ "color": "#242f3e" }]
+                            },
+                            {
+                                "featureType": "administrative.locality",
+                                "elementType": "labels.text.fill",
+                                "stylers": [{ "color": "#d59563" }]
+                            },
+                            {
+                                "featureType": "poi",
+                                "elementType": "labels.text.fill",
+                                "stylers": [{ "color": "#d59563" }]
+                            },
+                            {
+                                "featureType": "poi.park",
+                                "elementType": "geometry",
+                                "stylers": [{ "color": "#263c3f" }]
+                            },
+                            {
+                                "featureType": "poi.park",
+                                "elementType": "labels.text.fill",
+                                "stylers": [{ "color": "#6b9a76" }]
+                            },
+                            {
+                                "featureType": "road",
+                                "elementType": "geometry",
+                                "stylers": [{ "color": "#38414e" }]
+                            },
+                            {
+                                "featureType": "road",
+                                "elementType": "geometry.stroke",
+                                "stylers": [{ "color": "#212a37" }]
+                            },
+                            {
+                                "featureType": "road",
+                                "elementType": "labels.text.fill",
+                                "stylers": [{ "color": "#9ca5b3" }]
+                            },
+                            {
+                                "featureType": "road.highway",
+                                "elementType": "geometry",
+                                "stylers": [{ "color": "#746855" }]
+                            },
+                            {
+                                "featureType": "road.highway",
+                                "elementType": "geometry.stroke",
+                                "stylers": [{ "color": "#1f2835" }]
+                            },
+                            {
+                                "featureType": "road.highway",
+                                "elementType": "labels.text.fill",
+                                "stylers": [{ "color": "#f3d19c" }]
+                            },
+                            {
+                                "featureType": "transit",
+                                "elementType": "geometry",
+                                "stylers": [{ "color": "#2f3948" }]
+                            },
+                            {
+                                "featureType": "transit.station",
+                                "elementType": "labels.text.fill",
+                                "stylers": [{ "color": "#d59563" }]
+                            },
+                            {
+                                "featureType": "water",
+                                "elementType": "geometry",
+                                "stylers": [{ "color": "#17263c" }]
+                            },
+                            {
+                                "featureType": "water",
+                                "elementType": "labels.text.fill",
+                                "stylers": [{ "color": "#515c6d" }]
+                            },
+                            {
+                                "featureType": "water",
+                                "elementType": "labels.text.stroke",
+                                "stylers": [{ "color": "#17263c" }]
+                            }
+                            ]
+                        });
+                        this.isInitialized = true;
+
+                        // Force resize event to render tiles
+                        google.maps.event.trigger(this.map, "resize");
+
+                    } catch (e) {
+                        console.error("Map Init Failed:", e);
+                        UI.showToast("Map Init Failed: " + e.message, 'error');
+                    }
+                },
+
+                plotCurrentCase: function () {
+                    const defAddr = document.getElementById('defendant-home-address').value;
+                    const jail = "2115 Dr Martin Luther King Jr Blvd, Fort Myers, FL 33901"; // Lee Jail
+
+                    if (!this.isInitialized) {
+                        alert("Map not ready yet. Please try switching tabs again.");
+                        return;
+                    }
+                    alert(`Simulating Plot to ${jail}`);
+                }
+            };
+
             // --- Module: Stats ---
             const Stats = {
                 refreshAll: function () {
-                    ['Lee', 'Collier'].forEach(c => {
-                        UI.setHTML(`${c.toLowerCase()}-total`, '...');
-                        google.script.run
-                            .withSuccessHandler(s => Stats.updateCard(c, s))
-                            .client_getCountyStats(c);
+                    const counties = ['Lee', 'Collier', 'Charlotte', 'Sarasota', 'Hendry', 'DeSoto', 'Manatee', 'Palm Beach', 'Seminole', 'Orange', 'Pinellas', 'Broward', 'Hillsborough'];
+                    counties.forEach(c => {
+                        const id = c.toLowerCase().replace(/\s+/g, '-');
+                        UI.setHTML(`${id}-total`, '...');
                     });
+
+                    google.script.run
+                        .withSuccessHandler(allStats => {
+                            if (!allStats) return;
+                            Object.keys(allStats).forEach(key => {
+                                Stats.updateCard(key, allStats[key]);
+                            });
+                            UI.showToast("Stats Refreshed", "success");
+                        })
+                        .withFailureHandler(err => UI.showToast("Stats Failed: " + err.message, "error"))
+                        .getCountyStatistics();
                 },
 
-                updateCard: function (county, stats) {
-                    const id = county.toLowerCase();
+                updateCard: function (key, stats) {
+                    const id = key; // Key is already normalized from backend
                     if (!stats.exists) return UI.setHTML(`${id}-total`, 'N/A');
-                    UI.setHTML(`${id}-total`, `${stats.today} / ${stats.total}`);
-                    UI.setHTML(`${id}-male`, stats.male);
-                    UI.setHTML(`${id}-female`, stats.female);
-                    UI.setHTML(`${id}-avg-bond`, stats.avgBond);
+
+                    // Safe set helper
+                    const setIfExists = (suffix, val) => {
+                        const el = document.getElementById(`${id}-${suffix}`);
+                        if (el) el.innerHTML = val;
+                    };
+
+                    setIfExists('total', `${stats.today} / ${stats.total}`);
+                    setIfExists('male', stats.male);
+                    setIfExists('female', stats.female);
+                    setIfExists('avg-bond', stats.avgBond);
                 }
             };
 
@@ -6762,49 +7112,197 @@
                 }
             };
 
-            return {
+            // --- Module: Smart Import (Vision) ---
+            const SmartImport = {
                 init: function () {
-                    Router.handleParams();
-                    setTimeout(Queue.fetch, 2000);
+                    // Global Paste Listener for Defendant Tab
+                    document.addEventListener('paste', (e) => {
+                        const activeTab = document.querySelector('.tab-content.active');
+                        if (activeTab && activeTab.id === 'defendant-tab') {
+                            if (e.target.tagName !== 'INPUT') {
+                                SmartImport.handlePaste(e);
+                            }
+                        }
+                    });
+                },
+
+                handlePaste: function (e) {
+                    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                    for (let index in items) {
+                        const item = items[index];
+                        if (item.kind === 'file' && item.type.indexOf('image/') !== -1) {
+                            const blob = item.getAsFile();
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                SmartImport.processImage(event.target.result);
+                            };
+                            reader.readAsDataURL(blob);
+                            e.preventDefault();
+                            break;
+                        }
+                    }
+                },
+
+                handleFile: function (input) {
+                    if (input.files && input.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            SmartImport.processImage(e.target.result);
+                        };
+                        reader.readAsDataURL(input.files[0]);
+                    }
+                },
+
+                run: function () {
+                    const url = document.getElementById('smart-import-url').value;
+                    if (!url) return UI.showToast("Please enter a URL or Paste an Image", "warning");
+
+                    UI.showToast("🔮 analyzing...", "info");
+                    google.script.run
+                        .withSuccessHandler(SmartImport.applyData)
+                        .withFailureHandler(err => UI.showToast("Import Failed: " + err.message, "error"))
+                        .client_extractFromUrl(url);
+                },
+
+                processImage: function (base64) {
+                    UI.showToast("🔮 Analyzing Image...", "info");
+                    google.script.run
+                        .withSuccessHandler(SmartImport.applyData)
+                        .withFailureHandler(err => UI.showToast("Vision Failed: " + err.message, "error"))
+                        .client_parseBooking(base64);
+                },
+
+                applyData: function (data) {
+                    if (data.error) return UI.showToast(data.error, "error");
+
+                    // Map AI fields
+                    if (data.firstName) UI.setValue('defendant-first-name', data.firstName);
+                    if (data.lastName) UI.setValue('defendant-last-name', data.lastName);
+                    if (data.dob) UI.setValue('defendant-dob', data.dob);
+                    if (data.bondAmount) UI.setValue('defendant-bond-amount', data.bondAmount);
+                    if (data.bookingNumber) UI.setValue('defendant-case-number', data.bookingNumber);
+
+                    if (data.charges && Array.isArray(data.charges)) {
+                        data.charges.forEach(c => addCharge(c));
+                    }
+                    if (data.address) UI.setValue('defendant-home-address', data.address);
+
+                    UI.showToast("✅ Data Extracted & Applied", "success");
+                }
+            };
+
+            const api = {
+                Maps: Maps,
+                SmartImport: SmartImport,
+                IntakeCache: new Map(),
+                showToast: UI.showToast, // Expose for diagnostic script
+                init: function () {
+                    // Hide Overlay IMMEDIATELY
+                    const overlay = document.getElementById('progress-overlay');
+                    if (overlay) overlay.style.display = 'none';
+
+                    try { Router.handleParams(); } catch (e) { console.error('Router init failed', e); }
+                    try { SmartImport.init(); } catch (e) { console.error('SmartImport init failed', e); }
+
+                    // Initialize Queue (Data)
+                    setTimeout(Queue.fetch, 500);
+
+                    // Maps is now handled by callback or lazy-load on tab switch
+
                     // Global exports for onClick compatibility
                     window.runClerk = Agents.Clerk.run;
-                    window.clearClerk = Agents.Clerk.clear;
-                    window.handleFileSelect = Agents.Clerk.handleFile; // Clerk file
+                    window.limitSearch = Agents.Clerk.limitSearch;
+                    window.toggleAgentTab = UI.toggleAgentTab;
                     window.runAnalyst = Agents.Analyst.run;
                     window.runInvestigator = Agents.Investigator.run;
-                    window.handleInvestigatorFile = Agents.Investigator.handleFile;
                     window.runMonitor = Agents.Monitor.run;
                     window.fetchQueue = Queue.fetch;
-                    window.loadIntake = Queue.load;
+                    window.loadIntake = Queue.process;
                     window.refreshAllCountyStatus = Stats.refreshAll;
                     window.toggleAgentTab = UI.toggleAgentTab;
+                    window.switchTab = UI.switchTab; // CRITICAL FIX: Expose switchTab globally
 
                     window.forceQualifiedCleanup = function () {
                         if (!confirm('⚠️ ARE YOU SURE?\n\nThis will CLEAR ALL DATA in the "Shamrock_Arrests_Master" and "Qualified_exceptions" tabs and re-sync from source counties.\n\nThis process cannot be undone.')) return;
 
                         UI.showToast('🧹 Starting cleanup... this may take a minute.', 'info');
                         google.script.run
-                            .withSuccessHandler(res => {
-                                if (res.success) {
-                                    UI.showToast('✅ ' + res.message, 'success');
-                                } else {
-                                    UI.showToast('❌ Error: ' + res.error, 'error');
-                                }
+                            .withSuccessHandler(() => {
+                                UI.showToast('✅ Cleanup Complete!', 'success');
+                                alert('Cleanup Complete. Please reload the page.');
                             })
-                            .withFailureHandler(err => UI.showToast('❌ Failed: ' + err.message, 'error'))
+                            .withFailureHandler(err => {
+                                UI.showToast('❌ Cleanup Failed: ' + err.message, 'error');
+                            })
                             .client_forceCleanup();
                     };
 
-                    // Deprecated
-                    window.switchAIAgent = UI.toggleAgentTab;
-                },
-                Agents, Queue, UI, Stats
+                    console.log("✅ ShamrockApp Initialized");
+                    UI.showToast("System Ready v176", "success");
+                }
             };
+
+            // Expose globally for onclick handlers
+            window.ShamrockApp = api;
+            console.log("✅ ShamrockApp IIFE Loaded Successfully");
+            return api;
         })();
 
-        // Bootstrap
-        window.addEventListener('load', ShamrockApp.init);
+        // Bootstrap with Safety Check
+        window.addEventListener('load', function () {
+            console.log("🚀 Window Load Event Fired");
+            try {
+                if (typeof ShamrockApp !== 'undefined' && ShamrockApp.init) {
+                    ShamrockApp.init();
+                } else {
+                    console.error("❌ ShamrockApp is undefined on load");
+                    alert("CRITICAL ERROR: ShamrockApp failed to load. Check console.");
+                    // Emergency Overlay Removal
+                    const ov = document.getElementById('progress-overlay');
+                    if (ov) ov.style.display = 'none';
+                }
+            } catch (err) {
+                console.error("❌ Bootstrap Error:", err);
+                alert("Bootstrap Error: " + err.message);
+            }
+        });
+    </script>
+
+    <!-- FAIL-SAFE: Force UI Visibility -->
+    <script>
+        setTimeout(function () {
+            const ov = document.getElementById('progress-overlay');
+            if (ov) {
+                console.warn("⚠️ Fail-Safe: Hiding Overlay");
+                ov.style.display = 'none';
+            }
+
+            // Force Tab Visibility
+            const activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab || activeTab.style.display === 'none') {
+                console.warn("⚠️ Fail-Safe: No active tab visible, forcing Scrapers tab.");
+                const scrapers = document.getElementById('scrapers-tab');
+                if (scrapers) {
+                    scrapers.style.display = 'block';
+                    scrapers.classList.add('active');
+                    // Add debug border to see if it's rendering but empty
+                    scrapers.style.border = "4px solid red";
+                } else {
+                    console.error("❌ CRITCAL: #scrapers-tab element NOT FOUND in DOM");
+                    alert("CRITICAL ERROR: Dashboard HTML is corrupt. Missing #scrapers-tab");
+                }
+            } else {
+                console.log("✅ Tab is visible:", activeTab.id);
+            }
+
+            // Debug Node Count
+            const cards = document.querySelectorAll('.county-card');
+            console.log("Found " + cards.length + " county cards.");
+            if (cards.length === 0) alert("Diagnostic: 0 County Cards found. HTML is truncated?");
+
+        }, 3000);
     </script>
 </body>
 
 </html>
+```
