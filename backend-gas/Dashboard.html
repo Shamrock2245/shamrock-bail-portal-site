@@ -1949,15 +1949,18 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="required">First Name</label>
-                        <input type="text" id="defendant-first-name" placeholder="John" oninput="updateSummary()">
+                        <input type="text" id="defendant-first-name" placeholder="John" oninput="updateSummary()"
+                            autocomplete="off" data-lpignore="true">
                     </div>
                     <div class="form-group">
                         <label>Middle Name</label>
-                        <input type="text" id="defendant-middle-name" placeholder="Michael">
+                        <input type="text" id="defendant-middle-name" placeholder="Michael" autocomplete="off"
+                            data-lpignore="true">
                     </div>
                     <div class="form-group">
                         <label class="required">Last Name</label>
-                        <input type="text" id="defendant-last-name" placeholder="Doe" oninput="updateSummary()">
+                        <input type="text" id="defendant-last-name" placeholder="Doe" oninput="updateSummary()"
+                            autocomplete="off" data-lpignore="true">
                     </div>
                     <div class="form-group">
                         <label>Suffix</label>
@@ -6756,63 +6759,91 @@
             // --- Module: Queue Management ---
             const Queue = {
                 fetch: function () {
-                    UI.setHTML('queue-list', '<tr><td colspan="7" class="text-center" style="padding:20px;">⌛ Fetching pending intakes...</td></tr>');
+                    const loadingHTML = '<tr><td colspan="7" class="text-center" style="padding:20px;">⌛ Fetching pending intakes...</td></tr>';
+                    UI.setHTML('queue-list', loadingHTML);
+                    UI.setHTML('intake-queue-body', loadingHTML);
                     google.script.run
                         .withSuccessHandler(Queue.render)
-                        .withFailureHandler(err => UI.setHTML('queue-list', `<tr><td colspan="7" class="text-error" style="padding:20px; text-align:center;">Error: ${err.message}</td></tr>`))
+                        .withFailureHandler(err => {
+                            const errHTML = `<tr><td colspan="7" class="text-error" style="padding:20px; text-align:center;">Error: ${err.message}</td></tr>`;
+                            UI.setHTML('queue-list', errHTML);
+                            UI.setHTML('intake-queue-body', errHTML);
+                        })
                         .getWixIntakeQueue();
                 },
 
                 render: function (intakes) {
-                    const list = document.getElementById('queue-list');
+                    const list = document.getElementById('queue-list'); // AI Console Queue
+                    const listMain = document.getElementById('intake-queue-body'); // Main Dashboard Queue
                     const badge = document.getElementById('queue-badge');
 
+                    // Handle "No Intakes"
                     if (!intakes || !Array.isArray(intakes) || intakes.length === 0) {
                         if (badge) badge.style.display = 'none';
-                        return UI.setHTML('queue-list', '<tr><td colspan="7" class="text-center" style="padding:20px; color:var(--muted);">No pending intakes found.</td></tr>');
+                        const emptyHTML = '<tr><td colspan="7" class="text-center" style="padding:20px; color:var(--muted);">No pending intakes found.</td></tr>';
+                        if (list) UI.setHTML('queue-list', emptyHTML);
+                        if (listMain) UI.setHTML('intake-queue-body', emptyHTML);
+                        return;
                     }
 
                     if (badge) { badge.innerText = intakes.length; badge.style.display = 'inline-block'; }
 
-                    let html = '';
-                    intakes.forEach(item => {
-                        const id = item.IntakeID;
-                        // Cache the item for safe retrieval
-                        if (window.ShamrockApp && window.ShamrockApp.IntakeCache) {
-                            window.ShamrockApp.IntakeCache.set(id, item);
-                        }
+                    try {
+                        let html = '';
+                        intakes.forEach(item => {
+                            try {
+                                const id = item.IntakeID;
+                                // Cache the item for safe retrieval
+                                if (window.ShamrockApp && window.ShamrockApp.IntakeCache) {
+                                    window.ShamrockApp.IntakeCache.set(id, item);
+                                }
 
-                        const dateStr = item.Timestamp ? new Date(item.Timestamp).toLocaleString() : 'N/A';
+                                const dateStr = item.Timestamp ? new Date(item.Timestamp).toLocaleString() : 'N/A';
+                                const defendant = item.DefendantName || 'Unknown';
+                                const indemnitor = item.FullName || 'Unknown';
 
-                        // AI Risk Badge Logic
-                        let riskBadge = '';
-                        if (item.AI_Risk) {
-                            const riskColor = item.AI_Risk === 'High' ? 'var(--error)' : (item.AI_Risk === 'Medium' ? 'var(--warning)' : 'var(--success)');
-                            riskBadge = `<span class="badge" style="background:${riskColor}; color:#fff; margin-left:8px; font-size:10px;" title="${item.AI_Rationale}">🤖 ${item.AI_Risk}</span>`;
-                        }
+                                // AI Risk Badge Logic
+                                let riskBadge = '';
+                                if (item.AI_Risk) {
+                                    const riskColor = item.AI_Risk === 'High' ? 'var(--error)' : (item.AI_Risk === 'Medium' ? 'var(--warning)' : 'var(--success)');
+                                    riskBadge = `<span class="badge" style="background:${riskColor}; color:#fff; margin-left:8px; font-size:10px;" title="${item.AI_Rationale}">🤖 ${item.AI_Risk}</span>`;
+                                }
 
-                        html += `
-                            <tr>
-                                <td style="padding: 12px;">${id || 'N/A'}</td>
-                                <td style="padding: 12px;">
-                                    <strong>${item.DefendantName || 'N/A'}</strong>
-                                    <span id="badge-${id}">${riskBadge}</span>
-                                </td>
-                                <td style="padding: 12px;">${item.FullName || 'Anon'}</td>
-                                <td style="padding: 12px;">${item.Role || 'Indemnitor'}</td>
-                                <td style="padding: 12px;"><span class="badge badge-warning">${item.Status || 'Pending'}</span></td>
-                                <td style="padding: 12px;">${dateStr}</td>
-                                <td style="padding: 12px; text-align: right;">
-                                    <button class="btn btn-sm btn-primary" onclick="loadIntake('${id}')" title="Load & Process">
-                                        ⬇️ Process
-                                    </button>
-                                </td>
-                            </tr>`;
-                    });
-                    list.innerHTML = html;
+                                html += `
+                                    <tr>
+                                        <td style="padding: 12px; font-family:monospace;">${id ? id.substring(0, 8) : 'N/A'}...</td>
+                                        <td style="padding: 12px;">
+                                            <strong>${defendant}</strong>
+                                            <span id="badge-${id}">${riskBadge}</span>
+                                        </td>
+                                        <td style="padding: 12px;">${indemnitor}</td>
+                                        <td style="padding: 12px;">${item.Role || 'Indemnitor'}</td>
+                                        <td style="padding: 12px;"><span class="badge badge-warning">${item.Status || 'Pending'}</span></td>
+                                        <td style="padding: 12px;">${dateStr}</td>
+                                        <td style="padding: 12px; text-align: right;">
+                                            <button class="btn btn-sm btn-primary" onclick="loadIntake('${id}')" title="Load & Process">
+                                                ⬇️ Process
+                                            </button>
+                                        </td>
+                                    </tr>`;
+                            } catch (itemErr) {
+                                console.error('Error rendering item:', itemErr, item);
+                            }
+                        });
 
-                    // Trigger AI Scan
-                    setTimeout(() => Queue.scanRisks(intakes), 500);
+                        // Update BOTH tables
+                        if (list) list.innerHTML = html;
+                        if (listMain) listMain.innerHTML = html;
+
+                        // Trigger AI Scan
+                        setTimeout(() => Queue.scanRisks(intakes), 500);
+
+                    } catch (err) {
+                        console.error('CRITICAL RENDER ERROR:', err);
+                        const errHTML = `<tr><td colspan="5" class="text-error" style="text-align:center;">Render Error: ${err.message}</td></tr>`;
+                        if (list) list.innerHTML = errHTML;
+                        if (listMain) listMain.innerHTML = errHTML;
+                    }
                 },
 
 

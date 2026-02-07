@@ -453,8 +453,8 @@ function getWixIntakeQueue() {
 
       return {
         IntakeID: item.caseId || item._id,
-        DefendantName: item.defendantName || 'Unknown',
-        FullName: item.indemnitorName || 'Unknown',
+        DefendantName: (item.defendantName || '').trim() || 'Unknown',
+        FullName: (item.indemnitorName || '').trim() || 'Unknown',
         FirstName: firstName, // Critical for addIndemnitor hydration
         LastName: lastName,   // Critical for addIndemnitor hydration
         Email: item.indemnitorEmail || '',

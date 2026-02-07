@@ -371,7 +371,7 @@ function doPostFromClient(data) {
 function client_parseBooking(base64String) {
   // "The Clerk"
   const email = Session.getActiveUser().getEmail();
-  if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
+  if (!isUserAllowed(email)) return { error: `Unauthorized Access. User: '${email}' (Not in allowed list/domain)` };
 
   return AI_parseBookingSheet(base64String);
 }
@@ -379,14 +379,14 @@ function client_parseBooking(base64String) {
 function client_extractFromUrl(url) {
   // "The Clerk"
   const email = Session.getActiveUser().getEmail();
-  if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
+  if (!isUserAllowed(email)) return { error: `Unauthorized Access. User: '${email}'` };
   return AI_extractBookingFromUrl(url);
 }
 
 function client_analyzeLead(leadJsonString) {
   // "The Analyst"
   const email = Session.getActiveUser().getEmail();
-  if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
+  if (!isUserAllowed(email)) return { error: `Unauthorized Access. User: '${email}'` };
 
   try {
     const lead = JSON.parse(leadJsonString);
@@ -1897,7 +1897,11 @@ function saveFilledPacketToDrive(data) {
  * @returns {boolean} - True if allowed
  */
 function isUserAllowed(email) {
-  if (!email) return false;
+  if (!email) {
+    console.warn('isUserAllowed: No email provided.');
+    return false;
+  }
+  const emailLower = email.toLowerCase();
 
   // 1. Allow Admin/Owner
   const ALLOWED_USERS = [
@@ -1907,10 +1911,10 @@ function isUserAllowed(email) {
     'shamrockbailoffice@gmail.com'
   ];
 
-  if (ALLOWED_USERS.includes(email.toLowerCase())) return true;
+  if (ALLOWED_USERS.includes(emailLower)) return true;
 
-  // 2. Allow Domain (Staff)
-  if (email.endsWith('@shamrockbailbonds.biz')) return true;
+  // 2. Allow Domain (Staff) - RELAXED CHECK
+  if (emailLower.endsWith('@shamrockbailbonds.biz')) return true;
 
   // 3. Fallback: Log unauthorized attempt
   console.warn(`Unauthorized dashboard access attempt: ${email}`);
