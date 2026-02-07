@@ -133,10 +133,10 @@ function SETUP_SignNowBasicToken(token) {
 function ADMIN_SendDeploymentAlert(newUrl) {
     if (!newUrl) throw new Error("Please provide the new Web App URL");
 
-    // Check if SlackIntegration is loaded
-    if (typeof sendSlackMessage !== 'function') {
-        console.error("sendSlackMessage function not found. Ensure SlackIntegration.js is present.");
-        return "Failed: SlackIntegration not found";
+    // Check if NotificationService is loaded
+    if (typeof NotificationService === 'undefined') {
+        console.error("NotificationService not found.");
+        return "Failed: NotificationService not found";
     }
 
     const blocks = [
@@ -179,5 +179,5 @@ function ADMIN_SendDeploymentAlert(newUrl) {
         }
     ];
 
-    return sendSlackMessage('#alerts', '🚀 New Deployment: ' + newUrl, blocks);
+    return NotificationService.sendSlack('#alerts', '🚀 New Deployment: ' + newUrl, blocks);
 }

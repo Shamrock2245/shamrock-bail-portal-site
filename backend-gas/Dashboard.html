@@ -7426,7 +7426,17 @@
                     // Charges
                     if (data.charges && Array.isArray(data.charges)) {
                         // Clear existing? Maybe ask user? For now append.
-                        data.charges.forEach(c => addCharge(c));
+                        data.charges.forEach(c => {
+                            addCharge({
+                                desc: c.description,
+                                statute: c.statute,
+                                degree: c.degree,
+                                bondAmount: c.bond,
+                                bondType: c.bondType,
+                                courtDate: c.courtDate,
+                                caseNumber: c.caseNumber
+                            });
+                        });
 
                         // Calculate total bond if available
                         const totalBond = data.charges.reduce((acc, c) => acc + (c.bond || 0), 0);

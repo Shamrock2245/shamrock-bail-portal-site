@@ -157,7 +157,7 @@ function doGet(e) {
 
     // --- SLACK ALERT ---
     if (e.parameter.action === 'sendSlackAlert') {
-      const result = sendSlackMessage(e.parameter.channel || '#alerts', e.parameter.text, e.parameter.blocks);
+      const result = NotificationService.sendSlack(e.parameter.channel || '#alerts', e.parameter.text, e.parameter.blocks);
       return ContentService.createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
     }
@@ -389,12 +389,13 @@ function doPostFromClient(data) {
  * CLIENT WRAPPERS (for google.script.run)
  * Direct calls from Dashboard.html
  */
-function client_parseBooking(base64String) {
+// Supports single string or array
+function client_parseBooking(inputData) {
   // "The Clerk"
   const email = Session.getActiveUser().getEmail();
   if (!isUserAllowed(email)) return { error: `Unauthorized Access. User: '${email}' (Not in allowed list/domain)` };
 
-  return AI_parseBookingSheet(base64String);
+  return AI_parseBookingSheet(inputData);
 }
 
 function client_extractFromUrl(url) {
@@ -542,7 +543,7 @@ function handleAction(data) {
 
   // 1.5. NOTIFICATIONS
   if (action === 'sendEmail') return handleSendEmail(data);
-  if (action === 'sendSlackAlert') return sendSlackMessage(data.channel, data.text, data.blocks);
+  if (action === 'sendSlackAlert') return NotificationService.sendSlack(data.channel, data.text, data.blocks);
   if (action === 'testEmailAdmin') return sendDashboardLinkEmail();
 
   // 1.6. BAIL SCHOOL
@@ -647,8 +648,9 @@ function handleGetAction(e) {
   const action = e.parameter.action;
   const callback = e.parameter.callback;
 
-  if (action === 'health') return createResponse({ success: true, version: '5.9', timestamp: new Date().toISOString() }, callback);
+  if (action === 'health') return createResponse({ success: true, version: 'V204', timestamp: new Date().toISOString() }, callback);
   if (action === 'getNextReceiptNumber') return createResponse(getNextReceiptNumber(), callback);
+  if (action === 'testSlack') return createResponse(testSlackIntegration(), callback);
 
   return createErrorResponse('Unknown action', ERROR_CODES.UNKNOWN_ACTION);
 }
@@ -1571,7 +1573,7 @@ function handleNewIntake(caseId, data) {
     try {
       const slackText = `🚨 *New Indemnitor Intake*\n*Case:* ${data.caseNumber || 'Pending'}\n*Def:* ${data.defendantName}\n*Indemnitor:* ${data.indemnitorFullName}\n*Risk:* ${aiRisk || 'N/A'}`;
       if (typeof sendSlackMessage === 'function') {
-        sendSlackMessage('#new-cases', slackText);
+        NotificationService.sendSlack('#new-cases', slackText);
       }
     } catch (slackErr) {
       console.warn('Failed to send Slack alert:', slackErr);

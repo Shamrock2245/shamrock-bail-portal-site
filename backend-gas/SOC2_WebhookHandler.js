@@ -80,14 +80,11 @@ function handleTwilioWebhookSOC2(e) {
         const body = payload.Body || '';
 
         // 1. Notify Slack (Office)
-        if (typeof sendSlackMessage === 'function') {
+        if (typeof NotificationService !== 'undefined') {
+            NotificationService.sendSlack('#incoming-sms', `📱 *SMS from ${from}*\n>${body}`);
+        } else if (typeof sendSlackMessage === 'function') {
+            // Fallback to legacy if NotificationService missing (shouldn't happen)
             sendSlackMessage('#incoming-sms', `📱 *SMS from ${from}*\n>${body}`);
-        } else if (typeof postToSlack === 'function') {
-            // Fallback to helper if global function unavailable
-            const webhook = getSlackWebhookForChannel('general');
-            if (webhook) {
-                postToSlack(webhook, { text: `📱 *SMS from ${from}*: ${body}` });
-            }
         }
 
         // 2. Log to Sheet (if applicable)
