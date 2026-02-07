@@ -191,7 +191,8 @@ async function setupCommonBailAmounts() {
         console.error("❌ Failed to load Common Charges from CMS:", err);
     }
 
-    const element = $w('#amountRepeater') || $w('#amountsRepeater');
+    // UPDATED ID: Added #table1 as common default
+    const element = $w('#amountRepeater') || $w('#amountsRepeater') || $w('#table1');
 
     if (element && element.valid) {
         // DETECT ELEMENT TYPE: Check if it's a Table or a Repeater
@@ -312,7 +313,8 @@ async function setupFAQ() {
     }
 
     // Bind data to the FAQ repeater
-    const rep = $w('#faqRepeater');
+    // UPDATED ID based on Layers Panel: #listRepeater
+    const rep = $w('#listRepeater') || $w('#faqRepeater');
     if (rep && rep.valid) {
         rep.onItemReady(($item, itemData) => {
             // Map CMS fields
