@@ -191,7 +191,7 @@ async function setupCommonBailAmounts() {
         console.error("❌ Failed to load Common Charges from CMS:", err);
     }
 
-    const element = $w('#amountsRepeater');
+    const element = $w('#amountRepeater') || $w('#amountsRepeater');
 
     if (element && element.valid) {
         // DETECT ELEMENT TYPE: Check if it's a Table or a Repeater
@@ -314,29 +314,34 @@ async function setupFAQ() {
     // Bind data to the FAQ repeater
     const rep = $w('#faqRepeater');
     if (rep && rep.valid) {
-        console.log(`📝 Binding ${data.length} items to #faqRepeater`);
-
-        // FIX: Set onItemReady BEFORE setting data
         rep.onItemReady(($item, itemData) => {
-            // Map CMS field names to repeater elements
-            // CMS uses: title (question), answer
+            // Map CMS fields
             const question = itemData.title || itemData.question || itemData.q || "No Question";
             const answerText = itemData.answer || itemData.a || "No Answer";
 
-            // Try multiple possible element IDs for flexibility
-            // Added: #textQuestion, #textAnswer, #description (standard Wix List), #content
-            const questionEl = $item('#faqQuestion') || $item('#question') || $item('#title') || $item('#textQuestion') || $item('#questionText');
-            const answerEl = $item('#faqAnswer') || $item('#answer') || $item('#text') || $item('#textAnswer') || $item('#answerText') || $item('#description') || $item('#content');
+            const questionEl = $item('#faqQuestion');
+            const answerEl = $item('#faqAnswer');
+            const container = $item('#faqContainer'); // Assuming a container exists for the whole item
 
-            if (questionEl && questionEl.valid) questionEl.text = question;
-            if (answerEl && answerEl.valid) answerEl.text = answerText;
+            if (questionEl.valid) questionEl.text = question;
+            if (answerEl.valid) {
+                answerEl.text = answerText;
+                answerEl.collapse(); // Default to collapsed
+            }
 
-            // Debug log if elements missing
-            if (!questionEl || !questionEl.valid) console.warn("⚠️ Could not find 'Question' text element in #faqRepeater item");
-            if (!answerEl || !answerEl.valid) console.warn("⚠️ Could not find 'Answer' text element in #faqRepeater item");
+            // JOIN TOGGLE LOGIC
+            // Click on Question OR Container to toggle
+            const toggleFn = () => {
+                if (answerEl.valid) {
+                    if (answerEl.collapsed) answerEl.expand();
+                    else answerEl.collapse();
+                }
+            };
 
-            // Expand item if collapsed (sometimes happens)
-            if ($item('#faqAnswer').collapsed) $item('#faqAnswer').expand();
+            if (questionEl.valid) questionEl.onClick(toggleFn);
+            // If there's a header box, click that too
+            const header = $item('#faqHeader'); // Hypothetical
+            if (header.valid) header.onClick(toggleFn);
         });
 
         rep.data = data;
