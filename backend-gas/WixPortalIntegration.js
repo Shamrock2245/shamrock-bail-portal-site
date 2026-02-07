@@ -735,6 +735,7 @@ function updateWixSignNowData(caseId, signNowData) {
   }
 }
 
+
 /**
  * Update Wix intake with AI Analysis (Risk, Score, Rationale)
  */
@@ -775,5 +776,40 @@ function updateWixIntakeWithAI(caseId, aiData) {
   } catch (e) {
     Logger.log('Error updating AI data: ' + e.message);
     return false;
+  }
+}
+
+/**
+ * Fetch Indemnitor Profile + Documents from Wix
+ */
+function fetchIndemnitorProfile(email, includeDocs = false) {
+  try {
+    if (!email) throw new Error("Email required");
+
+    // Use centralized config for key
+    const config = getWixPortalConfig();
+    const apiKey = config.apiKey;
+
+    const url = `${config.baseUrl}/getIndemnitorProfile?apiKey=${encodeURIComponent(apiKey)}&email=${encodeURIComponent(email)}&includeDocs=${includeDocs}`;
+
+    const options = {
+      method: 'get',
+      followRedirects: true,
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    const body = response.getContentText();
+    const result = JSON.parse(body);
+
+    if (result.success) {
+      return result; // { success: true, profile: {...}, documents: [...] }
+    } else {
+      Logger.log(`Profile fetch failed: ${result.message}`);
+      return null;
+    }
+  } catch (error) {
+    Logger.log(`Error fetching indemnitor profile: ${error.message}`);
+    return null;
   }
 }

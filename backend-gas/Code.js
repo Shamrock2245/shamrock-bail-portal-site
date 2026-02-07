@@ -2386,6 +2386,9 @@ function handleWixLogEvent(data) {
   }
 }
 
-
-
-
+/**
+ * Frontend Wrapper: Get Indemnitor Profile & Documents
+ */
+function client_getIndemnitorProfile(email) {
+  return fetchIndemnitorProfile(email, true);
+}

@@ -958,10 +958,15 @@ export async function get_sitemap(request) {
  * GET /_functions/getIndemnitorProfile?email=...
  * Lookup a member profile by email for GAS Dashboard pre-fill
  */
+/**
+ * GET /_functions/getIndemnitorProfile?email=...&includeDocs=true
+ * Lookup a member profile by email for GAS Dashboard pre-fill
+ */
 export async function get_getIndemnitorProfile(request) {
     try {
         const apiKey = request.headers['api-key'];
         const email = request.query.email;
+        const includeDocs = request.query.includeDocs === 'true';
 
         // 1. Auth Check
         const validApiKey = await getSecret('GAS_API_KEY');
@@ -973,19 +978,14 @@ export async function get_getIndemnitorProfile(request) {
             return badRequest({ body: { success: false, message: 'Missing email' } });
         }
 
-        // 2. Query Portal Users (our custom user collection)
-        // We use Portal Users instead of native Wix Members
-        // This maintains our custom authentication system
-
-        let member = null;
-
-        // Strategy: Query 'Portal Users' which has our custom user data
-        // We use suppressAuth: true to bypass Wix permissions
-
+        // 2. Query Portal Users
         const options = { suppressAuth: true };
         const results = await wixData.query("Portal Users")
             .eq("email", email)
             .find(options);
+
+        let member = null;
+        let documents = [];
 
         if (results.items.length > 0) {
             const m = results.items[0];
@@ -994,20 +994,38 @@ export async function get_getIndemnitorProfile(request) {
                 lastName: m.lastName || m.name?.split(' ').slice(1).join(' ') || '',
                 phone: m.phone || '',
                 email: m.email,
-                address: m.address, // Object usually
+                address: m.address,
                 city: (m.address && m.address.city) ? m.address.city : '',
                 state: (m.address && m.address.state) ? m.address.state : '',
                 zip: (m.address && m.address.postalCode) ? m.address.postalCode : ''
             };
+
+            // 3. Fetch Documents if requested
+            if (includeDocs) {
+                try {
+                    const docResults = await wixData.query("Memberdocuments")
+                        .eq("memberEmail", email)
+                        .find(options);
+
+                    documents = docResults.items.map(doc => ({
+                        fileUrl: doc.fileUrl,
+                        fileName: doc.fileName,
+                        documentType: doc.documentType,
+                        documentSide: doc.documentSide,
+                        status: doc.status,
+                        createdAt: doc._createdDate
+                    }));
+                } catch (docErr) {
+                    console.error("Document Lookup Error (Non-Fatal):", docErr);
+                }
+            }
         } else {
-            // Fallback: Check 'Cases' collection for previous indemnitor records?
-            // Optional optimization.
             return ok({ body: { success: false, message: 'Member not found' } });
         }
 
         return ok({
             headers: { 'Content-Type': 'application/json' },
-            body: { success: true, profile: member }
+            body: { success: true, profile: member, documents: documents }
         });
 
     } catch (error) {

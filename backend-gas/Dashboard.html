@@ -3416,6 +3416,10 @@
                 <input type="text" id="indemnitor-${indemnitorCount}-ref2-address" value="${data.ref2Address || ''}">
              </div>
           </div>
+           
+           <div id="indemnitor-${indemnitorCount}-documents" class="form-row" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+              <!-- Documents will be loaded here -->
+           </div>
 
         </div>
             `;
@@ -3434,6 +3438,30 @@
                     document.getElementById('no-indemnitors-message').style.display = 'block';
                 }
             }
+        }
+
+        /**
+         * Render ID Documents on the card
+         */
+        function renderIndemnitorDocuments(documents, indemnitorId) {
+            const container = document.getElementById(`indemnitor-${indemnitorId}-documents`);
+            if (!container) return;
+
+            if (!documents || documents.length === 0) {
+                container.innerHTML = '<small class="text-muted" style="color:#999;">No uploaded documents linked to this email.</small>';
+                return;
+            }
+
+            let html = '<h6 style="margin:0 0 8px 0; font-size:12px; color:#666;">Uploaded Documents</h6><div class="doc-list" style="display:flex; gap:10px; flex-wrap:wrap;">';
+            documents.forEach(doc => {
+                const label = (doc.documentSide || doc.documentType || 'Document').toUpperCase();
+                const url = doc.fileUrl; // Use public URL if possible
+                html += `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary" style="font-size:11px; padding: 4px 8px; text-decoration:none; border:1px solid #ccc; border-radius:4px; color:#333; background:#f8f9fa; display:flex; align-items:center; gap:5px;">
+                          <i class="fas fa-file-image"></i> ${label}
+                        </a>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         /* =========================================================
@@ -6970,13 +6998,47 @@
 
                         // 3. Hydrate Indemnitor Info
                         // Map IntakeQueue item to Indemnitor Form Structure
+                        const raw = item._original || {}; // Access full Wix Data
+
                         const indemnitorData = {
-                            firstName: item.FirstName || '',
-                            lastName: item.LastName || '',
-                            email: item.Email || '',
-                            phone: item.Phone || '',
-                            relationship: item.Relationship || 'Self'
+                            firstName: item.FirstName || raw.indemnitorFirstName || '',
+                            lastName: item.LastName || raw.indemnitorLastName || '',
+                            email: item.Email || raw.indemnitorEmail || '',
+                            phone: item.Phone || raw.indemnitorPhone || '',
+                            relationship: item.Relationship || 'Self',
+
+                            // Expanded Fields (from raw)
+                            middleName: raw.indemnitorMiddleName || '',
+                            dob: raw.indemnitorDOB || raw.dob || '',
+                            ssn: raw.indemnitorSSN || raw.ssn || '',
+                            dl: raw.indemnitorDL || raw.dlNumber || '',
+                            dlState: raw.indemnitorDLState || raw.dlState || 'FL',
+
+                            address: raw.indemnitorStreetAddress || raw.indemnitorAddress || '',
+                            city: raw.indemnitorCity || '',
+                            state: raw.indemnitorState || 'FL',
+                            zip: raw.indemnitorZipCode || raw.indemnitorZip || '',
+
+                            // Employment
+                            employer: raw.indemnitorEmployerName || '',
+                            employerPhone: raw.indemnitorEmployerPhone || '',
+                            employerCity: raw.indemnitorEmployerCity || '',
+                            employerState: raw.indemnitorEmployerState || '',
+                            supervisor: raw.indemnitorSupervisorName || '',
+                            supervisorPhone: raw.indemnitorSupervisorPhone || '',
+
+                            // References
+                            ref1Name: raw.reference1Name || raw.ref1Name || '',
+                            ref1Relation: raw.reference1Relation || raw.ref1Relation || '',
+                            ref1Phone: raw.reference1Phone || raw.ref1Phone || '',
+                            ref1Address: raw.reference1Address || raw.ref1Address || '',
+
+                            ref2Name: raw.reference2Name || raw.ref2Name || '',
+                            ref2Relation: raw.reference2Relation || raw.ref2Relation || '',
+                            ref2Phone: raw.reference2Phone || raw.ref2Phone || '',
+                            ref2Address: raw.reference2Address || raw.ref2Address || ''
                         };
+                        console.log("Hydrating Indemnitor:", indemnitorData);
                         addIndemnitor(indemnitorData);
 
                         // 4. Hydrate Charges (if available in AI analysis or raw data)
@@ -6990,6 +7052,22 @@
                         const defendantTabBtn = document.querySelector('button[onclick*="defendant"]');
                         if (defendantTabBtn) defendantTabBtn.click();
                         else if (typeof switchTab === 'function') switchTab(null, 'defendant');
+
+                        // 6. Async: Fetch & Render Documents
+                        if (indemnitorData.email) {
+                            const currentId = indemnitorCount; // Capture current ID 
+                            google.script.run
+                                .withSuccessHandler(function (result) {
+                                    if (result && result.documents) {
+                                        console.log('📄 Documents Fetched:', result.documents.length);
+                                        renderIndemnitorDocuments(result.documents, currentId);
+                                    }
+                                })
+                                .withFailureHandler(function (err) {
+                                    console.warn('Document fetch failed', err);
+                                })
+                                .client_getIndemnitorProfile(indemnitorData.email);
+                        }
 
                         UI.showToast(`Loaded data for ${item.DefendantName}`, 'success');
 
