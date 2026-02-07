@@ -18,17 +18,17 @@ function generateTemplateConfig() {
     // 2. Define Expected Keys (Matches Code.js)
     const EXPECTED_FILES = {
         'paperwork-header': ['Paperwork Header', 'header'],
-        'faq-cosigners': ['FAQ Cosigner', 'FAQ - Cosigner'],
-        'faq-defendants': ['FAQ Defendant', 'FAQ - Defendant'],
+        'faq-cosigners': ['FAQ Cosigner', 'FAQ - Cosigner', 'Cosigner Guide', 'Cosigner Info', 'Cosigner FAQ'],
+        'faq-defendants': ['FAQ Defendant', 'FAQ - Defendant', 'Defendant Guide', 'Defendant Info', 'Defendant FAQ'],
         'indemnity-agreement': ['Indemnity Agreement', 'Indemnity'],
         'defendant-application': ['Defendant Application', 'Application'],
         'promissory-note': ['Promissory Note', 'Promissory'],
         'disclosure-form': ['Disclosure Form', 'Disclosure'],
-        'surety-terms': ['Surety Terms', 'Terms'],
-        'master-waiver': ['Master Waiver', 'Waiver'],
+        'surety-terms': ['Surety Terms', 'Terms', 'Surety'],
+        'master-waiver': ['Master Waiver', 'Waiver', 'Release of Liability', 'General Waiver'],
         'ssa-release': ['SSA Release', 'SSA'],
         'collateral-receipt': ['Collateral Receipt', 'Collateral'],
-        'payment-plan': ['Payment Plan', 'Payment'],
+        'payment-plan': ['Payment Plan', 'Payment', 'Installment', 'Premium Finance', 'Premium', 'Finance'],
         'appearance-bond': ['Appearance Bond', 'Appearance']
     };
 
@@ -42,8 +42,10 @@ function generateTemplateConfig() {
 
         // 3. Scan all files in folder
         const fileList = [];
+        console.log("📂 Files found in folder:"); // DEBUG LOG
         while (files.hasNext()) {
             const file = files.next();
+            console.log(`   - ${file.getName()}`); // DEBUG LOG
             fileList.push({
                 name: file.getName(),
                 id: file.getId(),
@@ -55,9 +57,11 @@ function generateTemplateConfig() {
         Object.keys(EXPECTED_FILES).forEach(key => {
             const searchTerms = EXPECTED_FILES[key];
             // Find file where name includes any search term (case-insensitive)
-            const match = fileList.find(f =>
-                searchTerms.some(term => f.name.toLowerCase().includes(term.toLowerCase()))
-            );
+            // UPDATE: Check for normalized name (replace -/_ with space) to handle variants
+            const match = fileList.find(f => {
+                const politeName = f.name.toLowerCase().replace(/[-_]/g, ' ');
+                return searchTerms.some(term => politeName.includes(term.toLowerCase()));
+            });
 
             if (match) {
                 foundTemplates[key] = match.id;

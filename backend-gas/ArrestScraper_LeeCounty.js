@@ -33,7 +33,7 @@ function runLeeArrestsNow() {
                 // Add link to sheet if possible
                 msg += '\n<https://docs.google.com/spreadsheets/d/' + LEE.SHEET_ID + '|View Spreadsheet>';
 
-                NotificationService.sendSlack('#new-cases', msg);
+                NotificationService.sendSlack('#new-arrests-lee-county', msg);
                 Logger.log('🔔 Sent Slack notification.');
             } catch (e) {
                 Logger.log('⚠️ Failed to send Slack notification: ' + e.message);

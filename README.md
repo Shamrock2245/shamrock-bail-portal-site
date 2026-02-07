@@ -24,13 +24,15 @@ This project is the official Shamrock Bail Bonds Portal. It runs on **Wix Velo**
 
 ---
 
-## 🤖 AI Concierge & RAG System
-The system now includes a "Headless" AI Agent that monitors leads and sends intelligent SMS.
+---
 
-*   **Brain:** `backend-gas/RAGService.js` (Vertex AI Integration).
-*   **Knowledge Base:** `backend-gas/KnowledgeBase.js` (Protocols for Lee, Collier, Miami-Dade, etc.).
-*   **Trigger:** New row in "Hot Leads" sheet -> AI analyzes context -> Generates SMS.
-*   **Fallback:** If the API Key is missing, it reverts to rule-based templates.
+## 🤖 AI Agents & Capabilities
+The system employs specialized AI agents (powered by OpenAI) to automate complex tasks.
+
+*   **"The Clerk" (`AI_BookingParser.js`)**: Data Entry & OCR.
+*   **"The Analyst" (`AI_FlightRisk.js`)**: Risk Assessment & Underwriting.
+*   **"The Investigator" (`AI_Investigator.js`)**: Deep Vetting & Background Checks.
+*   **"The Concierge" (`RAGService.js`)**: Intelligent SMS responses via Google Vertex AI.
 
 ## 💳 SwipeSimple Integration
 The dashboard now includes a direct integration with **SwipeSimple** for payment processing.
@@ -78,7 +80,8 @@ The backend is in `backend-gas/`.
 ---
 
 ## 📂 Documentation Index
-*   **[ANTIGRAVITY-FOUNDATION-SPEC.md](./docs/ANTIGRAVITY-FOUNDATION-SPEC.md):** 📜 The Supreme Authority for the system.
+*   **[GEMINI.md](../../.gemini/GEMINI.md):** 📜 **The Supreme Authority** (Project Guidelines & Architecture).
+*   **[ANTIGRAVITY-FOUNDATION-SPEC.md](./docs/ANTIGRAVITY-FOUNDATION-SPEC.md):** 🏛 Original Foundation Spec (Reference).
 *   **[TESTING_GUIDE.md](./TESTING_GUIDE.md):** Protocols for verification.
 *   **[AI_CAPABILITIES.md](./docs/AI_CAPABILITIES.md):** 🦾 Guide to the 5 AI Agents.
 *   **[AGENTS.md](./AGENTS.md):** Persona definitions for development.

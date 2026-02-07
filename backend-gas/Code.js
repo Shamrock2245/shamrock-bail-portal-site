@@ -70,19 +70,19 @@ function getConfig() {
 // TEMPLATE CONFIGURATION
 // ============================================================================
 const TEMPLATE_DRIVE_IDS = {
-  'paperwork-header': '15sTaIIwhzHk96I8X3rxz7GtLMU-F5zo1',
-  'faq-cosigners': '1bjmH2w-XS5Hhe828y_Jmv9DqaS_gSZM7',
-  'faq-defendants': '16j9Z8eTii-J_p4o6A2LrzgzptGB8aOhR',
-  'indemnity-agreement': '1Raa2gzHOlO5kSJOeDE25eBh2H8LcjN5L',
+  'paperwork-header': '1lm1andI4sccfpIXaqTfTuPLPv1TAYgwm',
+  'faq-cosigners': '1Gqc0W96Y-g7wwfHWH48pq894mIheJ10o',
+  'faq-defendants': '1dPM6N-6GFjgwfaKdevDqXsOleH1h1HJK',
+  'indemnity-agreement': '1nkCaAcppS5eFeo72VuW7O8SHRT8358wY',
   'defendant-application': '1JxBubXg0up1NeFBaWgi6qGNA133tSCxG',
-  'promissory-note': '104-ArZiCm3cgfQcT5rIO0x_OWiaw6Ddt',
-  'disclosure-form': '1qIIDudp7r3J7-6MHlL2US34RcrU9KZKY',
-  'surety-terms': '1VfmyUTpchfwJTlENlR72JxmoE_NCF-uf',
-  'master-waiver': '181mgKQN-VxvQOyzDquFs8cFHUN0tjrMs',
-  'ssa-release': '1govKv_N1wl0FIePV8Xfa8mFmZ9JT8mNu',
-  'collateral-receipt': '1IAYq4H2b0N0vPnJN7b2vZPaHg_RNKCmP',
-  'payment-plan': '1v-qkaegm6MDymiaPK45JqfXXX2_KOj8A',
-  'appearance-bond': '15SDM1oBysTw76bIL7Xt0Uhti8uRZKABs'
+  'promissory-note': '17Hu6eBF75oe07SovWybnXipcu1YDM-q_',
+  'disclosure-form': '1xpAbAme46KlCpLMNswECbN145NwpdfqY',
+  'surety-terms': '1zAaZO8GrXJktRiG6HoKyy2wjr6hRhMEG',
+  'master-waiver': '1MK1gbNoMVEAF68opfCN-2JG74fyiCPgu',
+  'ssa-release': '1qvSaF3c9dza69EuZh-4kOsWyR8rhqxBE',
+  'collateral-receipt': '1mhl3QVlWSC3xfsfD1OG_qeAUEURbO93p',
+  'payment-plan': '10EllMpWUaETjBsyEQWDLUeYgOr0xmEOr',
+  'appearance-bond': '1zZ9UV8U9a50wKng1q3YIKLQ0iAF473d-',
 };
 
 function getPDFTemplates(data) {
@@ -257,7 +257,21 @@ function getDashboardData() {
  * PUBLIC API: Fetch statistics for all counties
  * Called by Dashboard.html via google.script.run
  */
-function getCountyStatistics() {
+function getCountyStatistics(refresh = false) {
+  // OPTIMIZATION (V190): Cache Results for 10 Minutes
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'STATS_V1_CACHE';
+
+  // 1. Try Cache
+  if (!refresh) {
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      // console.log("Serving Stats from Cache");
+      return JSON.parse(cached);
+    }
+  }
+
+  // 2. Fetch Fresh Data
   const counties = ['Lee', 'Collier', 'Charlotte', 'Sarasota', 'Hendry', 'DeSoto', 'Manatee', 'Palm Beach', 'Seminole', 'Orange', 'Pinellas', 'Broward', 'Hillsborough'];
   const stats = {};
 
@@ -276,6 +290,13 @@ function getCountyStatistics() {
       stats[key] = { exists: false, error: e.message };
     }
   });
+
+  // 3. Store in Cache (600s = 10m)
+  try {
+    cache.put(cacheKey, JSON.stringify(stats), 600);
+  } catch (err) {
+    console.warn("Failed to write stats to cache", err);
+  }
 
   return stats;
 }
@@ -1472,14 +1493,30 @@ function handleNewIntake(caseId, data) {
     const intakeId = caseId || ('INT-' + timestamp.getTime());
 
     // Construct References
+    // Construct References (Robustly)
     var references = data.references || [];
+
+    // Log incoming keys to debug mismatches
+    console.log(`🔍 handleNewIntake Data Keys: ${Object.keys(data).join(', ')}`);
+
     if (references.length === 0) {
-      if (data.reference1Name) {
+      // Try to build from flat fields (Ref 1)
+      if (data.reference1Name || data.Reference1Name || data.ref1Name) {
         references.push({
-          name: data.reference1Name,
-          phone: data.reference1Phone,
+          name: data.reference1Name || data.Reference1Name || data.ref1Name,
+          phone: data.reference1Phone || data.Reference1Phone || data.ref1Phone,
           relation: data.reference1Relation || 'Ref 1',
-          address: (data.reference1Address || '')
+          address: data.reference1Address || data.Reference1Address || data.ref1Address || ''
+        });
+      }
+
+      // Try to build from flat fields (Ref 2)
+      if (data.reference2Name || data.Reference2Name || data.ref2Name) {
+        references.push({
+          name: data.reference2Name || data.Reference2Name || data.ref2Name,
+          phone: data.reference2Phone || data.Reference2Phone || data.ref2Phone,
+          relation: data.reference2Relation || 'Ref 2',
+          address: data.reference2Address || data.Reference2Address || data.ref2Address || ''
         });
       }
     }
@@ -1565,6 +1602,35 @@ function handleNewIntake(caseId, data) {
         signingMethod: data.signingMethod || 'email', // Default to email invites
         selectedDocs: data.selectedDocs || ['bail_application', 'indemnity_agreement'] // Default package
       };
+
+      // [NEW] Generate PDF from Google Doc Template (Auto-Intake Flow)
+      try {
+        if (typeof PDFService !== 'undefined' && typeof PDFService.generatePdfFromTemplate === 'function') {
+
+          // 1. Map Data using PDF_Mappings (Centralized Logic)
+          let pdfData = docData;
+          if (typeof PDF_mapDataToTags === 'function') {
+            const mappedFields = PDF_mapDataToTags(docData, 'BOND_PACKAGE');
+            // Convert Array to Object
+            const mappedObj = mappedFields.reduce((acc, field) => {
+              acc[field.name] = field.value;
+              return acc;
+            }, {});
+            // Merge: Mapped fields take precedence for PDF placeholders
+            pdfData = { ...docData, ...mappedObj };
+            console.log('✅ Auto-Intake: Applied PDF_Mappings to formData');
+          }
+
+          const pdfBlob = PDFService.generatePdfFromTemplate(pdfData);
+          docData.pdfBase64 = Utilities.base64Encode(pdfBlob.getBytes());
+          docData.fileName = pdfBlob.getName();
+          console.log('✅ Auto-Intake: Generated PDF Blob (' + docData.fileName + ')');
+        } else {
+          console.warn('⚠️ Auto-Intake: PDFService not available. Skipping PDF generation.');
+        }
+      } catch (pdfErr) {
+        console.error('❌ Auto-Intake: PDF Generation Failed: ' + pdfErr.message);
+      }
 
       console.log(`🚀 Triggering Auto-Docs for ${intakeId}`);
       docResult = generateAndSendWithWixPortal_Safe(docData);
@@ -1714,7 +1780,10 @@ function handleStartPaperwork(data) {
     // Check if generateAndSendWithWixPortal is available
     if (typeof generateAndSendWithWixPortal === 'function') {
       // Prepare the form data for document generation
+      // Prepare the form data for document generation
+      // Merge all original data first, then apply overrides/defaults
       const formData = {
+        ...data, // Include ALL intake data (references, employer, etc.)
         'defendant-first-name': data.defendantFirstName || '',
         'defendant-last-name': data.defendantLastName || '',
         defendantName: data.defendantName || '',
@@ -1733,7 +1802,23 @@ function handleStartPaperwork(data) {
       // [NEW] Generate PDF from Google Doc Template
       try {
         if (typeof PDFService !== 'undefined' && typeof PDFService.generatePdfFromTemplate === 'function') {
-          const pdfBlob = PDFService.generatePdfFromTemplate(formData);
+
+          // 1. Map Data using PDF_Mappings (Centralized Logic)
+          // This ensures 'reference1Name' becomes 'Ref1Name' for the template
+          let pdfData = formData;
+          if (typeof PDF_mapDataToTags === 'function') {
+            const mappedFields = PDF_mapDataToTags(formData, 'BOND_PACKAGE');
+            // Convert Array [{name, value}] to Object {name: value} for PDFService
+            pdfData = mappedFields.reduce((acc, field) => {
+              acc[field.name] = field.value;
+              return acc;
+            }, {});
+            // Merge original data back in case of unmapped fields
+            pdfData = { ...formData, ...pdfData };
+            console.log('✅ Applied PDF_Mappings to formData');
+          }
+
+          const pdfBlob = PDFService.generatePdfFromTemplate(pdfData);
           formData.pdfBase64 = Utilities.base64Encode(pdfBlob.getBytes());
           formData.fileName = pdfBlob.getName();
           Logger.log('✅ Generated PDF Blob for case: ' + formData.caseNumber);

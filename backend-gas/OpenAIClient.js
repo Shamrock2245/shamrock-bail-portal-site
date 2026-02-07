@@ -34,8 +34,25 @@ function callOpenAI(systemPrompt, userContent, options = {}) {
         ];
 
         // Handle different content types
-        if (typeof userContent === 'object' && userContent.mimeType && userContent.data) {
-            // Multi-modal (Image + Text) - OpenAI vision API
+        // Handle different content types
+        if (Array.isArray(userContent)) {
+            // Multi-modal (Multiple Images + optional text)
+            // Expect userContent to be array of objects: { mimeType, data }
+            const contentArray = [{ type: "text", text: "Extract structured data from these booking images. Combine information if spread across multiple pages/images." }];
+
+            userContent.forEach(img => {
+                if (img.mimeType && img.data) {
+                    contentArray.push({
+                        type: "image_url",
+                        image_url: { url: `data:${img.mimeType};base64,${img.data}` }
+                    });
+                }
+            });
+
+            messages.push({ role: "user", content: contentArray });
+
+        } else if (typeof userContent === 'object' && userContent.mimeType && userContent.data) {
+            // Single Image
             const imageUrl = `data:${userContent.mimeType};base64,${userContent.data}`;
             messages.push({
                 role: "user",
@@ -48,6 +65,7 @@ function callOpenAI(systemPrompt, userContent, options = {}) {
             // Text only
             messages.push({ role: "user", content: String(userContent) });
         }
+
 
         const payload = {
             model: OPENAI_CONFIG.MODEL,

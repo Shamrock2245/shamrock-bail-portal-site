@@ -7,30 +7,52 @@
  */
 
 /**
- * Parses a Booking Sheet or Mugshot Image (Base64)
- * @param {string} base64Data - Raw base64 string (with or without data:image/ prefix)
+ * Parses a Booking Sheet or Mugshot Image (Base64) - Supports Single or Multiple Images
+ * @param {string|string[]} inputData - Raw base64 string OR Array of base64 strings
  * @returns {Object} Structured defendant data
  */
-function AI_parseBookingSheet(base64Data) {
-    // 1. Clean Base64
+function AI_parseBookingSheet(inputData) {
+  let images = [];
+
+  // Normalize input to array
+  if (Array.isArray(inputData)) {
+    images = inputData;
+  } else {
+    images = [inputData];
+  }
+
+  // Prepare content for OpenAI
+  // OpenAIClient now accepts an array of { mimeType, data } objects
+  const userContent = images.map(base64Data => {
     let cleanData = base64Data;
     let mimeType = 'image/jpeg'; // Default
 
     if (base64Data.includes('data:image/')) {
-        const parts = base64Data.split(';base64,');
-        mimeType = parts[0].replace('data:', '');
-        cleanData = parts[1];
+      const parts = base64Data.split(';base64,');
+      mimeType = parts[0].replace('data:', '');
+      cleanData = parts[1];
     }
+    return { mimeType: mimeType, data: cleanData };
+  });
 
-    const systemPrompt = `
+  const systemPrompt = `
     You are an expert Data Entry Clerk for a Bail Bonds agency.
-    Extract the following information from the provided booking document, mugshot, or screenshot.
+    Extract the following information from the provided booking document(s), mugshot(s), or screenshot(s).
     
-    **OCR INSTRUCTIONS:**
-    - If the image is a screenshot, IGNORE browser tabs, taskbars, and surrounding UI. Focus ONLY on the booking data.
-    - If text is blurry, use context to infer the most likely characters (e.g. '0' vs 'O').
-    - Simplify verbose charge descriptions to their core offense (e.g. "POSS CONT SUBS" -> "Possession of Controlled Substance").
-    - **Court Dates**: Look for next court appearance, arraignment, or trial dates associated with charges.
+    **INSTRUCTIONS:**
+    1. **Combines Pages**: If multiple images are provided, treat them as pages of the SAME booking event. Combine charges and information into a single record.
+    2. **OCR Focus**: IGNORE browser tabs, taskbars, and surrounding UI. Focus ONLY on the booking data.
+    3. **Address**: Extract the defendant's FULL home address. If it spans multiple lines, combine them.
+    4. **Charges**: Extract ALL charges found. 
+       - If a bond amount is listed as $5000.00, return generic number 5000.
+    5. **Jail/Facility**: Look for "Housing", "Facility", "Jail", or "Custody" location.
+    6. **Court/County**: Look for "Court", "County", or "Jurisdiction" (e.g. "Lee", "Collier", "Charlotte").
+    7. **Dates**: Extract Arrest Date and Booking Date.
+    
+    **ROBUSTNESS**:
+    - If a field is missing, return null or empty string.
+    - If text is blurry, infer from context.
+    - Normalize state to 2-letter code (e.g. FL).
     
     Return ONLY JSON matching this schema:
     {
@@ -39,6 +61,9 @@ function AI_parseBookingSheet(base64Data) {
       "middleName": "String or null",
       "dob": "YYYY-MM-DD",
       "bookingNumber": "String",
+      "arrestDate": "YYYY-MM-DD or null",
+      "jailFacility": "String or null",
+      "county": "String (e.g. Lee, Collier, Orange) or null",
       "address": { 
         "street": "String", 
         "city": "String", 
@@ -52,22 +77,19 @@ function AI_parseBookingSheet(base64Data) {
           "degree": "String (M1, M2, F3, F2, F1, PBL) or null",
           "bond": "Number (no currency symbols)",
           "bondType": "String (surety, cash, property) or null",
-          "courtDate": "YYYY-MM-DD or null"
+          "courtDate": "YYYY-MM-DD or null",
+          "caseNumber": "String or null" 
         }
-      ]
+      ],
+      "notes": "String (Any other relevant info, e.g. 'Out of County Warrant')"
     }
     `;
 
-    const userContent = {
-        mimeType: mimeType,
-        data: cleanData
-    };
+  console.log(`🤖 Clerk: Analyzing ${images.length} document(s)...`);
+  const result = callOpenAI(systemPrompt, userContent, { jsonMode: true });
 
-    console.log("🤖 Clerk: Reading document...");
-    const result = callOpenAI(systemPrompt, userContent, { jsonMode: true });
-
-    if (!result) return { error: "Failed to read document." };
-    return result;
+  if (!result) return { error: "Failed to read document." };
+  return result;
 }
 
 /**
@@ -75,26 +97,13 @@ function AI_parseBookingSheet(base64Data) {
  * @param {string} url 
  */
 function AI_extractBookingFromUrl(url) {
-    const systemPrompt = `
+  const systemPrompt = `
     You are an expert Data Entry Clerk.
-    Extract defendant information from the provided URL or Image URL.
+    Extract defendant information from the provided URL.
     Return ONLY JSON.
-    
     Fields: firstName, lastName, dob, bookingNumber, charges, bondAmount, address.
     `;
-
-    // OpenAI supports image_url natively in the user content array
-    // We need to bypass the standard callOpenAI helper if it doesn't support 'image_url' param directly,
-    // BUT helper supports object with mimeType/data.
-    // Let's rely on the text helper for now if it's a page, or simple text if it's a known site.
-    // If it's an image URL, we can construct the message manually or update callOpenAI.
-
-    // For now, treat as text/analysis request
-    console.log("🤖 Clerk: Analyzing URL " + url);
-
-    // Note: Standard GPT-4o cannot "browse" live without tools, but can process image URLs if passed correctly.
-    // This implementation assumes the URL is passed as text for context or is a direct image link ref.
-
-    const result = callOpenAI(systemPrompt, `Analyze this URL/Image: ${url}`, { jsonMode: true });
-    return result;
+  console.log("🤖 Clerk: Analyzing URL " + url);
+  const result = callOpenAI(systemPrompt, `Analyze this URL/Image: ${url}`, { jsonMode: true });
+  return result;
 }

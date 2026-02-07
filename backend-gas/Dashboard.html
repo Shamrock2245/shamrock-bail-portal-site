@@ -1916,19 +1916,24 @@
                 <div class="form-row" style="margin-bottom: 0;">
                     <div class="form-group" style="flex: 2;">
                         <input type="text" id="smart-import-url"
-                            placeholder="Paste URL (Jail View, Google Drive, or Image Link)..."
+                            placeholder="Paste Screenshots (Cmd+V) or Upload Images..."
                             onpaste="ShamrockApp.SmartImport.handlePaste(event)">
                     </div>
                     <div class="form-group" style="flex: 1; display: flex; flex-direction: row; gap: 8px;">
-                        <button class="btn btn-primary" onclick="ShamrockApp.SmartImport.run()"
+                        <button class="btn btn-primary" id="btn-smart-extract" onclick="ShamrockApp.SmartImport.run()"
                             style="flex: 1;">Extract</button>
                         <button class="btn btn-secondary"
-                            onclick="document.getElementById('smart-upload-hidden').click()"
+                            onclick="try{document.getElementById('smart-upload-hidden').click();}catch(e){console.error(e)}"
                             title="Upload Image">📁</button>
-                        <input type="file" id="smart-upload-hidden" style="display: none;" accept="image/*"
+                        <button class="btn btn-ghost" onclick="ShamrockApp.SmartImport.reset()"
+                            title="Clear All">🗑️</button>
+                        <input type="file" id="smart-upload-hidden" style="display: none;" accept="image/*" multiple
                             onchange="ShamrockApp.SmartImport.handleFile(this)">
                     </div>
                 </div>
+                <!-- PREVIEW CONTAINER -->
+                <div id="smart-import-preview"
+                    style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; min-height: 0;"></div>
                 <div class="text-hint" style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
                     💡 Pro Tip: Press <strong>Cmd+V</strong> anywhere on this tab to paste a screenshot directly.
                 </div>
@@ -7199,13 +7204,20 @@
             };
 
             // --- Module: Smart Import (Vision) ---
+            // --- Module: Smart Import (Vision) ---
             const SmartImport = {
+                pendingImages: [], // Array of base64 strings
+
                 init: function () {
                     // Global Paste Listener for Defendant Tab
                     document.addEventListener('paste', (e) => {
                         const activeTab = document.querySelector('.tab-content.active');
                         if (activeTab && activeTab.id === 'defendant-tab') {
-                            if (e.target.tagName !== 'INPUT') {
+                            // Helper: Only capture if not pasting into a text input, OR if specific url input is focused
+                            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
+                            const isSmartInput = e.target.id === 'smart-import-url';
+
+                            if (!isInput || isSmartInput) {
                                 SmartImport.handlePaste(e);
                             }
                         }
@@ -7214,49 +7226,108 @@
 
                 handlePaste: function (e) {
                     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                    let foundImage = false;
+
                     for (let index in items) {
                         const item = items[index];
                         if (item.kind === 'file' && item.type.indexOf('image/') !== -1) {
                             const blob = item.getAsFile();
                             const reader = new FileReader();
                             reader.onload = (event) => {
-                                SmartImport.processImage(event.target.result);
+                                SmartImport.addImage(event.target.result);
                             };
                             reader.readAsDataURL(blob);
-                            e.preventDefault();
-                            break;
+                            foundImage = true;
                         }
                     }
+
+                    if (foundImage) e.preventDefault();
                 },
 
                 handleFile: function (input) {
-                    if (input.files && input.files[0]) {
-                        const reader = new FileReader();
-                        reader.onload = function (e) {
-                            SmartImport.processImage(e.target.result);
-                        };
-                        reader.readAsDataURL(input.files[0]);
+                    if (input.files && input.files.length > 0) {
+                        Array.from(input.files).forEach(file => {
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                SmartImport.addImage(e.target.result);
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                        // Reset input so same file can be selected again
+                        input.value = '';
                     }
                 },
 
-                run: function () {
-                    const urlInput = document.getElementById('smart-import-url');
-                    const url = urlInput ? urlInput.value : '';
-                    if (!url) return UI.showToast("Please enter a URL or Paste an Image", "warning");
-
-                    UI.showToast("🔮 analyzing...", "info");
-                    google.script.run
-                        .withSuccessHandler(SmartImport.applyData)
-                        .withFailureHandler(err => UI.showToast("Import Failed: " + err.message, "error"))
-                        .client_extractFromUrl(url);
+                addImage: function (base64) {
+                    this.pendingImages.push(base64);
+                    this.updatePreview();
+                    UI.showToast("Image added to queue.", "success");
                 },
 
-                processImage: function (base64) {
-                    UI.showToast("🔮 Analyzing Image...", "info");
+                reset: function () {
+                    this.pendingImages = [];
+                    this.updatePreview();
+                    UI.showToast("Queue cleared.", "info");
+                },
+
+                updatePreview: function () {
+                    const container = document.getElementById('smart-import-preview');
+                    const btn = document.getElementById('btn-smart-extract');
+
+                    if (container) {
+                        container.innerHTML = this.pendingImages.map((img, idx) => `
+                            <div style="position: relative; width: 60px; height: 60px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden;">
+                                <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;">
+                                <div onclick="ShamrockApp.SmartImport.removeImage(${idx})" 
+                                     style="position: absolute; top: 0; right: 0; background: rgba(0,0,0,0.5); color: white; width: 20px; height: 20px; text-align: center; line-height: 20px; cursor: pointer; font-size: 12px;">×</div>
+                            </div>
+                        `).join('');
+                    }
+
+                    if (btn) {
+                        const count = this.pendingImages.length;
+                        btn.innerText = count > 0 ? `Extract (${count})` : "Extract";
+                        btn.disabled = count === 0;
+                    }
+                },
+
+                removeImage: function (index) {
+                    this.pendingImages.splice(index, 1);
+                    this.updatePreview();
+                },
+
+                run: function () {
+                    if (this.pendingImages.length === 0) {
+                        // Check if URL field has text, if so warn
+                        const urlInput = document.getElementById('smart-import-url');
+                        if (urlInput && urlInput.value.trim()) {
+                            return UI.showToast("URL extraction is disabled. Please Paste a Screenshot (Cmd+V) or Upload Image.", "warning");
+                        }
+                        return UI.showToast("Please Paste or Upload an Image first.", "warning");
+                    }
+
+                    UI.showToast(`🔮 Analyzing ${this.pendingImages.length} images...`, "info");
+                    const btn = document.getElementById('btn-smart-extract');
+                    if (btn) btn.disabled = true;
+
+                    // Send Array of images
                     google.script.run
-                        .withSuccessHandler(SmartImport.applyData)
-                        .withFailureHandler(err => UI.showToast("Vision Failed: " + err.message, "error"))
-                        .client_parseBooking(base64);
+                        .withSuccessHandler((data) => {
+                            SmartImport.applyData(data);
+                            SmartImport.reset(); // Clear queue on success
+                            if (btn) btn.disabled = false;
+                        })
+                        .withFailureHandler(err => {
+                            UI.showToast("Import Failed: " + err.message, "error");
+                            if (btn) btn.disabled = false;
+                        })
+                        .client_parseBooking(this.pendingImages); // Sending Array!
+                },
+
+                // Deprecated single image processor, but kept if needed for legacy calls? 
+                // No, we handle array in backend now.
+                processImage: function (base64) {
+                    this.addImage(base64); // Redirect to queue
                 },
 
                 applyData: function (data) {
@@ -7265,14 +7336,39 @@
                     // Map AI fields
                     if (data.firstName) UI.setValue('defendant-first-name', data.firstName);
                     if (data.lastName) UI.setValue('defendant-last-name', data.lastName);
+                    if (data.middleName) UI.setValue('defendant-middle-name', data.middleName);
                     if (data.dob) UI.setValue('defendant-dob', data.dob);
-                    if (data.bondAmount) UI.setValue('defendant-bond-amount', data.bondAmount);
-                    if (data.bookingNumber) UI.setValue('defendant-case-number', data.bookingNumber);
+                    if (data.bookingNumber) UI.setValue('defendant-booking-number', data.bookingNumber); // Fixed ID
 
+                    if (data.arrestDate) UI.setValue('defendant-arrest-date', data.arrestDate);
+                    if (data.jailFacility) UI.setValue('defendant-jail-facility', data.jailFacility);
+                    if (data.county) UI.setSelect('defendant-county', data.county);
+                    if (data.notes) UI.setValue('defendant-notes', data.notes);
+
+                    // Charges
                     if (data.charges && Array.isArray(data.charges)) {
+                        // Clear existing? Maybe ask user? For now append.
                         data.charges.forEach(c => addCharge(c));
+
+                        // Calculate total bond if available
+                        const totalBond = data.charges.reduce((acc, c) => acc + (c.bond || 0), 0);
+                        if (totalBond > 0) UI.setValue('defendant-bond-amount', totalBond);
+
+                        UI.showToast(`Added ${data.charges.length} charges.`, "success");
                     }
-                    if (data.address) UI.setValue('defendant-home-address', data.address);
+
+                    // Address
+                    if (data.address) {
+                        // Handle object or string
+                        if (typeof data.address === 'object') {
+                            if (data.address.street) UI.setValue('defendant-street-address', data.address.street); // Fixed ID
+                            if (data.address.city) UI.setValue('defendant-city', data.address.city);
+                            if (data.address.state) UI.setSelect('defendant-state', data.address.state);
+                            if (data.address.zip) UI.setValue('defendant-zipcode', data.address.zip); // Fixed ID
+                        } else {
+                            UI.setValue('defendant-street-address', data.address);
+                        }
+                    }
 
                     UI.showToast("✅ Data Extracted & Applied", "success");
                 }
