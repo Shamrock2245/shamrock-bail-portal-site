@@ -1897,10 +1897,13 @@ function saveFilledPacketToDrive(data) {
  * @returns {boolean} - True if allowed
  */
 function isUserAllowed(email) {
+  // 0. LINK-AS-SECRET MODE (Fix for Iframe/Wix)
+  // If we can't detect the user (iframe), we trust they have the valid script URL.
   if (!email) {
-    console.warn('isUserAllowed: No email provided.');
-    return false;
+    console.warn('isUserAllowed: No email detected (Iframe/Anonymous). Allowing access via Link-as-Secret policy.');
+    return true;
   }
+
   const emailLower = email.toLowerCase();
 
   // 1. Allow Admin/Owner

@@ -3205,6 +3205,10 @@
               <input type="text" id="charge-${chargeCount}-power" placeholder="OSI3-4591234" value="${data.powerNumber || ''}">
             </div>
             <div class="form-group">
+                <label>Court Date</label>
+                <input type="date" id="charge-${chargeCount}-court-date" value="${data.courtDate || ''}">
+            </div>
+            <div class="form-group">
               <label class="required">Bond Amount</label>
               <input type="number" id="charge-${chargeCount}-bond" placeholder="5000.00" step="0.01" 
                      value="${data.bondAmount || ''}" oninput="updateSummary()">
@@ -6539,7 +6543,14 @@
                     if (content) {
                         content.classList.add('active');
                         content.style.display = 'block';
-                        if (targetId === 'ops-map-tab' && window.Maps && window.Maps.resize) window.Maps.resize();
+
+                        // FIX: Correct ID check and Object Access
+                        if (targetId === 'map-tab' && window.ShamrockApp && window.ShamrockApp.Maps) {
+                            window.ShamrockApp.Maps.tryInit();
+                            if (window.ShamrockApp.Maps.map) {
+                                try { google.maps.event.trigger(window.ShamrockApp.Maps.map, "resize"); } catch (e) { }
+                            }
+                        }
                     } else {
                         console.warn(`UI.switchTab: Target '${targetId}' not found.`);
                     }
@@ -6615,7 +6626,8 @@
                     },
 
                     run: function () {
-                        const textInput = document.getElementById('clerk-input').value;
+                        const inputEl = document.getElementById('clerk-input');
+                        const textInput = inputEl ? inputEl.value : '';
                         const payload = state.filePayload || textInput;
 
                         if (!payload) return UI.showToast('⚠️ Provide file or text.', 'warning');
@@ -6648,32 +6660,62 @@
 
                     populate: function (res) {
                         try {
+                            console.log("🤖 AI Populating Data:", res);
                             UI.setValue('defendant-first-name', res.firstName);
                             UI.setValue('defendant-last-name', res.lastName);
                             UI.setValue('defendant-middle-name', res.middleName);
                             UI.setValue('defendant-dob', res.dob);
-                            UI.setValue('defendant-street-address', res.address);
-                            UI.setValue('defendant-city', res.city);
-                            UI.setValue('defendant-state', res.state);
-                            UI.setValue('defendant-zipcode', res.zip);
+
+                            // Handle Address (Object or String)
+                            if (res.address && typeof res.address === 'object') {
+                                UI.setValue('defendant-street-address', res.address.street);
+                                UI.setValue('defendant-city', res.address.city);
+                                UI.setValue('defendant-state', res.address.state);
+                                UI.setValue('defendant-zipcode', res.address.zip);
+                            } else if (typeof res.address === 'string') {
+                                UI.setValue('defendant-street-address', res.address); // Fallback
+                            }
+
                             if (res.bookingNumber) UI.setValue('defendant-booking-number', res.bookingNumber);
 
+                            // Handle Charges
+                            if (res.charges && Array.isArray(res.charges)) {
+                                const container = document.getElementById('charges-container');
+                                if (container) container.innerHTML = ''; // Clear existing
+
+                                res.charges.forEach(c => {
+                                    // Map AI keys to UI keys expected by addCharge
+                                    addCharge({
+                                        desc: c.description,
+                                        statute: c.statute,
+                                        degree: c.degree,
+                                        bondAmount: c.bond,
+                                        bondType: c.bondType,
+                                        courtDate: c.courtDate
+                                    });
+                                });
+                                // Optional: Switch to Charges tab or just notify
+                                UI.showToast(`✅ Loaded ${res.charges.length} charges & defendant info!`, 'success');
+                            } else {
+                                UI.showToast('✅ Auto-populated!', 'success');
+                            }
+
                             if (typeof updateSummary === 'function') updateSummary();
-                            UI.showToast('✅ Auto-populated!', 'success');
                         } catch (e) { console.warn('Populate error', e); }
                     }
                 },
 
                 Analyst: {
                     run: function () {
+                        const el = (id) => { const e = document.getElementById(id); return e ? e.value : ''; };
                         const lead = {
-                            name: document.getElementById('analyst-name').value,
-                            charges: document.getElementById('analyst-charges').value,
-                            bond: document.getElementById('analyst-bond').value,
-                            residency: document.getElementById('analyst-residency').value,
-                            employment: document.getElementById('analyst-employment').value,
-                            history: document.getElementById('analyst-history').value,
-                            ties: document.getElementById('analyst-ties').value
+                            name: el('analyst-name'),
+                            charges: el('analyst-charges'),
+                            bond: el('analyst-bond'),
+                            residency: el('analyst-residency'),
+                            employment: el('analyst-employment'),
+                            history: el('analyst-history'),
+                            ties: el('analyst-ties')
                         };
 
                         UI.setHTML('analyst-output', "<div class='loading-spinner'>⚙️ Analyzing...</div>");
@@ -6687,6 +6729,9 @@
                                         <div class="score" style="color:${color}">${res.score}/100</div>
                                         <p>${res.rationale || res.summary}</p>
                                     </div>`);
+                            })
+                            .withFailureHandler(err => {
+                                UI.setHTML('analyst-output', `<div class="error-box">❌ Analyst Error: ${err.message}</div>`);
                             })
                             .client_analyzeLead(JSON.stringify(lead));
                     }
@@ -6705,8 +6750,10 @@
                     },
 
                     run: function () {
-                        const defText = document.getElementById('investigator-def-text').value;
-                        const indText = document.getElementById('investigator-ind-text').value;
+                        const defTextEl = document.getElementById('investigator-def-text');
+                        const indTextEl = document.getElementById('investigator-ind-text');
+                        const defText = defTextEl ? defTextEl.value : '';
+                        const indText = indTextEl ? indTextEl.value : '';
                         const payload = {
                             defendantReport: defText || (state.investigatorFiles.def ? "FILE_UPLOADED_DEF" : ""),
                             indemnitorReport: indText || (state.investigatorFiles.ind ? "FILE_UPLOADED_IND" : "")
@@ -6721,8 +6768,10 @@
                         google.script.run
                             .withSuccessHandler(res => {
                                 if (res.error) return UI.setHTML('investigator-output', `<div class="error-box">❌ ${res.error}</div>`);
-                                // (Rendering logic simplified for brevity, assume standardized card render)
                                 UI.setHTML('investigator-output', Agents.Investigator.renderReport(res));
+                            })
+                            .withFailureHandler(err => {
+                                UI.setHTML('investigator-output', `<div class="error-box">❌ Investigator Error: ${err.message}</div>`);
                             })
                             .client_runInvestigator(payload);
                     },
@@ -6745,11 +6794,15 @@
 
                 Monitor: {
                     run: function () {
-                        const notes = document.getElementById('monitor-input').value;
+                        const notesEl = document.getElementById('monitor-input');
+                        const notes = notesEl ? notesEl.value : '';
                         UI.setHTML('monitor-output', "⏳ Checking...");
                         google.script.run
                             .withSuccessHandler(res => {
                                 UI.setHTML('monitor-output', !res ? "<span class='text-success'>✅ No Risk</span>" : `<strong class='text-error'>🚨 ${res.status} ALERT</strong>`);
+                            })
+                            .withFailureHandler(err => {
+                                UI.setHTML('monitor-output', `<div class="error-box">❌ Monitor Error: ${err.message}</div>`);
                             })
                             .client_checkSentiment(notes);
                     }
@@ -7078,14 +7131,16 @@
                 },
 
                 plotCurrentCase: function () {
-                    const defAddr = document.getElementById('defendant-home-address').value;
+                    const defAddrEl = document.getElementById('defendant-home-address');
+                    const defAddr = defAddrEl ? defAddrEl.value : '';
+
                     const jail = "2115 Dr Martin Luther King Jr Blvd, Fort Myers, FL 33901"; // Lee Jail
 
                     if (!this.isInitialized) {
                         alert("Map not ready yet. Please try switching tabs again.");
                         return;
                     }
-                    alert(`Simulating Plot to ${jail}`);
+                    alert(`Simulating Plot to ${jail} (from ${defAddr || 'Unknown'})`);
                 }
             };
 
@@ -7185,7 +7240,8 @@
                 },
 
                 run: function () {
-                    const url = document.getElementById('smart-import-url').value;
+                    const urlInput = document.getElementById('smart-import-url');
+                    const url = urlInput ? urlInput.value : '';
                     if (!url) return UI.showToast("Please enter a URL or Paste an Image", "warning");
 
                     UI.showToast("🔮 analyzing...", "info");

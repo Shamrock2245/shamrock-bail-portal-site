@@ -24,17 +24,38 @@ function AI_parseBookingSheet(base64Data) {
 
     const systemPrompt = `
     You are an expert Data Entry Clerk for a Bail Bonds agency.
-    Extract the following information from the provided booking document or mugshot.
-    Return ONLY JSON.
-
-    Fields:
-    - firstName
-    - lastName
-    - dob (Date of Birth, YYYY-MM-DD)
-    - bookingNumber (or Arrest #)
-    - charges (Array of strings, simplify if verbose)
-    - bondAmount (Total bond amount, number only)
-    - address (Full home address if visible)
+    Extract the following information from the provided booking document, mugshot, or screenshot.
+    
+    **OCR INSTRUCTIONS:**
+    - If the image is a screenshot, IGNORE browser tabs, taskbars, and surrounding UI. Focus ONLY on the booking data.
+    - If text is blurry, use context to infer the most likely characters (e.g. '0' vs 'O').
+    - Simplify verbose charge descriptions to their core offense (e.g. "POSS CONT SUBS" -> "Possession of Controlled Substance").
+    - **Court Dates**: Look for next court appearance, arraignment, or trial dates associated with charges.
+    
+    Return ONLY JSON matching this schema:
+    {
+      "firstName": "String",
+      "lastName": "String",
+      "middleName": "String or null",
+      "dob": "YYYY-MM-DD",
+      "bookingNumber": "String",
+      "address": { 
+        "street": "String", 
+        "city": "String", 
+        "state": "String (2 char)", 
+        "zip": "String" 
+      },
+      "charges": [
+        {
+          "description": "String",
+          "statute": "String or null",
+          "degree": "String (M1, M2, F3, F2, F1, PBL) or null",
+          "bond": "Number (no currency symbols)",
+          "bondType": "String (surety, cash, property) or null",
+          "courtDate": "YYYY-MM-DD or null"
+        }
+      ]
+    }
     `;
 
     const userContent = {
