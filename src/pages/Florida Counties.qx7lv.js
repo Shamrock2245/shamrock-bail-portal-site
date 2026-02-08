@@ -341,7 +341,7 @@ async function populateMainUI(county, currentSlug) {
     try { $w('#jailAddress').collapse(); } catch (e) { }
 
     // POPULATE FAQs (Repeater) - Now pulls from CMS Faqs collection
-    const faqRep = $w('#repeaterFAQ');
+    const faqRep = $w('#repeaterFAQ').uniqueId ? $w('#repeaterFAQ') : ($w('#listRepeater').uniqueId ? $w('#listRepeater') : $w('#faqRepeater'));
 
     let faqs = [];
     try {
@@ -408,35 +408,37 @@ async function populateMainUI(county, currentSlug) {
     }
 
     try {
-        if (faqs.length > 0) {
+        if (faqs.length > 0 && faqRep.uniqueId) {
             faqRep.data = []; // Clear first to force redraw
 
             faqRep.onItemReady(($item, itemData) => {
                 const question = itemData.question || itemData.title || 'Question';
                 const answer = itemData.answer || itemData.a || 'Answer';
 
-                $item('#textQuestion').text = question;
-                $item('#textAnswer').text = answer;
+                // Robust ID Selection (Try multiple common patterns)
+                const qText = $item('#textQuestion').uniqueId ? $item('#textQuestion') : ($item('#faqQuestion').uniqueId ? $item('#faqQuestion') : $item('#question'));
+                const aText = $item('#textAnswer').uniqueId ? $item('#textAnswer') : ($item('#faqAnswer').uniqueId ? $item('#faqAnswer') : $item('#answer'));
+
+                if (qText.uniqueId) qText.text = question;
+                if (aText.uniqueId) aText.text = answer;
+
+                // Group/Container Logic
+                const answerGroup = $item('#groupAnswer').uniqueId ? $item('#groupAnswer') : ($item('#boxAnswer').uniqueId ? $item('#boxAnswer') : aText);
+                const toggleTrigger = $item('#containerQuestion').uniqueId ? $item('#containerQuestion') : ($item('#faqContainer').uniqueId ? $item('#faqContainer') : ($item('#groupHeader').uniqueId ? $item('#groupHeader') : qText));
 
                 // Initialize State
-                $item('#groupAnswer').collapse();
-                // If using an SVG arrow, set initial rotation if needed
-                // try { $item('#iconArrow').src = "wix:vector://v1/arrow_down.svg/..."; } catch(e){}
+                if (answerGroup.uniqueId) answerGroup.collapse();
 
                 // Handle Accordion Interaction
-                // We click the CONTAINER (Header) to toggle the GROUP (Answer)
-                $item('#containerQuestion').onClick(() => {
-                    const answerGroup = $item('#groupAnswer');
-                    const arrow = $item('#iconArrow'); // Assuming ID from standard UI kit
-
-                    if (answerGroup.collapsed) {
-                        answerGroup.expand();
-                        // Optional: Rotate arrow
-                        // if(arrow) arrow.style... (Wix Velo doesn't support style directly on vectors, usually switch src or rotate via animation)
-                    } else {
-                        answerGroup.collapse();
-                    }
-                });
+                if (toggleTrigger.uniqueId) {
+                    toggleTrigger.onClick(() => {
+                        if (answerGroup.collapsed) {
+                            answerGroup.expand();
+                        } else {
+                            answerGroup.collapse();
+                        }
+                    });
+                }
             });
 
             // Ensure unique IDs
@@ -444,8 +446,9 @@ async function populateMainUI(county, currentSlug) {
 
             faqRep.expand();
             try { $w('#sectionFAQ').expand(); } catch (e) { }
+            try { $w('#faqSection').expand(); } catch (e) { }
         } else {
-            faqRep.collapse();
+            if (faqRep.uniqueId) faqRep.collapse();
             try { $w('#sectionFAQ').collapse(); } catch (e) { }
         }
     } catch (e) {
