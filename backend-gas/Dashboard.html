@@ -5000,7 +5000,7 @@
                         }
 
                         // Process batch results
-                        batch.forEach(key => {
+                        for (const key of batch) {
                             const templateData = response.templates[key];
                             if (templateData && templateData.success && templateData.pdfBase64) {
                                 // Decode
@@ -5017,7 +5017,8 @@
                             } else {
                                 console.error(`❌ Failed to fetch ${key}:`, templateData?.error);
                             }
-                        });
+                        }
+
 
                     } catch (err) {
                         console.error('Batch Fetch Error:', err);
