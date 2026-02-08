@@ -4681,6 +4681,150 @@
             return printOnly;
         }
 
+
+        /**
+         * IndexedDB Wrapper for PDF Template Caching
+         * Replaces sessionStorage to avoid quota exceeded errors
+         */
+        class PDFCacheDB {
+            constructor() {
+                this.dbName = 'shamrock-pdf-cache';
+                this.storeName = 'templates';
+                this.version = 1;
+                this.db = null;
+                this.isSupported = typeof indexedDB !== 'undefined';
+                this.useFallback = false;
+            }
+
+            async init() {
+                if (!this.isSupported) {
+                    console.warn('⚠️ IndexedDB not supported, using sessionStorage fallback');
+                    this.useFallback = true;
+                    return;
+                }
+
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.version);
+
+                    request.onerror = () => {
+                        console.error('❌ IndexedDB open failed, using sessionStorage fallback');
+                        this.useFallback = true;
+                        resolve();
+                    };
+
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        console.log('✅ IndexedDB initialized for PDF caching');
+                        resolve();
+                    };
+
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            db.createObjectStore(this.storeName);
+                            console.log('📦 Created IndexedDB object store:', this.storeName);
+                        }
+                    };
+                });
+            }
+
+            async get(key) {
+                // Fallback to sessionStorage
+                if (this.useFallback) {
+                    return sessionStorage.getItem('PDF_CACHE_v1_' + key);
+                }
+
+                return new Promise((resolve, reject) => {
+                    try {
+                        const transaction = this.db.transaction([this.storeName], 'readonly');
+                        const store = transaction.objectStore(this.storeName);
+                        const request = store.get(key);
+
+                        request.onsuccess = () => resolve(request.result || null);
+                        request.onerror = () => {
+                            console.warn('IndexedDB read error, trying sessionStorage');
+                            resolve(sessionStorage.getItem('PDF_CACHE_v1_' + key));
+                        };
+                    } catch (e) {
+                        console.warn('IndexedDB get error:', e);
+                        resolve(sessionStorage.getItem('PDF_CACHE_v1_' + key));
+                    }
+                });
+            }
+
+            async set(key, value) {
+                // Fallback to sessionStorage
+                if (this.useFallback) {
+                    try {
+                        sessionStorage.setItem('PDF_CACHE_v1_' + key, value);
+                    } catch (quotaErr) {
+                        console.warn('⚠️ sessionStorage quota exceeded');
+                    }
+                    return;
+                }
+
+                return new Promise((resolve, reject) => {
+                    try {
+                        const transaction = this.db.transaction([this.storeName], 'readwrite');
+                        const store = transaction.objectStore(this.storeName);
+                        const request = store.put(value, key);
+
+                        request.onsuccess = () => resolve();
+                        request.onerror = () => {
+                            console.warn('IndexedDB write error, trying sessionStorage');
+                            try {
+                                sessionStorage.setItem('PDF_CACHE_v1_' + key, value);
+                            } catch (quotaErr) {
+                                console.warn('⚠️ Both IndexedDB and sessionStorage failed');
+                            }
+                            resolve();
+                        };
+                    } catch (e) {
+                        console.warn('IndexedDB set error:', e);
+                        try {
+                            sessionStorage.setItem('PDF_CACHE_v1_' + key, value);
+                        } catch (quotaErr) {
+                            console.warn('⚠️ sessionStorage quota exceeded');
+                        }
+                        resolve();
+                    }
+                });
+            }
+
+            async clear() {
+                if (this.useFallback) {
+                    // Clear sessionStorage items with our prefix
+                    const keys = Object.keys(sessionStorage);
+                    keys.forEach(key => {
+                        if (key.startsWith('PDF_CACHE_v1_')) {
+                            sessionStorage.removeItem(key);
+                        }
+                    });
+                    return;
+                }
+
+                return new Promise((resolve) => {
+                    try {
+                        const transaction = this.db.transaction([this.storeName], 'readwrite');
+                        const store = transaction.objectStore(this.storeName);
+                        const request = store.clear();
+                        request.onsuccess = () => {
+                            console.log('🗑️ PDF cache cleared');
+                            resolve();
+                        };
+                        request.onerror = () => resolve();
+                    } catch (e) {
+                        console.warn('Clear cache error:', e);
+                        resolve();
+                    }
+                });
+            }
+        }
+
+        // Initialize PDF cache globally
+        const pdfCache = new PDFCacheDB();
+        pdfCache.init().catch(err => console.error('PDF cache init error:', err));
+
         /**
          * Send document packet to Wix Client Portal
          * This mirrors generateAndSend but directs the output to the portal
@@ -4812,13 +4956,13 @@
             const results = [];
             const CACHE_PREFIX = 'PDF_CACHE_v1_';
 
-            // 1. Check Session Storage Cache
+            // 1. Check IndexedDB Cache (with sessionStorage fallback)
             console.log('🔍 Checking PDF Cache...');
             const missingDocs = [];
             for (const doc of documents) {
                 try {
                     const templateKey = doc.templateKey || doc.key; // Use templateKey for caching
-                    const cached = sessionStorage.getItem(CACHE_PREFIX + templateKey);
+                    const cached = await pdfCache.get(templateKey);
                     if (cached) {
                         const binaryString = atob(cached);
                         const bytes = new Uint8Array(binaryString.length);
@@ -4866,12 +5010,9 @@
                                     bytes[j] = binaryString.charCodeAt(j);
                                 }
 
-                                // Save to session storage for caching
-                                try {
-                                    sessionStorage.setItem(CACHE_PREFIX + key, templateData.pdfBase64);
-                                } catch (quotaErr) {
-                                    console.warn('⚠️ Cache Quota Exceeded. PDF not saved to cache.');
-                                }
+                                // Save to IndexedDB for caching (with sessionStorage fallback)
+                                await pdfCache.set(key, templateData.pdfBase64);
+
 
                             } else {
                                 console.error(`❌ Failed to fetch ${key}:`, templateData?.error);
@@ -4888,7 +5029,7 @@
                 // add the actual requested documents (which might be duplicates of templates) to results
                 for (const doc of missingDocs) {
                     const templateKey = doc.templateKey || doc.key;
-                    const cachedBase64 = sessionStorage.getItem(CACHE_PREFIX + templateKey);
+                    const cachedBase64 = await pdfCache.get(templateKey);
 
                     if (cachedBase64) {
                         const binaryString = atob(cachedBase64);
