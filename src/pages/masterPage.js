@@ -148,7 +148,7 @@ async function handleFindJailClick(btn) {
         if (nearest && nearest.length > 0) {
             // FIX: Strip '-county' suffix from slug to match dynamic page URL
             const rawSlug = nearest[0].slug;
-            const targetSlug = rawSlug.replace(/-county$/i, '');
+            const targetSlug = rawSlug;
 
             // 3. Redirect
             wixLocation.to(`/florida-bail-bonds/${targetSlug}`);
