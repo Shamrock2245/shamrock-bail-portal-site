@@ -34,20 +34,20 @@ $w.onReady(function () {
 function initializeLightbox() {
     // Set content
     $w('#ctaTitle').text = 'Need Help Right Now?';
-    
+
     $w('#ctaMessage').text = `
         We understand this is a stressful time. Our bail bond agents are available 24/7 to help you or your loved one.
         
         Call us now or start the bail process online - we'll guide you every step of the way.
     `;
-    
+
     // Set button labels
     $w('#callNowBtn').label = `📞 Call Now: ${PHONE_NUMBER}`;
     $w('#startOnlineBtn').label = '🚀 Start Bail Online';
-    
+
     // Populate county dropdown
     populateCountyDropdown();
-    
+
     // Set trust badges
     setTrustBadges();
 }
@@ -61,21 +61,21 @@ function setupEventListeners() {
         trackEvent('Emergency_CTA_Call_Click');
         wixLocation.to(PHONE_TEL);
     });
-    
+
     // Start online button
     $w('#startOnlineBtn').onClick(() => {
         trackEvent('Emergency_CTA_Start_Click');
         const selectedCounty = $w('#countySelect')?.value;
-        
+
         if (selectedCounty && selectedCounty !== 'select') {
             wixLocation.to(`/portal-landing?county=${selectedCounty}`);
         } else {
             wixLocation.to('/portal-landing');
         }
-        
+
         wixWindow.lightbox.close();
     });
-    
+
     // County select change
     if ($w('#countySelect')) {
         $w('#countySelect').onChange(() => {
@@ -85,13 +85,13 @@ function setupEventListeners() {
             }
         });
     }
-    
+
     // Close button
     $w('#closeBtn').onClick(() => {
         trackEvent('Emergency_CTA_Close');
         wixWindow.lightbox.close();
     });
-    
+
     // Chat button (if available)
     if ($w('#chatBtn')) {
         $w('#chatBtn').onClick(() => {
@@ -110,23 +110,23 @@ function setupEventListeners() {
  */
 function populateCountyDropdown() {
     if (!$w('#countySelect')) return;
-    
+
     const counties = [
         { value: 'select', label: 'Select Your County' },
-        { value: 'lee', label: 'Lee County' },
-        { value: 'collier', label: 'Collier County' },
-        { value: 'charlotte', label: 'Charlotte County' },
-        { value: 'hendry', label: 'Hendry County' },
-        { value: 'glades', label: 'Glades County' },
-        { value: 'miami-dade', label: 'Miami-Dade County' },
-        { value: 'broward', label: 'Broward County' },
-        { value: 'palm-beach', label: 'Palm Beach County' },
-        { value: 'hillsborough', label: 'Hillsborough County' },
-        { value: 'orange', label: 'Orange County' },
-        { value: 'duval', label: 'Duval County' },
+        { value: 'lee-county', label: 'Lee County' },
+        { value: 'collier-county', label: 'Collier County' },
+        { value: 'charlotte-county', label: 'Charlotte County' },
+        { value: 'hendry-county', label: 'Hendry County' },
+        { value: 'glades-county', label: 'Glades County' },
+        { value: 'miami-dade-county', label: 'Miami-Dade County' },
+        { value: 'broward-county', label: 'Broward County' },
+        { value: 'palm-beach-county', label: 'Palm Beach County' },
+        { value: 'hillsborough-county', label: 'Hillsborough County' },
+        { value: 'orange-county', label: 'Orange County' },
+        { value: 'duval-county', label: 'Duval County' },
         { value: 'other', label: 'Other Florida County' }
     ];
-    
+
     $w('#countySelect').options = counties;
     $w('#countySelect').value = 'select';
 }
@@ -136,7 +136,7 @@ function populateCountyDropdown() {
  */
 function setTrustBadges() {
     if (!$w('#trustBadges')) return;
-    
+
     // This would typically be set via repeater or multiple elements
     // For now, we'll set the text
     if ($w('#badge1')) $w('#badge1').text = '✓ Licensed & Insured';

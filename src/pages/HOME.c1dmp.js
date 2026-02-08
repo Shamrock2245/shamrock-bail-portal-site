@@ -121,7 +121,7 @@ async function loadCountyDropdown() {
             dropdown.options = countiesData.map(county => ({
                 label: county.county_name || county.name,  // Handle likely field names
                 // FIX: Strip '-county' suffix from slug to match dynamic page URL
-                value: (county.slug || '').replace(/-county$/i, '')
+                value: (county.slug || '')
             }));
             dropdown.placeholder = 'Select County Name';
             dropdown.onChange(() => handleCountySelection());
