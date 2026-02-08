@@ -58,6 +58,7 @@ function initCriticalUI() {
 
     // Footer Payment Link Tracking
     setupFooterPaymentLink();
+    setupMobilePaymentBtn();
 }
 
 /**
@@ -73,6 +74,17 @@ function setupFooterPaymentLink() {
         });
     }
 
+}
+
+function setupMobilePaymentBtn() {
+    const link = $w('#mobileMakePaymentBtn');
+    if (link.uniqueId) {
+        link.onClick(() => {
+            trackEvent('payment_link_clicked', {
+                location: 'mobile_menu'
+            });
+        });
+    }
 }
 
 /**
