@@ -191,13 +191,14 @@ async function setupCommonBailAmounts() {
         console.error("❌ Failed to load Common Charges from CMS:", err);
     }
 
-    // UPDATED ID: Added #table1 as common default
-    const element = $w('#amountRepeater') || $w('#amountsRepeater') || $w('#table1');
+    // UPDATED ID: Added #table1, #tableCommonCharges, #groupAmounts
+    const element = $w('#amountRepeater') || $w('#amountsRepeater') || $w('#table1') || $w('#tableCommonCharges');
 
     if (element && element.valid) {
+        element.expand(); // Force expand
         // DETECT ELEMENT TYPE: Check if it's a Table or a Repeater
         if (element.type === '$w.Table') {
-            console.log("📊 #amountsRepeater is a Table. Setting rows.");
+            console.log("📊 Found Table element:", element.id);
 
             // Map CMS fields to table columns - BE ROBUST
             // The table likely expects columns 'offense' and 'range' OR 'bailRange'
@@ -213,6 +214,7 @@ async function setupCommonBailAmounts() {
                     // Standard keys
                     offense: offenseVal,
                     range: rangeVal,
+                    bailRange: rangeVal, // Duplicate for safety
                     // Fallback keys in case table columns are named differently
                     title: offenseVal,
                     amount: rangeVal,
@@ -222,10 +224,11 @@ async function setupCommonBailAmounts() {
             });
 
             element.rows = tableRows;
+            console.log("✅ Table rows set.");
 
         } else {
             // It's a Repeater
-            console.log("🔄 #amountsRepeater is a Repeater. Binding items.");
+            console.log("🔄 Found Repeater element:", element.id);
 
             element.onItemReady(($item, itemData) => {
                 // Map CMS field names (may have spaces or different casing)
@@ -233,17 +236,23 @@ async function setupCommonBailAmounts() {
                 const range = itemData.bailRange || itemData['Bail Range'] || itemData.range || itemData.amount || "Varies";
 
                 // Try multiple possible element IDs for flexibility
-                const offenseEl = $item('#offenseName') || $item('#offense') || $item('#textOffense') || $item('#chargeName') || $item('#text1'); // Added text1
-                const rangeEl = $item('#bailRange') || $item('#range') || $item('#textRange') || $item('#bailAmount') || $item('#text2'); // Added text2
+                const offenseEl = $item('#offenseName') || $item('#offense') || $item('#textOffense') || $item('#chargeName') || $item('#text1');
+                const rangeEl = $item('#bailRange') || $item('#range') || $item('#textRange') || $item('#bailAmount') || $item('#text2');
 
-                if (offenseEl && offenseEl.valid) offenseEl.text = offense;
-                if (rangeEl && rangeEl.valid) rangeEl.text = range;
+                if (offenseEl && offenseEl.valid) {
+                    offenseEl.text = offense;
+                    offenseEl.expand();
+                }
+                if (rangeEl && rangeEl.valid) {
+                    rangeEl.text = range;
+                    rangeEl.expand();
+                }
             });
 
             element.data = data;
         }
     } else {
-        console.error('❌ #amountsRepeater not found on page');
+        console.error('❌ Common Charges Table/Repeater NOT found. IDs checked: #amountRepeater, #amountsRepeater, #table1, #tableCommonCharges');
     }
 }
 

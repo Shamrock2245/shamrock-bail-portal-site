@@ -299,8 +299,8 @@ async function populateMainUI(county, currentSlug) {
 
     // About Section Headers
     // Header often has IDs like: #aboutHeader, #aboutTitle, #textAboutCounty
-    setText(['#aboutHeader', '#aboutTitle', '#textAboutCounty', '#aboutSectionTitle'], `About Bail Bonds in ${county.county_name} County, Florida`);
-    setText(['#aboutBody', '#aboutText', '#aboutDescription'], county.content.about_county);
+    setText(['#aboutHeader', '#aboutTitle', '#textAboutCounty', '#aboutSectionTitle', '#textAboutTitle'], `About Bail Bonds in ${county.county_name} County, Florida`);
+    setText(['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'], county.content.about_county);
 
     // Why Choose Us
     setText(['#whyChooseHeader', '#whyChooseTitle'], `Why Choose Us in ${county.county_name}`);
@@ -351,34 +351,41 @@ async function populateMainUI(county, currentSlug) {
         let faqResult;
 
         // 1. Try 'Import22' (Primary Collection)
-        // STRATEGY: Try strict match "Lee County" first, then "Lee"
+        // STRATEGY: Try strict match "Lee County" first, then "Lee", then ANY (Broadest fallback)
         try {
+            console.log(`Checking Import22 for: ${countyName}`);
             // Attempt 1: "Lee County"
             faqResult = await wixData.query('Import22')
                 .eq('isActive', true)
-                .eq('relatedCounty', `${countyName} County`)
+                .contains('relatedCounty', countyName) // Use contains instead of eq for safety
                 .ascending('sortOrder')
                 .limit(15)
                 .find();
 
-            // Attempt 2: "Lee" (if no results)
+            // Attempt 2: "Lee" (if no results) - Broad search
             if (faqResult.items.length === 0) {
+                console.log("Strict search empty. Trying broad county search...");
                 faqResult = await wixData.query('Import22')
-                    .eq('isActive', true)
-                    .eq('relatedCounty', countyName)
-                    .ascending('sortOrder')
+                    .contains('relatedCounty', countyName.replace(' County', '').trim())
                     .limit(15)
                     .find();
             }
-        } catch (e) { console.warn("Import22 failed, trying 'Faqs'..."); }
+
+            // Attempt 3: Emergency Fallback - Just get SOME content
+            if (faqResult.items.length === 0) {
+                console.log("County search empty. Fetching generic FAQs...");
+                faqResult = await wixData.query('Import22')
+                    .limit(10)
+                    .find();
+            }
+
+        } catch (e) { console.warn("Import22 failed, trying 'Faqs'...", e); }
 
         // 2. Fallback to 'Faqs' Collection
         if (!faqResult || faqResult.items.length === 0) {
             try {
                 faqResult = await wixData.query('Faqs')
-                    .eq('isActive', true)
-                    .eq('relatedCounty', `${countyName} County`)
-                    .ascending('sortOrder')
+                    .contains('relatedCounty', countyName)
                     .limit(15)
                     .find();
             } catch (e) { }
