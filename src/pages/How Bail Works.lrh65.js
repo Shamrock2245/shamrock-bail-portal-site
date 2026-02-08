@@ -316,7 +316,11 @@ async function setupFAQ() {
     // UPDATED ID based on Layers Panel: #listRepeater
     const rep = $w('#listRepeater') || $w('#faqRepeater');
     if (rep && rep.valid) {
+        rep.expand(); // Force Expand
+        rep.show();   // Force Show
+
         rep.onItemReady(($item, itemData) => {
+            console.log("Rendering FAQ Item:", itemData);
             // Map CMS fields
             const question = itemData.title || itemData.question || itemData.q || "No Question";
             const answerText = itemData.answer || itemData.a || "No Answer";
