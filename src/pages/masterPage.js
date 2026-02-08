@@ -25,12 +25,14 @@ import wixWindow from 'wix-window';
 import { getNearestCounties } from 'backend/counties';
 
 import { validateStickyFooter } from 'public/uiValidator';
+import { initMobileOptimizations } from 'public/mobile-optimize';
 
 // Critical: Load immediately
 $w.onReady(function () {
     // Only essential above-the-fold operations here
     initCriticalUI();
     setupMobileMenu();
+    initMobileOptimizations();
 
     // Defer everything else
     deferNonCriticalOperations();
