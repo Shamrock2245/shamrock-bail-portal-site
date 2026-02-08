@@ -74,7 +74,6 @@ function setupFooterPaymentLink() {
     }
 
 }
-}
 
 /**
  * Setup mobile menu with minimal overhead
