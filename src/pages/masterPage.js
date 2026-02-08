@@ -126,6 +126,11 @@ function setupEmergencyCallButton() {
 function setupFindJailButton() {
     const btn = $w('#navFindJail');
     if (btn.uniqueId) {
+        // FORCE UI STATE: Override Editor settings
+        btn.label = "Find My Jail";
+        // Remove any static link set in Editor so our onClick works exclusive
+        btn.link = "";
+
         btn.onClick(() => {
             handleFindJailClick(btn);
         });
