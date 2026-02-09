@@ -4753,13 +4753,10 @@
             }
 
             async set(key, value) {
-                // Fallback to sessionStorage
+                // If IndexedDB is not available, skip caching entirely
+                // (sessionStorage is too small for PDF templates)
                 if (this.useFallback) {
-                    try {
-                        sessionStorage.setItem('PDF_CACHE_v1_' + key, value);
-                    } catch (quotaErr) {
-                        console.warn('⚠️ sessionStorage quota exceeded');
-                    }
+                    console.warn('⚠️ IndexedDB unavailable, skipping cache for:', key);
                     return;
                 }
 
@@ -4769,24 +4766,17 @@
                         const store = transaction.objectStore(this.storeName);
                         const request = store.put(value, key);
 
-                        request.onsuccess = () => resolve();
-                        request.onerror = () => {
-                            console.warn('IndexedDB write error, trying sessionStorage');
-                            try {
-                                sessionStorage.setItem('PDF_CACHE_v1_' + key, value);
-                            } catch (quotaErr) {
-                                console.warn('⚠️ Both IndexedDB and sessionStorage failed');
-                            }
+                        request.onsuccess = () => {
+                            console.log(`✅ Cached ${key} to IndexedDB`);
                             resolve();
                         };
+                        request.onerror = (e) => {
+                            console.error(`❌ IndexedDB write failed for ${key}:`, e.target.error);
+                            reject(new Error(`Failed to cache ${key}: ${e.target.error}`));
+                        };
                     } catch (e) {
-                        console.warn('IndexedDB set error:', e);
-                        try {
-                            sessionStorage.setItem('PDF_CACHE_v1_' + key, value);
-                        } catch (quotaErr) {
-                            console.warn('⚠️ sessionStorage quota exceeded');
-                        }
-                        resolve();
+                        console.error('❌ IndexedDB set error:', e);
+                        reject(e);
                     }
                 });
             }
@@ -5010,9 +5000,13 @@
                                     bytes[j] = binaryString.charCodeAt(j);
                                 }
 
-                                // Save to IndexedDB for caching (with sessionStorage fallback)
-                                await pdfCache.set(key, templateData.pdfBase64);
-
+                                // Save to IndexedDB for caching
+                                try {
+                                    await pdfCache.set(key, templateData.pdfBase64);
+                                } catch (cacheErr) {
+                                    console.warn(`⚠️ Failed to cache ${key}, will re-fetch if needed:`, cacheErr.message);
+                                    // Continue processing - caching is optional
+                                }
 
                             } else {
                                 console.error(`❌ Failed to fetch ${key}:`, templateData?.error);
