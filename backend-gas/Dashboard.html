@@ -5467,6 +5467,21 @@
                             }
                         }
 
+                        // SKIP SIGNATURE FIELDS
+                        // We do not fill these with text. SignNow handles them.
+                        // Attempting to setText on a signature field (or a text field meant for signature) often causes Type Mismatch errors in pdf-lib.
+                        const lowerName = fieldNameNormalized.toLowerCase();
+                        if (lowerName.includes('signature') || 
+                            lowerName.includes('initial') || 
+                            lowerName.includes('sign_') || 
+                            lowerName.includes('sig_')) {
+                            // console.log(`  Checking signature handling for: ${fieldName}`);
+                            // If it's a text field, we might normally fill it, but for these naming patterns
+                            // we explicitly skip to avoid overwriting or causing PDF structure errors 
+                            // that confuse the SignNow tag placers.
+                            continue;
+                        }
+
                         // Fallback to standard mapping if no value found yet
                         if (!value) {
                             value = formData[fieldNameNormalized]

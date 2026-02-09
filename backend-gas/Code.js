@@ -135,6 +135,16 @@ function doGet(e) {
       return createResponse(result);
     }
     if (e.parameter.action) return handleGetAction(e);
+    if (e.parameter.setup === 'signnow') {
+      const url = ScriptApp.getService().getUrl();
+      // Ensure we register the current active URL
+      try {
+        SN_registerCompletionWebhook(url);
+        return ContentService.createTextOutput(`Webhook Registered Successfully to: ${url}`);
+      } catch (err) {
+        return ContentService.createTextOutput(`Error: ${err.toString()}`);
+      }
+    }
     return createErrorResponse('No action specified', ERROR_CODES.MISSING_ACTION);
   }
 
