@@ -5373,7 +5373,7 @@
          * Fill PDFs with form data using pdf-lib - IMPROVED VERSION
          */
         async function fillPDFsWithData(pdfDocs, formData) {
-            const { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown } = PDFLib;
+            const { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, rgb } = PDFLib;
             const filledPdfs = [];
             let fieldCount = 0;
             let skippedFields = [];
@@ -5386,111 +5386,82 @@
             });
 
             for (const doc of pdfDocs) {
-                // Reset counters for each document
+                // Reset counters
                 fieldCount = 0;
-                skippedFields = [];
 
                 try {
                     console.log(`Filling ${doc.key}...`);
                     const pdfDoc = await PDFDocument.load(doc.bytes);
                     const form = pdfDoc.getForm();
-                    const fields = form.getFields();
-                    for (const field of fields) {
-                        const fieldName = field.getName();
-                        const fieldNameNormalized = normalizeFieldName(fieldName);
 
-                        let value = null;
+                    // --- NEW FAQ INITIAL LOGIC ---
+                    if (doc.key === 'faq-defendants' || doc.key === 'faq-cosigners') {
+                        const pages = pdfDoc.getPages();
+                        const role = doc.key === 'faq-defendants' ? 'Defendant' : 'Indemnitor';
+                        const tag = `{{t:i;r:y;o:"${role}"}}`;
+                        console.log(`Injecting initial tags for ${role} on ${pages.length} pages...`);
 
-                        // DATA MAPPING STRATEGY WITH CONTEXT AWARENESS
-                        // If we are filling a specific indemnitor copy (e.g. ssa-release-indemnitor-1),
-                        // we prioritize their data over the defendant's data.
+                        pages.forEach(page => {
+                            const { width, height } = page.getSize();
+                            // Bottom right corner, small white text (invisible to user, visible to SignNow parser)
+                            page.drawText(tag, {
+                                x: width - 150,
+                                y: 30,
+                                size: 8,
+                                color: rgb(1, 1, 1)
+                            });
+                        });
+                    }
 
-                        if (doc.indices && typeof doc.indices.indemnitorIndex !== 'undefined') {
-                            const idx = doc.indices.indemnitorIndex;
-                            // Try to match basic fields to this indemnitor
-                            const directMap = getIndemnitorField(formData, idx, fieldNameNormalized);
-                            if (directMap) {
-                                value = directMap;
-                            } else {
-                                // Handle fallback for generic names like "name", "address", "signature"
-                                if (['name', 'full-name', 'defendant-name', 'defendant-full-name', 'signature'].includes(fieldNameNormalized)) {
-                                    value = getIndemnitorField(formData, idx, 'fullName');
-                                } else if (['address', 'street-address', 'defendant-address'].includes(fieldNameNormalized)) {
-                                    value = getIndemnitorField(formData, idx, 'address');
-                                } else if (['city', 'defendant-city'].includes(fieldNameNormalized)) {
-                                    value = getIndemnitorField(formData, idx, 'city');
-                                } else if (['zip', 'zipcode', 'defendant-zip'].includes(fieldNameNormalized)) {
-                                    value = getIndemnitorField(formData, idx, 'zip');
-                                } else if (['ssn', 'social-security', 'defendant-ssn'].includes(fieldNameNormalized)) {
-                                    value = getIndemnitorField(formData, idx, 'ssn');
+                    // --- NEW MANUS MAPPING LOGIC ---
+                    // 1. Get the list of fields to fill for this specific template
+                    const mappedFields = PDF_mapDataToTags(formData, doc.key);
+                    console.log(`  Retrieving ${mappedFields.length} mapped fields for ${doc.key}`);
+
+                    // 2. Iterate and Fill
+                    for (const item of mappedFields) {
+                        try {
+                            const field = form.getField(item.name);
+                            if (!field) {
+                                // console.warn(`  Field not found in PDF: ${item.name}`);
+                                continue;
+                            }
+
+                            if (field instanceof PDFTextField) {
+                                field.setText(String(item.value));
+                                fieldCount++;
+                                console.log(`  ✓ Filled: ${item.name} = ${String(item.value).substring(0, 30)}...`);
+                            } else if (field instanceof PDFCheckBox) {
+                                if (item.value === true || item.value === 'true' || item.value === 'yes' || item.value === '1') {
+                                    field.check();
+                                    fieldCount++;
                                 }
                             }
-                        }
-
-                        // SKIP SIGNATURE FIELDS
-                        // We do not fill these with text. SignNow handles them.
-                        // Attempting to setText on a signature field (or a text field meant for signature) often causes Type Mismatch errors in pdf-lib.
-                        const lowerName = fieldNameNormalized.toLowerCase();
-                        if (lowerName.includes('signature') ||
-                            lowerName.includes('initial') ||
-                            lowerName.includes('sign_') ||
-                            lowerName.includes('sig_')) {
-                            // console.log(`  Checking signature handling for: ${fieldName}`);
-                            // If it's a text field, we might normally fill it, but for these naming patterns
-                            // we explicitly skip to avoid overwriting or causing PDF structure errors 
-                            // that confuse the SignNow tag placers.
-                            continue;
-                        }
-
-                        // Fallback to standard mapping if no value found yet
-                        if (!value) {
-                            value = formData[fieldNameNormalized]
-                                || formData[`defendant-${fieldNameNormalized}`]
-                                || mapFieldToData(fieldNameNormalized, formData);
-                        }
-
-                        if (value !== null && value !== undefined && value !== '') {
-                            try {
-                                if (field instanceof PDFTextField) {
-                                    field.setText(String(value));
-                                    fieldCount++;
-                                    console.log(`  ✓ Filled: ${fieldName} = ${String(value).substring(0, 50)}`);
-                                } else if (field instanceof PDFCheckBox) {
-                                    if (value === true || value === 'true' || value === 'yes' || value === '1') {
-                                        field.check();
-                                        fieldCount++;
-                                        console.log(`  ✓ Checked: ${fieldName}`);
-                                    }
-                                } else if (field instanceof PDFDropdown) {
-                                    field.select(String(value));
-                                    fieldCount++;
-                                    console.log(`  ✓ Selected: ${fieldName} = ${value}`);
-                                }
-                            } catch (fieldErr) {
-                                console.warn(`  ⚠️ Could not set field ${fieldName}:`, fieldErr.message);
-                            }
-                        } else {
-                            skippedFields.push(fieldName);
+                        } catch (err) {
+                            console.warn(`  Error filling field ${item.name}:`, err.message);
                         }
                     }
 
-                    if (skippedFields.length > 0) {
-                        console.log(`  ⚠️ Skipped ${skippedFields.length} empty fields:`, skippedFields.slice(0, 10));
-                    }
+                    // Flatten form to save data
+                    form.flatten();
 
-                    // FLATTEN FORM to ensure data is baked in and survives merging
-                    try {
-                        form.flatten();
-                    } catch (flatErr) {
-                        console.warn('Could not flatten form (maybe no fields?):', flatErr);
-                    }
+                    const pdfBytes = await pdfDoc.save();
+                    const pdfBase64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                        reader.readAsDataURL(new Blob([pdfBytes]));
+                    });
 
-                    const filledBytes = await pdfDoc.save();
-                    filledPdfs.push({ key: doc.key, name: doc.name, bytes: filledBytes });
-                    console.log(`✓ Successfully filled ${doc.key} (${fieldCount} fields filled, ${skippedFields.length} skipped)`);
+                    filledPdfs.push({
+                        key: doc.key,
+                        name: doc.name,
+                        data: pdfBase64
+                    });
+                    console.log(`  Completed ${doc.key} with ${fieldCount} fields filled.`);
+
                 } catch (err) {
-                    console.error(`❌ Error filling ${doc.key}:`, err);
-                    filledPdfs.push(doc); // Fall back to empty doc
+                    console.error(`Error filling PDF ${doc.name}:`, err);
+                    filledPdfs.push(doc); // Return original if failure
                 }
             }
             return filledPdfs;
