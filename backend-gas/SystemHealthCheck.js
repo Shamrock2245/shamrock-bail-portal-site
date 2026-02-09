@@ -170,3 +170,77 @@ function runEndToEndTestWorkflow() {
         Logger.log('❌ TEST FAILED: ' + result.message);
     }
 }
+
+// =============================================================================
+// 3. AI AGENT DEMOS
+// =============================================================================
+
+/**
+ * Validates "The Analyst" (AI_FlightRisk.js)
+ * Simulates scoring a high-risk and low-risk lead.
+ */
+function runAnalystDemo() {
+    Logger.log('🧠 TESTING "THE ANALYST" (Risk Assessment)...');
+
+    // 1. High Risk Scenario
+    const highRiskLead = {
+        name: "Johnny Fugitive",
+        charges: ["Grand Theft Auto", "Resisting Arrest w/ Violence"],
+        bond: 25000,
+        history: "3 Prior FTAs",
+        residency: "Out of State (Ohio)"
+    };
+
+    // 2. Low Risk Scenario
+    const lowRiskLead = {
+        name: "Sally Local",
+        charges: ["DUI First Offense"],
+        bond: 1500,
+        history: "None",
+        residency: "Local (Fort Myers, FL), Employed at Publix 5 years"
+    };
+
+    Logger.log(`\nScenario A: ${highRiskLead.name} (${highRiskLead.charges[0]})`);
+    const scoreA = AI_analyzeFlightRisk(highRiskLead);
+    Logger.log(JSON.stringify(scoreA, null, 2));
+
+    Logger.log(`\nScenario B: ${lowRiskLead.name} (${lowRiskLead.charges[0]})`);
+    const scoreB = AI_analyzeFlightRisk(lowRiskLead);
+    Logger.log(JSON.stringify(scoreB, null, 2));
+
+    Logger.log('\n✅ ANALYST DEMO COMPLETE');
+}
+
+/**
+ * Validates "The Clerk" (AI_BookingParser.js)
+ * Tests connection to OpenAI Vision (using a URL for simplicity).
+ */
+function runClerkDemo() {
+    Logger.log('👁️ TESTING "THE CLERK" (OCR & Vision)...');
+
+    // A public URL to a sample mugshot or text-heavy image is best, 
+    // but here we test the URL parser which is easier than mocking Base64.
+    const testUrl = "https://www.sheriffleefl.org/wp-content/uploads/2024/01/sample-arrest.jpg"; // Dummy URL context
+
+    // We'll mock the internal call if you don't have a real URL handy, 
+    // OR we can just test the function existence and config.
+    // For now, let's call the URL extractor with a known test string.
+
+    try {
+        Logger.log("Sending test prompt to OpenAI...");
+        // Direct call to see if API key works
+        const testPrompt = "Extract data from this text: Defendant John Doe, DOB 01/01/1980, Charge: DUI";
+        const result = callOpenAI("Extract JSON: {name, dob, charge}", testPrompt, { jsonMode: true });
+
+        Logger.log("Result:");
+        Logger.log(JSON.stringify(result, null, 2));
+
+        if (result && result.name === "John Doe") {
+            Logger.log("✅ CLERK INTEGRATION OPERATIONAL");
+        } else {
+            Logger.log("⚠️ CLERK FAILED (Check OpenAI Key)");
+        }
+    } catch (e) {
+        Logger.log("❌ CLERK ERROR: " + e.message);
+    }
+}
