@@ -5415,6 +5415,8 @@
         async function fillPDFsWithData(pdfDocs, formData) {
             const { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown } = PDFLib;
             const filledPdfs = [];
+            let fieldCount = 0;
+            let skippedFields = [];
 
             console.log(`Starting to fill ${pdfDocs.length} documents...`);
             console.log('Form data structure:', {
@@ -5424,6 +5426,10 @@
             });
 
             for (const doc of pdfDocs) {
+                // Reset counters for each document
+                fieldCount = 0;
+                skippedFields = [];
+
                 try {
                     console.log(`Filling ${doc.key}...`);
                     const pdfDoc = await PDFDocument.load(doc.bytes);
