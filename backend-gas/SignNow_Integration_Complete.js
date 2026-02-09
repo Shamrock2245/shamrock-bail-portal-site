@@ -388,10 +388,47 @@ function SN_addFields(documentId, fields) {
   const config = SN_getConfig();
   const url = config.API_BASE + `/document/${documentId}`;
 
-  // Transform simplified fields to SignNow structure if needed
-  // This is complex, usually we rely on "Smart Fields" or existing tags
-  // For raw PDF upload, we might just skipping manual field placement for now.
-  // ... Implementation TBD based on specific needs ...
+  SN_log('AddFields_Start', { documentId, fieldCount: fields ? fields.length : 0 });
+
+  if (!fields || fields.length === 0) {
+    return { success: true, message: 'No fields to add' };
+  }
+
+  const payload = {
+    fields: fields
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+        'Content-Type': 'application/json'
+      },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+
+    const json = JSON.parse(response.getContentText());
+
+    if (json.id) {
+      SN_log('AddFields_Success', { id: json.id });
+      return {
+        success: true,
+        id: json.id,
+        roles: json.roles || []
+      };
+    } else {
+      SN_log('AddFields_Error', json);
+      return {
+        success: false,
+        error: JSON.stringify(json)
+      };
+    }
+  } catch (e) {
+    SN_log('AddFields_Exception', e.toString());
+    return { success: false, error: e.toString() };
+  }
 }
 
 /**
