@@ -4230,7 +4230,7 @@
                             role: role,
                             required: true,
                             type: field.type === 'initials' ? 'initials' : 'signature',
-                            name: `${docKey}_${role}_${field.type}` // Unique name for the field
+                            name: `${docKey}_${role}_${field.type}_${idx}` // Unique name with index to prevent duplicates
                         };
 
                         allFields.push(signatureField);
@@ -5471,9 +5471,9 @@
                         // We do not fill these with text. SignNow handles them.
                         // Attempting to setText on a signature field (or a text field meant for signature) often causes Type Mismatch errors in pdf-lib.
                         const lowerName = fieldNameNormalized.toLowerCase();
-                        if (lowerName.includes('signature') || 
-                            lowerName.includes('initial') || 
-                            lowerName.includes('sign_') || 
+                        if (lowerName.includes('signature') ||
+                            lowerName.includes('initial') ||
+                            lowerName.includes('sign_') ||
                             lowerName.includes('sig_')) {
                             // console.log(`  Checking signature handling for: ${fieldName}`);
                             // If it's a text field, we might normally fill it, but for these naming patterns
