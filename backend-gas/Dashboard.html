@@ -5518,6 +5518,13 @@
                         console.log(`  ⚠️ Skipped ${skippedFields.length} empty fields:`, skippedFields.slice(0, 10));
                     }
 
+                    // FLATTEN FORM to ensure data is baked in and survives merging
+                    try {
+                        form.flatten();
+                    } catch (flatErr) {
+                        console.warn('Could not flatten form (maybe no fields?):', flatErr);
+                    }
+
                     const filledBytes = await pdfDoc.save();
                     filledPdfs.push({ key: doc.key, name: doc.name, bytes: filledBytes });
                     console.log(`✓ Successfully filled ${doc.key} (${fieldCount} fields filled, ${skippedFields.length} skipped)`);

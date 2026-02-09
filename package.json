@@ -11,6 +11,7 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "6.9.14",
     "pdf-generator-api": "1.1.0",
+    "pdf-lib": "^1.17.1",
     "react": "16.14.0",
     "react-dom": "16.14.0",
     "stripe": "16.2.0",
