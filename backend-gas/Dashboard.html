@@ -2514,6 +2514,11 @@
                     <button class="btn btn-warning" onclick="runLeeScraper()" style="background: #ffc107; color: #000;">
                         🚀 Run Lee Scraper
                     </button>
+                    <!-- TEST AUTOMATION BUTTON -->
+                    <button type="button" class="btn btn-warning" onclick="fillTestLeadData()"
+                        title="Auto-fill for testing">
+                        <i class="fas fa-robot"></i> Fill Test Data
+                    </button>
                     <button class="btn btn-secondary btn-lg" onclick="previewPacket()">
                         &#128065; Preview Packet
                     </button>
@@ -7667,6 +7672,89 @@
             if (cards.length === 0) alert("Diagnostic: 0 County Cards found. HTML is truncated?");
 
         }, 3000);
+    </script>
+    <script>
+        // =========================================================================
+        // TEST AUTOMATION - "The One-Click Test"
+        // =========================================================================
+        function fillTestLeadData() {
+            console.log("🤖 Filling form with test data...");
+
+            // 1. Defendant Info
+            const defFirst = document.getElementById('defendant-first-name');
+            if (defFirst) defFirst.value = "TEST_DEFENDANT";
+
+            const defLast = document.getElementById('defendant-last-name');
+            if (defLast) defLast.value = "DO_NOT_PROCESS";
+
+            const defDob = document.getElementById('defendant-dob');
+            if (defDob) defDob.value = "1990-01-01";
+
+            const defEmail = document.getElementById('defendant-email');
+            if (defEmail) defEmail.value = "admin@shamrockbailbonds.biz";
+
+            const defPhone = document.getElementById('defendant-phone');
+            if (defPhone) defPhone.value = "555-555-5555";
+
+            const caseNum = document.getElementById('case-number');
+            if (caseNum) caseNum.value = "TEST-CASE-" + new Date().getTime();
+
+            const bookNum = document.getElementById('booking-number');
+            if (bookNum) bookNum.value = "BK-" + Math.floor(Math.random() * 10000);
+
+            const county = document.getElementById('county');
+            if (county) county.value = "Lee";
+
+            // 2. Charges (Create row if needed)
+            // We assume at least one row exists or addChargeRow is available
+            if (typeof addChargeRow === 'function') {
+                const rows = document.querySelectorAll('.charge-row');
+                if (rows.length === 0) addChargeRow();
+
+                // Wait for DOM update if async, but usually sync here
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('.charge-row input');
+                    if (inputs[0]) inputs[0].value = "TEST CHARGE - IGNORE";
+                    if (inputs[1]) inputs[1].value = "5000";
+                }, 100);
+            }
+
+            // 3. Indemnitor Info
+            if (typeof addIndemnitorRow === 'function') {
+                const rows = document.querySelectorAll('.indemnitor-row');
+                if (rows.length === 0) addIndemnitorRow();
+
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('.indemnitor-row input');
+                    if (inputs[0]) inputs[0].value = "TEST INDEMNITOR"; // Name
+                    if (inputs[1]) inputs[1].value = "Friend"; // Relationship
+                    if (inputs[2]) inputs[2].value = "555-123-4567"; // Phone
+                    if (inputs[3]) inputs[3].value = "admin@shamrockbailbonds.biz"; // Email
+                }, 100);
+            }
+
+            // 4. Select Documents (FAQ Focus)
+            // Uncheck all first
+            const checkboxes = document.querySelectorAll('input[name="selectedDocs"]');
+            checkboxes.forEach(cb => cb.checked = false);
+
+            // Check target docs
+            checkboxes.forEach(cb => {
+                if (cb.value === 'faq-defendants' || cb.value === 'faq-cosigners' || cb.value === 'ssa-release') {
+                    cb.checked = true;
+                }
+            });
+
+            // 5. Select Signing Method
+            const emailRadio = document.querySelector('input[name="signingMethod"][value="email"]');
+            if (emailRadio) emailRadio.checked = true;
+
+            if (typeof showToast === 'function') {
+                showToast("✅ Test Data Filled! Click 'Generate Packet' to test.", "success");
+            } else {
+                alert("✅ Test Data Filled! Click 'Generate Packet' to test.");
+            }
+        }
     </script>
 </body>
 
