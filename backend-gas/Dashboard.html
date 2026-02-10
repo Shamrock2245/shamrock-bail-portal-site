@@ -5609,16 +5609,10 @@
 
                 const pdfBlob = new Blob([mergedPdf], { type: 'application/pdf' });
 
-                // Convert Blob to Data URL to avoid blob: CSP issues in GAS
-                const reader = new FileReader();
-                reader.onloadend = function () {
-                    hideProgress();
-                    showPreviewModal(reader.result, formData);
-                };
-                reader.onerror = function () {
-                    throw new Error('Failed to create preview URL');
-                };
-                reader.readAsDataURL(pdfBlob);
+                // Use Blob URL for better browser compatibility (Chrome blocks Data URLs in new tabs)
+                const blobUrl = URL.createObjectURL(pdfBlob);
+                hideProgress();
+                showPreviewModal(blobUrl, formData);
 
             } catch (err) {
                 hideProgress();

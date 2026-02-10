@@ -3,40 +3,49 @@
  */
 
 /**
- * HELPER: Find File IDs for Manus Templates
- * Run this function manually in the GAS Editor to get the IDs for your Dashboard Config.
+ * HELPER: Find File IDs and Generate Configuration Code
+ * Run this function manually in the GAS Editor.
+ * Copy the output and replace the `const TEMPLATE_DRIVE_IDS` block in Code.js.
  */
 function findManusTemplateIds() {
-    const fileNames = [
-        'osi-defendant-application-shamrock-reducedsize.pdf',
-        'osi-indemnity-agreement-shamrock.pdf',
-        'osi-collateral-premium-receipt.pdf',
-        'osi-appearance-bond-shamrock.pdf',
-        'osi-disclosure-form-shamrock.pdf',
-        'osi-promissory-note-side2-shamrock.pdf',
-        'osi-surety-terms-and-conditions-shamrock.pdf',
-        'shamrock-premium-finance-notice.pdf',
-        'shamrock-paperwork-header.pdf',
-        'shamrock-master-waiver.pdf'
-    ];
+    // Map of Filename -> Code.js Key
+    const fileMap = {
+        'osi-defendant-application-shamrock-reducedsize.pdf': 'defendant-application',
+        'osi-indemnity-agreement-shamrock.pdf': 'indemnity-agreement',
+        'osi-collateral-premium-receipt.pdf': 'collateral-receipt',
+        'osi-appearance-bond-shamrock.pdf': 'appearance-bond',
+        'osi-disclosure-form-shamrock.pdf': 'disclosure-form',
+        'osi-promissory-note-side2-shamrock.pdf': 'promissory-note',
+        'osi-surety-terms-and-conditions-shamrock.pdf': 'surety-terms',
+        'shamrock-premium-finance-notice.pdf': 'payment-plan',
+        'shamrock-paperwork-header.pdf': 'paperwork-header',
+        'shamrock-master-waiver.pdf': 'master-waiver'
+    };
 
     const results = {};
 
     console.log("🔍 Searching for Manus Templates...");
 
-    fileNames.forEach(name => {
-        const files = DriveApp.getFilesByName(name);
+    Object.entries(fileMap).forEach(([fileName, configKey]) => {
+        const files = DriveApp.getFilesByName(fileName);
         if (files.hasNext()) {
             const file = files.next();
-            results[name] = file.getId();
-            console.log(`✅ Found: ${name} -> ${file.getId()}`);
+            results[configKey] = file.getId();
+            console.log(`✅ Found: ${configKey} (${fileName}) -> ${file.getId()}`);
         } else {
-            console.log(`❌ NOT FOUND: ${name}`);
-            results[name] = "MISSING - Did you upload it securely?";
+            console.log(`❌ NOT FOUND: ${fileName}`);
+            results[configKey] = "MISSING_FILE_ID";
         }
     });
 
-    console.log("\n📋 COPY THIS JSON FOR DASHBOARD CONFIG:");
-    console.log(JSON.stringify(results, null, 2));
+    console.log("\n📋 COPY THE CODE BELOW AND PASTE IT INTO Code.js (Replace existing TEMPLATE_DRIVE_IDS):");
+    console.log("=====================================================================================");
+    console.log("const TEMPLATE_DRIVE_IDS = {");
+    Object.keys(results).forEach(key => {
+        console.log(`  '${key}': '${results[key]}',`);
+    });
+    console.log("};");
+    console.log("=====================================================================================");
+
     return results;
 }

@@ -186,6 +186,29 @@
         .dot.pending {
             background-color: #f1c40f;
         }
+
+        .scrapers-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .scraper-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: var(--input-bg);
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -270,6 +293,124 @@
             </div>
         </div>
 
+        <!-- DEPLOYMENT SECTION -->
+        <div class="card">
+            <h3>
+                <span style="font-size:1.5em">🚀</span> Deployment URLs
+            </h3>
+
+            <div class="form-group">
+                <label>GAS Web App URL (Current Deployment)</label>
+                <input type="text" name="GAS_WEB_APP_URL" placeholder="https://script.google.com/macros/s/..."
+                    autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>Wix Portal URL</label>
+                <input type="text" name="WIX_PORTAL_URL" placeholder="https://www.shamrockbailbonds.biz/portal"
+                    autocomplete="off">
+            </div>
+        </div>
+
+        <!-- SIGNNOW SECTION -->
+        <div class="card">
+            <h3>
+                <span style="font-size:1.5em">✍️</span> SignNow API
+            </h3>
+
+            <div class="form-group">
+                <label>API Base URL</label>
+                <input type="text" name="SIGNNOW_API_BASE_URL" placeholder="https://api.signnow.com" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>Production Token</label>
+                <input type="password" name="SIGNNOW_PRODUCTION_TOKEN" placeholder="Bearer Token..." autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>Sandbox Token</label>
+                <input type="password" name="SIGNNOW_SANDBOX_TOKEN" placeholder="Bearer Token..." autocomplete="off">
+            </div>
+        </div>
+
+        <!-- SCRAPERS SECTION -->
+        <div class="card">
+            <h3>
+                <span style="font-size:1.5em">🕷️</span> Active Scrapers
+            </h3>
+            <div class="scrapers-grid">
+                <!-- Row 1 -->
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_LEE" id="lee">
+                    <label for="lee" style="margin:0; cursor:pointer;">Lee County</label>
+                </div>
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_COLLIER" id="collier">
+                    <label for="collier" style="margin:0; cursor:pointer;">Collier County</label>
+                </div>
+                <!-- Row 2 -->
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_ORANGE" id="orange">
+                    <label for="orange" style="margin:0; cursor:pointer;">Orange County</label>
+                </div>
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_OSCEOLA" id="osceola">
+                    <label for="osceola" style="margin:0; cursor:pointer;">Osceola County</label>
+                </div>
+                <!-- Row 3 -->
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_POLK" id="polk">
+                    <label for="polk" style="margin:0; cursor:pointer;">Polk County</label>
+                </div>
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_PINELLAS" id="pinellas">
+                    <label for="pinellas" style="margin:0; cursor:pointer;">Pinellas County</label>
+                </div>
+                <!-- Row 4 -->
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_HILLSBOROUGH" id="hillsborough">
+                    <label for="hillsborough" style="margin:0; cursor:pointer;">Hillsborough County</label>
+                </div>
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_SEMINOLE" id="seminole">
+                    <label for="seminole" style="margin:0; cursor:pointer;">Seminole County</label>
+                </div>
+                <!-- Row 5 -->
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_MANATEE" id="manatee">
+                    <label for="manatee" style="margin:0; cursor:pointer;">Manatee County</label>
+                </div>
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_PASCO" id="pasco">
+                    <label for="pasco" style="margin:0; cursor:pointer;">Pasco County</label>
+                </div>
+                <!-- Row 6 -->
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_SARASOTA" id="sarasota">
+                    <label for="sarasota" style="margin:0; cursor:pointer;">Sarasota County</label>
+                </div>
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_DESOTO" id="desoto">
+                    <label for="desoto" style="margin:0; cursor:pointer;">DeSoto County</label>
+                </div>
+                <!-- Row 7 -->
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_CHARLOTTE" id="charlotte">
+                    <label for="charlotte" style="margin:0; cursor:pointer;">Charlotte County</label>
+                </div>
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_GLADES" id="glades">
+                    <label for="glades" style="margin:0; cursor:pointer;">Glades County</label>
+                </div>
+                <!-- Row 8 -->
+                <div class="scraper-item">
+                    <input type="checkbox" name="SCRAPER_ENABLED_HENDRY" id="hendry">
+                    <label for="hendry" style="margin:0; cursor:pointer;">Hendry County</label>
+                </div>
+            </div>
+        </div>
+
         <div class="actions">
             <div class="loader" id="loader"></div>
             <button type="button" class="btn-secondary" onclick="google.script.host.close()">Cancel</button>
@@ -292,9 +433,13 @@
             for (const [key, value] of Object.entries(config)) {
                 const input = document.getElementsByName(key)[0];
                 if (input) {
-                    input.value = value;
-                    // Visual feedback if value exists
-                    if (value) input.style.borderColor = '#00e676';
+                    if (input.type === 'checkbox') {
+                        input.checked = (value === 'true' || value === true);
+                    } else {
+                        input.value = value;
+                        // Visual feedback if value exists
+                        if (value) input.style.borderColor = '#00e676';
+                    }
                 }
             }
 
@@ -320,7 +465,11 @@
             // Collect specific fields
             const inputs = form.querySelectorAll('input');
             inputs.forEach(input => {
-                formData[input.name] = input.value;
+                if (input.type === 'checkbox') {
+                    formData[input.name] = input.checked ? 'true' : 'false';
+                } else {
+                    formData[input.name] = input.value;
+                }
             });
 
             const btn = document.querySelector('.btn-primary');
