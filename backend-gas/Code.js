@@ -166,7 +166,7 @@ function doGet(e) {
     // ---------------------------------------------
 
     // --- APP VERSION CONTROL ---
-    const APP_VERSION = '7.1.0-EDITION-SYNCED';
+    const APP_VERSION = 'v231-Release';
 
     // --- SLACK ALERT ---
     if (e.parameter.action === 'sendSlackAlert') {

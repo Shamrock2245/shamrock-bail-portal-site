@@ -2788,6 +2788,64 @@
                     // Reset width for next time after transition
                     setTimeout(() => { if (fill) fill.style.width = '0%'; }, 300);
                 }, 400); // Short delay to see 100%
+            },
+
+            switchTab: function (btn, tabId) {
+                // Harmonize with global switchTab logic (append -tab)
+                const targetId = tabId.endsWith('-tab') ? tabId : `${tabId}-tab`;
+
+                document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => {
+                    c.classList.remove('active');
+                    c.style.display = 'none'; // Enforce hide
+                });
+
+                if (btn) btn.classList.add('active');
+                else {
+                    // Try to find matching button to activate it visually
+                    const targetBtn = document.querySelector(`[onclick*="'${tabId}'"]`);
+                    if (targetBtn) targetBtn.classList.add('active');
+                }
+
+                const content = document.getElementById(targetId);
+                if (content) {
+                    content.classList.add('active');
+                    content.style.display = 'block';
+
+                    // FIX: Correct ID check and Object Access
+                    if (targetId === 'map-tab' && window.ShamrockApp && window.ShamrockApp.Maps) {
+                        window.ShamrockApp.Maps.tryInit();
+                        if (window.ShamrockApp.Maps.map) {
+                            try { google.maps.event.trigger(window.ShamrockApp.Maps.map, "resize"); } catch (e) { }
+                        }
+                    }
+                } else {
+                    console.warn(`UI.switchTab: Target '${targetId}' not found.`);
+                }
+            },
+
+            toggleAgentTab: function (btn, agentId) {
+                // Update visuals
+                const container = btn.closest('.nav-container') || btn.parentElement;
+                if (container) {
+                    container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    btn.classList.add('active');
+                }
+
+                // Switch views
+                document.querySelectorAll('.agent-view').forEach(v => v.style.display = 'none');
+                const target = document.getElementById(agentId);
+                if (target) target.style.display = 'block';
+            },
+
+            setHTML: function (id, html) {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = html;
+            },
+
+            setValue: function (id, val) {
+                const el = document.getElementById(id);
+                if (el) el.value = val || '';
             }
         };
 
@@ -2861,7 +2919,7 @@
            CONFIGURATION
            ========================================================= */
         const CONFIG = {
-            gasWebAppUrl: '<?= gasUrl ?>' || 'https://script.google.com/macros/s/AKfycbzV4rHGZlDXLvMgTHTHFV0u2yN1VTs1kjZVz38CA8pZv6sEcu6DD7S8owpw6Rbl7KtguA/exec', // AUTO-INJECTED v154
+            gasWebAppUrl: '<?= gasUrl ?>' || 'https://script.google.com/macros/s/AKfycby5N-lHvM2XzKnX38KSqekq0ENWMLYqYM2bYxuZcRRAQcBhP3RvBaF0CbQa9gKK73QI4w/exec', // AUTO-INJECTED v229
             signNowApiBase: 'https://api.signnow.com',
             // signNowToken moved to Script Properties for security
 
@@ -6664,71 +6722,7 @@
                 investigatorFiles: { def: null, ind: null }
             };
 
-            // --- Module: UI Utilities ---
-            const UI = {
-                switchTab: function (btn, tabId) {
-                    // Harmonize with global switchTab logic (append -tab)
-                    const targetId = tabId.endsWith('-tab') ? tabId : `${tabId}-tab`;
 
-                    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => {
-                        c.classList.remove('active');
-                        c.style.display = 'none'; // Enforce hide
-                    });
-
-                    if (btn) btn.classList.add('active');
-                    else {
-                        // Try to find matching button to activate it visually
-                        const targetBtn = document.querySelector(`[onclick*="'${tabId}'"]`);
-                        if (targetBtn) targetBtn.classList.add('active');
-                    }
-
-                    const content = document.getElementById(targetId);
-                    if (content) {
-                        content.classList.add('active');
-                        content.style.display = 'block';
-
-                        // FIX: Correct ID check and Object Access
-                        if (targetId === 'map-tab' && window.ShamrockApp && window.ShamrockApp.Maps) {
-                            window.ShamrockApp.Maps.tryInit();
-                            if (window.ShamrockApp.Maps.map) {
-                                try { google.maps.event.trigger(window.ShamrockApp.Maps.map, "resize"); } catch (e) { }
-                            }
-                        }
-                    } else {
-                        console.warn(`UI.switchTab: Target '${targetId}' not found.`);
-                    }
-                },
-
-                showToast: function (msg, type = 'success') {
-                    if (typeof window.showToast === 'function') window.showToast(msg, type);
-                    else console.log(`[${type}] ${msg}`);
-                },
-
-                toggleAgentTab: function (btn, agentId) {
-                    // Update visuals
-                    const container = btn.closest('.nav-container') || btn.parentElement;
-                    if (container) {
-                        container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                        btn.classList.add('active');
-                    }
-
-                    // Switch views
-                    document.querySelectorAll('.agent-view').forEach(v => v.style.display = 'none');
-                    const target = document.getElementById(agentId);
-                    if (target) target.style.display = 'block';
-                },
-
-                setHTML: function (id, html) {
-                    const el = document.getElementById(id);
-                    if (el) el.innerHTML = html;
-                },
-
-                setValue: function (id, val) {
-                    const el = document.getElementById(id);
-                    if (el) el.value = val || '';
-                }
-            };
 
             // --- Module: Agents (Clerk, Analyst, Investigator, Monitor) ---
             const Agents = {
@@ -7637,7 +7631,7 @@
                     };
 
                     console.log("✅ ShamrockApp Initialized");
-                    UI.showToast("System Ready v176", "success");
+                    UI.showToast(`System Ready ${APP_VERSION}`, "success");
                 }
             };
 
