@@ -18,6 +18,7 @@ function runSystemDiagnostics() {
     const results = {
         scriptProperties: checkScriptProperties(),
         googleDrive: checkGoogleDriveAccess(),
+        manusTemplates: checkManusTemplates(),
         googleSheets: checkSheetAccess(),
         signNow: checkSignNowConnectivity(),
         wix: checkWixConnectivity(),
@@ -110,6 +111,45 @@ function checkTwilioConfiguration() {
     const token = PropertiesService.getScriptProperties().getProperty('TWILIO_AUTH_TOKEN');
     if (sid && token) return { success: true, message: 'Credentials present' };
     return { success: false, error: 'Missing Twilio credentials' };
+}
+
+function checkManusTemplates() {
+    try {
+        // TEMPLATE_DRIVE_IDS is defined in Code.js (Global Scope)
+        if (typeof TEMPLATE_DRIVE_IDS === 'undefined') {
+            return { success: false, error: 'TEMPLATE_DRIVE_IDS not defined in global scope' };
+        }
+
+        const keys = Object.keys(TEMPLATE_DRIVE_IDS);
+        const missing = [];
+        let checked = 0;
+
+        keys.forEach(key => {
+            const id = TEMPLATE_DRIVE_IDS[key];
+            if (!id) {
+                missing.push(`${key}: (No ID)`);
+            } else {
+                try {
+                    // Just get metadata to verify access (fast)
+                    DriveApp.getFileById(id).getName();
+                    checked++;
+                } catch (e) {
+                    missing.push(`${key}: ${e.message}`);
+                }
+            }
+        });
+
+        if (missing.length > 0) {
+            return {
+                success: false,
+                error: `Found ${missing.length} issues`,
+                details: missing
+            };
+        }
+        return { success: true, count: checked, message: `Validated ${checked} templates` };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
 }
 
 

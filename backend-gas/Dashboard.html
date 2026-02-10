@@ -1323,7 +1323,146 @@
             body {
                 background: #fff;
             }
-        }
+
+            /* =========================================================
+       UI COMPONENTS: TOAST & LOADING OVERLAY (Premium Glass)
+       ========================================================= */
+            .toast-container {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 10000;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                pointer-events: none;
+            }
+
+            .toast {
+                background: rgba(20, 20, 25, 0.95);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                color: #fff;
+                padding: 12px 20px;
+                border-radius: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 14px;
+                font-weight: 500;
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+                transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                pointer-events: auto;
+                min-width: 250px;
+            }
+
+            .toast.show {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+            .toast.success {
+                border-left: 3px solid #00E676;
+            }
+
+            .toast.error {
+                border-left: 3px solid #FF1744;
+            }
+
+            .toast.warning {
+                border-left: 3px solid #FFC400;
+            }
+
+            .toast.info {
+                border-left: 3px solid #2979FF;
+            }
+
+            .progress-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                z-index: 9999;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease, visibility 0.3s;
+            }
+
+            .progress-overlay.active {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            .progress-card {
+                background: rgba(30, 30, 35, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 30px;
+                border-radius: 16px;
+                width: 100%;
+                max-width: 400px;
+                text-align: center;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+                transform: scale(0.9);
+                transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+
+            .progress-overlay.active .progress-card {
+                transform: scale(1);
+            }
+
+            .progress-bar {
+                height: 6px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 3px;
+                margin: 20px 0 10px;
+                overflow: hidden;
+                position: relative;
+            }
+
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #00C853, #64DD17);
+                width: 0%;
+                transition: width 0.4s ease;
+                box-shadow: 0 0 10px rgba(0, 200, 83, 0.5);
+            }
+
+            .progress-message {
+                color: #aaa;
+                font-size: 13px;
+                margin-top: 8px;
+                min-height: 20px;
+            }
+
+            .progress-steps {
+                display: flex;
+                justify-content: center;
+                gap: 4px;
+                margin-top: 15px;
+            }
+
+            .step-dot {
+                width: 6px;
+                height: 6px;
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 50%;
+                transition: all 0.3s ease;
+            }
+
+            .step-dot.active {
+                background: #00E676;
+                transform: scale(1.3);
+            }
     </style>
 </head>
 
@@ -2575,6 +2714,86 @@
 
 
     <script>
+        /* =========================================================
+           UI CONTROLLER (Loading, Toasts, Feedback)
+           ========================================================= */
+        const UI = {
+            // Toast Notification System
+            showToast: function (message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                if (!container) return console.warn('Toast container missing');
+
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+
+                let icon = '&#8505;'; // Info i
+                if (type === 'success') icon = '&#10004;'; // Check
+                if (type === 'error') icon = '&#10008;'; // X
+                if (type === 'warning') icon = '&#9888;'; // Warning
+
+                toast.innerHTML = `<span style="font-size:18px;">${icon}</span> <span>${message}</span>`;
+
+                container.appendChild(toast);
+
+                // Animate in
+                requestAnimationFrame(() => toast.classList.add('show'));
+
+                // Auto remove
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            },
+
+            // Loading Overlay System
+            showLoading: function (title = 'Processing...', message = 'Please wait') {
+                const overlay = document.getElementById('progress-overlay');
+                if (!overlay) return;
+
+                document.getElementById('progress-title').textContent = title;
+                document.getElementById('progress-message').textContent = message;
+                document.getElementById('progress-fill').style.width = '0%';
+
+                overlay.classList.add('active');
+
+                // Indeterminate animation start
+                this.loadingInterval = setInterval(() => {
+                    const fill = document.getElementById('progress-fill');
+                    let w = parseFloat(fill.style.width) || 0;
+                    if (w < 90) fill.style.width = (w + (90 - w) * 0.05) + '%';
+                }, 200);
+            },
+
+            updateLoading: function (percent, message) {
+                if (this.loadingInterval) clearInterval(this.loadingInterval);
+
+                const fill = document.getElementById('progress-fill');
+                if (fill) fill.style.width = `${percent}%`;
+
+                if (message) {
+                    const msgEl = document.getElementById('progress-message');
+                    if (msgEl) msgEl.textContent = message;
+                }
+            },
+
+            hideLoading: function () {
+                if (this.loadingInterval) clearInterval(this.loadingInterval);
+
+                const fill = document.getElementById('progress-fill');
+                if (fill) fill.style.width = '100%';
+
+                setTimeout(() => {
+                    const overlay = document.getElementById('progress-overlay');
+                    if (overlay) overlay.classList.remove('active');
+                    // Reset width for next time after transition
+                    setTimeout(() => { if (fill) fill.style.width = '0%'; }, 300);
+                }, 400); // Short delay to see 100%
+            }
+        };
+
+        // Global alias for compatibility
+        window.showToast = UI.showToast;
+
         /* =========================================================
            UI NAVIGATION & CORE HELPERS (Defined first for reliability)
            ========================================================= */
@@ -4537,51 +4756,84 @@
                 }
             }
 
-            showProgress('Generating Bail Packet', [
-                'Collecting form data',
-                'Fetching PDF templates',
-                'Filling documents',
-                'Merging packet',
-                'Uploading to SignNow',
-                'Adding signature fields',
-                'Sending for signatures'
-            ]);
+            // showProgress('Generating Bail Packet', [...]);
+            UI.showLoading('Generating Bail Packet', 'Initializing process...');
 
             try {
-                updateProgress(1, 'Collecting form data...');
+                // updateProgress(1, 'Collecting form data...');
+                UI.updateLoading(10, 'Collecting form data...');
                 await sleep(300);
 
-                updateProgress(2, 'Fetching PDF templates from Google Drive...');
+                // updateProgress(2, 'Fetching PDF templates from Google Drive...');
+                UI.updateLoading(20, 'Fetching PDF templates from Google Drive...');
                 const selectedDocs = getSelectedDocuments();
                 if (selectedDocs.length === 0) throw new Error('No documents selected');
 
                 const pdfBytes = await fetchPDFsFromDrive(selectedDocs);
 
-                updateProgress(3, 'Filling documents with defendant data...');
+                // updateProgress(3, 'Filling documents with defendant data...');
+                UI.updateLoading(40, 'Filling documents with defendant data...');
                 const filledPdfs = await fillPDFsWithData(pdfBytes, formData);
 
-                updateProgress(4, 'Merging all documents into packet...');
+                // updateProgress(4, 'Merging all documents into packet...');
+                UI.updateLoading(60, 'Merging all documents into packet...');
                 const mergedPdf = await mergePDFs(filledPdfs);
 
-                updateProgress(5, 'Uploading to SignNow...');
+                // updateProgress(5, 'Uploading to SignNow...');
+                UI.updateLoading(70, 'Uploading to SignNow system...');
                 const documentId = await uploadToSignNow(mergedPdf, formData);
 
                 if (!documentId) throw new Error('Failed to upload document to SignNow');
 
                 // Add signature/initials fields to the uploaded document
-                updateProgress(6, 'Adding signature fields...');
+                UI.updateLoading(80, 'Adding signature fields...');
                 await addSignatureFields(documentId, selectedDocs);
 
-                updateProgress(7, 'Sending for signatures...');
+                UI.updateLoading(90, 'Sending for signatures...');
 
                 let result;
+                let signingLinks = [];
+
                 if (signingMethod === 'email' || signingMethod === 'sms') {
                     result = await sendSignNowInvite(documentId, formData, signingMethod);
                 } else if (signingMethod === 'kiosk') {
-                    result = await createSigningLink(documentId);
+                    // For kiosk, generate link
+                    const request = await createSigningLink(documentId);
+                    if (request.success && request.signingLink) {
+                        result = request;
+                        signingLinks.push({
+                            email: 'kiosk_signer@shamrock.local', // Placeholder
+                            name: `${formData['defendant-first-name']} ${formData['defendant-last-name']}`,
+                            role: 'defendant',
+                            url: request.signingLink
+                        });
+                    } else {
+                        throw new Error('Failed to create kiosk link: ' + (request.error || 'Unknown error'));
+                    }
                 } else {
                     result = { success: true, mode: 'download' };
                     downloadFilledPdf(mergedPdf, formData);
+                }
+
+                // OPTIONAL: Save signing links to Wix portal
+                if (typeof WIX_PORTAL_CONFIG !== 'undefined' && WIX_PORTAL_CONFIG.enabled && signingLinks.length > 0) {
+                    UI.updateLoading(95, 'Saving to client portal...');
+                    const defendantName = `${formData['defendant-first-name']} ${formData['defendant-last-name']}`;
+                    const caseNumber = formData.charges[0]?.['case-number'] || '';
+
+                    const portalDocuments = signingLinks.map(link => ({
+                        signerEmail: link.email,
+                        signerName: link.name,
+                        signerPhone: link.phone || '', // Ensure optional phone is handled
+                        signerRole: link.role,
+                        signingLink: link.url,
+                        documentId: documentId,
+                        defendantName: defendantName,
+                        caseNumber: caseNumber,
+                        documentName: 'Bail Bond Packet'
+                    }));
+
+                    await batchSaveToWixPortal(portalDocuments);
                 }
 
                 currentReceiptNumber++;
@@ -4599,11 +4851,11 @@
                 });
                 localStorage.setItem(LS_KEY_PACKETS, JSON.stringify(sentPackets));
 
-                hideProgress();
+                UI.hideLoading();
                 showSuccessResult(result, formData, signingMethod);
 
             } catch (err) {
-                hideProgress();
+                UI.hideLoading();
                 showToast('Error generating packet: ' + err.message, 'error');
                 console.error('Generation error:', err);
             }
@@ -5576,48 +5828,43 @@
         /**
          * Preview the bail packet
          */
+        /**
+         * Preview the bail packet
+         */
         async function previewPacket() {
             const formData = collectFormData();
 
             if (!formData['defendant-first-name'] || !formData['defendant-last-name']) {
-                showToast('Please enter defendant name before preview', 'error');
+                showToast('Please enter defendant name', 'error');
                 return;
             }
 
-            showProgress('Generating Preview', [
-                'Collecting form data',
-                'Fetching PDF templates',
-                'Filling documents',
-                'Rendering preview'
-            ]);
+            UI.showLoading('Generating Preview', 'Preparing your document packet...');
 
             try {
-                updateProgress(1, 'Collecting form data...');
-                await sleep(300);
-
-                updateProgress(2, 'Fetching PDF templates from Google Drive...');
-                const selectedDocs = getSelectedDocuments(true);
+                UI.updateLoading(20, 'Fetching templates from Drive...');
+                const selectedDocs = getSelectedDocuments();
                 if (selectedDocs.length === 0) throw new Error('No documents selected');
 
                 const pdfBytes = await fetchPDFsFromDrive(selectedDocs);
 
-                updateProgress(3, 'Filling documents with form data...');
+                UI.updateLoading(50, 'Filling forms with data...');
                 const filledPdfs = await fillPDFsWithData(pdfBytes, formData);
 
-                updateProgress(4, 'Rendering preview...');
+                UI.updateLoading(80, 'Merging documents...');
                 const mergedPdf = await mergePDFs(filledPdfs);
 
-                const pdfBlob = new Blob([mergedPdf], { type: 'application/pdf' });
+                UI.updateLoading(95, 'Finalizing preview...');
+                const blob = new Blob([mergedPdf], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
 
-                // Use Blob URL for better browser compatibility (Chrome blocks Data URLs in new tabs)
-                const blobUrl = URL.createObjectURL(pdfBlob);
-                hideProgress();
-                showPreviewModal(blobUrl, formData);
+                UI.hideLoading();
+                showPreviewModal(url, formData);
 
             } catch (err) {
-                hideProgress();
-                showToast('Error generating preview: ' + err.message, 'error');
+                UI.hideLoading();
                 console.error('Preview error:', err);
+                showToast('Error generating preview: ' + err.message, 'error');
             }
         }
 
@@ -5670,6 +5917,50 @@
         </div>
       `);
         }
+        async function previewPacket() {
+            const formData = collectFormData();
+
+            if (!formData['defendant-first-name'] || !formData['defendant-last-name']) {
+                showToast('Please enter defendant name', 'error');
+                return;
+            }
+
+            // showProgress('Generating Preview', ['Fetching templates', 'Filling data', 'Merging PDF']);
+            UI.showLoading('Generating Preview', 'Preparing your document packet...');
+
+            try {
+                // updateProgress(1, 'Fetching templates...');
+                UI.updateLoading(20, 'Fetching templates from Drive...');
+                const selectedDocs = getSelectedDocuments();
+                if (selectedDocs.length === 0) throw new Error('No documents selected');
+
+                const pdfBytes = await fetchPDFsFromDrive(selectedDocs);
+
+                // updateProgress(2, 'Filling data...');
+                UI.updateLoading(50, 'Filling forms with data...');
+                const filledPdfs = await fillPDFsWithData(pdfBytes, formData);
+
+                // updateProgress(3, 'Merging PDF...');
+                UI.updateLoading(80, 'Merging documents...');
+                const mergedPdf = await mergePDFs(filledPdfs);
+
+                // Create blob and show modal
+                UI.updateLoading(95, 'Finalizing preview...');
+                const blob = new Blob([mergedPdf], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+
+                // hideProgress();
+                UI.hideLoading();
+                showPreviewModal(url, formData);
+
+            } catch (err) {
+                // hideProgress();
+                UI.hideLoading();
+                console.error('Preview error:', err);
+                showToast('Error generating preview: ' + err.message, 'error');
+            }
+        }
+
 
         /* =========================================================
            PROGRESS OVERLAY
@@ -5978,276 +6269,7 @@
             }
         }
 
-        /**
-         * Enhanced generateAndSend function that also saves to Wix portal
-         * This wraps the existing generateAndSend functionality
-         */
-        async function generateAndSendWithWixPortal() {
-            const formData = collectFormData();
 
-            if (!formData['defendant-first-name'] || !formData['defendant-last-name']) {
-                showToast('Please enter defendant name', 'error');
-                return;
-            }
-
-            if (formData.charges.length === 0) {
-                showToast('Please add at least one charge', 'error');
-                return;
-            }
-
-            const signingMethod = document.getElementById('signing-method').value;
-
-            // Validate signing method inputs
-            if (signingMethod === 'email') {
-                const defendantEmail = document.getElementById('signer-defendant-email').value;
-                const indemnitorEmail = document.getElementById('signer-indemnitor-email').value;
-                if (!defendantEmail && !indemnitorEmail) {
-                    showToast('Please enter at least one email address for signing', 'error');
-                    return;
-                }
-            } else if (signingMethod === 'sms') {
-                const defendantPhone = document.getElementById('signer-defendant-phone').value;
-                const indemnitorPhone = document.getElementById('signer-indemnitor-phone').value;
-                if (!defendantPhone && !indemnitorPhone) {
-                    showToast('Please enter at least one phone number for SMS signing', 'error');
-                    return;
-                }
-            }
-
-            // Add Wix portal step to progress
-            showProgress('Generating Bail Packet', [
-                'Collecting form data',
-                'Fetching PDF templates',
-                'Filling documents',
-                'Merging packet',
-                'Uploading to SignNow',
-                'Adding signature fields',
-                'Sending for signatures',
-                'Saving to client portal'  // New step
-            ]);
-
-            try {
-                updateProgress(1, 'Collecting form data...');
-                await sleep(300);
-
-                updateProgress(2, 'Fetching PDF templates from Google Drive...');
-                const selectedDocs = getSelectedDocuments();
-                if (selectedDocs.length === 0) throw new Error('No documents selected');
-
-                const pdfBytes = await fetchPDFsFromDrive(selectedDocs);
-
-                updateProgress(3, 'Filling documents with defendant data...');
-                const filledPdfs = await fillPDFsWithData(pdfBytes, formData);
-
-                updateProgress(4, 'Merging all documents into packet...');
-                const mergedPdf = await mergePDFs(filledPdfs);
-
-                updateProgress(5, 'Uploading to SignNow...');
-                const documentId = await uploadToSignNow(mergedPdf, formData);
-
-                if (!documentId) throw new Error('Failed to upload document to SignNow');
-
-                // Add signature/initials fields to the uploaded document
-                updateProgress(6, 'Adding signature fields...');
-                await addSignatureFields(documentId, selectedDocs);
-
-                updateProgress(7, 'Sending for signatures...');
-
-                let result;
-                let signingLinks = [];
-
-                if (signingMethod === 'email' || signingMethod === 'sms') {
-                    result = await sendSignNowInvite(documentId, formData, signingMethod);
-                } else if (signingMethod === 'kiosk' || signingMethod === 'embedded') {
-                    // For embedded/kiosk, create individual signing links for each signer
-                    signingLinks = await createMultiSignerLinks(documentId, formData);
-                    result = { success: true, mode: 'embedded', links: signingLinks };
-                } else {
-                    result = { success: true, mode: 'download' };
-                    downloadFilledPdf(mergedPdf, formData);
-                }
-
-                // NEW: Save signing links to Wix portal
-                updateProgress(8, 'Saving to client portal...');
-                if (WIX_PORTAL_CONFIG.enabled && signingLinks.length > 0) {
-                    const defendantName = `${formData['defendant-first-name']} ${formData['defendant-last-name']}`;
-                    const caseNumber = formData.charges[0]?.['case-number'] || '';
-
-                    const portalDocuments = signingLinks.map(link => ({
-                        signerEmail: link.email,
-                        signerName: link.name,
-                        signerPhone: link.phone,
-                        signerRole: link.role,
-                        signingLink: link.url,
-                        documentId: documentId,
-                        defendantName: defendantName,
-                        caseNumber: caseNumber,
-                        documentName: 'Bail Bond Packet'
-                    }));
-
-                    await batchSaveToWixPortal(portalDocuments);
-                }
-
-                currentReceiptNumber++;
-                updateReceiptDisplay();
-                saveFormToLocalStorage();
-
-                sentPackets.push({
-                    id: Date.now(),
-                    documentId: documentId,
-                    defendant: `${formData['defendant-first-name']} ${formData['defendant-last-name']}`,
-                    date: new Date().toISOString(),
-                    status: signingMethod === 'download' ? 'downloaded' : 'sent',
-                    receiptNumber: currentReceiptNumber - 1,
-                    signingMethod: signingMethod,
-                    portalEnabled: WIX_PORTAL_CONFIG.enabled
-                });
-                localStorage.setItem(LS_KEY_PACKETS, JSON.stringify(sentPackets));
-
-                hideProgress();
-                showSuccessResult(result, formData, signingMethod);
-
-            } catch (err) {
-                hideProgress();
-                showToast('Error generating packet: ' + err.message, 'error');
-                console.error('Generation error:', err);
-            }
-        }
-
-        /**
-         * Create embedded signing links for multiple signers
-         * 
-         * @param {string} documentId - SignNow document ID
-         * @param {Object} formData - Form data with signer information
-         * @returns {Promise<Array>} Array of signing link objects
-         */
-        async function createMultiSignerLinks(documentId, formData) {
-            const signers = [];
-
-            // Add defendant
-            const defendantEmail = document.getElementById('signer-defendant-email')?.value || '';
-            const defendantPhone = document.getElementById('signer-defendant-phone')?.value || '';
-            if (defendantEmail || defendantPhone) {
-                signers.push({
-                    name: `${formData['defendant-first-name']} ${formData['defendant-last-name']}`,
-                    email: defendantEmail,
-                    phone: defendantPhone,
-                    role: 'defendant',
-                    order: 1
-                });
-            }
-
-            // Add indemnitors from the dynamic indemnitor list
-            const indemnitorContainers = document.querySelectorAll('.indemnitor-entry, [data-indemnitor-index]');
-            indemnitorContainers.forEach((container, index) => {
-                const firstName = container.querySelector('[name*="first-name"], [id*="first-name"]')?.value || '';
-                const lastName = container.querySelector('[name*="last-name"], [id*="last-name"]')?.value || '';
-                const email = container.querySelector('[name*="email"], [id*="email"]')?.value || '';
-                const phone = container.querySelector('[name*="phone"], [id*="phone"]')?.value || '';
-
-                if ((firstName || lastName) && (email || phone)) {
-                    signers.push({
-                        name: `${firstName} ${lastName}`.trim(),
-                        email: email,
-                        phone: phone,
-                        role: 'indemnitor',
-                        order: index + 2
-                    });
-                }
-            });
-
-            // Also check for primary indemnitor fields
-            const primaryIndemnitorEmail = document.getElementById('signer-indemnitor-email')?.value || '';
-            const primaryIndemnitorPhone = document.getElementById('signer-indemnitor-phone')?.value || '';
-            const primaryIndemnitorName = formData['indemnitor-first-name']
-                ? `${formData['indemnitor-first-name']} ${formData['indemnitor-last-name'] || ''}`.trim()
-                : '';
-
-            if (primaryIndemnitorName && (primaryIndemnitorEmail || primaryIndemnitorPhone)) {
-                // Check if not already added
-                const alreadyAdded = signers.some(s => s.email === primaryIndemnitorEmail && s.role === 'indemnitor');
-                if (!alreadyAdded) {
-                    signers.push({
-                        name: primaryIndemnitorName,
-                        email: primaryIndemnitorEmail,
-                        phone: primaryIndemnitorPhone,
-                        role: 'indemnitor',
-                        order: 2
-                    });
-                }
-            }
-
-            // Create embedded signing links for each signer via GAS
-            const links = [];
-            for (const signer of signers) {
-                try {
-                    const linkResult = await new Promise((resolve, reject) => {
-                        google.script.run
-                            .withSuccessHandler(resolve)
-                            .withFailureHandler(reject)
-                            .SN_createEmbeddedSigningLink(documentId, signer.email, signer.name, signer.role, WIX_PORTAL_CONFIG.redirectUrl);
-                    });
-
-                    if (linkResult && linkResult.link) {
-                        links.push({
-                            ...signer,
-                            url: linkResult.link,
-                            wixUrl: `${WIX_PORTAL_CONFIG.siteUrl}/sign?link=${encodeURIComponent(linkResult.link)}`
-                        });
-                    }
-                } catch (error) {
-                    console.error(`Error creating signing link for ${signer.name}:`, error);
-                }
-            }
-
-            return links;
-        }
-
-        /**
-         * Show enhanced success result with Wix portal links
-         */
-        function showSuccessResultWithPortal(result, formData, signingMethod) {
-            // Call original success handler
-            showSuccessResult(result, formData, signingMethod);
-
-            // If we have portal links, add them to the success modal
-            if (result.links && result.links.length > 0) {
-                const linksHtml = result.links.map(link => `
-                    <div style="margin: 10px 0; padding: 10px; background: var(--surface-2); border-radius: 8px;">
-                        <strong>${link.name}</strong> (${link.role})<br>
-                        <a href="${link.wixUrl}" target="_blank" style="color: var(--accent); word-break: break-all;">
-                            ${link.wixUrl}
-                        </a>
-                        <button onclick="navigator.clipboard.writeText('${link.wixUrl}'); showToast('Link copied!', 'success');" 
-                                style="margin-left: 10px; padding: 4px 8px; cursor: pointer;">
-                            Copy
-                        </button>
-                    </div>
-                `).join('');
-
-                // Append to success modal if it exists
-                const successContent = document.querySelector('.success-modal-content, .modal-content');
-                if (successContent) {
-                    const portalSection = document.createElement('div');
-                    portalSection.innerHTML = `
-                        <h4 style="margin-top: 20px;">Client Portal Signing Links</h4>
-                        <p style="font-size: 14px; color: var(--muted);">
-                            These links are also saved to each client's portal account.
-                        </p>
-                        ${linksHtml}
-                    `;
-                    successContent.appendChild(portalSection);
-                }
-            }
-        }
-
-        // =========================================================
-        // OPTIONAL: Replace the default generateAndSend with portal version
-        // =========================================================
-
-        // Uncomment the line below to automatically use the Wix portal version
-        // Uncomment the line below to automatically use the Wix portal version
-        window.generateAndSend = generateAndSendWithWixPortal;
 
         // --- Indemnitor Profile Fetch ---
         function fetchIndemnitorProfile() {
@@ -6257,19 +6279,11 @@
                 return;
             }
 
-            const btn = event.currentTarget || document.querySelector('button[onclick="fetchIndemnitorProfile()"]');
-            const originalText = btn ? btn.innerText : 'Fetch Profile';
-            if (btn) {
-                btn.innerText = '⌛ Fetching...';
-                btn.disabled = true;
-            }
+            UI.showLoading('Fetching Profile', 'Searching Shamrock database...');
 
             google.script.run
                 .withSuccessHandler(function (response) {
-                    if (btn) {
-                        btn.innerText = originalText;
-                        btn.disabled = false;
-                    }
+                    UI.hideLoading();
 
                     if (response && response.success && response.profile) {
                         const p = response.profile;
@@ -6304,17 +6318,14 @@
                             document.getElementById('indemnitor-phone').value = p.phone;
                         }
 
-                        alert('✅ Profile data found and applied!');
+                        UI.showToast('✅ Profile data found and applied!', 'success');
                     } else {
-                        alert('⚠️ Profile not found in Shamrock system for this email.');
+                        UI.showToast('⚠️ Profile not found for this email.', 'warning');
                     }
                 })
                 .withFailureHandler(function (err) {
-                    if (btn) {
-                        btn.innerText = originalText;
-                        btn.disabled = false;
-                    }
-                    alert('Error fetching profile: ' + err.message);
+                    UI.hideLoading();
+                    UI.showToast('Error fetching profile: ' + err.message, 'error');
                 })
                 .doPostFromClient({
                     action: 'fetchIndemnitorProfile',
@@ -6766,14 +6777,15 @@
                         if (!payload) return UI.showToast('⚠️ Provide file or text.', 'warning');
 
                         const output = document.getElementById('clerk-output');
-                        const loading = document.getElementById('clerk-loading');
 
+                        // Hide output initially
                         output.style.display = 'none';
-                        loading.style.display = 'block';
+
+                        UI.showLoading('The Clerk', 'Extracting data from booking sheet...');
 
                         google.script.run
                             .withSuccessHandler(res => {
-                                loading.style.display = 'none';
+                                UI.hideLoading();
                                 output.style.display = 'block';
                                 if (res.error) {
                                     output.innerHTML = `<div class="error-box">❌ ${res.error}</div>`;
@@ -6784,7 +6796,7 @@
                                 }
                             })
                             .withFailureHandler(err => {
-                                loading.style.display = 'none';
+                                UI.hideLoading();
                                 output.style.display = 'block';
                                 output.innerHTML = `<div class="error-box">❌ Error: ${err.message}</div>`;
                             })
@@ -6851,10 +6863,11 @@
                             ties: el('analyst-ties')
                         };
 
-                        UI.setHTML('analyst-output', "<div class='loading-spinner'>⚙️ Analyzing...</div>");
+                        UI.showLoading('The Analyst', 'Evaluating flight risk and bond conditions...');
 
                         google.script.run
                             .withSuccessHandler(res => {
+                                UI.hideLoading();
                                 const color = res.riskLevel.includes('High') ? 'var(--error)' : (res.riskLevel === 'Medium' ? 'var(--warning)' : 'var(--success)');
                                 UI.setHTML('analyst-output', `
                                     <div class="result-card" style="border-color:${color}">
@@ -6864,6 +6877,7 @@
                                     </div>`);
                             })
                             .withFailureHandler(err => {
+                                UI.hideLoading();
                                 UI.setHTML('analyst-output', `<div class="error-box">❌ Analyst Error: ${err.message}</div>`);
                             })
                             .client_analyzeLead(JSON.stringify(lead));
@@ -6896,14 +6910,16 @@
                             return UI.showToast('⚠️ Provide at least one report.', 'warning');
                         }
 
-                        UI.setHTML('investigator-output', "<div class='loading-spinner'>⚙️ Investigating...</div>");
+                        UI.showLoading('The Investigator', 'Cross-referencing background reports...');
 
                         google.script.run
                             .withSuccessHandler(res => {
+                                UI.hideLoading();
                                 if (res.error) return UI.setHTML('investigator-output', `<div class="error-box">❌ ${res.error}</div>`);
                                 UI.setHTML('investigator-output', Agents.Investigator.renderReport(res));
                             })
                             .withFailureHandler(err => {
+                                UI.hideLoading();
                                 UI.setHTML('investigator-output', `<div class="error-box">❌ Investigator Error: ${err.message}</div>`);
                             })
                             .client_runInvestigator(payload);
@@ -6929,12 +6945,16 @@
                     run: function () {
                         const notesEl = document.getElementById('monitor-input');
                         const notes = notesEl ? notesEl.value : '';
-                        UI.setHTML('monitor-output', "⏳ Checking...");
+
+                        UI.showLoading('The Monitor', 'Analyzing sentiment and risk...');
+
                         google.script.run
                             .withSuccessHandler(res => {
+                                UI.hideLoading();
                                 UI.setHTML('monitor-output', !res ? "<span class='text-success'>✅ No Risk</span>" : `<strong class='text-error'>🚨 ${res.status} ALERT</strong>`);
                             })
                             .withFailureHandler(err => {
+                                UI.hideLoading();
                                 UI.setHTML('monitor-output', `<div class="error-box">❌ Monitor Error: ${err.message}</div>`);
                             })
                             .client_checkSentiment(notes);
@@ -6948,12 +6968,20 @@
                     const loadingHTML = '<tr><td colspan="7" class="text-center" style="padding:20px;">⌛ Fetching pending intakes...</td></tr>';
                     UI.setHTML('queue-list', loadingHTML);
                     UI.setHTML('intake-queue-body', loadingHTML);
+
+                    UI.showLoading('Refreshing Queue', 'Fetching latest intakes from system...');
+
                     google.script.run
-                        .withSuccessHandler(Queue.render)
+                        .withSuccessHandler(res => {
+                            UI.hideLoading();
+                            Queue.render(res);
+                        })
                         .withFailureHandler(err => {
+                            UI.hideLoading();
                             const errHTML = `<tr><td colspan="7" class="text-error" style="padding:20px; text-align:center;">Error: ${err.message}</td></tr>`;
                             UI.setHTML('queue-list', errHTML);
                             UI.setHTML('intake-queue-body', errHTML);
+                            UI.showToast('Failed to refresh queue', 'error');
                         })
                         .getWixIntakeQueue();
                 },
