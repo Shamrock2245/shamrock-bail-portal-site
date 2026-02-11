@@ -137,6 +137,32 @@ function doGet(e) {
       const result = runLeeScraper();
       return createResponse(result);
     }
+    if (e.parameter.action === 'test_pdf') {
+      const result = typeof testPdfHydration === 'function' ? testPdfHydration() : { error: 'Function not found' };
+      return ContentService.createTextOutput(JSON.stringify(result, null, 2)).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (e.parameter.action === 'analyze_tags') {
+      const result = typeof analyzeTagPatterns === 'function' ? analyzeTagPatterns() : 'Function not found';
+      return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    if (e.parameter.action === 'auto_tag') {
+      const result = typeof runAutoTagging === 'function' ? runAutoTagging() : 'Function not found';
+      return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    if (e.parameter.action === 'analyze_tags') {
+      const result = typeof analyzeTagPatterns === 'function' ? analyzeTagPatterns() : 'Function not found';
+      return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    if (e.parameter.action === 'auto_tag') {
+      const result = typeof runAutoTagging === 'function' ? runAutoTagging() : 'Function not found';
+      return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
+    }
+
+
     if (e.parameter.action) return handleGetAction(e);
     if (e.parameter.setup === 'signnow') {
       const url = ScriptApp.getService().getUrl();
@@ -145,9 +171,11 @@ function doGet(e) {
         SN_registerCompletionWebhook(url);
         return ContentService.createTextOutput(`Webhook Registered Successfully to: ${url}`);
       } catch (err) {
-        return ContentService.createTextOutput(`Error: ${err.toString()}`);
+        return ContentService.createTextOutput(`Webhook Registration Failed: ${err.message}`);
       }
     }
+
+
     return createErrorResponse('No action specified', ERROR_CODES.MISSING_ACTION);
   }
 
@@ -1622,18 +1650,16 @@ function handleNewIntake(caseId, data) {
       try {
         if (typeof PDFService !== 'undefined' && typeof PDFService.generatePdfFromTemplate === 'function') {
 
-          // 1. Map Data using PDF_Mappings (Centralized Logic)
+          // 1. Normalize Data for Hydration (Code.js Fix)
+          // We need standard keys like {{DefName}} to populate the doc.
+          // buildMasterDataObject is global in PDF_Mappings.js
           let pdfData = docData;
-          if (typeof PDF_mapDataToTags === 'function') {
-            const mappedFields = PDF_mapDataToTags(docData, 'BOND_PACKAGE');
-            // Convert Array to Object
-            const mappedObj = mappedFields.reduce((acc, field) => {
-              acc[field.name] = field.value;
-              return acc;
-            }, {});
-            // Merge: Mapped fields take precedence for PDF placeholders
-            pdfData = { ...docData, ...mappedObj };
-            console.log('✅ Auto-Intake: Applied PDF_Mappings to formData');
+          if (typeof buildMasterDataObject === 'function') {
+            const masterData = buildMasterDataObject(docData);
+            pdfData = { ...docData, ...masterData };
+            console.log('✅ Auto-Intake: Hydrated Master Data for PDF');
+          } else {
+            console.warn('⚠️ Auto-Intake: buildMasterDataObject not found. Hydration may be incomplete.');
           }
 
           const pdfBlob = PDFService.generatePdfFromTemplate(pdfData);
@@ -1818,19 +1844,14 @@ function handleStartPaperwork(data) {
       try {
         if (typeof PDFService !== 'undefined' && typeof PDFService.generatePdfFromTemplate === 'function') {
 
-          // 1. Map Data using PDF_Mappings (Centralized Logic)
-          // This ensures 'reference1Name' becomes 'Ref1Name' for the template
+          // 1. Normalize Data for Hydration (Code.js Fix)
           let pdfData = formData;
-          if (typeof PDF_mapDataToTags === 'function') {
-            const mappedFields = PDF_mapDataToTags(formData, 'BOND_PACKAGE');
-            // Convert Array [{name, value}] to Object {name: value} for PDFService
-            pdfData = mappedFields.reduce((acc, field) => {
-              acc[field.name] = field.value;
-              return acc;
-            }, {});
-            // Merge original data back in case of unmapped fields
-            pdfData = { ...formData, ...pdfData };
-            console.log('✅ Applied PDF_Mappings to formData');
+          if (typeof buildMasterDataObject === 'function') {
+            const masterData = buildMasterDataObject(formData);
+            pdfData = { ...formData, ...masterData };
+            console.log('✅ Hydrated Master Data for PDF');
+          } else {
+            Logger.log('⚠️ buildMasterDataObject not found.');
           }
 
           const pdfBlob = PDFService.generatePdfFromTemplate(pdfData);
