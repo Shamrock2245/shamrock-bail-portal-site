@@ -183,13 +183,12 @@ async function handleFindJailClick(btn) {
         const nearest = await getNearestCounties(latitude, longitude, 1);
 
         if (nearest && nearest.length > 0) {
-            // FIX: Use correctly routed /bail-bonds/ prefix (defined in bail-bonds-router.js)
-            // Revert stripping suffix - router expects full slug (e.g. lee-county)
-            const rawSlug = nearest[0].slug;
-            const targetSlug = rawSlug;
+            // FIX: Reverting to /florida-bail-bonds/ as confirmed by user feedback.
+            // Using full slug (e.g. lee-county) as strictly defined in CMS.
+            const targetSlug = nearest[0].slug;
 
             // 3. Redirect
-            wixLocation.to(`/bail-bonds/${targetSlug}`);
+            wixLocation.to(`/florida-bail-bonds/${targetSlug}`);
         } else {
             // Fallback
             wixLocation.to('/');
