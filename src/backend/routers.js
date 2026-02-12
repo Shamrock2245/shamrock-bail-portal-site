@@ -12,6 +12,7 @@
 
 import { ok, notFound, redirect } from 'wix-router';
 import { isLoggedIn, getUserRole, ROLES } from './portal-auth';
+import { bailbonds_Router } from './bail-bonds-router';
 
 /**
  * Router for the /portal/ prefix.
@@ -112,3 +113,5 @@ export function portal_beforeRouter(request) {
 export function portal_afterRouter(request, response) {
   return response;
 }
+
+export { bailbonds_Router };
