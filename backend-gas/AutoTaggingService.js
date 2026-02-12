@@ -14,7 +14,7 @@ const TAGGING_CONFIG = {
     docs: {
         'appearance-bond': '1pH1ZFWmrSSliM7ojsNlQ8J41Q-3AbVS7Rn5FKFCwllY',
         'collateral-receipt': '1x8DR6l1WOq3sCaOnxi0aOFGrzM1DrlS9nEGeQh9nLek',
-        'defendant-application': '1eFwOUAf4Wtlkux4DZkI9d3IJVVC-JLV9Zv5wLzG86o8',
+        'defendant-application': '1Gz4kbZSli03EE7QWnlNkh_9eFqzwzMSDwajF8RYr6P0',
         'disclosure-form': '1-2H13q6KhOuOhYhUCY1l0gM2FezBmejHShVv0eiuB_Q',
         'faq-cosigners': '1zmAJyuMPZtOG-Is-8tPfkQWEmK043VR571GCYXB3EKY',
         'faq-defendants': '1J2cgPoz1gomuCxrAyS69KwsEm570O0mn5m2__0pm3-E',
@@ -204,8 +204,6 @@ function analyzeTagPatterns() {
         }
     }
     return report.join('\n');
-}
-return report.join('\n');
 }
 
 function inspectDoc(docNameKey) {

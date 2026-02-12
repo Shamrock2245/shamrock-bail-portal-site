@@ -191,13 +191,13 @@ async function handleFindJailClick(btn) {
             wixLocation.to(`/florida-bail-bonds/${targetSlug}`);
         } else {
             // Fallback
-            wixLocation.to('/bail-bonds');
+            wixLocation.to('/');
         }
 
     } catch (error) {
         console.warn("Geolocation failed or denied:", error);
         // Fallback to general list if location denied
-        wixLocation.to('/bail-bonds');
+        wixLocation.to('/');
     } finally {
         // Reset label
         btn.label = originalLabel || "Find My Jail";
