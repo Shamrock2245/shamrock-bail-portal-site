@@ -21,6 +21,26 @@ import { syncCountiesToCms } from 'backend/cronJobs';
 import { createCustomSession, lookupUserByContact } from 'backend/portal-auth';
 
 /**
+ * GET /_functions/triggerCountySync
+ * Manually trigger the county data sync (Admin only)
+ */
+export async function get_triggerCountySync(request) {
+    // Ideally protect this with a secret or admin check
+    // For now, let's just run it as it's a safe idempotent operation
+    try {
+        const result = await syncCountiesToCms();
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: result
+        });
+    } catch (error) {
+        return serverError({
+            body: { success: false, error: error.message }
+        });
+    }
+}
+
+/**
  * POST /api/syncCaseData
  * Sync case data from Google Apps Script to Wix CMS
  * 

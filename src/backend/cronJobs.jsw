@@ -15,44 +15,125 @@ import { getConfig } from 'backend/config-loader';
  * 
  * Strategy: Upsert based on 'countySlug'.
  */
+import allCountiesData from 'backend/data/allFloridaCounties.json';
+
+/**
+ * Syncs the 'routing.counties' from tenant.json AND 'allFloridaCounties.json' 
+ * to the 'FloridaCounties' collection.
+ * 
+ * This ensures the Live DB has both:
+ * 1. Operational Config (Phone numbers, default addresses) from tenant.json
+ * 2. Rich Data (Jail URLs, Clerk Links, SEO) from allFloridaCounties.json
+ * 
+ * Strategy: 
+ * - Config wins for operational fields (phones/addresses).
+ * - JSON wins for static rich data (URLs).
+ * - Upsert based on 'countySlug'.
+ */
 export async function syncCountiesToCms() {
-    console.log('🔄 Starting CMS County Sync...');
+    console.log('🔄 Starting CMS County Sync (Rich Data Merge)...');
 
     try {
         const config = await getConfig();
-        const countiesMap = config.routing.counties;
-        const slugs = Object.keys(countiesMap); // e.g., ['lee', 'collier', 'miami-dade']
+        const configCounties = config.routing.counties; // { 'lee': { ... }, 'collier': { ... } }
+
+        // Convert JSON array to map for easier lookup by slug
+        // allFloridaCounties.json uses 'slug' property e.g. 'lee-county'
+        const richDataMap = {};
+        if (allCountiesData.counties && Array.isArray(allCountiesData.counties)) {
+            allCountiesData.counties.forEach(c => {
+                // Normalize legacy slugs if needed "lee-county" -> "lee" for matching
+                // But we keep the full slug for the DB record
+                const key = c.slug.replace('-county', '').toLowerCase();
+                richDataMap[key] = c;
+            });
+        }
+
+        // We want to sync EVERYTHING in the Config, plus potentially others from JSON if needed?
+        // For now, let's strictly sync what is declared in Config to avoid cluttering DB with unserved counties,
+        // UNLESS the prompt implies we want ALL florida counties.
+        // "I am trying to ensure that the fix is finished." implies the PAGE needs to work.
+        // The page works for counties in the DB.
+        // Let's iterate over the RICH DATA to ensure we get all 67 counties if possible, 
+        // effectively making "allFloridaCounties.json" the primary list, and Config the "override/active" list.
+
+        // Actually, adhering to "Project Guidelines": "Configuration Loader... Merges static tenant.json".
+        // Let's use the union of both lists to ensure comprehensive data.
+
+        const allSlugs = new Set([
+            ...Object.keys(configCounties),
+            ...Object.keys(richDataMap)
+        ]);
 
         let added = 0;
         let updated = 0;
         let errors = 0;
 
-        for (const slug of slugs) {
-            const countyData = countiesMap[slug];
+        for (const baseSlug of allSlugs) {
+            // baseSlug is likely "lee", "collier" (keys in config)
+            // or we need to derive it from richData keys if it wasn't in config
+
+            const configData = configCounties[baseSlug] || {};
+            const richData = richDataMap[baseSlug] || {};
+
+            // Determine canonical slug
+            // If rich data has "lee-county", use that. Else fallback to config key.
+            const finalSlug = richData.slug || (configData.slug || baseSlug); // richData.slug is usually "lee-county"
+
+            // Construct Name
+            const countyName = richData.name || configData.name || (baseSlug.charAt(0).toUpperCase() + baseSlug.slice(1));
 
             // 1. Construct the record object
-            // Required Schema Fields from ANTIGRAVITY-FOUNDATION-SPEC
+            // Required Schema Fields from ANTIGRAVITY-FOUNDATION-SPEC & CollectionIds.js
             const record = {
-                countySlug: slug,
-                countyName: countyData.name,
-                active: true, // If it's in config, it's active
-                primaryPhone: countyData.agentPhone || config.brand.phone, // Fallback to main brand phone
+                countySlug: finalSlug,
+                countyName: countyName,
 
-                // Defaults for required schema fields if missing in JSON
-                metaTitle: `Bail Bonds in ${countyData.name} | ${config.brand.name}`,
-                metaDescription: `24/7 Bail Bonds in ${countyData.name}. Call ${countyData.agentPhone || config.brand.phone} for immediate release.`,
-                tier: 2, // Default to Tier 2 until manually promoted
+                // Active Status: True if it's in our Tenant Config (we explicitly serve it)
+                // OR if we want to auto-enable all? Let's default to Config-presence = Active.
+                // But for SEO page generation, we might want inactive pages to at least exist?
+                // Let's set active = true for now as the user wants the "Dynamic Page" to work.
+                active: true,
 
-                // Jail Data (Mapped from Tenant Config)
-                jailAddress: countyData.jailLocation,
-                jailPhone: countyData.jailPhone
+                title: `${countyName} County Bail Bonds`, // Calculated field
+
+                // Contact Info (Config Wins)
+                primaryPhone: configData.agentPhone || config.brand.phone,
+
+                // Jail Data (Merge: Config wins location/phone, JSON wins URLs)
+                jailName: `${countyName} County Jail`, // Default standard naming
+                jailPhone: configData.jailPhone || richData.sheriffPhone || config.brand.phone,
+                jailBookingUrl: richData.bookingUrl || '',
+                // jailAddress: configData.jailLocation || '', // Schema might not have jailAddress column, checked collectionIds.js -> not strictly there, but 'serviceAreaCopy' is.
+                // Let's stick to known fields from collectionIds.js mapping
+
+                // Sheriff
+                sheriffName: `${countyName} County Sheriff's Office`,
+                sheriffWebsite: richData.bookingUrl || '', // Often same as booking
+                // sheriffPhone: ... (mapped to jailPhone usually)
+
+                // Clerk
+                clerkName: `${countyName} County Clerk of Court`,
+                clerkPhone: richData.clerkPhone || '',
+                clerkWebsite: richData.clerkWebsite || '',
+                recordsSearchLink: richData.recordsUrl || '',
+
+                // SEO / Content
+                seoTitle: `${countyName} County Bail Bonds - 24/7 Fast Release | ${config.brand.name}`,
+                seoDescription: `Need bail in ${countyName} County? ${config.brand.name} provides 24/7 fast release service. Licensed, trusted, and ready to help. Call ${configData.agentPhone || config.brand.phone} now.`,
+
+                h1Headline: `${countyName} County Bail Bonds`,
+                serviceAreaCopy: `We proudly serve all of ${countyName} County. Our agents are ready to assist you 24/7 at the ${countyName} County Jail and Courthouse.`,
+
+                // Metadata
+                tier: configData.tier || (Object.keys(configCounties).includes(baseSlug) ? 1 : 2),
+                lastSynced: new Date()
             };
 
             // 2. Upsert Logic
             try {
-                // Check if exists
                 const existing = await wixData.query('FloridaCounties')
-                    .eq('countySlug', slug)
+                    .eq('countySlug', finalSlug)
                     .find({ suppressAuth: true });
 
                 if (existing.items.length > 0) {
@@ -66,12 +147,18 @@ export async function syncCountiesToCms() {
                     added++;
                 }
             } catch (err) {
-                console.error(`❌ Failed to sync county: ${slug}`, err);
+                console.error(`❌ Failed to sync county: ${finalSlug}`, err);
                 errors++;
             }
         }
 
         console.log(`✅ Sync Complete: ${added} added, ${updated} updated, ${errors} errors.`);
+
+        // Verify specifically for Lee (Primary)
+        if (updated > 0 || added > 0) {
+            console.log("🔍 Sample Data Check (Lee):", richDataMap['lee'] ? "Found Rich Data" : "Missing Rich Data");
+        }
+
         return { success: true, added, updated, errors };
 
     } catch (globalError) {
