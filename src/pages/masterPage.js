@@ -187,7 +187,7 @@ async function handleFindJailClick(btn) {
             const targetSlug = nearest[0].slug;
 
             // 3. Redirect
-            wixLocation.to(`/bail-bonds/${targetSlug}`);
+            wixLocation.to(`/florida-bail-bonds/${targetSlug}`);
         } else {
             // Fallback
             wixLocation.to('/');

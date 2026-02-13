@@ -192,7 +192,7 @@ function transformCountyData(county) {
         `${countyName.toLowerCase()} county jail release`,
         `24/7 bail bonds ${countyName.toLowerCase()} county`
       ],
-      canonical_url: `/bail-bonds/${county.countySlug}`
+      canonical_url: `/florida-bail-bonds/${county.countySlug}`
     }
   };
 }
