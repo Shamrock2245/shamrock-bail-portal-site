@@ -215,7 +215,7 @@ function getStaticCounties() {
         
         return {
             name: c.county_name || c.name,
-            slug: slug,
+            slug: slug.replace('-county', ''),  // Strip -county suffix to match dynamic page URLs
             region: c.region || 'unknown',
             lat: coords.lat,
             lon: coords.lon
@@ -230,12 +230,12 @@ function getStaticCounties() {
 function getFallbackCounties() {
     // Return most common counties as fallback
     return [
-        { name: 'Lee County', slug: 'lee-county', region: 'southwest' },
-        { name: 'Collier County', slug: 'collier-county', region: 'southwest' },
-        { name: 'Charlotte County', slug: 'charlotte-county', region: 'southwest' },
-        { name: 'Miami-Dade County', slug: 'miami-dade-county', region: 'southeast' },
-        { name: 'Broward County', slug: 'broward-county', region: 'southeast' },
-        { name: 'Palm Beach County', slug: 'palm-beach-county', region: 'southeast' }
+        { name: 'Lee County', slug: 'lee', region: 'southwest' },
+        { name: 'Collier County', slug: 'collier', region: 'southwest' },
+        { name: 'Charlotte County', slug: 'charlotte', region: 'southwest' },
+        { name: 'Miami-Dade County', slug: 'miami-dade', region: 'southeast' },
+        { name: 'Broward County', slug: 'broward', region: 'southeast' },
+        { name: 'Palm Beach County', slug: 'palm-beach', region: 'southeast' }
     ];
 }
 
