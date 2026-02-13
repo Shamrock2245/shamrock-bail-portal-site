@@ -36,7 +36,7 @@ const DEFAULT_COUNTY = 'lee';
  * This function should be called from the masterPage.js onReady
  */
 export function initHeader() {
-    setupHeaderEventListeners();
+    setupHeaderListeners();
     updateActiveLink();
 
     // Check if we need to show/hide elements based on login status
