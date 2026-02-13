@@ -1,38 +1,9 @@
-<<<<<<< Updated upstream
-=======
-import wixUsers from 'wix-users';
-import wixLocation from 'wix-location';
-import wixAnimations from 'wix-animations';
-import wixData from 'wix-data';
-import { getUserRole, ROLES } from 'backend/portal-auth';
-
->>>>>>> Stashed changes
-/**
- * Shamrock Bail Bonds - Home Page
- * 
- * This is the main landing page for Shamrock Bail Bonds.
- * Mobile-first, conversion-focused design with clear CTAs.
- * 
- * Page Elements (Wix Editor IDs):
- * - #heroSection: Main hero section
- * - #callNowBtn: Primary CTA - Call Now
- * - #startBailBtn: Secondary CTA - Start Bail Now
- * - #trustBar: Trust indicators section
- * - #howItWorksSection: Process explanation
- * - #countySelector: County dropdown/search
- * - #getStartedBtn: Button to navigate to selected county
- * - #testimonialSection: Customer testimonials
- * - #faqSection: FAQ accordion
- * - #ctaSection: Final call to action
- * - #stickyMobileCTA: Mobile sticky footer CTA
- */
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import wixSite from 'wix-site';
 import wixData from 'wix-data';
 
-<<<<<<< Updated upstream
 // Phone number for all CTAs
 const PHONE_NUMBER = '239-332-2245';
 const PHONE_TEL = 'tel:+12393322245';
@@ -45,16 +16,9 @@ $w.onReady(function () {
     setupEventListeners();
     handleMobileView();
     trackPageView();
-    
+
     // Load counties into dropdown
     loadCountiesIntoDropdown();
-=======
-    // 2. Wire up Primary Call to Action
-    wireHeroCTA();
-
-    // 3. Wire up County Search/Dropdown
-    wireCountySelector();
->>>>>>> Stashed changes
 });
 
 /**
@@ -63,13 +27,13 @@ $w.onReady(function () {
 function initializePage() {
     // Set up hero section animations
     animateHeroSection();
-    
+
     // Load trust indicators
     loadTrustIndicators();
-    
+
     // Initialize FAQ accordion
     initializeFAQ();
-    
+
     // Check if user is logged in for personalization
     checkUserStatus();
 }
@@ -83,24 +47,24 @@ async function loadCountiesIntoDropdown() {
         const results = await wixData.query("FloridaCounties")
             .ascending("title")
             .find();
-        
+
         if (results.items && results.items.length > 0) {
             // Build dropdown options
             const countyOptions = results.items.map(county => ({
                 label: county.title || county.countyName,
                 value: county.countySlug || county.slug
             }));
-            
+
             // Set dropdown options
             if ($w('#countySelector').valid) {
                 $w('#countySelector').options = countyOptions;
                 $w('#countySelector').placeholder = "Select your county...";
             }
-            
+
             console.log(`Loaded ${countyOptions.length} counties into dropdown`);
         } else {
             console.error('No counties found in FloridaCounties collection');
-            
+
             // Fallback: Set placeholder message
             if ($w('#countySelector').valid) {
                 $w('#countySelector').placeholder = "Counties unavailable";
@@ -108,7 +72,7 @@ async function loadCountiesIntoDropdown() {
         }
     } catch (error) {
         console.error('Error loading counties:', error);
-        
+
         // Fallback: Set error message
         if ($w('#countySelector').valid) {
             $w('#countySelector').placeholder = "Error loading counties";
@@ -127,7 +91,7 @@ function setupEventListeners() {
             wixLocation.to(PHONE_TEL);
         });
     }
-    
+
     // Secondary CTA - Start Bail Now
     if ($w('#startBailBtn').valid) {
         $w('#startBailBtn').onClick(() => {
@@ -135,7 +99,7 @@ function setupEventListeners() {
             wixLocation.to('/members/start-bail');
         });
     }
-    
+
     // Mobile Sticky CTA - Call
     if ($w('#mobileCallBtn').valid) {
         $w('#mobileCallBtn').onClick(() => {
@@ -143,7 +107,7 @@ function setupEventListeners() {
             wixLocation.to(PHONE_TEL);
         });
     }
-    
+
     // Mobile Sticky CTA - Start Bail
     if ($w('#mobileStartBtn').valid) {
         $w('#mobileStartBtn').onClick(() => {
@@ -151,52 +115,52 @@ function setupEventListeners() {
             wixLocation.to('/members/start-bail');
         });
     }
-    
+
     // County selector - Store selected county
     if ($w('#countySelector').valid) {
         $w('#countySelector').onChange((event) => {
             selectedCountySlug = event.target.value;
-            
+
             if (selectedCountySlug) {
                 trackEvent('County_Selected', { county: selectedCountySlug });
                 console.log('County selected:', selectedCountySlug);
             }
         });
     }
-    
+
     // **NEW: Get Started button - Navigate to selected county**
     if ($w('#getStartedBtn').valid) {
         $w('#getStartedBtn').onClick(() => {
             if (selectedCountySlug) {
-                trackEvent('Get_Started_Click', { 
+                trackEvent('Get_Started_Click', {
                     county: selectedCountySlug,
                     location: 'hero_dropdown'
                 });
-                
+
                 // Route to county page using the slug from FloridaCounties collection
                 // The URL pattern matches the link-florida-counties-countyName field
                 wixLocation.to(`/bail-bonds-florida/${selectedCountySlug}`);
             } else {
                 // No county selected - show message or default to Lee County
                 trackEvent('Get_Started_No_County', { location: 'hero_dropdown' });
-                
+
                 // You can either show an error message or default to a county
                 // Option 1: Show error (requires a text element #countyError)
                 if ($w('#countyError').valid) {
                     $w('#countyError').text = 'Please select a county first';
                     $w('#countyError').show();
-                    
+
                     setTimeout(() => {
                         $w('#countyError').hide();
                     }, 3000);
                 }
-                
+
                 // Option 2: Default to Lee County (uncomment if preferred)
                 // wixLocation.to('/bail-bonds-florida/lee');
             }
         });
     }
-    
+
     // How It Works - Learn More buttons
     if ($w('#learnMoreBtn').valid) {
         $w('#learnMoreBtn').onClick(() => {
@@ -204,7 +168,7 @@ function setupEventListeners() {
             wixLocation.to('/how-bail-works');
         });
     }
-    
+
     // Final CTA Section
     if ($w('#finalCallBtn').valid) {
         $w('#finalCallBtn').onClick(() => {
@@ -212,7 +176,7 @@ function setupEventListeners() {
             wixLocation.to(PHONE_TEL);
         });
     }
-    
+
     if ($w('#finalStartBtn').valid) {
         $w('#finalStartBtn').onClick(() => {
             trackEvent('CTA_Click', { button: 'start_bail', location: 'final_cta' });
@@ -228,24 +192,24 @@ function handleMobileView() {
     wixWindow.getBoundingRect()
         .then((windowSize) => {
             const isMobile = windowSize.window.width < 768;
-            
+
             if (isMobile) {
                 // Show mobile sticky CTA
                 if ($w('#stickyMobileCTA').valid) $w('#stickyMobileCTA').show();
-                
+
                 // Adjust hero text for mobile
                 if ($w('#heroTitle').valid) $w('#heroTitle').text = "Need Bail? We're Here 24/7";
-                
+
                 // Simplify navigation for mobile
                 if ($w('#desktopNav').valid) $w('#desktopNav').hide();
                 if ($w('#mobileMenuBtn').valid) $w('#mobileMenuBtn').show();
             } else {
                 // Hide mobile sticky CTA on desktop
                 if ($w('#stickyMobileCTA').valid) $w('#stickyMobileCTA').hide();
-                
+
                 // Full hero text for desktop
                 if ($w('#heroTitle').valid) $w('#heroTitle').text = "Fast, Professional Bail Bonds Across Florida";
-                
+
                 // Show desktop navigation
                 if ($w('#desktopNav').valid) $w('#desktopNav').show();
                 if ($w('#mobileMenuBtn').valid) $w('#mobileMenuBtn').hide();
@@ -259,7 +223,7 @@ function handleMobileView() {
 function animateHeroSection() {
     // Fade in hero content with staggered timing
     const heroElements = ['#heroTitle', '#heroSubtitle', '#heroCTAContainer'];
-    
+
     heroElements.forEach((selector, index) => {
         if ($w(selector).valid) {
             setTimeout(() => {
@@ -280,7 +244,7 @@ function loadTrustIndicators() {
         { icon: 'star', text: '30+ Years Experience' },
         { icon: 'lock', text: 'Confidential Service' }
     ];
-    
+
     // Trust indicators are typically set up in the editor
     // This function can be used for dynamic updates if needed
 }
@@ -311,8 +275,8 @@ function initializeFAQ() {
             answer: "Absolutely! You can start the bail paperwork process online through our secure portal. This can significantly speed up the release process. Click 'Start Bail Now' to begin."
         }
     ];
-    
-    // FAQ items are typically set up as a repeater in Wix
+
+    // FAQ items are typically set up in the editor as a repeater
     // This data can be used to populate a dynamic FAQ section
 }
 
@@ -356,7 +320,6 @@ function trackPageView() {
 }
 
 /**
-<<<<<<< Updated upstream
  * Track custom events
  * @param {string} eventName - Name of the event
  * @param {object} eventData - Additional event data
@@ -373,40 +336,3 @@ function trackEvent(eventName, eventData) {
  * Export functions for testing
  */
 export { initializePage, setupEventListeners, handleMobileView, loadCountiesIntoDropdown };
-=======
- * Wires up the county dropdown and get started button.
- */
-async function wireCountySelector() {
-    const dropdown = $w('#countyDropdown');
-    const startBtn = $w('#getStartedButton');
-
-    if (dropdown && startBtn) {
-        // Load options from CMS
-        try {
-            const results = await wixData.query('FloridaCounties')
-                .eq('isActive', true)
-                .ascending('countyName')
-                .limit(100)
-                .find();
-
-            if (results.items.length > 0) {
-                dropdown.options = results.items.map(c => ({
-                    label: c.countyName,
-                    value: c.slug || c['link-floridacounties-countyName'] // Handle wix dynamic link slug if needed
-                }));
-            }
-        } catch (err) {
-            console.error('Home: Failed to load counties', err);
-        }
-
-        startBtn.onClick(() => {
-            const slug = dropdown.value;
-            if (slug) {
-                wixLocation.to(`/county/${slug}`);
-            } else {
-                dropdown.updateValidityIndication();
-            }
-        });
-    }
-}
->>>>>>> Stashed changes
