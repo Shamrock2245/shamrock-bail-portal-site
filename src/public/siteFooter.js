@@ -157,11 +157,11 @@ function setupFooterNav() {
 
     // Popular Counties
     const popularCounties = [
-        { selector: '#footerLinkLee', path: '/bail-bonds/lee-county', label: 'Lee County' },
-        { selector: '#footerLinkCollier', path: '/bail-bonds/collier-county', label: 'Collier County' },
-        { selector: '#footerLinkCharlotte', path: '/bail-bonds/charlotte-county', label: 'Charlotte County' },
-        { selector: '#footerLinkHillsborough', path: '/bail-bonds/hillsborough-county', label: 'Hillsborough County' },
-        { selector: '#footerLinkMiamiDade', path: '/bail-bonds/miami-dade-county', label: 'Miami-Dade County' }
+        { selector: '#footerLinkLee', path: '/florida-bail-bonds/lee-county', label: 'Lee County' },
+        { selector: '#footerLinkCollier', path: '/florida-bail-bonds/collier-county', label: 'Collier County' },
+        { selector: '#footerLinkCharlotte', path: '/florida-bail-bonds/charlotte-county', label: 'Charlotte County' },
+        { selector: '#footerLinkHillsborough', path: '/florida-bail-bonds/hillsborough-county', label: 'Hillsborough County' },
+        { selector: '#footerLinkMiamiDade', path: '/florida-bail-bonds/miami-dade-county', label: 'Miami-Dade County' }
     ];
 
     popularCounties.forEach(link => {

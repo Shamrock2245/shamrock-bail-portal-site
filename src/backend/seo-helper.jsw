@@ -11,7 +11,7 @@
 export function generateCountySEOTags(county) {
     const title = `Bail Bonds in ${county.name} | Shamrock Bail Bonds`;
     const description = `Fast, reliable bail bonds in ${county.name}, Florida. 24/7 service, no collateral needed for most cases. Call Shamrock Bail Bonds today!`;
-    const canonicalUrl = `https://www.shamrockbailbonds.com/bail-bonds/${county.slug}`;
+    const canonicalUrl = `https://www.shamrockbailbonds.com/florida-bail-bonds/${county.slug}`;
 
     return [
         { property: 'og:title', content: title },
@@ -35,7 +35,7 @@ export function generateLocalBusinessSchema(county) {
         "name": "Shamrock Bail Bonds",
         "image": "https://www.shamrockbailbonds.com/logo.png",
         "telephone": "+1-239-955-0301", // Should ideally be county-specific if you have local numbers
-        "url": `https://www.shamrockbailbonds.com/bail-bonds/${county.slug}`,
+        "url": `https://www.shamrockbailbonds.com/florida-bail-bonds/${county.slug}`,
         "address": {
             "@type": "PostalAddress",
             "addressLocality": county.name.replace(" County", ""), // Approximate

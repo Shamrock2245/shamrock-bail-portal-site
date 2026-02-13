@@ -932,7 +932,7 @@ export async function get_sitemap(request) {
             if (county.countySlug) {
                 const safeSlug = encodeURIComponent(county.countySlug);
                 xml += `  <url>
-    <loc>${SITE_URL}/bail-bonds/${safeSlug}</loc>
+    <loc>${SITE_URL}/florida-bail-bonds/${safeSlug}</loc>
     <lastmod>${LAST_MOD}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

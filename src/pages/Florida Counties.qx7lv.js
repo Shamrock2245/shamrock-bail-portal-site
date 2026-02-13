@@ -474,7 +474,7 @@ async function loadNearbyCounties(region, currentSlug) {
             nearbyRep.onItemReady(($item, itemData) => {
                 try { $item('#neighborName').text = itemData.county_name || itemData.name; } catch (e) { }
                 try {
-                    $item('#neighborContainer').onClick(() => wixLocation.to(`/bail-bonds/${itemData.slug}`));
+                    $item('#neighborContainer').onClick(() => wixLocation.to(`/florida-bail-bonds/${itemData.slug}`));
                 } catch (e) { }
             });
 

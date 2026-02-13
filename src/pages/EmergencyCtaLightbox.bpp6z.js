@@ -80,7 +80,7 @@ function setupEventHandlers() {
                     recordAction('county_select');
                     // Close lightbox and navigate
                     // local.setItem(DISMISS_KEY, Date.now().toString()); // Optional: dismiss on selection
-                    wixLocation.to(`/bail-bonds/${slug}`);
+                    wixLocation.to(`/florida-bail-bonds/${slug}`);
                 }
             });
         }

@@ -117,7 +117,7 @@ export function generateCountyPageSchema(county) {
         "@type": "LocalBusiness",
         "name": `${SITE_NAME} - ${county.name} County`,
         "description": `Bail bond services in ${county.name} County, Florida. Fast jail release in ${county.countySeat} and surrounding areas. Call ${PHONE}.`,
-        "url": `${SITE_URL}/bail-bonds/${county.slug}`,
+        "url": `${SITE_URL}/florida-bail-bonds/${county.slug}`,
         "telephone": PHONE_FORMATTED,
         "areaServed": {
             "@type": "AdministrativeArea",
