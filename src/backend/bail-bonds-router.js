@@ -10,7 +10,7 @@ import { ok, notFound } from 'wix-router';
 // Dynamic item routes must target the Dynamic Item page name, not the list page name.
 const COUNTY_ITEM_PAGE_NAME = 'Florida Counties (Item)';
 
-export async function bailbonds_Router(request) {
+export async function routeCountyPage(request) {
     const countySlug = request.path[0];
 
     console.log(`[County Router] Prefix: ${request.prefix || 'unknown'} Path: ${request.path.join('/')}`);
@@ -25,4 +25,8 @@ export async function bailbonds_Router(request) {
         description: `Professional bail bond services in ${countySlug}, Florida`,
         slug: countySlug
     });
+}
+
+export async function bailbonds_Router(request) {
+    return routeCountyPage(request);
 }
