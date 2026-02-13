@@ -11,6 +11,7 @@
  */
 
 import { redirect } from 'wix-router';
+import { isLoggedIn, getUserRole, ROLES } from './portal-auth';
 import { routeCountyPage } from './bail-bonds-router';
 
 /**
@@ -32,9 +33,6 @@ export async function portal_Router(request) {
   const path = request.path;
 
   try {
-    // Lazy-load portal auth so county routers are not impacted by portal auth module issues.
-    const { isLoggedIn, getUserRole, ROLES } = await import('./portal-auth');
-
     // Check if user is logged in
     // Note: 'isLoggedIn' verifies if the Wix User is authenticated
     if (!isLoggedIn()) {
@@ -123,6 +121,7 @@ export function portal_afterRouter(request, response) {
  * Defining concrete functions here (instead of only re-export aliases) ensures the Wix
  * router runtime can resolve these handlers for all legacy and current URL prefixes.
  */
+
 export async function bailbonds_Router(request) {
   return routeCountyPage(request);
 }
@@ -135,14 +134,18 @@ export async function florida_bail_bonds_Router(request) {
   return routeCountyPage(request);
 }
 
-export async function bailBonds_Router(request) {
-  return routeCountyPage(request);
+export function bail_bonds_beforeRouter(request) {
+  return request;
 }
 
-export async function floridaBailBonds_Router(request) {
-  return routeCountyPage(request);
+export function bail_bonds_afterRouter(request, response) {
+  return response;
 }
 
-export async function floridabailbonds_Router(request) {
-  return routeCountyPage(request);
+export function florida_bail_bonds_beforeRouter(request) {
+  return request;
+}
+
+export function florida_bail_bonds_afterRouter(request, response) {
+  return response;
 }
