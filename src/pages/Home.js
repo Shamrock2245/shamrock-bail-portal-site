@@ -1,3 +1,11 @@
+<<<<<<< Updated upstream
+=======
+import wixUsers from 'wix-users';
+import wixLocation from 'wix-location';
+import wixAnimations from 'wix-animations';
+import wixData from 'wix-data';
+import { getUserRole, ROLES } from 'backend/portal-auth';
+>>>>>>> Stashed changes
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
@@ -17,8 +25,16 @@ $w.onReady(function () {
     handleMobileView();
     trackPageView();
 
+<<<<<<< Updated upstream
     // Load counties into dropdown
     loadCountiesIntoDropdown();
+=======
+    // 2. Wire up Primary Call to Action
+    wireHeroCTA();
+
+    // 3. Wire up County Search/Dropdown
+    wireCountySelector();
+>>>>>>> Stashed changes
 });
 
 /**
@@ -320,6 +336,7 @@ function trackPageView() {
 }
 
 /**
+<<<<<<< Updated upstream
  * Track custom events
  * @param {string} eventName - Name of the event
  * @param {object} eventData - Additional event data
@@ -336,3 +353,40 @@ function trackEvent(eventName, eventData) {
  * Export functions for testing
  */
 export { initializePage, setupEventListeners, handleMobileView, loadCountiesIntoDropdown };
+=======
+ * Wires up the county dropdown and get started button.
+ */
+async function wireCountySelector() {
+    const dropdown = $w('#countyDropdown');
+    const startBtn = $w('#getStartedButton');
+
+    if (dropdown && startBtn) {
+        // Load options from CMS
+        try {
+            const results = await wixData.query('FloridaCounties')
+                .eq('isActive', true)
+                .ascending('countyName')
+                .limit(100)
+                .find();
+
+            if (results.items.length > 0) {
+                dropdown.options = results.items.map(c => ({
+                    label: c.countyName,
+                    value: c.slug || c['link-floridacounties-countyName'] // Handle wix dynamic link slug if needed
+                }));
+            }
+        } catch (err) {
+            console.error('Home: Failed to load counties', err);
+        }
+
+        startBtn.onClick(() => {
+            const slug = dropdown.value;
+            if (slug) {
+                wixLocation.to(`/county/${slug}`);
+            } else {
+                dropdown.updateValidityIndication();
+            }
+        });
+    }
+}
+>>>>>>> Stashed changes
