@@ -5,6 +5,9 @@ import wixLocation from 'wix-location';
 import wixAnimations from 'wix-animations';
 import wixData from 'wix-data';
 import { getUserRole, ROLES } from 'backend/portal-auth';
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 import wixWindow from 'wix-window';
@@ -34,6 +37,9 @@ $w.onReady(function () {
 
     // 3. Wire up County Search/Dropdown
     wireCountySelector();
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 });
 
@@ -337,6 +343,7 @@ function trackPageView() {
 
 /**
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
  * Track custom events
  * @param {string} eventName - Name of the event
  * @param {object} eventData - Additional event data
@@ -354,6 +361,8 @@ function trackEvent(eventName, eventData) {
  */
 export { initializePage, setupEventListeners, handleMobileView, loadCountiesIntoDropdown };
 =======
+=======
+>>>>>>> Stashed changes
  * Wires up the county dropdown and get started button.
  */
 async function wireCountySelector() {
@@ -389,4 +398,7 @@ async function wireCountySelector() {
         });
     }
 }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

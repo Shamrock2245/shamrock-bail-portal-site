@@ -45,7 +45,11 @@ The primary data object used by scrapers. Every script MUST output these columns
 | :--- | :--- | :--- |
 | `ArrestLeads` | Live leads for portal | Matches Master 34 |
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 | `FloridaCounties` | County data & URLs | `countyName`, `slug`, `isActive`, `bookingWebsite`, `clerkWebsite`, `recordsSearch`, `sheriffAddress`, `jailAddress`, `clerkAddress`, `countyInfoAddress`, `bookingPhone`, `jailUrl` |
+=======
+| `FloridaCounties` | County data & URLs | `countyName`, `slug`, `jailUrl`, `isActive` |
+>>>>>>> Stashed changes
 =======
 | `FloridaCounties` | County data & URLs | `countyName`, `slug`, `jailUrl`, `isActive` |
 >>>>>>> Stashed changes
