@@ -212,10 +212,10 @@ function getStaticCounties() {
         const slug = c.slug || '';
         const slugKey = slug.replace('-county', '');
         const coords = COUNTY_COORDINATES[slugKey] || {};
-        
+
         return {
             name: c.county_name || c.name,
-            slug: slug.replace('-county', ''),  // Strip -county suffix to match dynamic page URLs
+            slug: slug.replace('-county', ''),
             region: c.region || 'unknown',
             lat: coords.lat,
             lon: coords.lon

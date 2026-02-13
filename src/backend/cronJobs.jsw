@@ -78,7 +78,7 @@ export async function syncCountiesToCms() {
 
             // Determine canonical slug
             // If rich data has "lee-county", use that. Else fallback to config key.
-            const finalSlug = richData.slug || (configData.slug || baseSlug); // richData.slug is usually "lee-county"
+            const finalSlug = (richData.slug || (configData.slug || baseSlug)).replace('-county', ''); // Always strip -county suffix
 
             // Construct Name
             const countyName = richData.name || configData.name || (baseSlug.charAt(0).toUpperCase() + baseSlug.slice(1));
