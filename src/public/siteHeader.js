@@ -139,8 +139,8 @@ function setupHeaderListeners() {
     }
     
     // **NEW: Find My Jail button with geolocation**
-    if ($w('#findMyJailBtn').valid) {
-        $w('#findMyJailBtn').onClick(() => {
+    if ($w('#navFindJail').valid) {
+        $w('#navFindJail').onClick(() => {
             findNearestJail();
         });
     }
