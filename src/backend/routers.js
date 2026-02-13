@@ -12,7 +12,7 @@
 
 import { redirect } from 'wix-router';
 import { isLoggedIn, getUserRole, ROLES } from './portal-auth';
-import { routeCountyPage } from './bail-bonds-router';
+import { bailbonds_Router } from './bail-bonds-router';
 
 /**
  * Router for the /portal/ prefix.
@@ -114,38 +114,9 @@ export function portal_afterRouter(request, response) {
   return response;
 }
 
-/**
- * Router aliases for county pages.
- *
- * Wix maps route prefixes to exported function names where hyphens become underscores.
- * Defining concrete functions here (instead of only re-export aliases) ensures the Wix
- * router runtime can resolve these handlers for all legacy and current URL prefixes.
- */
-
-export async function bailbonds_Router(request) {
-  return routeCountyPage(request);
-}
-
-export async function bail_bonds_Router(request) {
-  return routeCountyPage(request);
-}
-
-export async function florida_bail_bonds_Router(request) {
-  return routeCountyPage(request);
-}
-
-export function bail_bonds_beforeRouter(request) {
-  return request;
-}
-
-export function bail_bonds_afterRouter(request, response) {
-  return response;
-}
-
-export function florida_bail_bonds_beforeRouter(request) {
-  return request;
-}
-
-export function florida_bail_bonds_afterRouter(request, response) {
-  return response;
-}
+// County routing aliases (Wix maps hyphenated prefixes to underscore names)
+export {
+  bailbonds_Router,
+  bailbonds_Router as bail_bonds_Router,
+  bailbonds_Router as florida_bail_bonds_Router
+};
