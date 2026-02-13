@@ -154,8 +154,8 @@ function setupEventListeners() {
                 });
 
                 // Route to county page using the slug from FloridaCounties collection
-                // The URL pattern matches the link-florida-counties-countyName field
-                wixLocation.to(`/bail-bonds-florida/${selectedCountySlug}`);
+                // The URL pattern matches the Wix dynamic page configuration
+                wixLocation.to(`/florida-bail-bonds/${selectedCountySlug}`);
             } else {
                 // No county selected - show message or default to Lee County
                 trackEvent('Get_Started_No_County', { location: 'hero_dropdown' });

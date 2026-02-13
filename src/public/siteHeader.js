@@ -100,7 +100,7 @@ function findNearestJail() {
             } catch (e) { /* ignore tracking error */ }
 
             // Route to county page
-            wixLocation.to(`/bail-bonds-florida/${nearest.slug}`);
+            wixLocation.to(`/florida-bail-bonds/${nearest.slug}`);
 
             // Reset button label
             if ($w('#navFindJail').valid) {
@@ -116,7 +116,7 @@ function findNearestJail() {
             } catch (e) { /* ignore tracking error */ }
 
             // Fallback to default county (Lee)
-            wixLocation.to(`/bail-bonds-florida/${DEFAULT_COUNTY}`);
+            wixLocation.to(`/florida-bail-bonds/${DEFAULT_COUNTY}`);
 
             // Reset button label
             if ($w('#navFindJail').valid) {
