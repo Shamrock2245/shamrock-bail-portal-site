@@ -1,401 +1,243 @@
-/**
- * Shamrock Bail Bonds - Site Header Component
- * 
- * Global header component with navigation, CTAs, and mobile menu.
- * Used across all pages for consistent navigation.
- * 
- * File: public/siteHeader.js
- */
 
-import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-import { currentMember } from 'wix-members-frontend';
+import wixWindow from 'wix-window';
 import wixData from 'wix-data';
+import { local } from 'wix-storage';
 
-// Phone number
-const PHONE_TEL = 'tel:+12393322245';
-
-let isMobileMenuOpen = false;
-let isLoggedIn = false;
-
-// Florida county coordinates (approximate centers)
+// Coordinates for major Florida counties (Lat, Lng)
 const COUNTY_COORDINATES = {
-    "lee": { lat: 26.6406, lon: -81.8723, slug: "lee" },
-    "collier": { lat: 26.1420, lon: -81.7948, slug: "collier" },
-    "charlotte": { lat: 26.8940, lon: -81.9498, slug: "charlotte" },
-    "miami-dade": { lat: 25.7617, lon: -80.1918, slug: "miami-dade" },
-    "broward": { lat: 26.1224, lon: -80.1373, slug: "broward" },
-    "palm-beach": { lat: 26.7153, lon: -80.0534, slug: "palm-beach" },
-    "hillsborough": { lat: 27.9904, lon: -82.3018, slug: "hillsborough" },
-    "pinellas": { lat: 27.9659, lon: -82.8001, slug: "pinellas" },
-    "orange": { lat: 28.5383, lon: -81.3792, slug: "orange" },
-    "duval": { lat: 30.3322, lon: -81.6557, slug: "duval" },
-    "brevard": { lat: 28.2639, lon: -80.7214, slug: "brevard" },
-    "volusia": { lat: 29.0280, lon: -81.0228, slug: "volusia" },
-    "polk": { lat: 28.0389, lon: -81.7887, slug: "polk" },
-    "sarasota": { lat: 27.2364, lon: -82.3004, slug: "sarasota" },
-    "manatee": { lat: 27.4989, lon: -82.3260, slug: "manatee" },
-    "escambia": { lat: 30.4213, lon: -87.2169, slug: "escambia" },
-    "seminole": { lat: 28.7419, lon: -81.2378, slug: "seminole" },
-    "lake": { lat: 28.8028, lon: -81.6320, slug: "lake" },
-    "st-johns": { lat: 29.8933, lon: -81.3124, slug: "st-johns" },
-    "bay": { lat: 30.1588, lon: -85.6602, slug: "bay" }
+    'lee': { lat: 26.6616, lng: -81.9338 }, // Fort Myers
+    'collier': { lat: 26.1420, lng: -81.7948 }, // Naples
+    'charlotte': { lat: 26.9634, lng: -82.0538 }, // Punta Gorda
+    'miami-dade': { lat: 25.7617, lng: -80.1918 }, // Miami
+    'broward': { lat: 26.1224, lng: -80.1373 }, // Fort Lauderdale
+    'palm-beach': { lat: 26.7153, lng: -80.0534 }, // West Palm Beach
+    'hillsborough': { lat: 27.9506, lng: -82.4572 }, // Tampa
+    'pinellas': { lat: 27.9142, lng: -82.7212 }, // Clearwater
+    'orange': { lat: 28.5383, lng: -81.3792 }, // Orlando
+    'duval': { lat: 30.3322, lng: -81.6557 }, // Jacksonville
+    'brevard': { lat: 28.3968, lng: -80.6057 }, // Cocoa/Merritt Island
+    'volusia': { lat: 29.0280, lng: -81.3031 }, // DeLand
+    'polk': { lat: 27.8967, lng: -81.8431 }, // Bartow
+    'sarasota': { lat: 27.3364, lng: -82.5307 }, // Sarasota
+    'manatee': { lat: 27.4989, lng: -82.5748 }, // Bradenton
+    'escambia': { lat: 30.4213, lng: -87.2169 }, // Pensacola
+    'seminole': { lat: 28.8029, lng: -81.2694 }, // Sanford
+    'lake': { lat: 28.8078, lng: -81.7371 }, // Tavares
+    'st-johns': { lat: 29.8961, lng: -81.3114 }, // St. Augustine
+    'bay': { lat: 30.1588, lng: -85.6602 } // Panama City
 };
 
+// Default fallback county
+const DEFAULT_COUNTY = 'lee';
+
 /**
- * Initialize header on page load
+ * Initialize the site header
+ * This function should be called from the masterPage.js onReady
  */
-export async function initHeader() {
-    // Check login status
-    isLoggedIn = await checkLoginStatus();
-    
-    // Update header based on login status
-    updateHeaderForLoginStatus();
-    
-    // Set up event listeners
-    setupHeaderListeners();
-    
-    // Handle responsive behavior
-    handleResponsive();
-    
-    // Highlight current page in navigation
-    highlightCurrentPage();
+export function initHeader() {
+    setupHeaderEventListeners();
+    updateActiveLink();
+
+    // Check if we need to show/hide elements based on login status
+    checkLoginStatus();
 }
 
 /**
- * Check if user is logged in
+ * Setup event listeners for header elements
  */
-async function checkLoginStatus() {
-    try {
-        const member = await currentMember.getMember();
-        return !!member;
-    } catch (error) {
-        return false;
-    }
-}
-
-/**
- * Update header based on login status
- */
-function updateHeaderForLoginStatus() {
-    if (isLoggedIn) {
-        // Show logged-in state
-        if ($w('#loginBtn').valid) $w('#loginBtn').hide();
-        if ($w('#accountBtn').valid) $w('#accountBtn').show();
-        if ($w('#startBailBtn').valid) $w('#startBailBtn').label = 'Start Bail';
-    } else {
-        // Show logged-out state
-        if ($w('#loginBtn').valid) $w('#loginBtn').show();
-        if ($w('#accountBtn').valid) $w('#accountBtn').hide();
-        if ($w('#startBailBtn').valid) $w('#startBailBtn').label = 'Start Bail';
-    }
-}
-
-/**
- * Set up header event listeners
- */
-function setupHeaderListeners() {
-    // Logo click - go home
-    if ($w('#headerLogo').valid) {
-        $w('#headerLogo').onClick(() => {
-            wixLocation.to('/');
-        });
-    }
-    
-    // Call Now button
-    if ($w('#headerCallBtn').valid) {
-        $w('#headerCallBtn').onClick(() => {
-            trackEvent('Header_CTA_Click', { button: 'call_now' });
-            wixLocation.to(PHONE_TEL);
-        });
-    }
-    
-    // Start Bail button
-    if ($w('#startBailBtn').valid) {
-        $w('#startBailBtn').onClick(() => {
-            trackEvent('Header_CTA_Click', { button: 'start_bail' });
-            if (isLoggedIn) {
-                wixLocation.to('/members/start-bail');
-            } else {
-                wixLocation.to('/members/login?returnUrl=/members/start-bail');
-            }
-        });
-    }
-    
-    // Login button
-    if ($w('#loginBtn').valid) {
-        $w('#loginBtn').onClick(() => {
-            trackEvent('Header_Login_Click');
-            wixLocation.to('/members/login');
-        });
-    }
-    
-    // Account button (for logged-in users)
-    if ($w('#accountBtn').valid) {
-        $w('#accountBtn').onClick(() => {
-            trackEvent('Header_Account_Click');
-            wixLocation.to('/members/account');
-        });
-    }
-    
-    // **NEW: Find My Jail button with geolocation**
+function setupEventListeners() {
+    // Find My Jail Button - NEW FEATURE
     if ($w('#navFindJail').valid) {
         $w('#navFindJail').onClick(() => {
             findNearestJail();
         });
     }
-    
+
     // Mobile menu toggle
     if ($w('#mobileMenuBtn').valid) {
         $w('#mobileMenuBtn').onClick(() => {
             toggleMobileMenu();
         });
     }
-    
-    // Mobile menu close button
-    if ($w('#mobileMenuClose').valid) {
-        $w('#mobileMenuClose').onClick(() => {
+
+    // Close mobile menu
+    if ($w('#closeMenuBtn').valid) {
+        $w('#closeMenuBtn').onClick(() => {
             closeMobileMenu();
         });
     }
-    
-    // Mobile menu overlay click to close
-    if ($w('#mobileMenuOverlay').valid) {
-        $w('#mobileMenuOverlay').onClick(() => {
-            closeMobileMenu();
-        });
-    }
-    
-    // Navigation links
-    setupNavLinks();
 }
 
 /**
- * Find nearest jail using geolocation
+ * Geolocate user and route to nearest county jail page
  */
-async function findNearestJail() {
-    trackEvent('Find_My_Jail_Click', { source: 'header' });
-    
-    // Check if geolocation is supported
-    if (!wixWindow.getCurrentGeolocation) {
-        console.log('Geolocation not supported, defaulting to Lee County');
-        wixLocation.to('/bail-bonds-florida/lee');
-        return;
+function findNearestJail() {
+    // Show loading state if possible
+    if ($w('#navFindJail').valid) {
+        $w('#navFindJail').label = "Locating...";
     }
-    
-    try {
-        // Request user's location
-        const position = await wixWindow.getCurrentGeolocation();
-        
-        if (position && position.coords) {
-            const userLat = position.coords.latitude;
-            const userLon = position.coords.longitude;
-            
+
+    wixWindow.getCurrentGeolocation()
+        .then((obj) => {
+            const userLat = obj.coords.latitude;
+            const userLng = obj.coords.longitude;
+
+            console.log(`User location: ${userLat}, ${userLng}`);
+
             // Find nearest county
-            const nearestCounty = findNearestCounty(userLat, userLon);
-            
-            trackEvent('Geolocation_Success', {
-                nearestCounty: nearestCounty.slug,
-                userLat: userLat,
-                userLon: userLon
-            });
-            
-            // Route to nearest county page
-            wixLocation.to(`/bail-bonds-florida/${nearestCounty.slug}`);
-        } else {
-            // Geolocation failed, default to Lee County
-            console.log('Geolocation failed, defaulting to Lee County');
-            wixLocation.to('/bail-bonds-florida/lee');
-        }
-    } catch (error) {
-        console.error('Geolocation error:', error);
-        trackEvent('Geolocation_Error', { error: error.message });
-        
-        // Default to Lee County on error
-        wixLocation.to('/bail-bonds-florida/lee');
-    }
+            const nearest = findNearestCounty(userLat, userLng);
+
+            console.log(`Nearest county: ${nearest.slug} (${nearest.distance.toFixed(2)} km)`);
+
+            // Track success
+            try {
+                wixWindow.trackEvent('Find_My_Jail_Success', {
+                    lat: userLat,
+                    lng: userLng,
+                    routedTo: nearest.slug
+                });
+            } catch (e) { /* ignore tracking error */ }
+
+            // Route to county page
+            wixLocation.to(`/bail-bonds-florida/${nearest.slug}`);
+
+            // Reset button label
+            if ($w('#navFindJail').valid) {
+                $w('#navFindJail').label = "Find My Jail";
+            }
+        })
+        .catch((error) => {
+            console.error("Geolocation failed:", error);
+
+            // Track failure
+            try {
+                wixWindow.trackEvent('Find_My_Jail_Error', { error: error.message || error });
+            } catch (e) { /* ignore tracking error */ }
+
+            // Fallback to default county (Lee)
+            wixLocation.to(`/bail-bonds-florida/${DEFAULT_COUNTY}`);
+
+            // Reset button label
+            if ($w('#navFindJail').valid) {
+                $w('#navFindJail').label = "Find My Jail";
+            }
+        });
 }
 
 /**
- * Calculate distance between two coordinates using Haversine formula
- * @param {number} lat1 - Latitude of point 1
- * @param {number} lon1 - Longitude of point 1
- * @param {number} lat2 - Latitude of point 2
- * @param {number} lon2 - Longitude of point 2
- * @returns {number} - Distance in miles
+ * Find the nearest county based on coordinates
+ * @param {number} lat - User latitude
+ * @param {number} lng - User longitude
+ * @returns {object} Nearest county object {slug, distance}
+ */
+function findNearestCounty(lat, lng) {
+    let nearest = { slug: DEFAULT_COUNTY, distance: Infinity };
+
+    for (const [slug, coords] of Object.entries(COUNTY_COORDINATES)) {
+        const distance = calculateDistance(lat, lng, coords.lat, coords.lng);
+
+        if (distance < nearest.distance) {
+            nearest = { slug, distance };
+        }
+    }
+
+    return nearest;
+}
+
+/**
+ * Calculate distance between two points using Haversine formula
+ * @returns {number} Distance in kilometers
  */
 function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 3959; // Earth's radius in miles
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    
-    return distance;
+    const d = R * c; // Distance in km
+    return d;
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI / 180);
 }
 
 /**
- * Find nearest county based on user's coordinates
- * @param {number} userLat - User's latitude
- * @param {number} userLon - User's longitude
- * @returns {Object} - Nearest county object with slug
+ * Update active state of navigation links
  */
-function findNearestCounty(userLat, userLon) {
-    let nearestCounty = COUNTY_COORDINATES["lee"]; // Default to Lee County
-    let minDistance = Infinity;
-    
-    for (const [countyName, coords] of Object.entries(COUNTY_COORDINATES)) {
-        const distance = calculateDistance(userLat, userLon, coords.lat, coords.lon);
-        
-        if (distance < minDistance) {
-            minDistance = distance;
-            nearestCounty = coords;
-        }
-    }
-    
-    return nearestCounty;
-}
+function updateActiveLink() {
+    const path = wixLocation.path;
 
-/**
- * Set up navigation link handlers
- */
-function setupNavLinks() {
-    const navItems = [
-        { selector: '#navHome', path: '/' },
-        { selector: '#navHowBailWorks', path: '/how-bail-works' },
-        { selector: '#navCounties', path: '/bail-bonds' },
-        { selector: '#navBecomeBondsman', path: '/become-a-bondsman' },
-        { selector: '#navDirectory', path: '/florida-sheriffs-clerks-directory' },
-        { selector: '#navBlog', path: '/blog' },
-        { selector: '#navContact', path: '/contact' }
-    ];
-    
-    navItems.forEach(item => {
-        if ($w(item.selector).valid) {
-            $w(item.selector).onClick(() => {
-                trackEvent('Navigation_Click', { destination: item.path });
-                closeMobileMenu();
-                wixLocation.to(item.path);
-            });
-        }
-    });
-    
-    // Mobile nav items
-    navItems.forEach(item => {
-        const mobileSelector = item.selector.replace('#nav', '#mobileNav');
-        if ($w(mobileSelector).valid) {
-            $w(mobileSelector).onClick(() => {
-                trackEvent('Mobile_Navigation_Click', { destination: item.path });
-                closeMobileMenu();
-                wixLocation.to(item.path);
-            });
+    // Default to home if no path
+    const currentInfo = path.length > 0 ? path[0] : 'home';
+
+    // Map of paths to element IDs
+    const navMap = {
+        'home': '#navHome',
+        'bail-process': '#navProcess',
+        'locations': '#navLocations',
+        'faq': '#navFAQ',
+        'contact': '#navContact'
+    };
+
+    // Reset all to standard style
+    Object.values(navMap).forEach(id => {
+        if ($w(id).valid) {
+            // Wix doesn't support adding classes via Velo easily
+            // We would rely on exact page coloring or state
+            // For now, this function is a placeholder for any custom state logic
         }
     });
 }
 
 /**
- * Toggle mobile menu
+ * Toggle mobile menu visibility
  */
 function toggleMobileMenu() {
-    if (isMobileMenuOpen) {
-        closeMobileMenu();
-    } else {
-        openMobileMenu();
-    }
-}
+    const menuBox = $w('#mobileMenuBox');
 
-/**
- * Open mobile menu
- */
-function openMobileMenu() {
-    isMobileMenuOpen = true;
-    if ($w('#mobileMenu').valid) $w('#mobileMenu').show('slide', { duration: 300, direction: 'right' });
-    if ($w('#mobileMenuOverlay').valid) $w('#mobileMenuOverlay').show('fade', { duration: 200 });
-    if ($w('#mobileMenuBtn').valid) $w('#mobileMenuBtn').label = '✕';
-    
-    trackEvent('Mobile_Menu_Open');
+    if (menuBox.valid) {
+        if (menuBox.collapsed || menuBox.hidden) {
+            menuBox.expand();
+            menuBox.show('fade', { duration: 200 });
+        } else {
+            menuBox.hide('fade', { duration: 200 });
+        }
+    }
 }
 
 /**
  * Close mobile menu
  */
 function closeMobileMenu() {
-    isMobileMenuOpen = false;
-    if ($w('#mobileMenu').valid) $w('#mobileMenu').hide('slide', { duration: 300, direction: 'right' });
-    if ($w('#mobileMenuOverlay').valid) $w('#mobileMenuOverlay').hide('fade', { duration: 200 });
-    if ($w('#mobileMenuBtn').valid) $w('#mobileMenuBtn').label = '☰';
-    
-    trackEvent('Mobile_Menu_Close');
+    const menuBox = $w('#mobileMenuBox');
+
+    if (menuBox.valid && !menuBox.hidden) {
+        menuBox.hide('fade', { duration: 200 });
+    }
 }
 
 /**
- * Handle responsive behavior
+ * Check login status to adjust header text
  */
-function handleResponsive() {
-    wixWindow.getBoundingRect()
-        .then((windowSize) => {
-            const isMobile = windowSize.window.width < 1024;
-            
-            if (isMobile) {
-                // Mobile view
-                if ($w('#desktopNav').valid) $w('#desktopNav').hide();
-                if ($w('#mobileMenuBtn').valid) $w('#mobileMenuBtn').show();
-                if ($w('#headerCallBtn').valid) $w('#headerCallBtn').hide(); // Use sticky footer on mobile
-            } else {
-                // Desktop view
-                if ($w('#desktopNav').valid) $w('#desktopNav').show();
-                if ($w('#mobileMenuBtn').valid) $w('#mobileMenuBtn').hide();
-                if ($w('#headerCallBtn').valid) $w('#headerCallBtn').show();
-                closeMobileMenu();
-            }
-        });
-}
-
-/**
- * Highlight current page in navigation
- */
-function highlightCurrentPage() {
-    const currentPath = wixLocation.path.join('/');
-    
-    const navMapping = {
-        '': 'navHome',
-        'how-bail-works': 'navHowBailWorks',
-        'bail-bonds': 'navCounties',
-        'become-a-bondsman': 'navBecomeBondsman',
-        'florida-sheriffs-clerks-directory': 'navDirectory',
-        'blog': 'navBlog',
-        'contact': 'navContact'
-    };
-    
-    // Remove active class from all nav items
-    Object.values(navMapping).forEach(navId => {
-        if ($w(`#${navId}`).valid) {
-            $w(`#${navId}`).style.fontWeight = 'normal';
-        }
+function checkLoginStatus() {
+    import('wix-members').then((wixMembers) => {
+        wixMembers.currentMember.getMember()
+            .then((member) => {
+                if (member) {
+                    if ($w('#navLogin').valid) {
+                        $w('#navLogin').label = "My Account";
+                        // Update link to members area
+                        // This usually happens in the editor, but can be forced here
+                    }
+                }
+            })
+            .catch(() => {
+                // Not logged in, default state is fine
+            });
     });
-    
-    // Add active class to current page
-    const activeNavId = navMapping[currentPath] || navMapping[currentPath.split('/')[0]];
-    if (activeNavId && $w(`#${activeNavId}`).valid) {
-        $w(`#${activeNavId}`).style.fontWeight = 'bold';
-    }
 }
-
-/**
- * Track events
- */
-function trackEvent(eventName, eventData = {}) {
-    try {
-        wixWindow.trackEvent(eventName, eventData);
-    } catch (error) {
-        console.log('Tracking error:', error);
-    }
-}
-
-// Export for use in masterPage.js
-export { initHeader, checkLoginStatus, toggleMobileMenu };
