@@ -7,20 +7,18 @@
 
 import { ok, notFound } from 'wix-router';
 
-// Dynamic item routes must target the Dynamic Item page name, not the list page name.
-const COUNTY_ITEM_PAGE_NAME = 'Florida Counties (Item)';
+const COUNTY_PAGE_NAME = 'Florida Counties';
 
 export async function routeCountyPage(request) {
-    const countySlug = request.path[0];
+    const countySlug = request.path[0]; // e.g., "lee-county"
 
-    console.log(`[County Router] Prefix: ${request.prefix || 'unknown'} Path: ${request.path.join('/')}`);
+    console.log(`[County Router] Request Path: ${request.path.join('/')}`);
+    console.log(`[County Router] Routing slug '${countySlug}' to page '${COUNTY_PAGE_NAME}'`);
 
-    if (!countySlug) {
-        console.error('[County Router] Missing county slug.');
-        return notFound();
-    }
-
-    return ok(COUNTY_ITEM_PAGE_NAME, {
+    // Return OK to render the page
+    // The page code (Florida Counties.qx7lv.js) will handle the slug
+    // Ensure this matches the page's internal name in Wix (derived from page file name).
+    return ok(COUNTY_PAGE_NAME, {
         title: `Bail Bonds in ${countySlug}`,
         description: `Professional bail bond services in ${countySlug}, Florida`,
         slug: countySlug
