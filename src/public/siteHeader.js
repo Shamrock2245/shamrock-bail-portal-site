@@ -1,60 +1,65 @@
 /**
- * Shamrock Bail Bonds - Site Header Component (FIXED)
+ * Shamrock Bail Bonds - Site Header Component
  * 
  * Global header component with navigation, CTAs, and mobile menu.
  * Used across all pages for consistent navigation.
  * 
  * File: public/siteHeader.js
- * 
- * FIXES:
- * - Added proper element existence checks before calling .onClick()
- * - Prevents "onClick is not a function" errors
  */
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-
-import { hasSessionToken } from 'public/session-manager';
+import { currentMember } from 'wix-members-frontend';
+import wixData from 'wix-data';
 
 // Phone number
 const PHONE_TEL = 'tel:+12393322245';
 
 let isMobileMenuOpen = false;
 let isLoggedIn = false;
-let $W = null; // Private scope variable for the passed $w instance
+
+// Florida county coordinates (approximate centers)
+const COUNTY_COORDINATES = {
+    "lee": { lat: 26.6406, lon: -81.8723, slug: "lee" },
+    "collier": { lat: 26.1420, lon: -81.7948, slug: "collier" },
+    "charlotte": { lat: 26.8940, lon: -81.9498, slug: "charlotte" },
+    "miami-dade": { lat: 25.7617, lon: -80.1918, slug: "miami-dade" },
+    "broward": { lat: 26.1224, lon: -80.1373, slug: "broward" },
+    "palm-beach": { lat: 26.7153, lon: -80.0534, slug: "palm-beach" },
+    "hillsborough": { lat: 27.9904, lon: -82.3018, slug: "hillsborough" },
+    "pinellas": { lat: 27.9659, lon: -82.8001, slug: "pinellas" },
+    "orange": { lat: 28.5383, lon: -81.3792, slug: "orange" },
+    "duval": { lat: 30.3322, lon: -81.6557, slug: "duval" },
+    "brevard": { lat: 28.2639, lon: -80.7214, slug: "brevard" },
+    "volusia": { lat: 29.0280, lon: -81.0228, slug: "volusia" },
+    "polk": { lat: 28.0389, lon: -81.7887, slug: "polk" },
+    "sarasota": { lat: 27.2364, lon: -82.3004, slug: "sarasota" },
+    "manatee": { lat: 27.4989, lon: -82.3260, slug: "manatee" },
+    "escambia": { lat: 30.4213, lon: -87.2169, slug: "escambia" },
+    "seminole": { lat: 28.7419, lon: -81.2378, slug: "seminole" },
+    "lake": { lat: 28.8028, lon: -81.6320, slug: "lake" },
+    "st-johns": { lat: 29.8933, lon: -81.3124, slug: "st-johns" },
+    "bay": { lat: 30.1588, lon: -85.6602, slug: "bay" }
+};
 
 /**
  * Initialize header on page load
  */
-export async function initHeader($wContext) {
-    if (!$wContext) {
-        console.error("Header: initHeader called without $w context!");
-        return;
-    }
-    $W = $wContext; // Assign to module-level variable
-
-    console.log("Header: Initializing with $w context...");
-
-    // Check login status (Fail-Safe)
-    try {
-        isLoggedIn = await checkLoginStatus();
-        console.log("Header: Login Status:", isLoggedIn);
-    } catch (e) {
-        console.error("Header: Login check failed, defaulting to guest.", e);
-        isLoggedIn = false;
-    }
-
+export async function initHeader() {
+    // Check login status
+    isLoggedIn = await checkLoginStatus();
+    
     // Update header based on login status
-    try {
-        updateHeaderForLoginStatus();
-    } catch (e) { console.error("Header: Update UI failed", e); }
-
-    // Set up event listeners and Responsive (CRITICAL: Must run even if login fails)
-    try {
-        setupHeaderListeners();
-        handleResponsive();
-        highlightCurrentPage();
-    } catch (e) { console.error("Header: Setup listeners failed", e); }
+    updateHeaderForLoginStatus();
+    
+    // Set up event listeners
+    setupHeaderListeners();
+    
+    // Handle responsive behavior
+    handleResponsive();
+    
+    // Highlight current page in navigation
+    highlightCurrentPage();
 }
 
 /**
@@ -62,12 +67,9 @@ export async function initHeader($wContext) {
  */
 async function checkLoginStatus() {
     try {
-        // STRICT: Only check for Custom Session. Ignore Wix Members.
-        const hasCustom = hasSessionToken();
-        console.log("Header: checkLoginStatus -> hasCustomSession:", hasCustom);
-        return hasCustom;
+        const member = await currentMember.getMember();
+        return !!member;
     } catch (error) {
-        console.error("Header: Login check failed", error);
         return false;
     }
 }
@@ -75,52 +77,17 @@ async function checkLoginStatus() {
 /**
  * Update header based on login status
  */
-let retryCount = 0;
-
 function updateHeaderForLoginStatus() {
-    console.log(`Header: Updating UI. LoggedIn = ${isLoggedIn}. Retry: ${retryCount}`);
-
-    const selector = $W || $w;
-    const loginBtn = selector('#loginBtn');
-    const accountBtn = selector('#accountBtn');
-
-    // Feature detection: Check if it looks like a valid Velo element (has .show method)
-    // Arrays/NodeLists might be behaving oddly across modules.
-    const loginExists = loginBtn && typeof loginBtn.show === 'function';
-    const accountExists = accountBtn && typeof accountBtn.show === 'function';
-
-    console.log(`Header: Element Status -> loginBtn: ${loginExists}, accountBtn: ${accountExists}`);
-
-    // RETRY LOGIC
-    if (!loginExists && !accountExists && retryCount < 3) {
-        console.warn("Header: Elements not found yet. Retrying in 500ms...");
-        retryCount++;
-        setTimeout(updateHeaderForLoginStatus, 500);
-        return;
-    }
-
-    try {
-        console.log("Header: Elements check -> loginBtn:", loginBtn.length > 0, "accountBtn:", accountBtn.length > 0);
-
-        if (isLoggedIn) {
-            // Show logged-in state
-            if (loginExists) loginBtn.hide();
-            if (accountExists) accountBtn.show();
-            if (selector('#startBailBtn').type) selector('#startBailBtn').label = 'Start Bail';
-        } else {
-            // Show logged-out state
-            if (loginExists) {
-                loginBtn.show();
-                console.log("Header: Shown loginBtn");
-            } else {
-                console.warn("Header: loginBtn NOT FOUND");
-            }
-
-            if (accountExists) accountBtn.hide();
-            if (selector('#startBailBtn').type) selector('#startBailBtn').label = 'Start Bail';
-        }
-    } catch (e) {
-        console.log('Header login status update skipped (elements missing)', e);
+    if (isLoggedIn) {
+        // Show logged-in state
+        if ($w('#loginBtn').valid) $w('#loginBtn').hide();
+        if ($w('#accountBtn').valid) $w('#accountBtn').show();
+        if ($w('#startBailBtn').valid) $w('#startBailBtn').label = 'Start Bail';
+    } else {
+        // Show logged-out state
+        if ($w('#loginBtn').valid) $w('#loginBtn').show();
+        if ($w('#accountBtn').valid) $w('#accountBtn').hide();
+        if ($w('#startBailBtn').valid) $w('#startBailBtn').label = 'Start Bail';
     }
 }
 
@@ -129,83 +96,169 @@ function updateHeaderForLoginStatus() {
  */
 function setupHeaderListeners() {
     // Logo click - go home
-    try {
-        if ($w('#headerLogo').type) {
-            $w('#headerLogo').onClick(() => {
-                wixLocation.to('/');
-            });
-        }
-    } catch (e) { }
-
+    if ($w('#headerLogo').valid) {
+        $w('#headerLogo').onClick(() => {
+            wixLocation.to('/');
+        });
+    }
+    
     // Call Now button
-    try {
-        if ($w('#headerCallBtn').type) {
-            $w('#headerCallBtn').onClick(() => {
-                trackEvent('Header_CTA_Click', { button: 'call_now' });
-                wixLocation.to(PHONE_TEL);
-            });
-        }
-    } catch (e) { }
-
+    if ($w('#headerCallBtn').valid) {
+        $w('#headerCallBtn').onClick(() => {
+            trackEvent('Header_CTA_Click', { button: 'call_now' });
+            wixLocation.to(PHONE_TEL);
+        });
+    }
+    
     // Start Bail button
-    try {
-        if ($w('#startBailBtn').type) {
-            $w('#startBailBtn').onClick(() => {
-                trackEvent('Header_CTA_Click', { button: 'start_bail' });
-                wixLocation.to('/portal-landing');
-            });
-        }
-    } catch (e) { }
-
+    if ($w('#startBailBtn').valid) {
+        $w('#startBailBtn').onClick(() => {
+            trackEvent('Header_CTA_Click', { button: 'start_bail' });
+            if (isLoggedIn) {
+                wixLocation.to('/members/start-bail');
+            } else {
+                wixLocation.to('/members/login?returnUrl=/members/start-bail');
+            }
+        });
+    }
+    
     // Login button
-    try {
-        if ($w('#loginBtn').type) {
-            $w('#loginBtn').onClick(() => {
-                trackEvent('Header_Login_Click');
-                wixLocation.to('/portal-landing');
-            });
-        }
-    } catch (e) { }
-
+    if ($w('#loginBtn').valid) {
+        $w('#loginBtn').onClick(() => {
+            trackEvent('Header_Login_Click');
+            wixLocation.to('/members/login');
+        });
+    }
+    
     // Account button (for logged-in users)
-    try {
-        if ($w('#accountBtn').type) {
-            $w('#accountBtn').onClick(() => {
-                trackEvent('Header_Account_Click');
-                wixLocation.to('/portal-landing');
-            });
-        }
-    } catch (e) { }
-
+    if ($w('#accountBtn').valid) {
+        $w('#accountBtn').onClick(() => {
+            trackEvent('Header_Account_Click');
+            wixLocation.to('/members/account');
+        });
+    }
+    
+    // **NEW: Find My Jail button with geolocation**
+    if ($w('#findMyJailBtn').valid) {
+        $w('#findMyJailBtn').onClick(() => {
+            findNearestJail();
+        });
+    }
+    
     // Mobile menu toggle
-    try {
-        if ($w('#mobileMenuBtn').type) {
-            $w('#mobileMenuBtn').onClick(() => {
-                toggleMobileMenu();
-            });
-        }
-    } catch (e) { }
-
+    if ($w('#mobileMenuBtn').valid) {
+        $w('#mobileMenuBtn').onClick(() => {
+            toggleMobileMenu();
+        });
+    }
+    
     // Mobile menu close button
-    try {
-        if ($w('#mobileMenuClose').type) {
-            $w('#mobileMenuClose').onClick(() => {
-                closeMobileMenu();
-            });
-        }
-    } catch (e) { }
-
+    if ($w('#mobileMenuClose').valid) {
+        $w('#mobileMenuClose').onClick(() => {
+            closeMobileMenu();
+        });
+    }
+    
     // Mobile menu overlay click to close
-    try {
-        if ($w('#mobileMenuOverlay').type) {
-            $w('#mobileMenuOverlay').onClick(() => {
-                closeMobileMenu();
-            });
-        }
-    } catch (e) { }
-
+    if ($w('#mobileMenuOverlay').valid) {
+        $w('#mobileMenuOverlay').onClick(() => {
+            closeMobileMenu();
+        });
+    }
+    
     // Navigation links
     setupNavLinks();
+}
+
+/**
+ * Find nearest jail using geolocation
+ */
+async function findNearestJail() {
+    trackEvent('Find_My_Jail_Click', { source: 'header' });
+    
+    // Check if geolocation is supported
+    if (!wixWindow.getCurrentGeolocation) {
+        console.log('Geolocation not supported, defaulting to Lee County');
+        wixLocation.to('/bail-bonds-florida/lee');
+        return;
+    }
+    
+    try {
+        // Request user's location
+        const position = await wixWindow.getCurrentGeolocation();
+        
+        if (position && position.coords) {
+            const userLat = position.coords.latitude;
+            const userLon = position.coords.longitude;
+            
+            // Find nearest county
+            const nearestCounty = findNearestCounty(userLat, userLon);
+            
+            trackEvent('Geolocation_Success', {
+                nearestCounty: nearestCounty.slug,
+                userLat: userLat,
+                userLon: userLon
+            });
+            
+            // Route to nearest county page
+            wixLocation.to(`/bail-bonds-florida/${nearestCounty.slug}`);
+        } else {
+            // Geolocation failed, default to Lee County
+            console.log('Geolocation failed, defaulting to Lee County');
+            wixLocation.to('/bail-bonds-florida/lee');
+        }
+    } catch (error) {
+        console.error('Geolocation error:', error);
+        trackEvent('Geolocation_Error', { error: error.message });
+        
+        // Default to Lee County on error
+        wixLocation.to('/bail-bonds-florida/lee');
+    }
+}
+
+/**
+ * Calculate distance between two coordinates using Haversine formula
+ * @param {number} lat1 - Latitude of point 1
+ * @param {number} lon1 - Longitude of point 1
+ * @param {number} lat2 - Latitude of point 2
+ * @param {number} lon2 - Longitude of point 2
+ * @returns {number} - Distance in miles
+ */
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    
+    return distance;
+}
+
+/**
+ * Find nearest county based on user's coordinates
+ * @param {number} userLat - User's latitude
+ * @param {number} userLon - User's longitude
+ * @returns {Object} - Nearest county object with slug
+ */
+function findNearestCounty(userLat, userLon) {
+    let nearestCounty = COUNTY_COORDINATES["lee"]; // Default to Lee County
+    let minDistance = Infinity;
+    
+    for (const [countyName, coords] of Object.entries(COUNTY_COORDINATES)) {
+        const distance = calculateDistance(userLat, userLon, coords.lat, coords.lon);
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearestCounty = coords;
+        }
+    }
+    
+    return nearestCounty;
 }
 
 /**
@@ -215,40 +268,33 @@ function setupNavLinks() {
     const navItems = [
         { selector: '#navHome', path: '/' },
         { selector: '#navHowBailWorks', path: '/how-bail-works' },
-        { selector: '#navCounties', path: '/florida-sheriffs-clerks-directory' },
-        { selector: '#navBecomeBondsman', path: '/how-to-become-a-bondsman' },
+        { selector: '#navCounties', path: '/bail-bonds' },
+        { selector: '#navBecomeBondsman', path: '/become-a-bondsman' },
         { selector: '#navDirectory', path: '/florida-sheriffs-clerks-directory' },
-        { selector: '#navLocate', path: '/locate-an-inmate' }, // Added per user request
         { selector: '#navBlog', path: '/blog' },
         { selector: '#navContact', path: '/contact' }
     ];
-
+    
     navItems.forEach(item => {
-        try {
-            const el = $w(item.selector);
-            if (el.type) {
-                el.onClick(() => {
-                    trackEvent('Navigation_Click', { destination: item.path });
-                    closeMobileMenu();
-                    wixLocation.to(item.path);
-                });
-            }
-        } catch (e) { }
+        if ($w(item.selector).valid) {
+            $w(item.selector).onClick(() => {
+                trackEvent('Navigation_Click', { destination: item.path });
+                closeMobileMenu();
+                wixLocation.to(item.path);
+            });
+        }
     });
-
+    
     // Mobile nav items
     navItems.forEach(item => {
-        try {
-            const mobileSelector = item.selector.replace('#nav', '#mobileNav');
-            const el = $w(mobileSelector);
-            if (el.type) {
-                el.onClick(() => {
-                    trackEvent('Mobile_Navigation_Click', { destination: item.path });
-                    closeMobileMenu();
-                    wixLocation.to(item.path);
-                });
-            }
-        } catch (e) { }
+        const mobileSelector = item.selector.replace('#nav', '#mobileNav');
+        if ($w(mobileSelector).valid) {
+            $w(mobileSelector).onClick(() => {
+                trackEvent('Mobile_Navigation_Click', { destination: item.path });
+                closeMobileMenu();
+                wixLocation.to(item.path);
+            });
+        }
     });
 }
 
@@ -268,24 +314,10 @@ function toggleMobileMenu() {
  */
 function openMobileMenu() {
     isMobileMenuOpen = true;
-    try {
-        if ($w('#mobileMenu').type) {
-            $w('#mobileMenu').show('slide', { duration: 300, direction: 'right' });
-        }
-    } catch (e) { }
-
-    try {
-        if ($w('#mobileMenuOverlay').type) {
-            $w('#mobileMenuOverlay').show('fade', { duration: 200 });
-        }
-    } catch (e) { }
-
-    try {
-        if ($w('#mobileMenuBtn').type) {
-            $w('#mobileMenuBtn').label = '✕';
-        }
-    } catch (e) { }
-
+    if ($w('#mobileMenu').valid) $w('#mobileMenu').show('slide', { duration: 300, direction: 'right' });
+    if ($w('#mobileMenuOverlay').valid) $w('#mobileMenuOverlay').show('fade', { duration: 200 });
+    if ($w('#mobileMenuBtn').valid) $w('#mobileMenuBtn').label = '✕';
+    
     trackEvent('Mobile_Menu_Open');
 }
 
@@ -294,26 +326,10 @@ function openMobileMenu() {
  */
 function closeMobileMenu() {
     isMobileMenuOpen = false;
-
-    // Check elements before hiding
-    try {
-        if ($w('#mobileMenu').type) {
-            $w('#mobileMenu').hide('slide', { duration: 300, direction: 'right' });
-        }
-    } catch (e) { }
-
-    try {
-        if ($w('#mobileMenuOverlay').type) {
-            $w('#mobileMenuOverlay').hide('fade', { duration: 200 });
-        }
-    } catch (e) { }
-
-    try {
-        if ($w('#mobileMenuBtn').type) {
-            $w('#mobileMenuBtn').label = '☰';
-        }
-    } catch (e) { }
-
+    if ($w('#mobileMenu').valid) $w('#mobileMenu').hide('slide', { duration: 300, direction: 'right' });
+    if ($w('#mobileMenuOverlay').valid) $w('#mobileMenuOverlay').hide('fade', { duration: 200 });
+    if ($w('#mobileMenuBtn').valid) $w('#mobileMenuBtn').label = '☰';
+    
     trackEvent('Mobile_Menu_Close');
 }
 
@@ -324,16 +340,17 @@ function handleResponsive() {
     wixWindow.getBoundingRect()
         .then((windowSize) => {
             const isMobile = windowSize.window.width < 1024;
-
-            // Safe visibility toggles
+            
             if (isMobile) {
-                try { if ($w('#desktopNav').type) $w('#desktopNav').hide(); } catch (e) { }
-                try { if ($w('#mobileMenuBtn').type) $w('#mobileMenuBtn').show(); } catch (e) { }
-                try { if ($w('#headerCallBtn').type) $w('#headerCallBtn').hide(); } catch (e) { }
+                // Mobile view
+                if ($w('#desktopNav').valid) $w('#desktopNav').hide();
+                if ($w('#mobileMenuBtn').valid) $w('#mobileMenuBtn').show();
+                if ($w('#headerCallBtn').valid) $w('#headerCallBtn').hide(); // Use sticky footer on mobile
             } else {
-                try { if ($w('#desktopNav').type) $w('#desktopNav').show(); } catch (e) { }
-                try { if ($w('#mobileMenuBtn').type) $w('#mobileMenuBtn').hide(); } catch (e) { }
-                try { if ($w('#headerCallBtn').type) $w('#headerCallBtn').show(); } catch (e) { }
+                // Desktop view
+                if ($w('#desktopNav').valid) $w('#desktopNav').show();
+                if ($w('#mobileMenuBtn').valid) $w('#mobileMenuBtn').hide();
+                if ($w('#headerCallBtn').valid) $w('#headerCallBtn').show();
                 closeMobileMenu();
             }
         });
@@ -343,10 +360,30 @@ function handleResponsive() {
  * Highlight current page in navigation
  */
 function highlightCurrentPage() {
-    // Styling navigation via Velo is flaky. 
-    // Best practice: Use Wix Menu element handles state automatically.
-    // Logic removed to prevent "style is undefined" crashes.
-    return;
+    const currentPath = wixLocation.path.join('/');
+    
+    const navMapping = {
+        '': 'navHome',
+        'how-bail-works': 'navHowBailWorks',
+        'bail-bonds': 'navCounties',
+        'become-a-bondsman': 'navBecomeBondsman',
+        'florida-sheriffs-clerks-directory': 'navDirectory',
+        'blog': 'navBlog',
+        'contact': 'navContact'
+    };
+    
+    // Remove active class from all nav items
+    Object.values(navMapping).forEach(navId => {
+        if ($w(`#${navId}`).valid) {
+            $w(`#${navId}`).style.fontWeight = 'normal';
+        }
+    });
+    
+    // Add active class to current page
+    const activeNavId = navMapping[currentPath] || navMapping[currentPath.split('/')[0]];
+    if (activeNavId && $w(`#${activeNavId}`).valid) {
+        $w(`#${activeNavId}`).style.fontWeight = 'bold';
+    }
 }
 
 /**
@@ -355,10 +392,10 @@ function highlightCurrentPage() {
 function trackEvent(eventName, eventData = {}) {
     try {
         wixWindow.trackEvent(eventName, eventData);
-    } catch (e) {
-        console.log('Event tracking failed:', eventName);
+    } catch (error) {
+        console.log('Tracking error:', error);
     }
 }
 
 // Export for use in masterPage.js
-export { checkLoginStatus, toggleMobileMenu };
+export { initHeader, checkLoginStatus, toggleMobileMenu };
