@@ -17,7 +17,7 @@ const memory = {
 };
 
 // Cache configuration
-const CACHE_KEY = 'florida_counties_v2';
+const CACHE_KEY = 'florida_counties_v3';  // v3: Fixed slug suffix issue
 const CACHE_TTL = 3600000; // 1 hour in milliseconds
 
 // Full Florida County Centroids (Approximate)
