@@ -122,7 +122,7 @@ async function loadCountyDropdown() {
                 // Ensure we use the slug field (already stripped of -county suffix in backend)
                 const slug = county.slug || '';
                 const displayName = county.name || county.county_name || slug;
-                
+
                 return {
                     label: displayName,
                     value: slug  // CRITICAL: Use slug for routing, not name
@@ -192,29 +192,15 @@ function handleGetStarted() {
 }
 
 async function navigateToCounty(selectedCounty) {
-<<<<<<< Updated upstream
     // Debug: Log the selected value to ensure it's the slug
     console.log('Navigating to county:', selectedCounty);
-    
+
     // Ensure we're using the slug (strip any spaces or 'county' suffix just in case)
     const cleanSlug = String(selectedCounty)
         .toLowerCase()
         .trim()
         .replace(/\s+county$/i, '')  // Remove ' county' or ' County' suffix
         .replace(/\s+/g, '-');  // Replace spaces with hyphens
-    
-=======
-    // Debug: Log the selected value
-    console.log('Navigating to county:', selectedCounty);
-
-    // Sanitize: Strip spaces and 'county' suffix just in case
-    const cleanSlug = String(selectedCounty)
-        .toLowerCase()
-        .trim()
-        .replace(/\s+county$/i, '')  // Remove ' county' suffix
-        .replace(/\s+/g, '-');        // Replace spaces with hyphens
-
->>>>>>> Stashed changes
     console.log('Clean slug:', cleanSlug);
     wixLocation.to(`/florida-bail-bonds/${cleanSlug}`);
 }
