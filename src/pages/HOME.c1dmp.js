@@ -118,11 +118,16 @@ async function loadCountyDropdown() {
 
         // Populate dropdown
         if (dropdown.uniqueId && Array.isArray(countiesData)) {
-            dropdown.options = countiesData.map(county => ({
-                label: county.county_name || county.name,  // Handle likely field names
-                // FIX: Strip '-county' suffix from slug to match dynamic page URL
-                value: (county.slug || '')
-            }));
+            dropdown.options = countiesData.map(county => {
+                // Ensure we use the slug field (already stripped of -county suffix in backend)
+                const slug = county.slug || '';
+                const displayName = county.name || county.county_name || slug;
+                
+                return {
+                    label: displayName,
+                    value: slug  // CRITICAL: Use slug for routing, not name
+                };
+            });
             dropdown.placeholder = 'Select County Name';
             dropdown.onChange(() => handleCountySelection());
         }
@@ -187,7 +192,18 @@ function handleGetStarted() {
 }
 
 async function navigateToCounty(selectedCounty) {
-    wixLocation.to(`/florida-bail-bonds/${selectedCounty}`);
+    // Debug: Log the selected value to ensure it's the slug
+    console.log('Navigating to county:', selectedCounty);
+    
+    // Ensure we're using the slug (strip any spaces or 'county' suffix just in case)
+    const cleanSlug = String(selectedCounty)
+        .toLowerCase()
+        .trim()
+        .replace(/\s+county$/i, '')  // Remove ' county' or ' County' suffix
+        .replace(/\s+/g, '-');  // Replace spaces with hyphens
+    
+    console.log('Clean slug:', cleanSlug);
+    wixLocation.to(`/florida-bail-bonds/${cleanSlug}`);
 }
 
 /**
