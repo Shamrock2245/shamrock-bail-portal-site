@@ -192,6 +192,7 @@ function handleGetStarted() {
 }
 
 async function navigateToCounty(selectedCounty) {
+<<<<<<< Updated upstream
     // Debug: Log the selected value to ensure it's the slug
     console.log('Navigating to county:', selectedCounty);
     
@@ -202,6 +203,18 @@ async function navigateToCounty(selectedCounty) {
         .replace(/\s+county$/i, '')  // Remove ' county' or ' County' suffix
         .replace(/\s+/g, '-');  // Replace spaces with hyphens
     
+=======
+    // Debug: Log the selected value
+    console.log('Navigating to county:', selectedCounty);
+
+    // Sanitize: Strip spaces and 'county' suffix just in case
+    const cleanSlug = String(selectedCounty)
+        .toLowerCase()
+        .trim()
+        .replace(/\s+county$/i, '')  // Remove ' county' suffix
+        .replace(/\s+/g, '-');        // Replace spaces with hyphens
+
+>>>>>>> Stashed changes
     console.log('Clean slug:', cleanSlug);
     wixLocation.to(`/florida-bail-bonds/${cleanSlug}`);
 }
