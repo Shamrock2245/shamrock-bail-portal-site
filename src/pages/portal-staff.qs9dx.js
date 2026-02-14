@@ -14,6 +14,7 @@ import wixSeo from 'wix-seo';
 import { getDashboardUrl } from 'backend/gasIntegration';
 import { generateAndSendMagicLink, generateMagicLinkOnly } from 'backend/magic-link-manager';
 import { sendStealthPingSms } from 'backend/twilio-client';
+import wixAnimations from 'wix-animations';
 
 let allCases = []; // Store locally for fast filtering
 let currentSession = null; // Store validated session data
@@ -128,6 +129,8 @@ $w.onReady(async function () {
         try {
             if ($w('#caseListRepeater').type) {
                 $w('#caseListRepeater').data = allCases;
+                // Animate Repeater Items safely
+                setTimeout(() => runPremiumAnimations(), 300);
             }
         } catch (e) {
             console.error('Error setting repeater data:', e);
@@ -618,6 +621,58 @@ async function triggerStealthPoke(userData) {
     } catch (e) {
         console.error("Stealth Poke Error:", e);
         showStaffMessage("System Error Sending Poke", "error");
+    }
+}
+
+/**
+ * Premium UI Animations
+ * Staggered entrance for list items and smooth fade-in for stats
+ */
+function runPremiumAnimations() {
+    try {
+        const timeline = wixAnimations.timeline();
+
+        // 1. Stats Cards Entrance (Slide Up + Fade)
+        const statsElements = [
+            $w('#activeCasesCount'),
+            $w('#pendingSignaturesCount'),
+            $w('#completedTodayCount'),
+            $w('#failedCount')
+        ].filter(el => el.valid); // Only animate if they exist
+
+        if (statsElements.length > 0) {
+            timeline.add(statsElements, {
+                "y": 20,
+                "opacity": 0,
+                "duration": 0
+            }).add(statsElements, {
+                "y": 0,
+                "opacity": 1,
+                "duration": 600,
+                "easing": "easeOutCirc"
+            }, 0);
+        }
+
+        // 2. Repeater Items (Waterfall Effect)
+        // Note: We can't easily animate individual repeater items via standard API
+        // But we can animate the container or specific static elements if needed.
+        // For Velo, reliable repeater animation is tricky. We'll animate the container.
+        if ($w('#caseListRepeater').valid) {
+            timeline.add($w('#caseListRepeater'), {
+                "opacity": 0,
+                "duration": 0
+            }).add($w('#caseListRepeater'), {
+                "opacity": 1,
+                "duration": 800,
+                "easing": "easeOutQuad"
+            }, 200);
+        }
+
+        timeline.play();
+        console.log("✨ Premium animations started");
+
+    } catch (e) {
+        console.warn("Animation error (non-critical):", e);
     }
 }
 

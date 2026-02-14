@@ -22,6 +22,7 @@ import wixData from 'wix-data';
 import { validateCustomSession, getIndemnitorDetails, linkDefendantToCase } from 'backend/portal-auth';
 import { submitIntakeForm } from 'backend/intakeQueue.jsw';
 import wixSeo from 'wix-seo';
+import wixAnimations from 'wix-animations';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 
 // Page state
@@ -122,12 +123,20 @@ async function initializePage() {
 
         // 5. Setup UI
         if (!currentIntake) {
+            console.log("🆕 No existing intake found. Starting fresh.");
             setupIntakeForm();
             // FIX: Attach submit handler AFTER setupIntakeForm() completes
-            // This ensures #mainContent is shown and the button is in the DOM
             setTimeout(() => attachSubmitHandler(), 100);
         } else {
-            showBondDashboard();
+            console.log("📂 Existing intake found. Checking for Choice UI...");
+            // CHECK: Does the user have the "New vs Resume" UI built?
+            if ($w('#boxChoice').valid) {
+                setupChoiceScreen();
+            } else {
+                // Fallback for legacy UI
+                console.log("⚠️ #boxChoice not found. Defaulting to Dashboard.");
+                showBondDashboard();
+            }
         }
 
         // Hide loading
@@ -274,6 +283,82 @@ function showBondDashboard() {
 }
 
 /**
+ * Show the "Resume vs New" Choice Screen
+ */
+function setupChoiceScreen() {
+    safeHide('#mainContent');
+    safeHide('#bondDashboardSection');
+    safeShow('#boxChoice');
+
+    // Personalized Welcome
+    const firstName = indemnitorData?.firstName || 'Back';
+    safeSetText('#textWelcomeChoice', `Welcome ${firstName}`);
+
+    // Defendant Info
+    const defName = currentIntake.defendantName || 'Unknown Defendant';
+    safeSetText('#textExistingInfo', `You have an active bond started for ${defName}.`);
+
+    // Premium Animation
+    animateChoiceScreen();
+}
+
+/**
+ * Animate the Choice Screen Entrance
+ */
+function animateChoiceScreen() {
+    try {
+        const box = $w('#boxChoice');
+        const content = [$w('#textWelcomeChoice'), $w('#textExistingInfo'), $w('#btnResumeBond'), $w('#btnStartNewBond')];
+
+        const timeline = wixAnimations.timeline();
+
+        // Preset
+        timeline.add(box, { "scale": 0.95, "opacity": 0, "duration": 0 })
+            .add(content, { "y": 10, "opacity": 0, "duration": 0 });
+
+        // Animate In
+        timeline.add(box, {
+            "scale": 1,
+            "opacity": 1,
+            "duration": 500,
+            "easing": "easeOutBack"
+        }).add(content, {
+            "y": 0,
+            "opacity": 1,
+            "duration": 400,
+            "stagger": 100, // Stagger items by 100ms
+            "easing": "easeOutQuad"
+        }, 100);
+
+        timeline.play();
+    } catch (e) {
+        console.warn("Animation error:", e);
+        // Fallback checks are handled by safeShow/safeHide in parent function
+    }
+}
+
+/**
+ * Handle "Start New Bond" Click
+ */
+function handleStartNewBond() {
+    console.log("🆕 Starting New Bond...");
+    currentIntake = null; // Clear current intake from memory (does not delete from DB)
+
+    safeHide('#boxChoice');
+    setupIntakeForm();
+    setTimeout(() => attachSubmitHandler(), 100);
+}
+
+/**
+ * Handle "Resume Bond" Click
+ */
+function handleResumeBond() {
+    console.log("📂 Resuming Existing Bond...");
+    safeHide('#boxChoice');
+    showBondDashboard();
+}
+
+/**
  * Format currency
  */
 function formatCurrency(amount) {
@@ -322,6 +407,10 @@ function setupEventListeners() {
 
     // Logout Button (New for Custom Auth)
     safeOnClick('#logoutBtn', handleLogout);
+
+    // Choice Screen Buttons
+    safeOnClick('#btnResumeBond', handleResumeBond);
+    safeOnClick('#btnStartNewBond', handleStartNewBond);
 
     // Setup Defendant Link Feature (New)
     setupDefendantLink();
