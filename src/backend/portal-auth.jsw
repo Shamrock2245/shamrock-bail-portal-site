@@ -17,6 +17,7 @@
 import wixData from 'wix-data';
 import { generateToken, hashPassword, verifyPassword } from 'backend/auth-utils';
 import { getConfig } from 'backend/config-loader';
+import { buildMagicLinkUrl } from 'backend/portal-url';
 import { getGasWebAppUrl, getGasApiKey } from 'backend/secretsManager';
 import { sendSms } from 'backend/twilio-client';
 import { fetch } from 'wix-fetch';
@@ -39,11 +40,13 @@ const CONFIG = {
     CASES_COLLECTION: 'Cases',
 
     // Portal URLs
-    BASE_URL: 'https://www.shamrockbailbonds.biz',
+    BASE_URL: 'https://shamrockbailbonds.biz',
     PORTAL_LANDING: '/portal-landing',
 
     // STAFF_ACCOUNTS removed as per instruction
 };
+
+// Portal URL building moved to backend/portal-url.jsw for centralized management
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -570,7 +573,7 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
             phone: phone,
             name: name
         });
-        const magicLinkUrl = `${CONFIG.BASE_URL}${CONFIG.PORTAL_LANDING}?token=${encodeURIComponent(token)}`;
+        const magicLinkUrl = await buildMagicLinkUrl(token);
 
         // 3. Send via appropriate channel
         if (isEmailInput && email) {
@@ -1470,7 +1473,7 @@ export async function getIndemnitorPendingPaperwork(sessionToken) {
 export async function sendMagicLink(email, token, role, personName = null) {
     // This is a simplified alias that sends an email with an existing token
     try {
-        const magicLinkUrl = `${CONFIG.BASE_URL}${CONFIG.PORTAL_LANDING}?token=${encodeURIComponent(token)}`;
+        const magicLinkUrl = await buildMagicLinkUrl(token);
         const result = await sendMagicLinkEmail(email, magicLinkUrl, role, personName);
         return result;
     } catch (error) {

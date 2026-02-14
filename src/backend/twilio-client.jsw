@@ -7,6 +7,7 @@
 
 import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
+import { buildMagicLinkUrl, buildPortalUrl } from 'backend/portal-url';
 
 // Helper to get credentials
 async function getCredentials() {
@@ -46,8 +47,9 @@ export async function sendSms(to, body) {
         params.append('To', to);
         params.append('From', from);
         params.append('Body', body);
-        // Add StatusCallback for delivery tracking
-        params.append('StatusCallback', 'https://www.shamrockbailbonds.biz/_functions/twilioStatus');
+        // Add StatusCallback for delivery tracking (use dynamic base URL)
+        const statusCallbackUrl = await buildPortalUrl('/_functions/twilioStatus');
+        params.append('StatusCallback', statusCallbackUrl);
 
         const response = await fetch(url, {
             method: 'POST',
@@ -175,8 +177,8 @@ export async function sendStealthPingSms(personId, phone) {
         const { generateMagicLink } = await import('backend/portal-auth');
         const token = await generateMagicLink(personId, 'defendant');
 
-        // 2. Construct URL
-        const portalUrl = `https://www.shamrockbailbonds.biz/portal-landing?token=${token}`;
+        // 2. Construct URL using centralized URL builder
+        const portalUrl = await buildMagicLinkUrl(token);
 
         // 3. Create "Boring" Message (Behavioral Hook)
         // "Status Check Required" is ominous enough to click, boring enough to not panic.

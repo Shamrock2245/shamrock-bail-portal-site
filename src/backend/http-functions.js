@@ -3,6 +3,7 @@
 // These endpoints can be called from Dashboard.html/GAS
 
 import { ok, badRequest, serverError, forbidden } from 'wix-http-functions';
+import { buildPortalUrl } from 'backend/portal-url';
 import crypto from 'crypto';
 import {
     addPendingDocument,
@@ -441,9 +442,7 @@ export async function get_authCallback(request) {
         }
 
         // 4. Return Success HTML with token
-        const landingUrl = "https://www.shamrockbailbonds.biz/portal-landing";
-        // Prefer 'st' (standard token param) and avoid passing sensitive role info in URL if not needed (frontend validates)
-        const targetUrl = `${landingUrl}?st=${encodeURIComponent(sessionToken)}`;
+        const targetUrl = await buildPortalUrl('/portal-landing', { st: sessionToken });
 
         return response(200, renderCloseScript({
             success: true,
@@ -452,7 +451,8 @@ export async function get_authCallback(request) {
 
     } catch (err) {
         console.error("Auth Callback Error:", err);
-        return response(200, renderCloseScript({ success: false, message: "System error during login." }, "https://www.shamrockbailbonds.biz/portal-landing"));
+        const fallbackUrl = await buildPortalUrl('/portal-landing');
+        return response(200, renderCloseScript({ success: false, message: "System error during login." }, fallbackUrl));
     }
 }
 
@@ -476,7 +476,7 @@ function response(status, body) {
 function renderCloseScript(data, targetUrl) {
     const safeData = JSON.stringify(data);
     // Default fallback if no target provided
-    const finalUrl = targetUrl || "https://www.shamrockbailbonds.biz/portal-landing";
+    const finalUrl = targetUrl || "https://shamrockbailbonds.biz/portal-landing";
 
     return `
       <!DOCTYPE html>

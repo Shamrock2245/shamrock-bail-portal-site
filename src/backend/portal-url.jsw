@@ -1,0 +1,232 @@
+/**
+ * Portal URL Builder Module
+ * backend/portal-url.jsw
+ * 
+ * Centralized, production-hardened URL builder for magic links and portal redirects.
+ * 
+ * Features:
+ * - Multi-layer fallback system
+ * - URL validation and self-correction
+ * - Comprehensive error handling
+ * - Logging for debugging
+ * - Autopilot-ready reliability
+ * 
+ * @version 1.0.0
+ * @updated 2026-02-14
+ */
+
+import { getConfig } from 'backend/config-loader';
+import { getSecret } from 'backend/secretsManager';
+
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+const URL_CONFIG = {
+    // Fallback URLs (in priority order)
+    FALLBACK_URLS: [
+        'https://shamrockbailbonds.biz',
+        'https://www.shamrockbailbonds.biz',
+        'https://shamrock2245.wixsite.com/shamrock-bail-portal'
+    ],
+    
+    // Portal paths
+    PORTAL_LANDING: '/portal-landing',
+    PORTAL_INDEMNITOR: '/portal-indemnitor',
+    PORTAL_DEFENDANT: '/portal-defendant',
+    PORTAL_STAFF: '/portal-staff',
+    
+    // Validation settings
+    REQUIRE_HTTPS: true,
+    MAX_URL_LENGTH: 2048,
+    VALID_DOMAINS: [
+        'shamrockbailbonds.biz',
+        'www.shamrockbailbonds.biz',
+        'shamrock2245.wixsite.com'
+    ]
+};
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Validate and normalize a URL
+ * @param {string} url - URL to validate
+ * @returns {{valid: boolean, url: string, error: string|null}}
+ */
+function validateAndNormalizeUrl(url) {
+    if (!url || typeof url !== 'string') {
+        return { valid: false, url: null, error: 'URL is empty or not a string' };
+    }
+
+    let normalized = url.trim();
+
+    // Remove trailing slashes
+    normalized = normalized.replace(/\/+$/, '');
+
+    // Auto-add https:// if missing
+    if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+        normalized = 'https://' + normalized;
+    }
+
+    // Force HTTPS if required
+    if (URL_CONFIG.REQUIRE_HTTPS && normalized.startsWith('http://')) {
+        normalized = normalized.replace('http://', 'https://');
+    }
+
+    // Check length
+    if (normalized.length > URL_CONFIG.MAX_URL_LENGTH) {
+        return { valid: false, url: null, error: 'URL exceeds maximum length' };
+    }
+
+    // Validate domain
+    try {
+        const urlObj = new URL(normalized);
+        const hostname = urlObj.hostname;
+        
+        if (!URL_CONFIG.VALID_DOMAINS.includes(hostname)) {
+            console.warn(`⚠️ URL domain ${hostname} not in whitelist. Proceeding anyway.`);
+        }
+
+        return { valid: true, url: normalized, error: null };
+    } catch (error) {
+        return { valid: false, url: null, error: `Invalid URL format: ${error.message}` };
+    }
+}
+
+/**
+ * Get portal base URL with multi-layer fallback system
+ * 
+ * Priority order:
+ * 1. Secrets Manager (PORTAL_BASE_URL)
+ * 2. Runtime config (brand.domain)
+ * 3. Hardcoded fallbacks
+ * 
+ * @returns {Promise<string>} Validated base URL
+ */
+export async function getPortalBaseUrl() {
+    const sources = [];
+
+    // Layer 1: Try Secrets Manager
+    try {
+        const secretUrl = await getSecret('PORTAL_BASE_URL');
+        if (secretUrl) {
+            sources.push({ source: 'Secrets Manager', url: secretUrl });
+        }
+    } catch (error) {
+        console.warn('⚠️ Could not read PORTAL_BASE_URL from Secrets Manager:', error?.message);
+    }
+
+    // Layer 2: Try runtime config
+    try {
+        const config = await getConfig();
+        const configDomain = String(config?.brand?.domain || '').trim();
+        if (configDomain) {
+            sources.push({ source: 'Runtime Config', url: configDomain });
+        }
+    } catch (error) {
+        console.warn('⚠️ Could not read brand.domain from config:', error?.message);
+    }
+
+    // Layer 3: Add hardcoded fallbacks
+    URL_CONFIG.FALLBACK_URLS.forEach((url, index) => {
+        sources.push({ source: `Fallback ${index + 1}`, url });
+    });
+
+    // Try each source in order until we find a valid URL
+    for (const { source, url } of sources) {
+        const validation = validateAndNormalizeUrl(url);
+        
+        if (validation.valid) {
+            console.log(`✅ Portal base URL resolved from ${source}: ${validation.url}`);
+            return validation.url;
+        } else {
+            console.warn(`⚠️ Invalid URL from ${source}: ${validation.error}`);
+        }
+    }
+
+    // Emergency fallback - should never reach here
+    const emergency = URL_CONFIG.FALLBACK_URLS[0];
+    console.error('🚨 All URL sources failed validation. Using emergency fallback:', emergency);
+    return emergency;
+}
+
+/**
+ * Build a complete portal URL with path and query params
+ * 
+ * @param {string} path - Portal path (e.g., '/portal-landing')
+ * @param {Object} queryParams - Query parameters as key-value pairs
+ * @returns {Promise<string>} Complete URL
+ */
+export async function buildPortalUrl(path = '', queryParams = {}) {
+    try {
+        const baseUrl = await getPortalBaseUrl();
+        
+        // Normalize path
+        let normalizedPath = path.trim();
+        if (normalizedPath && !normalizedPath.startsWith('/')) {
+            normalizedPath = '/' + normalizedPath;
+        }
+
+        // Build query string
+        const queryString = Object.keys(queryParams)
+            .filter(key => queryParams[key] !== undefined && queryParams[key] !== null && queryParams[key] !== '')
+            .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(queryParams[key])}`)
+            .join('&');
+
+        // Construct full URL
+        const fullUrl = `${baseUrl}${normalizedPath}${queryString ? '?' + queryString : ''}`;
+
+        // Validate final URL
+        const validation = validateAndNormalizeUrl(fullUrl);
+        if (!validation.valid) {
+            throw new Error(`Final URL validation failed: ${validation.error}`);
+        }
+
+        return validation.url;
+    } catch (error) {
+        console.error('🚨 Error building portal URL:', error);
+        // Return emergency fallback
+        return `${URL_CONFIG.FALLBACK_URLS[0]}${path}`;
+    }
+}
+
+/**
+ * Build magic link URL
+ * 
+ * @param {string} token - Magic link token
+ * @returns {Promise<string>} Complete magic link URL
+ */
+export async function buildMagicLinkUrl(token) {
+    if (!token) {
+        throw new Error('Magic link token is required');
+    }
+
+    return buildPortalUrl(URL_CONFIG.PORTAL_LANDING, { token });
+}
+
+/**
+ * Build portal redirect URL with session token
+ * 
+ * @param {string} portalPath - Portal path (e.g., '/portal-indemnitor')
+ * @param {string} sessionToken - Session token
+ * @returns {Promise<string>} Complete redirect URL
+ */
+export async function buildPortalRedirectUrl(portalPath, sessionToken) {
+    if (!portalPath) {
+        throw new Error('Portal path is required');
+    }
+
+    const queryParams = sessionToken ? { st: sessionToken } : {};
+    return buildPortalUrl(portalPath, queryParams);
+}
+
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
+export {
+    URL_CONFIG,
+    validateAndNormalizeUrl
+};

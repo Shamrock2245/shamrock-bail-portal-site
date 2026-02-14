@@ -11,7 +11,6 @@
  */
 
 import { ok, notFound, redirect } from 'wix-router';
-import { isLoggedIn, getUserRole, ROLES } from './portal-auth';
 import { routeCountyPage } from './bail-bonds-router';
 
 /**
@@ -31,65 +30,48 @@ import { routeCountyPage } from './bail-bonds-router';
  */
 export async function portal_Router(request) {
   const path = request.path;
+  const query = request.query || {};
+
+  // Helper to build redirect URL with preserved query params
+  function redirectWithQuery(targetPath) {
+    const queryString = Object.keys(query)
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`)
+      .join('&');
+    const fullUrl = queryString ? `${targetPath}?${queryString}` : targetPath;
+    return redirect(fullUrl);
+  }
 
   try {
-    // Check if user is logged in
-    // Note: 'isLoggedIn' verifies if the Wix User is authenticated
-    if (!isLoggedIn()) {
-      // User is NOT logged in.
-      // Redirect to the hyphenated portal-landing page
-      return redirect('/portal-landing');
-    }
-
-    const userRole = await getUserRole();
-    console.log(`[Router] User ${request.user ? request.user.id : 'Anon'} Role: ${userRole || 'None'}, Path: ${path}`);
-
+    // Simplified router: deterministic path forwarding without auth checks
+    // Auth is handled by the target pages themselves
+    
     switch (path[0]) {
       case 'defendant':
-        if (userRole === ROLES.DEFENDANT) {
-          // Redirect to hyphenated URL
-          return redirect('/portal-defendant');
-        } else {
-          // Wrong role? redirect to landing
-          return redirect('/portal-landing');
-        }
+        return redirectWithQuery('/portal-defendant');
+      
       case 'indemnitor':
-        if (userRole === ROLES.INDEMNITOR || userRole === ROLES.COINDEMNITOR) {
-          // Redirect to hyphenated URL
-          return redirect('/portal-indemnitor');
-        } else {
-          return redirect('/portal-landing');
-        }
+        return redirectWithQuery('/portal-indemnitor');
+      
       case 'staff':
-        if (userRole === ROLES.STAFF || userRole === ROLES.ADMIN) {
-          // Redirect to hyphenated URL
-          return redirect('/portal-staff');
-        } else {
-          return redirect('/portal-landing');
-        }
+        return redirectWithQuery('/portal-staff');
+      
       case 'landing':
-        // /portal/landing -> /portal-landing
-        return redirect('/portal-landing');
+        // /portal/landing?token=... -> /portal-landing?token=...
+        return redirectWithQuery('/portal-landing');
+      
       case undefined:
       case '':
-        // Root /portal/ path
-        // Behavior: If they have a role, redirect them to their dashboard
-        // If they don't have a role, show the landing page
-        if (userRole === ROLES.DEFENDANT) return redirect('/portal-defendant');
-        if (userRole === ROLES.STAFF || userRole === ROLES.ADMIN) return redirect('/portal-staff');
-        if (userRole === ROLES.INDEMNITOR || userRole === ROLES.COINDEMNITOR) return redirect('/portal-indemnitor');
-
-        // No role? Redirect to landing page
-        return redirect('/portal-landing');
+        // Root /portal/ path -> landing
+        return redirectWithQuery('/portal-landing');
 
       default:
         // Unknown path - redirect to landing
-        return redirect('/portal-landing');
+        return redirectWithQuery('/portal-landing');
     }
   } catch (error) {
     console.error("[Router] Error in portal_Router:", error);
-    // Fallback to landing instead of crashing
-    return redirect('/portal-landing');
+    // Fallback to landing (preserve query even in error case)
+    return redirectWithQuery('/portal-landing');
   }
 }
 

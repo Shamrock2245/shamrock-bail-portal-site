@@ -1,4 +1,5 @@
 import { generateMagicLink } from 'backend/portal-auth';
+import { buildMagicLinkUrl } from 'backend/portal-url';
 
 /**
  * Run this function directly in the Wix Editor Backend to get your Admin Link.
@@ -18,8 +19,8 @@ export async function generateAdminLinkForBrendan() {
         // Generate the secure token
         const token = await generateMagicLink(personId, role);
 
-        // Construct the full URL
-        const url = `https://www.shamrockbailbonds.biz/portal-landing?token=${token}`;
+        // Construct the full URL using centralized URL builder
+        const url = await buildMagicLinkUrl(token);
 
         console.log("\n===========================================");
         console.log(">>> YOUR ADMIN MAGIC LINK <<<");

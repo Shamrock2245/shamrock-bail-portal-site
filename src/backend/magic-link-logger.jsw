@@ -1,0 +1,182 @@
+/**
+ * Magic Link Logger
+ * backend/magic-link-logger.jsw
+ * 
+ * Centralized logging and monitoring for magic link operations
+ * Provides comprehensive debugging and audit trail
+ */
+
+import wixData from 'wix-data';
+
+/**
+ * Log levels
+ */
+const LOG_LEVEL = {
+    DEBUG: 'debug',
+    INFO: 'info',
+    WARN: 'warn',
+    ERROR: 'error',
+    CRITICAL: 'critical'
+};
+
+/**
+ * Log magic link generation event
+ * 
+ * @param {Object} params
+ * @param {string} params.personId - Person ID
+ * @param {string} params.role - User role
+ * @param {string} params.token - Generated token
+ * @param {string} params.url - Generated URL
+ * @param {string} params.method - Delivery method (email/sms)
+ * @param {string} params.recipient - Email or phone number
+ */
+export async function logMagicLinkGeneration(params) {
+    const { personId, role, token, url, method, recipient } = params;
+    
+    try {
+        await wixData.insert('MagicLinkLogs', {
+            timestamp: new Date(),
+            level: LOG_LEVEL.INFO,
+            event: 'magic_link_generated',
+            personId: personId,
+            role: role,
+            tokenPrefix: token ? token.substring(0, 8) + '...' : 'N/A', // Don't log full token
+            url: url,
+            deliveryMethod: method,
+            recipient: recipient,
+            success: true
+        });
+        
+        console.log(`[MagicLink] Generated for ${personId} (${role}) via ${method} to ${recipient}`);
+        console.log(`[MagicLink] URL: ${url}`);
+    } catch (error) {
+        console.error('[MagicLink] Failed to log generation:', error);
+    }
+}
+
+/**
+ * Log magic link usage event
+ * 
+ * @param {Object} params
+ * @param {string} params.token - Token used
+ * @param {string} params.personId - Person ID
+ * @param {boolean} params.success - Whether login was successful
+ * @param {string} params.error - Error message if failed
+ */
+export async function logMagicLinkUsage(params) {
+    const { token, personId, success, error } = params;
+    
+    try {
+        await wixData.insert('MagicLinkLogs', {
+            timestamp: new Date(),
+            level: success ? LOG_LEVEL.INFO : LOG_LEVEL.ERROR,
+            event: 'magic_link_used',
+            personId: personId,
+            tokenPrefix: token ? token.substring(0, 8) + '...' : 'N/A',
+            success: success,
+            errorMessage: error || null
+        });
+        
+        if (success) {
+            console.log(`[MagicLink] Successfully used by ${personId}`);
+        } else {
+            console.error(`[MagicLink] Failed use by ${personId}: ${error}`);
+        }
+    } catch (err) {
+        console.error('[MagicLink] Failed to log usage:', err);
+    }
+}
+
+/**
+ * Log URL resolution event
+ * 
+ * @param {Object} params
+ * @param {string} params.source - Source of URL resolution (config/fallback/default)
+ * @param {string} params.url - Resolved URL
+ * @param {string} params.context - Context of resolution (magic_link/oauth/general)
+ */
+export async function logUrlResolution(params) {
+    const { source, url, context } = params;
+    
+    try {
+        console.log(`[URL Resolution] ${context}: ${url} (source: ${source})`);
+        
+        // Only log to database if it's a fallback or error case
+        if (source !== 'config') {
+            await wixData.insert('MagicLinkLogs', {
+                timestamp: new Date(),
+                level: LOG_LEVEL.WARN,
+                event: 'url_resolution_fallback',
+                context: context,
+                source: source,
+                url: url
+            });
+        }
+    } catch (error) {
+        console.error('[MagicLink] Failed to log URL resolution:', error);
+    }
+}
+
+/**
+ * Log router redirect event
+ * 
+ * @param {Object} params
+ * @param {string} params.from - Original path
+ * @param {string} params.to - Redirect destination
+ * @param {Object} params.query - Query parameters
+ */
+export async function logRouterRedirect(params) {
+    const { from, to, query } = params;
+    
+    try {
+        const queryKeys = Object.keys(query || {}).join(',') || 'none';
+        console.log(`[Router] Redirect: ${from} → ${to} (query: ${queryKeys})`);
+        
+        // Only log if there's a token in the query (important redirect)
+        if (query && (query.token || query.st)) {
+            await wixData.insert('MagicLinkLogs', {
+                timestamp: new Date(),
+                level: LOG_LEVEL.INFO,
+                event: 'router_redirect',
+                fromPath: from,
+                toPath: to,
+                hasToken: !!(query.token || query.st),
+                queryKeys: queryKeys
+            });
+        }
+    } catch (error) {
+        console.error('[MagicLink] Failed to log router redirect:', error);
+    }
+}
+
+/**
+ * Log critical error
+ * 
+ * @param {Object} params
+ * @param {string} params.context - Context where error occurred
+ * @param {Error} params.error - Error object
+ * @param {Object} params.metadata - Additional metadata
+ */
+export async function logCriticalError(params) {
+    const { context, error, metadata } = params;
+    
+    try {
+        await wixData.insert('MagicLinkLogs', {
+            timestamp: new Date(),
+            level: LOG_LEVEL.CRITICAL,
+            event: 'critical_error',
+            context: context,
+            errorMessage: error.message,
+            errorStack: error.stack,
+            metadata: JSON.stringify(metadata || {})
+        });
+        
+        console.error(`[CRITICAL] ${context}:`, error);
+        console.error('Metadata:', metadata);
+    } catch (err) {
+        console.error('[MagicLink] Failed to log critical error:', err);
+        console.error('Original error:', error);
+    }
+}
+
+export { LOG_LEVEL };
