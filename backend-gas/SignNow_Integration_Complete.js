@@ -17,12 +17,25 @@
 // ============================================================================
 
 const INTEGRATION_CONFIG = {
-  REDIRECT_URI: 'https://www.shamrockbailbonds.biz',
-  DECLINE_REDIRECT_URI: 'https://www.shamrockbailbonds.biz',
-  CLOSE_REDIRECT_URI: 'https://www.shamrockbailbonds.biz',
-  WIX_SIGNING_PAGE: 'https://www.shamrockbailbonds.biz/sign',
+  get REDIRECT_URI() { return this.getBaseUrl(); },
+  get DECLINE_REDIRECT_URI() { return this.getBaseUrl(); },
+  get CLOSE_REDIRECT_URI() { return this.getBaseUrl(); },
+  get WIX_SIGNING_PAGE() { return this.getBaseUrl() + '/sign'; },
   LINK_EXPIRATION_MINUTES: 45,
-  COMPLETED_BONDS_FOLDER_ID: '1WnjwtxoaoXVW8_B6s-0ftdCPf_5WfKgs'
+  COMPLETED_BONDS_FOLDER_ID: '1WnjwtxoaoXVW8_B6s-0ftdCPf_5WfKgs',
+
+  getBaseUrl: function () {
+    try {
+      // Try to get from Script Properties
+      const props = PropertiesService.getScriptProperties();
+      const url = props.getProperty('PORTAL_BASE_URL');
+      if (url) return url.replace(/\/$/, ''); // Remove trailing slash if present
+    } catch (e) {
+      console.warn('Could not fetch PORTAL_BASE_URL from properties:', e);
+    }
+    // Fallback to default
+    return 'https://www.shamrockbailbonds.biz';
+  }
 };
 
 // ============================================================================

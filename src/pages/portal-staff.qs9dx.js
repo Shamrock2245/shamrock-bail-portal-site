@@ -274,7 +274,7 @@ function setupRepeater() {
                             // However, let's keep the logic simple here:
 
                             const token = await generateMagicLink(itemData._id, "defendant");
-                            console.log(`Link: https://www.shamrockbailbonds.biz/portal-landing?token=${token}`);
+                            console.log(`Magic Link Token Generated: ${token.substring(0, 10)}...`);
                             magicBtn.label = "Sent";
 
                         } catch (e) {
@@ -830,12 +830,12 @@ async function handleFinalizePaperwork(itemData) {
 
         if (result.success) {
             showStaffMessage('✅ Case finalized! IntakeQueue → Cases complete.', 'success');
-            
+
             // Refresh dashboard data
             const dashboardData = await getStaffDashboardData();
             allCases = dashboardData.cases;
             $w('#caseListRepeater').data = allCases;
-            
+
             console.log('✅ Case finalized:', result);
         } else {
             showStaffMessage('❌ Failed to finalize: ' + result.error, 'error');
