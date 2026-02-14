@@ -518,12 +518,14 @@
         .form-group select,
         .form-group textarea {
             padding: 12px 16px;
-            min-height: 48px; /* Mobile touch target */
+            min-height: 48px;
+            /* Mobile touch target */
             border: 2px solid var(--border);
             border-radius: var(--radius-sm);
             background: var(--surface-2);
             color: var(--text);
-            font-size: 16px; /* Prevents iOS zoom */
+            font-size: 16px;
+            /* Prevents iOS zoom */
             font-weight: 500;
             transition: var(--transition);
             font-family: inherit;
@@ -553,7 +555,8 @@
        BUTTONS - Enterprise Grade
        ========================================================= */
         .btn {
-            min-height: 48px; /* Mobile touch target */
+            min-height: 48px;
+            /* Mobile touch target */
             padding: 0 24px;
             border: none;
             border-radius: var(--radius-sm);
@@ -7037,6 +7040,9 @@
                                             <button class="btn btn-sm btn-primary" onclick="loadIntake('${id}')" title="Load & Process">
                                                 ⬇️ Process
                                             </button>
+                                            <button class="btn btn-sm btn-secondary" style="margin-left:4px;" onclick="Queue.archive('${id}', this)" title="Mark as Done (Remove from Queue)">
+                                                ✅ Done
+                                            </button>
                                         </td>
                                     </tr>`;
                             } catch (itemErr) {
@@ -7202,6 +7208,46 @@
                         console.error("Hydration Error:", e);
                         UI.showToast("Error loading data: " + e.message, 'error');
                     }
+                },
+
+                archive: function (intakeId, buttonEl) {
+                    if (!confirm('Clear this intake from the queue?\n\nThis marks it as processed and removes it from the list.')) return;
+
+                    if (buttonEl) {
+                        buttonEl.innerText = '⏳';
+                        buttonEl.disabled = true;
+                    }
+
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            if (res) {
+                                UI.showToast('Intake cleared', 'success');
+                                const row = buttonEl ? buttonEl.closest('tr') : null;
+                                if (row) {
+                                    row.style.transition = 'opacity 0.5s';
+                                    row.style.opacity = '0';
+                                    setTimeout(() => row.remove(), 500);
+                                } else {
+                                    Queue.fetch();
+                                }
+
+                                // Update badge count
+                                const badge = document.getElementById('queue-badge');
+                                if (badge) {
+                                    const count = parseInt(badge.innerText);
+                                    if (!isNaN(count)) badge.innerText = Math.max(0, count - 1);
+                                }
+                            } else {
+                                UI.showToast('Failed to clear intake', 'error');
+                                if (buttonEl) { buttonEl.innerText = '✅ Done'; buttonEl.disabled = false; }
+                            }
+                        })
+                        .withFailureHandler(err => {
+                            console.error(err);
+                            UI.showToast('Error: ' + err.message, 'error');
+                            if (buttonEl) { buttonEl.innerText = '✅ Done'; buttonEl.disabled = false; }
+                        })
+                        .handleAction({ action: 'markIntakeProcessed', intakeId: intakeId });
                 }
             };
 
