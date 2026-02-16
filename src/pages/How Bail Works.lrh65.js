@@ -346,19 +346,22 @@ async function setupFAQ() {
                 questionEl.text = question;
             }
             
-            // Set answer text and hide by default
+            // For collapsible text boxes: expand first, set text, then collapse
             if (answerEl) {
+                // Expand the collapsible text first so we can set the text
+                answerEl.expand();
                 answerEl.text = answerText;
-                answerEl.hide(); // Start hidden instead of collapsed
+                // Now collapse it to hide by default
+                answerEl.collapse();
             }
 
-            // Toggle function to show/hide answer
+            // Toggle function to expand/collapse answer
             const toggleFn = () => {
                 if (answerEl) {
-                    if (answerEl.hidden) {
-                        answerEl.show();
+                    if (answerEl.collapsed) {
+                        answerEl.expand();
                     } else {
-                        answerEl.hide();
+                        answerEl.collapse();
                     }
                 }
             };
