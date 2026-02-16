@@ -191,13 +191,14 @@ async function setupCommonBailAmounts() {
         console.error("❌ Failed to load Common Charges from CMS:", err);
     }
 
-    // UPDATED ID: Added #table1, #tableCommonCharges, #groupAmounts
-    const element = $w('#amountRepeater') || $w('#amountsRepeater') || $w('#table1') || $w('#tableCommonCharges');
+    // Use the correct ID from Wix Editor: #amountsRepeater
+    const element = $w('#amountsRepeater');
 
-    if (element && element.valid) {
-        element.expand(); // Force expand
+    if (element) {
+        console.log('✅ Found #amountsRepeater element, type:', element.type);
+        
         // DETECT ELEMENT TYPE: Check if it's a Table or a Repeater
-        if (element.type === '$w.Table') {
+        if (element.type === 'Table' || element.type === '$w.Table') {
             console.log("📊 Found Table element:", element.id);
 
             // Map CMS fields to table columns - BE ROBUST
@@ -224,7 +225,7 @@ async function setupCommonBailAmounts() {
             });
 
             element.rows = tableRows;
-            console.log("✅ Table rows set.");
+            console.log("✅ Table rows set:", tableRows.length, "rows");
 
         } else {
             // It's a Repeater
@@ -252,7 +253,7 @@ async function setupCommonBailAmounts() {
             element.data = data;
         }
     } else {
-        console.error('❌ Common Charges Table/Repeater NOT found. IDs checked: #amountRepeater, #amountsRepeater, #table1, #tableCommonCharges');
+        console.error('❌ #amountsRepeater element NOT found on page');
     }
 }
 
@@ -322,11 +323,10 @@ async function setupFAQ() {
     }
 
     // Bind data to the FAQ repeater
-    // UPDATED ID based on Layers Panel: #listRepeater
-    const rep = $w('#listRepeater') || $w('#faqRepeater');
-    if (rep && rep.valid) {
-        rep.expand(); // Force Expand
-        rep.show();   // Force Show
+    // Use the correct ID from Wix Editor: #faqRepeater
+    const rep = $w('#faqRepeater');
+    if (rep) {
+        console.log('✅ Found #faqRepeater element');
 
         rep.onItemReady(($item, itemData) => {
             console.log("Rendering FAQ Item:", itemData);
@@ -360,7 +360,7 @@ async function setupFAQ() {
         });
 
         rep.data = data;
-        console.log(`✅ FAQ Repeater populated.`);
+        console.log(`✅ FAQ Repeater populated with ${data.length} items.`);
     } else {
         console.error('❌ #faqRepeater not found on page');
     }
