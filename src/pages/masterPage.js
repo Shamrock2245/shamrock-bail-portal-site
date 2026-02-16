@@ -22,20 +22,28 @@
 import { session } from 'wix-storage';
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
-import { getNearestCounties } from 'backend/counties';
+// import { getNearestCounties } from 'backend/counties'; // Moved to dynamic import
 
 import { validateStickyFooter } from 'public/uiValidator';
 import { initMobileOptimizations } from 'public/mobile-optimize';
 
 // Critical: Load immediately
 $w.onReady(function () {
-    // Only essential above-the-fold operations here
+    // 1. Immediate Critical Setup (Universal)
     initCriticalUI();
-    setupMobileMenu();
-    initMobileOptimizations();
 
-    // Defer everything else
-    deferNonCriticalOperations();
+    // 2. Mobile-Specific Optimization Path
+    if (wixWindow.formFactor === 'Mobile') {
+        // Mobile: Prioritize interaction over heavy visuals
+        setupMobileMenu();
+        initMobileOptimizations(); // Now strictly for mobile
+
+        // Defer non-criticals significantly on mobile
+        deferNonCriticalOperations(true);
+    } else {
+        // Desktop: Standard loading
+        deferNonCriticalOperations(false);
+    }
 });
 
 /**
@@ -105,27 +113,30 @@ function setupMobileMenu() {
 
 /**
  * Defer non-critical operations to improve initial load time
+ * @param {boolean} isMobile - Whether to use aggressive mobile deferrals
  */
-function deferNonCriticalOperations() {
-    // Defer analytics (2 seconds)
+function deferNonCriticalOperations(isMobile = false) {
+    const baseDelay = isMobile ? 3000 : 1000; // Slower start on mobile to free up thread
+
+    // Defer analytics
     setTimeout(() => {
         initAnalytics();
-    }, 2000);
+    }, baseDelay + 1000);
 
-    // Defer geolocation (3 seconds)
+    // Defer geolocation
     setTimeout(() => {
         initGeolocation();
-    }, 3000);
+    }, baseDelay + 2000);
 
-    // Defer chat widget (5 seconds)
+    // Defer chat widget (Aggressive deferral on mobile)
     setTimeout(() => {
         initChatWidget();
-    }, 5000);
+    }, isMobile ? 8000 : 4000);
 
-    // Defer tracking pixels (5 seconds)
+    // Defer tracking pixels
     setTimeout(() => {
         initTrackingPixels();
-    }, 5000);
+    }, isMobile ? 8000 : 4000);
 }
 
 /**
@@ -180,6 +191,8 @@ async function handleFindJailClick(btn) {
         const { latitude, longitude } = location.coords;
 
         // 2. Find Nearest County
+        // Dynamic Import for performance
+        const { getNearestCounties } = await import('backend/counties');
         const nearest = await getNearestCounties(latitude, longitude, 1);
 
         if (nearest && nearest.length > 0) {

@@ -1,11 +1,12 @@
 /// <reference path="../types/wix-overrides.d.ts" />
 // Force Sync: Dynamic Page Logic
 import wixLocation from 'wix-location';
+import wixWindow from 'wix-window';
 import wixSeo from 'wix-seo';
 import wixData from 'wix-data';
 import { generateCountyPage } from 'backend/county-generator';
 // replaced public/countyUtils with optimized backend
-import { getCountiesByRegion } from 'backend/counties';
+// import { getCountiesByRegion } from 'backend/counties'; // Moved to dynamic import
 
 // Type-safe element selector to bypass ID validation issues
 // cast to any to allow any string
@@ -71,9 +72,12 @@ $w.onReady(async function () {
         await populateMainUI(county, countySlug);
 
         // 5. DEFER NON-CRITICAL (Nearby Counties)
+        // Mobile: Defer significantly (3s) to prioritize main content interaction
+        // Desktop: Slight deferral (0.5s)
+        const isMobile = wixWindow.formFactor === 'Mobile';
         setTimeout(() => {
             loadNearbyCounties(county.region, countySlug);
-        }, 500);
+        }, isMobile ? 3000 : 500);
 
         // 6. DEBUG CMS (User Request)
         debugCMS();
@@ -393,16 +397,16 @@ async function populateMainUI(county, currentSlug) {
 
         if (faqResult && faqResult.items.length > 0) {
             console.log(`✅ Loaded ${faqResult.items.length} FAQs from CMS for ${countyName}`);
-            
+
             // Dynamically replace "Lee County" with actual county name in questions and answers
             faqs = faqResult.items.map(item => {
                 let question = item.title || item.question || '';
                 let answer = item.answer || '';
-                
+
                 // Replace "Lee County" with the actual county name
                 question = question.replace(/Lee County/gi, countyName);
                 answer = answer.replace(/Lee County/gi, countyName);
-                
+
                 return {
                     _id: item._id,
                     question: question,
@@ -434,13 +438,13 @@ async function populateMainUI(county, currentSlug) {
                     qText.text = question;
                     console.log(`✅ Set question: ${question.substring(0, 50)}...`);
                 }
-                
+
                 // Check if answer element is a CollapsibleText element
                 if (aText.uniqueId) {
                     // Check if it's a CollapsibleText by checking for collapseText method
                     const isCollapsibleText = typeof aText.collapseText === 'function';
                     console.log(`📝 Answer element type: ${aText.type}, isCollapsibleText: ${isCollapsibleText}`);
-                    
+
                     if (isCollapsibleText) {
                         // It's a CollapsibleText - MUST expand first, then set text, then collapse
                         try {
@@ -455,7 +459,7 @@ async function populateMainUI(county, currentSlug) {
                     } else {
                         // It's a regular text element - use old logic
                         aText.text = answer;
-                        
+
                         // Group/Container Logic for regular text
                         const answerGroup = $item('#groupAnswer').uniqueId ? $item('#groupAnswer') : ($item('#boxAnswer').uniqueId ? $item('#boxAnswer') : aText);
                         const toggleTrigger = $item('#containerQuestion').uniqueId ? $item('#containerQuestion') : ($item('#faqContainer').uniqueId ? $item('#faqContainer') : ($item('#groupHeader').uniqueId ? $item('#groupHeader') : qText));
@@ -500,6 +504,8 @@ async function loadNearbyCounties(region, currentSlug) {
     if (!region) region = "Southwest";
 
     try {
+        // Dynamic Import for performance (lazy load)
+        const { getCountiesByRegion } = await import('backend/counties');
         const nearby = await getCountiesByRegion(region);
 
         if (Array.isArray(nearby) && nearby.length > 0) {

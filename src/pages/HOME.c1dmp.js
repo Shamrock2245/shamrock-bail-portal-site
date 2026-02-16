@@ -13,13 +13,15 @@ import { session } from 'wix-storage';
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import wixSeo from 'wix-seo';
-import { getCounties } from 'backend/counties';
+// import { getCounties } from 'backend/counties'; // Moved to dynamic import
 
 // State
 let countiesData = null;
 let countiesLoaded = false;
 
 $w.onReady(function () {
+    const isMobile = wixWindow.formFactor === 'Mobile';
+
     // Setup SEO and structured data
     setupOrganizationSchema();
 
@@ -29,14 +31,17 @@ $w.onReady(function () {
 
     // Load county dropdown - use shorter delay if cached, longer if not
     const hasCachedCounties = session.getItem('counties');
+    // Mobile: Wait longer to allow Hero interaction first
+    const dropdownDelay = isMobile ? (hasCachedCounties ? 50 : 1000) : (hasCachedCounties ? 100 : 500);
+
     setTimeout(() => {
         loadCountyDropdown();
-    }, hasCachedCounties ? 100 : 500);
+    }, dropdownDelay);
 
-    // Defer testimonials (2s)
+    // Defer testimonials (2s desktop, 4s mobile)
     setTimeout(() => {
         initTestimonials();
-    }, 2000);
+    }, isMobile ? 4000 : 2000);
 });
 
 /**
