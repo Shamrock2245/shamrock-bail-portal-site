@@ -1,0 +1,75 @@
+import wixData from 'wix-data';
+import { fetch } from 'wix-fetch';
+import { getGasWebAppUrl } from 'backend/secretsManager';
+import { getSecret } from 'wix-secrets-backend';
+
+/**
+ * Log a Stealth Ping Request
+ * Records the attempt to check a defendant's location/status.
+ * 
+ * @param {string} defendantId - ID of defendant (Wix Member/Contact ID)
+ * @param {string} defendantName - Name for the log
+ * @param {string} staffId - ID of staff initiating the ping
+ */
+export async function logStealthPing(defendantId, defendantName, staffId) {
+    try {
+        console.log(`📡 Logging Stealth Ping: ${defendantName} by ${staffId}`);
+
+        // 1. Log to Wix CMS (Audit Trail)
+        // We use a generic 'SystemLogs' or specific 'LocationPings'
+        // For now, let's use a simple object structure that matches what we might send to GAS
+
+        const payload = {
+            defendantId,
+            defendantName,
+            staffId,
+            timestamp: new Date(),
+            action: 'STEALTH_PING_SMS',
+            status: 'SENT'
+        };
+
+        // Optional: Save to a collection if it exists, otherwise just log to console
+        try {
+            await wixData.insert('SystemLogs', {
+                title: 'Stealth Ping',
+                data: JSON.stringify(payload),
+                timestamp: new Date()
+            });
+        } catch (e) {
+            console.warn("Could not save to SystemLogs (collection might be missing), continuing...", e);
+        }
+
+        // 2. Sync to GAS (The User Request)
+        const gasUrl = await getGasWebAppUrl();
+        const apiKey = await getSecret('GAS_API_KEY');
+
+        if (!gasUrl) {
+            console.error("❌ No GAS URL found");
+            return { success: false, error: "Missing GAS Configuration" };
+        }
+
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'log_ping_request',
+                apiKey: apiKey || 'shamrock_secretary_2024', // Fallback only if secret fails
+                defendantName: defendantName,
+                staffId: staffId,
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        if (response.ok) {
+            const json = await response.json();
+            return { success: true, result: json };
+        } else {
+            console.error("GAS Error:", await response.text());
+            return { success: false, error: "GAS refused connection" };
+        }
+
+    } catch (error) {
+        console.error("Error logging stealth ping:", error);
+        return { success: false, error: error.message };
+    }
+}

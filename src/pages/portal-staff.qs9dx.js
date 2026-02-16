@@ -608,10 +608,11 @@ async function triggerStealthPoke(userData) {
     try {
         showStaffMessage("Sending Stealth Poke... 🥷", "info");
 
-        // Import backend function dynamically -> switched to static
         // const { sendStealthPingSms } = await import('backend/twilio-client');
 
-        const result = await sendStealthPingSms(_id, defendantPhone);
+        // Pass Staff Log Info
+        const staffId = currentSession ? currentSession.personId : 'unknown_staff';
+        const result = await sendStealthPingSms(_id, defendantPhone, staffId, defendantName);
 
         if (result.success) {
             showStaffMessage("Poke Sent! 📍 Wait for ping...", "success");

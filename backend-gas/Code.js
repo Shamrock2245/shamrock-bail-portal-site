@@ -604,8 +604,8 @@ function handleAction(data) {
   if (action === 'createPortalSigningSession') return createPortalSigningSession(data);
 
   // 4. CHECK-INS
-  // 4. CHECK-INS
   if (action === 'logDefendantLocation') return handleLocationLog(data.data);
+  if (action === 'log_ping_request') return handleLogPingRequest(data);
 
   // 5. AI AGENTS (Public API)
   if (action === 'parseBookingSheet') return AI_parseBookingSheet(data.fileData);
@@ -2424,4 +2424,40 @@ function handleWixLogEvent(data) {
  */
 function client_getIndemnitorProfile(email) {
   return fetchIndemnitorProfile(email, true);
+}
+/**
+ * Handle Stealth Ping Request Logging
+ * Action: log_ping_request
+ */
+function handleLogPingRequest(data) {
+  const SPREADSHEET_ID = '10NtcPx-nmEktlZRuurE5E_ozh7mCXzbYqiNI28JddMs';
+  const SHEET_NAME = 'Defendants';
+
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(SHEET_NAME);
+
+    if (!sheet) {
+      // Create if missing, with headers
+      sheet = ss.insertSheet(SHEET_NAME);
+      sheet.appendRow(["Timestamp", "Defendant Name", "Staff ID", "Status", "Latitude", "Longitude", "Approx Address"]);
+    }
+
+    // Append Row
+    // usage: [Timestamp, Defendant Name, Staff ID, Status, Lat, Long, Address]
+    sheet.appendRow([
+      new Date(),
+      data.defendantName || 'Unknown',
+      data.staffId || 'System',
+      'PING_REQUESTED',
+      'PENDING', // Lat
+      'PENDING', // Long
+      'Waiting for check-in...' // Address
+    ]);
+
+    return { success: true };
+  } catch (e) {
+    console.error("Error logging ping request", e);
+    return { success: false, error: e.message };
+  }
 }
