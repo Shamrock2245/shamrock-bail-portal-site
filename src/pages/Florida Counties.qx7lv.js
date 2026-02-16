@@ -445,10 +445,10 @@ async function populateMainUI(county, currentSlug) {
                         // It's a CollapsibleText - MUST expand first, then set text, then collapse
                         try {
                             aText.expandText(); // Expand first
-                            aText.readMoreActionType = "ExpandOnCurrentPage";
-                            aText.text = answer;
+                            aText.text = answer; // Set the answer text
                             console.log(`✅ Set CollapsibleText answer: ${answer.substring(0, 50)}...`);
                             aText.collapseText(); // Collapse after setting text
+                            // Note: readMoreActionType is read-only and must be set in Wix Editor, not code
                         } catch (e) {
                             console.error(`❌ Error setting CollapsibleText:`, e);
                         }

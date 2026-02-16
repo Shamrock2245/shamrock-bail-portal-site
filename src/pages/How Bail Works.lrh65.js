@@ -348,11 +348,11 @@ async function setupFAQ() {
             
             // Set answer text on CollapsibleText element
             if (answerEl) {
-                // CRITICAL: Set readMoreActionType to ExpandOnCurrentPage for expand/collapse to work
-                answerEl.readMoreActionType = "ExpandOnCurrentPage";
+                // Expand first, set text, then collapse
+                answerEl.expandText();
                 answerEl.text = answerText;
-                // Use collapseText() for CollapsibleText elements (not collapse())
                 answerEl.collapseText();
+                // Note: readMoreActionType must be configured in Wix Editor (read-only property)
             }
         });
 
