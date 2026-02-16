@@ -330,33 +330,53 @@ async function setupFAQ() {
 
         rep.onItemReady(($item, itemData) => {
             console.log("Rendering FAQ Item:", itemData);
+            
             // Map CMS fields
             const question = itemData.title || itemData.question || itemData.q || "No Question";
             const answerText = itemData.answer || itemData.a || "No Answer";
 
+            // Get elements - IDs confirmed from Wix Editor Layers panel
             const questionEl = $item('#faqQuestion');
             const answerEl = $item('#faqAnswer');
-            const container = $item('#faqContainer'); // Assuming a container exists for the whole item
+            const container = $item('#faqContainer');
+            const box = $item('#box4');
 
-            if (questionEl.valid) questionEl.text = question;
-            if (answerEl.valid) {
+            // Set question text
+            if (questionEl) {
+                questionEl.text = question;
+            }
+            
+            // Set answer text and collapse by default
+            if (answerEl) {
                 answerEl.text = answerText;
-                answerEl.collapse(); // Default to collapsed
+                answerEl.collapse();
             }
 
-            // JOIN TOGGLE LOGIC
-            // Click on Question OR Container to toggle
+            // Toggle function to show/hide answer
             const toggleFn = () => {
-                if (answerEl.valid) {
-                    if (answerEl.collapsed) answerEl.expand();
-                    else answerEl.collapse();
+                if (answerEl) {
+                    if (answerEl.collapsed) {
+                        answerEl.expand();
+                    } else {
+                        answerEl.collapse();
+                    }
                 }
             };
 
-            if (questionEl.valid) questionEl.onClick(toggleFn);
-            // If there's a header box, click that too
-            const header = $item('#faqHeader'); // Hypothetical
-            if (header.valid) header.onClick(toggleFn);
+            // Make question clickable
+            if (questionEl) {
+                questionEl.onClick(toggleFn);
+            }
+            
+            // Make container clickable
+            if (container) {
+                container.onClick(toggleFn);
+            }
+            
+            // Make box clickable
+            if (box) {
+                box.onClick(toggleFn);
+            }
         });
 
         rep.data = data;
