@@ -346,11 +346,11 @@ async function setupFAQ() {
                 questionEl.text = question;
             }
             
-            // Set answer text - the collapsible text box handles expand/collapse automatically
+            // Set answer text on CollapsibleText element
             if (answerEl) {
                 answerEl.text = answerText;
-                // Collapse it initially so users have to click to see the answer
-                answerEl.collapse();
+                // Use collapseText() for CollapsibleText elements (not collapse())
+                answerEl.collapseText();
             }
         });
 
