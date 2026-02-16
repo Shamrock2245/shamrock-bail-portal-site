@@ -346,39 +346,11 @@ async function setupFAQ() {
                 questionEl.text = question;
             }
             
-            // For collapsible text boxes: expand first, set text, then collapse
+            // Set answer text - the collapsible text box handles expand/collapse automatically
             if (answerEl) {
-                // Expand the collapsible text first so we can set the text
-                answerEl.expand();
                 answerEl.text = answerText;
-                // Now collapse it to hide by default
+                // Collapse it initially so users have to click to see the answer
                 answerEl.collapse();
-            }
-
-            // Toggle function to expand/collapse answer
-            const toggleFn = () => {
-                if (answerEl) {
-                    if (answerEl.collapsed) {
-                        answerEl.expand();
-                    } else {
-                        answerEl.collapse();
-                    }
-                }
-            };
-
-            // Make question clickable
-            if (questionEl) {
-                questionEl.onClick(toggleFn);
-            }
-            
-            // Make container clickable
-            if (container) {
-                container.onClick(toggleFn);
-            }
-            
-            // Make box clickable
-            if (box) {
-                box.onClick(toggleFn);
             }
         });
 
