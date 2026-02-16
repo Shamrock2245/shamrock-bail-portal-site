@@ -244,50 +244,51 @@ function setupRepeater() {
                 console.error('Error mapping repeater fields:', e);
             }
 
-            // Actions - Details Button
+            // Actions - View Map Button (formerly Details)
             try {
-                const detailsBtn = $item('#detailsBtn');
-                if (detailsBtn) {
-                    detailsBtn.onClick(() => {
-                        console.log("Opening Details for", itemData.defendantName);
-                        LightboxController.setupDefendantDetailsLightbox(itemData);
+                const mapBtn = $item('#detailsBtn'); // User renamed label to "View Map"
+                if (mapBtn) {
+                    // Check if we have an address
+                    if (!itemData.address) {
+                        mapBtn.disable();
+                        mapBtn.label = "No Loc";
+                    }
+
+                    mapBtn.onClick(() => {
+                        console.log("View Map clicked for", itemData.defendantName);
+                        if (itemData.address) {
+                            const query = encodeURIComponent(itemData.address);
+                            wixLocation.to(`https://www.google.com/maps/search/?api=1&query=${query}`);
+                        } else {
+                            showStaffMessage("No address on file", "error");
+                        }
                     });
                 } else { console.warn("Missing element: #detailsBtn"); }
             } catch (e) {
-                console.error('Error setting up details button:', e);
+                console.error('Error setting up map button:', e);
             }
 
-            // Actions - Send Magic Link Button
+            // Actions - View Files Button (formerly Send Magic Link)
             try {
-                const magicBtn = $item('#sendMagicLinkBtn');
-                if (magicBtn) {
-                    magicBtn.onClick(async () => {
-                        try {
-                            // Using the new helper function from the bottom of the file
-                            // generateMagicLinkForUser comes from local scope or export
-                            // We need to make sure we call the right function.
-                            // The Remote file has `generateMagicLinkForUser` logic.
+                const filesBtn = $item('#sendMagicLinkBtn'); // User renamed label to "Files"
+                if (filesBtn) {
+                    // Check if we have a folder
+                    if (!itemData.driveFolderUrl) {
+                        filesBtn.disable();
+                        filesBtn.label = "No Files";
+                    }
 
-                            magicBtn.label = "...";
-
-                            // Check if generateMagicLinkForUser is available or import it?
-                            // In the Remote file, generateMagicLinkForUser is defined at the bottom.
-                            // But we are inside $w.onReady scope mostly? No, setupRepeater is top-level function.
-                            // generateMagicLinkForUser is exported. Ideally we can just call it if it's in scope.
-                            // However, let's keep the logic simple here:
-
-                            const token = await generateMagicLink(itemData._id, "defendant");
-                            console.log(`Magic Link Token Generated: ${token.substring(0, 10)}...`);
-                            magicBtn.label = "Sent";
-
-                        } catch (e) {
-                            console.error('Error generating magic link:', e);
-                            magicBtn.label = "Error";
+                    filesBtn.onClick(() => {
+                        console.log("View Files clicked for", itemData.defendantName);
+                        if (itemData.driveFolderUrl) {
+                            wixLocation.to(itemData.driveFolderUrl);
+                        } else {
+                            showStaffMessage("No document folder linked", "error");
                         }
                     });
                 }
             } catch (e) {
-                console.error('Error setting up magic link button:', e);
+                console.error('Error setting up files button:', e);
             }
 
             // Actions - Stealth Poke Button (New!)
