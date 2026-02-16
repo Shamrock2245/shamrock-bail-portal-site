@@ -430,18 +430,28 @@ async function populateMainUI(county, currentSlug) {
                 const qText = $item('#textQuestion').uniqueId ? $item('#textQuestion') : ($item('#faqQuestion').uniqueId ? $item('#faqQuestion') : $item('#question'));
                 const aText = $item('#textAnswer').uniqueId ? $item('#textAnswer') : ($item('#faqAnswer').uniqueId ? $item('#faqAnswer') : $item('#answer'));
 
-                if (qText.uniqueId) qText.text = question;
+                if (qText.uniqueId) {
+                    qText.text = question;
+                    console.log(`✅ Set question: ${question.substring(0, 50)}...`);
+                }
                 
                 // Check if answer element is a CollapsibleText element
                 if (aText.uniqueId) {
                     // Check if it's a CollapsibleText by checking for collapseText method
                     const isCollapsibleText = typeof aText.collapseText === 'function';
+                    console.log(`📝 Answer element type: ${aText.type}, isCollapsibleText: ${isCollapsibleText}`);
                     
                     if (isCollapsibleText) {
-                        // It's a CollapsibleText - use proper API
-                        aText.readMoreActionType = "ExpandOnCurrentPage";
-                        aText.text = answer;
-                        aText.collapseText();
+                        // It's a CollapsibleText - MUST expand first, then set text, then collapse
+                        try {
+                            aText.expandText(); // Expand first
+                            aText.readMoreActionType = "ExpandOnCurrentPage";
+                            aText.text = answer;
+                            console.log(`✅ Set CollapsibleText answer: ${answer.substring(0, 50)}...`);
+                            aText.collapseText(); // Collapse after setting text
+                        } catch (e) {
+                            console.error(`❌ Error setting CollapsibleText:`, e);
+                        }
                     } else {
                         // It's a regular text element - use old logic
                         aText.text = answer;
