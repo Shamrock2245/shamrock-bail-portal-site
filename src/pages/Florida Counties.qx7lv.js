@@ -393,11 +393,22 @@ async function populateMainUI(county, currentSlug) {
 
         if (faqResult && faqResult.items.length > 0) {
             console.log(`✅ Loaded ${faqResult.items.length} FAQs from CMS for ${countyName}`);
-            faqs = faqResult.items.map(item => ({
-                _id: item._id,
-                question: item.title || item.question,
-                answer: item.answer
-            }));
+            
+            // Dynamically replace "Lee County" with actual county name in questions and answers
+            faqs = faqResult.items.map(item => {
+                let question = item.title || item.question || '';
+                let answer = item.answer || '';
+                
+                // Replace "Lee County" with the actual county name
+                question = question.replace(/Lee County/gi, countyName);
+                answer = answer.replace(/Lee County/gi, countyName);
+                
+                return {
+                    _id: item._id,
+                    question: question,
+                    answer: answer
+                };
+            });
         } else {
             console.warn(`⚠️ No CMS FAQs for ${countyName}, using embedded fallback...`);
             faqs = (county.content && county.content.faq) || [];
@@ -423,7 +434,10 @@ async function populateMainUI(county, currentSlug) {
                 
                 // Check if answer element is a CollapsibleText element
                 if (aText.uniqueId) {
-                    if (aText.type === '$w.CollapsibleText') {
+                    // Check if it's a CollapsibleText by checking for collapseText method
+                    const isCollapsibleText = typeof aText.collapseText === 'function';
+                    
+                    if (isCollapsibleText) {
                         // It's a CollapsibleText - use proper API
                         aText.readMoreActionType = "ExpandOnCurrentPage";
                         aText.text = answer;
