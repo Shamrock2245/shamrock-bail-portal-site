@@ -420,24 +420,36 @@ async function populateMainUI(county, currentSlug) {
                 const aText = $item('#textAnswer').uniqueId ? $item('#textAnswer') : ($item('#faqAnswer').uniqueId ? $item('#faqAnswer') : $item('#answer'));
 
                 if (qText.uniqueId) qText.text = question;
-                if (aText.uniqueId) aText.text = answer;
+                
+                // Check if answer element is a CollapsibleText element
+                if (aText.uniqueId) {
+                    if (aText.type === '$w.CollapsibleText') {
+                        // It's a CollapsibleText - use proper API
+                        aText.readMoreActionType = "ExpandOnCurrentPage";
+                        aText.text = answer;
+                        aText.collapseText();
+                    } else {
+                        // It's a regular text element - use old logic
+                        aText.text = answer;
+                        
+                        // Group/Container Logic for regular text
+                        const answerGroup = $item('#groupAnswer').uniqueId ? $item('#groupAnswer') : ($item('#boxAnswer').uniqueId ? $item('#boxAnswer') : aText);
+                        const toggleTrigger = $item('#containerQuestion').uniqueId ? $item('#containerQuestion') : ($item('#faqContainer').uniqueId ? $item('#faqContainer') : ($item('#groupHeader').uniqueId ? $item('#groupHeader') : qText));
 
-                // Group/Container Logic
-                const answerGroup = $item('#groupAnswer').uniqueId ? $item('#groupAnswer') : ($item('#boxAnswer').uniqueId ? $item('#boxAnswer') : aText);
-                const toggleTrigger = $item('#containerQuestion').uniqueId ? $item('#containerQuestion') : ($item('#faqContainer').uniqueId ? $item('#faqContainer') : ($item('#groupHeader').uniqueId ? $item('#groupHeader') : qText));
+                        // Initialize State
+                        if (answerGroup.uniqueId) answerGroup.collapse();
 
-                // Initialize State
-                if (answerGroup.uniqueId) answerGroup.collapse();
-
-                // Handle Accordion Interaction
-                if (toggleTrigger.uniqueId) {
-                    toggleTrigger.onClick(() => {
-                        if (answerGroup.collapsed) {
-                            answerGroup.expand();
-                        } else {
-                            answerGroup.collapse();
+                        // Handle Accordion Interaction
+                        if (toggleTrigger.uniqueId) {
+                            toggleTrigger.onClick(() => {
+                                if (answerGroup.collapsed) {
+                                    answerGroup.expand();
+                                } else {
+                                    answerGroup.collapse();
+                                }
+                            });
                         }
-                    });
+                    }
                 }
             });
 

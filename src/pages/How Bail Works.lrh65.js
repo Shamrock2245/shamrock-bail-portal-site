@@ -348,6 +348,8 @@ async function setupFAQ() {
             
             // Set answer text on CollapsibleText element
             if (answerEl) {
+                // CRITICAL: Set readMoreActionType to ExpandOnCurrentPage for expand/collapse to work
+                answerEl.readMoreActionType = "ExpandOnCurrentPage";
                 answerEl.text = answerText;
                 // Use collapseText() for CollapsibleText elements (not collapse())
                 answerEl.collapseText();
