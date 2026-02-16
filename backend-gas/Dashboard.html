@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Shamrock App V163</title>
+    <title>Shamrock App V166</title>
 
     <!-- GLOBAL ERROR TRAP (DEBUGGING) -->
     <script>
@@ -1473,7 +1473,7 @@
     </style>
 </head>
 
-<body data-theme="tuxedo" data-mode="dark">
+<body data-theme="emerald" data-mode="dark">
     <!-- Server-side data injection (Moved to Body) -->
     <div id="server-data-injection" style="display:none;"
         data-json='<?!= (typeof data !== "undefined") ? JSON.stringify(data) : "null" ?>'></div>
@@ -1577,6 +1577,10 @@
             <button class="tab" onclick="switchTab(this, 'map')">
                 <span class="tab-icon">🗺️</span> Map
             </button>
+            <button class="tab" onclick="switchTab(this, 'blog-audio')">
+                <span class="tab-icon">🎙️</span> Blog Audio
+            </button>
+
         </nav>
 
         <!-- ============================================================
@@ -2594,6 +2598,77 @@
                     </div>
                 </div>
 
+                <!-- TAB: AI AGENTS -->
+                <div id="ai-tab" class="tab-content">
+                    <div class="card">
+                        <h2>🤖 AI Agent Console</h2>
+                        <div class="form-group">
+                            <p>Monitor the status of your AI agents here.</p>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="ai-status-checkin">🟢 Active</div>
+                                        <div class="stat-label">Check-In Monitor</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: BLOG AUDIO (ELEVENLABS) -->
+                <div id="blog-audio-tab" class="tab-content" style="display:none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>🎙️ Blog-to-Video Audio Generator</h2>
+                            <span class="badge badge-warning">Powered by ElevenLabs</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label>Blog Post Text</label>
+                                        <textarea id="blog-text" class="form-control" rows="12"
+                                            placeholder="Paste your blog post content here..."></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Voice Selection</label>
+                                        <select id="voice-select" class="form-control">
+                                            <option value="21m00Tcm4TlvDq8ikWAM">Rachel (Default - American, Clear)
+                                            </option>
+                                            <option value="AZnzlk1XvdvUeBnXmlld">Domi (Strong, Serious)</option>
+                                            <option value="EXAVITQu4vr4xnSDxMaL">Bella (Soft, Narration)</option>
+                                            <option value="ErXwobaYiN019PkySvjV">Antoni (American, Balanced)</option>
+                                            <option value="TxGEqnHWrfWFTfGW9XjX">Josh (American, Deep)</option>
+                                        </select>
+                                        <small class="text-muted">Select the voice that best fits the tone.</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Output Filename Preference</label>
+                                        <input type="text" id="blog-filename" class="form-control"
+                                            placeholder="e.g. 5_Tips_For_Bail">
+                                    </div>
+                                    <hr>
+                                    <button class="btn btn-primary btn-block" onclick="generateBlogAudio(this)">
+                                        ✨ Generate Audio
+                                    </button>
+                                    <div id="audio-result" style="margin-top:20px; display:none;">
+                                        <div class="alert alert-success">
+                                            <strong>Success!</strong> Audio saved to Drive.
+                                            <br>
+                                            <a id="audio-download-link" href="#" target="_blank"
+                                                class="btn btn-sm btn-secondary" style="margin-top:10px;">📂 Open in
+                                                Drive</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Signing Configuration -->
                 <h4
                     style="margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted);">
@@ -3207,7 +3282,7 @@
            ========================================================= */
         document.addEventListener('DOMContentLoaded', function () {
             // Restore theme and mode
-            const savedTheme = localStorage.getItem(LS_KEY_THEME) || 'tuxedo';
+            const savedTheme = localStorage.getItem(LS_KEY_THEME) || 'emerald';
             const savedMode = localStorage.getItem(LS_KEY_MODE) || 'dark';
             applyTheme(savedTheme);
             applyMode(savedMode);
@@ -7653,6 +7728,50 @@
 
                     // Maps is now handled by callback or lazy-load on tab switch
 
+                    // --- Module: Blog Audio ---
+                    window.generateBlogAudio = function (btn) {
+                        const text = document.getElementById('blog-text').value;
+                        const voiceId = document.getElementById('voice-select').value;
+                        const title = document.getElementById('blog-filename').value;
+
+                        if (!text) {
+                            UI.showToast('Please enter blog text', 'error');
+                            return;
+                        }
+
+                        // UI Loading State
+                        const originalText = btn.innerText;
+                        btn.innerText = '⏳ Generating... (This may take 30s)';
+                        btn.disabled = true;
+
+                        google.script.run
+                            .withSuccessHandler(res => {
+                                btn.innerText = originalText;
+                                btn.disabled = false;
+
+                                if (res.success) {
+                                    UI.showToast('Audio Generated Successfully!', 'success');
+                                    const resultBox = document.getElementById('audio-result');
+                                    const link = document.getElementById('audio-download-link');
+
+                                    if (resultBox && link) {
+                                        link.href = res.url; // Drive URL
+                                        resultBox.style.display = 'block';
+                                    }
+                                } else {
+                                    UI.showToast('Generation Failed: ' + res.error, 'error');
+                                }
+                            })
+                            .withFailureHandler(err => {
+                                btn.innerText = originalText;
+                                btn.disabled = false;
+                                console.error(err);
+                                UI.showToast('System Error: ' + err.message, 'error');
+                            })
+                            .client_generateBlogAudio(text, title, voiceId);
+                    };
+
+                    // Global Error Handler
                     // Global exports for onClick compatibility
                     window.runClerk = Agents.Clerk.run;
                     window.limitSearch = Agents.Clerk.limitSearch;
@@ -7897,4 +8016,4 @@
     </script>
 </body>
 
-```
+</html>

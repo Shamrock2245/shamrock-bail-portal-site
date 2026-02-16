@@ -19,6 +19,9 @@ function handleSOC2Webhook(e) {
             case "twilio":
             case "Twilio":
                 return handleTwilioWebhookSOC2(e);
+            case "elevenlabs":
+            case "ElevenLabs":
+                return handleElevenLabsWebhookSOC2(e);
             default:
                 logSecurityEvent("UNKNOWN_WEBHOOK", { path: path });
                 return ContentService.createTextOutput("Unknown endpoint or source").setMimeType(ContentService.MimeType.TEXT);
@@ -73,6 +76,17 @@ function handleTwilioWebhookSOC2(e) {
 
     const payload = e.parameter;
     logProcessingEvent("TWILIO_WEBHOOK_RECEIVED", payload);
+
+    // --- MANUS PROJECT (WHATSAPP) ---
+    // Detect WhatsApp sender (e.g., whatsapp:+1234567890)
+    if (payload.From && payload.From.startsWith('whatsapp:')) {
+        if (typeof handleManusWhatsApp === 'function') {
+            return handleManusWhatsApp(payload);
+        } else {
+            // Fallback if Manus_Brain.js not loaded
+            return ContentService.createTextOutput("Manus unavailable").setMimeType(ContentService.MimeType.TEXT);
+        }
+    }
 
     // Business Logic: Log to Slack and Reply
     try {

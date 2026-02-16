@@ -136,6 +136,47 @@ function callOpenAI(systemPrompt, userContent, options = {}) {
 }
 
 /**
+ * Transcribe Audio using OpenAI Whisper API
+ * @param {Blob} audioBlob - The audio file blob (mp3, wav, ogg, m4a)
+ * @returns {string|null} - The transcribed text
+ */
+function transcribeAudio(audioBlob) {
+    try {
+        const apiKey = PropertiesService.getScriptProperties().getProperty('OPENAI_API_KEY');
+        if (!apiKey) return null;
+
+        const url = 'https://api.openai.com/v1/audio/transcriptions';
+
+        const payload = {
+            model: 'whisper-1',
+            file: audioBlob
+        };
+
+        const options = {
+            method: 'post',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`
+            },
+            payload: payload,
+            muteHttpExceptions: true
+        };
+
+        const response = UrlFetchApp.fetch(url, options);
+        const json = JSON.parse(response.getContentText());
+
+        if (json.text) {
+            return json.text;
+        } else {
+            console.error("⛔ Whisper API Error:", json);
+            return null;
+        }
+    } catch (e) {
+        console.error("⛔ Whisper API Exception: " + e.toString());
+        return null;
+    }
+}
+
+/**
  * Test OpenAI Connection
  */
 function testOpenAIConnection() {

@@ -13,6 +13,18 @@ The integration connects three systems:
 
 ---
 
+## Step 0: Master Configuration (One-Click Setup)
+
+We have consolidated all configuration into a single file: `Setup_Properties.js`.
+
+1.  Open `backend-gas/Setup_Properties.js` in the GAS Editor.
+2.  Paste your keys (OpenAI, Grok, Twilio, SignNow, etc.) into the `MASTER_CONFIG` object.
+3.  Run `RUN_UpdateAllProperties()` from the toolbar.
+
+This replaces all previous "Bulk Update" or "Set Properties" scripts.
+
+---
+
 ## Step 1: Add GAS Files to Your Project
 
 ### Files to Add

@@ -170,6 +170,65 @@ var NotificationService = (function() {
         logError_('sendEmail', e.message);
         return { success: false, error: e.message };
       }
+
+    },
+
+    /**
+     * Send WhatsApp Message via Twilio.
+     * @param {string} to - Recipient number (e.g. +1239...)
+     * @param {string} body - Message text
+     * @param {string} mediaUrl - (Optional) URL to media file (voice note, image)
+     */
+    sendWhatsApp: function(to, body, mediaUrl) {
+      try {
+        const props = getConfig_();
+        const sid = props.getProperty('TWILIO_ACCOUNT_SID');
+        const token = props.getProperty('TWILIO_AUTH_TOKEN');
+        // Default to provided number if property missing
+        const from = props.getProperty('TWILIO_WHATSAPP_NUMBER') || '+12399550178'; 
+
+        if (!sid || !token) throw new Error('Missing Twilio credentials');
+
+        // Format Number (E.164)
+        let formattedTo = to.toString().replace(/\D/g, '');
+        if (formattedTo.length === 10) formattedTo = '+1' + formattedTo;
+        else if (formattedTo.length === 11 && formattedTo.startsWith('1')) formattedTo = '+' + formattedTo;
+        else if (!formattedTo.startsWith('+')) formattedTo = '+' + formattedTo;
+
+        const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+        const headers = {
+          "Authorization": "Basic " + Utilities.base64Encode(`${sid}:${token}`)
+        };
+
+        const payload = {
+          "To": `whatsapp:${formattedTo}`,
+          "From": `whatsapp:${from}`,
+          "Body": body
+        };
+
+        if (mediaUrl) {
+            payload["MediaUrl"] = mediaUrl;
+        }
+
+        const res = UrlFetchApp.fetch(url, {
+          method: "POST",
+          headers: headers,
+          payload: payload,
+          muteHttpExceptions: true
+        });
+
+        const json = JSON.parse(res.getContentText());
+        
+        if (res.getResponseCode() < 300) {
+          return { success: true, sid: json.sid };
+        } else {
+          return { success: false, error: json.message || 'Twilio Error' };
+        }
+
+      } catch (e) {
+        logError_('sendWhatsApp', e.message);
+        return { success: false, error: e.message };
+      }
     }
 
   };

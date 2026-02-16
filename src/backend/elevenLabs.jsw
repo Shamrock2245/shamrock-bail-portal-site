@@ -1,0 +1,41 @@
+/**
+ * ElevenLabs Integration for Wix Velo
+ * 
+ * Proxies requests to the Google Apps Script backend which handles
+ * the actual ElevenLabs API call and Google Drive storage.
+ */
+
+import { callGasAction } from 'backend/gasIntegration';
+
+/**
+ * Trigger audio generation for a blog post.
+ * 
+ * @param {string} text - The blog post content to convert to speech.
+ * @param {string} title - The title of the post (used for filename).
+ * @param {string} [voiceId] - Optional voice ID (defaults to 'Adam').
+ * @returns {Promise<Object>} - { success: true, url: "https://drive.google.com..." }
+ */
+export async function generateAudioForPost(text, title, voiceId) {
+    if (!text) throw new Error("Text is required for audio generation.");
+
+    // Default to 'Adam' (ElevenLabs standard American male) if not specified
+    const targetVoice = voiceId || 'pNInz6obpgDQGcFmaJgB';
+
+    try {
+        const result = await callGasAction('generateBlogAudio', {
+            text: text,
+            title: title || 'Untitled Audio',
+            voiceId: targetVoice
+        });
+
+        if (!result.success) {
+            throw new Error(result.error || "Unknown error during generation");
+        }
+
+        return result;
+
+    } catch (error) {
+        console.error("ElevenLabs Generation Failed:", error);
+        throw new Error(`Audio Generation Failed: ${error.message}`);
+    }
+}

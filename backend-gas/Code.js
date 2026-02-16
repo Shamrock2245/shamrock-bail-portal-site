@@ -194,7 +194,7 @@ function doGet(e) {
     // ---------------------------------------------
 
     // --- APP VERSION CONTROL ---
-    const APP_VERSION = 'v231-Release';
+    const APP_VERSION = 'v232-Release';
 
     // --- SLACK ALERT ---
     if (e.parameter.action === 'sendSlackAlert') {
@@ -486,12 +486,6 @@ function client_getCountyStats(countyName) {
 
 
 function client_getSystemStatus() {
-  const email = Session.getActiveUser().getEmail();
-  if (!isUserAllowed(email)) return { error: "Unauthorized Access" };
-
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const logs = [];
-
   ['Lee', 'Collier'].forEach(c => {
     const sh = ss.getSheetByName(c);
     if (sh && sh.getLastRow() > 1) {
@@ -622,6 +616,9 @@ function handleAction(data) {
   if (action === 'fetchIndemnitorProfile') {
     return { success: false, error: 'Profile lookup not yet implemented' };
   }
+
+  // 6. CONTENT & MEDIA
+  if (action === 'generateBlogAudio') return WORKFLOW_createBlogAudio(data.text, data.title, data.voiceId);
 
   // 4. UTILS
   if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
