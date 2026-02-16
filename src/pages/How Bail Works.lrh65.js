@@ -346,19 +346,19 @@ async function setupFAQ() {
                 questionEl.text = question;
             }
             
-            // Set answer text and collapse by default
+            // Set answer text and hide by default
             if (answerEl) {
                 answerEl.text = answerText;
-                answerEl.collapse();
+                answerEl.hide(); // Start hidden instead of collapsed
             }
 
             // Toggle function to show/hide answer
             const toggleFn = () => {
                 if (answerEl) {
-                    if (answerEl.collapsed) {
-                        answerEl.expand();
+                    if (answerEl.hidden) {
+                        answerEl.show();
                     } else {
-                        answerEl.collapse();
+                        answerEl.hide();
                     }
                 }
             };
