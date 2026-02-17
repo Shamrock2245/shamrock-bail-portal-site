@@ -54,7 +54,8 @@ function handleManusWhatsApp(params) {
                 userMessage = transcript;
                 logProcessingEvent("MANUS_AUDIO_TRANSCRIBED", { from: from, text: userMessage });
             } else {
-                NotificationService.sendWhatsApp(from, "Sorry, I couldn't hear that clearly. Could you type it?");
+                const whatsapp = new WhatsAppCloudAPI();
+                whatsapp.sendText(from.replace('whatsapp:', ''), "Sorry, I couldn't hear that clearly. Could you type it?");
                 return ContentService.createTextOutput("Audio transcription failed");
             }
         }
@@ -75,7 +76,8 @@ function handleManusWhatsApp(params) {
 
         // 3. Send Text Response
         if (replyText) {
-            NotificationService.sendWhatsApp(from, replyText);
+            const whatsapp = new WhatsAppCloudAPI();
+            whatsapp.sendText(from.replace('whatsapp:', ''), replyText);
         }
 
         // 4. Send Voice Note (if applicable)
@@ -87,7 +89,9 @@ function handleManusWhatsApp(params) {
 
     } catch (e) {
         console.error("Manus Brain Error:", e);
-        NotificationService.sendWhatsApp(from, "I'm having a little trouble thinking right now. A human agent will be with you shortly.");
+        // Use direct WhatsApp Cloud API
+        const whatsapp = new WhatsAppCloudAPI();
+        whatsapp.sendText(from.replace('whatsapp:', ''), "I'm having a little trouble thinking right now. A human agent will be with you shortly.");
         return ContentService.createTextOutput("Error: " + e.message);
     }
 }
@@ -122,8 +126,9 @@ function generateAndSendVoiceNote(to, script) {
         // Better to use: https://drive.google.com/uc?export=download&id=FILE_ID
         const directUrl = `https://drive.google.com/uc?export=download&id=${file.getId()}`;
 
-        // C. Send via Twilio
-        NotificationService.sendWhatsApp(to, "", directUrl);
+        // C. Send via WhatsApp Cloud API
+        const whatsapp = new WhatsAppCloudAPI();
+        whatsapp.sendAudio(to.replace('whatsapp:', ''), directUrl);
 
         // Cleanup? We might want to delete these files later to save space.
         // For now, keep them as logs.

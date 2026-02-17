@@ -174,12 +174,42 @@ var NotificationService = (function() {
     },
 
     /**
-     * Send WhatsApp Message via Twilio.
+     * Send WhatsApp Message via Direct Cloud API (No Twilio)
      * @param {string} to - Recipient number (e.g. +1239...)
      * @param {string} body - Message text
      * @param {string} mediaUrl - (Optional) URL to media file (voice note, image)
      */
     sendWhatsApp: function(to, body, mediaUrl) {
+      try {
+        // Use direct WhatsApp Cloud API
+        const whatsapp = new WhatsAppCloudAPI();
+        
+        if (mediaUrl) {
+          // Determine media type from URL
+          if (mediaUrl.includes('.mp3') || mediaUrl.includes('.ogg') || mediaUrl.includes('audio')) {
+            return whatsapp.sendAudio(to, mediaUrl);
+          } else if (mediaUrl.includes('.jpg') || mediaUrl.includes('.png') || mediaUrl.includes('image')) {
+            return whatsapp.sendImage(to, mediaUrl, body);
+          } else {
+            // Default to text with URL
+            return whatsapp.sendText(to, body + '\n' + mediaUrl);
+          }
+        } else {
+          return whatsapp.sendText(to, body);
+        }
+      } catch (e) {
+        logError_('sendWhatsApp', e.message);
+        return { success: false, error: e.message };
+      }
+    },
+
+    /**
+     * Send WhatsApp Message via Twilio (DEPRECATED - Use sendWhatsApp instead)
+     * @param {string} to - Recipient number (e.g. +1239...)
+     * @param {string} body - Message text
+     * @param {string} mediaUrl - (Optional) URL to media file (voice note, image)
+     */
+    sendWhatsAppTwilio: function(to, body, mediaUrl) {
       try {
         const props = getConfig_();
         const sid = props.getProperty('TWILIO_ACCOUNT_SID');

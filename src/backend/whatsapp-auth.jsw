@@ -1,0 +1,184 @@
+/**
+ * ============================================================================
+ * whatsapp-auth.jsw (Wix Backend)
+ * ============================================================================
+ * WhatsApp OTP Authentication Backend Functions
+ * 
+ * Provides frontend-callable functions for WhatsApp OTP login flow.
+ * Communicates with GAS backend for OTP generation and validation.
+ * 
+ * Functions:
+ * - sendWhatsAppOTP(phoneNumber)
+ * - validateWhatsAppOTP(phoneNumber, otpCode)
+ * - resendWhatsAppOTP(phoneNumber)
+ * ============================================================================
+ */
+
+import { fetch } from 'wix-fetch';
+import { getSecret } from 'wix-secrets-backend';
+
+/**
+ * Get GAS Web App URL from secrets
+ * @return {Promise<string>} GAS Web App URL
+ */
+async function getGasUrl() {
+    try {
+        const url = await getSecret('GAS_WEB_APP_URL');
+        if (!url) {
+            throw new Error('GAS_WEB_APP_URL not configured in Wix Secrets');
+        }
+        return url;
+    } catch (error) {
+        console.error('Failed to get GAS URL:', error);
+        throw new Error('Backend configuration error');
+    }
+}
+
+/**
+ * Send WhatsApp OTP to user
+ * @param {string} phoneNumber - User's WhatsApp number
+ * @return {Promise<Object>} Result object
+ */
+export async function sendWhatsAppOTP(phoneNumber) {
+    try {
+        console.log('📱 Sending WhatsApp OTP to:', phoneNumber);
+
+        // Validate phone number
+        if (!phoneNumber || phoneNumber.trim() === '') {
+            return {
+                success: false,
+                message: 'Phone number is required'
+            };
+        }
+
+        // Get GAS URL
+        const gasUrl = await getGasUrl();
+
+        // Call GAS backend
+        const response = await fetch(`${gasUrl}?action=whatsapp_send_otp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                phoneNumber: phoneNumber
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        console.log('✅ OTP send result:', result);
+        return result;
+
+    } catch (error) {
+        console.error('❌ Error sending WhatsApp OTP:', error);
+        return {
+            success: false,
+            message: 'Failed to send OTP. Please try again.'
+        };
+    }
+}
+
+/**
+ * Validate WhatsApp OTP and create session
+ * @param {string} phoneNumber - User's WhatsApp number
+ * @param {string} otpCode - OTP code entered by user
+ * @return {Promise<Object>} Result with session token if valid
+ */
+export async function validateWhatsAppOTP(phoneNumber, otpCode) {
+    try {
+        console.log('🔐 Validating WhatsApp OTP for:', phoneNumber);
+
+        // Validate inputs
+        if (!phoneNumber || !otpCode) {
+            return {
+                valid: false,
+                error: 'Phone number and OTP code are required'
+            };
+        }
+
+        // Get GAS URL
+        const gasUrl = await getGasUrl();
+
+        // Call GAS backend
+        const response = await fetch(`${gasUrl}?action=whatsapp_validate_otp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                phoneNumber: phoneNumber,
+                otpCode: otpCode
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        console.log('✅ OTP validation result:', result.valid ? 'Valid' : 'Invalid');
+        return result;
+
+    } catch (error) {
+        console.error('❌ Error validating WhatsApp OTP:', error);
+        return {
+            valid: false,
+            error: 'Validation failed. Please try again.'
+        };
+    }
+}
+
+/**
+ * Resend WhatsApp OTP (with rate limiting)
+ * @param {string} phoneNumber - User's WhatsApp number
+ * @return {Promise<Object>} Result object
+ */
+export async function resendWhatsAppOTP(phoneNumber) {
+    try {
+        console.log('🔄 Resending WhatsApp OTP to:', phoneNumber);
+
+        // Validate phone number
+        if (!phoneNumber || phoneNumber.trim() === '') {
+            return {
+                success: false,
+                message: 'Phone number is required'
+            };
+        }
+
+        // Get GAS URL
+        const gasUrl = await getGasUrl();
+
+        // Call GAS backend
+        const response = await fetch(`${gasUrl}?action=whatsapp_resend_otp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                phoneNumber: phoneNumber
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        console.log('✅ OTP resend result:', result);
+        return result;
+
+    } catch (error) {
+        console.error('❌ Error resending WhatsApp OTP:', error);
+        return {
+            success: false,
+            message: 'Failed to resend OTP. Please try again.'
+        };
+    }
+}

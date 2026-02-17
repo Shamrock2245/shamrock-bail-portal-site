@@ -1,21 +1,26 @@
 /**
- * Shamrock Bail Bonds - Portal Landing Page (SIMPLIFIED v2.0)
- * Last Updated: 2026-01-21 (Session Token URL Fix)
+ * Shamrock Bail Bonds - Portal Landing Page (v3.0 - WhatsApp OTP)
+ * Last Updated: 2026-02-17 (WhatsApp OTP Integration)
  * 
- * SIMPLIFIED AUTHENTICATION FLOW:
- * 1. User enters email/phone → Click "Get Started"
- * 2. System auto-detects if new or returning user
- * 3. Sends magic link with role embedded
- * 4. One-click login directly to correct portal
+ * DUAL AUTHENTICATION FLOW:
  * 
- * NO MORE:
- * - Access code manual entry
- * - Role button selection
- * - Multiple confusing steps
+ * A. EMAIL MAGIC LINK (Existing):
+ * 1. User enters email → Click "Get Started"
+ * 2. Receives magic link via email
+ * 3. One-click login to portal
+ * 
+ * B. WHATSAPP OTP (New):
+ * 1. User enters WhatsApp number → Click "Get Started"
+ * 2. Receives OTP code via WhatsApp
+ * 3. Enters OTP code → Logs in to portal
  * 
  * Page Elements (Must exist in Wix Editor):
- * - #emailPhoneInput: Text input for email or phone
+ * - #emailPhoneInput: Text input for email or WhatsApp number
  * - #getStartedBtn: Primary CTA button
+ * - #whatsappLoginBtn: WhatsApp login button (optional)
+ * - #otpInputBox: Container for OTP input (hidden by default)
+ * - #otpInput: Text input for OTP code
+ * - #verifyOtpBtn: Button to verify OTP
  * - #statusMessage: Text element for success/error messages
  * - #loadingBox: Container for loading state (optional)
  */
@@ -23,14 +28,15 @@
 import wixLocation from 'wix-location';
 import { sendMagicLinkSimplified, onMagicLinkLoginV2, validateCustomSession } from 'backend/portal-auth';
 import { getGoogleAuthUrl, getFacebookAuthUrl } from 'backend/social-auth';
+import { sendWhatsAppOTP, validateWhatsAppOTP, resendWhatsAppOTP } from 'backend/whatsapp-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 import { initAIChat } from 'public/ai-concierge';
 import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
-import { authentication } from 'wix-members-frontend'; // NEW: For persistent sessions
+import { authentication } from 'wix-members-frontend'; // For persistent sessions
 
 $w.onReady(async function () {
-    console.log("🚀 Portal Landing v2.2: Fix Query Scope");
+    console.log("🚀 Portal Landing v3.0: WhatsApp OTP Integration");
     const query = wixLocation.query;
 
     // 1. PRIORITY: Check for magic link token in URL (returning from email/SMS)
