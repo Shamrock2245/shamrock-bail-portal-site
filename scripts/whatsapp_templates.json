@@ -1,0 +1,28 @@
+{
+    "templates": {
+        "cold_asset_verification": {
+            "name": "cold_asset_verification",
+            "language": "en_US",
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {
+                            "type": "text",
+                            "text": "{{1}}"
+                        },
+                        {
+                            "type": "text",
+                            "text": "{{2}}"
+                        },
+                        {
+                            "type": "text",
+                            "text": "{{3}}"
+                        }
+                    ]
+                }
+            ],
+            "text_preview": "Hi {{1}}, this is Brendan with Shamrock Bail Bonds. We received a booking notification for {{2}} in {{3}}. Are you the correct point of contact for their release requirements? Reply YES or STOP to opt out."
+        }
+    }
+}

@@ -1,20 +1,16 @@
-// Page: portal-staff.qs9dx.js (CUSTOM AUTH VERSION)
-// Function: Staff Dashboard for Case Management (Stats, Search, Filtering)
-// Last Updated: 2026-01-08
-//
-// AUTHENTICATION: Custom session-based (NO Wix Members)
-// Uses browser storage (wix-storage-frontend) session tokens validated against PortalSessions collection
-
 import wixData from 'wix-data';
 import wixLocation from 'wix-location';
 import { LightboxController } from 'public/lightbox-controller';
 import { validateCustomSession, generateMagicLink, getStaffDashboardData } from 'backend/portal-auth';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
+// @ts-ignore
 import wixSeo from 'wix-seo';
 import { getDashboardUrl } from 'backend/gasIntegration';
 import { generateAndSendMagicLink, generateMagicLinkOnly } from 'backend/magic-link-manager';
 import { sendStealthPingSms } from 'backend/twilio-client';
+// @ts-ignore
 import wixAnimations from 'wix-animations';
+import { finalizeCase } from 'backend/defendant-matching';
 
 let allCases = []; // Store locally for fast filtering
 let currentSession = null; // Store validated session data
@@ -246,7 +242,7 @@ function setupRepeater() {
 
             // Actions - View Map Button (formerly Details)
             try {
-                const mapBtn = $item('#detailsBtn'); // User renamed label to "View Map"
+                const mapBtn = $item('#btnViewMap');
                 if (mapBtn) {
                     // Check if we have an address
                     if (!itemData.address) {
@@ -263,14 +259,17 @@ function setupRepeater() {
                             showStaffMessage("No address on file", "error");
                         }
                     });
-                } else { console.warn("Missing element: #detailsBtn"); }
+                } else {
+                    // Fallback to old ID if new one isn't found yet (User Code Transition)
+                    if ($item('#detailsBtn')) { console.warn("Using legacy ID #detailsBtn. Please rename to #btnViewMap"); }
+                }
             } catch (e) {
                 console.error('Error setting up map button:', e);
             }
 
             // Actions - View Files Button (formerly Send Magic Link)
             try {
-                const filesBtn = $item('#sendMagicLinkBtn'); // User renamed label to "Files"
+                const filesBtn = $item('#btnViewFiles');
                 if (filesBtn) {
                     // Check if we have a folder
                     if (!itemData.driveFolderUrl) {
@@ -286,6 +285,9 @@ function setupRepeater() {
                             showStaffMessage("No document folder linked", "error");
                         }
                     });
+                } else {
+                    // Fallback/Warning
+                    if ($item('#sendMagicLinkBtn')) { console.warn("Using legacy ID #sendMagicLinkBtn. Please rename to #btnViewFiles"); }
                 }
             } catch (e) {
                 console.error('Error setting up files button:', e);
@@ -875,7 +877,6 @@ async function handleFinalizePaperwork(itemData) {
         // Step 4: Call backend to finalize
         showStaffMessage('Finalizing case...', 'info');
 
-        const { finalizeCase } = await import('backend/defendant-matching');
         const result = await finalizeCase(itemData._id, {
             powerNumber: powerNumber,
             caseNumber: caseNumber,

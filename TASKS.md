@@ -32,6 +32,10 @@
 - [x] **Submit Button Fix:** Robust ID detection (`#btnSubmitInfo` / `#btnSubmitForm`) for Indemnitor Portal.
 - [x] **Git Sync:** Full parity achieved between local desktop and remote repo.
 
+## ✅ Phase 3.6: Operational Tools (Complete)
+- [x] **Stealth Poke:** Location logging + SMS backend (`location-tracker.jsw`).
+- [x] **Staff Portal 2.0:** "View Map" and "Files" buttons wired to real data.
+
 ---
 
 ## 🚧 Phase 4: System Verification (Current Focus)
@@ -55,7 +59,19 @@
 
 ---
 
-## 🔮 Phase 5: "Bail School" & Scale
+## 🚀 Phase 5: Hyper-Growth & Modernization (Active)
+- [ ] **WhatsApp Integration:**
+    - [ ] Enable Twilio WhatsApp Sandbox.
+    - [ ] Update `backend/twilio-client.jsw` to support WhatsApp channel.
+    - [ ] Add "Chat on WhatsApp" button to sticky mobile footer.
+- [ ] **"The Scout" Agent (Expansion):**
+    - [ ] Configure `AI_BookingParser.js` for 5 new county URLs.
+    - [ ] Set up daily cron triggers in GAS.
+- [ ] **"The Closer" Bot:**
+    - [ ] Design abandoned cart workflow (SMS drip).
+    - [ ] Implement trigger on `IntakeQueue` timeout.
+
+## 🔮 Phase 6: "Bail School" & Scale
 - [ ] **Landing Page:** Design high-converting registration page (`/bail-school`).
 - [ ] **Video Integration:** Embed verified educational content.
 - [ ] **Certificate:** Auto-issue PDF upon completion.
