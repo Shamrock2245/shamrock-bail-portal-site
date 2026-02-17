@@ -1,28 +1,61 @@
 {
     "templates": {
-        "cold_asset_verification": {
-            "name": "cold_asset_verification",
+        "start_consultation": {
+            "name": "start_consultation",
             "language": "en_US",
+            "category": "MARKETING",
             "components": [
                 {
-                    "type": "body",
-                    "parameters": [
+                    "type": "BODY",
+                    "text": "Hi {{1}}, this is Shamrock Bail Bonds. We received an inquiry regarding bail for {{2}}. Do you have 5 minutes to discuss the release options? Reply YES to chat or STOP to opt out."
+                },
+                {
+                    "type": "BUTTONS",
+                    "buttons": [
                         {
-                            "type": "text",
-                            "text": "{{1}}"
+                            "type": "QUICK_REPLY",
+                            "text": "Yes, I'm ready"
                         },
                         {
-                            "type": "text",
-                            "text": "{{2}}"
-                        },
-                        {
-                            "type": "text",
-                            "text": "{{3}}"
+                            "type": "QUICK_REPLY",
+                            "text": "Call me instead"
                         }
                     ]
                 }
-            ],
-            "text_preview": "Hi {{1}}, this is Brendan with Shamrock Bail Bonds. We received a booking notification for {{2}} in {{3}}. Are you the correct point of contact for their release requirements? Reply YES or STOP to opt out."
+            ]
+        },
+        "send_paperwork_link": {
+            "name": "send_paperwork_link",
+            "language": "en_US",
+            "category": "UTILITY",
+            "components": [
+                {
+                    "type": "BODY",
+                    "text": "Hi {{1}}, to speed up the release process for {{2}}, please review and sign the digital bail documents here: {{3}}"
+                }
+            ]
+        },
+        "court_date_reminder": {
+            "name": "court_date_reminder",
+            "language": "en_US",
+            "category": "UTILITY",
+            "components": [
+                {
+                    "type": "BODY",
+                    "text": "Reminder: {{1}} has a court appearance tomorrow, {{2}}, at {{3}}. Location: {{4}}. Please arrive 15 minutes early."
+                }
+            ]
+        },
+        "general_followup": {
+            "name": "general_followup",
+            "language": "en_US",
+            "category": "MARKETING",
+            "components": [
+                {
+                    "type": "BODY",
+                    "text": "Hi {{1}}, just checking in. Do you still need assistance with bail for {{2}}? We're available 24/7."
+                }
+            ]
         }
     }
 }

@@ -40,20 +40,13 @@ def main():
     templates_data = load_json(TEMPLATES_FILE)
     templates = templates_data.get("templates", {})
     
-    # 2. Load Leads (Mocking for now if file doesn't exist)
-    leads = load_json(LEADS_FILE)
+    # 2. Load Leads
+    from leads_loader import get_outreach_leads
+    leads = get_outreach_leads()
+    
     if not leads:
-        print(f"No leads found in {LEADS_FILE}. Creating a dummy lead for testing.")
-        leads = [
-            {
-                "id": "test_001",
-                "name": "Jane Doe",
-                "phone": "15550001111", # Replace with real number for testing
-                "defendant": "John Doe",
-                "jail": "Pinellas County",
-                "charges": "DUI"
-            }
-        ]
+        print(f"No leads found from API or local file. Exiting.")
+        return
     
     # 3. Iterate
     for lead in leads:

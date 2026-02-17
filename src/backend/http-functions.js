@@ -1581,3 +1581,50 @@ export async function post_openAIWebhook(request) {
         return serverError({ body: { error: error.message } });
     }
 }
+
+/**
+ * GET /api/outreach/leads
+ * Fetch leads for the outreach manager script
+ * 
+ * Protected by GAS_API_KEY
+ */
+export async function get_outreachLeads(request) {
+    try {
+        const apiKey = request.query.apiKey;
+
+        // Validate API Key
+        const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
+        if (!apiKey || apiKey !== validApiKey) {
+            return forbidden({
+                body: { success: false, message: 'Invalid API key' }
+            });
+        }
+
+        // Query IntakeQueue for potential leads
+        // You might want to filter by status or created date here
+        const results = await wixData.query('IntakeQueue')
+            .limit(50) // Limit to 50 for now
+            .descending('_createdDate')
+            .find();
+
+        const leads = results.items.map(item => ({
+            id: item._id,
+            name: `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Unknown',
+            phone: item.phone || '',
+            email: item.email || '',
+            status: item.status || 'new',
+            createdDate: item._createdDate
+        }));
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: { success: true, leads: leads }
+        });
+
+    } catch (error) {
+        console.error('Error fetching outreach leads:', error);
+        return serverError({
+            body: { success: false, message: error.message }
+        });
+    }
+}

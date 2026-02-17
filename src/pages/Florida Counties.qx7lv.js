@@ -439,45 +439,61 @@ async function populateMainUI(county, currentSlug) {
                     console.log(`✅ Set question: ${question.substring(0, 50)}...`);
                 }
 
-                // Check if answer element is a CollapsibleText element
+                // --- Unified FAQ Handling Logic ---
+                // 1. Identify Answer Group (The container/element to hide/show)
+                const answerGroup = $item('#groupAnswer').uniqueId ? $item('#groupAnswer') : ($item('#boxAnswer').uniqueId ? $item('#boxAnswer') : aText);
+
+                // 2. Identify Toggle Trigger (The element to click)
+                // Priority: Box > Container > Header > Question Text
+                const toggleTrigger = $item('#boxQuestion').uniqueId ? $item('#boxQuestion') :
+                    ($item('#containerQuestion').uniqueId ? $item('#containerQuestion') :
+                        ($item('#faqContainer').uniqueId ? $item('#faqContainer') :
+                            ($item('#groupHeader').uniqueId ? $item('#groupHeader') : qText)));
+
+                // 3. Identify Icons
+                const arrowDown = $item('#iconArrowDown');
+                const arrowUp = $item('#iconArrowUp');
+
+                // 4. Set Answer Text & Handle CollapsibleText specifics
                 if (aText.uniqueId) {
-                    // Check if it's a CollapsibleText by checking for collapseText method
                     const isCollapsibleText = typeof aText.collapseText === 'function';
-                    console.log(`📝 Answer element type: ${aText.type}, isCollapsibleText: ${isCollapsibleText}`);
 
                     if (isCollapsibleText) {
-                        // It's a CollapsibleText - MUST expand first, then set text, then collapse
+                        // For CollapsibleText: Expand text fully so it acts like a normal text element inside our accordion
                         try {
-                            aText.expandText(); // Expand first
-                            aText.text = answer; // Set the answer text
-                            console.log(`✅ Set CollapsibleText answer: ${answer.substring(0, 50)}...`);
-                            aText.collapseText(); // Collapse after setting text
-                            // Note: readMoreActionType is read-only and must be set in Wix Editor, not code
+                            aText.expandText();
+                            aText.text = answer;
+                            // Do NOT call collapseText() here, because we want the full text to be visible when the accordion opens.
+                            // We rely on answerGroup.collapse() below to hide it initially.
                         } catch (e) {
                             console.error(`❌ Error setting CollapsibleText:`, e);
+                            aText.text = answer; // Fallback
                         }
                     } else {
-                        // It's a regular text element - use old logic
                         aText.text = answer;
-
-                        // Group/Container Logic for regular text
-                        const answerGroup = $item('#groupAnswer').uniqueId ? $item('#groupAnswer') : ($item('#boxAnswer').uniqueId ? $item('#boxAnswer') : aText);
-                        const toggleTrigger = $item('#containerQuestion').uniqueId ? $item('#containerQuestion') : ($item('#faqContainer').uniqueId ? $item('#faqContainer') : ($item('#groupHeader').uniqueId ? $item('#groupHeader') : qText));
-
-                        // Initialize State
-                        if (answerGroup.uniqueId) answerGroup.collapse();
-
-                        // Handle Accordion Interaction
-                        if (toggleTrigger.uniqueId) {
-                            toggleTrigger.onClick(() => {
-                                if (answerGroup.collapsed) {
-                                    answerGroup.expand();
-                                } else {
-                                    answerGroup.collapse();
-                                }
-                            });
-                        }
                     }
+                }
+
+                // 5. Initialize State (Collapsed)
+                if (answerGroup.uniqueId) {
+                    answerGroup.collapse(); // Initially hidden
+                }
+                if (arrowDown.uniqueId) arrowDown.show();
+                if (arrowUp.uniqueId) arrowUp.hide();
+
+                // 6. Interaction Logic (Click to Toggle)
+                if (toggleTrigger.uniqueId) {
+                    toggleTrigger.onClick(() => {
+                        if (answerGroup.collapsed) {
+                            answerGroup.expand();
+                            if (arrowDown.uniqueId) arrowDown.hide();
+                            if (arrowUp.uniqueId) arrowUp.show();
+                        } else {
+                            answerGroup.collapse();
+                            if (arrowDown.uniqueId) arrowDown.show();
+                            if (arrowUp.uniqueId) arrowUp.hide();
+                        }
+                    });
                 }
             });
 
