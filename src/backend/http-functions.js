@@ -1628,3 +1628,154 @@ export async function get_outreachLeads(request) {
         });
     }
 }
+
+
+// ============================================================================
+// WHATSAPP CLOUD API WEBHOOKS
+// ============================================================================
+// Register in Meta Developer Console > App > WhatsApp > Configuration:
+//   Callback URL:  https://www.shamrockbailbonds.biz/_functions/webhookWhatsApp
+//   Verify Token:  (value of Wix Secret: WHATSAPP_WEBHOOK_VERIFY_TOKEN)
+//
+// Required Wix Secrets:
+//   WHATSAPP_WEBHOOK_VERIFY_TOKEN  — random string you set in Meta console
+//   WHATSAPP_APP_SECRET            — App Secret from Meta App Dashboard
+//   WHATSAPP_ACCESS_TOKEN          — Permanent System User token
+//   WHATSAPP_PHONE_NUMBER_ID       — Numeric Phone Number ID from WhatsApp Manager
+// ============================================================================
+
+/**
+ * GET /_functions/webhookWhatsApp
+ * Meta webhook verification handshake.
+ */
+export async function get_webhookWhatsApp(request) {
+    try {
+        const mode      = request.query['hub.mode'];
+        const token     = request.query['hub.verify_token'];
+        const challenge = request.query['hub.challenge'];
+        const verifyToken = await getSecret('WHATSAPP_WEBHOOK_VERIFY_TOKEN').catch(() => null);
+        if (mode === 'subscribe' && token === verifyToken) {
+            console.log('[WhatsApp Webhook] Verification successful');
+            return ok({ headers: { 'Content-Type': 'text/plain' }, body: challenge });
+        }
+        console.warn('[WhatsApp Webhook] Verification failed');
+        return forbidden({ body: 'Verification failed' });
+    } catch (error) {
+        console.error('[WhatsApp Webhook] Verification error:', error);
+        return serverError({ body: { error: error.message } });
+    }
+}
+
+/**
+ * POST /_functions/webhookWhatsApp
+ * Receives all inbound WhatsApp events (messages, status updates).
+ */
+export async function post_webhookWhatsApp(request) {
+    try {
+        const bodyText  = await request.body.text();
+        const signature = request.headers['x-hub-signature-256'] || '';
+
+        // 1. Verify signature
+        const appSecret = await getSecret('WHATSAPP_APP_SECRET').catch(() => null);
+        if (appSecret && signature) {
+            const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(bodyText).digest('hex');
+            if (expected !== signature) {
+                console.warn('[WhatsApp Webhook] Signature mismatch');
+                return forbidden({ body: 'Invalid signature' });
+            }
+        }
+
+        // 2. Parse payload
+        let payload;
+        try { payload = JSON.parse(bodyText); } catch (e) { return badRequest({ body: { error: 'Invalid JSON' } }); }
+
+        const entry   = payload.entry   && payload.entry[0];
+        const changes = entry && entry.changes && entry.changes[0];
+        const value   = changes && changes.value;
+        if (!value) return ok({ body: { received: true } });
+
+        // 3. Status updates
+        if (value.statuses && value.statuses.length) {
+            for (const s of value.statuses) { await _waStatusUpdate(s); }
+        }
+
+        // 4. Inbound messages
+        if (value.messages && value.messages.length) {
+            for (const m of value.messages) {
+                const contact = (value.contacts || []).find(c => c.wa_id === m.from) || {};
+                await _waInboundMessage(m, contact);
+            }
+        }
+
+        return ok({ body: { received: true } });
+    } catch (error) {
+        console.error('[WhatsApp Webhook] POST error:', error);
+        return ok({ body: { received: true, error: error.message } }); // always 200 to Meta
+    }
+}
+
+async function _waInboundMessage(message, contact) {
+    const from      = message.from;
+    const msgId     = message.id;
+    const type      = message.type;
+    const name      = (contact.profile && contact.profile.name) || 'Unknown';
+    const timestamp = new Date(parseInt(message.timestamp) * 1000).toISOString();
+    let textBody = '';
+    if (type === 'text')        textBody = (message.text && message.text.body) || '';
+    else if (type === 'button') textBody = (message.button && message.button.text) || '';
+    else if (type === 'interactive') {
+        textBody = (message.interactive && message.interactive.button_reply && message.interactive.button_reply.title)
+                || (message.interactive && message.interactive.list_reply  && message.interactive.list_reply.title) || '';
+    }
+    console.log('[WhatsApp Webhook] Inbound from +' + from + ' (' + name + '): "' + textBody + '"');
+
+    // Log to CMS
+    try {
+        await wixData.insert('WhatsAppMessages', {
+            waId: from, messageId: msgId, direction: 'inbound',
+            type: type, body: textBody, senderName: name,
+            timestamp: timestamp, rawPayload: JSON.stringify(message)
+        }, { suppressAuth: true });
+    } catch (e) { console.warn('[WhatsApp Webhook] CMS log error:', e.message); }
+
+    // Forward to GAS for business logic
+    try {
+        const gasUrl = await getSecret('GAS_WEB_APP_URL').catch(() => null);
+        const apiKey = await getSecret('GAS_API_KEY').catch(() => null);
+        if (gasUrl && apiKey) {
+            const { fetch: wf } = await import('wix-fetch');
+            wf(gasUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'whatsapp_inbound_message', apiKey, from, name, messageId: msgId, type, body: textBody, timestamp })
+            }).catch(err => console.warn('[WhatsApp Webhook] GAS fwd error:', err));
+        }
+    } catch (e) { console.warn('[WhatsApp Webhook] GAS route error:', e.message); }
+
+    // Mark as read
+    try {
+        const token = await getSecret('WHATSAPP_ACCESS_TOKEN').catch(() => null);
+        const pid   = await getSecret('WHATSAPP_PHONE_NUMBER_ID').catch(() => null);
+        if (token && pid) {
+            const { fetch: wf } = await import('wix-fetch');
+            wf('https://graph.facebook.com/v21.0/' + pid + '/messages', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messaging_product: 'whatsapp', status: 'read', message_id: msgId })
+            }).catch(() => {});
+        }
+    } catch (e) {}
+}
+
+async function _waStatusUpdate(status) {
+    const ts = new Date(parseInt(status.timestamp) * 1000).toISOString();
+    try {
+        const res = await wixData.query('WhatsAppMessages').eq('messageId', status.id).find({ suppressAuth: true });
+        if (res.items.length > 0) {
+            const item = res.items[0];
+            item.deliveryStatus  = status.status;
+            item.statusUpdatedAt = ts;
+            await wixData.update('WhatsAppMessages', item, { suppressAuth: true });
+        }
+    } catch (e) {}
+}

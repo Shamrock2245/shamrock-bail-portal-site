@@ -160,6 +160,9 @@ export async function sendAdminNotification(type, data) {
         // Send to Slack via GAS
         await sendSlackNotification(type, data);
 
+        // Send WhatsApp notification to relevant parties
+        await sendWhatsAppNotification(type, data);
+
         // Also send email for critical notifications
         const criticalTypes = [
             NOTIFICATION_TYPES.SIGNING_DECLINED,
@@ -429,6 +432,61 @@ export async function reportSystemError(service, error, context = {}) {
         });
     } catch (err) {
         console.error('Double failure in reportSystemError:', err);
+    }
+}
+
+
+/**
+ * Send WhatsApp notification to relevant parties based on notification type.
+ * Uses whatsapp-auth.jsw sendWhatsAppText function.
+ */
+async function sendWhatsAppNotification(type, data) {
+    try {
+        const { sendWhatsAppText } = await import('backend/whatsapp-auth');
+        switch (type) {
+            case NOTIFICATION_TYPES.NEW_CASE: {
+                const phone = data.indemnitorPhone || data.phone || '';
+                if (!phone) break;
+                const name = data.indemnitorName || data.name || 'there';
+                const defendant = data.defendantName || 'your defendant';
+                const caseNum = data.caseNumber || '';
+                const bond = data.bondAmount || '';
+                const county = data.county || '';
+                await sendWhatsAppText(phone,
+                    'Hello ' + name + ', Shamrock Bail Bonds has processed a new bond for ' + defendant + '.' +
+                    (caseNum ? ' Case #: ' + caseNum + '.' : '') +
+                    (bond ? ' Bond: $' + bond + '.' : '') +
+                    (county ? ' County: ' + county + '.' : '') +
+                    ' Questions? Call (239) 332-2245.'
+                );
+                break;
+            }
+            case NOTIFICATION_TYPES.DOCUMENTS_READY: {
+                const phone = data.memberPhone || data.phone || '';
+                const name = data.memberName || data.name || 'there';
+                const signingLink = data.signingLink || '';
+                if (!phone || !signingLink) break;
+                await sendWhatsAppText(phone,
+                    'Hello ' + name + ', your Shamrock Bail Bonds documents are ready to sign: ' +
+                    signingLink + ' — This link expires in 48 hours. Questions? Call (239) 332-2245.'
+                );
+                break;
+            }
+            case NOTIFICATION_TYPES.URGENT_CASE: {
+                const phone = data.indemnitorPhone || data.phone || '';
+                const name = data.indemnitorName || data.name || 'there';
+                if (!phone) break;
+                await sendWhatsAppText(phone,
+                    'URGENT — Shamrock Bail Bonds: ' + (data.message || 'Your case requires immediate attention.') +
+                    ' Please call (239) 332-2245 immediately.'
+                );
+                break;
+            }
+            default:
+                break;
+        }
+    } catch (error) {
+        console.warn('[notificationService] WhatsApp notification error:', error.message);
     }
 }
 

@@ -628,6 +628,7 @@ function handleAction(data) {
   if (action === 'whatsapp_send_otp') return WA_sendOTP(data.phoneNumber);
   if (action === 'whatsapp_validate_otp') return WA_validateOTP(data.phoneNumber, data.otpCode);
   if (action === 'whatsapp_resend_otp') return WA_resendOTP(data.phoneNumber);
+  if (action === 'whatsapp_inbound_message') return handleWhatsAppInbound(data);
 
   // 8. DOCUMENT GENERATION (Magic Tags)
   if (action === 'generate_document') {
