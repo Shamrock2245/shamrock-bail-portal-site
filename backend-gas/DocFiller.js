@@ -100,6 +100,28 @@ class DocFiller {
             return acc;
         }, {});
     }
+
+    /**
+     * Resolves a Template Key (e.g., 'defendant-application') to a Google Doc ID.
+     * Relies on 'DOC_TEMPLATE_IDS' property being set by TaggingAssistant.js.
+     * @param {string} key 
+     * @return {string|null} Doc ID or null if not found
+     */
+    static getTemplateId(key) {
+        try {
+            const props = PropertiesService.getScriptProperties();
+            const json = props.getProperty('DOC_TEMPLATE_IDS');
+            if (!json) {
+                console.warn('DOC_TEMPLATE_IDS property not found. Run TaggingAssistant.scanAndRegisterTemplates() first.');
+                return null;
+            }
+            const templates = JSON.parse(json);
+            return templates[key] || null;
+        } catch (e) {
+            console.error('Error resolving template ID:', e);
+            return null;
+        }
+    }
 }
 
 /**
@@ -115,4 +137,21 @@ function fillDocumentTemplate(templateId, folderId, title, data) {
     const newDocId = filler.createCopy(title);
     filler.fillData(data);
     return newDocId;
+}
+
+/**
+ * Generates a document using a Template Key (e.g. 'defendant-application').
+ * Auto-resolves the Template ID from the registry.
+ * @param {string} templateKey - The key from DOC_FILENAME_MATCHER
+ * @param {string} folderId - Destination folder ID
+ * @param {string} title - New document title
+ * @param {Object} data - Form data
+ * @return {string} The ID of the created document
+ */
+function generateDocumentFromKey(templateKey, folderId, title, data) {
+    const templateId = DocFiller.getTemplateId(templateKey);
+    if (!templateId) {
+        throw new Error(`Template not found for key: ${templateKey}. Please run TaggingAssistant setup.`);
+    }
+    return fillDocumentTemplate(templateId, folderId, title, data);
 }

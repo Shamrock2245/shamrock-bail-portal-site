@@ -39,22 +39,22 @@
 
 const WA_SETUP_VALUES = {
     // From Meta App Dashboard > WhatsApp > API Setup
-    WHATSAPP_PHONE_NUMBER_ID:       '',   // e.g. '123456789012345'
-    WHATSAPP_ACCESS_TOKEN:          '',   // Permanent System User token
-    WHATSAPP_BUSINESS_ACCOUNT_ID:   '',   // WABA ID from Business Settings
-    WHATSAPP_APP_SECRET:            '',   // App Secret from App Settings > Basic
+    WHATSAPP_PHONE_NUMBER_ID: '',   // e.g. '123456789012345'
+    WHATSAPP_ACCESS_TOKEN: '',   // Permanent System User token
+    WHATSAPP_BUSINESS_ACCOUNT_ID: '3050872911967629',   // WABA ID from Business Settings (Confirmed by Manus)
+    WHATSAPP_APP_SECRET: '',   // App Secret from App Settings > Basic
 
     // Choose any random string — must match what you enter in Meta webhook config
-    WHATSAPP_WEBHOOK_VERIFY_TOKEN:  'shamrock_webhook_verify_2026',
+    WHATSAPP_WEBHOOK_VERIFY_TOKEN: 'shamrock_webhook_verify_2026',
 
     // Template names (must be approved in WhatsApp Manager > Message Templates)
-    WHATSAPP_AUTH_TEMPLATE_NAME:    'shamrock_otp',        // Authentication OTP template
-    WHATSAPP_COURT_TEMPLATE_NAME:   'court_date_reminder', // Court date reminder template
+    WHATSAPP_AUTH_TEMPLATE_NAME: 'shamrock_otp',        // Authentication OTP template
+    WHATSAPP_COURT_TEMPLATE_NAME: 'court_date_reminder', // Court date reminder template
 
     // Business info used in messages
-    SHAMROCK_OFFICE_PHONE:          '(239) 332-2245',
-    SHAMROCK_CELL_PHONE:            '(239) 955-0178',
-    PAYMENT_LINK:                   'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
+    SHAMROCK_OFFICE_PHONE: '(239) 332-2245',
+    SHAMROCK_CELL_PHONE: '(239) 955-0178',
+    PAYMENT_LINK: 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -171,11 +171,11 @@ function testWhatsAppOTP() {
  */
 function testWhatsAppInbound() {
     const testData = {
-        from:      '12399550178',
-        name:      'Test User',
+        from: '12399550178',
+        name: 'Test User',
         messageId: 'test_' + Date.now(),
-        type:      'text',
-        body:      'HERE',
+        type: 'text',
+        body: 'HERE',
         timestamp: String(Math.floor(Date.now() / 1000))
     };
     console.log('Testing inbound handler with:', JSON.stringify(testData));
@@ -192,14 +192,14 @@ function testCourtDateReminder() {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const caseData = {
-        defendantPhone:  '+12399550178',
-        defendantName:   'Test Defendant',
+        defendantPhone: '+12399550178',
+        defendantName: 'Test Defendant',
         indemnitorPhone: '',
-        indemnitorName:  '',
-        courtDate:       tomorrow.toLocaleDateString('en-US'),
-        courtTime:       '9:00 AM',
-        courtroom:       'Lee County Courthouse, Room 4A',
-        caseNumber:      'TEST-2026-001'
+        indemnitorName: '',
+        courtDate: tomorrow.toLocaleDateString('en-US'),
+        courtTime: '9:00 AM',
+        courtroom: 'Lee County Courthouse, Room 4A',
+        caseNumber: 'TEST-2026-001'
     };
 
     console.log('Sending 1-day court reminder to ' + caseData.defendantPhone + '...');
