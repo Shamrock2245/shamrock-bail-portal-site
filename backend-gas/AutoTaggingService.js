@@ -34,13 +34,14 @@ const TAGGING_CONFIG = {
         // Defendant Info
         { tag: '{{DefName}}', regex: /Name:\s*_+/i },
         { tag: '{{DefName}}', regex: /Defendant Name:\s*_+/i },
+        { tag: '{{DefName}}', regex: /Defendant:\s*_+/i }, // Added based on finding
         { tag: '{{DefDOB}}', regex: /Date of Birth:\s*_+/i },
         { tag: '{{DefSSN}}', regex: /SSN:\s*_+/i },
         { tag: '{{DefPhone}}', regex: /Phone:\s*_+/i },
         { tag: '{{DefEmail}}', regex: /Email:\s*_+/i },
         { tag: '{{DefAddress}}', regex: /Address:\s*_+/i },
         { tag: '{{DefCity}}', regex: /City:\s*_+/i },
-        { tag: '{{DefState}}', regex: /State:\s*_+/i }, // Careful with short lines
+        { tag: '{{DefState}}', regex: /State:\s*_+/i },
         { tag: '{{DefZip}}', regex: /Zip:\s*_+/i },
 
         // Bond Info
@@ -51,6 +52,7 @@ const TAGGING_CONFIG = {
 
         // Indemnitor Info
         { tag: '{{IndName}}', regex: /Indemnitor Name:\s*_+/i },
+        { tag: '{{IndName}}', regex: /Indemnitor\(s\):\s*_+/i }, // Added based on finding
         { tag: '{{IndAddress}}', regex: /Indemnitor Address:\s*_+/i },
 
         // Dates
@@ -72,100 +74,59 @@ function runAutoTagging() {
             const doc = DocumentApp.openById(id);
             const body = doc.getBody();
 
+            // DEBUG PROBES
+            if (name === 'paperwork-header') {
+                resultLog.push(`DEBUG: Searching 'paperwork-header'...`);
+                resultLog.push(`Found 'Defendant'? ${body.findText('Defendant') ? 'YES' : 'NO'}`);
+                resultLog.push(`Found underscores? ${body.findText('______') ? 'YES' : 'NO'}`);
+                resultLog.push(`Found 'Defendant: ______'? ${body.findText('Defendant: ______') ? 'YES' : 'NO'}`);
+                resultLog.push(`Found /Defendant:.*_+/? ${body.findText('Defendant:.*_+') ? 'YES' : 'NO'}`);
+            }
+
             let replaceCount = 0;
 
             TAGGING_CONFIG.patterns.forEach(p => {
-                // We use findText to locate the pattern
-                let found = body.findText(p.regex);
+                // Find all occurrences of the pattern
+                // passing the source string, not the RegExp object
+                let patternSource = p.regex.source;
+                let found = body.findText(patternSource);
 
                 while (found) {
-                    const element = found.getElement();
-                    const start = found.getStartOffset();
-                    const end = found.getEndOffsetInclusive();
+                    const element = found.getElement().asText();
+                    const startOffset = found.getStartOffset();
+                    const endOffset = found.getEndOffsetInclusive();
                     const text = element.getText();
 
-                    // We found e.g. "Name: ____________"
-                    // We want to replace it with "Name: {{DefName}}"
+                    // Extract the matched text (e.g., "Name: ______")
+                    // Note: findText returns a range, but getText returns the whole element text.
+                    // We need to match precisely to replace safely.
 
-                    // Check if it's already tagged to avoid double tagging
-                    if (!text.includes(p.tag)) {
-                        // Determine label from regex match (e.g. "Name: ")
-                        // Simple approach: Replace the whole match string with "Label: {{Tag}}" requires knowing the label.
-                        // Better approach: Regex replace on the text content of the element?
+                    const match = text.substring(startOffset, endOffset + 1);
 
-                        // Simple replaceText on body is safer for global replace
-                        body.replaceText(p.regex.source, p.tag);
-                        // Note: replaceText takes string pattern, not regex object in GAS? 
-                        // "searchPattern	String	A regular expression pattern to search for"
+                    // Create replacement: "Name: ______" -> "Name: {{Tag}}"
+                    // We replace the underscores within the match with the tag.
+                    const newTextForMatch = match.replace(/_+/, p.tag);
 
-                        // Wait, replaceText replaces the *whole pattern match* with the replacement.
-                        // If pattern is "Name: _____", replacement is "{{DefName}}", result is "{{DefName}}".
-                        // We lost "Name: ".
-                        // We need to capture the label? GAS replaceText doesn't support capture groups in replacement string easily.
+                    // We can use deleteText and insertText to be precise
+                    element.deleteText(startOffset, endOffset);
+                    element.insertText(startOffset, newTextForMatch);
 
-                        // Alternative:
-                        // The pattern should include the underscores ONLY?
-                        // But "________" is ambiguous.
+                    replaceCount++;
 
-                        // Strategy:
-                        // 1. Find text.
-                        // 2. Get the text string.
-                        // 3. Replace within the string using JS replace (which supports groups).
-                        // 4. Set the text back.
-                    }
-
-                    // Continue search
+                    // Continue search from the end of the insertion
+                    // Note: After modification, offsets change. 
+                    // findText continues from the *next* occurrence naturally if we call it again?
+                    // Actually, findText(searchPattern, startFrom) requires a RangeElement.
+                    // Easiest way in GAS loop is nicely handled if we are careful.
+                    // But modifying the document invalidates the 'found' range often.
+                    // Safest approach: Loop until no found (but strictly move forward).
+                    // Or, since we modified the text, the regex might not match anymore (good!).
                     found = body.findText(p.regex, found);
                 }
             });
 
-            // Since specific exact-match replacement is hard with just global replaceText,
-            // let's try a specific set of known full-string replacements if possible.
-            // OR, iterate paragraphs.
-
-            const paragraphs = body.getParagraphs();
-            paragraphs.forEach(para => {
-                let text = para.getText();
-                let modified = false;
-
-                TAGGING_CONFIG.patterns.forEach(p => {
-                    if (p.regex.test(text)) {
-                        // E.g. "Name: ________________" matches /Name:\s*_+/
-                        // We want "Name: {{DefName}}"
-                        // We need to know what part is the label.
-                        // Let's assume the label is everything before the underscores?
-
-                        // New Regex with capture: /^(.*name:)\s*_+/i
-                        // But our config patterns are simple.
-
-                        // Let's use a smart Replace:
-                        // Replace the underscores with the tag?
-                        // /Name:\s*(_+)/ -> replace group 1 with tag?
-
-                        // Let's refine the regex for JS replace
-                        // We need to match the Label AND the Underscores
-                        const match = text.match(p.regex);
-                        if (match) {
-                            // We replace the underscores part with the tag?
-                            // Or replace the whole match with "Safe Label" + Tag?
-
-                            // Let's try to just replace the underscores if they follow the keyword
-                            // const newText = text.replace(/(Name:\s*)(_+)/i, '$1{{DefName}}');
-
-                            // We need dynamic regex construction based on the pattern key?
-                            // Let's look at the patterns again.
-                            // { tag: '{{DefName}}', regex: /Name:\s*_+/i }
-
-                            // We can modify pattern to be: { tag: '{{DefName}}', label: 'Name' }
-                            // Then regex is new RegExp(label + ':\\s*_+', 'i')
-                        }
-                    }
-                });
-            });
-
-            // Save
             doc.saveAndClose();
-            resultLog.push(`  - Done`);
+            resultLog.push(`  - Done (${replaceCount} replacements)`);
 
         } catch (e) {
             resultLog.push(`  - Error: ${e.message}`);

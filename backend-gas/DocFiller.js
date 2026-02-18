@@ -52,14 +52,32 @@ class DocFiller {
         if (!this.doc) throw new Error("Document not open. Call createCopy() first.");
 
         // Flatten data for easier replacement (handle nested objects)
-        const flatData = this._flattenObject(data);
+        let flatData = this._flattenObject(data);
+
+        // Normalize using PDF_Mappings if available
+        if (typeof buildMasterDataObject === 'function') {
+            try {
+                const masterData = buildMasterDataObject(data);
+                // Merge masterData into flatData (masterData keys take precedence)
+                flatData = { ...flatData, ...masterData };
+                console.log('✅ Data normalized using PDF_Mappings');
+            } catch (e) {
+                console.warn('⚠️ Failed to normalize data with PDF_Mappings:', e);
+            }
+        }
 
         for (const [key, value] of Object.entries(flatData)) {
             const tag = `{{${key}}}`;
             // Replace all occurrences of the tag
             // Note: replaceText returns null if no match, which is fine
             // We process value to ensure it's a string
-            const replacement = value === null || value === undefined ? "" : String(value);
+            let replacement = value === null || value === undefined ? "" : String(value);
+
+            // Format Dates if they look like dates and aren't already formatted
+            if (value instanceof Date) {
+                replacement = Utilities.formatDate(value, 'America/New_York', 'MM/dd/yyyy');
+            }
+
             this.body.replaceText(tag, replacement);
         }
 
