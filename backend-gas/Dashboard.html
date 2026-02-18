@@ -4867,6 +4867,11 @@
          * Generate bail packet and send to SignNow
          */
         async function generateAndSend() {
+            // Updated to use the new Orchestrator
+            await generateAndSendWithWixPortal();
+            return;
+
+            /* LEGACY LOGIC BELOW (Unreachable) */
             const formData = collectFormData();
 
             if (!formData['defendant-first-name'] || !formData['defendant-last-name']) {
@@ -5859,9 +5864,13 @@
                     filledPdfs.push({
                         key: doc.key,
                         name: doc.name,
-                        data: pdfBase64
+                        data: pdfBase64,
+                        pageCount: pdfDoc.getPageCount(), // Added for signature offset calculation
+                        // Preserve copy metadata
+                        isCopy: doc.isCopy,
+                        indemnitorIndex: doc.indemnitorIndex
                     });
-                    console.log(`  Completed ${doc.key} with ${fieldCount} fields filled.`);
+                    console.log(`  Completed ${doc.key} with ${fieldCount} fields filled. Pages: ${pdfDoc.getPageCount()}`);
 
                 } catch (err) {
                     console.error(`Error filling PDF ${doc.name}:`, err);
@@ -6058,47 +6067,234 @@
         </div>
       `);
         }
-        async function previewPacket() {
-            const formData = collectFormData();
+        /* =========================================================
+           SERVER PROXY FUNCTIONS & ORCHESTRATION
+           ========================================================= */
 
-            if (!formData['defendant-first-name'] || !formData['defendant-last-name']) {
-                showToast('Please enter defendant name', 'error');
+        /**
+         * Wrapper for server-side PDF fetching
+         */
+        function fetchPDFsFromDrive(selectedDocs) {
+            return new Promise((resolve, reject) => {
+                const fileIds = selectedDocs.map(doc => doc.key);
+                google.script.run
+                    .withSuccessHandler(response => {
+                        // Map back to expected format for fillPDFsWithData
+                        const results = response.map((data, index) => ({
+                            key: selectedDocs[index].key,
+                            name: selectedDocs[index].name,
+                            bytes: Uint8Array.from(atob(data), c => c.charCodeAt(0)),
+                            isCopy: selectedDocs[index].isCopy || false,
+                            indemnitorIndex: selectedDocs[index].indemnitorIndex
+                        }));
+                        resolve(results);
+                    })
+                    .withFailureHandler(reject)
+                    .server_getPDFTemplatesBatch(fileIds);
+            });
+        }
+
+        /**
+         * Upload merged PDF to Drive via server
+         */
+        async function uploadPDFToTempStorage(pdfBytes, formData) {
+            return new Promise((resolve, reject) => {
+                const base64 = btoa(String.fromCharCode(...pdfBytes));
+                const defendantName = `${formData['defendant-first-name'] || 'Unknown'}_${formData['defendant-last-name'] || 'Defendant'}`;
+                const filename = `Bail_Packet_${defendantName}_${Date.now()}.pdf`;
+
+                google.script.run
+                    .withSuccessHandler(resolve)
+                    .withFailureHandler(reject)
+                    .server_saveCompositePDF(base64, filename);
+            });
+        }
+
+        /**
+        * Send to SignNow via Wix Backend Proxy
+        */
+        async function sendToSignNow(fileUrl, signatureFields, signers, formData) {
+            return new Promise((resolve, reject) => {
+                const payload = {
+                    fileUrl: fileUrl,
+                    signers: signers,
+                    signatureFields: signatureFields,
+                    folderName: `${formData['defendant-last-name']}, ${formData['defendant-first-name']}`
+                };
+
+                google.script.run
+                    .withSuccessHandler(resolve)
+                    .withFailureHandler(reject)
+                    .server_uploadAndSendForSigning(payload);
+            });
+        }
+
+        /**
+         * Store Pending Document via Wix Backend Proxy
+         */
+        async function storePendingDocument(result, formData) {
+            return new Promise((resolve, reject) => {
+                const payload = {
+                    documentId: result.id,
+                    status: 'Sent',
+                    defendantName: `${formData['defendant-first-name']} ${formData['defendant-last-name']}`,
+                    indemnitorName: formData['indemnitor-full-name'] || 'N/A',
+                    email: formData['indemnitor-email'] || '',
+                    timestamp: new Date().toISOString()
+                };
+
+                google.script.run
+                    .withSuccessHandler(resolve)
+                    .withFailureHandler(reject)
+                    .server_storePendingDocument(payload);
+            });
+        }
+
+        /**
+         * Send Notifications via Wix Backend Proxy
+         */
+        async function sendSigningNotifications(result, formData) {
+            return new Promise((resolve, reject) => {
+                const payload = {
+                    documentId: result.id,
+                    email: formData['indemnitor-email'],
+                    phone: formData['indemnitor-phone'],
+                    defendantName: `${formData['defendant-first-name']} ${formData['defendant-last-name']}`,
+                    link: result.signingLine
+                };
+
+                google.script.run
+                    .withSuccessHandler(resolve)
+                    .withFailureHandler(reject)
+                    .server_sendSigningNotification(payload);
+            });
+        }
+
+        /**
+         * Prepare Signature Fields with Page Offsets
+         */
+        function prepareSignatureFields(filledPdfs, formData) {
+            const fields = [];
+            let pageOffset = 0;
+
+            filledPdfs.forEach(doc => {
+                const templateKey = doc.key;
+                const docPageCount = doc.pageCount || 1;
+
+                // Get config for this template
+                const templateConfig = CONFIG.signatureFields[templateKey] || [];
+
+                templateConfig.forEach(field => {
+                    const newField = { ...field };
+                    newField.page_number += pageOffset;
+
+                    // Handle duplicate Indemnitors (e.g. SSA Release copies)
+                    if (doc.isCopy && doc.indemnitorIndex !== undefined && newField.role === 'Indemnitor') {
+                        // Assign to specific indemnitor role if needed
+                        // For now, checking if we need strict role separation.
+                        // If we have multiple indemnitors, we need multiple signer objects in the request.
+                        newField.role = `Indemnitor ${doc.indemnitorIndex + 1}`;
+                    } else if (newField.role === 'Indemnitor') {
+                        // Default to Indemnitor 1
+                        newField.role = 'Indemnitor 1';
+                    }
+
+                    fields.push(newField);
+                });
+
+                pageOffset += docPageCount;
+            });
+
+            return fields;
+        }
+
+        /**
+         * Main Orchestrator
+         */
+        async function generateAndSendWithWixPortal() {
+            const method = document.getElementById('signing-method').value;
+            if (method === 'download') {
+                previewPacket(); // Reuse preview for download
+                return;
+            }
+            if (method === 'kiosk') {
+                showToast('Kiosk mode not yet implemented on V2 Dashboard', 'warning');
                 return;
             }
 
-            // showProgress('Generating Preview', ['Fetching templates', 'Filling data', 'Merging PDF']);
-            UI.showLoading('Generating Preview', 'Preparing your document packet...');
+            const formData = collectFormData();
+            if (!formData['defendant-first-name']) {
+                showToast('Defendant name required', 'error');
+                return;
+            }
+
+            UI.showLoading('Starting Workflow', 'Validating data...');
 
             try {
-                // updateProgress(1, 'Fetching templates...');
-                UI.updateLoading(20, 'Fetching templates from Drive...');
+                // 1. Fetch
+                UI.updateLoading(10, 'Fetching templates...');
                 const selectedDocs = getSelectedDocuments();
                 if (selectedDocs.length === 0) throw new Error('No documents selected');
+                const pdfs = await fetchPDFsFromDrive(selectedDocs);
 
-                const pdfBytes = await fetchPDFsFromDrive(selectedDocs);
+                // 2. Fill
+                UI.updateLoading(30, 'Filling forms...');
+                const filledPdfs = await fillPDFsWithData(pdfs, formData);
 
-                // updateProgress(2, 'Filling data...');
-                UI.updateLoading(50, 'Filling forms with data...');
-                const filledPdfs = await fillPDFsWithData(pdfBytes, formData);
-
-                // updateProgress(3, 'Merging PDF...');
-                UI.updateLoading(80, 'Merging documents...');
+                // 3. Merge
+                UI.updateLoading(50, 'Merging packet...');
                 const mergedPdf = await mergePDFs(filledPdfs);
 
-                // Create blob and show modal
-                UI.updateLoading(95, 'Finalizing preview...');
-                const blob = new Blob([mergedPdf], { type: 'application/pdf' });
-                const url = URL.createObjectURL(blob);
+                // 4. Upload
+                UI.updateLoading(70, 'Uploading to secure storage...');
+                const fileUrl = await uploadPDFToTempStorage(mergedPdf, formData);
 
-                // hideProgress();
+                // 5. Send to SignNow
+                UI.updateLoading(85, 'Sending to SignNow...');
+
+                // Prepare Signers
+                const signers = [];
+
+                // Indemnitors
+                if (formData.indemnitors && formData.indemnitors.length > 0) {
+                    formData.indemnitors.forEach((ind, index) => {
+                        signers.push({
+                            email: ind.email,
+                            role: `Indemnitor ${index + 1}`
+                        });
+                    });
+                } else {
+                    // Fallback for single indemnitor form data
+                    signers.push({
+                        email: formData['indemnitor-email'],
+                        role: 'Indemnitor 1'
+                    });
+                }
+
+                // Bail Agent (Always included)
+                signers.push({ email: 'admin@shamrockbailbonds.biz', role: 'Bail Agent' });
+                // Defendant (if email exists)
+                if (formData['defendant-email']) {
+                    signers.push({ email: formData['defendant-email'], role: 'Defendant' });
+                }
+
+                // Prepare Fields
+                const signatureFields = prepareSignatureFields(filledPdfs, formData);
+
+                const result = await sendToSignNow(fileUrl, signatureFields, signers, formData);
+
+                // 6. Finalize
+                UI.updateLoading(95, 'Finalizing...');
+                await storePendingDocument(result, formData);
+                await sendSigningNotifications(result, formData);
+
                 UI.hideLoading();
-                showPreviewModal(url, formData);
+                showSuccess('Packet sent successfully! Check Slack for status.');
 
             } catch (err) {
-                // hideProgress();
                 UI.hideLoading();
-                console.error('Preview error:', err);
-                showToast('Error generating preview: ' + err.message, 'error');
+                console.error(err);
+                showToast(err.message, 'error');
             }
         }
 

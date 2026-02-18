@@ -25,6 +25,12 @@ function handleSOC2Webhook(e) {
             case "whatsapp":
             case "WhatsApp":
                 return handleWhatsAppWebhookSOC2(e);
+            case "whatsapp_send_otp":
+                return handleWhatsAppSendOTP(e);
+            case "whatsapp_validate_otp":
+                return handleWhatsAppValidateOTP(e);
+            case "whatsapp_resend_otp":
+                return handleWhatsAppResendOTP(e);
             default:
                 logSecurityEvent("UNKNOWN_WEBHOOK", { path: path });
                 return ContentService.createTextOutput("Unknown endpoint or source").setMimeType(ContentService.MimeType.TEXT);
@@ -169,5 +175,93 @@ function handleWhatsAppWebhookSOC2(e) {
     } catch (error) {
         logSecurityEvent("WHATSAPP_WEBHOOK_ERROR", { error: error.toString() });
         return ContentService.createTextOutput("Error processing webhook").setMimeType(ContentService.MimeType.TEXT);
+    }
+}
+
+/**
+ * Handle WhatsApp OTP send request
+ */
+function handleWhatsAppSendOTP(e) {
+    try {
+        const requestData = JSON.parse(e.postData.contents);
+        const phoneNumber = requestData.phoneNumber;
+
+        if (!phoneNumber) {
+            return ContentService.createTextOutput(JSON.stringify({
+                success: false,
+                message: 'Phone number is required'
+            })).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        const result = WA_sendOTP(phoneNumber);
+
+        return ContentService.createTextOutput(JSON.stringify(result))
+            .setMimeType(ContentService.MimeType.JSON);
+
+    } catch (error) {
+        console.error('Error in handleWhatsAppSendOTP:', error);
+        return ContentService.createTextOutput(JSON.stringify({
+            success: false,
+            message: 'Failed to send OTP'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+}
+
+/**
+ * Handle WhatsApp OTP validation request
+ */
+function handleWhatsAppValidateOTP(e) {
+    try {
+        const requestData = JSON.parse(e.postData.contents);
+        const phoneNumber = requestData.phoneNumber;
+        const otpCode = requestData.otpCode;
+
+        if (!phoneNumber || !otpCode) {
+            return ContentService.createTextOutput(JSON.stringify({
+                valid: false,
+                error: 'Phone number and OTP code are required'
+            })).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        const result = WA_validateOTP(phoneNumber, otpCode);
+
+        return ContentService.createTextOutput(JSON.stringify(result))
+            .setMimeType(ContentService.MimeType.JSON);
+
+    } catch (error) {
+        console.error('Error in handleWhatsAppValidateOTP:', error);
+        return ContentService.createTextOutput(JSON.stringify({
+            valid: false,
+            error: 'Failed to validate OTP'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+}
+
+/**
+ * Handle WhatsApp OTP resend request
+ */
+function handleWhatsAppResendOTP(e) {
+    try {
+        const requestData = JSON.parse(e.postData.contents);
+        const phoneNumber = requestData.phoneNumber;
+
+        if (!phoneNumber) {
+            return ContentService.createTextOutput(JSON.stringify({
+                success: false,
+                message: 'Phone number is required'
+            })).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        const result = WA_resendOTP(phoneNumber);
+
+        return ContentService.createTextOutput(JSON.stringify(result))
+            .setMimeType(ContentService.MimeType.JSON);
+
+    } catch (error) {
+        console.error('Error in handleWhatsAppResendOTP:', error);
+        return ContentService.createTextOutput(JSON.stringify({
+            success: false,
+            message: 'Failed to resend OTP'
+        })).setMimeType(ContentService.MimeType.JSON);
     }
 }

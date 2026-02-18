@@ -15,6 +15,23 @@ import { isLoggedIn, getUserRole, ROLES } from './portal-auth';
 import { routeCountyPage } from './bail-bonds-router';
 
 /**
+ * @typedef {Object} WixRouterRequest
+ * @property {string} path
+ * @property {Object} query
+ * @property {string} [prefix]
+ * @property {Object} [user]
+ * @property {string} [user.id]
+ * @property {string} [user.role]
+ */
+
+/**
+ * @typedef {Object} WixRouterResponse
+ * @property {Object} status
+ * @property {Object} [body]
+ * @property {Object} [headers]
+ */
+
+/**
  * Router for the /portal/ prefix.
  * Handles routing for the main portal landing page and role-specific portals.
  * 
