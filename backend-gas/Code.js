@@ -624,6 +624,21 @@ function handleAction(data) {
   if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
   if (action === 'health') return { success: true, version: '5.9', timestamp: new Date().toISOString() };
 
+  // 7. WA OPT (Direct Meta Integration)
+  if (action === 'whatsapp_send_otp') return WA_sendOTP(data.phoneNumber);
+  if (action === 'whatsapp_validate_otp') return WA_validateOTP(data.phoneNumber, data.otpCode);
+  if (action === 'whatsapp_resend_otp') return WA_resendOTP(data.phoneNumber);
+
+  // 8. DOCUMENT GENERATION (Magic Tags)
+  if (action === 'generate_document') {
+    try {
+      const newDocId = fillDocumentTemplate(data.templateId, data.folderId, data.title, data.data);
+      return { success: true, documentId: newDocId, url: `https://docs.google.com/document/d/${newDocId}` };
+    } catch (e) {
+      return { success: false, error: e.toString() };
+    }
+  }
+
   // --- EMERGENCY ADMIN ACTION ---
   if (action === 'RESET_KEYS_ADMIN_OVERRIDE') {
     const secret = 'shamrock_gas_2026_secure_key_aqhrvpytqw';

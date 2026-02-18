@@ -22,6 +22,9 @@ function handleSOC2Webhook(e) {
             case "elevenlabs":
             case "ElevenLabs":
                 return handleElevenLabsWebhookSOC2(e);
+            case "whatsapp":
+            case "WhatsApp":
+                return handleWhatsAppWebhookSOC2(e);
             default:
                 logSecurityEvent("UNKNOWN_WEBHOOK", { path: path });
                 return ContentService.createTextOutput("Unknown endpoint or source").setMimeType(ContentService.MimeType.TEXT);
@@ -122,4 +125,49 @@ function handleTwilioWebhookSOC2(e) {
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${replyMsg}</Message></Response>`;
     return ContentService.createTextOutput(xml).setMimeType(ContentService.MimeType.XML);
+}
+
+/**
+ * Handles webhooks from WhatsApp Cloud API with signature verification.
+ * @param {object} e The event parameter.
+ */
+function handleWhatsAppWebhookSOC2(e) {
+    // 1. VERIFICATION REQUEST (GET)
+    // Meta sends a GET request to verify the webhook URL
+    if (e.parameter['hub.mode'] === 'subscribe' && e.parameter['hub.verify_token']) {
+        const props = PropertiesService.getScriptProperties().getProperties();
+        const verifyToken = props.WHATSAPP_VERIFY_TOKEN;
+
+        if (e.parameter['hub.verify_token'] === verifyToken) {
+            return ContentService.createTextOutput(e.parameter['hub.challenge']);
+        } else {
+            return ContentService.createTextOutput('Verification failed: Invalid Token').setMimeType(ContentService.MimeType.TEXT);
+        }
+    }
+
+    // 2. EVENT NOTIFICATION (POST)
+    try {
+        const payload = JSON.parse(e.postData.contents);
+        logProcessingEvent("WHATSAPP_WEBHOOK_RECEIVED", { entries: payload.entry ? payload.entry.length : 0 });
+
+        // Process Incoming Messages
+        if (payload.entry && payload.entry[0].changes && payload.entry[0].changes[0].value.messages) {
+            const message = payload.entry[0].changes[0].value.messages[0];
+            const from = message.from; // Sender phone ID
+            const text = message.text ? message.text.body : '[Media/Other]';
+            const type = message.type;
+            const name = payload.entry[0].changes[0].value.contacts[0].profile.name;
+
+            // Notify Slack
+            if (typeof NotificationService !== 'undefined') {
+                NotificationService.sendSlack('#incoming-sms', `🟢 *WhatsApp from ${name} (${from})*\n>${text}`);
+            }
+        }
+
+        return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
+
+    } catch (error) {
+        logSecurityEvent("WHATSAPP_WEBHOOK_ERROR", { error: error.toString() });
+        return ContentService.createTextOutput("Error processing webhook").setMimeType(ContentService.MimeType.TEXT);
+    }
 }
