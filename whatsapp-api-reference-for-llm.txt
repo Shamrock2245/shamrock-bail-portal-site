@@ -1,0 +1,105 @@
+
+# WhatsApp Cloud API Reference (Shamrock V6)
+
+## 1. External API (Google Apps Script Web App)
+**Endpoint**: `[GAS_WEB_APP_URL]`
+**Method**: `POST`
+**Headers**: `Content-Type: application/json`
+**Auth**: Payload must include `"apiKey": "[GAS_API_KEY]"`
+
+### A. Send OTP (Login)
+Triggers the 6-digit 2FA code via WhatsApp Template (`shamrock_auth`).
+```json
+{
+  "action": "whatsapp_send_otp",
+  "apiKey": "YOUR_API_KEY",
+  "phoneNumber": "+12395550100"
+}
+```
+**Response**: `{"success": true, "message": "OTP sent", "expiresIn": 600}`
+
+### B. Validate OTP (Verify)
+Verifies the code and returns a session token.
+```json
+{
+  "action": "whatsapp_validate_otp",
+  "apiKey": "YOUR_API_KEY",
+  "phoneNumber": "+12395550100",
+  "otpCode": "123456"
+}
+```
+**Response**: `{"valid": true, "sessionToken": "abc...", "role": "indemnitor"}`
+
+### C. Resend OTP
+Resends the code (Rate Limit: 3 per 15 mins).
+```json
+{
+  "action": "whatsapp_resend_otp",
+  "apiKey": "YOUR_API_KEY",
+  "phoneNumber": "+12395550100"
+}
+```
+
+---
+
+## 2. Internal Library (Google Apps Script)
+Use these classes when writing GAS code (Agents, Webhooks, triggers).
+
+### Class: `WhatsAppCloudAPI`
+**File**: `backend-gas/WhatsApp_CloudAPI.js`
+
+#### usage
+```javascript
+const client = new WhatsAppCloudAPI();
+```
+
+#### Methods
+
+**1. Send Text**
+```javascript
+// to: E.164 phone number
+// text: Message body
+// previewUrl: boolean (default false)
+client.sendText('+12395550100', 'Hello from Shamrock!', true);
+```
+
+**2. Send Image**
+```javascript
+// imageUrl: Publicly accessible URL
+// caption: Optional text
+client.sendImage('+12395550100', 'https://example.com/mugshot.jpg', 'Booking Photo');
+```
+
+**3. Send Audio**
+```javascript
+// audioUrl: Public MP3/OGG url
+client.sendAudio('+12395550100', 'https://example.com/voice-note.mp3');
+```
+
+**4. Send Authentication Template**
+```javascript
+// otpCode: The 6-digit code
+client.sendAuthenticationOTP('+12395550100', '998877');
+```
+
+---
+
+## 3. Global Helpers
+Quick one-liners available globally in GAS.
+
+```javascript
+// Send simple text
+sendWhatsAppMessage('+12395550100', 'Your bail has been posted.');
+
+// Send audio
+sendWhatsAppAudio('+12395550100', 'https://files.com/recording.mp3');
+
+// Send OTP
+sendWhatsAppOTP('+12395550100', '123456');
+```
+
+## 4. Configuration
+**Script Properties** (File > Project Properties > Script Properties):
+- `WHATSAPP_ACCESS_TOKEN`: Meta System User Token.
+- `WHATSAPP_PHONE_NUMBER_ID`: From Meta Dashboard.
+- `WHATSAPP_BUSINESS_ACCOUNT_ID`: From Meta Dashboard.
