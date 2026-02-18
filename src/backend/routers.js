@@ -5,12 +5,13 @@
  * This allows for dynamic content and role-based access control.
  * 
  * NOTE: The actual pages use hyphenated URLs (portal-defendant, portal-indemnitor, portal-staff)
- * This router handles the /portal/ prefix and redirects to the correct hyphenated pages.
+ * This router handles the /portal/ prefix and redirects to the correct hyphenated URLs.
  * 
  * @module routers
  */
 
-import { ok, notFound, redirect } from 'wix-router';
+import { redirect } from 'wix-router';
+import { isLoggedIn, getUserRole, ROLES } from './portal-auth';
 import { routeCountyPage } from './bail-bonds-router';
 
 /**
@@ -42,26 +43,47 @@ export async function portal_Router(request) {
   }
 
   try {
-    // Simplified router: deterministic path forwarding without auth checks
-    // Auth is handled by the target pages themselves
-    
+    // 1. Check Login Status
+    // If not logged in, send to landing (passing query params in case it's a magic link token)
+    if (!isLoggedIn()) {
+      return redirectWithQuery('/portal-landing');
+    }
+
+    // 2. Check User Role
+    const userRole = await getUserRole();
+    console.log(`[Router] User ${request.user ? request.user.id : 'Anon'} Role: ${userRole || 'None'}, Path: ${path}`);
+
     switch (path[0]) {
       case 'defendant':
-        return redirectWithQuery('/portal-defendant');
-      
+        if (userRole === ROLES.DEFENDANT) {
+          return redirectWithQuery('/portal-defendant');
+        } else {
+          return redirectWithQuery('/portal-landing');
+        }
+
       case 'indemnitor':
-        return redirectWithQuery('/portal-indemnitor');
-      
+        if (userRole === ROLES.INDEMNITOR || userRole === ROLES.COINDEMNITOR) {
+          return redirectWithQuery('/portal-indemnitor');
+        } else {
+          return redirectWithQuery('/portal-landing');
+        }
+
       case 'staff':
-        return redirectWithQuery('/portal-staff');
-      
+        if (userRole === ROLES.STAFF || userRole === ROLES.ADMIN) {
+          return redirectWithQuery('/portal-staff');
+        } else {
+          return redirectWithQuery('/portal-landing');
+        }
+
       case 'landing':
-        // /portal/landing?token=... -> /portal-landing?token=...
         return redirectWithQuery('/portal-landing');
-      
+
       case undefined:
       case '':
-        // Root /portal/ path -> landing
+        // Intelligent root redirect based on role
+        if (userRole === ROLES.DEFENDANT) return redirectWithQuery('/portal-defendant');
+        if (userRole === ROLES.STAFF || userRole === ROLES.ADMIN) return redirectWithQuery('/portal-staff');
+        if (userRole === ROLES.INDEMNITOR || userRole === ROLES.COINDEMNITOR) return redirectWithQuery('/portal-indemnitor');
         return redirectWithQuery('/portal-landing');
 
       default:
@@ -75,34 +97,15 @@ export async function portal_Router(request) {
   }
 }
 
-/**
- * Hook for before router for /portal/ prefix.
- * 
- * @param {WixRouterRequest} request
- * @returns {WixRouterRequest}
- */
 export function portal_beforeRouter(request) {
   return request;
 }
 
-/**
- * Hook for after router for /portal/ prefix.
- * 
- * @param {WixRouterRequest} request
- * @param {WixRouterResponse} response
- * @returns {WixRouterResponse}
- */
 export function portal_afterRouter(request, response) {
   return response;
 }
 
-/**
- * Router aliases for county pages.
- *
- * Wix maps route prefixes to exported function names where hyphens become underscores.
- * Defining concrete functions here (instead of only re-export aliases) ensures the Wix
- * router runtime can resolve these handlers for all legacy and current URL prefixes.
- */
+// County router aliases for both URL prefixes.
 export async function bailbonds_Router(request) {
   return routeCountyPage(request);
 }

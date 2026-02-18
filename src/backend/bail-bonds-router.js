@@ -1,15 +1,11 @@
 /**
- * Router for Florida County Dynamic Pages
- * 
- * This router handles URLs like:
- * /bail-bonds/lee-county
- * /bail-bonds/collier-county
- * etc.
- * 
- * It routes them to the "Florida Counties" dynamic page.
+ * Router for Florida County Dynamic Pages.
+ * Handles:
+ * - /bail-bonds/{county-slug}
+ * - /florida-bail-bonds/{county-slug}
  */
 
-import { ok } from 'wix-router';
+import { ok, notFound } from 'wix-router';
 
 const COUNTY_PAGE_NAME = 'Florida Counties';
 
@@ -25,7 +21,7 @@ export async function routeCountyPage(request) {
     return ok(COUNTY_PAGE_NAME, {
         title: `Bail Bonds in ${countySlug}`,
         description: `Professional bail bond services in ${countySlug}, Florida`,
-        slug: countySlug // Pass slug in data just in case
+        slug: countySlug
     });
 }
 
