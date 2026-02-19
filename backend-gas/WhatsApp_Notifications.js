@@ -357,6 +357,295 @@ function WA_sendBulkCourtReminders() {
   }
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEMPLATE-BASED SENDS (uses approved WhatsApp templates)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Send court date reminder using the approved 'court_date_reminder' template.
+ * Falls back to plain text if template is not yet approved.
+ * @param {Object} caseData - { phone, name, courtDate, courtTime, courtroom, caseNumber }
+ */
+function WA_templateCourtReminder(caseData) {
+  const client = new WhatsAppCloudAPI();
+  if (!client.isConfigured()) return { success: false, error: 'Not configured' };
+  const phone = _formatPhone(caseData.phone || caseData.defendantPhone || '');
+  if (!phone) return { success: false, error: 'Invalid phone' };
+
+  const props = PropertiesService.getScriptProperties();
+  const templateName = props.getProperty('WHATSAPP_COURT_TEMPLATE_NAME') || 'court_date_reminder';
+
+  // Build template components matching the court_date_reminder template:
+  // Body: Hello {{1}}, this is a reminder for your court date on {{2}} at {{3}}.
+  //       Location: {{4}}. Case #: {{5}}.
+  const components = [
+    {
+      type: 'body',
+      parameters: [
+        { type: 'text', text: caseData.name || 'Defendant' },
+        { type: 'text', text: caseData.courtDate || 'your court date' },
+        { type: 'text', text: caseData.courtTime || 'TBD' },
+        { type: 'text', text: caseData.courtroom || 'See your paperwork' },
+        { type: 'text', text: caseData.caseNumber || 'N/A' }
+      ]
+    }
+  ];
+
+  try {
+    return client.sendTemplate(phone, templateName, 'en_US', components);
+  } catch (e) {
+    console.warn('Template send failed, falling back to text:', e.message);
+    return WA_notifyCourtDateReminder(caseData, 1);
+  }
+}
+
+/**
+ * Send document signature request using the 'document_signature_request' template.
+ * Falls back to plain text if template is not yet approved.
+ * @param {string} phone - Recipient phone
+ * @param {string} name - Recipient name
+ * @param {string} signingLink - SignNow URL
+ */
+function WA_templateDocumentSignature(phone, name, signingLink) {
+  const client = new WhatsAppCloudAPI();
+  if (!client.isConfigured()) return { success: false, error: 'Not configured' };
+  const formattedPhone = _formatPhone(phone);
+  if (!formattedPhone) return { success: false, error: 'Invalid phone' };
+
+  const props = PropertiesService.getScriptProperties();
+  const templateName = props.getProperty('WHATSAPP_DOCUMENT_TEMPLATE_NAME') || 'document_signature_request';
+
+  // Body: Hello {{1}}, your bail documents are ready for signature. Please sign here: {{2}}
+  // Button: Visit Website → dynamic URL ({{1}})
+  const components = [
+    {
+      type: 'body',
+      parameters: [
+        { type: 'text', text: name },
+        { type: 'text', text: signingLink }
+      ]
+    },
+    {
+      type: 'button',
+      sub_type: 'url',
+      index: 0,
+      parameters: [
+        { type: 'text', text: signingLink }
+      ]
+    }
+  ];
+
+  try {
+    return client.sendTemplate(formattedPhone, templateName, 'en_US', components);
+  } catch (e) {
+    console.warn('Template send failed, falling back to text:', e.message);
+    return WA_notifyDocumentReady(phone, name, signingLink, 'bail bond documents');
+  }
+}
+
+/**
+ * Send payment request using the 'payment_request' template.
+ * Falls back to plain text if template is not yet approved.
+ * @param {string} phone - Recipient phone
+ * @param {string} name - Recipient name
+ * @param {string} amount - Amount due (e.g. "$250.00")
+ * @param {string} status - Payment status (e.g. "Overdue", "Due Today")
+ * @param {string} paymentLink - SwipeSimple or other payment URL
+ */
+function WA_templatePaymentRequest(phone, name, amount, status, paymentLink) {
+  const client = new WhatsAppCloudAPI();
+  if (!client.isConfigured()) return { success: false, error: 'Not configured' };
+  const formattedPhone = _formatPhone(phone);
+  if (!formattedPhone) return { success: false, error: 'Invalid phone' };
+
+  const props = PropertiesService.getScriptProperties();
+  const templateName = props.getProperty('WHATSAPP_PAYMENT_TEMPLATE_NAME') || 'payment_request';
+  const link = paymentLink || props.getProperty('PAYMENT_LINK') || 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
+
+  // Body: Hello {{1}}, this is a notice regarding your payment of {{2}}. Status: {{3}}. Pay here: {{4}}
+  // Button: Visit Website → dynamic URL ({{1}})
+  const components = [
+    {
+      type: 'body',
+      parameters: [
+        { type: 'text', text: name },
+        { type: 'text', text: amount },
+        { type: 'text', text: status },
+        { type: 'text', text: link }
+      ]
+    },
+    {
+      type: 'button',
+      sub_type: 'url',
+      index: 0,
+      parameters: [
+        { type: 'text', text: link }
+      ]
+    }
+  ];
+
+  try {
+    return client.sendTemplate(formattedPhone, templateName, 'en_US', components);
+  } catch (e) {
+    console.warn('Template send failed, falling back to text:', e.message);
+    return WA_notifyPaymentOverdue(phone, name, amount, '');
+  }
+}
+
+/**
+ * Send general follow-up / stealth ping using the 'general_followup' template.
+ * Falls back to plain text if template is not yet approved.
+ * @param {string} phone - Recipient phone
+ * @param {string} name - Recipient name
+ * @param {string} reference - Reference info (case number, date, etc.)
+ */
+function WA_templateGeneralFollowup(phone, name, reference) {
+  const client = new WhatsAppCloudAPI();
+  if (!client.isConfigured()) return { success: false, error: 'Not configured' };
+  const formattedPhone = _formatPhone(phone);
+  if (!formattedPhone) return { success: false, error: 'Invalid phone' };
+
+  const props = PropertiesService.getScriptProperties();
+  const templateName = props.getProperty('WHATSAPP_FOLLOWUP_TEMPLATE_NAME') || 'general_followup';
+
+  // Body: Hello {{1}}, please confirm you received this message regarding your bond status. Reference: {{2}}
+  const components = [
+    {
+      type: 'body',
+      parameters: [
+        { type: 'text', text: name },
+        { type: 'text', text: reference || 'your bond' }
+      ]
+    }
+  ];
+
+  try {
+    return client.sendTemplate(formattedPhone, templateName, 'en_US', components);
+  } catch (e) {
+    console.warn('Template send failed, falling back to text:', e.message);
+    return WA_sendStealthPing(phone, name, '');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ELEVENLABS VOICE NOTE INTEGRATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Send a voice note (audio message) to a WhatsApp number.
+ * Designed to work with ElevenLabs TTS audio URLs.
+ *
+ * The ElevenLabs audio URL must be publicly accessible (use a signed URL or
+ * upload to Google Drive / S3 first). The WhatsApp Cloud API accepts MP3 and
+ * OGG Opus formats.
+ *
+ * Typical usage with ElevenLabs:
+ *   1. Generate audio via ElevenLabs API → get audio URL
+ *   2. Upload to Google Drive or S3 to get a public URL
+ *   3. Call WA_sendVoiceNote(phone, publicAudioUrl, logLabel)
+ *
+ * @param {string} phone - Recipient phone in any format
+ * @param {string} audioUrl - Publicly accessible audio URL (MP3 or OGG)
+ * @param {string} logLabel - Optional label for logging (e.g. case number)
+ * @return {Object} API response
+ */
+function WA_sendVoiceNote(phone, audioUrl, logLabel) {
+  const client = new WhatsAppCloudAPI();
+  if (!client.isConfigured()) return { success: false, error: 'Not configured' };
+  const formattedPhone = _formatPhone(phone);
+  if (!formattedPhone) return { success: false, error: 'Invalid phone number' };
+  if (!audioUrl) return { success: false, error: 'No audio URL provided' };
+
+  console.log('🎙️ Sending voice note to ' + formattedPhone + (logLabel ? ' [' + logLabel + ']' : ''));
+
+  try {
+    const result = client.sendAudio(formattedPhone, audioUrl);
+    console.log('Voice note result:', JSON.stringify(result));
+    return result;
+  } catch (e) {
+    console.error('WA_sendVoiceNote error:', e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Generate an ElevenLabs voice note and send it via WhatsApp.
+ * Requires ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID in Script Properties.
+ *
+ * @param {string} phone - Recipient phone
+ * @param {string} text - Text to convert to speech
+ * @param {string} logLabel - Optional label for logging
+ * @return {Object} Result with success status
+ */
+function WA_sendElevenLabsVoiceNote(phone, text, logLabel) {
+  const props = PropertiesService.getScriptProperties();
+  const elevenLabsKey = props.getProperty('ELEVENLABS_API_KEY');
+  const voiceId = props.getProperty('ELEVENLABS_VOICE_ID') || 'EXAVITQu4vr4xnSDxMaL'; // Default: Bella
+
+  if (!elevenLabsKey) {
+    console.error('ELEVENLABS_API_KEY not set in Script Properties');
+    return { success: false, error: 'ElevenLabs API key not configured' };
+  }
+
+  try {
+    // Step 1: Generate audio from ElevenLabs
+    console.log('🎙️ Generating ElevenLabs audio for: ' + text.substring(0, 50) + '...');
+    const elevenLabsUrl = 'https://api.elevenlabs.io/v1/text-to-speech/' + voiceId;
+    const audioResponse = UrlFetchApp.fetch(elevenLabsUrl, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': elevenLabsKey,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg'
+      },
+      payload: JSON.stringify({
+        text: text,
+        model_id: 'eleven_monolingual_v1',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75
+        }
+      }),
+      muteHttpExceptions: true
+    });
+
+    if (audioResponse.getResponseCode() !== 200) {
+      throw new Error('ElevenLabs API error: ' + audioResponse.getContentText());
+    }
+
+    // Step 2: Save audio to Google Drive temporarily
+    const audioBlob = audioResponse.getBlob().setName('shamrock_voice_' + Date.now() + '.mp3');
+    const folder = DriveApp.getRootFolder(); // Or use a specific folder ID
+    const file = folder.createFile(audioBlob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    // Step 3: Get public URL (direct download link)
+    const fileId = file.getId();
+    const publicUrl = 'https://drive.google.com/uc?export=download&id=' + fileId;
+
+    console.log('✅ Audio generated and uploaded: ' + publicUrl);
+
+    // Step 4: Send via WhatsApp
+    const waResult = WA_sendVoiceNote(phone, publicUrl, logLabel);
+
+    // Step 5: Clean up file after 1 hour (set expiry via trigger or just leave it)
+    // For now, log the file ID for manual cleanup
+    console.log('Audio file ID (for cleanup): ' + fileId);
+
+    return {
+      success: waResult.success || false,
+      audioFileId: fileId,
+      audioUrl: publicUrl,
+      waResult: waResult
+    };
+
+  } catch (e) {
+    console.error('WA_sendElevenLabsVoiceNote error:', e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PRIVATE HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -374,4 +663,34 @@ function _getWANotifConfig() {
   return {
     GOOGLE_SHEET_ID: props.getProperty('GOOGLE_SHEET_ID') || ''
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OBJECT-STYLE ALIASES (for callers that pass a single caseData object)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Object-style alias for WA_notifyDocumentReady.
+ * @param {Object} data - { memberPhone, memberName, signingLink, documentName }
+ */
+function WA_notifyDocumentReadyObj(data) {
+  return WA_notifyDocumentReady(
+    data.memberPhone || data.phone || '',
+    data.memberName  || data.name  || 'Member',
+    data.signingLink || data.link  || '',
+    data.documentName || 'bail bond documents'
+  );
+}
+
+/**
+ * Object-style alias for WA_notifyPaymentOverdue.
+ * @param {Object} data - { indemnitorPhone, indemnitorName, amountDue, dueDate }
+ */
+function WA_notifyPaymentOverdueObj(data) {
+  return WA_notifyPaymentOverdue(
+    data.indemnitorPhone || data.phone || '',
+    data.indemnitorName  || data.name  || 'Indemnitor',
+    data.amountDue || data.amount || '',
+    data.dueDate   || data.date   || ''
+  );
 }

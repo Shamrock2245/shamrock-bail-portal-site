@@ -30,6 +30,9 @@
  *   WHATSAPP_PHONE_NUMBER_ID
  *   WHATSAPP_APP_SECRET
  *   WHATSAPP_WEBHOOK_VERIFY_TOKEN
+ *
+ * STEP 7 — Create the 5 message templates in WhatsApp Manager
+ *   (see TEMPLATE CREATION GUIDE at the bottom of this file)
  * ============================================================================
  */
 
@@ -39,22 +42,26 @@
 
 const WA_SETUP_VALUES = {
     // From Meta App Dashboard > WhatsApp > API Setup
-    WHATSAPP_PHONE_NUMBER_ID: '',   // e.g. '123456789012345'
-    WHATSAPP_ACCESS_TOKEN: '',   // Permanent System User token
-    WHATSAPP_BUSINESS_ACCOUNT_ID: '3050872911967629',   // WABA ID from Business Settings (Confirmed by Manus)
-    WHATSAPP_APP_SECRET: '',   // App Secret from App Settings > Basic
+    WHATSAPP_PHONE_NUMBER_ID:       '',   // e.g. '945804478623321'
+    WHATSAPP_ACCESS_TOKEN:          '',   // Permanent System User token
+    WHATSAPP_BUSINESS_ACCOUNT_ID:   '3050872911967629', // Your WABA ID (confirmed)
+    WHATSAPP_APP_SECRET:            '',   // App Secret from App Settings > Basic
 
     // Choose any random string — must match what you enter in Meta webhook config
-    WHATSAPP_WEBHOOK_VERIFY_TOKEN: 'shamrock_webhook_verify_2026',
+    WHATSAPP_WEBHOOK_VERIFY_TOKEN:  'shamrock_webhook_verify_2026',
 
-    // Template names (must be approved in WhatsApp Manager > Message Templates)
-    WHATSAPP_AUTH_TEMPLATE_NAME: 'shamrock_otp',        // Authentication OTP template
-    WHATSAPP_COURT_TEMPLATE_NAME: 'court_date_reminder', // Court date reminder template
+    // Template names — MUST match exactly what you create in WhatsApp Manager
+    WHATSAPP_AUTH_TEMPLATE_NAME:         'shamrock_otp_login',       // Authentication OTP
+    WHATSAPP_COURT_TEMPLATE_NAME:        'court_date_reminder',      // Court date reminder
+    WHATSAPP_DOCUMENT_TEMPLATE_NAME:     'document_signature_request', // SignNow signing link
+    WHATSAPP_PAYMENT_TEMPLATE_NAME:      'payment_request',          // Payment link
+    WHATSAPP_FOLLOWUP_TEMPLATE_NAME:     'general_followup',         // Stealth ping / check-in
 
-    // Business info used in messages
-    SHAMROCK_OFFICE_PHONE: '(239) 332-2245',
-    SHAMROCK_CELL_PHONE: '(239) 955-0178',
-    PAYMENT_LINK: 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
+    // Business info
+    SHAMROCK_OFFICE_PHONE:          '(239) 332-2245',
+    SHAMROCK_CELL_PHONE:            '(239) 955-0178',   // Confirmed WhatsApp number
+    SHAMROCK_WA_NUMBER:             '+12399550178',     // E.164 format for API calls
+    PAYMENT_LINK:                   'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -100,8 +107,12 @@ function AUDIT_WhatsAppProperties() {
         'WHATSAPP_WEBHOOK_VERIFY_TOKEN',
         'WHATSAPP_AUTH_TEMPLATE_NAME',
         'WHATSAPP_COURT_TEMPLATE_NAME',
+        'WHATSAPP_DOCUMENT_TEMPLATE_NAME',
+        'WHATSAPP_PAYMENT_TEMPLATE_NAME',
+        'WHATSAPP_FOLLOWUP_TEMPLATE_NAME',
         'SHAMROCK_OFFICE_PHONE',
         'SHAMROCK_CELL_PHONE',
+        'SHAMROCK_WA_NUMBER',
         'PAYMENT_LINK'
     ];
 
@@ -110,7 +121,6 @@ function AUDIT_WhatsAppProperties() {
     for (const key of keys) {
         const val = props.getProperty(key);
         if (val) {
-            // Mask sensitive values
             const display = (key.includes('TOKEN') || key.includes('SECRET'))
                 ? val.substring(0, 8) + '...' + val.substring(val.length - 4)
                 : val;
@@ -120,7 +130,9 @@ function AUDIT_WhatsAppProperties() {
             allSet = false;
         }
     }
-    console.log('\n' + (allSet ? '✅ All WhatsApp properties configured!' : '⚠️  Some properties are missing — fill in WA_SETUP_VALUES and run RUN_SetupWhatsAppProperties()'));
+    console.log('\n' + (allSet
+        ? '✅ All WhatsApp properties configured!'
+        : '⚠️  Some properties are missing — fill in WA_SETUP_VALUES and run RUN_SetupWhatsAppProperties()'));
     return allSet;
 }
 
@@ -144,8 +156,7 @@ function testWhatsAppConnection() {
     console.log('   Phone Number ID:', client.phoneNumberId);
     console.log('   Business Account ID:', client.businessAccountId);
 
-    // Send a test message to the business cell
-    const testPhone = '+12399550178';
+    const testPhone = '+12399550178'; // Shamrock business cell — confirmed WhatsApp number
     const result = client.sendText(testPhone,
         '✅ WhatsApp Cloud API test — Shamrock Bail Bonds system is connected and working! ' +
         new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
@@ -159,7 +170,7 @@ function testWhatsAppConnection() {
  * Test OTP send to the business cell.
  */
 function testWhatsAppOTP() {
-    const testPhone = '+12399550178';
+    const testPhone = '+12399550178'; // Shamrock business cell
     console.log('Sending test OTP to ' + testPhone + '...');
     const result = WA_sendOTP(testPhone);
     console.log('OTP result:', JSON.stringify(result));
@@ -171,11 +182,11 @@ function testWhatsAppOTP() {
  */
 function testWhatsAppInbound() {
     const testData = {
-        from: '12399550178',
-        name: 'Test User',
+        from:      '12399550178',
+        name:      'Test User',
         messageId: 'test_' + Date.now(),
-        type: 'text',
-        body: 'HERE',
+        type:      'text',
+        body:      'HERE',
         timestamp: String(Math.floor(Date.now() / 1000))
     };
     console.log('Testing inbound handler with:', JSON.stringify(testData));
@@ -192,14 +203,14 @@ function testCourtDateReminder() {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const caseData = {
-        defendantPhone: '+12399550178',
-        defendantName: 'Test Defendant',
+        defendantPhone:  '+12399550178',
+        defendantName:   'Test Defendant',
         indemnitorPhone: '',
-        indemnitorName: '',
-        courtDate: tomorrow.toLocaleDateString('en-US'),
-        courtTime: '9:00 AM',
-        courtroom: 'Lee County Courthouse, Room 4A',
-        caseNumber: 'TEST-2026-001'
+        indemnitorName:  '',
+        courtDate:       tomorrow.toLocaleDateString('en-US'),
+        courtTime:       '9:00 AM',
+        courtroom:       'Lee County Courthouse, Room 4A',
+        caseNumber:      'TEST-2026-001'
     };
 
     console.log('Sending 1-day court reminder to ' + caseData.defendantPhone + '...');
@@ -208,29 +219,115 @@ function testCourtDateReminder() {
     return result;
 }
 
+/**
+ * Test document signature request template.
+ */
+function testDocumentSignatureRequest() {
+    const result = WA_notifyDocumentReadyObj({
+        memberPhone:  '+12399550178',
+        memberName:   'Test Indemnitor',
+        signingLink:  'https://app.signnow.com/webapp/document/test123'
+    });
+    console.log('Document signature result:', JSON.stringify(result));
+    return result;
+}
+
+/**
+ * Test payment request template.
+ */
+function testPaymentRequest() {
+    const result = WA_notifyPaymentOverdueObj({
+        indemnitorPhone: '+12399550178',
+        indemnitorName:  'Test Indemnitor',
+        amountDue:       '250.00',
+        dueDate:         'March 1, 2026'
+    });
+    console.log('Payment request result:', JSON.stringify(result));
+    return result;
+}
+
+/**
+ * Test ElevenLabs audio send.
+ */
+function testElevenLabsAudio() {
+    // Replace with a real ElevenLabs audio URL to test
+    const testAudioUrl = 'https://api.elevenlabs.io/v1/text-to-speech/test/stream';
+    const result = WA_sendVoiceNote('+12399550178', testAudioUrl, 'Test voice note from Shamrock AI');
+    console.log('Audio send result:', JSON.stringify(result));
+    return result;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TEMPLATE CREATION GUIDE
 // ─────────────────────────────────────────────────────────────────────────────
 /*
- * AUTHENTICATION TEMPLATE (shamrock_otp):
+ * Create these 5 templates in WhatsApp Manager > Message Templates.
+ * Go to: https://business.facebook.com/latest/whatsapp_manager/message_templates
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * TEMPLATE 1: shamrock_otp_login  (Authentication)
+ * ─────────────────────────────────────────────────────────────────────────────
  *   Category: Authentication
- *   Name: shamrock_otp
+ *   Name: shamrock_otp_login
  *   Language: English (US)
  *   Body: {{1}} is your Shamrock Bail Bonds verification code.
  *   Footer: This code expires in 10 minutes.
- *   Button: Copy code (OTP type)
- *   → Submit for approval in WhatsApp Manager > Message Templates
+ *   Button: Copy Code (OTP type — Meta auto-generates)
+ *   → Do NOT fill in "Package name" or "App signature hash" — leave blank
+ *   → Select "Copy code" button type (NOT "One-tap autofill")
  *
- * COURT DATE REMINDER TEMPLATE (court_date_reminder):
+ * ─────────────────────────────────────────────────────────────────────────────
+ * TEMPLATE 2: court_date_reminder  (Utility)
+ * ─────────────────────────────────────────────────────────────────────────────
  *   Category: Utility
  *   Name: court_date_reminder
  *   Language: English (US)
  *   Header: Court Date Reminder
- *   Body: Hello {{1}}, you have a court appearance on {{2}} at {{3}}.
- *         Case #{{4}}. Failure to appear may result in bond forfeiture.
- *   Footer: Shamrock Bail Bonds — (239) 332-2245
- *   → Submit for approval
+ *   Body: Hello {{1}}, this is a reminder for your court date on {{2}} at {{3}}.
+ *         Location: {{4}}. Case #: {{5}}. Failure to appear may result in a warrant.
+ *   Footer: Shamrock Bail Bonds • (239) 332-2245
+ *   Buttons:
+ *     - Call Phone Number: "Call Office" → +12393322245
+ *     - Quick Reply: "I will be there"
  *
- * NOTE: While templates are pending approval, the system will fall back to
- * sending plain text messages, which works fine for existing conversations.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * TEMPLATE 3: document_signature_request  (Utility)
+ * ─────────────────────────────────────────────────────────────────────────────
+ *   Category: Utility
+ *   Name: document_signature_request
+ *   Language: English (US)
+ *   Body: Hello {{1}}, your bail documents are ready for signature.
+ *         Please sign them immediately here: {{2}}
+ *   Footer: Shamrock Bail Bonds
+ *   Button:
+ *     - Visit Website: "Sign Documents" → Dynamic URL ({{1}})
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * TEMPLATE 4: payment_request  (Utility)
+ * ─────────────────────────────────────────────────────────────────────────────
+ *   Category: Utility
+ *   Name: payment_request
+ *   Language: English (US)
+ *   Body: Hello {{1}}, this is a notice regarding your payment of {{2}}.
+ *         Status: {{3}}. Please pay securely here: {{4}}
+ *   Footer: Shamrock Bail Bonds
+ *   Button:
+ *     - Visit Website: "Pay Now" → Dynamic URL ({{1}})
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * TEMPLATE 5: general_followup  (Utility)
+ * ─────────────────────────────────────────────────────────────────────────────
+ *   Category: Utility
+ *   Name: general_followup
+ *   Language: English (US)
+ *   Body: Hello {{1}}, please confirm you received this message regarding
+ *         your bond status. Reference: {{2}}
+ *   Buttons:
+ *     - Quick Reply: "Confirm Receipt"
+ *     - Quick Reply: "Call Me"
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * NOTE: While templates are pending approval (usually 1-2 hours), the system
+ * automatically falls back to plain text messages for any open conversations.
+ * ─────────────────────────────────────────────────────────────────────────────
  */

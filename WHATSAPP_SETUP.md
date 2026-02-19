@@ -1,8 +1,10 @@
-# WhatsApp Integration Setup Guide
+# WhatsApp Integration — Complete Setup Guide
 ## Shamrock Bail Bonds
 
-This document covers everything needed to activate the WhatsApp integration.
-The code is fully written — you just need to plug in the credentials.
+**WhatsApp Business Number:** +1 (239) 955-0178 ✅ Confirmed  
+**Phone Number ID:** 945804478623321  
+**WABA ID:** 3050872911967629  
+**Business Portfolio ID:** 877128086156188  
 
 ---
 
@@ -10,228 +12,298 @@ The code is fully written — you just need to plug in the credentials.
 
 | Item | Status |
 |------|--------|
-| WhatsApp Business Account (WABA) | ✅ Created (ID: 3050872911967629) |
+| WhatsApp Business Account (WABA) | ✅ Active (ID: 3050872911967629) |
 | Phone number +1 239-955-0178 added | ✅ Added |
-| Phone number verified | ⏳ Pending (rate limit — retry in ~1 hr) |
-| `whatsapp-auth.jsw` (Wix) | ✅ Complete |
+| Phone number verified | ⏳ Pending — retry verification in ~1 hr (rate limit) |
+| `whatsapp-auth.jsw` (Wix backend) | ✅ Complete |
 | `http-functions.js` webhook endpoints | ✅ Complete |
+| `WhatsApp_CloudAPI.js` (GAS) | ✅ Complete |
+| `WhatsApp_Auth.js` (GAS) | ✅ Complete |
 | `WhatsApp_Webhook.js` (GAS) | ✅ Complete |
-| `WhatsApp_Notifications.js` (GAS) | ✅ Complete |
-| `WhatsApp_CloudAPI.js` (GAS) | ✅ Existing |
-| `WhatsApp_Auth.js` (GAS) | ✅ Existing |
-| `notificationService.jsw` wired | ✅ Complete |
-| Credentials entered | ❌ Needs your values |
+| `WhatsApp_Notifications.js` (GAS) | ✅ Complete + Templates + ElevenLabs |
+| `Setup_Properties_WhatsApp.js` (GAS) | ✅ Complete — fill in credentials |
+| Meta credentials entered in GAS | ❌ Needs your values |
 | Wix Secrets configured | ❌ Needs your values |
 | Meta webhook registered | ❌ After phone verified |
+| Message templates created | ❌ 5 templates to create |
 
 ---
 
-## Step 1 — Complete Phone Number Verification
+## Step 1 — Verify the Phone Number
 
-The rate limit on the verification code will clear within 1–2 hours.
+Go to: https://business.facebook.com/latest/whatsapp_manager/phone_numbers?business_id=877128086156188&asset_id=3050872911967629
 
-1. Go to [WhatsApp Manager](https://business.facebook.com/latest/whatsapp_manager/phone_numbers?business_id=877128086156188&asset_id=3050872911967629)
-2. Click the gear icon next to **+1 239-955-0178**
-3. Click **Profile** tab
-4. Click **"Send verification code"** → choose **Text message**
-5. Enter the 6-digit code from your phone
-6. Status will change to **Connected**
+1. Click the **gear icon** next to +1 239-955-0178
+2. Click the **Profile** tab
+3. Click **"Send verification code"** → select **Text message** → click **Next**
+4. Check 239-955-0178 for the 6-digit code
+5. Enter the code → click **Verify**
+
+> **Note:** If you see "Verification code limit exceeded," wait 1–2 hours and try again. This is a Meta rate limit that resets automatically.
 
 ---
 
-## Step 2 — Get Your Credentials from Meta
+## Step 2 — Get Your Meta Credentials
 
-1. Go to [Meta Developer Apps](https://developers.facebook.com/apps)
-2. Open your **Shamrock Bail Bonds** app
-3. Navigate to **WhatsApp > API Setup**
-4. Copy:
-   - **Phone Number ID** (16-digit number next to your phone number)
-   - **WhatsApp Business Account ID** (shown on the same page)
-5. Generate a **Permanent System User Token**:
-   - Go to [Business Settings > System Users](https://business.facebook.com/settings/system-users)
-   - Create a System User (Admin role)
-   - Click **Generate New Token** → select your app → grant `whatsapp_business_messaging` and `whatsapp_business_management` permissions
-   - Copy the token (save it — it only shows once)
-6. Get your **App Secret**:
-   - App Dashboard > **App Settings > Basic** → copy App Secret
+Go to: https://developers.facebook.com/apps → select your Shamrock app
+
+| Credential | Where to Find It |
+|-----------|-----------------|
+| **Phone Number ID** | WhatsApp > API Setup → "Phone number ID" field (already known: `945804478623321`) |
+| **Access Token** | Business Settings > System Users → create a System User with `whatsapp_business_messaging` permission → Generate token |
+| **App Secret** | App Settings > Basic → "App secret" |
+| **WABA ID** | Already known: `3050872911967629` |
+
+> **Important:** Use a **permanent System User token**, not the temporary token shown in API Setup. Temporary tokens expire in 24 hours.
 
 ---
 
 ## Step 3 — Configure Google Apps Script Properties
 
 1. Open your GAS project
-2. Open **Setup_Properties_WhatsApp.js**
-3. Fill in `WA_SETUP_VALUES` with your credentials:
+2. Open `Setup_Properties_WhatsApp.js`
+3. Fill in `WA_SETUP_VALUES` at the top of the file:
 
 ```javascript
 const WA_SETUP_VALUES = {
-    WHATSAPP_PHONE_NUMBER_ID:       '123456789012345',  // from Step 2
-    WHATSAPP_ACCESS_TOKEN:          'EAABsbCS1iHg...',  // from Step 2
-    WHATSAPP_BUSINESS_ACCOUNT_ID:   '3050872911967629', // your WABA ID
-    WHATSAPP_APP_SECRET:            'abc123def456...',  // from Step 2
-    WHATSAPP_WEBHOOK_VERIFY_TOKEN:  'shamrock_webhook_verify_2026', // keep as-is
-    WHATSAPP_AUTH_TEMPLATE_NAME:    'shamrock_otp',
-    WHATSAPP_COURT_TEMPLATE_NAME:   'court_date_reminder',
-    SHAMROCK_OFFICE_PHONE:          '(239) 332-2245',
-    SHAMROCK_CELL_PHONE:            '(239) 955-0178',
-    PAYMENT_LINK:                   'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
+    WHATSAPP_PHONE_NUMBER_ID:     '945804478623321',  // ← Already known
+    WHATSAPP_ACCESS_TOKEN:        'YOUR_SYSTEM_USER_TOKEN',
+    WHATSAPP_BUSINESS_ACCOUNT_ID: '3050872911967629', // ← Already set
+    WHATSAPP_APP_SECRET:          'YOUR_APP_SECRET',
+    WHATSAPP_WEBHOOK_VERIFY_TOKEN: 'shamrock_webhook_verify_2026',
+    // ... rest is already filled in
 };
 ```
 
-4. Run **`RUN_SetupWhatsAppProperties()`**
-5. Run **`AUDIT_WhatsAppProperties()`** to confirm all values are set
-6. Run **`testWhatsAppConnection()`** — you should receive a test text on 239-955-0178
+4. Run `RUN_SetupWhatsAppProperties()` — this writes all values to Script Properties
+5. Run `AUDIT_WhatsAppProperties()` — confirms everything is set
+6. Run `testWhatsAppConnection()` — sends a test message to 239-955-0178
 
 ---
 
 ## Step 4 — Configure Wix Secrets Manager
 
-In your Wix site editor:
-1. Go to **Settings > Secrets Manager** (or Dev Mode > Secrets)
-2. Add these secrets:
+In your Wix Editor → Settings → Secrets Manager, add these 4 secrets:
 
 | Secret Name | Value |
 |-------------|-------|
-| `WHATSAPP_ACCESS_TOKEN` | Your permanent system user token |
-| `WHATSAPP_PHONE_NUMBER_ID` | Your phone number ID (16 digits) |
-| `WHATSAPP_APP_SECRET` | Your app secret |
+| `WHATSAPP_ACCESS_TOKEN` | Same System User token from Step 2 |
+| `WHATSAPP_PHONE_NUMBER_ID` | `945804478623321` |
+| `WHATSAPP_APP_SECRET` | Same App Secret from Step 2 |
 | `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | `shamrock_webhook_verify_2026` |
 
 ---
 
 ## Step 5 — Register the Webhook in Meta
 
-1. Go to [Meta App Dashboard](https://developers.facebook.com/apps) → your app
-2. Navigate to **WhatsApp > Configuration**
-3. Under **Webhook**, click **Edit**
-4. Set:
-   - **Callback URL**: `https://www.shamrockbailbonds.biz/_functions/webhookWhatsApp`
-   - **Verify Token**: `shamrock_webhook_verify_2026`
-5. Click **Verify and Save**
-6. Under **Webhook fields**, subscribe to:
-   - `messages`
-   - `message_status_updates` (or `message_deliveries`, `message_reads`)
+Go to: https://developers.facebook.com/apps → your app → WhatsApp > Configuration → Webhooks
+
+| Field | Value |
+|-------|-------|
+| **Callback URL** | `https://www.shamrockbailbonds.biz/_functions/webhookWhatsApp` |
+| **Verify Token** | `shamrock_webhook_verify_2026` |
+
+Click **Verify and Save**, then subscribe to:
+- `messages`
+- `message_status_updates`
 
 ---
 
-## Step 6 — Create Message Templates
+## Step 6 — Create the 5 Message Templates
 
-### Authentication Template (for OTP login)
+Go to: https://business.facebook.com/latest/whatsapp_manager/message_templates?business_id=877128086156188&asset_id=3050872911967629
 
-1. Go to [WhatsApp Manager > Message Templates](https://business.facebook.com/latest/whatsapp_manager/message_templates)
-2. Click **Create Template**
-3. Fill in:
-   - **Category**: Authentication
-   - **Name**: `shamrock_otp`
-   - **Language**: English (US)
-4. Meta auto-generates the body: *"{{1}} is your verification code."*
-5. Submit for approval (usually approved within 1–2 hours)
+### Template 1: `shamrock_otp_login` (Authentication)
 
-### Court Date Reminder Template
+| Field | Value |
+|-------|-------|
+| Category | Authentication |
+| Name | `shamrock_otp_login` |
+| Language | English (US) |
+| Body | `{{1}} is your Shamrock Bail Bonds verification code.` |
+| Footer | `This code expires in 10 minutes.` |
+| Button | **Copy Code** (NOT "One-tap autofill") |
 
-1. Create another template:
-   - **Category**: Utility
-   - **Name**: `court_date_reminder`
-   - **Language**: English (US)
-   - **Header**: `Court Date Reminder`
-   - **Body**: `Hello {{1}}, you have a court appearance on {{2}} at {{3}}. Case #{{4}}. Failure to appear may result in bond forfeiture. Questions? Call Shamrock Bail Bonds.`
-   - **Footer**: `Shamrock Bail Bonds — (239) 332-2245`
-2. Submit for approval
-
-> **Note**: While templates are pending approval, the system automatically falls back to plain text messages for any open conversations.
+> **Critical:** Leave "Package name" and "App signature hash" **blank** — those are for native Android apps, not websites.
 
 ---
 
-## Step 7 — Set Up Daily Court Reminder Trigger
+### Template 2: `court_date_reminder` (Utility)
 
-1. In GAS, go to **Triggers** (clock icon)
-2. Add a new trigger:
-   - Function: `WA_sendBulkCourtReminders`
-   - Event source: Time-driven
-   - Type: Day timer
-   - Time: 8 AM – 9 AM (Eastern)
-3. Save
+| Field | Value |
+|-------|-------|
+| Category | Utility |
+| Name | `court_date_reminder` |
+| Language | English (US) |
+| Header | `Court Date Reminder` |
+| Body | `Hello {{1}}, this is a reminder for your court date on {{2}} at {{3}}. Location: {{4}}. Case #: {{5}}. Failure to appear may result in a warrant.` |
+| Footer | `Shamrock Bail Bonds • (239) 332-2245` |
+| Button 1 | Call Phone Number → "Call Office" → `+12393322245` |
+| Button 2 | Quick Reply → "I will be there" |
 
-This will automatically send WhatsApp reminders at 7 days, 3 days, and 1 day before each court date.
+---
+
+### Template 3: `document_signature_request` (Utility)
+
+| Field | Value |
+|-------|-------|
+| Category | Utility |
+| Name | `document_signature_request` |
+| Language | English (US) |
+| Body | `Hello {{1}}, your bail documents are ready for your signature. Please sign them immediately here: {{2}}` |
+| Footer | `Shamrock Bail Bonds` |
+| Button | Visit Website → "Sign Documents" → Dynamic URL `{{1}}` |
+
+---
+
+### Template 4: `payment_request` (Utility)
+
+| Field | Value |
+|-------|-------|
+| Category | Utility |
+| Name | `payment_request` |
+| Language | English (US) |
+| Body | `Hello {{1}}, this is a notice regarding your payment of {{2}}. Status: {{3}}. Please pay securely here: {{4}}` |
+| Footer | `Shamrock Bail Bonds` |
+| Button | Visit Website → "Pay Now" → Dynamic URL `{{1}}` |
+
+---
+
+### Template 5: `general_followup` (Utility)
+
+| Field | Value |
+|-------|-------|
+| Category | Utility |
+| Name | `general_followup` |
+| Language | English (US) |
+| Body | `Hello {{1}}, please confirm you received this message regarding your bond status. Reference: {{2}}` |
+| Button 1 | Quick Reply → "Confirm Receipt" |
+| Button 2 | Quick Reply → "Call Me" |
+
+> Templates are usually approved within 1–2 hours. While pending, the system automatically falls back to plain text messages.
 
 ---
 
 ## Architecture Overview
 
 ```
-User's Phone
-    │
-    ▼ (sends WhatsApp message)
-Meta Cloud API
-    │
-    ▼ (POST webhook)
-Wix: /_functions/webhookWhatsApp  (http-functions.js)
-    │
-    ├─► Log to WhatsAppMessages CMS collection
-    ├─► Forward to GAS: action=whatsapp_inbound_message
-    └─► Mark message as read
-         │
-         ▼
-    GAS: handleWhatsAppInbound()  (WhatsApp_Webhook.js)
-         │
-         ├─► OTP reply → WA_validateOTP()
-         ├─► "HERE" → log check-in, reply, notify Slack
-         ├─► "PAY" → send payment link
-         ├─► "HELP" → send menu
-         └─► Unknown → notify staff, send default reply
-
-Outbound (from your system):
-Wix notificationService.jsw
-    └─► sendWhatsAppNotification()
-         └─► whatsapp-auth.jsw sendWhatsAppText()
-              └─► Meta Cloud API → User's Phone
-
-GAS WhatsApp_Notifications.js
-    ├─► WA_notifyNewCase()
-    ├─► WA_notifyCourtDateReminder()
-    ├─► WA_notifyDocumentReady()
-    ├─► WA_notifyDocumentSigned()
-    ├─► WA_notifyPaymentReceived()
-    ├─► WA_notifyPaymentOverdue()
-    ├─► WA_sendStealthPing()
-    ├─► WA_notifyForfeitureAlert()
-    ├─► WA_notifyBondDischarge()
-    └─► WA_sendBulkCourtReminders() [daily trigger]
+Customer Phone
+     │
+     ▼
+WhatsApp Cloud API (Meta)
+     │
+     ├── Inbound messages ──► Wix http-functions.js (webhookWhatsApp)
+     │                              │
+     │                              ▼
+     │                        GAS doPost (whatsapp_inbound_message)
+     │                              │
+     │                              ▼
+     │                        WhatsApp_Webhook.js
+     │                        (HERE, PAY, HELP, STOP, OTP replies)
+     │
+     └── Outbound messages ◄── WhatsApp_Notifications.js
+                                (court reminders, docs, payments)
+                                      │
+                                      ├── Plain text (sendText)
+                                      ├── Templates (sendTemplate)
+                                      └── Voice notes (sendAudio)
+                                                │
+                                                └── ElevenLabs TTS
+                                                    (WA_sendElevenLabsVoiceNote)
 ```
 
 ---
 
-## Wix CMS Collections Needed
+## Key Functions Reference
 
-Add these collections in your Wix CMS if they don't exist:
+### GAS — WhatsApp_Notifications.js
 
-### `WhatsAppMessages`
-| Field | Type | Notes |
-|-------|------|-------|
-| `waId` | Text | Sender's WhatsApp ID (phone without +) |
-| `messageId` | Text | Meta message ID |
-| `direction` | Text | `inbound` or `outbound` |
-| `type` | Text | `text`, `image`, etc. |
-| `body` | Text | Message text |
-| `senderName` | Text | Display name |
-| `timestamp` | Text | ISO timestamp |
-| `deliveryStatus` | Text | `sent`, `delivered`, `read`, `failed` |
-| `statusUpdatedAt` | Text | ISO timestamp |
-| `rawPayload` | Text | Full JSON payload |
+| Function | Purpose |
+|----------|---------|
+| `WA_notifyNewCase(caseData)` | Alert staff of new case intake |
+| `WA_notifyCourtDateReminder(caseData, daysUntil)` | Court date reminder (plain text) |
+| `WA_templateCourtReminder(caseData)` | Court date reminder (approved template) |
+| `WA_notifyDocumentReady(phone, name, link, docName)` | Document ready for signing |
+| `WA_templateDocumentSignature(phone, name, link)` | Document signature (template) |
+| `WA_notifyPaymentOverdue(phone, name, amount, dueDate)` | Payment overdue notice |
+| `WA_templatePaymentRequest(phone, name, amount, status, link)` | Payment request (template) |
+| `WA_sendStealthPing(phone, name, magicLink)` | Stealth check-in ping |
+| `WA_templateGeneralFollowup(phone, name, reference)` | General follow-up (template) |
+| `WA_notifyForfeitureAlert(caseData)` | Bond forfeiture alert |
+| `WA_notifyBondDischarge(caseData)` | Bond discharged confirmation |
+| `WA_sendBulkCourtReminders()` | Daily bulk court date scan (set as time trigger) |
+| `WA_sendVoiceNote(phone, audioUrl, label)` | Send audio/voice note |
+| `WA_sendElevenLabsVoiceNote(phone, text, label)` | Generate ElevenLabs TTS + send |
+
+### GAS — WhatsApp_Auth.js
+
+| Function | Purpose |
+|----------|---------|
+| `WA_sendOTP(phone)` | Send 6-digit OTP via `shamrock_otp_login` template |
+| `WA_validateOTP(phone, code)` | Validate OTP, return session token |
+| `WA_resendOTP(phone)` | Resend OTP (rate limited) |
+
+### Wix — whatsapp-auth.jsw
+
+| Export | Purpose |
+|--------|---------|
+| `sendWhatsAppOTP(phone)` | Send OTP (calls GAS) |
+| `validateWhatsAppOTP(phone, code)` | Validate OTP (calls GAS) |
+| `resendWhatsAppOTP(phone)` | Resend OTP (calls GAS) |
+| `sendWhatsAppText(to, text)` | Direct Cloud API text send |
+| `sendWhatsAppTemplate(to, name, lang, components)` | Direct Cloud API template send |
+| `initiateWhatsAppLogin(phone)` | Alias for sendWhatsAppOTP |
+| `verifyWhatsAppOTP(phone, code)` | Alias for validateWhatsAppOTP |
 
 ---
 
-## Testing Checklist
+## ElevenLabs Integration
 
-- [ ] Run `testWhatsAppConnection()` in GAS → receive text on 239-955-0178
-- [ ] Run `testWhatsAppOTP()` in GAS → receive 6-digit code on 239-955-0178
-- [ ] Visit portal login page → enter 239-955-0178 → receive OTP → log in
-- [ ] Send "HERE" to 239-955-0178 from another phone → check-in logged
-- [ ] Send "PAY" → receive payment link
-- [ ] Send "HELP" → receive menu
-- [ ] Run `testCourtDateReminder()` → receive reminder on 239-955-0178
-- [ ] Verify webhook in Meta console shows green checkmark
+The system supports sending AI-generated voice notes via WhatsApp using ElevenLabs TTS.
+
+**Required Script Properties:**
+- `ELEVENLABS_API_KEY` — your ElevenLabs API key
+- `ELEVENLABS_VOICE_ID` — voice ID (default: `EXAVITQu4vr4xnSDxMaL` = Bella)
+
+**Usage example:**
+```javascript
+// Send a voice note to a defendant
+WA_sendElevenLabsVoiceNote(
+  '+13055551234',
+  'Hello John, this is a reminder from Shamrock Bail Bonds. Your court date is tomorrow at 9 AM.',
+  'Case-2026-001'
+);
+```
+
+**Flow:**
+1. Text sent to ElevenLabs API → returns MP3 audio
+2. MP3 saved to Google Drive (public link)
+3. Audio URL sent to WhatsApp Cloud API as voice note
+4. Recipient receives it as a voice message in WhatsApp
 
 ---
 
-*Last updated: February 2026*
+## Inbound Message Commands
+
+When someone texts your WhatsApp number, the system responds automatically:
+
+| Command | Response |
+|---------|----------|
+| `HERE` | Logs check-in, confirms receipt |
+| `PAY` | Sends SwipeSimple payment link |
+| `HELP` | Sends full menu of options |
+| `STOP` | Unsubscribes from notifications |
+| `START` | Re-subscribes |
+| `LOCATION` | Sends office address + Google Maps link |
+| `FORMS` | Sends forms menu |
+| 6-digit number | Treated as OTP reply |
+| Anything else | Notifies staff via Slack, sends "we'll follow up" reply |
+
+---
+
+## Contacts
+
+| Contact | Number |
+|---------|--------|
+| Shamrock Business Cell (WhatsApp) | (239) 955-0178 |
+| Shamrock Office | (239) 332-2245 |

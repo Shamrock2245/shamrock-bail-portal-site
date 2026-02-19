@@ -130,7 +130,7 @@ class WhatsAppCloudAPI {
      * @param {string} templateName - Template name (must be pre-approved)
      * @return {Object} API response
      */
-    sendAuthenticationOTP(to, otpCode, templateName = 'shamrock_otp') {
+    sendAuthenticationOTP(to, otpCode, templateName = 'shamrock_otp_login') {
         if (!this.isConfigured()) {
             throw new Error('WhatsApp Cloud API not configured.');
         }
