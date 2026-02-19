@@ -2598,76 +2598,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: AI AGENTS -->
-                <div id="ai-tab" class="tab-content">
-                    <div class="card">
-                        <h2>🤖 AI Agent Console</h2>
-                        <div class="form-group">
-                            <p>Monitor the status of your AI agents here.</p>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="stat-card">
-                                        <div class="stat-value" id="ai-status-checkin">🟢 Active</div>
-                                        <div class="stat-label">Check-In Monitor</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- TAB: BLOG AUDIO (ELEVENLABS) -->
-                <div id="blog-audio-tab" class="tab-content" style="display:none;">
-                    <div class="card">
-                        <div class="card-header">
-                            <h2>🎙️ Blog-to-Video Audio Generator</h2>
-                            <span class="badge badge-warning">Powered by ElevenLabs</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <div class="form-group">
-                                        <label>Blog Post Text</label>
-                                        <textarea id="blog-text" class="form-control" rows="12"
-                                            placeholder="Paste your blog post content here..."></textarea>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label>Voice Selection</label>
-                                        <select id="voice-select" class="form-control">
-                                            <option value="21m00Tcm4TlvDq8ikWAM">Rachel (Default - American, Clear)
-                                            </option>
-                                            <option value="AZnzlk1XvdvUeBnXmlld">Domi (Strong, Serious)</option>
-                                            <option value="EXAVITQu4vr4xnSDxMaL">Bella (Soft, Narration)</option>
-                                            <option value="ErXwobaYiN019PkySvjV">Antoni (American, Balanced)</option>
-                                            <option value="TxGEqnHWrfWFTfGW9XjX">Josh (American, Deep)</option>
-                                        </select>
-                                        <small class="text-muted">Select the voice that best fits the tone.</small>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Output Filename Preference</label>
-                                        <input type="text" id="blog-filename" class="form-control"
-                                            placeholder="e.g. 5_Tips_For_Bail">
-                                    </div>
-                                    <hr>
-                                    <button class="btn btn-primary btn-block" onclick="generateBlogAudio(this)">
-                                        ✨ Generate Audio
-                                    </button>
-                                    <div id="audio-result" style="margin-top:20px; display:none;">
-                                        <div class="alert alert-success">
-                                            <strong>Success!</strong> Audio saved to Drive.
-                                            <br>
-                                            <a id="audio-download-link" href="#" target="_blank"
-                                                class="btn btn-sm btn-secondary" style="margin-top:10px;">📂 Open in
-                                                Drive</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Signing Configuration -->
                 <h4
@@ -6708,6 +6639,61 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+     TAB: BLOG AUDIO (ELEVENLABS)
+     ============================================================ -->
+    <div id="blog-audio-tab" class="tab-content" style="display:none;">
+        <div class="card">
+            <div class="card-header">
+                <h2>🎙️ Blog-to-Video Audio Generator</h2>
+                <span class="badge badge-warning">Powered by ElevenLabs</span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            <label>Blog Post Text</label>
+                            <textarea id="blog-text" class="form-control" rows="12"
+                                placeholder="Paste your blog post content here..."></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Voice Selection</label>
+                            <select id="voice-select" class="form-control">
+                                <option value="21m00Tcm4TlvDq8ikWAM">Rachel (Default - American, Clear)
+                                </option>
+                                <option value="AZnzlk1XvdvUeBnXmlld">Domi (Strong, Serious)</option>
+                                <option value="EXAVITQu4vr4xnSDxMaL">Bella (Soft, Narration)</option>
+                                <option value="ErXwobaYiN019PkySvjV">Antoni (American, Balanced)</option>
+                                <option value="TxGEqnHWrfWFTfGW9XjX">Josh (American, Deep)</option>
+                            </select>
+                            <small class="text-muted">Select the voice that best fits the tone.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Output Filename Preference</label>
+                            <input type="text" id="blog-filename" class="form-control"
+                                placeholder="e.g. 5_Tips_For_Bail">
+                        </div>
+                        <hr>
+                        <button class="btn btn-primary btn-block" onclick="generateBlogAudio(this)">
+                            ✨ Generate Audio
+                        </button>
+                        <div id="audio-result" style="margin-top:20px; display:none;">
+                            <div class="alert alert-success">
+                                <strong>Success!</strong> Audio saved to Drive.
+                                <br>
+                                <a id="audio-download-link" href="#" target="_blank" class="btn btn-sm btn-secondary"
+                                    style="margin-top:10px;">📂 Open in
+                                    Drive</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
