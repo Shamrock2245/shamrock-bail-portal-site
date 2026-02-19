@@ -175,7 +175,6 @@ function doGet(e) {
       }
     }
 
-
     return createErrorResponse('No action specified', ERROR_CODES.MISSING_ACTION);
   }
 
