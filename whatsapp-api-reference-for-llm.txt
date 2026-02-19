@@ -103,3 +103,4239 @@ sendWhatsAppOTP('+12395550100', '123456');
 - `WHATSAPP_ACCESS_TOKEN`: Meta System User Token.
 - `WHATSAPP_PHONE_NUMBER_ID`: From Meta Dashboard.
 - `WHATSAPP_BUSINESS_ACCOUNT_ID`: From Meta Dashboard.
+ 
+
+ #### Start of md from the official docs
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com | Production Graph API server |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| GET | [/{Version}/{Application-ID}/connected_client_businesses](#get-version-application-id-connected-client-businesses) |
+
+<jumplink id="get-version-application-id-connected-client-businesses"></jumplink>
+## GET /{Version}/{Application-ID}/connected_client_businesses
+
+Get Connected Client Businesses
+
+Retrieve a list of client businesses connected to the specified application.
+
+
+**Use Cases:**
+- Monitor application-business client relationships
+- Verify connected business configurations
+- Retrieve business connection status and details
+- Manage client business access and permissions
+
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Use appropriate retry logic with exponential backoff.
+
+
+**Caching:**
+Business connection data can be cached for moderate periods, but status information may change.
+Implement appropriate cache invalidation strategies.
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| Application-ID | string | ✓ | Your Meta Application ID. This ID is provided when you create the application and can be found in your App Dashboard. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| fields | string |  | Comma-separated list of fields to include in the response. If not specified, default fields will be returned (id, name, verification_status, business_status). Available fields: id, name, verification_status, business_status, created_time, updated_time |
+| limit | integer [min: 1, max: 100] |  | Maximum number of connected client businesses to return per page. Default is 25, maximum is 100. |
+| after | string |  | Cursor for pagination. Use this to get the next page of results. |
+| before | string |  | Cursor for pagination. Use this to get the previous page of results. |
+
+### Responses
+
+**200**
+
+Successfully retrieved connected client businesses
+
+**Content Type**: `application/json`
+
+**Schema**: [ConnectedClientBusinessesResponse](#connectedclientbusinessesresponse)
+
+**400**
+
+Bad Request - Invalid parameters or malformed request
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid parameter: application_id must be a valid numeric string",
+        "type": "OAuthException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Your app doesn't have permission to access connected client businesses for this application",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - Application ID does not exist or is not accessible
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application not found",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "The requested fields are not available for this application",
+        "type": "GraphMethodException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+# Components
+
+## Schemas
+
+<jumplink id="connectedclientbusiness"></jumplink>
+### ConnectedClientBusiness
+
+Connected client business information and configuration
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Unique identifier for the connected client business |
+| name | string | ✓ | Name of the connected client business |
+| verification_status | [BusinessVerificationStatus](#businessverificationstatus) |  |  |
+| business_status | [BusinessStatus](#businessstatus) |  |  |
+| created_time | string (date-time) |  | Timestamp when the business connection was created |
+| updated_time | string (date-time) |  | Timestamp when the business connection was last updated |
+
+<jumplink id="businessverificationstatus"></jumplink>
+### BusinessVerificationStatus
+
+Verification status of the connected client business
+
+**Type**: string
+
+**Enum Values**: "VERIFIED", "UNVERIFIED", "PENDING", "REJECTED"
+
+<jumplink id="businessstatus"></jumplink>
+### BusinessStatus
+
+Current status of the connected client business
+
+**Type**: string
+
+**Enum Values**: "ACTIVE", "INACTIVE", "SUSPENDED", "PENDING_APPROVAL"
+
+<jumplink id="connectedclientbusinessesresponse"></jumplink>
+### ConnectedClientBusinessesResponse
+
+Response containing list of connected client businesses
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| data | array of [ConnectedClientBusiness](#connectedclientbusiness) |  | Array of connected client businesses |
+| paging | [CursorPaging](#cursorpaging) |  |  |
+
+<jumplink id="cursorpaging"></jumplink>
+### CursorPaging
+
+Cursor-based pagination information
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| cursors | [Cursors](#object-cursors-1) |  |  |
+| previous | string |  | URL for the previous page of results |
+| next | string |  | URL for the next page of results |
+
+<jumplink id="graphapierror"></jumplink>
+### GraphAPIError
+
+Standard Graph API error response
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| error | [Error](#object-error-2) | ✓ |  |
+
+## Inline Object Definitions
+
+<jumplink id="object-cursors-1"></jumplink>
+### Cursors
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| before | string |  | Cursor pointing to the start of the page of data |
+| after | string |  | Cursor pointing to the end of the page of data |
+
+<jumplink id="object-error-2"></jumplink>
+### Error
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| message | string | ✓ | Human-readable error message |
+| type | string | ✓ | Error category type |
+| code | integer | ✓ | Numeric error code |
+| error_subcode | integer |  | More specific error subcode when available |
+| fbtrace_id | string |  | Unique identifier for debugging and support requests with Meta |
+| is_transient | boolean |  | Indicates whether this error is temporary and the request should be retried |
+| error_user_title | string |  | User-friendly error title for display purposes |
+| error_user_msg | string |  | User-friendly error message for display purposes |
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com | Production Graph API server |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| GET | [/{Version}/{Application-ID}/whatsapp_business_solutions](#get-version-application-id-whatsapp-business-solutions) |
+
+<jumplink id="get-version-application-id-whatsapp-business-solutions"></jumplink>
+## GET /{Version}/{Application-ID}/whatsapp_business_solutions
+
+Get Multi-Partner Solutions for Application
+
+Retrieve all WhatsApp Business Multi-Partner Solutions associated with the specified application.
+This includes both solutions owned by the application and solutions where the application
+acts as a partner.
+
+
+**Use Cases:**
+- Retrieve all solutions for an application's portfolio management
+- Filter solutions by ownership role (owner vs partner)
+- Monitor solution lifecycle and status changes across multiple solutions
+- Verify solution configuration before business onboarding operations
+- Check pending approval requests and status transitions
+
+
+**Filtering:**
+Use the `role` parameter to filter solutions by the application's relationship:
+- `OWNER`: Only solutions owned by this application
+- `PARTNER`: Only solutions where this application is a partner
+- No role parameter: All solutions (both owned and partnered)
+
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Use appropriate retry logic with exponential backoff.
+
+
+**Caching:**
+Solution details can be cached for short periods, but status information may change
+frequently during transitions. Implement appropriate cache invalidation strategies.
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| Application-ID | string | ✓ | Your Meta Application ID. This ID can be found in your App Dashboard and represents the application for which you want to retrieve associated Multi-Partner Solutions. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| role | [WhatsAppBusinessSolutionApplicationRole](#whatsappbusinesssolutionapplicationrole) |  | Filter solutions by the application's relationship role. If not specified, all solutions (both owned and partnered) will be returned. |
+| fields | string |  | Comma-separated list of fields to include in the response. If not specified, default fields will be returned (name, status, status_for_pending_request). Available fields: id, name, status, status_for_pending_request, owner_app, owner_permissions |
+| limit | integer [min: 1, max: 100] |  | Maximum number of solutions to return in a single request. Default is 25, maximum is 100. |
+| after | string |  | Cursor for pagination. Use this to get the next page of results. |
+| before | string |  | Cursor for pagination. Use this to get the previous page of results. |
+
+### Responses
+
+**200**
+
+Successfully retrieved Multi-Partner Solutions for the application
+
+**Content Type**: `application/json`
+
+**Schema**: [WhatsAppBusinessSolutionsResponse](#whatsappbusinesssolutionsresponse)
+
+**400**
+
+Bad Request - Invalid parameters or malformed request
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid parameter: application_id must be a valid numeric string",
+        "type": "OAuthException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Your app doesn't have permission to access Multi-Partner Solutions for this application",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - Application ID does not exist or is not accessible
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application not found",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "The requested fields are not available for these solutions",
+        "type": "GraphMethodException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+# Components
+
+## Schemas
+
+<jumplink id="whatsappbusinesssolution"></jumplink>
+### WhatsAppBusinessSolution
+
+Multi-Partner Solution details and configuration
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Unique identifier for the Multi-Partner Solution |
+| name | string | ✓ | Human-readable name of the Multi-Partner Solution |
+| status | [WhatsAppBusinessSolutionStatus](#whatsappbusinesssolutionstatus) | ✓ |  |
+| status_for_pending_request | [WhatsAppBusinessSolutionPendingStatus](#whatsappbusinesssolutionpendingstatus) | ✓ |  |
+| owner_app | [ApplicationNode](#applicationnode) |  |  |
+| owner_permissions | array of [WhatsAppBusinessAccountPermissionTask](#whatsappbusinessaccountpermissiontask) |  | List of WhatsApp Business Account permissions granted to the solution owner |
+
+<jumplink id="whatsappbusinesssolutionstatus"></jumplink>
+### WhatsAppBusinessSolutionStatus
+
+Current effective status of the Multi-Partner Solution
+
+**Type**: string
+
+**Enum Values**: "DRAFT", "INITIATED", "ACTIVE", "REJECTED", "DEACTIVATED"
+
+<jumplink id="whatsappbusinesssolutionpendingstatus"></jumplink>
+### WhatsAppBusinessSolutionPendingStatus
+
+Status of any pending solution status transition requests
+
+**Type**: string
+
+**Enum Values**: "PENDING_ACTIVATION", "PENDING_DEACTIVATION", "NONE"
+
+<jumplink id="whatsappbusinessaccountpermissiontask"></jumplink>
+### WhatsAppBusinessAccountPermissionTask
+
+Granular permission tasks for WhatsApp Business Account access
+
+**Type**: string
+
+**Enum Values**: "MANAGE", "DEVELOP", "MANAGE_TEMPLATES", "MANAGE_PHONE", "VIEW_COST", "MANAGE_EXTENSIONS", "VIEW_PHONE_ASSETS", "MANAGE_PHONE_ASSETS", "VIEW_TEMPLATES", "VIEW_INSIGHTS", "RECEIVE_INCOMING_MESSAGES", "MANAGE_BILLING", "MANAGE_USERS", "MESSAGING", "FULL_CONTROL"
+
+<jumplink id="whatsappbusinesssolutionapplicationrole"></jumplink>
+### WhatsAppBusinessSolutionApplicationRole
+
+Role of the application in relation to the Multi-Partner Solution
+
+**Type**: string
+
+**Enum Values**: "OWNER", "PARTNER"
+
+<jumplink id="applicationnode"></jumplink>
+### ApplicationNode
+
+Meta application that owns the Multi-Partner Solution
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string |  | Unique identifier for the Meta application |
+| name | string |  | Name of the Meta application |
+
+<jumplink id="whatsappbusinesssolutionsresponse"></jumplink>
+### WhatsAppBusinessSolutionsResponse
+
+Response containing list of Multi-Partner Solutions with pagination
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| data | array of [WhatsAppBusinessSolution](#whatsappbusinesssolution) |  | Array of Multi-Partner Solutions |
+| paging | [CursorPaging](#cursorpaging) |  |  |
+
+<jumplink id="cursorpaging"></jumplink>
+### CursorPaging
+
+Cursor-based pagination information
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| cursors | [Cursors](#object-cursors-1) |  |  |
+| previous | string |  | Graph API endpoint URL for the previous page of data |
+| next | string |  | Graph API endpoint URL for the next page of data |
+
+<jumplink id="graphapierror"></jumplink>
+### GraphAPIError
+
+Standard Graph API error response
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| error | [Error](#object-error-2) | ✓ |  |
+
+## Inline Object Definitions
+
+<jumplink id="object-cursors-1"></jumplink>
+### Cursors
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| before | string |  | Cursor pointing to the start of the page of data that has been returned |
+| after | string |  | Cursor pointing to the end of the page of data that has been returned |
+
+<jumplink id="object-error-2"></jumplink>
+### Error
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| message | string | ✓ | Human-readable error message |
+| type | string | ✓ | Error category type |
+| code | integer | ✓ | Numeric error code |
+| error_subcode | integer |  | More specific error subcode when available |
+| fbtrace_id | string |  | Unique identifier for debugging and support requests with Meta |
+| is_transient | boolean |  | Indicates whether this error is temporary and the request should be retried |
+| error_user_title | string |  | User-friendly error title for display purposes |
+| error_user_msg | string |  | User-friendly error message for display purposes |
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com | Production Graph API server |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| POST | [/{Version}/{Application-ID}/whatsapp_business_solution](#post-version-application-id-whatsapp-business-solution) |
+
+<jumplink id="post-version-application-id-whatsapp-business-solution"></jumplink>
+## POST /{Version}/{Application-ID}/whatsapp_business_solution
+
+Create Multi-Partner Solution
+
+Create a new Multi-Partner Solution that defines permission distribution between
+a solution owner app and a partner app for WhatsApp Business messaging collaboration.
+
+
+**Permission Logic:**
+- Only one partner (owner or partner app) can have MESSAGING permission
+- At least one partner must have MESSAGING permission
+- Both partners automatically receive default solution partner permissions
+- Empty permission arrays indicate no configurable permissions for that partner
+
+
+**Solution Lifecycle:**
+- Solutions are created with INITIATED status
+- Require subsequent activation workflow through solution management
+- Can be managed through Partner Dashboard or solution management APIs
+
+
+**Rate Limiting:**
+Standard Graph API rate limits apply with WhatsApp Business Management throttling.
+Use appropriate retry logic with exponential backoff for rate-limited requests.
+
+
+**Validation:**
+- Partner app must be accessible and have proper capabilities
+- Permission combinations are validated against business logic rules
+- Solution names must meet length and content requirements
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines API behavior and available features. Use the latest stable version for new integrations. |
+| Application-ID | string | ✓ | Your Facebook Application ID that will serve as the solution owner. This application will be the primary owner of the created solution. |
+
+### Request Body (Required)
+
+**Content Type**: `application/json`
+
+**Schema**: [WhatsAppBusinessSolutionCreateRequest](#whatsappbusinesssolutioncreaterequest)
+
+### Responses
+
+**200**
+
+Multi-Partner Solution created successfully. The solution is created with INITIATED status
+and can be managed through subsequent API calls or Partner Dashboard.
+
+
+**Content Type**: `application/json`
+
+**Schema**: [WhatsAppBusinessSolutionCreateResponse](#whatsappbusinesssolutioncreateresponse)
+
+**400**
+
+Bad Request - Invalid parameters provided. This includes validation failures
+for permission logic, malformed IDs, or constraint violations.
+
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**401**
+
+Unauthorized - Authentication required or invalid access token provided.
+
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**403**
+
+Forbidden - Insufficient permissions or missing required capabilities.
+App may lack whatsapp_business_management permission or required granular scopes.
+
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**404**
+
+Not Found - Application ID not found or not accessible to the requesting entity.
+
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**422**
+
+Unprocessable Entity - Request is well-formed but contains business logic violations.
+This includes cases where both partners have MESSAGING permission or neither has it.
+
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**429**
+
+Too Many Requests - Rate limiting threshold exceeded.
+Implement exponential backoff retry logic.
+
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**500**
+
+Internal Server Error - Unexpected server-side error occurred.
+These errors are typically transient and should be retried.
+
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+
+# Components
+
+## Schemas
+
+<jumplink id="whatsappbusinesssolutioncreaterequest"></jumplink>
+### WhatsAppBusinessSolutionCreateRequest
+
+Request payload for creating a Multi-Partner Solution
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| owner_permissions | array of [WhatsAppBusinessAccountConfigurablePermissionTask](#whatsappbusinessaccountconfigurablepermissiontask) | ✓ | Configurable permissions granted to the solution owner app. Currently supports only MESSAGING permission. Use empty array if owner should not have configurable permissions. |
+| partner_app_id | string | ✓ | Facebook Application ID of the partner app that will participate in this solution. Must be a valid application ID accessible to the requesting entity. |
+| partner_permissions | array of [WhatsAppBusinessAccountConfigurablePermissionTask](#whatsappbusinessaccountconfigurablepermissiontask) | ✓ | Configurable permissions granted to the partner app. Currently supports only MESSAGING permission. Use empty array if partner should not have configurable permissions. |
+| solution_name | string | ✓ | Human-readable name for the Multi-Partner Solution. Used for identification and management purposes in partner dashboards and solution management interfaces. |
+
+<jumplink id="whatsappbusinesssolutioncreateresponse"></jumplink>
+### WhatsAppBusinessSolutionCreateResponse
+
+Successful response containing the created solution identifier
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| solution_id | string | ✓ | Unique identifier for the newly created Multi-Partner Solution. Use this ID for subsequent solution management operations. |
+
+<jumplink id="whatsappbusinessaccountconfigurablepermissiontask"></jumplink>
+### WhatsAppBusinessAccountConfigurablePermissionTask
+
+Configurable permission tasks for WhatsApp Business Account access in Multi-Partner Solutions.
+Currently only MESSAGING permission is configurable through this API.
+
+
+**Type**: string
+
+**Enum Values**: "MESSAGING"
+
+<jumplink id="graphapierror"></jumplink>
+### GraphAPIError
+
+Standard Graph API error response structure
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| error | [Error](#object-error-1) | ✓ |  |
+
+## Inline Object Definitions
+
+<jumplink id="object-error-1"></jumplink>
+### Error
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| message | string | ✓ | Human-readable error message describing the issue |
+| type | string | ✓ | Error type classification for programmatic handling |
+| code | integer | ✓ | Numeric error code for specific error identification |
+| error_subcode | integer |  | More specific error subcode when applicable |
+| fbtrace_id | string |  | Facebook trace ID for debugging and support purposes |
+| is_transient | boolean |  | Indicates whether this error is temporary and the request should be retried |
+| error_user_title | string |  | User-friendly error title for display purposes |
+| error_user_msg | string |  | User-friendly error message for display purposes |
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com | Production Graph API server |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| POST | [/{Version}/{Business-ID}/add_phone_numbers](#post-version-business-id-add-phone-numbers) |
+
+<jumplink id="post-version-business-id-add-phone-numbers"></jumplink>
+## POST /{Version}/{Business-ID}/add_phone_numbers
+
+Add Phone Number to Business Account
+
+Add a preverified phone number to a WhatsApp Business Account. This endpoint is used by
+Partners to create a pool of Partner owned numbers that end clients
+can purchase.
+
+**Use Cases:**
+- Add new phone numbers to scale messaging operations
+- Set up phone numbers for different business locations
+- Manage phone number inventory for business messaging
+- Configure phone numbers for specific messaging workflows
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Use appropriate retry logic with exponential backoff.
+
+**Phone Number Requirements:**
+- Must be in E.164 format (e.g., +1234567890)
+- Must not be already registered to another WhatsApp Business Account
+- Must be capable of receiving SMS for verification
+- Must comply with WhatsApp's business messaging policies
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| Business-ID | string | ✓ | Your WhatsApp Business Account ID. This ID can be found in your Business Manager or through business management APIs. |
+
+### Request Body (Required)
+
+Phone number to add to the business account
+
+**Content Type**: `application/json`
+
+**Schema**: [AddPhoneNumbersRequest](#addphonenumbersrequest)
+
+### Responses
+
+**200**
+
+Phone number successfully added
+
+**Content Type**: `application/json`
+
+**Schema**: [AddPhoneNumbersResponse](#addphonenumbersresponse)
+
+**400**
+
+Bad Request - Invalid parameters, malformed request, or phone number already registered
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Your app doesn't have permission to add phone numbers to this business account",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - Business ID does not exist or is not accessible
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "WhatsApp Business Account not found",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Maximum number of phone numbers per business account exceeded",
+        "type": "GraphMethodException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+# Components
+
+## Schemas
+
+<jumplink id="addphonenumbersrequest"></jumplink>
+### AddPhoneNumbersRequest
+
+Request payload for adding a phone number to a business account
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| phone_number | string | ✓ | Phone number to add to the business account. Accepts E.164 format or formatted numbers with spaces, hyphens, and parentheses (e.g., +1234567890, +1 (631) 555-1000, +1-631-555-1000). The phone number will be normalized and validated by the endpoint. |
+
+<jumplink id="addphonenumbersresponse"></jumplink>
+### AddPhoneNumbersResponse
+
+Response containing the ID of the successfully added phone number
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Unique identifier for the preverified phone number entity that was created |
+
+<jumplink id="graphapierror"></jumplink>
+### GraphAPIError
+
+Standard Graph API error response
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| error | [Error](#object-error-1) | ✓ |  |
+
+## Inline Object Definitions
+
+<jumplink id="object-error-1"></jumplink>
+### Error
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| message | string | ✓ | Human-readable error message |
+| type | string | ✓ | Error category type |
+| code | integer | ✓ | Numeric error code |
+| error_subcode | integer |  | More specific error subcode when available |
+| fbtrace_id | string |  | Unique identifier for debugging and support requests with Meta |
+| is_transient | boolean |  | Indicates whether this error is temporary and the request should be retried |
+| error_user_title | string |  | User-friendly error title for display purposes |
+| error_user_msg | string |  | User-friendly error message for display purposes |
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com |  |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| GET | [/{Version}/{Business-ID}](#get-version-business-id) |
+
+<jumplink id="get-version-business-id"></jumplink>
+## GET /{Version}/{Business-ID}
+
+Get Business Portfolio (Specific Fields)
+
+Endpoint reference: [Business](https://developers.facebook.com/docs/marketing-api/reference/business/)
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| fields | string |  |  |
+
+### Responses
+
+**200**
+
+Example response
+
+**Content Type**: `application/json`
+
+**Schema**: object
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string |  |  |
+| name | string |  |  |
+| timezone_id | number |  |  |
+
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+https://developers.facebook.com/documentation/business-messaging/whatsapp/reference/business/client-whatsapp-business-accounts-api
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com | Production Graph API server |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| GET | [/{Version}/{Business-ID}/whatsapp_business_accounts](#get-version-business-id-whatsapp-business-accounts) |
+| POST | [/{Version}/{Business-ID}/whatsapp_business_accounts](#post-version-business-id-whatsapp-business-accounts) |
+
+<jumplink id="get-version-business-id-whatsapp-business-accounts"></jumplink>
+## GET /{Version}/{Business-ID}/whatsapp_business_accounts
+
+Get WhatsApp Business Accounts
+
+Retrieve a list of WhatsApp Business Accounts owned by the specified business portfolio.
+
+This endpoint provides information about WhatsApp Business Accounts that are owned
+by the business, including their configuration, status, and core properties. This
+corresponds to the GraphBusinessWhatsAppBusinessAccountsEdge functionality.
+
+**Use Cases:**
+- Retrieve list of owned WhatsApp Business Accounts
+- Monitor WABA status and configuration
+- Verify WABA details for business integrations
+- Manage business WhatsApp messaging setups
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Use appropriate retry logic with exponential backoff.
+
+**Caching:**
+WABA information can be cached for moderate periods, but status information may change
+frequently. Implement appropriate cache invalidation strategies.
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| Business-ID | string | ✓ | Your business portfolio ID. This ID can be found in the Meta Business Suite or through business management APIs. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| fields | string |  | Comma-separated list of fields to include in the response. If not specified, default fields will be returned (id, name, currency, timezone_id). Available fields: id, name, account_review_status, purchase_order_number, currency, timezone_id, business_verification_status, country, on_behalf_of_business_info, is_enabled_for_insights, message_template_namespace |
+| business_type | array of One of "ENTERPRISE", "SMB" |  | Filter results by WhatsApp Business Account type |
+| limit | integer [min: 1, max: 100] |  | Maximum number of WhatsApp Business Accounts to return per page. Default is 25, maximum is 100. |
+| after | string |  | Cursor for pagination. Use this to get the next page of results. |
+| before | string |  | Cursor for pagination. Use this to get the previous page of results. |
+| find | string |  | Find a specific WhatsApp Business Account by ID |
+
+### Responses
+
+**200**
+
+Successfully retrieved WhatsApp Business Accounts
+
+**Content Type**: `application/json`
+
+**Schema**: [WhatsAppBusinessAccountsResponse](#whatsappbusinessaccountsresponse)
+
+**400**
+
+Bad Request - Invalid parameters or malformed request
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid parameter: business_id must be a valid numeric string",
+        "type": "OAuthException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Your app doesn't have permission to access WhatsApp Business Accounts for this business",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - Business ID does not exist or is not accessible
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Business not found",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "The requested fields are not available for this business",
+        "type": "GraphMethodException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+<jumplink id="post-version-business-id-whatsapp-business-accounts"></jumplink>
+## POST /{Version}/{Business-ID}/whatsapp_business_accounts
+
+Create WhatsApp Business Account
+
+Create a new WhatsApp Business Account under the specified business portfolio.
+
+This endpoint creates a new WABA with the provided configuration and associates it
+with the business portfolio. The account will be set up with the specified payment
+method and business settings.
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Account creation may have additional
+rate limits to prevent abuse.
+
+**Business Logic:**
+- Account name must be unique within the business portfolio
+- Payment method must be valid and active
+- Business must have appropriate permissions for WABA creation
+- Created account will be in pending state until verification is complete
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| Business-ID | string | ✓ | Your business portfolio ID. This ID can be found in the Meta Business Suite or through business management APIs. |
+
+### Request Body (Required)
+
+**Content Type**: `application/json`
+
+**Schema**: [WhatsAppBusinessAccountCreationRequest](#whatsappbusinessaccountcreationrequest)
+
+### Responses
+
+**200**
+
+Successfully created WhatsApp Business Account
+
+**Content Type**: `application/json`
+
+**Schema**: [WhatsAppBusinessAccountCreationResponse](#whatsappbusinessaccountcreationresponse)
+
+**400**
+
+Bad Request - Invalid parameters or malformed request
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid parameter: name is required",
+        "type": "OAuthException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Your app doesn't have permission to create WhatsApp Business Accounts",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - Business ID does not exist or is not accessible
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Business not found",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Cannot create WhatsApp Business Account: payment method is invalid",
+        "type": "GraphMethodException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+# Components
+
+## Schemas
+
+<jumplink id="whatsappbusinessaccountcreationrequest"></jumplink>
+### WhatsAppBusinessAccountCreationRequest
+
+Request payload for creating a WhatsApp Business Account
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| name | string | ✓ | Human-readable name for the WhatsApp Business Account |
+| primary_funding_id | string |  | ID of the primary funding source (credit card or extended credit) |
+| purchase_order_number | string |  | Purchase order number for billing reference |
+| currency | string |  | Currency code for billing (ISO 4217 format) |
+| timezone_id | integer |  | Timezone ID for the account |
+| business_type | [WhatsAppBusinessType](#whatsappbusinesstype) |  |  |
+| on_behalf_of_business_id | string |  | Business ID when creating account on behalf of another business |
+
+<jumplink id="whatsappbusinesstype"></jumplink>
+### WhatsAppBusinessType
+
+Type of WhatsApp Business Account
+
+**Type**: string
+
+**Enum Values**: "ENTERPRISE", "SMB"
+
+<jumplink id="whatsappbusinessaccount"></jumplink>
+### WhatsAppBusinessAccount
+
+WhatsApp Business Account details and configuration
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Unique identifier for the WhatsApp Business Account |
+| name | string | ✓ | Human-readable name of the WhatsApp Business Account |
+| account_review_status | [AccountReviewStatus](#accountreviewstatus) |  |  |
+| purchase_order_number | string |  | Purchase order number associated with the account |
+| currency | string |  | Currency code for the WABA (ISO 4217 format) |
+| timezone_id | string |  | Timezone identifier for the WABA |
+| business_verification_status | [BusinessVerificationStatus](#businessverificationstatus) |  |  |
+| country | string |  | Country code where the WABA is registered |
+| on_behalf_of_business_info | [OnBehalfOfBusinessInfo](#onbehalfofbusinessinfo) |  |  |
+| is_enabled_for_insights | boolean |  | Whether insights are enabled for this WABA |
+| message_template_namespace | string |  | Namespace for message templates |
+
+<jumplink id="accountreviewstatus"></jumplink>
+### AccountReviewStatus
+
+Review status of the WhatsApp Business Account
+
+**Type**: string
+
+**Enum Values**: "APPROVED", "PENDING", "REJECTED", "RESTRICTED"
+
+<jumplink id="businessverificationstatus"></jumplink>
+### BusinessVerificationStatus
+
+Verification status of the business associated with the WABA
+
+**Type**: string
+
+**Enum Values**: "VERIFIED", "UNVERIFIED", "PENDING", "REJECTED"
+
+<jumplink id="onbehalfofbusinessinfo"></jumplink>
+### OnBehalfOfBusinessInfo
+
+Information about the business on whose behalf the WABA operates
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string |  | Business ID |
+| name | string |  | Business name |
+
+<jumplink id="whatsappbusinessaccountcreationresponse"></jumplink>
+### WhatsAppBusinessAccountCreationResponse
+
+Response after successfully creating a WhatsApp Business Account
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Unique identifier for the created WhatsApp Business Account |
+| payment_account_id | string | ✓ | ID of the associated payment account for billing |
+
+<jumplink id="whatsappbusinessaccountsresponse"></jumplink>
+### WhatsAppBusinessAccountsResponse
+
+Response containing list of WhatsApp Business Accounts
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| data | array of [WhatsAppBusinessAccount](#whatsappbusinessaccount) |  | Array of WhatsApp Business Accounts |
+| paging | [CursorPaging](#cursorpaging) |  |  |
+
+<jumplink id="cursorpaging"></jumplink>
+### CursorPaging
+
+Cursor-based pagination information
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| cursors | [Cursors](#object-cursors-1) |  |  |
+| previous | string |  | URL for the previous page of results |
+| next | string |  | URL for the next page of results |
+
+<jumplink id="graphapierror"></jumplink>
+### GraphAPIError
+
+Standard Graph API error response
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| error | [Error](#object-error-2) | ✓ |  |
+
+## Inline Object Definitions
+
+<jumplink id="object-cursors-1"></jumplink>
+### Cursors
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| before | string |  | Cursor pointing to the start of the page of data |
+| after | string |  | Cursor pointing to the end of the page of data |
+
+<jumplink id="object-error-2"></jumplink>
+### Error
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| message | string | ✓ | Human-readable error message |
+| type | string | ✓ | Error category type |
+| code | integer | ✓ | Numeric error code |
+| error_subcode | integer |  | More specific error subcode when available |
+| fbtrace_id | string |  | Unique identifier for debugging and support requests with Meta |
+| is_transient | boolean |  | Indicates whether this error is temporary and the request should be retried |
+| error_user_title | string |  | User-friendly error title for display purposes |
+| error_user_msg | string |  | User-friendly error message for display purposes |
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com |  |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| DELETE | [/{Version}/{Media-ID}](#delete-version-media-id) |
+| GET | [/{Version}/{Media-ID}](#get-version-media-id) |
+
+<jumplink id="delete-version-media-id"></jumplink>
+## DELETE /{Version}/{Media-ID}
+
+Delete Media
+
+To delete media, make a **DELETE** call to the ID of the media you want to delete.
+
+## Prerequisites
+- [User Access Token](https://developers.facebook.com/docs/facebook-login/access-tokens#usertokens) with **`whatsapp_business_messaging`** permission
+- Media object ID from either uploading media endpoint or media message Webhooks
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+| Content-Type | One of "application/json", "application/x-www-form-urlencoded", "multipart/form-data" | ✓ | Media type of the request body |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| phone_number_id | string |  | Specifies that deletion of the media only be performed if the media belongs to the provided phone number. |
+
+### Responses
+
+**200**
+
+Delete Media
+
+**Content Type**: `application/json`
+
+**Schema**: object
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| success | boolean |  |  |
+
+
+<jumplink id="get-version-media-id"></jumplink>
+## GET /{Version}/{Media-ID}
+
+Retrieve Media URL
+
+To retrieve your media’s URL, make a **GET** call to **`/{{Media-ID}}`**. Use the returned URL to download the media file. Note that clicking this URL (i.e. performing a generic GET) will not return the media; you must include an access token. For more information, see [Download Media](https://developers.facebook.com/docs/business-messaging/whatsapp/business-phone-numbers/media#download-media).
+
+You can also use the optional query **`?phone_number_id`** for **`Retrieve Media URL`** and **`Delete Media`**. This parameter checks to make sure the media belongs to the phone number before retrieval or deletion.
+
+#### Response
+
+A successful response includes an object with a media URL. The URL is only valid for 5 minutes. To use this URL, see [Download Media](https://developers.facebook.com/docs/business-messaging/whatsapp/business-phone-numbers/media#download-media).
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| phone_number_id | string |  | Specifies that this action only be performed if the media belongs to the provided phone number. |
+
+### Responses
+
+**200**
+
+Retrieve Media URL
+
+**Content Type**: `application/json`
+
+**Schema**: object
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| file_size | string |  |  |
+| id | string |  |  |
+| messaging_product | string |  |  |
+| mime_type | string |  |  |
+| sha256 | string |  |  |
+| url | string |  |  |
+
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com |  |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| GET | [/{Version}/{Media-URL}](#get-version-media-url) |
+
+<jumplink id="get-version-media-url"></jumplink>
+## GET /{Version}/{Media-URL}
+
+Download Media
+
+Download media files using URLs obtained from media retrieval endpoints.
+Requires User Access Token with whatsapp_business_messaging permission.
+Media URLs expire after 5 minutes and must be re-retrieved if expired.
+Returns binary content with appropriate MIME type headers.
+
+
+### Responses
+
+**200**
+
+Download Media
+
+**Content Type**: `text/plain`
+
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com | Production Graph API server |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| GET | [/{Version}/{Message-History-ID}/events](#get-version-message-history-id-events) |
+
+<jumplink id="get-version-message-history-id-events"></jumplink>
+## GET /{Version}/{Message-History-ID}/events
+
+Get WhatsApp Message History Events
+
+Retrieve paginated message delivery status events for a specific message history entry,
+including delivery status occurrences, timestamps, and application information.
+
+
+**Use Cases:**
+- Track detailed message delivery status events and transitions
+- Monitor delivery status occurrence timestamps
+- Retrieve application information for delivery events
+- Debug message delivery issues and status changes
+
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Use appropriate retry logic with exponential backoff.
+
+
+**Caching:**
+Message history events can be cached for short periods, but delivery status events
+may change frequently. Implement appropriate cache invalidation strategies.
+
+
+**Pagination:**
+This endpoint supports cursor-based pagination. Use the `after` and `before` cursors
+from the response to navigate through results.
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| Message-History-ID | string | ✓ | Your WhatsApp Business Message History ID. This ID is provided when you retrieve message history and can be found through message history APIs. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| status_filter | [WhatsAppMessageDeliveryStatus](#whatsappmessagedeliverystatus) |  | Filter results by specific delivery status. When provided, only events with this delivery status will be returned. |
+| fields | string |  | Comma-separated list of fields to include in the response. If not specified, default fields will be returned (cursor, node{id,delivery_status,occurrence_timestamp}). Available fields: cursor, node{id,delivery_status,error_description,occurrence_timestamp,status_timestamp,application} |
+| limit | integer [min: 1, max: 100] |  | Maximum number of message history events to return per page. Default is 25, maximum is 100. |
+| after | string |  | Cursor for pagination. Use this to get the next page of results. This value comes from the `paging.cursors.after` field in previous responses. |
+| before | string |  | Cursor for pagination. Use this to get the previous page of results. This value comes from the `paging.cursors.before` field in previous responses. |
+
+### Responses
+
+**200**
+
+Successfully retrieved WhatsApp message history events
+
+**Content Type**: `application/json`
+
+**Schema**: [MessageHistoryEventsResponse](#messagehistoryeventsresponse)
+
+**400**
+
+Bad Request - Invalid parameters or malformed request
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid parameter: status_filter must be a valid delivery status",
+        "type": "OAuthException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Your app doesn't have permission to access message history events for this resource",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - Message History ID does not exist or is not accessible
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "WhatsApp Business Message History not found",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "The requested fields are not available for this message history",
+        "type": "GraphMethodException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+# Components
+
+## Schemas
+
+<jumplink id="whatsappmessagehistoryeventsedge"></jumplink>
+### WhatsAppMessageHistoryEventsEdge
+
+Edge containing message delivery status occurrence with pagination cursor
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| cursor | string |  | Pagination cursor for this edge |
+| node | [WhatsAppBusinessMessageDeliveryStatusOccurrence](#whatsappbusinessmessagedeliverystatusoccurrence) | ✓ |  |
+
+<jumplink id="whatsappbusinessmessagedeliverystatusoccurrence"></jumplink>
+### WhatsAppBusinessMessageDeliveryStatusOccurrence
+
+Message delivery status occurrence with detailed event information
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Unique identifier for the message delivery status occurrence |
+| delivery_status | [WhatsAppMessageDeliveryStatus](#whatsappmessagedeliverystatus) | ✓ |  |
+| error_description | string |  | Error description if the delivery encountered an error |
+| occurrence_timestamp | integer (int64) | ✓ | Unix timestamp when the delivery status occurrence happened |
+| status_timestamp | integer (int64) |  | Unix timestamp when the status was recorded |
+| application | [ApplicationNode](#applicationnode) |  |  |
+
+<jumplink id="whatsappmessagedeliverystatus"></jumplink>
+### WhatsAppMessageDeliveryStatus
+
+Message delivery status
+
+**Type**: string
+
+**Enum Values**: "ACCEPTED", "DELIVERED", "ERROR", "READ", "SENT"
+
+<jumplink id="applicationnode"></jumplink>
+### ApplicationNode
+
+Meta application that processed the delivery status event
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string |  | Unique identifier for the Meta application |
+| name | string |  | Name of the Meta application |
+
+<jumplink id="messagehistoryeventsresponse"></jumplink>
+### MessageHistoryEventsResponse
+
+Paginated response containing message history events
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| data | array of [WhatsAppMessageHistoryEventsEdge](#whatsappmessagehistoryeventsedge) |  | Array of message history event edges |
+| paging | [PaginationInfo](#paginationinfo) |  |  |
+
+<jumplink id="paginationinfo"></jumplink>
+### PaginationInfo
+
+Pagination information for navigating through results
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| cursors | [Cursors](#object-cursors-1) |  | Pagination cursors for navigation |
+| previous | string (uri) |  | URL for the previous page of results |
+| next | string (uri) |  | URL for the next page of results |
+
+<jumplink id="graphapierror"></jumplink>
+### GraphAPIError
+
+Standard Graph API error response
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| error | [Error](#object-error-2) | ✓ |  |
+
+## Inline Object Definitions
+
+<jumplink id="object-cursors-1"></jumplink>
+### Cursors
+
+Pagination cursors for navigation
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| before | string |  | Cursor for the previous page of results |
+| after | string |  | Cursor for the next page of results |
+
+<jumplink id="object-error-2"></jumplink>
+### Error
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| message | string | ✓ | Human-readable error message |
+| type | string | ✓ | Error category type |
+| code | integer | ✓ | Numeric error code |
+| error_subcode | integer |  | More specific error subcode when available |
+| fbtrace_id | string |  | Unique identifier for debugging and support requests with Meta |
+| is_transient | boolean |  | Indicates whether this error is temporary and the request should be retried |
+| error_user_title | string |  | User-friendly error title for display purposes |
+| error_user_msg | string |  | User-friendly error message for display purposes |
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com | Production Graph API server |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| GET | [/{Version}/{User-ID}/assigned_whatsapp_business_accounts](#get-version-user-id-assigned-whatsapp-business-accounts) |
+
+<jumplink id="get-version-user-id-assigned-whatsapp-business-accounts"></jumplink>
+## GET /{Version}/{User-ID}/assigned_whatsapp_business_accounts
+
+Get Assigned WhatsApp Business Accounts
+
+Retrieve WhatsApp Business Accounts that have been assigned to a specific user.
+This endpoint provides information about account assignments, permissions, and
+current status corresponding to the GraphAssignedWhatsAppBusinessAccountsEdge node.
+
+
+**Use Cases:**
+- Retrieve all WhatsApp Business Accounts assigned to a user
+- Check user permissions for specific accounts
+- Monitor account assignment status and changes
+- Validate user access before performing business operations
+
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Use appropriate retry logic with exponential backoff.
+
+
+**Caching:**
+Assignment information can be cached for short periods, but permissions and status
+may change frequently. Implement appropriate cache invalidation strategies.
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| User-ID | string | ✓ | The user ID for whom to retrieve assigned WhatsApp Business Accounts. This must be a valid user ID within your solution or partnership. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| fields | string |  | Comma-separated list of fields to include in the response. If not specified, default fields will be returned (id, name, status). Available fields: id, name, status, assignment_date, permissions, business_id, phone_numbers |
+| limit | integer [min: 1, max: 100] |  | Maximum number of accounts to return per page. Default is 25, maximum is 100. |
+| after | string |  | Cursor for pagination. Use this to get the next page of results. |
+| before | string |  | Cursor for pagination. Use this to get the previous page of results. |
+
+### Responses
+
+**200**
+
+Successfully retrieved assigned WhatsApp Business Accounts
+
+**Content Type**: `application/json`
+
+**Schema**: [AssignedAccountsResponse](#assignedaccountsresponse)
+
+**400**
+
+Bad Request - Invalid parameters or malformed request
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid parameter: user_id must be a valid numeric string",
+        "type": "OAuthException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Your app doesn't have permission to access assigned WhatsApp Business Accounts for this user",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - User ID does not exist or is not accessible
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "User not found",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "The requested fields are not available for this user",
+        "type": "GraphMethodException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+# Components
+
+## Schemas
+
+<jumplink id="assignedwhatsappbusinessaccount"></jumplink>
+### AssignedWhatsAppBusinessAccount
+
+WhatsApp Business Account assigned to a user
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Unique identifier for the WhatsApp Business Account |
+| name | string | ✓ | Display name of the WhatsApp Business Account |
+| status | [WhatsAppBusinessAccountStatus](#whatsappbusinessaccountstatus) | ✓ |  |
+| assignment_date | string (date-time) |  | Date and time when the account was assigned to the user |
+| permissions | array of [WhatsAppBusinessAccountPermission](#whatsappbusinessaccountpermission) |  | List of permissions granted to the user for this account |
+| business_id | string |  | Business ID that owns this WhatsApp Business Account |
+| phone_numbers | array of [PhoneNumberInfo](#phonenumberinfo) |  | Phone numbers associated with this WhatsApp Business Account |
+
+<jumplink id="whatsappbusinessaccountstatus"></jumplink>
+### WhatsAppBusinessAccountStatus
+
+Current status of the WhatsApp Business Account
+
+**Type**: string
+
+**Enum Values**: "ACTIVE", "PENDING", "RESTRICTED", "DISABLED"
+
+<jumplink id="whatsappbusinessaccountpermission"></jumplink>
+### WhatsAppBusinessAccountPermission
+
+Permission level for WhatsApp Business Account access
+
+**Type**: string
+
+**Enum Values**: "MANAGE", "DEVELOP", "MANAGE_TEMPLATES", "MANAGE_PHONE", "VIEW_COST", "MANAGE_EXTENSIONS", "VIEW_PHONE_ASSETS", "MANAGE_PHONE_ASSETS", "VIEW_TEMPLATES", "VIEW_INSIGHTS", "RECEIVE_INCOMING_MESSAGES", "MANAGE_BILLING", "MANAGE_USERS", "MESSAGING", "FULL_CONTROL"
+
+<jumplink id="phonenumberinfo"></jumplink>
+### PhoneNumberInfo
+
+Phone number information for WhatsApp Business Account
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string |  | Phone number ID |
+| display_phone_number | string |  | Formatted phone number for display |
+| verified_name | string |  | Verified business name for this phone number |
+| status | One of "CONNECTED", "DISCONNECTED", "MIGRATED", "PENDING", "DELETED" |  | Status of the phone number |
+
+<jumplink id="assignedaccountsresponse"></jumplink>
+### AssignedAccountsResponse
+
+Response containing assigned WhatsApp Business Accounts
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| data | array of [AssignedWhatsAppBusinessAccount](#assignedwhatsappbusinessaccount) | ✓ | List of assigned WhatsApp Business Accounts |
+| paging | [PagingInfo](#paginginfo) |  |  |
+
+<jumplink id="paginginfo"></jumplink>
+### PagingInfo
+
+Pagination information for the response
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| cursors | [Cursors](#object-cursors-1) |  |  |
+| next | string |  | URL for the next page of results |
+| previous | string |  | URL for the previous page of results |
+
+<jumplink id="graphapierror"></jumplink>
+### GraphAPIError
+
+Standard Graph API error response
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| error | [Error](#object-error-2) | ✓ |  |
+
+## Inline Object Definitions
+
+<jumplink id="object-cursors-1"></jumplink>
+### Cursors
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| before | string |  | Cursor for the previous page |
+| after | string |  | Cursor for the next page |
+
+<jumplink id="object-error-2"></jumplink>
+### Error
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| message | string | ✓ | Human-readable error message |
+| type | string | ✓ | Error category type |
+| code | integer | ✓ | Numeric error code |
+| error_subcode | integer |  | More specific error subcode when available |
+| fbtrace_id | string |  | Unique identifier for debugging and support requests with Meta |
+| is_transient | boolean |  | Indicates whether this error is temporary and the request should be retried |
+| error_user_title | string |  | User-friendly error title for display purposes |
+| error_user_msg | string |  | User-friendly error message for display purposes |
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+No base URL specified.
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| POST | [/whatsapp/webhooks](#post-whatsapp-webhooks) |
+
+<jumplink id="post-whatsapp-webhooks"></jumplink>
+## POST /whatsapp/webhooks
+
+Receive incoming WhatsApp messages
+
+Endpoint for receiving webhook payloads for diverse incoming WhatsApp message types.
+
+### Request Body (Required)
+
+Webhook payload containing incoming WhatsApp messages.
+
+**Content Type**: `application/json`
+
+**Schema**: [WebhookPayload](#webhookpayload)
+
+### Responses
+
+**200**
+
+Webhook received successfully
+
+
+# Components
+
+## Schemas
+
+<jumplink id="webhookpayload"></jumplink>
+### WebhookPayload
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| object | string | ✓ | Always 'whatsapp_business_account' for these webhooks. |
+| entry | array of [Entry](#entry) | ✓ |  |
+
+<jumplink id="entry"></jumplink>
+### Entry
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | WhatsApp Business Account ID. |
+| changes | array of [Change](#change) | ✓ |  |
+
+<jumplink id="change"></jumplink>
+### Change
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| value | Must be one of: [IncomingMessageValueGeneral](#incomingmessagevaluegeneral), [IncomingMessageValueSystem](#incomingmessagevaluesystem), [StatusMessageValue](#statusmessagevalue), [GroupValue](#groupvalue) | ✓ |  |
+| field | One of "messages", "group_lifecycle_update", "group_settings_update", "group_participant_update" | ✓ | The field indicate to what object is the webhook related: - messages: the webhook is related to messages from consumer or status of message sent by business to consumer. - group_lifecycle_update: the webhook is related to group creation and deletion. - group_settings_update: the webhook is related to group settings update. - group_participant_update: the webhook is related to participants joining and leaving the groups. |
+
+<jumplink id="metadata"></jumplink>
+### Metadata
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| display_phone_number | string | ✓ | Business display phone number. |
+| phone_number_id | string | ✓ | Business phone number ID. |
+
+<jumplink id="contactprofile"></jumplink>
+### ContactProfile
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| profile | [Profile](#object-profile-1) | ✓ |  |
+| wa_id | string |  | WhatsApp user ID. Note that a WhatsApp user's ID and phone number may not always match. |
+
+<jumplink id="incomingmessagevaluegeneral"></jumplink>
+### IncomingMessageValueGeneral
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| messaging_product | string | ✓ | Always 'whatsapp'. |
+| metadata | [Metadata](#metadata) | ✓ |  |
+| contacts | array of [ContactProfile](#contactprofile) | ✓ | Array of contact profiles for the sender. Included for all non-system incoming messages. |
+| messages | array of [IncomingMessage](#incomingmessage) | ✓ | Array of message objects. The structure varies based on the 'type' property. |
+
+<jumplink id="incomingmessagevaluesystem"></jumplink>
+### IncomingMessageValueSystem
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| messaging_product | string | ✓ | Always 'whatsapp'. |
+| metadata | [Metadata](#metadata) | ✓ |  |
+| messages | array of [SystemMessage](#systemmessage) | ✓ | Array containing only 'system' message objects. |
+
+<jumplink id="statusmessagevalue"></jumplink>
+### StatusMessageValue
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| messaging_product | string | ✓ | Always 'whatsapp'. |
+| metadata | [Metadata](#metadata) | ✓ |  |
+| statuses | array of [Statuses](#statuses) | ✓ | Array of status objects. |
+
+<jumplink id="statuses"></jumplink>
+### Statuses
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Unique WhatsApp message ID the status is associated with. |
+| status | One of "sent", "delivered", "read", "failed" | ✓ |  |
+| timestamp | string | ✓ |  |
+| recipient_id | string | ✓ | Recipeint phone number. |
+| group_id | string |  | Group ID if the message was sent to a group. |
+| conversation | [Conversation](#conversation) |  |  |
+| pricing | [Pricing](#pricing) |  |  |
+| errors | array of [StatusError](#statuserror) |  |  |
+
+<jumplink id="conversation"></jumplink>
+### Conversation
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string |  |  |
+| expiration_timestamp | string |  |  |
+| origin | [ConversationOrigin](#conversationorigin) |  |  |
+
+<jumplink id="conversationorigin"></jumplink>
+### ConversationOrigin
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| type | string |  |  |
+
+<jumplink id="pricing"></jumplink>
+### Pricing
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| billable | boolean |  |  |
+| pricing_model | One of "CBP", "PMP" |  |  |
+| category | string |  |  |
+
+<jumplink id="statuserror"></jumplink>
+### StatusError
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| code | integer |  |  |
+| title | string |  |  |
+| message | string |  |  |
+| error_data | [ErrorData](#errordata) |  |  |
+| href | string |  |  |
+
+<jumplink id="errordata"></jumplink>
+### ErrorData
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| details | string |  |  |
+
+<jumplink id="groupvalue"></jumplink>
+### GroupValue
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| messaging_product | string | ✓ | Always 'whatsapp'. |
+| metadata | [Metadata](#metadata) | ✓ |  |
+| groups | array of [Groups](#groups) | ✓ | Array of group objects. |
+
+<jumplink id="groups"></jumplink>
+### Groups
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| timestamp | integer | ✓ | Unix timestamp of the group event |
+| group_id | string | ✓ | Unique identifier for the group |
+| type | One of "group_create", "group_delete", "group_settings_update", "group_add_participants", "group_remove_participants" | ✓ | Type of group event |
+| request_id | string | ✓ | Unique identifier for the request |
+| subject | string |  | Group subject/name |
+| description | string |  | Group description |
+| added_participants | array of [GroupParticipant](#groupparticipant) |  | List of participants added to the group |
+| removed_participants | array of [GroupParticipant](#groupparticipant) |  | List of participants removed from the group |
+| profile_picture | [GroupProfilePicture](#groupprofilepicture) |  | Group profile picture information |
+
+<jumplink id="groupparticipant"></jumplink>
+### GroupParticipant
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| input | string |  | Input phone number or WhatsApp ID |
+| wa_id | string |  | WhatsApp ID of the participant |
+
+<jumplink id="groupprofilepicture"></jumplink>
+### GroupProfilePicture
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| mime_type | string |  | MIME type of the profile picture |
+| sha256 | string |  | SHA256 hash of the profile picture |
+
+<jumplink id="basemessageproperties"></jumplink>
+### BaseMessageProperties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| from | string | ✓ | WhatsApp user phone number. Note that a WhatsApp user's phone number and ID may not always match. |
+| id | string | ✓ | Unique WhatsApp message ID. |
+| timestamp | string | ✓ | Unix timestamp indicating when the webhook was triggered. |
+
+<jumplink id="incomingmessage"></jumplink>
+### IncomingMessage
+
+**Type**: object
+
+<jumplink id="textmessage"></jumplink>
+### TextMessage
+
+<jumplink id="contextobject"></jumplink>
+### ContextObject
+
+Only included if message via a "Message business" button.
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| from | string | ✓ | Business display phone number. |
+| id | string | ✓ | WhatsApp message ID of the message the user used to access the "Message business" button. |
+| referred_product | [Referred_product](#object-referred_product-2) | ✓ |  |
+
+<jumplink id="referralobject"></jumplink>
+### ReferralObject
+
+Only included if message via a Click to WhatsApp ad.
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| source_url | string | ✓ | Ad URL. |
+| source_id | string | ✓ | Ad ID. |
+| source_type | One of "ad", "post" | ✓ |  |
+| body | string | ✓ | Ad primary text. |
+| headline | string | ✓ | Ad headline. |
+| media_type | One of "image", "video" | ✓ |  |
+| image_url | string |  | Only included for image media_type. |
+| video_url | string |  | Only included for video media_type. |
+| thumbnail_url | string |  | Only included for video media_type. |
+| ctwa_clid | string | ✓ | Ad click ID. |
+| welcome_message | [Welcome_message](#object-welcome_message-3) |  |  |
+
+<jumplink id="reactionmessage"></jumplink>
+### ReactionMessage
+
+<jumplink id="mediamessageproperties"></jumplink>
+### MediaMessageProperties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| mime_type | string | ✓ | Media asset MIME type. |
+| sha256 | string | ✓ | Media asset SHA-256 hash. |
+| id | string | ✓ | Media asset ID. A GET request on this ID can provide the asset URL. |
+
+<jumplink id="audiomessage"></jumplink>
+### AudioMessage
+
+<jumplink id="documentmessage"></jumplink>
+### DocumentMessage
+
+<jumplink id="imagemessage"></jumplink>
+### ImageMessage
+
+<jumplink id="stickermessage"></jumplink>
+### StickerMessage
+
+<jumplink id="videomessage"></jumplink>
+### VideoMessage
+
+<jumplink id="locationmessage"></jumplink>
+### LocationMessage
+
+<jumplink id="contactsharingmessage"></jumplink>
+### ContactSharingMessage
+
+<jumplink id="contactobject"></jumplink>
+### ContactObject
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| addresses | array of [Addresses](#object-addresses-4) |  |  |
+| birthday | string (date) |  | Contact birthday (YYYY-MM-DD). |
+| emails | array of [Emails](#object-emails-5) |  |  |
+| name | [Name](#object-name-6) |  |  |
+| org | [Org](#object-org-7) |  |  |
+| phones | array of [Phones](#object-phones-8) |  |  |
+| urls | array of [Urls](#object-urls-9) |  |  |
+
+<jumplink id="unsupportedmessage"></jumplink>
+### UnsupportedMessage
+
+<jumplink id="interactivemessagereply"></jumplink>
+### InteractiveMessageReply
+
+<jumplink id="interactivelistreplycontent"></jumplink>
+### InteractiveListReplyContent
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| list_reply | [List_reply](#object-list_reply-10) | ✓ |  |
+
+<jumplink id="interactivebuttonreplycontent"></jumplink>
+### InteractiveButtonReplyContent
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| button_reply | [Button_reply](#object-button_reply-11) | ✓ |  |
+
+<jumplink id="ordermessage"></jumplink>
+### OrderMessage
+
+<jumplink id="systemmessage"></jumplink>
+### SystemMessage
+
+## Inline Object Definitions
+
+<jumplink id="object-profile-1"></jumplink>
+### Profile
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| name | string | ✓ | WhatsApp user's name as it appears in their profile in the WhatsApp client. |
+
+<jumplink id="object-referred_product-2"></jumplink>
+### Referred_product
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| catalog_id | string | ✓ | Product catalog ID. |
+| product_retailer_id | string | ✓ | Product ID. |
+
+<jumplink id="object-welcome_message-3"></jumplink>
+### Welcome_message
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| text | string | ✓ | Ad greeting text. |
+
+<jumplink id="object-addresses-4"></jumplink>
+### Addresses
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| city | string |  | City mentioned in the contact address |
+| country | string |  | Country mentioned in the contact address |
+| country_code | string |  | ISO country code for the contact address |
+| state | string |  | State mentioned in the contact address |
+| street | string |  | Street mentioned in the contact address |
+| type | string |  | Type of address, such as home or work |
+| zip | string |  | Zip code in the contact address |
+
+<jumplink id="object-emails-5"></jumplink>
+### Emails
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| email | string (email) |  | Email address of the contact |
+| type | string |  | Type of email, such as personal or work |
+
+<jumplink id="object-name-6"></jumplink>
+### Name
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| formatted_name | string | ✓ | Contact's formatted name |
+| first_name | string |  | Contact’s first name |
+| last_name | string |  | Contact’s last name |
+| middle_name | string |  | Contact’s middle name |
+| suffix | string |  | Contact’s name suffix |
+| prefix | string |  | Contact’s name prefix |
+
+<jumplink id="object-org-7"></jumplink>
+### Org
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| company | string |  | Name of the company where the contact works |
+| department | string |  | Name of the department where the contact works |
+| title | string |  | Contact's job title |
+
+<jumplink id="object-phones-8"></jumplink>
+### Phones
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| phone | string |  | Contact’s Phone number |
+| wa_id | string |  | Contact's WhatsApp Number. Note that a WhatsApp user's ID and phone number may not always match. |
+| type | string |  | Type of phone number. For example, cell, mobile, main, iPhone, home, work, etc. |
+
+<jumplink id="object-urls-9"></jumplink>
+### Urls
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| url | string (uri) |  | Website URL associated with the contact or their company |
+| type | string |  | Type of website. For example, company, work, personal, Facebook Page, Instagram, etc. |
+
+<jumplink id="object-list_reply-10"></jumplink>
+### List_reply
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Row ID. |
+| title | string | ✓ | Row title. |
+| description | string | ✓ | Row description. |
+
+<jumplink id="object-button_reply-11"></jumplink>
+### Button_reply
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Button ID. |
+| title | string | ✓ | Button label text. |
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com | Production Graph API server |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| GET | [/{Version}/{WhatsApp-Account-Number-ID}](#get-version-whatsapp-account-number-id) |
+
+<jumplink id="get-version-whatsapp-account-number-id"></jumplink>
+## GET /{Version}/{WhatsApp-Account-Number-ID}
+
+Get WhatsApp Account Number Details
+
+Retrieve comprehensive details about a WhatsApp Account Number, including its current status,
+verification information, quality rating, and configuration settings.
+
+**Use Cases:**
+- Monitor account number status and quality rating
+- Verify account number configuration before messaging operations
+- Check verification and approval status
+- Retrieve display name and business profile information
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Use appropriate retry logic with exponential backoff.
+
+**Caching:**
+Account number details can be cached for short periods, but status information may change
+frequently. Implement appropriate cache invalidation strategies.
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| WhatsApp-Account-Number-ID | string | ✓ | Your WhatsApp Account Number ID. This ID represents the account number entity and can be obtained from your WhatsApp Business Account phone numbers list. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| fields | string |  | Comma-separated list of fields to include in the response. If not specified, default fields will be returned (id, display_phone_number, status). Available fields: id, display_phone_number, verified_name, status, quality_rating, country_code, country_dial_code, code_verification_status, name_status, messaging_limit_tier, account_mode, certificate, is_official_business_account |
+
+### Responses
+
+**200**
+
+Successfully retrieved WhatsApp Account Number details
+
+**Content Type**: `application/json`
+
+**Schema**: [WhatsAppAccountNumber](#whatsappaccountnumber)
+
+**400**
+
+Bad Request - Invalid parameters or malformed request
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid parameter: account_number_id must be a valid numeric string",
+        "type": "OAuthException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Your app doesn't have permission to access this WhatsApp Account Number",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - Account Number ID does not exist or is not accessible
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "WhatsApp Account Number not found",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "The requested fields are not available for this account number",
+        "type": "GraphMethodException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+# Components
+
+## Schemas
+
+<jumplink id="whatsappaccountnumber"></jumplink>
+### WhatsAppAccountNumber
+
+WhatsApp Account Number details and configuration
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Unique identifier for the WhatsApp Account Number |
+| display_phone_number | string | ✓ | Phone number in international format for display purposes |
+| verified_name | string |  | Business name verified for this phone number |
+| status | [WhatsAppAccountNumberStatus](#whatsappaccountnumberstatus) | ✓ |  |
+| quality_rating | [WhatsAppPhoneNumberQualityRating](#whatsappphonenumberqualityrating) |  |  |
+| country_code | string |  | ISO 3166-1 alpha-2 country code |
+| country_dial_code | string |  | Country dialing code |
+| code_verification_status | [WhatsAppCodeVerificationStatus](#whatsappcodeverificationstatus) |  |  |
+| name_status | [WhatsAppDisplayNameStatus](#whatsappdisplaynamestatus) |  |  |
+| messaging_limit_tier | One of "TIER_50", "TIER_250", "TIER_1K", "TIER_10K", "TIER_100K", "TIER_UNLIMITED" |  | Current messaging limit tier for the account number |
+| account_mode | [WhatsAppBusinessSandboxEligibility](#whatsappbusinesssandboxeligibility) |  |  |
+| certificate | string |  | Business certificate information for the account number |
+| is_official_business_account | boolean |  | Whether this is an official business account |
+
+<jumplink id="whatsappaccountnumberstatus"></jumplink>
+### WhatsAppAccountNumberStatus
+
+Current status of the WhatsApp Account Number
+
+**Type**: string
+
+**Enum Values**: "CONNECTED", "DISCONNECTED", "UNVERIFIED", "PENDING", "FLAGGED", "RESTRICTED"
+
+<jumplink id="whatsappphonenumberqualityrating"></jumplink>
+### WhatsAppPhoneNumberQualityRating
+
+Quality rating based on message delivery and user feedback
+
+**Type**: string
+
+**Enum Values**: "GREEN", "YELLOW", "RED", "NA"
+
+<jumplink id="whatsappcodeverificationstatus"></jumplink>
+### WhatsAppCodeVerificationStatus
+
+Two-step verification status for the phone number
+
+**Type**: string
+
+**Enum Values**: "VERIFIED", "UNVERIFIED"
+
+<jumplink id="whatsappdisplaynamestatus"></jumplink>
+### WhatsAppDisplayNameStatus
+
+Status of the display name associated with the phone number
+
+**Type**: string
+
+**Enum Values**: "APPROVED", "AVAILABLE_WITHOUT_REVIEW", "DECLINED", "EXPIRED", "PENDING_REVIEW", "NONE"
+
+<jumplink id="whatsappbusinesssandboxeligibility"></jumplink>
+### WhatsAppBusinessSandboxEligibility
+
+Account mode indicating sandbox or live environment
+
+**Type**: string
+
+**Enum Values**: "LIVE", "SANDBOX"
+
+<jumplink id="graphapierror"></jumplink>
+### GraphAPIError
+
+Standard Graph API error response
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| error | [Error](#object-error-1) | ✓ |  |
+
+## Inline Object Definitions
+
+<jumplink id="object-error-1"></jumplink>
+### Error
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| message | string | ✓ | Human-readable error message |
+| type | string | ✓ | Error category type |
+| code | integer | ✓ | Numeric error code |
+| error_subcode | integer |  | More specific error subcode when available |
+| fbtrace_id | string |  | Unique identifier for debugging and support requests with Meta |
+| is_transient | boolean |  | Indicates whether this error is temporary and the request should be retried |
+| error_user_title | string |  | User-friendly error title for display purposes |
+| error_user_msg | string |  | User-friendly error message for display purposes |
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com | Production Graph API server |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| DELETE | [/{Version}/{WhatsApp-Business-Account-ID}/assigned_users](#delete-version-whatsapp-business-account-id-assigned-users) |
+| GET | [/{Version}/{WhatsApp-Business-Account-ID}/assigned_users](#get-version-whatsapp-business-account-id-assigned-users) |
+| POST | [/{Version}/{WhatsApp-Business-Account-ID}/assigned_users](#post-version-whatsapp-business-account-id-assigned-users) |
+
+<jumplink id="delete-version-whatsapp-business-account-id-assigned-users"></jumplink>
+## DELETE /{Version}/{WhatsApp-Business-Account-ID}/assigned_users
+
+Remove User from WhatsApp Business Account
+
+Remove a user's access from the WhatsApp Business Account. This operation revokes
+all permissions and access rights for the specified user on the account.
+
+
+**Use Cases:**
+- Revoke user access when they leave the organization
+- Remove temporary access grants
+- Clean up user permissions for security compliance
+- Manage user lifecycle and access control
+
+
+**Important Notes:**
+- This operation removes ALL permissions for the user on this WhatsApp Business Account
+- The user will lose access to all account features and data
+- This action cannot be undone - the user must be re-added if access is needed again
+- Webhooks may be triggered to notify of user access changes
+
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Use appropriate retry logic with exponential backoff.
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| WhatsApp-Business-Account-ID | string | ✓ | Your WhatsApp Business Account ID. This ID is provided when you create the account and can be found in your Business Manager or through account management APIs. |
+
+### Request Body (Required)
+
+**Content Type**: `application/x-www-form-urlencoded`
+
+**Schema**: object
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| user | string | ✓ | User ID of the person to remove from the WhatsApp Business Account. This must be a valid Facebook user ID that is currently assigned to the account. |
+
+### Responses
+
+**200**
+
+Successfully removed user from WhatsApp Business Account
+
+**Content Type**: `application/json`
+
+**Schema**: [SuccessResponse](#successresponse)
+
+**Example**:\n```json\n{
+    "success": true
+}\n```
+
+**400**
+
+Bad Request - Invalid parameters or malformed request
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid parameter: user must be a valid user ID",
+        "type": "OAuthException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Your app doesn't have permission to remove users from this WhatsApp Business Account",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - WhatsApp Business Account ID or User ID does not exist or is not assigned
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "User is not assigned to this WhatsApp Business Account",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Cannot remove user due to business asset group permissions",
+        "type": "GraphMethodException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+<jumplink id="get-version-whatsapp-business-account-id-assigned-users"></jumplink>
+## GET /{Version}/{WhatsApp-Business-Account-ID}/assigned_users
+
+List Assigned Users
+
+Retrieve a list of users assigned to the WhatsApp Business Account with their permissions
+and user details. This endpoint supports pagination and filtering capabilities.
+
+
+**Use Cases:**
+- Audit user access to WhatsApp Business Account
+- Retrieve user permission assignments for compliance
+- List all users with access for management purposes
+- Monitor user access patterns and assignments
+
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Use appropriate retry logic with exponential backoff.
+
+
+**Caching:**
+User assignment data can be cached for short periods, but permission changes may occur
+frequently. Implement appropriate cache invalidation strategies.
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| WhatsApp-Business-Account-ID | string | ✓ | Your WhatsApp Business Account ID. This ID is provided when you create the account and can be found in your Business Manager or through account management APIs. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| business | string | ✓ | Business ID that owns or has access to the WhatsApp Business Account. This parameter is required to specify the business context for user assignments. |
+| fields | string |  | Comma-separated list of fields to include in the response. If not specified, default fields will be returned (id, name). Available fields: id, name, business, user_type |
+| limit | integer [min: 1, max: 100] |  | Maximum number of assigned users to return per page. Default is 25, maximum is 100. |
+| after | string |  | Cursor for pagination. Use this to get the next page of results. |
+| before | string |  | Cursor for pagination. Use this to get the previous page of results. |
+
+### Responses
+
+**200**
+
+Successfully retrieved assigned users list
+
+**Content Type**: `application/json`
+
+**Schema**: [AssignedUsersResponse](#assignedusersresponse)
+
+**400**
+
+Bad Request - Invalid parameters or malformed request
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "The parameter business is required to specify a business",
+        "type": "OAuthException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Need permission on WhatsAppBusinessAccount or this Business",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - WhatsApp Business Account ID does not exist or is not accessible
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "WhatsApp Business Account not found",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "The requested fields are not available for this account",
+        "type": "GraphMethodException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+<jumplink id="post-version-whatsapp-business-account-id-assigned-users"></jumplink>
+## POST /{Version}/{WhatsApp-Business-Account-ID}/assigned_users
+
+Add User to WhatsApp Business Account
+
+Add a user to the WhatsApp Business Account with specified permission tasks.
+This operation grants the user access to perform specific actions on the account
+based on the provided permission tasks.
+
+
+**Use Cases:**
+- Grant user access to WhatsApp Business Account management
+- Assign specific permission tasks for granular access control
+- Add new team members to WhatsApp Business Account operations
+- Configure user permissions for different business roles
+
+
+**Permission Tasks:**
+Different permission tasks grant access to different WhatsApp Business Account features:
+- MANAGE: General account management permissions
+- DEVELOP: Development and API access permissions
+- MANAGE_TEMPLATES: Message template management
+- MANAGE_PHONE: Phone number management
+- MESSAGING: Send and receive messages
+- FULL_CONTROL: Complete access to all account features
+
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Use appropriate retry logic with exponential backoff.
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| WhatsApp-Business-Account-ID | string | ✓ | Your WhatsApp Business Account ID. This ID is provided when you create the account and can be found in your Business Manager or through account management APIs. |
+
+### Request Body (Required)
+
+**Content Type**: `application/x-www-form-urlencoded`
+
+**Schema**: object
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| user | string | ✓ | User ID of the person to add to the WhatsApp Business Account. This must be a valid Facebook user ID. |
+| tasks | array of [WhatsAppBusinessAccountPermissionTask](#whatsappbusinessaccountpermissiontask) | ✓ | Array of permission tasks to grant to the user. These tasks determine what actions the user can perform on the WhatsApp Business Account. |
+
+### Responses
+
+**200**
+
+Successfully added user to WhatsApp Business Account
+
+**Content Type**: `application/json`
+
+**Schema**: [SuccessResponse](#successresponse)
+
+**Example**:\n```json\n{
+    "success": true
+}\n```
+
+**400**
+
+Bad Request - Invalid parameters or malformed request
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid parameter: user must be a valid user ID",
+        "type": "OAuthException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Your app doesn't have permission to add users to this WhatsApp Business Account",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - WhatsApp Business Account ID or User ID does not exist
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "WhatsApp Business Account not found",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "User is already assigned to this WhatsApp Business Account",
+        "type": "GraphMethodException",
+        "code": 100,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+# Components
+
+## Schemas
+
+<jumplink id="assigneduser"></jumplink>
+### AssignedUser
+
+User assigned to WhatsApp Business Account with permissions
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string | ✓ | Unique identifier for the assigned user |
+| name | string | ✓ | Display name of the assigned user |
+| business | [BusinessNode](#businessnode) |  |  |
+| user_type | [AssignedUserType](#assignedusertype) |  |  |
+
+<jumplink id="assignedusertype"></jumplink>
+### AssignedUserType
+
+Type of user assignment
+
+**Type**: string
+
+**Enum Values**: "BUSINESS_USER", "SYSTEM_USER", "PERSONAL_USER"
+
+<jumplink id="businessnode"></jumplink>
+### BusinessNode
+
+Business entity associated with the user
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| id | string |  | Unique identifier for the business |
+| name | string |  | Name of the business |
+
+<jumplink id="whatsappbusinessaccountpermissiontask"></jumplink>
+### WhatsAppBusinessAccountPermissionTask
+
+Granular permission tasks for WhatsApp Business Account access
+
+**Type**: string
+
+**Enum Values**: "MANAGE", "DEVELOP", "MANAGE_TEMPLATES", "MANAGE_PHONE", "VIEW_COST", "MANAGE_EXTENSIONS", "VIEW_PHONE_ASSETS", "MANAGE_PHONE_ASSETS", "VIEW_TEMPLATES", "VIEW_INSIGHTS", "RECEIVE_INCOMING_MESSAGES", "MANAGE_BILLING", "MANAGE_USERS", "MESSAGING", "FULL_CONTROL"
+
+<jumplink id="assignedusersresponse"></jumplink>
+### AssignedUsersResponse
+
+Response containing list of assigned users with pagination
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| data | array of [AssignedUser](#assigneduser) | ✓ | Array of assigned users |
+| paging | [CursorPaging](#cursorpaging) |  |  |
+| summary | [AssignedUsersSummary](#assigneduserssummary) |  |  |
+
+<jumplink id="assigneduserssummary"></jumplink>
+### AssignedUsersSummary
+
+Summary information about assigned users
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| total_count | integer |  | Total number of assigned users |
+
+<jumplink id="cursorpaging"></jumplink>
+### CursorPaging
+
+Cursor-based pagination information
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| cursors | [Cursors](#object-cursors-1) |  |  |
+| next | string |  | Graph API endpoint for the next page of results |
+| previous | string |  | Graph API endpoint for the previous page of results |
+
+<jumplink id="successresponse"></jumplink>
+### SuccessResponse
+
+Standard success response for write operations
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| success | boolean | ✓ | Indicates whether the operation was successful |
+
+<jumplink id="graphapierror"></jumplink>
+### GraphAPIError
+
+Standard Graph API error response
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| error | [Error](#object-error-2) | ✓ |  |
+
+## Inline Object Definitions
+
+<jumplink id="object-cursors-1"></jumplink>
+### Cursors
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| before | string |  | Cursor pointing to the start of the page of data |
+| after | string |  | Cursor pointing to the end of the page of data |
+
+<jumplink id="object-error-2"></jumplink>
+### Error
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| message | string | ✓ | Human-readable error message |
+| type | string | ✓ | Error category type |
+| code | integer | ✓ | Numeric error code |
+| error_subcode | integer |  | More specific error subcode when available |
+| fbtrace_id | string |  | Unique identifier for debugging and support requests with Meta |
+| is_transient | boolean |  | Indicates whether this error is temporary and the request should be retried |
+| error_user_title | string |  | User-friendly error title for display purposes |
+| error_user_msg | string |  | User-friendly error message for display purposes |
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
+
+
+## Base URL
+
+| URL | Description |
+|-----|-------------|
+| https://graph.facebook.com | Production Graph API server |
+
+## APIs
+
+| Method | Endpoint |
+|--------|----------|
+| POST | [/{Version}/{Phone-Number-ID}/conversational_automation](#post-version-phone-number-id-conversational-automation) |
+
+<jumplink id="post-version-phone-number-id-conversational-automation"></jumplink>
+## POST /{Version}/{Phone-Number-ID}/conversational_automation
+
+Configure Conversational Automation
+
+Configure conversational automation settings for a WhatsApp Business Account phone number,
+including welcome messages, conversation prompts (ice breakers), and bot commands.
+
+
+**Use Cases:**
+- Set up automated welcome messages for new customer conversations
+- Configure conversation prompts to guide customer interactions
+- Define bot commands for common customer service scenarios
+- Update existing automation settings
+- Enable or disable specific automation features
+
+
+**Rate Limiting:**
+Standard Graph API rate limits apply. Use appropriate retry logic with exponential backoff.
+
+
+**Validation:**
+- Command names must be unique within the same phone number
+- Prompts and command descriptions must comply with WhatsApp Business policies
+- Maximum limits are enforced for prompts and commands
+
+
+### Header Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| User-Agent | string |  | The user agent string identifying the client software making the request. |
+| Authorization | string | ✓ | Bearer token for API authentication. This should be a valid access token obtained through the appropriate OAuth flow or system user token. |
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| Version | string | ✓ | Graph API version to use for this request. Determines the API behavior and available features. |
+| Phone-Number-ID | string | ✓ | Your WhatsApp Business phone number ID. This ID represents the phone number entity and can be obtained from your WhatsApp Business Account phone numbers list. |
+
+### Request Body (Required)
+
+**Content Type**: `application/json`
+
+**Schema**: [ConversationalAutomationRequest](#conversationalautomationrequest)
+
+### Responses
+
+**200**
+
+Successfully configured conversational automation settings
+
+**Content Type**: `application/json`
+
+**Schema**: [ConversationalAutomationResponse](#conversationalautomationresponse)
+
+**400**
+
+Bad Request - Invalid parameters or malformed request
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**401**
+
+Unauthorized - Invalid or missing access token
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Invalid OAuth access token",
+        "type": "OAuthException",
+        "code": 190,
+        "error_subcode": 463,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**403**
+
+Forbidden - Insufficient permissions or access denied
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Your app doesn't have permission to manage conversational automation for this phone number",
+        "type": "OAuthException",
+        "code": 200,
+        "error_subcode": 1349174,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "error_user_title": "Permission Denied",
+        "error_user_msg": "Your app doesn't have permission to access this resource"
+    }
+}\n```
+
+**404**
+
+Not Found - Phone number ID does not exist or is not accessible
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "WhatsApp Business phone number not found",
+        "type": "GraphMethodException",
+        "code": 803,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn"
+    }
+}\n```
+
+**422**
+
+Unprocessable Entity - Request parameters are valid but cannot be processed
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**429**
+
+Too Many Requests - Rate limit exceeded
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "Application request limit reached",
+        "type": "OAuthException",
+        "code": 4,
+        "error_subcode": 2446079,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+**500**
+
+Internal Server Error - Unexpected server error
+
+**Content Type**: `application/json`
+
+**Schema**: [GraphAPIError](#graphapierror)
+
+**Example**:\n```json\n{
+    "error": {
+        "message": "An unexpected error occurred. Please retry your request",
+        "type": "GraphMethodException",
+        "code": 2,
+        "fbtrace_id": "AXsgnV2Cm3ZMGF3dF_cfYIn",
+        "is_transient": true
+    }
+}\n```
+
+
+# Components
+
+## Schemas
+
+<jumplink id="conversationalautomationrequest"></jumplink>
+### ConversationalAutomationRequest
+
+Request payload for configuring conversational automation settings
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| enable_welcome_message | boolean |  | Whether to enable welcome messages for new conversations |
+| prompts | array of string |  | List of conversation prompts (ice breakers) to help guide customer interactions |
+| commands | array of [BotCommand](#botcommand) |  | List of bot commands for automated responses |
+
+<jumplink id="botcommand"></jumplink>
+### BotCommand
+
+Bot command configuration for automated responses
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| command_name | string | ✓ | Name of the bot command (without leading slash) |
+| command_description | string | ✓ | Description of what the command does |
+
+<jumplink id="conversationalautomationresponse"></jumplink>
+### ConversationalAutomationResponse
+
+Response after successfully configuring conversational automation
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| success | boolean | ✓ | Indicates whether the automation configuration was successful |
+
+<jumplink id="graphapierror"></jumplink>
+### GraphAPIError
+
+Standard Graph API error response
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| error | [Error](#object-error-1) | ✓ |  |
+
+## Inline Object Definitions
+
+<jumplink id="object-error-1"></jumplink>
+### Error
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| message | string | ✓ | Human-readable error message |
+| type | string | ✓ | Error category type |
+| code | integer | ✓ | Numeric error code |
+| error_subcode | integer |  | More specific error subcode when available |
+| fbtrace_id | string |  | Unique identifier for debugging and support requests with Meta |
+| is_transient | boolean |  | Indicates whether this error is temporary and the request should be retried |
+| error_user_title | string |  | User-friendly error title for display purposes |
+| error_user_msg | string |  | User-friendly error message for display purposes |
+
+## Authentication
+
+| Scheme | Type | Location |
+|--------|------|----------|
+| bearerAuth | HTTP Bearer | Header: `Authorization` |
+
+### Usage Examples
+
+- **bearerAuth**: Include `Authorization: Bearer your-token-here` in request headers
+
+### Global Authentication Requirements
+
+All endpoints require: bearerAuth
+
