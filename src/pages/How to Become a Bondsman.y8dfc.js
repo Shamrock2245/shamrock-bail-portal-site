@@ -81,6 +81,28 @@ function updatePageSEO() {
                     "url": pageUrl
                 }
             ]
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            "name": "Shamrock Bail Bonds",
+            "url": "https://www.shamrockbailbonds.biz",
+            "logo": "https://www.shamrockbailbonds.biz/logo.png",
+            "image": "https://www.shamrockbailbonds.biz/logo.png",
+            "description": "Florida's most responsive and reliable bail bond service, offering 24/7 assistance across the state.",
+            "telephone": "+1-239-332-2245",
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "1528 Broadway",
+                "addressLocality": "Fort Myers",
+                "addressRegion": "FL",
+                "postalCode": "33901",
+                "addressCountry": "US"
+            },
+            "sameAs": [
+                "https://www.facebook.com/ShamrockBail",
+                "https://www.instagram.com/shamrock_bail_bonds"
+            ]
         }
     ])
         .then(() => console.log("✅ Bail School SEO Set"))

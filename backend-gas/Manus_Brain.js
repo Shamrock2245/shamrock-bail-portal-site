@@ -33,37 +33,45 @@ You must respond in valid JSON format:
 
 /**
  * Handle incoming WhatsApp message (Text or Audio)
- * @param {Object} params - HTTP POST parameters from Twilio
+ * @param {Object} data - WhatsApp Cloud API inbound data from WhatsApp_Webhook
  */
-function handleManusWhatsApp(params) {
-    const from = params.From; // whatsapp:+1...
-    const body = params.Body;
-    const mediaUrl = params.MediaUrl0;
-    const mimeType = params.MediaContentType0;
+function handleManusWhatsApp(data) {
+    const { from, name, body, type, mediaId, mimeType } = data;
 
-    let userMessage = body;
-    let inputType = 'text';
+    let userMessage = body || '';
+    let inputType = type || 'text';
 
     try {
+        const whatsapp = new WhatsAppCloudAPI();
+
         // 1. Transcribe Audio if present
-        if (mediaUrl && (mimeType.includes('audio') || mimeType.includes('ogg'))) {
-            inputType = 'audio';
-            const audioBlob = UrlFetchApp.fetch(mediaUrl).getBlob();
-            const transcript = transcribeAudio(audioBlob); // Ensure OpenAIClient.js is loaded
+        if (inputType === 'audio' && mediaId) {
+            const audioBlob = whatsapp.downloadMedia(mediaId);
+            const transcript = transcribeAudio(audioBlob); // Uses OpenAIClient.js
             if (transcript) {
                 userMessage = transcript;
                 logProcessingEvent("MANUS_AUDIO_TRANSCRIBED", { from: from, text: userMessage });
             } else {
-                const whatsapp = new WhatsAppCloudAPI();
-                whatsapp.sendText(from.replace('whatsapp:', ''), "Sorry, I couldn't hear that clearly. Could you type it?");
+                whatsapp.sendText(from, "Sorry, I couldn't hear that clearly. Could you type it?");
                 return ContentService.createTextOutput("Audio transcription failed");
             }
         }
 
+        // Incorporate Knowledge Base (RAG) context
+        let ragContext = "";
+        try {
+            const kb = RAG_getKnowledge();
+            ragContext = "\n\nShamrock Bail Bonds Knowledge Base Data:\n" + JSON.stringify(kb, null, 2);
+        } catch (e) {
+            console.warn("RAG fetch failed", e);
+        }
+
+        const fullPrompt = MANUS_SYSTEM_PROMPT + ragContext;
+
         // 2. Query OpenAI for Response
         const responseJson = callOpenAI(
-            MANUS_SYSTEM_PROMPT,
-            `User said: "${userMessage}"`,
+            fullPrompt,
+            `User (${name}) said: "${userMessage}"`,
             { jsonMode: true, temperature: 0.7 }
         );
 
@@ -76,8 +84,7 @@ function handleManusWhatsApp(params) {
 
         // 3. Send Text Response
         if (replyText) {
-            const whatsapp = new WhatsAppCloudAPI();
-            whatsapp.sendText(from.replace('whatsapp:', ''), replyText);
+            whatsapp.sendText(from, replyText);
         }
 
         // 4. Send Voice Note (if applicable)
@@ -91,7 +98,7 @@ function handleManusWhatsApp(params) {
         console.error("Manus Brain Error:", e);
         // Use direct WhatsApp Cloud API
         const whatsapp = new WhatsAppCloudAPI();
-        whatsapp.sendText(from.replace('whatsapp:', ''), "I'm having a little trouble thinking right now. A human agent will be with you shortly.");
+        whatsapp.sendText(from, "I'm having a little trouble thinking right now. A human agent will be with you shortly.");
         return ContentService.createTextOutput("Error: " + e.message);
     }
 }
@@ -102,40 +109,27 @@ function handleManusWhatsApp(params) {
 function generateAndSendVoiceNote(to, script) {
     try {
         // A. Generate Audio
-        // TODO: Use a specific "Manus" voice ID if available, otherwise default
-        // User needs to provide MANUS_VOICE_ID in Script Properties
         const manusVoiceId = PropertiesService.getScriptProperties().getProperty('MANUS_VOICE_ID');
         const audioBlob = EL_generateAudio(script, manusVoiceId); // Uses ElevenLabs_Client.js
 
-        // B. Upload to Drive (Public) for Twilio
-        // We need a folder that is "Anyone with link can view"
-        // Let's use the 'GOOGLE_DRIVE_OUTPUT_FOLDER_ID' or a dedicated one.
+        // B. Upload to Drive (Public) for WhatsApp Cloud API
         const folderId = PropertiesService.getScriptProperties().getProperty('GOOGLE_DRIVE_OUTPUT_FOLDER_ID');
         const folder = DriveApp.getFolderById(folderId);
 
         const file = folder.createFile(audioBlob);
         file.setName(`Manus_Voice_${new Date().getTime()}.mp3`);
 
-        // Ensure public visibility for Twilio to fetch it
+        // Ensure public visibility for WhatsApp to fetch it via URL
         file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
-        // Twilio requires a direct download link.
-        // Drive webContentLink usually works if public.
-        const downloadUrl = file.getDownloadUrl().replace('&export=download', '');
-        // Note: getDownloadUrl() sometimes requires auth cookie?? 
-        // Better to use: https://drive.google.com/uc?export=download&id=FILE_ID
         const directUrl = `https://drive.google.com/uc?export=download&id=${file.getId()}`;
 
         // C. Send via WhatsApp Cloud API
         const whatsapp = new WhatsAppCloudAPI();
-        whatsapp.sendAudio(to.replace('whatsapp:', ''), directUrl);
-
-        // Cleanup? We might want to delete these files later to save space.
-        // For now, keep them as logs.
+        whatsapp.sendAudio(to, directUrl);
 
     } catch (e) {
         console.error("Manus Voice Generation Failed:", e);
         // Fallback: The text message was already sent, so we just fail silently on the voice part
-        // or notify admin.
     }
 }

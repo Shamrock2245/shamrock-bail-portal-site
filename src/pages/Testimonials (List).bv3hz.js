@@ -61,11 +61,45 @@ async function updatePageSEO() {
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
             "name": "Shamrock Bail Bonds",
+            "url": "https://www.shamrockbailbonds.biz",
+            "logo": "https://www.shamrockbailbonds.biz/logo.png",
+            "image": "https://www.shamrockbailbonds.biz/logo.png",
+            "telephone": "+1-239-332-2245",
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "1528 Broadway",
+                "addressLocality": "Fort Myers",
+                "addressRegion": "FL",
+                "postalCode": "33901",
+                "addressCountry": "US"
+            },
+            "sameAs": [
+                "https://www.facebook.com/ShamrockBail",
+                "https://www.instagram.com/shamrock_bail_bonds"
+            ],
             "aggregateRating": {
                 "@type": "AggregateRating",
                 "ratingValue": "4.9",
                 "reviewCount": "150"
             }
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://www.shamrockbailbonds.biz/"
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Testimonials",
+                    "item": "https://www.shamrockbailbonds.biz/testimonials"
+                }
+            ]
         }
     ]);
 }

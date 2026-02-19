@@ -15,8 +15,15 @@ function updateBlogSEO() {
         { "name": "description", "content": pageDesc },
         { "property": "og:title", "content": pageTitle },
         { "property": "og:description", "content": pageDesc },
-        { "property": "og:type", "content": "blog" },
+        { "property": "og:type", "content": "website" },
+        { "property": "og:url", "content": pageUrl },
+        { "property": "og:image", "content": "https://www.shamrockbailbonds.biz/logo.png" },
+        { "name": "twitter:card", "content": "summary_large_image" },
         { "name": "keywords", "content": "Florida Bail Laws, Fort Myers Legal News, Bail Bond Tips, Court Updates Lee County" }
+    ]);
+
+    wixSeo.setLinks([
+        { "rel": "canonical", "href": pageUrl }
     ]);
 
     // 2. Structured Data (Blog + Publisher Authority)
@@ -34,7 +41,11 @@ function updateBlogSEO() {
                     "@type": "ImageObject",
                     "url": "https://www.shamrockbailbonds.biz/logo.png"
                 },
-                "areaServed": ["Fort Myers", "Naples", "Cape Coral", "Sarasota", "Bradenton"] // Reinforcing local reach
+                "areaServed": ["Fort Myers", "Naples", "Cape Coral", "Sarasota", "Bradenton"], // Reinforcing local reach
+                "sameAs": [
+                    "https://www.facebook.com/ShamrockBail",
+                    "https://www.instagram.com/shamrock_bail_bonds"
+                ]
             }
         },
         {

@@ -196,7 +196,7 @@ async function setupCommonBailAmounts() {
 
     if (element) {
         console.log('✅ Found #amountsRepeater element, type:', element.type);
-        
+
         // DETECT ELEMENT TYPE: Check if it's a Table or a Repeater
         if (element.type === 'Table' || element.type === '$w.Table') {
             console.log("📊 Found Table element:", element.id);
@@ -330,7 +330,7 @@ async function setupFAQ() {
 
         rep.onItemReady(($item, itemData) => {
             console.log("Rendering FAQ Item:", itemData);
-            
+
             // Map CMS fields
             const question = itemData.title || itemData.question || itemData.q || "No Question";
             const answerText = itemData.answer || itemData.a || "No Answer";
@@ -345,7 +345,7 @@ async function setupFAQ() {
             if (questionEl) {
                 questionEl.text = question;
             }
-            
+
             // Set answer text on CollapsibleText element
             if (answerEl) {
                 // Expand first, set text, then collapse
@@ -417,7 +417,51 @@ function updatePageSEO(faqItems) {
         ]
     };
 
-    wixSeo.setStructuredData([faqSchema, howToSchema])
+    // 3. BreadcrumbList Schema
+    const breadcrumbSchema = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://www.shamrockbailbonds.biz/"
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "How Bail Works",
+                "item": "https://www.shamrockbailbonds.biz/how-bail-works"
+            }
+        ]
+    };
+
+    // 4. LocalBusiness Schema
+    const localBusinessSchema = {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Shamrock Bail Bonds",
+        "url": "https://www.shamrockbailbonds.biz",
+        "logo": "https://www.shamrockbailbonds.biz/logo.png",
+        "image": "https://www.shamrockbailbonds.biz/logo.png",
+        "description": "Florida's most responsive and reliable bail bond service, offering 24/7 assistance across the state.",
+        "telephone": "+1-239-332-2245",
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "1528 Broadway",
+            "addressLocality": "Fort Myers",
+            "addressRegion": "FL",
+            "postalCode": "33901",
+            "addressCountry": "US"
+        },
+        "sameAs": [
+            "https://www.facebook.com/ShamrockBail",
+            "https://www.instagram.com/shamrock_bail_bonds"
+        ]
+    };
+
+    wixSeo.setStructuredData([faqSchema, howToSchema, breadcrumbSchema, localBusinessSchema])
         .then(() => console.log("SEO: Structured Data Set Successfully"))
         .catch(err => console.error("SEO: Failed to set structured data", err));
 }

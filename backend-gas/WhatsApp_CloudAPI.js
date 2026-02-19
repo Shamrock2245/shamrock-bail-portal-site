@@ -298,6 +298,55 @@ class WhatsAppCloudAPI {
     }
 
     /**
+     * Download media from WhatsApp Cloud API
+     * @param {string} mediaId - WhatsApp media ID
+     * @return {Blob} Media blob
+     */
+    downloadMedia(mediaId) {
+        if (!this.isConfigured()) {
+            throw new Error('WhatsApp Cloud API not configured.');
+        }
+
+        // 1. Get media URL
+        const metadataUrl = `${this.baseUrl}/${mediaId}`;
+        const metadataOptions = {
+            method: 'get',
+            headers: {
+                'Authorization': `Bearer ${this.accessToken}`
+            },
+            muteHttpExceptions: true
+        };
+
+        const metadataResponse = UrlFetchApp.fetch(metadataUrl, metadataOptions);
+        if (metadataResponse.getResponseCode() !== 200) {
+            throw new Error(`Failed to get media metadata: ${metadataResponse.getContentText()}`);
+        }
+
+        const metadata = JSON.parse(metadataResponse.getContentText());
+        const mediaUrl = metadata.url;
+
+        if (!mediaUrl) {
+            throw new Error('Media URL not found in metadata response');
+        }
+
+        // 2. Download binary media
+        const downloadOptions = {
+            method: 'get',
+            headers: {
+                'Authorization': `Bearer ${this.accessToken}`
+            },
+            muteHttpExceptions: true
+        };
+
+        const mediaResponse = UrlFetchApp.fetch(mediaUrl, downloadOptions);
+        if (mediaResponse.getResponseCode() !== 200) {
+            throw new Error(`Failed to download media blob: ${mediaResponse.getContentText()}`);
+        }
+
+        return mediaResponse.getBlob();
+    }
+
+    /**
      * Verify webhook signature (for incoming webhooks)
      * @param {string} signature - X-Hub-Signature-256 header value
      * @param {string} payload - Raw request body

@@ -78,7 +78,7 @@ function handleWhatsAppInbound(data) {
   }
 
   // 9. Default — acknowledge and route to staff
-  return _handleDefault(from, name, body);
+  return _handleDefault(data);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -212,24 +212,19 @@ function _handleReviewRequest(from, name) {
   return { success: true, action: 'review_request_sent', from: from };
 }
 
-function _handleDefault(from, name, body) {
-  console.log('💬 Default reply to +' + from + ' (' + name + ')');
+function _handleDefault(data) {
+  const { from, name, body } = data;
+  console.log('💬 Routing message to Manus_Brain for +' + from + ' (' + name + ')');
 
-  // Notify staff of unhandled message
+  // Notify staff of inbound interaction
   try {
     NotificationService.notifySlack('SLACK_WEBHOOK_ALERTS', {
-      text: '💬 Unhandled WhatsApp message from ' + name + ' (+' + from + '): "' + body + '"'
+      text: '🤖 Manus AI interacting with ' + name + ' (+' + from + ')'
     });
   } catch (e) { }
 
-  const client = new WhatsAppCloudAPI();
-  client.sendText('+' + from,
-    'Thanks for reaching out, ' + name + '! A member of our team will follow up shortly. ' +
-    'For immediate assistance, call Shamrock Bail Bonds at (239) 332-2245 (available 24/7).\n\n' +
-    'Reply HELP to see available options.'
-  );
-
-  return { success: true, action: 'default_reply_sent', from: from };
+  // Hand off to Manus_Brain
+  return handleManusWhatsApp(data);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

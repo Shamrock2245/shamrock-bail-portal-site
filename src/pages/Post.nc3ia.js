@@ -29,8 +29,25 @@ async function updatePostSEO() {
         const post = result.items[0];
         const postUrl = wixLocation.url;
         const imageUrl = post.coverImage || "https://www.shamrockbailbonds.biz/logo.png"; // Fallback
+        const excerpt = post.excerpt || "Read the latest bail bond news and Florida legal insights from Shamrock Bail Bonds.";
 
-        // 3. Generate Deep Schema
+        // 3. Set Meta Tags (Crucial for Social Sharing & SERP Snippets)
+        wixSeo.setTitle(`${post.title} | Shamrock Bail Bonds`);
+        wixSeo.setMetaTags([
+            { "name": "description", "content": excerpt },
+            { "property": "og:title", "content": `${post.title} | Shamrock Bail Bonds` },
+            { "property": "og:description", "content": excerpt },
+            { "property": "og:image", "content": imageUrl },
+            { "property": "og:url", "content": postUrl },
+            { "property": "og:type", "content": "article" },
+            { "name": "twitter:card", "content": "summary_large_image" }
+        ]);
+
+        wixSeo.setLinks([
+            { "rel": "canonical", "href": postUrl }
+        ]);
+
+        // 4. Generate Deep Schema
         wixSeo.setStructuredData([
             {
                 "@context": "https://schema.org",
@@ -50,7 +67,11 @@ async function updatePostSEO() {
                     "logo": {
                         "@type": "ImageObject",
                         "url": "https://www.shamrockbailbonds.biz/logo.png"
-                    }
+                    },
+                    "sameAs": [
+                        "https://www.facebook.com/ShamrockBail",
+                        "https://www.instagram.com/shamrock_bail_bonds"
+                    ]
                 },
                 "mainEntityOfPage": {
                     "@type": "WebPage",

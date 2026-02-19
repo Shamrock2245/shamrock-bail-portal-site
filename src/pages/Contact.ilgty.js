@@ -62,6 +62,10 @@ function updatePageSEO() {
                 "image": "https://www.shamrockbailbonds.biz/logo.png",
                 "telephone": "+12393322245",
                 "url": "https://www.shamrockbailbonds.biz/",
+                "sameAs": [
+                    "https://www.facebook.com/ShamrockBail",
+                    "https://www.instagram.com/shamrock_bail_bonds"
+                ],
                 "contactPoint": {
                     "@type": "ContactPoint",
                     "telephone": "+12393322245",

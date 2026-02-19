@@ -12,3 +12,5 @@ backend-gas/*_output_*.json
 backend-gas/test_pdf_output.json
 
 backend-gas/*output*.json
+scripts/seo/service_account.json
+scripts/seo/indexing_report_*.json

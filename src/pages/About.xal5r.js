@@ -71,8 +71,8 @@ function updatePageSEO() {
                     { "@type": "AdministrativeArea", "name": "Charlotte County" }
                 ],
                 "sameAs": [
-                    "https://www.facebook.com/shamrockbailbonds",
-                    // Add other social links if known
+                    "https://www.facebook.com/ShamrockBail",
+                    "https://www.instagram.com/shamrock_bail_bonds"
                 ]
             }
         }

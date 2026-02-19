@@ -1724,13 +1724,22 @@ async function _waInboundMessage(message, contact) {
     const name = (contact.profile && contact.profile.name) || 'Unknown';
     const timestamp = new Date(parseInt(message.timestamp) * 1000).toISOString();
     let textBody = '';
-    if (type === 'text') textBody = (message.text && message.text.body) || '';
-    else if (type === 'button') textBody = (message.button && message.button.text) || '';
-    else if (type === 'interactive') {
+    let mediaId = null;
+    let mimeType = null;
+
+    if (type === 'text') {
+        textBody = (message.text && message.text.body) || '';
+    } else if (type === 'button') {
+        textBody = (message.button && message.button.text) || '';
+    } else if (type === 'interactive') {
         textBody = (message.interactive && message.interactive.button_reply && message.interactive.button_reply.title)
             || (message.interactive && message.interactive.list_reply && message.interactive.list_reply.title) || '';
+    } else if (type === 'audio') {
+        mediaId = (message.audio && message.audio.id) || null;
+        mimeType = (message.audio && message.audio.mime_type) || null;
     }
-    console.log('[WhatsApp Webhook] Inbound from +' + from + ' (' + name + '): "' + textBody + '"');
+
+    console.log('[WhatsApp Webhook] Inbound from +' + from + ' (' + name + '): "' + textBody + '" Type: ' + type);
 
     // Log to CMS
     try {
@@ -1750,7 +1759,11 @@ async function _waInboundMessage(message, contact) {
             wf(gasUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'whatsapp_inbound_message', apiKey, from, name, messageId: msgId, type, body: textBody, timestamp })
+                body: JSON.stringify({
+                    action: 'whatsapp_inbound_message',
+                    apiKey, from, name, messageId: msgId, type,
+                    body: textBody, timestamp, mediaId, mimeType
+                })
             }).catch(err => console.warn('[WhatsApp Webhook] GAS fwd error:', err));
         }
     } catch (e) { console.warn('[WhatsApp Webhook] GAS route error:', e.message); }

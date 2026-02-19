@@ -1,0 +1,216 @@
+/**
+ * Velo Backend Module: seo-rich-results.jsw
+ * 
+ * This module is responsible for generating and returning structured data (JSON-LD)
+ * for various page types on the Shamrock Bail Bonds website. This allows for dynamic
+ * injection of rich results schema, enhancing SEO and search visibility.
+ */
+
+import { getSecret } from 'wix-secrets-backend';
+import { fetch } from 'wix-fetch';
+
+// Import the schema templates. In a real Velo environment, this would be a backend file.
+// For this simulation, we'll define the core templates directly.
+const schemaTemplates = {
+    organization: {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Shamrock Bail Bonds",
+        "url": "https://www.shamrockbailbonds.biz",
+        "logo": "https://www.shamrockbailbonds.biz/logo.png",
+        "telephone": "+1-239-332-2245",
+        "email": "admin@shamrockbailbonds.biz",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Fort Myers",
+            "addressRegion": "FL",
+            "addressCountry": "US"
+        },
+        "areaServed": {
+            "@type": "State",
+            "name": "Florida"
+        }
+    },
+    localBusiness: {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Shamrock Bail Bonds",
+        "image": "https://www.shamrockbailbonds.biz/office-exterior.jpg",
+        "@id": "https://www.shamrockbailbonds.biz",
+        "url": "https://www.shamrockbailbonds.biz",
+        "telephone": "+1-239-332-2245",
+        "priceRange": "$$",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Fort Myers",
+            "addressRegion": "FL",
+            "addressCountry": "US"
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 26.6406,
+            "longitude": -81.8723
+        },
+        "openingHoursSpecification": [
+            {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "opens": "00:00",
+                "closes": "23:59"
+            }
+        ]
+    },
+    breadcrumbTemplate: {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": []
+    },
+    articleTemplate: {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "author": {
+            "@type": "Organization",
+            "name": "Shamrock Bail Bonds"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Shamrock Bail Bonds",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://www.shamrockbailbonds.biz/logo.png"
+
+            }
+        }
+    }
+};
+
+/**
+ * Main exported function to generate schema based on page context.
+ * This function is web-callable from the frontend.
+ * 
+ * @param {string} pageType - The type of page (e.g., 'HOME', 'COUNTY', 'BLOG_POST').
+ * @param {object} data - Page-specific data (e.g., county name, blog post details).
+ * @returns {string} - A stringified JSON-LD schema.
+ */
+export function getRichResultsSchema(pageType, data) {
+    let schema = [];
+
+    switch (pageType) {
+        case 'HOME':
+            schema = getHomepageSchema();
+            break;
+        case 'COUNTY':
+            if (data && data.countyName) {
+                schema = getCountyPageSchema(data.countyName, data.countySlug);
+            }
+            break;
+        case 'BLOG_POST':
+            if (data && data.post) {
+                schema = getBlogPostSchema(data.post);
+            }
+            break;
+        case 'HOW_TO':
+            if (data && data.howTo) {
+                schema = getHowToSchema(data.howTo);
+            }
+            break;
+        default:
+            // Return a default schema or an empty array
+            schema.push(schemaTemplates.organization);
+            break;
+    }
+
+    return JSON.stringify(schema, null, 2);
+}
+
+/**
+ * Generates the schema for the Homepage.
+ */
+function getHomepageSchema() {
+    const schemas = [];
+    schemas.push(schemaTemplates.organization);
+    schemas.push(schemaTemplates.localBusiness);
+    // Add Website schema for Sitelinks Search Box
+    schemas.push({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "url": "https://www.shamrockbailbonds.biz/",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://www.shamrockbailbonds.biz/search-results?query={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    });
+    return schemas;
+}
+
+/**
+ * Generates the schema for a specific County Page.
+ */
+function getCountyPageSchema(countyName, countySlug) {
+    const schemas = [];
+
+    // 1. Customized LocalBusiness Schema
+    let localBusiness = JSON.parse(JSON.stringify(schemaTemplates.localBusiness));
+    localBusiness.name = `Shamrock Bail Bonds in ${countyName} County`;
+    localBusiness.description = `24/7 bail bond services in ${countyName} County, Florida. Fast, confidential jail release for ${countyName} and surrounding areas.`;
+    localBusiness.areaServed = {
+        "@type": "AdministrativeArea",
+        "name": `${countyName} County, Florida`
+    };
+    localBusiness.url = `https://www.shamrockbailbonds.biz/florida-bail-bonds/${countySlug}`;
+    schemas.push(localBusiness);
+
+    // 2. Breadcrumb Schema
+    let breadcrumb = JSON.parse(JSON.stringify(schemaTemplates.breadcrumbTemplate));
+    breadcrumb.itemListElement.push(
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz" },
+        { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": "https://www.shamrockbailbonds.biz/florida-bail-bonds" },
+        { "@type": "ListItem", "position": 3, "name": `${countyName} County`, "item": localBusiness.url }
+    );
+    schemas.push(breadcrumb);
+
+    return schemas;
+}
+
+/**
+ * Generates the schema for a Blog Post.
+ */
+function getBlogPostSchema(post) {
+    const schemas = [];
+    let article = JSON.parse(JSON.stringify(schemaTemplates.articleTemplate));
+
+    article.headline = post.title;
+    article.description = post.excerpt;
+    article.image = post.coverImage;
+    article.datePublished = post.firstPublishedDate;
+    article.dateModified = post.lastPublishedDate;
+    article.mainEntityOfPage = {
+        "@type": "WebPage",
+        "@id": post.postPageUrl
+    };
+
+    schemas.push(article);
+    return schemas;
+}
+
+/**
+ * Generates the HowTo schema.
+ */
+function getHowToSchema(howToData) {
+    const schemas = [];
+    let howTo = {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": howToData.name,
+        "description": howToData.description,
+        "step": howToData.steps.map((step, index) => ({
+            "@type": "HowToStep",
+            "name": step.name,
+            "text": step.text,
+            "url": `${howToData.url}#step-${index + 1}`
+        }))
+    };
+    schemas.push(howTo);
+    return schemas;
+}

@@ -116,7 +116,7 @@ function setupSEO(county) {
         "@type": "BreadcrumbList",
         "itemListElement": [
             { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
-            { "@type": "ListItem", "position": 2, "name": "Bail Bonds", "item": "https://www.shamrockbailbonds.biz/bail-bonds" },
+            { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": "https://www.shamrockbailbonds.biz/florida-bail-bonds" },
             { "@type": "ListItem", "position": 3, "name": county.county_name_full, "item": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}` }
         ]
     });
@@ -131,6 +131,10 @@ function setupSEO(county) {
         "url": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}`,
         "telephone": "+1-239-332-2245",
         "image": "https://www.shamrockbailbonds.biz/logo.png",
+        "sameAs": [
+            "https://www.facebook.com/ShamrockBail",
+            "https://www.instagram.com/shamrock_bail_bonds"
+        ],
         "address": {
             "@type": "PostalAddress",
             "streetAddress": "1528 Broadway",

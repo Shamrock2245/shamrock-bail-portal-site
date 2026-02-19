@@ -74,7 +74,7 @@ class ElevenLabsClient {
 
         const payload = {
             text: text,
-            model_id: "eleven_turbo_v2_5", // Use latest Turbo model for speed
+            model_id: "eleven_v3", // Use latest V3 model
             voice_settings: {
                 stability: 0.5,
                 similarity_boost: 0.75
