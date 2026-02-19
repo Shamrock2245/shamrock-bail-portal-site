@@ -1613,7 +1613,10 @@ export async function get_outreachLeads(request) {
             phone: item.phone || '',
             email: item.email || '',
             status: item.status || 'new',
-            createdDate: item._createdDate
+            createdDate: item._createdDate,
+            defendant: item.defendantName || 'Unknown',
+            jail: item.county || 'Unknown',
+            charges: item.charges || 'Pending'
         }));
 
         return ok({
@@ -1650,8 +1653,8 @@ export async function get_outreachLeads(request) {
  */
 export async function get_webhookWhatsApp(request) {
     try {
-        const mode      = request.query['hub.mode'];
-        const token     = request.query['hub.verify_token'];
+        const mode = request.query['hub.mode'];
+        const token = request.query['hub.verify_token'];
         const challenge = request.query['hub.challenge'];
         const verifyToken = await getSecret('WHATSAPP_WEBHOOK_VERIFY_TOKEN').catch(() => null);
         if (mode === 'subscribe' && token === verifyToken) {
@@ -1672,7 +1675,7 @@ export async function get_webhookWhatsApp(request) {
  */
 export async function post_webhookWhatsApp(request) {
     try {
-        const bodyText  = await request.body.text();
+        const bodyText = await request.body.text();
         const signature = request.headers['x-hub-signature-256'] || '';
 
         // 1. Verify signature
@@ -1689,9 +1692,9 @@ export async function post_webhookWhatsApp(request) {
         let payload;
         try { payload = JSON.parse(bodyText); } catch (e) { return badRequest({ body: { error: 'Invalid JSON' } }); }
 
-        const entry   = payload.entry   && payload.entry[0];
+        const entry = payload.entry && payload.entry[0];
         const changes = entry && entry.changes && entry.changes[0];
-        const value   = changes && changes.value;
+        const value = changes && changes.value;
         if (!value) return ok({ body: { received: true } });
 
         // 3. Status updates
@@ -1715,17 +1718,17 @@ export async function post_webhookWhatsApp(request) {
 }
 
 async function _waInboundMessage(message, contact) {
-    const from      = message.from;
-    const msgId     = message.id;
-    const type      = message.type;
-    const name      = (contact.profile && contact.profile.name) || 'Unknown';
+    const from = message.from;
+    const msgId = message.id;
+    const type = message.type;
+    const name = (contact.profile && contact.profile.name) || 'Unknown';
     const timestamp = new Date(parseInt(message.timestamp) * 1000).toISOString();
     let textBody = '';
-    if (type === 'text')        textBody = (message.text && message.text.body) || '';
+    if (type === 'text') textBody = (message.text && message.text.body) || '';
     else if (type === 'button') textBody = (message.button && message.button.text) || '';
     else if (type === 'interactive') {
         textBody = (message.interactive && message.interactive.button_reply && message.interactive.button_reply.title)
-                || (message.interactive && message.interactive.list_reply  && message.interactive.list_reply.title) || '';
+            || (message.interactive && message.interactive.list_reply && message.interactive.list_reply.title) || '';
     }
     console.log('[WhatsApp Webhook] Inbound from +' + from + ' (' + name + '): "' + textBody + '"');
 
@@ -1755,16 +1758,16 @@ async function _waInboundMessage(message, contact) {
     // Mark as read
     try {
         const token = await getSecret('WHATSAPP_ACCESS_TOKEN').catch(() => null);
-        const pid   = await getSecret('WHATSAPP_PHONE_NUMBER_ID').catch(() => null);
+        const pid = await getSecret('WHATSAPP_PHONE_NUMBER_ID').catch(() => null);
         if (token && pid) {
             const { fetch: wf } = await import('wix-fetch');
             wf('https://graph.facebook.com/v21.0/' + pid + '/messages', {
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ messaging_product: 'whatsapp', status: 'read', message_id: msgId })
-            }).catch(() => {});
+            }).catch(() => { });
         }
-    } catch (e) {}
+    } catch (e) { }
 }
 
 async function _waStatusUpdate(status) {
@@ -1773,9 +1776,9 @@ async function _waStatusUpdate(status) {
         const res = await wixData.query('WhatsAppMessages').eq('messageId', status.id).find({ suppressAuth: true });
         if (res.items.length > 0) {
             const item = res.items[0];
-            item.deliveryStatus  = status.status;
+            item.deliveryStatus = status.status;
             item.statusUpdatedAt = ts;
             await wixData.update('WhatsAppMessages', item, { suppressAuth: true });
         }
-    } catch (e) {}
+    } catch (e) { }
 }

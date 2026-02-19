@@ -53,7 +53,7 @@ class WhatsAppCloudAPI {
         }
 
         const url = `${this.baseUrl}/${this.phoneNumberId}/messages`;
-        
+
         const payload = {
             messaging_product: 'whatsapp',
             recipient_type: 'individual',
@@ -80,7 +80,7 @@ class WhatsAppCloudAPI {
         }
 
         const url = `${this.baseUrl}/${this.phoneNumberId}/messages`;
-        
+
         const payload = {
             messaging_product: 'whatsapp',
             to: this._formatPhoneNumber(to),
@@ -106,7 +106,7 @@ class WhatsAppCloudAPI {
         }
 
         const url = `${this.baseUrl}/${this.phoneNumberId}/messages`;
-        
+
         const payload = {
             messaging_product: 'whatsapp',
             to: this._formatPhoneNumber(to),
@@ -136,7 +136,7 @@ class WhatsAppCloudAPI {
         }
 
         const url = `${this.baseUrl}/${this.phoneNumberId}/messages`;
-        
+
         const payload = {
             messaging_product: 'whatsapp',
             to: this._formatPhoneNumber(to),
@@ -175,6 +175,37 @@ class WhatsAppCloudAPI {
     }
 
     /**
+     * Send a template message
+     * @param {string} to - Recipient phone number
+     * @param {string} templateName - Template name
+     * @param {string} languageCode - Language code (e.g., 'en_US')
+     * @param {Array} components - Array of component objects
+     * @return {Object} API response
+     */
+    sendTemplate(to, templateName, languageCode = 'en_US', components = []) {
+        if (!this.isConfigured()) {
+            throw new Error('WhatsApp Cloud API not configured.');
+        }
+
+        const url = `${this.baseUrl}/${this.phoneNumberId}/messages`;
+
+        const payload = {
+            messaging_product: 'whatsapp',
+            to: this._formatPhoneNumber(to),
+            type: 'template',
+            template: {
+                name: templateName,
+                language: {
+                    code: languageCode
+                },
+                components: components
+            }
+        };
+
+        return this._makeRequest(url, payload);
+    }
+
+    /**
      * Mark a message as read
      * @param {string} messageId - WhatsApp message ID
      * @return {Object} API response
@@ -185,7 +216,7 @@ class WhatsAppCloudAPI {
         }
 
         const url = `${this.baseUrl}/${this.phoneNumberId}/messages`;
-        
+
         const payload = {
             messaging_product: 'whatsapp',
             status: 'read',
@@ -203,17 +234,17 @@ class WhatsAppCloudAPI {
     _formatPhoneNumber(phone) {
         // Remove all non-digit characters
         let cleaned = phone.toString().replace(/\D/g, '');
-        
+
         // Add country code if missing (assume US +1)
         if (cleaned.length === 10) {
             cleaned = '1' + cleaned;
         }
-        
+
         // Ensure it starts with +
         if (!cleaned.startsWith('+')) {
             cleaned = '+' + cleaned;
         }
-        
+
         return cleaned;
     }
 
@@ -324,4 +355,17 @@ function sendWhatsAppAudio(to, audioUrl) {
 function sendWhatsAppOTP(to, otpCode) {
     const client = new WhatsAppCloudAPI();
     return client.sendAuthenticationOTP(to, otpCode);
+}
+
+/**
+ * Send WhatsApp template message
+ * @param {string} to - Recipient phone number
+ * @param {string} templateName - Template name
+ * @param {string} languageCode - Language code
+ * @param {Array} components - Component objects
+ * @return {Object} Result object
+ */
+function sendWhatsAppTemplate(to, templateName, languageCode, components) {
+    const client = new WhatsAppCloudAPI();
+    return client.sendTemplate(to, templateName, languageCode, components);
 }

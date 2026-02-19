@@ -23,10 +23,10 @@
  * @return {Object} result
  */
 function handleWhatsAppInbound(data) {
-  const from      = data.from      || '';
-  const name      = data.name      || 'Unknown';
-  const body      = (data.body     || '').trim();
-  const type      = data.type      || 'text';
+  const from = data.from || '';
+  const name = data.name || 'Unknown';
+  const body = (data.body || '').trim();
+  const type = data.type || 'text';
   const messageId = data.messageId || '';
 
   console.log('📩 WhatsApp inbound from +' + from + ' (' + name + '): "' + body + '"');
@@ -62,7 +62,22 @@ function handleWhatsAppInbound(data) {
     return _handleStop(from, name);
   }
 
-  // 6. Default — acknowledge and route to staff
+  // 6. Location / Office
+  if (lowerBody.includes('location') || lowerBody.includes('office') || lowerBody.includes('address') || lowerBody.includes('map')) {
+    return _handleLocation(from, name);
+  }
+
+  // 7. Forms
+  if (lowerBody.includes('form') || lowerBody.includes('paperwork') || lowerBody.includes('download')) {
+    return _handleForms(from, name);
+  }
+
+  // 8. Review / Feedback
+  if (lowerBody.includes('review') || lowerBody.includes('feedback') || lowerBody.includes('rate')) {
+    return _handleReviewRequest(from, name);
+  }
+
+  // 9. Default — acknowledge and route to staff
   return _handleDefault(from, name, body);
 }
 
@@ -106,7 +121,7 @@ function _handleCheckIn(from, name, body) {
     NotificationService.notifySlack('SLACK_WEBHOOK_ALERTS', {
       text: '📍 Check-in received from ' + name + ' (+' + from + ') via WhatsApp'
     });
-  } catch (e) {}
+  } catch (e) { }
 
   return { success: true, action: 'check_in_logged', from: from };
 }
@@ -151,7 +166,7 @@ function _handleStop(from, name) {
       optOuts.push(from);
       props.setProperty('WA_OPT_OUTS', JSON.stringify(optOuts));
     }
-  } catch (e) {}
+  } catch (e) { }
 
   const client = new WhatsAppCloudAPI();
   client.sendText('+' + from,
@@ -159,6 +174,42 @@ function _handleStop(from, name) {
     'Reply START to resubscribe at any time. For urgent matters call (239) 332-2245.'
   );
   return { success: true, action: 'opted_out', from: from };
+}
+
+function _handleLocation(from, name) {
+  const client = new WhatsAppCloudAPI();
+  client.sendText('+' + from,
+    '📍 *Shamrock Bail Bonds Office*\n' +
+    '1528 Broadway, Fort Myers, FL 33901\n\n' +
+    'Get Directions: https://www.google.com/maps/dir/?api=1&destination=Shamrock+Bail+Bonds+1528+Broadway+Fort+Myers+FL+33901\n' +
+    'Hours: 24/7\n' +
+    'Phone: (239) 332-2245'
+  );
+  return { success: true, action: 'location_sent', from: from };
+}
+
+function _handleForms(from, name) {
+  const client = new WhatsAppCloudAPI();
+  client.sendText('+' + from,
+    '📄 *Common Forms*\n\n' +
+    'Which form do you need? Reply with the number:\n\n' +
+    '1. Weekly Check-In\n' +
+    '2. Travel Request\n' +
+    '3. Credit Card Authorization\n' +
+    '4. Indigent Status Application\n\n' +
+    'Or visit our forms page: https://www.shamrockbailbonds.biz/forms'
+  );
+  return { success: true, action: 'forms_menu_sent', from: from };
+}
+
+function _handleReviewRequest(from, name) {
+  const client = new WhatsAppCloudAPI();
+  client.sendText('+' + from,
+    '⭐ *Rate Your Experience*\n\n' +
+    'Hi ' + name + ', if we handled your case well, please leave us a 5-star review. It helps others find us!\n\n' +
+    'Rate us on Google: https://share.google/xhZ13e8XMlR4Dl1Qg'
+  );
+  return { success: true, action: 'review_request_sent', from: from };
 }
 
 function _handleDefault(from, name, body) {
@@ -169,7 +220,7 @@ function _handleDefault(from, name, body) {
     NotificationService.notifySlack('SLACK_WEBHOOK_ALERTS', {
       text: '💬 Unhandled WhatsApp message from ' + name + ' (+' + from + '): "' + body + '"'
     });
-  } catch (e) {}
+  } catch (e) { }
 
   const client = new WhatsAppCloudAPI();
   client.sendText('+' + from,
@@ -189,8 +240,8 @@ function _logInboundMessage(from, name, body, type, messageId) {
   try {
     const config = _getConfig();
     if (!config.GOOGLE_SHEET_ID) return;
-    const ss    = SpreadsheetApp.openById(config.GOOGLE_SHEET_ID);
-    let sheet   = ss.getSheetByName('WhatsApp_Inbound');
+    const ss = SpreadsheetApp.openById(config.GOOGLE_SHEET_ID);
+    let sheet = ss.getSheetByName('WhatsApp_Inbound');
     if (!sheet) {
       sheet = ss.insertSheet('WhatsApp_Inbound');
       sheet.appendRow(['Timestamp', 'From', 'Name', 'Type', 'Body', 'MessageID']);
