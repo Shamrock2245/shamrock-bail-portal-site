@@ -72,7 +72,17 @@ function AI_deepAnalyzeReports(payload) {
     const result = callOpenAI(systemPrompt, userContent, { jsonMode: true });
 
     if (!result) {
-        return { error: "AI Analysis Failed to generate response." };
+        console.warn("🕵️ Investigator failed to generate. Returning fallback safe object.");
+        return {
+            flightRiskScore: 50,
+            flightRiskRationale: "AI Analysis Failed",
+            indemnitorStabilityScore: 50,
+            indemnitorRationale: "AI Analysis Failed",
+            relationshipVerified: false,
+            relationshipNotes: "AI Analysis Failed",
+            redFlags: ["AI Analysis Failed - Manual Review Required"],
+            recommendation: "REQUIRE COLLATERAL"
+        };
     }
 
     return result;

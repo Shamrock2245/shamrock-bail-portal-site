@@ -124,6 +124,11 @@ function saveCompletedBondToDrive(params) {
     
     console.log('✅ Saved bond document:', file.getUrl());
     
+    // Notify Slack channel
+    if (typeof NotificationService !== 'undefined') {
+      NotificationService.sendSlack('#drive', `📁 *New Bond Saved to Drive*\nDefendant: ${defendantFirstName} ${defendantLastName}\nFolder: <${defendantFolder.getUrl()}|${defendantFolder.getName()}>\nFile: <${file.getUrl()}|${file.getName()}>`);
+    }
+
     return {
       success: true,
       fileUrl: file.getUrl(),

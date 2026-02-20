@@ -12,6 +12,11 @@
  * @returns {Object} Structured defendant data
  */
 function AI_parseBookingSheet(inputData) {
+  if (!inputData || (Array.isArray(inputData) && inputData.length === 0)) {
+    console.warn("🤖 Clerk: No images provided to parser.");
+    return { error: "No valid images provided." };
+  }
+
   let images = [];
 
   // Normalize input to array
@@ -19,6 +24,14 @@ function AI_parseBookingSheet(inputData) {
     images = inputData;
   } else {
     images = [inputData];
+  }
+
+  // Filter out invalid/empty image data array items
+  images = images.filter(img => img && typeof img === 'string' && img.trim().length > 0);
+
+  if (images.length === 0) {
+    console.warn("🤖 Clerk: No valid image data after filtering.");
+    return { error: "No valid image data." };
   }
 
   // Prepare content for OpenAI

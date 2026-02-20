@@ -67,9 +67,6 @@ function AI_analyzeCheckIn(checkInData) {
  * Send Slack Alert for Check-In Risk
  */
 function sendCheckInAlert_(data, analysis) {
-    const url = PropertiesService.getScriptProperties().getProperty('SLACK_WEBHOOK_LEADS');
-    if (!url) return;
-
     const color = analysis.status === 'CRITICAL' ? '#ff0000' : '#ffa500';
 
     const payload = {
@@ -86,10 +83,12 @@ function sendCheckInAlert_(data, analysis) {
         }]
     };
 
-    try {
-        UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', payload: JSON.stringify(payload) });
+    const webhookKey = 'SLACK_WEBHOOK_LEADS';
+    const result = NotificationService.notifySlack(webhookKey, payload);
+
+    if (result.success) {
         console.log("🚨 Sent Check-In Alert to Slack.");
-    } catch (e) {
-        console.error("Failed to send Slack alert", e);
+    } else {
+        console.error("Failed to send Slack alert: " + result.error);
     }
 }

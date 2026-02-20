@@ -9,10 +9,19 @@
 // In local dev we assume RAG_getKnowledge() is available.
 
 function RAG_queryCounty(countyName) {
-    const db = RAG_getKnowledge();
+    let db = {};
+    if (typeof RAG_getKnowledge === 'function') {
+        try { db = RAG_getKnowledge(); } catch (e) { console.warn("RAG_getKnowledge failed", e); }
+    }
+
     const slug = (countyName || "").toLowerCase().trim().replace(/\s+county/g, "").replace(/\s+/g, "-");
 
-    const entry = db[slug] || db['default'];
+    const entry = db[slug] || db['default'] || {
+        name: countyName || "Unknown County",
+        process: "Standard bail process applies. Please contact an agent for specifics.",
+        jail_location: "Unknown",
+        tips: ["Verify all details manually."]
+    };
     return entry;
 }
 
@@ -40,11 +49,11 @@ function RAG_generateIntroSMS(lead) {
         `;
 
         const userData = {
-            LeadName: lead.name,
-            County: context.name,
-            Process: context.process,
-            UrgencyScore: lead.score,
-            JailLocation: context.jail_location
+            LeadName: lead.name || "Client",
+            County: context.name || "Unknown",
+            Process: context.process || "",
+            UrgencyScore: lead.score || 50,
+            JailLocation: context.jail_location || ""
         };
 
         // Use the centralized OpenAIClient
@@ -78,5 +87,6 @@ function RAG_generateIntroSMS(lead) {
  */
 function RAG_generateSlackContext(lead) {
     const context = RAG_queryCounty(lead.county);
-    return `*${context.name} Strategy:* ${context.process}\n*Tips:* ${context.tips.join(", ")}`;
+    const tips = context.tips ? context.tips.join(", ") : "No specific tips.";
+    return `*${context.name || "Unknown"} Strategy:* ${context.process || "N/A"}\n*Tips:* ${tips}`;
 }

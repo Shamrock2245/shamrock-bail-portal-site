@@ -160,13 +160,6 @@ function processConciergeQueue() {
  * Send Slack Notification (Enriched with AI)
  */
 function sendSlackAlert_(lead, smsBody) {
-    const url = PropertiesService.getScriptProperties().getProperty(CONCIERGE_CONFIG.SLACK_WEBHOOK_PROP);
-
-    if (!url) {
-        console.warn("Slack Webhook URL not set.");
-        return;
-    }
-
     const blocks = [
         {
             type: "header",
@@ -235,15 +228,9 @@ function sendSlackAlert_(lead, smsBody) {
 
     const payload = { blocks: blocks };
 
-    try {
-        const options = {
-            method: 'post',
-            contentType: 'application/json',
-            payload: JSON.stringify(payload)
-        };
-        UrlFetchApp.fetch(url, options);
-    } catch (e) {
-        console.error("Failed to send Slack alert: " + e.message);
+    const result = NotificationService.notifySlack(CONCIERGE_CONFIG.SLACK_WEBHOOK_PROP, payload);
+    if (!result.success) {
+        console.error("🤖 Concierge Slack Alert Failed: " + result.error);
     }
 }
 
@@ -259,15 +246,11 @@ function sendTwilioIntro_(lead, preGeneratedBody) {
     // RAG Generation (Use pre-generated if available)
     const bodyContent = preGeneratedBody || RAG_generateIntroSMS(lead);
 
-    if (typeof sendSmsViaTwilio === 'function') {
-        const result = sendSmsViaTwilio(lead.phone, bodyContent);
-        if (result.success) {
-            console.log(`🤖 Concierge SMS Sent to ${lead.name} (${result.sid})`);
-        } else {
-            console.error(`🤖 Concierge SMS Failed: ${result.error}`);
-        }
+    const result = NotificationService.sendSms(lead.phone, bodyContent);
+    if (result.success) {
+        console.log(`🤖 Concierge SMS Sent to ${lead.name}`);
     } else {
-        console.error("sendSmsViaTwilio function not found in global scope.");
+        console.error(`🤖 Concierge SMS Failed: ${result.error}`);
     }
 }
 

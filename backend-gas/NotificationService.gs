@@ -86,6 +86,8 @@ var NotificationService = (function() {
         else if (ch === '#forfeitures' || ch.includes('forfeit')) webhookKey = 'SLACK_WEBHOOK_FORFEITURES';
         else if (ch === '#discharges' || ch.includes('discharge')) webhookKey = 'SLACK_WEBHOOK_DISCHARGES';
         else if (ch === '#signing-errors' || ch.includes('signing-error')) webhookKey = 'SLACK_WEBHOOK_SIGNING_ERRORS';
+        else if (ch === '#drive' || ch.includes('drive')) webhookKey = 'SLACK_WEBHOOK_DRIVE';
+        else if (ch === '#calendar' || ch.includes('calendar')) webhookKey = 'SLACK_WEBHOOK_CALENDAR';
       }
 
       // 2. Construct Payload
