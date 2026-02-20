@@ -80,11 +80,12 @@ var NotificationService = (function() {
       if (channel) {
         const ch = channel.toLowerCase().trim();
         if (ch === '#new-cases' || ch.includes('new-cases')) webhookKey = 'SLACK_WEBHOOK_NEW_CASES';
-        else if (ch === '#new-arrests-lee-county' || ch.includes('lee-county')) webhookKey = 'SLACK_WEBHOOK_NEW_CASES'; // Map to same webhook or new one if needed
-        else if (ch === '#intake' || ch.includes('intake')) webhookKey = 'SLACK_WEBHOOK_INTAKE'; // New webhook needed? Or map to General?
+        else if (ch === '#new-arrests-lee-county' || ch.includes('lee-county')) webhookKey = 'SLACK_WEBHOOK_NEW_ARRESTS_LEE_COUNTY';
+        else if (ch === '#intake' || ch.includes('intake')) webhookKey = 'SLACK_WEBHOOK_INTAKE';
         else if (ch === '#court-dates' || ch.includes('court')) webhookKey = 'SLACK_WEBHOOK_COURT_DATES';
         else if (ch === '#forfeitures' || ch.includes('forfeit')) webhookKey = 'SLACK_WEBHOOK_FORFEITURES';
         else if (ch === '#discharges' || ch.includes('discharge')) webhookKey = 'SLACK_WEBHOOK_DISCHARGES';
+        else if (ch === '#signing-errors' || ch.includes('signing-error')) webhookKey = 'SLACK_WEBHOOK_SIGNING_ERRORS';
       }
 
       // 2. Construct Payload
@@ -205,3 +206,26 @@ var NotificationService = (function() {
 
   };
 })();
+
+/**
+ * Test function to verify all Slack Webhook channels are working
+ */
+function testSlackWebhooks() {
+  const testMessage = "🤖 Test message from Google Apps Script! If you see this, the webhook channel routing is configured correctly.";
+  
+  const channels = [
+    '#new-cases',
+    '#new-arrests-lee-county',
+    '#intake',
+    '#court-dates',
+    '#forfeitures',
+    '#discharges',
+    '#signing-errors'
+  ];
+  
+  channels.forEach(ch => {
+    console.log('Sending test message to ' + ch + '...');
+    const result = NotificationService.sendSlack(ch, testMessage + ' (' + ch + ')');
+    console.log('Result for ' + ch + ': ' + JSON.stringify(result));
+  });
+}

@@ -798,7 +798,6 @@ function sendSlackMessage(channel, text, blocks) {
   if (typeof NotificationService !== 'undefined') {
     return NotificationService.sendSlack(channel, text, blocks);
   }
-
   // Fallback ( Legacy Logic )
   const config = getConfig();
   const botToken = PropertiesService.getScriptProperties().getProperty('SLACK_BOT_TOKEN');

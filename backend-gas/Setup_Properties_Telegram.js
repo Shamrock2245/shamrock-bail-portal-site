@@ -68,6 +68,7 @@ function setupAllProperties() {
   // ── PHASE 1: Non-secret properties (set directly) ──────────────────────────
   const safeProperties = {
     // Telegram
+    'TELEGRAM_BOT_TOKEN': '8478352763:AAF7Td2Ft-Oi5C4QKj_nVCUQzeWtR8FRYPQ',
     'TELEGRAM_WEBHOOK_URL': SETUP_CONFIG.wixSiteUrl + SETUP_CONFIG.telegramWebhookPath,
     'TELEGRAM_BOT_NAME': SETUP_CONFIG.botName,
     'TELEGRAM_BOT_USERNAME': SETUP_CONFIG.botUsername,
@@ -102,6 +103,18 @@ function setupAllProperties() {
 
     // Slack workspace (public URL, not a webhook secret)
     'SLACK_WORKSPACE_URL': 'https://shamrockbailbonds.slack.com',
+
+    // Slack Webhooks
+    'SLACK_WEBHOOK_SIGNING_ERRORS': '[REDACTED]',
+    'SLACK_WEBHOOK_NEW_CASES': '[REDACTED]',
+    'SLACK_WEBHOOK_COURT_DATES': '[REDACTED]',
+    'SLACK_WEBHOOK_FORFEITURES': '[REDACTED]',
+    'SLACK_WEBHOOK_DISCHARGES': '[REDACTED]',
+    'SLACK_WEBHOOK_NEW_ARRESTS_LEE_COUNTY': '[REDACTED]',
+    'SLACK_WEBHOOK_INTAKE': '[REDACTED]',
+    'SLACK_WEBHOOK_GENERAL': '[REDACTED]',
+    'SLACK_WEBHOOK_LEADS': '[REDACTED]',
+    'SLACK_WEBHOOK_URL': '[REDACTED]',
 
     // Counters / state (initialize if not set)
     'LAST_INTAKE_POLL': new Date().toISOString(),
@@ -197,16 +210,7 @@ function setupAllProperties() {
     ],
 
     // ── Slack ─────────────────────────────────────────────────────────────────
-    // One Slack webhook URL serves all channel-specific aliases.
-    'SLACK_WEBHOOK_URL': [
-      'SLACK_WEBHOOK_URL',
-      'SLACK_WEBHOOK_NEW_CASES',    // channel alias
-      'SLACK_WEBHOOK_COURT_DATES',  // channel alias
-      'SLACK_WEBHOOK_GENERAL',      // channel alias
-      'SLACK_WEBHOOK_FORFEITURES',  // channel alias
-      'SLACK_WEBHOOK_DISCHARGES',   // channel alias
-      'SLACK_WEBHOOK_LEADS',        // channel alias
-    ],
+    // Webhooks are hardcoded in safeProperties, so we do not fetch them from Wix Secrets anymore.
 
     // ── Arrest Scraper ────────────────────────────────────────────────────────
     'ARREST_SCRAPER_API_KEY': [
