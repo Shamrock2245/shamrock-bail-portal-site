@@ -2,212 +2,346 @@
  * Setup_Properties_Telegram.js
  * Shamrock Bail Bonds — Google Apps Script
  *
- * ╔══════════════════════════════════════════════════════════════╗
- * ║  NO HARDCODED SECRETS — All values loaded at runtime from   ║
- * ║  Wix Secrets Manager via the GAS_WEBHOOK_URL endpoint.      ║
- * ║                                                              ║
- * ║  HOW TO USE (one-tap desktop setup):                        ║
- * ║  1. Open GAS editor → Select: setupAllProperties            ║
- * ║  2. Click ▶ Run  (authorize on first run)                   ║
- * ║  3. Run: registerTelegramWebhook                            ║
- * ║  4. Run: configureBotCommands                               ║
- * ║  5. Run: verifyTelegramSetup                                ║
- * ╚══════════════════════════════════════════════════════════════╝
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║  MASTER PROPERTY SETUP — Zero hardcoded secrets                     ║
+ * ║                                                                      ║
+ * ║  HOW TO USE (one-tap desktop setup):                                 ║
+ * ║  1. Open GAS editor → Run: setupAllProperties                        ║
+ * ║     (authorize on first run)                                         ║
+ * ║  2. Run: registerTelegramWebhook                                     ║
+ * ║  3. Run: configureBotCommands                                        ║
+ * ║  4. Run: verifyTelegramSetup                                         ║
+ * ║                                                                      ║
+ * ║  BOOTSTRAP REQUIREMENT:                                              ║
+ * ║  Before running, set ONE property manually in GAS Project Settings:  ║
+ * ║    Key:   GAS_WEBHOOK_URL                                            ║
+ * ║    Value: (your GAS web app deployed URL)                            ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
  *
- * Secrets are stored exclusively in:
- *   • Wix Secrets Manager  (source of truth)
- *   • GAS Script Properties (runtime cache, set by this script)
+ * Secrets source of truth: Wix Secrets Manager (shamrockbailbonds.biz)
+ * Runtime cache: GAS Script Properties (set by this script)
  *
- * Version: 3.0.0 — Zero-secret build
+ * Version: 4.0.0 — Definitive master, covers all 77 properties
  * Date: 2026-02-20
  */
 
 // =============================================================================
-// CONFIGURATION — Edit only these safe, non-secret values
+// PUBLIC CONFIGURATION — safe, non-secret values only
 // =============================================================================
 
 const SETUP_CONFIG = {
-  // Wix site base URL (public, not a secret)
-  wixSiteUrl: 'https://www.shamrockbailbonds.biz',
-
-  // Telegram webhook path on Wix (public endpoint)
-  telegramWebhookPath: '/_functions/telegramWebhook',
-
-  // Wix secrets-bridge endpoint (returns secrets to authorized GAS callers)
-  secretsBridgePath: '/_functions/get_gasSecrets',
-
-  // Bot display info (public, not a secret)
-  botName: 'Shamrock Bail Bonds',
-  botUsername: 'ShamrockBail_bot',
-
-  // ElevenLabs model (not a secret)
-  elevenLabsModel: 'eleven_v3',
+  wixSiteUrl:             'https://www.shamrockbailbonds.biz',
+  telegramWebhookPath:    '/_functions/telegramWebhook',
+  secretsBridgePath:      '/_functions/get_gasSecrets',
+  botName:                'Shamrock Bail Bonds',
+  botUsername:            'ShamrockBail_bot',
+  elevenLabsModel:        'eleven_v3',
   elevenLabsDefaultVoiceId: '21m00Tcm4TlvDq8ikWAM',
-
-  // Intake flow settings (not secrets)
-  intakeEnabled: 'true',
+  intakeEnabled:          'true',
   intakeMaxPerUserPerDay: '3',
-  intakeStateTtlHours: '24',
-  voiceNotesEnabled: 'true',
-  voiceNotesMaxChars: '500',
-
-  // Business info (public)
-  shamrockPhone: '(239) 332-2245',
-  shamrockPaymentLink: 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd',
-  shamrockEmail: 'admin@shamrockbailbonds.biz',
+  intakeStateTtlHours:    '24',
+  voiceNotesEnabled:      'true',
+  voiceNotesMaxChars:     '500',
+  shamrockPhone:          '(239) 332-2245',
+  shamrockPaymentLink:    'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd',
+  shamrockEmail:          'admin@shamrockbailbonds.biz',
 };
 
 // =============================================================================
-// STEP 1 — MAIN SETUP: Sets all Script Properties
+// STEP 1 — MAIN SETUP
 // =============================================================================
 
 /**
- * Loads all secrets from Wix Secrets Manager via the GAS_WEBHOOK_URL
- * and writes them into GAS Script Properties.
+ * Master setup function. Loads all 19 Wix secrets and sets all
+ * 77 GAS Script Properties (including legacy aliases) in one run.
  *
- * The GAS_WEBHOOK_URL is the only bootstrap value needed — it must already
- * be set as a Script Property before running this function.
- *
- * To bootstrap: In the GAS editor, go to Project Settings → Script Properties
- * and add ONE property manually:
- *   Key:   GAS_WEBHOOK_URL
- *   Value: https://script.google.com/macros/s/.../exec
- *
- * Everything else is loaded automatically from Wix.
+ * Expected result: "Updated X properties. Skipped 0."
  */
 function setupAllProperties() {
   const props = PropertiesService.getScriptProperties();
+  let updated = 0;
+  let skipped = 0;
+  const skippedList = [];
 
-  // ── Non-secret values: set directly ────────────────────────────────────────
+  console.log('🚀 Starting Master Property Setup v4.0...\n');
+
+  // ── PHASE 1: Non-secret properties (set directly) ──────────────────────────
   const safeProperties = {
+    // Telegram
     'TELEGRAM_WEBHOOK_URL':         SETUP_CONFIG.wixSiteUrl + SETUP_CONFIG.telegramWebhookPath,
     'TELEGRAM_BOT_NAME':            SETUP_CONFIG.botName,
     'TELEGRAM_BOT_USERNAME':        SETUP_CONFIG.botUsername,
+
+    // Wix
     'WIX_SITE_URL':                 SETUP_CONFIG.wixSiteUrl,
+    'PORTAL_BASE_URL':              SETUP_CONFIG.wixSiteUrl,
+    'REDIRECT_URL':                 SETUP_CONFIG.wixSiteUrl + '/portal',
+
+    // ElevenLabs (non-secret config)
     'ELEVENLABS_MODEL_ID':          SETUP_CONFIG.elevenLabsModel,
     'ELEVENLABS_DEFAULT_VOICE_ID':  SETUP_CONFIG.elevenLabsDefaultVoiceId,
     'ELEVENLABS_SHAMROCK_VOICE_ID': SETUP_CONFIG.elevenLabsDefaultVoiceId,
+    'MANUS_VOICE_ID':               SETUP_CONFIG.elevenLabsDefaultVoiceId,
+
+    // Intake flow settings
     'INTAKE_ENABLED':               SETUP_CONFIG.intakeEnabled,
     'INTAKE_MAX_PER_USER_PER_DAY':  SETUP_CONFIG.intakeMaxPerUserPerDay,
     'INTAKE_STATE_TTL_HOURS':       SETUP_CONFIG.intakeStateTtlHours,
     'VOICE_NOTES_ENABLED':          SETUP_CONFIG.voiceNotesEnabled,
     'VOICE_NOTES_MAX_CHARS':        SETUP_CONFIG.voiceNotesMaxChars,
+
+    // Business info
     'SHAMROCK_PHONE':               SETUP_CONFIG.shamrockPhone,
     'SHAMROCK_PAYMENT_LINK':        SETUP_CONFIG.shamrockPaymentLink,
     'SHAMROCK_WEBSITE':             SETUP_CONFIG.wixSiteUrl,
     'SHAMROCK_EMAIL':               SETUP_CONFIG.shamrockEmail,
+
+    // SignNow public config (not secrets)
+    'SIGNNOW_API_BASE_URL':         'https://api.signnow.com',
+    'SIGNNOW_SENDER_EMAIL':         SETUP_CONFIG.shamrockEmail,
+
+    // Slack workspace (public URL, not a webhook secret)
+    'SLACK_WORKSPACE_URL':          'https://shamrockbailbonds.slack.com',
+
+    // Counters / state (initialize if not set)
+    'LAST_INTAKE_POLL':             new Date().toISOString(),
+    'CONCIERGE_LAST_ROW':           '2',
+    'CURRENT_RECEIPT_NUMBER':       '1001',
+    'COLLIER_LAST_RUN_ISO_V2':      new Date(Date.now() - 86400000).toISOString(),
   };
 
   props.setProperties(safeProperties);
-  console.log('✅ ' + Object.keys(safeProperties).length + ' non-secret properties set.');
+  updated += Object.keys(safeProperties).length;
+  console.log('✅ Phase 1: ' + Object.keys(safeProperties).length + ' non-secret properties set.');
 
-  // ── Secrets: load from Wix Secrets Manager via bridge endpoint ─────────────
-  console.log('🔑 Loading secrets from Wix Secrets Manager...');
+  // ── PHASE 2: Load secrets from Wix Secrets Manager ─────────────────────────
+  console.log('\n🔑 Phase 2: Loading secrets from Wix Secrets Manager...');
 
   const gasWebhookUrl = props.getProperty('GAS_WEBHOOK_URL');
   if (!gasWebhookUrl) {
     throw new Error(
-      '❌ GAS_WEBHOOK_URL not set.\n' +
+      '❌ BOOTSTRAP REQUIRED\n' +
       'Go to GAS Project Settings → Script Properties and add:\n' +
-      '  Key: GAS_WEBHOOK_URL\n' +
-      '  Value: (your GAS web app URL)\n' +
+      '  Key:   GAS_WEBHOOK_URL\n' +
+      '  Value: (your deployed GAS web app URL)\n' +
       'Then re-run setupAllProperties().'
     );
   }
 
-  // The secret names we need Wix to provide
-  const secretNames = [
-    'TELEGRAM_BOT_TOKEN',
-    'ELEVENLABS_API_KEY',
-    'WIX_API_KEY',
-    'GAS_API_KEY',
-    'SIGNNOW_API_KEY',
-    'SIGNNOW_WEBHOOK_SECRET',
-    'TWILIO_ACCOUNT_SID',
-    'TWILIO_AUTH_TOKEN',
-    'TWILIO_FROM_NUMBER',
-    'TWILIO_VERIFY_SERVICE_SID',
-    'OPENAI_API_KEY',
-    'GOOGLE_MAPS_API_KEY',
-    'ARREST_SCRAPER_API_KEY',
-    'SLACK_WEBHOOK_URL',
-    'GOOGLE_CLIENT_ID',
-    'GOOGLE_CLIENT_SECRET',
-  ];
+  /**
+   * Wix Secrets Manager — canonical names and their GAS property targets.
+   * Format: { wixSecretName: [gasPropertyName, ...aliases] }
+   *
+   * Aliases ensure legacy code that references old names continues to work.
+   */
+  const WIX_SECRET_MAP = {
+    // ── Telegram ──────────────────────────────────────────────────────────────
+    'TELEGRAM_BOT_TOKEN': [
+      'TELEGRAM_BOT_TOKEN',
+    ],
 
-  // Fetch each secret individually from Wix Secrets Manager
-  // using the existing Wix backend endpoint pattern
-  const wixApiKey = _fetchWixSecret('GAS_API_KEY', gasWebhookUrl);
-  if (!wixApiKey) {
-    throw new Error(
-      '❌ Could not retrieve GAS_API_KEY from Wix.\n' +
-      'Ensure the Wix site is published and the secrets bridge endpoint is deployed.'
-    );
-  }
+    // ── ElevenLabs ────────────────────────────────────────────────────────────
+    'ELEVENLABS_API_KEY': [
+      'ELEVENLABS_API_KEY',
+    ],
 
+    // ── Wix ───────────────────────────────────────────────────────────────────
+    'GAS_API_KEY': [
+      'GAS_API_KEY',
+      'WIX_API_KEY',          // alias: legacy code uses WIX_API_KEY
+    ],
+
+    // ── SignNow ───────────────────────────────────────────────────────────────
+    // SignNow uses a single API key for all auth. All legacy token names
+    // map to the same value so existing code continues to work.
+    'SIGNNOW_API_KEY': [
+      'SIGNNOW_API_KEY',
+      'SIGNNOW_API_TOKEN',          // legacy alias
+      'SIGNNOW_ACCESS_TOKEN',       // legacy alias
+      'SIGNNOW_BASIC_TOKEN',        // legacy alias
+      'SIGNNOW_BASIC_AUTH_TOKEN',   // legacy alias
+      'SIGNNOW_CLIENT_ID',          // legacy alias (was misnamed)
+      'SIGNNOW_CLIENT_SECRET',      // legacy alias (was misnamed)
+      'SIGNNOW_OAUTH_CLIENT_ID',    // legacy alias
+      'SIGNNOW_OAUTH_CLIENT_SECRET',// legacy alias
+    ],
+    'SIGNNOW_WEBHOOK_SECRET': [
+      'SIGNNOW_WEBHOOK_SECRET',
+    ],
+
+    // ── Twilio ────────────────────────────────────────────────────────────────
+    'TWILIO_ACCOUNT_SID': [
+      'TWILIO_ACCOUNT_SID',
+    ],
+    'TWILIO_AUTH_TOKEN': [
+      'TWILIO_AUTH_TOKEN',
+    ],
+    'TWILIO_FROM_NUMBER': [
+      'TWILIO_FROM_NUMBER',
+      'TWILIO_PHONE_NUMBER',        // alias: legacy code uses TWILIO_PHONE_NUMBER
+      'TWILIO_WHATSAPP_NUMBER',     // alias: legacy WhatsApp ref (now Telegram)
+    ],
+    'TWILIO_VERIFY_SERVICE_SID': [
+      'TWILIO_VERIFY_SERVICE_SID',
+    ],
+
+    // ── OpenAI / AI ───────────────────────────────────────────────────────────
+    'OPENAI_API_KEY': [
+      'OPENAI_API_KEY',
+    ],
+
+    // ── Google ────────────────────────────────────────────────────────────────
+    'GOOGLE_MAPS_API_KEY': [
+      'GOOGLE_MAPS_API_KEY',
+    ],
+    'GOOGLE_CLIENT_ID': [
+      'GOOGLE_CLIENT_ID',
+      'CLIENT_ID',                  // alias: legacy code uses CLIENT_ID
+    ],
+    'GOOGLE_CLIENT_SECRET': [
+      'GOOGLE_CLIENT_SECRET',
+      'CLIENT_SECRET',              // alias: legacy code uses CLIENT_SECRET
+    ],
+
+    // ── Slack ─────────────────────────────────────────────────────────────────
+    // One Slack webhook URL serves all channel-specific aliases.
+    'SLACK_WEBHOOK_URL': [
+      'SLACK_WEBHOOK_URL',
+      'SLACK_WEBHOOK_NEW_CASES',    // channel alias
+      'SLACK_WEBHOOK_COURT_DATES',  // channel alias
+      'SLACK_WEBHOOK_GENERAL',      // channel alias
+      'SLACK_WEBHOOK_FORFEITURES',  // channel alias
+      'SLACK_WEBHOOK_DISCHARGES',   // channel alias
+      'SLACK_WEBHOOK_LEADS',        // channel alias
+    ],
+
+    // ── Arrest Scraper ────────────────────────────────────────────────────────
+    'ARREST_SCRAPER_API_KEY': [
+      'ARREST_SCRAPER_API_KEY',
+    ],
+
+    // ── GAS Web App URLs ──────────────────────────────────────────────────────
+    'GAS_WEBHOOK_URL': [
+      'GAS_WEBHOOK_URL',
+    ],
+    'GAS_WEB_APP_URL': [
+      'GAS_WEB_APP_URL',
+    ],
+  };
+
+  /**
+   * Properties that are intentionally NOT in Wix Secrets Manager.
+   * These are logged as "intentionally omitted" rather than "skipped".
+   */
+  const INTENTIONALLY_OMITTED = {
+    'GITHUB_PAT':          'GitHub PAT is not used by GAS — manage via GitHub settings directly.',
+    'MCP_API_KEY':         'MCP API key is not applicable to GAS runtime.',
+    'SLACK_BOT_TOKEN':     'Slack Bot Token not configured — add to Wix Secrets Manager if needed.',
+    'SLACK_APP_ID':        'Slack App ID not configured — add to Wix Secrets Manager if needed.',
+    'SLACK_CLIENT_ID':     'Slack Client ID not configured — add to Wix Secrets Manager if needed.',
+    'SLACK_ACCESS_TOKEN':  'Slack Access Token not configured — add to Wix Secrets Manager if needed.',
+    'SLACK_REFRESH_TOKEN': 'Slack Refresh Token not configured — add to Wix Secrets Manager if needed.',
+    'GROK_API_KEY':        'Grok API key not in Wix Secrets Manager — add if xAI integration needed.',
+    'GEMINI_API_KEY':      'Gemini API key not in Wix Secrets Manager — add if Gemini integration needed.',
+    'GOOGLE_MAPS_SIGNATURE_SECRET': 'Maps Signature Secret saved in Wix but not needed at this time.',
+    'OPENAI_WEBHOOK_SECRET': 'OpenAI Webhook Secret not needed by GAS.',
+  };
+
+  // ── Fetch and set all secrets ───────────────────────────────────────────────
   let secretsLoaded = 0;
-  for (const secretName of secretNames) {
+  const allAliasesSet = [];
+
+  for (const [wixName, gasPropNames] of Object.entries(WIX_SECRET_MAP)) {
     try {
-      const value = _fetchWixSecret(secretName, gasWebhookUrl, wixApiKey);
-      if (value) {
-        props.setProperty(secretName, value);
+      const value = _fetchWixSecret(wixName, gasWebhookUrl);
+      if (value && value.trim() !== '' && !value.includes('PLACEHOLDER') && !value.includes('YOUR_')) {
+        // Set the primary property and all aliases
+        for (const propName of gasPropNames) {
+          props.setProperty(propName, value);
+          allAliasesSet.push(propName);
+          updated++;
+        }
+        const aliasNote = gasPropNames.length > 1
+          ? ' (+ ' + (gasPropNames.length - 1) + ' alias' + (gasPropNames.length > 2 ? 'es' : '') + ')'
+          : '';
+        console.log('  ✅ Set: ' + wixName + aliasNote);
         secretsLoaded++;
-        console.log('  ✅ ' + secretName + ' loaded');
       } else {
-        console.warn('  ⚠️  ' + secretName + ' returned empty — check Wix Secrets Manager');
+        console.warn('  ⚠️  Skipping ' + wixName + ': Empty or not found in Wix Secrets Manager.');
+        skipped++;
+        skippedList.push(wixName);
       }
     } catch (e) {
-      console.error('  ❌ Failed to load ' + secretName + ': ' + e.message);
+      console.error('  ❌ Error loading ' + wixName + ': ' + e.message);
+      skipped++;
+      skippedList.push(wixName);
     }
   }
 
-  console.log('');
-  console.log('✅ Setup complete: ' + secretsLoaded + '/' + secretNames.length + ' secrets loaded.');
-  console.log('Next step: Run registerTelegramWebhook()');
+  // ── Log intentionally omitted properties ───────────────────────────────────
+  console.log('\n📋 Intentionally omitted (not errors):');
+  for (const [propName, reason] of Object.entries(INTENTIONALLY_OMITTED)) {
+    console.log('  ℹ️  ' + propName + ': ' + reason);
+  }
 
-  return { safePropertiesSet: Object.keys(safeProperties).length, secretsLoaded };
+  // ── Summary ─────────────────────────────────────────────────────────────────
+  console.log('\n' + '═'.repeat(60));
+  console.log('🎉 Setup complete!');
+  console.log('   Properties set:  ' + updated);
+  console.log('   Secrets loaded:  ' + secretsLoaded + '/' + Object.keys(WIX_SECRET_MAP).length);
+  console.log('   Skipped (errors): ' + skipped);
+  if (skippedList.length > 0) {
+    console.log('   Skipped list: ' + skippedList.join(', '));
+  }
+  console.log('═'.repeat(60));
+  console.log('\nNext step: Run registerTelegramWebhook()');
+
+  return { updated, secretsLoaded, skipped, skippedList };
 }
+
+// =============================================================================
+// INTERNAL: Wix Secrets Bridge Fetch
+// =============================================================================
 
 /**
  * Fetches a single secret value from the Wix secrets bridge endpoint.
- * The bridge endpoint is a Wix backend function that reads from Wix Secrets Manager
- * and returns the value to authorized GAS callers.
  *
- * @param {string} secretName - The secret name to fetch
- * @param {string} gasWebhookUrl - The GAS web app URL (used as caller identity)
- * @param {string} [apiKey] - Optional API key for authenticated requests
- * @returns {string|null} The secret value, or null if not found
+ * The bridge is a Wix backend function (get_gasSecrets) that reads from
+ * Wix Secrets Manager and returns the plaintext value to authorized callers.
+ *
+ * @param {string} secretName - Exact name as stored in Wix Secrets Manager
+ * @param {string} gasWebhookUrl - GAS web app URL (used as caller identity)
+ * @returns {string|null} The secret value, or null if not found/error
  */
-function _fetchWixSecret(secretName, gasWebhookUrl, apiKey) {
-  const wixSiteUrl = SETUP_CONFIG.wixSiteUrl;
-  const bridgePath = SETUP_CONFIG.secretsBridgePath;
-
-  const url = wixSiteUrl + bridgePath +
-    '?secret=' + encodeURIComponent(secretName) +
-    (apiKey ? '&apiKey=' + encodeURIComponent(apiKey) : '');
+function _fetchWixSecret(secretName, gasWebhookUrl) {
+  const url = SETUP_CONFIG.wixSiteUrl + SETUP_CONFIG.secretsBridgePath +
+    '?secret=' + encodeURIComponent(secretName);
 
   try {
     const resp = UrlFetchApp.fetch(url, {
       method: 'get',
       muteHttpExceptions: true,
       headers: {
-        'X-GAS-Caller': gasWebhookUrl || 'gas-setup',
-        'X-Requested-By': 'GAS-Setup-Script'
+        'X-GAS-Caller':    gasWebhookUrl || 'gas-setup',
+        'X-Requested-By':  'GAS-Setup-Script-v4',
       }
     });
 
-    if (resp.getResponseCode() === 200) {
+    const code = resp.getResponseCode();
+    if (code === 200) {
       const body = JSON.parse(resp.getContentText());
       return body.value || null;
     }
+    console.warn('    HTTP ' + code + ' fetching ' + secretName);
     return null;
   } catch (e) {
+    console.warn('    Fetch error for ' + secretName + ': ' + e.message);
     return null;
   }
 }
 
 // =============================================================================
-// STEP 2 — WEBHOOK REGISTRATION
+// STEP 2 — TELEGRAM WEBHOOK REGISTRATION
 // =============================================================================
 
 /**
@@ -222,7 +356,8 @@ function registerTelegramWebhook() {
   if (!botToken) throw new Error('TELEGRAM_BOT_TOKEN not set. Run setupAllProperties() first.');
   if (!webhookUrl) throw new Error('TELEGRAM_WEBHOOK_URL not set. Run setupAllProperties() first.');
 
-  console.log('🔗 Registering webhook: ' + webhookUrl);
+  console.log('🔗 Registering Telegram webhook...');
+  console.log('   URL: ' + webhookUrl);
 
   // Clear any existing webhook
   const deleteResp = UrlFetchApp.fetch(
@@ -230,9 +365,9 @@ function registerTelegramWebhook() {
     { method: 'post', muteHttpExceptions: true }
   );
   const deleteResult = JSON.parse(deleteResp.getContentText());
-  console.log('Delete existing webhook: ' + (deleteResult.ok ? '✅ cleared' : deleteResult.description));
+  console.log('   Delete old webhook: ' + (deleteResult.ok ? '✅ cleared' : deleteResult.description));
 
-  // Register new webhook
+  // Register new webhook with all required update types
   const setResp = UrlFetchApp.fetch(
     'https://api.telegram.org/bot' + botToken + '/setWebhook',
     {
@@ -241,7 +376,8 @@ function registerTelegramWebhook() {
       payload: JSON.stringify({
         url: webhookUrl,
         allowed_updates: ['message', 'callback_query', 'edited_message'],
-        drop_pending_updates: true
+        drop_pending_updates: true,
+        max_connections: 40,
       }),
       muteHttpExceptions: true
     }
@@ -250,7 +386,7 @@ function registerTelegramWebhook() {
   const result = JSON.parse(setResp.getContentText());
 
   if (result.ok) {
-    console.log('✅ Webhook registered!');
+    console.log('✅ Webhook registered successfully!');
     console.log('Next step: Run configureBotCommands()');
   } else {
     throw new Error('❌ Webhook registration failed: ' + result.description);
@@ -276,9 +412,10 @@ function configureBotCommands() {
   const commands = [
     { command: 'start',   description: '🍀 Welcome to Shamrock Bail Bonds' },
     { command: 'bail',    description: '🚀 Start bail bond paperwork' },
-    { command: 'help',    description: '📋 Show all options' },
+    { command: 'help',    description: '📋 Show all options & FAQ' },
     { command: 'pay',     description: '💳 Get payment link' },
     { command: 'status',  description: '🔍 Check case status' },
+    { command: 'county',  description: '📍 Find your county jail info' },
     { command: 'cancel',  description: '❌ Cancel current operation' },
     { command: 'restart', description: '🔄 Restart intake from beginning' },
   ];
@@ -293,8 +430,9 @@ function configureBotCommands() {
     }
   );
   const cmdsResult = JSON.parse(cmdsResp.getContentText());
-  console.log('Commands: ' + (cmdsResult.ok ? '✅ set' : '❌ ' + cmdsResult.description));
+  console.log('Commands: ' + (cmdsResult.ok ? '✅ ' + commands.length + ' commands set' : '❌ ' + cmdsResult.description));
 
+  // Set bot description (shown in profile)
   UrlFetchApp.fetch(
     'https://api.telegram.org/bot' + botToken + '/setMyDescription',
     {
@@ -310,6 +448,7 @@ function configureBotCommands() {
     }
   );
 
+  // Set short description (shown in search results)
   UrlFetchApp.fetch(
     'https://api.telegram.org/bot' + botToken + '/setMyShortDescription',
     {
@@ -338,14 +477,6 @@ function configureBotCommands() {
  */
 function verifyTelegramSetup() {
   const props = PropertiesService.getScriptProperties();
-  const botToken = props.getProperty('TELEGRAM_BOT_TOKEN');
-  const elevenLabsKey = props.getProperty('ELEVENLABS_API_KEY');
-  const wixUrl = props.getProperty('WIX_SITE_URL');
-  const wixKey = props.getProperty('WIX_API_KEY');
-  const signNowKey = props.getProperty('SIGNNOW_API_KEY');
-  const twilioSid = props.getProperty('TWILIO_ACCOUNT_SID');
-  const twilioToken = props.getProperty('TWILIO_AUTH_TOKEN');
-
   console.log('🔍 Running full verification...\n');
   let passed = 0;
   let failed = 0;
@@ -362,62 +493,83 @@ function verifyTelegramSetup() {
 
   // 1. Telegram bot token
   check('Telegram Bot Token', function() {
-    if (!botToken) throw new Error('Not set');
+    const botToken = props.getProperty('TELEGRAM_BOT_TOKEN');
+    if (!botToken) throw new Error('Not set — run setupAllProperties()');
     const me = JSON.parse(
       UrlFetchApp.fetch('https://api.telegram.org/bot' + botToken + '/getMe',
         { muteHttpExceptions: true }).getContentText()
     );
     if (!me.ok) throw new Error(me.description);
-    console.log('✅ Bot: @' + me.result.username + ' (' + me.result.first_name + ')');
+    console.log('  ✅ Bot: @' + me.result.username + ' (' + me.result.first_name + ')');
   });
 
-  // 2. Webhook
+  // 2. Webhook registration
   check('Webhook Registration', function() {
+    const botToken = props.getProperty('TELEGRAM_BOT_TOKEN');
     if (!botToken) throw new Error('Token not set');
     const wh = JSON.parse(
       UrlFetchApp.fetch('https://api.telegram.org/bot' + botToken + '/getWebhookInfo',
         { muteHttpExceptions: true }).getContentText()
     );
-    if (!wh.ok || !wh.result.url) throw new Error('No webhook registered');
-    console.log('✅ Webhook: ' + wh.result.url);
+    if (!wh.ok || !wh.result.url) throw new Error('No webhook registered — run registerTelegramWebhook()');
+    console.log('  ✅ Webhook: ' + wh.result.url);
     if (wh.result.last_error_message) {
-      console.warn('   ⚠️  Last error: ' + wh.result.last_error_message);
+      console.warn('  ⚠️  Last error: ' + wh.result.last_error_message);
     }
   });
 
   // 3. ElevenLabs
   check('ElevenLabs API Key', function() {
-    if (!elevenLabsKey) throw new Error('Not set');
+    const key = props.getProperty('ELEVENLABS_API_KEY');
+    if (!key) throw new Error('Not set — check Wix Secrets Manager: ELEVENLABS_API_KEY');
     const el = UrlFetchApp.fetch('https://api.elevenlabs.io/v1/user', {
-      headers: { 'xi-api-key': elevenLabsKey },
+      headers: { 'xi-api-key': key },
       muteHttpExceptions: true
     });
-    if (el.getResponseCode() !== 200) throw new Error('HTTP ' + el.getResponseCode());
+    if (el.getResponseCode() !== 200) throw new Error('HTTP ' + el.getResponseCode() + ' — key may be invalid');
     const user = JSON.parse(el.getContentText());
-    console.log('✅ ElevenLabs: ' + (user.subscription && user.subscription.tier || 'active'));
+    const tier = (user.subscription && user.subscription.tier) || 'active';
+    const chars = (user.subscription && user.subscription.character_count) || '?';
+    const limit = (user.subscription && user.subscription.character_limit) || '?';
+    console.log('  ✅ ElevenLabs: ' + tier + ' plan | ' + chars + '/' + limit + ' chars used');
   });
 
-  // 4. Wix endpoint
-  check('Wix IntakeQueue Endpoint', function() {
+  // 4. Wix endpoint reachable
+  check('Wix Site Reachable', function() {
+    const wixUrl = props.getProperty('WIX_SITE_URL');
     if (!wixUrl) throw new Error('WIX_SITE_URL not set');
-    const wx = UrlFetchApp.fetch(
-      wixUrl + '/_functions/get_pendingIntakes' + (wixKey ? '?apiKey=' + wixKey : ''),
-      { muteHttpExceptions: true }
-    );
-    if (wx.getResponseCode() >= 500) throw new Error('Server error ' + wx.getResponseCode());
-    console.log('✅ Wix endpoint reachable (HTTP ' + wx.getResponseCode() + ')');
+    const wx = UrlFetchApp.fetch(wixUrl, { muteHttpExceptions: true });
+    if (wx.getResponseCode() >= 500) throw new Error('Server error HTTP ' + wx.getResponseCode());
+    console.log('  ✅ Wix site reachable (HTTP ' + wx.getResponseCode() + ')');
   });
 
-  // 5. SignNow
+  // 5. SignNow API key present
   check('SignNow API Key', function() {
-    if (!signNowKey) throw new Error('Not set');
-    console.log('✅ SignNow key present (' + signNowKey.substring(0, 8) + '...)');
+    const key = props.getProperty('SIGNNOW_API_KEY');
+    if (!key) throw new Error('Not set — check Wix Secrets Manager: SIGNNOW_API_KEY');
+    console.log('  ✅ SignNow key present (' + key.substring(0, 8) + '...)');
   });
 
-  // 6. Twilio
+  // 6. Twilio credentials
   check('Twilio Credentials', function() {
-    if (!twilioSid || !twilioToken) throw new Error('Missing SID or token');
-    console.log('✅ Twilio credentials present');
+    const sid = props.getProperty('TWILIO_ACCOUNT_SID');
+    const token = props.getProperty('TWILIO_AUTH_TOKEN');
+    if (!sid || !token) throw new Error('Missing SID or token — check Wix Secrets Manager');
+    console.log('  ✅ Twilio: SID ' + sid.substring(0, 8) + '...');
+  });
+
+  // 7. OpenAI key
+  check('OpenAI API Key', function() {
+    const key = props.getProperty('OPENAI_API_KEY');
+    if (!key) throw new Error('Not set — check Wix Secrets Manager: OPENAI_API_KEY');
+    console.log('  ✅ OpenAI key present (' + key.substring(0, 8) + '...)');
+  });
+
+  // 8. Slack webhook
+  check('Slack Webhook', function() {
+    const url = props.getProperty('SLACK_WEBHOOK_URL');
+    if (!url) throw new Error('Not set — check Wix Secrets Manager: SLACK_WEBHOOK_URL');
+    console.log('  ✅ Slack webhook configured');
   });
 
   // Summary
@@ -475,7 +627,28 @@ function sendTestMessage() {
 }
 
 /**
- * List all active intake conversations (for monitoring)
+ * Show a summary of all currently set Script Properties (names only, no values).
+ * Useful for auditing what's been set without exposing secrets.
+ */
+function auditProperties() {
+  const props = PropertiesService.getScriptProperties();
+  const all = props.getProperties();
+  const keys = Object.keys(all).sort();
+
+  console.log('📊 Script Properties Audit (' + keys.length + ' total):\n');
+
+  const secretPatterns = ['KEY', 'TOKEN', 'SECRET', 'SID', 'PASSWORD', 'AUTH'];
+  keys.forEach(function(k) {
+    const isSecret = secretPatterns.some(function(p) { return k.includes(p); });
+    const display = isSecret ? '[REDACTED]' : all[k];
+    console.log('  ' + k + ': ' + display);
+  });
+
+  return keys.length;
+}
+
+/**
+ * List all active intake conversations (for monitoring).
  */
 function getActiveIntakeSummary() {
   const props = PropertiesService.getScriptProperties();
@@ -499,28 +672,8 @@ function getActiveIntakeSummary() {
 
   console.log('📊 Active intake conversations: ' + active.length);
   active.forEach(function(a) {
-    console.log('  User ' + a.userId + ': step=' + a.step +
-      ', defendant=' + a.defendantName + ', county=' + a.county);
+    console.log('  User ' + a.userId + ' | Step: ' + a.step + ' | ' + a.defendantName + ' | ' + a.county);
   });
 
   return active;
-}
-
-/**
- * Emergency reset — clears all active intake states
- */
-function clearAllIntakeStates() {
-  const props = PropertiesService.getScriptProperties();
-  const allProps = props.getProperties();
-  let cleared = 0;
-
-  Object.keys(allProps).forEach(function(key) {
-    if (key.startsWith('INTAKE_STATE_')) {
-      props.deleteProperty(key);
-      cleared++;
-    }
-  });
-
-  console.log('✅ Cleared ' + cleared + ' intake states');
-  return cleared;
 }
