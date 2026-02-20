@@ -1808,33 +1808,33 @@ async function _waStatusUpdate(status) {
  * This endpoint is called by Telegram when users interact with the bot
  */
 export async function post_telegramWebhook(request) {
-  console.log('📩 Telegram webhook triggered');
-  
-  try {
-    // Parse request body
-    const update = await request.body.json();
-    
-    // Import telegram webhook handler
-    const { handleTelegramWebhook } = await import('backend/telegram-webhook');
-    
-    // Process update
-    const result = await handleTelegramWebhook(update);
-    
-    // Return OK to Telegram (required)
-    return ok({
-      headers: { 'Content-Type': 'application/json' },
-      body: { ok: true, result: result }
-    });
-    
-  } catch (error) {
-    console.error('Telegram webhook error:', error);
-    
-    // Still return OK to Telegram to avoid retries
-    return ok({
-      headers: { 'Content-Type': 'application/json' },
-      body: { ok: true, error: error.message }
-    });
-  }
+    console.log('📩 Telegram webhook triggered');
+
+    try {
+        // Parse request body
+        const update = await request.body.json();
+
+        // Import telegram webhook handler
+        const { handleTelegramWebhook } = await import('backend/telegram-webhook');
+
+        // Process update
+        const result = await handleTelegramWebhook(update);
+
+        // Return OK to Telegram (required)
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: { ok: true, result: result }
+        });
+
+    } catch (error) {
+        console.error('Telegram webhook error:', error);
+
+        // Still return OK to Telegram to avoid retries
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: { ok: true, error: error.message }
+        });
+    }
 }
 
 /**
@@ -1842,26 +1842,60 @@ export async function post_telegramWebhook(request) {
  * Get Telegram webhook configuration info (for debugging)
  */
 export async function get_telegramWebhookInfo(request) {
-  try {
-    const botToken = await getSecret('TELEGRAM_BOT_TOKEN');
-    
-    if (!botToken) {
-      return badRequest({
-        body: { success: false, error: 'Bot token not configured' }
-      });
+    try {
+        const botToken = await getSecret('TELEGRAM_BOT_TOKEN');
+
+        if (!botToken) {
+            return badRequest({
+                body: { success: false, error: 'Bot token not configured' }
+            });
+        }
+
+        const { getTelegramWebhookInfo } = await import('backend/telegram-webhook');
+        const info = await getTelegramWebhookInfo(botToken);
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: info
+        });
+
+    } catch (error) {
+        return serverError({
+            body: { success: false, error: error.message }
+        });
     }
-    
-    const { getTelegramWebhookInfo } = await import('backend/telegram-webhook');
-    const info = await getTelegramWebhookInfo(botToken);
-    
-    return ok({
-      headers: { 'Content-Type': 'application/json' },
-      body: info
-    });
-    
-  } catch (error) {
-    return serverError({
-      body: { success: false, error: error.message }
-    });
-  }
+}
+
+/**
+ * GET /_functions/setupTelegramWebhook
+ * Setup Telegram webhook securely
+ * Requires ?auth=GAS_API_KEY
+ */
+export async function get_setupTelegramWebhook(request) {
+    try {
+        const providedAuth = request.query['auth'];
+        const expectedAuth = await getSecret('GAS_API_KEY');
+
+        if (providedAuth !== expectedAuth && expectedAuth) {
+            return forbidden({ body: { error: 'Unauthorized' } });
+        }
+
+        const botToken = await getSecret('TELEGRAM_BOT_TOKEN');
+        if (!botToken) {
+            return serverError({ body: { error: 'TELEGRAM_BOT_TOKEN not found in secrets' } });
+        }
+
+        const { setTelegramWebhook } = await import('backend/telegram-webhook');
+        const webhookUrl = 'https://www.shamrockbailbonds.biz/_functions/telegramWebhook';
+        const result = await setTelegramWebhook(botToken, webhookUrl);
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: result
+        });
+    } catch (error) {
+        return serverError({
+            body: { success: false, error: error.message }
+        });
+    }
 }
