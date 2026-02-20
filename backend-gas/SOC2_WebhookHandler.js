@@ -63,11 +63,11 @@ function handleSignNowWebhookSOC2(e) {
     logProcessingEvent("SIGNNOW_WEBHOOK_RECEIVED", payload);
 
     // DELEGATE TO EXISTING BUSINESS LOGIC
-    // If we have an existing handler in SignNowAPI.gs or Code.js, call it here.
-    // Example: handleDocumentComplete(payload)
-    if (payload.event === 'document.complete' || payload.event === 'document_complete') {
-        if (typeof handleDocumentComplete === 'function') {
-            return handleDocumentComplete(payload);
+    // Passes off perfectly to WebhookHandler.js which routes appropriately to DriveFilingService
+    if (typeof handleSignNowWebhook === 'function') {
+        const result = handleSignNowWebhook(payload);
+        if (result && result.success) {
+            return ContentService.createTextOutput("Webhook handled successfully").setMimeType(ContentService.MimeType.TEXT);
         }
     }
 

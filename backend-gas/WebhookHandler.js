@@ -34,11 +34,11 @@ function handleIncomingWebhook(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
     const source = detectWebhookSource(payload, e);
-    
+
     console.log(`Webhook received from ${source}:`, JSON.stringify(payload).substring(0, 500));
-    
+
     let result;
-    
+
     switch (source) {
       case 'signnow':
         result = handleSignNowWebhook(payload);
@@ -49,10 +49,10 @@ function handleIncomingWebhook(e) {
       default:
         result = { success: false, error: 'Unknown webhook source' };
     }
-    
+
     return ContentService.createTextOutput(JSON.stringify(result))
       .setMimeType(ContentService.MimeType.JSON);
-      
+
   } catch (error) {
     console.error('Webhook error:', error);
     return ContentService.createTextOutput(JSON.stringify({
@@ -70,12 +70,12 @@ function detectWebhookSource(payload, e) {
   if (payload.event || payload.meta?.event || payload.document_id) {
     return 'signnow';
   }
-  
+
   // Check for Wix webhook indicators
   if (payload.action || e.parameter?.source === 'wix') {
     return 'wix';
   }
-  
+
   return 'unknown';
 }
 
@@ -85,22 +85,22 @@ function detectWebhookSource(payload, e) {
 function handleSignNowWebhook(payload) {
   const event = payload.event || payload.meta?.event;
   const documentId = payload.document_id || payload.content?.document_id;
-  
+
   console.log(`SignNow event: ${event}, Document: ${documentId}`);
-  
+
   switch (event) {
     case 'document.complete':
     case 'document_complete':
       return handleDocumentComplete(documentId, payload);
-      
+
     case 'document.update':
     case 'document_update':
       return handleDocumentUpdate(documentId, payload);
-      
+
     case 'invite.sent':
     case 'invite_sent':
       return handleInviteSent(documentId, payload);
-      
+
     default:
       console.log(`Unhandled SignNow event: ${event}`);
       return { success: true, message: `Event ${event} acknowledged` };
@@ -112,45 +112,23 @@ function handleSignNowWebhook(payload) {
  */
 function handleDocumentComplete(documentId, payload) {
   try {
-    console.log(`Document ${documentId} completed, downloading...`);
-    
-    // Get document info
-    const docInfo = SN_getDocumentStatus(documentId);
-    if (!docInfo.success) {
-      throw new Error('Failed to get document info');
+    console.log(`Delegating Document ${documentId} completion to DriveFilingService...`);
+    // Pass the payload directly to the centralized service
+    const result = DriveFilingService.handleSignNowCompletedDocument(payload);
+
+    if (result && result.success) {
+      logCompletion(documentId, extractDefendantName(payload?.document_name), result.fileUrl);
+      return {
+        success: true,
+        message: 'Document saved to Google Drive via DriveFilingService',
+        fileUrl: result.fileUrl,
+        folderId: result.folderId
+      };
+    } else {
+      throw new Error((result && result.error) || 'Failed in DriveFilingService');
     }
-    
-    // Create folder for this defendant
-    const defendantName = extractDefendantName(docInfo.documentName) || 'Unknown';
-    const dateStr = new Date().toISOString().split('T')[0];
-    const folderName = `${defendantName} - ${dateStr}`;
-    
-    // Get or create the Completed Bonds folder
-    const completedBondsFolder = getOrCreateFolder('Completed Bonds');
-    const defendantFolder = getOrCreateFolder(folderName, completedBondsFolder);
-    
-    // Download and save the signed document
-    const downloadResult = SN_downloadSignedDocument(documentId, defendantFolder.getId());
-    
-    if (!downloadResult.success) {
-      throw new Error('Failed to download signed document');
-    }
-    
-    // Update status in Wix
-    updateWixDocumentStatus(documentId, 'signed');
-    
-    // Log the completion
-    logCompletion(documentId, defendantName, downloadResult.fileUrl);
-    
-    return {
-      success: true,
-      message: 'Document saved to Google Drive',
-      fileUrl: downloadResult.fileUrl,
-      folderId: defendantFolder.getId()
-    };
-    
   } catch (error) {
-    console.error('Error handling document completion:', error);
+    console.error('Error handling document completion delegated task:', error);
     return { success: false, error: error.message };
   }
 }
@@ -159,15 +137,7 @@ function handleDocumentComplete(documentId, payload) {
  * Handle document update events
  */
 function handleDocumentUpdate(documentId, payload) {
-  console.log(`Document ${documentId} updated`);
-  
-  // Check if all signatures are complete
-  const status = SN_getDocumentStatus(documentId);
-  
-  if (status.success && status.status === 'completed') {
-    return handleDocumentComplete(documentId, payload);
-  }
-  
+  console.log(`Document ${documentId} updated - check skipped in centralized handler`);
   return { success: true, message: 'Update acknowledged' };
 }
 
@@ -184,14 +154,14 @@ function handleInviteSent(documentId, payload) {
  */
 function handleWixWebhook(payload) {
   const action = payload.action;
-  
+
   switch (action) {
     case 'saveDocumentToDrive':
       return handleSaveDocumentToDrive(payload.document);
-      
+
     case 'syncIdUpload':
       return handleSyncIdUpload(payload.upload);
-      
+
     default:
       console.log(`Unhandled Wix action: ${action}`);
       return { success: true, message: `Action ${action} acknowledged` };
@@ -204,35 +174,41 @@ function handleWixWebhook(payload) {
 function handleSaveDocumentToDrive(document) {
   try {
     const { memberEmail, memberName, documentType, documentName, fileUrl, metadata } = document;
-    
-    // Create folder structure
-    const completedBondsFolder = getOrCreateFolder('Completed Bonds');
-    const dateStr = new Date().toISOString().split('T')[0];
-    const memberFolder = getOrCreateFolder(`${memberName || memberEmail} - ${dateStr}`, completedBondsFolder);
-    
+
+    // Format names for DriveFilingService using Defendant First and Last names extracted from memberName
+    let firstName = memberName || memberEmail || 'Unknown';
+    let lastName = '';
+    if (memberName && memberName.includes(' ')) {
+      const parts = memberName.split(' ');
+      firstName = parts[0];
+      lastName = parts.slice(1).join(' ');
+    }
+
+    const memberFolder = DriveFilingService.getOrCreateDefendantFolder(firstName, lastName, new Date());
+
     // Download the file from Wix
     const response = UrlFetchApp.fetch(fileUrl, { muteHttpExceptions: true });
-    
+
     if (response.getResponseCode() !== 200) {
       throw new Error('Failed to download file from Wix');
     }
-    
+
     const blob = response.getBlob();
     const fileName = `${documentType}_${documentName || 'document'}.${getFileExtension(blob.getContentType())}`;
-    
+
     const file = memberFolder.createFile(blob.setName(fileName));
-    
+
     // Add metadata as file description
     if (metadata) {
       file.setDescription(JSON.stringify(metadata));
     }
-    
+
     return {
       success: true,
       fileId: file.getId(),
       fileUrl: file.getUrl()
     };
-    
+
   } catch (error) {
     console.error('Error saving document to Drive:', error);
     return { success: false, error: error.message };
@@ -245,37 +221,46 @@ function handleSaveDocumentToDrive(document) {
 function handleSyncIdUpload(upload) {
   try {
     const { memberEmail, memberName, documentType, fileUrl, side, metadata } = upload;
-    
-    // Create folder structure
-    const completedBondsFolder = getOrCreateFolder('Completed Bonds');
-    const dateStr = new Date().toISOString().split('T')[0];
-    const memberFolder = getOrCreateFolder(`${memberName || memberEmail} - ${dateStr}`, completedBondsFolder);
-    const idsFolder = getOrCreateFolder('IDs', memberFolder);
-    
+
+    // Format names for DriveFilingService
+    let firstName = memberName || memberEmail || 'Unknown';
+    let lastName = '';
+    if (memberName && memberName.includes(' ')) {
+      const parts = memberName.split(' ');
+      firstName = parts[0];
+      lastName = parts.slice(1).join(' ');
+    }
+
+    const memberFolder = DriveFilingService.getOrCreateDefendantFolder(firstName, lastName, new Date());
+
+    // Helper function no longer exists; DriveApp.getFoldersByName does
+    const existingIds = memberFolder.getFoldersByName('IDs');
+    const idsFolder = existingIds.hasNext() ? existingIds.next() : memberFolder.createFolder('IDs');
+
     // Download the ID image from Wix
     const response = UrlFetchApp.fetch(fileUrl, { muteHttpExceptions: true });
-    
+
     if (response.getResponseCode() !== 200) {
       throw new Error('Failed to download ID from Wix');
     }
-    
+
     const blob = response.getBlob();
     const fileName = `ID_${side || 'photo'}_${memberName || memberEmail}.${getFileExtension(blob.getContentType())}`;
-    
+
     const file = idsFolder.createFile(blob.setName(fileName));
-    
+
     // Add GPS and other metadata as file description
     if (metadata) {
       const metaObj = typeof metadata === 'string' ? JSON.parse(metadata) : metadata;
       file.setDescription(`GPS: ${metaObj.gps?.latitude}, ${metaObj.gps?.longitude}\nUploaded: ${metaObj.uploadedAt}`);
     }
-    
+
     return {
       success: true,
       fileId: file.getId(),
       fileUrl: file.getUrl()
     };
-    
+
   } catch (error) {
     console.error('Error syncing ID upload:', error);
     return { success: false, error: error.message };
@@ -283,28 +268,15 @@ function handleSyncIdUpload(upload) {
 }
 
 /**
- * Get or create a folder in Google Drive
+ * getOrCreateFolder function deprecated in favor of DriveFilingService.
  */
-function getOrCreateFolder(name, parent) {
-  let folder;
-  
-  if (parent) {
-    const folders = parent.getFoldersByName(name);
-    folder = folders.hasNext() ? folders.next() : parent.createFolder(name);
-  } else {
-    const folders = DriveApp.getFoldersByName(name);
-    folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(name);
-  }
-  
-  return folder;
-}
 
 /**
  * Extract defendant name from document name
  */
 function extractDefendantName(documentName) {
   if (!documentName) return null;
-  
+
   // Try to extract name from common patterns
   // e.g., "Bail_Packet_John_Doe_2024-01-15"
   const patterns = [
@@ -312,14 +284,14 @@ function extractDefendantName(documentName) {
     /Bond[_\s](.+?)[_\s]\d{4}/i,
     /(.+?)[_\s]Bail[_\s]Bond/i
   ];
-  
+
   for (const pattern of patterns) {
     const match = documentName.match(pattern);
     if (match) {
       return match[1].replace(/_/g, ' ').trim();
     }
   }
-  
+
   return documentName.split('_')[0];
 }
 
@@ -334,7 +306,7 @@ function getFileExtension(mimeType) {
     'image/gif': 'gif',
     'image/webp': 'webp'
   };
-  
+
   return extensions[mimeType] || 'bin';
 }
 
@@ -345,13 +317,13 @@ function logCompletion(documentId, defendantName, fileUrl) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     if (!ss) return;
-    
+
     let sheet = ss.getSheetByName('Completed Bonds Log');
     if (!sheet) {
       sheet = ss.insertSheet('Completed Bonds Log');
       sheet.appendRow(['Timestamp', 'Document ID', 'Defendant Name', 'File URL', 'Status']);
     }
-    
+
     sheet.appendRow([
       new Date().toISOString(),
       documentId,
@@ -359,7 +331,7 @@ function logCompletion(documentId, defendantName, fileUrl) {
       fileUrl,
       'Completed'
     ]);
-    
+
   } catch (error) {
     console.log('Could not log to spreadsheet:', error.message);
   }
@@ -373,7 +345,7 @@ function testWebhookHandler() {
     event: 'document.complete',
     document_id: 'test-document-123'
   };
-  
+
   console.log('Testing webhook handler...');
   const result = handleSignNowWebhook(testPayload);
   console.log('Result:', result);

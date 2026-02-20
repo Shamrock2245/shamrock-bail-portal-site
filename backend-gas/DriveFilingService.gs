@@ -34,16 +34,16 @@ function getOrCreateDefendantFolder(defendantFirstName, defendantLastName, dateB
       bondDate = new Date();
     }
     
-    // Format as MMDDYY
-    const month = String(bondDate.getMonth() + 1).padStart(2, '0');
-    const day = String(bondDate.getDate()).padStart(2, '0');
-    const year = String(bondDate.getFullYear()).slice(-2);
-    const dateStr = month + day + year;
+    // Format as YYYY-MM-DD
+    const dateStr = bondDate.toISOString().split('T')[0];
     
-    // 2. Create folder name: LastNameFirstLetters-MMDDYY
-    const lastName = (defendantLastName || '').trim().replace(/\s+/g, '');
-    const firstLetters = (defendantFirstName || '').trim().substring(0, 3).replace(/\s+/g, '');
-    const folderName = `${lastName}${firstLetters}-${dateStr}`;
+    // 2. Create folder name: Defendant Name - Date
+    const firstName = (defendantFirstName || '').trim();
+    const lastName = (defendantLastName || '').trim();
+    let defendantName = `${firstName} ${lastName}`.trim();
+    if (!defendantName) defendantName = 'Unknown Defendant';
+    
+    const folderName = `${defendantName} - ${dateStr}`;
     
     console.log('Creating/Finding folder:', folderName);
     
@@ -168,9 +168,13 @@ function handleSignNowCompletedDocument(webhookData) {
     
     if (!defendantFirstName || !defendantLastName) {
       console.warn('⚠️ Missing defendant info in webhook, using fallback');
-      // Try to extract from document name
       const docName = webhookData.document_name || '';
-      // Implement name parsing logic here if needed
+      const extractedName = extractDefendantName(docName);
+      if (extractedName && extractedName !== 'Unknown') {
+        const parts = extractedName.split(' ');
+        defendantFirstName = parts[0] || '';
+        defendantLastName = parts.slice(1).join(' ') || '';
+      }
     }
     
     // 4. Save to defendant folder
@@ -178,8 +182,8 @@ function handleSignNowCompletedDocument(webhookData) {
       pdfBlob: signedPdf,
       fileName: `Signed_Bond_${documentId}.pdf`,
       defendantFirstName: defendantFirstName || 'Unknown',
-      defendantLastName: defendantLastName || 'Defendant',
-      dateBondWritten: dateBondWritten
+      defendantLastName: defendantLastName || '',
+      dateBondWritten: dateBondWritten || new Date().toISOString().split('T')[0]
     });
     
     return result;
@@ -230,6 +234,24 @@ function downloadSignedPdfFromSignNow(documentId) {
 }
 
 /**
+ * Extract defendant name from document name as fallback
+ */
+function extractDefendantName(documentName) {
+  if (!documentName) return null;
+  // e.g., "Bail_Packet_John_Doe_2024-01-15"
+  const patterns = [
+    /Bail[_\s]Packet[_\s](.+?)[_\s]\d{4}/i,
+    /Bond[_\s](.+?)[_\s]\d{4}/i,
+    /(.+?)[_\s]Bail[_\s]Bond/i
+  ];
+  for (const pattern of patterns) {
+    const match = documentName.match(pattern);
+    if (match) return match[1].replace(/_/g, ' ').trim();
+  }
+  return documentName.split('_')[0];
+}
+
+/**
  * TEST FUNCTION - Create a sample defendant folder
  */
 function testCreateDefendantFolder() {
@@ -243,7 +265,7 @@ function testCreateDefendantFolder() {
     console.log('✅ Test Successful!');
     console.log('Folder Name:', folder.getName());
     console.log('Folder URL:', folder.getUrl());
-    console.log('Expected Name: JonesBob-021026');
+    console.log('Expected Format: Defendant Name - YYYY-MM-DD');
     
   } catch (error) {
     console.error('❌ Test Failed:', error);

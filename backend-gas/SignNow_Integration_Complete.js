@@ -296,44 +296,7 @@ function SN_cancelInvites(documentId) {
  * 3. Saves to Google Drive
  * 4. Logs the completion
  */
-function handleDocumentComplete(e) {
-  // e.postData.contents contains the JSON payload from SignNow
-  try {
-    const data = JSON.parse(e.postData.contents);
-
-    // Verify Event Type
-    if (data.event !== 'user.document.complete') return;
-
-    const documentId = data.meta.document_id;
-    const documentName = data.meta.document_name || 'Signed_Document.pdf';
-
-    SN_log('Webhook_Received', `Doc Complete: ${documentId} - ${documentName}`);
-
-    // Download PDF
-    const config = SN_getConfig();
-    const pdfUrl = config.API_BASE + `/document/${documentId}/download?type=collapsed`; // Collapsed = valid PDF
-
-    const pdfBlob = UrlFetchApp.fetch(pdfUrl, {
-      method: 'GET',
-      headers: { 'Authorization': 'Bearer ' + config.ACCESS_TOKEN }
-    }).getBlob();
-
-    pdfBlob.setName(`[SIGNED] ${documentName}`);
-
-    // Save to Drive
-    const folderId = INTEGRATION_CONFIG.COMPLETED_BONDS_FOLDER_ID;
-    const folder = DriveApp.getFolderById(folderId);
-    const file = folder.createFile(pdfBlob);
-
-    SN_log('Drive_Save', `Saved to ${file.getUrl()}`);
-
-    return ContentService.createTextOutput('OK');
-
-  } catch (err) {
-    SN_log('Webhook_Error', err.toString());
-    return ContentService.createTextOutput('Error').setMimeType(ContentService.MimeType.TEXT);
-  }
-}
+// The handleDocumentComplete logic was refactored and centralized in WebhookHandler.js and DriveFilingService.gs to avoid Global Namespace conflicts.
 
 
 // ============================================================================
