@@ -21,12 +21,13 @@
 // =============================================================================
 
 /**
- * Handle incoming location message from WhatsApp
- * @param {object} webhookPayload - WhatsApp Cloud API webhook payload
+ * Handle incoming location message from WhatsApp or Telegram
+ * @param {object} webhookPayload - WhatsApp or Telegram webhook payload
  * @returns {object} - { success: boolean, location: object, message: string }
  */
 function handleLocationMessage(webhookPayload) {
-  console.log('Processing location message...');
+  const platform = webhookPayload.platform || 'whatsapp';
+  console.log(`Processing location message from ${platform}...`);
   
   try {
     // 1. Extract location data

@@ -101,15 +101,16 @@ function clearPhotoUploadState(phoneNumber) {
 // =============================================================================
 
 /**
- * Handle incoming photo from WhatsApp
- * @param {string} from - User's phone number
- * @param {string} mediaId - WhatsApp media ID
+ * Handle incoming photo from WhatsApp or Telegram
+ * @param {string} from - User's phone number or user ID
+ * @param {string} mediaId - WhatsApp media ID or Telegram file ID
  * @param {string} mimeType - Media MIME type
  * @param {string} caption - Optional caption from user
+ * @param {string} platform - 'whatsapp' or 'telegram' (default: 'whatsapp')
  * @returns {object} - { success: boolean, message: string, complete: boolean }
  */
-function handlePhotoUpload(from, mediaId, mimeType, caption) {
-  console.log(`Photo upload from ${from}: mediaId=${mediaId}, type=${mimeType}`);
+function handlePhotoUpload(from, mediaId, mimeType, caption, platform = 'whatsapp') {
+  console.log(`Photo upload from ${from} (${platform}): mediaId=${mediaId}, type=${mimeType}`);
   
   try {
     // 1. Get upload state
@@ -130,9 +131,15 @@ function handlePhotoUpload(from, mediaId, mimeType, caption) {
     // 3. Determine photo type
     const photoType = determinePhotoType(state, caption);
     
-    // 4. Download photo from WhatsApp
-    const whatsapp = new WhatsAppCloudAPI();
-    const photoBlob = whatsapp.downloadMedia(mediaId);
+    // 4. Download photo (platform-specific)
+    let photoBlob;
+    if (platform === 'telegram') {
+      const telegram = new TelegramBotAPI();
+      photoBlob = telegram.downloadFile(mediaId);
+    } else {
+      const whatsapp = new WhatsAppCloudAPI();
+      photoBlob = whatsapp.downloadMedia(mediaId);
+    }
     
     if (!photoBlob) {
       return {

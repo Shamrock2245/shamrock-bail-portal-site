@@ -1,0 +1,148 @@
+/**
+ * telegram-webhook.jsw
+ * 
+ * Wix Backend Module - Telegram Webhook Handler
+ * Receives Telegram bot updates and forwards to GAS backend
+ * 
+ * Endpoint: POST /telegram-webhook
+ * 
+ * Version: 1.0.0
+ * Date: 2026-02-19
+ */
+
+import { fetch } from 'wix-fetch';
+
+// Get GAS webhook URL from Wix Secrets
+const GAS_WEBHOOK_URL = 'YOUR_GAS_WEBHOOK_URL_HERE'; // TODO: Set in Wix Secrets Manager
+
+/**
+ * Handle incoming Telegram webhook
+ * Called by http-functions.js
+ * 
+ * @param {object} update - Telegram update object
+ * @returns {object} - Response
+ */
+export async function handleTelegramWebhook(update) {
+  console.log('📩 Telegram webhook received:', JSON.stringify(update));
+  
+  try {
+    // Validate update object
+    if (!update || typeof update !== 'object') {
+      console.error('Invalid update object');
+      return {
+        success: false,
+        error: 'Invalid update'
+      };
+    }
+    
+    // Extract message or callback query
+    const message = update.message;
+    const callbackQuery = update.callback_query;
+    
+    if (!message && !callbackQuery) {
+      console.warn('No message or callback query in update');
+      return {
+        success: true,
+        message: 'No actionable content'
+      };
+    }
+    
+    // Forward to GAS backend
+    const gasPayload = {
+      action: 'telegram_inbound_message',
+      update: update,
+      timestamp: new Date().toISOString()
+    };
+    
+    const gasResponse = await fetch(GAS_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(gasPayload)
+    });
+    
+    if (!gasResponse.ok) {
+      console.error(`GAS webhook failed: ${gasResponse.status}`);
+      return {
+        success: false,
+        error: `GAS returned ${gasResponse.status}`
+      };
+    }
+    
+    const gasResult = await gasResponse.json();
+    console.log('✅ GAS processed Telegram message:', gasResult);
+    
+    return {
+      success: true,
+      gasResult: gasResult
+    };
+    
+  } catch (error) {
+    console.error('Telegram webhook error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Verify Telegram webhook (for setup)
+ * @param {string} botToken - Telegram bot token
+ * @param {string} webhookUrl - Public webhook URL
+ * @returns {object} - Result
+ */
+export async function setTelegramWebhook(botToken, webhookUrl) {
+  try {
+    const apiUrl = `https://api.telegram.org/bot${botToken}/setWebhook`;
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: webhookUrl
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.ok) {
+      console.log('✅ Telegram webhook set successfully');
+      return { success: true, result: result };
+    } else {
+      console.error('Failed to set webhook:', result);
+      return { success: false, error: result.description };
+    }
+    
+  } catch (error) {
+    console.error('Error setting webhook:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get Telegram webhook info
+ * @param {string} botToken - Telegram bot token
+ * @returns {object} - Webhook info
+ */
+export async function getTelegramWebhookInfo(botToken) {
+  try {
+    const apiUrl = `https://api.telegram.org/bot${botToken}/getWebhookInfo`;
+    
+    const response = await fetch(apiUrl);
+    const result = await response.json();
+    
+    if (result.ok) {
+      return { success: true, info: result.result };
+    } else {
+      return { success: false, error: result.description };
+    }
+    
+  } catch (error) {
+    console.error('Error getting webhook info:', error);
+    return { success: false, error: error.message };
+  }
+}

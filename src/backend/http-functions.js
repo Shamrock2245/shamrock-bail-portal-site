@@ -1795,3 +1795,73 @@ async function _waStatusUpdate(status) {
         }
     } catch (e) { }
 }
+
+
+// =============================================================================
+// TELEGRAM WEBHOOK ENDPOINT
+// =============================================================================
+
+/**
+ * POST /_functions/telegram-webhook
+ * Receive incoming Telegram bot updates
+ * 
+ * This endpoint is called by Telegram when users interact with the bot
+ */
+export async function post_telegramWebhook(request) {
+  console.log('📩 Telegram webhook triggered');
+  
+  try {
+    // Parse request body
+    const update = await request.body.json();
+    
+    // Import telegram webhook handler
+    const { handleTelegramWebhook } = await import('backend/telegram-webhook');
+    
+    // Process update
+    const result = await handleTelegramWebhook(update);
+    
+    // Return OK to Telegram (required)
+    return ok({
+      headers: { 'Content-Type': 'application/json' },
+      body: { ok: true, result: result }
+    });
+    
+  } catch (error) {
+    console.error('Telegram webhook error:', error);
+    
+    // Still return OK to Telegram to avoid retries
+    return ok({
+      headers: { 'Content-Type': 'application/json' },
+      body: { ok: true, error: error.message }
+    });
+  }
+}
+
+/**
+ * GET /_functions/telegram-webhook-info
+ * Get Telegram webhook configuration info (for debugging)
+ */
+export async function get_telegramWebhookInfo(request) {
+  try {
+    const botToken = await getSecret('TELEGRAM_BOT_TOKEN');
+    
+    if (!botToken) {
+      return badRequest({
+        body: { success: false, error: 'Bot token not configured' }
+      });
+    }
+    
+    const { getTelegramWebhookInfo } = await import('backend/telegram-webhook');
+    const info = await getTelegramWebhookInfo(botToken);
+    
+    return ok({
+      headers: { 'Content-Type': 'application/json' },
+      body: info
+    });
+    
+  } catch (error) {
+    return serverError({
+      body: { success: false, error: error.message }
+    });
+  }
+}

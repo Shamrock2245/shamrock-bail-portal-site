@@ -37,27 +37,46 @@ You must respond in valid JSON format:
 `;
 
 /**
- * Handle incoming WhatsApp message (Text or Audio)
- * @param {Object} data - WhatsApp Cloud API inbound data from WhatsApp_Webhook
+ * Handle incoming WhatsApp or Telegram message (Text or Audio)
+ * @param {Object} data - WhatsApp or Telegram inbound data from webhook
  */
 function handleManusWhatsApp(data) {
-    const { from, name, body, type, mediaId, mimeType } = data;
+    const { from, name, body, type, mediaId, mimeType, platform, chatId } = data;
+    const messagePlatform = platform || 'whatsapp';
 
     let userMessage = body || '';
     let inputType = type || 'text';
 
     try {
-        const whatsapp = new WhatsAppCloudAPI();
+        // Initialize platform-specific API client
+        let apiClient;
+        if (messagePlatform === 'telegram') {
+            apiClient = new TelegramBotAPI();
+        } else {
+            apiClient = new WhatsAppCloudAPI();
+        }
 
         // 1. Transcribe Audio if present
         if (inputType === 'audio' && mediaId) {
-            const audioBlob = whatsapp.downloadMedia(mediaId);
+            // Download audio (platform-specific)
+            let audioBlob;
+            if (messagePlatform === 'telegram') {
+                audioBlob = apiClient.downloadFile(mediaId);
+            } else {
+                audioBlob = apiClient.downloadMedia(mediaId);
+            }
+            
             const transcript = transcribeAudio(audioBlob); // Uses OpenAIClient.js
             if (transcript) {
                 userMessage = transcript;
-                logProcessingEvent("MANUS_AUDIO_TRANSCRIBED", { from: from, text: userMessage });
+                logProcessingEvent("MANUS_AUDIO_TRANSCRIBED", { from: from, text: userMessage, platform: messagePlatform });
             } else {
-                whatsapp.sendText(from, "Sorry, I couldn't hear that clearly. Could you type it?");
+                const errorMsg = "Sorry, I couldn't hear that clearly. Could you type it?";
+                if (messagePlatform === 'telegram') {
+                    apiClient.sendMessage(chatId, errorMsg);
+                } else {
+                    apiClient.sendText(from, errorMsg);
+                }
                 return ContentService.createTextOutput("Audio transcription failed");
             }
         }
@@ -65,12 +84,16 @@ function handleManusWhatsApp(data) {
         // 2. Check if user is in intake flow
         const intakeResult = checkAndProcessIntake(from, userMessage, name);
         if (intakeResult.handled) {
-            // Intake flow handled the message
+            // Intake flow handled the message - send response
             if (intakeResult.text) {
-                whatsapp.sendText(from, intakeResult.text);
+                if (messagePlatform === 'telegram') {
+                    apiClient.sendMessage(chatId, intakeResult.text);
+                } else {
+                    apiClient.sendText(from, intakeResult.text);
+                }
             }
             if (intakeResult.voice_script) {
-                generateAndSendVoiceNote(from, intakeResult.voice_script);
+                generateAndSendVoiceNote(from, intakeResult.voice_script, messagePlatform, chatId);
             }
             return ContentService.createTextOutput("Intake flow processed");
         }
@@ -100,31 +123,49 @@ function handleManusWhatsApp(data) {
         const replyText = responseJson.text;
         const voiceScript = responseJson.voice_script;
 
-        // 4. Send Text Response
+        // 4. Send Text Response (platform-specific)
         if (replyText) {
-            whatsapp.sendText(from, replyText);
+            if (messagePlatform === 'telegram') {
+                apiClient.sendMessage(chatId, replyText);
+            } else {
+                apiClient.sendText(from, replyText);
+            }
         }
 
         // 5. Send Voice Note (if applicable)
         if (voiceScript && voiceScript.length > 10) {
-            generateAndSendVoiceNote(from, voiceScript);
+            generateAndSendVoiceNote(from, voiceScript, messagePlatform, chatId);
         }
 
         return ContentService.createTextOutput("Manus processed message");
 
     } catch (e) {
         console.error("Manus Brain Error:", e);
-        // Use direct WhatsApp Cloud API
-        const whatsapp = new WhatsAppCloudAPI();
-        whatsapp.sendText(from, "I'm having a little trouble thinking right now. A human agent will be with you shortly.");
+        // Send error message (platform-specific)
+        const errorMsg = "I'm having a little trouble thinking right now. A human agent will be with you shortly.";
+        try {
+            if (messagePlatform === 'telegram') {
+                const telegram = new TelegramBotAPI();
+                telegram.sendMessage(chatId, errorMsg);
+            } else {
+                const whatsapp = new WhatsAppCloudAPI();
+                whatsapp.sendText(from, errorMsg);
+            }
+        } catch (sendError) {
+            console.error("Failed to send error message:", sendError);
+        }
         return ContentService.createTextOutput("Error: " + e.message);
     }
 }
 
 /**
- * Generate Voice Note via ElevenLabs and Send via WhatsApp
+ * Generate Voice Note via ElevenLabs and Send via WhatsApp or Telegram
+ * @param {string} to - Phone number or user ID
+ * @param {string} script - Text to speak
+ * @param {string} platform - 'whatsapp' or 'telegram'
+ * @param {string} chatId - Telegram chat ID (optional, only for Telegram)
  */
-function generateAndSendVoiceNote(to, script) {
+function generateAndSendVoiceNote(to, script, platform = 'whatsapp', chatId = null) {
     try {
         // A. Generate Audio
         const manusVoiceId = PropertiesService.getScriptProperties().getProperty('MANUS_VOICE_ID');
@@ -142,9 +183,14 @@ function generateAndSendVoiceNote(to, script) {
 
         const directUrl = `https://drive.google.com/uc?export=download&id=${file.getId()}`;
 
-        // C. Send via WhatsApp Cloud API
-        const whatsapp = new WhatsAppCloudAPI();
-        whatsapp.sendAudio(to, directUrl);
+        // C. Send via platform-specific API
+        if (platform === 'telegram') {
+            const telegram = new TelegramBotAPI();
+            telegram.sendVoice(chatId || to, directUrl);
+        } else {
+            const whatsapp = new WhatsAppCloudAPI();
+            whatsapp.sendAudio(to, directUrl);
+        }
 
     } catch (e) {
         console.error("Manus Voice Generation Failed:", e);
