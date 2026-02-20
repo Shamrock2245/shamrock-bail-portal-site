@@ -60,10 +60,10 @@
 ---
 
 ## 🚀 Phase 5: Hyper-Growth & Modernization (Active)
-- [ ] **WhatsApp Integration:**
-    - [ ] Enable Twilio WhatsApp Sandbox.
-    - [ ] Update `backend/twilio-client.jsw` to support WhatsApp channel.
-    - [ ] Add "Chat on WhatsApp" button to sticky mobile footer.
+- [ ] **Telegram Integration:**
+    - [ ] Enable Telegram Bot API.
+    - [ ] Update `backend/telegram-client.jsw` to support Telegram channel.
+    - [ ] Add "Chat on Telegram" button to sticky mobile footer.
 - [ ] **"The Scout" Agent (Expansion):**
     - [ ] Configure `AI_BookingParser.js` for 5 new county URLs.
     - [ ] Set up daily cron triggers in GAS.

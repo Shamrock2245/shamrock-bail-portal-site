@@ -1899,3 +1899,263 @@ export async function get_setupTelegramWebhook(request) {
         });
     }
 }
+
+// =============================================================================
+// TELEGRAM INTAKE SUBMIT ENDPOINT
+// =============================================================================
+
+/**
+ * POST /_functions/post_intakeSubmit
+ * Receive completed Telegram intake data from GAS and write to IntakeQueue CMS.
+ *
+ * Called by Telegram_IntakeFlow.js → pushIntakeToWix() after the indemnitor
+ * completes the conversational intake and uploads their ID photo.
+ *
+ * Request body:
+ * {
+ *   "apiKey": "GAS_API_KEY",
+ *   "source": "telegram",
+ *   "telegramUserId": "123456789",
+ *   "telegramChatId": "123456789",
+ *   "indemnitorName": "Jane Doe",
+ *   "indemnitorPhone": "(239) 555-1234",
+ *   "indemnitorEmail": "jane@example.com",
+ *   "indemnitorAddress": "123 Main St, Fort Myers, FL 33901",
+ *   "relationship": "Mother",
+ *   "defendantName": "John Doe",
+ *   "defendantDob": "03/15/1985",
+ *   "county": "Lee County",
+ *   "charges": "DUI",
+ *   "bondAmount": "5,000",
+ *   "idPhotoFileId": "AgACAgIAAxk...",
+ *   "submittedAt": "2026-02-20T12:00:00.000Z"
+ * }
+ *
+ * Response:
+ * { "success": true, "intakeId": "wix-cms-record-id" }
+ */
+export async function post_intakeSubmit(request) {
+    console.log('📥 Telegram intake submission received');
+
+    try {
+        const body = await request.body.json();
+
+        // ── Auth ──────────────────────────────────────────────────────────────
+        const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
+        if (!validApiKey) {
+            console.error('CRITICAL: GAS_API_KEY secret missing');
+            return serverError({ body: { success: false, message: 'Server misconfiguration' } });
+        }
+        if (!body.apiKey || body.apiKey !== validApiKey) {
+            console.warn('Invalid API key on intake submit');
+            return forbidden({ body: { success: false, message: 'Invalid API key' } });
+        }
+
+        // ── Validate required fields ──────────────────────────────────────────
+        const required = ['indemnitorName', 'indemnitorPhone', 'defendantName', 'county'];
+        for (const field of required) {
+            if (!body[field]) {
+                return badRequest({
+                    body: { success: false, message: `Missing required field: ${field}` }
+                });
+            }
+        }
+
+        // ── Build IntakeQueue record ──────────────────────────────────────────
+        // Matches the IntakeQueue CMS collection schema exactly
+        const intakeRecord = {
+            // Source metadata
+            source:           body.source || 'telegram',
+            telegramUserId:   body.telegramUserId || '',
+            telegramChatId:   body.telegramChatId || '',
+
+            // Indemnitor (co-signer) fields
+            indemnitorName:    body.indemnitorName,
+            indemnitorPhone:   body.indemnitorPhone,
+            indemnitorEmail:   body.indemnitorEmail || '',
+            indemnitorAddress: body.indemnitorAddress || '',
+            relationship:      body.relationship || '',
+
+            // Defendant fields
+            defendantName:     body.defendantName,
+            defendantDob:      body.defendantDob || '',
+            county:            body.county,
+            charges:           body.charges || '',
+            bondAmount:        body.bondAmount || '',
+
+            // ID verification
+            idPhotoFileId:     body.idPhotoFileId || '',
+            idVerified:        false,
+
+            // Status
+            status:            'pending',
+            matchedCaseId:     '',
+            processedAt:       null,
+            submittedAt:       body.submittedAt ? new Date(body.submittedAt) : new Date(),
+            createdAt:         new Date()
+        };
+
+        // ── Insert into IntakeQueue ───────────────────────────────────────────
+        const result = await wixData.insert('IntakeQueue', intakeRecord);
+
+        console.log(`✅ Intake record created: ${result._id} for ${body.indemnitorName}`);
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+                success: true,
+                intakeId: result._id,
+                message: 'Intake submitted successfully'
+            }
+        });
+
+    } catch (error) {
+        console.error('Error processing intake submission:', error);
+        return serverError({
+            body: { success: false, message: error.message }
+        });
+    }
+}
+
+/**
+ * POST /_functions/post_sendSigningLink
+ * Called by GAS after a packet is generated.
+ * Sends the signing link + payment link to the client via Telegram.
+ *
+ * Request body:
+ * {
+ *   "apiKey": "GAS_API_KEY",
+ *   "telegramChatId": "123456789",
+ *   "defendantName": "John Doe",
+ *   "signingLink": "https://app.signnow.com/...",
+ *   "paymentLink": "https://swipesimple.com/..."
+ * }
+ */
+export async function post_sendSigningLink(request) {
+    console.log('📤 Send signing link via Telegram triggered');
+
+    try {
+        const body = await request.body.json();
+
+        // ── Auth ──────────────────────────────────────────────────────────────
+        const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
+        if (!validApiKey || !body.apiKey || body.apiKey !== validApiKey) {
+            return forbidden({ body: { success: false, message: 'Invalid API key' } });
+        }
+
+        // ── Validate ──────────────────────────────────────────────────────────
+        if (!body.telegramChatId || !body.signingLink) {
+            return badRequest({
+                body: { success: false, message: 'Missing telegramChatId or signingLink' }
+            });
+        }
+
+        // ── Send via Telegram Bot API ─────────────────────────────────────────
+        const botToken = await getSecret('TELEGRAM_BOT_TOKEN').catch(() => null);
+        if (!botToken) {
+            return serverError({ body: { success: false, message: 'TELEGRAM_BOT_TOKEN not configured' } });
+        }
+
+        const paymentLink = body.paymentLink || 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
+        const defendantName = body.defendantName || 'your loved one';
+
+        const messageText = `📋 *Your Bail Bond Paperwork is Ready!*
+
+The documents for *${defendantName}* are ready to sign.
+
+*Step 1 — Sign the paperwork:*
+👉 [Tap here to sign](${body.signingLink})
+
+*Step 2 — Pay the premium:*
+💳 [Tap here to pay](${paymentLink})
+
+Once both are complete, we post the bond immediately. 🚀
+
+Questions? Reply here or call *(239) 332-2245*`;
+
+        const telegramPayload = {
+            chat_id: body.telegramChatId,
+            text: messageText,
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '✍️ Sign Documents', url: body.signingLink }],
+                    [{ text: '💳 Pay Premium', url: paymentLink }],
+                    [{ text: '📞 Call Us Now', url: 'tel:+12393322245' }]
+                ]
+            }
+        };
+
+        const telegramResponse = await fetch(
+            `https://api.telegram.org/bot${botToken}/sendMessage`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(telegramPayload)
+            }
+        );
+
+        const telegramResult = await telegramResponse.json();
+
+        if (!telegramResult.ok) {
+            console.error('Telegram send failed:', telegramResult);
+            return serverError({
+                body: { success: false, message: 'Telegram delivery failed', detail: telegramResult }
+            });
+        }
+
+        console.log(`✅ Signing link sent to chatId ${body.telegramChatId}`);
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+                success: true,
+                messageId: telegramResult.result.message_id,
+                message: 'Signing link delivered via Telegram'
+            }
+        });
+
+    } catch (error) {
+        console.error('Error sending signing link:', error);
+        return serverError({
+            body: { success: false, message: error.message }
+        });
+    }
+}
+
+/**
+ * GET /_functions/get_pendingIntakes
+ * Returns all unprocessed IntakeQueue records for the Dashboard.
+ * Protected by GAS_API_KEY.
+ */
+export async function get_pendingIntakes(request) {
+    try {
+        const providedKey = request.query['apiKey'];
+        const validKey = await getSecret('GAS_API_KEY').catch(() => null);
+
+        if (!validKey || providedKey !== validKey) {
+            return forbidden({ body: { success: false, message: 'Invalid API key' } });
+        }
+
+        const results = await wixData.query('IntakeQueue')
+            .eq('status', 'pending')
+            .descending('submittedAt')
+            .limit(50)
+            .find();
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+                success: true,
+                count: results.items.length,
+                intakes: results.items
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching pending intakes:', error);
+        return serverError({
+            body: { success: false, message: error.message }
+        });
+    }
+}

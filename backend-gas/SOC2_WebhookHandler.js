@@ -22,15 +22,7 @@ function handleSOC2Webhook(e) {
             case "elevenlabs":
             case "ElevenLabs":
                 return handleElevenLabsWebhookSOC2(e);
-            case "whatsapp":
-            case "WhatsApp":
-                return handleWhatsAppWebhookSOC2(e);
-            case "whatsapp_send_otp":
-                return handleWhatsAppSendOTP(e);
-            case "whatsapp_validate_otp":
-                return handleWhatsAppValidateOTP(e);
-            case "whatsapp_resend_otp":
-                return handleWhatsAppResendOTP(e);
+
             default:
                 logSecurityEvent("UNKNOWN_WEBHOOK", { path: path });
                 return ContentService.createTextOutput("Unknown endpoint or source").setMimeType(ContentService.MimeType.TEXT);
@@ -86,16 +78,7 @@ function handleTwilioWebhookSOC2(e) {
     const payload = e.parameter;
     logProcessingEvent("TWILIO_WEBHOOK_RECEIVED", payload);
 
-    // --- MANUS PROJECT (WHATSAPP) ---
-    // Detect WhatsApp sender (e.g., whatsapp:+1234567890)
-    if (payload.From && payload.From.startsWith('whatsapp:')) {
-        if (typeof handleManusWhatsApp === 'function') {
-            return handleManusWhatsApp(payload);
-        } else {
-            // Fallback if Manus_Brain.js not loaded
-            return ContentService.createTextOutput("Manus unavailable").setMimeType(ContentService.MimeType.TEXT);
-        }
-    }
+
 
     // Business Logic: Log to Slack and Reply
     try {
@@ -133,135 +116,10 @@ function handleTwilioWebhookSOC2(e) {
     return ContentService.createTextOutput(xml).setMimeType(ContentService.MimeType.XML);
 }
 
-/**
- * Handles webhooks from WhatsApp Cloud API with signature verification.
- * @param {object} e The event parameter.
- */
-function handleWhatsAppWebhookSOC2(e) {
-    // 1. VERIFICATION REQUEST (GET)
-    // Meta sends a GET request to verify the webhook URL
-    if (e.parameter['hub.mode'] === 'subscribe' && e.parameter['hub.verify_token']) {
-        const props = PropertiesService.getScriptProperties().getProperties();
-        const verifyToken = props.WHATSAPP_VERIFY_TOKEN;
 
-        if (e.parameter['hub.verify_token'] === verifyToken) {
-            return ContentService.createTextOutput(e.parameter['hub.challenge']);
-        } else {
-            return ContentService.createTextOutput('Verification failed: Invalid Token').setMimeType(ContentService.MimeType.TEXT);
-        }
-    }
 
-    // 2. EVENT NOTIFICATION (POST)
-    try {
-        const payload = JSON.parse(e.postData.contents);
-        logProcessingEvent("WHATSAPP_WEBHOOK_RECEIVED", { entries: payload.entry ? payload.entry.length : 0 });
 
-        // Process Incoming Messages
-        if (payload.entry && payload.entry[0].changes && payload.entry[0].changes[0].value.messages) {
-            const message = payload.entry[0].changes[0].value.messages[0];
-            const from = message.from; // Sender phone ID
-            const text = message.text ? message.text.body : '[Media/Other]';
-            const type = message.type;
-            const name = payload.entry[0].changes[0].value.contacts[0].profile.name;
 
-            // Notify Slack
-            if (typeof NotificationService !== 'undefined') {
-                NotificationService.sendSlack('#incoming-sms', `🟢 *WhatsApp from ${name} (${from})*\n>${text}`);
-            }
-        }
 
-        return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
 
-    } catch (error) {
-        logSecurityEvent("WHATSAPP_WEBHOOK_ERROR", { error: error.toString() });
-        return ContentService.createTextOutput("Error processing webhook").setMimeType(ContentService.MimeType.TEXT);
-    }
-}
 
-/**
- * Handle WhatsApp OTP send request
- */
-function handleWhatsAppSendOTP(e) {
-    try {
-        const requestData = JSON.parse(e.postData.contents);
-        const phoneNumber = requestData.phoneNumber;
-
-        if (!phoneNumber) {
-            return ContentService.createTextOutput(JSON.stringify({
-                success: false,
-                message: 'Phone number is required'
-            })).setMimeType(ContentService.MimeType.JSON);
-        }
-
-        const result = WA_sendOTP(phoneNumber);
-
-        return ContentService.createTextOutput(JSON.stringify(result))
-            .setMimeType(ContentService.MimeType.JSON);
-
-    } catch (error) {
-        console.error('Error in handleWhatsAppSendOTP:', error);
-        return ContentService.createTextOutput(JSON.stringify({
-            success: false,
-            message: 'Failed to send OTP'
-        })).setMimeType(ContentService.MimeType.JSON);
-    }
-}
-
-/**
- * Handle WhatsApp OTP validation request
- */
-function handleWhatsAppValidateOTP(e) {
-    try {
-        const requestData = JSON.parse(e.postData.contents);
-        const phoneNumber = requestData.phoneNumber;
-        const otpCode = requestData.otpCode;
-
-        if (!phoneNumber || !otpCode) {
-            return ContentService.createTextOutput(JSON.stringify({
-                valid: false,
-                error: 'Phone number and OTP code are required'
-            })).setMimeType(ContentService.MimeType.JSON);
-        }
-
-        const result = WA_validateOTP(phoneNumber, otpCode);
-
-        return ContentService.createTextOutput(JSON.stringify(result))
-            .setMimeType(ContentService.MimeType.JSON);
-
-    } catch (error) {
-        console.error('Error in handleWhatsAppValidateOTP:', error);
-        return ContentService.createTextOutput(JSON.stringify({
-            valid: false,
-            error: 'Failed to validate OTP'
-        })).setMimeType(ContentService.MimeType.JSON);
-    }
-}
-
-/**
- * Handle WhatsApp OTP resend request
- */
-function handleWhatsAppResendOTP(e) {
-    try {
-        const requestData = JSON.parse(e.postData.contents);
-        const phoneNumber = requestData.phoneNumber;
-
-        if (!phoneNumber) {
-            return ContentService.createTextOutput(JSON.stringify({
-                success: false,
-                message: 'Phone number is required'
-            })).setMimeType(ContentService.MimeType.JSON);
-        }
-
-        const result = WA_resendOTP(phoneNumber);
-
-        return ContentService.createTextOutput(JSON.stringify(result))
-            .setMimeType(ContentService.MimeType.JSON);
-
-    } catch (error) {
-        console.error('Error in handleWhatsAppResendOTP:', error);
-        return ContentService.createTextOutput(JSON.stringify({
-            success: false,
-            message: 'Failed to resend OTP'
-        })).setMimeType(ContentService.MimeType.JSON);
-    }
-}

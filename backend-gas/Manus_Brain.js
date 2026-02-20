@@ -1,24 +1,24 @@
 /**
  * Manus_Brain.js
  * 
- * Core logic for "The Manus Project" - WhatsApp Facilitator.
+ * Core logic for "The Manus Project" - Telegram Facilitator.
  * Orchestrates:
- * 1. WhatsApp Cloud API (Inbound/Outbound)
+ * 1. Telegram Bot API (Inbound/Outbound)
  * 2. OpenAI/Grok (Reasoning & Audio Transcription)
  * 3. ElevenLabs V3 (Voice Note Generation)
  * 4. Intake Flow (Conversational Data Collection)
  * 5. Document Generation (Automatic Paperwork)
  * 
- * Version: 2.0.0 - WhatsApp Intake Integration
+ * Version: 3.0.0 - Telegram-Native (WhatsApp removed - ToS violation)
  * Date: 2026-02-19
  */
 
 const MANUS_SYSTEM_PROMPT = `
-You are "Manus", the digital facilitator for Shamrock Bail Bonds on WhatsApp. 
+You are "Manus", the digital facilitator for Shamrock Bail Bonds on Telegram. 
 Your job is to guide clients through the bond signing process.
 You are helpful, reassuring, and extremely clear.
 
-Channel Context: WhatsApp. Keep text messages short/punchy.
+Channel Context: Telegram. Keep text messages short/punchy.
 
 Objectives:
 1. Get the Signature: "Tap the link, sign at the bottom."
@@ -37,12 +37,12 @@ You must respond in valid JSON format:
 `;
 
 /**
- * Handle incoming WhatsApp or Telegram message (Text or Audio)
- * @param {Object} data - WhatsApp or Telegram inbound data from webhook
+ * Handle incoming Telegram message (Text or Audio)
+ * @param {Object} data - Telegram inbound data from webhook
  */
-function handleManusWhatsApp(data) {
+function handleManusMessage(data) {
     const { from, name, body, type, mediaId, mimeType, platform, chatId } = data;
-    const messagePlatform = platform || 'whatsapp';
+    const messagePlatform = platform || 'telegram';
 
     let userMessage = body || '';
     let inputType = type || 'text';
@@ -53,7 +53,7 @@ function handleManusWhatsApp(data) {
         if (messagePlatform === 'telegram') {
             apiClient = new TelegramBotAPI();
         } else {
-            apiClient = new WhatsAppCloudAPI();
+            throw new Error('Unsupported platform');
         }
 
         // 1. Transcribe Audio if present
@@ -63,7 +63,7 @@ function handleManusWhatsApp(data) {
             if (messagePlatform === 'telegram') {
                 audioBlob = apiClient.downloadFile(mediaId);
             } else {
-                audioBlob = apiClient.downloadMedia(mediaId);
+                throw new Error('Unsupported platform');
             }
             
             const transcript = transcribeAudio(audioBlob); // Uses OpenAIClient.js
@@ -75,7 +75,7 @@ function handleManusWhatsApp(data) {
                 if (messagePlatform === 'telegram') {
                     apiClient.sendMessage(chatId, errorMsg);
                 } else {
-                    apiClient.sendText(from, errorMsg);
+                    throw new Error('Unsupported platform');
                 }
                 return ContentService.createTextOutput("Audio transcription failed");
             }
@@ -89,7 +89,7 @@ function handleManusWhatsApp(data) {
                 if (messagePlatform === 'telegram') {
                     apiClient.sendMessage(chatId, intakeResult.text);
                 } else {
-                    apiClient.sendText(from, intakeResult.text);
+                    throw new Error('Unsupported platform');
                 }
             }
             if (intakeResult.voice_script) {
@@ -128,7 +128,7 @@ function handleManusWhatsApp(data) {
             if (messagePlatform === 'telegram') {
                 apiClient.sendMessage(chatId, replyText);
             } else {
-                apiClient.sendText(from, replyText);
+                throw new Error('Unsupported platform');
             }
         }
 
@@ -148,8 +148,7 @@ function handleManusWhatsApp(data) {
                 const telegram = new TelegramBotAPI();
                 telegram.sendMessage(chatId, errorMsg);
             } else {
-                const whatsapp = new WhatsAppCloudAPI();
-                whatsapp.sendText(from, errorMsg);
+                throw new Error('Unsupported platform');
             }
         } catch (sendError) {
             console.error("Failed to send error message:", sendError);
@@ -159,13 +158,13 @@ function handleManusWhatsApp(data) {
 }
 
 /**
- * Generate Voice Note via ElevenLabs and Send via WhatsApp or Telegram
+ * Generate Voice Note via ElevenLabs and Send via Telegram
  * @param {string} to - Phone number or user ID
  * @param {string} script - Text to speak
- * @param {string} platform - 'whatsapp' or 'telegram'
+ * @param {string} platform - 'telegram'
  * @param {string} chatId - Telegram chat ID (optional, only for Telegram)
  */
-function generateAndSendVoiceNote(to, script, platform = 'whatsapp', chatId = null) {
+function generateAndSendVoiceNote(to, script, platform = 'telegram', chatId = null) {
     try {
         // A. Generate Audio
         const manusVoiceId = PropertiesService.getScriptProperties().getProperty('MANUS_VOICE_ID');
@@ -188,8 +187,7 @@ function generateAndSendVoiceNote(to, script, platform = 'whatsapp', chatId = nu
             const telegram = new TelegramBotAPI();
             telegram.sendVoice(chatId || to, directUrl);
         } else {
-            const whatsapp = new WhatsAppCloudAPI();
-            whatsapp.sendAudio(to, directUrl);
+            throw new Error('Unsupported platform');
         }
 
     } catch (e) {
@@ -207,11 +205,11 @@ function generateAndSendVoiceNote(to, script, platform = 'whatsapp', chatId = nu
  * Check if user is in intake flow and process accordingly
  * @param {string} from - User's phone number
  * @param {string} message - User's message
- * @param {string} name - User's name from WhatsApp profile
+ * @param {string} name - User's name from Telegram profile
  * @returns {object} - { handled: boolean, text: string, voice_script: string }
  */
 function checkAndProcessIntake(from, message, name) {
-    // Check if processIntakeConversation function exists (from WhatsApp_IntakeFlow.js)
+    // Check if processIntakeConversation function exists (from Telegram_IntakeFlow.js)
     if (typeof processIntakeConversation !== 'function') {
         console.warn('processIntakeConversation function not found - intake flow disabled');
         return { handled: false };
