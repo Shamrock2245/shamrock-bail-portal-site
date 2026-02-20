@@ -136,61 +136,86 @@ function handleTelegramInbound(update) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Handle photo messages (ID verification)
+ * Handle photo messages (ID verification).
+ * Routes through PDF_Processor.js handleIncomingDocument() which uses
+ * the ID front/back/selfie state machine for guided compliance uploads.
  */
 function _handlePhotoMessage(data) {
   console.log(`📸 Photo received from ${data.name}`);
 
   try {
     const message = data.message;
-    const photos = message.photo; // Array of PhotoSize objects
+    const photos  = message.photo; // Array of PhotoSize objects
 
-    // Get largest photo
+    // Get largest photo (best quality)
     const largestPhoto = photos[photos.length - 1];
-    const fileId = largestPhoto.file_id;
-    const caption = message.caption || '';
+    const fileId       = largestPhoto.file_id;
+    const caption      = message.caption || '';
 
-    // Call photo handler
-    if (typeof handlePhotoUpload === 'function') {
-      // Convert Telegram data to normalized format
-      const phoneNumber = data.userId.toString(); // Use user ID as identifier
-      const result = handlePhotoUpload(phoneNumber, fileId, 'image/jpeg', caption, 'telegram');
-
-      // Send response
-      const bot = new TelegramBotAPI();
-      bot.sendMessage(data.chatId, result.message);
-
-      return {
-        success: result.success,
-        action: 'photo_uploaded',
-        chatId: data.chatId,
-        complete: result.complete
-      };
-    } else {
-      console.warn('handlePhotoUpload function not found');
-      const bot = new TelegramBotAPI();
-      bot.sendMessage(data.chatId, 'Thank you for the photo! I\'ve received it. ✅');
-      return { success: true, action: 'photo_acknowledged' };
+    // Check if user is in a document task selection state first
+    if (typeof isDocumentTaskSelection === 'function' && isDocumentTaskSelection(caption, data.userId)) {
+      return processDocumentTaskSelection(data.chatId, data.userId, caption);
     }
+
+    // Route through PDF_Processor for unified ID photo handling
+    if (typeof handleIncomingDocument === 'function') {
+      return handleIncomingDocument(
+        data.chatId,
+        data.userId,
+        fileId,
+        caption || `photo_${Date.now()}.jpg`,
+        'image/jpeg'
+      );
+    }
+
+    // Fallback acknowledgement
+    const bot = new TelegramBotAPI();
+    bot.sendMessage(data.chatId, 'Thank you for the photo! ✅ I\'ve received it.');
+    return { success: true, action: 'photo_acknowledged' };
 
   } catch (e) {
     console.error('Error handling photo:', e);
+    const bot = new TelegramBotAPI();
+    bot.sendMessage(data.chatId, '❌ There was an error processing your photo. Please try again or call (239) 332-2245.');
     return { success: false, error: e.message };
   }
 }
 
 /**
- * Handle document messages
+ * Handle document messages (PDF, DOCX, etc.).
+ * Routes through PDF_Processor.js handleIncomingDocument() which presents
+ * a task menu: ID Photo | Signed Documents | Supporting Document | Cancel.
  */
 function _handleDocumentMessage(data) {
   console.log(`📄 Document received from ${data.name}`);
 
-  const bot = new TelegramBotAPI();
-  bot.sendMessage(data.chatId, 'Thank you for the document! I\'ve received it. 📄');
+  try {
+    const doc    = data.message.document;
+    const fileId = doc.file_id;
+    const name   = doc.file_name || 'document';
+    const mime   = doc.mime_type || 'application/octet-stream';
 
-  // TODO: Implement document storage if needed
+    // Check if user is responding to a document task menu
+    if (typeof isDocumentTaskSelection === 'function' && isDocumentTaskSelection(data.body, data.userId)) {
+      return processDocumentTaskSelection(data.chatId, data.userId, data.body);
+    }
 
-  return { success: true, action: 'document_received' };
+    // Route through PDF_Processor for the full task menu
+    if (typeof handleIncomingDocument === 'function') {
+      return handleIncomingDocument(data.chatId, data.userId, fileId, name, mime);
+    }
+
+    // Fallback
+    const bot = new TelegramBotAPI();
+    bot.sendMessage(data.chatId, 'Thank you for the document! 📄 I\'ve received it.');
+    return { success: true, action: 'document_received' };
+
+  } catch (e) {
+    console.error('Error handling document:', e);
+    const bot = new TelegramBotAPI();
+    bot.sendMessage(data.chatId, '❌ There was an error processing your document. Please try again or call (239) 332-2245.');
+    return { success: false, error: e.message };
+  }
 }
 
 /**

@@ -108,7 +108,8 @@ function handleSignNowWebhook(payload) {
 }
 
 /**
- * Handle document completion - download and save to Google Drive
+ * Handle document completion - download and save to Google Drive,
+ * then trigger the post-signing Telegram notification pipeline.
  */
 function handleDocumentComplete(documentId, payload) {
   try {
@@ -117,7 +118,35 @@ function handleDocumentComplete(documentId, payload) {
     const result = DriveFilingService.handleSignNowCompletedDocument(payload);
 
     if (result && result.success) {
-      logCompletion(documentId, extractDefendantName(payload?.document_name), result.fileUrl);
+      const defendantName = extractDefendantName(payload?.document_name);
+      logCompletion(documentId, defendantName, result.fileUrl);
+
+      // ── Post-signing pipeline ────────────────────────────────────────────────
+      // Trigger Telegram notification + ID upload request via PDF_Processor.js
+      // This closes the loop: signing complete → client notified → ID upload requested
+      if (typeof triggerPostSigningFromWebhook === 'function') {
+        try {
+          triggerPostSigningFromWebhook({
+            documentId:    documentId,
+            documentName:  payload?.document_name || '',
+            defendantName: defendantName,
+            fileUrl:       result.fileUrl,
+            folderId:      result.folderId,
+            payload:       payload,
+          });
+        } catch (pipelineErr) {
+          // Non-fatal — Drive filing already succeeded; log and continue
+          console.error('[WebhookHandler] Post-signing pipeline error (non-fatal):', pipelineErr);
+          logProcessingEvent('POST_SIGNING_PIPELINE_ERROR', {
+            documentId: documentId,
+            error: pipelineErr.message
+          });
+        }
+      } else {
+        console.warn('[WebhookHandler] triggerPostSigningFromWebhook not available — skipping Telegram notification');
+      }
+      // ────────────────────────────────────────────────────────────────────────
+
       return {
         success: true,
         message: 'Document saved to Google Drive via DriveFilingService',

@@ -6,11 +6,14 @@ This project is the official **Shamrock Bail Bonds Portal**. It runs on **Wix Ve
 
 ---
 
-## 📌 Goals
-*   **AI-Powered Workflow Automation:** Intelligent lead scoring, booking data extraction, risk assessment, and background checks using OpenAI.
-*   **Automated Paperwork:** Digital intake for Indemnitors and Defendants with SignNow integration.
-*   **Role-Based Portals:** Secure access for Defendants (Check-ins), Indemnitors (Financing), and Staff (Dashboard).
-*   **Compliance:** SOC II aligned, audit trails, encrypted PII storage.
+## 📌 Core Features
+
+*   **Telegram-First Client Intake:** A conversational bot guides clients through the entire intake process, collecting all necessary information for the bail bond packet.
+*   **Automated Document Generation:** One-click packet generation from the staff dashboard, pulling data directly from the intake conversation.
+*   **Mobile-First Electronic Signing:** Clients receive a link to sign all documents on their mobile device via an embedded SignNow session.
+*   **Automated ID Verification:** After signing, the bot automatically requests and guides the client through uploading photos of their ID (front, back, and selfie) for compliance.
+*   **Closed-Loop Document Delivery:** Once signing is complete, the final, executed documents are automatically processed (merged, watermarked) and sent back to the client via Telegram.
+*   **Wix Staff Dashboard:** A central hub for staff to monitor the intake queue, manage cases, and oversee the automation process.
 
 ---
 
@@ -42,13 +45,20 @@ The GAS Dashboard includes a direct integration with **SwipeSimple** for payment
 
 ---
 
+## 🚀 System Architecture
+
+The system is built on a robust, deduplicated architecture that prioritizes a single source of truth for all business logic.
+
+For a detailed breakdown of all system components, data flows, and architectural decisions, please see the [**System Architecture Document**](./docs/ARCHITECTURE.md).
+
 ## 🚀 Workflows
 
-### 1. AI Concierge (Web Chat)
-1.  **User Access:** Available on Portal Landing page (`/portal-landing`).
-2.  **Interactive Chat:** Users can ask questions about bail bonds, court dates, jail locations.
-3.  **Tool-Augmented:** AI can search county data, look up user cases (if authenticated).
-4.  **Backend:** Wix backend (`ai-service.jsw`) calls OpenAI with function calling.
+### 1. Telegram Intake & Signing
+1.  **Initiation:** Client starts a conversation with the Shamrock Bail Bonds Telegram bot.
+2.  **Intake:** The bot (`Telegram_IntakeFlow.js`) guides the user through a conversational form, collecting all required defendant and indemnitor data.
+3.  **Signing:** Upon completion, a SignNow signing link is generated and sent to the client via Telegram.
+4.  **ID Verification:** After signing, the bot (`PDF_Processor.js`) automatically requests and guides the user through uploading their ID photos (front, back, selfie).
+5.  **Completion:** The final, executed documents are processed and sent back to the client via Telegram.
 
 ### 2. Lead Scoring & Arrest Monitoring
 1.  **Arrest Scraper:** GAS scripts monitor Lee County, Collier County jail websites.
@@ -70,31 +80,45 @@ The GAS Dashboard includes a direct integration with **SwipeSimple** for payment
 
 ## 📦 Setup & Configuration
 
-### Wix Side
-*   **Secrets Manager:**
-    *   `GAS_WEB_APP_URL` (Latest deployed GAS endpoint).
-    *   `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN`.
-    *   `GOOGLE_MAPS_API_KEY`.
-    *   `OPENAI_API_KEY` (for AI Concierge).
-    *   `WIX_API_KEY` (for GAS → Wix integration).
+### Prerequisites
 
-### GAS Side (Backend)
-The backend is in `backend-gas/`.
-1.  **Deploy:** `clasp push` → `clasp deploy`.
-2.  **Config:** Run `SetProperties.js` functions to set keys:
-    *   `forceUpdateConfig()`: Sets basic infrastructure keys.
-    *   `SAFE_updateOpenAIKey()`: Sets `OPENAI_API_KEY` securely.
-3.  **Update Wix:** After deploying, update `GAS_WEB_APP_URL` in Wix Secrets Manager.
+*   Google Workspace account with access to Google Apps Script, Google Drive, and Google Sheets.
+*   Wix account with an active site and Velo enabled.
+*   API keys for all required services (Telegram, SignNow, ElevenLabs, etc.).
+
+### Deployment
+
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/Shamrock2245/shamrock-bail-portal-site.git
+    ```
+
+2.  **Configure Secrets:**
+    *   Add all required API keys to the **Wix Secrets Manager**.
+
+3.  **Deploy Google Apps Script:**
+    *   Use `clasp` to push the `backend-gas` code to your Google Apps Script project.
+    *   Open the GAS editor.
+    *   Run the `setupTelegramProperties` function in `Setup_Properties_Telegram.js`. This will pull all secrets from Wix and configure the script properties automatically.
+    *   Deploy the script as a Web App, ensuring it has access to "Anyone" and executes as "Me".
+
+4.  **Deploy Wix Velo Code:**
+    *   Use the Wix CLI or copy/paste the code from the `src` directory into your Velo editor.
+    *   Ensure the `http-functions.js` endpoint is configured with the correct GAS Web App URL.
+
+5.  **Register Webhooks:**
+    *   Run the `setTelegramWebhook` function in `SetupUtilities.js` to register your GAS endpoint with Telegram.
+    *   Configure your SignNow account to send webhooks to the same GAS endpoint for `document.complete` events.
+
+For a complete, step-by-step guide, refer to the [**Deployment Checklist**](./docs/DEPLOYMENT_CHECKLIST.md).
 
 ---
 
 ## 📂 Documentation Index
-*   **[GEMINI.md](../../.gemini/GEMINI.md):** 📜 **The Supreme Authority** (Project Guidelines & Architecture).
-*   **[TESTING_GUIDE.md](./TESTING_GUIDE.md):** Protocols for verification.
-*   **[AI_CAPABILITIES.md](./docs/AI_CAPABILITIES.md):** 🦾 Guide to the AI Agents.
-*   **[SCHEMAS.md](./docs/SCHEMAS.md):** Data models for CMS collections.
-*   **[API_SPEC.md](./docs/API_SPEC.md):** Backend interfaces.
-*   **[More Docs...](./docs/INDEX.md):** Full documentation index.
+*   **[ARCHITECTURE.md](./docs/ARCHITECTURE.md):** 📜 **System Architecture** (The new source of truth).
+*   **[DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md):** Step-by-step deployment guide.
+*   **[PDF_BOT_SKILLS.md](./docs/PDF_BOT_SKILLS.md):** Catalog of PDF handling skills integrated from open-source bots.
+*   **[TASKS.md](./TASKS.md):** Current project task list.
 
 ---
 
