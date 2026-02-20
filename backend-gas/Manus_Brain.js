@@ -3,13 +3,13 @@
  * 
  * Core logic for "The Manus Project" - Telegram Facilitator.
  * Orchestrates:
- * 1. Telegram Bot API (Inbound/Outbound)
+ * 1. Telegram Cloud API (Inbound/Outbound)
  * 2. OpenAI/Grok (Reasoning & Audio Transcription)
  * 3. ElevenLabs V3 (Voice Note Generation)
  * 4. Intake Flow (Conversational Data Collection)
  * 5. Document Generation (Automatic Paperwork)
  * 
- * Version: 3.0.0 - Telegram-Native (WhatsApp removed - ToS violation)
+ * Version: 2.0.0 - Telegram Intake Integration
  * Date: 2026-02-19
  */
 
@@ -37,46 +37,31 @@ You must respond in valid JSON format:
 `;
 
 /**
- * Handle incoming Telegram message (Text or Audio)
- * @param {Object} data - Telegram inbound data from webhook
+ * Handle incoming Telegram or Telegram message (Text or Audio)
+ * @param {Object} data - Telegram or Telegram inbound data from webhook
  */
-function handleManusMessage(data) {
-    const { from, name, body, type, mediaId, mimeType, platform, chatId } = data;
-    const messagePlatform = platform || 'telegram';
+function handleManus(data) {
+    const { from, name, body, type, mediaId, mimeType, chatId } = data;
 
     let userMessage = body || '';
     let inputType = type || 'text';
 
     try {
         // Initialize platform-specific API client
-        let apiClient;
-        if (messagePlatform === 'telegram') {
-            apiClient = new TelegramBotAPI();
-        } else {
-            throw new Error('Unsupported platform');
-        }
+        const apiClient = new TelegramBotAPI();
 
         // 1. Transcribe Audio if present
         if (inputType === 'audio' && mediaId) {
-            // Download audio (platform-specific)
-            let audioBlob;
-            if (messagePlatform === 'telegram') {
-                audioBlob = apiClient.downloadFile(mediaId);
-            } else {
-                throw new Error('Unsupported platform');
-            }
-            
+            // Download audio
+            const audioBlob = apiClient.downloadFile(mediaId);
+
             const transcript = transcribeAudio(audioBlob); // Uses OpenAIClient.js
             if (transcript) {
                 userMessage = transcript;
-                logProcessingEvent("MANUS_AUDIO_TRANSCRIBED", { from: from, text: userMessage, platform: messagePlatform });
+                logProcessingEvent("MANUS_AUDIO_TRANSCRIBED", { from: from, text: userMessage, platform: 'telegram' });
             } else {
                 const errorMsg = "Sorry, I couldn't hear that clearly. Could you type it?";
-                if (messagePlatform === 'telegram') {
-                    apiClient.sendMessage(chatId, errorMsg);
-                } else {
-                    throw new Error('Unsupported platform');
-                }
+                apiClient.sendMessage(chatId, errorMsg);
                 return ContentService.createTextOutput("Audio transcription failed");
             }
         }
@@ -86,14 +71,10 @@ function handleManusMessage(data) {
         if (intakeResult.handled) {
             // Intake flow handled the message - send response
             if (intakeResult.text) {
-                if (messagePlatform === 'telegram') {
-                    apiClient.sendMessage(chatId, intakeResult.text);
-                } else {
-                    throw new Error('Unsupported platform');
-                }
+                apiClient.sendMessage(chatId, intakeResult.text);
             }
             if (intakeResult.voice_script) {
-                generateAndSendVoiceNote(from, intakeResult.voice_script, messagePlatform, chatId);
+                generateAndSendVoiceNote(intakeResult.voice_script, chatId);
             }
             return ContentService.createTextOutput("Intake flow processed");
         }
@@ -123,18 +104,14 @@ function handleManusMessage(data) {
         const replyText = responseJson.text;
         const voiceScript = responseJson.voice_script;
 
-        // 4. Send Text Response (platform-specific)
+        // 4. Send Text Response
         if (replyText) {
-            if (messagePlatform === 'telegram') {
-                apiClient.sendMessage(chatId, replyText);
-            } else {
-                throw new Error('Unsupported platform');
-            }
+            apiClient.sendMessage(chatId, replyText);
         }
 
         // 5. Send Voice Note (if applicable)
         if (voiceScript && voiceScript.length > 10) {
-            generateAndSendVoiceNote(from, voiceScript, messagePlatform, chatId);
+            generateAndSendVoiceNote(voiceScript, chatId);
         }
 
         return ContentService.createTextOutput("Manus processed message");
@@ -144,12 +121,8 @@ function handleManusMessage(data) {
         // Send error message (platform-specific)
         const errorMsg = "I'm having a little trouble thinking right now. A human agent will be with you shortly.";
         try {
-            if (messagePlatform === 'telegram') {
-                const telegram = new TelegramBotAPI();
-                telegram.sendMessage(chatId, errorMsg);
-            } else {
-                throw new Error('Unsupported platform');
-            }
+            const telegram = new TelegramBotAPI();
+            telegram.sendMessage(chatId, errorMsg);
         } catch (sendError) {
             console.error("Failed to send error message:", sendError);
         }
@@ -158,37 +131,33 @@ function handleManusMessage(data) {
 }
 
 /**
- * Generate Voice Note via ElevenLabs and Send via Telegram
+ * Generate Voice Note via ElevenLabs and Send via Telegram or Telegram
  * @param {string} to - Phone number or user ID
  * @param {string} script - Text to speak
- * @param {string} platform - 'telegram'
+ * @param {string} platform - 'telegram' or 'telegram'
  * @param {string} chatId - Telegram chat ID (optional, only for Telegram)
  */
-function generateAndSendVoiceNote(to, script, platform = 'telegram', chatId = null) {
+function generateAndSendVoiceNote(script, chatId) {
     try {
         // A. Generate Audio
         const manusVoiceId = PropertiesService.getScriptProperties().getProperty('MANUS_VOICE_ID');
         const audioBlob = EL_generateAudio(script, manusVoiceId); // Uses ElevenLabs_Client.js
 
-        // B. Upload to Drive (Public) for WhatsApp Cloud API
+        // B. Upload to Drive (Public) for Telegram API
         const folderId = PropertiesService.getScriptProperties().getProperty('GOOGLE_DRIVE_OUTPUT_FOLDER_ID');
         const folder = DriveApp.getFolderById(folderId);
 
         const file = folder.createFile(audioBlob);
         file.setName(`Manus_Voice_${new Date().getTime()}.mp3`);
 
-        // Ensure public visibility for WhatsApp to fetch it via URL
+        // Ensure public visibility for Telegram to fetch it via URL
         file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
         const directUrl = `https://drive.google.com/uc?export=download&id=${file.getId()}`;
 
         // C. Send via platform-specific API
-        if (platform === 'telegram') {
-            const telegram = new TelegramBotAPI();
-            telegram.sendVoice(chatId || to, directUrl);
-        } else {
-            throw new Error('Unsupported platform');
-        }
+        const telegram = new TelegramBotAPI();
+        telegram.sendVoice(chatId, directUrl);
 
     } catch (e) {
         console.error("Manus Voice Generation Failed:", e);
@@ -214,15 +183,15 @@ function checkAndProcessIntake(from, message, name) {
         console.warn('processIntakeConversation function not found - intake flow disabled');
         return { handled: false };
     }
-    
+
     // Get conversation state
     const state = getConversationState(from);
-    
+
     // Determine if this message should be handled by intake flow
     const lowerMsg = message.toLowerCase();
     const intakeKeywords = ['bail', 'arrested', 'jail', 'bond', 'help', 'release'];
     const isIntakeRequest = intakeKeywords.some(kw => lowerMsg.includes(kw));
-    
+
     // If user is in an active intake flow, OR if they're requesting intake
     if (state.step !== 'complete' && state.step !== 'greeting') {
         // User is mid-intake, process their message
@@ -241,7 +210,7 @@ function checkAndProcessIntake(from, message, name) {
             voice_script: result.voice_script
         };
     }
-    
+
     // Not an intake flow message - let general AI handle it
     return { handled: false };
 }

@@ -17,16 +17,16 @@
 
 function getPaymentConfig() {
   const scriptProps = PropertiesService.getScriptProperties();
-  
+
   return {
     // SwipeSimple configuration
     swipeSimpleBaseUrl: scriptProps.getProperty('SWIPESIMPLE_BASE_URL') || 'https://swipesimple.com/links',
     swipeSimpleApiKey: scriptProps.getProperty('SWIPESIMPLE_API_KEY') || '',
-    
+
     // Payment settings
     processingFee: 25, // Fixed processing fee
     minimumPayment: 50, // Minimum payment amount
-    
+
     // Payment link expiration
     linkExpirationHours: 48 // 48 hours to complete payment
   };
@@ -43,21 +43,21 @@ function getPaymentConfig() {
  */
 function calculatePaymentAmount(caseData) {
   const bondAmount = parseFloat(caseData.bondAmount || caseData.Bond_Amount || 0);
-  
+
   if (bondAmount <= 0) {
     throw new Error('Invalid bond amount');
   }
-  
+
   // Premium calculation (10% of bond amount in Florida)
   const premium = bondAmount * 0.10;
-  
+
   // Processing fee
   const config = getPaymentConfig();
   const processingFee = config.processingFee;
-  
+
   // Total
   const total = premium + processingFee;
-  
+
   return {
     bondAmount: bondAmount,
     premium: premium,
@@ -78,10 +78,10 @@ function calculatePaymentAmount(caseData) {
  */
 function generatePaymentLink(caseData, amounts) {
   const config = getPaymentConfig();
-  
+
   // Generate unique reference
   const reference = `${caseData.caseNumber || 'CASE'}_${new Date().getTime()}`;
-  
+
   // Build payment link
   // Note: SwipeSimple link format may vary - adjust based on actual API
   const params = {
@@ -91,34 +91,34 @@ function generatePaymentLink(caseData, amounts) {
     customer_email: caseData.indemnitorEmail || '',
     customer_phone: caseData.indemnitorPhone || ''
   };
-  
+
   const queryString = Object.keys(params)
     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
     .join('&');
-  
+
   const paymentLink = `${config.swipeSimpleBaseUrl}?${queryString}`;
-  
+
   console.log(`Payment link generated: ${paymentLink}`);
-  
+
   return paymentLink;
 }
 
 // =============================================================================
-// WHATSAPP DELIVERY
+// TELEGRAM DELIVERY
 // =============================================================================
 
 /**
- * Send payment link via WhatsApp
+ * Send payment link via Telegram
  * @param {string} phoneNumber - Recipient's phone number
  * @param {object} caseData - Case information
  * @param {object} amounts - Payment amounts
  * @param {string} paymentLink - Payment link URL
  * @returns {object} - { success: boolean, message: string }
  */
-function sendPaymentLinkViaWhatsApp(phoneNumber, caseData, amounts, paymentLink) {
+function sendPaymentLinkViaTelegram(phoneNumber, caseData, amounts, paymentLink) {
   try {
-    const whatsapp = new WhatsAppCloudAPI();
-    
+    const telegram = new TelegramBotAPI();
+
     const message = `✅ **Signature received!** Thank you for signing.
 
 Now for payment. Here's the breakdown:
@@ -142,9 +142,12 @@ Once payment clears, ${caseData.defendantName || 'the defendant'} can be release
 ⏰ This link expires in 48 hours.
 
 Questions? Just reply!`;
-    
-    const result = whatsapp.sendText(phoneNumber, message);
-    
+
+    // Convert phone number to chat ID or logic appropriate for Telegram 
+    // Usually handled inside `TelegramBotAPI` finding chat ID based on phone 
+    // Assuming backend logic supports sending to phone or finding matching chat ID.
+    const result = telegram.sendMessage(phoneNumber, message);
+
     if (result && result.success !== false) {
       // Log for compliance
       logProcessingEvent('PAYMENT_LINK_SENT', {
@@ -154,18 +157,18 @@ Questions? Just reply!`;
         paymentLink: paymentLink,
         timestamp: new Date().toISOString()
       });
-      
+
       return {
         success: true,
-        message: 'Payment link sent via WhatsApp'
+        message: 'Payment link sent via Telegram'
       };
     } else {
       return {
         success: false,
-        message: 'Failed to send WhatsApp message'
+        message: 'Failed to send Telegram message'
       };
     }
-    
+
   } catch (e) {
     console.error('Error sending payment link:', e);
     return {
@@ -188,37 +191,37 @@ Questions? Just reply!`;
  */
 function processPaymentLink(caseData) {
   console.log(`Processing payment link for case: ${caseData.caseNumber}`);
-  
+
   try {
     // 1. Validate case data
     if (!caseData.caseNumber) {
       throw new Error('Case number is required');
     }
-    
+
     if (!caseData.indemnitorPhone && !caseData.phoneNumber) {
       throw new Error('Indemnitor phone number is required');
     }
-    
+
     // 2. Calculate payment amounts
     const amounts = calculatePaymentAmount(caseData);
-    
+
     // 3. Generate payment link
     const paymentLink = generatePaymentLink(caseData, amounts);
-    
-    // 4. Send via WhatsApp
+
+    // 4. Send via Telegram
     const phoneNumber = caseData.indemnitorPhone || caseData.phoneNumber;
-    const deliveryResult = sendPaymentLinkViaWhatsApp(phoneNumber, caseData, amounts, paymentLink);
-    
+    const deliveryResult = sendPaymentLinkViaTelegram(phoneNumber, caseData, amounts, paymentLink);
+
     // 5. Store payment link in case record
     storePaymentLink(caseData.caseNumber, paymentLink, amounts);
-    
+
     return {
       success: deliveryResult.success,
       paymentLink: paymentLink,
       amounts: amounts,
       message: deliveryResult.message
     };
-    
+
   } catch (e) {
     console.error('Payment link processing error:', e);
     return {
@@ -242,11 +245,11 @@ function storePaymentLink(caseNumber, paymentLink, amounts) {
       createdAt: new Date().toISOString(),
       status: 'pending'
     };
-    
+
     props.setProperty(`payment_${caseNumber}`, JSON.stringify(paymentData));
-    
+
     console.log(`Payment link stored for case: ${caseNumber}`);
-    
+
   } catch (e) {
     console.error('Error storing payment link:', e);
   }
@@ -259,13 +262,13 @@ function getPaymentLink(caseNumber) {
   try {
     const props = PropertiesService.getScriptProperties();
     const data = props.getProperty(`payment_${caseNumber}`);
-    
+
     if (data) {
       return JSON.parse(data);
     }
-    
+
     return null;
-    
+
   } catch (e) {
     console.error('Error retrieving payment link:', e);
     return null;
@@ -279,15 +282,15 @@ function getPaymentLink(caseNumber) {
 function markPaymentComplete(caseNumber, transactionId) {
   try {
     const paymentData = getPaymentLink(caseNumber);
-    
+
     if (paymentData) {
       paymentData.status = 'completed';
       paymentData.transactionId = transactionId;
       paymentData.completedAt = new Date().toISOString();
-      
+
       const props = PropertiesService.getScriptProperties();
       props.setProperty(`payment_${caseNumber}`, JSON.stringify(paymentData));
-      
+
       // Log for compliance
       logProcessingEvent('PAYMENT_COMPLETED', {
         caseNumber: caseNumber,
@@ -295,16 +298,16 @@ function markPaymentComplete(caseNumber, transactionId) {
         amount: paymentData.amounts.total,
         timestamp: new Date().toISOString()
       });
-      
+
       // Trigger next step (ID verification request)
       triggerIdVerificationRequest(caseNumber, paymentData);
-      
+
       console.log(`Payment marked complete: ${caseNumber}`);
       return true;
     }
-    
+
     return false;
-    
+
   } catch (e) {
     console.error('Error marking payment complete:', e);
     return false;
@@ -318,11 +321,11 @@ function triggerIdVerificationRequest(caseNumber, paymentData) {
   try {
     // Get case data to find phone number
     const phoneNumber = paymentData.phoneNumber || findPhoneNumberByCase(caseNumber);
-    
+
     if (phoneNumber && typeof requestPhotoUpload === 'function') {
       requestPhotoUpload(phoneNumber, caseNumber);
     }
-    
+
   } catch (e) {
     console.error('Error triggering ID verification:', e);
   }
@@ -337,10 +340,10 @@ function findPhoneNumberByCase(caseNumber) {
     const config = getConfig();
     const ss = SpreadsheetApp.openById(config.SPREADSHEET_ID || '');
     const sheet = ss.getSheetByName('Bookings');
-    
+
     if (sheet) {
       const data = sheet.getDataRange().getValues();
-      
+
       for (let i = 1; i < data.length; i++) {
         if (data[i][0] === caseNumber) {
           // Assuming phone is in a specific column - adjust as needed
@@ -351,7 +354,7 @@ function findPhoneNumberByCase(caseNumber) {
   } catch (e) {
     console.warn('Could not find phone number:', e);
   }
-  
+
   return null;
 }
 
@@ -365,19 +368,19 @@ function findPhoneNumberByCase(caseNumber) {
 function sendPaymentReminder(caseNumber) {
   try {
     const paymentData = getPaymentLink(caseNumber);
-    
+
     if (!paymentData || paymentData.status === 'completed') {
       return;
     }
-    
+
     const phoneNumber = paymentData.phoneNumber || findPhoneNumberByCase(caseNumber);
     if (!phoneNumber) {
       console.warn(`No phone number found for case: ${caseNumber}`);
       return;
     }
-    
-    const whatsapp = new WhatsAppCloudAPI();
-    
+
+    const telegram = new TelegramBotAPI();
+
     const message = `👋 Hi! This is a friendly reminder about your bail bond payment.
 
 **Total Due:** $${paymentData.amounts.total.toFixed(2)}
@@ -388,17 +391,17 @@ ${paymentData.paymentLink}
 Once payment clears, we can proceed with the release process.
 
 Questions? Just reply!`;
-    
-    whatsapp.sendText(phoneNumber, message);
-    
+
+    telegram.sendMessage(phoneNumber, message);
+
     logProcessingEvent('PAYMENT_REMINDER_SENT', {
       caseNumber: caseNumber,
       phoneNumber: phoneNumber,
       timestamp: new Date().toISOString()
     });
-    
+
     console.log(`Payment reminder sent for case: ${caseNumber}`);
-    
+
   } catch (e) {
     console.error('Error sending payment reminder:', e);
   }

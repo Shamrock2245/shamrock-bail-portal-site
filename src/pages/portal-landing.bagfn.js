@@ -26,9 +26,8 @@
  */
 
 import wixLocation from 'wix-location';
-import { sendMagicLinkSimplified, onMagicLinkLoginV2, validateCustomSession } from 'backend/portal-auth';
+import { sendMagicLinkSimplified, onMagicLinkLoginV2, validateCustomSession, onTelegramLogin } from 'backend/portal-auth';
 import { getGoogleAuthUrl, getFacebookAuthUrl } from 'backend/social-auth';
-import { sendWhatsAppOTP, validateWhatsAppOTP, resendWhatsAppOTP } from 'backend/whatsapp-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 import { initAIChat } from 'public/ai-concierge';
 import wixSeo from 'wix-seo';
@@ -41,7 +40,7 @@ const state = {
 };
 
 $w.onReady(async function () {
-    console.log("🚀 Portal Landing v3.0: WhatsApp OTP Integration");
+    console.log("🚀 Portal Landing v4.0: Telegram Login Widget Integration");
     const query = wixLocation.query;
 
     // 1. PRIORITY: Check for magic link token in URL (returning from email/SMS)
@@ -198,17 +197,14 @@ function setupSimplifiedLogin() {
         await handleGetStarted();
     });
 
-    // Wire up OTP verification button (if exists)
-    if ($w('#verifyOtpBtn')) {
-        $w('#verifyOtpBtn').onClick(handleVerifyOTP);
-        console.log("✅ OTP verification button wired");
-    }
-
-    // Hide OTP input box by default
+    // Hide OTP input box by default (not needed with Telegram widget, but keeping reference to collapse it)
     if ($w('#otpInputBox')) {
         $w('#otpInputBox').hide();
         $w('#otpInputBox').collapse();
     }
+
+    // Setup Telegram Widget
+    setupTelegramWidget();
 
     // Setup Social Logins (Real Implementation)
     const googleBtn = $w('#googleLoginBtn');
@@ -227,10 +223,9 @@ function setupSimplifiedLogin() {
 }
 
 /**
- * Handle "Get Started" button click (v3.0 - WhatsApp OTP Support)
+ * Handle "Get Started" button click (v3.0)
  * Validates input and routes to appropriate auth flow:
- * - Email: Magic link
- * - Phone: WhatsApp OTP
+ * - Email/Phone: Magic link
  */
 async function handleGetStarted() {
     const input = $w('#emailPhoneInput');
@@ -240,107 +235,27 @@ async function handleGetStarted() {
     const emailOrPhone = input.value ? input.value.trim() : '';
 
     if (!emailOrPhone) {
-        showMessage("Please enter your email or WhatsApp number", "error");
+        showMessage("Please enter your email or phone number", "error");
         input.focus();
         return;
     }
 
     // Basic validation
     if (!isValidEmailOrPhone(emailOrPhone)) {
-        showMessage("Please enter a valid email or WhatsApp number", "error");
+        showMessage("Please enter a valid email or phone number", "error");
         input.focus();
         return;
     }
 
-    // Detect if input is phone number (for WhatsApp OTP) or email (for magic link)
-    // Phone detection: mostly digits, spaces, dashes, plus, parens
-    // Email detection: contains @
-    const isPhone = !emailOrPhone.includes('@') && /^[\d\s\-\+\(\)]+$/.test(emailOrPhone);
-
-    if (isPhone) {
-        // Route to WhatsApp OTP flow
-        console.log("📱 Detected phone number, sending WhatsApp OTP");
-        await handleWhatsAppOTPFlow(emailOrPhone);
-    } else {
-        // Route to email magic link flow
-        console.log("📧 Detected email, sending magic link");
-        await handleEmailMagicLinkFlow(emailOrPhone);
-    }
+    // Route to email/sms magic link flow
+    console.log("📧 Sending magic link");
+    await handleEmailMagicLinkFlow(emailOrPhone);
 }
 
 /**
- * Handle WhatsApp OTP Flow (New)
+ * Handle Email/SMS Magic Link Flow
  */
-async function handleWhatsAppOTPFlow(phoneNumber) {
-    const button = $w('#getStartedBtn');
-
-    // Show loading state
-    button.disable();
-    const originalLabel = button.label;
-    button.label = "Sending OTP...";
-    showMessage("Sending verification code to WhatsApp...", "info");
-
-    try {
-        // Call backend to send WhatsApp OTP
-        const result = await sendWhatsAppOTP(phoneNumber);
-
-        console.log("📱 WhatsApp OTP result:", result);
-
-        if (result.success) {
-            // Success! Show OTP input
-            button.label = "Code Sent! ✓";
-            showMessage("Check WhatsApp for your verification code", "success");
-
-            // Show OTP input box (if element exists)
-            if ($w('#otpInputBox')) {
-                $w('#otpInputBox').show();
-                $w('#otpInputBox').expand();
-
-                // Focus on OTP input
-                if ($w('#otpInput')) {
-                    $w('#otpInput').focus();
-                }
-
-                // Store phone number for validation - attaching to OTP input as custom data source
-                if ($w('#otpInput')) {
-                    try {
-                        $w('#otpInput').customData = { phoneNumber: phoneNumber };
-                    } catch (e) {
-                        // Fallback: Use a hidden text field if available, or just keeping it in memory is fine for SPA
-                        // For this implementation, I'll store it in a module-level variable to be safe across functions
-                        state.phoneNumberForOtp = phoneNumber;
-                    }
-                }
-                // Always set state as backup
-                state.phoneNumberForOtp = phoneNumber;
-            }
-
-            // Re-enable button for resend
-            setTimeout(() => {
-                button.enable();
-                button.label = "Resend Code";
-            }, 30000); // 30 seconds
-
-        } else {
-            // Error
-            console.error("❌ WhatsApp OTP send failed:", result.message);
-            showMessage(result.message || "Unable to send code. Please try again.", "error");
-            button.enable();
-            button.label = "Try Again";
-        }
-
-    } catch (error) {
-        console.error("❌ CRITICAL ERROR sending WhatsApp OTP:", error);
-        showMessage("System error. Please try again.", "error");
-        button.enable();
-        button.label = originalLabel;
-    }
-}
-
-/**
- * Handle Email Magic Link Flow (Existing logic, extracted)
- */
-async function handleEmailMagicLinkFlow(email) {
+async function handleEmailMagicLinkFlow(emailOrPhone) {
     const button = $w('#getStartedBtn');
 
     // Show loading state
@@ -351,7 +266,7 @@ async function handleEmailMagicLinkFlow(email) {
 
     try {
         // Call backend to send magic link
-        const result = await sendMagicLinkSimplified(email);
+        const result = await sendMagicLinkSimplified(emailOrPhone);
 
         console.log("📬 Magic link result:", result);
 
@@ -373,6 +288,7 @@ async function handleEmailMagicLinkFlow(email) {
             let countdown = 60;
             const timer = setInterval(() => {
                 countdown--;
+                // Stop timer if state changed unexpectedly
                 if (button.label !== "Sent! ✓" && !button.label.startsWith("Resend")) {
                     if (button.enabled) { clearInterval(timer); return; }
                 }
@@ -403,84 +319,49 @@ async function handleEmailMagicLinkFlow(email) {
 }
 
 /**
- * Handle OTP Verification
- * Called when user clicks "Verify" button after entering OTP code
+ * Setup Telegram Login Widget listener
+ * Called from onReady to listen for messages from the HTML component
  */
-async function handleVerifyOTP() {
-    const otpInput = $w('#otpInput');
-    const verifyBtn = $w('#verifyOtpBtn');
-    const otpCode = otpInput.value ? otpInput.value.trim() : '';
-
-    if (!otpCode) {
-        showMessage("Please enter the verification code", "error");
-        otpInput.focus();
+function setupTelegramWidget() {
+    const telegramHtml = $w('#telegramHtml');
+    if (!telegramHtml) {
+        console.log("No Telegram HTML component found on page.");
         return;
     }
 
-    if (otpCode.length !== 6) {
-        showMessage("Code must be 6 digits", "error");
-        otpInput.focus();
-        return;
-    }
+    console.log("📱 Hooking up Telegram Login Widget listener");
+    telegramHtml.onMessage(async (event) => {
+        try {
+            console.log("📩 Received message from Telegram HTML component:", event.data);
+            const telegramData = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
 
-    // Get phone number from state or custom data
-    let phoneNumber = state.phoneNumberForOtp;
+            if (telegramData && telegramData.hash) {
+                showMessage("Verifying Telegram Login...", "info");
+                showLoading();
 
-    // Fallback to customData if state is empty (rare)
-    if (!phoneNumber && otpInput.customData) {
-        phoneNumber = otpInput.customData.phoneNumber;
-    }
+                // Call backend using imported function directly
+                const result = await onTelegramLogin(telegramData);
 
-    if (!phoneNumber) {
-        showMessage("Session expired. Please request a new code.", "error");
-        return;
-    }
+                if (result.ok && result.sessionToken) {
+                    // Success! Save session and redirect
+                    setSessionToken(result.sessionToken);
+                    showMessage("Login successful! Redirecting...", "success");
 
-    console.log("🔐 Verifying OTP code...");
-
-    // Show loading state
-    verifyBtn.disable();
-    const originalLabel = verifyBtn.label;
-    verifyBtn.label = "Verifying...";
-    showMessage("Verifying your code...", "info");
-
-    try {
-        // Call backend to validate OTP
-        const result = await validateWhatsAppOTP(phoneNumber, otpCode);
-
-        console.log("✅ OTP validation result:", result);
-
-        if (result.valid && result.sessionToken) {
-            // Success! Save session and redirect
-            setSessionToken(result.sessionToken);
-            showMessage("Login successful! Redirecting...", "success");
-
-            // Redirect to appropriate portal
-            setTimeout(() => {
-                redirectToPortal(result.role);
-            }, 1000);
-
-        } else {
-            // Invalid code
-            console.error("❌ OTP validation failed:", result.error);
-            showMessage(result.error || "Invalid code. Please try again.", "error");
-            verifyBtn.enable();
-            verifyBtn.label = originalLabel;
-            otpInput.value = "";
-            otpInput.focus();
-
-            // Show attempts remaining if available
-            if (result.attemptsRemaining !== undefined) {
-                showMessage(`Invalid code. ${result.attemptsRemaining} attempts remaining.`, "error");
+                    setTimeout(() => {
+                        redirectToPortal(result.role || 'indemnitor');
+                    }, 1000);
+                } else {
+                    console.error("❌ Telegram validation failed:", result.message);
+                    showMessage(result.message || "Invalid Telegram login. Please try again.", "error");
+                    hideLoading();
+                }
             }
+        } catch (error) {
+            console.error("❌ Error processing Telegram login event:", error);
+            showMessage("Error verifying Telegram login. Please try again.", "error");
+            hideLoading();
         }
-
-    } catch (error) {
-        console.error("❌ CRITICAL ERROR verifying OTP:", error);
-        showMessage("System error. Please try again.", "error");
-        verifyBtn.enable();
-        verifyBtn.label = originalLabel;
-    }
+    });
 }
 
 /**

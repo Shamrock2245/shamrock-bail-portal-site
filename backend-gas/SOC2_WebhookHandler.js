@@ -22,7 +22,6 @@ function handleSOC2Webhook(e) {
             case "elevenlabs":
             case "ElevenLabs":
                 return handleElevenLabsWebhookSOC2(e);
-
             default:
                 logSecurityEvent("UNKNOWN_WEBHOOK", { path: path });
                 return ContentService.createTextOutput("Unknown endpoint or source").setMimeType(ContentService.MimeType.TEXT);
@@ -78,8 +77,6 @@ function handleTwilioWebhookSOC2(e) {
     const payload = e.parameter;
     logProcessingEvent("TWILIO_WEBHOOK_RECEIVED", payload);
 
-
-
     // Business Logic: Log to Slack and Reply
     try {
         const from = payload.From || 'Unknown';
@@ -115,11 +112,4 @@ function handleTwilioWebhookSOC2(e) {
     const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${replyMsg}</Message></Response>`;
     return ContentService.createTextOutput(xml).setMimeType(ContentService.MimeType.XML);
 }
-
-
-
-
-
-
-
 

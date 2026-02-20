@@ -1,1062 +1,839 @@
 /**
  * Telegram_IntakeFlow.js
- * Shamrock Bail Bonds — Google Apps Script
- *
- * Conversational intake state machine for Telegram.
- * Guides family members / indemnitors through the bail bond process
- * across all 67 Florida counties.
- *
- * FLOW OVERVIEW:
- *   greeting → county → defendant_name → defendant_dob → charges
- *   → bond_amount → indemnitor_name → indemnitor_phone → indemnitor_email
- *   → indemnitor_address → relationship → id_prompt → complete
- *
- * SECURITY:
- *   - All PII stored in GAS Script Properties (keyed by Telegram user ID)
- *   - No raw PII in logs (IDs only)
- *   - Rate limiting: max 1 intake per user per 24 hours
- *   - Input sanitization on all fields
- *
- * INTEGRATION:
- *   - On completion → pushes to Wix IntakeQueue via WixPortalIntegration.js
- *   - Sends signing link via Telegram when packet is ready
- *   - ElevenLabs voice note on complex steps
- *
- * Version: 1.0.0 — Telegram-Native
- * Date: 2026-02-20
+ * 
+ * Conversational Intake State Machine for Shamrock Bail Bonds
+ * Manages multi-turn Telegram conversations to collect complete bail bond data
+ * 
+ * FLOW:
+ * 1. Greeting → Defendant Info → Indemnitor Info → References → Complete
+ * 2. Each step validates input before advancing
+ * 3. State persists in CacheService (1 hour timeout)
+ * 4. On completion, triggers document generation
+ * 
+ * Version: 1.0.0
+ * Date: 2026-02-19
  */
 
 // =============================================================================
-// CONSTANTS
+// CONVERSATION STEPS
 // =============================================================================
 
-const INTAKE_STEPS = [
-  'greeting',
-  'county',
-  'defendant_name',
-  'defendant_dob',
-  'charges',
-  'bond_amount',
-  'indemnitor_name',
-  'indemnitor_phone',
-  'indemnitor_email',
-  'indemnitor_address',
-  'relationship',
-  'id_prompt',
-  'complete'
-];
-
-const INTAKE_PROMPTS = {
-  greeting: `🍀 *Welcome to Shamrock Bail Bonds*
-
-I'm Manus, your digital assistant. I'll help get your loved one home as fast as possible.
-
-This takes about 3 minutes. Everything you share is encrypted and secure.
-
-*Which Florida county was your loved one arrested in?*
-(Type the county name, e.g. "Lee" or "Collier")`,
-
-  county: `Got it. Now I need a few details about the person who was arrested.
-
-*What is the defendant's full legal name?*
-(First and Last name, as it appears on their ID)`,
-
-  defendant_name: `Thank you.
-
-*What is the defendant's date of birth?*
-(Format: MM/DD/YYYY)`,
-
-  defendant_dob: `*What are the charges?*
-(You can type them as listed on the arrest record, or say "I don't know" and I'll help.)`,
-
-  charges: `*What is the bond amount?*
-(Check the arrest record or booking sheet. Type the number, e.g. "5000")`,
-
-  bond_amount: `Now I need your information as the person signing the bond (the Indemnitor/Co-signer).
-
-*What is YOUR full legal name?*`,
-
-  indemnitor_name: `*What is your best phone number?*
-(We'll text you the signing link here too)`,
-
-  indemnitor_phone: `*What is your email address?*
-(Your signed documents will be sent here)`,
-
-  indemnitor_email: `*What is your current home address?*
-(Street, City, State, ZIP — required for the bond paperwork)`,
-
-  indemnitor_address: `*What is your relationship to the defendant?*
-(e.g. Mother, Father, Spouse, Friend, Employer)`,
-
-  relationship: `Almost done! 
-
-*I'll need a photo of your government-issued ID.*
-Please send a clear photo of the front of your driver's license or passport.
-
-This is required by Florida law to complete the bond.`,
-
-  id_prompt: null // Handled by photo upload flow
-};
-
-const VOICE_SCRIPTS = {
-  greeting: "Welcome to Shamrock Bail Bonds. I'm Manus, and I'm here to help get your loved one home tonight. This process takes about three minutes. Let's start with the county.",
-  bond_amount: "The bond amount is the total set by the judge. Your premium — what you pay us — is typically ten percent of that number. So a ten thousand dollar bond means a one thousand dollar premium.",
-  id_prompt: "Florida law requires us to verify your identity before we can post the bond. Please send a clear photo of the front of your driver's license or state ID. This is completely secure and only used for this transaction.",
-  complete: "You're all set! Your intake has been submitted. An agent will review it immediately and send you the signing link. Most clients are signing within fifteen minutes."
+const INTAKE_STEPS = {
+  GREETING: 'greeting',
+  DEFENDANT_NAME: 'defendant_name',
+  DEFENDANT_DOB: 'defendant_dob',
+  DEFENDANT_JAIL: 'defendant_jail',
+  DEFENDANT_PHONE: 'defendant_phone',
+  INDEMNITOR_NAME: 'indemnitor_name',
+  INDEMNITOR_CONTACT: 'indemnitor_contact',
+  INDEMNITOR_ADDRESS: 'indemnitor_address',
+  INDEMNITOR_EMPLOYMENT: 'indemnitor_employment',
+  INDEMNITOR_RELATIONSHIP: 'indemnitor_relationship',
+  REFERENCE_1: 'reference_1',
+  REFERENCE_2: 'reference_2',
+  CONFIRM_INFO: 'confirm_info',
+  COMPLETE: 'complete'
 };
 
 // =============================================================================
 // STATE MANAGEMENT
-// Uses GAS Script Properties with user-scoped keys
 // =============================================================================
 
+const CONVERSATION_TIMEOUT = 3600; // 1 hour in seconds
+
 /**
- * Get conversation state for a user
- * @param {string} userId - Telegram user ID (as string)
- * @returns {Object} state object
+ * Get current conversation state for a phone number
  */
-function getConversationState(userId) {
-  const props = PropertiesService.getScriptProperties();
-  const key = `INTAKE_STATE_${userId}`;
-  const raw = props.getProperty(key);
+function getConversationState(phoneNumber) {
+  const cache = CacheService.getScriptCache();
+  const key = `intake_${phoneNumber}`;
+  const cached = cache.get(key);
 
-  if (!raw) {
-    return {
-      step: 'greeting',
-      data: {},
-      startedAt: null,
-      lastActivity: null
-    };
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (e) {
+      console.error('Failed to parse conversation state:', e);
+    }
   }
 
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('Failed to parse intake state for user:', userId);
-    return { step: 'greeting', data: {}, startedAt: null, lastActivity: null };
-  }
+  // New conversation
+  return {
+    step: INTAKE_STEPS.GREETING,
+    data: {},
+    startedAt: new Date().toISOString(),
+    phoneNumber: phoneNumber
+  };
 }
 
 /**
- * Save conversation state for a user
- * @param {string} userId - Telegram user ID
- * @param {Object} state - State object to save
+ * Update conversation state
  */
-function saveConversationState(userId, state) {
-  const props = PropertiesService.getScriptProperties();
-  const key = `INTAKE_STATE_${userId}`;
-  state.lastActivity = new Date().toISOString();
-  props.setProperty(key, JSON.stringify(state));
+function updateConversationState(phoneNumber, newState) {
+  const cache = CacheService.getScriptCache();
+  const key = `intake_${phoneNumber}`;
+
+  newState.updatedAt = new Date().toISOString();
+  newState.phoneNumber = phoneNumber;
+
+  cache.put(key, JSON.stringify(newState), CONVERSATION_TIMEOUT);
+
+  // Also log for debugging
+  console.log(`Conversation state updated: ${phoneNumber} → ${newState.step}`);
 }
 
 /**
- * Clear conversation state for a user
- * @param {string} userId - Telegram user ID
+ * Clear conversation state (on completion or timeout)
  */
-function clearConversationState(userId) {
-  const props = PropertiesService.getScriptProperties();
-  props.deleteProperty(`INTAKE_STATE_${userId}`);
+function clearConversationState(phoneNumber) {
+  const cache = CacheService.getScriptCache();
+  cache.remove(`intake_${phoneNumber}`);
+  console.log(`Conversation state cleared: ${phoneNumber}`);
 }
 
 // =============================================================================
 // MAIN INTAKE PROCESSOR
-// Called by Manus_Brain.js checkAndProcessIntake()
 // =============================================================================
 
 /**
- * Process an intake conversation message
- * @param {string} userId - Telegram user ID
- * @param {string} message - User's message text
- * @param {string} name - User's display name from Telegram
- * @returns {Object} { text, voice_script, handled }
+ * Process incoming message and advance conversation
+ * This is called by Manus_Brain.js
+ * 
+ * @param {string} from - User's phone number
+ * @param {string} message - User's message
+ * @param {string} userName - User's name from Telegram profile
+ * @returns {object} - { text: string, voice_script: string|null, advance: boolean }
  */
-function processIntakeConversation(userId, message, name) {
-  const state = getConversationState(userId);
-  const currentStep = state.step;
+function processIntakeConversation(from, message, userName) {
+  const state = getConversationState(from);
 
-  console.log(`[Intake] User ${userId} at step: ${currentStep}, message: "${message.substring(0, 50)}"`);
-
-  // ── Handle /cancel command ──────────────────────────────────────────────────
-  if (message.toLowerCase() === '/cancel' || message.toLowerCase() === 'cancel') {
-    clearConversationState(userId);
-    return {
-      text: '✅ Intake cancelled. Type /start anytime to begin again, or call us at (239) 332-2245.',
-      voice_script: null,
-      handled: true
-    };
+  // Store user name if not already stored
+  if (!state.data.userName && userName) {
+    state.data.userName = userName;
   }
 
-  // ── Handle /restart command ─────────────────────────────────────────────────
-  if (message.toLowerCase() === '/restart' || message.toLowerCase() === 'restart') {
-    clearConversationState(userId);
-    const newState = { step: 'greeting', data: {}, startedAt: new Date().toISOString(), lastActivity: null };
-    saveConversationState(userId, newState);
-    return {
-      text: INTAKE_PROMPTS.greeting,
-      voice_script: VOICE_SCRIPTS.greeting,
-      handled: true
-    };
-  }
+  let response;
 
-  // ── Step: greeting (initial trigger) ───────────────────────────────────────
-  if (currentStep === 'greeting') {
-    const newState = {
-      step: 'county',
-      data: { userName: sanitizeInput(name) },
-      startedAt: new Date().toISOString(),
-      lastActivity: null
-    };
-    saveConversationState(userId, newState);
-    return {
-      text: INTAKE_PROMPTS.greeting,
-      voice_script: VOICE_SCRIPTS.greeting,
-      handled: true
-    };
-  }
+  switch (state.step) {
+    case INTAKE_STEPS.GREETING:
+      response = handleGreeting(state, message);
+      break;
 
-  // ── Step: county ────────────────────────────────────────────────────────────
-  if (currentStep === 'county') {
-    const county = resolveCounty(message);
-    if (!county) {
-      return {
-        text: `⚠️ I didn't recognize "${sanitizeInput(message)}" as a Florida county.\n\nPlease type the county name (e.g. "Lee", "Collier", "Miami-Dade", "Hillsborough").`,
-        voice_script: null,
-        handled: true
+    case INTAKE_STEPS.DEFENDANT_NAME:
+      response = handleDefendantName(state, message);
+      break;
+
+    case INTAKE_STEPS.DEFENDANT_DOB:
+      response = handleDefendantDOB(state, message);
+      break;
+
+    case INTAKE_STEPS.DEFENDANT_JAIL:
+      response = handleDefendantJail(state, message);
+      break;
+
+    case INTAKE_STEPS.DEFENDANT_PHONE:
+      response = handleDefendantPhone(state, message);
+      break;
+
+    case INTAKE_STEPS.INDEMNITOR_NAME:
+      response = handleIndemnitorName(state, message);
+      break;
+
+    case INTAKE_STEPS.INDEMNITOR_CONTACT:
+      response = handleIndemnitorContact(state, message);
+      break;
+
+    case INTAKE_STEPS.INDEMNITOR_ADDRESS:
+      response = handleIndemnitorAddress(state, message);
+      break;
+
+    case INTAKE_STEPS.INDEMNITOR_EMPLOYMENT:
+      response = handleIndemnitorEmployment(state, message);
+      break;
+
+    case INTAKE_STEPS.INDEMNITOR_RELATIONSHIP:
+      response = handleIndemnitorRelationship(state, message);
+      break;
+
+    case INTAKE_STEPS.REFERENCE_1:
+      response = handleReference1(state, message);
+      break;
+
+    case INTAKE_STEPS.REFERENCE_2:
+      response = handleReference2(state, message);
+      break;
+
+    case INTAKE_STEPS.CONFIRM_INFO:
+      response = handleConfirmation(state, message);
+      break;
+
+    case INTAKE_STEPS.COMPLETE:
+      response = handleComplete(state, message);
+      break;
+
+    default:
+      response = {
+        text: "I'm sorry, something went wrong. Let's start over. Type 'restart' to begin again.",
+        nextStep: INTAKE_STEPS.GREETING
       };
+  }
+
+  // Update state if step changed
+  if (response.nextStep) {
+    state.step = response.nextStep;
+    updateConversationState(from, state);
+  }
+
+  // If complete, trigger document generation
+  if (response.triggerDocuments) {
+    try {
+      const docResult = triggerDocumentGenerationFromTelegram(state.data, from);
+      response.documentResult = docResult;
+    } catch (e) {
+      console.error('Document generation failed:', e);
+      response.text += "\n\n⚠️ There was an issue generating your documents. A staff member will assist you shortly.";
     }
-
-    state.data.county = county.name;
-    state.data.countySlug = county.slug;
-    state.step = 'defendant_name';
-    saveConversationState(userId, state);
-
-    // Provide county-specific context
-    const countyInfo = getCountyInfo(county.slug);
-    let countyContext = '';
-    if (countyInfo) {
-      countyContext = `\n\n📍 *${county.name} Info:*\n${countyInfo.process}`;
-    }
-
-    return {
-      text: `✅ Got it — *${county.name} County*${countyContext}\n\n${INTAKE_PROMPTS.county}`,
-      voice_script: null,
-      handled: true
-    };
   }
-
-  // ── Step: defendant_name ────────────────────────────────────────────────────
-  if (currentStep === 'defendant_name') {
-    const cleaned = sanitizeInput(message);
-    if (cleaned.length < 3 || cleaned.split(' ').length < 2) {
-      return {
-        text: '⚠️ Please enter the defendant\'s *full legal name* (First and Last name).',
-        voice_script: null,
-        handled: true
-      };
-    }
-
-    state.data.defendantName = cleaned;
-    state.step = 'defendant_dob';
-    saveConversationState(userId, state);
-
-    return {
-      text: INTAKE_PROMPTS.defendant_name,
-      voice_script: null,
-      handled: true
-    };
-  }
-
-  // ── Step: defendant_dob ─────────────────────────────────────────────────────
-  if (currentStep === 'defendant_dob') {
-    const dob = parseDateOfBirth(message);
-    if (!dob) {
-      return {
-        text: '⚠️ Please enter the date of birth in MM/DD/YYYY format.\n\nExample: 03/15/1985',
-        voice_script: null,
-        handled: true
-      };
-    }
-
-    state.data.defendantDob = dob;
-    state.step = 'charges';
-    saveConversationState(userId, state);
-
-    return {
-      text: INTAKE_PROMPTS.defendant_dob,
-      voice_script: null,
-      handled: true
-    };
-  }
-
-  // ── Step: charges ───────────────────────────────────────────────────────────
-  if (currentStep === 'charges') {
-    const cleaned = sanitizeInput(message);
-    const charges = cleaned.toLowerCase() === "i don't know" || cleaned.toLowerCase() === 'unknown'
-      ? 'Unknown — to be verified'
-      : cleaned;
-
-    state.data.charges = charges;
-    state.step = 'bond_amount';
-    saveConversationState(userId, state);
-
-    return {
-      text: INTAKE_PROMPTS.charges,
-      voice_script: VOICE_SCRIPTS.bond_amount,
-      handled: true
-    };
-  }
-
-  // ── Step: bond_amount ───────────────────────────────────────────────────────
-  if (currentStep === 'bond_amount') {
-    const amount = parseBondAmount(message);
-    if (amount === null) {
-      return {
-        text: '⚠️ Please enter the bond amount as a number.\n\nExamples: "5000", "$10,000", "25000"\n\nIf you don\'t know, type "unknown".',
-        voice_script: null,
-        handled: true
-      };
-    }
-
-    state.data.bondAmount = amount;
-    state.step = 'indemnitor_name';
-    saveConversationState(userId, state);
-
-    const premium = amount !== 'Unknown' ? `\n\n💰 *Estimated Premium: $${Math.ceil(parseFloat(amount) * 0.10).toLocaleString()}* (10% of bond)` : '';
-
-    return {
-      text: `✅ Bond amount: *$${amount}*${premium}\n\n${INTAKE_PROMPTS.bond_amount}`,
-      voice_script: null,
-      handled: true
-    };
-  }
-
-  // ── Step: indemnitor_name ───────────────────────────────────────────────────
-  if (currentStep === 'indemnitor_name') {
-    const cleaned = sanitizeInput(message);
-    if (cleaned.length < 3 || cleaned.split(' ').length < 2) {
-      return {
-        text: '⚠️ Please enter your *full legal name* (First and Last name).',
-        voice_script: null,
-        handled: true
-      };
-    }
-
-    state.data.indemnitorName = cleaned;
-    state.step = 'indemnitor_phone';
-    saveConversationState(userId, state);
-
-    return {
-      text: INTAKE_PROMPTS.indemnitor_name,
-      voice_script: null,
-      handled: true
-    };
-  }
-
-  // ── Step: indemnitor_phone ──────────────────────────────────────────────────
-  if (currentStep === 'indemnitor_phone') {
-    const phone = parsePhoneNumber(message);
-    if (!phone) {
-      return {
-        text: '⚠️ Please enter a valid 10-digit US phone number.\n\nExample: 239-332-2245',
-        voice_script: null,
-        handled: true
-      };
-    }
-
-    state.data.indemnitorPhone = phone;
-    state.step = 'indemnitor_email';
-    saveConversationState(userId, state);
-
-    return {
-      text: INTAKE_PROMPTS.indemnitor_phone,
-      voice_script: null,
-      handled: true
-    };
-  }
-
-  // ── Step: indemnitor_email ──────────────────────────────────────────────────
-  if (currentStep === 'indemnitor_email') {
-    const email = message.trim().toLowerCase();
-    if (!isValidEmail(email)) {
-      return {
-        text: '⚠️ Please enter a valid email address.\n\nExample: jane.doe@gmail.com',
-        voice_script: null,
-        handled: true
-      };
-    }
-
-    state.data.indemnitorEmail = email;
-    state.step = 'indemnitor_address';
-    saveConversationState(userId, state);
-
-    return {
-      text: INTAKE_PROMPTS.indemnitor_email,
-      voice_script: null,
-      handled: true
-    };
-  }
-
-  // ── Step: indemnitor_address ────────────────────────────────────────────────
-  if (currentStep === 'indemnitor_address') {
-    const cleaned = sanitizeInput(message);
-    if (cleaned.length < 10) {
-      return {
-        text: '⚠️ Please enter your full address including street, city, state, and ZIP.\n\nExample: 123 Main St, Fort Myers, FL 33901',
-        voice_script: null,
-        handled: true
-      };
-    }
-
-    state.data.indemnitorAddress = cleaned;
-    state.step = 'relationship';
-    saveConversationState(userId, state);
-
-    return {
-      text: INTAKE_PROMPTS.indemnitor_address,
-      voice_script: null,
-      handled: true
-    };
-  }
-
-  // ── Step: relationship ──────────────────────────────────────────────────────
-  if (currentStep === 'relationship') {
-    const cleaned = sanitizeInput(message);
-    if (cleaned.length < 2) {
-      return {
-        text: '⚠️ Please describe your relationship to the defendant (e.g. Mother, Spouse, Friend).',
-        voice_script: null,
-        handled: true
-      };
-    }
-
-    state.data.relationship = cleaned;
-    state.step = 'id_prompt';
-    saveConversationState(userId, state);
-
-    return {
-      text: INTAKE_PROMPTS.relationship,
-      voice_script: VOICE_SCRIPTS.id_prompt,
-      handled: true
-    };
-  }
-
-  // ── Step: id_prompt (waiting for photo — handled by photo handler) ──────────
-  if (currentStep === 'id_prompt') {
-    // User sent text instead of a photo
-    return {
-      text: '📸 I\'m waiting for a photo of your ID.\n\nPlease take a clear photo of the *front* of your driver\'s license or passport and send it here.',
-      voice_script: null,
-      handled: true
-    };
-  }
-
-  // ── Step: complete ──────────────────────────────────────────────────────────
-  if (currentStep === 'complete') {
-    return {
-      text: '✅ Your intake is already submitted! An agent will contact you shortly.\n\nQuestions? Call us at *(239) 332-2245*',
-      voice_script: null,
-      handled: true
-    };
-  }
-
-  // Fallback
-  return { handled: false };
-}
-
-/**
- * Complete the intake after ID photo is received
- * Called by _handlePhotoMessage in Telegram_Webhook.js
- * @param {string} userId - Telegram user ID
- * @param {string} chatId - Telegram chat ID
- * @param {string} photoFileId - Telegram file ID of the uploaded photo
- * @returns {Object} result
- */
-function completeIntakeWithPhoto(userId, chatId, photoFileId) {
-  const state = getConversationState(userId);
-
-  if (state.step !== 'id_prompt') {
-    return { handled: false };
-  }
-
-  // Store photo reference
-  state.data.idPhotoFileId = photoFileId;
-  state.data.telegramChatId = chatId;
-  state.data.telegramUserId = userId;
-  state.data.submittedAt = new Date().toISOString();
-  state.step = 'complete';
-  saveConversationState(userId, state);
-
-  // Push to Wix IntakeQueue
-  const pushResult = pushIntakeToWix(state.data);
-
-  // Log to GAS Sheet
-  logIntakeToSheet(state.data);
-
-  // Notify staff via Slack
-  notifyStaffNewIntake(state.data);
-
-  const successText = `✅ *Intake Complete!*
-
-Here's a summary:
-• *Defendant:* ${state.data.defendantName}
-• *County:* ${state.data.county}
-• *Bond Amount:* $${state.data.bondAmount}
-• *Your Name:* ${state.data.indemnitorName}
-
-*What happens next:*
-1. An agent reviews your intake (usually within 15 minutes)
-2. You'll receive a signing link here on Telegram
-3. Sign on your phone — takes 2 minutes
-4. We post the bond and your loved one is released
-
-Questions? Call *(239) 332-2245* anytime, 24/7.`;
 
   return {
-    text: successText,
-    voice_script: VOICE_SCRIPTS.complete,
-    handled: true,
-    intakeData: state.data,
-    wixResult: pushResult
+    text: response.text,
+    voice_script: response.voice_script || null,
+    advance: !!response.nextStep
   };
 }
 
 // =============================================================================
-// PUSH TO WIX INTAKEQUEUE
+// STEP HANDLERS
 // =============================================================================
 
-/**
- * Push completed intake data to Wix CMS IntakeQueue collection
- * @param {Object} data - Intake data
- * @returns {Object} result
- */
-function pushIntakeToWix(data) {
-  try {
-    const config = getConfig();
-    const wixUrl = config.WIX_SITE_URL;
-    const apiKey = config.WIX_API_KEY;
+function handleGreeting(state, message) {
+  const lowerMsg = message.toLowerCase();
 
-    if (!wixUrl || !apiKey) {
-      console.error('[Intake] Wix config missing — cannot push to IntakeQueue');
-      return { success: false, error: 'Wix config missing' };
-    }
+  // Check if user is asking for help or starting intake
+  if (lowerMsg.includes('bail') || lowerMsg.includes('arrested') || lowerMsg.includes('help') || lowerMsg.includes('bond')) {
+    return {
+      text: `Hi! I'm Manus, Shamrock's digital assistant. I'll help you get your loved one released quickly. 🏃‍♂️
 
-    const endpoint = `${wixUrl}/_functions/post_intakeSubmit`;
+First, I need information about the defendant (the person in jail):
 
-    const payload = {
-      apiKey: apiKey,
-      source: 'telegram',
-      telegramUserId: data.telegramUserId,
-      telegramChatId: data.telegramChatId,
-      indemnitorName: data.indemnitorName,
-      indemnitorPhone: data.indemnitorPhone,
-      indemnitorEmail: data.indemnitorEmail,
-      indemnitorAddress: data.indemnitorAddress,
-      relationship: data.relationship,
-      defendantName: data.defendantName,
-      defendantDob: data.defendantDob,
-      county: data.county,
-      charges: data.charges,
-      bondAmount: data.bondAmount,
-      idPhotoFileId: data.idPhotoFileId,
-      submittedAt: data.submittedAt
+**What is their full legal name?**
+(First and Last, as shown on booking)`,
+      voice_script: "Hi! I'm Manus, Shamrock's digital assistant. I'll help you get your loved one released quickly. First, I need the defendant's full legal name - that's their first and last name as shown on the booking paperwork.",
+      nextStep: INTAKE_STEPS.DEFENDANT_NAME
     };
-
-    const response = UrlFetchApp.fetch(endpoint, {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-
-    const responseCode = response.getResponseCode();
-    const responseText = response.getContentText();
-
-    if (responseCode === 200) {
-      const result = JSON.parse(responseText);
-      console.log('[Intake] Successfully pushed to Wix IntakeQueue:', result);
-      return { success: true, wixId: result.intakeId };
-    } else {
-      console.error(`[Intake] Wix push failed (${responseCode}):`, responseText);
-      return { success: false, error: `HTTP ${responseCode}` };
-    }
-
-  } catch (e) {
-    console.error('[Intake] Exception pushing to Wix:', e);
-    return { success: false, error: e.message };
   }
+
+  // User said something else
+  return {
+    text: `Hi! I'm Manus from Shamrock Bail Bonds. 👋
+
+Are you looking to:
+1. Bail someone out of jail
+2. Check on an existing case
+3. Ask a question
+
+Reply with 1, 2, or 3, or just tell me what you need!`,
+    nextStep: INTAKE_STEPS.GREETING // Stay on greeting
+  };
 }
 
-// =============================================================================
-// STAFF NOTIFICATIONS
-// =============================================================================
+function handleDefendantName(state, message) {
+  // Parse name (simple validation: at least 2 words)
+  const nameParts = message.trim().split(/\s+/);
 
-/**
- * Notify staff of new Telegram intake via Slack
- * @param {Object} data - Intake data
- */
-function notifyStaffNewIntake(data) {
-  try {
-    const config = getConfig();
-    const slackUrl = config.SLACK_WEBHOOK_NEW_CASES;
-
-    if (!slackUrl) return;
-
-    const message = {
-      text: `🍀 *New Telegram Intake Submitted*`,
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `🍀 *New Telegram Intake*\n*Defendant:* ${data.defendantName}\n*County:* ${data.county}\n*Bond:* $${data.bondAmount}\n*Indemnitor:* ${data.indemnitorName}\n*Phone:* ${data.indemnitorPhone}\n*Email:* ${data.indemnitorEmail}\n*Submitted:* ${new Date(data.submittedAt).toLocaleString()}`
-          }
-        },
-        {
-          type: 'actions',
-          elements: [
-            {
-              type: 'button',
-              text: { type: 'plain_text', text: '📋 Open Dashboard' },
-              url: 'https://script.google.com/macros/s/AKfycbz.../exec',
-              style: 'primary'
-            }
-          ]
-        }
-      ]
+  if (nameParts.length < 2) {
+    return {
+      text: "I need the defendant's **full name** (first and last). For example: 'John Smith'\n\nPlease try again:",
+      nextStep: null // Stay on same step
     };
+  }
 
-    UrlFetchApp.fetch(slackUrl, {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(message),
-      muteHttpExceptions: true
-    });
+  // Store name
+  state.data.defendantFirstName = nameParts[0];
+  state.data.defendantLastName = nameParts.slice(1).join(' ');
+  state.data.defendantName = message.trim();
 
-  } catch (e) {
-    console.error('[Intake] Slack notification failed:', e);
+  return {
+    text: `Got it! **${state.data.defendantName}**
+
+**What is their date of birth?**
+(Format: MM/DD/YYYY or just type it naturally like "May 15, 1990")`,
+    nextStep: INTAKE_STEPS.DEFENDANT_DOB
+  };
+}
+
+function handleDefendantDOB(state, message) {
+  // Parse date (flexible)
+  const parsedDate = parseDateFlexible(message);
+
+  if (!parsedDate) {
+    return {
+      text: "I couldn't understand that date. Please try again.\n\nExamples:\n- 05/15/1990\n- May 15, 1990\n- 5-15-1990",
+      nextStep: null
+    };
+  }
+
+  // Validate age (must be at least 18)
+  const age = calculateAge(parsedDate);
+  if (age < 18) {
+    return {
+      text: "The defendant must be at least 18 years old. Please verify the date of birth and try again:",
+      nextStep: null
+    };
+  }
+
+  if (age > 100) {
+    return {
+      text: "That date seems incorrect. Please verify and try again:",
+      nextStep: null
+    };
+  }
+
+  state.data.defendantDOB = parsedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+  state.data.defendantAge = age;
+
+  return {
+    text: `Perfect! DOB: **${formatDate(parsedDate)}** (Age: ${age})
+
+**Which jail is ${state.data.defendantFirstName} in?**
+
+Common options:
+- Lee County Jail
+- Collier County Jail
+- Charlotte County Jail
+- Hendry County Jail
+- Glades County Jail
+
+(Or type the name of another jail)`,
+    nextStep: INTAKE_STEPS.DEFENDANT_JAIL
+  };
+}
+
+function handleDefendantJail(state, message) {
+  // Store jail name
+  state.data.defendantJail = message.trim();
+  state.data.county = extractCountyFromJail(message);
+
+  return {
+    text: `Got it! **${state.data.defendantJail}**
+
+**What is ${state.data.defendantFirstName}'s phone number?**
+(We'll use this to send them their signing link after release)`,
+    nextStep: INTAKE_STEPS.DEFENDANT_PHONE
+  };
+}
+
+function handleDefendantPhone(state, message) {
+  const phone = parsePhoneNumber(message);
+
+  if (!phone) {
+    return {
+      text: "I need a valid phone number. Examples:\n- (239) 555-1234\n- 239-555-1234\n- 2395551234\n\nPlease try again:",
+      nextStep: null
+    };
+  }
+
+  state.data.defendantPhone = phone;
+
+  return {
+    text: `Perfect! ${phone}
+
+Now I need **YOUR information** as the indemnitor (co-signer):
+
+**What is your full legal name?**`,
+    nextStep: INTAKE_STEPS.INDEMNITOR_NAME
+  };
+}
+
+function handleIndemnitorName(state, message) {
+  const nameParts = message.trim().split(/\s+/);
+
+  if (nameParts.length < 2) {
+    return {
+      text: "I need your **full name** (first and last). Please try again:",
+      nextStep: null
+    };
+  }
+
+  state.data.indemnitorFirstName = nameParts[0];
+  state.data.indemnitorLastName = nameParts.slice(1).join(' ');
+  state.data.indemnitorName = message.trim();
+
+  return {
+    text: `Thank you, **${state.data.indemnitorName}**!
+
+**What is your email address?**
+(We'll send you a copy of the signed documents)`,
+    nextStep: INTAKE_STEPS.INDEMNITOR_CONTACT
+  };
+}
+
+function handleIndemnitorContact(state, message) {
+  const email = parseEmail(message);
+
+  if (!email) {
+    return {
+      text: "I need a valid email address. Example: john@email.com\n\nPlease try again:",
+      nextStep: null
+    };
+  }
+
+  state.data.indemnitorEmail = email;
+  state.data.indemnitorPhone = state.phoneNumber; // They're texting from this number
+
+  return {
+    text: `Perfect! ${email}
+
+**What is your current home address?**
+(Street, City, State, ZIP)`,
+    nextStep: INTAKE_STEPS.INDEMNITOR_ADDRESS
+  };
+}
+
+function handleIndemnitorAddress(state, message) {
+  // Basic validation: must have at least 10 characters
+  if (message.trim().length < 10) {
+    return {
+      text: "Please provide your complete address (Street, City, State, ZIP):",
+      nextStep: null
+    };
+  }
+
+  state.data.indemnitorAddress = message.trim();
+
+  return {
+    text: `Got it!
+
+**Employment information:**
+
+Please provide:
+1. Your employer's name
+2. Your job title
+3. Your approximate annual income
+
+You can type it all at once or one at a time.`,
+    nextStep: INTAKE_STEPS.INDEMNITOR_EMPLOYMENT
+  };
+}
+
+function handleIndemnitorEmployment(state, message) {
+  // Store employment info (we'll parse it flexibly)
+  state.data.indemnitorEmployment = message.trim();
+
+  // Try to extract employer, title, income
+  const lines = message.split('\n').map(l => l.trim()).filter(l => l);
+  if (lines.length >= 1) state.data.indemnitorEmployer = lines[0];
+  if (lines.length >= 2) state.data.indemnitorJobTitle = lines[1];
+  if (lines.length >= 3) state.data.indemnitorIncome = lines[2];
+
+  return {
+    text: `Thank you!
+
+**What is your relationship to ${state.data.defendantFirstName}?**
+
+Examples: Mother, Father, Sister, Brother, Spouse, Friend, etc.`,
+    nextStep: INTAKE_STEPS.INDEMNITOR_RELATIONSHIP
+  };
+}
+
+function handleIndemnitorRelationship(state, message) {
+  state.data.indemnitorRelationship = message.trim();
+
+  return {
+    text: `Perfect!
+
+**Personal References:**
+
+For compliance, I need 2 personal references (not family members).
+
+**Reference #1:**
+Please provide:
+- Name
+- Phone number
+- Relationship to you
+
+(You can type it all at once)`,
+    nextStep: INTAKE_STEPS.REFERENCE_1
+  };
+}
+
+function handleReference1(state, message) {
+  state.data.reference1 = message.trim();
+
+  // Try to parse name and phone
+  const parsed = parseReference(message);
+  if (parsed) {
+    state.data.reference1Name = parsed.name;
+    state.data.reference1Phone = parsed.phone;
+    state.data.reference1Relationship = parsed.relationship;
+  }
+
+  return {
+    text: `Got it!
+
+**Reference #2:**
+Please provide:
+- Name
+- Phone number
+- Relationship to you`,
+    nextStep: INTAKE_STEPS.REFERENCE_2
+  };
+}
+
+function handleReference2(state, message) {
+  state.data.reference2 = message.trim();
+
+  // Try to parse name and phone
+  const parsed = parseReference(message);
+  if (parsed) {
+    state.data.reference2Name = parsed.name;
+    state.data.reference2Phone = parsed.phone;
+    state.data.reference2Relationship = parsed.relationship;
+  }
+
+  return {
+    text: `Excellent! Let me confirm everything:
+
+**DEFENDANT:**
+- Name: ${state.data.defendantName}
+- DOB: ${state.data.defendantDOB} (Age: ${state.data.defendantAge})
+- Jail: ${state.data.defendantJail}
+- Phone: ${state.data.defendantPhone}
+
+**INDEMNITOR (YOU):**
+- Name: ${state.data.indemnitorName}
+- Email: ${state.data.indemnitorEmail}
+- Phone: ${state.data.indemnitorPhone}
+- Address: ${state.data.indemnitorAddress}
+- Relationship: ${state.data.indemnitorRelationship}
+
+**Is this information correct?**
+Reply "YES" to continue, or "NO" to make changes.`,
+    voice_script: "Let me confirm all the information I've collected. Please review it carefully and reply YES if everything is correct, or NO if you need to make any changes.",
+    nextStep: INTAKE_STEPS.CONFIRM_INFO
+  };
+}
+
+function handleConfirmation(state, message) {
+  const lowerMsg = message.toLowerCase().trim();
+
+  if (lowerMsg === 'yes' || lowerMsg === 'y' || lowerMsg === 'correct' || lowerMsg === 'confirm') {
+    return {
+      text: `✅ Perfect! All information confirmed.
+
+I'm now generating your bail bond paperwork. This takes about 30 seconds...
+
+📄 Documents being prepared:
+- Indemnity Agreement
+- Defendant Application
+- Promissory Note
+- Disclosure Forms
+- Master Waiver
+
+Please wait...`,
+      voice_script: "Perfect! All information confirmed. I'm now generating your bail bond paperwork. This will take about 30 seconds. Please wait while I prepare all the necessary documents.",
+      nextStep: INTAKE_STEPS.COMPLETE,
+      triggerDocuments: true
+    };
+  } else if (lowerMsg === 'no' || lowerMsg === 'n' || lowerMsg === 'incorrect') {
+    return {
+      text: `No problem! Let's start over to ensure everything is correct.
+
+Type 'restart' when you're ready to begin again.`,
+      nextStep: INTAKE_STEPS.GREETING
+    };
+  } else {
+    return {
+      text: `Please reply **YES** to confirm, or **NO** to make changes.`,
+      nextStep: null // Stay on confirmation
+    };
   }
 }
 
+function handleComplete(state, message) {
+  // Conversation is complete, documents should be generated
+  // This step handles any follow-up questions
+
+  return {
+    text: `Your paperwork has been generated! You should receive your signing link shortly.
+
+💳 **Payment Options:**
+You can pay the bail premium securely online here:
+https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8
+
+If you have any questions, just ask! I'm here to help. 😊`,
+    nextStep: null // Stay on complete
+  };
+}
+
 // =============================================================================
-// LOG TO SHEET
+// DOCUMENT GENERATION TRIGGER
 // =============================================================================
 
 /**
- * Log intake to the Intakes tab in the GAS spreadsheet
- * @param {Object} data - Intake data
+ * Trigger document generation from Telegram conversation data
+ * This calls the existing generateAndSendWithWixPortal function
  */
-function logIntakeToSheet(data) {
-  try {
-    const ss = SpreadsheetApp.openById(
-      PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E'
-    );
+function triggerDocumentGenerationFromTelegram(conversationData, phoneNumber) {
+  console.log('Triggering document generation from Telegram intake...');
 
-    let sheet = ss.getSheetByName('TelegramIntakes');
-    if (!sheet) {
-      sheet = ss.insertSheet('TelegramIntakes');
-      sheet.appendRow([
-        'Submitted At', 'Telegram User ID', 'Defendant Name', 'DOB', 'County',
-        'Charges', 'Bond Amount', 'Indemnitor Name', 'Phone', 'Email',
-        'Address', 'Relationship', 'ID Photo File ID', 'Wix Pushed'
-      ]);
+  // Transform conversation data to Dashboard.html formData format
+  const formData = {
+    // Defendant fields
+    'defendant-first-name': conversationData.defendantFirstName || '',
+    'defendant-last-name': conversationData.defendantLastName || '',
+    'defendant-dob': conversationData.defendantDOB || '',
+    'defendant-phone': conversationData.defendantPhone || '',
+    defendantName: conversationData.defendantName || '',
+    defendantEmail: conversationData.defendantEmail || '',
+    defendantPhone: conversationData.defendantPhone || '',
+    defendantDOB: conversationData.defendantDOB || '',
+    defendantAge: conversationData.defendantAge || '',
+    defendantJail: conversationData.defendantJail || '',
+    county: conversationData.county || '',
+
+    // Indemnitor fields
+    'indemnitor-first-name': conversationData.indemnitorFirstName || '',
+    'indemnitor-last-name': conversationData.indemnitorLastName || '',
+    'indemnitor-email': conversationData.indemnitorEmail || '',
+    'indemnitor-phone': conversationData.indemnitorPhone || phoneNumber,
+    'indemnitor-address': conversationData.indemnitorAddress || '',
+    'indemnitor-employer': conversationData.indemnitorEmployer || '',
+    'indemnitor-job-title': conversationData.indemnitorJobTitle || '',
+    'indemnitor-income': conversationData.indemnitorIncome || '',
+    'indemnitor-relationship': conversationData.indemnitorRelationship || '',
+    indemnitorName: conversationData.indemnitorName || '',
+    indemnitorEmail: conversationData.indemnitorEmail || '',
+    indemnitorPhone: conversationData.indemnitorPhone || phoneNumber,
+    indemnitorAddress: conversationData.indemnitorAddress || '',
+    indemnitorRelationship: conversationData.indemnitorRelationship || '',
+
+    // References
+    'reference1-name': conversationData.reference1Name || '',
+    'reference1-phone': conversationData.reference1Phone || '',
+    'reference1-relationship': conversationData.reference1Relationship || '',
+    'reference2-name': conversationData.reference2Name || '',
+    'reference2-phone': conversationData.reference2Phone || '',
+    'reference2-relationship': conversationData.reference2Relationship || '',
+
+    // Case metadata
+    caseNumber: generateCaseNumber(),
+    'case-number': generateCaseNumber(),
+    receiptNumber: generateReceiptNumber(),
+
+    // Document selection (all standard docs)
+    selectedDocs: [
+      'indemnity-agreement',
+      'defendant-application',
+      'promissory-note',
+      'disclosure-form',
+      'surety-terms',
+      'master-waiver'
+    ],
+
+    // Signing method: Telegram (tells system to send links via Telegram)
+    signingMethod: 'telegram',
+
+    // Source tracking
+    source: 'telegram_intake',
+    intakeTimestamp: new Date().toISOString()
+  };
+
+  // Call existing document generation function
+  if (typeof generateAndSendWithWixPortal === 'function') {
+    try {
+      const result = generateAndSendWithWixPortal(formData);
+      console.log('Document generation result:', JSON.stringify(result));
+      return result;
+    } catch (e) {
+      console.error('Document generation error:', e);
+      throw e;
     }
-
-    sheet.appendRow([
-      data.submittedAt,
-      data.telegramUserId,
-      data.defendantName,
-      data.defendantDob,
-      data.county,
-      data.charges,
-      data.bondAmount,
-      data.indemnitorName,
-      data.indemnitorPhone,
-      data.indemnitorEmail,
-      data.indemnitorAddress,
-      data.relationship,
-      data.idPhotoFileId || 'pending',
-      'yes'
-    ]);
-
-  } catch (e) {
-    console.error('[Intake] Sheet logging failed:', e);
+  } else {
+    throw new Error('generateAndSendWithWixPortal function not found');
   }
 }
 
 // =============================================================================
-// SEND SIGNING LINK VIA TELEGRAM
-// Called by GAS after packet is generated
+// VALIDATION & PARSING UTILITIES
 // =============================================================================
 
 /**
- * Send a signing link to a client via Telegram
- * @param {string} chatId - Telegram chat ID
- * @param {string} signingLink - SignNow signing URL
- * @param {string} defendantName - Defendant's name for context
- * @param {string} paymentLink - Payment link
+ * Parse date from flexible input
  */
-function sendSigningLinkViaTelegram(chatId, signingLink, defendantName, paymentLink) {
+function parseDateFlexible(input) {
+  // Try standard formats
+  const formats = [
+    /(\d{1,2})\/(\d{1,2})\/(\d{4})/, // MM/DD/YYYY
+    /(\d{1,2})-(\d{1,2})-(\d{4})/, // MM-DD-YYYY
+    /(\d{4})-(\d{1,2})-(\d{1,2})/ // YYYY-MM-DD
+  ];
+
+  for (const regex of formats) {
+    const match = input.match(regex);
+    if (match) {
+      let month, day, year;
+      if (regex === formats[2]) {
+        // YYYY-MM-DD
+        year = parseInt(match[1]);
+        month = parseInt(match[2]);
+        day = parseInt(match[3]);
+      } else {
+        // MM/DD/YYYY or MM-DD-YYYY
+        month = parseInt(match[1]);
+        day = parseInt(match[2]);
+        year = parseInt(match[3]);
+      }
+
+      const date = new Date(year, month - 1, day);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+  }
+
+  // Try natural language parsing
   try {
-    const bot = new TelegramBotAPI();
-
-    const text = `📋 *Your Bail Bond Paperwork is Ready!*
-
-The documents for *${defendantName}* are ready to sign.
-
-*Step 1 — Sign the paperwork:*
-👉 [Tap here to sign](${signingLink})
-
-*Step 2 — Pay the premium:*
-💳 [Tap here to pay](${paymentLink || 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'})
-
-Once both are complete, we post the bond immediately. 🚀
-
-Questions? Reply here or call *(239) 332-2245*`;
-
-    const result = bot.sendMessageWithKeyboard(chatId, text, [
-      [{ text: '✍️ Sign Documents', url: signingLink }],
-      [{ text: '💳 Pay Premium', url: paymentLink || 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd' }],
-      [{ text: '📞 Call Us Now', url: 'tel:+12393322245' }]
-    ]);
-
-    // Also send ElevenLabs voice note for the signing step
-    generateAndSendVoiceNote(
-      chatId,
-      `Your paperwork for ${defendantName} is ready. Tap the sign button, scroll to the bottom, and sign with your finger. It takes about two minutes. After signing, tap the payment button to pay the premium. Once both are done, we post the bond right away.`,
-      'telegram',
-      chatId
-    );
-
-    logProcessingEvent('TELEGRAM_SIGNING_LINK_SENT', {
-      chatId: chatId,
-      defendantName: defendantName
-    });
-
-    return { success: true, messageId: result.messageId };
-
+    const date = new Date(input);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
   } catch (e) {
-    console.error('[Intake] Failed to send signing link via Telegram:', e);
-    return { success: false, error: e.message };
-  }
-}
-
-// =============================================================================
-// INPUT VALIDATION & SANITIZATION
-// Patterns adapted from zeshuaro/telegram-pdf-bot (MIT License)
-// =============================================================================
-
-/**
- * Sanitize user input — strip HTML, limit length, trim whitespace
- * @param {string} input
- * @returns {string}
- */
-function sanitizeInput(input) {
-  if (!input) return '';
-  return input
-    .toString()
-    .replace(/<[^>]*>/g, '')          // Strip HTML tags
-    .replace(/[^\w\s\-\.,#@'\/]/g, '') // Allow only safe chars
-    .trim()
-    .substring(0, 200);               // Max 200 chars
-}
-
-/**
- * Parse and validate date of birth
- * @param {string} input
- * @returns {string|null} Formatted date or null
- */
-function parseDateOfBirth(input) {
-  if (!input) return null;
-  const cleaned = input.replace(/[^\d\/\-\.]/g, '');
-
-  // MM/DD/YYYY or MM-DD-YYYY or MM.DD.YYYY
-  const match = cleaned.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
-  if (!match) return null;
-
-  const month = parseInt(match[1]);
-  const day = parseInt(match[2]);
-  const year = parseInt(match[3]);
-
-  if (month < 1 || month > 12) return null;
-  if (day < 1 || day > 31) return null;
-  if (year < 1900 || year > new Date().getFullYear()) return null;
-
-  return `${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}/${year}`;
-}
-
-/**
- * Parse bond amount from user input
- * @param {string} input
- * @returns {string|null} Amount string or null
- */
-function parseBondAmount(input) {
-  if (!input) return null;
-  const lower = input.toLowerCase().trim();
-
-  if (lower === 'unknown' || lower === "don't know" || lower === 'no bond') {
-    return 'Unknown';
+    // Ignore
   }
 
-  // Strip currency symbols, commas, spaces
-  const cleaned = input.replace(/[$,\s]/g, '');
-  const num = parseFloat(cleaned);
-
-  if (isNaN(num) || num < 0) return null;
-  if (num > 10000000) return null; // Sanity check: $10M max
-
-  return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return null;
 }
 
 /**
- * Parse and normalize US phone number
- * @param {string} input
- * @returns {string|null} E.164-ish format or null
+ * Calculate age from date of birth
+ */
+function calculateAge(dob) {
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+
+  return age;
+}
+
+/**
+ * Format date for display
+ */
+function formatDate(date) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
+}
+
+/**
+ * Parse phone number (flexible)
  */
 function parsePhoneNumber(input) {
-  if (!input) return null;
+  // Remove all non-digits
   const digits = input.replace(/\D/g, '');
 
-  // Handle 10-digit or 11-digit (with leading 1)
+  // Must be 10 digits (US phone number)
   if (digits.length === 10) {
-    return `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
-  }
-  if (digits.length === 11 && digits[0] === '1') {
-    return `(${digits.substring(1, 4)}) ${digits.substring(4, 7)}-${digits.substring(7)}`;
-  }
-
-  return null;
-}
-
-/**
- * Validate email address
- * @param {string} email
- * @returns {boolean}
- */
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-/**
- * Resolve county name from user input
- * Handles common abbreviations and misspellings
- * @param {string} input
- * @returns {Object|null} { name, slug } or null
- */
-function resolveCounty(input) {
-  if (!input) return null;
-
-  const normalized = input.toLowerCase().trim()
-    .replace(/\s+county$/i, '')
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z\-]/g, '');
-
-  // Direct match
-  if (RAG_KNOWLEDGE_BASE[normalized]) {
-    return { name: RAG_KNOWLEDGE_BASE[normalized].name, slug: normalized };
-  }
-
-  // Alias map for common variations
-  const ALIASES = {
-    'miami': 'miami-dade',
-    'miami dade': 'miami-dade',
-    'miamidade': 'miami-dade',
-    'dade': 'miami-dade',
-    'ft myers': 'lee',
-    'fort myers': 'lee',
-    'naples': 'collier',
-    'tampa': 'hillsborough',
-    'orlando': 'orange',
-    'jacksonville': 'duval',
-    'pensacola': 'escambia',
-    'tallahassee': 'leon',
-    'gainesville': 'alachua',
-    'ocala': 'marion',
-    'daytona': 'volusia',
-    'daytona beach': 'volusia',
-    'st pete': 'pinellas',
-    'saint pete': 'pinellas',
-    'st. pete': 'pinellas',
-    'clearwater': 'pinellas',
-    'sarasota': 'sarasota',
-    'bradenton': 'manatee',
-    'fort lauderdale': 'broward',
-    'ft lauderdale': 'broward',
-    'west palm': 'palm-beach',
-    'west palm beach': 'palm-beach',
-    'palm beach': 'palm-beach',
-    'key west': 'monroe',
-    'keys': 'monroe',
-    'punta gorda': 'charlotte',
-    'cape coral': 'lee',
-    'bonita springs': 'lee',
-    'marco island': 'collier',
-    'arcadia': 'desoto',
-    'sebring': 'highlands',
-    'lake city': 'columbia',
-    'panama city': 'bay',
-    'pensacola': 'escambia',
-    'st augustine': 'st-johns',
-    'saint augustine': 'st-johns',
-    'st. augustine': 'st-johns',
-    'lakeland': 'polk',
-    'bartow': 'polk',
-    'kissimmee': 'osceola',
-    'sanford': 'seminole',
-    'titusville': 'brevard',
-    'cocoa': 'brevard',
-    'melbourne': 'brevard',
-    'vero beach': 'indian-river',
-    'fort pierce': 'st-lucie',
-    'ft pierce': 'st-lucie',
-    'stuart': 'martin',
-    'brooksville': 'hernando',
-    'inverness': 'citrus',
-    'crystal river': 'citrus',
-    'deland': 'volusia',
-    'leesburg': 'lake',
-    'tavares': 'lake',
-    'starke': 'bradford',
-    'green cove springs': 'clay',
-    'fernandina beach': 'nassau',
-    'live oak': 'suwannee',
-    'jasper': 'hamilton',
-    'madison': 'madison',
-    'perry': 'taylor',
-    'cross city': 'dixie',
-    'chiefland': 'levy',
-    'bronson': 'levy',
-    'trenton': 'gilchrist',
-    'newberry': 'alachua',
-    'macclenny': 'baker',
-    'quincy': 'gadsden',
-    'marianna': 'jackson',
-    'blountstown': 'calhoun',
-    'wewahitchka': 'gulf',
-    'port st joe': 'gulf',
-    'apalachicola': 'franklin',
-    'crawfordville': 'wakulla',
-    'monticello': 'jefferson',
-    'mayo': 'lafayette',
-    'jasper': 'hamilton',
-    'labelle': 'hendry',
-    'moore haven': 'glades',
-    'clewiston': 'hendry',
-    'okeechobee': 'okeechobee',
-    'wauchula': 'hardee',
-    'avon park': 'highlands',
-    'lake placid': 'highlands',
-    'bushnell': 'sumter',
-    'the villages': 'sumter',
-    'dunnellon': 'marion',
-    'palatka': 'putnam',
-    'bunnell': 'flagler',
-    'de land': 'volusia',
-    'new smyrna': 'volusia',
-    'deltona': 'volusia',
-    'sanford': 'seminole',
-    'altamonte': 'seminole',
-    'longwood': 'seminole',
-    'oviedo': 'seminole',
-    'winter garden': 'orange',
-    'apopka': 'orange',
-    'clermont': 'lake',
-    'mount dora': 'lake',
-    'eustis': 'lake',
-    'zephyrhills': 'pasco',
-    'new port richey': 'pasco',
-    'dade city': 'pasco',
-    'land o lakes': 'pasco',
-    'bartow': 'polk',
-    'winter haven': 'polk',
-    'haines city': 'polk',
-    'auburndale': 'polk',
-    'plant city': 'hillsborough',
-    'brandon': 'hillsborough',
-    'riverview': 'hillsborough',
-    'ruskin': 'hillsborough',
-    'sun city': 'hillsborough',
-    'venice': 'sarasota',
-    'englewood': 'sarasota',
-    'north port': 'sarasota',
-    'port charlotte': 'charlotte',
-    'punta gorda': 'charlotte',
-    'immokalee': 'collier',
-    'everglades city': 'collier',
-    'clewiston': 'hendry',
-    'belle glade': 'palm-beach',
-    'pahokee': 'palm-beach',
-    'homestead': 'miami-dade',
-    'hialeah': 'miami-dade',
-    'coral gables': 'miami-dade',
-    'miami beach': 'miami-dade',
-    'north miami': 'miami-dade',
-    'opa-locka': 'miami-dade',
-    'florida city': 'miami-dade',
-    'pompano beach': 'broward',
-    'hollywood': 'broward',
-    'miramar': 'broward',
-    'pembroke pines': 'broward',
-    'coral springs': 'broward',
-    'deerfield beach': 'broward',
-    'boca raton': 'palm-beach',
-    'delray beach': 'palm-beach',
-    'boynton beach': 'palm-beach',
-    'lake worth': 'palm-beach',
-    'riviera beach': 'palm-beach',
-    'jupiter': 'palm-beach',
-    'port st lucie': 'st-lucie',
-    'hutchinson island': 'st-lucie',
-    'hobe sound': 'martin',
-    'jensen beach': 'martin',
-    'sebastian': 'indian-river',
-    'fellsmere': 'indian-river',
-    'okeechobee city': 'okeechobee'
-  };
-
-  const aliasKey = input.toLowerCase().trim().replace(/\s+county$/i, '').trim();
-  const aliasSlug = ALIASES[aliasKey];
-  if (aliasSlug && RAG_KNOWLEDGE_BASE[aliasSlug]) {
-    return { name: RAG_KNOWLEDGE_BASE[aliasSlug].name, slug: aliasSlug };
-  }
-
-  // Fuzzy match — find county where name starts with input
-  const inputLower = input.toLowerCase().trim();
-  for (const [slug, info] of Object.entries(RAG_KNOWLEDGE_BASE)) {
-    if (info.name.toLowerCase().startsWith(inputLower)) {
-      return { name: info.name, slug: slug };
-    }
+    return `+1${digits}`;
+  } else if (digits.length === 11 && digits[0] === '1') {
+    return `+${digits}`;
   }
 
   return null;
 }
 
 /**
- * Get county info from knowledge base
- * @param {string} slug - County slug
- * @returns {Object|null}
+ * Parse email (basic validation)
  */
-function getCountyInfo(slug) {
-  return RAG_KNOWLEDGE_BASE[slug] || null;
-}
+function parseEmail(input) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const trimmed = input.trim().toLowerCase();
 
-// =============================================================================
-// PROCESSING EVENT LOGGER
-// =============================================================================
+  if (emailRegex.test(trimmed)) {
+    return trimmed;
+  }
+
+  return null;
+}
 
 /**
- * Log a processing event (SOC2-safe — no raw PII)
- * @param {string} eventType
- * @param {Object} metadata
+ * Extract county from jail name
  */
-function logProcessingEvent(eventType, metadata) {
-  try {
-    console.log(`[EVENT] ${eventType}:`, JSON.stringify(metadata));
+function extractCountyFromJail(jailName) {
+  const lowerJail = jailName.toLowerCase();
 
-    // Log to sheet if SecurityLogger is available
-    if (typeof SecurityLogger !== 'undefined' && SecurityLogger.log) {
-      SecurityLogger.log(eventType, metadata);
+  const counties = [
+    'lee', 'collier', 'charlotte', 'hendry', 'glades',
+    'sarasota', 'manatee', 'desoto', 'hardee', 'highlands'
+  ];
+
+  for (const county of counties) {
+    if (lowerJail.includes(county)) {
+      return county.charAt(0).toUpperCase() + county.slice(1);
     }
-  } catch (e) {
-    console.error('logProcessingEvent failed:', e);
   }
+
+  return 'Unknown';
 }
+
+/**
+ * Parse reference information
+ */
+function parseReference(input) {
+  // Try to extract name, phone, relationship
+  const lines = input.split('\n').map(l => l.trim()).filter(l => l);
+
+  let name = null;
+  let phone = null;
+  let relationship = null;
+
+  // Look for phone number pattern
+  for (const line of lines) {
+    if (!phone && /\d{3}[-\s]?\d{3}[-\s]?\d{4}/.test(line)) {
+      phone = parsePhoneNumber(line);
+    } else if (!name && line.length > 3 && !line.includes('@')) {
+      name = line;
+    } else if (!relationship && line.length > 2) {
+      relationship = line;
+    }
+  }
+
+  // If only one line, assume it's the name
+  if (lines.length === 1) {
+    name = lines[0];
+  }
+
+  return { name, phone, relationship };
+}
+
+/**
+ * Generate case number
+ */
+function generateCaseNumber() {
+  const timestamp = new Date().getTime();
+  const random = Math.floor(Math.random() * 1000);
+  return `SBB-${timestamp}-${random}`;
+}
+
+/**
+ * Generate receipt number
+ */
+function generateReceiptNumber() {
+  const props = PropertiesService.getScriptProperties();
+  let current = parseInt(props.getProperty('CURRENT_RECEIPT_NUMBER') || '201204');
+  current++;
+  props.setProperty('CURRENT_RECEIPT_NUMBER', String(current));
+  return String(current);
+}
+
+// =============================================================================
+// EXPORTS
+// =============================================================================
+
+// Main function called by Manus_Brain.js
+// (No explicit exports needed in GAS - functions are global)

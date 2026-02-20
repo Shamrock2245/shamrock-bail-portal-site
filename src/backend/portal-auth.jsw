@@ -18,7 +18,7 @@ import wixData from 'wix-data';
 import { generateToken, hashPassword, verifyPassword } from 'backend/auth-utils';
 import { getConfig } from 'backend/config-loader';
 import { buildMagicLinkUrl } from 'backend/portal-url';
-import { getGasWebAppUrl, getGasApiKey } from 'backend/secretsManager';
+import { getGasWebAppUrl, getGasApiKey, getSecureSecret } from 'backend/secretsManager';
 import { sendSms } from 'backend/twilio-client';
 import { fetch } from 'wix-fetch';
 import { fetchWithRetry } from 'backend/utils';
@@ -1490,3 +1490,87 @@ export {
     isStaffAccount,
     getStaffAccountDetails
 };
+
+// ============================================================================
+// TELEGRAM LOGIN INTEGRATION
+// ============================================================================
+
+/**
+ * Handle Telegram Login Widget Data
+ * Validates the hash securely and logs the user in
+ * @param {object} telegramData - Data returned from Telegram widget
+ */
+export async function onTelegramLogin(telegramData) {
+    try {
+        if (!telegramData || !telegramData.hash) {
+            return { ok: false, message: 'Invalid Telegram data' };
+        }
+
+        // 1. Get Bot Token from Secrets
+        const botToken = await getSecureSecret('TELEGRAM_BOT_TOKEN');
+        if (!botToken) {
+            throw new Error('Telegram Bot Token not configured');
+        }
+
+        // 2. Validate Data Hash
+        // Create data-check-string
+        const dataCheckArr = [];
+        for (const key in telegramData) {
+            if (key !== 'hash' && telegramData[key] !== undefined && telegramData[key] !== null) {
+                // Telegram requires sorted keys
+                dataCheckArr.push(`${key}=${telegramData[key]}`);
+            }
+        }
+        dataCheckArr.sort();
+        const dataCheckString = dataCheckArr.join('\n');
+
+        // Create SHA256 of bot token
+        const secretKey = crypto.createHash('sha256').update(botToken).digest();
+
+        // Calculate HMAC-SHA-256
+        const calculatedHash = crypto.createHmac('sha256', secretKey)
+            .update(dataCheckString)
+            .digest('hex');
+
+        if (calculatedHash !== telegramData.hash) {
+            console.error('❌ Telegram auth failed: Invalid hash');
+            return { ok: false, message: 'Authentication failed: Invalid signature' };
+        }
+
+        // Check auth_date (prevent replay attacks > 24 hours old)
+        const now = Math.floor(Date.now() / 1000);
+        if (now - telegramData.auth_date > 86400) {
+            console.error('❌ Telegram auth failed: Data is too old');
+            return { ok: false, message: 'Authentication expired, please try again' };
+        }
+
+        console.log(`✅ Telegram auth successful for user ID: ${telegramData.id} (${telegramData.first_name})`);
+
+        // 3. Find User & Create Session
+        let personId = 'telegram_' + telegramData.id;
+        let role = 'indemnitor';
+        let caseId = 'CASE-' + Date.now() + '-' + generateToken(4).toUpperCase();
+
+        // Create custom session
+        const sessionToken = await createCustomSession(
+            personId,
+            role,
+            caseId,
+            {
+                name: (telegramData.first_name + ' ' + (telegramData.last_name || '')).trim(),
+            }
+        );
+
+        return {
+            ok: true,
+            sessionToken: sessionToken,
+            role: role,
+            personId: personId,
+            telegramId: telegramData.id
+        };
+
+    } catch (error) {
+        console.error('❌ CRITICAL ERROR in onTelegramLogin:', error);
+        return { ok: false, message: 'System error processing Telegram login: ' + error.message };
+    }
+}

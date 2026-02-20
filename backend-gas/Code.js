@@ -393,6 +393,16 @@ function doPost(e) {
       }
     }
 
+    // NEW: Telegram webhook handling
+    if (data.action === 'telegram_inbound_message') {
+      if (typeof handleTelegramInbound === 'function') {
+        return createResponse(handleTelegramInbound(data.update));
+      } else {
+        console.error('handleTelegramInbound function not found');
+        return createErrorResponse('Function handleTelegramInbound not found', ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
     // --- API KEY VERIFICATION (Security Hardening) ---
     const config = getConfig();
     // Allow if it matches the configured Wix API Key
@@ -623,11 +633,6 @@ function handleAction(data) {
   if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
   if (action === 'health') return { success: true, version: '5.9', timestamp: new Date().toISOString() };
 
-  // 7. WA OPT (Direct Meta Integration)
-  if (action === 'whatsapp_send_otp') return WA_sendOTP(data.phoneNumber);
-  if (action === 'whatsapp_validate_otp') return WA_validateOTP(data.phoneNumber, data.otpCode);
-  if (action === 'whatsapp_resend_otp') return WA_resendOTP(data.phoneNumber);
-  if (action === 'whatsapp_inbound_message') return handleWhatsAppInbound(data);
 
   // 8. DOCUMENT GENERATION (Magic Tags)
   if (action === 'generate_document') {

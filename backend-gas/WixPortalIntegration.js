@@ -207,9 +207,9 @@ function generateAndSendWithWixPortal(formData) {
 
   // 6. Deliver signing links (WhatsApp or Wix Portal)
   let deliveryResult;
-  if (formData.signingMethod === 'whatsapp') {
-    // Send via WhatsApp instead of Wix Portal
-    deliveryResult = sendSigningLinksViaWhatsApp(signersWithLinks, caseData);
+  if (formData.signingMethod === 'telegram') {
+    // Send via Telegram instead of Wix Portal
+    deliveryResult = sendSigningLinksViaTelegram(signersWithLinks, caseData);
   } else {
     // Default: Sync to Wix Portal
     deliveryResult = saveSigningLinksToWixBatch(signersWithLinks, caseData);
@@ -222,9 +222,9 @@ function generateAndSendWithWixPortal(formData) {
     documentId: signingResult.documentId,
     deliveryMethod: formData.signingMethod || 'wix',
     deliveryResult: deliveryResult,
-    wixPortal: formData.signingMethod === 'whatsapp' ? null : deliveryResult,
+    wixPortal: formData.signingMethod === 'telegram' ? null : deliveryResult,
     message: deliveryResult.success
-      ? `Documents sent via ${formData.signingMethod === 'whatsapp' ? 'WhatsApp' : 'Client Portal'} successfully!`
+      ? `Documents sent via ${formData.signingMethod === 'telegram' ? 'Telegram' : 'Client Portal'} successfully!`
       : `Documents created, but delivery failed: ${deliveryResult.message}`
   };
 }
@@ -825,68 +825,69 @@ function fetchIndemnitorProfile(email, includeDocs = false) {
 
 
 // =============================================================================
-// WHATSAPP DELIVERY
+// TELEGRAM DELIVERY
 // =============================================================================
 
 /**
- * Send signing links via WhatsApp instead of Wix Portal
- * @param {Array} signers - Array of signer objects with phone, email, role, signingLink
+ * Send signing links via Telegram instead of Wix Portal
+ * @param {Array} signers - Array of signer objects with phone, email, role, signingLink, telegramId
  * @param {Object} caseData - Case information
  * @returns {object} - { success: boolean, message: string, sent: number }
  */
-function sendSigningLinksViaWhatsApp(signers, caseData) {
+function sendSigningLinksViaTelegram(signers, caseData) {
   if (!Array.isArray(signers) || signers.length === 0) {
     return { success: false, message: 'No signers provided', sent: 0 };
   }
-  
-  console.log(`Sending ${signers.length} signing links via WhatsApp...`);
-  
+
+  console.log(`Sending ${signers.length} signing links via Telegram...`);
+
   try {
-    const whatsapp = new WhatsAppCloudAPI();
+    const telegram = new TelegramBotAPI();
     let sentCount = 0;
     const errors = [];
-    
+
     signers.forEach(signer => {
       try {
-        // Validate phone number
-        if (!signer.phone) {
-          errors.push(`${signer.role}: No phone number provided`);
+        // Validate telegram ID or phone
+        const chatId = signer.telegramId || signer.phone;
+        if (!chatId) {
+          errors.push(`${signer.role}: No Telegram ID or phone provided`);
           return;
         }
-        
+
         // Generate message based on role
         const message = generateSigningMessage(signer, caseData);
-        
-        // Send via WhatsApp
-        const result = whatsapp.sendText(signer.phone, message);
-        
+
+        // Send via Telegram
+        const result = telegram.sendMessage(chatId, message);
+
         if (result && result.success !== false) {
           sentCount++;
-          console.log(`Signing link sent to ${signer.phone} (${signer.role})`);
-          
+          console.log(`Signing link sent to ${chatId} (${signer.role})`);
+
           // Log for compliance
-          logProcessingEvent('SIGNING_LINK_SENT_WHATSAPP', {
+          logProcessingEvent('SIGNING_LINK_SENT_TELEGRAM', {
             caseNumber: caseData.caseNumber,
-            phoneNumber: signer.phone,
+            telegramId: chatId,
             role: signer.role,
             documentId: signer.signNowDocumentId,
             timestamp: new Date().toISOString()
           });
         } else {
-          errors.push(`${signer.role}: WhatsApp send failed`);
+          errors.push(`${signer.role}: Telegram send failed`);
         }
-        
+
       } catch (e) {
-        console.error(`Error sending to ${signer.phone}:`, e);
+        console.error(`Error sending to ${signer.telegramId || signer.phone}:`, e);
         errors.push(`${signer.role}: ${e.message}`);
       }
     });
-    
+
     // Return result
     if (sentCount === signers.length) {
       return {
         success: true,
-        message: `All ${sentCount} signing links sent via WhatsApp`,
+        message: `All ${sentCount} signing links sent via Telegram`,
         sent: sentCount
       };
     } else if (sentCount > 0) {
@@ -904,12 +905,12 @@ function sendSigningLinksViaWhatsApp(signers, caseData) {
         errors: errors
       };
     }
-    
+
   } catch (e) {
-    console.error('WhatsApp delivery error:', e);
+    console.error('Telegram delivery error:', e);
     return {
       success: false,
-      message: `WhatsApp delivery failed: ${e.message}`,
+      message: `Telegram delivery failed: ${e.message}`,
       sent: 0
     };
   }
@@ -921,16 +922,16 @@ function sendSigningLinksViaWhatsApp(signers, caseData) {
 function generateSigningMessage(signer, caseData) {
   const defendantName = caseData.defendantName || 'the defendant';
   const role = signer.role || 'signer';
-  
+
   // Base message components
-  const greeting = role === 'indemnitor' 
+  const greeting = role === 'indemnitor'
     ? `Hi! This is Manus from Shamrock Bail Bonds.`
     : `Hi! This is Manus from Shamrock Bail Bonds.`;
-  
+
   const context = role === 'indemnitor'
     ? `Your bail bond paperwork for **${defendantName}** is ready to sign.`
     : `Your bail bond paperwork is ready for your signature.`;
-  
+
   const instructions = `📋 **Sign your documents here:**
 ${signer.signingLink}
 
@@ -942,12 +943,12 @@ ${signer.signingLink}
 5. Submit
 
 This takes about 3-5 minutes and works on any device (iPhone, Android, tablet, or computer).`;
-  
+
   const urgency = role === 'indemnitor'
     ? `\n\n⏰ **Important:** Please sign ASAP so we can process the bond and get ${defendantName} released quickly.`
     : `\n\n⏰ Please complete this within 24 hours.`;
-  
+
   const support = `\n\nQuestions? Just reply to this message! I'm here to help. 😊`;
-  
+
   return `${greeting}\n\n${context}\n\n${instructions}${urgency}${support}`;
 }
