@@ -1,23 +1,17 @@
 /**
- * Shamrock Bail Bonds - Portal Landing Page (v3.0 - WhatsApp OTP)
- * Last Updated: 2026-02-17 (WhatsApp OTP Integration)
+ * Shamrock Bail Bonds - Portal Landing Page (v3.0)
+ * Last Updated: 2026-02-17
  * 
- * DUAL AUTHENTICATION FLOW:
+ * AUTHENTICATION FLOW:
  * 
  * A. EMAIL MAGIC LINK (Existing):
  * 1. User enters email → Click "Get Started"
  * 2. Receives magic link via email
  * 3. One-click login to portal
  * 
- * B. WHATSAPP OTP (New):
- * 1. User enters WhatsApp number → Click "Get Started"
- * 2. Receives OTP code via WhatsApp
- * 3. Enters OTP code → Logs in to portal
- * 
  * Page Elements (Must exist in Wix Editor):
- * - #emailPhoneInput: Text input for email or WhatsApp number
+ * - #emailPhoneInput: Text input for email
  * - #getStartedBtn: Primary CTA button
- * - #whatsappLoginBtn: WhatsApp login button (optional)
  * - #otpInputBox: Container for OTP input (hidden by default)
  * - #otpInput: Text input for OTP code
  * - #verifyOtpBtn: Button to verify OTP

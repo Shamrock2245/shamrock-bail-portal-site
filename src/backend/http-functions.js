@@ -1633,21 +1633,6 @@ export async function get_outreachLeads(request) {
 }
 
 
-// ============================================================================
-// WHATSAPP CLOUD API WEBHOOKS
-// ============================================================================
-// Register in Meta Developer Console > App > WhatsApp > Configuration:
-//   Callback URL:  https://www.shamrockbailbonds.biz/_functions/webhookWhatsApp
-//   Verify Token:  (value of Wix Secret: WHATSAPP_WEBHOOK_VERIFY_TOKEN)
-//
-// Required Wix Secrets:
-//   WHATSAPP_WEBHOOK_VERIFY_TOKEN  — random string you set in Meta console
-//   WHATSAPP_APP_SECRET            — App Secret from Meta App Dashboard
-//   WHATSAPP_ACCESS_TOKEN          — Permanent System User token
-//   WHATSAPP_PHONE_NUMBER_ID       — Numeric Phone Number ID from WhatsApp Manager
-// ============================================================================
-
-
 
 // =============================================================================
 // TELEGRAM WEBHOOK ENDPOINT
@@ -1985,14 +1970,14 @@ export async function get_gasSecrets(request) {
     const responseHeaders = {
         "Content-Type": "application/json"
     };
-    
+
     try {
         const callerIP = request.ip || 'Unknown';
         const queryParams = request.query || {};
         const secretName = queryParams.secret;
         const providedApiKey = queryParams.apiKey;
         const gasCaller = request.headers['x-gas-caller'];
-        
+
         console.log(`[gasSecrets] Request for ${secretName} from ${callerIP}`);
 
         if (!secretName) {
@@ -2002,11 +1987,11 @@ export async function get_gasSecrets(request) {
                 body: { error: 'Missing secret parameter' }
             });
         }
-        
+
         // Very important: If the secret requested is GAS_API_KEY, 
         // we only authenticate via the known GAS Webhook URL (x-gas-caller).
         // For ALL OTHER secrets, we require the GAS_API_KEY itself to be passed.
-        
+
         if (secretName === 'GAS_API_KEY') {
             // We just verify the caller looks kinda like a GAS URL, 
             // though this isn't high security, the API key itself is the real security token
@@ -2018,7 +2003,7 @@ export async function get_gasSecrets(request) {
                     body: { error: 'Forbidden' }
                 });
             }
-            
+
             const gasApiKey = await getSecret('GAS_API_KEY');
             return response({
                 status: 200,
@@ -2026,7 +2011,7 @@ export async function get_gasSecrets(request) {
                 body: { value: gasApiKey }
             });
         }
-        
+
         // For everything else, require valid API key
         if (!providedApiKey) {
             return response({
@@ -2035,7 +2020,7 @@ export async function get_gasSecrets(request) {
                 body: { error: 'Unauthorized: Missing API Key' }
             });
         }
-        
+
         const validApiKey = await getSecret('GAS_API_KEY');
         if (providedApiKey !== validApiKey) {
             console.warn(`[gasSecrets] Invalid API key used by ${gasCaller}`);
@@ -2045,7 +2030,7 @@ export async function get_gasSecrets(request) {
                 body: { error: 'Forbidden: Invalid API Key' }
             });
         }
-        
+
         // The requested secret
         let value = null;
         try {
@@ -2054,13 +2039,13 @@ export async function get_gasSecrets(request) {
             console.error(`[gasSecrets] Failed to fetch secret ${secretName}:`, e);
             // Don't fail the request, just return null so caller knows it doesn't exist yet
         }
-        
+
         return response({
             status: 200,
             headers: responseHeaders,
             body: { value: value }
         });
-        
+
     } catch (error) {
         console.error("[gasSecrets] Fatal error fetching secret:", error);
         return response({
