@@ -7290,7 +7290,7 @@
                                             <span id="badge-${id}">${riskBadge}</span>
                                         </td>
                                         <td style="padding: 12px;">${indemnitor}</td>
-                                        <td style="padding: 12px;">${item.Role || 'Indemnitor'}</td>
+                                        <td style="padding: 12px;">${item.Role || 'Indemnitor'}${id && id.startsWith('TG-') ? ' <span style="background:#0088cc;color:#fff;font-size:10px;padding:2px 6px;border-radius:8px;margin-left:4px;">📱 Telegram</span>' : ''}</td>
                                         <td style="padding: 12px;"><span class="badge badge-warning">${item.Status || 'Pending'}</span></td>
                                         <td style="padding: 12px;">${dateStr}</td>
                                         <td style="padding: 12px; text-align: right;">
@@ -7363,17 +7363,41 @@
                     });
                 },
 
-                process: function (intakeId) {
-                    // Retrieve from Cache
+                  process: function (intakeId) {
+                    // --- TELEGRAM INTAKE: Fetch full data from backend if TG- prefixed ---
+                    if (intakeId && intakeId.startsWith('TG-')) {
+                        const cached = window.ShamrockApp.IntakeCache.get(intakeId);
+                        if (!cached) {
+                            // Not yet in cache — fetch from backend TelegramIntakeData sheet
+                            UI.showLoading('Loading Telegram Intake', 'Fetching full intake data from Telegram bot...');
+                            google.script.run
+                                .withSuccessHandler(function (fullData) {
+                                    UI.hideLoading();
+                                    if (!fullData) {
+                                        UI.showToast('Telegram intake data not found in system', 'error');
+                                        return;
+                                    }
+                                    // Store in cache then re-call process
+                                    window.ShamrockApp.IntakeCache.set(intakeId, fullData);
+                                    Queue.process(intakeId);
+                                })
+                                .withFailureHandler(function (err) {
+                                    UI.hideLoading();
+                                    UI.showToast('Failed to load Telegram intake: ' + (err.message || err), 'error');
+                                })
+                                .handleAction({ action: 'getTelegramIntakeData', intakeId: intakeId });
+                            return; // Exit — will re-enter once data is fetched
+                        }
+                    }
+                    // --- STANDARD INTAKE: Retrieve from Cache ---
                     const item = window.ShamrockApp.IntakeCache.get(intakeId);
-
                     if (!item) {
                         console.error('Intake not found in cache:', intakeId);
                         UI.showToast('Error: Could not load intake data (Cache Miss)', 'error');
                         return;
                     }
-
-                    if (!confirm(`Process data for ${item.DefendantName}?\n\n⚠️ This will CLEAR and OVERWRITE the current form.`)) return;
+                    const sourceLabel = (item.source === 'telegram') ? '📱 Telegram Bot' : '🌐 Wix Portal';
+                    if (!confirm(`Process data for ${item.DefendantName || item.defendantName}?\n\n⚠️ This will CLEAR and OVERWRITE the current form.\n\nSource: ${sourceLabel}`)) return;
 
                     try {
                         // 1. Clear existing form to prevent ghost data

@@ -88,6 +88,8 @@ var NotificationService = (function() {
         else if (ch === '#signing-errors' || ch.includes('signing-error')) webhookKey = 'SLACK_WEBHOOK_SIGNING_ERRORS';
         else if (ch === '#drive' || ch.includes('drive')) webhookKey = 'SLACK_WEBHOOK_DRIVE';
         else if (ch === '#calendar' || ch.includes('calendar')) webhookKey = 'SLACK_WEBHOOK_CALENDAR';
+        else if (ch === 'shamrock bail bonds' || ch.includes('shamrock')) webhookKey = 'SLACK_WEBHOOK_SHAMROCK';
+        else if (ch === '#general' || ch.includes('general')) webhookKey = 'SLACK_WEBHOOK_GENERAL';
       }
 
       // 2. Construct Payload
@@ -100,6 +102,34 @@ var NotificationService = (function() {
 
       // 3. Send
       return this.notifySlack(webhookKey, payload);
+    },
+
+    /**
+     * Send a rich new-intake alert to both #intake and #new-cases simultaneously.
+     * Used by Telegram_IntakeQueue.js and Wix intake handlers.
+     *
+     * @param {object} opts - { intakeId, defendantName, facility, county, indemnitorName,
+     *                          indemnitorPhone, indemnitorRelation, source, aiRisk }
+     */
+    sendNewIntakeAlert: function(opts) {
+      const riskEmoji = opts.aiRisk === 'High' ? '🔴' : (opts.aiRisk === 'Medium' ? '🟡' : '🟢');
+      const sourceLabel = opts.source === 'telegram' ? '📱 Telegram Bot' : '🌐 Wix Portal';
+      const message = [
+        `${sourceLabel} *New Intake Received*`,
+        `*ID:* \`${opts.intakeId || '—'}\``,
+        `*Defendant:* ${opts.defendantName || 'Unknown'}`,
+        `*Facility:* ${opts.facility || 'Unknown'}${opts.county ? ' (' + opts.county + ' County)' : ''}`,
+        `*Co-Signer:* ${opts.indemnitorName || 'Unknown'} (${opts.indemnitorRelation || '?'})`,
+        `*Co-Signer Phone:* ${opts.indemnitorPhone || '—'}`,
+        `*AI Risk:* ${riskEmoji} ${opts.aiRisk || 'Pending'}`,
+        `*Action:* Open Dashboard → Queue tab → Click ⬇️ Process`
+      ].join('\n');
+
+      const results = {};
+      results.intake    = this.sendSlack('#intake',    message);
+      results.newCases  = this.sendSlack('#new-cases', message);
+      results.shamrock  = this.sendSlack('shamrock bail bonds', message);
+      return results;
     },
 
     /**

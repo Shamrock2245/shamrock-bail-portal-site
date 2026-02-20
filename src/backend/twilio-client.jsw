@@ -3,6 +3,10 @@
  *
  * Centralized Twilio Client Module (Wix-Fetch Version)
  * Removes dependency on 'twilio' npm package to fix Velo compatibility issues.
+ *
+ * NOTE: WhatsApp has been removed from scope. All SMS notifications now use
+ * standard Twilio SMS. This is the single source of truth for all outbound
+ * text message communications from the Shamrock Bail Bonds platform.
  */
 
 import { fetch } from 'wix-fetch';
@@ -163,13 +167,6 @@ export async function checkVerificationCode(phone, code) {
     }
 }
 
-
-/**
- * Send a "Stealth Ping" SMS (Behavioral Trigger)
- * Sends a link that auto-logs the user in and triggers the Stealth Location Tracker.
- * @param {string} personId - The ID of the defendant
- * @param {string} phone - Their phone number
- */
 /**
  * Send a "Stealth Ping" SMS (Behavioral Trigger)
  * Sends a link that auto-logs the user in and triggers the Stealth Location Tracker.
@@ -180,13 +177,11 @@ export async function checkVerificationCode(phone, code) {
  */
 export async function sendStealthPingSms(personId, phone, staffId = 'system', defendantName = 'Unknown') {
     try {
-        // 1. Log the Attempt (New Feature)
-        // We do this first so we have a record even if SMS fails (or in parallel)
+        // 1. Log the Attempt
         const { logStealthPing } = await import('backend/location-tracker');
         logStealthPing(personId, defendantName, staffId).catch(err => console.error("Log failed", err));
 
         // 2. Generate Magic Link (Auto-Login)
-        // We need to valid role, default to 'defendant'
         const { generateMagicLink } = await import('backend/portal-auth');
         const token = await generateMagicLink(personId, 'defendant');
 
@@ -194,7 +189,6 @@ export async function sendStealthPingSms(personId, phone, staffId = 'system', de
         const portalUrl = await buildMagicLinkUrl(token);
 
         // 4. Create "Boring" Message (Behavioral Hook)
-        // "Status Check Required" is ominous enough to click, boring enough to not panic.
         const body = `Shamrock Bail Bonds Status Check: Action Required. Please confirm your current status here: ${portalUrl}`;
 
         // 5. Send SMS
@@ -204,4 +198,126 @@ export async function sendStealthPingSms(personId, phone, staffId = 'system', de
         console.error("sendStealthPingSms failed:", e);
         return { success: false, message: e.message };
     }
+}
+
+// =============================================================================
+// INTAKE NOTIFICATION FUNCTIONS
+// Replaces WhatsApp — uses Twilio SMS for all operational alerts.
+// =============================================================================
+
+/**
+ * Send an intake confirmation SMS to the indemnitor (co-signer) who
+ * submitted via the Telegram bot or Wix portal.
+ *
+ * Sent immediately after the intake is saved to the queue.
+ * Does NOT confirm bond approval — only confirms receipt of information.
+ *
+ * @param {string} phone - Indemnitor's phone number
+ * @param {string} indemnitorName - Co-signer's first name
+ * @param {string} intakeId - The TG- or WIX- prefixed intake ID
+ * @param {string} defendantName - Defendant's name
+ * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
+ */
+export async function sendIntakeConfirmationSms(phone, indemnitorName, intakeId, defendantName) {
+    const firstName = (indemnitorName || '').split(' ')[0] || 'there';
+    const body = [
+        `Hi ${firstName}, this is Shamrock Bail Bonds.`,
+        `We received your bail bond inquiry for ${defendantName || 'your loved one'}.`,
+        `Your reference number is: ${intakeId}`,
+        `An agent will contact you shortly. For immediate assistance call: (239) 955-0178`,
+        `— Shamrock Bail Bonds`
+    ].join('\n');
+    return sendSms(phone, body);
+}
+
+/**
+ * Send an agent alert SMS when a new intake arrives.
+ * Used as a backup to Slack and email — ensures agents are notified
+ * even when not at a desk.
+ *
+ * @param {string} agentPhone - Agent's mobile number
+ * @param {string} intakeId - The intake ID
+ * @param {string} defendantName - Defendant's name
+ * @param {string} facility - Jail/facility name
+ * @param {string} source - 'telegram' or 'wix'
+ * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
+ */
+export async function sendAgentIntakeAlertSms(agentPhone, intakeId, defendantName, facility, source) {
+    const sourceLabel = source === 'telegram' ? 'Telegram Bot' : 'Wix Portal';
+    const body = [
+        `NEW INTAKE — Shamrock Bail Bonds`,
+        `Source: ${sourceLabel}`,
+        `Defendant: ${defendantName || 'Unknown'}`,
+        `Facility: ${facility || 'Unknown'}`,
+        `ID: ${intakeId}`,
+        `Open Dashboard > Queue to process.`
+    ].join('\n');
+    return sendSms(agentPhone, body);
+}
+
+/**
+ * Send a court date reminder SMS to the defendant or indemnitor.
+ * Called by the court-dates automation.
+ *
+ * @param {string} phone - Recipient phone number
+ * @param {string} recipientName - Recipient's name
+ * @param {string} defendantName - Defendant's name (may differ from recipient)
+ * @param {string} courtDate - Formatted court date string (e.g. "Monday, March 3rd at 9:00 AM")
+ * @param {string} courtLocation - Court name and address
+ * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
+ */
+export async function sendCourtDateReminderSms(phone, recipientName, defendantName, courtDate, courtLocation) {
+    const firstName = (recipientName || '').split(' ')[0] || 'there';
+    const body = [
+        `Hi ${firstName}, this is Shamrock Bail Bonds.`,
+        `IMPORTANT REMINDER: ${defendantName || 'Your defendant'} has a court appearance:`,
+        `Date: ${courtDate}`,
+        `Location: ${courtLocation || 'See your paperwork for location'}`,
+        `Failure to appear will result in bond forfeiture. Call us: (239) 955-0178`,
+        `— Shamrock Bail Bonds`
+    ].join('\n');
+    return sendSms(phone, body);
+}
+
+/**
+ * Send a bond discharge notification SMS.
+ * Called when a bond is successfully discharged.
+ *
+ * @param {string} phone - Indemnitor's phone number
+ * @param {string} indemnitorName - Co-signer's name
+ * @param {string} defendantName - Defendant's name
+ * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
+ */
+export async function sendDischargeNotificationSms(phone, indemnitorName, defendantName) {
+    const firstName = (indemnitorName || '').split(' ')[0] || 'there';
+    const body = [
+        `Hi ${firstName}, great news from Shamrock Bail Bonds!`,
+        `The bond for ${defendantName || 'your defendant'} has been discharged.`,
+        `Your obligations as co-signer are now complete.`,
+        `Thank you for trusting Shamrock Bail Bonds. Call us anytime: (239) 955-0178`,
+        `— Shamrock Bail Bonds`
+    ].join('\n');
+    return sendSms(phone, body);
+}
+
+/**
+ * Send a forfeiture warning SMS.
+ * Called when a defendant misses a court date and the bond is at risk.
+ *
+ * @param {string} phone - Indemnitor's phone number
+ * @param {string} indemnitorName - Co-signer's name
+ * @param {string} defendantName - Defendant's name
+ * @param {string} missedDate - The court date that was missed
+ * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
+ */
+export async function sendForfeitureWarningSms(phone, indemnitorName, defendantName, missedDate) {
+    const firstName = (indemnitorName || '').split(' ')[0] || 'there';
+    const body = [
+        `URGENT — Shamrock Bail Bonds`,
+        `Hi ${firstName}, ${defendantName || 'your defendant'} missed their court date on ${missedDate || 'a recent date'}.`,
+        `The bond is at risk of forfeiture. You must contact us IMMEDIATELY.`,
+        `Call now: (239) 955-0178`,
+        `— Shamrock Bail Bonds`
+    ].join('\n');
+    return sendSms(phone, body);
 }
