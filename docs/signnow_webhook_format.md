@@ -12,7 +12,7 @@ The `callback` field must be **inside** the `attributes` object, not at the root
   "entity_id": "22121bf4f6bb4682aeb53f963df5098c2b442ac1",
   "attributes": {
     "callback": "https://www.shamrockbailbonds.biz/_functions/webhookSignnow",
-    "secret_key": "b4633bfe7f90483abcf4801620aedc59",
+    "secret_key": "REDACTED_SIGNNOW_WEBHOOK_SECRET",
     "use_tls_12": true,
     "retry_count": 3
   }

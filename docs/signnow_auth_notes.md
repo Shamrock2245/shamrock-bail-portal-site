@@ -21,10 +21,10 @@
 - Application ID: `60910f0631c84a94b842a0d8a13233039a848b9e`
 - Client ID: `3b4dd51e0a07557e5b0e6b42415759db`
 - Basic Authorization Token: `M2I0ZGQ1MWUwYTA3NTU3ZTViMGU2YjQyNDE1NzU5ZGI6YjQ2MzNiZmU3ZjkwNDgzYWJjZjQ4MDE2MjBhZWRjNTk=`
-- Secret Key: `b4633bfe7f90483abcf4801620aedc59`
+- Secret Key: `REDACTED_SIGNNOW_WEBHOOK_SECRET`
 
 **API Key (Primary):**
-- API Key: `d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4`
+- API Key: `REDACTED_SIGNNOW_API_KEY`
 
 **Account Credentials:**
 - Email: `admin@shamrockbailbonds.biz`
@@ -36,7 +36,7 @@
 ```bash
 curl --request POST \
   --url https://api.signnow.com/document/{{document_id}}/invite \
-  --header 'Authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4' \
+  --header 'Authorization: Bearer REDACTED_SIGNNOW_API_KEY' \
   --header 'Content-Type: application/json'
 ```
 
@@ -67,7 +67,7 @@ According to docs, these webhook operations work with **Basic Authorization**:
 - Edit event subscriptions (basic auth)
 
 For webhook verification, we need:
-- Webhook Secret: Use the Secret Key `b4633bfe7f90483abcf4801620aedc59`
+- Webhook Secret: Use the Secret Key `REDACTED_SIGNNOW_WEBHOOK_SECRET`
 
 ## Next Steps
 

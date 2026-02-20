@@ -3,12 +3,12 @@
 ## Credentials to Update
 
 ### 1. SIGNNOW_API_KEY
-**Value:** `d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4`  
+**Value:** `REDACTED_SIGNNOW_API_KEY`  
 **Usage:** Primary authentication for all SignNow API calls  
 **Format:** Bearer token in Authorization header
 
 ### 2. SIGNNOW_WEBHOOK_SECRET
-**Value:** `b4633bfe7f90483abcf4801620aedc59`  
+**Value:** `REDACTED_SIGNNOW_WEBHOOK_SECRET`  
 **Usage:** HMAC signature verification for incoming webhooks  
 **Format:** Secret key for cryptographic validation
 
@@ -33,7 +33,7 @@ After updating, test with this API call:
 ```bash
 curl --request GET \
   --url https://api.signnow.com/user \
-  --header 'Authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4'
+  --header 'Authorization: Bearer REDACTED_SIGNNOW_API_KEY'
 ```
 
 Expected response: User account information

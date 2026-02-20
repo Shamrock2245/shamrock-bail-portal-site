@@ -1,75 +1,0 @@
-Note: Unnecessary use of -X or --request, POST is already inferred.
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0* Host api.signnow.com:443 was resolved.
-* IPv6: (none)
-* IPv4: 104.18.13.216, 104.18.12.216
-*   Trying 104.18.13.216:443...
-* Connected to api.signnow.com (104.18.13.216) port 443
-* ALPN: curl offers h2,http/1.1
-* (304) (OUT), TLS handshake, Client hello (1):
-} [320 bytes data]
-*  CAfile: /etc/ssl/cert.pem
-*  CApath: none
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0* (304) (IN), TLS handshake, Server hello (2):
-{ [122 bytes data]
-* (304) (IN), TLS handshake, Unknown (8):
-{ [19 bytes data]
-* (304) (IN), TLS handshake, Certificate (11):
-{ [3911 bytes data]
-* (304) (IN), TLS handshake, CERT verify (15):
-{ [264 bytes data]
-* (304) (IN), TLS handshake, Finished (20):
-{ [36 bytes data]
-* (304) (OUT), TLS handshake, Finished (20):
-} [36 bytes data]
-* SSL connection using TLSv1.3 / AEAD-CHACHA20-POLY1305-SHA256 / [blank] / UNDEF
-* ALPN: server accepted h2
-* Server certificate:
-*  subject: CN=*.signnow.com
-*  start date: Aug  6 17:54:47 2025 GMT
-*  expire date: Sep  7 17:54:47 2026 GMT
-*  subjectAltName: host "api.signnow.com" matched cert's "*.signnow.com"
-*  issuer: C=US; ST=Arizona; L=Scottsdale; O=GoDaddy.com, Inc.; OU=http://certs.godaddy.com/repository/; CN=Go Daddy Secure Certificate Authority - G2
-*  SSL certificate verify ok.
-* using HTTP/2
-* [HTTP/2] [1] OPENED stream for https://api.signnow.com/document
-* [HTTP/2] [1] [:method: POST]
-* [HTTP/2] [1] [:scheme: https]
-* [HTTP/2] [1] [:authority: api.signnow.com]
-* [HTTP/2] [1] [:path: /document]
-* [HTTP/2] [1] [user-agent: curl/8.7.1]
-* [HTTP/2] [1] [accept: */*]
-* [HTTP/2] [1] [authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4]
-* [HTTP/2] [1] [content-length: 3139772]
-* [HTTP/2] [1] [content-type: multipart/form-data; boundary=------------------------sVoiWGzqp0VoZYTdD1kwLZ]
-> POST /document HTTP/2
-> Host: api.signnow.com
-> User-Agent: curl/8.7.1
-> Accept: */*
-> Authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4
-> Content-Length: 3139772
-> Content-Type: multipart/form-data; boundary=------------------------sVoiWGzqp0VoZYTdD1kwLZ
-> 
-} [65246 bytes data]
-* upload completely sent off: 3139772 bytes
-100 3066k    0     0  100 3066k      0  2262k  0:00:01  0:00:01 --:--:-- 2261k100 3066k    0     0  100 3066k      0  1300k  0:00:02  0:00:02 --:--:-- 1300k100 3066k    0     0  100 3066k      0   911k  0:00:03  0:00:03 --:--:--  911k100 3066k    0     0  100 3066k      0   702k  0:00:04  0:00:04 --:--:--  701k100 3066k    0     0  100 3066k      0   571k  0:00:05  0:00:05 --:--:--  581k100 3066k    0     0  100 3066k      0   481k  0:00:06  0:00:06 --:--:--     0100 3066k    0     0  100 3066k      0   415k  0:00:07  0:00:07 --:--:--     0< HTTP/2 200 
-< date: Tue, 03 Feb 2026 16:57:59 GMT
-< content-type: application/json; charset=utf-8
-< cf-ray: 9c8378410f5d32d8-MIA
-< x-ratelimit-limit: 1000
-< x-ratelimit-remaining: 989
-< x-ratelimit-reset: 1770141600
-< cache-control: no-cache, private
-< x-request-id: d5c3aba01ad9ec1317745d3c966df614
-< x-envoy-upstream-service-time: 7053
-< strict-transport-security: max-age=31536000; includeSubDomains
-< vary: accept-encoding
-< cf-cache-status: DYNAMIC
-< set-cookie: __cf_bm=6Z4IuOgOttepc2Ff2w3fFILLbVKgzIoJXy7hSpxLtJA-1770137879-1.0.1.1-NkGis.0dQ5ZyCcSXCBh8u758E6xp3DaLd1MZlI3GifsmZEbaXMHsWbvvJcbLT73xiqr6yc_yCcslA5U4nQjc_K0XhAth_cLfYvI9wChZo70; path=/; expires=Tue, 03-Feb-26 17:27:59 GMT; domain=.signnow.com; HttpOnly; Secure; SameSite=None
-< server: cloudflare
-< 
-{ [49 bytes data]
-100 3066k    0    49  100 3066k      6   394k  0:00:07  0:00:07 --:--:--    11
-* Connection #0 to host api.signnow.com left intact
-{"id":"a4fbe2bcf6e44742816c036c9437600a3ec574b4"}

@@ -62,12 +62,12 @@
 ```bash
 curl --request POST \
   --url https://api.signnow.com/v2/event-subscriptions \
-  --header 'Authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4' \
+  --header 'Authorization: Bearer REDACTED_SIGNNOW_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
     "event": "document.complete",
     "callback_url": "https://www.shamrockbailbonds.biz/_functions/webhookSignnow",
-    "secret_key": "b4633bfe7f90483abcf4801620aedc59",
+    "secret_key": "REDACTED_SIGNNOW_WEBHOOK_SECRET",
     "attributes": {
       "document_id": true,
       "document_name": true,
@@ -80,12 +80,12 @@ curl --request POST \
 ```bash
 curl --request POST \
   --url https://api.signnow.com/v2/event-subscriptions \
-  --header 'Authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4' \
+  --header 'Authorization: Bearer REDACTED_SIGNNOW_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
     "event": "document.signed",
     "callback_url": "https://www.shamrockbailbonds.biz/_functions/webhookSignnow",
-    "secret_key": "b4633bfe7f90483abcf4801620aedc59"
+    "secret_key": "REDACTED_SIGNNOW_WEBHOOK_SECRET"
   }'
 ```
 
@@ -93,12 +93,12 @@ curl --request POST \
 ```bash
 curl --request POST \
   --url https://api.signnow.com/v2/event-subscriptions \
-  --header 'Authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4' \
+  --header 'Authorization: Bearer REDACTED_SIGNNOW_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
     "event": "document.declined",
     "callback_url": "https://www.shamrockbailbonds.biz/_functions/webhookSignnow",
-    "secret_key": "b4633bfe7f90483abcf4801620aedc59"
+    "secret_key": "REDACTED_SIGNNOW_WEBHOOK_SECRET"
   }'
 ```
 
@@ -108,12 +108,12 @@ curl --request POST \
 
 1. **SIGNNOW_API_KEY**
    ```
-   d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4
+   REDACTED_SIGNNOW_API_KEY
    ```
 
 2. **SIGNNOW_WEBHOOK_SECRET**
    ```
-   b4633bfe7f90483abcf4801620aedc59
+   REDACTED_SIGNNOW_WEBHOOK_SECRET
    ```
 
 ### 3. Run GAS Setup Function

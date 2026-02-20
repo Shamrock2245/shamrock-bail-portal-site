@@ -2,172 +2,239 @@
  * Setup_Properties_Telegram.js
  * Shamrock Bail Bonds — Google Apps Script
  *
- * ONE-CLICK SETUP for the Telegram Bot + ElevenLabs integration.
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║  NO HARDCODED SECRETS — All values loaded at runtime from   ║
+ * ║  Wix Secrets Manager via the GAS_WEBHOOK_URL endpoint.      ║
+ * ║                                                              ║
+ * ║  HOW TO USE (one-tap desktop setup):                        ║
+ * ║  1. Open GAS editor → Select: setupAllProperties            ║
+ * ║  2. Click ▶ Run  (authorize on first run)                   ║
+ * ║  3. Run: registerTelegramWebhook                            ║
+ * ║  4. Run: configureBotCommands                               ║
+ * ║  5. Run: verifyTelegramSetup                                ║
+ * ╚══════════════════════════════════════════════════════════════╝
  *
- * HOW TO USE:
- *   1. Open this GAS project in the Apps Script editor
- *   2. Select the function: setupTelegramProperties
- *   3. Click ▶ Run
- *   4. Authorize when prompted
- *   5. Then run: registerTelegramWebhook
- *   6. Then run: verifyTelegramSetup
+ * Secrets are stored exclusively in:
+ *   • Wix Secrets Manager  (source of truth)
+ *   • GAS Script Properties (runtime cache, set by this script)
  *
- * REQUIRED SECRETS (fill in below before running):
- *   TELEGRAM_BOT_TOKEN   — From @BotFather on Telegram
- *   ELEVENLABS_API_KEY   — From elevenlabs.io/app/settings/api-keys
- *   WIX_SITE_URL         — Your Wix site URL (e.g. https://www.shamrockbailbonds.biz)
- *   WIX_API_KEY          — GAS_API_KEY secret set in Wix Secrets Manager
- *
- * Version: 1.0.0
+ * Version: 3.0.0 — Zero-secret build
  * Date: 2026-02-20
  */
 
 // =============================================================================
-// ⚠️  FILL THESE IN BEFORE RUNNING  ⚠️
+// CONFIGURATION — Edit only these safe, non-secret values
 // =============================================================================
 
-const TELEGRAM_CONFIG = {
-  // Get this from @BotFather — /newbot or /mybots
-  BOT_TOKEN: '',  // e.g. '7123456789:AAHdqTcvCHhvQNKMe29udihh0k1lkH9tY8'
+const SETUP_CONFIG = {
+  // Wix site base URL (public, not a secret)
+  wixSiteUrl: 'https://www.shamrockbailbonds.biz',
 
-  // Your Wix site public URL (no trailing slash)
-  WIX_SITE_URL: 'https://www.shamrockbailbonds.biz',
+  // Telegram webhook path on Wix (public endpoint)
+  telegramWebhookPath: '/_functions/telegramWebhook',
 
-  // The Wix HTTP function endpoint that receives Telegram updates
-  WEBHOOK_PATH: '/_functions/telegramWebhook',
+  // Wix secrets-bridge endpoint (returns secrets to authorized GAS callers)
+  secretsBridgePath: '/_functions/get_gasSecrets',
 
-  // Bot display settings (set via BotFather)
-  BOT_NAME: 'Shamrock Bail Bonds',
-  BOT_USERNAME: 'ShamrockBailBot',
-  BOT_DESCRIPTION: '🍀 Shamrock Bail Bonds — 24/7 bail bond assistance for all 67 Florida counties. Get your loved one home fast.',
-};
+  // Bot display info (public, not a secret)
+  botName: 'Shamrock Bail Bonds',
+  botUsername: 'ShamrockBail_bot',
 
-const ELEVENLABS_CONFIG = {
-  // Get from elevenlabs.io/app/settings/api-keys
-  API_KEY: '',
+  // ElevenLabs model (not a secret)
+  elevenLabsModel: 'eleven_v3',
+  elevenLabsDefaultVoiceId: '21m00Tcm4TlvDq8ikWAM',
 
-  // Voice ID — "Rachel" (American, clear, professional)
-  // Change at: elevenlabs.io/app/voice-lab
-  DEFAULT_VOICE_ID: '21m00Tcm4TlvDq8ikWAM',
+  // Intake flow settings (not secrets)
+  intakeEnabled: 'true',
+  intakeMaxPerUserPerDay: '3',
+  intakeStateTtlHours: '24',
+  voiceNotesEnabled: 'true',
+  voiceNotesMaxChars: '500',
 
-  // Voice for Shamrock bot (warm, reassuring female voice)
-  // Recommended: "Bella" (21m00Tcm4TlvDq8ikWAM) or "Elli" (MF3mGyEYCl7XYWbV9V6O)
-  SHAMROCK_VOICE_ID: '21m00Tcm4TlvDq8ikWAM',
-
-  // Model — use eleven_v3 for best quality
-  MODEL_ID: 'eleven_v3',
-};
-
-const WIX_CONFIG = {
-  // Must match GAS_API_KEY in Wix Secrets Manager
-  API_KEY: '',  // e.g. 'sbb-gas-2026-abc123xyz'
+  // Business info (public)
+  shamrockPhone: '(239) 332-2245',
+  shamrockPaymentLink: 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd',
+  shamrockEmail: 'admin@shamrockbailbonds.biz',
 };
 
 // =============================================================================
-// MAIN SETUP FUNCTION
-// Run this first: setupTelegramProperties()
+// STEP 1 — MAIN SETUP: Sets all Script Properties
 // =============================================================================
 
 /**
- * Set all required Script Properties for Telegram + ElevenLabs.
- * Run this ONCE after filling in the config above.
+ * Loads all secrets from Wix Secrets Manager via the GAS_WEBHOOK_URL
+ * and writes them into GAS Script Properties.
+ *
+ * The GAS_WEBHOOK_URL is the only bootstrap value needed — it must already
+ * be set as a Script Property before running this function.
+ *
+ * To bootstrap: In the GAS editor, go to Project Settings → Script Properties
+ * and add ONE property manually:
+ *   Key:   GAS_WEBHOOK_URL
+ *   Value: https://script.google.com/macros/s/.../exec
+ *
+ * Everything else is loaded automatically from Wix.
  */
-function setupTelegramProperties() {
+function setupAllProperties() {
   const props = PropertiesService.getScriptProperties();
 
-  console.log('🔧 Setting up Telegram + ElevenLabs properties...');
-
-  // ── Validate inputs ──────────────────────────────────────────────────────────
-  const errors = [];
-  if (!TELEGRAM_CONFIG.BOT_TOKEN) errors.push('TELEGRAM_CONFIG.BOT_TOKEN is empty');
-  if (!ELEVENLABS_CONFIG.API_KEY) errors.push('ELEVENLABS_CONFIG.API_KEY is empty');
-  if (!WIX_CONFIG.API_KEY) errors.push('WIX_CONFIG.API_KEY is empty');
-
-  if (errors.length > 0) {
-    console.error('❌ Setup aborted. Please fill in the required values:');
-    errors.forEach(e => console.error('  -', e));
-    throw new Error('Missing required configuration. See logs.');
-  }
-
-  // ── Set properties ───────────────────────────────────────────────────────────
-  const propertiesToSet = {
-    // Telegram
-    'TELEGRAM_BOT_TOKEN':          TELEGRAM_CONFIG.BOT_TOKEN,
-    'TELEGRAM_WEBHOOK_URL':        TELEGRAM_CONFIG.WIX_SITE_URL + TELEGRAM_CONFIG.WEBHOOK_PATH,
-    'TELEGRAM_BOT_NAME':           TELEGRAM_CONFIG.BOT_NAME,
-    'TELEGRAM_BOT_USERNAME':       TELEGRAM_CONFIG.BOT_USERNAME,
-
-    // ElevenLabs
-    'ELEVENLABS_API_KEY':          ELEVENLABS_CONFIG.API_KEY,
-    'ELEVENLABS_DEFAULT_VOICE_ID': ELEVENLABS_CONFIG.DEFAULT_VOICE_ID,
-    'ELEVENLABS_SHAMROCK_VOICE_ID':ELEVENLABS_CONFIG.SHAMROCK_VOICE_ID,
-    'ELEVENLABS_MODEL_ID':         ELEVENLABS_CONFIG.MODEL_ID,
-
-    // Wix
-    'WIX_SITE_URL':                TELEGRAM_CONFIG.WIX_SITE_URL,
-    'WIX_API_KEY':                 WIX_CONFIG.API_KEY,
-
-    // Intake flow settings
-    'INTAKE_ENABLED':              'true',
-    'INTAKE_MAX_PER_USER_PER_DAY': '3',
-    'INTAKE_STATE_TTL_HOURS':      '24',
-
-    // Voice note settings
-    'VOICE_NOTES_ENABLED':         'true',
-    'VOICE_NOTES_MAX_CHARS':       '500',
-
-    // Business info
-    'SHAMROCK_PHONE':              '(239) 332-2245',
-    'SHAMROCK_PAYMENT_LINK':       'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd',
-    'SHAMROCK_WEBSITE':            'https://www.shamrockbailbonds.biz',
-    'SHAMROCK_EMAIL':              'admin@shamrockbailbonds.biz',
+  // ── Non-secret values: set directly ────────────────────────────────────────
+  const safeProperties = {
+    'TELEGRAM_WEBHOOK_URL':         SETUP_CONFIG.wixSiteUrl + SETUP_CONFIG.telegramWebhookPath,
+    'TELEGRAM_BOT_NAME':            SETUP_CONFIG.botName,
+    'TELEGRAM_BOT_USERNAME':        SETUP_CONFIG.botUsername,
+    'WIX_SITE_URL':                 SETUP_CONFIG.wixSiteUrl,
+    'ELEVENLABS_MODEL_ID':          SETUP_CONFIG.elevenLabsModel,
+    'ELEVENLABS_DEFAULT_VOICE_ID':  SETUP_CONFIG.elevenLabsDefaultVoiceId,
+    'ELEVENLABS_SHAMROCK_VOICE_ID': SETUP_CONFIG.elevenLabsDefaultVoiceId,
+    'INTAKE_ENABLED':               SETUP_CONFIG.intakeEnabled,
+    'INTAKE_MAX_PER_USER_PER_DAY':  SETUP_CONFIG.intakeMaxPerUserPerDay,
+    'INTAKE_STATE_TTL_HOURS':       SETUP_CONFIG.intakeStateTtlHours,
+    'VOICE_NOTES_ENABLED':          SETUP_CONFIG.voiceNotesEnabled,
+    'VOICE_NOTES_MAX_CHARS':        SETUP_CONFIG.voiceNotesMaxChars,
+    'SHAMROCK_PHONE':               SETUP_CONFIG.shamrockPhone,
+    'SHAMROCK_PAYMENT_LINK':        SETUP_CONFIG.shamrockPaymentLink,
+    'SHAMROCK_WEBSITE':             SETUP_CONFIG.wixSiteUrl,
+    'SHAMROCK_EMAIL':               SETUP_CONFIG.shamrockEmail,
   };
 
-  props.setProperties(propertiesToSet);
+  props.setProperties(safeProperties);
+  console.log('✅ ' + Object.keys(safeProperties).length + ' non-secret properties set.');
 
-  console.log('✅ Properties set successfully:');
-  Object.keys(propertiesToSet).forEach(key => {
-    const val = propertiesToSet[key];
-    // Mask sensitive values in logs
-    const masked = key.includes('TOKEN') || key.includes('KEY') || key.includes('SECRET')
-      ? val.substring(0, 8) + '...' + val.substring(val.length - 4)
-      : val;
-    console.log(`  ${key}: ${masked}`);
-  });
+  // ── Secrets: load from Wix Secrets Manager via bridge endpoint ─────────────
+  console.log('🔑 Loading secrets from Wix Secrets Manager...');
 
-  console.log('\n✅ Step 1 complete. Now run: registerTelegramWebhook()');
+  const gasWebhookUrl = props.getProperty('GAS_WEBHOOK_URL');
+  if (!gasWebhookUrl) {
+    throw new Error(
+      '❌ GAS_WEBHOOK_URL not set.\n' +
+      'Go to GAS Project Settings → Script Properties and add:\n' +
+      '  Key: GAS_WEBHOOK_URL\n' +
+      '  Value: (your GAS web app URL)\n' +
+      'Then re-run setupAllProperties().'
+    );
+  }
+
+  // The secret names we need Wix to provide
+  const secretNames = [
+    'TELEGRAM_BOT_TOKEN',
+    'ELEVENLABS_API_KEY',
+    'WIX_API_KEY',
+    'GAS_API_KEY',
+    'SIGNNOW_API_KEY',
+    'SIGNNOW_WEBHOOK_SECRET',
+    'TWILIO_ACCOUNT_SID',
+    'TWILIO_AUTH_TOKEN',
+    'TWILIO_FROM_NUMBER',
+    'TWILIO_VERIFY_SERVICE_SID',
+    'OPENAI_API_KEY',
+    'GOOGLE_MAPS_API_KEY',
+    'ARREST_SCRAPER_API_KEY',
+    'SLACK_WEBHOOK_URL',
+    'GOOGLE_CLIENT_ID',
+    'GOOGLE_CLIENT_SECRET',
+  ];
+
+  // Fetch each secret individually from Wix Secrets Manager
+  // using the existing Wix backend endpoint pattern
+  const wixApiKey = _fetchWixSecret('GAS_API_KEY', gasWebhookUrl);
+  if (!wixApiKey) {
+    throw new Error(
+      '❌ Could not retrieve GAS_API_KEY from Wix.\n' +
+      'Ensure the Wix site is published and the secrets bridge endpoint is deployed.'
+    );
+  }
+
+  let secretsLoaded = 0;
+  for (const secretName of secretNames) {
+    try {
+      const value = _fetchWixSecret(secretName, gasWebhookUrl, wixApiKey);
+      if (value) {
+        props.setProperty(secretName, value);
+        secretsLoaded++;
+        console.log('  ✅ ' + secretName + ' loaded');
+      } else {
+        console.warn('  ⚠️  ' + secretName + ' returned empty — check Wix Secrets Manager');
+      }
+    } catch (e) {
+      console.error('  ❌ Failed to load ' + secretName + ': ' + e.message);
+    }
+  }
+
+  console.log('');
+  console.log('✅ Setup complete: ' + secretsLoaded + '/' + secretNames.length + ' secrets loaded.');
+  console.log('Next step: Run registerTelegramWebhook()');
+
+  return { safePropertiesSet: Object.keys(safeProperties).length, secretsLoaded };
+}
+
+/**
+ * Fetches a single secret value from the Wix secrets bridge endpoint.
+ * The bridge endpoint is a Wix backend function that reads from Wix Secrets Manager
+ * and returns the value to authorized GAS callers.
+ *
+ * @param {string} secretName - The secret name to fetch
+ * @param {string} gasWebhookUrl - The GAS web app URL (used as caller identity)
+ * @param {string} [apiKey] - Optional API key for authenticated requests
+ * @returns {string|null} The secret value, or null if not found
+ */
+function _fetchWixSecret(secretName, gasWebhookUrl, apiKey) {
+  const wixSiteUrl = SETUP_CONFIG.wixSiteUrl;
+  const bridgePath = SETUP_CONFIG.secretsBridgePath;
+
+  const url = wixSiteUrl + bridgePath +
+    '?secret=' + encodeURIComponent(secretName) +
+    (apiKey ? '&apiKey=' + encodeURIComponent(apiKey) : '');
+
+  try {
+    const resp = UrlFetchApp.fetch(url, {
+      method: 'get',
+      muteHttpExceptions: true,
+      headers: {
+        'X-GAS-Caller': gasWebhookUrl || 'gas-setup',
+        'X-Requested-By': 'GAS-Setup-Script'
+      }
+    });
+
+    if (resp.getResponseCode() === 200) {
+      const body = JSON.parse(resp.getContentText());
+      return body.value || null;
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
 }
 
 // =============================================================================
-// WEBHOOK REGISTRATION
-// Run after setupTelegramProperties()
+// STEP 2 — WEBHOOK REGISTRATION
 // =============================================================================
 
 /**
- * Register the Wix webhook URL with Telegram.
- * Run AFTER setupTelegramProperties().
+ * Registers the Wix webhook URL with Telegram.
+ * Run AFTER setupAllProperties().
  */
 function registerTelegramWebhook() {
   const props = PropertiesService.getScriptProperties();
   const botToken = props.getProperty('TELEGRAM_BOT_TOKEN');
   const webhookUrl = props.getProperty('TELEGRAM_WEBHOOK_URL');
 
-  if (!botToken || !webhookUrl) {
-    throw new Error('Run setupTelegramProperties() first.');
-  }
+  if (!botToken) throw new Error('TELEGRAM_BOT_TOKEN not set. Run setupAllProperties() first.');
+  if (!webhookUrl) throw new Error('TELEGRAM_WEBHOOK_URL not set. Run setupAllProperties() first.');
 
-  console.log(`🔗 Registering webhook: ${webhookUrl}`);
+  console.log('🔗 Registering webhook: ' + webhookUrl);
 
-  // Delete existing webhook first (clean slate)
-  const deleteResponse = UrlFetchApp.fetch(
-    `https://api.telegram.org/bot${botToken}/deleteWebhook`,
+  // Clear any existing webhook
+  const deleteResp = UrlFetchApp.fetch(
+    'https://api.telegram.org/bot' + botToken + '/deleteWebhook',
     { method: 'post', muteHttpExceptions: true }
   );
-  console.log('Delete webhook response:', deleteResponse.getContentText());
+  const deleteResult = JSON.parse(deleteResp.getContentText());
+  console.log('Delete existing webhook: ' + (deleteResult.ok ? '✅ cleared' : deleteResult.description));
 
-  // Set new webhook
-  const setResponse = UrlFetchApp.fetch(
-    `https://api.telegram.org/bot${botToken}/setWebhook`,
+  // Register new webhook
+  const setResp = UrlFetchApp.fetch(
+    'https://api.telegram.org/bot' + botToken + '/setWebhook',
     {
       method: 'post',
       contentType: 'application/json',
@@ -180,28 +247,31 @@ function registerTelegramWebhook() {
     }
   );
 
-  const result = JSON.parse(setResponse.getContentText());
-  console.log('Set webhook response:', JSON.stringify(result, null, 2));
+  const result = JSON.parse(setResp.getContentText());
 
   if (result.ok) {
-    console.log('✅ Webhook registered successfully!');
-    console.log('\n✅ Step 2 complete. Now run: configureBotCommands()');
+    console.log('✅ Webhook registered!');
+    console.log('Next step: Run configureBotCommands()');
   } else {
-    console.error('❌ Webhook registration failed:', result.description);
-    throw new Error('Webhook registration failed: ' + result.description);
+    throw new Error('❌ Webhook registration failed: ' + result.description);
   }
 
   return result;
 }
 
+// =============================================================================
+// STEP 3 — BOT COMMANDS & PROFILE
+// =============================================================================
+
 /**
- * Configure bot commands visible in the Telegram menu
+ * Configure the bot command menu visible in Telegram.
+ * Run AFTER registerTelegramWebhook().
  */
 function configureBotCommands() {
   const props = PropertiesService.getScriptProperties();
   const botToken = props.getProperty('TELEGRAM_BOT_TOKEN');
 
-  if (!botToken) throw new Error('Run setupTelegramProperties() first.');
+  if (!botToken) throw new Error('Run setupAllProperties() first.');
 
   const commands = [
     { command: 'start',   description: '🍀 Welcome to Shamrock Bail Bonds' },
@@ -213,53 +283,35 @@ function configureBotCommands() {
     { command: 'restart', description: '🔄 Restart intake from beginning' },
   ];
 
-  const response = UrlFetchApp.fetch(
-    `https://api.telegram.org/bot${botToken}/setMyCommands`,
+  const cmdsResp = UrlFetchApp.fetch(
+    'https://api.telegram.org/bot' + botToken + '/setMyCommands',
     {
       method: 'post',
       contentType: 'application/json',
-      payload: JSON.stringify({ commands: commands }),
+      payload: JSON.stringify({ commands }),
       muteHttpExceptions: true
     }
   );
+  const cmdsResult = JSON.parse(cmdsResp.getContentText());
+  console.log('Commands: ' + (cmdsResult.ok ? '✅ set' : '❌ ' + cmdsResult.description));
 
-  const result = JSON.parse(response.getContentText());
-  console.log('Set commands response:', JSON.stringify(result, null, 2));
-
-  if (result.ok) {
-    console.log('✅ Bot commands configured!');
-    console.log('\n✅ Step 3 complete. Now run: configureBotProfile()');
-  }
-
-  return result;
-}
-
-/**
- * Set bot name, description, and short description via BotFather API
- */
-function configureBotProfile() {
-  const props = PropertiesService.getScriptProperties();
-  const botToken = props.getProperty('TELEGRAM_BOT_TOKEN');
-
-  if (!botToken) throw new Error('Run setupTelegramProperties() first.');
-
-  // Set bot description
-  const descResponse = UrlFetchApp.fetch(
-    `https://api.telegram.org/bot${botToken}/setMyDescription`,
+  UrlFetchApp.fetch(
+    'https://api.telegram.org/bot' + botToken + '/setMyDescription',
     {
       method: 'post',
       contentType: 'application/json',
       payload: JSON.stringify({
-        description: '🍀 Shamrock Bail Bonds — 24/7 bail bond assistance for all 67 Florida counties.\n\nI can guide you through the entire bail process, collect paperwork, send signing links, and answer your questions instantly.\n\nType /start to begin.'
+        description:
+          '🍀 Shamrock Bail Bonds — 24/7 bail bond assistance for all 67 Florida counties.\n\n' +
+          'I guide you through the entire bail process, collect paperwork, send signing links, ' +
+          'and answer your questions instantly.\n\nType /start to begin.'
       }),
       muteHttpExceptions: true
     }
   );
-  console.log('Set description:', JSON.parse(descResponse.getContentText()).ok ? '✅' : '❌');
 
-  // Set short description
-  const shortDescResponse = UrlFetchApp.fetch(
-    `https://api.telegram.org/bot${botToken}/setMyShortDescription`,
+  UrlFetchApp.fetch(
+    'https://api.telegram.org/bot' + botToken + '/setMyShortDescription',
     {
       method: 'post',
       contentType: 'application/json',
@@ -269,19 +321,20 @@ function configureBotProfile() {
       muteHttpExceptions: true
     }
   );
-  console.log('Set short description:', JSON.parse(shortDescResponse.getContentText()).ok ? '✅' : '❌');
 
   console.log('✅ Bot profile configured!');
-  console.log('\n✅ Step 4 complete. Now run: verifyTelegramSetup()');
+  console.log('Next step: Run verifyTelegramSetup()');
+
+  return cmdsResult;
 }
 
 // =============================================================================
-// VERIFICATION
+// STEP 4 — FULL VERIFICATION
 // =============================================================================
 
 /**
- * Verify the complete Telegram + ElevenLabs setup
- * Run after all setup steps are complete
+ * Verifies the complete setup end-to-end.
+ * Run after all three setup steps above.
  */
 function verifyTelegramSetup() {
   const props = PropertiesService.getScriptProperties();
@@ -289,286 +342,147 @@ function verifyTelegramSetup() {
   const elevenLabsKey = props.getProperty('ELEVENLABS_API_KEY');
   const wixUrl = props.getProperty('WIX_SITE_URL');
   const wixKey = props.getProperty('WIX_API_KEY');
+  const signNowKey = props.getProperty('SIGNNOW_API_KEY');
+  const twilioSid = props.getProperty('TWILIO_ACCOUNT_SID');
+  const twilioToken = props.getProperty('TWILIO_AUTH_TOKEN');
 
-  console.log('🔍 Verifying Telegram + ElevenLabs setup...\n');
+  console.log('🔍 Running full verification...\n');
+  let passed = 0;
+  let failed = 0;
 
-  let allPassed = true;
-
-  // ── Check 1: Bot token ────────────────────────────────────────────────────────
-  console.log('1. Checking Telegram Bot Token...');
-  if (!botToken) {
-    console.error('   ❌ TELEGRAM_BOT_TOKEN not set');
-    allPassed = false;
-  } else {
-    const meResponse = UrlFetchApp.fetch(
-      `https://api.telegram.org/bot${botToken}/getMe`,
-      { muteHttpExceptions: true }
-    );
-    const me = JSON.parse(meResponse.getContentText());
-    if (me.ok) {
-      console.log(`   ✅ Bot: @${me.result.username} (${me.result.first_name})`);
-    } else {
-      console.error('   ❌ Invalid bot token:', me.description);
-      allPassed = false;
+  function check(name, fn) {
+    try {
+      fn();
+      passed++;
+    } catch (e) {
+      console.error('❌ ' + name + ': ' + e.message);
+      failed++;
     }
   }
 
-  // ── Check 2: Webhook ──────────────────────────────────────────────────────────
-  console.log('2. Checking Webhook registration...');
-  if (botToken) {
-    const webhookResponse = UrlFetchApp.fetch(
-      `https://api.telegram.org/bot${botToken}/getWebhookInfo`,
-      { muteHttpExceptions: true }
+  // 1. Telegram bot token
+  check('Telegram Bot Token', function() {
+    if (!botToken) throw new Error('Not set');
+    const me = JSON.parse(
+      UrlFetchApp.fetch('https://api.telegram.org/bot' + botToken + '/getMe',
+        { muteHttpExceptions: true }).getContentText()
     );
-    const webhookInfo = JSON.parse(webhookResponse.getContentText());
-    if (webhookInfo.ok && webhookInfo.result.url) {
-      console.log(`   ✅ Webhook URL: ${webhookInfo.result.url}`);
-      if (webhookInfo.result.last_error_message) {
-        console.warn(`   ⚠️  Last error: ${webhookInfo.result.last_error_message}`);
-      }
-    } else {
-      console.error('   ❌ No webhook registered');
-      allPassed = false;
-    }
-  }
+    if (!me.ok) throw new Error(me.description);
+    console.log('✅ Bot: @' + me.result.username + ' (' + me.result.first_name + ')');
+  });
 
-  // ── Check 3: ElevenLabs ───────────────────────────────────────────────────────
-  console.log('3. Checking ElevenLabs API Key...');
-  if (!elevenLabsKey) {
-    console.error('   ❌ ELEVENLABS_API_KEY not set');
-    allPassed = false;
-  } else {
-    const elResponse = UrlFetchApp.fetch('https://api.elevenlabs.io/v1/user', {
+  // 2. Webhook
+  check('Webhook Registration', function() {
+    if (!botToken) throw new Error('Token not set');
+    const wh = JSON.parse(
+      UrlFetchApp.fetch('https://api.telegram.org/bot' + botToken + '/getWebhookInfo',
+        { muteHttpExceptions: true }).getContentText()
+    );
+    if (!wh.ok || !wh.result.url) throw new Error('No webhook registered');
+    console.log('✅ Webhook: ' + wh.result.url);
+    if (wh.result.last_error_message) {
+      console.warn('   ⚠️  Last error: ' + wh.result.last_error_message);
+    }
+  });
+
+  // 3. ElevenLabs
+  check('ElevenLabs API Key', function() {
+    if (!elevenLabsKey) throw new Error('Not set');
+    const el = UrlFetchApp.fetch('https://api.elevenlabs.io/v1/user', {
       headers: { 'xi-api-key': elevenLabsKey },
       muteHttpExceptions: true
     });
-    if (elResponse.getResponseCode() === 200) {
-      const user = JSON.parse(elResponse.getContentText());
-      console.log(`   ✅ ElevenLabs: ${user.subscription?.tier || 'active'} plan`);
-    } else {
-      console.error('   ❌ ElevenLabs API key invalid');
-      allPassed = false;
-    }
-  }
+    if (el.getResponseCode() !== 200) throw new Error('HTTP ' + el.getResponseCode());
+    const user = JSON.parse(el.getContentText());
+    console.log('✅ ElevenLabs: ' + (user.subscription && user.subscription.tier || 'active'));
+  });
 
-  // ── Check 4: Wix endpoint ─────────────────────────────────────────────────────
-  console.log('4. Checking Wix intake endpoint...');
-  if (!wixUrl || !wixKey) {
-    console.error('   ❌ WIX_SITE_URL or WIX_API_KEY not set');
-    allPassed = false;
-  } else {
-    const testResponse = UrlFetchApp.fetch(
-      `${wixUrl}/_functions/get_pendingIntakes?apiKey=${wixKey}`,
+  // 4. Wix endpoint
+  check('Wix IntakeQueue Endpoint', function() {
+    if (!wixUrl) throw new Error('WIX_SITE_URL not set');
+    const wx = UrlFetchApp.fetch(
+      wixUrl + '/_functions/get_pendingIntakes' + (wixKey ? '?apiKey=' + wixKey : ''),
       { muteHttpExceptions: true }
     );
-    if (testResponse.getResponseCode() === 200) {
-      console.log('   ✅ Wix IntakeQueue endpoint reachable');
-    } else {
-      console.warn(`   ⚠️  Wix endpoint returned ${testResponse.getResponseCode()} — may need deployment`);
-    }
-  }
-
-  // ── Check 5: Script Properties ────────────────────────────────────────────────
-  console.log('5. Checking Script Properties...');
-  const requiredProps = [
-    'TELEGRAM_BOT_TOKEN', 'ELEVENLABS_API_KEY', 'WIX_SITE_URL', 'WIX_API_KEY',
-    'SHAMROCK_PHONE', 'SHAMROCK_PAYMENT_LINK', 'INTAKE_ENABLED'
-  ];
-  let propsMissing = false;
-  requiredProps.forEach(key => {
-    const val = props.getProperty(key);
-    if (!val) {
-      console.error(`   ❌ Missing: ${key}`);
-      propsMissing = true;
-      allPassed = false;
-    }
+    if (wx.getResponseCode() >= 500) throw new Error('Server error ' + wx.getResponseCode());
+    console.log('✅ Wix endpoint reachable (HTTP ' + wx.getResponseCode() + ')');
   });
-  if (!propsMissing) {
-    console.log('   ✅ All required properties set');
-  }
 
-  // ── Summary ───────────────────────────────────────────────────────────────────
-  console.log('\n' + '='.repeat(50));
-  if (allPassed) {
-    console.log('✅ ALL CHECKS PASSED — Telegram bot is ready!');
-    console.log('\nNext steps:');
-    console.log('  1. Send /start to your bot on Telegram to test');
-    console.log('  2. Try the intake flow: "I need to bail someone out"');
-    console.log('  3. Monitor logs in the GAS editor');
+  // 5. SignNow
+  check('SignNow API Key', function() {
+    if (!signNowKey) throw new Error('Not set');
+    console.log('✅ SignNow key present (' + signNowKey.substring(0, 8) + '...)');
+  });
+
+  // 6. Twilio
+  check('Twilio Credentials', function() {
+    if (!twilioSid || !twilioToken) throw new Error('Missing SID or token');
+    console.log('✅ Twilio credentials present');
+  });
+
+  // Summary
+  console.log('\n' + '═'.repeat(50));
+  console.log('Results: ' + passed + ' passed, ' + failed + ' failed');
+  if (failed === 0) {
+    console.log('✅ ALL CHECKS PASSED — System is live!');
+    console.log('🍀 Message @ShamrockBail_bot on Telegram to test.');
   } else {
-    console.error('❌ SOME CHECKS FAILED — Review errors above');
+    console.error('❌ ' + failed + ' check(s) failed — review errors above.');
   }
 
-  return allPassed;
+  return { passed, failed };
 }
 
 // =============================================================================
-// TEST FUNCTIONS
+// UTILITIES
 // =============================================================================
 
 /**
- * Send a test message to yourself via the bot
- * Replace CHAT_ID with your own Telegram user ID
- * (Get it by messaging @userinfobot on Telegram)
+ * Send a test message to yourself via the bot.
+ * Get your chat ID by messaging @userinfobot on Telegram first.
  */
 function sendTestMessage() {
-  const YOUR_CHAT_ID = ''; // ← Fill in your Telegram chat ID
+  const YOUR_CHAT_ID = ''; // ← Fill in your Telegram chat ID before running
 
   if (!YOUR_CHAT_ID) {
-    console.error('Fill in YOUR_CHAT_ID before running this function');
-    return;
+    throw new Error(
+      'Fill in YOUR_CHAT_ID before running.\n' +
+      'Message @userinfobot on Telegram to get your numeric chat ID.'
+    );
   }
 
   const props = PropertiesService.getScriptProperties();
   const botToken = props.getProperty('TELEGRAM_BOT_TOKEN');
+  if (!botToken) throw new Error('Run setupAllProperties() first.');
 
-  if (!botToken) throw new Error('Run setupTelegramProperties() first.');
-
-  const response = UrlFetchApp.fetch(
-    `https://api.telegram.org/bot${botToken}/sendMessage`,
+  const resp = UrlFetchApp.fetch(
+    'https://api.telegram.org/bot' + botToken + '/sendMessage',
     {
       method: 'post',
       contentType: 'application/json',
       payload: JSON.stringify({
         chat_id: YOUR_CHAT_ID,
-        text: '🍀 *Shamrock Bail Bonds bot is live!*\n\nThis is a test message from the GAS backend.\n\nType /start to begin.',
+        text: '🍀 *Shamrock Bail Bonds bot is live!*\n\nAll systems are go. Type /start to begin.',
         parse_mode: 'Markdown'
       }),
       muteHttpExceptions: true
     }
   );
 
-  const result = JSON.parse(response.getContentText());
+  const result = JSON.parse(resp.getContentText());
   console.log(result.ok ? '✅ Test message sent!' : '❌ Failed: ' + result.description);
   return result;
 }
 
 /**
- * Test ElevenLabs voice generation and send to Telegram
- * Replace CHAT_ID with your own Telegram user ID
- */
-function testVoiceNote() {
-  const YOUR_CHAT_ID = ''; // ← Fill in your Telegram chat ID
-
-  if (!YOUR_CHAT_ID) {
-    console.error('Fill in YOUR_CHAT_ID before running this function');
-    return;
-  }
-
-  console.log('🎤 Testing ElevenLabs voice note...');
-
-  const script = 'Welcome to Shamrock Bail Bonds. I am Manus, your digital assistant. I am here to help get your loved one home tonight. This is a test of the voice note system.';
-
-  try {
-    const client = new ElevenLabsClient();
-    const audioBlob = client.textToSpeech(script);
-
-    if (!audioBlob) {
-      console.error('❌ ElevenLabs returned no audio');
-      return;
-    }
-
-    console.log('✅ Audio generated, sending to Telegram...');
-
-    const props = PropertiesService.getScriptProperties();
-    const botToken = props.getProperty('TELEGRAM_BOT_TOKEN');
-
-    const formData = {
-      chat_id: YOUR_CHAT_ID,
-      audio: audioBlob,
-      caption: '🎤 Test voice note from Shamrock Bail Bonds bot',
-      parse_mode: 'Markdown'
-    };
-
-    const response = UrlFetchApp.fetch(
-      `https://api.telegram.org/bot${botToken}/sendAudio`,
-      {
-        method: 'post',
-        payload: formData,
-        muteHttpExceptions: true
-      }
-    );
-
-    const result = JSON.parse(response.getContentText());
-    console.log(result.ok ? '✅ Voice note sent!' : '❌ Failed: ' + result.description);
-    return result;
-
-  } catch (e) {
-    console.error('❌ Voice note test failed:', e);
-  }
-}
-
-/**
- * Simulate a full intake conversation (for testing without Telegram)
- */
-function testIntakeFlow() {
-  const testUserId = 'TEST_USER_' + new Date().getTime();
-  const testName = 'Test User';
-
-  console.log('🧪 Testing intake flow...\n');
-
-  const steps = [
-    'I need to bail someone out',
-    'Lee',
-    'John Smith',
-    '03/15/1985',
-    'DUI',
-    '5000',
-    'Jane Smith',
-    '239-555-1234',
-    'jane@test.com',
-    '123 Main St, Fort Myers, FL 33901',
-    'Mother'
-  ];
-
-  steps.forEach((input, i) => {
-    console.log(`\nStep ${i + 1}: User says: "${input}"`);
-    const result = processIntakeConversation(testUserId, input, testName);
-    console.log(`Bot responds: "${(result.text || '').substring(0, 150)}..."`);
-    if (result.voice_script) {
-      console.log(`Voice note: "${result.voice_script.substring(0, 100)}..."`);
-    }
-  });
-
-  // Check final state
-  const finalState = getConversationState(testUserId);
-  console.log('\n📊 Final intake state:', JSON.stringify(finalState.data, null, 2));
-  console.log('Current step:', finalState.step);
-
-  // Clean up test state
-  clearConversationState(testUserId);
-  console.log('\n✅ Test complete. State cleaned up.');
-}
-
-/**
- * Clear all intake states (emergency reset)
- * Use only in development/testing
- */
-function clearAllIntakeStates() {
-  const props = PropertiesService.getScriptProperties();
-  const allProps = props.getProperties();
-  let cleared = 0;
-
-  Object.keys(allProps).forEach(key => {
-    if (key.startsWith('INTAKE_STATE_')) {
-      props.deleteProperty(key);
-      cleared++;
-    }
-  });
-
-  console.log(`✅ Cleared ${cleared} intake states`);
-  return cleared;
-}
-
-/**
- * Get a summary of all active intake conversations
+ * List all active intake conversations (for monitoring)
  */
 function getActiveIntakeSummary() {
   const props = PropertiesService.getScriptProperties();
   const allProps = props.getProperties();
   const active = [];
 
-  Object.keys(allProps).forEach(key => {
+  Object.keys(allProps).forEach(function(key) {
     if (key.startsWith('INTAKE_STATE_')) {
       try {
         const state = JSON.parse(allProps[key]);
@@ -576,20 +490,37 @@ function getActiveIntakeSummary() {
           userId: key.replace('INTAKE_STATE_', ''),
           step: state.step,
           startedAt: state.startedAt,
-          lastActivity: state.lastActivity,
-          defendantName: state.data?.defendantName || 'not yet collected',
-          county: state.data?.county || 'not yet collected'
+          defendantName: (state.data && state.data.defendantName) || 'not yet collected',
+          county: (state.data && state.data.county) || 'not yet collected'
         });
-      } catch (e) {
-        // Skip malformed states
-      }
+      } catch (e) { /* skip malformed */ }
     }
   });
 
-  console.log(`📊 Active intake conversations: ${active.length}`);
-  active.forEach(a => {
-    console.log(`  User ${a.userId}: step=${a.step}, defendant=${a.defendantName}, county=${a.county}`);
+  console.log('📊 Active intake conversations: ' + active.length);
+  active.forEach(function(a) {
+    console.log('  User ' + a.userId + ': step=' + a.step +
+      ', defendant=' + a.defendantName + ', county=' + a.county);
   });
 
   return active;
+}
+
+/**
+ * Emergency reset — clears all active intake states
+ */
+function clearAllIntakeStates() {
+  const props = PropertiesService.getScriptProperties();
+  const allProps = props.getProperties();
+  let cleared = 0;
+
+  Object.keys(allProps).forEach(function(key) {
+    if (key.startsWith('INTAKE_STATE_')) {
+      props.deleteProperty(key);
+      cleared++;
+    }
+  });
+
+  console.log('✅ Cleared ' + cleared + ' intake states');
+  return cleared;
 }

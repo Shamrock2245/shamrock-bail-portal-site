@@ -33,7 +33,7 @@ Run the function: `verifyOpenAIKey()`
 **Expected output:**
 ```
 ✅ OPENAI_API_KEY is set
-   Key starts with: sk-proj-CL...
+   Key starts with: sk-proj-REDACTED...
 ```
 
 ---

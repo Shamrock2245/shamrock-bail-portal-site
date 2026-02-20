@@ -12,9 +12,9 @@
 
 **Google Apps Script** (`backend-gas/SetProperties.js`)
 ```javascript
-'SIGNNOW_API_KEY': 'd7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4'
-'SIGNNOW_API_TOKEN': 'd7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4'
-'SIGNNOW_WEBHOOK_SECRET': 'b4633bfe7f90483abcf4801620aedc59'
+'SIGNNOW_API_KEY': 'REDACTED_SIGNNOW_API_KEY'
+'SIGNNOW_API_TOKEN': 'REDACTED_SIGNNOW_API_KEY'
+'SIGNNOW_WEBHOOK_SECRET': 'REDACTED_SIGNNOW_WEBHOOK_SECRET'
 'SIGNNOW_CLIENT_ID': '3b4dd51e0a07557e5b0e6b42415759db'
 'SIGNNOW_BASIC_TOKEN': 'M2I0ZGQ1MWUwYTA3NTU3ZTViMGU2YjQyNDE1NzU5ZGI6YjQ2MzNiZmU3ZjkwNDgzYWJjZjQ4MDE2MjBhZWRjNTk='
 ```
@@ -66,8 +66,8 @@
 3. Add/Update these secrets:
 
 ```
-SIGNNOW_API_KEY = d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4
-SIGNNOW_WEBHOOK_SECRET = b4633bfe7f90483abcf4801620aedc59
+SIGNNOW_API_KEY = REDACTED_SIGNNOW_API_KEY
+SIGNNOW_WEBHOOK_SECRET = REDACTED_SIGNNOW_WEBHOOK_SECRET
 ```
 
 4. Save changes
@@ -169,7 +169,7 @@ Create webhook subscriptions for document groups (templates):
 ```bash
 curl --request POST \
   --url https://api.signnow.com/document \
-  --header 'Authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4' \
+  --header 'Authorization: Bearer REDACTED_SIGNNOW_API_KEY' \
   --form 'file=@/path/to/test.pdf'
 ```
 
@@ -184,14 +184,14 @@ curl --request POST \
 ```bash
 curl --request POST \
   --url https://api.signnow.com/v2/event-subscriptions \
-  --header 'Authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4' \
+  --header 'Authorization: Bearer REDACTED_SIGNNOW_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
     "event": "document.complete",
     "entity_id": "{DOCUMENT_ID}",
     "attributes": {
       "callback": "https://www.shamrockbailbonds.biz/_functions/webhookSignnow",
-      "secret_key": "b4633bfe7f90483abcf4801620aedc59",
+      "secret_key": "REDACTED_SIGNNOW_WEBHOOK_SECRET",
       "use_tls_12": true,
       "retry_count": 3
     }

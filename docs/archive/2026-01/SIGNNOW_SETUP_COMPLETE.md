@@ -12,9 +12,9 @@
 
 Updated the following properties:
 ```javascript
-'SIGNNOW_API_KEY': 'd7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4'
-'SIGNNOW_API_TOKEN': 'd7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4'
-'SIGNNOW_WEBHOOK_SECRET': 'b4633bfe7f90483abcf4801620aedc59'
+'SIGNNOW_API_KEY': 'REDACTED_SIGNNOW_API_KEY'
+'SIGNNOW_API_TOKEN': 'REDACTED_SIGNNOW_API_KEY'
+'SIGNNOW_WEBHOOK_SECRET': 'REDACTED_SIGNNOW_WEBHOOK_SECRET'
 'SIGNNOW_CLIENT_ID': '3b4dd51e0a07557e5b0e6b42415759db'
 'SIGNNOW_BASIC_TOKEN': 'M2I0ZGQ1MWUwYTA3NTU3ZTViMGU2YjQyNDE1NzU5ZGI6YjQ2MzNiZmU3ZjkwNDgzYWJjZjQ4MDE2MjBhZWRjNTk='
 ```
@@ -25,11 +25,11 @@ Updated the following properties:
 **Required Secrets:**
 
 1. **SIGNNOW_API_KEY**
-   - Value: `d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4`
+   - Value: `REDACTED_SIGNNOW_API_KEY`
    - Usage: Primary authentication for all SignNow API calls
 
 2. **SIGNNOW_WEBHOOK_SECRET**
-   - Value: `b4633bfe7f90483abcf4801620aedc59`
+   - Value: `REDACTED_SIGNNOW_WEBHOOK_SECRET`
    - Usage: HMAC signature verification for incoming webhooks
 
 **Action Required:** Add these secrets in Wix Editor → Settings → Secrets Manager
@@ -41,7 +41,7 @@ Updated the following properties:
 Based on SignNow documentation, we're using **API Key authentication** (simplest method):
 
 ```bash
-Authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4
+Authorization: Bearer REDACTED_SIGNNOW_API_KEY
 ```
 
 This is the recommended method for server-to-server communication and works for all API operations.
@@ -97,8 +97,8 @@ POST https://script.google.com/macros/s/{DEPLOYMENT_ID}/exec?source=signnow
 1. Open Wix Editor
 2. Go to **Settings** → **Secrets Manager**
 3. Add/Update:
-   - `SIGNNOW_API_KEY` = `d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4`
-   - `SIGNNOW_WEBHOOK_SECRET` = `b4633bfe7f90483abcf4801620aedc59`
+   - `SIGNNOW_API_KEY` = `REDACTED_SIGNNOW_API_KEY`
+   - `SIGNNOW_WEBHOOK_SECRET` = `REDACTED_SIGNNOW_WEBHOOK_SECRET`
 4. Save changes
 
 ### Step 3: Configure Webhooks in SignNow Dashboard
@@ -113,12 +113,12 @@ POST https://script.google.com/macros/s/{DEPLOYMENT_ID}/exec?source=signnow
    ```bash
    curl --request POST \
      --url https://api.signnow.com/v2/event-subscriptions \
-     --header 'Authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4' \
+     --header 'Authorization: Bearer REDACTED_SIGNNOW_API_KEY' \
      --header 'Content-Type: application/json' \
      --data '{
        "event": "document.complete",
        "callback_url": "https://www.shamrockbailbonds.biz/_functions/webhookSignnow",
-       "secret_key": "b4633bfe7f90483abcf4801620aedc59"
+       "secret_key": "REDACTED_SIGNNOW_WEBHOOK_SECRET"
      }'
    ```
 
@@ -131,7 +131,7 @@ Run this test from command line or Postman:
 ```bash
 curl --request GET \
   --url https://api.signnow.com/user \
-  --header 'Authorization: Bearer d7586a6fe7dc621f6f26d531e9073665111ce3c4dfe90408001e18637de141c4'
+  --header 'Authorization: Bearer REDACTED_SIGNNOW_API_KEY'
 ```
 
 **Expected Response:**
