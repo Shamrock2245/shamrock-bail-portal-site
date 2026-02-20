@@ -1817,34 +1817,34 @@ export async function post_intakeSubmit(request) {
         // Matches the IntakeQueue CMS collection schema exactly
         const intakeRecord = {
             // Source metadata
-            source:           body.source || 'telegram',
-            telegramUserId:   body.telegramUserId || '',
-            telegramChatId:   body.telegramChatId || '',
+            source: body.source || 'telegram',
+            telegramUserId: body.telegramUserId || '',
+            telegramChatId: body.telegramChatId || '',
 
             // Indemnitor (co-signer) fields
-            indemnitorName:    body.indemnitorName,
-            indemnitorPhone:   body.indemnitorPhone,
-            indemnitorEmail:   body.indemnitorEmail || '',
+            indemnitorName: body.indemnitorName,
+            indemnitorPhone: body.indemnitorPhone,
+            indemnitorEmail: body.indemnitorEmail || '',
             indemnitorAddress: body.indemnitorAddress || '',
-            relationship:      body.relationship || '',
+            relationship: body.relationship || '',
 
             // Defendant fields
-            defendantName:     body.defendantName,
-            defendantDob:      body.defendantDob || '',
-            county:            body.county,
-            charges:           body.charges || '',
-            bondAmount:        body.bondAmount || '',
+            defendantName: body.defendantName,
+            defendantDob: body.defendantDob || '',
+            county: body.county,
+            charges: body.charges || '',
+            bondAmount: body.bondAmount || '',
 
             // ID verification
-            idPhotoFileId:     body.idPhotoFileId || '',
-            idVerified:        false,
+            idPhotoFileId: body.idPhotoFileId || '',
+            idVerified: false,
 
             // Status
-            status:            'pending',
-            matchedCaseId:     '',
-            processedAt:       null,
-            submittedAt:       body.submittedAt ? new Date(body.submittedAt) : new Date(),
-            createdAt:         new Date()
+            status: 'pending',
+            matchedCaseId: '',
+            processedAt: null,
+            submittedAt: body.submittedAt ? new Date(body.submittedAt) : new Date(),
+            createdAt: new Date()
         };
 
         // ── Insert into IntakeQueue ───────────────────────────────────────────
@@ -1969,43 +1969,6 @@ Questions? Reply here or call *(239) 332-2245*`;
 
     } catch (error) {
         console.error('Error sending signing link:', error);
-        return serverError({
-            body: { success: false, message: error.message }
-        });
-    }
-}
-
-/**
- * GET /_functions/get_pendingIntakes
- * Returns all unprocessed IntakeQueue records for the Dashboard.
- * Protected by GAS_API_KEY.
- */
-export async function get_pendingIntakes(request) {
-    try {
-        const providedKey = request.query['apiKey'];
-        const validKey = await getSecret('GAS_API_KEY').catch(() => null);
-
-        if (!validKey || providedKey !== validKey) {
-            return forbidden({ body: { success: false, message: 'Invalid API key' } });
-        }
-
-        const results = await wixData.query('IntakeQueue')
-            .eq('status', 'pending')
-            .descending('submittedAt')
-            .limit(50)
-            .find();
-
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: {
-                success: true,
-                count: results.items.length,
-                intakes: results.items
-            }
-        });
-
-    } catch (error) {
-        console.error('Error fetching pending intakes:', error);
         return serverError({
             body: { success: false, message: error.message }
         });
