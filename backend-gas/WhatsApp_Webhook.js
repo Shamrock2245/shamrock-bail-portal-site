@@ -19,7 +19,7 @@
 
 /**
  * Handle an inbound WhatsApp message forwarded from Wix.
- * @param {Object} data - { from, name, messageId, type, body, timestamp }
+ * @param {Object} data - { from, name, messageId, type, body, timestamp, mediaId, mimeType, location }
  * @return {Object} result
  */
 function handleWhatsAppInbound(data) {
@@ -28,13 +28,26 @@ function handleWhatsAppInbound(data) {
   const body = (data.body || '').trim();
   const type = data.type || 'text';
   const messageId = data.messageId || '';
+  const mediaId = data.mediaId || null;
+  const mimeType = data.mimeType || null;
 
-  console.log('📩 WhatsApp inbound from +' + from + ' (' + name + '): "' + body + '"');
+  console.log(`📩 WhatsApp inbound from +${from} (${name}): type=${type}, body="${body}"`);
 
   // Log to Google Sheet
   _logInboundMessage(from, name, body, type, messageId);
 
-  // ── Route based on content ─────────────────────────────────────────────────
+  // ── Route based on message type ────────────────────────────────────────────
+
+  // 0. Handle media messages (photos, videos, documents)
+  if (type === 'image' && mediaId) {
+    return _handleImageMessage(from, name, mediaId, mimeType, body);
+  }
+
+  if (type === 'location' || data.location) {
+    return _handleLocationMessage(from, name, data);
+  }
+
+  // ── Route based on text content ────────────────────────────────────────────
 
   // 1. 6-digit OTP reply
   if (/^\d{6}$/.test(body)) {
@@ -77,8 +90,75 @@ function handleWhatsAppInbound(data) {
     return _handleReviewRequest(from, name);
   }
 
-  // 9. Default — acknowledge and route to staff
+  // 9. Default — route to Manus AI (includes intake flow)
   return _handleDefault(data);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NEW MESSAGE TYPE HANDLERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Handle image/photo messages (ID verification)
+ */
+function _handleImageMessage(from, name, mediaId, mimeType, caption) {
+  console.log(`📸 Image received from +${from}: mediaId=${mediaId}`);
+  
+  try {
+    // Call photo handler from WhatsApp_PhotoHandler.js
+    if (typeof handlePhotoUpload === 'function') {
+      const result = handlePhotoUpload(from, mediaId, mimeType, caption);
+      
+      // Send response to user
+      const client = new WhatsAppCloudAPI();
+      client.sendText('+' + from, result.message);
+      
+      return {
+        success: result.success,
+        action: 'photo_uploaded',
+        from: from,
+        complete: result.complete
+      };
+    } else {
+      console.warn('handlePhotoUpload function not found');
+      const client = new WhatsAppCloudAPI();
+      client.sendText('+' + from, 'Thank you for the photo! I\'ve received it.');
+      return { success: true, action: 'photo_acknowledged', from: from };
+    }
+  } catch (e) {
+    console.error('Error handling image:', e);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Handle location messages (GPS capture)
+ */
+function _handleLocationMessage(from, name, data) {
+  console.log(`📍 Location received from +${from}`);
+  
+  try {
+    // Call location handler from LocationMetadataService.js
+    if (typeof handleLocationMessage === 'function') {
+      const result = handleLocationMessage(data);
+      
+      // Response is sent by the handler itself
+      return {
+        success: result.success,
+        action: 'location_captured',
+        from: from,
+        location: result.location
+      };
+    } else {
+      console.warn('handleLocationMessage function not found');
+      const client = new WhatsAppCloudAPI();
+      client.sendText('+' + from, 'Thank you for sharing your location!');
+      return { success: true, action: 'location_acknowledged', from: from };
+    }
+  } catch (e) {
+    console.error('Error handling location:', e);
+    return { success: false, error: e.message };
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

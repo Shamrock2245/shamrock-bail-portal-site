@@ -3,9 +3,14 @@
  * 
  * Core logic for "The Manus Project" - WhatsApp Facilitator.
  * Orchestrates:
- * 1. Twilio (WhatsApp Inbound/Outbound)
- * 2. OpenAI (Reasoning & Audio Transcription)
- * 3. ElevenLabs (Voice Note Generation)
+ * 1. WhatsApp Cloud API (Inbound/Outbound)
+ * 2. OpenAI/Grok (Reasoning & Audio Transcription)
+ * 3. ElevenLabs V3 (Voice Note Generation)
+ * 4. Intake Flow (Conversational Data Collection)
+ * 5. Document Generation (Automatic Paperwork)
+ * 
+ * Version: 2.0.0 - WhatsApp Intake Integration
+ * Date: 2026-02-19
  */
 
 const MANUS_SYSTEM_PROMPT = `
@@ -57,6 +62,19 @@ function handleManusWhatsApp(data) {
             }
         }
 
+        // 2. Check if user is in intake flow
+        const intakeResult = checkAndProcessIntake(from, userMessage, name);
+        if (intakeResult.handled) {
+            // Intake flow handled the message
+            if (intakeResult.text) {
+                whatsapp.sendText(from, intakeResult.text);
+            }
+            if (intakeResult.voice_script) {
+                generateAndSendVoiceNote(from, intakeResult.voice_script);
+            }
+            return ContentService.createTextOutput("Intake flow processed");
+        }
+
         // Incorporate Knowledge Base (RAG) context
         let ragContext = "";
         try {
@@ -68,7 +86,7 @@ function handleManusWhatsApp(data) {
 
         const fullPrompt = MANUS_SYSTEM_PROMPT + ragContext;
 
-        // 2. Query OpenAI for Response
+        // 3. Query OpenAI for Response
         const responseJson = callOpenAI(
             fullPrompt,
             `User (${name}) said: "${userMessage}"`,
@@ -82,12 +100,12 @@ function handleManusWhatsApp(data) {
         const replyText = responseJson.text;
         const voiceScript = responseJson.voice_script;
 
-        // 3. Send Text Response
+        // 4. Send Text Response
         if (replyText) {
             whatsapp.sendText(from, replyText);
         }
 
-        // 4. Send Voice Note (if applicable)
+        // 5. Send Voice Note (if applicable)
         if (voiceScript && voiceScript.length > 10) {
             generateAndSendVoiceNote(from, voiceScript);
         }
@@ -132,4 +150,54 @@ function generateAndSendVoiceNote(to, script) {
         console.error("Manus Voice Generation Failed:", e);
         // Fallback: The text message was already sent, so we just fail silently on the voice part
     }
+}
+
+
+// =============================================================================
+// INTAKE FLOW INTEGRATION
+// =============================================================================
+
+/**
+ * Check if user is in intake flow and process accordingly
+ * @param {string} from - User's phone number
+ * @param {string} message - User's message
+ * @param {string} name - User's name from WhatsApp profile
+ * @returns {object} - { handled: boolean, text: string, voice_script: string }
+ */
+function checkAndProcessIntake(from, message, name) {
+    // Check if processIntakeConversation function exists (from WhatsApp_IntakeFlow.js)
+    if (typeof processIntakeConversation !== 'function') {
+        console.warn('processIntakeConversation function not found - intake flow disabled');
+        return { handled: false };
+    }
+    
+    // Get conversation state
+    const state = getConversationState(from);
+    
+    // Determine if this message should be handled by intake flow
+    const lowerMsg = message.toLowerCase();
+    const intakeKeywords = ['bail', 'arrested', 'jail', 'bond', 'help', 'release'];
+    const isIntakeRequest = intakeKeywords.some(kw => lowerMsg.includes(kw));
+    
+    // If user is in an active intake flow, OR if they're requesting intake
+    if (state.step !== 'complete' && state.step !== 'greeting') {
+        // User is mid-intake, process their message
+        const result = processIntakeConversation(from, message, name);
+        return {
+            handled: true,
+            text: result.text,
+            voice_script: result.voice_script
+        };
+    } else if (isIntakeRequest && state.step === 'greeting') {
+        // User is starting a new intake
+        const result = processIntakeConversation(from, message, name);
+        return {
+            handled: true,
+            text: result.text,
+            voice_script: result.voice_script
+        };
+    }
+    
+    // Not an intake flow message - let general AI handle it
+    return { handled: false };
 }

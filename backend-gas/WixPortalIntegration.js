@@ -205,18 +205,27 @@ function generateAndSendWithWixPortal(formData) {
     }));
   }
 
-  // 6. Sync to Wix
-  const wixResult = saveSigningLinksToWixBatch(signersWithLinks, caseData);
+  // 6. Deliver signing links (WhatsApp or Wix Portal)
+  let deliveryResult;
+  if (formData.signingMethod === 'whatsapp') {
+    // Send via WhatsApp instead of Wix Portal
+    deliveryResult = sendSigningLinksViaWhatsApp(signersWithLinks, caseData);
+  } else {
+    // Default: Sync to Wix Portal
+    deliveryResult = saveSigningLinksToWixBatch(signersWithLinks, caseData);
+  }
 
   // 7. Return Composite Result
   return {
     success: true,
     signingLinks: signingResult.signingLinks,
     documentId: signingResult.documentId,
-    wixPortal: wixResult,
-    message: wixResult.success
-      ? 'Documents sent to Client Portal successfully!'
-      : 'Documents created, but Portal Sync failed: ' + wixResult.message
+    deliveryMethod: formData.signingMethod || 'wix',
+    deliveryResult: deliveryResult,
+    wixPortal: formData.signingMethod === 'whatsapp' ? null : deliveryResult,
+    message: deliveryResult.success
+      ? `Documents sent via ${formData.signingMethod === 'whatsapp' ? 'WhatsApp' : 'Client Portal'} successfully!`
+      : `Documents created, but delivery failed: ${deliveryResult.message}`
   };
 }
 
@@ -812,4 +821,133 @@ function fetchIndemnitorProfile(email, includeDocs = false) {
     Logger.log(`Error fetching indemnitor profile: ${error.message}`);
     return null;
   }
+}
+
+
+// =============================================================================
+// WHATSAPP DELIVERY
+// =============================================================================
+
+/**
+ * Send signing links via WhatsApp instead of Wix Portal
+ * @param {Array} signers - Array of signer objects with phone, email, role, signingLink
+ * @param {Object} caseData - Case information
+ * @returns {object} - { success: boolean, message: string, sent: number }
+ */
+function sendSigningLinksViaWhatsApp(signers, caseData) {
+  if (!Array.isArray(signers) || signers.length === 0) {
+    return { success: false, message: 'No signers provided', sent: 0 };
+  }
+  
+  console.log(`Sending ${signers.length} signing links via WhatsApp...`);
+  
+  try {
+    const whatsapp = new WhatsAppCloudAPI();
+    let sentCount = 0;
+    const errors = [];
+    
+    signers.forEach(signer => {
+      try {
+        // Validate phone number
+        if (!signer.phone) {
+          errors.push(`${signer.role}: No phone number provided`);
+          return;
+        }
+        
+        // Generate message based on role
+        const message = generateSigningMessage(signer, caseData);
+        
+        // Send via WhatsApp
+        const result = whatsapp.sendText(signer.phone, message);
+        
+        if (result && result.success !== false) {
+          sentCount++;
+          console.log(`Signing link sent to ${signer.phone} (${signer.role})`);
+          
+          // Log for compliance
+          logProcessingEvent('SIGNING_LINK_SENT_WHATSAPP', {
+            caseNumber: caseData.caseNumber,
+            phoneNumber: signer.phone,
+            role: signer.role,
+            documentId: signer.signNowDocumentId,
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          errors.push(`${signer.role}: WhatsApp send failed`);
+        }
+        
+      } catch (e) {
+        console.error(`Error sending to ${signer.phone}:`, e);
+        errors.push(`${signer.role}: ${e.message}`);
+      }
+    });
+    
+    // Return result
+    if (sentCount === signers.length) {
+      return {
+        success: true,
+        message: `All ${sentCount} signing links sent via WhatsApp`,
+        sent: sentCount
+      };
+    } else if (sentCount > 0) {
+      return {
+        success: true,
+        message: `${sentCount}/${signers.length} signing links sent. Errors: ${errors.join(', ')}`,
+        sent: sentCount,
+        errors: errors
+      };
+    } else {
+      return {
+        success: false,
+        message: `Failed to send signing links. Errors: ${errors.join(', ')}`,
+        sent: 0,
+        errors: errors
+      };
+    }
+    
+  } catch (e) {
+    console.error('WhatsApp delivery error:', e);
+    return {
+      success: false,
+      message: `WhatsApp delivery failed: ${e.message}`,
+      sent: 0
+    };
+  }
+}
+
+/**
+ * Generate signing message based on signer role
+ */
+function generateSigningMessage(signer, caseData) {
+  const defendantName = caseData.defendantName || 'the defendant';
+  const role = signer.role || 'signer';
+  
+  // Base message components
+  const greeting = role === 'indemnitor' 
+    ? `Hi! This is Manus from Shamrock Bail Bonds.`
+    : `Hi! This is Manus from Shamrock Bail Bonds.`;
+  
+  const context = role === 'indemnitor'
+    ? `Your bail bond paperwork for **${defendantName}** is ready to sign.`
+    : `Your bail bond paperwork is ready for your signature.`;
+  
+  const instructions = `📋 **Sign your documents here:**
+${signer.signingLink}
+
+**How to sign:**
+1. Tap the link above
+2. Review each page carefully
+3. Initial where marked
+4. Sign at the bottom
+5. Submit
+
+This takes about 3-5 minutes and works on any device (iPhone, Android, tablet, or computer).`;
+  
+  const urgency = role === 'indemnitor'
+    ? `\n\n⏰ **Important:** Please sign ASAP so we can process the bond and get ${defendantName} released quickly.`
+    : `\n\n⏰ Please complete this within 24 hours.`;
+  
+  const support = `\n\nQuestions? Just reply to this message! I'm here to help. 😊`;
+  
+  return `${greeting}\n\n${context}\n\n${instructions}${urgency}${support}`;
 }
