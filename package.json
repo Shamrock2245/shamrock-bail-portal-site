@@ -1,0 +1,26 @@
+{
+  "devDependencies": {
+    "@wix/cli": "^1.0.0",
+    "@wix/eslint-plugin-cli": "^1.0.0",
+    "eslint": "^8.25.0",
+    "react": "16.14.0"
+  },
+  "dependencies": {
+    "axios": "1.7.3",
+    "lodash": "4.17.21",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "6.9.14",
+    "pdf-generator-api": "1.1.0",
+    "pdf-lib": "^1.17.1",
+    "react": "16.14.0",
+    "react-dom": "16.14.0",
+    "stripe": "16.2.0",
+    "twilio": "5.2.2",
+    "uuid": "10.0.0"
+  },
+  "scripts": {
+    "postinstall": "wix sync-types",
+    "dev": "wix dev",
+    "lint": "eslint ."
+  }
+}
