@@ -2055,3 +2055,109 @@ export async function get_gasSecrets(request) {
         });
     }
 }
+
+// =============================================================================
+// GAS SECRETS BUNDLE ENDPOINT (BULK)
+// =============================================================================
+
+/**
+ * GET /_functions/gasSecretsBundle
+ * Bulk secrets bridge — returns ALL GAS-required secrets in one authenticated call.
+ *
+ * This complements the per-secret get_gasSecrets endpoint. It is used by
+ * Setup_Properties_Telegram.gs to fetch all secrets in a single HTTP call,
+ * which is faster and more reliable than N individual calls.
+ *
+ * Authentication: Requires ?apiKey=GAS_API_KEY in query string.
+ *
+ * Called by: Setup_Properties_Telegram.gs → setupAllProperties() (Phase 2 bulk fetch)
+ */
+export async function get_gasSecretsBundle(request) {
+    const responseHeaders = {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate'
+    };
+
+    try {
+        // ── Auth ──────────────────────────────────────────────────────────────
+        const providedKey = (request.query && request.query['apiKey']) || '';
+        const validKey = await getSecret('GAS_API_KEY').catch(() => null);
+
+        if (!validKey) {
+            return response({
+                status: 500,
+                headers: responseHeaders,
+                body: { success: false, error: 'GAS_API_KEY not configured in Wix Secrets Manager' }
+            });
+        }
+
+        if (!providedKey || providedKey !== validKey) {
+            return response({
+                status: 403,
+                headers: responseHeaders,
+                body: { success: false, error: 'Forbidden: Invalid API Key' }
+            });
+        }
+
+        // ── Fetch all secrets in parallel ─────────────────────────────────────
+        const secretNames = [
+            'TELEGRAM_BOT_TOKEN',
+            'ELEVENLABS_API_KEY',
+            'SIGNNOW_API_KEY',
+            'SIGNNOW_WEBHOOK_SECRET',
+            'TWILIO_ACCOUNT_SID',
+            'TWILIO_AUTH_TOKEN',
+            'TWILIO_PHONE_NUMBER',
+            'OPENAI_API_KEY',
+            'SLACK_WEBHOOK_URL',
+            'GOOGLE_MAPS_API_KEY',
+            'STRIPE_SECRET_KEY',
+            'STRIPE_PUBLISHABLE_KEY',
+            'WIX_API_KEY',
+            'GAS_WEBHOOK_URL',
+            'SIGNNOW_BASE_URL',
+            'ELEVENLABS_VOICE_ID',
+            'GOOGLE_CLIENT_ID',
+            'GOOGLE_CLIENT_SECRET'
+        ];
+
+        const secretResults = await Promise.allSettled(
+            secretNames.map(name =>
+                getSecret(name)
+                    .then(val => ({ name, value: val || null }))
+                    .catch(() => ({ name, value: null }))
+            )
+        );
+
+        const secrets = {};
+        let loaded = 0;
+        secretResults.forEach(result => {
+            if (result.status === 'fulfilled' && result.value.value) {
+                secrets[result.value.name] = result.value.value;
+                loaded++;
+            }
+        });
+
+        console.log(`[gasSecretsBundle] Returned ${loaded}/${secretNames.length} secrets`);
+
+        return response({
+            status: 200,
+            headers: responseHeaders,
+            body: {
+                success: true,
+                secrets: secrets,
+                count: loaded,
+                total: secretNames.length,
+                timestamp: new Date().toISOString()
+            }
+        });
+
+    } catch (error) {
+        console.error('[gasSecretsBundle] Fatal error:', error);
+        return response({
+            status: 500,
+            headers: responseHeaders,
+            body: { success: false, error: error.message }
+        });
+    }
+}
