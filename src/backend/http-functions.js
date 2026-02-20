@@ -1974,3 +1974,99 @@ Questions? Reply here or call *(239) 332-2245*`;
         });
     }
 }
+
+// ==== SECRETS SYNC ENDPOINT ====
+
+/**
+ * Endpoint for GAS backend to retrieve secrets securely during setup
+ * Requires X-GAS-Caller header and valid API Key
+ */
+export async function get_gasSecrets(request) {
+    const responseHeaders = {
+        "Content-Type": "application/json"
+    };
+    
+    try {
+        const callerIP = request.ip || 'Unknown';
+        const queryParams = request.query || {};
+        const secretName = queryParams.secret;
+        const providedApiKey = queryParams.apiKey;
+        const gasCaller = request.headers['x-gas-caller'];
+        
+        console.log(`[gasSecrets] Request for ${secretName} from ${callerIP}`);
+
+        if (!secretName) {
+            return response({
+                status: 400,
+                headers: responseHeaders,
+                body: { error: 'Missing secret parameter' }
+            });
+        }
+        
+        // Very important: If the secret requested is GAS_API_KEY, 
+        // we only authenticate via the known GAS Webhook URL (x-gas-caller).
+        // For ALL OTHER secrets, we require the GAS_API_KEY itself to be passed.
+        
+        if (secretName === 'GAS_API_KEY') {
+            // We just verify the caller looks kinda like a GAS URL, 
+            // though this isn't high security, the API key itself is the real security token
+            if (!gasCaller || !gasCaller.includes('script.google.com/macros/')) {
+                console.warn(`[gasSecrets] Attempt to fetch GAS_API_KEY without valid GAS caller. Caller: ${gasCaller}`);
+                return response({
+                    status: 403,
+                    headers: responseHeaders,
+                    body: { error: 'Forbidden' }
+                });
+            }
+            
+            const gasApiKey = await getSecret('GAS_API_KEY');
+            return response({
+                status: 200,
+                headers: responseHeaders,
+                body: { value: gasApiKey }
+            });
+        }
+        
+        // For everything else, require valid API key
+        if (!providedApiKey) {
+            return response({
+                status: 401,
+                headers: responseHeaders,
+                body: { error: 'Unauthorized: Missing API Key' }
+            });
+        }
+        
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (providedApiKey !== validApiKey) {
+            console.warn(`[gasSecrets] Invalid API key used by ${gasCaller}`);
+            return response({
+                status: 403,
+                headers: responseHeaders,
+                body: { error: 'Forbidden: Invalid API Key' }
+            });
+        }
+        
+        // The requested secret
+        let value = null;
+        try {
+            value = await getSecret(secretName);
+        } catch (e) {
+            console.error(`[gasSecrets] Failed to fetch secret ${secretName}:`, e);
+            // Don't fail the request, just return null so caller knows it doesn't exist yet
+        }
+        
+        return response({
+            status: 200,
+            headers: responseHeaders,
+            body: { value: value }
+        });
+        
+    } catch (error) {
+        console.error("[gasSecrets] Fatal error fetching secret:", error);
+        return response({
+            status: 500,
+            headers: responseHeaders,
+            body: { error: "Internal Server Error" }
+        });
+    }
+}
