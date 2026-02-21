@@ -114,20 +114,54 @@ function handleTelegramInbound(update) {
     return _handleCommand(data);
   }
 
-  // 7. Quick replies / keywords
+  // NOTE: Numbered menu choices (1-5) and active intake check follow below
+
+  const trimmed = text.trim();
+
+  // 7. ── NUMBERED MENU CHOICES (1–5) ──────────────────────────────────────────
+  //    Checked BEFORE the active-intake check so a user can always restart.
+  if (trimmed === '1' || lowerText === 'post bail now' || lowerText === 'post bail') {
+    return _handleMenuPostBail(data);
+  }
+  if (trimmed === '2' || lowerText === 'check jail status' || lowerText === 'jail status') {
+    return _handleMenuJailStatus(data);
+  }
+  if (trimmed === '3' || lowerText === 'speak to a bondsman' || lowerText === 'bondsman' || lowerText === 'agent') {
+    return _handleMenuSpeakToBondsman(data);
+  }
+  if (trimmed === '4' || lowerText === 'payment' || lowerText === 'pay' || lowerText.includes('financing')) {
+    return _handleMenuPayment(data);
+  }
+  if (trimmed === '5' || lowerText === 'general questions' || lowerText === 'faq') {
+    return _handleMenuGeneralQuestions(data);
+  }
+
+  // 8. ── ACTIVE INTAKE FLOW ──────────────────────────────────────────────────
+  //    If the user is mid-intake, route ALL messages to the state machine.
+  const userIdStr = userId.toString();
+  if (typeof getConversationState === 'function') {
+    const state = getConversationState(userIdStr);
+    const isActiveIntake = state &&
+      state.step &&
+      state.step !== 'greeting' &&
+      state.step !== 'complete';
+    if (isActiveIntake) {
+      return _routeToIntakeFlow(data);
+    }
+  }
+
+  // 9. Keyword shortcuts
   if (['help', 'menu', 'start'].includes(lowerText)) {
-    return _handleHelpMenu(data);
+    return _handleWelcomeMessage(data);
   }
-
-  if (lowerText.includes('pay') || lowerText.includes('payment')) {
-    return _handlePaymentInquiry(data);
-  }
-
   if (lowerText.includes('location') || lowerText.includes('office') || lowerText.includes('address')) {
     return _handleLocationRequest(data);
   }
+  if (lowerText.includes('bail') || lowerText.includes('arrested') || lowerText.includes('jail') || lowerText.includes('bond') || lowerText.includes('release') || lowerText.includes('custody')) {
+    return _handleMenuPostBail(data);
+  }
 
-  // 8. Default → Route to Manus AI (includes intake flow)
+  // 10. Default → Route to Manus AI (includes RAG knowledge base)
   return _handleDefault(data);
 }
 
@@ -308,100 +342,258 @@ function _handleCommand(data) {
 
   switch (command) {
     case '/start':
-      return _handleStart(data);
     case '/help':
-      return _handleHelpMenu(data);
+      return _handleWelcomeMessage(data);
+    case '/bail':
+    case '/postbail':
+      return _handleMenuPostBail(data);
+    case '/pay':
+    case '/payment':
+      return _handleMenuPayment(data);
     case '/status':
-      return _handleStatus(data);
+    case '/jailstatus':
+      return _handleMenuJailStatus(data);
+    case '/agent':
+    case '/bondsman':
+      return _handleMenuSpeakToBondsman(data);
+    case '/faq':
+    case '/questions':
+      return _handleMenuGeneralQuestions(data);
     case '/cancel':
+    case '/restart':
       return _handleCancel(data);
     default:
       return _handleUnknownCommand(data);
   }
 }
 
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+var PAYMENT_LINK   = 'https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8';
+var SHAMROCK_PHONE = '(239) 332-2245';
+
+// =============================================================================
+// WELCOME MESSAGE
+// =============================================================================
+
 /**
- * Handle /start command
+ * Send the main welcome message — statewide Florida coverage.
+ * Used by /start, /help, and the 'help'/'menu' keyword shortcuts.
  */
-function _handleStart(data) {
+function _handleWelcomeMessage(data) {
   const bot = new TelegramBotAPI();
+  const msg =
+    '🍀 *Shamrock Bail Bonds — We\'re Ready to Help*\n\n' +
+    'If you\'re here, it\'s urgent. Take a breath — we\'ve got you.\n\n' +
+    'We provide fast, confidential bail bond services across *all 67 Florida counties* — ' +
+    'from Pensacola to Key West, the Gulf Coast to the Atlantic.\n\n' +
+    '*Available 24/7. No judgment. Just solutions.*\n\n' +
+    'To get started, please choose an option below:\n\n' +
+    '1️⃣  Post Bail Now\n' +
+    '2️⃣  Check Jail Status\n' +
+    '3️⃣  Speak to a Bondsman Immediately\n' +
+    '4️⃣  Payment & Financing Options\n' +
+    '5️⃣  General Questions\n\n' +
+    'If someone you care about is in custody, time matters. ' +
+    'The sooner we start, the sooner they\'re home.\n\n' +
+    'You can also call us directly anytime: 📞 ' + SHAMROCK_PHONE + '\n\n' +
+    'Let\'s get this handled. 🍀';
+  bot.sendMessage(data.chatId, msg, { parse_mode: 'Markdown' });
+  return { success: true, action: 'welcome_sent', chatId: data.chatId };
+}
 
-  const message = `👋 *Welcome to Shamrock Bail Bonds!*
+// =============================================================================
+// NUMBERED MENU OPTION HANDLERS
+// =============================================================================
 
-I'm Manus, your digital assistant. I can help you:
+/**
+ * Option 1 — Post Bail Now: starts the conversational intake state machine.
+ */
+function _handleMenuPostBail(data) {
+  const bot    = new TelegramBotAPI();
+  const userId = data.userId.toString();
+  console.log('🚀 Starting intake flow for ' + data.name + ' (' + userId + ')');
 
-✅ Complete bail bond paperwork
-✅ Check case status
-✅ Make payments
-✅ Get office information
+  if (typeof processIntakeMessage === 'function') {
+    // Clear any stale state first
+    if (typeof clearConversationState === 'function') {
+      clearConversationState(userId);
+    }
+    // Trigger the first question from the state machine
+    const result = processIntakeMessage(userId, '/start', data.firstName);
+    if (result && result.text) {
+      bot.sendMessage(data.chatId, result.text, { parse_mode: 'Markdown' });
+    }
+    return { success: true, action: 'intake_started', chatId: data.chatId };
+  }
 
-*To get started, just tell me:*
-"I need to bail someone out"
-
-Or type /help to see all options.`;
-
-  bot.sendMessage(data.chatId, message);
-
-  return { success: true, action: 'start_sent', chatId: data.chatId };
+  // Fallback if intake module not loaded
+  bot.sendMessage(data.chatId,
+    '📋 *Let\'s start your bail bond paperwork.*\n\n' +
+    'I\'ll need to ask you a few questions about the person who was arrested. ' +
+    'This usually takes about 5 minutes.\n\n' +
+    'First — what is the *defendant\'s full legal name*? (First and Last)',
+    { parse_mode: 'Markdown' }
+  );
+  return { success: true, action: 'intake_fallback_started', chatId: data.chatId };
 }
 
 /**
- * Handle help/menu request
+ * Option 2 — Check Jail Status
  */
-function _handleHelpMenu(data) {
+function _handleMenuJailStatus(data) {
   const bot = new TelegramBotAPI();
-
-  const message = `📋 *Shamrock Bail Bonds - Menu*
-
-*Commands:*
-/start - Start conversation
-/help - Show this menu
-/status - Check case status
-/cancel - Cancel current operation
-
-*Quick Actions:*
-• "I need to bail someone out" - Start paperwork
-• "Payment" - Get payment link
-• "Office location" - Get our address
-• "Contact" - Get phone number
-
-*Need immediate help?*
-Call us: (239) 955-0178
-
-Just send me a message and I'll assist you! 😊`;
-
-  bot.sendMessage(data.chatId, message);
-
-  return { success: true, action: 'help_sent', chatId: data.chatId };
+  const msg =
+    '🔍 *Jail Status Check*\n\n' +
+    'To look up someone\'s custody status, please tell me:\n' +
+    '• The *defendant\'s full name*\n' +
+    '• The *county or city* where they were arrested\n\n' +
+    'For the fastest results, you can also search directly:\n' +
+    '• *Lee County:* https://www.leeclerk.org/\n' +
+    '• *Collier County:* https://www.colliersheriff.org/\n' +
+    '• *Charlotte County:* https://www.charlottesheriff.org/\n' +
+    '• *Hendry County:* https://www.hendrysheriff.org/\n' +
+    '• *All Florida counties:* https://www.vinelink.com/\n\n' +
+    'Or call us and we\'ll look it up for you: 📞 ' + SHAMROCK_PHONE;
+  bot.sendMessage(data.chatId, msg, { parse_mode: 'Markdown' });
+  return { success: true, action: 'jail_status_sent', chatId: data.chatId };
 }
 
 /**
- * Handle status request
+ * Option 3 — Speak to a Bondsman Immediately
  */
-function _handleStatus(data) {
+function _handleMenuSpeakToBondsman(data) {
   const bot = new TelegramBotAPI();
-  bot.sendMessage(data.chatId, 'Let me check your case status... 🔍\n\nPlease provide your case number or defendant name.');
-
-  return { success: true, action: 'status_requested', chatId: data.chatId };
+  const msg =
+    '📞 *Speak to a Licensed Bondsman*\n\n' +
+    'Our agents are available *24 hours a day, 7 days a week* — including holidays.\n\n' +
+    '👉 *Call or text us now:*\n' +
+    SHAMROCK_PHONE + '\n\n' +
+    'When you call, have ready:\n' +
+    '• The defendant\'s full name\n' +
+    '• The county or jail where they\'re held\n' +
+    '• Your relationship to the defendant\n\n' +
+    'We\'ll handle everything from there. 🍀\n\n' +
+    '_You can also type *1* here to start the paperwork process online._';
+  bot.sendMessage(data.chatId, msg, { parse_mode: 'Markdown' });
+  return { success: true, action: 'bondsman_contact_sent', chatId: data.chatId };
 }
 
 /**
- * Handle cancel command
+ * Option 4 — Payment & Financing Options
  */
-function _handleCancel(data) {
+function _handleMenuPayment(data) {
   const bot = new TelegramBotAPI();
+  const msg =
+    '💳 *Payment & Financing Options*\n\n' +
+    'Shamrock Bail Bonds offers flexible payment options to help you ' +
+    'get your loved one home as quickly as possible.\n\n' +
+    '*Standard Premium:* 10% of the total bond amount (Florida state rate)\n\n' +
+    '*We accept:*\n' +
+    '✅ Credit & Debit Cards\n' +
+    '✅ Cash\n' +
+    '✅ Payment Plans (ask your agent)\n' +
+    '✅ Collateral (property, vehicles, jewelry)\n\n' +
+    '👉 *Make a payment now:*\n' +
+    PAYMENT_LINK + '\n\n' +
+    'Have questions about financing? Call us: 📞 ' + SHAMROCK_PHONE + '\n\n' +
+    '_Your agent will discuss all available options with you._';
+  bot.sendMessage(data.chatId, msg, { parse_mode: 'Markdown' });
+  return { success: true, action: 'payment_info_sent', chatId: data.chatId };
+}
 
-  // Clear conversation state
+/**
+ * Option 5 — General Questions (FAQ)
+ */
+function _handleMenuGeneralQuestions(data) {
+  const bot = new TelegramBotAPI();
+  bot.showTyping(data.chatId);
+  const msg =
+    '❓ *General Questions — Shamrock Bail Bonds*\n\n' +
+    '*How does bail work?*\n' +
+    'When someone is arrested, a judge sets a bail amount. A bail bond allows ' +
+    'them to be released while awaiting trial. You pay 10% (the premium) to us, ' +
+    'and we post the full bond with the court.\n\n' +
+    '*How long does it take?*\n' +
+    'Once paperwork is signed and payment is received, most releases happen ' +
+    'within 2–6 hours depending on the jail\'s processing time.\n\n' +
+    '*What do I need to get started?*\n' +
+    '• Defendant\'s full name and date of birth\n' +
+    '• The jail or county where they\'re held\n' +
+    '• Your ID and contact information\n' +
+    '• 10% of the bond amount (or collateral)\n\n' +
+    '*Do you cover my county?*\n' +
+    'Yes — we cover *all 67 Florida counties* through our statewide network.\n\n' +
+    '*Is this confidential?*\n' +
+    'Absolutely. Everything you share with us is private and professional.\n\n' +
+    '📞 More questions? Call us anytime: ' + SHAMROCK_PHONE + '\n' +
+    '📋 Ready to start? Type *1* to begin paperwork.';
+  bot.sendMessage(data.chatId, msg, { parse_mode: 'Markdown' });
+  return { success: true, action: 'faq_sent', chatId: data.chatId };
+}
+
+// =============================================================================
+// INTAKE FLOW ROUTER
+// =============================================================================
+
+/**
+ * Route a mid-intake message to the processIntakeMessage state machine.
+ */
+function _routeToIntakeFlow(data) {
+  const bot    = new TelegramBotAPI();
   const userId = data.userId.toString();
   try {
-    CacheService.getScriptCache().remove(`intake_${userId}`);
-    CacheService.getScriptCache().remove(`photo_${userId}`);
+    const result = processIntakeMessage(userId, data.body, data.firstName);
+    if (result && result.text) {
+      bot.sendMessage(data.chatId, result.text, { parse_mode: 'Markdown' });
+    }
+    // Intake complete — send confirmation
+    if (result && result.intakeId) {
+      const confirmMsg =
+        '✅ *Your information has been received.*\n\n' +
+        'Reference ID: `' + result.intakeId + '`\n\n' +
+        'A licensed bondsman will review your case and contact you shortly. ' +
+        'For immediate assistance, call: 📞 ' + SHAMROCK_PHONE;
+      bot.sendMessage(data.chatId, confirmMsg, { parse_mode: 'Markdown' });
+    }
+    return { success: true, action: 'intake_flow_processed', chatId: data.chatId };
+  } catch (e) {
+    console.error('Intake flow error:', e);
+    bot.sendMessage(data.chatId,
+      '⚠️ Something went wrong. Please type *1* to start over or call us at ' + SHAMROCK_PHONE,
+      { parse_mode: 'Markdown' }
+    );
+    return { success: false, error: e.message };
+  }
+}
+
+// =============================================================================
+// LEGACY STUBS — kept for backward compatibility
+// =============================================================================
+
+function _handleStart(data)          { return _handleWelcomeMessage(data); }
+function _handleHelpMenu(data)       { return _handleWelcomeMessage(data); }
+function _handleStatus(data)         { return _handleMenuJailStatus(data); }
+function _handlePaymentInquiry(data) { return _handleMenuPayment(data); }
+
+/**
+ * Handle cancel / restart command
+ */
+function _handleCancel(data) {
+  const bot    = new TelegramBotAPI();
+  const userId = data.userId.toString();
+  try {
+    if (typeof clearConversationState === 'function') clearConversationState(userId);
+    CacheService.getScriptCache().remove('intake_' + userId);
+    CacheService.getScriptCache().remove('photo_'  + userId);
   } catch (e) {
     console.warn('Could not clear cache:', e);
   }
-
-  bot.sendMessage(data.chatId, '❌ Operation cancelled.\n\nType /start to begin again.');
-
+  bot.sendMessage(data.chatId,
+    '❌ Operation cancelled.\n\nType /start or send *1* to begin again.',
+    { parse_mode: 'Markdown' }
+  );
   return { success: true, action: 'cancelled', chatId: data.chatId };
 }
 
@@ -410,43 +602,24 @@ function _handleCancel(data) {
  */
 function _handleUnknownCommand(data) {
   const bot = new TelegramBotAPI();
-  bot.sendMessage(data.chatId, `I don't recognize that command. Type /help to see available commands.`);
-
+  bot.sendMessage(data.chatId,
+    'I don\'t recognize that command.\n\nType /start to see the main menu or call ' + SHAMROCK_PHONE + ' for immediate help.'
+  );
   return { success: true, action: 'unknown_command', chatId: data.chatId };
 }
 
 /**
- * Handle payment inquiry
- */
-function _handlePaymentInquiry(data) {
-  const bot = new TelegramBotAPI();
-  bot.sendMessage(data.chatId, '💳 *Payment Information*\n\nTo get your payment link, please provide your case number or the defendant\'s name.');
-
-  return { success: true, action: 'payment_inquiry', chatId: data.chatId };
-}
-
-/**
- * Handle location request
+ * Handle office location request
  */
 function _handleLocationRequest(data) {
   const bot = new TelegramBotAPI();
-
-  const message = `📍 *Shamrock Bail Bonds*
-
-**Address:**
-1234 Main Street
-Fort Myers, FL 33901
-
-**Phone:**
-(239) 955-0178
-
-**Hours:**
-24/7 - We're always here to help!
-
-[View on Google Maps](https://www.google.com/maps?q=Shamrock+Bail+Bonds+Fort+Myers)`;
-
-  bot.sendMessage(data.chatId, message);
-
+  const msg =
+    '📍 *Shamrock Bail Bonds*\n\n' +
+    'We are a mobile bail bond agency serving *all 67 Florida counties*.\n' +
+    'Our agents come to you — at the jail, courthouse, or wherever you need us.\n\n' +
+    '📞 Call or text us anytime: ' + SHAMROCK_PHONE + '\n\n' +
+    '_We don\'t have a single storefront — we have the whole state of Florida._';
+  bot.sendMessage(data.chatId, msg, { parse_mode: 'Markdown' });
   return { success: true, action: 'location_sent', chatId: data.chatId };
 }
 
@@ -503,22 +676,42 @@ function _handleCallbackQuery(callbackQuery) {
   // Answer the callback query (removes loading state)
   bot.answerCallbackQuery(queryId, 'Processing...');
 
+  // Build a synthetic data object for reuse with menu handlers
+  const syntheticData = {
+    chatId:    chatId,
+    userId:    from.id,
+    username:  from.username || '',
+    name:      ((from.first_name || '') + ' ' + (from.last_name || '')).trim(),
+    firstName: from.first_name || 'there',
+    body:      data,
+    message:   message,
+    platform:  'telegram'
+  };
+
   // Handle different callback data
   switch (data) {
     case 'start_intake':
-      bot.sendMessage(chatId, 'Great! Let\'s start. What is the defendant\'s full legal name?');
-      return { success: true, action: 'intake_started' };
+    case 'menu_1':
+      return _handleMenuPostBail(syntheticData);
 
     case 'check_status':
-      bot.sendMessage(chatId, 'Please provide your case number or defendant name.');
-      return { success: true, action: 'status_check' };
+    case 'menu_2':
+      return _handleMenuJailStatus(syntheticData);
+
+    case 'speak_agent':
+    case 'menu_3':
+      return _handleMenuSpeakToBondsman(syntheticData);
 
     case 'make_payment':
-      bot.sendMessage(chatId, 'Please provide your case number to get your payment link.');
-      return { success: true, action: 'payment_request' };
+    case 'menu_4':
+      return _handleMenuPayment(syntheticData);
+
+    case 'general_questions':
+    case 'menu_5':
+      return _handleMenuGeneralQuestions(syntheticData);
 
     default:
-      bot.sendMessage(chatId, 'Button clicked! Processing your request...');
+      bot.sendMessage(chatId, 'Processing your request...');
       return { success: true, action: 'callback_handled', data: data };
   }
 }

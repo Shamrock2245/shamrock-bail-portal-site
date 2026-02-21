@@ -185,34 +185,34 @@ function checkAndProcessIntake(from, message, name, chatId) {
         return { handled: false };
     }
 
-    // Get conversation state (using chatId as the reliable unique identifier for Telegram)
+    // IMPORTANT: Numbered menu choices (1-5) are handled upstream in Telegram_Webhook.js
+    // BEFORE this function is ever called. By the time we reach handleManus(), the user
+    // is either mid-intake (active state machine) or asking a general AI question.
+    // We must NOT start a new intake here — that is _handleMenuPostBail's exclusive job.
+    //
+    // The only job of this function is to continue an ALREADY-ACTIVE intake session.
+
+    // Use chatId as the reliable unique identifier for Telegram
     const stateId = chatId || from;
     const state = getConversationState(stateId);
 
-    // Determine if this message should be handled by intake flow
-    const lowerMsg = message.toLowerCase();
-    const intakeKeywords = ['bail', 'arrested', 'jail', 'bond', 'help', 'release'];
-    const isIntakeRequest = intakeKeywords.some(kw => lowerMsg.includes(kw));
+    // Only intercept if user is actively mid-intake (not at greeting, not complete)
+    const isActiveIntake = state &&
+        state.step &&
+        state.step !== 'complete' &&
+        state.step !== 'greeting';
 
-    // If user is in an active intake flow, OR if they're requesting intake
-    if (state.step !== 'complete' && state.step !== 'greeting') {
-        // User is mid-intake, process their message
+    if (isActiveIntake) {
+        // User is mid-intake: route through the state machine
         const result = processIntakeMessage(stateId, message, name);
         return {
-            handled: true,
-            text: result.text,
-            voice_script: result.voice_script
-        };
-    } else if (isIntakeRequest && state.step === 'greeting') {
-        // User is starting a new intake
-        const result = processIntakeMessage(stateId, message, name);
-        return {
-            handled: true,
-            text: result.text,
-            voice_script: result.voice_script || result.result
+            handled:      true,
+            text:         result.text         || null,
+            voice_script: result.voice_script  || null,
+            intakeId:     result.intakeId      || null
         };
     }
 
-    // Not an intake flow message - let general AI handle it
+    // Not an active intake — let the general Manus AI handle it
     return { handled: false };
 }
