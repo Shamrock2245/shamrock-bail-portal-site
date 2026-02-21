@@ -67,7 +67,7 @@ function handleManus(data) {
         }
 
         // 2. Check if user is in intake flow
-        const intakeResult = checkAndProcessIntake(from, userMessage, name);
+        const intakeResult = checkAndProcessIntake(from, userMessage, name, chatId);
         if (intakeResult.handled) {
             // Intake flow handled the message - send response
             if (intakeResult.text) {
@@ -172,20 +172,22 @@ function generateAndSendVoiceNote(script, chatId) {
 
 /**
  * Check if user is in intake flow and process accordingly
- * @param {string} from - User's phone number
+ * @param {string} from - User's phone number or ID
  * @param {string} message - User's message
  * @param {string} name - User's name from Telegram profile
+ * @param {string} chatId - Telegram chat ID to send replies directly
  * @returns {object} - { handled: boolean, text: string, voice_script: string }
  */
-function checkAndProcessIntake(from, message, name) {
+function checkAndProcessIntake(from, message, name, chatId) {
     // Check if processIntakeMessage function exists (from Telegram_IntakeFlow.js)
     if (typeof processIntakeMessage !== 'function') {
         console.warn('processIntakeMessage function not found - intake flow disabled');
         return { handled: false };
     }
 
-    // Get conversation state
-    const state = getConversationState(from);
+    // Get conversation state (using chatId as the reliable unique identifier for Telegram)
+    const stateId = chatId || from;
+    const state = getConversationState(stateId);
 
     // Determine if this message should be handled by intake flow
     const lowerMsg = message.toLowerCase();
@@ -195,7 +197,7 @@ function checkAndProcessIntake(from, message, name) {
     // If user is in an active intake flow, OR if they're requesting intake
     if (state.step !== 'complete' && state.step !== 'greeting') {
         // User is mid-intake, process their message
-        const result = processIntakeMessage(from, message, name);
+        const result = processIntakeMessage(stateId, message, name);
         return {
             handled: true,
             text: result.text,
@@ -203,11 +205,11 @@ function checkAndProcessIntake(from, message, name) {
         };
     } else if (isIntakeRequest && state.step === 'greeting') {
         // User is starting a new intake
-        const result = processIntakeMessage(from, message, name);
+        const result = processIntakeMessage(stateId, message, name);
         return {
             handled: true,
             text: result.text,
-            voice_script: result.result
+            voice_script: result.voice_script || result.result
         };
     }
 
