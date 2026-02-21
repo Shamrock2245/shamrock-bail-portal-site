@@ -1,0 +1,85 @@
+[
+  {
+    "original_url": "http://shamrockbailbonds.biz/",
+    "chain": [
+      {
+        "url": "http://shamrockbailbonds.biz/",
+        "status_code": 301,
+        "target": "https://shamrockbailbonds.biz/"
+      },
+      {
+        "url": "https://shamrockbailbonds.biz/",
+        "status_code": 301,
+        "target": "https://www.shamrockbailbonds.biz/"
+      }
+    ],
+    "final_url": "https://www.shamrockbailbonds.biz/",
+    "final_status": 200,
+    "error": null
+  },
+  {
+    "original_url": "https://shamrockbailbonds.biz/",
+    "chain": [
+      {
+        "url": "https://shamrockbailbonds.biz/",
+        "status_code": 301,
+        "target": "https://www.shamrockbailbonds.biz/"
+      }
+    ],
+    "final_url": "https://www.shamrockbailbonds.biz/",
+    "final_status": 200,
+    "error": null
+  },
+  {
+    "original_url": "https://www.shamrockbailbonds.biz/blank-3",
+    "chain": [
+      {
+        "url": "https://www.shamrockbailbonds.biz/blank-3",
+        "status_code": 301,
+        "target": "https://www.shamrockbailbonds.biz/how-bail-works"
+      }
+    ],
+    "final_url": "https://www.shamrockbailbonds.biz/how-bail-works",
+    "final_status": 200,
+    "error": null
+  },
+  {
+    "original_url": "https://www.shamrockbailbonds.biz/blank",
+    "chain": [
+      {
+        "url": "https://www.shamrockbailbonds.biz/blank",
+        "status_code": 301,
+        "target": "https://www.shamrockbailbonds.biz/how-to-become-a-bondsman"
+      }
+    ],
+    "final_url": "https://www.shamrockbailbonds.biz/how-to-become-a-bondsman",
+    "final_status": 200,
+    "error": null
+  },
+  {
+    "original_url": "http://www.shamrockbailbonds.biz/",
+    "chain": [
+      {
+        "url": "http://www.shamrockbailbonds.biz/",
+        "status_code": 301,
+        "target": "https://www.shamrockbailbonds.biz/"
+      }
+    ],
+    "final_url": "https://www.shamrockbailbonds.biz/",
+    "final_status": 200,
+    "error": null
+  },
+  {
+    "original_url": "https://www.shamrockbailbonds.biz/home-1",
+    "chain": [
+      {
+        "url": "https://www.shamrockbailbonds.biz/home-1",
+        "status_code": 301,
+        "target": "https://www.shamrockbailbonds.biz/how-to-become-a-bondsman"
+      }
+    ],
+    "final_url": "https://www.shamrockbailbonds.biz/how-to-become-a-bondsman",
+    "final_status": 200,
+    "error": null
+  }
+]
