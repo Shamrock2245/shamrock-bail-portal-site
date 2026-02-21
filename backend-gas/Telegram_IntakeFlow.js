@@ -407,7 +407,7 @@ _(Type "skip" if you don't have it.)_`,
   const phone = _parsePhone(msg);
   if (!phone) {
     return {
-      text: 'I need a valid phone number.\n\nExamples:\n• (239) 555-1234\n• 239-555-1234\n• 2395551234\n\nOr type *skip* to continue:',
+      text: 'I need a valid phone number.\n\nExamples:\n• (239) 332-2245\n• 239-332-2245\n• 2393322245\n\nOr type *skip* to continue:',
       nextStep: null
     };
   }
@@ -865,7 +865,7 @@ function _handleConfirmation(state, msg) {
 
 📞 You will receive a call or message from our team to confirm the details and walk you through the next steps.
 
-_We're available 24/7 at (239) 955-0178 if you need anything right away._
+_We're available 24/7 at (239) 332-2245 if you need anything right away._
 
 🍀 *Shamrock Bail Bonds — We'll get them home.*`,
       voice_script: "Thank you! Your information has been received. A Shamrock agent will review your intake and prepare your paperwork shortly. You will receive a call or message from our team to confirm the details. We're available 24 hours a day, 7 days a week.",
@@ -890,7 +890,11 @@ function _handleComplete(state, msg) {
   return {
     text: `Your intake has already been submitted and is being reviewed by a Shamrock agent.
 
-If you have an urgent question, please call us directly at *(239) 955-0178*. We're available 24/7. 🍀`,
+If you have an urgent question, please call us directly at *(239) 332-2245*. 
+For texts and Telegram messages, use *(239) 955-0178*.
+Para Español, llame al *(239) 955-0301*. 
+
+We're available 24/7. 🍀`,
     nextStep: null
   };
 }

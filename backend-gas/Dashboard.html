@@ -4359,6 +4359,39 @@
                     });
                 }
 
+                // Fill Indemnitor if present
+                if (getValue('indemnitorFullName', 'indemnitorFirstName', 'indemnitorLastName', 'indemnitorPhone', 'indemnitorEmail')) {
+                    const mappedIndemnitor = {
+                        firstName: getValue('indemnitorFirstName'),
+                        lastName: getValue('indemnitorLastName'),
+                        middleName: '',
+                        relationship: getValue('indemnitorRelation', 'relation'),
+                        dob: getValue('indemnitorDOB'),
+                        phone: getValue('indemnitorPhone', 'phone'),
+                        email: getValue('indemnitorEmail', 'email'),
+                        address: getValue('indemnitorAddress'),
+                        city: getValue('indemnitorCity'),
+                        state: getValue('indemnitorState') || 'FL',
+                        zip: getValue('indemnitorZip'),
+                        employer: getValue('indemnitorEmployerName', 'employer'),
+                        employerPhone: '',
+                        employerCity: '',
+                        employerState: '',
+                        supervisor: getValue('indemnitorJobTitle', 'jobTitle'),
+                        // References
+                        ref1Name: getValue('reference1Name', 'ref1Name'),
+                        ref1Relation: getValue('reference1Relation', 'ref1Relation'),
+                        ref1Phone: getValue('reference1Phone', 'ref1Phone'),
+                        ref1Address: getValue('reference1Address', 'ref1Address'),
+                        ref2Name: getValue('reference2Name', 'ref2Name'),
+                        ref2Relation: getValue('reference2Relation', 'ref2Relation'),
+                        ref2Phone: getValue('reference2Phone', 'ref2Phone'),
+                        ref2Address: getValue('reference2Address', 'ref2Address')
+                    };
+
+                    addIndemnitor(mappedIndemnitor);
+                }
+
                 updateSummary();
                 showToast('Booking data imported successfully!', 'success');
                 switchTab(null, 'defendant');
