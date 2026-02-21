@@ -2102,7 +2102,7 @@ function handleSendEmail(data) {
       to: data.to,
       subject: data.subject,
       htmlBody: data.htmlBody,
-      // name: 'Shamrock Portal' // Optional sender name
+      name: 'Shamrock Portal' // Sender name
     });
     return { success: true };
   } catch (e) {

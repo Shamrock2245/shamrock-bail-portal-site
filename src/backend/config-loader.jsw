@@ -11,8 +11,13 @@ import tenantConfig from './config/tenant.json';
  * import { getConfig } from 'backend/config-loader';
  * const config = await getConfig();
  */
+let _cachedConfig = null;
 
 export async function getConfig() {
+    if (_cachedConfig) {
+        return _cachedConfig;
+    }
+
     // 1. Load critical secrets in parallel
     const [
         gasWebAppUrl,
@@ -44,6 +49,7 @@ export async function getConfig() {
     // 3. Environment Overrides (Optional expansion point)
     // e.g. if (wixWindow.formFactor === 'Mobile') ...
 
+    _cachedConfig = runtimeConfig;
     return runtimeConfig;
 }
 

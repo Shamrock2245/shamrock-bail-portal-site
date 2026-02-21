@@ -162,22 +162,30 @@ export async function lookupUserByContact(contact) {
             };
         }
 
-        // 2. Search in Cases collection
-        let results = { items: [] };
+        // 2 & 3. Search in Cases collection (Defendant & Indemnitor parallel lookups)
+        const casesLookups = [];
 
         if (isEmail(contact)) {
             // Check defendant email
-            results = await wixData.query(CONFIG.CASES_COLLECTION)
+            casesLookups.push(wixData.query(CONFIG.CASES_COLLECTION)
                 .eq('defendantEmail', normalized)
-                .find({ suppressAuth: true });
+                .find({ suppressAuth: true }));
+            // Check indemnitor email
+            casesLookups.push(wixData.query(CONFIG.CASES_COLLECTION)
+                .eq('indemnitorEmail', normalized)
+                .find({ suppressAuth: true }));
         } else {
-            // Check defendant phone (Fuzzy Match)
-            const query = buildPhoneQuery(CONFIG.CASES_COLLECTION, 'defendantPhone', contact);
-            results = await query.find({ suppressAuth: true });
+            // Check defendant phone
+            casesLookups.push(buildPhoneQuery(CONFIG.CASES_COLLECTION, 'defendantPhone', contact).find({ suppressAuth: true }));
+            // Check indemnitor phone
+            casesLookups.push(buildPhoneQuery(CONFIG.CASES_COLLECTION, 'indemnitorPhone', contact).find({ suppressAuth: true }));
         }
 
-        if (results.items.length > 0) {
-            const caseData = results.items[0];
+        const [defResults, indResults] = await Promise.all(casesLookups);
+
+        // Check defendant results first
+        if (defResults.items.length > 0) {
+            const caseData = defResults.items[0];
             return {
                 found: true,
                 personId: caseData._id,
@@ -189,19 +197,9 @@ export async function lookupUserByContact(contact) {
             };
         }
 
-        // 3. Check indemnitor fields
-        if (isEmail(contact)) {
-            results = await wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('indemnitorEmail', normalized)
-                .find({ suppressAuth: true });
-        } else {
-            // Check indemnitor phone (Fuzzy Match)
-            const query = buildPhoneQuery(CONFIG.CASES_COLLECTION, 'indemnitorPhone', contact);
-            results = await query.find({ suppressAuth: true });
-        }
-
-        if (results.items.length > 0) {
-            const caseData = results.items[0];
+        // Check indemnitor results second
+        if (indResults.items.length > 0) {
+            const caseData = indResults.items[0];
             return {
                 found: true,
                 personId: 'indemnitor_' + caseData._id,
@@ -614,8 +612,10 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
 async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
     try {
         // Use GAS backend to send email
-        const gasUrl = await getGasWebAppUrl();
-        const apiKey = await getGasApiKey();
+        const [gasUrl, apiKey] = await Promise.all([
+            getGasWebAppUrl(),
+            getGasApiKey()
+        ]);
 
         console.log('🔧 sendMagicLinkEmail DEBUG:');
         console.log('  - GAS URL:', gasUrl ? 'SET' : 'MISSING');

@@ -8328,6 +8328,7 @@
                     window.runMonitor = Agents.Monitor.run;
                     window.fetchQueue = Queue.fetch;
                     window.loadIntake = Queue.process;
+                    window.Queue = Queue; // CRITICAL FIX: Expose Queue globally for inline handlers
                     window.refreshAllCountyStatus = Stats.refreshAll;
                     window.toggleAgentTab = UI.toggleAgentTab;
                     window.switchTab = UI.switchTab; // CRITICAL FIX: Expose switchTab globally
