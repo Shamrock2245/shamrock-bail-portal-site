@@ -370,7 +370,7 @@ function _handleCommand(data) {
 // =============================================================================
 // CONSTANTS
 // =============================================================================
-var PAYMENT_LINK   = 'https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8';
+var PAYMENT_LINK = 'https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8';
 var SHAMROCK_PHONE = '(239) 332-2245';
 
 // =============================================================================
@@ -389,17 +389,14 @@ function _handleWelcomeMessage(data) {
     'We provide fast, confidential bail bond services across *all 67 Florida counties* — ' +
     'from Pensacola to Key West, the Gulf Coast to the Atlantic.\n\n' +
     '*Available 24/7. No judgment. Just solutions.*\n\n' +
-    'To get started, please choose an option below:\n\n' +
-    '1️⃣  Post Bail Now\n' +
-    '2️⃣  Check Jail Status\n' +
-    '3️⃣  Speak to a Bondsman Immediately\n' +
-    '4️⃣  Payment & Financing Options\n' +
-    '5️⃣  General Questions\n\n' +
-    'If someone you care about is in custody, time matters. ' +
-    'The sooner we start, the sooner they\'re home.\n\n' +
-    'You can also call us directly anytime: 📞 ' + SHAMROCK_PHONE + '\n\n' +
-    'Let\'s get this handled. 🍀';
-  bot.sendMessage(data.chatId, msg, { parse_mode: 'Markdown' });
+    'To get started, please choose an option below:';
+
+  bot.sendMessageWithKeyboard(data.chatId, msg, [
+    [{ text: '🚀 Post Bail Now', callback_data: 'menu_1' }],
+    [{ text: '🔍 Check Jail Status', callback_data: 'menu_2' }],
+    [{ text: '📞 Speak to a Bondsman', callback_data: 'menu_3' }],
+    [{ text: '💳 Payment Options', callback_data: 'menu_4' }, { text: '❓ FAQ', callback_data: 'menu_5' }]
+  ]);
   return { success: true, action: 'welcome_sent', chatId: data.chatId };
 }
 
@@ -411,7 +408,7 @@ function _handleWelcomeMessage(data) {
  * Option 1 — Post Bail Now: starts the conversational intake state machine.
  */
 function _handleMenuPostBail(data) {
-  const bot    = new TelegramBotAPI();
+  const bot = new TelegramBotAPI();
   const userId = data.userId.toString();
   console.log('🚀 Starting intake flow for ' + data.name + ' (' + userId + ')');
 
@@ -456,7 +453,9 @@ function _handleMenuJailStatus(data) {
     '• *Hendry County:* https://www.hendrysheriff.org/\n' +
     '• *All Florida counties:* https://www.vinelink.com/\n\n' +
     'Or call us and we\'ll look it up for you: 📞 ' + SHAMROCK_PHONE;
-  bot.sendMessage(data.chatId, msg, { parse_mode: 'Markdown' });
+  bot.sendMessageWithKeyboard(data.chatId, msg, [
+    [{ text: '🏠 Main Menu', callback_data: 'show_menu' }]
+  ]);
   return { success: true, action: 'jail_status_sent', chatId: data.chatId };
 }
 
@@ -475,8 +474,11 @@ function _handleMenuSpeakToBondsman(data) {
     '• The county or jail where they\'re held\n' +
     '• Your relationship to the defendant\n\n' +
     'We\'ll handle everything from there. 🍀\n\n' +
-    '_You can also type *1* here to start the paperwork process online._';
-  bot.sendMessage(data.chatId, msg, { parse_mode: 'Markdown' });
+    '_You can also tap the button below to start the paperwork process online._';
+  bot.sendMessageWithKeyboard(data.chatId, msg, [
+    [{ text: '🚀 Post Bail Now', callback_data: 'menu_1' }],
+    [{ text: '🏠 Main Menu', callback_data: 'show_menu' }]
+  ]);
   return { success: true, action: 'bondsman_contact_sent', chatId: data.chatId };
 }
 
@@ -499,7 +501,10 @@ function _handleMenuPayment(data) {
     PAYMENT_LINK + '\n\n' +
     'Have questions about financing? Call us: 📞 ' + SHAMROCK_PHONE + '\n\n' +
     '_Your agent will discuss all available options with you._';
-  bot.sendMessage(data.chatId, msg, { parse_mode: 'Markdown' });
+  bot.sendMessageWithKeyboard(data.chatId, msg, [
+    [{ text: '💳 Pay Now', url: PAYMENT_LINK }],
+    [{ text: '🏠 Main Menu', callback_data: 'show_menu' }]
+  ]);
   return { success: true, action: 'payment_info_sent', chatId: data.chatId };
 }
 
@@ -527,9 +532,11 @@ function _handleMenuGeneralQuestions(data) {
     'Yes — we cover *all 67 Florida counties* through our statewide network.\n\n' +
     '*Is this confidential?*\n' +
     'Absolutely. Everything you share with us is private and professional.\n\n' +
-    '📞 More questions? Call us anytime: ' + SHAMROCK_PHONE + '\n' +
-    '📋 Ready to start? Type *1* to begin paperwork.';
-  bot.sendMessage(data.chatId, msg, { parse_mode: 'Markdown' });
+    '📞 More questions? Call us anytime: ' + SHAMROCK_PHONE;
+  bot.sendMessageWithKeyboard(data.chatId, msg, [
+    [{ text: '🚀 Post Bail Now', callback_data: 'menu_1' }],
+    [{ text: '🏠 Main Menu', callback_data: 'show_menu' }]
+  ]);
   return { success: true, action: 'faq_sent', chatId: data.chatId };
 }
 
@@ -541,7 +548,7 @@ function _handleMenuGeneralQuestions(data) {
  * Route a mid-intake message to the processIntakeMessage state machine.
  */
 function _routeToIntakeFlow(data) {
-  const bot    = new TelegramBotAPI();
+  const bot = new TelegramBotAPI();
   const userId = data.userId.toString();
   try {
     const result = processIntakeMessage(userId, data.body, data.firstName);
@@ -572,21 +579,21 @@ function _routeToIntakeFlow(data) {
 // LEGACY STUBS — kept for backward compatibility
 // =============================================================================
 
-function _handleStart(data)          { return _handleWelcomeMessage(data); }
-function _handleHelpMenu(data)       { return _handleWelcomeMessage(data); }
-function _handleStatus(data)         { return _handleMenuJailStatus(data); }
+function _handleStart(data) { return _handleWelcomeMessage(data); }
+function _handleHelpMenu(data) { return _handleWelcomeMessage(data); }
+function _handleStatus(data) { return _handleMenuJailStatus(data); }
 function _handlePaymentInquiry(data) { return _handleMenuPayment(data); }
 
 /**
  * Handle cancel / restart command
  */
 function _handleCancel(data) {
-  const bot    = new TelegramBotAPI();
+  const bot = new TelegramBotAPI();
   const userId = data.userId.toString();
   try {
     if (typeof clearConversationState === 'function') clearConversationState(userId);
     CacheService.getScriptCache().remove('intake_' + userId);
-    CacheService.getScriptCache().remove('photo_'  + userId);
+    CacheService.getScriptCache().remove('photo_' + userId);
   } catch (e) {
     console.warn('Could not clear cache:', e);
   }
@@ -602,8 +609,11 @@ function _handleCancel(data) {
  */
 function _handleUnknownCommand(data) {
   const bot = new TelegramBotAPI();
-  bot.sendMessage(data.chatId,
-    'I don\'t recognize that command.\n\nType /start to see the main menu or call ' + SHAMROCK_PHONE + ' for immediate help.'
+  bot.sendMessageWithKeyboard(data.chatId,
+    'I don\'t recognize that command.\n\nTap the button below to see the main menu or call ' + SHAMROCK_PHONE + ' for immediate help.',
+    [
+      [{ text: '🏠 Main Menu', callback_data: 'show_menu' }]
+    ]
   );
   return { success: true, action: 'unknown_command', chatId: data.chatId };
 }
@@ -678,18 +688,21 @@ function _handleCallbackQuery(callbackQuery) {
 
   // Build a synthetic data object for reuse with menu handlers
   const syntheticData = {
-    chatId:    chatId,
-    userId:    from.id,
-    username:  from.username || '',
-    name:      ((from.first_name || '') + ' ' + (from.last_name || '')).trim(),
+    chatId: chatId,
+    userId: from.id,
+    username: from.username || '',
+    name: ((from.first_name || '') + ' ' + (from.last_name || '')).trim(),
     firstName: from.first_name || 'there',
-    body:      data,
-    message:   message,
-    platform:  'telegram'
+    body: data,
+    message: message,
+    platform: 'telegram'
   };
 
   // Handle different callback data
   switch (data) {
+    case 'show_menu':
+      return _handleWelcomeMessage(syntheticData);
+
     case 'start_intake':
     case 'menu_1':
       return _handleMenuPostBail(syntheticData);
