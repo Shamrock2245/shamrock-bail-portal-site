@@ -1295,7 +1295,11 @@ export async function post_intakeWebhook(request) {
 
         // Get GAS configuration
         const gasApiKey = await getSecret('GAS_API_KEY');
-        const gasUrl = process.env.GAS_WEB_APP_URL || 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbzc0XYqz0rN5jPZ3yRIh--Z3izfO1qiXyy64HVHRouLWmi3WHL2ZwJrMKA1xl-uwyg2Vg/exec';
+        const gasUrl = await getSecret('GAS_WEBHOOK_URL').catch(() => null);
+        if (!gasUrl) {
+            console.error('[intakeWebhook] GAS_WEBHOOK_URL not set in Wix Secrets Manager. Cannot notify GAS.');
+            // Continue — don't fail the intake just because GAS notification failed
+        }
 
         // Prepare notification payload for GAS
         const gasPayload = {

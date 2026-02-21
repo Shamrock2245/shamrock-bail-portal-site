@@ -3,7 +3,8 @@
  * Run this function to finalize the configuration of your Web App.
  */
 function launchApp_v1() {
-    const WEB_APP_URL = 'https://script.google.com/a/macros/shamrockbailbonds.biz/s/AKfycbw0NcB6LU_sjC_UO-98_Nqxi_Zl8zxFMbDzIIgbhFx1XHWp067CoJJLek9ExRMNip3h0g/exec';
+    // Read the live deployed URL from ScriptApp — never hardcode this.
+    const WEB_APP_URL = ScriptApp.getService().getUrl();
     const ui = console;
 
     ui.log('🚀 INITIALIZING SHAMROCK BAIL BONDS APP...');

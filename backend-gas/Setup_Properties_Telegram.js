@@ -128,9 +128,25 @@ function setupAllProperties() {
   // ── PHASE 2: Load secrets from Wix Secrets Manager ─────────────────────────
   console.log('\n🔑 Phase 2: Loading secrets from Wix Secrets Manager...');
 
-  // The production GAS Webhook URL used for authentication
-  const gasWebhookUrl = 'https://script.google.com/macros/s/AKfycbwd5zOQmkwNgvVCjFo2QJchGgzKMvt2IRA_PylVI2YokEl18LKvdGpie92tvZmQh8v4IA/exec';
-  props.setProperty('GAS_WEBHOOK_URL', gasWebhookUrl);
+  // ── GAS Webhook URL (self-referential — read from ScriptApp at runtime) ─────
+  // NEVER hardcode this. ScriptApp.getService().getUrl() returns the live
+  // deployed URL of THIS script, which is the correct value for GAS_WEBHOOK_URL.
+  let gasWebhookUrl;
+  try {
+    gasWebhookUrl = ScriptApp.getService().getUrl();
+    if (!gasWebhookUrl) throw new Error('ScriptApp returned empty URL');
+    props.setProperty('GAS_WEBHOOK_URL', gasWebhookUrl);
+    console.log('✅ GAS_WEBHOOK_URL set from ScriptApp: ' + gasWebhookUrl);
+  } catch (e) {
+    // If not deployed as a web app yet, read from existing property
+    gasWebhookUrl = props.getProperty('GAS_WEBHOOK_URL') || '';
+    if (gasWebhookUrl) {
+      console.log('⚠️  GAS_WEBHOOK_URL read from existing property (not yet deployed as web app).');
+    } else {
+      console.error('❌ GAS_WEBHOOK_URL could not be determined. Deploy as Web App first, then re-run.');
+      // Do not throw — allow the rest of setup to proceed
+    }
+  }
 
   /**
    * Wix Secrets Manager — canonical names and their GAS property targets.
