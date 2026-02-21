@@ -19,7 +19,7 @@
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import wixData from 'wix-data';
-import { validateCustomSession, getIndemnitorDetails, linkDefendantToCase } from 'backend/portal-auth';
+import { validateCustomSession, getIndemnitorDetails, linkDefendantToCase, onMagicLinkLoginV2 } from 'backend/portal-auth';
 import { submitIntakeForm } from 'backend/intakeQueue.jsw';
 import wixSeo from 'wix-seo';
 import wixAnimations from 'wix-animations';
@@ -45,10 +45,24 @@ $w.onReady(async function () {
 
     // 1. Handle Magic Link Token from URL
     const query = wixLocation.query;
-    if (query.st) {
+    if (query.token && wixWindow.rendering.env === 'browser') {
+        console.log("🔗 Indemnitor Portal: Magic link token detected, authenticating directly...");
+        const result = await onMagicLinkLoginV2(query.token);
+        if (result.ok && result.sessionToken) {
+            console.log("✅ Token valid! Session token received");
+            await setSessionToken(result.sessionToken);
+            // Clean the URL to prevent sharing the token, without reloading the page
+            wixLocation.queryParams.remove(['token']);
+        } else {
+            console.error("❌ Token validation failed:", result.message);
+            wixLocation.to('/portal-landing?auth_error=1');
+            return; // Stop rendering
+        }
+    } else if (query.st && wixWindow.rendering.env === 'browser') {
         console.log("🔗 Indemnitor Portal: Found session token in URL, storing...");
         // Wait for storage to ensure it's set before initialization reads it
         await setSessionToken(query.st);
+        wixLocation.queryParams.remove(['st']);
     }
 
     await initializePage();

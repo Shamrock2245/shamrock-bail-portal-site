@@ -29,13 +29,13 @@ const URL_CONFIG = {
         'https://www.shamrockbailbonds.biz',
         'https://shamrock2245.wixsite.com/shamrock-bail-portal'
     ],
-    
+
     // Portal paths
     PORTAL_LANDING: '/portal-landing',
     PORTAL_INDEMNITOR: '/portal-indemnitor',
     PORTAL_DEFENDANT: '/portal-defendant',
     PORTAL_STAFF: '/portal-staff',
-    
+
     // Validation settings
     REQUIRE_HTTPS: true,
     MAX_URL_LENGTH: 2048,
@@ -84,7 +84,7 @@ function validateAndNormalizeUrl(url) {
     try {
         const urlObj = new URL(normalized);
         const hostname = urlObj.hostname;
-        
+
         if (!URL_CONFIG.VALID_DOMAINS.includes(hostname)) {
             console.warn(`⚠️ URL domain ${hostname} not in whitelist. Proceeding anyway.`);
         }
@@ -137,7 +137,7 @@ export async function getPortalBaseUrl() {
     // Try each source in order until we find a valid URL
     for (const { source, url } of sources) {
         const validation = validateAndNormalizeUrl(url);
-        
+
         if (validation.valid) {
             console.log(`✅ Portal base URL resolved from ${source}: ${validation.url}`);
             return validation.url;
@@ -162,7 +162,7 @@ export async function getPortalBaseUrl() {
 export async function buildPortalUrl(path = '', queryParams = {}) {
     try {
         const baseUrl = await getPortalBaseUrl();
-        
+
         // Normalize path
         let normalizedPath = path.trim();
         if (normalizedPath && !normalizedPath.startsWith('/')) {
@@ -203,7 +203,7 @@ export async function buildMagicLinkUrl(token) {
         throw new Error('Magic link token is required');
     }
 
-    return buildPortalUrl(URL_CONFIG.PORTAL_LANDING, { token });
+    return buildPortalUrl(URL_CONFIG.PORTAL_INDEMNITOR, { token });
 }
 
 /**

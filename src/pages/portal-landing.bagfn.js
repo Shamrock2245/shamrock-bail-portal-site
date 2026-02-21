@@ -390,9 +390,6 @@ async function handleMagicLinkLogin(token) {
 
             showMessage("Welcome! Redirecting to your portal...", "success");
 
-            // Small delay to show success message
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
             // Redirect to indemnitor portal
             redirectToPortalWithToken(targetRole, result.sessionToken);
 
