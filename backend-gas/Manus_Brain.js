@@ -178,9 +178,9 @@ function generateAndSendVoiceNote(script, chatId) {
  * @returns {object} - { handled: boolean, text: string, voice_script: string }
  */
 function checkAndProcessIntake(from, message, name) {
-    // Check if processIntakeConversation function exists (from Telegram_IntakeFlow.js)
-    if (typeof processIntakeConversation !== 'function') {
-        console.warn('processIntakeConversation function not found - intake flow disabled');
+    // Check if processIntakeMessage function exists (from Telegram_IntakeFlow.js)
+    if (typeof processIntakeMessage !== 'function') {
+        console.warn('processIntakeMessage function not found - intake flow disabled');
         return { handled: false };
     }
 
@@ -195,7 +195,7 @@ function checkAndProcessIntake(from, message, name) {
     // If user is in an active intake flow, OR if they're requesting intake
     if (state.step !== 'complete' && state.step !== 'greeting') {
         // User is mid-intake, process their message
-        const result = processIntakeConversation(from, message, name);
+        const result = processIntakeMessage(from, message, name);
         return {
             handled: true,
             text: result.text,
@@ -203,11 +203,11 @@ function checkAndProcessIntake(from, message, name) {
         };
     } else if (isIntakeRequest && state.step === 'greeting') {
         // User is starting a new intake
-        const result = processIntakeConversation(from, message, name);
+        const result = processIntakeMessage(from, message, name);
         return {
             handled: true,
             text: result.text,
-            voice_script: result.voice_script
+            voice_script: result.result
         };
     }
 
