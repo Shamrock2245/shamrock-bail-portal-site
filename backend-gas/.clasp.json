@@ -1,22 +1,16 @@
 {
-    "scriptId": "12BRRdYuyVJpQODJq2-OpUhQdZ9YLt4bbAFWmOUyJPWM_EcazKTiu3dYo",
-    "rootDir": "/Users/brendan/Desktop/shamrock-bail-portal-site/backend-gas",
-    "filePushOrder": [
-        "Compliance.gs",
-        "SecurityLogger.gs",
-        "ComplianceControls.gs",
-        "Telemetry.gs",
-        "NotificationService.gs",
-        "SetupUtilities.js",
-        "Code.js",
-        "Code_Helpers.js",
-        "WixPortalIntegration.js",
-        "SignNow_Integration_Complete.js",
-        "CourtEmailProcessor.js",
-        "GoogleSearchConsole.js",
-        "SOC2_WebhookHandler.js",
-        "SystemHealthCheck.js",
-        "ConfigBackend.js",
-        "Test_Suite.js"
-    ]
+  "scriptId": "12BRRdYuyVJpQODJq2-OpUhQdZ9YLt4bbAFWmOUyJPWM_EcazKTiu3dYo",
+  "rootDir": "",
+  "projectId": "shamrock-bail-portal-site",
+  "scriptExtensions": [
+    ".js",
+    ".gs"
+  ],
+  "htmlExtensions": [
+    ".html"
+  ],
+  "jsonExtensions": [
+    ".json"
+  ],
+  "filePushOrder": []
 }

@@ -473,10 +473,10 @@ function _handleDefault(data) {
   };
 
   // Hand off to Manus_Brain
-  if (typeof handleManusWhatsApp === 'function') {
-    return handleManusWhatsApp(manusData);
+  if (typeof handleManus === 'function') {
+    return handleManus(manusData);
   } else {
-    console.warn('handleManusWhatsApp function not found');
+    console.warn('handleManus function not found');
     bot.sendMessage(data.chatId, 'I\'m here to help! How can I assist you today?');
     return { success: true, action: 'default_response' };
   }
