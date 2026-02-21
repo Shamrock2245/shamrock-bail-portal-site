@@ -157,6 +157,44 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
     // everything when they click "Process" in the Dashboard.
     _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId);
 
+    // --- PIPING TO WIX CMS INTAKEQUEUE ---
+    // User requested to send the Telegram bot data directly into Wix CMS IntakeQueue
+    try {
+      if (typeof getWixPortalConfig === 'function' && typeof sendToWixWithRetry === 'function') {
+        const wixConfig = getWixPortalConfig();
+
+        // Map Telegram fields (e.g., IndName) to Wix CMS fields (e.g., indemnitorName)
+        const wixMappedData = {
+          defendantName: intakeData.DefName || '',
+          defendantBookingNumber: '', // Usually empty from bot
+          county: intakeData.DefCounty || '',
+          indemnitorName: intakeData.IndName || '',
+          indemnitorPhone: intakeData.IndPhone || telegramUserId.toString(),
+          indemnitorEmail: intakeData.IndEmail || '',
+          indemnitorRelation: intakeData.IndRelation || '',
+          notes: 'Submitted via Telegram Bot.',
+          // Also pass raw original data along so it saves completely
+          ...intakeData
+        };
+
+        const payload = {
+          apiKey: wixConfig.apiKey,
+          intakeData: wixMappedData
+        };
+        const wixResult = sendToWixWithRetry('/telegramIntake', payload);
+        if (wixResult && wixResult.success) {
+          console.log('✅ Telegram intake synced cleanly to Wix CMS IntakeQueue: ' + (wixResult.caseId || intakeId));
+        } else {
+          console.warn('⚠️ Telegram intake saved locally, but Wix CMS sync failed:', wixResult);
+        }
+      } else {
+        console.warn('⚠️ WixPortalIntegration functions not found. Skipping Wix CMS sync.');
+      }
+    } catch (wixErr) {
+      console.error('❌ Error piping Telegram intake to Wix CMS:', wixErr);
+    }
+    // -------------------------------------
+
     console.log('✅ Telegram intake saved to queue: ' + intakeId);
 
     // --- Notify Slack (all relevant channels simultaneously) ---

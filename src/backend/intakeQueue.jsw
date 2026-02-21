@@ -24,8 +24,8 @@ export async function submitIntakeForm(intakeData) {
         const config = await getConfig();
         console.log('📝 Submitting to IntakeQueue. Data keys:', Object.keys(intakeData));
 
-        // 1. Generate Case ID
-        const caseId = `CASE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        // 1. Generate or use provided Case ID
+        const caseId = intakeData.caseId || `CASE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
         // 2. Prepare Record
         const newRecord = {

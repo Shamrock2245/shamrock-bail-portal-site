@@ -2507,3 +2507,47 @@ function handleLogPingRequest(data) {
     return { success: false, error: e.message };
   }
 }
+
+/**
+ * Endpoint for Dashboard Outreach Tab
+ * Dispatches an automated message via Twilio or Telegram.
+ * @param {Object} payload - { phone, message, provider }
+ */
+function sendOutreachMessage(payload) {
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { success: false, error: "Unauthorized" };
+
+  console.log('sendOutreachMessage triggered', JSON.stringify(payload));
+
+  if (!payload || !payload.phone || !payload.message) {
+    return { success: false, error: "Missing required fields (phone, message)" };
+  }
+
+  const provider = payload.provider || 'twilio';
+
+  try {
+    if (provider === 'twilio') {
+      const result = NotificationService.sendSms(payload.phone, payload.message);
+      if (result && result.success) {
+        logProcessingEvent('OUTREACH_TEXT_SENT', { provider: 'twilio', phone: payload.phone });
+        return { success: true, sid: result.sid };
+      } else {
+        return { success: false, error: result.error || "Twilio error" };
+      }
+    } else if (provider === 'telegram') {
+      // Note: For Telegram, the 'phone' field should actually be a chat_id.
+      const result = NotificationService.sendTelegram(payload.phone, payload.message);
+      if (result && result.success) {
+        logProcessingEvent('OUTREACH_TEXT_SENT', { provider: 'telegram', chatId: payload.phone });
+        return { success: true };
+      } else {
+        return { success: false, error: result.error || "Telegram error" };
+      }
+    } else {
+      return { success: false, error: "Unknown provider check" };
+    }
+  } catch (e) {
+    console.error('sendOutreachMessage error:', e);
+    return { success: false, error: e.message };
+  }
+}
