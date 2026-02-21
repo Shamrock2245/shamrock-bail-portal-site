@@ -9,6 +9,8 @@
 import wixData from 'wix-data';
 import { currentMember } from 'wix-members-backend';
 import { detectCounty } from 'backend/geocoding';
+import { fetch } from 'wix-fetch';
+import { getSecret } from 'wix-secrets-backend';
 
 /**
  * Save user location to the database (Enhanced)
@@ -23,7 +25,7 @@ export async function saveUserLocation(latitude, longitude, options = {}) {
     let member = null;
     let memberId = null;
     let memberEmail = null;
-    
+
     try {
       member = await currentMember.getMember();
       if (member) {
@@ -34,36 +36,86 @@ export async function saveUserLocation(latitude, longitude, options = {}) {
       // User not logged in, continue without member info
       console.log('User not logged in, saving anonymous location');
     }
-    
+
     // Detect county from coordinates
     const countyResult = await detectCounty(latitude, longitude);
-    
+
     if (!countyResult.success) {
       console.warn('Could not detect county:', countyResult.error);
     }
-    
+
+    // Reverse Geocoding for Wix Address Object
+    let address = 'Unknown';
+    let city = '';
+    let region = '';
+    let country = 'US';
+    let postalCode = '';
+
+    try {
+      const apiKey = await getSecret('GOOGLE_MAPS_API_KEY');
+      if (apiKey) {
+        const geoResponse = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`);
+        if (geoResponse.ok) {
+          const geoData = await geoResponse.json();
+          if (geoData.status === 'OK' && geoData.results.length > 0) {
+            address = geoData.results[0].formatted_address;
+
+            geoData.results[0].address_components.forEach(component => {
+              if (component.types.includes('locality')) {
+                city = component.long_name;
+              }
+              if (component.types.includes('administrative_area_level_1')) {
+                region = component.short_name; // e.g., 'FL'
+              }
+              if (component.types.includes('country')) {
+                country = component.short_name; // e.g., 'US'
+              }
+              if (component.types.includes('postal_code')) {
+                postalCode = component.long_name;
+              }
+            });
+          }
+        }
+      }
+    } catch (geoError) {
+      console.warn('LocationEnhanced: Geocoding failed', geoError);
+    }
+
+    const addressObj = {
+      formatted: address,
+      location: {
+        latitude: Number(latitude),
+        longitude: Number(longitude)
+      },
+      city: city,
+      subdivision: region,
+      country: country,
+      postalCode: postalCode
+    };
+
     // Prepare location data
     const locationData = {
-      memberId: memberId || null,
-      memberEmail: memberEmail || null,
-      sessionId: options.sessionId || generateSessionId(),
-      latitude: latitude,
-      longitude: longitude,
-      accuracy: options.accuracy || null,
-      county: countyResult.county || null,
-      state: countyResult.state || 'FL',
-      confidence: countyResult.confidence || 0,
-      detectionMethod: countyResult.method || 'unknown',
-      consentGiven: options.consentGiven !== false, // Default to true
+      memberId: String(memberId || ''),
+      memberEmail: String(memberEmail || ''),
+      sessionId: String(options.sessionId || generateSessionId()),
+      latitude: String(latitude),
+      longitude: String(longitude),
+      address: addressObj,
+      accuracy: String(options.accuracy || ''),
+      county: String(countyResult.county || ''),
+      state: String(countyResult.state || 'FL'),
+      confidence: Number(countyResult.confidence || 0),
+      detectionMethod: String(countyResult.method || 'unknown'),
+      consentGiven: Boolean(options.consentGiven !== false), // Default to true
       timestamp: new Date(),
-      userAgent: options.userAgent || 'Wix Member Portal',
-      device: options.device || 'Unknown',
-      page: options.page || null
+      userAgent: String(options.userAgent || 'Wix Member Portal'),
+      device: String(options.device || 'Unknown'),
+      page: String(options.page || '')
     };
-    
+
     // Save to UserLocations collection
     const result = await wixData.insert('UserLocations', locationData);
-    
+
     return {
       success: true,
       message: 'Location saved successfully',
@@ -72,7 +124,7 @@ export async function saveUserLocation(latitude, longitude, options = {}) {
       locationId: result._id,
       confidence: countyResult.confidence
     };
-    
+
   } catch (error) {
     console.error('Error saving user location:', error);
     return {
@@ -96,9 +148,9 @@ export async function getLastLocation(memberId) {
       .descending('timestamp')
       .limit(1)
       .find();
-    
+
     return results.items.length > 0 ? results.items[0] : null;
-    
+
   } catch (error) {
     console.error('Error getting last location:', error);
     return null;
@@ -117,9 +169,9 @@ export async function getLocationBySession(sessionId) {
       .descending('timestamp')
       .limit(1)
       .find();
-    
+
     return results.items.length > 0 ? results.items[0] : null;
-    
+
   } catch (error) {
     console.error('Error getting location by session:', error);
     return null;
@@ -136,15 +188,15 @@ export async function getLocationsByCounty(county, daysBack = 7) {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysBack);
-    
+
     const results = await wixData.query('UserLocations')
       .eq('county', county)
       .ge('timestamp', cutoffDate)
       .descending('timestamp')
       .find();
-    
+
     return results.items;
-    
+
   } catch (error) {
     console.error('Error getting locations by county:', error);
     return [];
@@ -160,17 +212,17 @@ export async function getLocationStats(daysBack = 30) {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysBack);
-    
+
     const results = await wixData.query('UserLocations')
       .ge('timestamp', cutoffDate)
       .find();
-    
+
     // Aggregate by county
     const stats = {};
-    
+
     for (const location of results.items) {
       const county = location.county || 'unknown';
-      
+
       if (!stats[county]) {
         stats[county] = {
           count: 0,
@@ -179,33 +231,33 @@ export async function getLocationStats(daysBack = 30) {
           methods: {}
         };
       }
-      
+
       stats[county].count++;
-      
+
       if (location.memberId) {
         stats[county].members.add(location.memberId);
       }
-      
+
       stats[county].avgConfidence += location.confidence || 0;
-      
+
       const method = location.detectionMethod || 'unknown';
       stats[county].methods[method] = (stats[county].methods[method] || 0) + 1;
     }
-    
+
     // Calculate averages
     for (const county in stats) {
       stats[county].avgConfidence = stats[county].avgConfidence / stats[county].count;
       stats[county].uniqueMembers = stats[county].members.size;
       delete stats[county].members; // Remove Set object
     }
-    
+
     return {
       success: true,
       stats,
       totalLocations: results.totalCount,
       daysAnalyzed: daysBack
     };
-    
+
   } catch (error) {
     console.error('Error getting location stats:', error);
     return {
@@ -224,24 +276,24 @@ export async function cleanupOldLocations(daysOld = 90) {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-    
+
     const results = await wixData.query('UserLocations')
       .lt('timestamp', cutoffDate)
       .find();
-    
+
     let deletedCount = 0;
-    
+
     for (const location of results.items) {
       await wixData.remove('UserLocations', location._id);
       deletedCount++;
     }
-    
+
     return {
       success: true,
       deletedCount,
       message: `Deleted ${deletedCount} old location records`
     };
-    
+
   } catch (error) {
     console.error('Error cleaning up old locations:', error);
     return {
@@ -257,7 +309,7 @@ export async function cleanupOldLocations(daysOld = 90) {
  * @returns {string} - UUID v4
  */
 function generateSessionId() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);

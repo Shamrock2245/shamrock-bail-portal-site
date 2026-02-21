@@ -58,6 +58,10 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
         // 3. Reverse Geocoding
         let address = 'Unknown';
         let intersection = 'Unknown';
+        let city = '';
+        let region = '';
+        let country = 'US';
+        let postalCode = '';
 
         try {
             const apiKey = await getSecret('GOOGLE_MAPS_API_KEY');
@@ -67,6 +71,23 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
                     const geoData = await geoResponse.json();
                     if (geoData.status === 'OK' && geoData.results.length > 0) {
                         address = geoData.results[0].formatted_address;
+
+                        // Extract address components for a robust Wix Address Object
+                        geoData.results[0].address_components.forEach(component => {
+                            if (component.types.includes('locality')) {
+                                city = component.long_name;
+                            }
+                            if (component.types.includes('administrative_area_level_1')) {
+                                region = component.short_name; // e.g., 'FL'
+                            }
+                            if (component.types.includes('country')) {
+                                country = component.short_name; // e.g., 'US'
+                            }
+                            if (component.types.includes('postal_code')) {
+                                postalCode = component.long_name;
+                            }
+                        });
+
                         const intersectionResult = geoData.results.find(r => r.types.includes('intersection'));
                         if (intersectionResult) intersection = intersectionResult.formatted_address;
                     }
@@ -76,25 +97,38 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
             console.warn('LocationBackend: Geocoding failed', geoError);
         }
 
+        // Build robust Wix Address Object
+        const addressObj = {
+            formatted: address,
+            location: {
+                latitude: Number(latitude),
+                longitude: Number(longitude)
+            },
+            city: city,
+            subdivision: region,
+            country: country,
+            postalCode: postalCode
+        };
+
         const locationData = {
-            memberId: personId,
-            memberEmail: email,
-            phoneNumber: phoneNumber || session.phone || '', // Try session phone if available
-            latitude,
-            longitude,
-            address,
-            intersection,
+            memberId: String(personId || ''),
+            memberEmail: String(email || ''),
+            phoneNumber: String(phoneNumber || session.phone || ''),
+            latitude: String(latitude),
+            longitude: String(longitude),
+            address: addressObj, // Send fully formatted Address object
+            intersection: String(intersection || ''),
             timestamp: new Date(),
-            notes: notes || "",
-            imageUrl: imageUrl || "",
-            ipAddress,
-            deviceModel,
-            os,
-            browser,
-            userAgent: userAgent || 'Portal Custom Auth',
-            riskLevel,
-            riskFactors,
-            isHighRisk: riskLevel === 'HIGH'
+            notes: String(notes || ''),
+            imageUrl: String(imageUrl || ''),
+            ipAddress: String(ipAddress || ''),
+            deviceModel: String(deviceModel || ''),
+            os: String(os || ''),
+            browser: String(browser || ''),
+            userAgent: String(userAgent || 'Portal Custom Auth'),
+            riskLevel: String(riskLevel || ''),
+            riskFactors: Array.isArray(riskFactors) ? riskFactors.join(', ') : String(riskFactors || ''),
+            isHighRisk: Boolean(riskLevel === 'HIGH')
         };
 
         // 4. Save to UserLocations
