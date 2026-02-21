@@ -67,6 +67,7 @@ function setupAllProperties() {
 
   // ── PHASE 1: Non-secret properties (set directly) ──────────────────────────
   const safeProperties = {
+<<<<<<< Updated upstream
     // Telegram
     'TELEGRAM_BOT_TOKEN': '8478352763:AAF7Td2Ft-Oi5C4QKj_nVCUQzeWtR8FRYPQ',
     'TELEGRAM_WEBHOOK_URL': SETUP_CONFIG.wixSiteUrl + SETUP_CONFIG.telegramWebhookPath,
@@ -85,17 +86,30 @@ function setupAllProperties() {
     'MANUS_VOICE_ID': SETUP_CONFIG.elevenLabsDefaultVoiceId,
 
     // Intake flow settings
+=======
+    'TELEGRAM_WEBHOOK_URL': SETUP_CONFIG.wixSiteUrl + SETUP_CONFIG.telegramWebhookPath,
+    'TELEGRAM_BOT_NAME': SETUP_CONFIG.botName,
+    'TELEGRAM_BOT_USERNAME': SETUP_CONFIG.botUsername,
+    'WIX_SITE_URL': SETUP_CONFIG.wixSiteUrl,
+    'ELEVENLABS_MODEL_ID': SETUP_CONFIG.elevenLabsModel,
+    'ELEVENLABS_DEFAULT_VOICE_ID': SETUP_CONFIG.elevenLabsDefaultVoiceId,
+    'ELEVENLABS_SHAMROCK_VOICE_ID': SETUP_CONFIG.elevenLabsDefaultVoiceId,
+>>>>>>> Stashed changes
     'INTAKE_ENABLED': SETUP_CONFIG.intakeEnabled,
     'INTAKE_MAX_PER_USER_PER_DAY': SETUP_CONFIG.intakeMaxPerUserPerDay,
     'INTAKE_STATE_TTL_HOURS': SETUP_CONFIG.intakeStateTtlHours,
     'VOICE_NOTES_ENABLED': SETUP_CONFIG.voiceNotesEnabled,
     'VOICE_NOTES_MAX_CHARS': SETUP_CONFIG.voiceNotesMaxChars,
+<<<<<<< Updated upstream
 
     // Business info
+=======
+>>>>>>> Stashed changes
     'SHAMROCK_PHONE': SETUP_CONFIG.shamrockPhone,
     'SHAMROCK_PAYMENT_LINK': SETUP_CONFIG.shamrockPaymentLink,
     'SHAMROCK_WEBSITE': SETUP_CONFIG.wixSiteUrl,
     'SHAMROCK_EMAIL': SETUP_CONFIG.shamrockEmail,
+<<<<<<< Updated upstream
 
     // SignNow public config (not secrets)
     'SIGNNOW_API_BASE_URL': 'https://api.signnow.com',
@@ -123,6 +137,8 @@ function setupAllProperties() {
     'CONCIERGE_LAST_ROW': '2',
     'CURRENT_RECEIPT_NUMBER': '1001',
     'COLLIER_LAST_RUN_ISO_V2': new Date(Date.now() - 86400000).toISOString(),
+=======
+>>>>>>> Stashed changes
   };
 
   props.setProperties(safeProperties);
@@ -411,10 +427,16 @@ function configureBotCommands() {
   const commands = [
     { command: 'start', description: '🍀 Welcome to Shamrock Bail Bonds' },
     { command: 'bail', description: '🚀 Start bail bond paperwork' },
+<<<<<<< Updated upstream
     { command: 'help', description: '📋 Show all options & FAQ' },
     { command: 'pay', description: '💳 Get payment link' },
     { command: 'status', description: '🔍 Check case status' },
     { command: 'county', description: '📍 Find your county jail info' },
+=======
+    { command: 'help', description: '📋 Show all options' },
+    { command: 'pay', description: '💳 Get payment link' },
+    { command: 'status', description: '🔍 Check case status' },
+>>>>>>> Stashed changes
     { command: 'cancel', description: '❌ Cancel current operation' },
     { command: 'restart', description: '🔄 Restart intake from beginning' },
   ];
@@ -492,8 +514,12 @@ function verifyTelegramSetup() {
 
   // 1. Telegram bot token
   check('Telegram Bot Token', function () {
+<<<<<<< Updated upstream
     const botToken = props.getProperty('TELEGRAM_BOT_TOKEN');
     if (!botToken) throw new Error('Not set — run setupAllProperties()');
+=======
+    if (!botToken) throw new Error('Not set');
+>>>>>>> Stashed changes
     const me = JSON.parse(
       UrlFetchApp.fetch('https://api.telegram.org/bot' + botToken + '/getMe',
         { muteHttpExceptions: true }).getContentText()
@@ -502,9 +528,14 @@ function verifyTelegramSetup() {
     console.log('  ✅ Bot: @' + me.result.username + ' (' + me.result.first_name + ')');
   });
 
+<<<<<<< Updated upstream
   // 2. Webhook registration
   check('Webhook Registration', function () {
     const botToken = props.getProperty('TELEGRAM_BOT_TOKEN');
+=======
+  // 2. Webhook
+  check('Webhook Registration', function () {
+>>>>>>> Stashed changes
     if (!botToken) throw new Error('Token not set');
     const wh = JSON.parse(
       UrlFetchApp.fetch('https://api.telegram.org/bot' + botToken + '/getWebhookInfo',
@@ -519,8 +550,12 @@ function verifyTelegramSetup() {
 
   // 3. ElevenLabs
   check('ElevenLabs API Key', function () {
+<<<<<<< Updated upstream
     const key = props.getProperty('ELEVENLABS_API_KEY');
     if (!key) throw new Error('Not set — check Wix Secrets Manager: ELEVENLABS_API_KEY');
+=======
+    if (!elevenLabsKey) throw new Error('Not set');
+>>>>>>> Stashed changes
     const el = UrlFetchApp.fetch('https://api.elevenlabs.io/v1/user', {
       headers: { 'xi-api-key': key },
       muteHttpExceptions: true
@@ -533,15 +568,21 @@ function verifyTelegramSetup() {
     console.log('  ✅ ElevenLabs: ' + tier + ' plan | ' + chars + '/' + limit + ' chars used');
   });
 
+<<<<<<< Updated upstream
   // 4. Wix endpoint reachable
   check('Wix Site Reachable', function () {
     const wixUrl = props.getProperty('WIX_SITE_URL');
+=======
+  // 4. Wix endpoint
+  check('Wix IntakeQueue Endpoint', function () {
+>>>>>>> Stashed changes
     if (!wixUrl) throw new Error('WIX_SITE_URL not set');
     const wx = UrlFetchApp.fetch(wixUrl, { muteHttpExceptions: true });
     if (wx.getResponseCode() >= 500) throw new Error('Server error HTTP ' + wx.getResponseCode());
     console.log('  ✅ Wix site reachable (HTTP ' + wx.getResponseCode() + ')');
   });
 
+<<<<<<< Updated upstream
   // 5. SignNow API key present
   check('SignNow API Key', function () {
     const key = props.getProperty('SIGNNOW_API_KEY');
@@ -569,6 +610,18 @@ function verifyTelegramSetup() {
     const url = props.getProperty('SLACK_WEBHOOK_URL');
     if (!url) throw new Error('Not set — check Wix Secrets Manager: SLACK_WEBHOOK_URL');
     console.log('  ✅ Slack webhook configured');
+=======
+  // 5. SignNow
+  check('SignNow API Key', function () {
+    if (!signNowKey) throw new Error('Not set');
+    console.log('✅ SignNow key present (' + signNowKey.substring(0, 8) + '...)');
+  });
+
+  // 6. Twilio
+  check('Twilio Credentials', function () {
+    if (!twilioSid || !twilioToken) throw new Error('Missing SID or token');
+    console.log('✅ Twilio credentials present');
+>>>>>>> Stashed changes
   });
 
   // Summary
@@ -671,7 +724,12 @@ function getActiveIntakeSummary() {
 
   console.log('📊 Active intake conversations: ' + active.length);
   active.forEach(function (a) {
+<<<<<<< Updated upstream
     console.log('  User ' + a.userId + ' | Step: ' + a.step + ' | ' + a.defendantName + ' | ' + a.county);
+=======
+    console.log('  User ' + a.userId + ': step=' + a.step +
+      ', defendant=' + a.defendantName + ', county=' + a.county);
+>>>>>>> Stashed changes
   });
 
   return active;
