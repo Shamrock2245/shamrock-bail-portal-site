@@ -145,12 +145,12 @@ function _handlePhotoMessage(data) {
 
   try {
     const message = data.message;
-    const photos  = message.photo; // Array of PhotoSize objects
+    const photos = message.photo; // Array of PhotoSize objects
 
     // Get largest photo (best quality)
     const largestPhoto = photos[photos.length - 1];
-    const fileId       = largestPhoto.file_id;
-    const caption      = message.caption || '';
+    const fileId = largestPhoto.file_id;
+    const caption = message.caption || '';
 
     // Check if user is in a document task selection state first
     if (typeof isDocumentTaskSelection === 'function' && isDocumentTaskSelection(caption, data.userId)) {
@@ -190,10 +190,10 @@ function _handleDocumentMessage(data) {
   console.log(`📄 Document received from ${data.name}`);
 
   try {
-    const doc    = data.message.document;
+    const doc = data.message.document;
     const fileId = doc.file_id;
-    const name   = doc.file_name || 'document';
-    const mime   = doc.mime_type || 'application/octet-stream';
+    const name = doc.file_name || 'document';
+    const mime = doc.mime_type || 'application/octet-stream';
 
     // Check if user is responding to a document task menu
     if (typeof isDocumentTaskSelection === 'function' && isDocumentTaskSelection(data.body, data.userId)) {
@@ -546,10 +546,14 @@ function _getMessageType(message) {
  */
 function _logInboundMessage(data) {
   try {
-    const config = _getConfig();
-    if (!config.GOOGLE_SHEET_ID) return;
+    let ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) {
+      const props = PropertiesService.getScriptProperties();
+      const fallbackId = props.getProperty('TARGET_SPREADSHEET_ID');
+      if (!fallbackId) return;
+      ss = SpreadsheetApp.openById(fallbackId);
+    }
 
-    const ss = SpreadsheetApp.openById(config.GOOGLE_SHEET_ID);
     let sheet = ss.getSheetByName('Telegram_Inbound');
 
     if (!sheet) {
@@ -571,16 +575,6 @@ function _logInboundMessage(data) {
   } catch (e) {
     console.warn('Could not log inbound message to sheet:', e.message);
   }
-}
-
-/**
- * Get configuration
- */
-function _getConfig() {
-  const props = PropertiesService.getScriptProperties();
-  return {
-    GOOGLE_SHEET_ID: props.getProperty('SPREADSHEET_ID') || props.getProperty('GOOGLE_SHEET_ID') || ''
-  };
 }
 
 // =============================================================================
