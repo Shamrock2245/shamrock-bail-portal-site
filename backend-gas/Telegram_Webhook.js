@@ -597,11 +597,17 @@ function _routeToIntakeFlow(data) {
     // Intake complete — send confirmation
     if (result && result.intakeId) {
       const confirmMsg =
-        '✅ *Your information has been received.*\n\n' +
+        '✅ *Your information has been securely received.*\n\n' +
         'Reference ID: `' + result.intakeId + '`\n\n' +
-        'A licensed bondsman will review your case and contact you shortly. ' +
-        'For immediate assistance, call: 📞 ' + SHAMROCK_PHONE;
-      bot.sendMessage(data.chatId, confirmMsg, { parse_mode: 'Markdown' });
+        'A licensed bondsman is reviewing your case right now. You will receive a call or text shortly.\n\n' +
+        '💳 *Next Steps:*\n' +
+        'If you know the premium due, please feel free to pay your defendant\'s bond securely using the link below. Be sure to add any notes that you would like.\n\n' +
+        '_If you prefer other payment methods, please discuss that with your agent._\n\n' +
+        '📞 *Need immediate assistance?* Call us 24/7 at ' + SHAMROCK_PHONE;
+
+      bot.sendMessageWithKeyboard(data.chatId, confirmMsg, [
+        [{ text: '💳 Secure Payment Link', url: PAYMENT_LINK }]
+      ]);
     }
     return { success: true, action: 'intake_flow_processed', chatId: data.chatId };
   } catch (e) {

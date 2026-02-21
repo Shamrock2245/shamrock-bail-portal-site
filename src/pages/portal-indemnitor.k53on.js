@@ -523,15 +523,21 @@ async function handleSubmitIntake() {
             safeHide('#groupStep3');
             safeShow('#groupSuccess');
 
-            safeSetText('#textSuccessMessage', `Success! Your Case ID is: ${result.caseId}\n\nStand by. Our AI Agent is reviewing your file and will text you in a moment.`);
+            const successMsg = `🎉 Success! Your Case ID is: ${result.caseId}\n\n` +
+                `Stand by. Our AI agent is reviewing your file and will email you the completed SignNow documents to review and sign shortly.\n\n` +
+                `💳 Next Steps:\n` +
+                `If you know the premium due, please feel free to pay your defendant's bond securely using our payment page. Be sure to add any notes that you would like.\n\n` +
+                `If the premium isn't paid after this submission, then there will be a payment plan signed and sent to you. If you prefer other payment methods, please discuss that with your agent.\n\n` +
+                `Redirecting to our secure payment portal...`;
+
+            safeSetText('#textSuccessMessage', successMsg);
 
             wixWindow.scrollTo(0, 0);
 
             setTimeout(() => {
-                const redirectUrl = wixLocation.url; // Reload same page to trigger dashboard view
-                console.log("🔄 Reloading page ->", redirectUrl);
-                wixLocation.to(redirectUrl);
-            }, 5000);
+                console.log("🔄 Redirecting to payments page ->");
+                wixLocation.to('/payments');
+            }, 10000);
         } else {
             throw new Error(result.message || 'Submission failed');
         }
