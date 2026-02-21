@@ -2165,3 +2165,53 @@ export async function get_gasSecretsBundle(request) {
         });
     }
 }
+
+/**
+ * POST /_functions/telegramIntake
+ * Secure endpoint to inject completed Telegram Bot intakes directly into Wix IntakeQueue CMS
+ */
+export async function post_telegramIntake(request) {
+    try {
+        const body = await request.body.json();
+
+        // Validate API key
+        if (!body.apiKey) {
+            return badRequest({ body: { success: false, message: 'Missing apiKey' } });
+        }
+
+        const validApiKey = await getSecret('GAS_API_KEY');
+        if (body.apiKey !== validApiKey) {
+            logSafe('Invalid API Key attempt for Telegram Intake', { provided: body.apiKey }, 'warn');
+            return forbidden({ body: { success: false, message: 'Invalid API key' } });
+        }
+
+        // Validate required fields
+        if (!body.intakeData || !body.intakeData.indemnitorName) {
+            return badRequest({ body: { success: false, message: 'Missing required intake data (indemnitorName is required)' } });
+        }
+
+        const { submitIntakeForm } = await import('backend/intakeQueue.jsw');
+
+        const intakeData = body.intakeData;
+        intakeData.source = 'telegram_bot';
+
+        const result = await submitIntakeForm(intakeData);
+
+        if (result.success) {
+            return ok({
+                headers: { 'Content-Type': 'application/json' },
+                body: { success: true, caseId: result.caseId, message: 'Telegram intake saved to Wix CMS' }
+            });
+        } else {
+            return serverError({
+                body: { success: false, message: result.error || 'Failed to submit intake' }
+            });
+        }
+
+    } catch (error) {
+        console.error('Telegram intake error:', error);
+        return serverError({
+            body: { success: false, message: error.message }
+        });
+    }
+}
