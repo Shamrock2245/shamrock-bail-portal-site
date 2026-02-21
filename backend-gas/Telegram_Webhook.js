@@ -186,6 +186,23 @@ function _handlePhotoMessage(data) {
     const fileId = largestPhoto.file_id;
     const caption = message.caption || '';
 
+    // Check if user is in an active intake flow expecting a document
+    if (typeof getConversationState === 'function') {
+      const state = getConversationState(data.userId);
+      if (state && ['upload_id', 'upload_utility', 'upload_paystub'].includes(state.step)) {
+        if (typeof processIntakeMessage === 'function') {
+          const token = `__DOC__${fileId}__${caption || 'photo.jpg'}__image/jpeg`;
+          const result = processIntakeMessage(data.userId, token, data.name);
+          const bot = new TelegramBotAPI();
+          if (result.text) bot.sendMessage(data.chatId, result.text, { parse_mode: 'Markdown' });
+          if (result.voice_script && typeof generateAndSendVoiceNote === 'function') {
+            generateAndSendVoiceNote(data.chatId, result.voice_script, 'telegram', data.userId);
+          }
+          return { success: true, action: 'intake_photo_processed' };
+        }
+      }
+    }
+
     // Check if user is in a document task selection state first
     if (typeof isDocumentTaskSelection === 'function' && isDocumentTaskSelection(caption, data.userId)) {
       return processDocumentTaskSelection(data.chatId, data.userId, caption);
@@ -228,6 +245,23 @@ function _handleDocumentMessage(data) {
     const fileId = doc.file_id;
     const name = doc.file_name || 'document';
     const mime = doc.mime_type || 'application/octet-stream';
+
+    // Check if user is in an active intake flow expecting a document
+    if (typeof getConversationState === 'function') {
+      const state = getConversationState(data.userId);
+      if (state && ['upload_id', 'upload_utility', 'upload_paystub'].includes(state.step)) {
+        if (typeof processIntakeMessage === 'function') {
+          const token = `__DOC__${fileId}__${name}__${mime}`;
+          const result = processIntakeMessage(data.userId, token, data.name);
+          const bot = new TelegramBotAPI();
+          if (result.text) bot.sendMessage(data.chatId, result.text, { parse_mode: 'Markdown' });
+          if (result.voice_script && typeof generateAndSendVoiceNote === 'function') {
+            generateAndSendVoiceNote(data.chatId, result.voice_script, 'telegram', data.userId);
+          }
+          return { success: true, action: 'intake_document_processed' };
+        }
+      }
+    }
 
     // Check if user is responding to a document task menu
     if (typeof isDocumentTaskSelection === 'function' && isDocumentTaskSelection(data.body, data.userId)) {
@@ -428,9 +462,14 @@ function _handleMenuPostBail(data) {
   // Fallback if intake module not loaded
   bot.sendMessage(data.chatId,
     '📋 *Let\'s start your bail bond paperwork.*\n\n' +
-    'I\'ll need to ask you a few questions about the person who was arrested. ' +
-    'This usually takes about 5 minutes.\n\n' +
-    'First — what is the *defendant\'s full legal name*? (First and Last)',
+    '*Before we begin, please review our terms:*\n\n' +
+    'By continuing, you agree to:\n' +
+    '• Sign documents electronically (legally binding)\n' +
+    '• Allow us to capture your location at signing time\n' +
+    '• Receive necessary text/voice communications about this case\n' +
+    '• Authorize Shamrock Bail Bonds to use this data for underwriting purposes.\n\n' +
+    'Do you agree to these terms?\n' +
+    '*(Please reply "I agree" or "Yes")*',
     { parse_mode: 'Markdown' }
   );
   return { success: true, action: 'intake_fallback_started', chatId: data.chatId };

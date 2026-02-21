@@ -55,17 +55,17 @@ function getConfig() {
     WIX_SITE_URL: props.getProperty('WIX_SITE_URL') || 'https://www.shamrockbailbonds.biz',
     WEBHOOK_URL: props.getProperty('WEBHOOK_URL') || '',
     // Slack Webhooks — all channels from Shamrock Bail Bonds Slack workspace
-    SLACK_WEBHOOK_NEW_CASES:              props.getProperty('SLACK_WEBHOOK_NEW_CASES')              || '',
-    SLACK_WEBHOOK_COURT_DATES:            props.getProperty('SLACK_WEBHOOK_COURT_DATES')            || '',
-    SLACK_WEBHOOK_FORFEITURES:            props.getProperty('SLACK_WEBHOOK_FORFEITURES')            || '',
-    SLACK_WEBHOOK_DISCHARGES:             props.getProperty('SLACK_WEBHOOK_DISCHARGES')             || '',
-    SLACK_WEBHOOK_GENERAL:                props.getProperty('SLACK_WEBHOOK_GENERAL')                || '',
-    SLACK_WEBHOOK_SIGNING_ERRORS:         props.getProperty('SLACK_WEBHOOK_SIGNING_ERRORS')         || '',
-    SLACK_WEBHOOK_INTAKE:                 props.getProperty('SLACK_WEBHOOK_INTAKE')                 || '',
+    SLACK_WEBHOOK_NEW_CASES: props.getProperty('SLACK_WEBHOOK_NEW_CASES') || '',
+    SLACK_WEBHOOK_COURT_DATES: props.getProperty('SLACK_WEBHOOK_COURT_DATES') || '',
+    SLACK_WEBHOOK_FORFEITURES: props.getProperty('SLACK_WEBHOOK_FORFEITURES') || '',
+    SLACK_WEBHOOK_DISCHARGES: props.getProperty('SLACK_WEBHOOK_DISCHARGES') || '',
+    SLACK_WEBHOOK_GENERAL: props.getProperty('SLACK_WEBHOOK_GENERAL') || '',
+    SLACK_WEBHOOK_SIGNING_ERRORS: props.getProperty('SLACK_WEBHOOK_SIGNING_ERRORS') || '',
+    SLACK_WEBHOOK_INTAKE: props.getProperty('SLACK_WEBHOOK_INTAKE') || '',
     SLACK_WEBHOOK_NEW_ARRESTS_LEE_COUNTY: props.getProperty('SLACK_WEBHOOK_NEW_ARRESTS_LEE_COUNTY') || '',
-    SLACK_WEBHOOK_SHAMROCK:               props.getProperty('SLACK_WEBHOOK_SHAMROCK')               || '',
-    SLACK_WEBHOOK_DRIVE:                  props.getProperty('SLACK_WEBHOOK_DRIVE')                  || '',
-    SLACK_WEBHOOK_CALENDAR:               props.getProperty('SLACK_WEBHOOK_CALENDAR')               || '',
+    SLACK_WEBHOOK_SHAMROCK: props.getProperty('SLACK_WEBHOOK_SHAMROCK') || '',
+    SLACK_WEBHOOK_DRIVE: props.getProperty('SLACK_WEBHOOK_DRIVE') || '',
+    SLACK_WEBHOOK_CALENDAR: props.getProperty('SLACK_WEBHOOK_CALENDAR') || '',
     PAYMENT_LINK: 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
   };
   return _CONFIG_CACHE;
@@ -589,8 +589,26 @@ function handleAction(data) {
   // 1. INTAKE & QUEUE
   if (action === 'intakeSubmission') return handleIntakeSubmission(data);
   if (action === 'newIntake') return handleNewIntake(data.caseId, data.data);
-  if (action === 'fetchPendingIntakes') return getWixIntakeQueue(); // Updated to new robust function
-  if (action === 'markIntakeProcessed') return markWixIntakeAsSynced(data.intakeId); // Updated to new robust function
+  if (action === 'fetchPendingIntakes') {
+    const wixIntakes = getWixIntakeQueue() || [];
+    const tgIntakes = getPendingIntakes() || [];
+
+    // Merge and sort by Timestamp descending
+    const combined = [...wixIntakes, ...tgIntakes].sort((a, b) => {
+      const timeA = new Date(a.Timestamp || 0).getTime();
+      const timeB = new Date(b.Timestamp || 0).getTime();
+      return timeB - timeA;
+    });
+
+    return combined;
+  }
+  if (action === 'markIntakeProcessed') {
+    if (String(data.intakeId).startsWith('TG-')) {
+      return markTelegramIntakeProcessed(data.intakeId);
+    } else {
+      return markWixIntakeAsSynced(data.intakeId);
+    }
+  }
   // Telegram intake full data (for Dashboard Queue.process() hydration when IntakeID starts with 'TG-')
   if (action === 'getTelegramIntakeData') return getTelegramIntakeFullData(data.intakeId);
 

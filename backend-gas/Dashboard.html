@@ -1565,6 +1565,9 @@
             <button class="tab" onclick="switchTab(this, 'documents')">
                 <span class="tab-icon">&#128196;</span> Documents
             </button>
+            <button class="tab" onclick="switchTab(this, 'attachments')">
+                <span class="tab-icon">📎</span> Attachments
+            </button>
             <button class="tab" onclick="switchTab(this, 'generate')">
                 <span class="tab-icon">&#9654;</span> Generate & Send
             </button>
@@ -2563,6 +2566,32 @@
                     <span style="font-weight: 600;"><span id="selected-doc-count">11</span> documents selected</span>
                     <span style="color: var(--muted); font-size: 14px;">Estimated <span id="estimated-pages">~15</span>
                         pages</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+         TAB: ATTACHMENTS
+         ============================================================ -->
+        <div id="attachments-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header" style="justify-content: space-between; display: flex;">
+                    <h3><span class="icon">📎</span> Attachments & Uploads</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="Queue.renderAttachments()">
+                        🔄 Refresh
+                    </button>
+                </div>
+
+                <!-- Attachments Container -->
+                <div id="attachments-list"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 20px;">
+                    <div
+                        style="grid-column: 1 / -1; text-align: center; padding: 48px; color: var(--muted); background: var(--surface-2); border-radius: var(--radius);">
+                        <p style="font-size: 48px; margin-bottom: 16px;">📎</p>
+                        <p style="font-size: 16px; font-weight: 600;">No Intake Selected</p>
+                        <p style="font-size: 14px; margin-top: 8px;">Process an intake from the Queue to view its
+                            attachments here.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -7363,7 +7392,7 @@
                     });
                 },
 
-                  process: function (intakeId) {
+                process: function (intakeId) {
                     // --- TELEGRAM INTAKE: Fetch full data from backend if TG- prefixed ---
                     if (intakeId && intakeId.startsWith('TG-')) {
                         const cached = window.ShamrockApp.IntakeCache.get(intakeId);
@@ -7483,11 +7512,106 @@
                                 .client_getIndemnitorProfile(indemnitorData.email);
                         }
 
+                        // 7. Render Attachments Tab
+                        Queue.renderAttachments(raw);
+
                         UI.showToast(`Loaded data for ${item.DefendantName}`, 'success');
 
                     } catch (e) {
                         console.error("Hydration Error:", e);
                         UI.showToast("Error loading data: " + e.message, 'error');
+                    }
+                },
+
+                renderAttachments: function (data) {
+                    const list = document.getElementById('attachments-list');
+                    if (!list) return;
+
+                    let attachmentsHTML = '';
+                    let hasAttachments = false;
+
+                    // 1. Check for Telegram Documents
+                    if (data.Documents && Array.isArray(data.Documents)) {
+                        data.Documents.forEach(doc => {
+                            hasAttachments = true;
+                            const url = doc.file_url || '#';
+                            const title = doc.doc_type || 'Telegram Upload';
+                            const name = doc.file_name || 'Document';
+                            attachmentsHTML += `
+                                <div class="card" style="padding: 16px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid var(--accent);">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <span style="font-size: 24px;">📄</span>
+                                        <div>
+                                            <div style="font-weight: 600; color: var(--text);">${title}</div>
+                                            <div style="font-size: 12px; color: var(--muted);">${name}</div>
+                                        </div>
+                                    </div>
+                                    <a href="${url}" target="_blank" class="btn btn-sm btn-primary">View</a>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    // 2. Check for Wix Indemnitor Form Uploads
+                    const wixFields = [
+                        { key: 'idFront', label: 'ID Front' },
+                        { key: 'idBack', label: 'ID Back' },
+                        { key: 'utilityBill', label: 'Utility Bill' },
+                        { key: 'paystub', label: 'Pay Stub' },
+                        { key: 'selfie', label: 'Selfie / Verification' }
+                    ];
+
+                    wixFields.forEach(field => {
+                        if (data[field.key]) {
+                            hasAttachments = true;
+                            let url = data[field.key];
+                            // Clean up Wix URLs if they use the wix:image:// format to make them playable/viewable if possible.
+                            // For now, we'll try to present the raw URL.
+                            let isImage = url.match(/\.(jpeg|jpg|gif|png)$/) != null || url.includes('wix:image');
+                            let icon = isImage ? '🖼️' : '📄';
+
+                            attachmentsHTML += `
+                                <div class="card" style="padding: 16px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid var(--accent);">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <span style="font-size: 24px;">${icon}</span>
+                                        <div>
+                                            <div style="font-weight: 600; color: var(--text);">${field.label}</div>
+                                            <div style="font-size: 12px; color: var(--muted);">Wix Upload</div>
+                                        </div>
+                                    </div>
+                                    <a href="${url}" target="_blank" class="btn btn-sm btn-primary" onclick="if(this.href.includes('wix:image')) { alert('Direct access to Wix internal image URIs requires Dashboard resolution.\\n\\nURI: ' + this.href); return false; }">View</a>
+                                </div>
+                            `;
+                        }
+                    });
+
+                    if (!hasAttachments) {
+                        attachmentsHTML = `
+                            <div style="grid-column: 1 / -1; text-align: center; padding: 48px; color: var(--muted); background: var(--surface-2); border-radius: var(--radius);">
+                                <p style="font-size: 48px; margin-bottom: 16px;">📁</p>
+                                <p style="font-size: 16px; font-weight: 600;">No Attachments Found</p>
+                                <p style="font-size: 14px; margin-top: 8px;">This intake does not contain any uploaded documents.</p>
+                            </div>
+                        `;
+                    }
+
+                    list.innerHTML = attachmentsHTML;
+
+                    // Update Tab Badge
+                    const navTabs = document.querySelector('.nav-tabs');
+                    if (navTabs) {
+                        const attachBtn = Array.from(navTabs.querySelectorAll('button')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes("'attachments'"));
+                        if (attachBtn) {
+                            if (hasAttachments) {
+                                attachBtn.style.position = 'relative';
+                                if (!attachBtn.querySelector('.tab-badge')) {
+                                    attachBtn.innerHTML += '<span class="tab-badge" style="display:inline-block; background:var(--warning); color:#000;">!</span>';
+                                }
+                            } else {
+                                const badge = attachBtn.querySelector('.tab-badge');
+                                if (badge) badge.remove();
+                            }
+                        }
                     }
                 },
 

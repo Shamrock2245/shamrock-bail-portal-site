@@ -57,35 +57,40 @@
 // =============================================================================
 
 const INTAKE_STEPS = {
-  GREETING:            'greeting',
+  GREETING: 'greeting',
+  CONSENT: 'consent',
   // --- Defendant ---
-  DEFENDANT_NAME:      'defendant_name',
-  DEFENDANT_DOB:       'defendant_dob',
-  DEFENDANT_JAIL:      'defendant_jail',
-  DEFENDANT_PHONE:     'defendant_phone',
-  DEFENDANT_EMAIL:     'defendant_email',
-  DEFENDANT_ADDRESS:   'defendant_address',
-  DEFENDANT_DL:        'defendant_dl',
-  DEFENDANT_PHYSICAL:  'defendant_physical',
+  DEFENDANT_NAME: 'defendant_name',
+  DEFENDANT_DOB: 'defendant_dob',
+  DEFENDANT_JAIL: 'defendant_jail',
+  DEFENDANT_PHONE: 'defendant_phone',
+  DEFENDANT_EMAIL: 'defendant_email',
+  DEFENDANT_ADDRESS: 'defendant_address',
+  DEFENDANT_DL: 'defendant_dl',
+  DEFENDANT_PHYSICAL: 'defendant_physical',
   // --- Indemnitor ---
-  INDEMNITOR_NAME:     'indemnitor_name',
-  INDEMNITOR_DOB:      'indemnitor_dob',
+  INDEMNITOR_NAME: 'indemnitor_name',
+  INDEMNITOR_DOB: 'indemnitor_dob',
   INDEMNITOR_RELATION: 'indemnitor_relation',
-  INDEMNITOR_EMAIL:    'indemnitor_email',
-  INDEMNITOR_ADDRESS:  'indemnitor_address',
+  INDEMNITOR_EMAIL: 'indemnitor_email',
+  INDEMNITOR_ADDRESS: 'indemnitor_address',
   INDEMNITOR_EMPLOYMENT: 'indemnitor_employment',
   // --- References ---
-  REF1_NAME:           'ref1_name',
-  REF1_PHONE:          'ref1_phone',
-  REF1_RELATION:       'ref1_relation',
-  REF1_ADDRESS:        'ref1_address',
-  REF2_NAME:           'ref2_name',
-  REF2_PHONE:          'ref2_phone',
-  REF2_RELATION:       'ref2_relation',
-  REF2_ADDRESS:        'ref2_address',
+  REF1_NAME: 'ref1_name',
+  REF1_PHONE: 'ref1_phone',
+  REF1_RELATION: 'ref1_relation',
+  REF1_ADDRESS: 'ref1_address',
+  REF2_NAME: 'ref2_name',
+  REF2_PHONE: 'ref2_phone',
+  REF2_RELATION: 'ref2_relation',
+  REF2_ADDRESS: 'ref2_address',
+  // --- Document Uploads ---
+  UPLOAD_ID: 'upload_id',
+  UPLOAD_UTILITY: 'upload_utility',
+  UPLOAD_PAYSTUB: 'upload_paystub',
   // --- Finalization ---
-  CONFIRM_INFO:        'confirm_info',
-  COMPLETE:            'complete'
+  CONFIRM_INFO: 'confirm_info',
+  COMPLETE: 'complete'
 };
 
 // =============================================================================
@@ -172,12 +177,12 @@ function processIntakeMessage(userId, message, firstName) {
     };
   }
   if (msg.toLowerCase() === '/start' || msg.toLowerCase() === 'start') {
-    if (state.step === INTAKE_STEPS.GREETING || state.step === INTAKE_STEPS.COMPLETE) {
+    if (state.step === INTAKE_STEPS.GREETING || state.step === INTAKE_STEPS.COMPLETE || state.step === INTAKE_STEPS.CONSENT) {
       clearConversationState(userId);
       const newState = getConversationState(userId);
-      newState.step = INTAKE_STEPS.DEFENDANT_NAME;
+      newState.step = INTAKE_STEPS.CONSENT;
       updateConversationState(userId, newState);
-      return { text: _greetingText(firstName) };
+      return { text: _consentText(firstName) };
     }
   }
   if (msg.toLowerCase() === '/status') {
@@ -190,9 +195,12 @@ function processIntakeMessage(userId, message, firstName) {
   let response;
   switch (state.step) {
     case INTAKE_STEPS.GREETING:
-      state.step = INTAKE_STEPS.DEFENDANT_NAME;
+      state.step = INTAKE_STEPS.CONSENT;
       updateConversationState(userId, state);
-      return { text: _greetingText(firstName) };
+      return { text: _consentText(firstName) };
+
+    case INTAKE_STEPS.CONSENT:
+      response = _handleConsent(state, msg); break;
 
     case INTAKE_STEPS.DEFENDANT_NAME:
       response = _handleDefendantName(state, msg); break;
@@ -241,6 +249,13 @@ function processIntakeMessage(userId, message, firstName) {
     case INTAKE_STEPS.REF2_ADDRESS:
       response = _handleRef2Address(state, msg); break;
 
+    case INTAKE_STEPS.UPLOAD_ID:
+      response = _handleUploadID(state, msg); break;
+    case INTAKE_STEPS.UPLOAD_UTILITY:
+      response = _handleUploadUtility(state, msg); break;
+    case INTAKE_STEPS.UPLOAD_PAYSTUB:
+      response = _handleUploadPaystub(state, msg); break;
+
     case INTAKE_STEPS.CONFIRM_INFO:
       response = _handleConfirmation(state, msg); break;
     case INTAKE_STEPS.COMPLETE:
@@ -273,28 +288,48 @@ function processIntakeMessage(userId, message, firstName) {
   }
 
   return {
-    text:         response.text,
+    text: response.text,
     voice_script: response.voice_script || null,
-    intakeId:     response.intakeId     || null
+    intakeId: response.intakeId || null
   };
 }
 
 // =============================================================================
-// GREETING
+// CONSENT AND GREETING
 // =============================================================================
 
-function _greetingText(firstName) {
+function _consentText(firstName) {
   const name = firstName ? (', ' + firstName) : '';
   return `🍀 *Welcome to Shamrock Bail Bonds${name}!*
 
 I'm here to help you start the bail process. I'll ask you a few questions to get everything ready for one of our agents.
 
-This usually takes about 5 minutes. All information is kept strictly confidential.
+*Before we begin, please review our terms:*
 
-Let's start with the person who has been arrested.
+By continuing, you agree to:
+• Sign documents electronically (legally binding)
+• Allow us to capture your location at signing time
+• Receive necessary text/voice communications about this case
+• Authorize Shamrock Bail Bonds to use this data for underwriting purposes.
 
-*What is their full legal name?*
-_(First and Last name, as it appears on their ID)_`;
+Do you agree to these terms?
+*(Please type exactly: "I agree" or "Yes")*`;
+}
+
+function _handleConsent(state, text) {
+  const answer = text.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+  if (answer === 'i agree' || answer === 'yes' || answer === 'agree' || answer === 'y') {
+    state.data.consentGiven = true;
+    state.data.consentTimestamp = new Date().toISOString();
+    return {
+      text: 'Thank you. Your consent has been recorded.\n\nLet\'s start with the person who has been arrested.\n\n*What is their full legal name?*\n_(First and Last name, as it appears on their ID)_',
+      nextStep: INTAKE_STEPS.DEFENDANT_NAME
+    };
+  } else {
+    return {
+      text: '⚠️ You must agree to the terms to proceed. If you do not agree, we cannot process your bail bond electronically.\n\nPlease type *"I agree"* or *"Yes"* when you are ready to proceed.'
+    };
+  }
 }
 
 // =============================================================================
@@ -309,9 +344,9 @@ function _handleDefendantName(state, msg) {
       nextStep: null
     };
   }
-  state.data.DefName      = msg.trim();
+  state.data.DefName = msg.trim();
   state.data.DefFirstName = parts[0];
-  state.data.DefLastName  = parts.slice(1).join(' ');
+  state.data.DefLastName = parts.slice(1).join(' ');
   return {
     text: `Got it — *${state.data.DefName}*.
 
@@ -468,9 +503,9 @@ function _handleIndemnitorName(state, msg) {
       nextStep: null
     };
   }
-  state.data.IndName      = msg.trim();
+  state.data.IndName = msg.trim();
   state.data.IndFirstName = parts[0];
-  state.data.IndLastName  = parts.slice(1).join(' ');
+  state.data.IndLastName = parts.slice(1).join(' ');
   return {
     text: `Nice to meet you, *${state.data.IndFirstName}*!
 
@@ -667,10 +702,109 @@ _(Street, City, State, ZIP — type "skip" if you don't know it)_`,
 
 function _handleRef2Address(state, msg) {
   state.data.Ref2Address = msg.toLowerCase() === 'skip' ? '' : msg.trim();
-  // Build the confirmation summary
+  return {
+    text: `Great! We have almost everything.\n\nNow, please upload a clear photo of your *Government-Issued ID (Front)*.\n\n_(Tap the paperclip or camera icon to upload. Type "skip" to provide this later.)_`,
+    nextStep: INTAKE_STEPS.UPLOAD_ID
+  };
+}
+
+// =============================================================================
+// DOCUMENT UPLOAD STEP HANDLERS
+// =============================================================================
+
+function _handleUploadID(state, msg) {
+  if (msg.toLowerCase() === 'skip') {
+    state.data.Doc_ID_Front = '';
+    return {
+      text: `Skipped ID upload.\n\nNext, please upload a recent *Utility Bill* (Electric, Water, etc.) to verify your address.\n\n_(Type "skip" to provide this later.)_`,
+      nextStep: INTAKE_STEPS.UPLOAD_UTILITY
+    };
+  }
+
+  if (msg.startsWith('__DOC__')) {
+    const parts = msg.split('__');
+    const fileId = parts[2];
+    const fileName = parts[3];
+    const mimeType = parts[4] || 'image/jpeg';
+
+    // Download to drive
+    let url = '';
+    if (typeof _downloadTelegramFileToDrive === 'function') {
+      try {
+        const ext = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '.jpg';
+        url = _downloadTelegramFileToDrive(fileId, `ID_Front_${state.userId}_${Date.now()}${ext}`, 'ID_Verification');
+      } catch (e) { console.error('Failed ID upload', e); }
+    }
+    state.data.Doc_ID_Front = url;
+
+    return {
+      text: `✅ ID received!\n\nNext, please upload a recent *Utility Bill* (Electric, Water, etc.) to verify your address.\n\n_(Type "skip" to provide this later.)_`,
+      nextStep: INTAKE_STEPS.UPLOAD_UTILITY
+    };
+  }
+
+  return { text: `Please upload your ID as a photo or document, or type "skip".`, nextStep: null };
+}
+
+function _handleUploadUtility(state, msg) {
+  if (msg.toLowerCase() === 'skip') {
+    state.data.Doc_Utility = '';
+    return {
+      text: `Skipped Utility Bill.\n\nFinally, please upload your most recent *Pay Stub*.\n\n_(Type "skip" to provide this later.)_`,
+      nextStep: INTAKE_STEPS.UPLOAD_PAYSTUB
+    };
+  }
+
+  if (msg.startsWith('__DOC__')) {
+    const parts = msg.split('__');
+    const fileId = parts[2];
+    const fileName = parts[3];
+    const mimeType = parts[4] || 'application/pdf';
+
+    // Download to drive
+    let url = '';
+    if (typeof _downloadTelegramFileToDrive === 'function') {
+      try {
+        const ext = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '.pdf';
+        url = _downloadTelegramFileToDrive(fileId, `Utility_${state.userId}_${Date.now()}${ext}`, 'SupportingDocuments');
+      } catch (e) { console.error('Failed Utility upload', e); }
+    }
+    state.data.Doc_Utility = url;
+
+    return {
+      text: `✅ Utility Bill received!\n\nFinally, please upload your most recent *Pay Stub*.\n\n_(Type "skip" to provide this later.)_`,
+      nextStep: INTAKE_STEPS.UPLOAD_PAYSTUB
+    };
+  }
+
+  return { text: `Please upload your Utility Bill as a photo or document, or type "skip".`, nextStep: null };
+}
+
+function _handleUploadPaystub(state, msg) {
+  if (msg.toLowerCase() === 'skip') {
+    state.data.Doc_Paystub = '';
+  } else if (msg.startsWith('__DOC__')) {
+    const parts = msg.split('__');
+    const fileId = parts[2];
+    const fileName = parts[3];
+    const mimeType = parts[4] || 'application/pdf';
+
+    // Download to drive
+    let url = '';
+    if (typeof _downloadTelegramFileToDrive === 'function') {
+      try {
+        const ext = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '.pdf';
+        url = _downloadTelegramFileToDrive(fileId, `Paystub_${state.userId}_${Date.now()}${ext}`, 'SupportingDocuments');
+      } catch (e) { console.error('Failed Paystub upload', e); }
+    }
+    state.data.Doc_Paystub = url;
+  } else {
+    return { text: `Please upload your Pay Stub as a photo or document, or type "skip".`, nextStep: null };
+  }
+
   return {
     text: _buildConfirmationSummary(state.data),
-    voice_script: 'Please review the information I have collected. Reply YES if everything looks correct, or NO to start over.',
+    voice_script: 'Please review the information and documents I have collected. Reply YES if everything looks correct, or NO to start over.',
     nextStep: INTAKE_STEPS.CONFIRM_INFO
   };
 }
@@ -711,6 +845,11 @@ function _buildConfirmationSummary(data) {
 • Phone: ${data.Ref2Phone || '—'}
 • Relationship: ${data.Ref2Relation || '—'}
 • Address: ${data.Ref2Address || '—'}
+
+*DOCUMENTS UPLOADED:*
+• ID: ${data.Doc_ID_Front ? '✅ Provided' : '❌ Skipped'}
+• Utility Bill: ${data.Doc_Utility ? '✅ Provided' : '❌ Skipped'}
+• Pay Stub: ${data.Doc_Paystub ? '✅ Provided' : '❌ Skipped'}
 
 Is this information correct?
 Reply *YES* to submit, or *NO* to start over.`;
@@ -840,69 +979,69 @@ function _detectCountyFromFacility(facilityName) {
   if (!facilityName) return '';
   const lower = facilityName.toLowerCase();
   const countyMap = {
-    'lee':        ['lee county', 'lcso', 'naples jail', 'fort myers'],
-    'collier':    ['collier', 'naples jail center', 'immokalee'],
-    'charlotte':  ['charlotte', 'punta gorda'],
-    'sarasota':   ['sarasota'],
-    'manatee':    ['manatee', 'bradenton'],
+    'lee': ['lee county', 'lcso', 'naples jail', 'fort myers'],
+    'collier': ['collier', 'naples jail center', 'immokalee'],
+    'charlotte': ['charlotte', 'punta gorda'],
+    'sarasota': ['sarasota'],
+    'manatee': ['manatee', 'bradenton'],
     'hillsborough': ['hillsborough', 'tampa', 'orient road'],
-    'pinellas':   ['pinellas', 'st. pete', 'clearwater'],
-    'orange':     ['orange county', 'orlando'],
+    'pinellas': ['pinellas', 'st. pete', 'clearwater'],
+    'orange': ['orange county', 'orlando'],
     'miami-dade': ['miami', 'dade', 'tgk', 'pre-trial detention'],
-    'broward':    ['broward', 'fort lauderdale', 'main jail'],
+    'broward': ['broward', 'fort lauderdale', 'main jail'],
     'palm beach': ['palm beach', 'west palm'],
-    'alachua':    ['alachua', 'gainesville'],
-    'duval':      ['duval', 'jacksonville', 'pretrial detention facility'],
-    'volusia':    ['volusia', 'daytona'],
-    'brevard':    ['brevard', 'melbourne', 'titusville'],
-    'polk':       ['polk', 'lakeland', 'bartow'],
-    'seminole':   ['seminole', 'sanford'],
-    'lake':       ['lake county', 'tavares'],
-    'osceola':    ['osceola', 'kissimmee'],
-    'pasco':      ['pasco', 'new port richey', 'dade city'],
-    'hernando':   ['hernando', 'brooksville'],
-    'citrus':     ['citrus', 'inverness'],
-    'marion':     ['marion', 'ocala'],
-    'st. johns':  ['st. johns', 'saint johns', 'st johns'],
-    'st. lucie':  ['st. lucie', 'saint lucie', 'port st. lucie'],
+    'alachua': ['alachua', 'gainesville'],
+    'duval': ['duval', 'jacksonville', 'pretrial detention facility'],
+    'volusia': ['volusia', 'daytona'],
+    'brevard': ['brevard', 'melbourne', 'titusville'],
+    'polk': ['polk', 'lakeland', 'bartow'],
+    'seminole': ['seminole', 'sanford'],
+    'lake': ['lake county', 'tavares'],
+    'osceola': ['osceola', 'kissimmee'],
+    'pasco': ['pasco', 'new port richey', 'dade city'],
+    'hernando': ['hernando', 'brooksville'],
+    'citrus': ['citrus', 'inverness'],
+    'marion': ['marion', 'ocala'],
+    'st. johns': ['st. johns', 'saint johns', 'st johns'],
+    'st. lucie': ['st. lucie', 'saint lucie', 'port st. lucie'],
     'indian river': ['indian river', 'vero beach'],
-    'martin':     ['martin county', 'stuart'],
-    'monroe':     ['monroe', 'key west', 'stock island'],
-    'hendry':     ['hendry', 'labelle', 'clewiston'],
-    'glades':     ['glades', 'moore haven'],
-    'desoto':     ['desoto', 'arcadia'],
-    'hardee':     ['hardee', 'wauchula'],
-    'highlands':  ['highlands', 'sebring'],
+    'martin': ['martin county', 'stuart'],
+    'monroe': ['monroe', 'key west', 'stock island'],
+    'hendry': ['hendry', 'labelle', 'clewiston'],
+    'glades': ['glades', 'moore haven'],
+    'desoto': ['desoto', 'arcadia'],
+    'hardee': ['hardee', 'wauchula'],
+    'highlands': ['highlands', 'sebring'],
     'okeechobee': ['okeechobee'],
-    'flagler':    ['flagler', 'bunnell'],
-    'putnam':     ['putnam', 'palatka'],
-    'clay':       ['clay county', 'green cove'],
-    'nassau':     ['nassau', 'fernandina'],
-    'columbia':   ['columbia', 'lake city'],
-    'baker':      ['baker county', 'macclenny'],
-    'union':      ['union county', 'lake butler'],
-    'bradford':   ['bradford', 'starke'],
-    'gilchrist':  ['gilchrist', 'trenton'],
-    'levy':       ['levy', 'bronson'],
-    'dixie':      ['dixie', 'cross city'],
-    'lafayette':  ['lafayette', 'mayo'],
-    'suwannee':   ['suwannee', 'live oak'],
-    'hamilton':   ['hamilton', 'jasper'],
-    'madison':    ['madison county', 'madison fl'],
-    'taylor':     ['taylor', 'perry fl'],
-    'jefferson':  ['jefferson', 'monticello'],
-    'leon':       ['leon', 'tallahassee'],
-    'wakulla':    ['wakulla', 'crawfordville'],
-    'franklin':   ['franklin', 'apalachicola'],
-    'gulf':       ['gulf county', 'port st. joe'],
-    'calhoun':    ['calhoun', 'blountstown'],
-    'jackson':    ['jackson county', 'marianna'],
+    'flagler': ['flagler', 'bunnell'],
+    'putnam': ['putnam', 'palatka'],
+    'clay': ['clay county', 'green cove'],
+    'nassau': ['nassau', 'fernandina'],
+    'columbia': ['columbia', 'lake city'],
+    'baker': ['baker county', 'macclenny'],
+    'union': ['union county', 'lake butler'],
+    'bradford': ['bradford', 'starke'],
+    'gilchrist': ['gilchrist', 'trenton'],
+    'levy': ['levy', 'bronson'],
+    'dixie': ['dixie', 'cross city'],
+    'lafayette': ['lafayette', 'mayo'],
+    'suwannee': ['suwannee', 'live oak'],
+    'hamilton': ['hamilton', 'jasper'],
+    'madison': ['madison county', 'madison fl'],
+    'taylor': ['taylor', 'perry fl'],
+    'jefferson': ['jefferson', 'monticello'],
+    'leon': ['leon', 'tallahassee'],
+    'wakulla': ['wakulla', 'crawfordville'],
+    'franklin': ['franklin', 'apalachicola'],
+    'gulf': ['gulf county', 'port st. joe'],
+    'calhoun': ['calhoun', 'blountstown'],
+    'jackson': ['jackson county', 'marianna'],
     'washington': ['washington county', 'chipley'],
-    'holmes':     ['holmes', 'bonifay'],
-    'walton':     ['walton', 'defuniak'],
-    'okaloosa':   ['okaloosa', 'fort walton', 'crestview'],
+    'holmes': ['holmes', 'bonifay'],
+    'walton': ['walton', 'defuniak'],
+    'okaloosa': ['okaloosa', 'fort walton', 'crestview'],
     'santa rosa': ['santa rosa', 'milton fl'],
-    'escambia':   ['escambia', 'pensacola']
+    'escambia': ['escambia', 'pensacola']
   };
 
   for (const [county, keywords] of Object.entries(countyMap)) {

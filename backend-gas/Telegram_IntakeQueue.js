@@ -77,29 +77,29 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
     const references = [];
     if (intakeData.Ref1Name) {
       references.push({
-        name:     intakeData.Ref1Name     || '',
-        phone:    intakeData.Ref1Phone    || '',
+        name: intakeData.Ref1Name || '',
+        phone: intakeData.Ref1Phone || '',
         relation: intakeData.Ref1Relation || '',
-        address:  intakeData.Ref1Address  || ''
+        address: intakeData.Ref1Address || ''
       });
     }
     if (intakeData.Ref2Name) {
       references.push({
-        name:     intakeData.Ref2Name     || '',
-        phone:    intakeData.Ref2Phone    || '',
+        name: intakeData.Ref2Name || '',
+        phone: intakeData.Ref2Phone || '',
         relation: intakeData.Ref2Relation || '',
-        address:  intakeData.Ref2Address  || ''
+        address: intakeData.Ref2Address || ''
       });
     }
 
     // --- Build EmployerInfo object (matches handleNewIntake schema) ---
     const employerInfo = {
-      employer:       intakeData.IndEmployer    || '',
-      jobTitle:       intakeData.IndJobTitle    || '',
-      income:         intakeData.IndIncome      || '',
-      employerPhone:  intakeData.IndEmpPhone    || '',
+      employer: intakeData.IndEmployer || '',
+      jobTitle: intakeData.IndJobTitle || '',
+      income: intakeData.IndIncome || '',
+      employerPhone: intakeData.IndEmpPhone || '',
       employerAddress: intakeData.IndEmpAddress || '',
-      supervisor:     intakeData.IndSupervisor  || ''
+      supervisor: intakeData.IndSupervisor || ''
     };
 
     // --- Run AI Flight Risk Analysis (same as handleNewIntake) ---
@@ -107,17 +107,17 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
     try {
       if (typeof AI_analyzeFlightRisk === 'function') {
         const aiAnalysis = AI_analyzeFlightRisk({
-          name:       intakeData.DefName     || 'Unknown',
-          charges:    intakeData.DefCharges  || 'Pending',
-          bond:       '',
-          residency:  intakeData.DefState    || 'FL',
+          name: intakeData.DefName || 'Unknown',
+          charges: intakeData.DefCharges || 'Pending',
+          bond: '',
+          residency: intakeData.DefState || 'FL',
           employment: intakeData.IndEmployer ? 'Employed' : 'Unknown',
-          history:    'Unknown',
-          ties:       intakeData.IndRelation || 'Family'
+          history: 'Unknown',
+          ties: intakeData.IndRelation || 'Family'
         });
-        aiRisk      = aiAnalysis.riskLevel  || '';
-        aiRationale = aiAnalysis.rationale  || '';
-        aiScore     = aiAnalysis.score      || '';
+        aiRisk = aiAnalysis.riskLevel || '';
+        aiRationale = aiAnalysis.rationale || '';
+        aiScore = aiAnalysis.score || '';
       }
     } catch (aiErr) {
       console.warn('AI analysis skipped for Telegram intake:', aiErr.message);
@@ -132,11 +132,11 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
       timestamp,
       intakeId,
       'indemnitor',                                          // Role
-      intakeData.IndEmail    || '',                          // Email
-      intakeData.IndPhone    || telegramUserId.toString(),   // Phone
-      intakeData.IndName     || '',                          // FullName (Indemnitor)
-      intakeData.DefName     || '',                          // DefendantName
-      intakeData.DefPhone    || '',                          // DefendantPhone
+      intakeData.IndEmail || '',                          // Email
+      intakeData.IndPhone || telegramUserId.toString(),   // Phone
+      intakeData.IndName || '',                          // FullName (Indemnitor)
+      intakeData.DefName || '',                          // DefendantName
+      intakeData.DefPhone || '',                          // DefendantPhone
       '',                                                    // CaseNumber (assigned by agent)
       'pending',                                             // Status
       JSON.stringify(references),                            // References (JSON)
@@ -162,15 +162,15 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
     // --- Notify Slack (all relevant channels simultaneously) ---
     try {
       NotificationService.sendNewIntakeAlert({
-        intakeId:           intakeId,
-        defendantName:      intakeData.DefName      || 'Unknown',
-        facility:           intakeData.DefFacility  || 'Unknown',
-        county:             intakeData.DefCounty    || '',
-        indemnitorName:     intakeData.IndName      || 'Unknown',
-        indemnitorPhone:    intakeData.IndPhone     || '',
-        indemnitorRelation: intakeData.IndRelation  || '',
-        source:             'telegram',
-        aiRisk:             aiRisk
+        intakeId: intakeId,
+        defendantName: intakeData.DefName || 'Unknown',
+        facility: intakeData.DefFacility || 'Unknown',
+        county: intakeData.DefCounty || '',
+        indemnitorName: intakeData.IndName || 'Unknown',
+        indemnitorPhone: intakeData.IndPhone || '',
+        indemnitorRelation: intakeData.IndRelation || '',
+        source: 'telegram',
+        aiRisk: aiRisk
       });
     } catch (slackErr) {
       console.warn('Slack alert failed (non-critical):', slackErr.message);
@@ -181,16 +181,16 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
 
     // --- Notify the Telegram user that their intake was received ---
     return {
-      success:  true,
+      success: true,
       intakeId: intakeId,
-      row:      lastRow
+      row: lastRow
     };
 
   } catch (e) {
     console.error('saveTelegramIntakeToQueue failed:', e.message);
     return { success: false, error: e.message };
   } finally {
-    try { lock.releaseLock(); } catch (le) {}
+    try { lock.releaseLock(); } catch (le) { }
   }
 }
 
@@ -241,44 +241,44 @@ function _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId) {
       telegramUserId || '',
       'telegram_bot_v2',
       // Defendant
-      intakeData.DefName        || '',
-      intakeData.DefFirstName   || '',
-      intakeData.DefLastName    || '',
-      intakeData.DefDOB         || '',
-      intakeData.DefPhone       || '',
-      intakeData.DefEmail       || '',
-      intakeData.DefAddress     || '',
-      intakeData.DefCity        || '',
-      intakeData.DefState       || 'FL',
-      intakeData.DefZip         || '',
-      intakeData.DefDL          || '',
-      intakeData.DefFacility    || '',
-      intakeData.DefCounty      || '',
-      intakeData.DefPhysical    || '',
+      intakeData.DefName || '',
+      intakeData.DefFirstName || '',
+      intakeData.DefLastName || '',
+      intakeData.DefDOB || '',
+      intakeData.DefPhone || '',
+      intakeData.DefEmail || '',
+      intakeData.DefAddress || '',
+      intakeData.DefCity || '',
+      intakeData.DefState || 'FL',
+      intakeData.DefZip || '',
+      intakeData.DefDL || '',
+      intakeData.DefFacility || '',
+      intakeData.DefCounty || '',
+      intakeData.DefPhysical || '',
       // Indemnitor
-      intakeData.IndName        || '',
-      intakeData.IndFirstName   || '',
-      intakeData.IndLastName    || '',
-      intakeData.IndRelation    || '',
-      intakeData.IndPhone       || telegramUserId.toString(),
-      intakeData.IndEmail       || '',
-      intakeData.IndAddress     || '',
-      intakeData.IndCity        || '',
-      intakeData.IndState       || 'FL',
-      intakeData.IndZip         || '',
-      intakeData.IndDOB         || '',
-      intakeData.IndEmployer    || '',
-      intakeData.IndJobTitle    || '',
-      intakeData.IndIncome      || '',
+      intakeData.IndName || '',
+      intakeData.IndFirstName || '',
+      intakeData.IndLastName || '',
+      intakeData.IndRelation || '',
+      intakeData.IndPhone || telegramUserId.toString(),
+      intakeData.IndEmail || '',
+      intakeData.IndAddress || '',
+      intakeData.IndCity || '',
+      intakeData.IndState || 'FL',
+      intakeData.IndZip || '',
+      intakeData.IndDOB || '',
+      intakeData.IndEmployer || '',
+      intakeData.IndJobTitle || '',
+      intakeData.IndIncome || '',
       // References
-      intakeData.Ref1Name       || '',
-      intakeData.Ref1Phone      || '',
-      intakeData.Ref1Relation   || '',
-      intakeData.Ref1Address    || '',
-      intakeData.Ref2Name       || '',
-      intakeData.Ref2Phone      || '',
-      intakeData.Ref2Relation   || '',
-      intakeData.Ref2Address    || '',
+      intakeData.Ref1Name || '',
+      intakeData.Ref1Phone || '',
+      intakeData.Ref1Relation || '',
+      intakeData.Ref1Address || '',
+      intakeData.Ref2Name || '',
+      intakeData.Ref2Phone || '',
+      intakeData.Ref2Relation || '',
+      intakeData.Ref2Address || '',
       // Raw JSON for full fidelity
       JSON.stringify(intakeData)
     ]);
@@ -312,7 +312,7 @@ function getTelegramIntakeFullData(intakeId) {
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
     const idxIntakeId = headers.indexOf('IntakeID');
-    const idxRawJson  = headers.indexOf('RawJSON');
+    const idxRawJson = headers.indexOf('RawJSON');
 
     if (idxIntakeId === -1) return null;
 
@@ -342,6 +342,50 @@ function getTelegramIntakeFullData(intakeId) {
 }
 
 /**
+ * Marks a Telegram intake as processed in the 'IntakeQueue' sheet.
+ * Called by the Dashboard when an agent processes a Telegram lead.
+ *
+ * @param {string} intakeId - The TG-prefixed intake ID
+ * @returns {boolean} - True if successful, false otherwise
+ */
+function markTelegramIntakeProcessed(intakeId) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('IntakeQueue');
+    if (!sheet) return false;
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const idxIntakeId = headers.indexOf('IntakeID');
+    const idxStatus = headers.indexOf('Status');
+    const idxProcessedAt = headers.indexOf('ProcessedAt');
+
+    if (idxIntakeId === -1 || idxStatus === -1) return false;
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idxIntakeId] === intakeId) {
+        // Found the row. 1-indexed for Apps Script, plus 1 for the loop
+        const rowNum = i + 1;
+        sheet.getRange(rowNum, idxStatus + 1).setValue('processed');
+
+        if (idxProcessedAt !== -1) {
+          sheet.getRange(rowNum, idxProcessedAt + 1).setValue(new Date());
+        }
+
+        console.log(`Telegram intake ${intakeId} marked as processed on row ${rowNum}`);
+        return true;
+      }
+    }
+    console.warn(`Telegram intake ${intakeId} not found to mark processed.`);
+    return false;
+  } catch (e) {
+    console.error(`markTelegramIntakeProcessed failed for ${intakeId}:`, e.message);
+    return false;
+  }
+}
+
+
+/**
  * Maps the canonical field names (DefName, IndName, etc.) to the
  * camelCase format that Dashboard.html's hydration logic expects
  * (defendantName, indemnitorFullName, etc.).
@@ -355,72 +399,72 @@ function getTelegramIntakeFullData(intakeId) {
 function _mapCanonicalToDashboardFormat(data, intakeId) {
   return {
     // System
-    IntakeID:             intakeId,
-    source:               'telegram',
-    Status:               'pending',
-    Role:                 'indemnitor',
+    IntakeID: intakeId,
+    source: 'telegram',
+    Status: 'pending',
+    Role: 'indemnitor',
 
     // Defendant (camelCase for Dashboard hydration)
-    DefendantName:        data.DefName       || '',
-    defendantName:        data.DefName       || '',
-    defendantFirstName:   data.DefFirstName  || '',
-    defendantLastName:    data.DefLastName   || '',
-    defendantDOB:         data.DefDOB        || '',
-    defendantPhone:       data.DefPhone      || '',
-    defendantEmail:       data.DefEmail      || '',
-    defendantAddress:     data.DefAddress    || '',
-    defendantCity:        data.DefCity       || '',
-    defendantState:       data.DefState      || 'FL',
-    defendantZip:         data.DefZip        || '',
-    defendantDL:          data.DefDL         || '',
-    defendantFacility:    data.DefFacility   || '',
-    defendantCounty:      data.DefCounty     || '',
-    defendantPhysical:    data.DefPhysical   || '',
-    County:               data.DefCounty     || '',
+    DefendantName: data.DefName || '',
+    defendantName: data.DefName || '',
+    defendantFirstName: data.DefFirstName || '',
+    defendantLastName: data.DefLastName || '',
+    defendantDOB: data.DefDOB || '',
+    defendantPhone: data.DefPhone || '',
+    defendantEmail: data.DefEmail || '',
+    defendantAddress: data.DefAddress || '',
+    defendantCity: data.DefCity || '',
+    defendantState: data.DefState || 'FL',
+    defendantZip: data.DefZip || '',
+    defendantDL: data.DefDL || '',
+    defendantFacility: data.DefFacility || '',
+    defendantCounty: data.DefCounty || '',
+    defendantPhysical: data.DefPhysical || '',
+    County: data.DefCounty || '',
 
     // Indemnitor (camelCase for Dashboard hydration)
-    indemnitorFullName:   data.IndName       || '',
-    indemnitorFirstName:  data.IndFirstName  || '',
-    indemnitorLastName:   data.IndLastName   || '',
-    indemnitorRelation:   data.IndRelation   || '',
-    indemnitorPhone:      data.IndPhone      || '',
-    indemnitorEmail:      data.IndEmail      || '',
-    email:                data.IndEmail      || '',
-    phone:                data.IndPhone      || '',
-    indemnitorAddress:    data.IndAddress    || '',
-    indemnitorCity:       data.IndCity       || '',
-    indemnitorState:      data.IndState      || 'FL',
-    indemnitorZip:        data.IndZip        || '',
-    indemnitorDOB:        data.IndDOB        || '',
+    indemnitorFullName: data.IndName || '',
+    indemnitorFirstName: data.IndFirstName || '',
+    indemnitorLastName: data.IndLastName || '',
+    indemnitorRelation: data.IndRelation || '',
+    indemnitorPhone: data.IndPhone || '',
+    indemnitorEmail: data.IndEmail || '',
+    email: data.IndEmail || '',
+    phone: data.IndPhone || '',
+    indemnitorAddress: data.IndAddress || '',
+    indemnitorCity: data.IndCity || '',
+    indemnitorState: data.IndState || 'FL',
+    indemnitorZip: data.IndZip || '',
+    indemnitorDOB: data.IndDOB || '',
     indemnitorEmployerName: data.IndEmployer || '',
-    indemnitorJobTitle:   data.IndJobTitle   || '',
-    indemnitorIncome:     data.IndIncome     || '',
+    indemnitorJobTitle: data.IndJobTitle || '',
+    indemnitorIncome: data.IndIncome || '',
 
     // References (array format for Dashboard)
     references: [
       {
-        name:     data.Ref1Name     || '',
-        phone:    data.Ref1Phone    || '',
+        name: data.Ref1Name || '',
+        phone: data.Ref1Phone || '',
         relation: data.Ref1Relation || '',
-        address:  data.Ref1Address  || ''
+        address: data.Ref1Address || ''
       },
       {
-        name:     data.Ref2Name     || '',
-        phone:    data.Ref2Phone    || '',
+        name: data.Ref2Name || '',
+        phone: data.Ref2Phone || '',
         relation: data.Ref2Relation || '',
-        address:  data.Ref2Address  || ''
+        address: data.Ref2Address || ''
       }
     ].filter(r => r.name), // Remove empty references
 
     // Flat reference fields (for backward compatibility)
-    reference1Name:     data.Ref1Name     || '',
-    reference1Phone:    data.Ref1Phone    || '',
+    reference1Name: data.Ref1Name || '',
+    reference1Phone: data.Ref1Phone || '',
     reference1Relation: data.Ref1Relation || '',
-    reference1Address:  data.Ref1Address  || '',
-    reference2Name:     data.Ref2Name     || '',
-    reference2Phone:    data.Ref2Phone    || '',
+    reference1Address: data.Ref1Address || '',
+    reference2Name: data.Ref2Name || '',
+    reference2Phone: data.Ref2Phone || '',
     reference2Relation: data.Ref2Relation || '',
-    reference2Address:  data.Ref2Address  || ''
+    reference2Address: data.Ref2Address || ''
   };
 }
 
@@ -440,11 +484,11 @@ function _mapCanonicalToDashboardFormat(data, intakeId) {
 function _sendAdminEmailAlert(intakeData, intakeId, aiRisk) {
   try {
     const ADMIN_EMAIL = 'admin@shamrockbailbonds.biz';
-    const riskLabel   = aiRisk || 'Pending';
-    const timestamp   = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+    const riskLabel = aiRisk || 'Pending';
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
 
     const subject = '📱 New Telegram Intake: ' + (intakeData.DefName || 'Unknown Defendant') +
-                    ' — ' + (intakeData.DefFacility || 'Unknown Facility');
+      ' — ' + (intakeData.DefFacility || 'Unknown Facility');
 
     const plainBody = [
       'A new bail bond intake was submitted via the Telegram bot.',
@@ -454,21 +498,21 @@ function _sendAdminEmailAlert(intakeData, intakeId, aiRisk) {
       'AI RISK:   ' + riskLabel,
       '',
       '--- DEFENDANT ---',
-      'Name:     ' + (intakeData.DefName     || '—'),
-      'DOB:      ' + (intakeData.DefDOB      || '—'),
+      'Name:     ' + (intakeData.DefName || '—'),
+      'DOB:      ' + (intakeData.DefDOB || '—'),
       'Facility: ' + (intakeData.DefFacility || '—'),
-      'County:   ' + (intakeData.DefCounty   || '—'),
-      'Phone:    ' + (intakeData.DefPhone    || '—'),
-      'Email:    ' + (intakeData.DefEmail    || '—'),
+      'County:   ' + (intakeData.DefCounty || '—'),
+      'Phone:    ' + (intakeData.DefPhone || '—'),
+      'Email:    ' + (intakeData.DefEmail || '—'),
       '',
       '--- CO-SIGNER (INDEMNITOR) ---',
-      'Name:         ' + (intakeData.IndName      || '—'),
-      'DOB:          ' + (intakeData.IndDOB       || '—'),
-      'Relationship: ' + (intakeData.IndRelation  || '—'),
-      'Phone:        ' + (intakeData.IndPhone     || '—'),
-      'Email:        ' + (intakeData.IndEmail     || '—'),
-      'Address:      ' + (intakeData.IndAddress   || '—'),
-      'Employer:     ' + (intakeData.IndEmployer  || '—'),
+      'Name:         ' + (intakeData.IndName || '—'),
+      'DOB:          ' + (intakeData.IndDOB || '—'),
+      'Relationship: ' + (intakeData.IndRelation || '—'),
+      'Phone:        ' + (intakeData.IndPhone || '—'),
+      'Email:        ' + (intakeData.IndEmail || '—'),
+      'Address:      ' + (intakeData.IndAddress || '—'),
+      'Employer:     ' + (intakeData.IndEmployer || '—'),
       '',
       '--- REFERENCES ---',
       'Ref 1: ' + (intakeData.Ref1Name || '—') + ' | ' + (intakeData.Ref1Phone || '—') + ' | ' + (intakeData.Ref1Relation || '—'),
@@ -521,9 +565,9 @@ function _sendAdminEmailAlert(intakeData, intakeId, aiRisk) {
       </div>`;
 
     MailApp.sendEmail({
-      to:       ADMIN_EMAIL,
-      subject:  subject,
-      body:     plainBody,
+      to: ADMIN_EMAIL,
+      subject: subject,
+      body: plainBody,
       htmlBody: htmlBody
     });
     console.log('✉️ Admin email alert sent for intake: ' + intakeId);
