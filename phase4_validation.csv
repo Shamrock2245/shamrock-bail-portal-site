@@ -1,0 +1,30 @@
+name,original_url,final_url,final_status,hops,result
+Home,https://www.shamrockbailbonds.biz/,https://www.shamrockbailbonds.biz/,200,0,PASS - Clean 200
+How Bail Works,https://www.shamrockbailbonds.biz/how-bail-works,https://www.shamrockbailbonds.biz/how-bail-works,200,0,PASS - Clean 200
+How to Become a Bondsman,https://www.shamrockbailbonds.biz/how-to-become-a-bondsman,https://www.shamrockbailbonds.biz/how-to-become-a-bondsman,200,0,PASS - Clean 200
+Contact,https://www.shamrockbailbonds.biz/contact,https://www.shamrockbailbonds.biz/contact,200,0,PASS - Clean 200
+About,https://www.shamrockbailbonds.biz/about,https://www.shamrockbailbonds.biz/about,200,0,PASS - Clean 200
+Blog,https://www.shamrockbailbonds.biz/blog,https://www.shamrockbailbonds.biz/blog,200,0,PASS - Clean 200
+Terms of Service,https://www.shamrockbailbonds.biz/terms-of-service,https://www.shamrockbailbonds.biz/terms-of-service,200,0,PASS - Clean 200
+Testimonials,https://www.shamrockbailbonds.biz/testimonials,https://www.shamrockbailbonds.biz/testimonials,200,0,PASS - Clean 200
+Portal Landing,https://www.shamrockbailbonds.biz/portal-landing,https://www.shamrockbailbonds.biz/portal-landing,200,0,PASS - Clean 200
+Portal Indemnitor,https://www.shamrockbailbonds.biz/portal-indemnitor,https://www.shamrockbailbonds.biz/portal-indemnitor,200,0,PASS - Clean 200
+Portal Defendant,https://www.shamrockbailbonds.biz/portal-defendant,https://www.shamrockbailbonds.biz/portal-defendant,200,0,PASS - Clean 200
+Lee County,https://www.shamrockbailbonds.biz/florida-bail-bonds/lee,https://www.shamrockbailbonds.biz/florida-bail-bonds/lee,200,0,PASS - Clean 200
+Collier County,https://www.shamrockbailbonds.biz/florida-bail-bonds/collier,https://www.shamrockbailbonds.biz/florida-bail-bonds/collier,200,0,PASS - Clean 200
+Charlotte County,https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte,https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte,200,0,PASS - Clean 200
+Sarasota County,https://www.shamrockbailbonds.biz/florida-bail-bonds/sarasota,https://www.shamrockbailbonds.biz/florida-bail-bonds/sarasota,200,0,PASS - Clean 200
+Manatee County,https://www.shamrockbailbonds.biz/florida-bail-bonds/manatee,https://www.shamrockbailbonds.biz/florida-bail-bonds/manatee,200,0,PASS - Clean 200
+Hillsborough County,https://www.shamrockbailbonds.biz/florida-bail-bonds/hillsborough,https://www.shamrockbailbonds.biz/florida-bail-bonds/hillsborough,200,0,PASS - Clean 200
+Miami-Dade County,https://www.shamrockbailbonds.biz/florida-bail-bonds/miami-dade,https://www.shamrockbailbonds.biz/florida-bail-bonds/miami-dade,200,0,PASS - Clean 200
+Broward County,https://www.shamrockbailbonds.biz/florida-bail-bonds/broward,https://www.shamrockbailbonds.biz/florida-bail-bonds/broward,200,0,PASS - Clean 200
+Palm Beach County,https://www.shamrockbailbonds.biz/florida-bail-bonds/palmbeach,https://www.shamrockbailbonds.biz/florida-bail-bonds/palmbeach,200,0,PASS - Clean 200
+Orange County,https://www.shamrockbailbonds.biz/florida-bail-bonds/orange,https://www.shamrockbailbonds.biz/florida-bail-bonds/orange,200,0,PASS - Clean 200
+Duval County,https://www.shamrockbailbonds.biz/florida-bail-bonds/duval,https://www.shamrockbailbonds.biz/florida-bail-bonds/duval,200,0,PASS - Clean 200
+OLD: /bail-bonds/hendry,https://www.shamrockbailbonds.biz/bail-bonds/hendry,https://www.shamrockbailbonds.biz/,200,1,PASS - Correctly redirects (1 hop)
+OLD: /bail-bonds/pinellas,https://www.shamrockbailbonds.biz/bail-bonds/pinellas,https://www.shamrockbailbonds.biz/,200,1,PASS - Correctly redirects (1 hop)
+OLD: /bail-bonds/stlucie,https://www.shamrockbailbonds.biz/bail-bonds/stlucie,https://www.shamrockbailbonds.biz/,200,1,PASS - Correctly redirects (1 hop)
+OLD: /bail-online,https://www.shamrockbailbonds.biz/bail-online,https://www.shamrockbailbonds.biz/,200,1,PASS - Correctly redirects (1 hop)
+OLD: /blank-3,https://www.shamrockbailbonds.biz/blank-3,https://www.shamrockbailbonds.biz/how-bail-works,200,1,PASS - Correctly redirects (1 hop)
+OLD: /blank,https://www.shamrockbailbonds.biz/blank,https://www.shamrockbailbonds.biz/how-to-become-a-bondsman,200,1,PASS - Correctly redirects (1 hop)
+OLD: /home-1,https://www.shamrockbailbonds.biz/home-1,https://www.shamrockbailbonds.biz/how-to-become-a-bondsman,200,1,PASS - Correctly redirects (1 hop)
