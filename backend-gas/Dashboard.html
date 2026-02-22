@@ -1586,6 +1586,10 @@
             <button class="tab" onclick="switchTab(this, 'blog-audio')">
                 <span class="tab-icon">🎙️</span> Blog Audio
             </button>
+            <button class="tab" onclick="switchTab(this, 'social')">
+                <span class="tab-icon">&#128227;</span> Social
+                <span class="tab-badge" id="social-badge" style="display:none;">!</span>
+            </button>
 
         </nav>
 
@@ -6631,7 +6635,276 @@
          * 2. Clients can view and sign from their Wix member portal
          * 3. Automatic status updates when documents are signed
          * 
-         * Add this script block before the closing </body> tag in Dashboard.html
+         * Add this script block before the closing 
+    <!-- ============================================================
+     SOCIAL TAB: Client-Side JavaScript Module
+     ============================================================ -->
+    <script>
+    var SocialTab = (function () {
+
+        var PLATFORMS = ['twitter', 'linkedin', 'gbp', 'tiktok', 'youtube'];
+        var LIMITS = { twitter: 280, linkedin: 3000, gbp: 1500, tiktok: 2200, youtube: 5000 };
+        var LABELS = { twitter: 'X (Twitter)', linkedin: 'LinkedIn', gbp: 'Google Business Profile', tiktok: 'TikTok', youtube: 'YouTube' };
+
+        // ── Helpers ──────────────────────────────────────────────────────────
+
+        function setStatus(msg, type) {
+            var el = document.getElementById('social-draft-status');
+            if (!el) return;
+            el.style.display = msg ? 'block' : 'none';
+            el.style.color = type === 'error' ? 'var(--error)' : type === 'success' ? 'var(--success)' : 'var(--muted)';
+            el.textContent = msg;
+        }
+
+        function setResultBadge(platform, success, message) {
+            var el = document.getElementById('social-result-' + platform);
+            if (!el) return;
+            el.style.display = 'block';
+            el.style.color = success ? 'var(--success)' : 'var(--error)';
+            el.textContent = success ? '&#10003; ' + message : '&#10007; ' + message;
+            el.innerHTML = (success ? '&#10003; ' : '&#10007; ') + message;
+        }
+
+        function setPublishBtnState(platform, loading) {
+            var btn = document.getElementById('social-publish-' + platform);
+            if (!btn) return;
+            btn.disabled = loading;
+            btn.textContent = loading ? 'Posting...' : '&#128640; Post to ' + LABELS[platform];
+            btn.innerHTML = loading ? '&#9203; Posting...' : '&#128640; Post to ' + LABELS[platform];
+        }
+
+        function timeAgo(date) {
+            if (!date) return '&#8212;';
+            var d = new Date(date);
+            var diff = Math.floor((Date.now() - d.getTime()) / 1000);
+            if (diff < 60) return 'Just now';
+            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+            return Math.floor(diff / 86400) + 'd ago';
+        }
+
+        // ── Public Methods ───────────────────────────────────────────────────
+
+        return {
+
+            // Called when Social tab is first opened — load credential status + last post times
+            init: function () {
+                google.script.run
+                    .withSuccessHandler(function (status) {
+                        PLATFORMS.forEach(function (p) {
+                            var badge = document.getElementById('social-cred-' + p);
+                            var detailContainer = document.getElementById('social-cred-status-detail');
+                            var connected = status[p];
+                            if (badge) {
+                                badge.style.background = connected ? 'var(--success-bg)' : 'var(--error-bg)';
+                                badge.style.color = connected ? 'var(--success)' : 'var(--error)';
+                                badge.style.border = '1px solid ' + (connected ? 'var(--success)' : 'var(--error)');
+                            }
+                            if (detailContainer) {
+                                var label = LABELS[p] || p;
+                                var div = document.createElement('div');
+                                div.style.cssText = 'padding:8px 12px; border-radius:8px; font-size:12px; display:flex; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--border);';
+                                div.innerHTML = (connected
+                                    ? '<span style="color:var(--success);">&#10003;</span>'
+                                    : '<span style="color:var(--error);">&#10007;</span>')
+                                    + ' <strong>' + label + '</strong>'
+                                    + (connected ? ' <span style="color:var(--muted);">Connected</span>' : ' <span style="color:var(--error);">No credentials</span>');
+                                detailContainer.appendChild(div);
+                            }
+                        });
+                    })
+                    .withFailureHandler(function (err) {
+                        console.warn('SocialTab: Could not load credential status:', err);
+                    })
+                    .getSocialCredentialStatus();
+
+                google.script.run
+                    .withSuccessHandler(function (times) {
+                        PLATFORMS.forEach(function (p) {
+                            var el = document.getElementById('social-last-' + p);
+                            if (el && times[p]) {
+                                el.textContent = 'Last: ' + timeAgo(times[p]);
+                            }
+                        });
+                    })
+                    .withFailureHandler(function () {})
+                    .getSocialLastPostTimes();
+            },
+
+            // Update character counter for a platform textarea
+            updateCounter: function (platform, limit) {
+                var textarea = document.getElementById('social-content-' + platform);
+                var counter  = document.getElementById('social-counter-' + platform);
+                if (!textarea || !counter) return;
+                var len = textarea.value.length;
+                counter.textContent = len + ' / ' + limit;
+                counter.style.color = len > limit * 0.9 ? (len >= limit ? 'var(--error)' : 'var(--warning)') : 'var(--muted)';
+            },
+
+            // Clear a single platform draft
+            clearDraft: function (platform) {
+                var el = document.getElementById('social-content-' + platform);
+                if (el) { el.value = ''; SocialTab.updateCounter(platform, LIMITS[platform]); }
+                var res = document.getElementById('social-result-' + platform);
+                if (res) res.style.display = 'none';
+            },
+
+            // Generate AI drafts for all platforms
+            generateDrafts: function () {
+                var topic = document.getElementById('social-topic');
+                var context = document.getElementById('social-context');
+                if (!topic || !topic.value.trim()) {
+                    setStatus('Please enter a topic or prompt first.', 'error');
+                    topic && topic.focus();
+                    return;
+                }
+
+                var btn = document.getElementById('social-draft-btn');
+                if (btn) { btn.disabled = true; btn.innerHTML = '&#9203; Generating...'; }
+                setStatus('Asking AI to draft posts for all 5 platforms...', 'info');
+
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        if (btn) { btn.disabled = false; btn.innerHTML = '&#129302; Generate AI Drafts'; }
+                        if (!res.success) {
+                            setStatus('Error: ' + res.error, 'error');
+                            return;
+                        }
+                        var drafts = res.drafts;
+                        PLATFORMS.forEach(function (p) {
+                            var el = document.getElementById('social-content-' + p);
+                            if (el && drafts[p]) {
+                                el.value = drafts[p];
+                                SocialTab.updateCounter(p, LIMITS[p]);
+                            }
+                            var res2 = document.getElementById('social-result-' + p);
+                            if (res2) res2.style.display = 'none';
+                        });
+                        setStatus('&#10003; Drafts generated! Review and edit each platform below, then publish.', 'success');
+                    })
+                    .withFailureHandler(function (err) {
+                        if (btn) { btn.disabled = false; btn.innerHTML = '&#129302; Generate AI Drafts'; }
+                        setStatus('Failed to generate drafts: ' + err.message, 'error');
+                    })
+                    .draftPosts(topic.value.trim(), context ? context.value.trim() : '');
+            },
+
+            // Publish to a single platform
+            publishOne: function (platform) {
+                var contentEl = document.getElementById('social-content-' + platform);
+                if (!contentEl || !contentEl.value.trim()) {
+                    setResultBadge(platform, false, 'No content to post.');
+                    return;
+                }
+                var content = contentEl.value.trim();
+                if (content.length > LIMITS[platform]) {
+                    setResultBadge(platform, false, 'Exceeds ' + LIMITS[platform] + ' character limit (' + content.length + ' chars).');
+                    return;
+                }
+
+                setPublishBtnState(platform, true);
+                setResultBadge(platform, true, 'Posting...');
+
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        setPublishBtnState(platform, false);
+                        if (res.success) {
+                            setResultBadge(platform, true, 'Posted successfully!' + (res.id ? ' ID: ' + res.id : ''));
+                            var lastEl = document.getElementById('social-last-' + platform);
+                            if (lastEl) lastEl.textContent = 'Last: Just now';
+                        } else if (res.note) {
+                            setResultBadge(platform, false, res.note);
+                        } else {
+                            setResultBadge(platform, false, res.error || 'Unknown error.');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        setPublishBtnState(platform, false);
+                        setResultBadge(platform, false, 'Error: ' + err.message);
+                    })
+                    .publishPost(platform, content);
+            },
+
+            // Publish all platforms at once
+            publishAll: function () {
+                var confirmed = document.getElementById('social-confirm-publish');
+                if (!confirmed || !confirmed.checked) {
+                    alert('Please check the confirmation box to confirm you have reviewed all drafts before publishing.');
+                    return;
+                }
+
+                var posts = {};
+                var hasContent = false;
+                PLATFORMS.forEach(function (p) {
+                    var el = document.getElementById('social-content-' + p);
+                    if (el && el.value.trim()) {
+                        posts[p] = el.value.trim();
+                        hasContent = true;
+                    }
+                });
+
+                if (!hasContent) {
+                    alert('No content to publish. Generate drafts first.');
+                    return;
+                }
+
+                var btn = document.getElementById('social-publish-all-btn');
+                if (btn) { btn.disabled = true; btn.innerHTML = '&#9203; Publishing...'; }
+
+                // Set all filled platforms to loading state
+                Object.keys(posts).forEach(function (p) { setPublishBtnState(p, true); });
+
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        if (btn) { btn.disabled = false; btn.innerHTML = '&#128640; Publish All Now'; }
+                        if (confirmed) confirmed.checked = false;
+
+                        var resultsEl = document.getElementById('social-publish-all-results');
+                        if (resultsEl) {
+                            resultsEl.style.display = 'block';
+                            var html = '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:8px;">';
+                            Object.keys(res.results).forEach(function (p) {
+                                var r = res.results[p];
+                                var ok = r.success;
+                                html += '<div style="padding:8px 12px; border-radius:8px; font-size:12px; background:' +
+                                    (ok ? 'var(--success-bg)' : 'var(--error-bg)') + '; color:' +
+                                    (ok ? 'var(--success)' : 'var(--error)') + '; border:1px solid ' +
+                                    (ok ? 'var(--success)' : 'var(--error)') + ';">' +
+                                    (ok ? '&#10003; ' : '&#10007; ') + (LABELS[p] || p) + ': ' +
+                                    (ok ? 'Posted!' : (r.note || r.error || 'Failed')) + '</div>';
+                                setPublishBtnState(p, false);
+                                if (ok) {
+                                    var lastEl = document.getElementById('social-last-' + p);
+                                    if (lastEl) lastEl.textContent = 'Last: Just now';
+                                }
+                            });
+                            html += '</div>';
+                            resultsEl.innerHTML = html;
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        if (btn) { btn.disabled = false; btn.innerHTML = '&#128640; Publish All Now'; }
+                        PLATFORMS.forEach(function (p) { setPublishBtnState(p, false); });
+                        alert('Publish All failed: ' + err.message);
+                    })
+                    .publishAll(posts);
+            }
+
+        };
+    })();
+
+    // Auto-init when Social tab is clicked
+    document.addEventListener('DOMContentLoaded', function () {
+        var socialTabBtn = document.querySelector('[onclick*="social"]');
+        if (socialTabBtn) {
+            socialTabBtn.addEventListener('click', function () {
+                setTimeout(function () { SocialTab.init(); }, 100);
+            });
+        }
+    });
+    </script>
+
+</body> tag in Dashboard.html
          */
 
         // =========================================================
@@ -6892,7 +7165,221 @@
     <!-- ============================================================
      TAB: BLOG AUDIO (ELEVENLABS)
      ============================================================ -->
-    <div id="blog-audio-tab" class="tab-content" style="display:none;">
+    <!-- ============================================================
+     TAB: SOCIAL MEDIA PUBLISHER
+     ============================================================ -->
+    <div id="social-tab" class="tab-content" style="display:none;">
+
+        <!-- TOP BAR: Topic Input + AI Draft Button -->
+        <div class="card" style="border-top: 4px solid var(--accent); margin-bottom: 16px;">
+            <div class="card-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:22px;">&#128227;</span>
+                    <div>
+                        <h3 style="margin:0; font-size:18px;">Social Media Publisher</h3>
+                        <p style="margin:0; font-size:12px; color:var(--muted);">AI drafts &#8594; Human review &#8594; One-click publish</p>
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;" id="social-cred-badges">
+                    <span id="social-cred-twitter"  class="badge" style="font-size:11px;">X &#8212;</span>
+                    <span id="social-cred-linkedin" class="badge" style="font-size:11px;">in &#8212;</span>
+                    <span id="social-cred-gbp"      class="badge" style="font-size:11px;">G &#8212;</span>
+                    <span id="social-cred-tiktok"   class="badge" style="font-size:11px;">TT &#8212;</span>
+                    <span id="social-cred-youtube"  class="badge" style="font-size:11px;">YT &#8212;</span>
+                </div>
+            </div>
+            <div style="padding:16px 28px;">
+                <div style="display:grid; grid-template-columns:1fr 280px auto; gap:12px; align-items:end;">
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">Post Topic / Prompt</label>
+                        <input type="text" id="social-topic" class="input"
+                            placeholder="e.g. What to do when a family member is arrested"
+                            style="width:100%;" />
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">Context (optional)</label>
+                        <input type="text" id="social-context" class="input"
+                            placeholder="Link, event details..."
+                            style="width:100%;" />
+                    </div>
+                    <button class="btn btn-primary" onclick="SocialTab.generateDrafts()" id="social-draft-btn"
+                        style="white-space:nowrap; height:42px; align-self:end;">
+                        &#129302; Generate AI Drafts
+                    </button>
+                </div>
+                <div id="social-draft-status" style="margin-top:10px; font-size:13px; display:none;"></div>
+            </div>
+        </div>
+
+        <!-- PLATFORM CARDS GRID -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(420px, 1fr)); gap:16px; margin-bottom:16px;">
+
+            <!-- X / Twitter -->
+            <div class="card" style="border-left:4px solid #000000; padding:0; overflow:hidden;">
+                <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px; font-weight:800;">X</span>
+                    <span style="font-weight:700;">X (Twitter)</span>
+                    <span class="badge" id="social-last-twitter" style="font-size:10px; margin-left:auto;">&#8212;</span>
+                </div>
+                <div style="padding:12px 16px;">
+                    <textarea id="social-content-twitter" class="input" rows="5"
+                        maxlength="280"
+                        placeholder="AI draft will appear here. Edit before publishing..."
+                        oninput="SocialTab.updateCounter('twitter', 280)"
+                        style="width:100%; resize:vertical; font-size:13px;"></textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                        <span id="social-counter-twitter" style="font-size:11px; color:var(--muted);">0 / 280</span>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-secondary btn-sm" onclick="SocialTab.clearDraft('twitter')">&#10005; Clear</button>
+                            <button class="btn btn-primary btn-sm" onclick="SocialTab.publishOne('twitter')" id="social-publish-twitter">
+                                &#128640; Post to X
+                            </button>
+                        </div>
+                    </div>
+                    <div id="social-result-twitter" style="display:none; margin-top:8px; font-size:12px;"></div>
+                </div>
+            </div>
+
+            <!-- LinkedIn -->
+            <div class="card" style="border-left:4px solid #0077B5; padding:0; overflow:hidden;">
+                <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">&#128188;</span>
+                    <span style="font-weight:700;">LinkedIn</span>
+                    <span class="badge" id="social-last-linkedin" style="font-size:10px; margin-left:auto;">&#8212;</span>
+                </div>
+                <div style="padding:12px 16px;">
+                    <textarea id="social-content-linkedin" class="input" rows="5"
+                        maxlength="3000"
+                        placeholder="AI draft will appear here. Edit before publishing..."
+                        oninput="SocialTab.updateCounter('linkedin', 3000)"
+                        style="width:100%; resize:vertical; font-size:13px;"></textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                        <span id="social-counter-linkedin" style="font-size:11px; color:var(--muted);">0 / 3000</span>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-secondary btn-sm" onclick="SocialTab.clearDraft('linkedin')">&#10005; Clear</button>
+                            <button class="btn btn-primary btn-sm" onclick="SocialTab.publishOne('linkedin')" id="social-publish-linkedin">
+                                &#128640; Post to LinkedIn
+                            </button>
+                        </div>
+                    </div>
+                    <div id="social-result-linkedin" style="display:none; margin-top:8px; font-size:12px;"></div>
+                </div>
+            </div>
+
+            <!-- Google Business Profile -->
+            <div class="card" style="border-left:4px solid #4285F4; padding:0; overflow:hidden;">
+                <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">&#128205;</span>
+                    <span style="font-weight:700;">Google Business Profile</span>
+                    <span class="badge" id="social-last-gbp" style="font-size:10px; margin-left:auto;">&#8212;</span>
+                </div>
+                <div style="padding:12px 16px;">
+                    <textarea id="social-content-gbp" class="input" rows="5"
+                        maxlength="1500"
+                        placeholder="AI draft will appear here. Edit before publishing..."
+                        oninput="SocialTab.updateCounter('gbp', 1500)"
+                        style="width:100%; resize:vertical; font-size:13px;"></textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                        <span id="social-counter-gbp" style="font-size:11px; color:var(--muted);">0 / 1500</span>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-secondary btn-sm" onclick="SocialTab.clearDraft('gbp')">&#10005; Clear</button>
+                            <button class="btn btn-primary btn-sm" onclick="SocialTab.publishOne('gbp')" id="social-publish-gbp">
+                                &#128640; Post to Google
+                            </button>
+                        </div>
+                    </div>
+                    <div id="social-result-gbp" style="display:none; margin-top:8px; font-size:12px;"></div>
+                </div>
+            </div>
+
+            <!-- TikTok -->
+            <div class="card" style="border-left:4px solid #010101; padding:0; overflow:hidden;">
+                <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">&#127925;</span>
+                    <span style="font-weight:700;">TikTok</span>
+                    <span class="badge" id="social-last-tiktok" style="font-size:10px; margin-left:auto;">&#8212;</span>
+                </div>
+                <div style="padding:12px 16px;">
+                    <textarea id="social-content-tiktok" class="input" rows="5"
+                        maxlength="2200"
+                        placeholder="AI draft will appear here. Edit before publishing..."
+                        oninput="SocialTab.updateCounter('tiktok', 2200)"
+                        style="width:100%; resize:vertical; font-size:13px;"></textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                        <span id="social-counter-tiktok" style="font-size:11px; color:var(--muted);">0 / 2200</span>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-secondary btn-sm" onclick="SocialTab.clearDraft('tiktok')">&#10005; Clear</button>
+                            <button class="btn btn-primary btn-sm" onclick="SocialTab.publishOne('tiktok')" id="social-publish-tiktok">
+                                &#128640; Post to TikTok
+                            </button>
+                        </div>
+                    </div>
+                    <div id="social-result-tiktok" style="display:none; margin-top:8px; font-size:12px;"></div>
+                </div>
+            </div>
+
+            <!-- YouTube Community -->
+            <div class="card" style="border-left:4px solid #FF0000; padding:0; overflow:hidden;">
+                <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">&#9654;&#65039;</span>
+                    <span style="font-weight:700;">YouTube Community</span>
+                    <span class="badge" id="social-last-youtube" style="font-size:10px; margin-left:auto;">&#8212;</span>
+                </div>
+                <div style="padding:12px 16px;">
+                    <textarea id="social-content-youtube" class="input" rows="5"
+                        maxlength="5000"
+                        placeholder="AI draft will appear here. Edit before publishing..."
+                        oninput="SocialTab.updateCounter('youtube', 5000)"
+                        style="width:100%; resize:vertical; font-size:13px;"></textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                        <span id="social-counter-youtube" style="font-size:11px; color:var(--muted);">0 / 5000</span>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-secondary btn-sm" onclick="SocialTab.clearDraft('youtube')">&#10005; Clear</button>
+                            <button class="btn btn-primary btn-sm" onclick="SocialTab.publishOne('youtube')" id="social-publish-youtube">
+                                &#128640; Post to YouTube
+                            </button>
+                        </div>
+                    </div>
+                    <div id="social-result-youtube" style="display:none; margin-top:8px; font-size:12px;"></div>
+                </div>
+            </div>
+
+        </div><!-- end platform grid -->
+
+        <!-- PUBLISH ALL BUTTON -->
+        <div class="card" style="border-top: 4px solid var(--success);">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:16px 28px;">
+                <div>
+                    <p style="margin:0; font-weight:700; font-size:15px;">&#128640; Publish All Platforms</p>
+                    <p style="margin:0; font-size:12px; color:var(--muted);">Posts to every platform with content in the editor above. Empty platforms are skipped automatically.</p>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+                        <input type="checkbox" id="social-confirm-publish" style="width:16px; height:16px;"> I&#39;ve reviewed all drafts
+                    </label>
+                    <button class="btn btn-primary" onclick="SocialTab.publishAll()" id="social-publish-all-btn"
+                        style="background:var(--success); border-color:var(--success); font-size:15px; padding:10px 24px;">
+                        &#128640; Publish All Now
+                    </button>
+                </div>
+            </div>
+            <div id="social-publish-all-results" style="display:none; padding:0 28px 16px;"></div>
+        </div>
+
+        <!-- CREDENTIAL STATUS PANEL -->
+        <div class="card" style="margin-top:16px; border-top:2px solid var(--border);">
+            <div style="padding:12px 28px; border-bottom:1px solid var(--border);">
+                <h4 style="margin:0; font-size:14px;">&#9881;&#65039; Platform Credentials Status</h4>
+            </div>
+            <div style="padding:16px 28px;">
+                <p style="font-size:12px; color:var(--muted); margin:0 0 10px;">Missing credentials? See <strong>SOCIAL_MEDIA_SETUP_GUIDE.md</strong> in the backend-gas folder, then add keys to GAS Script Properties.</p>
+                <div id="social-cred-status-detail" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:8px;"></div>
+            </div>
+        </div>
+
+    </div><!-- end #social-tab -->
+
+        <div id="blog-audio-tab" class="tab-content" style="display:none;">
         <div class="card">
             <div class="card-header">
                 <h2>🎙️ Blog-to-Video Audio Generator</h2>
