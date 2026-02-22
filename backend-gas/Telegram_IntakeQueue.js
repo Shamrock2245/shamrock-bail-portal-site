@@ -165,16 +165,41 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
 
         // Map Telegram fields (e.g., IndName) to Wix CMS fields (e.g., indemnitorName)
         const wixMappedData = {
+          // System & Consent
+          source: 'telegram',
+          consentGiven: intakeData.consentGiven || false,
+          consentTimestamp: intakeData.consentTimestamp ? new Date(intakeData.consentTimestamp) : null,
+          notes: 'Submitted via Telegram Bot.',
+
+          // Case & Defendant
+          caseId: intakeId, // Use the generated intake ID
           defendantName: intakeData.DefName || '',
-          defendantBookingNumber: '', // Usually empty from bot
+          defendantPhone: intakeData.DefPhone || '',
+          defendantEmail: intakeData.DefEmail || '',
           county: intakeData.DefCounty || '',
+
+          // Indemnitor
           indemnitorName: intakeData.IndName || '',
           indemnitorPhone: intakeData.IndPhone || telegramUserId.toString(),
           indemnitorEmail: intakeData.IndEmail || '',
           indemnitorRelation: intakeData.IndRelation || '',
-          notes: 'Submitted via Telegram Bot.',
-          // Also pass raw original data along so it saves completely
-          ...intakeData
+          indemnitorStreetAddress: intakeData.IndAddress || '',
+          indemnitorCity: intakeData.IndCity || '',
+          indemnitorState: intakeData.IndState || '',
+          indemnitorZipCode: intakeData.IndZip || '',
+
+          // References
+          reference1Name: intakeData.Ref1Name || '',
+          reference1Phone: intakeData.Ref1Phone || '',
+          reference1Relation: intakeData.Ref1Relation || '',
+          reference1Address: intakeData.Ref1Address || '',
+          reference2Name: intakeData.Ref2Name || '',
+          reference2Phone: intakeData.Ref2Phone || '',
+          reference2Relation: intakeData.Ref2Relation || '',
+          reference2Address: intakeData.Ref2Address || '',
+
+          // Documents
+          docIdFront: intakeData.Doc_ID_Front || null
         };
 
         const payload = {
