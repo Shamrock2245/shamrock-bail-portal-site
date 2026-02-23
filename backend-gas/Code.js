@@ -638,6 +638,7 @@ function handleAction(data) {
   if (action === 'sendSmsInvite') return SN_sendSmsInvite(data.documentId, data.signers, data.options);
   if (action === 'createEmbeddedLink') return SN_createEmbeddedLink(data.documentId, data.email, data.role);
   if (action === 'batchSaveToWixPortal') return batchSaveToWixPortal(data);
+  if (action === 'fillSinglePdfWithAdobe') return fillSinglePdfWithAdobe(data);
 
   // 2. SIGNING & DOCS
   if (action === 'sendForSignature') return handleSendForSignature(data);
@@ -730,6 +731,34 @@ function handleAction(data) {
   // ------------------------------
 
   return { success: false, error: 'Unknown Action: ' + action };
+}
+
+/**
+ * Endpoint for Dashboard to ask Adobe to fill a specific template.
+ */
+function fillSinglePdfWithAdobe(data) {
+  try {
+    const { templateKey, intakeData } = data;
+    const driveId = TEMPLATE_DRIVE_IDS[templateKey];
+    if (!driveId) throw new Error('Template drive ID not found for ' + templateKey);
+
+    // Get PDF Blob
+    const templateBlob = DriveApp.getFileById(driveId).getBlob();
+
+    // Map data
+    const mappedData = getMappingForDocumentTemplate(templateKey, intakeData);
+
+    // Fill via Adobe
+    const filledBlob = AdobePDFService.fillPdfForm(templateBlob, mappedData);
+
+    return {
+      success: true,
+      pdfBase64: Utilities.base64Encode(filledBlob.getBytes())
+    };
+  } catch (e) {
+    console.error('fillSinglePdfWithAdobe error:', e.message);
+    return { success: false, error: e.message };
+  }
 }
 
 function handleGetAction(e) {
