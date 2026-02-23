@@ -522,6 +522,7 @@ var ROUTER_SCORING_CONFIG = {
     VOP: 15,
     THEFT: 10,
     BURGLARY: 15,
+    PRIOR_CLIENT: 25,
 
     CAPITAL: -200,
     FEDERAL: -200,
@@ -535,6 +536,42 @@ var ROUTER_LEAD_STATUS = {
   COLD: "Cold",
   DISQUALIFIED: "Disqualified"
 };
+
+// ============================================
+// HISTORICAL BONDS LOOKUP
+// ============================================
+var HISTORICAL_BONDS_CACHE_ = null;
+
+function getHistoricalBondsSet_() {
+  if (HISTORICAL_BONDS_CACHE_) return HISTORICAL_BONDS_CACHE_;
+  HISTORICAL_BONDS_CACHE_ = new Set();
+  try {
+    var ss = SpreadsheetApp.openById(QUAL_ROUTER_CONFIG.SPREADSHEET_ID);
+    var sheet = ss.getSheetByName("Historical Bond Reports");
+    if (sheet) {
+      var data = sheet.getDataRange().getValues();
+      if (data.length > 1) {
+        var fnameIdx = -1, lnameIdx = -1;
+        var headers = data[0];
+        for (var c = 0; c < headers.length; c++) {
+          var h = String(headers[c]).trim().toLowerCase();
+          if (h === "first name" || h === "first_name") fnameIdx = c;
+          if (h === "last name" || h === "last_name") lnameIdx = c;
+        }
+        if (fnameIdx >= 0 && lnameIdx >= 0) {
+          for (var r = 1; r < data.length; r++) {
+            var fn = String(data[r][fnameIdx]).trim().toLowerCase();
+            var ln = String(data[r][lnameIdx]).trim().toLowerCase();
+            if (fn && ln) HISTORICAL_BONDS_CACHE_.add(fn + "|" + ln);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Historical bonds load error: " + e);
+  }
+  return HISTORICAL_BONDS_CACHE_;
+}
 
 function scoreSheet_(sheet) {
   var lastRow = sheet.getLastRow();
@@ -636,15 +673,61 @@ function scoreArrestLeadCompat_(record) {
   if (chargesText.includes('domestic') || chargesText.includes('battery')) score += ROUTER_SCORING_CONFIG.POINTS.DOMESTIC;
   if (chargesText.includes('violation of probation') || chargesText.includes('vop')) score += ROUTER_SCORING_CONFIG.POINTS.VOP;
 
+  // 6. Prior Client Boost
+  var isPriorClient = false;
+  var fName = String(record['First_Name'] || record['First Name'] || '').trim().toLowerCase();
+  var lName = String(record['Last_Name'] || record['Last Name'] || '').trim().toLowerCase();
+
+  if (!fName && !lName) {
+    var full = String(record['Full_Name'] || record['Full Name'] || record['Name'] || '').trim().toLowerCase();
+    if (full) {
+      if (full.includes(',')) {
+        var p = full.split(',');
+        lName = p[0].trim();
+        fName = (p[1] || '').trim().split(' ')[0]; // taking just the first word
+      } else {
+        var p = full.split(' ');
+        if (p.length >= 2) {
+          fName = p[0].trim();
+          lName = p[p.length - 1].trim();
+        }
+      }
+    }
+  }
+
+  if (fName && lName) {
+    var bondsSet = getHistoricalBondsSet_();
+    // Sometimes names have middle initials in fName, we just check exact match first
+    if (bondsSet.has(fName + "|" + lName)) {
+      isPriorClient = true;
+    } else {
+      // Loose match on first word of first name
+      var fNameShort = fName.split(' ')[0];
+      if (bondsSet.has(fNameShort + "|" + lName)) {
+        isPriorClient = true;
+      }
+    }
+  }
+
+  if (isPriorClient) {
+    score += ROUTER_SCORING_CONFIG.POINTS.PRIOR_CLIENT;
+    reasons.push("Prior Client (+" + ROUTER_SCORING_CONFIG.POINTS.PRIOR_CLIENT + ")");
+  }
+
   // Final Status
   var leadStatus = ROUTER_LEAD_STATUS.COLD;
   if (disqualified || score < 0) leadStatus = ROUTER_LEAD_STATUS.DISQUALIFIED;
   else if (score >= ROUTER_SCORING_CONFIG.HOT_THRESHOLD) leadStatus = ROUTER_LEAD_STATUS.HOT;
   else if (score >= ROUTER_SCORING_CONFIG.WARM_THRESHOLD) leadStatus = ROUTER_LEAD_STATUS.WARM;
 
+  if (isPriorClient && leadStatus !== ROUTER_LEAD_STATUS.DISQUALIFIED) {
+    leadStatus = ROUTER_LEAD_STATUS.HOT + " - Prior Client";
+  }
+
   return {
     score: score,
-    status: leadStatus
+    status: leadStatus,
+    reasons: reasons
   };
 }
 
