@@ -6371,7 +6371,7 @@
                         resolve(results);
                     })
                     .withFailureHandler(reject)
-                    .server_getPDFTemplatesBatch(fileIds);
+                    .getPDFTemplatesBatch(fileIds);
             });
         }
 
@@ -6380,14 +6380,21 @@
          */
         async function uploadPDFToTempStorage(pdfBytes, formData) {
             return new Promise((resolve, reject) => {
-                const base64 = btoa(String.fromCharCode(...pdfBytes));
+                // Ensure safe base64 encoding without hitting call stack limits
+                let binary = '';
+                const len = pdfBytes.byteLength;
+                for (let i = 0; i < len; i++) {
+                    binary += String.fromCharCode(pdfBytes[i]);
+                }
+                const base64 = btoa(binary);
+
                 const defendantName = `${formData['defendant-first-name'] || 'Unknown'}_${formData['defendant-last-name'] || 'Defendant'}`;
                 const filename = `Bail_Packet_${defendantName}_${Date.now()}.pdf`;
 
                 google.script.run
                     .withSuccessHandler(resolve)
                     .withFailureHandler(reject)
-                    .server_saveCompositePDF(base64, filename);
+                    .saveCompositePDF(base64, filename);
             });
         }
 
