@@ -209,7 +209,7 @@ function mapIntakeDataToSuretyTerms(intakeData) {
         'DefCharges1': intakeData.charges || intakeData['defendant-charges'] || '',
         'CaseNum1': intakeData.caseNumber || intakeData['case-number'] || '',
         'PowerNum1': intakeData.powerNumber || intakeData['power-number'] || '',
-        'TotalBond1': data.totalBond || data.bondAmount || data['numeric-bond-amount'] || ''
+        'TotalBond1': intakeData.totalBond || intakeData.bondAmount || intakeData['numeric-bond-amount'] || ''
     };
 }
 
@@ -243,6 +243,14 @@ function getMappingForDocumentTemplate(templateKey, intakeData) {
             return mapIntakeDataToSuretyTerms(intakeData);
         case 'disclosure-form':
             return mapIntakeDataToDisclosureForm(intakeData);
+        case 'master-waiver':
+        case 'faq-cosigners':
+        case 'faq-defendants':
+            // These forms use the base/fallback fields
+            return Object.assign({}, _getCommonAdobeFields(intakeData), {
+                'DefName': intakeData.defendantFullName || `${intakeData['defendant-first-name']} ${intakeData['defendant-last-name']}` || '',
+                'IndName': intakeData.indemnitorFullName || intakeData.indemnitorName || ''
+            });
         default:
             // Fallback
             return Object.assign({}, _getCommonAdobeFields(intakeData), {
