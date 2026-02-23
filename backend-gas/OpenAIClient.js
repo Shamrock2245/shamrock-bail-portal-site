@@ -29,8 +29,18 @@ function callOpenAI(systemPrompt, userContent, options = {}) {
             return null;
         }
 
+        let finalSystemPrompt = systemPrompt;
+        if (options.useKnowledgeBase && typeof RAG_getKnowledge === 'function') {
+            try {
+                const kb = RAG_getKnowledge();
+                finalSystemPrompt += "\n\nShamrock Bail Bonds Knowledge Base Data:\n" + JSON.stringify(kb, null, 2);
+            } catch (e) {
+                console.warn("Failed to inject Knowledge Base", e);
+            }
+        }
+
         const messages = [
-            { role: "system", content: systemPrompt }
+            { role: "system", content: finalSystemPrompt }
         ];
 
         // Handle different content types

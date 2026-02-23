@@ -51,7 +51,7 @@ function AI_analyzeFlightRisk(lead) {
 
     console.log(`🤖 Analyst: Reviewing ${lead.name || 'Anonymous'}...`);
 
-    const result = callOpenAI(systemPrompt, leadData, { jsonMode: true });
+    const result = callOpenAI(systemPrompt, leadData, { jsonMode: true, useKnowledgeBase: true });
 
     if (!result) {
         console.warn("Analyst failed to generate. Returning fallback neutral score.");

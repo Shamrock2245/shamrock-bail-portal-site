@@ -99,7 +99,7 @@ function AI_parseBookingSheet(inputData) {
     `;
 
   console.log(`🤖 Clerk: Analyzing ${images.length} document(s)...`);
-  const result = callOpenAI(systemPrompt, userContent, { jsonMode: true });
+  const result = callOpenAI(systemPrompt, userContent, { jsonMode: true, useKnowledgeBase: true });
 
   if (!result) return { error: "Failed to read document." };
   return result;
@@ -117,6 +117,6 @@ function AI_extractBookingFromUrl(url) {
     Fields: firstName, lastName, dob, bookingNumber, charges, bondAmount, address.
     `;
   console.log("🤖 Clerk: Analyzing URL " + url);
-  const result = callOpenAI(systemPrompt, `Analyze this URL/Image: ${url}`, { jsonMode: true });
+  const result = callOpenAI(systemPrompt, `Analyze this URL/Image: ${url}`, { jsonMode: true, useKnowledgeBase: true });
   return result;
 }

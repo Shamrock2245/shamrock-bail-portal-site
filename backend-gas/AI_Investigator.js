@@ -69,7 +69,7 @@ function AI_deepAnalyzeReports(payload) {
     ${indSafe}
     `;
 
-    const result = callOpenAI(systemPrompt, userContent, { jsonMode: true });
+    const result = callOpenAI(systemPrompt, userContent, { jsonMode: true, useKnowledgeBase: true });
 
     if (!result) {
         console.warn("🕵️ Investigator failed to generate. Returning fallback safe object.");

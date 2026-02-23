@@ -148,6 +148,10 @@ function doGet(e) {
       const result = typeof testPdfHydration === 'function' ? testPdfHydration() : { error: 'Function not found' };
       return ContentService.createTextOutput(JSON.stringify(result, null, 2)).setMimeType(ContentService.MimeType.JSON);
     }
+    if (e.parameter.action === 'test_ai') {
+      const result = typeof testAIConnections === 'function' ? testAIConnections() : { error: 'Function testAIConnections not found' };
+      return ContentService.createTextOutput(JSON.stringify(result, null, 2)).setMimeType(ContentService.MimeType.JSON);
+    }
 
     if (e.parameter.action === 'analyze_tags') {
       const result = typeof analyzeTagPatterns === 'function' ? analyzeTagPatterns() : 'Function not found';

@@ -38,8 +38,23 @@ class GrokClient {
         // Normalize messages to array
         let messagePayload = [];
 
-        if (systemPrompt) {
-            messagePayload.push({ role: "system", content: systemPrompt });
+        let finalSystemPrompt = systemPrompt;
+        if (options.useKnowledgeBase && typeof RAG_getKnowledge === 'function') {
+            try {
+                const kb = RAG_getKnowledge();
+                const kbString = "\n\nShamrock Bail Bonds Knowledge Base Data:\n" + JSON.stringify(kb, null, 2);
+                if (finalSystemPrompt) {
+                    finalSystemPrompt += kbString;
+                } else {
+                    finalSystemPrompt = kbString;
+                }
+            } catch (e) {
+                console.warn("Failed to inject Knowledge Base", e);
+            }
+        }
+
+        if (finalSystemPrompt) {
+            messagePayload.push({ role: "system", content: finalSystemPrompt });
         }
 
         if (typeof messages === 'string') {
@@ -94,6 +109,6 @@ class GrokClient {
 }
 
 // Global Help Function
-function callGrok(systemPrompt, userMessage) {
-    return new GrokClient().chat(userMessage, systemPrompt);
+function callGrok(systemPrompt, userMessage, options = {}) {
+    return new GrokClient().chat(userMessage, systemPrompt, options);
 }
