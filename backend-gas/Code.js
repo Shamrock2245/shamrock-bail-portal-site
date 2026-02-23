@@ -77,22 +77,19 @@ function getConfig() {
 // TEMPLATE CONFIGURATION
 // ============================================================================
 const TEMPLATE_DRIVE_IDS = {
-  // Manus Templates (Updated via User Input)
-  'paperwork-header': '1sUtBtGuzScoXNRtfFhMQbjO2Hk5tJ8Bd',
-  'indemnity-agreement': '1ZyNW42z7MhOQejcG9qWr8Vnh-OyvW7di',
-  'defendant-application': '1Nbjk7p_zDv5TCIRzSnpV2dxHqIF6EJeK',
-  'promissory-note': '1hArVNYhIucOFyGDyjQpKyRzbJgNt6tim',
-  'disclosure-form': '11R2D_Scac7Hvi48Fx-hzHWC9HgMf5vta',
-  'surety-terms': '1IZsduZyEu_7dJQxb5udzzi2AB-vG2Jpz',
-  'master-waiver': '1G3cXF3t_h43BnVHnbGKUTKh3cT_0_q1U',
-  'collateral-receipt': '1InRElbA8hni9W94BOPmILmKQ3Ix_gVQ-',
-  'payment-plan': '1KjoAv-pkWNiwbnWa5EJLNdceKgbFSNi5',
-  'appearance-bond': '1ORdTwNvXYYudbxfVn6dOGA13hvGdMTvT',
-
-  // Existing/Static Templates (Preserved)
-  'faq-cosigners': '14i2SO7G9DzpCTFbM9mUbbnzDrnQTKlzu',
-  'faq-defendants': '1lQkzWRjnQXU9SjJmI8-Q6LGF-Z6Qx0pR',
-  'ssa-release': '14ZEHw8za1v17UTQgG86I8Koz1PikMTdB',
+  'paperwork-header': '1khIgXwq1TcL2s3M8k9eMzFZaHPtMj9J_',
+  'faq-cosigners': '1Biws7af2OyiNV6b95emUU2PmPODPNZJR',
+  'faq-defendants': '1tGit87xr0b1meX0iVJQQh6w6r7uEbwYe',
+  'indemnity-agreement': '1a2lUxpbBZLhz_xYS0Q8JGYfsfwnuGiLQ',
+  'defendant-application': '1_uDAIF_0N79GUFNt1bA9TsGgx_8p11Ij',
+  'promissory-note': '1vbyzaX4KozMwQsyaYWiVcS7Cb5voQuBN',
+  'disclosure-form': '1oegrie_W8edgOjw9UzkR-C0_xJJeKtjR',
+  'surety-terms': '1xy15JudqXaPECpQQ4-cf9220rv7vBXIR',
+  'master-waiver': '17Oh1NHPPqerdrSyWMKyyGMy88UUk2fEM',
+  'ssa-release': '18wotgdzjYhvS3O9vAUqzfxZ9tQk_3Z_p',
+  'collateral-receipt': '1RnViP5Ehjd98Pv5lRNVkoR6CS6hDicBx',
+  'payment-plan': '1lZGPk2gOxtFt2-NMol8H9QV7ahI2EWiA',
+  'appearance-bond': '15NQf1Bdmvbp9b_h6xosZYGhalHEplfeQ',
 };
 
 function getPDFTemplates(data) {

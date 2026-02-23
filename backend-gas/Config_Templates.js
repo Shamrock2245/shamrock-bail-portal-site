@@ -7,8 +7,8 @@
 
 function generateTemplateConfig() {
     // 1. Get Folder ID from Script Properties
-    const props = PropertiesService.getScriptProperties();
-    const folderId = props.getProperty('GOOGLE_DRIVE_FOLDER_ID'); // "Templates" Folder
+    // Modifying script to point to the NEW folder ID provided:
+    const folderId = '1FwqH4mcD3-rZ0_mp29bQRgW54I3wltuz';
 
     if (!folderId) {
         console.error("❌ Error: GOOGLE_DRIVE_FOLDER_ID not set in Script Properties.");
@@ -19,14 +19,14 @@ function generateTemplateConfig() {
     const EXPECTED_FILES = {
         'paperwork-header': ['Paperwork Header', 'header'],
         'faq-cosigners': ['FAQ Cosigner', 'FAQ - Cosigner', 'Cosigner Guide', 'Cosigner Info', 'Cosigner FAQ'],
-        'faq-defendants': ['FAQ Defendant', 'FAQ - Defendant', 'Defendant Guide', 'Defendant Info', 'Defendant FAQ'],
+        'faq-defendants': ['FAQ Defendant', 'FAQ - Defendant', 'Defendant Guide', 'Defendant Info', 'Defendant FAQ', 'FAQ Defe', 'Defendant'],
         'indemnity-agreement': ['Indemnity Agreement', 'Indemnity'],
         'defendant-application': ['Defendant Application', 'Application'],
         'promissory-note': ['Promissory Note', 'Promissory'],
         'disclosure-form': ['Disclosure Form', 'Disclosure'],
         'surety-terms': ['Surety Terms', 'Terms', 'Surety'],
         'master-waiver': ['Master Waiver', 'Waiver', 'Release of Liability', 'General Waiver'],
-        'ssa-release': ['SSA Release', 'SSA'],
+        'ssa-release': ['SSA Release', 'SSA', 'Release'],
         'collateral-receipt': ['Collateral Receipt', 'Collateral'],
         'payment-plan': ['Payment Plan', 'Payment', 'Installment', 'Premium Finance', 'Premium', 'Finance'],
         'appearance-bond': ['Appearance Bond', 'Appearance']

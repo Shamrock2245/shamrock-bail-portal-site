@@ -6323,13 +6323,19 @@
                 google.script.run
                     .withSuccessHandler(response => {
                         // Map back to expected format for fillPDFsWithData
-                        const results = response.map((data, index) => ({
-                            key: selectedDocs[index].key,
-                            name: selectedDocs[index].name,
-                            bytes: Uint8Array.from(atob(data), c => c.charCodeAt(0)),
-                            isCopy: selectedDocs[index].isCopy || false,
-                            indemnitorIndex: selectedDocs[index].indemnitorIndex
-                        }));
+                        const results = selectedDocs.map((doc) => {
+                            const data = response[doc.key];
+                            if (!data) {
+                                console.warn(`Missing template data for ${doc.key}`);
+                            }
+                            return {
+                                key: doc.key,
+                                name: doc.name,
+                                bytes: data ? Uint8Array.from(atob(data), c => c.charCodeAt(0)) : new Uint8Array(),
+                                isCopy: doc.isCopy || false,
+                                indemnitorIndex: doc.indemnitorIndex
+                            };
+                        });
                         resolve(results);
                     })
                     .withFailureHandler(reject)
