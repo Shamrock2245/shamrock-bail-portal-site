@@ -25,3 +25,24 @@ function setInternalGASUrl() {
   props.setProperty('GAS_WEBHOOK_URL', url);
   console.log('✅ Set GAS_WEBHOOK_URL: ' + url);
 }
+
+function setTwitterTokens() {
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('TWITTER_API_KEY', 'REDACTED');
+  props.setProperty('TWITTER_API_SECRET', 'REDACTED');
+  props.setProperty('TWITTER_ACCESS_TOKEN', 'REDACTED');
+  props.setProperty('TWITTER_ACCESS_TOKEN_SECRET', 'REDACTED');
+  console.log('✅ Set Twitter Tokens successfully.');
+}
+
+function testTwitter() {
+  try {
+    var result = SocialPublisher.publish(
+      "Hello world! This is a test tweet from the new automated Shamrock Bail Bonds system. 🍀🚀",
+      ['twitter']
+    );
+    console.log("✅ Twitter Test Result: ", result);
+  } catch (e) {
+    console.error("❌ Twitter Test Failed: " + e.message);
+  }
+}

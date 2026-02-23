@@ -96,6 +96,62 @@ var SocialPublisher = (function () {
     PROPS.setProperty(platform.toUpperCase() + '_ACCESS_TOKEN', token);
   }
 
+  /**
+   * Refreshes an OAuth access token using the stored refresh token.
+   * Currently supports Google (GBP/YouTube).
+   */
+  function refreshAccessToken_(platform) {
+    var refreshToken = PROPS.getProperty(platform.toUpperCase() + '_REFRESH_TOKEN');
+    if (!refreshToken) {
+      throw new Error('No refresh token available for ' + platform + '. Please re-authenticate.');
+    }
+
+    var tokenUrl, payload;
+
+    switch (platform) {
+      case 'gbp':
+      case 'youtube':
+        var clientId = PROPS.getProperty('GOOGLE_OAUTH_CLIENT_ID');
+        var clientSecret = PROPS.getProperty('GOOGLE_OAUTH_CLIENT_SECRET');
+        if (!clientId || !clientSecret) {
+          throw new Error('Google OAuth credentials missing.');
+        }
+        tokenUrl = 'https://oauth2.googleapis.com/token';
+        payload = {
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token'
+        };
+        break;
+      // TikTok and LinkedIn have different refresh flows, can be added later if needed.
+      default:
+        throw new Error('Token refresh not implemented for ' + platform);
+    }
+
+    var options = {
+      method: 'post',
+      contentType: 'application/x-www-form-urlencoded',
+      payload: payload,
+      muteHttpExceptions: true
+    };
+
+    var response = UrlFetchApp.fetch(tokenUrl, options);
+    var code = response.getResponseCode();
+    var body = JSON.parse(response.getContentText());
+
+    if (code >= 200 && code < 300 && body.access_token) {
+      storeToken_(platform, body.access_token);
+      if (body.refresh_token) {
+        // Sometimes a new refresh token is issued
+        PROPS.setProperty(platform.toUpperCase() + '_REFRESH_TOKEN', body.refresh_token);
+      }
+      return body.access_token;
+    } else {
+      throw new Error('Failed to refresh ' + platform + ' token (' + code + '): ' + response.getContentText());
+    }
+  }
+
   // ─── PRIVATE: Twitter / X API v2 ────────────────────────────────────────────
 
   /**
@@ -191,10 +247,10 @@ var SocialPublisher = (function () {
     var file = DriveApp.getFileById(fileId);
     var blob = file.getBlob();
     var mimeType = blob.getContentType();
-    
+
     var initUrl = 'https://upload.twitter.com/1.1/media/upload.json?command=INIT&total_bytes=' + blob.getBytes().length + '&media_category=tweet_image';
     var initAuth = buildOAuth1Header_('POST', 'https://upload.twitter.com/1.1/media/upload.json', { 'command': 'INIT', 'total_bytes': blob.getBytes().length.toString(), 'media_category': 'tweet_image' }, consumerKey, consumerSecret, token, tokenSecret);
-    
+
     var initRes = UrlFetchApp.fetch(initUrl, {
       method: 'post',
       headers: { 'Authorization': initAuth },
@@ -205,7 +261,7 @@ var SocialPublisher = (function () {
 
     var appendUrl = 'https://upload.twitter.com/1.1/media/upload.json?command=APPEND&media_id=' + mediaId + '&segment_index=0';
     var appendAuth = buildOAuth1Header_('POST', 'https://upload.twitter.com/1.1/media/upload.json', { 'command': 'APPEND', 'media_id': mediaId, 'segment_index': '0' }, consumerKey, consumerSecret, token, tokenSecret);
-    
+
     var appendRes = UrlFetchApp.fetch(appendUrl, {
       method: 'post',
       headers: { 'Authorization': appendAuth },
@@ -216,14 +272,14 @@ var SocialPublisher = (function () {
 
     var finUrl = 'https://upload.twitter.com/1.1/media/upload.json?command=FINALIZE&media_id=' + mediaId;
     var finAuth = buildOAuth1Header_('POST', 'https://upload.twitter.com/1.1/media/upload.json', { 'command': 'FINALIZE', 'media_id': mediaId }, consumerKey, consumerSecret, token, tokenSecret);
-    
+
     var finRes = UrlFetchApp.fetch(finUrl, {
       method: 'post',
       headers: { 'Authorization': finAuth },
       muteHttpExceptions: true
     });
     if (finRes.getResponseCode() >= 300) throw new Error('Twitter FINALIZE error: ' + finRes.getContentText());
-    
+
     return mediaId;
   }
 
@@ -253,7 +309,7 @@ var SocialPublisher = (function () {
       muteHttpExceptions: true
     });
     if (registerRes.getResponseCode() >= 300) throw new Error('LinkedIn Register Upload error: ' + registerRes.getContentText());
-    
+
     var regData = JSON.parse(registerRes.getContentText());
     var uploadMechanism = regData.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'];
     var uploadUrl = uploadMechanism.uploadUrl;
@@ -354,10 +410,10 @@ var SocialPublisher = (function () {
     };
 
     if (postOptions && postOptions.driveFileId) {
-        payload.media = [{
-             mediaFormat: 'PHOTO',
-             sourceUrl: getDriveFilePublicUrl_(postOptions.driveFileId)
-        }];
+      payload.media = [{
+        mediaFormat: 'PHOTO',
+        sourceUrl: getDriveFilePublicUrl_(postOptions.driveFileId)
+      }];
     }
 
     var options = {
@@ -581,36 +637,36 @@ var SocialPublisher = (function () {
     if (!postOptions || !postOptions.driveFileId) {
       throw new Error('Instagram Graph API requires an image or video for feed posts. Text-only posting is unsupported by Meta API. Please attach media.');
     }
-    
+
     var token = PROPS.getProperty('FB_PAGE_ACCESS_TOKEN');
     var pageId = PROPS.getProperty('FB_PAGE_ID');
     var instaAccountId = PROPS.getProperty('INSTAGRAM_ACCOUNT_ID');
-    
+
     if (!token || !pageId) {
       throw new Error('Facebook/Instagram credentials missing. Check Script Properties for FB_PAGE_ACCESS_TOKEN.');
     }
 
     if (!instaAccountId) {
-       var igFetch = UrlFetchApp.fetch('https://graph.facebook.com/v19.0/' + pageId + '?fields=instagram_business_account&access_token=' + token, { muteHttpExceptions: true });
-       if (igFetch.getResponseCode() === 200) {
-           var igData = JSON.parse(igFetch.getContentText());
-           if (igData.instagram_business_account) {
-               instaAccountId = igData.instagram_business_account.id;
-               PROPS.setProperty('INSTAGRAM_ACCOUNT_ID', instaAccountId);
-           }
-       }
+      var igFetch = UrlFetchApp.fetch('https://graph.facebook.com/v19.0/' + pageId + '?fields=instagram_business_account&access_token=' + token, { muteHttpExceptions: true });
+      if (igFetch.getResponseCode() === 200) {
+        var igData = JSON.parse(igFetch.getContentText());
+        if (igData.instagram_business_account) {
+          instaAccountId = igData.instagram_business_account.id;
+          PROPS.setProperty('INSTAGRAM_ACCOUNT_ID', instaAccountId);
+        }
+      }
     }
-    
+
     if (!instaAccountId) {
       throw new Error('Could not find connected Instagram Business Account for the Facebook Page. Please link it in Page Settings.');
     }
 
     var publicUrl = getDriveFilePublicUrl_(postOptions.driveFileId);
-    
+
     // Step 1: Create media container
     var initUrl = 'https://graph.facebook.com/v19.0/' + instaAccountId + '/media?image_url=' + encodeURIComponent(publicUrl) + '&caption=' + encodeURIComponent(content) + '&access_token=' + token;
     var initRes = UrlFetchApp.fetch(initUrl, { method: 'post', muteHttpExceptions: true });
-    
+
     if (initRes.getResponseCode() >= 300) {
       throw new Error('Instagram Media Init Error: ' + initRes.getContentText());
     }
@@ -619,7 +675,7 @@ var SocialPublisher = (function () {
     // Step 2: Publish media container
     var pubUrl = 'https://graph.facebook.com/v19.0/' + instaAccountId + '/media_publish?creation_id=' + creationId + '&access_token=' + token;
     var pubRes = UrlFetchApp.fetch(pubUrl, { method: 'post', muteHttpExceptions: true });
-    
+
     var pCode = pubRes.getResponseCode();
     if (pCode >= 200 && pCode < 300) {
       return { success: true, id: JSON.parse(pubRes.getContentText()).id, platform: 'instagram' };
@@ -871,6 +927,13 @@ var SocialPublisher = (function () {
       var scriptId = ScriptApp.getScriptId();
       var callbackUrl = 'https://script.google.com/macros/d/' + scriptId + '/usercallback';
 
+      // Generate a state token for the built-in GAS callback endpoint
+      var stateToken = ScriptApp.newStateToken()
+        .withMethod('socialAuthCallback')
+        .withArgument('platform', platform)
+        .withTimeout(3600)
+        .createToken();
+
       switch (platform) {
         case 'gbp':
         case 'youtube': {
@@ -885,7 +948,7 @@ var SocialPublisher = (function () {
             '&response_type=code' +
             '&scope=' + encodeURIComponent(scopes) +
             '&access_type=offline&prompt=consent' +
-            '&state=' + platform;
+            '&state=' + encodeURIComponent(stateToken);
         }
         case 'linkedin': {
           var liClientId = PROPS.getProperty('LINKEDIN_CLIENT_ID');
@@ -895,7 +958,7 @@ var SocialPublisher = (function () {
             '&client_id=' + encodeURIComponent(liClientId) +
             '&redirect_uri=' + encodeURIComponent(callbackUrl) +
             '&scope=w_member_social%20r_organization_social%20w_organization_social' +
-            '&state=linkedin';
+            '&state=' + encodeURIComponent(stateToken);
         }
         case 'tiktok': {
           var ttClientKey = PROPS.getProperty('TIKTOK_CLIENT_KEY');
@@ -905,7 +968,7 @@ var SocialPublisher = (function () {
             '&response_type=code' +
             '&scope=user.info.basic,video.publish,video.upload' +
             '&redirect_uri=' + encodeURIComponent(callbackUrl) +
-            '&state=tiktok';
+            '&state=' + encodeURIComponent(stateToken);
         }
         default:
           return 'ERROR: Unknown platform "' + platform + '". Valid: gbp, linkedin, tiktok, youtube';
@@ -1043,6 +1106,112 @@ function getSocialCredentialStatus() {
   return SocialPublisher.getCredentialStatus();
 }
 
+/**
+ * Run this function from the IDE to get the Google Business Profile authorization URL in the Execution Log
+ */
+function logAuthUrl_GBP() {
+  var url = SocialPublisher.getAuthUrl('gbp');
+  console.log('\\n=========================================\\n\\nGBP Auth URL (Visit this in your browser):\\n\\n' + url + '\\n\\n=========================================\\n');
+}
+
+/**
+ * Helper function to fetch and list all Google Business Profile locations 
+ * so the user can easily find their GBP_LOCATION_ID without manual API calls.
+ */
+function logGbpLocations() {
+  var PROPS = PropertiesService.getScriptProperties();
+  var accessToken = PROPS.getProperty('GBP_ACCESS_TOKEN');
+  if (!accessToken) {
+    console.error("Missing GBP_ACCESS_TOKEN. Please run logAuthUrl_GBP() and authorize first.");
+    return;
+  }
+
+  // 1. Get Accounts
+  var accountsUrl = 'https://mybusinessaccountmanagement.googleapis.com/v1/accounts';
+  var options = {
+    method: 'get',
+    headers: { 'Authorization': 'Bearer ' + accessToken },
+    muteHttpExceptions: true
+  };
+
+  console.log("Fetching GBP Accounts...");
+  var accountsResponse = UrlFetchApp.fetch(accountsUrl, options);
+  if (accountsResponse.getResponseCode() !== 200) {
+    console.error("Failed to fetch accounts:", accountsResponse.getContentText());
+    return;
+  }
+
+  var accountsData = JSON.parse(accountsResponse.getContentText());
+  var accounts = accountsData.accounts || [];
+
+  if (accounts.length === 0) {
+    console.log("No GBP accounts found. Does this Google user manage any Business Profiles?");
+    return;
+  }
+
+  console.log("Found " + accounts.length + " GBP Account(s). Fetching locations...");
+
+  // 2. Look up locations for each account
+  accounts.forEach(function (account) {
+    console.log("\\n--- Account: " + account.accountName + " (" + account.name + ") ---");
+    var locationsUrl = 'https://mybusinessbusinessinformation.googleapis.com/v1/' + account.name + '/locations?readMask=name,title';
+    var locResponse = UrlFetchApp.fetch(locationsUrl, options);
+
+    if (locResponse.getResponseCode() === 200) {
+      var locData = JSON.parse(locResponse.getContentText());
+      var locations = locData.locations || [];
+      if (locations.length === 0) {
+        console.log("  No locations found in this account.");
+      } else {
+        locations.forEach(function (loc) {
+          console.log("  => Business Title: " + loc.title);
+          var locationId = loc.name.split('/')[1]; // locations/1234 -> 1234
+          console.log("  => GBP_LOCATION_ID to save: " + locationId);
+        });
+      }
+    } else {
+      console.error("  Failed to fetch locations for this account:", locResponse.getContentText());
+    }
+  });
+
+  console.log("\\n=========================================\\nCopy the correct GBP_LOCATION_ID from above and save it in Project Settings -> Script Properties.\\n=========================================\\n");
+}
+
+/**
+ * Run this function from the IDE to get the YouTube authorization URL in the Execution Log
+ */
+function logAuthUrl_YouTube() {
+  var url = SocialPublisher.getAuthUrl('youtube');
+  console.log('\\n=========================================\\n\\nYouTube Auth URL (Visit this in your browser):\\n\\n' + url + '\\n\\n=========================================\\n');
+}
+
+/**
+ * Legacy wrapper fallback, defaulting to gbp if run without arguments
+ */
 function getSocialAuthUrl(platform) {
-  return SocialPublisher.getAuthUrl(platform);
+  var p = platform || 'gbp';
+  var url = SocialPublisher.getAuthUrl(p);
+  console.log('Auth URL for ' + p + ':', url);
+  return url;
+}
+
+/**
+ * Native GAS callback for OAuth flows using /usercallback.
+ * Defers to SocialPublisher.handleOAuthCallback.
+ */
+function socialAuthCallback(request) {
+  var platform = request.parameter.platform;
+  var code = request.parameter.code;
+
+  if (!platform || !code) {
+    return HtmlService.createHtmlOutput('<h1>Error</h1><p>Missing platform or authorization code in callback request.</p>');
+  }
+
+  var result = SocialPublisher.handleOAuthCallback(platform, code);
+
+  if (result.success) {
+    return HtmlService.createHtmlOutput('<h1>Authorization Successful!</h1><p>' + result.message + '</p><p>You may now close this tab.</p>');
+  } else {
+    return HtmlService.createHtmlOutput('<h1>Authorization Failed</h1><p>' + result.error + '</p>');
+  }
 }

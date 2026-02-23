@@ -165,6 +165,12 @@ function doGet(e) {
       return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
     }
 
+
+    if (e.parameter.action === 'analyze_tags') {
+      const result = typeof analyzeTagPatterns === 'function' ? analyzeTagPatterns() : 'Function not found';
+      return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
+    }
+
     if (e.parameter.action === 'auto_tag') {
       const result = typeof runAutoTagging === 'function' ? runAutoTagging() : 'Function not found';
       return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);

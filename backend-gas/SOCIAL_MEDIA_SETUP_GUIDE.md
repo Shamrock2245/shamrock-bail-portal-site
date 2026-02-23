@@ -12,22 +12,30 @@ This guide provides step-by-step instructions for obtaining the necessary API cr
 ## 1. Google Business Profile API
 
 **Required Properties:**
-- `GBP_ACCESS_TOKEN`
+- `GOOGLE_OAUTH_CLIENT_ID` (Required to initialize OAuth)
+- `GOOGLE_OAUTH_CLIENT_SECRET` (Required to initialize OAuth)
+- `GBP_ACCESS_TOKEN` (Generated automatically)
+- `GBP_REFRESH_TOKEN` (Generated automatically)
 - `GBP_LOCATION_ID`
 
 ### Steps:
 
-1.  **Enable the API:**
-    - Go to the [Google API Console](https://console.cloud.google.com/apis/library/mybusinessbusinessinformation.googleapis.com).
+1.  **Enable the APIs & Request Quota:**
+    - Go to the [Google API Console](https://console.cloud.google.com/apis/library/).
     - Select a project or create a new one.
-    - Click **Enable** to activate the "Google My Business API".
+    - Search for and **Enable** the following two APIs:
+      1.  **My Business Account Management API** (Needed to list accounts/locations)
+      2.  **My Business Business Information API** (Needed to create posts)
+    - **CRITICAL:** Google sets your initial quota for these APIs to **0**. After enabling them, you *must* fill out the [Google Business Profile API Application](https://support.google.com/business/contact/api_default) to get your quota increased so you can actually use the API. Approval usually takes a few days.
 
 2.  **Create OAuth 2.0 Credentials:**
     - Go to the [Credentials page](https://console.cloud.google.com/apis/credentials).
     - Click **+ CREATE CREDENTIALS** and select **OAuth client ID**.
     - Choose **Web application** as the application type.
     - Under **Authorized redirect URIs**, add the special Apps Script URI: `https://script.google.com/macros/d/{SCRIPT_ID}/usercallback` (replace `{SCRIPT_ID}` with your actual GAS project's Script ID).
-    - Click **Create**. Copy the **Client ID** and **Client Secret** and save them temporarily.
+    - Click **Create**.
+    - Store the **Client ID** as `GOOGLE_OAUTH_CLIENT_ID` in your GAS Script Properties.
+    - Store the **Client Secret** as `GOOGLE_OAUTH_CLIENT_SECRET` in your GAS Script Properties.
 
 3.  **Get an Access Token (via OAuth2 for GAS):**
     - The `SocialPublisher.js` file will include a function `getGbpAuthUrl()` that you can run once to get an authorization URL. You will visit this URL, approve access, and the script will automatically handle storing the access and refresh tokens.
@@ -39,6 +47,10 @@ This guide provides step-by-step instructions for obtaining the necessary API cr
 ---
 
 ## 2. X (Twitter) API v2
+
+> **Strategic Note:** X (Twitter) is used exclusively as an outbound "megaphone" for automated marketing posts, bail bond facts, and geographic updates. Due to API limitations and WhatsApp Terms of Service, **all customer service must be directed to Telegram**. 
+> 
+> **Action Required:** Ensure your X (Twitter) profile bio includes a direct link to your Telegram bot (e.g., `t.me/ShamrockBailBot`) for customer service inquiries.
 
 **Required Properties:**
 - `TWITTER_API_KEY`
