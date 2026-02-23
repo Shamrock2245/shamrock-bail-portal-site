@@ -1586,9 +1586,8 @@
             <button class="tab" onclick="switchTab(this, 'blog-audio')">
                 <span class="tab-icon">🎙️</span> Blog Audio
             </button>
-            <button class="tab" onclick="switchTab(this, 'social')">
-                <span class="tab-icon">&#128227;</span> Social
-                <span class="tab-badge" id="social-badge" style="display:none;">!</span>
+            <button class="tab" onclick="switchTab(this, 'social-hub')">
+                <span class="tab-icon">📣</span> Social Hub (Grok)
             </button>
 
         </nav>
@@ -1608,6 +1607,170 @@
                 </div>
                 <div id="ops-map-container"
                     style="height: 600px; width: 100%; border-radius: 8px; border: 1px solid var(--border);"></div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+         TAB: SOCIAL HUB
+         ============================================================ -->
+        <div id="social-hub-tab" class="tab-content" style="display:none;">
+            <div class="card" style="border-top: 4px solid var(--accent); min-height: 750px;">
+                <div class="card-header">
+                    <h3><span class="icon">📣</span> AI Social Hub (The Broadcaster)</h3>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <span style="font-size:12px; color:var(--success);">●</span> Online</span>
+                        <div class="badge"
+                            style="background:var(--surface-2); color:var(--text); padding:6px 14px; border-radius:20px; font-size:12px; border:1px solid var(--border);">
+                            Powered by xAI Grok
+                        </div>
+                    </div>
+                </div>
+                <p style="margin-bottom: 24px; color: var(--text-secondary); font-size: 15px;">
+                    Enter a base post and optionally attach media. Grok will generate optimal variants for 9 platforms.
+                </p>
+
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 32px; margin-bottom: 32px;">
+                    <!-- LEFT COLUMN: Input -->
+                    <div>
+                        <!-- The News Reactor -->
+                        <div
+                            style="background: var(--surface-2); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px;">
+                            <h4
+                                style="margin-bottom: 12px; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                                📰 The News Reactor (X Trend Monitor)
+                            </h4>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="news-topic" placeholder="e.g. Local bail news..."
+                                    class="form-control"
+                                    style="flex: 1; padding: 8px; font-size: 13px; border: 1px solid var(--border); border-radius: 4px; background: var(--background); color: var(--text);">
+                                <button class="btn btn-secondary btn-sm" onclick="fetchTrendingNews()"
+                                    id="btn-fetch-news">
+                                    Fetch Trending
+                                </button>
+                            </div>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 8px;">Finds trending
+                                topics & drafts a relevant base post.</small>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label class="required">Base Post / Idea</label>
+                            <textarea id="social-base-post" rows="6"
+                                placeholder="Example: We just bailed out 5 people in Lee County under 2 hours. If you need help, call Shamrock!"></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Media Attachment (Optional)</span>
+                                <button type="button" class="btn btn-sm" onclick="openMediaLibrary()"
+                                    style="padding: 4px 8px; font-size: 11px; background: rgba(52, 199, 89, 0.1); color: var(--success); border-radius: 4px; border: 1px solid rgba(52, 199, 89, 0.3);">
+                                    <i class="fas fa-folder-open"></i> Media Library
+                                </button>
+                            </label>
+
+                            <div id="selected-media-preview"
+                                style="display: none; margin-bottom: 10px; padding: 10px; border: 1px solid var(--border-medium); border-radius: 6px; background: rgba(0,0,0,0.2);">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span id="selected-media-name"
+                                        style="font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%;"></span>
+                                    <button type="button" onclick="clearSelectedMedia()"
+                                        style="background: none; border: none; color: var(--danger); cursor: pointer;"><i
+                                            class="fas fa-times"></i></button>
+                                </div>
+                            </div>
+
+                            <input type="file" id="social-media" accept="image/*,video/*"
+                                style="padding: 10px; cursor: pointer; border: 2px dashed var(--border-strong);">
+
+                            <!-- Hidden input to store Drive file ID if selected from library -->
+                            <input type="hidden" id="social-media-drive-id">
+
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px;">
+                                <input type="checkbox" id="social-opus-clips" value="true">
+                                <span style="color: var(--text-secondary);">Create video repurposing variants via
+                                    <b>Opus Clips</b></span>
+                            </label>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label
+                                style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary); display: block;">Target
+                                Platforms</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <label><input type="checkbox" class="social-platform" value="facebook" checked>
+                                    Facebook</label>
+                                <label><input type="checkbox" class="social-platform" value="instagram" checked>
+                                    Instagram</label>
+                                <label><input type="checkbox" class="social-platform" value="threads" checked>
+                                    Threads</label>
+                                <label><input type="checkbox" class="social-platform" value="twitter" checked> X
+                                    (Twitter)</label>
+                                <label><input type="checkbox" class="social-platform" value="linkedin" checked>
+                                    LinkedIn</label>
+                                <label><input type="checkbox" class="social-platform" value="gbp" checked> Google
+                                    Business</label>
+                                <label><input type="checkbox" class="social-platform" value="telegram" checked>
+                                    Telegram</label>
+                                <label><input type="checkbox" class="social-platform" value="youtube"> YouTube</label>
+                                <label><input type="checkbox" class="social-platform" value="tiktok"> TikTok</label>
+                                <label><input type="checkbox" class="social-platform" value="skool"> Skool</label>
+                                <label><input type="checkbox" class="social-platform" value="patreon"> Patreon</label>
+                            </div>
+                        </div>
+
+                        <button id="btn-generate-social" class="btn btn-primary"
+                            style="width: 100%; justify-content: center;" onclick="generateSocialPosts()">
+                            🤖 Generate with Grok
+                        </button>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Output & Preview -->
+                    <div
+                        style="background: var(--surface-2); border-radius: var(--radius); border: 1px solid var(--border); padding: 24px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h4>Generated Variants</h4>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="btn-schedule-social" class="btn btn-secondary btn-sm"
+                                    onclick="scheduleSocialPosts()" disabled
+                                    title="Schedule to Calendar for up to 60 days">
+                                    📆 Schedule
+                                </button>
+                                <button id="btn-broadcast-social" class="btn btn-success btn-sm"
+                                    onclick="broadcastSocialPosts()" disabled>
+                                    🚀 Broadcast Now
+                                </button>
+                            </div>
+                        </div>
+                        <div id="social-variants-container"
+                            style="display: flex; flex-direction: column; gap: 16px; max-height: 600px; overflow-y: auto; padding-right: 10px;">
+                            <!-- Variants will be rendered here dynamically -->
+                            <div
+                                style="text-align:center; padding:60px 20px; color:var(--muted); border: 2px dashed var(--border); border-radius:var(--radius-sm);">
+                                <i>Awaiting base post...</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM FULL-WIDTH: Campaign Planner -->
+                <div
+                    style="background: var(--surface-2); border-radius: var(--radius); border: 1px solid var(--border); padding: 24px; margin-top: 32px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h4>📆 Campaign Planner (Next 60 Days)</h4>
+                        <button class="btn btn-secondary btn-sm" onclick="syncGoogleCalendar()">
+                            🔄 Sync with Google Calendar
+                        </button>
+                    </div>
+                    <div id="calendar-events-container"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+                        <div
+                            style="padding: 20px; text-align: center; color: var(--muted); border: 1px dashed var(--border); grid-column: 1 / -1; border-radius: var(--radius-sm);">
+                            Click "Sync with Google Calendar" to view scheduled upcoming posts.
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -6623,297 +6786,426 @@
     </script>
 
 
-    <!-- =========================================================
-         WIX PORTAL INTEGRATION MODULE (Added)
-         ========================================================= -->
-    <script>
-        /**
-         * Dashboard.html - Wix Portal Integration Module
-         * 
-         * This code should be added to Dashboard.html to enable:
-         * 1. Saving signing links to Wix PendingDocuments collection
-         * 2. Clients can view and sign from their Wix member portal
-         * 3. Automatic status updates when documents are signed
-         * 
-         * Add this script block before the closing 
     <!-- ============================================================
-     SOCIAL TAB: Client-Side JavaScript Module
+     SOCIAL HUB TAB: Client-Side JavaScript Module
      ============================================================ -->
     <script>
-    var SocialTab = (function () {
+        var SocialHub = (function () {
+            var LIMITS = { facebook: 63206, instagram: 2200, threads: 500, twitter: 280, linkedin: 3000, gbp: 1500, telegram: 4096, youtube: 5000, tiktok: 2200, skool: 10000, patreon: 10000 };
+            var LABELS = { facebook: 'Facebook', instagram: 'Instagram', threads: 'Threads', twitter: 'X (Twitter)', linkedin: 'LinkedIn', gbp: 'Google Business', telegram: 'Telegram', youtube: 'YouTube', tiktok: 'TikTok', skool: 'Skool', patreon: 'Patreon' };
+            // Using HTML entities to match style
+            var ICONS = { facebook: '&#128216;', instagram: '&#128248;', threads: '&#128172;', twitter: 'X', linkedin: '&#128188;', gbp: '&#128205;', telegram: '&#128233;', youtube: '&#9654;&#65039;', tiktok: '&#127925;', skool: '&#127979;', patreon: '&#127912;' };
 
-        var PLATFORMS = ['twitter', 'linkedin', 'gbp', 'tiktok', 'youtube'];
-        var LIMITS = { twitter: 280, linkedin: 3000, gbp: 1500, tiktok: 2200, youtube: 5000 };
-        var LABELS = { twitter: 'X (Twitter)', linkedin: 'LinkedIn', gbp: 'Google Business Profile', tiktok: 'TikTok', youtube: 'YouTube' };
 
-        // ── Helpers ──────────────────────────────────────────────────────────
+            var currentVariants = {};
 
-        function setStatus(msg, type) {
-            var el = document.getElementById('social-draft-status');
-            if (!el) return;
-            el.style.display = msg ? 'block' : 'none';
-            el.style.color = type === 'error' ? 'var(--error)' : type === 'success' ? 'var(--success)' : 'var(--muted)';
-            el.textContent = msg;
-        }
-
-        function setResultBadge(platform, success, message) {
-            var el = document.getElementById('social-result-' + platform);
-            if (!el) return;
-            el.style.display = 'block';
-            el.style.color = success ? 'var(--success)' : 'var(--error)';
-            el.textContent = success ? '&#10003; ' + message : '&#10007; ' + message;
-            el.innerHTML = (success ? '&#10003; ' : '&#10007; ') + message;
-        }
-
-        function setPublishBtnState(platform, loading) {
-            var btn = document.getElementById('social-publish-' + platform);
-            if (!btn) return;
-            btn.disabled = loading;
-            btn.textContent = loading ? 'Posting...' : '&#128640; Post to ' + LABELS[platform];
-            btn.innerHTML = loading ? '&#9203; Posting...' : '&#128640; Post to ' + LABELS[platform];
-        }
-
-        function timeAgo(date) {
-            if (!date) return '&#8212;';
-            var d = new Date(date);
-            var diff = Math.floor((Date.now() - d.getTime()) / 1000);
-            if (diff < 60) return 'Just now';
-            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-            return Math.floor(diff / 86400) + 'd ago';
-        }
-
-        // ── Public Methods ───────────────────────────────────────────────────
-
-        return {
-
-            // Called when Social tab is first opened — load credential status + last post times
-            init: function () {
-                google.script.run
-                    .withSuccessHandler(function (status) {
-                        PLATFORMS.forEach(function (p) {
-                            var badge = document.getElementById('social-cred-' + p);
-                            var detailContainer = document.getElementById('social-cred-status-detail');
-                            var connected = status[p];
-                            if (badge) {
-                                badge.style.background = connected ? 'var(--success-bg)' : 'var(--error-bg)';
-                                badge.style.color = connected ? 'var(--success)' : 'var(--error)';
-                                badge.style.border = '1px solid ' + (connected ? 'var(--success)' : 'var(--error)');
-                            }
-                            if (detailContainer) {
-                                var label = LABELS[p] || p;
-                                var div = document.createElement('div');
-                                div.style.cssText = 'padding:8px 12px; border-radius:8px; font-size:12px; display:flex; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--border);';
-                                div.innerHTML = (connected
-                                    ? '<span style="color:var(--success);">&#10003;</span>'
-                                    : '<span style="color:var(--error);">&#10007;</span>')
-                                    + ' <strong>' + label + '</strong>'
-                                    + (connected ? ' <span style="color:var(--muted);">Connected</span>' : ' <span style="color:var(--error);">No credentials</span>');
-                                detailContainer.appendChild(div);
-                            }
-                        });
-                    })
-                    .withFailureHandler(function (err) {
-                        console.warn('SocialTab: Could not load credential status:', err);
-                    })
-                    .getSocialCredentialStatus();
-
-                google.script.run
-                    .withSuccessHandler(function (times) {
-                        PLATFORMS.forEach(function (p) {
-                            var el = document.getElementById('social-last-' + p);
-                            if (el && times[p]) {
-                                el.textContent = 'Last: ' + timeAgo(times[p]);
-                            }
-                        });
-                    })
-                    .withFailureHandler(function () {})
-                    .getSocialLastPostTimes();
-            },
-
-            // Update character counter for a platform textarea
-            updateCounter: function (platform, limit) {
-                var textarea = document.getElementById('social-content-' + platform);
-                var counter  = document.getElementById('social-counter-' + platform);
-                if (!textarea || !counter) return;
-                var len = textarea.value.length;
-                counter.textContent = len + ' / ' + limit;
-                counter.style.color = len > limit * 0.9 ? (len >= limit ? 'var(--error)' : 'var(--warning)') : 'var(--muted)';
-            },
-
-            // Clear a single platform draft
-            clearDraft: function (platform) {
-                var el = document.getElementById('social-content-' + platform);
-                if (el) { el.value = ''; SocialTab.updateCounter(platform, LIMITS[platform]); }
-                var res = document.getElementById('social-result-' + platform);
-                if (res) res.style.display = 'none';
-            },
-
-            // Generate AI drafts for all platforms
-            generateDrafts: function () {
-                var topic = document.getElementById('social-topic');
-                var context = document.getElementById('social-context');
-                if (!topic || !topic.value.trim()) {
-                    setStatus('Please enter a topic or prompt first.', 'error');
-                    topic && topic.focus();
-                    return;
+            function setStatus(msg, type) {
+                var container = document.getElementById('social-variants-container');
+                if (container && type === 'loading') {
+                    container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--muted); border: 2px dashed var(--border); border-radius:var(--radius-sm);"><i>&#9203; ' + msg + '</i></div>';
+                } else if (container && type === 'error') {
+                    container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--error); border: 2px dashed var(--error); border-radius:var(--radius-sm);"><i>&#10007; ' + msg + '</i></div>';
                 }
-
-                var btn = document.getElementById('social-draft-btn');
-                if (btn) { btn.disabled = true; btn.innerHTML = '&#9203; Generating...'; }
-                setStatus('Asking AI to draft posts for all 5 platforms...', 'info');
-
-                google.script.run
-                    .withSuccessHandler(function (res) {
-                        if (btn) { btn.disabled = false; btn.innerHTML = '&#129302; Generate AI Drafts'; }
-                        if (!res.success) {
-                            setStatus('Error: ' + res.error, 'error');
-                            return;
-                        }
-                        var drafts = res.drafts;
-                        PLATFORMS.forEach(function (p) {
-                            var el = document.getElementById('social-content-' + p);
-                            if (el && drafts[p]) {
-                                el.value = drafts[p];
-                                SocialTab.updateCounter(p, LIMITS[p]);
-                            }
-                            var res2 = document.getElementById('social-result-' + p);
-                            if (res2) res2.style.display = 'none';
-                        });
-                        setStatus('&#10003; Drafts generated! Review and edit each platform below, then publish.', 'success');
-                    })
-                    .withFailureHandler(function (err) {
-                        if (btn) { btn.disabled = false; btn.innerHTML = '&#129302; Generate AI Drafts'; }
-                        setStatus('Failed to generate drafts: ' + err.message, 'error');
-                    })
-                    .draftPosts(topic.value.trim(), context ? context.value.trim() : '');
-            },
-
-            // Publish to a single platform
-            publishOne: function (platform) {
-                var contentEl = document.getElementById('social-content-' + platform);
-                if (!contentEl || !contentEl.value.trim()) {
-                    setResultBadge(platform, false, 'No content to post.');
-                    return;
-                }
-                var content = contentEl.value.trim();
-                if (content.length > LIMITS[platform]) {
-                    setResultBadge(platform, false, 'Exceeds ' + LIMITS[platform] + ' character limit (' + content.length + ' chars).');
-                    return;
-                }
-
-                setPublishBtnState(platform, true);
-                setResultBadge(platform, true, 'Posting...');
-
-                google.script.run
-                    .withSuccessHandler(function (res) {
-                        setPublishBtnState(platform, false);
-                        if (res.success) {
-                            setResultBadge(platform, true, 'Posted successfully!' + (res.id ? ' ID: ' + res.id : ''));
-                            var lastEl = document.getElementById('social-last-' + platform);
-                            if (lastEl) lastEl.textContent = 'Last: Just now';
-                        } else if (res.note) {
-                            setResultBadge(platform, false, res.note);
-                        } else {
-                            setResultBadge(platform, false, res.error || 'Unknown error.');
-                        }
-                    })
-                    .withFailureHandler(function (err) {
-                        setPublishBtnState(platform, false);
-                        setResultBadge(platform, false, 'Error: ' + err.message);
-                    })
-                    .publishPost(platform, content);
-            },
-
-            // Publish all platforms at once
-            publishAll: function () {
-                var confirmed = document.getElementById('social-confirm-publish');
-                if (!confirmed || !confirmed.checked) {
-                    alert('Please check the confirmation box to confirm you have reviewed all drafts before publishing.');
-                    return;
-                }
-
-                var posts = {};
-                var hasContent = false;
-                PLATFORMS.forEach(function (p) {
-                    var el = document.getElementById('social-content-' + p);
-                    if (el && el.value.trim()) {
-                        posts[p] = el.value.trim();
-                        hasContent = true;
-                    }
-                });
-
-                if (!hasContent) {
-                    alert('No content to publish. Generate drafts first.');
-                    return;
-                }
-
-                var btn = document.getElementById('social-publish-all-btn');
-                if (btn) { btn.disabled = true; btn.innerHTML = '&#9203; Publishing...'; }
-
-                // Set all filled platforms to loading state
-                Object.keys(posts).forEach(function (p) { setPublishBtnState(p, true); });
-
-                google.script.run
-                    .withSuccessHandler(function (res) {
-                        if (btn) { btn.disabled = false; btn.innerHTML = '&#128640; Publish All Now'; }
-                        if (confirmed) confirmed.checked = false;
-
-                        var resultsEl = document.getElementById('social-publish-all-results');
-                        if (resultsEl) {
-                            resultsEl.style.display = 'block';
-                            var html = '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:8px;">';
-                            Object.keys(res.results).forEach(function (p) {
-                                var r = res.results[p];
-                                var ok = r.success;
-                                html += '<div style="padding:8px 12px; border-radius:8px; font-size:12px; background:' +
-                                    (ok ? 'var(--success-bg)' : 'var(--error-bg)') + '; color:' +
-                                    (ok ? 'var(--success)' : 'var(--error)') + '; border:1px solid ' +
-                                    (ok ? 'var(--success)' : 'var(--error)') + ';">' +
-                                    (ok ? '&#10003; ' : '&#10007; ') + (LABELS[p] || p) + ': ' +
-                                    (ok ? 'Posted!' : (r.note || r.error || 'Failed')) + '</div>';
-                                setPublishBtnState(p, false);
-                                if (ok) {
-                                    var lastEl = document.getElementById('social-last-' + p);
-                                    if (lastEl) lastEl.textContent = 'Last: Just now';
-                                }
-                            });
-                            html += '</div>';
-                            resultsEl.innerHTML = html;
-                        }
-                    })
-                    .withFailureHandler(function (err) {
-                        if (btn) { btn.disabled = false; btn.innerHTML = '&#128640; Publish All Now'; }
-                        PLATFORMS.forEach(function (p) { setPublishBtnState(p, false); });
-                        alert('Publish All failed: ' + err.message);
-                    })
-                    .publishAll(posts);
             }
 
-        };
-    })();
+            function getSelectedPlatforms() {
+                var checkboxes = document.querySelectorAll('.social-platform:checked');
+                var platforms = [];
+                checkboxes.forEach(function (cb) { platforms.push(cb.value); });
+                return platforms;
+            }
 
-    // Auto-init when Social tab is clicked
-    document.addEventListener('DOMContentLoaded', function () {
-        var socialTabBtn = document.querySelector('[onclick*="social"]');
-        if (socialTabBtn) {
-            socialTabBtn.addEventListener('click', function () {
-                setTimeout(function () { SocialTab.init(); }, 100);
-            });
+            function renderVariants() {
+                var container = document.getElementById('social-variants-container');
+                if (!container) return;
+                container.innerHTML = '';
+
+                var platforms = Object.keys(currentVariants);
+                if (platforms.length === 0) {
+                    setStatus('No variants generated.', 'loading');
+                    return;
+                }
+
+                platforms.forEach(function (p) {
+                    var content = currentVariants[p];
+                    var limit = LIMITS[p] || 2000;
+
+                    var card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.cssText = 'border-left: 4px solid var(--accent); padding: 0; overflow: hidden; margin-bottom: 16px;';
+
+                    var header = document.createElement('div');
+                    header.style.cssText = 'padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;';
+                    header.innerHTML = '<div style="display: flex; align-items: center; gap: 8px;">' +
+                        '<span style="font-size:18px;">' + (ICONS[p] || '') + '</span>' +
+                        '<span style="font-weight: 700;">' + (LABELS[p] || p) + '</span>' +
+                        '</div>' +
+                        '<label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;">' +
+                        '<input type="checkbox" class="social-variant-approve" data-platform="' + p + '" checked> Approve' +
+                        '</label>';
+
+                    var body = document.createElement('div');
+                    body.style.cssText = 'padding: 12px 16px;';
+
+                    var textarea = document.createElement('textarea');
+                    textarea.id = 'social-content-' + p;
+                    textarea.className = 'input';
+                    textarea.rows = 5;
+                    textarea.maxLength = limit;
+                    textarea.style.cssText = 'width: 100%; resize: vertical; font-size: 13px;';
+                    textarea.value = content;
+                    textarea.oninput = function () { SocialHub.updateCounter(p, limit); };
+
+                    var controls = document.createElement('div');
+                    controls.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-top: 6px;';
+
+                    var counter = document.createElement('span');
+                    counter.id = 'social-counter-' + p;
+                    counter.style.cssText = 'font-size: 11px; color: var(--muted);';
+                    counter.textContent = content.length + ' / ' + limit;
+
+                    var btnGroup = document.createElement('div');
+                    btnGroup.style.cssText = 'display: flex; gap: 8px;';
+
+                    var copyBtn = document.createElement('button');
+                    copyBtn.className = 'btn btn-secondary btn-sm';
+                    copyBtn.innerHTML = '&#128203; Copy';
+                    copyBtn.onclick = function () {
+                        var text = document.getElementById('social-content-' + p).value;
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(text);
+                            var orig = this.innerHTML;
+                            this.innerHTML = '&#10003; Copied!';
+                            var btn = this;
+                            setTimeout(function () { btn.innerHTML = orig; }, 2000);
+                        } else {
+                            // fallback for older browsers
+                            var txtArea = document.getElementById('social-content-' + p);
+                            txtArea.select();
+                            document.execCommand('copy');
+                            alert('Copied to clipboard');
+                        }
+                    };
+
+                    var publishBtn = document.createElement('button');
+                    publishBtn.id = 'social-publish-' + p;
+                    publishBtn.className = 'btn btn-primary btn-sm';
+                    publishBtn.innerHTML = '&#128640; Post to ' + (LABELS[p] || p);
+                    publishBtn.onclick = function () { SocialHub.publishOne(p); };
+
+                    btnGroup.appendChild(copyBtn);
+                    btnGroup.appendChild(publishBtn);
+
+                    controls.appendChild(counter);
+                    controls.appendChild(btnGroup);
+
+                    var resultDiv = document.createElement('div');
+                    resultDiv.id = 'social-result-' + p;
+                    resultDiv.style.cssText = 'display: none; margin-top: 8px; font-size: 12px;';
+
+                    body.appendChild(textarea);
+                    body.appendChild(controls);
+                    body.appendChild(resultDiv);
+                    card.appendChild(header);
+                    card.appendChild(body);
+
+                    container.appendChild(card);
+                });
+
+                document.getElementById('btn-broadcast-social').disabled = false;
+            }
+
+            function setResultBadge(platform, success, message) {
+                var el = document.getElementById('social-result-' + platform);
+                if (!el) return;
+                el.style.display = 'block';
+                el.style.color = success ? 'var(--success)' : 'var(--error)';
+
+                var actionHtml = '';
+                if (!success) {
+                    var links = {
+                        twitter: 'https://twitter.com/compose/tweet',
+                        linkedin: 'https://www.linkedin.com/post/new',
+                        facebook: 'https://www.facebook.com/',
+                        instagram: 'https://www.instagram.com/',
+                        threads: 'https://www.threads.net/',
+                        gbp: 'https://business.google.com/locations'
+                    };
+                    if (links[platform]) {
+                        actionHtml = ' <a href="' + links[platform] + '" target="_blank" style="color:var(--primary);text-decoration:underline;margin-left:8px;">Post manually &rarr;</a>';
+                    }
+                }
+
+                el.innerHTML = (success ? '&#10003; ' : '&#10007; ') + message + actionHtml;
+            }
+
+            function setPublishBtnState(platform, loading) {
+                var btn = document.getElementById('social-publish-' + platform);
+                if (!btn) return;
+                btn.disabled = loading;
+                btn.innerHTML = loading ? '&#9203; Posting...' : '&#128640; Post to ' + (LABELS[platform] || platform);
+            }
+
+            return {
+                init: function () {
+                    // init logic if needed
+                },
+
+                updateCounter: function (platform, limit) {
+                    var textarea = document.getElementById('social-content-' + platform);
+                    var counter = document.getElementById('social-counter-' + platform);
+                    if (!textarea || !counter) return;
+                    var len = textarea.value.length;
+                    counter.textContent = len + ' / ' + limit;
+                    counter.style.color = len > limit * 0.9 ? (len >= limit ? 'var(--error)' : 'var(--warning)') : 'var(--muted)';
+                },
+
+                generate: function () {
+                    var basePostEl = document.getElementById('social-base-post');
+                    var basePost = basePostEl ? basePostEl.value.trim() : '';
+                    if (!basePost) {
+                        alert("Please enter a base post or idea first.");
+                        return;
+                    }
+
+                    var platforms = getSelectedPlatforms();
+                    if (platforms.length === 0) {
+                        alert("Please select at least one target platform.");
+                        return;
+                    }
+
+                    var useOpus = document.getElementById('social-opus-clips') ? document.getElementById('social-opus-clips').checked : false;
+
+                    var btn = document.getElementById('btn-generate-social');
+                    if (btn) { btn.disabled = true; btn.innerHTML = '&#9203; Generating...'; }
+                    document.getElementById('btn-broadcast-social').disabled = true;
+
+                    setStatus('Generating AI variants for ' + platforms.join(', ') + '...', 'loading');
+
+                    google.script.run
+                        .withSuccessHandler(function (res) {
+                            if (btn) { btn.disabled = false; btn.innerHTML = '&#129302; Generate with Grok'; }
+                            if (res.success) {
+                                currentVariants = res.variants;
+                                renderVariants();
+                            } else {
+                                setStatus('Generation failed: ' + res.error, 'error');
+                            }
+                        })
+                        .withFailureHandler(function (err) {
+                            if (btn) { btn.disabled = false; btn.innerHTML = '&#129302; Generate with Grok'; }
+                            setStatus('Communication failed: ' + err.message, 'error');
+                        })
+                        .client_generateSocialPosts(basePost, platforms, useOpus);
+                },
+
+                publishOne: function (platform) {
+                    // We check if it's supported by backend right now
+                    // Backend SocialPublisher supports twitter, linkedin, gbp, tiktok, youtube, telegram, facebook, instagram, threads, skool, patreon
+                    var supported = ['twitter', 'linkedin', 'gbp', 'tiktok', 'youtube', 'telegram', 'facebook', 'instagram', 'threads', 'skool', 'patreon'];
+
+                    var contentEl = document.getElementById('social-content-' + platform);
+                    if (!contentEl || !contentEl.value.trim()) return;
+                    var content = contentEl.value.trim();
+                    var driveFileId = document.getElementById('social-media-drive-id') ? document.getElementById('social-media-drive-id').value : '';
+
+                    if (supported.indexOf(platform) === -1) {
+                        setResultBadge(platform, false, 'API integration for ' + LABELS[platform] + ' is not yet complete.');
+                        return;
+                    }
+
+                    setPublishBtnState(platform, true);
+                    setResultBadge(platform, true, 'Posting...');
+
+                    google.script.run
+                        .withSuccessHandler(function (res) {
+                            setPublishBtnState(platform, false);
+                            if (res.success) {
+                                setResultBadge(platform, true, 'Posted successfully!');
+                            } else {
+                                setResultBadge(platform, false, res.note || res.error || 'Failed.');
+                            }
+                        })
+                        .withFailureHandler(function (err) {
+                            setPublishBtnState(platform, false);
+                            setResultBadge(platform, false, 'Error: ' + err.message);
+                        })
+                        .publishPost(platform, content, { driveFileId: driveFileId });
+                },
+
+                broadcastAll: function () {
+                    var posts = {};
+                    var approvedCheckboxes = document.querySelectorAll('.social-variant-approve:checked');
+                    var driveFileId = document.getElementById('social-media-drive-id') ? document.getElementById('social-media-drive-id').value : '';
+                    approvedCheckboxes.forEach(function (cb) {
+                        var p = cb.getAttribute('data-platform');
+                        var contentEl = document.getElementById('social-content-' + p);
+                        if (contentEl && contentEl.value.trim()) {
+                            posts[p] = { content: contentEl.value.trim(), driveFileId: driveFileId };
+                        }
+                    });
+
+                    if (Object.keys(posts).length === 0) {
+                        alert("No approved variants with content to broadcast.");
+                        return;
+                    }
+
+                    var btn = document.getElementById('btn-broadcast-social');
+                    if (btn) { btn.disabled = true; btn.innerHTML = '&#9203; Broadcasting...'; }
+
+                    Object.keys(posts).forEach(function (p) {
+                        // Only set status to posting if making API request
+                        var supported = ['twitter', 'linkedin', 'gbp', 'tiktok', 'youtube'];
+                        if (supported.indexOf(p) !== -1) {
+                            setPublishBtnState(p, true);
+                            setResultBadge(p, true, 'Posting...');
+                        }
+                    });
+
+                    google.script.run
+                        .withSuccessHandler(function (res) {
+                            if (btn) { btn.disabled = false; btn.innerHTML = '&#128640; Broadcast Approved Posts'; }
+
+                            // Process the backend results
+                            Object.keys(res.results).forEach(function (p) {
+                                var r = res.results[p];
+                                setPublishBtnState(p, false);
+                                if (r.success) {
+                                    setResultBadge(p, true, 'Posted successfully!');
+                                } else {
+                                    setResultBadge(p, false, r.note || r.error || 'Failed.');
+                                }
+                            });
+
+                            // Handle any unsupported platforms that were approved but not sent
+                            Object.keys(posts).forEach(function (p) {
+                                if (!res.results[p]) {
+                                    setPublishBtnState(p, false);
+                                    setResultBadge(p, false, 'Platform not yet supported by backend API.');
+                                }
+                            });
+                        })
+                        .withFailureHandler(function (err) {
+                            if (btn) { btn.disabled = false; btn.innerHTML = '&#128640; Broadcast Approved Posts'; }
+                            Object.keys(posts).forEach(function (p) {
+                                setPublishBtnState(p, false);
+                            });
+                            alert("Broadcast failed: " + err.message);
+                        })
+                        .publishAll(posts);
+                }
+            };
+        })();
+
+        function generateSocialPosts() {
+            SocialHub.generate();
         }
-    });
+
+        function broadcastSocialPosts() {
+            SocialHub.broadcastAll();
+        }
+
+        function scheduleSocialPosts() {
+            var posts = {};
+            var approvedCheckboxes = document.querySelectorAll('.social-variant-approve:checked');
+            var driveFileId = document.getElementById('social-media-drive-id') ? document.getElementById('social-media-drive-id').value : '';
+            approvedCheckboxes.forEach(function (cb) {
+                var p = cb.getAttribute('data-platform');
+                var contentEl = document.getElementById('social-content-' + p);
+                if (contentEl && contentEl.value.trim()) {
+                    posts[p] = { content: contentEl.value.trim(), driveFileId: driveFileId };
+                }
+            });
+
+            if (Object.keys(posts).length === 0) {
+                alert("No approved variants with content to schedule.");
+                return;
+            }
+
+            var scheduledDate = prompt("Enter schedule date (e.g. YYYY-MM-DD or YYYY-MM-DD HH:MM) for these posts:");
+            if (!scheduledDate) return;
+
+            var btn = document.getElementById('btn-schedule-social');
+            if (btn) { btn.disabled = true; btn.innerHTML = '&#9203; Scheduling...'; }
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '📆 Schedule'; }
+                    if (res.success) {
+                        alert("Successfully scheduled posts!");
+                        syncGoogleCalendar();
+                    } else {
+                        alert("Failed to schedule: " + res.error);
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '📆 Schedule'; }
+                    alert("Communication failed: " + err.message);
+                })
+                .client_scheduleSocialPosts(posts, scheduledDate);
+        }
+
+        function syncGoogleCalendar() {
+            var container = document.getElementById('calendar-events-container');
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); grid-column: 1 / -1;">⏳ Syncing with Calendar...</div>';
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res.success && res.events && res.events.length > 0) {
+                        var html = '';
+                        res.events.forEach(function (ev) {
+                            html += `<div style="padding: 16px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                                <div style="font-weight: 600; margin-bottom: 8px; color: var(--primary);">${new Date(ev.date).toLocaleString()}</div>
+                                <div style="font-size: 13px; color: var(--text); font-style: italic;">"${ev.title}"</div>
+                                <div style="font-size: 12px; color: var(--muted); margin-top: 8px; text-transform: capitalize;">Platforms: ${ev.platforms.join(', ')}</div>
+                            </div>`;
+                        });
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); grid-column: 1 / -1;">No upcoming scheduled posts found in the next 60 days.</div>';
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--error); grid-column: 1 / -1;">Error: ${err.message}</div>`;
+                })
+                .client_getScheduledPosts();
+        }
+
+        function fetchTrendingNews() {
+            var topic = document.getElementById('news-topic').value.trim();
+            var btn = document.getElementById('btn-fetch-news');
+            if (btn) { btn.disabled = true; btn.innerText = 'Fetching...'; }
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (btn) { btn.disabled = false; btn.innerText = 'Fetch Trending'; }
+                    if (res.success) {
+                        document.getElementById('social-base-post').value = res.draft;
+                    } else {
+                        alert('Failed to fetch news: ' + res.error);
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    if (btn) { btn.disabled = false; btn.innerText = 'Fetch Trending'; }
+                    alert('Communication failed: ' + err.message);
+                })
+                .client_fetchTrendingNews(topic);
+        }
     </script>
 
-</body> tag in Dashboard.html
-         */
+    <!-- Modal for Social API Login (Optional) -->
+    <!-- (We can add to this later if we need explicit OAuth popups) -->
+
+    <!-- Placeholder for Wix integration or other scripts -->
+    <script>
 
         // =========================================================
         // WIX PORTAL INTEGRATION
         // =========================================================
 
         /**
-         * Configuration for Wix Portal Integration
-         */
+        * Configuration for Wix Portal Integration
+        */
         const WIX_PORTAL_CONFIG = {
             // Your Wix site URL
             siteUrl: 'https://www.shamrockbailbonds.biz',
@@ -6933,20 +7225,20 @@
         };
 
         /**
-         * Save a signing link to the Wix portal for a specific signer
-         * 
-         * @param {Object} params
-         * @param {string} params.signerEmail - Email of the signer
-         * @param {string} params.signerName - Name of the signer
-         * @param {string} params.signerPhone - Phone of the signer
-         * @param {string} params.signerRole - 'defendant', 'indemnitor', or 'agent'
-         * @param {string} params.signingLink - The SignNow signing link
-         * @param {string} params.documentId - The SignNow document ID
-         * @param {string} params.defendantName - Full defendant name
-         * @param {string} params.caseNumber - Case number
-         * @param {string} params.documentName - Name of the document packet
-         * @returns {Promise<Object>} Result of the save operation
-         */
+        * Save a signing link to the Wix portal for a specific signer
+        *
+        * @param {Object} params
+                    * @param {string} params.signerEmail - Email of the signer
+                    * @param {string} params.signerName - Name of the signer
+                    * @param {string} params.signerPhone - Phone of the signer
+                    * @param {string} params.signerRole - 'defendant', 'indemnitor', or 'agent'
+                    * @param {string} params.signingLink - The SignNow signing link
+                    * @param {string} params.documentId - The SignNow document ID
+                    * @param {string} params.defendantName - Full defendant name
+                    * @param {string} params.caseNumber - Case number
+                    * @param {string} params.documentName - Name of the document packet
+                    * @returns {Promise < Object >} Result of the save operation
+                    */
         async function saveSigningLinkToWixPortal(params) {
             if (!WIX_PORTAL_CONFIG.enabled) return { success: false, reason: 'disabled' };
             // Wrap single item as batch
@@ -7011,9 +7303,12 @@
                             // Try to parse address object or string
                             if (typeof p.address === 'object') {
                                 if (p.address.formatted) document.getElementById('indemnitor-street').value = p.address.formatted;
-                                if (p.address.city && document.getElementById('indemnitor-city')) document.getElementById('indemnitor-city').value = p.address.city;
-                                if (p.address.state && document.getElementById('indemnitor-state')) document.getElementById('indemnitor-state').value = p.address.state;
-                                if (p.address.postalCode && document.getElementById('indemnitor-zip')) document.getElementById('indemnitor-zip').value = p.address.postalCode;
+                                if (p.address.city && document.getElementById('indemnitor-city')) document.getElementById('indemnitor-city').value =
+                                    p.address.city;
+                                if (p.address.state && document.getElementById('indemnitor-state'))
+                                    document.getElementById('indemnitor-state').value = p.address.state;
+                                if (p.address.postalCode && document.getElementById('indemnitor-zip'))
+                                    document.getElementById('indemnitor-zip').value = p.address.postalCode;
                             } else {
                                 document.getElementById('indemnitor-street').value = p.address;
                             }
@@ -7165,221 +7460,8 @@
     <!-- ============================================================
      TAB: BLOG AUDIO (ELEVENLABS)
      ============================================================ -->
-    <!-- ============================================================
-     TAB: SOCIAL MEDIA PUBLISHER
-     ============================================================ -->
-    <div id="social-tab" class="tab-content" style="display:none;">
 
-        <!-- TOP BAR: Topic Input + AI Draft Button -->
-        <div class="card" style="border-top: 4px solid var(--accent); margin-bottom: 16px;">
-            <div class="card-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-size:22px;">&#128227;</span>
-                    <div>
-                        <h3 style="margin:0; font-size:18px;">Social Media Publisher</h3>
-                        <p style="margin:0; font-size:12px; color:var(--muted);">AI drafts &#8594; Human review &#8594; One-click publish</p>
-                    </div>
-                </div>
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;" id="social-cred-badges">
-                    <span id="social-cred-twitter"  class="badge" style="font-size:11px;">X &#8212;</span>
-                    <span id="social-cred-linkedin" class="badge" style="font-size:11px;">in &#8212;</span>
-                    <span id="social-cred-gbp"      class="badge" style="font-size:11px;">G &#8212;</span>
-                    <span id="social-cred-tiktok"   class="badge" style="font-size:11px;">TT &#8212;</span>
-                    <span id="social-cred-youtube"  class="badge" style="font-size:11px;">YT &#8212;</span>
-                </div>
-            </div>
-            <div style="padding:16px 28px;">
-                <div style="display:grid; grid-template-columns:1fr 280px auto; gap:12px; align-items:end;">
-                    <div>
-                        <label style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">Post Topic / Prompt</label>
-                        <input type="text" id="social-topic" class="input"
-                            placeholder="e.g. What to do when a family member is arrested"
-                            style="width:100%;" />
-                    </div>
-                    <div>
-                        <label style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">Context (optional)</label>
-                        <input type="text" id="social-context" class="input"
-                            placeholder="Link, event details..."
-                            style="width:100%;" />
-                    </div>
-                    <button class="btn btn-primary" onclick="SocialTab.generateDrafts()" id="social-draft-btn"
-                        style="white-space:nowrap; height:42px; align-self:end;">
-                        &#129302; Generate AI Drafts
-                    </button>
-                </div>
-                <div id="social-draft-status" style="margin-top:10px; font-size:13px; display:none;"></div>
-            </div>
-        </div>
-
-        <!-- PLATFORM CARDS GRID -->
-        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(420px, 1fr)); gap:16px; margin-bottom:16px;">
-
-            <!-- X / Twitter -->
-            <div class="card" style="border-left:4px solid #000000; padding:0; overflow:hidden;">
-                <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:18px; font-weight:800;">X</span>
-                    <span style="font-weight:700;">X (Twitter)</span>
-                    <span class="badge" id="social-last-twitter" style="font-size:10px; margin-left:auto;">&#8212;</span>
-                </div>
-                <div style="padding:12px 16px;">
-                    <textarea id="social-content-twitter" class="input" rows="5"
-                        maxlength="280"
-                        placeholder="AI draft will appear here. Edit before publishing..."
-                        oninput="SocialTab.updateCounter('twitter', 280)"
-                        style="width:100%; resize:vertical; font-size:13px;"></textarea>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                        <span id="social-counter-twitter" style="font-size:11px; color:var(--muted);">0 / 280</span>
-                        <div style="display:flex; gap:6px;">
-                            <button class="btn btn-secondary btn-sm" onclick="SocialTab.clearDraft('twitter')">&#10005; Clear</button>
-                            <button class="btn btn-primary btn-sm" onclick="SocialTab.publishOne('twitter')" id="social-publish-twitter">
-                                &#128640; Post to X
-                            </button>
-                        </div>
-                    </div>
-                    <div id="social-result-twitter" style="display:none; margin-top:8px; font-size:12px;"></div>
-                </div>
-            </div>
-
-            <!-- LinkedIn -->
-            <div class="card" style="border-left:4px solid #0077B5; padding:0; overflow:hidden;">
-                <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:18px;">&#128188;</span>
-                    <span style="font-weight:700;">LinkedIn</span>
-                    <span class="badge" id="social-last-linkedin" style="font-size:10px; margin-left:auto;">&#8212;</span>
-                </div>
-                <div style="padding:12px 16px;">
-                    <textarea id="social-content-linkedin" class="input" rows="5"
-                        maxlength="3000"
-                        placeholder="AI draft will appear here. Edit before publishing..."
-                        oninput="SocialTab.updateCounter('linkedin', 3000)"
-                        style="width:100%; resize:vertical; font-size:13px;"></textarea>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                        <span id="social-counter-linkedin" style="font-size:11px; color:var(--muted);">0 / 3000</span>
-                        <div style="display:flex; gap:6px;">
-                            <button class="btn btn-secondary btn-sm" onclick="SocialTab.clearDraft('linkedin')">&#10005; Clear</button>
-                            <button class="btn btn-primary btn-sm" onclick="SocialTab.publishOne('linkedin')" id="social-publish-linkedin">
-                                &#128640; Post to LinkedIn
-                            </button>
-                        </div>
-                    </div>
-                    <div id="social-result-linkedin" style="display:none; margin-top:8px; font-size:12px;"></div>
-                </div>
-            </div>
-
-            <!-- Google Business Profile -->
-            <div class="card" style="border-left:4px solid #4285F4; padding:0; overflow:hidden;">
-                <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:18px;">&#128205;</span>
-                    <span style="font-weight:700;">Google Business Profile</span>
-                    <span class="badge" id="social-last-gbp" style="font-size:10px; margin-left:auto;">&#8212;</span>
-                </div>
-                <div style="padding:12px 16px;">
-                    <textarea id="social-content-gbp" class="input" rows="5"
-                        maxlength="1500"
-                        placeholder="AI draft will appear here. Edit before publishing..."
-                        oninput="SocialTab.updateCounter('gbp', 1500)"
-                        style="width:100%; resize:vertical; font-size:13px;"></textarea>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                        <span id="social-counter-gbp" style="font-size:11px; color:var(--muted);">0 / 1500</span>
-                        <div style="display:flex; gap:6px;">
-                            <button class="btn btn-secondary btn-sm" onclick="SocialTab.clearDraft('gbp')">&#10005; Clear</button>
-                            <button class="btn btn-primary btn-sm" onclick="SocialTab.publishOne('gbp')" id="social-publish-gbp">
-                                &#128640; Post to Google
-                            </button>
-                        </div>
-                    </div>
-                    <div id="social-result-gbp" style="display:none; margin-top:8px; font-size:12px;"></div>
-                </div>
-            </div>
-
-            <!-- TikTok -->
-            <div class="card" style="border-left:4px solid #010101; padding:0; overflow:hidden;">
-                <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:18px;">&#127925;</span>
-                    <span style="font-weight:700;">TikTok</span>
-                    <span class="badge" id="social-last-tiktok" style="font-size:10px; margin-left:auto;">&#8212;</span>
-                </div>
-                <div style="padding:12px 16px;">
-                    <textarea id="social-content-tiktok" class="input" rows="5"
-                        maxlength="2200"
-                        placeholder="AI draft will appear here. Edit before publishing..."
-                        oninput="SocialTab.updateCounter('tiktok', 2200)"
-                        style="width:100%; resize:vertical; font-size:13px;"></textarea>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                        <span id="social-counter-tiktok" style="font-size:11px; color:var(--muted);">0 / 2200</span>
-                        <div style="display:flex; gap:6px;">
-                            <button class="btn btn-secondary btn-sm" onclick="SocialTab.clearDraft('tiktok')">&#10005; Clear</button>
-                            <button class="btn btn-primary btn-sm" onclick="SocialTab.publishOne('tiktok')" id="social-publish-tiktok">
-                                &#128640; Post to TikTok
-                            </button>
-                        </div>
-                    </div>
-                    <div id="social-result-tiktok" style="display:none; margin-top:8px; font-size:12px;"></div>
-                </div>
-            </div>
-
-            <!-- YouTube Community -->
-            <div class="card" style="border-left:4px solid #FF0000; padding:0; overflow:hidden;">
-                <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:18px;">&#9654;&#65039;</span>
-                    <span style="font-weight:700;">YouTube Community</span>
-                    <span class="badge" id="social-last-youtube" style="font-size:10px; margin-left:auto;">&#8212;</span>
-                </div>
-                <div style="padding:12px 16px;">
-                    <textarea id="social-content-youtube" class="input" rows="5"
-                        maxlength="5000"
-                        placeholder="AI draft will appear here. Edit before publishing..."
-                        oninput="SocialTab.updateCounter('youtube', 5000)"
-                        style="width:100%; resize:vertical; font-size:13px;"></textarea>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                        <span id="social-counter-youtube" style="font-size:11px; color:var(--muted);">0 / 5000</span>
-                        <div style="display:flex; gap:6px;">
-                            <button class="btn btn-secondary btn-sm" onclick="SocialTab.clearDraft('youtube')">&#10005; Clear</button>
-                            <button class="btn btn-primary btn-sm" onclick="SocialTab.publishOne('youtube')" id="social-publish-youtube">
-                                &#128640; Post to YouTube
-                            </button>
-                        </div>
-                    </div>
-                    <div id="social-result-youtube" style="display:none; margin-top:8px; font-size:12px;"></div>
-                </div>
-            </div>
-
-        </div><!-- end platform grid -->
-
-        <!-- PUBLISH ALL BUTTON -->
-        <div class="card" style="border-top: 4px solid var(--success);">
-            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:16px 28px;">
-                <div>
-                    <p style="margin:0; font-weight:700; font-size:15px;">&#128640; Publish All Platforms</p>
-                    <p style="margin:0; font-size:12px; color:var(--muted);">Posts to every platform with content in the editor above. Empty platforms are skipped automatically.</p>
-                </div>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
-                        <input type="checkbox" id="social-confirm-publish" style="width:16px; height:16px;"> I&#39;ve reviewed all drafts
-                    </label>
-                    <button class="btn btn-primary" onclick="SocialTab.publishAll()" id="social-publish-all-btn"
-                        style="background:var(--success); border-color:var(--success); font-size:15px; padding:10px 24px;">
-                        &#128640; Publish All Now
-                    </button>
-                </div>
-            </div>
-            <div id="social-publish-all-results" style="display:none; padding:0 28px 16px;"></div>
-        </div>
-
-        <!-- CREDENTIAL STATUS PANEL -->
-        <div class="card" style="margin-top:16px; border-top:2px solid var(--border);">
-            <div style="padding:12px 28px; border-bottom:1px solid var(--border);">
-                <h4 style="margin:0; font-size:14px;">&#9881;&#65039; Platform Credentials Status</h4>
-            </div>
-            <div style="padding:16px 28px;">
-                <p style="font-size:12px; color:var(--muted); margin:0 0 10px;">Missing credentials? See <strong>SOCIAL_MEDIA_SETUP_GUIDE.md</strong> in the backend-gas folder, then add keys to GAS Script Properties.</p>
-                <div id="social-cred-status-detail" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:8px;"></div>
-            </div>
-        </div>
-
-    </div><!-- end #social-tab -->
-
-        <div id="blog-audio-tab" class="tab-content" style="display:none;">
+    <div id="blog-audio-tab" class="tab-content" style="display:none;">
         <div class="card">
             <div class="card-header">
                 <h2>🎙️ Blog-to-Video Audio Generator</h2>
@@ -7862,11 +7944,11 @@
                                 UI.hideLoading();
                                 const color = res.riskLevel.includes('High') ? 'var(--error)' : (res.riskLevel === 'Medium' ? 'var(--warning)' : 'var(--success)');
                                 UI.setHTML('analyst-output', `
-                                    <div class="result-card" style="border-color:${color}">
-                                        <h2 style="color:${color}">${res.riskLevel} Risk</h2>
-                                        <div class="score" style="color:${color}">${res.score}/100</div>
-                                        <p>${res.rationale || res.summary}</p>
-                                    </div>`);
+            <div class="result-card" style="border-color:${color}">
+                <h2 style="color:${color}">${res.riskLevel} Risk</h2>
+                <div class="score" style="color:${color}">${res.score}/100</div>
+                <p>${res.rationale || res.summary}</p>
+            </div>`);
                             })
                             .withFailureHandler(err => {
                                 UI.hideLoading();
@@ -7920,16 +8002,16 @@
                     renderReport: function (res) {
                         const safeScore = (s) => (s >= 80 ? `<span class="text-success">${s} (Safe)</span>` : (s >= 50 ? `<span class="text-warning">${s} (Caution)</span>` : `<span class="text-error">${s} (Risk)</span>`));
                         return `
-                            <div class="card">
-                                <h3>Results</h3>
-                                <div class="grid-2">
-                                    <div class="box"><strong>Flight Risk</strong>: ${safeScore(res.flightRiskScore)}</div>
-                                    <div class="box"><strong>Stability</strong>: ${safeScore(res.indemnitorStabilityScore)}</div>
-                                </div>
-                                <div class="rec-box">
-                                    <div class="rec-val">${res.recommendation}</div>
-                                </div>
-                            </div>`;
+            <div class="card">
+                <h3>Results</h3>
+                <div class="grid-2">
+                    <div class="box"><strong>Flight Risk</strong>: ${safeScore(res.flightRiskScore)}</div>
+                    <div class="box"><strong>Stability</strong>: ${safeScore(res.indemnitorStabilityScore)}</div>
+                </div>
+                <div class="rec-box">
+                    <div class="rec-val">${res.recommendation}</div>
+                </div>
+            </div>`;
                     }
                 },
 
@@ -8016,25 +8098,25 @@
                                 }
 
                                 html += `
-                                    <tr>
-                                        <td style="padding: 12px; font-family:monospace;">${id ? id.substring(0, 8) : 'N/A'}...</td>
-                                        <td style="padding: 12px;">
-                                            <strong>${defendant}</strong>
-                                            <span id="badge-${id}">${riskBadge}</span>
-                                        </td>
-                                        <td style="padding: 12px;">${indemnitor}</td>
-                                        <td style="padding: 12px;">${item.Role || 'Indemnitor'}${id && id.startsWith('TG-') ? ' <span style="background:#0088cc;color:#fff;font-size:10px;padding:2px 6px;border-radius:8px;margin-left:4px;">📱 Telegram</span>' : ''}</td>
-                                        <td style="padding: 12px;"><span class="badge badge-warning">${item.Status || 'Pending'}</span></td>
-                                        <td style="padding: 12px;">${dateStr}</td>
-                                        <td style="padding: 12px; text-align: right;">
-                                            <button class="btn btn-sm btn-primary" onclick="loadIntake('${id}')" title="Load & Process">
-                                                ⬇️ Process
-                                            </button>
-                                            <button class="btn btn-sm btn-secondary" style="margin-left:4px;" onclick="Queue.archive('${id}', this)" title="Mark as Done (Remove from Queue)">
-                                                ✅ Done
-                                            </button>
-                                        </td>
-                                    </tr>`;
+            <tr>
+                <td style="padding: 12px; font-family:monospace;">${id ? id.substring(0, 8) : 'N/A'}...</td>
+                <td style="padding: 12px;">
+                    <strong>${defendant}</strong>
+                    <span id="badge-${id}">${riskBadge}</span>
+                </td>
+                <td style="padding: 12px;">${indemnitor}</td>
+                <td style="padding: 12px;">${item.Role || 'Indemnitor'}${id && id.startsWith('TG-') ? ' <span style="background:#0088cc;color:#fff;font-size:10px;padding:2px 6px;border-radius:8px;margin-left:4px;">📱 Telegram</span>' : ''}</td>
+                <td style="padding: 12px;"><span class="badge badge-warning">${item.Status || 'Pending'}</span></td>
+                <td style="padding: 12px;">${dateStr}</td>
+                <td style="padding: 12px; text-align: right;">
+                    <button class="btn btn-sm btn-primary" onclick="loadIntake('${id}')" title="Load & Process">
+                        ⬇️ Process
+                    </button>
+                    <button class="btn btn-sm btn-secondary" style="margin-left:4px;" onclick="Queue.archive('${id}', this)" title="Mark as Done (Remove from Queue)">
+                        ✅ Done
+                    </button>
+                </td>
+            </tr>`;
                             } catch (itemErr) {
                                 console.error('Error rendering item:', itemErr, item);
                             }
@@ -8202,7 +8284,7 @@
 
                         // 6. Async: Fetch & Render Documents
                         if (indemnitorData.email) {
-                            const currentId = indemnitorCount; // Capture current ID 
+                            const currentId = indemnitorCount; // Capture current ID
                             google.script.run
                                 .withSuccessHandler(function (result) {
                                     if (result && result.documents) {
@@ -8275,17 +8357,17 @@
                             let icon = isImage ? '🖼️' : '📄';
 
                             attachmentsHTML += `
-                                <div class="card" style="padding: 16px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid var(--accent);">
-                                    <div style="display: flex; align-items: center; gap: 12px;">
-                                        <span style="font-size: 24px;">${icon}</span>
-                                        <div>
-                                            <div style="font-weight: 600; color: var(--text);">${field.label}</div>
-                                            <div style="font-size: 12px; color: var(--muted);">Wix Upload</div>
-                                        </div>
-                                    </div>
-                                    <a href="${url}" target="_blank" class="btn btn-sm btn-primary" onclick="if(this.href.includes('wix:image')) { alert('Direct access to Wix internal image URIs requires Dashboard resolution.\\n\\nURI: ' + this.href); return false; }">View</a>
-                                </div>
-                            `;
+            <div class="card" style="padding: 16px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid var(--accent);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 24px;">${icon}</span>
+                    <div>
+                        <div style="font-weight: 600; color: var(--text);">${field.label}</div>
+                        <div style="font-size: 12px; color: var(--muted);">Wix Upload</div>
+                    </div>
+                </div>
+                <a href="${url}" target="_blank" class="btn btn-sm btn-primary" onclick="if(this.href.includes('wix:image')) { alert('Direct access to Wix internal image URIs requires Dashboard resolution.\\n\\nURI: ' + this.href); return false; }">View</a>
+            </div>
+            `;
                         }
                     });
 
@@ -8762,6 +8844,90 @@
 
                     // Maps is now handled by callback or lazy-load on tab switch
 
+                    // --- Module: Social Hub ---
+                    window.generateSocialPosts = function () {
+                        const basePost = document.getElementById('social-base-post').value;
+                        if (!basePost) {
+                            UI.showToast('Please enter a base post/idea', 'error');
+                            return;
+                        }
+
+                        const checkboxes = document.querySelectorAll('.social-platform:checked');
+                        const platforms = Array.from(checkboxes).map(cb => cb.value);
+
+                        if (platforms.length === 0) {
+                            UI.showToast('Please select at least one target platform', 'error');
+                            return;
+                        }
+
+                        const btn = document.getElementById('btn-generate-social');
+                        const originalText = btn.innerHTML;
+                        btn.innerHTML = '⏳ Generating with Grok...';
+                        btn.disabled = true;
+
+                        const container = document.getElementById('social-variants-container');
+                        container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--text-secondary);"><div style="font-size:32px; animation:spin 1s linear infinite; display:inline-block;">⚙️</div><p style="margin-top:16px;">Grok is crafting optimal posts for ' + platforms.length + ' platforms...</p></div>';
+
+                        google.script.run
+                            .withSuccessHandler(res => {
+                                btn.innerHTML = originalText;
+                                btn.disabled = false;
+
+                                if (res.success) {
+                                    UI.showToast('Variants Generated Successfully!', 'success');
+                                    renderSocialVariants(res.variants);
+                                    document.getElementById('btn-broadcast-social').disabled = false;
+                                } else {
+                                    UI.showToast('Generation Failed: ' + res.error, 'error');
+                                    container.innerHTML = '<div style="color:var(--error); padding:20px;">Error: ' + res.error + '</div>';
+                                }
+                            })
+                            .withFailureHandler(err => {
+                                btn.innerHTML = originalText;
+                                btn.disabled = false;
+                                console.error(err);
+                                UI.showToast('System Error: ' + err.message, 'error');
+                                container.innerHTML = '<div style="color:var(--error); padding:20px;">System Error: ' + err.message + '</div>';
+                            })
+                            .client_generateSocialPosts(basePost, platforms);
+                    };
+
+                    window.renderSocialVariants = function (variants) {
+                        const container = document.getElementById('social-variants-container');
+                        container.innerHTML = '';
+
+                        Object.keys(variants).forEach(platform => {
+                            const text = variants[platform];
+
+                            const div = document.createElement('div');
+                            div.style.cssText = 'background: var(--surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 12px;';
+
+                            const header = document.createElement('div');
+                            header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;';
+                            header.innerHTML = '<strong style="text-transform: capitalize; color: var(--accent); font-size: 15px;">' + platform + '</strong><span style="font-size: 11px; color: var(--muted); font-weight: bold;">' + text.length + ' chars</span>';
+
+                            const textarea = document.createElement('textarea');
+                            textarea.className = 'social-variant-edit';
+                            textarea.dataset.platform = platform;
+                            textarea.rows = 4;
+                            textarea.style.cssText = 'width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 8px; font-size: 14px;';
+                            textarea.value = text;
+
+                            const utils = document.createElement('div');
+                            utils.style.cssText = 'display: flex; justify-content: flex-end; gap: 8px;';
+                            utils.innerHTML = '<button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(this.parentElement.previousElementSibling.value); UI.showToast(\'Copied!\',\'success\')">Copy</button>';
+
+                            div.appendChild(header);
+                            div.appendChild(textarea);
+                            div.appendChild(utils);
+                            container.appendChild(div);
+                        });
+                    };
+
+                    window.broadcastSocialPosts = function () {
+                        UI.showToast('API Broadcasting is scheduled for Phase 8.', 'info');
+                    };
+
                     // --- Module: Blog Audio ---
                     window.generateBlogAudio = function (btn) {
                         const text = document.getElementById('blog-text').value;
@@ -9048,6 +9214,144 @@
                 alert(toastMsg);
             }
         }
+        <!-- Media Library Modal -->
+        <div id="media-library-modal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+            <div class="modal-content" style="background: var(--bg-surface); padding: 20px; border-radius: 8px; width: 90%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; border: 1px solid var(--border-medium); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; font-size: 1.25rem;">Media Library</h2>
+                    <button type="button" onclick="closeMediaLibrary()" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer;">&times;</button>
+                </div>
+
+                <div class="tabs" style="display: flex; border-bottom: 1px solid var(--border-medium); margin-bottom: 20px;">
+                    <div class="tab active" onclick="switchMediaTab('drive')" id="tab-drive" style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid var(--primary); color: var(--primary); font-weight: 600;">Google Drive</div>
+                    <div class="tab" onclick="switchMediaTab('grok')" id="tab-grok" style="padding: 10px 20px; cursor: pointer; color: var(--text-secondary);">Grok/X.com</div>
+                    <div class="tab" onclick="switchMediaTab('public')" id="tab-public" style="padding: 10px 20px; cursor: pointer; color: var(--text-secondary);">Public Domain</div>
+                </div>
+
+                <div id="media-content-drive" class="media-tab-content" style="flex: 1; overflow-y: auto;">
+                    <div id="drive-media-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">
+                        <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 40px;">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Loading media from Google Drive...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="media-content-grok" class="media-tab-content" style="display: none; flex: 1; overflow-y: auto;">
+                        <div style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                            <i class="fas fa-robot fa-3x" style="margin-bottom:15px;color:var(--text-muted)"></i><br>
+                                <h3>Grok & X.com Integration</h3>
+                                <p>Search for trending memes and media generated by Grok.</p>
+                                <button class="btn btn-secondary mt-3">Coming Soon</button>
+                        </div>
+                    </div>
+
+                    <div id="media-content-public" class="media-tab-content" style="display: none; flex: 1; overflow-y: auto;">
+                        <div style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                            <i class="fas fa-search fa-3x" style="margin-bottom:15px;color:var(--text-muted)"></i><br>
+                                <h3>Public Domain Search</h3>
+                                <p>Search Unsplash, Pexels, and Giphy for free-to-use media.</p>
+                                <button class="btn btn-secondary mt-3">Coming Soon</button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-medium);">
+                        <button type="button" class="btn btn-secondary" onclick="closeMediaLibrary()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function openMediaLibrary() {
+                    document.getElementById('media-library-modal').style.display = 'flex';
+                loadDriveMedia();
+        }
+
+                function closeMediaLibrary() {
+                    document.getElementById('media-library-modal').style.display = 'none';
+        }
+
+                function switchMediaTab(tabId) {
+                    document.querySelectorAll('.media-tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('#media-library-modal .tab').forEach(el => {
+                    el.style.borderBottom = 'none';
+                el.style.color = 'var(--text-secondary)';
+                el.style.fontWeight = 'normal';
+            });
+
+                document.getElementById('media-content-' + tabId).style.display = 'block';
+                const activeTab = document.getElementById('tab-' + tabId);
+                activeTab.style.borderBottom = '2px solid var(--primary)';
+                activeTab.style.color = 'var(--primary)';
+                activeTab.style.fontWeight = '600';
+
+                if (tabId === 'drive') loadDriveMedia();
+        }
+
+                function loadDriveMedia() {
+            const grid = document.getElementById('drive-media-grid');
+                grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 40px;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Loading media from Google Drive...</div>';
+
+                    google.script.run
+                    .withSuccessHandler(function(files) {
+                    if (!files || files.length === 0) {
+                        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 40px;">No media found in the "shamrock-social-media" folder.</div>';
+                    return;
+                    }
+
+                    grid.innerHTML = files.map(f => {
+                        const isVideo = f.mimeType.startsWith('video/');
+                    const icon = isVideo ? '<i class="fas fa-video"></i>' : '<i class="fas fa-image"></i>';
+                    return `
+                    <div class="media-item" onclick="selectMediaFile('${f.id}', '${f.name}', '${f.mimeType}')" style="border: 1px solid var(--border-medium); border-radius: 6px; padding: 10px; cursor: pointer; text-align: center; background: rgba(0,0,0,0.1); transition: all 0.2s ease;">
+                        <div style="height: 100px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--text-muted); background: var(--bg-main); border-radius: 4px; margin-bottom: 10px;">
+                            ${icon}
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; mix-blend-mode: difference;">
+                            ${f.name}
+                        </div>
+                    </div>`;
+                    }).join('');
+                })
+                .withFailureHandler(function(err) {
+                    grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--danger); padding: 40px;">Error loading media: ' + err.message + '</div>';
+                })
+                .client_getSocialMediaFiles();
+        }
+
+        let currentSelectedMedia = null;
+
+        function selectMediaFile(id, name, mimeType) {
+            currentSelectedMedia = { id, name, mimeType };
+            document.getElementById('social-media-drive-id').value = id;
+            document.getElementById('social-media').value = ''; // clear local file if picked from drive
+            
+            const preview = document.getElementById('selected-media-preview');
+            const previewName = document.getElementById('selected-media-name');
+            const icon = mimeType.startsWith('video/') ? '<i class="fas fa-video"></i> ' : '<i class="fas fa-image"></i> ';
+            previewName.innerHTML = icon + name;
+            preview.style.display = 'block';
+            
+            closeMediaLibrary();
+            if (typeof UI !== 'undefined' && UI.showToast) {
+                UI.showToast("Media selected from Drive.", "success");
+            }
+        }
+
+        function clearSelectedMedia() {
+            currentSelectedMedia = null;
+            document.getElementById('social-media-drive-id').value = '';
+            document.getElementById('social-media').value = '';
+            document.getElementById('selected-media-preview').style.display = 'none';
+        }
+        
+        // Listen for standard file uploads to clear drive selection
+        document.getElementById('social-media').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                document.getElementById('social-media-drive-id').value = '';
+                document.getElementById('selected-media-preview').style.display = 'none';
+                currentSelectedMedia = null;
+            }
+        });
     </script>
 </body>
 

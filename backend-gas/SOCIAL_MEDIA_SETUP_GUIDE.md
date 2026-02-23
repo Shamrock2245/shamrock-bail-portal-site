@@ -128,3 +128,78 @@ This guide provides step-by-step instructions for obtaining the necessary API cr
 4.  **Find your Channel ID:**
     - Your channel ID is found in your YouTube account's [advanced settings](https://www.youtube.com/account_advanced). It will start with `UC...`.
     - Store this in the `YOUTUBE_CHANNEL_ID` script property.
+
+---
+
+## 6. Telegram API
+
+**Required Properties:**
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+
+### Steps:
+
+1.  **Create a Bot:**
+    - Talk to [@BotFather](https://t.me/botfather) on Telegram and select `/newbot`.
+    - Follow the prompts to create a bot. Copy the provided HTTP API Token.
+    - Store this token as `TELEGRAM_BOT_TOKEN`.
+
+2.  **Get Chat ID:**
+    - Add your bot to the target channel or group as an admin.
+    - Send a test message to the channel/group.
+    - Visit `https://api.telegram.org/bot<YourBOTToken>/getUpdates` to find the `chat_id` in the JSON response.
+    - Store this as `TELEGRAM_CHAT_ID` (usually starts with a `-` for channels/groups).
+
+---
+
+## 7. Meta Platform (Facebook, Instagram, Threads)
+
+**Required Properties:**
+- `FB_PAGE_ACCESS_TOKEN`
+- `FB_PAGE_ID`
+- `THREADS_ACCESS_TOKEN`
+- `THREADS_USER_ID`
+
+> [!WARNING]
+> The Instagram Graph API does not support text-only posts. To post text, you must copy it and post it manually, or the system will require an image/video to be attached.
+
+### Steps:
+
+1.  **Create Meta Developer App:**
+    - Go to [Meta for Developers](https://developers.facebook.com/) and create a new **Business** app.
+    - Add the **Facebook Login for Business** product and the **Threads API** product.
+
+2.  **Generate Graph API Tokens:**
+    - Use the [Graph API Explorer](https://developers.facebook.com/tools/explorer/) to generate a System User or Page Access Token.
+    - Ensure you request the `pages_manage_posts` and `pages_read_engagement` permissions.
+    - Store the token as `FB_PAGE_ACCESS_TOKEN` and your Facebook Page ID as `FB_PAGE_ID`.
+
+3.  **Generate Threads API Tokens:**
+    - Authenticate through your Meta app using the Threads API use cases to obtain a Threads access token.
+    - Store the token as `THREADS_ACCESS_TOKEN` and your Threads user ID as `THREADS_USER_ID`.
+
+---
+
+## 8. Global & AI Settings
+
+**Required Properties:**
+- `OPENAI_API_KEY`
+- `GROK_API_KEY`
+- `SOCIAL_CALENDAR_ID`
+
+### Steps:
+
+1.  **OpenAI (Standard Content Generation):**
+    - Go to the [OpenAI Platform](https://platform.openai.com/api-keys).
+    - Generate a new API key and store it as `OPENAI_API_KEY`.
+    - This is used for standard social media draft generation and general AI functionalities.
+
+2.  **xAI/Grok (News Reactor & Real-Time Content):**
+    - Go to the [xAI API Console](https://console.x.ai).
+    - Create an API key to access Grok.
+    - Store this as `GROK_API_KEY`.
+    - This powers the "News Reactor" feature, analyzing current events and generating edgy/relevant posts.
+
+3.  **Social Calendar ID (Auto-Generated):**
+    - The system automatically creates a dedicated "Shamrock Social Hub Planner" calendar on the first scheduling attempt.
+    - Its ID is saved automatically to the `SOCIAL_CALENDAR_ID` script property to maintain perfectly separated schedules from court dates and notifications. No manual setup is required unless redefining the calendar.

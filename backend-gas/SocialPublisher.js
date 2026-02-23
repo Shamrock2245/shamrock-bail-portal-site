@@ -30,11 +30,17 @@ var SocialPublisher = (function () {
   var PROPS = PropertiesService.getScriptProperties();
 
   var PLATFORM_LIMITS = {
-    twitter:   { chars: 280,   label: 'X (Twitter)' },
-    linkedin:  { chars: 3000,  label: 'LinkedIn' },
-    gbp:       { chars: 1500,  label: 'Google Business Profile' },
-    tiktok:    { chars: 2200,  label: 'TikTok' },
-    youtube:   { chars: 5000,  label: 'YouTube Community' }
+    twitter: { chars: 280, label: 'X (Twitter)' },
+    linkedin: { chars: 3000, label: 'LinkedIn' },
+    gbp: { chars: 1500, label: 'Google Business Profile' },
+    tiktok: { chars: 2200, label: 'TikTok' },
+    youtube: { chars: 5000, label: 'YouTube Community' },
+    telegram: { chars: 4096, label: 'Telegram' },
+    facebook: { chars: 63206, label: 'Facebook' },
+    instagram: { chars: 2200, label: 'Instagram' },
+    threads: { chars: 500, label: 'Threads' },
+    skool: { chars: 10000, label: 'Skool' },
+    patreon: { chars: 10000, label: 'Patreon' }
   };
 
   var LOG_SHEET_NAME = 'Social_Posts_Log';
@@ -97,18 +103,29 @@ var SocialPublisher = (function () {
    * Requires: TWITTER_API_KEY, TWITTER_API_SECRET,
    *           TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET
    */
-  function postToTwitter_(content) {
-    var apiKey        = PROPS.getProperty('TWITTER_API_KEY');
-    var apiSecret     = PROPS.getProperty('TWITTER_API_SECRET');
-    var accessToken   = PROPS.getProperty('TWITTER_ACCESS_TOKEN');
-    var accessSecret  = PROPS.getProperty('TWITTER_ACCESS_TOKEN_SECRET');
+  function postToTwitter_(content, postOptions) {
+    var apiKey = PROPS.getProperty('TWITTER_API_KEY');
+    var apiSecret = PROPS.getProperty('TWITTER_API_SECRET');
+    var accessToken = PROPS.getProperty('TWITTER_ACCESS_TOKEN');
+    var accessSecret = PROPS.getProperty('TWITTER_ACCESS_TOKEN_SECRET');
 
     if (!apiKey || !apiSecret || !accessToken || !accessSecret) {
       throw new Error('Twitter credentials missing. Check Script Properties: TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET');
     }
 
     var url = 'https://api.twitter.com/2/tweets';
-    var payload = JSON.stringify({ text: content });
+    var payloadObj = { text: content };
+
+    if (postOptions && postOptions.driveFileId) {
+      try {
+        var mediaId = uploadToTwitter_(postOptions.driveFileId, apiKey, apiSecret, accessToken, accessSecret);
+        if (mediaId) {
+          payloadObj.media = { media_ids: [mediaId] };
+        }
+      } catch (e) {
+        console.warn('Twitter Media Upload failed: ' + e.message);
+      }
+    }
 
     // Build OAuth 1.0a signature
     var oauthHeader = buildOAuth1Header_('POST', url, {}, apiKey, apiSecret, accessToken, accessSecret);
@@ -117,7 +134,7 @@ var SocialPublisher = (function () {
       method: 'post',
       contentType: 'application/json',
       headers: { 'Authorization': oauthHeader },
-      payload: payload,
+      payload: JSON.stringify(payloadObj),
       muteHttpExceptions: true
     };
 
@@ -140,18 +157,18 @@ var SocialPublisher = (function () {
     var timestamp = Math.floor(Date.now() / 1000).toString();
 
     var oauthParams = {
-      oauth_consumer_key:     consumerKey,
-      oauth_nonce:            nonce,
+      oauth_consumer_key: consumerKey,
+      oauth_nonce: nonce,
       oauth_signature_method: 'HMAC-SHA1',
-      oauth_timestamp:        timestamp,
-      oauth_token:            token,
-      oauth_version:          '1.0'
+      oauth_timestamp: timestamp,
+      oauth_token: token,
+      oauth_version: '1.0'
     };
 
     // Merge all params for signature base
     var allParams = Object.assign({}, params, oauthParams);
     var sortedKeys = Object.keys(allParams).sort();
-    var paramString = sortedKeys.map(function(k) {
+    var paramString = sortedKeys.map(function (k) {
       return encodeURIComponent(k) + '=' + encodeURIComponent(allParams[k]);
     }).join('&');
 
@@ -163,11 +180,94 @@ var SocialPublisher = (function () {
     );
     oauthParams['oauth_signature'] = signature;
 
-    var headerParts = Object.keys(oauthParams).sort().map(function(k) {
+    var headerParts = Object.keys(oauthParams).sort().map(function (k) {
       return encodeURIComponent(k) + '="' + encodeURIComponent(oauthParams[k]) + '"';
     });
 
     return 'OAuth ' + headerParts.join(', ');
+  }
+
+  function uploadToTwitter_(fileId, consumerKey, consumerSecret, token, tokenSecret) {
+    var file = DriveApp.getFileById(fileId);
+    var blob = file.getBlob();
+    var mimeType = blob.getContentType();
+    
+    var initUrl = 'https://upload.twitter.com/1.1/media/upload.json?command=INIT&total_bytes=' + blob.getBytes().length + '&media_category=tweet_image';
+    var initAuth = buildOAuth1Header_('POST', 'https://upload.twitter.com/1.1/media/upload.json', { 'command': 'INIT', 'total_bytes': blob.getBytes().length.toString(), 'media_category': 'tweet_image' }, consumerKey, consumerSecret, token, tokenSecret);
+    
+    var initRes = UrlFetchApp.fetch(initUrl, {
+      method: 'post',
+      headers: { 'Authorization': initAuth },
+      muteHttpExceptions: true
+    });
+    if (initRes.getResponseCode() >= 300) throw new Error('Twitter INIT error: ' + initRes.getContentText());
+    var mediaId = JSON.parse(initRes.getContentText()).media_id_string;
+
+    var appendUrl = 'https://upload.twitter.com/1.1/media/upload.json?command=APPEND&media_id=' + mediaId + '&segment_index=0';
+    var appendAuth = buildOAuth1Header_('POST', 'https://upload.twitter.com/1.1/media/upload.json', { 'command': 'APPEND', 'media_id': mediaId, 'segment_index': '0' }, consumerKey, consumerSecret, token, tokenSecret);
+    
+    var appendRes = UrlFetchApp.fetch(appendUrl, {
+      method: 'post',
+      headers: { 'Authorization': appendAuth },
+      payload: { media: blob },
+      muteHttpExceptions: true
+    });
+    if (appendRes.getResponseCode() >= 300) throw new Error('Twitter APPEND error: ' + appendRes.getContentText());
+
+    var finUrl = 'https://upload.twitter.com/1.1/media/upload.json?command=FINALIZE&media_id=' + mediaId;
+    var finAuth = buildOAuth1Header_('POST', 'https://upload.twitter.com/1.1/media/upload.json', { 'command': 'FINALIZE', 'media_id': mediaId }, consumerKey, consumerSecret, token, tokenSecret);
+    
+    var finRes = UrlFetchApp.fetch(finUrl, {
+      method: 'post',
+      headers: { 'Authorization': finAuth },
+      muteHttpExceptions: true
+    });
+    if (finRes.getResponseCode() >= 300) throw new Error('Twitter FINALIZE error: ' + finRes.getContentText());
+    
+    return mediaId;
+  }
+
+  function getDriveFilePublicUrl_(fileId) {
+    var file = DriveApp.getFileById(fileId);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return 'https://drive.google.com/uc?export=download&id=' + fileId;
+  }
+
+  function uploadToLinkedIn_(fileId, accessToken, companyUrn) {
+    var file = DriveApp.getFileById(fileId);
+    var blob = file.getBlob();
+
+    var registerUrl = 'https://api.linkedin.com/v2/assets?action=registerUpload';
+    var registerPayload = {
+      registerUploadRequest: {
+        recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
+        owner: companyUrn,
+        supportedUploadMechanism: ['SYNCHRONOUS_UPLOAD']
+      }
+    };
+    var registerRes = UrlFetchApp.fetch(registerUrl, {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { 'Authorization': 'Bearer ' + accessToken, 'X-Restli-Protocol-Version': '2.0.0' },
+      payload: JSON.stringify(registerPayload),
+      muteHttpExceptions: true
+    });
+    if (registerRes.getResponseCode() >= 300) throw new Error('LinkedIn Register Upload error: ' + registerRes.getContentText());
+    
+    var regData = JSON.parse(registerRes.getContentText());
+    var uploadMechanism = regData.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'];
+    var uploadUrl = uploadMechanism.uploadUrl;
+    var assetUrn = regData.value.asset;
+
+    var uploadRes = UrlFetchApp.fetch(uploadUrl, {
+      method: 'put',
+      headers: { 'Authorization': 'Bearer ' + accessToken },
+      payload: blob,
+      muteHttpExceptions: true
+    });
+    if (uploadRes.getResponseCode() >= 300) throw new Error('LinkedIn Media Upload error: ' + uploadRes.getContentText());
+
+    return assetUrn;
   }
 
   // ─── PRIVATE: LinkedIn API ──────────────────────────────────────────────────
@@ -176,12 +276,12 @@ var SocialPublisher = (function () {
    * Posts a text update to a LinkedIn Company Page.
    * Requires: LINKEDIN_ACCESS_TOKEN, LINKEDIN_COMPANY_URN
    */
-  function postToLinkedIn_(content) {
-    var accessToken  = PROPS.getProperty('LINKEDIN_ACCESS_TOKEN');
-    var companyUrn   = PROPS.getProperty('LINKEDIN_COMPANY_URN');
+  function postToLinkedIn_(content, postOptions) {
+    var accessToken = PROPS.getProperty('LINKEDIN_ACCESS_TOKEN');
+    var companyUrn = PROPS.getProperty('LINKEDIN_COMPANY_URN');
 
     if (!accessToken) throw new Error('LinkedIn credentials missing. Check Script Properties: LINKEDIN_ACCESS_TOKEN, LINKEDIN_COMPANY_URN');
-    if (!companyUrn)  throw new Error('LINKEDIN_COMPANY_URN not set. Format: urn:li:organization:12345678');
+    if (!companyUrn) throw new Error('LINKEDIN_COMPANY_URN not set. Format: urn:li:organization:12345678');
 
     var url = 'https://api.linkedin.com/v2/ugcPosts';
     var payload = {
@@ -197,6 +297,19 @@ var SocialPublisher = (function () {
         'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
       }
     };
+
+    if (postOptions && postOptions.driveFileId) {
+      try {
+        var assetUrn = uploadToLinkedIn_(postOptions.driveFileId, accessToken, companyUrn);
+        payload.specificContent['com.linkedin.ugc.ShareContent'].shareMediaCategory = 'IMAGE';
+        payload.specificContent['com.linkedin.ugc.ShareContent'].media = [{
+          media: assetUrn,
+          status: 'READY'
+        }];
+      } catch (e) {
+        console.warn('LinkedIn Media Upload failed: ' + e.message);
+      }
+    }
 
     var options = {
       method: 'post',
@@ -226,12 +339,12 @@ var SocialPublisher = (function () {
    * Creates a Google Business Profile post (Local Post).
    * Requires: GBP_ACCESS_TOKEN, GBP_LOCATION_ID
    */
-  function postToGBP_(content) {
+  function postToGBP_(content, postOptions) {
     var accessToken = PROPS.getProperty('GBP_ACCESS_TOKEN');
-    var locationId  = PROPS.getProperty('GBP_LOCATION_ID');
+    var locationId = PROPS.getProperty('GBP_LOCATION_ID');
 
     if (!accessToken) throw new Error('GBP credentials missing. Check Script Properties: GBP_ACCESS_TOKEN, GBP_LOCATION_ID');
-    if (!locationId)  throw new Error('GBP_LOCATION_ID not set. Find it in Google Business Profile API explorer.');
+    if (!locationId) throw new Error('GBP_LOCATION_ID not set. Find it in Google Business Profile API explorer.');
 
     var url = 'https://mybusiness.googleapis.com/v4/accounts/-/locations/' + locationId + '/localPosts';
     var payload = {
@@ -239,6 +352,13 @@ var SocialPublisher = (function () {
       summary: content,
       topicType: 'STANDARD'
     };
+
+    if (postOptions && postOptions.driveFileId) {
+        payload.media = [{
+             mediaFormat: 'PHOTO',
+             sourceUrl: getDriveFilePublicUrl_(postOptions.driveFileId)
+        }];
+    }
 
     var options = {
       method: 'post',
@@ -268,7 +388,7 @@ var SocialPublisher = (function () {
    * Text-only posts are created as photo posts with a placeholder image or
    * as a "direct post" if the account has that capability.
    */
-  function postToTikTok_(content) {
+  function postToTikTok_(content, postOptions) {
     var accessToken = PROPS.getProperty('TIKTOK_ACCESS_TOKEN');
 
     if (!accessToken) throw new Error('TikTok credentials missing. Check Script Properties: TIKTOK_ACCESS_TOKEN');
@@ -292,6 +412,11 @@ var SocialPublisher = (function () {
       post_mode: 'DIRECT_POST',
       media_type: 'PHOTO'
     };
+
+    if (postOptions && postOptions.driveFileId) {
+      payload.source_info.source = 'PULL_FROM_URL';
+      payload.source_info.photo_images = [getDriveFilePublicUrl_(postOptions.driveFileId)];
+    }
 
     var options = {
       method: 'post',
@@ -321,12 +446,12 @@ var SocialPublisher = (function () {
    * Requires: YOUTUBE_ACCESS_TOKEN, YOUTUBE_CHANNEL_ID
    * Note: Community Posts API requires the channel to have 500+ subscribers.
    */
-  function postToYouTube_(content) {
+  function postToYouTube_(content, postOptions) {
     var accessToken = PROPS.getProperty('YOUTUBE_ACCESS_TOKEN');
-    var channelId   = PROPS.getProperty('YOUTUBE_CHANNEL_ID');
+    var channelId = PROPS.getProperty('YOUTUBE_CHANNEL_ID');
 
     if (!accessToken) throw new Error('YouTube credentials missing. Check Script Properties: YOUTUBE_ACCESS_TOKEN, YOUTUBE_CHANNEL_ID');
-    if (!channelId)   throw new Error('YOUTUBE_CHANNEL_ID not set. Find it in YouTube Account Advanced Settings.');
+    if (!channelId) throw new Error('YOUTUBE_CHANNEL_ID not set. Find it in YouTube Account Advanced Settings.');
 
     var url = 'https://www.googleapis.com/youtube/v3/communityPosts?part=snippet';
     var payload = {
@@ -355,7 +480,204 @@ var SocialPublisher = (function () {
     }
   }
 
-  // ─── PRIVATE: AI Draft Generator ────────────────────────────────────────────
+  // ─── PRIVATE: Telegram API ──────────────────────────────────────────────────
+
+  /**
+   * Posts to a Telegram Channel or Group.
+   * Requires: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID (e.g. @yourchannel or ID)
+   */
+  function postToTelegram_(content, postOptions) {
+    var botToken = PROPS.getProperty('TELEGRAM_BOT_TOKEN');
+    var chatId = PROPS.getProperty('TELEGRAM_CHAT_ID');
+    if (!botToken || !chatId) {
+      throw new Error('Telegram credentials missing. Check Script Properties: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID');
+    }
+
+    var url, payload;
+    if (postOptions && postOptions.driveFileId) {
+      url = 'https://api.telegram.org/bot' + botToken + '/sendPhoto';
+      payload = {
+        chat_id: chatId,
+        caption: content,
+        photo: DriveApp.getFileById(postOptions.driveFileId).getBlob()
+      };
+    } else {
+      url = 'https://api.telegram.org/bot' + botToken + '/sendMessage';
+      payload = { chat_id: chatId, text: content };
+    }
+
+    var options = {
+      method: 'post',
+      payload: (postOptions && postOptions.driveFileId) ? payload : JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    if (!postOptions || !postOptions.driveFileId) {
+      options.contentType = 'application/json';
+    }
+
+    var response = UrlFetchApp.fetch(url, options);
+    var code = response.getResponseCode();
+
+    if (code >= 200 && code < 300) {
+      var body = JSON.parse(response.getContentText());
+      return { success: true, id: body.result.message_id, platform: 'telegram' };
+    } else {
+      throw new Error('Telegram API Error ' + code + ': ' + response.getContentText());
+    }
+  }
+
+  // ─── PRIVATE: Facebook Pages API ────────────────────────────────────────────
+
+  /**
+   * Posts to a Facebook Page.
+   * Requires: FB_PAGE_ACCESS_TOKEN, FB_PAGE_ID
+   */
+  function postToFacebook_(content, postOptions) {
+    var token = PROPS.getProperty('FB_PAGE_ACCESS_TOKEN');
+    var pageId = PROPS.getProperty('FB_PAGE_ID');
+    if (!token || !pageId) {
+      throw new Error('Facebook credentials missing. Check Script Properties: FB_PAGE_ACCESS_TOKEN, FB_PAGE_ID');
+    }
+
+    var url, payload;
+    if (postOptions && postOptions.driveFileId) {
+      url = 'https://graph.facebook.com/v19.0/' + pageId + '/photos';
+      payload = {
+        message: content,
+        access_token: token,
+        source: DriveApp.getFileById(postOptions.driveFileId).getBlob()
+      };
+    } else {
+      url = 'https://graph.facebook.com/v19.0/' + pageId + '/feed';
+      payload = { message: content, access_token: token };
+    }
+
+    var options = {
+      method: 'post',
+      payload: payload,
+      muteHttpExceptions: true
+    };
+
+    var response = UrlFetchApp.fetch(url, options);
+    var code = response.getResponseCode();
+
+    if (code >= 200 && code < 300) {
+      var body = JSON.parse(response.getContentText());
+      return { success: true, id: body.id, platform: 'facebook' };
+    } else {
+      throw new Error('Facebook API Error ' + code + ': ' + response.getContentText());
+    }
+  }
+
+  // ─── PRIVATE: Instagram Graph API ───────────────────────────────────────────
+
+  /**
+   * Posts to Instagram via Graph API.
+   * Note: The Instagram Graph API requires an image or video URL for feed posts.
+   * Text-only posts are not supported.
+   */
+  function postToInstagram_(content, postOptions) {
+    if (!postOptions || !postOptions.driveFileId) {
+      throw new Error('Instagram Graph API requires an image or video for feed posts. Text-only posting is unsupported by Meta API. Please attach media.');
+    }
+    
+    var token = PROPS.getProperty('FB_PAGE_ACCESS_TOKEN');
+    var pageId = PROPS.getProperty('FB_PAGE_ID');
+    var instaAccountId = PROPS.getProperty('INSTAGRAM_ACCOUNT_ID');
+    
+    if (!token || !pageId) {
+      throw new Error('Facebook/Instagram credentials missing. Check Script Properties for FB_PAGE_ACCESS_TOKEN.');
+    }
+
+    if (!instaAccountId) {
+       var igFetch = UrlFetchApp.fetch('https://graph.facebook.com/v19.0/' + pageId + '?fields=instagram_business_account&access_token=' + token, { muteHttpExceptions: true });
+       if (igFetch.getResponseCode() === 200) {
+           var igData = JSON.parse(igFetch.getContentText());
+           if (igData.instagram_business_account) {
+               instaAccountId = igData.instagram_business_account.id;
+               PROPS.setProperty('INSTAGRAM_ACCOUNT_ID', instaAccountId);
+           }
+       }
+    }
+    
+    if (!instaAccountId) {
+      throw new Error('Could not find connected Instagram Business Account for the Facebook Page. Please link it in Page Settings.');
+    }
+
+    var publicUrl = getDriveFilePublicUrl_(postOptions.driveFileId);
+    
+    // Step 1: Create media container
+    var initUrl = 'https://graph.facebook.com/v19.0/' + instaAccountId + '/media?image_url=' + encodeURIComponent(publicUrl) + '&caption=' + encodeURIComponent(content) + '&access_token=' + token;
+    var initRes = UrlFetchApp.fetch(initUrl, { method: 'post', muteHttpExceptions: true });
+    
+    if (initRes.getResponseCode() >= 300) {
+      throw new Error('Instagram Media Init Error: ' + initRes.getContentText());
+    }
+    var creationId = JSON.parse(initRes.getContentText()).id;
+
+    // Step 2: Publish media container
+    var pubUrl = 'https://graph.facebook.com/v19.0/' + instaAccountId + '/media_publish?creation_id=' + creationId + '&access_token=' + token;
+    var pubRes = UrlFetchApp.fetch(pubUrl, { method: 'post', muteHttpExceptions: true });
+    
+    var pCode = pubRes.getResponseCode();
+    if (pCode >= 200 && pCode < 300) {
+      return { success: true, id: JSON.parse(pubRes.getContentText()).id, platform: 'instagram' };
+    } else {
+      throw new Error('Instagram Publish Error ' + pCode + ': ' + pubRes.getContentText());
+    }
+  }
+
+  // ─── PRIVATE: Threads API ───────────────────────────────────────────────────
+
+  /**
+   * Posts a text update to Threads.
+   * Requires: THREADS_ACCESS_TOKEN, THREADS_USER_ID
+   */
+  function postToSkool_(content, postOptions) {
+    // Skool does not currently have a public API for creating posts.
+    return { success: false, platform: 'skool', note: 'Skool API posting not currently supported. Please copy the text and post manually.' };
+  }
+
+  function postToPatreon_(content, postOptions) {
+    // Patreon requires complex OAuth flow for user tokens to create posts. 
+    return { success: false, platform: 'patreon', note: 'Patreon API posting for creators requires advanced OAuth. Please copy the text and post manually.' };
+  }
+
+  function postToThreads_(content, postOptions) {
+    var token = PROPS.getProperty('THREADS_ACCESS_TOKEN');
+    var userId = PROPS.getProperty('THREADS_USER_ID');
+    if (!token || !userId) {
+      throw new Error('Threads credentials missing. Check Script Properties: THREADS_ACCESS_TOKEN, THREADS_USER_ID');
+    }
+
+    var initUrl;
+    if (postOptions && postOptions.driveFileId) {
+      var publicUrl = getDriveFilePublicUrl_(postOptions.driveFileId);
+      initUrl = 'https://graph.threads.net/v1.0/' + userId + '/threads?media_type=IMAGE&image_url=' + encodeURIComponent(publicUrl) + '&text=' + encodeURIComponent(content) + '&access_token=' + token;
+    } else {
+      initUrl = 'https://graph.threads.net/v1.0/' + userId + '/threads?media_type=TEXT&text=' + encodeURIComponent(content) + '&access_token=' + token;
+    }
+
+    var initRes = UrlFetchApp.fetch(initUrl, { method: 'post', muteHttpExceptions: true });
+
+    if (initRes.getResponseCode() !== 200) {
+      throw new Error('Threads Init Error: ' + initRes.getContentText());
+    }
+
+    var containerId = JSON.parse(initRes.getContentText()).id;
+
+    // Step 2: Publish media container
+    var pubUrl = 'https://graph.threads.net/v1.0/' + userId + '/threads_publish?creation_id=' + containerId + '&access_token=' + token;
+    var pubRes = UrlFetchApp.fetch(pubUrl, { method: 'post', muteHttpExceptions: true });
+    var pCode = pubRes.getResponseCode();
+
+    if (pCode >= 200 && pCode < 300) {
+      return { success: true, id: JSON.parse(pubRes.getContentText()).id, platform: 'threads' };
+    } else {
+      throw new Error('Threads Publish Error ' + pCode + ': ' + pubRes.getContentText());
+    }
+  }
 
   /**
    * Calls OpenAI to generate platform-specific post drafts from a topic.
@@ -379,14 +701,16 @@ var SocialPublisher = (function () {
       'Generate social media post drafts for the following topic: "' + topic + '".',
       context ? 'Additional context: ' + context : '',
       '',
-      'Return a JSON object with exactly these keys: twitter, linkedin, gbp, tiktok, youtube.',
+      'Return a JSON object with exactly these keys: twitter, linkedin, gbp, tiktok, youtube, telegram, facebook, instagram, threads, skool, patreon.',
       'Each value should be a ready-to-publish post string optimized for that platform.',
-      'Respect these character limits strictly: twitter=280, linkedin=3000, gbp=1500, tiktok=2200, youtube=5000.',
+      'Respect these character limits strictly: twitter=280, linkedin=3000, gbp=1500, tiktok=2200, youtube=5000, telegram=4096, facebook=63206, instagram=2200, threads=500, skool=10000, patreon=10000.',
       'For twitter: be punchy, include 2-3 relevant hashtags.',
       'For linkedin: professional tone, can be longer, include a question to drive engagement.',
       'For gbp: focus on local SEO keywords (Southwest Florida, Lee County, etc.), include phone number.',
       'For tiktok: conversational, use line breaks for readability, include trending hashtags.',
       'For youtube: informative community post, can reference a video or blog post if relevant.',
+      'For skool: engaging community post to spark discussion in a course/group setting.',
+      'For patreon: exclusive behind-the-scenes content or updates for supporters.',
       'Return ONLY valid JSON, no markdown code blocks, no extra text.'
     ].join('\n');
 
@@ -394,7 +718,7 @@ var SocialPublisher = (function () {
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userPrompt }
+        { role: 'user', content: userPrompt }
       ],
       temperature: 0.7,
       max_tokens: 2000
@@ -437,7 +761,7 @@ var SocialPublisher = (function () {
      * Called from Dashboard.html via google.script.run.draftPosts(topic, context)
      * @param {string} topic - The post topic or prompt.
      * @param {string} [context] - Optional additional context.
-     * @returns {Object} - { twitter, linkedin, gbp, tiktok, youtube } draft strings.
+     * @returns {Object} - { twitter, linkedin, gbp, tiktok, youtube, telegram, facebook, instagram, threads, skool, patreon } draft strings.
      */
     draftPosts: function (topic, context) {
       try {
@@ -452,14 +776,16 @@ var SocialPublisher = (function () {
 
     /**
      * Publish a post to a single platform.
-     * Called from Dashboard.html via google.script.run.publishPost(platform, content)
-     * @param {string} platform - One of: twitter, linkedin, gbp, tiktok, youtube
+     * Called from Dashboard.html via google.script.run.publishPost(platform, content, options)
+     * @param {string} platform - One of: twitter, linkedin, gbp, tiktok, youtube, telegram, facebook, instagram, threads
      * @param {string} content  - The post content string.
+     * @param {Object} [options] - Optional settings, e.g., { driveFileId: '123abc_' }
      * @returns {Object} - { success, id, platform } or { success: false, error }
      */
-    publishPost: function (platform, content) {
+    publishPost: function (platform, content, options) {
       try {
         if (!content || content.trim() === '') throw new Error('Post content cannot be empty.');
+        options = options || {};
 
         var limit = PLATFORM_LIMITS[platform];
         if (!limit) throw new Error('Unknown platform: ' + platform + '. Valid: twitter, linkedin, gbp, tiktok, youtube');
@@ -467,11 +793,17 @@ var SocialPublisher = (function () {
 
         var result;
         switch (platform) {
-          case 'twitter':  result = postToTwitter_(content);  break;
-          case 'linkedin': result = postToLinkedIn_(content); break;
-          case 'gbp':      result = postToGBP_(content);      break;
-          case 'tiktok':   result = postToTikTok_(content);   break;
-          case 'youtube':  result = postToYouTube_(content);  break;
+          case 'twitter': result = postToTwitter_(content, options); break;
+          case 'linkedin': result = postToLinkedIn_(content, options); break;
+          case 'gbp': result = postToGBP_(content, options); break;
+          case 'tiktok': result = postToTikTok_(content, options); break;
+          case 'youtube': result = postToYouTube_(content, options); break;
+          case 'telegram': result = postToTelegram_(content, options); break;
+          case 'facebook': result = postToFacebook_(content, options); break;
+          case 'instagram': result = postToInstagram_(content, options); break;
+          case 'threads': result = postToThreads_(content, options); break;
+          case 'skool': result = postToSkool_(content, options); break;
+          case 'patreon': result = postToPatreon_(content, options); break;
         }
 
         logPost_(platform, content, result.success ? 'success' : 'partial', result.note || null);
@@ -497,12 +829,16 @@ var SocialPublisher = (function () {
 
       for (var i = 0; i < platforms.length; i++) {
         var platform = platforms[i];
-        var content = posts[platform];
+        var data = posts[platform];
+        // Handle both simple strings and objects { content, driveFileId }
+        var content = typeof data === 'string' ? data : (data ? data.content : null);
+        var options = typeof data === 'string' ? {} : { driveFileId: data ? data.driveFileId : null };
+
         if (!content || content.trim() === '') {
           results[platform] = { success: false, error: 'Empty content — skipped.', platform: platform };
           continue;
         }
-        results[platform] = SocialPublisher.publishPost(platform, content);
+        results[platform] = SocialPublisher.publishPost(platform, content, options);
         // Brief pause between API calls to avoid rate limiting
         Utilities.sleep(500);
       }
@@ -517,11 +853,11 @@ var SocialPublisher = (function () {
      */
     getLastPostTimes: function () {
       return {
-        twitter:  getLastPostTime_('twitter'),
+        twitter: getLastPostTime_('twitter'),
         linkedin: getLastPostTime_('linkedin'),
-        gbp:      getLastPostTime_('gbp'),
-        tiktok:   getLastPostTime_('tiktok'),
-        youtube:  getLastPostTime_('youtube')
+        gbp: getLastPostTime_('gbp'),
+        tiktok: getLastPostTime_('tiktok'),
+        youtube: getLastPostTime_('youtube')
       };
     },
 
@@ -592,9 +928,9 @@ var SocialPublisher = (function () {
         switch (platform) {
           case 'gbp':
           case 'youtube': {
-            clientId     = PROPS.getProperty('GOOGLE_OAUTH_CLIENT_ID');
+            clientId = PROPS.getProperty('GOOGLE_OAUTH_CLIENT_ID');
             clientSecret = PROPS.getProperty('GOOGLE_OAUTH_CLIENT_SECRET');
-            tokenUrl     = 'https://oauth2.googleapis.com/token';
+            tokenUrl = 'https://oauth2.googleapis.com/token';
             payload = {
               code: code,
               client_id: clientId,
@@ -605,9 +941,9 @@ var SocialPublisher = (function () {
             break;
           }
           case 'linkedin': {
-            clientId     = PROPS.getProperty('LINKEDIN_CLIENT_ID');
+            clientId = PROPS.getProperty('LINKEDIN_CLIENT_ID');
             clientSecret = PROPS.getProperty('LINKEDIN_CLIENT_SECRET');
-            tokenUrl     = 'https://www.linkedin.com/oauth/v2/accessToken';
+            tokenUrl = 'https://www.linkedin.com/oauth/v2/accessToken';
             payload = {
               grant_type: 'authorization_code',
               code: code,
@@ -618,9 +954,9 @@ var SocialPublisher = (function () {
             break;
           }
           case 'tiktok': {
-            clientId     = PROPS.getProperty('TIKTOK_CLIENT_KEY');
+            clientId = PROPS.getProperty('TIKTOK_CLIENT_KEY');
             clientSecret = PROPS.getProperty('TIKTOK_CLIENT_SECRET');
-            tokenUrl     = 'https://open.tiktokapis.com/v2/oauth/token/';
+            tokenUrl = 'https://open.tiktokapis.com/v2/oauth/token/';
             payload = {
               client_key: clientId,
               client_secret: clientSecret,
@@ -667,11 +1003,11 @@ var SocialPublisher = (function () {
      */
     getCredentialStatus: function () {
       return {
-        twitter:  !!(PROPS.getProperty('TWITTER_API_KEY') && PROPS.getProperty('TWITTER_ACCESS_TOKEN')),
+        twitter: !!(PROPS.getProperty('TWITTER_API_KEY') && PROPS.getProperty('TWITTER_ACCESS_TOKEN')),
         linkedin: !!(PROPS.getProperty('LINKEDIN_ACCESS_TOKEN')),
-        gbp:      !!(PROPS.getProperty('GBP_ACCESS_TOKEN')),
-        tiktok:   !!(PROPS.getProperty('TIKTOK_ACCESS_TOKEN')),
-        youtube:  !!(PROPS.getProperty('YOUTUBE_ACCESS_TOKEN'))
+        gbp: !!(PROPS.getProperty('GBP_ACCESS_TOKEN')),
+        tiktok: !!(PROPS.getProperty('TIKTOK_ACCESS_TOKEN')),
+        youtube: !!(PROPS.getProperty('YOUTUBE_ACCESS_TOKEN'))
       };
     }
 
@@ -691,8 +1027,8 @@ function draftPosts(topic, context) {
   return SocialPublisher.draftPosts(topic, context);
 }
 
-function publishPost(platform, content) {
-  return SocialPublisher.publishPost(platform, content);
+function publishPost(platform, content, options) {
+  return SocialPublisher.publishPost(platform, content, options);
 }
 
 function publishAll(posts) {
