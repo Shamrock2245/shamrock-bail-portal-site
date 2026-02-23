@@ -8337,8 +8337,8 @@
                     let attachmentsHTML = '';
                     let hasAttachments = false;
 
-                    // 1. Check for Telegram Documents
-                    if (data.Documents && Array.isArray(data.Documents)) {
+                    // 1. Check for Telegram Documents safely
+                    if (data && data.Documents && Array.isArray(data.Documents)) {
                         data.Documents.forEach(doc => {
                             hasAttachments = true;
                             const url = doc.file_url || '#';
