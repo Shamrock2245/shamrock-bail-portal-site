@@ -2555,3 +2555,39 @@ function sendOutreachMessage(payload) {
     return { success: false, error: e.message };
   }
 }
+
+/**
+ * Triggers a direct SMS/Email payment link to the Indemnitor
+ * Called from Dashboard after SignNow invite is sent.
+ */
+function notifyPaymentLink(payload) {
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { error: "Unauthorized" };
+
+  try {
+    const paymentLink = 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
+    const defendantName = payload.defendantName || 'the defendant';
+    const message = `Shamrock Bail Bonds: We have sent paperwork to your email for ${defendantName}. Please sign ASAP.\n\nPremium Payment Link: ${paymentLink}`;
+
+    let smsResult = false;
+    let emailResult = false;
+
+    if (payload.indemnitorPhone) {
+      const res = NotificationService.sendSms(payload.indemnitorPhone, message);
+      if (res && res.success) {
+        smsResult = true;
+      }
+    }
+
+    if (payload.indemnitorEmail) {
+      const subject = `Bail Premium Payment Link for ${defendantName}`;
+      NotificationService.sendEmail(payload.indemnitorEmail, subject, message, message);
+      emailResult = true;
+    }
+
+    return { success: true, sms: smsResult, email: emailResult };
+  } catch (e) {
+    console.error('notifyPaymentLink error:', e);
+    return { success: false, error: e.message };
+  }
+}

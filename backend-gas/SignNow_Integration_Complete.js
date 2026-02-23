@@ -465,7 +465,13 @@ function SN_sendEmailInvite(documentId, signers, options) {
   const url = config.API_BASE + `/document/${documentId}/invite`;
 
   const payload = {
-    to: signers.map(s => ({ email: s.email, role: s.role, order: s.order })),
+    to: signers.map(s => ({
+      email: s.email,
+      role: s.role,
+      order: s.order,
+      subject: s.subject || options.subject || 'Document to Sign',
+      message: s.message || options.message || 'Please sign the attached document.'
+    })),
     from: options.senderEmail || 'admin@shamrockbailbonds.biz',
     subject: options.subject || 'Document to Sign',
     message: options.message || 'Please sign the attached document.'
