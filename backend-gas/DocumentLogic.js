@@ -19,15 +19,15 @@
 async function duplicateDocuments(pdfDocs, formData) {
     const { PDFDocument } = PDFLib;
     const expandedDocs = [];
-    
+
     console.log('Starting document duplication...');
-    
+
     for (const doc of pdfDocs) {
         // SSA Release: Duplicate for each person (defendant + indemnitors)
         if (doc.key === 'ssa-release') {
             const personCount = 1 + (formData.indemnitors ? formData.indemnitors.length : 0);
             console.log(`Duplicating SSA Release for ${personCount} people...`);
-            
+
             // Defendant SSA Release
             expandedDocs.push({
                 ...doc,
@@ -36,7 +36,7 @@ async function duplicateDocuments(pdfDocs, formData) {
                 personType: 'defendant',
                 personIndex: -1
             });
-            
+
             // Indemnitor SSA Releases
             if (formData.indemnitors && formData.indemnitors.length > 0) {
                 for (let i = 0; i < formData.indemnitors.length; i++) {
@@ -50,33 +50,49 @@ async function duplicateDocuments(pdfDocs, formData) {
                     });
                 }
             }
-            
+
             console.log(`✓ Created ${personCount} SSA Release documents`);
         }
-        // Appearance Bond: Duplicate for each charge
+        // Appearance Bond: Duplicate for each charge and each power number
         else if (doc.key === 'appearance-bond') {
-            const chargeCount = formData.charges ? formData.charges.length : 1;
-            console.log(`Duplicating Appearance Bond for ${chargeCount} charges...`);
-            
-            for (let i = 0; i < chargeCount; i++) {
-                const charge = formData.charges ? formData.charges[i] : null;
-                expandedDocs.push({
-                    ...doc,
-                    key: `appearance-bond-${i + 1}`,
-                    name: `Appearance Bond - Charge ${i + 1}`,
-                    chargeIndex: i,
-                    chargeData: charge
-                });
+            const charges = formData.charges || [null];
+            let bondIndex = 1;
+            console.log(`Duplicating Appearance Bond for ${charges.length} charges...`);
+
+            for (let i = 0; i < charges.length; i++) {
+                const charge = charges[i];
+
+                // Split power numbers by comma, semicolon, space, or newline
+                const powerNumbers = charge && charge.powerNumber
+                    ? charge.powerNumber.split(/[,;\s]+/).filter(Boolean)
+                    : [null];
+
+                // Ensure at least one bond per charge
+                if (powerNumbers.length === 0) powerNumbers.push(null);
+
+                for (let j = 0; j < powerNumbers.length; j++) {
+                    const powerNum = powerNumbers[j];
+                    expandedDocs.push({
+                        ...doc,
+                        key: `appearance-bond-${bondIndex}`,
+                        name: `Appearance Bond - Bond ${bondIndex}`,
+                        chargeIndex: i,
+                        powerIndex: j,
+                        specificPowerNum: powerNum,
+                        chargeData: charge
+                    });
+                    bondIndex++;
+                }
             }
-            
-            console.log(`✓ Created ${chargeCount} Appearance Bond documents`);
+
+            console.log(`✓ Created ${bondIndex - 1} Appearance Bond documents`);
         }
         // All other documents: Keep as-is
         else {
             expandedDocs.push(doc);
         }
     }
-    
+
     console.log(`Document duplication complete: ${pdfDocs.length} → ${expandedDocs.length} documents`);
     return expandedDocs;
 }
@@ -104,10 +120,10 @@ async function fillPDFsWithData_Enhanced(pdfDocs, formData) {
             const fields = form.getFields();
             let fieldCount = 0;
             let skippedFields = [];
-            
+
             // Create modified formData for this specific document
             const docFormData = { ...formData };
-            
+
             // SSA Release: Override with specific person's data
             if (doc.key.startsWith('ssa-release-')) {
                 if (doc.personType === 'defendant') {
@@ -118,7 +134,7 @@ async function fillPDFsWithData_Enhanced(pdfDocs, formData) {
                     // Indemnitor SSA Release - use specific indemnitor data
                     const ind = formData.indemnitors[doc.personIndex];
                     console.log(`  → SSA Release for Indemnitor ${doc.personIndex + 1}: ${ind.firstName} ${ind.lastName}`);
-                    
+
                     // Override primary fields with this indemnitor's data
                     // (SSA Release is signed by the person, so their name goes in the signature field)
                     docFormData['signer-name'] = `${ind.firstName} ${ind.lastName}`;
@@ -126,16 +142,16 @@ async function fillPDFsWithData_Enhanced(pdfDocs, formData) {
                     docFormData['signer-ssn'] = ind.ssn;
                 }
             }
-            
-            // Appearance Bond: Override with specific charge data
+
+            // Appearance Bond: Override with specific charge and power data
             if (doc.key.startsWith('appearance-bond-') && doc.chargeIndex >= 0) {
                 const charge = formData.charges[doc.chargeIndex];
-                console.log(`  → Appearance Bond for Charge ${doc.chargeIndex + 1}: ${charge.desc}`);
-                
+                console.log(`  → Appearance Bond for Charge ${doc.chargeIndex + 1} (Power: ${doc.specificPowerNum || charge.powerNumber || 'N/A'}): ${charge.charge || charge.desc || 'Unknown'}`);
+
                 // Override charge-specific fields
                 docFormData['CaseNum'] = charge.caseNumber;
-                docFormData['PowerNum'] = charge.powerNumber;
-                docFormData['charge-description'] = charge.desc;
+                docFormData['PowerNum'] = doc.specificPowerNum || charge.powerNumber;
+                docFormData['charge-description'] = charge.charge || charge.desc; // Note: Dashboard.html uses 'charge', earlier logic used 'desc'
                 docFormData['bond-amount'] = charge.bondAmount;
                 docFormData['TotalBond'] = charge.bondAmount;
                 docFormData['numericBondAmount'] = charge.bondAmount;
@@ -147,8 +163,8 @@ async function fillPDFsWithData_Enhanced(pdfDocs, formData) {
                 const fieldNameNormalized = normalizeFieldName(fieldName);
 
                 // Try multiple lookup strategies
-                let value = docFormData[fieldNameNormalized] 
-                    || docFormData[`defendant-${fieldNameNormalized}`] 
+                let value = docFormData[fieldNameNormalized]
+                    || docFormData[`defendant-${fieldNameNormalized}`]
                     || mapFieldToData(fieldNameNormalized, docFormData)
                     || mapFieldToData(fieldName, docFormData); // Try original name too
 
@@ -198,73 +214,73 @@ async function fillPDFsWithData_Enhanced(pdfDocs, formData) {
  */
 async function generateAndSendWithWixPortal_WithDuplication() {
     console.log('Starting packet generation with document duplication...');
-    
+
     try {
         // Step 1: Validate form data
         const formData = collectFormData();
         if (!validateFormData(formData)) {
             throw new Error('Form validation failed');
         }
-        
+
         // Step 2: Fetch PDFs from Google Drive
         showStatus('Fetching PDF templates...');
         const pdfs = await fetchPDFsFromDrive(getSelectedDocuments(true)); // Include print-only
-        
+
         // Step 3: DUPLICATE DOCUMENTS (SSA Release + Appearance Bonds)
         showStatus('Preparing documents...');
         const expandedPDFs = await duplicateDocuments(pdfs, formData);
-        
+
         // Step 4: Fill PDFs with data
         showStatus('Filling PDF forms...');
         const filledPDFs = await fillPDFsWithData_Enhanced(expandedPDFs, formData);
-        
+
         // Step 5: Separate SignNow docs from print-only docs
         const signNowDocs = filledPDFs.filter(doc => !doc.key.startsWith('appearance-bond'));
         const printOnlyDocs = filledPDFs.filter(doc => doc.key.startsWith('appearance-bond'));
-        
+
         // Step 6: Merge SignNow PDFs into single packet
         showStatus('Merging documents for signing...');
         const mergedSignNowPDF = await mergePDFs(signNowDocs);
-        
+
         // Step 7: Merge print-only PDFs separately
         const mergedPrintOnlyPDF = await mergePDFs(printOnlyDocs);
-        
+
         // Step 8: Upload merged PDFs to temporary storage
         showStatus('Uploading packets...');
         const signNowPdfUrl = await uploadPDFToTempStorage(mergedSignNowPDF, formData, 'signing');
         const printOnlyPdfUrl = await uploadPDFToTempStorage(mergedPrintOnlyPDF, formData, 'print');
-        
+
         // Step 9: Prepare signature fields from CONFIG
         const signatureFields = prepareSignatureFields(formData);
-        
+
         // Step 10: Prepare signers list
         const signers = prepareSignersList(formData);
-        
+
         // Step 11: Send to SignNow via Wix backend
         showStatus('Sending to SignNow...');
         const result = await sendToSignNow(signNowPdfUrl, signatureFields, signers, formData);
-        
+
         // Step 12: Store signing links in Wix CMS
         showStatus('Storing signing links...');
         await storePendingDocument(result, formData);
-        
+
         // Step 13: Store print-only PDF in Google Drive
         showStatus('Filing appearance bonds...');
         await storePrintOnlyPDF(printOnlyPdfUrl, formData);
-        
+
         // Step 14: Send notifications
         showStatus('Sending notifications...');
         await sendSigningNotifications(result, formData);
-        
+
         // Success!
         showSuccess(`Packet sent successfully! 
         - ${signNowDocs.length} documents sent for signing
         - ${printOnlyDocs.length} appearance bonds ready for print`);
-        
+
         console.log('Complete workflow finished:', result);
-        
+
         return result;
-        
+
     } catch (error) {
         console.error('Failed to generate and send packet:', error);
         showError(`Failed to send packet: ${error.message}`);
@@ -278,14 +294,14 @@ async function generateAndSendWithWixPortal_WithDuplication() {
 async function uploadPDFToTempStorage(pdfBlob, formData, type) {
     try {
         const filename = `Temp_${type}_${formData['defendant-last-name']}_${Date.now()}.pdf`;
-        
+
         const file = DriveApp.getFolderById(CONFIG.tempFolderId)
             .createFile(pdfBlob)
             .setName(filename)
             .setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-        
+
         const url = `https://drive.google.com/uc?export=download&id=${file.getId()}`;
-        
+
         console.log(`PDF uploaded to temp storage: ${url}`);
         return url;
     } catch (error) {
@@ -302,27 +318,27 @@ async function storePrintOnlyPDF(pdfUrl, formData) {
         // Download from temp storage
         const response = await UrlFetchApp.fetch(pdfUrl);
         const pdfBlob = response.getBlob();
-        
+
         // Create filename
         const defendantName = `${formData['defendant-last-name']}${formData['defendant-first-name'].substring(0, 3)}`;
         const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
         const folderName = `${defendantName}${date}`;
         const filename = `Appearance_Bonds_${folderName}.pdf`;
-        
+
         // Get or create defendant folder
         const completedBondsFolder = DriveApp.getFolderById(CONFIG.completedBondsFolderId);
         let defendantFolder;
-        
+
         const existingFolders = completedBondsFolder.getFoldersByName(folderName);
         if (existingFolders.hasNext()) {
             defendantFolder = existingFolders.next();
         } else {
             defendantFolder = completedBondsFolder.createFolder(folderName);
         }
-        
+
         // Save PDF
         defendantFolder.createFile(pdfBlob).setName(filename);
-        
+
         console.log(`Print-only PDF stored: ${folderName}/${filename}`);
     } catch (error) {
         console.error('Failed to store print-only PDF:', error);

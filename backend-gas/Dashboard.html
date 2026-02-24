@@ -3794,14 +3794,14 @@
               </select>
             </div>
           </div>
-          <div class="form-row">is there
+          <div class="form-row">
             <div class="form-group">
               <label>Case Number</label>
               <input type="text" id="charge-${chargeCount}-case" placeholder="24-CF-001234" value="${data.caseNumber || ''}">
             </div>
             <div class="form-group">
               <label>Power Number</label>
-              <input type="text" id="charge-${chargeCount}-power" placeholder="OSI3-4591234" value="${data.powerNumber || ''}">
+              <input type="text" id="charge-${chargeCount}-power" placeholder="OSI3-4591234" value="${data.powerNumber || ''}" oninput="updateDocumentCount()">
             </div>
             <div class="form-group">
                 <label>Court Date</label>
@@ -4104,11 +4104,22 @@
 
         function updateDocumentCount() {
             const checked = document.querySelectorAll('.doc-item input[type="checkbox"]:checked').length;
-            const chargeCards = document.querySelectorAll('.entity-card.charge').length;
+
+            let totalBondsCount = 0;
+            const chargeCards = document.querySelectorAll('.entity-card.charge');
+
+            if (chargeCards.length === 0) {
+                totalBondsCount = 0;
+            } else {
+                document.querySelectorAll('[id^="charge-"][id$="-power"]').forEach(input => {
+                    const powers = input.value.split(/[,;\\s]+/).filter(Boolean);
+                    totalBondsCount += (powers.length > 0 ? powers.length : 1);
+                });
+            }
 
             document.getElementById('selected-doc-count').textContent = checked;
-            document.getElementById('appearance-bond-count').textContent = `${chargeCards} bonds`;
-            document.getElementById('estimated-pages').textContent = `~${checked * 1.5 + chargeCards}`;
+            document.getElementById('appearance-bond-count').textContent = `${totalBondsCount} bonds`;
+            document.getElementById('estimated-pages').textContent = `~${checked * 1.5 + totalBondsCount}`;
             document.getElementById('summary-docs').textContent = checked;
         }
 

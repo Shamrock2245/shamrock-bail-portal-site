@@ -13,7 +13,7 @@ class GrokClient {
     constructor() {
         this.API_URL = 'https://api.x.ai/v1/chat/completions';
         this.API_KEY = PropertiesService.getScriptProperties().getProperty('GROK_API_KEY');
-        this.MODEL = 'grok-2-latest'; // Or 'grok-beta'
+        this.MODEL = 'grok-3'; // Supported model version
     }
 
     /**
@@ -104,6 +104,27 @@ class GrokClient {
         } catch (e) {
             console.error("⛔ GrokClient Exception:", e);
             throw e;
+        }
+    }
+
+    /**
+     * Fetch available models to diagnose "Model not found" errors
+     */
+    fetchAvailableModels() {
+        if (!this.hasKey()) return null;
+        try {
+            const response = UrlFetchApp.fetch('https://api.x.ai/v1/models', {
+                method: 'get',
+                headers: {
+                    'Authorization': 'Bearer ' + this.API_KEY,
+                },
+                muteHttpExceptions: true
+            });
+            const content = response.getContentText();
+            return JSON.parse(content);
+        } catch (e) {
+            console.error("GrokClient: fetchAvailableModels error", e);
+            return null;
         }
     }
 }

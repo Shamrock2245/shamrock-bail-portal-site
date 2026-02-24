@@ -206,6 +206,17 @@ var SocialPublisher = (function () {
   }
 
   /**
+   * Helper function for exact RFC 3986 encoding required by Twitter OAuth 1.0a.
+   */
+  function rfc3986_(str) {
+    if (str == null) return '';
+    return encodeURIComponent(str)
+      .replace(/[!'()*]/g, function (c) {
+        return '%' + c.charCodeAt(0).toString(16).toUpperCase();
+      });
+  }
+
+  /**
    * Minimal OAuth 1.0a header builder for Twitter.
    */
   function buildOAuth1Header_(method, url, params, consumerKey, consumerSecret, token, tokenSecret) {
@@ -225,19 +236,19 @@ var SocialPublisher = (function () {
     var allParams = Object.assign({}, params, oauthParams);
     var sortedKeys = Object.keys(allParams).sort();
     var paramString = sortedKeys.map(function (k) {
-      return encodeURIComponent(k) + '=' + encodeURIComponent(allParams[k]);
+      return rfc3986_(k) + '=' + rfc3986_(allParams[k]);
     }).join('&');
 
-    var signatureBase = method.toUpperCase() + '&' + encodeURIComponent(url) + '&' + encodeURIComponent(paramString);
-    var signingKey = encodeURIComponent(consumerSecret) + '&' + encodeURIComponent(tokenSecret);
+    var signatureBase = method.toUpperCase() + '&' + rfc3986_(url) + '&' + rfc3986_(paramString);
+    var signingKey = rfc3986_(consumerSecret) + '&' + rfc3986_(tokenSecret);
 
     var signature = Utilities.base64Encode(
-      Utilities.computeHmacSha256Signature(signatureBase, signingKey)
+      Utilities.computeHmacSignature(Utilities.MacAlgorithm.HMAC_SHA_1, signatureBase, signingKey)
     );
     oauthParams['oauth_signature'] = signature;
 
     var headerParts = Object.keys(oauthParams).sort().map(function (k) {
-      return encodeURIComponent(k) + '="' + encodeURIComponent(oauthParams[k]) + '"';
+      return rfc3986_(k) + '="' + rfc3986_(oauthParams[k]) + '"';
     });
 
     return 'OAuth ' + headerParts.join(', ');
@@ -531,6 +542,22 @@ var SocialPublisher = (function () {
     if (code >= 200 && code < 300) {
       var body = JSON.parse(response.getContentText());
       return { success: true, id: body.id, platform: 'youtube' };
+    } else if (code === 401) {
+      // Token expired, attempt refresh
+      try {
+        var newTokens = refreshAccessToken_('youtube');
+        options.headers['Authorization'] = 'Bearer ' + newTokens.access_token;
+        var retryResponse = UrlFetchApp.fetch(url, options);
+        var retryCode = retryResponse.getResponseCode();
+        if (retryCode >= 200 && retryCode < 300) {
+          var retryBody = JSON.parse(retryResponse.getContentText());
+          return { success: true, id: retryBody.id, platform: 'youtube' };
+        } else {
+          throw new Error('YouTube API Error after refresh ' + retryCode + ': ' + retryResponse.getContentText());
+        }
+      } catch (refreshErr) {
+        throw new Error('YouTube API Error 401 (Refresh failed): ' + refreshErr.message);
+      }
     } else {
       throw new Error('YouTube API Error ' + code + ': ' + response.getContentText());
     }
