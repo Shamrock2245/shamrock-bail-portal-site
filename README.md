@@ -117,7 +117,6 @@ For a complete, step-by-step guide, refer to the [**Deployment Checklist**](./do
 ## 📂 Documentation Index
 *   **[ARCHITECTURE.md](./docs/ARCHITECTURE.md):** 📜 **System Architecture** (The new source of truth).
 *   **[DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md):** Step-by-step deployment guide.
-*   **[PDF_BOT_SKILLS.md](./docs/PDF_BOT_SKILLS.md):** Catalog of PDF handling skills integrated from open-source bots.
 *   **[TASKS.md](./TASKS.md):** Current project task list.
 
 ---

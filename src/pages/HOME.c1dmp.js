@@ -83,6 +83,19 @@ function setupCTAButtons() {
             wixLocation.to("tel:12399550301");
         });
     }
+
+    // Telegram Bot Button
+    const telegramBtn = $w('#telegramBotBtn');
+    if (telegramBtn.uniqueId) {
+        telegramBtn.onClick(() => {
+            trackEvent('telegram_bot_clicked', {
+                location: 'home_page'
+            });
+
+            // If you need to set the link via code instead of the Wix Editor UI, uncomment and update the URL below:
+            // wixLocation.to('https://t.me/ ShamrockBailBot');
+        });
+    }
 }
 
 /**
