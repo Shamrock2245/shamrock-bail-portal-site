@@ -44,20 +44,15 @@ $w.onReady(async function () {
     await loadCounties();
 
     // 1. Handle Magic Link Token from URL
+    // SAFETY NET: Magic links should land on /portal-landing first (see portal-url.jsw).
+    // If a raw ?token= somehow arrives here (e.g., old cached link), redirect to
+    // portal-landing so it can be validated on a public page before the Members Area
+    // gate can intercept it. This prevents the 404 on cold token arrivals.
     const query = wixLocation.query;
     if (query.token && wixWindow.rendering.env === 'browser') {
-        console.log("🔗 Indemnitor Portal: Magic link token detected, authenticating directly...");
-        const result = await onMagicLinkLoginV2(query.token);
-        if (result.ok && result.sessionToken) {
-            console.log("✅ Token valid! Session token received");
-            await setSessionToken(result.sessionToken);
-            // Clean the URL to prevent sharing the token, without reloading the page
-            wixLocation.queryParams.remove(['token']);
-        } else {
-            console.error("❌ Token validation failed:", result.message);
-            wixLocation.to('/portal-landing?auth_error=1');
-            return; // Stop rendering
-        }
+        console.log("🔗 Indemnitor Portal: Raw magic link token detected — bouncing to portal-landing for proper validation...");
+        wixLocation.to(`/portal-landing?token=${encodeURIComponent(query.token)}`);
+        return; // Stop — portal-landing will validate and redirect back with ?st=
     } else if (query.st && wixWindow.rendering.env === 'browser') {
         console.log("🔗 Indemnitor Portal: Found session token in URL, storing...");
         // Wait for storage to ensure it's set before initialization reads it

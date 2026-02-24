@@ -1,294 +1,305 @@
 /**
- * Shamrock Bail Bonds - Portal Landing Page (v3.0)
- * Last Updated: 2026-02-17
- * 
+ * Shamrock Bail Bonds - Portal Landing Page
+ * File: portal-landing.bagfn.js
+ * Last Updated: 2026-02-23
+ *
  * AUTHENTICATION FLOW:
- * 
- * A. EMAIL MAGIC LINK (Existing):
- * 1. User enters email → Click "Get Started"
- * 2. Receives magic link via email
- * 3. One-click login to portal
- * 
- * Page Elements (Must exist in Wix Editor):
- * - #emailPhoneInput: Text input for email
- * - #getStartedBtn: Primary CTA button
- * - #otpInputBox: Container for OTP input (hidden by default)
- * - #otpInput: Text input for OTP code
- * - #verifyOtpBtn: Button to verify OTP
- * - #statusMessage: Text element for success/error messages
- * - #loadingBox: Container for loading state (optional)
+ *
+ * A. MAGIC LINK (Primary — email or SMS):
+ *    1. User enters email or phone → "Get Started"
+ *    2. Backend sends magic link to /portal-landing?token=...
+ *    3. This page intercepts the token, validates it, creates a session,
+ *       then redirects to /portal-indemnitor?st=<sessionToken>
+ *    NOTE: Magic links MUST land here (portal-landing), NOT on portal-indemnitor.
+ *          portal-indemnitor is a Members-Area-protected page and will 404 for
+ *          unauthenticated cold arrivals.
+ *
+ * B. SESSION TOKEN REDIRECT (Social/OAuth callbacks):
+ *    URL: /portal-landing?st=<sessionToken>
+ *    Validates session, redirects to role-appropriate portal.
+ *
+ * C. FRESH LOGIN (No token):
+ *    Shows the email/phone input form.
+ *
+ * Required Wix Editor Elements:
+ *   #emailPhoneInput  — textarea/input for email or phone
+ *   #getStartedBtn    — primary CTA button
+ *   #statusMessage    — text element for feedback
+ *   #loadingBox       — optional loading container
+ *   #otpInputBox      — optional OTP container (hidden by default)
+ *   #googleLoginBtn   — optional Google login button
+ *   #telegramHtml     — optional Telegram widget HTML component
+ *   #boxAIChat        — optional AI concierge container
  */
 
 import wixLocation from 'wix-location';
-import { sendMagicLinkSimplified, onMagicLinkLoginV2, validateCustomSession, onTelegramLogin } from 'backend/portal-auth';
-import { getGoogleAuthUrl, getFacebookAuthUrl } from 'backend/social-auth';
+import {
+    sendMagicLinkSimplified,
+    onMagicLinkLoginV2,
+    validateCustomSession,
+    onTelegramLogin
+} from 'backend/portal-auth';
+import { getGoogleAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 import { initAIChat } from 'public/ai-concierge';
 import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
-import { authentication } from 'wix-members-frontend'; // For persistent sessions
 
-// State object to hold temporary validation data
-const state = {
-    phoneNumberForOtp: null
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE INIT
+// ─────────────────────────────────────────────────────────────────────────────
 
 $w.onReady(async function () {
-    console.log("🚀 Portal Landing v4.0: Telegram Login Widget Integration");
+    console.log("🚀 Portal Landing: Initializing...");
+
+    updatePageSEO();
+
     const query = wixLocation.query;
 
-    // 1. PRIORITY: Check for magic link token in URL (returning from email/SMS)
-    // ONLY run on client-side to prevent SSR from consuming the token
+    // ── Priority 1: Magic link token in URL (?token=...) ─────────────────────
+    // This is the primary entry point when a user clicks the link in their email.
+    // MUST be handled BEFORE anything else, and ONLY in the browser (not SSR).
     if (query.token && wixWindow.rendering.env === 'browser') {
-        console.log("🔗 Magic link token detected, processing...");
-        await handleMagicLinkLogin(query.token);
+        console.log("🔗 Magic link token detected in URL — processing...");
+        showMessage("Logging you in securely...", "info");
+        showLoading();
+        await handleMagicLinkToken(query.token);
+        return; // Stop — redirect will happen inside handleMagicLinkToken
+    }
+
+    // ── Priority 2: Session token in URL (?st=... or ?sessionToken=...) ──────
+    // Used by OAuth callbacks and legacy redirects.
+    const sessionToken = query.st || query.sessionToken;
+    if (sessionToken && wixWindow.rendering.env === 'browser') {
+        console.log("🔗 Session token detected in URL — validating...");
+        showMessage("Verifying your session...", "info");
+        showLoading();
+        await handleSessionTokenRedirect(sessionToken);
         return;
     }
 
-    // 2. Unified Token Handling (Social Login & Redirects)
-    // Accept 'st' (preferred) or 'sessionToken' (legacy/social)
-    const token = query.st || query.sessionToken;
-
-    if (token) {
-        console.log("🔗 Token detected in URL:", { token: token.substring(0, 10) + "..." });
-
-        // Save immediately
-        setSessionToken(token);
-
+    // ── Priority 3: Existing valid session in browser storage ────────────────
+    // If the user already has a session, skip the login form entirely.
+    const existingToken = getSessionToken();
+    if (existingToken && wixWindow.rendering.env === 'browser') {
+        console.log("🔍 Existing session found — validating...");
         try {
-            console.log("🔍 Validating session...");
-            const session = await validateCustomSession(token);
-
-            console.log("📄 Validation Result:", session);
-
-            if (session && session.role) {
-                console.log(`✅ Session Validified. Role: ${session.role}. Redirecting...`);
+            const session = await validateCustomSession(existingToken);
+            if (session && session.valid && session.role) {
+                console.log(`✅ Existing session valid (${session.role}). Redirecting...`);
+                showMessage("Welcome back! Redirecting...", "success");
                 redirectToPortal(session.role);
                 return;
-            } else {
-                throw new Error("Session invalid or role missing");
             }
-
-        } catch (err) {
-            console.error("❌ Login Failed during validation:", err);
-
-            // Clear bad state
-            clearSessionToken();
-
-            // Show user visual feedback
-            showMessage("Login session expired. Please try again.", "error");
-
-            // Strip bad params from URL without reload (if possible) or just stop
-            // We don't want to infinite loop, so we stop here.
-            // wixLocation.to("/portal-landing"); // Optional: clean URL
+        } catch (e) {
+            // Session invalid or expired — fall through to login form
+            console.warn("⚠️ Existing session invalid, showing login form:", e.message);
         }
+        clearSessionToken();
     }
 
-    // Set up the simplified login form
-    setupSimplifiedLogin();
-
-    // Initialize AI Concierge (Safely)
-    if ($w('#boxAIChat').valid && $w('#repChatMessages').valid) {
-        initAIChat({
-            chatBox: $w('#boxAIChat'),
-            repeater: $w('#repChatMessages'),
-            inputMap: {
-                input: $w('#inputAIMessage'),
-                sendBtn: $w('#btnAISend'),
-                minimizeBtn: $w('#btnAIMinimize'),
-                openBtn: $w('#btnAIOpen')
-            }
-        });
-        console.log("🤖 AI Concierge Initialized");
-    } else {
-        console.log("🤖 AI Concierge elements not found (Editor setup required)");
-    }
-
-    updatePageSEO();
+    // ── Default: Show the login form ─────────────────────────────────────────
+    setupLoginForm();
+    setupTelegramWidget();
+    setupAIConcierge();
 });
 
-function updatePageSEO() {
-    const pageTitle = "Client Portal Login | Shamrock Bail Bonds";
-    const pageDesc = "Secure client portal for Shamrock Bail Bonds. Manage your bail case, check in, and view paperwork.";
-    const pageUrl = "https://www.shamrockbailbonds.biz/portal-landing";
-
-    wixSeo.setTitle(pageTitle);
-    wixSeo.setMetaTags([
-        { "name": "description", "content": pageDesc },
-        { "property": "og:title", "content": pageTitle },
-        { "property": "og:description", "content": pageDesc },
-        { "property": "og:url", "content": pageUrl },
-        { "property": "og:type", "content": "website" },
-        { "name": "robots", "content": "noindex" }
-    ]);
-
-    wixSeo.setStructuredData([
-        {
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
-                { "@type": "ListItem", "position": 2, "name": "Portal Login", "item": pageUrl }
-            ]
-        },
-        {
-            "@context": "https://schema.org",
-            "@type": "AccountPage",
-            "name": "Shamrock Bail Bonds Client Portal",
-            "url": pageUrl,
-            "mainEntity": {
-                "@type": "LocalBusiness",
-                "name": "Shamrock Bail Bonds, LLC",
-                "telephone": "+12393322245",
-                "image": "https://www.shamrockbailbonds.biz/logo.png"
-            }
-        }
-    ]);
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// MAGIC LINK TOKEN HANDLER
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Setup the simplified login form
- * Single input + single button = Fortune 50 simplicity
+ * Validate a magic link token from the URL and redirect to the indemnitor portal.
+ * This is the ONLY correct entry point for magic link clicks.
+ *
+ * @param {string} token - The raw token from ?token=...
  */
-function setupSimplifiedLogin() {
-    console.log("🎨 Setting up simplified login UI...");
+async function handleMagicLinkToken(token) {
+    try {
+        const result = await onMagicLinkLoginV2(token);
+
+        if (result.ok && result.sessionToken) {
+            console.log("✅ Magic link valid — session created");
+
+            // Store session in browser storage
+            setSessionToken(result.sessionToken);
+
+            // Determine target role — default everyone to indemnitor.
+            // Defendants can identify themselves via the case-lookup widget
+            // at the top of the indemnitor portal.
+            const role = result.role || 'indemnitor';
+            const targetRole = (role === 'staff' || role === 'admin') ? role : 'indemnitor';
+
+            showMessage("Welcome! Taking you to your portal...", "success");
+
+            // Redirect with session token in URL as belt-and-suspenders
+            // (in case browser storage write hasn't flushed yet)
+            redirectToPortalWithToken(targetRole, result.sessionToken);
+
+        } else {
+            // Token invalid or expired
+            const reason = result.message || 'Link expired or already used.';
+            console.warn("⚠️ Magic link rejected:", reason);
+
+            hideLoading();
+            showMessage(
+                "This link has expired or was already used. Enter your email below to get a new one.",
+                "error"
+            );
+
+            // Show the login form so they can request a new link immediately
+            setupLoginForm();
+            setupTelegramWidget();
+
+            // Pre-fill the button label to "Resend Link" for clarity
+            try {
+                const btn = $w('#getStartedBtn');
+                if (btn) btn.label = "Send New Link";
+            } catch (e) { /* optional */ }
+        }
+
+    } catch (error) {
+        console.error("❌ Critical error validating magic link token:", error);
+        hideLoading();
+        clearSessionToken();
+        showMessage("System error. Please try again or call (239) 332-2245.", "error");
+        setupLoginForm();
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SESSION TOKEN REDIRECT HANDLER
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Validate a session token from the URL (?st=...) and redirect to the
+ * appropriate portal. Used by OAuth callbacks and legacy redirects.
+ *
+ * @param {string} token - The raw session token from ?st=...
+ */
+async function handleSessionTokenRedirect(token) {
+    try {
+        setSessionToken(token);
+        const session = await validateCustomSession(token);
+
+        if (session && session.valid && session.role) {
+            console.log(`✅ Session valid (${session.role}). Redirecting...`);
+            redirectToPortal(session.role);
+        } else {
+            throw new Error("Session invalid or role missing");
+        }
+
+    } catch (err) {
+        console.error("❌ Session token validation failed:", err);
+        clearSessionToken();
+        hideLoading();
+        showMessage("Login session expired. Please enter your email below.", "error");
+        setupLoginForm();
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGIN FORM
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Set up the email/phone input form.
+ */
+function setupLoginForm() {
+    console.log("🎨 Setting up login form...");
 
     const input = $w('#emailPhoneInput');
     const button = $w('#getStartedBtn');
 
-    // Validate elements exist
-    if (!input) {
-        console.error("❌ CRITICAL: #emailPhoneInput not found in Wix Editor!");
-        showMessage("Configuration error. Please contact support.", "error");
-        return;
-    }
-    if (!button) {
-        console.error("❌ CRITICAL: #getStartedBtn not found in Wix Editor!");
+    if (!input || !button) {
+        console.error("❌ #emailPhoneInput or #getStartedBtn not found in Wix Editor!");
         showMessage("Configuration error. Please contact support.", "error");
         return;
     }
 
-    console.log("✅ UI elements found, attaching handlers");
+    // Auto-focus
+    try { input.focus(); } catch (e) { /* optional */ }
 
-    // Auto-focus on input for better UX
-    try {
-        input.focus();
-    } catch (e) {
-        console.warn("⚠️ Could not auto-focus input:", e);
-    }
-
-    // Allow Enter key to submit
+    // Enter key submits
     input.onKeyPress((event) => {
-        if (event.key === 'Enter') {
-            console.log("⌨️ Enter key pressed, triggering submit");
-            handleGetStarted();
-        }
+        if (event.key === 'Enter') handleGetStarted();
     });
 
-    // Handle button click
-    button.onClick(async () => {
-        console.log("🖱️ Get Started button clicked");
-        await handleGetStarted();
-    });
+    // Button click
+    button.onClick(() => handleGetStarted());
 
-    // Hide OTP input box by default (not needed with Telegram widget, but keeping reference to collapse it)
-    if ($w('#otpInputBox')) {
+    // Collapse OTP box (not used in magic link flow)
+    try {
         $w('#otpInputBox').hide();
         $w('#otpInputBox').collapse();
-    }
+    } catch (e) { /* optional element */ }
 
-    // Setup Telegram Widget
-    setupTelegramWidget();
+    // Google login
+    try {
+        const googleBtn = $w('#googleLoginBtn');
+        if (googleBtn) googleBtn.onClick(() => startSocialLogin('google'));
+    } catch (e) { /* optional */ }
 
-    // Setup Social Logins (Real Implementation)
-    const googleBtn = $w('#googleLoginBtn');
-    const fbBtn = $w('#facebookLoginBtn');
+    // Facebook login — collapsed per user request
+    try {
+        $w('#facebookLoginBtn').collapse();
+    } catch (e) { /* optional */ }
 
-    if (googleBtn) {
-        googleBtn.onClick(() => startSocialLogin('google'));
-    }
-
-    if (fbBtn) {
-        // fbBtn.onClick(() => startSocialLogin('facebook'));
-        fbBtn.collapse(); // User requested removal from frontend
-    }
-
-    console.log("✅ Simplified login ready!");
+    console.log("✅ Login form ready");
 }
 
 /**
- * Handle "Get Started" button click (v3.0)
- * Validates input and routes to appropriate auth flow:
- * - Email/Phone: Magic link
+ * Handle "Get Started" button click.
  */
 async function handleGetStarted() {
     const input = $w('#emailPhoneInput');
     const button = $w('#getStartedBtn');
 
-    // Get and validate input
-    const emailOrPhone = input.value ? input.value.trim() : '';
+    const emailOrPhone = (input.value || '').trim();
 
     if (!emailOrPhone) {
-        showMessage("Please enter your email or phone number", "error");
-        input.focus();
+        showMessage("Please enter your email or phone number.", "error");
+        try { input.focus(); } catch (e) { /* optional */ }
         return;
     }
 
-    // Basic validation
     if (!isValidEmailOrPhone(emailOrPhone)) {
-        showMessage("Please enter a valid email or phone number", "error");
-        input.focus();
+        showMessage("Please enter a valid email address or phone number.", "error");
+        try { input.focus(); } catch (e) { /* optional */ }
         return;
     }
 
-    // Route to email/sms magic link flow
-    console.log("📧 Sending magic link");
-    await handleEmailMagicLinkFlow(emailOrPhone);
+    await sendMagicLinkFlow(emailOrPhone, button);
 }
 
 /**
- * Handle Email/SMS Magic Link Flow
+ * Send magic link and handle UX state.
+ *
+ * @param {string} emailOrPhone
+ * @param {Object} button - Wix button element
  */
-async function handleEmailMagicLinkFlow(emailOrPhone) {
-    const button = $w('#getStartedBtn');
-
-    // Show loading state
+async function sendMagicLinkFlow(emailOrPhone, button) {
     button.disable();
     const originalLabel = button.label;
     button.label = "Sending...";
     showMessage("Sending your secure link...", "info");
 
     try {
-        // Call backend to send magic link
         const result = await sendMagicLinkSimplified(emailOrPhone);
 
-        console.log("📬 Magic link result:", result);
-
         if (result.success) {
-            // Success! Show instructions
             button.label = "Sent! ✓";
             showMessage(
-                result.isNewUser
-                    ? "Welcome! Check your email or phone for your secure link."
-                    : "Check your email or phone for your secure link.",
+                "Check your email or phone — your secure link is on the way. It expires in 24 hours.",
                 "success"
             );
+            try { $w('#emailPhoneInput').value = ""; } catch (e) { /* optional */ }
 
-            // Clear input
-            $w('#emailPhoneInput').value = "";
-
-            // RESEND LOGIC (UX UPGRADE)
-            // Disable button for 60 seconds to prevent spam, then change to "Resend Link"
+            // Countdown before allowing resend (prevents spam)
             let countdown = 60;
             const timer = setInterval(() => {
                 countdown--;
-                // Stop timer if state changed unexpectedly
-                if (button.label !== "Sent! ✓" && !button.label.startsWith("Resend")) {
-                    if (button.enabled) { clearInterval(timer); return; }
-                }
-
-                button.label = "Resend in " + countdown + "s";
-
+                button.label = `Resend in ${countdown}s`;
                 if (countdown <= 0) {
                     clearInterval(timer);
                     button.label = "Resend Link";
@@ -297,268 +308,199 @@ async function handleEmailMagicLinkFlow(emailOrPhone) {
             }, 1000);
 
         } else {
-            // Error
             console.error("❌ Magic link send failed:", result.message);
             showMessage(result.message || "Unable to send link. Please try again.", "error");
+            button.label = originalLabel;
             button.enable();
-            button.label = "Try Again";
         }
 
     } catch (error) {
-        console.error("❌ CRITICAL ERROR sending magic link:", error);
-        showMessage("System error. Please try again or call us at 239-332-2245.", "error");
-        button.enable();
+        console.error("❌ Critical error sending magic link:", error);
+        showMessage("System error. Please try again or call (239) 332-2245.", "error");
         button.label = originalLabel;
+        button.enable();
     }
 }
 
-/**
- * Setup Telegram Login Widget listener
- * Called from onReady to listen for messages from the HTML component
- */
+// ─────────────────────────────────────────────────────────────────────────────
+// TELEGRAM WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
 function setupTelegramWidget() {
-    const telegramHtml = $w('#telegramHtml');
-    if (!telegramHtml) {
-        console.log("No Telegram HTML component found on page.");
-        return;
-    }
+    try {
+        const telegramHtml = $w('#telegramHtml');
+        if (!telegramHtml) return;
 
-    console.log("📱 Hooking up Telegram Login Widget listener");
-    telegramHtml.onMessage(async (event) => {
-        try {
-            console.log("📩 Received message from Telegram HTML component:", event.data);
-            const telegramData = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        console.log("📱 Telegram Login Widget: attaching listener");
 
-            if (telegramData && telegramData.hash) {
-                showMessage("Verifying Telegram Login...", "info");
+        telegramHtml.onMessage(async (event) => {
+            try {
+                const telegramData = typeof event.data === 'string'
+                    ? JSON.parse(event.data)
+                    : event.data;
+
+                if (!telegramData || !telegramData.hash) return;
+
+                showMessage("Verifying Telegram login...", "info");
                 showLoading();
 
-                // Call backend using imported function directly
                 const result = await onTelegramLogin(telegramData);
 
                 if (result.ok && result.sessionToken) {
-                    // Success! Save session and redirect
                     setSessionToken(result.sessionToken);
                     showMessage("Login successful! Redirecting...", "success");
-
-                    setTimeout(() => {
-                        redirectToPortal(result.role || 'indemnitor');
-                    }, 1000);
+                    setTimeout(() => redirectToPortal(result.role || 'indemnitor'), 800);
                 } else {
-                    console.error("❌ Telegram validation failed:", result.message);
-                    showMessage(result.message || "Invalid Telegram login. Please try again.", "error");
                     hideLoading();
+                    showMessage(result.message || "Telegram login failed. Please try email.", "error");
                 }
+            } catch (error) {
+                console.error("❌ Telegram login error:", error);
+                hideLoading();
+                showMessage("Error verifying Telegram login. Please try email.", "error");
             }
-        } catch (error) {
-            console.error("❌ Error processing Telegram login event:", error);
-            showMessage("Error verifying Telegram login. Please try again.", "error");
-            hideLoading();
-        }
-    });
+        });
+    } catch (e) {
+        // Telegram widget is optional
+    }
 }
 
-/**
- * Handle magic link login from URL
- * Called when user clicks link from email/SMS
- * Uses custom session tokens only (no Wix member sessions)
- * Defaults all users to indemnitor role (defendants use case lookup)
- */
-async function handleMagicLinkLogin(token) {
-    console.log("🔐 Processing magic link token...");
+// ─────────────────────────────────────────────────────────────────────────────
+// AI CONCIERGE
+// ─────────────────────────────────────────────────────────────────────────────
 
-    showMessage("Logging you in...", "info");
-    showLoading();
-
+function setupAIConcierge() {
     try {
-        // Validate token via existing backend function
-        const result = await onMagicLinkLoginV2(token);
-
-        console.log("🔑 Token validation result:", result);
-
-        if (result.ok && result.sessionToken) {
-            console.log("✅ Token valid! Session token received");
-
-            // Store custom session token in browser
-            const stored = setSessionToken(result.sessionToken);
-            console.log("📦 Custom session stored:", stored);
-
-            // ✅ SIMPLIFIED: Default everyone to indemnitor
-            // Defendants can use case lookup at top of portal
-            const targetRole = 'indemnitor';
-            console.log("✅ Defaulting to indemnitor role (defendants use case lookup)");
-
-            showMessage("Welcome! Redirecting to your portal...", "success");
-
-            // Redirect to indemnitor portal
-            redirectToPortalWithToken(targetRole, result.sessionToken);
-
-        } else {
-            console.error("❌ Token validation failed:", result.message);
-            showMessage("Link expired or invalid. Please request a new one below.", "error");
-            hideLoading();
-
-            // Allow user to try again immediately
-            const button = $w('#getStartedBtn');
-            if (button) {
-                button.label = "Resend Link";
-                button.enable();
-            }
+        if ($w('#boxAIChat').valid && $w('#repChatMessages').valid) {
+            initAIChat({
+                chatBox: $w('#boxAIChat'),
+                repeater: $w('#repChatMessages'),
+                inputMap: {
+                    input: $w('#inputAIMessage'),
+                    sendBtn: $w('#btnAISend'),
+                    minimizeBtn: $w('#btnAIMinimize'),
+                    openBtn: $w('#btnAIOpen')
+                }
+            });
+            console.log("🤖 AI Concierge initialized");
         }
+    } catch (e) {
+        // AI concierge is optional
+    }
+}
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SOCIAL LOGIN
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function startSocialLogin(provider) {
+    showMessage(`Connecting to ${provider}...`, "info");
+    try {
+        let authUrl = "";
+        if (provider === 'google') authUrl = await getGoogleAuthUrl();
+        if (!authUrl) {
+            showMessage(`${provider} login is not configured. Please use email.`, "error");
+            return;
+        }
+        wixLocation.to(authUrl);
     } catch (error) {
-        console.error("❌ CRITICAL ERROR validating token:", error);
-        showMessage("System error. Please try again or call us at 239-332-2245.", "error");
-        hideLoading();
-
-        // Clear any partial session
-        clearSessionToken();
-
-        setTimeout(() => {
-            wixLocation.to('/portal-landing');
-        }, 2000);
+        console.error("❌ Social login error:", error);
+        showMessage(`Could not connect to ${provider}. Please use email.`, "error");
     }
 }
 
-// handleSocialSession removed - unified logic in onReady
+// ─────────────────────────────────────────────────────────────────────────────
+// REDIRECT HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PORTAL_MAP = {
+    'defendant':   '/portal-defendant',
+    'indemnitor':  '/portal-indemnitor',
+    'coindemnitor':'/portal-indemnitor',
+    'staff':       '/portal-staff',
+    'admin':       '/portal-staff'
+};
 
 /**
- * Validate email or phone number format
- * Simple validation - backend will do thorough check
- */
-function isValidEmailOrPhone(input) {
-    // Email pattern (basic)
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    // Phone pattern (flexible - allows various formats)
-    const phonePattern = /^[\d\s\-\(\)\+\.]{10,}$/;
-
-    return emailPattern.test(input) || phonePattern.test(input);
-}
-
-/**
- * Show status message to user
- */
-function showMessage(text, type) {
-    const msgElement = $w('#statusMessage');
-    if (!msgElement) {
-        console.warn("⚠️ #statusMessage element not found");
-        return;
-    }
-
-    msgElement.text = text;
-
-    // Set color based on type
-    try {
-        if (type === 'error') {
-            msgElement.style.color = '#FF4444';
-        } else if (type === 'success') {
-            msgElement.style.color = '#00C851';
-        } else {
-            msgElement.style.color = '#33B5E5';
-        }
-    } catch (e) {
-        // Style API might not be available
-    }
-
-    msgElement.show();
-}
-
-/**
- * Show loading indicator
- */
-function showLoading() {
-    try {
-        const loadingBox = $w('#loadingBox');
-        if (loadingBox) {
-            loadingBox.show();
-        }
-    } catch (e) {
-        // Loading box is optional
-    }
-}
-
-/**
- * Hide loading indicator
- */
-function hideLoading() {
-    try {
-        const loadingBox = $w('#loadingBox');
-        if (loadingBox) {
-            loadingBox.hide();
-        }
-    } catch (e) {
-        // Loading box is optional
-    }
-}
-
-/**
- * Redirect to appropriate portal based on role (without token)
+ * Redirect to the role-appropriate portal (no token in URL).
+ * Use only when session is already reliably stored in browser storage.
  */
 function redirectToPortal(role) {
-    const portalMap = {
-        'defendant': '/portal-defendant',
-        'indemnitor': '/portal-indemnitor',
-        'coindemnitor': '/portal-indemnitor',
-        'staff': '/portal-staff',
-        'admin': '/portal-staff'
-    };
-
-    const destination = portalMap[role] || '/portal-indemnitor';
-
-    console.log("🚀 Redirecting to: " + destination);
+    const destination = PORTAL_MAP[role] || '/portal-indemnitor';
+    console.log(`🚀 Redirecting to: ${destination}`);
     wixLocation.to(destination);
 }
 
 /**
- * Redirect to appropriate portal with session token in URL
- * This ensures the token is passed even if browser storage fails
+ * Redirect to the role-appropriate portal WITH the session token in the URL.
+ * Belt-and-suspenders: ensures the token reaches the portal page even if
+ * browser storage hasn't flushed yet (common on mobile Safari).
  */
 function redirectToPortalWithToken(role, sessionToken) {
-    const portalMap = {
-        'defendant': '/portal-defendant',
-        'indemnitor': '/portal-indemnitor',
-        'coindemnitor': '/portal-indemnitor',
-        'staff': '/portal-staff',
-        'admin': '/portal-staff'
-    };
-
-    const destination = portalMap[role] || '/portal-indemnitor';
-
-    // Pass session token as URL parameter (st = session token)
-    const urlWithToken = destination + "?st=" + encodeURIComponent(sessionToken);
-
-    console.log("🚀 Redirecting to: " + urlWithToken);
-    wixLocation.to(urlWithToken);
+    const destination = PORTAL_MAP[role] || '/portal-indemnitor';
+    const url = `${destination}?st=${encodeURIComponent(sessionToken)}`;
+    console.log(`🚀 Redirecting to: ${url}`);
+    wixLocation.to(url);
 }
 
-/**
- * Starts the Social Login Flow (Popup)
- * @param {'google' | 'facebook'} provider 
- */
-async function startSocialLogin(provider) {
-    console.log("🚀 Starting " + provider + " login flow...");
-    showMessage("Connecting to " + provider + "...", "info");
+// ─────────────────────────────────────────────────────────────────────────────
+// UI HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
 
+function showMessage(text, type) {
     try {
-        // 1. Get Auth URL from Backend (securely)
-        let authUrl = "";
-        if (provider === 'google') {
-            authUrl = await getGoogleAuthUrl();
-        } else {
-            authUrl = await getFacebookAuthUrl();
+        const el = $w('#statusMessage');
+        if (!el) return;
+        el.text = text;
+        try {
+            if (type === 'error')   el.style.color = '#FF4444';
+            else if (type === 'success') el.style.color = '#00C851';
+            else                    el.style.color = '#33B5E5';
+        } catch (e) { /* style API optional */ }
+        el.show();
+    } catch (e) { /* element optional */ }
+}
+
+function showLoading() {
+    try { $w('#loadingBox').show(); } catch (e) { /* optional */ }
+}
+
+function hideLoading() {
+    try { $w('#loadingBox').hide(); } catch (e) { /* optional */ }
+}
+
+function isValidEmailOrPhone(input) {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phonePattern = /^[\d\s\-\(\)\+\.]{10,}$/;
+    return emailPattern.test(input) || phonePattern.test(input);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEO
+// ─────────────────────────────────────────────────────────────────────────────
+
+function updatePageSEO() {
+    const pageTitle = "Client Portal Login | Shamrock Bail Bonds";
+    const pageDesc  = "Secure client portal for Shamrock Bail Bonds. Manage your bail case, check in, and view paperwork.";
+    const pageUrl   = "https://www.shamrockbailbonds.biz/portal-landing";
+
+    wixSeo.setTitle(pageTitle);
+    wixSeo.setMetaTags([
+        { name: "description",   content: pageDesc },
+        { property: "og:title",  content: pageTitle },
+        { property: "og:description", content: pageDesc },
+        { property: "og:url",    content: pageUrl },
+        { property: "og:type",   content: "website" },
+        { name: "robots",        content: "noindex, nofollow" }
+    ]);
+    wixSeo.setStructuredData([
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
+                { "@type": "ListItem", "position": 2, "name": "Portal Login", "item": pageUrl }
+            ]
         }
-
-        if (!authUrl) {
-            showMessage(provider + " login is not configured. Please use email/phone.", "error");
-            return;
-        }
-
-        // 2. Redirect to OAuth Provider
-        wixLocation.to(authUrl);
-
-    } catch (error) {
-        console.error("❌ Social login error:", error);
-        showMessage("Could not connect to " + provider + ". Please try email/phone.", "error");
-    }
+    ]);
 }

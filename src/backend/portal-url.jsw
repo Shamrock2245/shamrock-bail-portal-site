@@ -11,8 +11,15 @@
  * - Logging for debugging
  * - Autopilot-ready reliability
  * 
- * @version 1.0.0
- * @updated 2026-02-14
+ * @version 1.1.0
+ * @updated 2026-02-23
+ * 
+ * CRITICAL FIX (2026-02-23):
+ * buildMagicLinkUrl() now routes to /portal-landing?token=... instead of
+ * /portal-indemnitor?token=... because portal-indemnitor is a Members Area
+ * protected page. Cold token arrivals on that page cause a Wix 404.
+ * portal-landing is public, handles the token via handleMagicLinkLogin(),
+ * validates it, creates a session, then redirects to /portal-indemnitor?st=...
  */
 
 import { getConfig } from 'backend/config-loader';
@@ -203,7 +210,11 @@ export async function buildMagicLinkUrl(token) {
         throw new Error('Magic link token is required');
     }
 
-    return buildPortalUrl(URL_CONFIG.PORTAL_INDEMNITOR, { token });
+    // CRITICAL: Route to /portal-landing so the token is validated on a public
+    // page before the user is redirected to the protected /portal-indemnitor.
+    // Sending the token directly to /portal-indemnitor causes a Wix 404 because
+    // that page is behind the Members Area gate for unauthenticated users.
+    return buildPortalUrl(URL_CONFIG.PORTAL_LANDING, { token });
 }
 
 /**
