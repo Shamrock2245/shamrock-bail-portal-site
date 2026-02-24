@@ -1240,6 +1240,42 @@ function logAuthUrl_YouTube() {
 }
 
 /**
+ * Run this function from the IDE to get the TikTok authorization URL in the Execution Log.
+ * Prerequisites: TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET must already be set in Script Properties.
+ * Use setTikTokTokens() in ScriptProperties_Temp.js to set those first.
+ */
+function logAuthUrl_TikTok() {
+  var url = SocialPublisher.getAuthUrl('tiktok');
+  console.log('\n=========================================\n\nTikTok Auth URL (Visit this in your browser):\n\n' + url + '\n\n=========================================\n');
+}
+/**
+ * Run this function from the IDE to get the LinkedIn authorization URL in the Execution Log.
+ * Prerequisites: LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET must be set in Script Properties.
+ */
+function logAuthUrl_LinkedIn() {
+  var url = SocialPublisher.getAuthUrl('linkedin');
+  console.log('\n=========================================\n\nLinkedIn Auth URL (Visit this in your browser):\n\n' + url + '\n\n=========================================\n');
+}
+/**
+ * Sets the TELEGRAM_CHAT_ID for social broadcasting (the channel/group to post to).
+ * This is SEPARATE from the intake bot — the bot token (TELEGRAM_BOT_TOKEN) is already set.
+ * The TELEGRAM_CHAT_ID for social posts is the @username or numeric ID of your public channel.
+ *
+ * To find your channel ID:
+ *   1. Add your bot to the Telegram channel as an admin.
+ *   2. Send a test message to the channel.
+ *   3. Visit: https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
+ *   4. Look for "chat": { "id": -100XXXXXXXXXX } — that is your TELEGRAM_CHAT_ID.
+ *   5. Replace 'YOUR_CHANNEL_ID_HERE' below with that value and run this function once.
+ */
+function setTelegramSocialChatId() {
+  var props = PropertiesService.getScriptProperties();
+  // Replace with your actual Telegram channel ID (e.g. '@shamrockbailbonds' or '-100123456789')
+  props.setProperty('TELEGRAM_CHAT_ID', 'YOUR_CHANNEL_ID_HERE');
+  console.log('✅ Set TELEGRAM_CHAT_ID. Telegram social broadcasting is now active.');
+  console.log('   Bot token already present:', !!(props.getProperty('TELEGRAM_BOT_TOKEN')));
+}
+/**
  * Legacy wrapper fallback, defaulting to gbp if run without arguments
  */
 function getSocialAuthUrl(platform) {

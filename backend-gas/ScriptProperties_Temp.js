@@ -52,3 +52,40 @@ function setTikTokTokens() {
   props.setProperty('TIKTOK_CLIENT_SECRET', 'REDACTED');
   console.log('✅ Set TikTok Tokens successfully.');
 }
+
+/**
+ * ─── TIKTOK OAUTH FLOW ──────────────────────────────────────────────────────
+ * Step 1: Run setTikTokTokens() above to store TIKTOK_CLIENT_KEY + TIKTOK_CLIENT_SECRET.
+ * Step 2: Run logAuthUrl_TikTok() (in SocialPublisher.js) to get the OAuth URL.
+ * Step 3: Visit the URL, authorize with your TikTok account.
+ * Step 4: GAS will auto-store TIKTOK_ACCESS_TOKEN via the OAuth callback.
+ * Step 5: Run testTikTok() below to confirm posting works.
+ */
+function testTikTok() {
+  try {
+    var result = SocialPublisher.publishPost('tiktok',
+      "Hello from Shamrock Bail Bonds! 🍀 Automated post test. #BailBonds #SWFL"
+    );
+    console.log("✅ TikTok Test Result:", result);
+  } catch (e) {
+    console.error("❌ TikTok Test Failed: " + e.message);
+  }
+}
+/**
+ * ─── TELEGRAM SOCIAL CHAT ID ────────────────────────────────────────────────
+ * The TELEGRAM_BOT_TOKEN is already set (used by the intake bot).
+ * To enable social broadcasting to a Telegram channel, you only need to set
+ * TELEGRAM_CHAT_ID. Use setTelegramSocialChatId() in SocialPublisher.js.
+ *
+ * Quick test — run this after setting TELEGRAM_CHAT_ID:
+ */
+function testTelegram() {
+  try {
+    var result = SocialPublisher.publishPost('telegram',
+      "Hello from Shamrock Bail Bonds! 🍀 Automated post test. #BailBonds #SWFL"
+    );
+    console.log("✅ Telegram Test Result:", result);
+  } catch (e) {
+    console.error("❌ Telegram Test Failed: " + e.message);
+  }
+}
