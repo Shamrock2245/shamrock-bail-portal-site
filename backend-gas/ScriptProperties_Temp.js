@@ -35,14 +35,23 @@ function setTwitterTokens() {
   console.log('✅ Set Twitter Tokens successfully.');
 }
 
+/**
+ * ─── TWITTER SMOKE TEST ─────────────────────────────────────────────────────
+ * A timestamp is appended to every test post to prevent Twitter's
+ * duplicate-content 403 error. Safe to run multiple times.
+ */
 function testTwitter() {
   try {
+    // Timestamp prevents Twitter's duplicate-content 403
+    var ts = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York' });
     var result = SocialPublisher.publishPost('twitter',
-      "Hello world! This is a test tweet from the new automated Shamrock Bail Bonds system. 🍀🚀"
+      '🍀 Shamrock Bail Bonds — automated system check (' + ts + ' ET). ' +
+      'Fast, professional bail bonds in SWFL. Call (239) 332-2245. ' +
+      '#BailBonds #SWFL #FortMyers'
     );
-    console.log("✅ Twitter Test Result: ", result);
+    console.log('✅ Twitter Test Result:', result);
   } catch (e) {
-    console.error("❌ Twitter Test Failed: " + e.message);
+    console.error('❌ Twitter Test Failed: ' + e.message);
   }
 }
 
@@ -63,14 +72,18 @@ function setTikTokTokens() {
  */
 function testTikTok() {
   try {
+    var ts = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York' });
     var result = SocialPublisher.publishPost('tiktok',
-      "Hello from Shamrock Bail Bonds! 🍀 Automated post test. #BailBonds #SWFL"
+      '🍀 Shamrock Bail Bonds — automated system check (' + ts + ' ET). ' +
+      'Fast, professional bail bonds in SWFL. Call (239) 332-2245. ' +
+      '#BailBonds #SWFL #FortMyers'
     );
-    console.log("✅ TikTok Test Result:", result);
+    console.log('✅ TikTok Test Result:', result);
   } catch (e) {
-    console.error("❌ TikTok Test Failed: " + e.message);
+    console.error('❌ TikTok Test Failed: ' + e.message);
   }
 }
+
 /**
  * ─── TELEGRAM SOCIAL CHAT ID ────────────────────────────────────────────────
  * The TELEGRAM_BOT_TOKEN is already set (used by the intake bot).
@@ -81,11 +94,14 @@ function testTikTok() {
  */
 function testTelegram() {
   try {
+    var ts = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York' });
     var result = SocialPublisher.publishPost('telegram',
-      "Hello from Shamrock Bail Bonds! 🍀 Automated post test. #BailBonds #SWFL"
+      '🍀 Shamrock Bail Bonds — automated system check (' + ts + ' ET). ' +
+      'Fast, professional bail bonds in SWFL. Call (239) 332-2245. ' +
+      '#BailBonds #SWFL #FortMyers'
     );
-    console.log("✅ Telegram Test Result:", result);
+    console.log('✅ Telegram Test Result:', result);
   } catch (e) {
-    console.error("❌ Telegram Test Failed: " + e.message);
+    console.error('❌ Telegram Test Failed: ' + e.message);
   }
 }
