@@ -37,7 +37,7 @@ The keys of the JSON object must be exactly the platform identifiers requested, 
 Example format:
 {
   "facebook": "Text for Facebook...",
-  "x": "Text for X...",
+  "twitter": "Text for X (Twitter)...",
   "skool": "Text for Skool..."
 }`;
 

@@ -1723,10 +1723,12 @@
                         <!-- ── Credential Status Panel ─────────────────────────────── -->
                         <div id="social-cred-status"
                             style="background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:16px; font-size:12px;">
-                            <div style="font-weight:600; color:var(--text-secondary); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                            <div
+                                style="font-weight:600; color:var(--text-secondary); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
                                 🔑 Platform Credential Status
                                 <button type="button" onclick="SocialHub.loadCredentialStatus()"
-                                    style="margin-left:auto; background:none; border:none; color:var(--accent); cursor:pointer; font-size:11px; padding:0;">↻ Refresh</button>
+                                    style="margin-left:auto; background:none; border:none; color:var(--accent); cursor:pointer; font-size:11px; padding:0;">↻
+                                    Refresh</button>
                             </div>
                             <div id="social-cred-status-grid"
                                 style="display:grid; grid-template-columns:1fr 1fr; gap:4px 12px;">
@@ -7068,7 +7070,7 @@
 
                     Object.keys(posts).forEach(function (p) {
                         // Only set status to posting if making API request
-                        var supported = ['twitter', 'linkedin', 'gbp', 'tiktok', 'youtube'];
+                        var supported = ['twitter', 'linkedin', 'gbp', 'tiktok', 'youtube', 'telegram', 'facebook', 'instagram', 'threads', 'skool', 'patreon'];
                         if (supported.indexOf(p) !== -1) {
                             setPublishBtnState(p, true);
                             setResultBadge(p, true, 'Posting...');
@@ -7106,7 +7108,7 @@
                             alert("Broadcast failed: " + err.message);
                         })
                         .publishAll(posts);
-,
+                },
                 loadCredentialStatus: function () {
                     var grid = document.getElementById('social-cred-status-grid');
                     if (!grid) return;
@@ -7143,7 +7145,6 @@
                             console.warn('getSocialCredentialStatus failed:', err.message);
                         })
                         .getSocialCredentialStatus();
-                }
                 }
             };
         })();
