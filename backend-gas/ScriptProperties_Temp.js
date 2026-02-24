@@ -37,12 +37,18 @@ function setTwitterTokens() {
 
 function testTwitter() {
   try {
-    var result = SocialPublisher.publish(
-      "Hello world! This is a test tweet from the new automated Shamrock Bail Bonds system. 🍀🚀",
-      ['twitter']
+    var result = SocialPublisher.publishPost('twitter',
+      "Hello world! This is a test tweet from the new automated Shamrock Bail Bonds system. 🍀🚀"
     );
     console.log("✅ Twitter Test Result: ", result);
   } catch (e) {
     console.error("❌ Twitter Test Failed: " + e.message);
   }
+}
+
+function setTikTokTokens() {
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('TIKTOK_CLIENT_KEY', 'REDACTED');
+  props.setProperty('TIKTOK_CLIENT_SECRET', 'REDACTED');
+  console.log('✅ Set TikTok Tokens successfully.');
 }
