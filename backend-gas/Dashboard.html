@@ -1620,7 +1620,7 @@
                 <div class="card-header">
                     <h3><span class="icon">📣</span> AI Social Hub (The Broadcaster)</h3>
                     <div style="display:flex; gap:10px; align-items:center;">
-                        <span style="font-size:12px; color:var(--success);">●</span> Online</span>
+                        <span style="font-size:12px; color:var(--success);">●</span> Online
                         <div class="badge"
                             style="background:var(--surface-2); color:var(--text); padding:6px 14px; border-radius:20px; font-size:12px; border:1px solid var(--border);">
                             Powered by xAI Grok
@@ -1720,6 +1720,19 @@
                             </div>
                         </div>
 
+                        <!-- ── Credential Status Panel ─────────────────────────────── -->
+                        <div id="social-cred-status"
+                            style="background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:16px; font-size:12px;">
+                            <div style="font-weight:600; color:var(--text-secondary); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                                🔑 Platform Credential Status
+                                <button type="button" onclick="SocialHub.loadCredentialStatus()"
+                                    style="margin-left:auto; background:none; border:none; color:var(--accent); cursor:pointer; font-size:11px; padding:0;">↻ Refresh</button>
+                            </div>
+                            <div id="social-cred-status-grid"
+                                style="display:grid; grid-template-columns:1fr 1fr; gap:4px 12px;">
+                                <span style="color:var(--muted);">Loading credential status...</span>
+                            </div>
+                        </div>
                         <button id="btn-generate-social" class="btn btn-primary"
                             style="width: 100%; justify-content: center;" onclick="generateSocialPosts()">
                             🤖 Generate with Grok
@@ -7093,6 +7106,44 @@
                             alert("Broadcast failed: " + err.message);
                         })
                         .publishAll(posts);
+,
+                loadCredentialStatus: function () {
+                    var grid = document.getElementById('social-cred-status-grid');
+                    if (!grid) return;
+                    grid.innerHTML = '<span style="color:var(--muted); grid-column:1/-1;">Checking credentials...</span>';
+                    google.script.run
+                        .withSuccessHandler(function (status) {
+                            if (!status) {
+                                grid.innerHTML = '<span style="color:var(--error); grid-column:1/-1;">Could not load credential status.</span>';
+                                return;
+                            }
+                            var PLATFORM_LABELS = {
+                                twitter: 'X (Twitter)', linkedin: 'LinkedIn', gbp: 'Google Business',
+                                tiktok: 'TikTok', youtube: 'YouTube', facebook: 'Facebook',
+                                instagram: 'Instagram', telegram: 'Telegram', threads: 'Threads',
+                                skool: 'Skool', patreon: 'Patreon'
+                            };
+                            var html = '';
+                            Object.keys(status).forEach(function (p) {
+                                var ready = status[p];
+                                var label = PLATFORM_LABELS[p] || p;
+                                var dot = ready
+                                    ? '<span style="color:var(--success);">&#9679;</span>'
+                                    : '<span style="color:var(--warning);">&#9679;</span>';
+                                var tag = ready
+                                    ? '<span style="color:var(--success); font-size:10px;">Ready</span>'
+                                    : '<span style="color:var(--warning); font-size:10px;">Pending</span>';
+                                html += '<span style="display:flex; align-items:center; gap:5px;">' + dot + ' ' + label + ' ' + tag + '</span>';
+                            });
+                            if (!html) html = '<span style="color:var(--muted); grid-column:1/-1;">No credential data returned.</span>';
+                            grid.innerHTML = html;
+                        })
+                        .withFailureHandler(function (err) {
+                            if (grid) grid.innerHTML = '<span style="color:var(--muted); grid-column:1/-1;">Credential check unavailable.</span>';
+                            console.warn('getSocialCredentialStatus failed:', err.message);
+                        })
+                        .getSocialCredentialStatus();
+                }
                 }
             };
         })();
@@ -7345,7 +7396,7 @@
     <!-- ============================================================
          TAB: QUEUE (New)
          ============================================================ -->
-    <div id="queue-tab" class="tab-content" style="display:none;">
+    <div id="queue-tab-mobile" class="tab-content" style="display:none;">
         <div class="card">
             <div class="card-header">
                 <h3><span class="icon">📋</span> Incoming Intake Queue</h3>
@@ -7521,7 +7572,7 @@
             <div class="card-header">
                 <h3><span class="icon">🤖</span> AI Agent Console</h3>
                 <div style="display:flex; gap:10px; align-items:center;">
-                    <span style="font-size:12px; color:var(--success);">●</span> Online</span>
+                    <span style="font-size:12px; color:var(--success);">●</span> Online
                     <div class="badge"
                         style="background:var(--surface-2); color:var(--text); padding:6px 14px; border-radius:20px; font-size:12px; border:1px solid var(--border);">
                         Powered by OpenAI GPT-4o-mini</div>
@@ -8841,92 +8892,14 @@
 
                     // Initialize Queue (Data)
                     setTimeout(Queue.fetch, 500);
+                    // Load Social Hub credential status on startup
+                    setTimeout(function () {
+                        if (typeof SocialHub !== 'undefined' && SocialHub.loadCredentialStatus) {
+                            SocialHub.loadCredentialStatus();
+                        }
+                    }, 1500);
 
                     // Maps is now handled by callback or lazy-load on tab switch
-
-                    // --- Module: Social Hub ---
-                    window.generateSocialPosts = function () {
-                        const basePost = document.getElementById('social-base-post').value;
-                        if (!basePost) {
-                            UI.showToast('Please enter a base post/idea', 'error');
-                            return;
-                        }
-
-                        const checkboxes = document.querySelectorAll('.social-platform:checked');
-                        const platforms = Array.from(checkboxes).map(cb => cb.value);
-
-                        if (platforms.length === 0) {
-                            UI.showToast('Please select at least one target platform', 'error');
-                            return;
-                        }
-
-                        const btn = document.getElementById('btn-generate-social');
-                        const originalText = btn.innerHTML;
-                        btn.innerHTML = '⏳ Generating with Grok...';
-                        btn.disabled = true;
-
-                        const container = document.getElementById('social-variants-container');
-                        container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--text-secondary);"><div style="font-size:32px; animation:spin 1s linear infinite; display:inline-block;">⚙️</div><p style="margin-top:16px;">Grok is crafting optimal posts for ' + platforms.length + ' platforms...</p></div>';
-
-                        google.script.run
-                            .withSuccessHandler(res => {
-                                btn.innerHTML = originalText;
-                                btn.disabled = false;
-
-                                if (res.success) {
-                                    UI.showToast('Variants Generated Successfully!', 'success');
-                                    renderSocialVariants(res.variants);
-                                    document.getElementById('btn-broadcast-social').disabled = false;
-                                } else {
-                                    UI.showToast('Generation Failed: ' + res.error, 'error');
-                                    container.innerHTML = '<div style="color:var(--error); padding:20px;">Error: ' + res.error + '</div>';
-                                }
-                            })
-                            .withFailureHandler(err => {
-                                btn.innerHTML = originalText;
-                                btn.disabled = false;
-                                console.error(err);
-                                UI.showToast('System Error: ' + err.message, 'error');
-                                container.innerHTML = '<div style="color:var(--error); padding:20px;">System Error: ' + err.message + '</div>';
-                            })
-                            .client_generateSocialPosts(basePost, platforms);
-                    };
-
-                    window.renderSocialVariants = function (variants) {
-                        const container = document.getElementById('social-variants-container');
-                        container.innerHTML = '';
-
-                        Object.keys(variants).forEach(platform => {
-                            const text = variants[platform];
-
-                            const div = document.createElement('div');
-                            div.style.cssText = 'background: var(--surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 12px;';
-
-                            const header = document.createElement('div');
-                            header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;';
-                            header.innerHTML = '<strong style="text-transform: capitalize; color: var(--accent); font-size: 15px;">' + platform + '</strong><span style="font-size: 11px; color: var(--muted); font-weight: bold;">' + text.length + ' chars</span>';
-
-                            const textarea = document.createElement('textarea');
-                            textarea.className = 'social-variant-edit';
-                            textarea.dataset.platform = platform;
-                            textarea.rows = 4;
-                            textarea.style.cssText = 'width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 8px; font-size: 14px;';
-                            textarea.value = text;
-
-                            const utils = document.createElement('div');
-                            utils.style.cssText = 'display: flex; justify-content: flex-end; gap: 8px;';
-                            utils.innerHTML = '<button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(this.parentElement.previousElementSibling.value); UI.showToast(\'Copied!\',\'success\')">Copy</button>';
-
-                            div.appendChild(header);
-                            div.appendChild(textarea);
-                            div.appendChild(utils);
-                            container.appendChild(div);
-                        });
-                    };
-
-                    window.broadcastSocialPosts = function () {
-                        UI.showToast('API Broadcasting is scheduled for Phase 8.', 'info');
-                    };
 
                     // --- Module: Blog Audio ---
                     window.generateBlogAudio = function (btn) {

@@ -413,7 +413,7 @@ var SocialPublisher = (function () {
     if (!accessToken) throw new Error('GBP credentials missing. Check Script Properties: GBP_ACCESS_TOKEN, GBP_LOCATION_ID');
     if (!locationId) throw new Error('GBP_LOCATION_ID not set. Find it in Google Business Profile API explorer.');
 
-    var url = 'https://mybusiness.googleapis.com/v4/accounts/-/locations/' + locationId + '/localPosts';
+    var url = 'https://mybusinesspostingapi.googleapis.com/v1/locations/' + locationId + '/localPosts';
     var payload = {
       languageCode: 'en-US',
       summary: content,
@@ -441,6 +441,22 @@ var SocialPublisher = (function () {
     if (code >= 200 && code < 300) {
       var body = JSON.parse(response.getContentText());
       return { success: true, id: body.name, platform: 'gbp' };
+    } else if (code === 401) {
+      // Token expired — attempt refresh and retry once
+      try {
+        var newToken = refreshAccessToken_('gbp');
+        options.headers['Authorization'] = 'Bearer ' + newToken;
+        var retryResp = UrlFetchApp.fetch(url, options);
+        var retryCode = retryResp.getResponseCode();
+        if (retryCode >= 200 && retryCode < 300) {
+          var retryBody = JSON.parse(retryResp.getContentText());
+          return { success: true, id: retryBody.name, platform: 'gbp' };
+        } else {
+          throw new Error('GBP API Error after token refresh (' + retryCode + '): ' + retryResp.getContentText());
+        }
+      } catch (refreshErr) {
+        throw new Error('GBP API Error 401 (Refresh failed): ' + refreshErr.message);
+      }
     } else {
       throw new Error('Google Business Profile API Error ' + code + ': ' + response.getContentText());
     }
@@ -520,6 +536,10 @@ var SocialPublisher = (function () {
     if (!accessToken) throw new Error('YouTube credentials missing. Check Script Properties: YOUTUBE_ACCESS_TOKEN, YOUTUBE_CHANNEL_ID');
     if (!channelId) throw new Error('YOUTUBE_CHANNEL_ID not set. Find it in YouTube Account Advanced Settings.');
 
+    // NOTE: YouTube Community Posts API requires 500+ subscribers on the channel AND
+    // the channel must be approved for Community Posts by YouTube.
+    // If the channel is not eligible, this will return HTTP 403. The error is surfaced
+    // to the user via the standard broadcastAll error handler — no silent failures.
     var url = 'https://www.googleapis.com/youtube/v3/communityPosts?part=snippet';
     var payload = {
       snippet: {
@@ -546,7 +566,7 @@ var SocialPublisher = (function () {
       // Token expired, attempt refresh
       try {
         var newTokens = refreshAccessToken_('youtube');
-        options.headers['Authorization'] = 'Bearer ' + newTokens.access_token;
+        options.headers['Authorization'] = 'Bearer ' + newTokens; // refreshAccessToken_ returns the token string directly
         var retryResponse = UrlFetchApp.fetch(url, options);
         var retryCode = retryResponse.getResponseCode();
         if (retryCode >= 200 && retryCode < 300) {
@@ -1092,12 +1112,19 @@ var SocialPublisher = (function () {
      * @returns {Object} - { twitter: bool, linkedin: bool, gbp: bool, tiktok: bool, youtube: bool }
      */
     getCredentialStatus: function () {
+      // Returns true/false per platform — false = credentials not yet provisioned (graceful, no errors thrown)
       return {
-        twitter: !!(PROPS.getProperty('TWITTER_API_KEY') && PROPS.getProperty('TWITTER_ACCESS_TOKEN')),
-        linkedin: !!(PROPS.getProperty('LINKEDIN_ACCESS_TOKEN')),
-        gbp: !!(PROPS.getProperty('GBP_ACCESS_TOKEN')),
-        tiktok: !!(PROPS.getProperty('TIKTOK_ACCESS_TOKEN')),
-        youtube: !!(PROPS.getProperty('YOUTUBE_ACCESS_TOKEN'))
+        twitter:   !!(PROPS.getProperty('TWITTER_API_KEY') && PROPS.getProperty('TWITTER_ACCESS_TOKEN')),
+        linkedin:  !!(PROPS.getProperty('LINKEDIN_ACCESS_TOKEN')),
+        gbp:       !!(PROPS.getProperty('GBP_ACCESS_TOKEN') && PROPS.getProperty('GBP_LOCATION_ID')),
+        tiktok:    !!(PROPS.getProperty('TIKTOK_ACCESS_TOKEN')),
+        youtube:   !!(PROPS.getProperty('YOUTUBE_ACCESS_TOKEN') && PROPS.getProperty('YOUTUBE_CHANNEL_ID')),
+        facebook:  !!(PROPS.getProperty('FB_PAGE_ACCESS_TOKEN') && PROPS.getProperty('FB_PAGE_ID')),
+        instagram: !!(PROPS.getProperty('INSTAGRAM_ACCESS_TOKEN') && PROPS.getProperty('INSTAGRAM_ACCOUNT_ID')),
+        telegram:  !!(PROPS.getProperty('TELEGRAM_BOT_TOKEN') && PROPS.getProperty('TELEGRAM_CHAT_ID')),
+        threads:   !!(PROPS.getProperty('THREADS_ACCESS_TOKEN')),
+        skool:     !!(PROPS.getProperty('SKOOL_API_KEY')),
+        patreon:   !!(PROPS.getProperty('PATREON_ACCESS_TOKEN'))
       };
     }
 
