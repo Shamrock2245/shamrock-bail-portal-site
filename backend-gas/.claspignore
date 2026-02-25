@@ -3,3 +3,4 @@ fetch_token*.js
 *.md
 *.json
 !appsscript.json
+extracted_scripts.js
