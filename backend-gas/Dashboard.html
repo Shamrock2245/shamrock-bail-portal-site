@@ -8160,10 +8160,14 @@
                     google.script.run
                         .withSuccessHandler(res => {
                             UI.hideLoading();
+                            console.log('[Queue.fetch] Raw response type:', typeof res, 'isArray:', Array.isArray(res), 'length:', res && res.length);
+                            if (res && !Array.isArray(res)) console.log('[Queue.fetch] Response keys:', Object.keys(res));
+                            if (Array.isArray(res) && res.length > 0) console.log('[Queue.fetch] First item:', JSON.stringify(res[0]).substring(0, 200));
                             Queue.render(res);
                         })
                         .withFailureHandler(err => {
                             UI.hideLoading();
+                            console.error('[Queue.fetch] Error:', err);
                             const errHTML = `<tr><td colspan="7" class="text-error" style="padding:20px; text-align:center;">Error: ${err.message}</td></tr>`;
                             UI.setHTML('queue-list', errHTML);
                             UI.setHTML('intake-queue-body', errHTML);
@@ -8176,6 +8180,14 @@
                     const list = document.getElementById('queue-list'); // AI Console Queue
                     const listMain = document.getElementById('intake-queue-body'); // Main Dashboard Queue
                     const badge = document.getElementById('queue-badge');
+
+                    // google.script.run can serialize arrays-of-objects as plain objects
+                    // with numeric keys (e.g. {0: {...}, 1: {...}, ...}).
+                    // Normalize back to a true Array before proceeding.
+                    if (intakes && typeof intakes === 'object' && !Array.isArray(intakes)) {
+                        console.log('[Queue.render] Normalizing object → array, keys:', Object.keys(intakes).length);
+                        intakes = Object.values(intakes);
+                    }
 
                     // Handle "No Intakes"
                     if (!intakes || !Array.isArray(intakes) || intakes.length === 0) {

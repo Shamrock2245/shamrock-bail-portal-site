@@ -541,7 +541,7 @@ function getPendingIntakes() {
   const pending = [];
   const seenIds = new Set();
 
-  SHEET_NAMES.forEach(function(sheetName) {
+  SHEET_NAMES.forEach(function (sheetName) {
     try {
       const sheet = ss.getSheetByName(sheetName);
       if (!sheet) {
@@ -566,7 +566,7 @@ function getPendingIntakes() {
         const statusVal = String(row[idxStatus] || '').trim().toLowerCase();
         if (statusVal === 'pending') {
           const item = {};
-          headers.forEach(function(header, index) {
+          headers.forEach(function (header, index) {
             item[header] = row[index];
           });
           // Parse JSON fields
@@ -638,6 +638,8 @@ function handleAction(data) {
     }
 
     Logger.log('fetchPendingIntakes: wix=' + wixIntakes.length + ' sheets=' + tgIntakes.length);
+    if (wixIntakes.length > 0) Logger.log('  wix[0] keys: ' + Object.keys(wixIntakes[0]).join(', '));
+    if (tgIntakes.length > 0) Logger.log('  sheets[0] keys: ' + Object.keys(tgIntakes[0]).join(', '));
 
     // Deduplicate by IntakeID (Wix record wins if same ID exists in both)
     const seen = new Set();

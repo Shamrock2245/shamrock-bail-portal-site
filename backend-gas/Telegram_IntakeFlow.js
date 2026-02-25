@@ -452,6 +452,9 @@ _(Street, City, State, ZIP — type "skip" if unknown)_`,
 function _handleDefendantAddress(state, msg) {
   if (msg.toLowerCase() === 'skip') {
     state.data.DefAddress = '';
+    state.data.DefCity = '';
+    state.data.DefState = '';
+    state.data.DefZip = '';
   } else {
     if (msg.trim().length < 5) {
       return {
@@ -460,6 +463,11 @@ function _handleDefendantAddress(state, msg) {
       };
     }
     state.data.DefAddress = msg.trim();
+    // Decompose into city/state/zip
+    const parsed = _parseAddress(msg.trim());
+    state.data.DefCity = parsed.city;
+    state.data.DefState = parsed.state;
+    state.data.DefZip = parsed.zip;
   }
   return {
     text: `Got it.
@@ -584,6 +592,11 @@ function _handleIndemnitorAddress(state, msg) {
     };
   }
   state.data.IndAddress = msg.trim();
+  // Decompose into city/state/zip
+  const parsed = _parseAddress(msg.trim());
+  state.data.IndCity = parsed.city;
+  state.data.IndState = parsed.state;
+  state.data.IndZip = parsed.zip;
   return {
     text: `Got it.
 
@@ -1140,6 +1153,94 @@ function _detectCountyFromFacility(facilityName) {
     }
   }
   return '';
+}
+
+// =============================================================================
+// ADDRESS PARSING UTILITY
+// =============================================================================
+
+/**
+ * Decomposes a full address string into street, city, state, and ZIP.
+ * Handles common formats:
+ *   "123 Main St, Fort Myers, FL 33901"
+ *   "123 Main St Fort Myers FL 33901"
+ *   "123 Main St, Fort Myers FL"
+ *
+ * Falls back gracefully — if parsing fails, city/state/zip are empty
+ * but the original string is preserved in DefAddress / IndAddress.
+ *
+ * @param {string} raw - Full address string from user
+ * @returns {{ street: string, city: string, state: string, zip: string }}
+ */
+function _parseAddress(raw) {
+  const result = { street: '', city: '', state: '', zip: '' };
+  if (!raw) return result;
+
+  const trimmed = raw.trim();
+
+  // Pattern 1: "Street, City, ST ZIP" or "Street, City, ST"
+  //   e.g. "123 Main St, Fort Myers, FL 33901"
+  const commaPattern = /^(.+?),\s*(.+?),\s*([A-Za-z]{2})\s*(\d{5}(?:-\d{4})?)?$/;
+  let match = trimmed.match(commaPattern);
+  if (match) {
+    result.street = match[1].trim();
+    result.city = match[2].trim();
+    result.state = match[3].toUpperCase();
+    result.zip = (match[4] || '').trim();
+    return result;
+  }
+
+  // Pattern 2: "Street, City ST ZIP" (no comma before state)
+  //   e.g. "123 Main St, Fort Myers FL 33901"
+  const semiCommaPattern = /^(.+?),\s*(.+?)\s+([A-Za-z]{2})\s*(\d{5}(?:-\d{4})?)?$/;
+  match = trimmed.match(semiCommaPattern);
+  if (match) {
+    result.street = match[1].trim();
+    result.city = match[2].trim();
+    result.state = match[3].toUpperCase();
+    result.zip = (match[4] || '').trim();
+    return result;
+  }
+
+  // Pattern 3: No commas — try to extract trailing "ST ZIP" or "ST"
+  //   e.g. "123 Main St Fort Myers FL 33901"
+  const noCommaPattern = /^(.+?)\s+([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/;
+  match = trimmed.match(noCommaPattern);
+  if (match) {
+    const stateCandidate = match[2].toUpperCase();
+    // Validate it's a real US state abbreviation (not "ST" for Street, "DR" for Drive, etc.)
+    const validStates = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA',
+      'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC',
+      'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC'];
+    if (validStates.indexOf(stateCandidate) > -1) {
+      const leading = match[1].trim();
+      result.state = stateCandidate;
+      result.zip = match[3].trim();
+      const lastComma = leading.lastIndexOf(',');
+      if (lastComma > -1) {
+        result.street = leading.substring(0, lastComma).trim();
+        result.city = leading.substring(lastComma + 1).trim();
+      } else {
+        result.street = leading;
+      }
+      return result;
+    }
+    // If not a valid state abbreviation, fall through to Pattern 4
+  }
+
+  // Pattern 4: Just try to extract a ZIP at the end
+  const zipOnly = /^(.+?)\s+(\d{5}(?:-\d{4})?)$/;
+  match = trimmed.match(zipOnly);
+  if (match) {
+    result.street = match[1].trim();
+    result.zip = match[2].trim();
+    // Default to FL for Florida-based agency
+    result.state = 'FL';
+    return result;
+  }
+
+  // No pattern matched — return empty decomposition (full string stays in DefAddress/IndAddress)
+  return result;
 }
 
 // =============================================================================
