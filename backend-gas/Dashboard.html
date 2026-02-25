@@ -6110,69 +6110,130 @@
         }
 
         /**
-         * Fill PDFs with form data using Adobe PDF Services API (via backend-gas)
+         * Get field mapping from GAS backend (lightweight — no PDF processing)
+         */
+        function getFieldMapping(templateKey, formData) {
+            return new Promise((resolve, reject) => {
+                google.script.run
+                    .withSuccessHandler(resolve)
+                    .withFailureHandler(reject)
+                    .doPostFromClient({
+                        action: 'getFieldMapping',
+                        templateKey: templateKey,
+                        intakeData: formData
+                    });
+            });
+        }
+
+        /**
+         * Fill PDFs with form data using pdf-lib (client-side AcroForm filling)
+         * No external API needed — pdf-lib handles it directly in the browser.
          */
         async function fillPDFsWithData(pdfDocs, formData) {
-            console.log(`Starting to fill ${pdfDocs.length} documents via Adobe API...`);
+            console.log(`Starting to fill ${pdfDocs.length} documents via pdf-lib (client-side)...`);
             console.log('Form data structure:', {
                 defendantName: formData['defendant-first-name'],
                 indemnitorCount: formData.indemnitors ? formData.indemnitors.length : 0,
                 chargesCount: formData.charges ? formData.charges.length : 0
             });
 
+            const { PDFDocument } = PDFLib;
             const filledPdfs = [];
 
-            // Execute all PDF filling requests to Adobe API in parallel
+            // Process each PDF
             const fillPromises = pdfDocs.map(async (doc) => {
                 try {
-                    console.log(`Filling ${doc.key} via Adobe PDF Services API...`);
+                    console.log(`Filling ${doc.key} via pdf-lib...`);
 
-                    const response = await new Promise((resolve, reject) => {
-                        google.script.run
-                            .withSuccessHandler(resolve)
-                            .withFailureHandler(reject)
-                            .doPostFromClient({
-                                action: 'fillSinglePdfWithAdobe',
-                                templateKey: doc.key,
-                                intakeData: formData
-                            });
-                    });
-
-                    if (!response || !response.success) {
-                        throw new Error(`Adobe API filling failed for ${doc.key}: ${response ? response.error : 'Unknown error'}`);
+                    // 1. Get the field-name → value mapping from GAS
+                    const mappedFields = await getFieldMapping(doc.key, formData);
+                    if (!mappedFields || typeof mappedFields !== 'object') {
+                        console.warn(`No mapping returned for ${doc.key}, skipping fill`);
+                        return doc;
                     }
 
-                    // Decode base64 to Uint8Array for merging
-                    const binaryStr = atob(response.pdfBase64);
-                    const bytes = new Uint8Array(binaryStr.length);
-                    for (let i = 0; i < binaryStr.length; i++) {
-                        bytes[i] = binaryStr.charCodeAt(i);
+                    // 2. Load PDF with pdf-lib
+                    const pdfDoc = await PDFDocument.load(doc.bytes, { ignoreEncryption: true });
+                    let form;
+                    try {
+                        form = pdfDoc.getForm();
+                    } catch (formErr) {
+                        console.warn(`${doc.key} has no form fields, passing through unfilled`);
+                        const pageCount = pdfDoc.getPageCount();
+                        return {
+                            key: doc.key,
+                            name: doc.name,
+                            bytes: doc.bytes,
+                            pageCount: pageCount,
+                            isCopy: doc.isCopy,
+                            indemnitorIndex: doc.indemnitorIndex
+                        };
                     }
 
-                    // Parse with pdf-lib to get pageCount for signature offset mapping
-                    const { PDFDocument } = PDFLib;
-                    const pdfDoc = await PDFDocument.load(bytes);
+                    // 3. Fill each mapped field
+                    let filledCount = 0;
+                    const allFields = form.getFields();
+                    const fieldNames = allFields.map(f => f.getName());
+
+                    for (const [fieldName, value] of Object.entries(mappedFields)) {
+                        if (value === null || value === undefined || value === '') continue;
+                        try {
+                            if (fieldNames.includes(fieldName)) {
+                                const field = form.getTextField(fieldName);
+                                field.setText(String(value));
+                                filledCount++;
+                            }
+                        } catch (fieldErr) {
+                            // Field might be a checkbox, dropdown, etc. — try alternatives
+                            try {
+                                const cb = form.getCheckBox(fieldName);
+                                if (String(value).toLowerCase() === 'true' || value === 'Yes') {
+                                    cb.check();
+                                }
+                                filledCount++;
+                            } catch (e2) {
+                                // Skip fields that don't exist or aren't text/checkbox
+                            }
+                        }
+                    }
+
+                    console.log(`  ✓ ${doc.key}: filled ${filledCount}/${Object.keys(mappedFields).length} fields (PDF has ${fieldNames.length} total fields)`);
+
+                    // 4. Flatten form (makes fields non-editable, embeds text)
+                    try { form.flatten(); } catch (flatErr) { /* some forms resist flattening */ }
+
+                    // 5. Save filled PDF
+                    const filledBytes = await pdfDoc.save();
                     const pageCount = pdfDoc.getPageCount();
-
-                    console.log(`  Completed ${doc.key} via Adobe API. Pages: ${pageCount}`);
 
                     return {
                         key: doc.key,
                         name: doc.name,
-                        bytes: bytes, // for mergePDFs
-                        data: response.pdfBase64, // for legacy base64 support
+                        bytes: new Uint8Array(filledBytes),
                         pageCount: pageCount,
                         isCopy: doc.isCopy,
                         indemnitorIndex: doc.indemnitorIndex
                     };
                 } catch (err) {
-                    console.error(`Error filling PDF ${doc.name} via Adobe:`, err);
-                    // Return original unfilled document as fallback in case of failure
-                    return doc;
+                    console.error(`Error filling PDF ${doc.name} via pdf-lib:`, err);
+                    // Fallback: return original unfilled document
+                    try {
+                        const fallbackDoc = await PDFDocument.load(doc.bytes, { ignoreEncryption: true });
+                        return {
+                            key: doc.key,
+                            name: doc.name,
+                            bytes: doc.bytes,
+                            pageCount: fallbackDoc.getPageCount(),
+                            isCopy: doc.isCopy,
+                            indemnitorIndex: doc.indemnitorIndex
+                        };
+                    } catch (e2) {
+                        return doc;
+                    }
                 }
             });
 
-            // Wait for all Adobe API jobs to complete
+            // Wait for all fills to complete
             const results = await Promise.all(fillPromises);
             filledPdfs.push(...results);
 

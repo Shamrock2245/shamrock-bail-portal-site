@@ -417,6 +417,50 @@ function doPost(e) {
       }
     }
 
+    // --- TELEGRAM MINI APP (no-cors — cannot send API key) ---
+    // These actions bypass API key verification because the Mini App
+    // uses fetch({ mode: 'no-cors' }) which cannot read responses or
+    // send custom headers reliably. Security is via Telegram initData.
+    if (data.action === 'telegram_mini_app_intake') {
+      try {
+        Logger.log('📱 Telegram Mini App intake received');
+        const result = saveTelegramIntakeToQueue(data, data.telegramUserId || 'mini_app_unknown');
+        // Send Slack notification
+        try {
+          const slackChannel = getConfig().SLACK_WEBHOOK_INTAKE || getConfig().SLACK_WEBHOOK_SHAMROCK;
+          if (slackChannel) {
+            sendSlackMessage(slackChannel,
+              `📱 New Telegram Mini App Intake: ${data.DefName || 'Unknown'} | Facility: ${data.DefFacility || 'N/A'} | Indemnitor: ${data.IndName || 'N/A'} | Phone: ${data.IndPhone || 'N/A'}`,
+              null
+            );
+          }
+        } catch (slackErr) {
+          Logger.log('Slack notification failed (non-fatal): ' + slackErr.message);
+        }
+        return createResponse(result);
+      } catch (intakeErr) {
+        Logger.log('❌ Mini App intake error: ' + intakeErr.message);
+        return createErrorResponse(intakeErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
+    if (data.action === 'telegram_mini_app_upload') {
+      try {
+        Logger.log('📎 Telegram Mini App file upload: ' + data.docType);
+        // Save file to Google Drive
+        const folder = DriveApp.getFolderById(getConfig().GOOGLE_DRIVE_FOLDER_ID);
+        const decoded = Utilities.base64Decode(data.base64Data);
+        const blob = Utilities.newBlob(decoded, data.mimeType || 'image/jpeg', data.fileName || 'upload.jpg');
+        const file = folder.createFile(blob);
+        file.setDescription('Telegram Mini App upload | User: ' + (data.telegramUserId || 'unknown') + ' | Type: ' + (data.docType || 'unknown'));
+        return createResponse({ success: true, fileId: file.getId(), fileUrl: file.getUrl() });
+      } catch (uploadErr) {
+        Logger.log('❌ Mini App upload error: ' + uploadErr.message);
+        return createErrorResponse(uploadErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+    // --- END TELEGRAM MINI APP ---
+
     // --- API KEY VERIFICATION (Security Hardening) ---
     const config = getConfig();
     // Allow if it matches the configured Wix API Key
@@ -674,6 +718,17 @@ function handleAction(data) {
   // Telegram intake full data (for Dashboard Queue.process() hydration when IntakeID starts with 'TG-')
   if (action === 'getTelegramIntakeData') return getTelegramIntakeFullData(data.intakeId);
 
+  // Telegram Mini App (authenticated path — fallback if API key is sent)
+  if (action === 'telegram_mini_app_intake') return saveTelegramIntakeToQueue(data, data.telegramUserId || 'mini_app_unknown');
+  if (action === 'telegram_mini_app_upload') {
+    const folder = DriveApp.getFolderById(getConfig().GOOGLE_DRIVE_FOLDER_ID);
+    const decoded = Utilities.base64Decode(data.base64Data);
+    const blob = Utilities.newBlob(decoded, data.mimeType || 'image/jpeg', data.fileName || 'upload.jpg');
+    const file = folder.createFile(blob);
+    file.setDescription('TG Mini App | User: ' + (data.telegramUserId || 'unknown') + ' | Type: ' + (data.docType || 'unknown'));
+    return { success: true, fileId: file.getId(), fileUrl: file.getUrl() };
+  }
+
   // 1.5. NOTIFICATIONS
   if (action === 'sendEmail') return handleSendEmail(data);
   if (action === 'sendSlackAlert') return NotificationService.sendSlack(data.channel, data.text, data.blocks);
@@ -697,6 +752,7 @@ function handleAction(data) {
   if (action === 'createEmbeddedLink') return SN_createEmbeddedLink(data.documentId, data.email, data.role);
   if (action === 'batchSaveToWixPortal') return batchSaveToWixPortal(data);
   if (action === 'fillSinglePdfWithAdobe') return fillSinglePdfWithAdobe(data);
+  if (action === 'getFieldMapping') return getMappingForDocumentTemplate(data.templateKey, data.intakeData);
 
   // 2. SIGNING & DOCS
   if (action === 'sendForSignature') return handleSendForSignature(data);
