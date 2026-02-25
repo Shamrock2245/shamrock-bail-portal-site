@@ -601,26 +601,43 @@ function extractDischargeData(message) {
 }
 
 /**
- * Robust Text Extraction from PDF
+ * Robust Text Extraction from PDF (Drive API v3 compatible)
+ * Uploads PDF, converts to Google Doc (triggers OCR), extracts text.
  */
 function extractTextFromPDF(attachment) {
   try {
-    const resource = {
-      title: attachment.getName(),
-      mimeType: attachment.getContentType()
-    };
+    // Step 1: Upload PDF blob to Drive
+    const pdfBlob = attachment.copyBlob().setName(attachment.getName() || 'court_doc.pdf');
+    const pdfFile = DriveApp.createFile(pdfBlob);
+    const fileId = pdfFile.getId();
 
-    // Drive.Files.insert requires Advanced Drive Service enabled
-    const file = Drive.Files.insert(resource, attachment, { ocr: true });
-    const doc = DocumentApp.openById(file.id);
+    // Step 2: Copy the file as a Google Doc (this triggers OCR conversion)
+    const docCopy = Drive.Files.copy(
+      { name: attachment.getName().replace('.pdf', '') + '_ocr', mimeType: 'application/vnd.google-apps.document' },
+      fileId
+    );
+
+    // Step 3: Open the Google Doc and extract text
+    const doc = DocumentApp.openById(docCopy.id);
     const text = doc.getBody().getText();
 
-    Drive.Files.remove(file.id); // Clean up
+    // Step 4: Clean up both files
+    try {
+      DriveApp.getFileById(fileId).setTrashed(true);
+      DriveApp.getFileById(docCopy.id).setTrashed(true);
+    } catch (cleanupErr) {
+      Logger.log(`⚠️ OCR cleanup warning: ${cleanupErr.message}`);
+    }
+
     return text;
   } catch (e) {
     Logger.log(`⚠️ OCR failed (using quick text): ${e.message}`);
-    // Fallback if Drive API is not enabled or fails
-    return attachment.getDataAsString();
+    // Fallback: try to read raw text from the PDF blob
+    try {
+      return attachment.getDataAsString();
+    } catch (fallbackErr) {
+      return '';
+    }
   }
 }
 
