@@ -250,3 +250,99 @@ function smokeTestAllPlatforms() {
 
   console.log('═══════════════════════════════════════════════════════');
 }
+
+// =============================================================================
+// INTAKE QUEUE DIAGNOSTICS
+// =============================================================================
+
+/**
+ * debugFetchQueue
+ * Run this from the GAS IDE to diagnose why the Dashboard Intake Queue is blank.
+ * Checks both the Google Sheets path and the Wix CMS path independently.
+ * Read-only — no side effects.
+ *
+ * HOW TO RUN:
+ *   GAS IDE → select "debugFetchQueue" from the function dropdown → click Run
+ *   Then check the Execution Log for the output.
+ */
+function debugFetchQueue() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  Logger.log('=== INTAKE QUEUE DIAGNOSTIC ===');
+
+  // 1. Check IntakeQueue sheet
+  const iqSheet = ss.getSheetByName('IntakeQueue');
+  if (!iqSheet) {
+    Logger.log('❌ IntakeQueue sheet: NOT FOUND');
+  } else {
+    const iqRows = iqSheet.getLastRow() - 1;
+    Logger.log('✅ IntakeQueue sheet: found, ' + iqRows + ' data rows');
+    if (iqRows > 0) {
+      const iqData = iqSheet.getDataRange().getValues();
+      const iqHeaders = iqData[0];
+      const idxStatus = iqHeaders.indexOf('Status');
+      let pendingCount = 0;
+      for (let i = 1; i < iqData.length; i++) {
+        if (String(iqData[i][idxStatus] || '').trim().toLowerCase() === 'pending') pendingCount++;
+      }
+      Logger.log('   → Rows with Status=pending: ' + pendingCount);
+      Logger.log('   → Headers: ' + iqHeaders.join(', '));
+      if (iqData.length > 1) Logger.log('   → Sample row 2: ' + JSON.stringify(iqData[1]).substring(0, 300));
+    }
+  }
+
+  // 2. Check Telegram_IntakeQueue sheet
+  const tqSheet = ss.getSheetByName('Telegram_IntakeQueue');
+  if (!tqSheet) {
+    Logger.log('❌ Telegram_IntakeQueue sheet: NOT FOUND');
+  } else {
+    const tqRows = tqSheet.getLastRow() - 1;
+    Logger.log('✅ Telegram_IntakeQueue sheet: found, ' + tqRows + ' data rows');
+    if (tqRows > 0) {
+      const tqData = tqSheet.getDataRange().getValues();
+      const tqHeaders = tqData[0];
+      const idxStatus2 = tqHeaders.indexOf('Status');
+      let pendingCount2 = 0;
+      for (let j = 1; j < tqData.length; j++) {
+        if (String(tqData[j][idxStatus2] || '').trim().toLowerCase() === 'pending') pendingCount2++;
+      }
+      Logger.log('   → Rows with Status=pending: ' + pendingCount2);
+      Logger.log('   → Headers: ' + tqHeaders.join(', '));
+      if (tqData.length > 1) Logger.log('   → Sample row 2: ' + JSON.stringify(tqData[1]).substring(0, 300));
+    }
+  }
+
+  // 3. Check TelegramIntakeData sheet
+  const tidSheet = ss.getSheetByName('TelegramIntakeData');
+  if (!tidSheet) {
+    Logger.log('❌ TelegramIntakeData sheet: NOT FOUND');
+  } else {
+    Logger.log('✅ TelegramIntakeData sheet: found, ' + (tidSheet.getLastRow() - 1) + ' data rows');
+  }
+
+  // 4. Test Wix pendingIntakes endpoint
+  Logger.log('--- Wix CMS path ---');
+  try {
+    const result = debugWixIntakeQueueConnection();
+    Logger.log('Wix endpoint status: ' + result.statusCode);
+    Logger.log('Wix intakes count: ' + (result.parsed && result.parsed.intakes ? result.parsed.intakes.length : 'N/A'));
+    if (result.parsed && result.parsed.intakes && result.parsed.intakes.length > 0) {
+      Logger.log('Sample Wix intake: ' + JSON.stringify(result.parsed.intakes[0]).substring(0, 200));
+    }
+  } catch (e) {
+    Logger.log('❌ Wix endpoint error: ' + e.message);
+  }
+
+  // 5. Run the actual combined fetch
+  Logger.log('--- Combined fetchPendingIntakes result ---');
+  try {
+    const combined = handleAction({ action: 'fetchPendingIntakes' });
+    Logger.log('Total intakes returned to Dashboard: ' + (combined ? combined.length : 0));
+    if (combined && combined.length > 0) {
+      Logger.log('First intake: ' + JSON.stringify(combined[0]).substring(0, 300));
+    }
+  } catch (e) {
+    Logger.log('❌ fetchPendingIntakes threw: ' + e.message);
+  }
+
+  Logger.log('=== DIAGNOSTIC COMPLETE ===');
+}

@@ -481,8 +481,9 @@ function getWixIntakeQueue() {
     });
 
   } catch (error) {
-    Logger.log(`Error querying Wix IntakeQueue: ${error && error.stack ? error.stack : error}`);
-    throw new Error(`Failed to fetch Wix IntakeQueue: ${error.message || error}`);
+    Logger.log('Error querying Wix IntakeQueue: ' + (error && error.stack ? error.stack : error));
+    // Return empty array instead of throwing — caller will still get Sheets data
+    return [];
   }
 }
 

@@ -534,43 +534,65 @@ function client_getSystemStatus() {
  * Used by Dashboard.html to populate the intake queue
  */
 function getPendingIntakes() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('IntakeQueue');
-  if (!sheet) return [];
-
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // Read from BOTH sheet names — 'IntakeQueue' (Wix/manual path) and
+  // 'Telegram_IntakeQueue' (Telegram bot path, created by INIT_TELEGRAM_INTAKE_QUEUE_HEADERS)
+  const SHEET_NAMES = ['IntakeQueue', 'Telegram_IntakeQueue'];
   const pending = [];
+  const seenIds = new Set();
 
-  // Indices
-  const idxStatus = headers.indexOf('Status');
-  const idxId = headers.indexOf('IntakeID');
-
-  if (idxStatus === -1) return [];
-
-  // Iterate rows (skip header)
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    if (row[idxStatus] === 'pending') {
-      // Map row to object based on headers
-      const item = {};
-      headers.forEach((header, index) => {
-        item[header] = row[index];
-      });
-      // Parse JSON fields if necessary
-      try {
-        if (item.EmployerInfo && typeof item.EmployerInfo === 'string') {
-          item.EmployerInfo = JSON.parse(item.EmployerInfo);
-        }
-        if (item.References && typeof item.References === 'string') {
-          item.References = JSON.parse(item.References);
-        }
-      } catch (e) {
-        console.warn('Failed to parse JSON for intake ' + item.IntakeID);
+  SHEET_NAMES.forEach(function(sheetName) {
+    try {
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet) {
+        Logger.log('getPendingIntakes: sheet not found: ' + sheetName);
+        return;
       }
-
-      pending.push(item);
+      const lastRow = sheet.getLastRow();
+      if (lastRow < 2) {
+        Logger.log('getPendingIntakes: ' + sheetName + ' has no data rows');
+        return;
+      }
+      const data = sheet.getDataRange().getValues();
+      const headers = data[0];
+      const idxStatus = headers.indexOf('Status');
+      const idxId = headers.indexOf('IntakeID');
+      if (idxStatus === -1) {
+        Logger.log('getPendingIntakes: ' + sheetName + ' missing Status column');
+        return;
+      }
+      for (var i = 1; i < data.length; i++) {
+        const row = data[i];
+        const statusVal = String(row[idxStatus] || '').trim().toLowerCase();
+        if (statusVal === 'pending') {
+          const item = {};
+          headers.forEach(function(header, index) {
+            item[header] = row[index];
+          });
+          // Parse JSON fields
+          try {
+            if (item.EmployerInfo && typeof item.EmployerInfo === 'string') {
+              item.EmployerInfo = JSON.parse(item.EmployerInfo);
+            }
+            if (item.References && typeof item.References === 'string') {
+              item.References = JSON.parse(item.References);
+            }
+          } catch (e) {
+            console.warn('Failed to parse JSON for intake ' + item.IntakeID);
+          }
+          // Deduplicate by IntakeID
+          const intakeId = item.IntakeID || '';
+          if (!intakeId || !seenIds.has(intakeId)) {
+            if (intakeId) seenIds.add(intakeId);
+            pending.push(item);
+          }
+        }
+      }
+      Logger.log('getPendingIntakes: ' + sheetName + ' contributed ' + pending.length + ' pending rows so far');
+    } catch (sheetErr) {
+      Logger.log('getPendingIntakes: error reading ' + sheetName + ': ' + sheetErr.message);
     }
-  }
+  });
 
   return pending.reverse(); // Newest first
 }
@@ -597,17 +619,45 @@ function handleAction(data) {
   if (action === 'intakeSubmission') return handleIntakeSubmission(data);
   if (action === 'newIntake') return handleNewIntake(data.caseId, data.data);
   if (action === 'fetchPendingIntakes') {
-    const wixIntakes = getWixIntakeQueue() || [];
-    const tgIntakes = getPendingIntakes() || [];
+    // Wix CMS path — wrapped in try/catch so a Wix API failure never blocks
+    // the Google Sheets path (which has the confirmed Telegram intake data).
+    let wixIntakes = [];
+    try {
+      wixIntakes = getWixIntakeQueue() || [];
+    } catch (wixErr) {
+      Logger.log('⚠️ getWixIntakeQueue failed (non-fatal): ' + wixErr.message);
+      // Continue — Sheets data will still be returned below
+    }
 
-    // Merge and sort by Timestamp descending
-    const combined = [...wixIntakes, ...tgIntakes].sort((a, b) => {
+    // Google Sheets path — reads IntakeQueue sheet directly
+    let tgIntakes = [];
+    try {
+      tgIntakes = getPendingIntakes() || [];
+    } catch (sheetErr) {
+      Logger.log('⚠️ getPendingIntakes (Sheets) failed (non-fatal): ' + sheetErr.message);
+    }
+
+    Logger.log('fetchPendingIntakes: wix=' + wixIntakes.length + ' sheets=' + tgIntakes.length);
+
+    // Deduplicate by IntakeID (Wix record wins if same ID exists in both)
+    const seen = new Set();
+    const deduped = [];
+    [...wixIntakes, ...tgIntakes].forEach(item => {
+      const id = item.IntakeID || item._id || '';
+      if (!id || !seen.has(id)) {
+        if (id) seen.add(id);
+        deduped.push(item);
+      }
+    });
+
+    // Sort by Timestamp descending
+    deduped.sort((a, b) => {
       const timeA = new Date(a.Timestamp || 0).getTime();
       const timeB = new Date(b.Timestamp || 0).getTime();
       return timeB - timeA;
     });
 
-    return combined;
+    return deduped;
   }
   if (action === 'markIntakeProcessed') {
     if (String(data.intakeId).startsWith('TG-')) {
