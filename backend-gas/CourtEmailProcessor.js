@@ -601,33 +601,26 @@ function extractDischargeData(message) {
 }
 
 /**
- * Robust Text Extraction from PDF (Drive API v3 compatible)
- * Uploads PDF, converts to Google Doc (triggers OCR), extracts text.
+ * Robust Text Extraction from PDF (Drive API v3)
+ * Uses Drive.Files.create() to upload PDF and convert to Google Doc in one call,
+ * which triggers Google's OCR. Then reads the Doc text and cleans up.
  */
 function extractTextFromPDF(attachment) {
+  let createdFileId = null;
   try {
-    // Step 1: Upload PDF blob to Drive
-    const pdfBlob = attachment.copyBlob().setName(attachment.getName() || 'court_doc.pdf');
-    const pdfFile = DriveApp.createFile(pdfBlob);
-    const fileId = pdfFile.getId();
+    // Single v3 call: upload PDF blob → convert to Google Doc (OCR)
+    const resource = {
+      name: (attachment.getName() || 'court_doc') + '_ocr',
+      mimeType: 'application/vnd.google-apps.document'  // Target format triggers OCR
+    };
 
-    // Step 2: Copy the file as a Google Doc (this triggers OCR conversion)
-    const docCopy = Drive.Files.copy(
-      { name: attachment.getName().replace('.pdf', '') + '_ocr', mimeType: 'application/vnd.google-apps.document' },
-      fileId
-    );
+    const blob = attachment.copyBlob();
+    const file = Drive.Files.create(resource, blob, { fields: 'id' });
+    createdFileId = file.id;
 
-    // Step 3: Open the Google Doc and extract text
-    const doc = DocumentApp.openById(docCopy.id);
+    // Extract text from the converted Google Doc
+    const doc = DocumentApp.openById(createdFileId);
     const text = doc.getBody().getText();
-
-    // Step 4: Clean up both files
-    try {
-      DriveApp.getFileById(fileId).setTrashed(true);
-      DriveApp.getFileById(docCopy.id).setTrashed(true);
-    } catch (cleanupErr) {
-      Logger.log(`⚠️ OCR cleanup warning: ${cleanupErr.message}`);
-    }
 
     return text;
   } catch (e) {
@@ -637,6 +630,12 @@ function extractTextFromPDF(attachment) {
       return attachment.getDataAsString();
     } catch (fallbackErr) {
       return '';
+    }
+  } finally {
+    // Always clean up the temp file
+    if (createdFileId) {
+      try { DriveApp.getFileById(createdFileId).setTrashed(true); }
+      catch (cleanupErr) { /* ignore */ }
     }
   }
 }
