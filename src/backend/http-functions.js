@@ -457,6 +457,84 @@ export async function get_authCallback(request) {
 }
 
 /**
+ * POST /_functions/metaDataDeletion
+ * Meta (Facebook) Data Deletion Callback URL
+ * 
+ * Flow:
+ * 1. User removes app from their Facebook settings.
+ * 2. Meta sends POST request with signed_request.
+ * 3. We parse and verify the request using FACEBOOK_APP_SECRET.
+ * 4. We return the confirmation code and status URL.
+ */
+export async function post_metaDataDeletion(request) {
+    try {
+        // Facebook sends signed_request as application/x-www-form-urlencoded
+        const bodyText = await request.body.text();
+
+        let signedRequest = null;
+        try {
+            // First try to parse as JSON in case it's sent that way
+            const jsonBody = JSON.parse(bodyText);
+            signedRequest = jsonBody.signed_request;
+        } catch (e) {
+            // Fallback to URLSearchParams if it's form-urlencoded
+            const params = new URLSearchParams(bodyText);
+            signedRequest = params.get('signed_request');
+        }
+
+        if (!signedRequest) {
+            return badRequest({ body: { error: "Missing signed_request" } });
+        }
+
+        const secret = await getSecret('FACEBOOK_APP_SECRET').catch(() => null);
+        if (!secret) {
+            console.error("Missing FACEBOOK_APP_SECRET secret in Wix Secrets Manager.");
+            return serverError({ body: { error: "Server configuration error" } });
+        }
+
+        // Parse signed_request (format: encoded_sig.payload)
+        const parts = signedRequest.split('.');
+        if (parts.length !== 2) {
+            return badRequest({ body: { error: "Invalid signed_request format" } });
+        }
+
+        const [encodedSig, payload] = parts;
+
+        // Base64Url decode using Buffer
+        const sigHex = Buffer.from(encodedSig.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('hex');
+        const dataStr = Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+        const data = JSON.parse(dataStr);
+
+        // Verify HMAC SHA-256 signature
+        const expectedSig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+
+        if (sigHex !== expectedSig) {
+            logSafe('Invalid Meta Data Deletion Signature', { received: sigHex, expected: expectedSig }, 'warn');
+            return forbidden({ body: { error: "Invalid signature" } });
+        }
+
+        // The data object contains `user_id` (Facebook app-scoped ID).
+        const userId = data.user_id;
+        console.log(`[Meta] Data deletion requested for Facebook user: ${userId}`);
+
+        // Return exactly what Facebook expects
+        const confirmationCode = `DELETION-${userId}-${Date.now()}`;
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+                url: "https://www.shamrockbailbonds.biz/data-deletion",
+                confirmation_code: confirmationCode
+            }
+        });
+
+    } catch (err) {
+        console.error("Meta Data Deletion Callback Error:", err);
+        return serverError({ body: { error: "Internal server error processing deletion" } });
+    }
+}
+
+/**
  * Helper to return HTML response
  */
 function response(status, body) {

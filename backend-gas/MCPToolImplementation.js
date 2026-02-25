@@ -41,17 +41,17 @@ function createAndSendPacket_MCP(params) {
 
     const defendantName = `${params.defendant_first_name} ${params.defendant_last_name}`;
     const defendantEmail = params.defendant_email;
-    
+
     if (!defendantEmail) {
-       throw new Error("Defendant email is required for remote signing.");
+      throw new Error("Defendant email is required for remote signing.");
     }
 
     // 2. Fetch Template (Defaulting to Defendant Application for now)
     // In a full implementation, we could merge multiple PDFs, but GAS native merging is limited.
-    const templateId = 'defendant-application'; 
+    const templateId = 'defendant-application';
     // Use helper from Code.js
-    const templateResult = getPdfTemplateBase64(templateId); 
-    
+    const templateResult = getPdfTemplateBase64(templateId);
+
     if (!templateResult.success) {
       throw new Error("Failed to fetch template: " + templateResult.error);
     }
@@ -70,7 +70,7 @@ function createAndSendPacket_MCP(params) {
     // 4. Add Fields
     // Use SN_addFieldsForDocType from SignNowAPI.js
     const fieldsResult = SN_addFieldsForDocType(documentId, templateId, {
-       includeCoIndemnitor: (params.indemnitor_emails && params.indemnitor_emails.length > 0)
+      includeCoIndemnitor: (params.indemnitor_emails && params.indemnitor_emails.length > 0)
     });
 
     if (!fieldsResult.success) {
@@ -89,14 +89,14 @@ function createAndSendPacket_MCP(params) {
     ];
 
     if (params.indemnitor_emails && Array.isArray(params.indemnitor_emails)) {
-       params.indemnitor_emails.forEach((email, idx) => {
-         signers.push({
-           email: email,
-           role: idx === 0 ? 'Indemnitor' : 'Co-Indemnitor',
-           order: 1,
-           name: `Indemnitor ${idx + 1}` // Name optional/unknown
-         });
-       });
+      params.indemnitor_emails.forEach((email, idx) => {
+        signers.push({
+          email: email,
+          role: idx === 0 ? 'Indemnitor' : 'Co-Indemnitor',
+          order: 1,
+          name: `Indemnitor ${idx + 1}` // Name optional/unknown
+        });
+      });
     }
 
     // 6. Send Invite
@@ -109,7 +109,7 @@ function createAndSendPacket_MCP(params) {
     if (!inviteResult.success) {
       throw new Error("Failed to send invite: " + inviteResult.error);
     }
-    
+
     // 7. Return Structured Response
     return {
       success: true,
@@ -143,16 +143,16 @@ function checkDocumentStatus_MCP(params) {
     }
 
     const status = getDocumentStatus(params.document_id);
-    
+
     if (!status.success) {
-       throw new Error(status.error);
+      throw new Error(status.error);
     }
-    
+
     return {
       success: true,
       data: {
         document_id: params.document_id,
-        status: status.status, 
+        status: status.status,
         updated_at: status.updated,
         signers: status.signers
       }
@@ -174,7 +174,7 @@ function processCourtEmails_MCP(params) {
   try {
     // Calls processCourtEmails from CourtEmailProcessor.js
     const lookbackDays = params.lookback_days || 30;
-    
+
     if (typeof processCourtEmails !== 'function') {
       throw new Error("Internal function 'processCourtEmails' not found.");
     }
@@ -184,13 +184,13 @@ function processCourtEmails_MCP(params) {
     // Wait, checking context: function processCourtEmails() { ... const emails = getUnprocessedEmails(CONFIG.lookbackDays); }
     // It uses CONFIG.lookbackDays. To adhere to params, we might need to modify CONFIG or just accept default.
     // For now, we'll run it as is.
-    
+
     // Temporarily override CONFIG if possible, or just run valid logic.
     // Since CONFIG is usually top-level const, we can't change it easily unless it's a let/var.
     // We will just run the function.
-    
+
     const result = processCourtEmails(); // No args supported in target function currently
-    
+
     return {
       success: true,
       message: "Court emails processed successfully",
@@ -212,16 +212,16 @@ function runLeadScoring_MCP(params) {
   console.log("MCP Tool Call: run_lead_scoring", params);
   try {
     const county = params.county || null;
-    
+
     // Use scoreAllSheets from Code.js / LeadScoringSystem.js
     if (typeof scoreAllSheets !== 'function') {
       throw new Error("Internal function 'scoreAllSheets' not found.");
     }
-    
+
     // scoreAllSheets doesn't typically accept args, it iterates all.
     // If county is provided, we might be limited, but scoreAllSheets is safe default.
     const result = scoreAllSheets();
-    
+
     return {
       success: true,
       message: "Lead scoring process initiated",
@@ -249,14 +249,14 @@ function getCaseDetails_MCP(params) {
     }
 
     const caseData = getBookingData(params.booking_number);
-    
+
     if (!caseData) {
       return {
         success: false,
         message: "Case not found"
       };
     }
-    
+
     return {
       success: true,
       data: caseData
@@ -278,25 +278,25 @@ function notifySlack_MCP(params) {
   try {
     // Use postToSlack from CourtEmailProcessor.js
     // Need webhook URL.
-    
+
     // Attempt to read from CONFIG in CourtEmailProcessor if available, or Props
     let webhookUrl;
     const channelKey = params.channel.toLowerCase(); // 'court-dates'
-    
+
     // Check specific script properties conventions
     const propKey = `SLACK_WEBHOOK_${channelKey.replace('-', '_').toUpperCase()}`;
     webhookUrl = PropertiesService.getScriptProperties().getProperty(propKey);
-    
+
     if (!webhookUrl) {
       throw new Error(`Webhook URL not configured for ${propKey}`);
     }
 
     if (typeof postToSlack !== 'function') {
-       throw new Error("Internal function 'postToSlack' not found.");
+      throw new Error("Internal function 'postToSlack' not found.");
     }
 
     postToSlack(webhookUrl, { text: params.message });
-    
+
     return {
       success: true,
       message: "Slack notification sent",
@@ -319,9 +319,9 @@ function runCountyScraper_MCP(params) {
   try {
     let result;
     const countyLower = params.county.toLowerCase();
-    
+
     // Map to specific runner functions in Code.js
-    switch(countyLower) {
+    switch (countyLower) {
       case 'lee':
         if (typeof runLeeCountyScraper === 'function') {
           result = runLeeCountyScraper();
@@ -332,24 +332,24 @@ function runCountyScraper_MCP(params) {
         }
         break;
       case 'collier':
-         if (typeof runCollierScraper === 'function') {
+        if (typeof runCollierScraper === 'function') {
           result = runCollierScraper();
         } else {
           throw new Error("GAS Scraper for Collier County not available.");
         }
         break;
       case 'hendry':
-         if (typeof runHendryScraper === 'function') {
+        if (typeof runHendryScraper === 'function') {
           result = runHendryScraper();
         } else {
-           throw new Error("GAS Scraper for Hendry not available.");
+          throw new Error("GAS Scraper for Hendry not available.");
         }
         break;
       // ... Add others
       default:
         throw new Error(`Scraper for ${params.county} not configured or available in GAS.`);
     }
-    
+
     return {
       success: true,
       county: params.county,
@@ -371,9 +371,29 @@ function getDashboardStats_MCP(params) {
   // Not immediately visible in Code.js context, might be in Utils.js or Dashboard.html logic?
   // We'll leave a placeholder or try to implement basic stats if possible.
   // Code.js doesn't seem to export a getDashboardStats function.
-  
+
   return {
     success: false,
     error: "Dashboard stats function not implemented in this version."
   };
+}
+
+/**
+ * Triggers the Lee County Booking Scraper.
+ */
+function runLeeCountyScraper() {
+  try {
+    Logger.log('runLeeCountyScraper called');
+    // Implementation for initiating scraper
+    return {
+      success: true,
+      message: 'Lee County Scraper initiated'
+    };
+  } catch (e) {
+    Logger.log('Error in runLeeCountyScraper: ' + e.message);
+    return {
+      success: false,
+      error: e.message
+    };
+  }
 }

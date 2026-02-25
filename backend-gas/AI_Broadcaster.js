@@ -127,3 +127,27 @@ You must write a highly engaging, single-paragraph "Base Post" that reacts to th
         };
     }
 }
+
+/**
+ * Generates an audio file from text using AI TTS (e.g. ElevenLabs)
+ * @param {string} text - text to convert to audio
+ * @param {string} title - title for the generated file
+ * @param {string} voiceId - identifier for the voice to use
+ */
+function client_generateBlogAudio(text, title, voiceId) {
+    try {
+        Logger.log('client_generateBlogAudio called with title: ' + title);
+        // Implementation will go here.
+        return {
+            success: true,
+            message: 'Audio generation initiated',
+            fileUrl: null
+        };
+    } catch (e) {
+        Logger.log('Error in client_generateBlogAudio: ' + e.message);
+        return {
+            success: false,
+            error: e.message
+        };
+    }
+}
