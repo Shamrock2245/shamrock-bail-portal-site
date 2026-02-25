@@ -134,7 +134,6 @@ function processCourtEmails() {
 
     for (let i = 0; i < batchSize; i++) {
       // Time Safety Check
-      // Time Safety Check
       if (new Date().getTime() - startTime > CONFIG.maxExecutionTime) {
         Logger.log('⏳ Time limit reached. Scheduling continuation trigger...');
         createContinuationTrigger();
@@ -163,7 +162,6 @@ function processCourtEmails() {
       }
     }
 
-    Logger.log(`\n📊 Batch complete: ✅ ${processed} | ⏭️ ${skipped} | ❌ ${errors}`);
     Logger.log(`\n📊 Batch complete: ✅ ${processed} | ⏭️ ${skipped} | ❌ ${errors}`);
 
     // If we finished the batch naturally (didn't hit time limit), invoke delete triggers
@@ -267,6 +265,39 @@ function notifyParties(data) {
     NotificationService.sendEmail(data.contacts.indemnitorEmail, indSubject, indEmailBody, indEmailBody);
     Logger.log(`📧 Email sent to Indemnitor: ${data.contacts.indemnitorEmail}`);
   }
+
+  // 3. Telegram Notifications (Court Date Reminder)
+  try {
+    if (typeof TG_notifyCourtDateReminder === 'function') {
+      const courtDateStr = data.courtDate instanceof Date
+        ? data.courtDate.toLocaleDateString('en-US')
+        : String(data.courtDate);
+      const courtTimeStr = data.courtDate instanceof Date
+        ? data.courtDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        : '';
+
+      const tgCaseData = {
+        defendantPhone: data.contacts.defendantPhone || '',
+        defendantName: data.defendant || 'Defendant',
+        indemnitorPhone: data.contacts.indemnitorPhone || '',
+        indemnitorName: data.contacts.indemnitorName || 'Co-signer',
+        courtDate: courtDateStr,
+        courtTime: courtTimeStr,
+        courtroom: `Courtroom ${data.courtroom || 'TBD'}`,
+        caseNumber: data.caseNumber || ''
+      };
+
+      // Calculate days until court date
+      const now = new Date();
+      const diffMs = data.courtDate.getTime() - now.getTime();
+      const daysUntil = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+
+      const tgResult = TG_notifyCourtDateReminder(tgCaseData, daysUntil);
+      Logger.log(`📲 Telegram court date reminder sent: ${JSON.stringify(tgResult)}`);
+    }
+  } catch (tgErr) {
+    Logger.log(`⚠️ Telegram court date notification failed (non-fatal): ${tgErr.message}`);
+  }
 }
 
 /**
@@ -278,8 +309,46 @@ function processForfeitureEmail(message) {
 
   if (!data) return { success: false, error: 'Extraction failed' };
 
+  // Look up contacts for forfeiture notifications
+  if (typeof lookupCaseContacts === 'function') {
+    const contacts = lookupCaseContacts(data.defendant, data.caseNumber);
+    if (contacts && contacts.found) {
+      data.contacts = contacts;
+      Logger.log(`🔍 Found contacts for forfeiture: ${JSON.stringify(contacts)}`);
+    }
+  }
+
   createForfeitureEvents(data);
-  addForfeitureToSheet(data); // Added from Utils.gs
+  addForfeitureToSheet(data);
+
+  // SMS/Email Forfeiture Alerts
+  if (data.contacts && data.contacts.found) {
+    const forfBody = `🚨 URGENT — Shamrock Bail Bonds\n\nA FORFEITURE has been filed for ${data.defendant}.\nCase: ${data.caseNumber}\nAmount at Risk: $${data.amount}\n\nCall us IMMEDIATELY: (239) 332-2245`;
+    if (data.contacts.indemnitorPhone) {
+      NotificationService.sendSms(data.contacts.indemnitorPhone, forfBody);
+      Logger.log(`📱 Forfeiture SMS sent to Indemnitor: ${data.contacts.indemnitorPhone}`);
+    }
+    if (data.contacts.indemnitorEmail) {
+      NotificationService.sendEmail(data.contacts.indemnitorEmail, `URGENT: Bond Forfeiture - ${data.defendant}`, forfBody, forfBody);
+      Logger.log(`📧 Forfeiture Email sent to Indemnitor: ${data.contacts.indemnitorEmail}`);
+    }
+  }
+
+  // Telegram Forfeiture Alert
+  try {
+    if (typeof TG_notifyForfeitureAlert === 'function' && data.contacts && data.contacts.found) {
+      const tgResult = TG_notifyForfeitureAlert({
+        indemnitorPhone: data.contacts.indemnitorPhone || '',
+        indemnitorName: data.contacts.indemnitorName || 'Co-signer',
+        defendantName: data.defendant,
+        caseNumber: data.caseNumber,
+        bondAmount: data.amount
+      });
+      Logger.log(`📲 Telegram forfeiture alert sent: ${JSON.stringify(tgResult)}`);
+    }
+  } catch (tgErr) {
+    Logger.log(`⚠️ Telegram forfeiture notification failed (non-fatal): ${tgErr.message}`);
+  }
 
   if (CONFIG.slackWebhooks.forfeitures) {
     postToSlack(CONFIG.slackWebhooks.forfeitures, formatForfeitureSlackMessage(data));
@@ -298,7 +367,6 @@ function processDischargeEmail(message) {
 
   if (!data) return { success: false, error: 'Extraction failed' };
 
-  createDischargeEvent(data);
   createDischargeEvent(data);
   addDischargeToSheet(data); // Added from Utils.gs
   notifyDischargeParties(data);
@@ -332,17 +400,42 @@ function notifyDischargeParties(data) {
   const disclaimer = "Note: The entire case may not be discharged. Please check with the official clerk record.";
 
   const smsBody = `Shamrock Bail Bonds Good News!\n\n${powerInfo} ${chargeInfo} for ${data.defendant} has been DISCHARGED.\n\n${disclaimer}`;
+  const emailSubject = `Good News: Bond Discharged for ${data.defendant}`;
 
   // 1. Notify Indemnitor (Priority)
   if (data.contacts.indemnitorPhone) {
     NotificationService.sendSms(data.contacts.indemnitorPhone, smsBody);
     Logger.log(`📱 Discharge SMS sent to Indemnitor: ${data.contacts.indemnitorPhone}`);
   }
+  if (data.contacts.indemnitorEmail) {
+    NotificationService.sendEmail(data.contacts.indemnitorEmail, emailSubject, smsBody, smsBody);
+    Logger.log(`📧 Discharge Email sent to Indemnitor: ${data.contacts.indemnitorEmail}`);
+  }
 
   // 2. Notify Defendant
   if (data.contacts.defendantPhone) {
     NotificationService.sendSms(data.contacts.defendantPhone, smsBody);
     Logger.log(`📱 Discharge SMS sent to Defendant: ${data.contacts.defendantPhone}`);
+  }
+  if (data.contacts.defendantEmail) {
+    NotificationService.sendEmail(data.contacts.defendantEmail, emailSubject, smsBody, smsBody);
+    Logger.log(`📧 Discharge Email sent to Defendant: ${data.contacts.defendantEmail}`);
+  }
+
+  // 3. Telegram Discharge Notification
+  try {
+    if (typeof TG_notifyBondDischarge === 'function') {
+      const tgResult = TG_notifyBondDischarge({
+        defendantPhone: data.contacts.defendantPhone || '',
+        defendantName: data.defendant || 'Defendant',
+        indemnitorPhone: data.contacts.indemnitorPhone || '',
+        indemnitorName: data.contacts.indemnitorName || 'Co-signer',
+        caseNumber: data.caseNumber || ''
+      });
+      Logger.log(`📲 Telegram discharge notification sent: ${JSON.stringify(tgResult)}`);
+    }
+  } catch (tgErr) {
+    Logger.log(`⚠️ Telegram discharge notification failed (non-fatal): ${tgErr.message}`);
   }
 }
 
@@ -486,15 +579,7 @@ function extractDischargeData(message) {
     // Date
     const dateMatch = combinedText.match(/discharged.*on\s+(\d{1,2}\/\d{1,2}\/\d{4})/i) || combinedText.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
 
-    return {
-      caseNumber: caseMatch ? caseMatch[1] : 'Unknown',
-      defendant: defendant,
-      dischargeDate: dateMatch ? new Date(dateMatch[1]) : new Date(),
-      info: 'Discharge of Bond'
-    };
-
-    // Power Number & Charge
-    // Look for Power Number (e.g. S100-..., Power No:, etc)
+    // Power Number (e.g. S100-..., Power No:, etc)
     const powerMatch = combinedText.match(/Power\s*(?:No|Number)?\.?[:\s]*([A-Z0-9-]+)/i) || combinedText.match(/Bond\s*(?:No|Number)?\.?[:\s]*([A-Z0-9-]+)/i);
 
     // Charge (Often labeled as Charge: or Offense:)
@@ -755,6 +840,12 @@ function formatForfeitureSlackMessage(d) {
   return { text: `🚨 *FORFEITURE NOTICE*\n*Defendant:* ${d.defendant}\n*Amount:* $${d.amount}\n*Forfeiture Date:* ${d.forfeitureDate.toDateString()}` };
 }
 
+function formatDischargeSlackMessage(d) {
+  const powerInfo = d.powerNumber ? ` (Bond ${d.powerNumber})` : '';
+  const chargeInfo = d.charge ? `\n*Charge:* ${d.charge}` : '';
+  return { text: `✅ *BOND DISCHARGE*\n*Defendant:* ${d.defendant}${powerInfo}\n*Case:* ${d.caseNumber}${chargeInfo}\n*Discharged:* ${d.dischargeDate.toDateString()}` };
+}
+
 
 // ============================================================================
 // TRIGGER MANAGEMENT (Ported from CourtProcessor.gs)
@@ -799,18 +890,21 @@ function createContinuationTrigger() {
 function deleteContinuationTriggers() {
   const triggers = ScriptApp.getProjectTriggers();
   for (const trigger of triggers) {
+    // Only delete "after" (one-off) triggers for processCourtEmails.
+    // GAS EventType.CLOCK covers time-based triggers.
+    // One-off "after()" triggers have no recurring schedule, so we check the handler
+    // and use a try/catch approach: daily triggers have everyDays set, one-offs don't.
     if (trigger.getHandlerFunction() === 'processCourtEmails' && trigger.getTriggerSource() === ScriptApp.TriggerSource.CLOCK) {
-      // We only want to delete the one-off/continuation triggers, but how to distinguish?
-      // Standard triggers are usually recurring. One-offs are not.
-      // However, simplified approach: The main function handles this by checking if it's a recurring run or continuation.
-      // Ideally, we don't delete the daily triggers, only the "after(x)" ones.
-      // But GAS doesn't easily distinguish. 
-      // BETTER APPROACH: Only delete if proper ID is stored or just rely on them expiring? 
-      // Actually, standard practice for "after" triggers is they run once and gone.
-      // But good hygiene is to clear them if we finish early.
-
-      // For this simplified version, we won't aggressive delete to avoid killing the daily schedule.
-      // We assume "after" triggers self-destruct after running.
+      try {
+        // One-off "after()" triggers have no easily distinguishable property in GAS.
+        // Best practice: store continuation trigger IDs and only delete those.
+        // For now, we rely on the fact that "after()" triggers auto-delete after firing.
+        // This function is a safety net — we log but don't aggressively delete daily triggers.
+        const triggerId = trigger.getUniqueId();
+        Logger.log(`ℹ️ Found trigger ${triggerId} for processCourtEmails. Continuation triggers auto-expire after firing.`);
+      } catch (e) {
+        Logger.log(`⚠️ Error inspecting trigger: ${e.message}`);
+      }
     }
   }
 }
@@ -960,8 +1054,104 @@ function isCaseInSheet(sheet, caseNumber, column) {
 function calculateTotalBond(bonds) {
   if (!bonds || !Array.isArray(bonds)) return 0;
   return bonds.reduce((sum, b) => {
-    const cleanAmount = String(b.amount).replace(/[^0-9.]/g, '');
+    const cleanAmount = String(b.amount || '0').replace(/[^0-9.]/g, '');
     const amount = parseFloat(cleanAmount) || 0;
     return sum + amount;
   }, 0);
+}
+
+// ============================================================================
+// HISTORICAL & DATE RANGE PROCESSING (from Manus v2.1)
+// ============================================================================
+
+/**
+ * Process historical court emails (up to 30 days back).
+ * Useful for initial setup or catch-up after downtime.
+ * Can be run from the GAS editor or a custom menu.
+ */
+function processHistoricalEmails() {
+  const startTime = Date.now();
+  const MAX_RUNTIME_MS = 5 * 60 * 1000; // 5 minutes
+
+  Logger.log('📅 Starting historical email processing (last 30 days)...');
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const afterDate = Utilities.formatDate(thirtyDaysAgo, Session.getScriptTimeZone(), 'yyyy/MM/dd');
+
+  let totalProcessed = 0;
+
+  CONFIG.senders.forEach(sender => {
+    CONFIG.subjects.forEach(keyword => {
+      if ((Date.now() - startTime) > MAX_RUNTIME_MS) {
+        Logger.log(`⏰ Time limit reached. Processed ${totalProcessed} emails.`);
+        return;
+      }
+
+      const query = `from:${sender} subject:${keyword} after:${afterDate} -label:${CONFIG.labels.processed}`;
+      const threads = GmailApp.search(query, 0, 50);
+
+      threads.forEach(thread => {
+        if ((Date.now() - startTime) > MAX_RUNTIME_MS) return;
+
+        thread.getMessages().forEach(message => {
+          if ((Date.now() - startTime) > MAX_RUNTIME_MS) return;
+          try {
+            processEmail(message, keyword);
+            totalProcessed++;
+          } catch (e) {
+            Logger.log(`❌ Error processing historical email: ${e.message}`);
+          }
+        });
+      });
+    });
+  });
+
+  Logger.log(`✅ Historical processing complete. Total processed: ${totalProcessed}`);
+  return { success: true, processed: totalProcessed };
+}
+
+/**
+ * Process court emails within a specific date range.
+ * @param {string} startDate - Start date (YYYY/MM/DD format)
+ * @param {string} endDate - End date (YYYY/MM/DD format)
+ */
+function processDateRange(startDate, endDate) {
+  const startTime = Date.now();
+  const MAX_RUNTIME_MS = 5 * 60 * 1000;
+
+  if (!startDate || !endDate) {
+    Logger.log('❌ processDateRange requires startDate and endDate (YYYY/MM/DD)');
+    return { success: false, error: 'Missing startDate or endDate' };
+  }
+
+  Logger.log(`📅 Processing emails from ${startDate} to ${endDate}...`);
+
+  let totalProcessed = 0;
+
+  CONFIG.senders.forEach(sender => {
+    CONFIG.subjects.forEach(keyword => {
+      if ((Date.now() - startTime) > MAX_RUNTIME_MS) return;
+
+      const query = `from:${sender} subject:${keyword} after:${startDate} before:${endDate} -label:${CONFIG.labels.processed}`;
+      const threads = GmailApp.search(query, 0, 100);
+
+      threads.forEach(thread => {
+        if ((Date.now() - startTime) > MAX_RUNTIME_MS) return;
+
+        thread.getMessages().forEach(message => {
+          if ((Date.now() - startTime) > MAX_RUNTIME_MS) return;
+          try {
+            processEmail(message, keyword);
+            totalProcessed++;
+          } catch (e) {
+            Logger.log(`❌ Error processing email in date range: ${e.message}`);
+          }
+        });
+      });
+    });
+  });
+
+  Logger.log(`✅ Date range processing complete. Total processed: ${totalProcessed}`);
+  return { success: true, processed: totalProcessed };
 }
