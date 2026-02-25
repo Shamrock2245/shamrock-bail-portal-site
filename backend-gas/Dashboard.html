@@ -8160,10 +8160,13 @@
                     google.script.run
                         .withSuccessHandler(res => {
                             UI.hideLoading();
-                            console.log('[Queue.fetch] Raw response type:', typeof res, 'isArray:', Array.isArray(res), 'length:', res && res.length);
-                            if (res && !Array.isArray(res)) console.log('[Queue.fetch] Response keys:', Object.keys(res));
-                            if (Array.isArray(res) && res.length > 0) console.log('[Queue.fetch] First item:', JSON.stringify(res[0]).substring(0, 200));
-                            Queue.render(res);
+                            // Server returns JSON string to avoid google.script.run serialization issues
+                            let intakes = res;
+                            if (typeof res === 'string') {
+                                try { intakes = JSON.parse(res); } catch (e) { console.error('[Queue.fetch] JSON parse error:', e); }
+                            }
+                            console.log('[Queue.fetch] Parsed type:', typeof intakes, 'isArray:', Array.isArray(intakes), 'count:', intakes && intakes.length);
+                            Queue.render(intakes);
                         })
                         .withFailureHandler(err => {
                             UI.hideLoading();

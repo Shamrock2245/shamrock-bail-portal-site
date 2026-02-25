@@ -659,7 +659,10 @@ function handleAction(data) {
       return timeB - timeA;
     });
 
-    return deduped;
+    // JSON.stringify avoids google.script.run's broken serialization
+    // of arrays-of-complex-objects (they arrive as plain objects on the client).
+    // The client-side Queue.fetch parses this back with JSON.parse.
+    return JSON.stringify(deduped);
   }
   if (action === 'markIntakeProcessed') {
     if (String(data.intakeId).startsWith('TG-')) {
