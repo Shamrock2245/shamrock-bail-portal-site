@@ -1011,7 +1011,13 @@ var SocialPublisher = (function () {
         linkedin: getLastPostTime_('linkedin'),
         gbp: getLastPostTime_('gbp'),
         tiktok: getLastPostTime_('tiktok'),
-        youtube: getLastPostTime_('youtube')
+        youtube: getLastPostTime_('youtube'),
+        telegram: getLastPostTime_('telegram'),
+        facebook: getLastPostTime_('facebook'),
+        instagram: getLastPostTime_('instagram'),
+        threads: getLastPostTime_('threads'),
+        skool: getLastPostTime_('skool'),
+        patreon: getLastPostTime_('patreon')
       };
     },
 
@@ -1072,7 +1078,7 @@ var SocialPublisher = (function () {
         case 'instagram': {
           var fbClientId = PROPS.getProperty('FACEBOOK_CLIENT_ID');
           if (!fbClientId) return 'ERROR: Set FACEBOOK_CLIENT_ID in Script Properties first.';
-          return 'https://www.facebook.com/v21.0/dialog/oauth?' + 
+          return 'https://www.facebook.com/v21.0/dialog/oauth?' +
             'client_id=' + encodeURIComponent(fbClientId) +
             '&redirect_uri=' + encodeURIComponent(callbackUrl) +
             '&response_type=code' +
@@ -1082,7 +1088,7 @@ var SocialPublisher = (function () {
         case 'threads': {
           var threadsClientId = PROPS.getProperty('THREADS_CLIENT_ID');
           if (!threadsClientId) return 'ERROR: Set THREADS_CLIENT_ID in Script Properties first.';
-          return 'https://threads.net/oauth/authorize?' + 
+          return 'https://threads.net/oauth/authorize?' +
             'client_id=' + encodeURIComponent(threadsClientId) +
             '&redirect_uri=' + encodeURIComponent(callbackUrl) +
             '&response_type=code' +
@@ -1213,17 +1219,17 @@ var SocialPublisher = (function () {
     getCredentialStatus: function () {
       // Returns true/false per platform — false = credentials not yet provisioned (graceful, no errors thrown)
       return {
-        twitter:   !!(PROPS.getProperty('TWITTER_API_KEY') && PROPS.getProperty('TWITTER_ACCESS_TOKEN')),
-        linkedin:  !!(PROPS.getProperty('LINKEDIN_ACCESS_TOKEN')),
-        gbp:       !!(PROPS.getProperty('GBP_ACCESS_TOKEN') && PROPS.getProperty('GBP_LOCATION_ID')),
-        tiktok:    !!(PROPS.getProperty('TIKTOK_ACCESS_TOKEN')),
-        youtube:   !!(PROPS.getProperty('YOUTUBE_ACCESS_TOKEN') && PROPS.getProperty('YOUTUBE_CHANNEL_ID')),
-        facebook:  !!(PROPS.getProperty('FB_PAGE_ACCESS_TOKEN') && PROPS.getProperty('FB_PAGE_ID')),
+        twitter: !!(PROPS.getProperty('TWITTER_API_KEY') && PROPS.getProperty('TWITTER_ACCESS_TOKEN')),
+        linkedin: !!(PROPS.getProperty('LINKEDIN_ACCESS_TOKEN')),
+        gbp: !!(PROPS.getProperty('GBP_ACCESS_TOKEN') && PROPS.getProperty('GBP_LOCATION_ID')),
+        tiktok: !!(PROPS.getProperty('TIKTOK_ACCESS_TOKEN')),
+        youtube: !!(PROPS.getProperty('YOUTUBE_ACCESS_TOKEN') && PROPS.getProperty('YOUTUBE_CHANNEL_ID')),
+        facebook: !!(PROPS.getProperty('FB_PAGE_ACCESS_TOKEN') && PROPS.getProperty('FB_PAGE_ID')),
         instagram: !!(PROPS.getProperty("FB_PAGE_ACCESS_TOKEN") && PROPS.getProperty("INSTAGRAM_ACCOUNT_ID")),
-        telegram:  !!(PROPS.getProperty('TELEGRAM_BOT_TOKEN') && PROPS.getProperty('TELEGRAM_CHAT_ID')),
-        threads:   !!(PROPS.getProperty('THREADS_ACCESS_TOKEN')),
-        skool:     !!(PROPS.getProperty('SKOOL_API_KEY')),
-        patreon:   !!(PROPS.getProperty('PATREON_ACCESS_TOKEN'))
+        telegram: !!(PROPS.getProperty('TELEGRAM_BOT_TOKEN') && PROPS.getProperty('TELEGRAM_CHAT_ID')),
+        threads: !!(PROPS.getProperty('THREADS_ACCESS_TOKEN')),
+        skool: !!(PROPS.getProperty('SKOOL_API_KEY')),
+        patreon: !!(PROPS.getProperty('PATREON_ACCESS_TOKEN'))
       };
     }
 
@@ -1412,7 +1418,7 @@ function exchangeFacebookTokenForPageToken() {
     var pagesRes = UrlFetchApp.fetch(pagesUrl, { muteHttpExceptions: true });
     var pagesData = JSON.parse(pagesRes.getContentText());
     console.log('Your Facebook Pages:');
-    (pagesData.data || []).forEach(function(p) {
+    (pagesData.data || []).forEach(function (p) {
       console.log('  Page: ' + p.name + ' | ID: ' + p.id + ' | Token: ' + p.access_token.substring(0, 20) + '...');
     });
     console.log('Set FB_PAGE_ID in Script Properties to one of the IDs above, then run this function again.');
