@@ -1,0 +1,5 @@
+fetch_token*.js
+*.py
+*.md
+*.json
+!appsscript.json

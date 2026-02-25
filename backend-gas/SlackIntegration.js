@@ -56,10 +56,40 @@ function sendSlackMessage(channel, text, blocks = null) {
 }
 
 /**
- * Handle incoming Slack Events (Webhook)
- * Hook this up to `doPost` in Code.js if needed.
+ * Handle incoming Slack Webhooks (from Slash Commands)
+ * Routed from SOC2_WebhookHandler.js
  */
-function handleSlackEvent(e) {
-    // Implementation for verifying signature and handling events
-    // ...
+function handleSlackWebhookSOC2(e) {
+    try {
+        const payload = e.parameter;
+        // Verify the command matches our expectation
+        if (payload.command !== '/tg_reply') {
+            return ContentService.createTextOutput("Ignored: Command must be /tg_reply").setMimeType(ContentService.MimeType.TEXT);
+        }
+
+        const text = payload.text || '';
+        // Format of text: "chatId message"
+        const parts = text.split(' ');
+        if (parts.length < 2) {
+            return ContentService.createTextOutput(
+                "Format: `/tg_reply [chatId] [message]`\\nExample: `/tg_reply 123456789 Hello there!`"
+            ).setMimeType(ContentService.MimeType.TEXT);
+        }
+
+        const chatId = parts[0].trim();
+        const replyMessage = parts.slice(1).join(' ').trim();
+
+        // Send the message via Telegram Bot API
+        try {
+            const bot = new TelegramBotAPI();
+            bot.sendMessage(chatId, replyMessage);
+            return ContentService.createTextOutput(`✅ Reply sent successfully to Chat ID: ${chatId}`).setMimeType(ContentService.MimeType.TEXT);
+        } catch (tgError) {
+            console.error('Failed to send Telegram reply via Slack command:', tgError);
+            return ContentService.createTextOutput(`❌ Failed to send Telegram message: ${tgError.message}`).setMimeType(ContentService.MimeType.TEXT);
+        }
+    } catch (e) {
+        console.error('Slack Webhook Error:', e);
+        return ContentService.createTextOutput(`Error: ${e.message}`).setMimeType(ContentService.MimeType.TEXT);
+    }
 }

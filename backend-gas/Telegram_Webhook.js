@@ -78,6 +78,23 @@ function handleTelegramInbound(update) {
   // Log to Google Sheet
   _logInboundMessage(data);
 
+  // Broadcast to Slack so staff can view and reply
+  try {
+    let slackMsg = `📱 *New Telegram Message*\n*From:* ${fullName} (@${username})\n*Chat ID:* \`${chatId}\`\n*Message:* ${text}`;
+    if (data.type !== 'text') {
+      slackMsg += `\n*[Sent a ${data.type} file]*`;
+    }
+    slackMsg += `\n\n*To reply, type:* \`/tg_reply ${chatId} Your message here\``;
+
+    if (typeof NotificationService !== 'undefined') {
+      NotificationService.sendSlack('#incoming-sms', slackMsg);
+    } else if (typeof sendSlackMessage === 'function') {
+      sendSlackMessage('#incoming-sms', slackMsg);
+    }
+  } catch (err) {
+    console.error('Failed to send Telegram message to Slack:', err);
+  }
+
   // ── Route based on message type ────────────────────────────────────────────
 
   // 1. Photos (ID verification)

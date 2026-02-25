@@ -22,6 +22,12 @@ function handleSOC2Webhook(e) {
             case "elevenlabs":
             case "ElevenLabs":
                 return handleElevenLabsWebhookSOC2(e);
+            case "slack":
+            case "Slack":
+                if (typeof handleSlackWebhookSOC2 === 'function') {
+                    return handleSlackWebhookSOC2(e);
+                }
+                return ContentService.createTextOutput("Slack handler not found").setMimeType(ContentService.MimeType.TEXT);
             default:
                 logSecurityEvent("UNKNOWN_WEBHOOK", { path: path });
                 return ContentService.createTextOutput("Unknown endpoint or source").setMimeType(ContentService.MimeType.TEXT);

@@ -90,7 +90,10 @@ const INTAKE_STEPS = {
   UPLOAD_PAYSTUB: 'upload_paystub',
   // --- Finalization ---
   CONFIRM_INFO: 'confirm_info',
-  COMPLETE: 'complete'
+  COMPLETE: 'complete',
+
+  // --- Document Signing ---
+  SIGNING_WALKTHROUGH: 'signing_walkthrough'
 };
 
 // =============================================================================
@@ -260,6 +263,9 @@ function processIntakeMessage(userId, message, firstName) {
       response = _handleConfirmation(state, msg); break;
     case INTAKE_STEPS.COMPLETE:
       response = _handleComplete(state, msg); break;
+
+    case INTAKE_STEPS.SIGNING_WALKTHROUGH:
+      response = _handleSigningWalkthrough(state, msg, firstName); break;
 
     default:
       clearConversationState(userId);
@@ -898,6 +904,86 @@ We're available 24/7. 🍀`,
     nextStep: null
   };
 }
+
+// =============================================================================
+// SIGNING WALKTHROUGH FLOW
+// =============================================================================
+
+function _handleSigningWalkthrough(state, msg, firstName) {
+  // If user says "ready" or similar, we might want to tell them to check email/SMS for the link
+  // or we might want to parse their question using OpenAI.
+  // For now, we will intercept messages in this state and route them through Manus (OpenAI).
+
+  // We construct a specific prompt context for the signing walkthrough
+  let ragContext = "";
+  try {
+    if (typeof RAG_getKnowledge === 'function') {
+      const kb = RAG_getKnowledge();
+      ragContext = "\\n\\nShamrock Bail Bonds Knowledge Base Data:\\n" + JSON.stringify(kb, null, 2);
+    }
+  } catch (e) {
+    console.warn("RAG fetch failed for signing walkthrough", e);
+  }
+
+  const signingPrompt = `
+You are "Manus", the digital facilitator for Shamrock Bail Bonds on Telegram.
+The user is currently in the Document Signing phase. They have been sent their bail bond documents via SignNow to their email/phone.
+
+Your objective is to:
+1. Explain what the documents are (Indemnity Agreement, Appearance Bond, etc.).
+2. Answer any questions they have about the terms or the signing process.
+3. Keep them moving forward to sign the documents.
+4. If they say they are done, congratulate them and tell them a staff member will review it shortly.
+
+If they say they are ready or ask what to do: "Please check your email or SMS for the secure SignNow link. Tap the link, read the documents, and sign at the bottom."
+If they ask about a specific term (e.g., "what is collateral?", "what is an indemnitor?"), explain it simply and reassuringly. DO NOT give legal advice.
+
+Tone: Competent, Patient, Action-Oriented. Reassuring.
+
+RESPOND IN VALID JSON FORMAT ONLY:
+{
+  "text": "The text message to send back to the user.",
+  "voice_script": "Optional. Text to be spoken in a voice note IF the explanation is complex or needs reassurance. Leave empty if text is sufficient.",
+  "status": "continue" OR "completed" (Use "completed" ONLY if they explicitly state they have finished signing everything).
+}
+`;
+
+  try {
+    if (typeof callOpenAI !== 'function') {
+      return { text: "I'm having trouble thinking right now. Please check your email or SMS for the secure SignNow link to review and sign your documents." };
+    }
+
+    const responseJson = callOpenAI(
+      signingPrompt + ragContext,
+      `User (${firstName || 'User'}) said: "${msg}"`,
+      { jsonMode: true, temperature: 0.5 }
+    );
+
+    if (!responseJson) {
+      return { text: "Please check your email or SMS for the secure SignNow link to review and sign your documents. If you have any questions, you can ask them here." };
+    }
+
+    // If the AI determines they are done signing, we can move them out of this state, or just let them be.
+    if (responseJson.status === 'completed') {
+      console.log("Signing walkthrough marked complete for user.");
+      // We can optionally move them to COMPLETE, but COMPLETE is currently a static message.
+      // We'll leave them here or we could transition them back to the start if needed.
+      // For now, we stay in SIGNING_WALKTHROUGH so they can ask post-signing questions if they want,
+      // or move them to a new post-signing state later.
+    }
+
+    return {
+      text: responseJson.text,
+      voice_script: responseJson.voice_script,
+      nextStep: INTAKE_STEPS.SIGNING_WALKTHROUGH // Stay in this state
+    };
+
+  } catch (e) {
+    console.error("Error in _handleSigningWalkthrough:", e);
+    return { text: "Please check your email or SMS for the secure SignNow link to review and sign your documents." };
+  }
+}
+
 
 // =============================================================================
 // DOCUMENT GENERATION TRIGGER (DEPRECATED — Now routes to Queue)
