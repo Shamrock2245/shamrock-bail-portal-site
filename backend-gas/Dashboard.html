@@ -1631,6 +1631,26 @@
                     Enter a base post and optionally attach media. Grok will generate optimal variants for 9 platforms.
                 </p>
 
+                <!-- ── OAuth Connect Panel ─────────────────────────────── -->
+                <div id="social-oauth-panel"
+                    style="background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:20px; font-size:13px;">
+                    <div style="font-weight:600; color:var(--text-secondary); margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                        🔐 Connect Social Accounts
+                        <span style="font-size:11px; color:var(--muted); font-weight:400; margin-left:4px;">(One-time setup per platform)</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:8px;">
+                        <button class="btn btn-secondary btn-sm" onclick="SocialHub.connectPlatform('facebook')" style="justify-content:center;">🔵 Connect Facebook</button>
+                        <button class="btn btn-secondary btn-sm" onclick="SocialHub.connectPlatform('instagram')" style="justify-content:center;">📸 Connect Instagram</button>
+                        <button class="btn btn-secondary btn-sm" onclick="SocialHub.connectPlatform('threads')" style="justify-content:center;">🧵 Connect Threads</button>
+                        <button class="btn btn-secondary btn-sm" onclick="SocialHub.connectPlatform('twitter')" style="justify-content:center;">✖ Connect X (Twitter)</button>
+                        <button class="btn btn-secondary btn-sm" onclick="SocialHub.connectPlatform('linkedin')" style="justify-content:center;">💼 Connect LinkedIn</button>
+                        <button class="btn btn-secondary btn-sm" onclick="SocialHub.connectPlatform('gbp')" style="justify-content:center;">📍 Connect GBP</button>
+                        <button class="btn btn-secondary btn-sm" onclick="SocialHub.connectPlatform('youtube')" style="justify-content:center;">▶ Connect YouTube</button>
+                        <button class="btn btn-secondary btn-sm" onclick="SocialHub.connectPlatform('tiktok')" style="justify-content:center;">🎵 Connect TikTok</button>
+                    </div>
+                    <div id="social-connect-status" style="margin-top:10px; font-size:12px; color:var(--muted);"></div>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 32px; margin-bottom: 32px;">
                     <!-- LEFT COLUMN: Input -->
                     <div>
@@ -7019,10 +7039,10 @@
                     // Backend SocialPublisher supports twitter, linkedin, gbp, tiktok, youtube, telegram, facebook, instagram, threads, skool, patreon
                     var supported = ['twitter', 'linkedin', 'gbp', 'tiktok', 'youtube', 'telegram', 'facebook', 'instagram', 'threads', 'skool', 'patreon'];
 
+                    var driveFileId = document.getElementById('social-media-drive-id') ? document.getElementById('social-media-drive-id').value : '';
                     var contentEl = document.getElementById('social-content-' + platform);
                     if (!contentEl || !contentEl.value.trim()) return;
                     var content = contentEl.value.trim();
-                    var driveFileId = document.getElementById('social-media-drive-id') ? document.getElementById('social-media-drive-id').value : '';
 
                     if (supported.indexOf(platform) === -1) {
                         setResultBadge(platform, false, 'API integration for ' + LABELS[platform] + ' is not yet complete.');
@@ -7109,6 +7129,36 @@
                         })
                         .publishAll(posts);
                 },
+                connectPlatform: function (platform) {
+                    var statusEl = document.getElementById('social-connect-status');
+                    if (statusEl) statusEl.innerHTML = '<span style="color:var(--muted);">&#9203; Fetching authorization URL for ' + (LABELS[platform] || platform) + '...</span>';
+
+                    google.script.run
+                        .withSuccessHandler(function (url) {
+                            if (!url || url.indexOf('ERROR:') === 0) {
+                                if (statusEl) statusEl.innerHTML = '<span style="color:var(--error);">&#10007; ' + (url || 'Could not get auth URL.') + '</span>';
+                                return;
+                            }
+                            // Open the OAuth window
+                            var popup = window.open(url, 'SocialOAuth_' + platform, 'width=600,height=700,scrollbars=yes,resizable=yes');
+                            if (statusEl) statusEl.innerHTML = '<span style="color:var(--warning);">&#9203; Authorization window opened for ' + (LABELS[platform] || platform) + '. Complete the login, then click Refresh below.</span>';
+                            // Poll for popup close
+                            var pollTimer = setInterval(function () {
+                                try {
+                                    if (popup && popup.closed) {
+                                        clearInterval(pollTimer);
+                                        if (statusEl) statusEl.innerHTML = '<span style="color:var(--success);">&#10003; Authorization window closed. Refreshing credential status...</span>';
+                                        SocialHub.loadCredentialStatus();
+                                    }
+                                } catch (e) { clearInterval(pollTimer); }
+                            }, 1000);
+                        })
+                        .withFailureHandler(function (err) {
+                            if (statusEl) statusEl.innerHTML = '<span style="color:var(--error);">&#10007; Failed: ' + err.message + '</span>';
+                        })
+                        .getSocialAuthUrl(platform);
+                },
+
                 loadCredentialStatus: function () {
                     var grid = document.getElementById('social-cred-status-grid');
                     if (!grid) return;

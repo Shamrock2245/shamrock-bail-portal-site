@@ -645,14 +645,14 @@ var SocialPublisher = (function () {
 
     var url, payload;
     if (postOptions && postOptions.driveFileId) {
-      url = 'https://graph.facebook.com/v19.0/' + pageId + '/photos';
+      url = 'https://graph.facebook.com/v21.0/' + pageId + '/photos';
       payload = {
         message: content,
         access_token: token,
         source: DriveApp.getFileById(postOptions.driveFileId).getBlob()
       };
     } else {
-      url = 'https://graph.facebook.com/v19.0/' + pageId + '/feed';
+      url = 'https://graph.facebook.com/v21.0/' + pageId + '/feed';
       payload = { message: content, access_token: token };
     }
 
@@ -676,15 +676,16 @@ var SocialPublisher = (function () {
   // ─── PRIVATE: Instagram Graph API ───────────────────────────────────────────
 
   /**
-   * Posts to Instagram via Graph API.
+   * Posts to Instagram via the Instagram Graph API (via Facebook Page Access Token).
+   * Requires: FB_PAGE_ACCESS_TOKEN, FB_PAGE_ID, INSTAGRAM_ACCOUNT_ID (auto-discovered if not set).
+   *
    * Note: The Instagram Graph API requires an image or video URL for feed posts.
-   * Text-only posts are not supported.
+   * Text-only posts are not supported by the API — the function returns a graceful failure
+   * with a manual posting link if no media is attached.
+   *
+   * For media posts, the media file must be publicly accessible (e.g., via Google Drive public link).
    */
   function postToInstagram_(content, postOptions) {
-    if (!postOptions || !postOptions.driveFileId) {
-      throw new Error('Instagram Graph API requires an image or video for feed posts. Text-only posting is unsupported by Meta API. Please attach media.');
-    }
-
     var token = PROPS.getProperty('FB_PAGE_ACCESS_TOKEN');
     var pageId = PROPS.getProperty('FB_PAGE_ID');
     var instaAccountId = PROPS.getProperty('INSTAGRAM_ACCOUNT_ID');
@@ -694,7 +695,7 @@ var SocialPublisher = (function () {
     }
 
     if (!instaAccountId) {
-      var igFetch = UrlFetchApp.fetch('https://graph.facebook.com/v19.0/' + pageId + '?fields=instagram_business_account&access_token=' + token, { muteHttpExceptions: true });
+      var igFetch = UrlFetchApp.fetch('https://graph.facebook.com/v21.0/' + pageId + '?fields=instagram_business_account&access_token=' + token, { muteHttpExceptions: true });
       if (igFetch.getResponseCode() === 200) {
         var igData = JSON.parse(igFetch.getContentText());
         if (igData.instagram_business_account) {
@@ -708,10 +709,20 @@ var SocialPublisher = (function () {
       throw new Error('Could not find connected Instagram Business Account for the Facebook Page. Please link it in Page Settings.');
     }
 
+    // Instagram Graph API does not support text-only posts.
+    // If no media is attached, return a graceful failure with a manual posting link.
+    if (!postOptions || !postOptions.driveFileId) {
+      return {
+        success: false,
+        platform: 'instagram',
+        note: 'Instagram requires an image or video for feed posts. Please attach media or post manually at instagram.com.'
+      };
+    }
+
     var publicUrl = getDriveFilePublicUrl_(postOptions.driveFileId);
 
     // Step 1: Create media container
-    var initUrl = 'https://graph.facebook.com/v19.0/' + instaAccountId + '/media?image_url=' + encodeURIComponent(publicUrl) + '&caption=' + encodeURIComponent(content) + '&access_token=' + token;
+    var initUrl = 'https://graph.facebook.com/v21.0/' + instaAccountId + '/media?image_url=' + encodeURIComponent(publicUrl) + '&caption=' + encodeURIComponent(content) + '&access_token=' + token;
     var initRes = UrlFetchApp.fetch(initUrl, { method: 'post', muteHttpExceptions: true });
 
     if (initRes.getResponseCode() >= 300) {
@@ -720,7 +731,7 @@ var SocialPublisher = (function () {
     var creationId = JSON.parse(initRes.getContentText()).id;
 
     // Step 2: Publish media container
-    var pubUrl = 'https://graph.facebook.com/v19.0/' + instaAccountId + '/media_publish?creation_id=' + creationId + '&access_token=' + token;
+    var pubUrl = 'https://graph.facebook.com/v21.0/' + instaAccountId + '/media_publish?creation_id=' + creationId + '&access_token=' + token;
     var pubRes = UrlFetchApp.fetch(pubUrl, { method: 'post', muteHttpExceptions: true });
 
     var pCode = pubRes.getResponseCode();
@@ -747,6 +758,13 @@ var SocialPublisher = (function () {
     return { success: false, platform: 'patreon', note: 'Patreon API posting for creators requires advanced OAuth. Please copy the text and post manually.' };
   }
 
+  /**
+   * Posts to Threads via the Threads API.
+   * Requires: THREADS_ACCESS_TOKEN, THREADS_USER_ID
+   * Supports: Text-only posts and image posts (image must be publicly accessible).
+   * Text posts are limited to 500 characters.
+   * Uses the two-step create container + publish flow.
+   */
   function postToThreads_(content, postOptions) {
     var token = PROPS.getProperty('THREADS_ACCESS_TOKEN');
     var userId = PROPS.getProperty('THREADS_USER_ID');
@@ -754,25 +772,58 @@ var SocialPublisher = (function () {
       throw new Error('Threads credentials missing. Check Script Properties: THREADS_ACCESS_TOKEN, THREADS_USER_ID');
     }
 
-    var initUrl;
+    // Step 1: Create media container
+    var initUrl = 'https://graph.threads.net/v1.0/' + userId + '/threads';
+    var initPayload;
     if (postOptions && postOptions.driveFileId) {
       var publicUrl = getDriveFilePublicUrl_(postOptions.driveFileId);
-      initUrl = 'https://graph.threads.net/v1.0/' + userId + '/threads?media_type=IMAGE&image_url=' + encodeURIComponent(publicUrl) + '&text=' + encodeURIComponent(content) + '&access_token=' + token;
+      initPayload = {
+        media_type: 'IMAGE',
+        image_url: publicUrl,
+        text: content,
+        access_token: token
+      };
     } else {
-      initUrl = 'https://graph.threads.net/v1.0/' + userId + '/threads?media_type=TEXT&text=' + encodeURIComponent(content) + '&access_token=' + token;
+      initPayload = {
+        media_type: 'TEXT',
+        text: content,
+        access_token: token
+      };
     }
 
-    var initRes = UrlFetchApp.fetch(initUrl, { method: 'post', muteHttpExceptions: true });
+    var initOptions = {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(initPayload),
+      muteHttpExceptions: true
+    };
 
-    if (initRes.getResponseCode() !== 200) {
-      throw new Error('Threads Init Error: ' + initRes.getContentText());
+    var initRes = UrlFetchApp.fetch(initUrl, initOptions);
+    var initCode = initRes.getResponseCode();
+
+    if (initCode < 200 || initCode >= 300) {
+      throw new Error('Threads Create Container Error ' + initCode + ': ' + initRes.getContentText());
     }
 
     var containerId = JSON.parse(initRes.getContentText()).id;
+    if (!containerId) {
+      throw new Error('Threads API did not return a container ID. Response: ' + initRes.getContentText());
+    }
 
-    // Step 2: Publish media container
-    var pubUrl = 'https://graph.threads.net/v1.0/' + userId + '/threads_publish?creation_id=' + containerId + '&access_token=' + token;
-    var pubRes = UrlFetchApp.fetch(pubUrl, { method: 'post', muteHttpExceptions: true });
+    // Step 2: Publish the container
+    var pubUrl = 'https://graph.threads.net/v1.0/' + userId + '/threads_publish';
+    var pubPayload = {
+      creation_id: containerId,
+      access_token: token
+    };
+    var pubOptions = {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(pubPayload),
+      muteHttpExceptions: true
+    };
+
+    var pubRes = UrlFetchApp.fetch(pubUrl, pubOptions);
     var pCode = pubRes.getResponseCode();
 
     if (pCode >= 200 && pCode < 300) {
@@ -1017,8 +1068,29 @@ var SocialPublisher = (function () {
             '&redirect_uri=' + encodeURIComponent(callbackUrl) +
             '&state=' + encodeURIComponent(stateToken);
         }
+        case 'facebook':
+        case 'instagram': {
+          var fbClientId = PROPS.getProperty('FACEBOOK_CLIENT_ID');
+          if (!fbClientId) return 'ERROR: Set FACEBOOK_CLIENT_ID in Script Properties first.';
+          return 'https://www.facebook.com/v21.0/dialog/oauth?' + 
+            'client_id=' + encodeURIComponent(fbClientId) +
+            '&redirect_uri=' + encodeURIComponent(callbackUrl) +
+            '&response_type=code' +
+            '&scope=' + encodeURIComponent('pages_manage_posts,pages_read_engagement,instagram_basic,instagram_content_publish') +
+            '&state=' + encodeURIComponent(stateToken);
+        }
+        case 'threads': {
+          var threadsClientId = PROPS.getProperty('THREADS_CLIENT_ID');
+          if (!threadsClientId) return 'ERROR: Set THREADS_CLIENT_ID in Script Properties first.';
+          return 'https://threads.net/oauth/authorize?' + 
+            'client_id=' + encodeURIComponent(threadsClientId) +
+            '&redirect_uri=' + encodeURIComponent(callbackUrl) +
+            '&response_type=code' +
+            '&scope=' + encodeURIComponent('threads_basic,threads_content_publish') +
+            '&state=' + encodeURIComponent(stateToken);
+        }
         default:
-          return 'ERROR: Unknown platform "' + platform + '". Valid: gbp, linkedin, tiktok, youtube';
+          return 'ERROR: Unknown platform "' + platform + '". Valid: gbp, linkedin, tiktok, youtube, facebook, instagram, threads';
       }
     },
 
@@ -1076,6 +1148,33 @@ var SocialPublisher = (function () {
             };
             break;
           }
+          case 'facebook':
+          case 'instagram': {
+            clientId = PROPS.getProperty('FACEBOOK_CLIENT_ID');
+            clientSecret = PROPS.getProperty('FACEBOOK_CLIENT_SECRET');
+            tokenUrl = 'https://graph.facebook.com/v21.0/oauth/access_token';
+            payload = {
+              code: code,
+              client_id: clientId,
+              client_secret: clientSecret,
+              redirect_uri: callbackUrl,
+              grant_type: 'authorization_code'
+            };
+            break;
+          }
+          case 'threads': {
+            clientId = PROPS.getProperty('THREADS_CLIENT_ID');
+            clientSecret = PROPS.getProperty('THREADS_CLIENT_SECRET');
+            tokenUrl = 'https://graph.threads.net/oauth/access_token';
+            payload = {
+              code: code,
+              client_id: clientId,
+              client_secret: clientSecret,
+              redirect_uri: callbackUrl,
+              grant_type: 'authorization_code'
+            };
+            break;
+          }
           default:
             throw new Error('Unknown platform: ' + platform);
         }
@@ -1120,7 +1219,7 @@ var SocialPublisher = (function () {
         tiktok:    !!(PROPS.getProperty('TIKTOK_ACCESS_TOKEN')),
         youtube:   !!(PROPS.getProperty('YOUTUBE_ACCESS_TOKEN') && PROPS.getProperty('YOUTUBE_CHANNEL_ID')),
         facebook:  !!(PROPS.getProperty('FB_PAGE_ACCESS_TOKEN') && PROPS.getProperty('FB_PAGE_ID')),
-        instagram: !!(PROPS.getProperty('INSTAGRAM_ACCESS_TOKEN') && PROPS.getProperty('INSTAGRAM_ACCOUNT_ID')),
+        instagram: !!(PROPS.getProperty("FB_PAGE_ACCESS_TOKEN") && PROPS.getProperty("INSTAGRAM_ACCOUNT_ID")),
         telegram:  !!(PROPS.getProperty('TELEGRAM_BOT_TOKEN') && PROPS.getProperty('TELEGRAM_CHAT_ID')),
         threads:   !!(PROPS.getProperty('THREADS_ACCESS_TOKEN')),
         skool:     !!(PROPS.getProperty('SKOOL_API_KEY')),
@@ -1257,6 +1356,110 @@ function logAuthUrl_LinkedIn() {
   console.log('\n=========================================\n\nLinkedIn Auth URL (Visit this in your browser):\n\n' + url + '\n\n=========================================\n');
 }
 /**
+ * Run this function from the IDE to get the Facebook authorization URL in the Execution Log.
+ * Prerequisites: FACEBOOK_CLIENT_ID must be set in Script Properties.
+ */
+function logAuthUrl_Facebook() {
+  var url = SocialPublisher.getAuthUrl('facebook');
+  console.log('\n=========================================\n\nFacebook Auth URL (Visit this in your browser):\n\n' + url + '\n\n=========================================\n');
+}
+
+/**
+ * Run this function from the IDE to get the Threads authorization URL in the Execution Log.
+ * Prerequisites: THREADS_CLIENT_ID must be set in Script Properties.
+ */
+function logAuthUrl_Threads() {
+  var url = SocialPublisher.getAuthUrl('threads');
+  console.log('\n=========================================\n\nThreads Auth URL (Visit this in your browser):\n\n' + url + '\n\n=========================================\n');
+}
+
+/**
+ * After Facebook OAuth completes, this helper exchanges the short-lived user token
+ * for a long-lived Page Access Token and stores it automatically.
+ * Run this once after logAuthUrl_Facebook() and completing the OAuth flow.
+ * The FB_USER_ACCESS_TOKEN must be set manually first from the OAuth callback.
+ */
+function exchangeFacebookTokenForPageToken() {
+  var PROPS = PropertiesService.getScriptProperties();
+  var userToken = PROPS.getProperty('FB_USER_ACCESS_TOKEN');
+  var clientId = PROPS.getProperty('FACEBOOK_CLIENT_ID');
+  var clientSecret = PROPS.getProperty('FACEBOOK_CLIENT_SECRET');
+  var pageId = PROPS.getProperty('FB_PAGE_ID');
+
+  if (!userToken) {
+    console.error('FB_USER_ACCESS_TOKEN not set. Complete the OAuth flow first and manually set this property.');
+    return;
+  }
+  if (!clientId || !clientSecret) {
+    console.error('FACEBOOK_CLIENT_ID or FACEBOOK_CLIENT_SECRET not set.');
+    return;
+  }
+
+  // Step 1: Exchange short-lived token for long-lived user token
+  var llUrl = 'https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=' + clientId + '&client_secret=' + clientSecret + '&fb_exchange_token=' + userToken;
+  var llRes = UrlFetchApp.fetch(llUrl, { muteHttpExceptions: true });
+  if (llRes.getResponseCode() !== 200) {
+    console.error('Failed to exchange token:', llRes.getContentText());
+    return;
+  }
+  var llToken = JSON.parse(llRes.getContentText()).access_token;
+  console.log('Long-lived user token obtained.');
+
+  // Step 2: Get Page Access Token
+  if (!pageId) {
+    // List pages to find the ID
+    var pagesUrl = 'https://graph.facebook.com/v21.0/me/accounts?access_token=' + llToken;
+    var pagesRes = UrlFetchApp.fetch(pagesUrl, { muteHttpExceptions: true });
+    var pagesData = JSON.parse(pagesRes.getContentText());
+    console.log('Your Facebook Pages:');
+    (pagesData.data || []).forEach(function(p) {
+      console.log('  Page: ' + p.name + ' | ID: ' + p.id + ' | Token: ' + p.access_token.substring(0, 20) + '...');
+    });
+    console.log('Set FB_PAGE_ID in Script Properties to one of the IDs above, then run this function again.');
+    return;
+  }
+
+  var pageTokenUrl = 'https://graph.facebook.com/v21.0/' + pageId + '?fields=access_token&access_token=' + llToken;
+  var pageTokenRes = UrlFetchApp.fetch(pageTokenUrl, { muteHttpExceptions: true });
+  if (pageTokenRes.getResponseCode() !== 200) {
+    console.error('Failed to get page token:', pageTokenRes.getContentText());
+    return;
+  }
+  var pageToken = JSON.parse(pageTokenRes.getContentText()).access_token;
+  PROPS.setProperty('FB_PAGE_ACCESS_TOKEN', pageToken);
+  console.log('\u2705 FB_PAGE_ACCESS_TOKEN stored successfully for page ' + pageId + '.');
+  console.log('Instagram Business Account will be auto-discovered on first Instagram post.');
+}
+
+/**
+ * After Threads OAuth completes, this helper exchanges the short-lived token
+ * for a long-lived Threads access token (valid 60 days) and stores it.
+ * The THREADS_SHORT_LIVED_TOKEN must be set manually first from the OAuth callback.
+ */
+function exchangeThreadsTokenForLongLived() {
+  var PROPS = PropertiesService.getScriptProperties();
+  var shortToken = PROPS.getProperty('THREADS_SHORT_LIVED_TOKEN');
+  var clientId = PROPS.getProperty('THREADS_CLIENT_ID');
+  var clientSecret = PROPS.getProperty('THREADS_CLIENT_SECRET');
+
+  if (!shortToken || !clientId || !clientSecret) {
+    console.error('THREADS_SHORT_LIVED_TOKEN, THREADS_CLIENT_ID, or THREADS_CLIENT_SECRET not set.');
+    return;
+  }
+
+  var url = 'https://graph.threads.net/access_token?grant_type=th_exchange_token&client_secret=' + clientSecret + '&access_token=' + shortToken;
+  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) {
+    console.error('Failed to exchange Threads token:', res.getContentText());
+    return;
+  }
+  var data = JSON.parse(res.getContentText());
+  PROPS.setProperty('THREADS_ACCESS_TOKEN', data.access_token);
+  PROPS.setProperty('THREADS_USER_ID', String(data.user_id));
+  console.log('\u2705 THREADS_ACCESS_TOKEN and THREADS_USER_ID stored. Token valid for 60 days.');
+}
+
+/**
  * Sets the TELEGRAM_CHAT_ID for social broadcasting (the channel/group to post to).
  * This is SEPARATE from the intake bot — the bot token (TELEGRAM_BOT_TOKEN) is already set.
  * The TELEGRAM_CHAT_ID for social posts is the @username or numeric ID of your public channel.
@@ -1304,4 +1507,9 @@ function socialAuthCallback(request) {
   } else {
     return HtmlService.createHtmlOutput('<h1>Authorization Failed</h1><p>' + result.error + '</p>');
   }
+}
+
+
+function client_generateSocialPosts(basePost, platforms, useOpus) {
+  return SocialPublisher.draftPosts(basePost, { platforms: platforms, useOpus: useOpus });
 }

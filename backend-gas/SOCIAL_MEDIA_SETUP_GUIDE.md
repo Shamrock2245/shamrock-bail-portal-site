@@ -166,29 +166,168 @@ This guide provides step-by-step instructions for obtaining the necessary API cr
 
 ## 7. Meta Platform (Facebook, Instagram, Threads)
 
-**Required Properties:**
-- `FB_PAGE_ACCESS_TOKEN`
-- `FB_PAGE_ID`
-- `THREADS_ACCESS_TOKEN`
-- `THREADS_USER_ID`
+### Architecture
 
-> [!WARNING]
-> The Instagram Graph API does not support text-only posts. To post text, you must copy it and post it manually, or the system will require an image/video to be attached.
+All three Meta platforms use **Meta Graph API v21.0**. Facebook and Instagram share a single Meta App and Page Access Token. Threads uses a **separate** Threads App with its own token.
 
-### Steps:
+```
+Dashboard.html (Browser)
+       │  google.script.run
+       ▼
+SocialPublisher.js (GAS)
+       ├── postToFacebook_()   → graph.facebook.com/v21.0/{pageId}/feed
+       ├── postToInstagram_()  → graph.facebook.com/v21.0/{igId}/media + /media_publish
+       └── postToThreads_()    → graph.threads.net/v1.0/{userId}/threads + /threads_publish
+```
 
-1.  **Create Meta Developer App:**
-    - Go to [Meta for Developers](https://developers.facebook.com/) and create a new **Business** app.
-    - Add the **Facebook Login for Business** product and the **Threads API** product.
+---
 
-2.  **Generate Graph API Tokens:**
-    - Use the [Graph API Explorer](https://developers.facebook.com/tools/explorer/) to generate a System User or Page Access Token.
-    - Ensure you request the `pages_manage_posts` and `pages_read_engagement` permissions.
-    - Store the token as `FB_PAGE_ACCESS_TOKEN` and your Facebook Page ID as `FB_PAGE_ID`.
+### 7a. Facebook Page Posting
 
-3.  **Generate Threads API Tokens:**
-    - Authenticate through your Meta app using the Threads API use cases to obtain a Threads access token.
-    - Store the token as `THREADS_ACCESS_TOKEN` and your Threads user ID as `THREADS_USER_ID`.
+**Required Script Properties:**
+- `FACEBOOK_CLIENT_ID` (for OAuth setup only)
+- `FACEBOOK_CLIENT_SECRET` (for OAuth setup only)
+- `FB_PAGE_ACCESS_TOKEN` (**required for posting**)
+- `FB_PAGE_ID` (**required for posting**)
+
+#### Steps:
+
+1.  **Create or Use an Existing Meta App:**
+    - Go to [https://developers.facebook.com/apps/](https://developers.facebook.com/apps/)
+    - Select an existing app or click **Create App** → **Business** type
+    - Add the **Facebook Login for Business** product
+    - Under **Settings → Basic**, note your **App ID** and **App Secret**
+    - Store them as `FACEBOOK_CLIENT_ID` and `FACEBOOK_CLIENT_SECRET`
+
+2.  **Set the Redirect URI:**
+    - Go to **Facebook Login for Business → Settings**
+    - Under **Valid OAuth Redirect URIs**, add your GAS Web App URL:
+      `https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec`
+    - Save changes
+
+3.  **Set Script Properties** (in GAS IDE → Project Settings → Script Properties):
+
+    | Property | Value |
+    |---|---|
+    | `FACEBOOK_CLIENT_ID` | Your Meta App ID |
+    | `FACEBOOK_CLIENT_SECRET` | Your Meta App Secret |
+    | `FB_PAGE_ID` | Your Facebook Page numeric ID |
+
+    > **How to find your Page ID:** Go to your Facebook Page → About → scroll to the bottom → Page ID.
+
+4.  **Authorize and Get Page Access Token:**
+    - In the GAS IDE, run the function **`logAuthUrl_Facebook`**
+    - Copy the URL from the Execution Log and open it in your browser
+    - Authorize the app with your Facebook account
+    - After redirect, copy the `code=` parameter from the URL (strip the trailing `#_`)
+    - In Script Properties, temporarily set `FB_USER_ACCESS_TOKEN` to that code
+    - Run **`exchangeFacebookTokenForPageToken`** — this automatically:
+      - Exchanges the code for a long-lived user token
+      - Fetches and stores your `FB_PAGE_ACCESS_TOKEN`
+
+    > If `FB_PAGE_ID` is not set, the function lists all your pages in the Execution Log.
+
+5.  **Verify:** In the Dashboard Social Hub, the Facebook credential indicator turns green.
+
+---
+
+### 7b. Instagram Business Account
+
+Instagram uses the **same Facebook App and Page Access Token**. The only additional requirement is linking your Instagram Professional account to your Facebook Page.
+
+**Required Script Properties:**
+- `FB_PAGE_ACCESS_TOKEN` (same as Facebook — already set)
+- `FB_PAGE_ID` (same as Facebook — already set)
+- `INSTAGRAM_ACCOUNT_ID` (auto-discovered on first post)
+
+#### Steps:
+
+1.  **Link Instagram to Facebook Page:**
+    - Go to your Facebook Page → **Settings → Linked Accounts → Instagram**
+    - Click **Connect Account** and log in to your Instagram Business/Creator account
+
+2.  **No additional credentials needed.** The `INSTAGRAM_ACCOUNT_ID` is auto-discovered on the first Instagram post.
+
+> **Important:** The Instagram Graph API **does not support text-only posts**. If no media is attached, the system returns a graceful message with a link to post manually. For media posts, attach a Google Drive File ID in the Social Hub — the file must be publicly accessible.
+
+---
+
+### 7c. Threads
+
+Threads uses a **separate Meta App** with the Threads use case and its own OAuth flow.
+
+**Required Script Properties:**
+- `THREADS_CLIENT_ID` (for OAuth setup only)
+- `THREADS_CLIENT_SECRET` (for OAuth setup only)
+- `THREADS_ACCESS_TOKEN` (**required for posting**, valid 60 days)
+- `THREADS_USER_ID` (**required for posting**, auto-set during token exchange)
+
+#### Steps:
+
+1.  **Create a Threads App:**
+    - Go to [https://developers.facebook.com/apps/](https://developers.facebook.com/apps/)
+    - Click **Create App** → **Other** → **Next**
+    - Under **Add a use case**, select **Threads API** → **Next**
+    - Under **Settings → Basic**, note your **Threads App ID** and **Threads App Secret**
+
+    > **Important:** There will be two App IDs — use the **Threads App ID** (not the Meta App ID).
+
+2.  **Configure Redirect URI:**
+    - Go to **Threads API → Settings**
+    - Under **Redirect Callback URLs**, add your GAS Web App URL:
+      `https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec`
+
+3.  **Add Yourself as a Tester** (required until app is approved by Meta):
+    - Go to **App Roles → Roles → Add People** → **Threads Tester**
+    - Accept the invitation in Threads: **Account Settings → Website Permissions**
+
+4.  **Set Script Properties:**
+
+    | Property | Value |
+    |---|---|
+    | `THREADS_CLIENT_ID` | Your Threads App ID |
+    | `THREADS_CLIENT_SECRET` | Your Threads App Secret |
+
+5.  **Authorize and Get Long-Lived Token:**
+    - In the GAS IDE, run **`logAuthUrl_Threads`**
+    - Copy the URL from the Execution Log and open it in your browser
+    - Authorize the app
+    - After redirect, copy the `code=` parameter (strip the trailing `#_`)
+    - In Script Properties, set `THREADS_SHORT_LIVED_TOKEN` to that code
+    - Run **`exchangeThreadsTokenForLongLived`** — this automatically stores:
+      - `THREADS_ACCESS_TOKEN` (valid 60 days)
+      - `THREADS_USER_ID`
+
+6.  **Token Refresh:** Threads tokens expire after 60 days. Re-run `exchangeThreadsTokenForLongLived` before expiry. Set a calendar reminder 50 days after setup.
+
+7.  **Verify:** In the Dashboard Social Hub, the Threads credential indicator turns green.
+
+---
+
+### 7d. Script Properties Quick Reference
+
+| Property | Platform | Required | Description |
+|---|---|---|---|
+| `FACEBOOK_CLIENT_ID` | Facebook/Instagram | OAuth only | Meta App ID |
+| `FACEBOOK_CLIENT_SECRET` | Facebook/Instagram | OAuth only | Meta App Secret |
+| `FB_USER_ACCESS_TOKEN` | Facebook | Temp (OAuth) | Short-lived user token — replaced after `exchangeFacebookTokenForPageToken` |
+| `FB_PAGE_ACCESS_TOKEN` | Facebook/Instagram | **Yes** | Long-lived Page Access Token |
+| `FB_PAGE_ID` | Facebook/Instagram | **Yes** | Facebook Page numeric ID |
+| `INSTAGRAM_ACCOUNT_ID` | Instagram | Auto-set | Instagram Business Account ID |
+| `THREADS_CLIENT_ID` | Threads | OAuth only | Threads App ID |
+| `THREADS_CLIENT_SECRET` | Threads | OAuth only | Threads App Secret |
+| `THREADS_SHORT_LIVED_TOKEN` | Threads | Temp (OAuth) | Short-lived Threads token — replaced after exchange |
+| `THREADS_ACCESS_TOKEN` | Threads | **Yes** | Long-lived token (60 days) |
+| `THREADS_USER_ID` | Threads | **Yes** | Threads user numeric ID (auto-set) |
+
+### 7e. Troubleshooting
+
+- **"Facebook/Instagram credentials missing"** → Set `FB_PAGE_ACCESS_TOKEN` and `FB_PAGE_ID` in Script Properties.
+- **"Could not find connected Instagram Business Account"** → Confirm your Instagram is a Professional account linked to the Facebook Page.
+- **"Instagram requires an image or video"** → Attach a Google Drive File ID in the Social Hub, or post manually.
+- **"Threads credentials missing"** → Re-run the token exchange if the 60-day token expired.
+- **"Threads Create Container Error 400"** → Text exceeds 500 characters (Threads limit). Shorten the post.
+- **OAuth popup does not redirect** → Verify the Redirect URI in the Meta App Dashboard exactly matches your GAS deployment URL.
 
 ---
 
