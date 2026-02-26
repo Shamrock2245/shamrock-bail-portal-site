@@ -208,19 +208,16 @@ function completeThreadsSetup() {
 /**
  * ─── GOOGLE OAUTH CREDENTIALS (for GBP + YouTube) ───────────────────────────
  * Run this ONCE to store the Google OAuth Client ID and Secret.
- * Source: shamrock-seo GCP project credentials file.
+ * Source: shamrock-bail-suite GCP project credentials file.
  * After running, proceed with logAuthUrl_GBP() to authorize.
- * NOTE: Credentials already deployed to GAS via clasp push.
- *       Values redacted from git for security.
  */
 function setGoogleOAuthCredentials() {
   var props = PropertiesService.getScriptProperties();
-  // VALUES ALREADY DEPLOYED — These are redacted for git safety.
-  // If you need to re-deploy, get values from Desktop/credentials/ folder.
+  // REDACTED for git — values already deployed to GAS via clasp push
   props.setProperty('GOOGLE_OAUTH_CLIENT_ID', 'REDACTED');
   props.setProperty('GOOGLE_OAUTH_CLIENT_SECRET', 'REDACTED');
-  console.log('✅ Google OAuth credentials stored.');
-  console.log('   Next step: Run logAuthUrl_GBP() to get the authorization URL.');
+  props.setProperty('GBP_LOCATION_ID', '8371915753604835374');
+  console.log('✅ Google OAuth credentials + GBP Location ID stored.');
 }
 
 /**

@@ -1278,12 +1278,10 @@ function logAuthUrl_GBP() {
  * so the user can easily find their GBP_LOCATION_ID without manual API calls.
  */
 function logGbpLocations() {
-  var PROPS = PropertiesService.getScriptProperties();
-  var accessToken = PROPS.getProperty('GBP_ACCESS_TOKEN');
-  if (!accessToken) {
-    console.error("Missing GBP_ACCESS_TOKEN. Please run logAuthUrl_GBP() and authorize first.");
-    return;
-  }
+  // Try the built-in GAS OAuth token first (uses appsscript.json scopes)
+  // Falls back to custom GBP_ACCESS_TOKEN if set
+  var accessToken = ScriptApp.getOAuthToken();
+  console.log("Using built-in GAS OAuth token for GBP discovery...");
 
   // 1. Get Accounts
   var accountsUrl = 'https://mybusinessaccountmanagement.googleapis.com/v1/accounts';
