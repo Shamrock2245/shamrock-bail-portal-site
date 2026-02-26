@@ -22,6 +22,9 @@
  * │ client_getIndemnitorProfile    │ Code.js                      │
  * │ client_forceCleanup            │ Code.js                      │
  * │ client_getSocialMediaFiles     │ SocialMediaPicker.js         │
+ * │ client_searchPublicMedia       │ SocialMediaPicker.js         │
+ * │ client_searchGrokImages        │ SocialMediaPicker.js         │
+ * │ client_getDriveFileBase64      │ SocialMediaPicker.js         │
  * │ publishPost                    │ SocialPublisher.js           │
  * │ publishAll                     │ SocialPublisher.js           │
  * │ getSocialAuthUrl               │ SocialPublisher.js           │

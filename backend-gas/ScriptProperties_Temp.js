@@ -85,6 +85,39 @@ function testTikTok() {
 }
 
 /**
+ * ─── TELEGRAM PROPERTIES ────────────────────────────────────────────────
+ * Sets TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID for social broadcasting.
+ * Run this ONCE from the GAS IDE after replacing the placeholder values.
+ *
+ * To get your CHAT_ID:
+ *   1. Add your bot to the target channel/group as admin
+ *   2. Send a message in that channel
+ *   3. Visit: https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates
+ *   4. Look for "chat": { "id": ... } in the response
+ *   5. Channel IDs start with -100 (e.g., -1001234567890)
+ */
+function setTelegramProperties() {
+  var props = PropertiesService.getScriptProperties();
+  // ⚠️ REPLACE these with your real values before running
+  props.setProperty('TELEGRAM_BOT_TOKEN', 'PASTE_YOUR_BOT_TOKEN_HERE');
+  props.setProperty('TELEGRAM_CHAT_ID', 'PASTE_YOUR_CHAT_ID_HERE');
+  console.log('✅ Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID successfully.');
+  console.log('   Run testTelegram() to verify posting works.');
+}
+
+/**
+ * ─── PEXELS API KEY ─────────────────────────────────────────────────────
+ * Sets the Pexels API key for the Media Library public domain image search.
+ * Get a free key at https://www.pexels.com/api/
+ */
+function setPexelsApiKey() {
+  var props = PropertiesService.getScriptProperties();
+  // ⚠️ REPLACE with your real Pexels API key
+  props.setProperty('PEXELS_API_KEY', 'PASTE_YOUR_PEXELS_KEY_HERE');
+  console.log('✅ Set PEXELS_API_KEY successfully.');
+}
+
+/**
  * ─── TELEGRAM SOCIAL CHAT ID ────────────────────────────────────────────────
  * The TELEGRAM_BOT_TOKEN is already set (used by the intake bot).
  * To enable social broadcasting to a Telegram channel, you only need to set

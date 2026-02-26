@@ -300,6 +300,51 @@ var SocialPublisher = (function () {
     return 'https://drive.google.com/uc?export=download&id=' + fileId;
   }
 
+  /**
+   * Resolves media source from postOptions.driveFileId.
+   * Handles both Drive IDs and external URLs (prefixed with 'EXTERNAL:').
+   * @returns {Blob|null} - Image blob ready for upload
+   */
+  function resolveMediaBlob_(driveFileId) {
+    if (!driveFileId) return null;
+
+    // External URL from Media Library search
+    if (driveFileId.indexOf('EXTERNAL:') === 0) {
+      var externalUrl = driveFileId.substring(9); // strip 'EXTERNAL:' prefix
+      try {
+        var response = UrlFetchApp.fetch(externalUrl, { muteHttpExceptions: true });
+        if (response.getResponseCode() === 200) {
+          return response.getBlob();
+        }
+        console.warn('Could not fetch external media: HTTP ' + response.getResponseCode());
+        return null;
+      } catch (e) {
+        console.warn('External media fetch failed: ' + e.message);
+        return null;
+      }
+    }
+
+    // Standard Drive file ID
+    try {
+      return DriveApp.getFileById(driveFileId).getBlob();
+    } catch (e) {
+      console.warn('Drive file fetch failed: ' + e.message);
+      return null;
+    }
+  }
+
+  /**
+   * Gets a public URL for the media — external URLs returned as-is, Drive IDs shared publicly.
+   * @returns {string|null}
+   */
+  function getMediaUrl_(driveFileId) {
+    if (!driveFileId) return null;
+    if (driveFileId.indexOf('EXTERNAL:') === 0) {
+      return driveFileId.substring(9);
+    }
+    return getDriveFilePublicUrl_(driveFileId);
+  }
+
   function uploadToLinkedIn_(fileId, accessToken, companyUrn) {
     var file = DriveApp.getFileById(fileId);
     var blob = file.getBlob();
@@ -421,10 +466,13 @@ var SocialPublisher = (function () {
     };
 
     if (postOptions && postOptions.driveFileId) {
-      payload.media = [{
-        mediaFormat: 'PHOTO',
-        sourceUrl: getDriveFilePublicUrl_(postOptions.driveFileId)
-      }];
+      var mediaUrl = getMediaUrl_(postOptions.driveFileId);
+      if (mediaUrl) {
+        payload.media = [{
+          mediaFormat: 'PHOTO',
+          sourceUrl: mediaUrl
+        }];
+      }
     }
 
     var options = {
@@ -598,12 +646,19 @@ var SocialPublisher = (function () {
 
     var url, payload;
     if (postOptions && postOptions.driveFileId) {
-      url = 'https://api.telegram.org/bot' + botToken + '/sendPhoto';
-      payload = {
-        chat_id: chatId,
-        caption: content,
-        photo: DriveApp.getFileById(postOptions.driveFileId).getBlob()
-      };
+      var mediaBlob = resolveMediaBlob_(postOptions.driveFileId);
+      if (mediaBlob) {
+        url = 'https://api.telegram.org/bot' + botToken + '/sendPhoto';
+        payload = {
+          chat_id: chatId,
+          caption: content,
+          photo: mediaBlob
+        };
+      } else {
+        // Fallback to text-only if media can't be resolved
+        url = 'https://api.telegram.org/bot' + botToken + '/sendMessage';
+        payload = { chat_id: chatId, text: content };
+      }
     } else {
       url = 'https://api.telegram.org/bot' + botToken + '/sendMessage';
       payload = { chat_id: chatId, text: content };
