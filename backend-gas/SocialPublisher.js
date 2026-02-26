@@ -1516,6 +1516,6 @@ function socialAuthCallback(request) {
 }
 
 
-function client_generateSocialPosts(basePost, platforms, useOpus) {
-  return SocialPublisher.draftPosts(basePost, { platforms: platforms, useOpus: useOpus });
-}
+// NOTE: client_generateSocialPosts lives in AI_Broadcaster.js (uses GrokClient).
+// DO NOT add a duplicate here — SocialPublisher.js loads AFTER AI_Broadcaster.js
+// alphabetically and would shadow the Grok-powered version.

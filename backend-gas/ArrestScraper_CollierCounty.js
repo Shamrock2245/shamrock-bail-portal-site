@@ -68,6 +68,16 @@ function runCollierArrestsNow() {
       upsertStrict_(sheet, validRecords);
     }
 
+    // 4. REPEAT OFFENDER CHECK
+    try {
+      if (validRecords.length > 0 && typeof checkArrestsForRepeatOffenders === 'function') {
+        Logger.log('🔍 Checking for repeat offenders...');
+        checkArrestsForRepeatOffenders('Collier');
+      }
+    } catch (e) {
+      Logger.log('⚠️ Repeat offender check failed (non-fatal): ' + e.message);
+    }
+
     const duration = Math.round((Date.now() - startMs) / 1000);
     Logger.log('⏱️ Total: ' + duration + 's');
     Logger.log('═══════════════════════════════════════');

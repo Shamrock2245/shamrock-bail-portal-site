@@ -321,6 +321,16 @@ function processForfeitureEmail(message) {
   createForfeitureEvents(data);
   addForfeitureToSheet(data);
 
+  // Historical Bond Cross-Reference
+  try {
+    if (typeof checkForfeitureForHistoricalBond === 'function') {
+      Logger.log('🔍 Checking forfeiture against historical bonds...');
+      checkForfeitureForHistoricalBond(data);
+    }
+  } catch (hbErr) {
+    Logger.log(`⚠️ Historical bond check failed (non-fatal): ${hbErr.message}`);
+  }
+
   // SMS/Email Forfeiture Alerts
   if (data.contacts && data.contacts.found) {
     const forfBody = `🚨 URGENT — Shamrock Bail Bonds\n\nA FORFEITURE has been filed for ${data.defendant}.\nCase: ${data.caseNumber}\nAmount at Risk: $${data.amount}\n\nCall us IMMEDIATELY: (239) 332-2245`;

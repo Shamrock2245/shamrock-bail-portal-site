@@ -88,13 +88,5 @@ function AI_deepAnalyzeReports(payload) {
     return result;
 }
 
-/**
- * Client-facing wrapper
- */
-function client_runInvestigator(payload) {
-    const email = Session.getActiveUser().getEmail();
-    // Security check (reusing global helper if available, else simple check)
-    // if (!isUserAllowed(email)) return { error: "Unauthorized" }; 
-
-    return AI_deepAnalyzeReports(payload);
-}
+// NOTE: client_runInvestigator lives in Code.js (includes isUserAllowed auth check).
+// DO NOT duplicate here.

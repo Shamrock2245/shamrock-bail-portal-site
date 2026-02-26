@@ -40,6 +40,17 @@ function runLeeArrestsNow() {
             }
             // --------------------------
 
+            // --- REPEAT OFFENDER CHECK ---
+            try {
+                if (typeof checkArrestsForRepeatOffenders === 'function') {
+                    Logger.log('🔍 Checking for repeat offenders...');
+                    checkArrestsForRepeatOffenders('Lee');
+                }
+            } catch (e) {
+                Logger.log('⚠️ Repeat offender check failed (non-fatal): ' + e.message);
+            }
+            // -----------------------------
+
             if (LEE.EMBED_MUGSHOTS) { Logger.log('🖼️ Embedding mugshots for new rows...'); embedMugshotsForRange_(sheet, startRow, sheet.getLastRow()) } var endRow = sheet.getLastRow(); if (typeof autoScoreNewArrests === 'function') { Logger.log('📊 Auto-scoring new arrests...'); try { autoScoreNewArrests(startRow, endRow) } catch (e) { Logger.log('⚠️ Auto-scoring failed: ' + e.message) } } if (typeof autoGenerateSearchLinksForNewArrests === 'function') { Logger.log('🔍 Auto-generating search links...'); try { autoGenerateSearchLinksForNewArrests(startRow, endRow) } catch (e) { Logger.log('⚠️ Search link generation failed: ' + e.message) } } if (typeof syncQualifiedArrests === 'function' && typeof CONFIG !== 'undefined' && CONFIG.QUALIFIED_ARRESTS && CONFIG.QUALIFIED_ARRESTS.AUTO_SYNC) { Logger.log('🎯 Auto-syncing qualified arrests...'); try { syncQualifiedArrests() } catch (e) { Logger.log('⚠️ Qualified arrests sync failed: ' + e.message) } }
         } else { Logger.log('ℹ️ No new rows to write.') } if (LEE.BACKFILL_MODE) { elapsed = Date.now() - startMs; remaining = LEE.MAX_EXECUTION_MS - elapsed; if (remaining > 60000) { Logger.log('🔄 Starting backfill mode for existing records...'); backfillExistingRecords_(sheet, remaining) } else { Logger.log('⏭️ Skipping backfill (low time budget)') } } var duration = Math.round((Date.now() - startMs) / 1000); Logger.log('⏱️ Total execution time: ' + duration + ' seconds'); Logger.log('═══════════════════════════════════════')
     } catch (e) { Logger.log('❌ Fatal: ' + (e && e.stack ? e.stack : e)); throw e } finally { lock.releaseLock() }
