@@ -459,6 +459,208 @@ function doPost(e) {
         return createErrorResponse(uploadErr.message, ERROR_CODES.INTERNAL_ERROR);
       }
     }
+    if (data.action === 'telegram_payment_log') {
+      try {
+        Logger.log('💳 Telegram Mini App payment log: ' + data.referenceId);
+        // Log to PaymentLog sheet
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        let sheet = ss.getSheetByName('PaymentLog');
+        if (!sheet) {
+          sheet = ss.insertSheet('PaymentLog');
+          sheet.appendRow(['Timestamp', 'ReferenceID', 'Name', 'Phone', 'Amount', 'Type', 'Status', 'TelegramUserID', 'TelegramUsername', 'Source']);
+          sheet.getRange(1, 1, 1, 10).setFontWeight('bold');
+        }
+        sheet.appendRow([
+          new Date(),
+          data.referenceId || '',
+          data.name || '',
+          data.phone || '',
+          data.amount || 0,
+          data.paymentType || '',
+          data.status || 'initiated',
+          data.telegramUserId || '',
+          data.telegramUsername || '',
+          data.source || 'telegram_mini_app'
+        ]);
+        // Slack notification
+        try {
+          const slackChannel = getConfig().SLACK_WEBHOOK_INTAKE || getConfig().SLACK_WEBHOOK_SHAMROCK;
+          if (slackChannel) {
+            sendSlackMessage(slackChannel,
+              `💳 Payment initiated via Telegram: ${data.name || 'Unknown'} | $${data.amount || '?'} | ${data.paymentType || 'unknown'} | Ref: ${data.referenceId || 'N/A'}`,
+              null
+            );
+          }
+        } catch (slackErr) {
+          Logger.log('Slack notification failed (non-fatal): ' + slackErr.message);
+        }
+        return createResponse({ success: true, referenceId: data.referenceId });
+      } catch (payErr) {
+        Logger.log('❌ Payment log error: ' + payErr.message);
+        return createErrorResponse(payErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
+    if (data.action === 'telegram_payment_lookup') {
+      try {
+        Logger.log('🔍 Payment lookup: ' + data.phone);
+        // Future: look up client by phone in IntakeQueue or Bonds sheet
+        // For now, return a generic success
+        return createResponse({ success: true, found: false, message: 'Lookup not yet implemented' });
+      } catch (lookupErr) {
+        Logger.log('❌ Payment lookup error: ' + lookupErr.message);
+        return createErrorResponse(lookupErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+    if (data.action === 'telegram_checkin_log') {
+      try {
+        Logger.log('📍 Telegram Mini App check-in: ' + data.referenceId);
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        let sheet = ss.getSheetByName('CheckInLog');
+        if (!sheet) {
+          sheet = ss.insertSheet('CheckInLog');
+          sheet.appendRow(['Timestamp', 'ReferenceID', 'Name', 'Phone', 'HasSelfie', 'Latitude', 'Longitude', 'TelegramUserID', 'TelegramUsername', 'Source']);
+          sheet.getRange(1, 1, 1, 10).setFontWeight('bold');
+        }
+        sheet.appendRow([
+          new Date(),
+          data.referenceId || '',
+          data.name || '',
+          data.phone || '',
+          data.hasSelfie ? 'Yes' : 'No',
+          data.latitude || '',
+          data.longitude || '',
+          data.telegramUserId || '',
+          data.telegramUsername || '',
+          data.source || 'telegram_mini_app'
+        ]);
+        // Slack notification
+        try {
+          const slackChannel = getConfig().SLACK_WEBHOOK_INTAKE || getConfig().SLACK_WEBHOOK_SHAMROCK;
+          if (slackChannel) {
+            var locationStr = (data.latitude && data.longitude)
+              ? data.latitude.toFixed(4) + ', ' + data.longitude.toFixed(4)
+              : 'Not provided';
+            sendSlackMessage(slackChannel,
+              '📍 Check-in via Telegram: ' + (data.name || 'Unknown') + ' | Location: ' + locationStr + ' | Selfie: ' + (data.hasSelfie ? '✅' : '❌') + ' | Ref: ' + (data.referenceId || 'N/A'),
+              null
+            );
+          }
+        } catch (slackErr) {
+          Logger.log('Slack notification failed (non-fatal): ' + slackErr.message);
+        }
+        return createResponse({ success: true, referenceId: data.referenceId });
+      } catch (checkinErr) {
+        Logger.log('❌ Check-in log error: ' + checkinErr.message);
+        return createErrorResponse(checkinErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+    // ─── STATUS LOOKUP ───
+    if (data.action === 'telegram_status_lookup') {
+      try {
+        Logger.log('🔍 Status lookup: ' + (data.phone || 'unknown'));
+        var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+        // Log the lookup
+        var lookSheet = ss.getSheetByName('CaseStatusLookups');
+        if (!lookSheet) {
+          lookSheet = ss.insertSheet('CaseStatusLookups');
+          lookSheet.appendRow(['Timestamp', 'Phone', 'Name', 'TelegramUserID', 'Source']);
+          lookSheet.getRange(1, 1, 1, 5).setFontWeight('bold');
+        }
+        lookSheet.appendRow([
+          new Date(),
+          data.phone || '',
+          data.name || '',
+          data.telegramUserId || '',
+          data.source || 'telegram_mini_app'
+        ]);
+
+        // Return success (actual case data will be populated when CORS is enabled)
+        return createResponse({
+          success: true,
+          message: 'Lookup logged',
+          phone: data.phone
+        });
+      } catch (lookupErr) {
+        Logger.log('❌ Status lookup error: ' + lookupErr.message);
+        return createErrorResponse(lookupErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
+    // ─── CLIENT UPDATE ───
+    if (data.action === 'telegram_client_update') {
+      try {
+        Logger.log('📝 Client update (' + data.updateType + '): ' + (data.referenceId || 'N/A'));
+        var ss2 = SpreadsheetApp.getActiveSpreadsheet();
+
+        var updateSheet = ss2.getSheetByName('ClientUpdates');
+        if (!updateSheet) {
+          updateSheet = ss2.insertSheet('ClientUpdates');
+          updateSheet.appendRow(['Timestamp', 'ReferenceID', 'Type', 'IsAnonymous', 'Name', 'Phone', 'FormData', 'TelegramUserID', 'TelegramUsername', 'Source']);
+          updateSheet.getRange(1, 1, 1, 10).setFontWeight('bold');
+        }
+
+        updateSheet.appendRow([
+          new Date(),
+          data.referenceId || '',
+          data.updateType || '',
+          data.isAnonymous ? 'Yes' : 'No',
+          data.name || '',
+          data.phone || '',
+          JSON.stringify(data.formData || {}),
+          data.telegramUserId || '',
+          data.telegramUsername || '',
+          data.source || 'telegram_mini_app'
+        ]);
+
+        // Slack alert
+        try {
+          var slackCh = getConfig().SLACK_WEBHOOK_INTAKE || getConfig().SLACK_WEBHOOK_SHAMROCK;
+          if (slackCh) {
+            var emoji = data.isAnonymous ? '🚨' : '📝';
+            var typeLabel = {
+              contact: 'Contact Info',
+              address: 'Address/Whereabouts',
+              extension: 'Payment Extension',
+              circumstances: 'Circumstances',
+              anonymous_tip: '🚨 ANONYMOUS TIP'
+            }[data.updateType] || data.updateType;
+
+            var slackMsg = emoji + ' *Client Update via Telegram*\n'
+              + '> Type: *' + typeLabel + '*\n'
+              + '> Ref: `' + (data.referenceId || 'N/A') + '`\n';
+
+            if (!data.isAnonymous) {
+              slackMsg += '> Name: ' + (data.name || 'Unknown') + '\n';
+              slackMsg += '> Phone: ' + (data.phone || 'N/A') + '\n';
+            }
+
+            // Include key form details
+            var fd = data.formData || {};
+            if (data.updateType === 'anonymous_tip') {
+              slackMsg += '> Defendant: *' + (fd.defendantName || 'Not provided') + '*\n';
+              slackMsg += '> Tip: ' + (fd.tip || 'No details') + '\n';
+            } else if (data.updateType === 'extension') {
+              slackMsg += '> Requested Date: ' + (fd.requestedDate || 'N/A') + '\n';
+              slackMsg += '> Reason: ' + (fd.reason || 'N/A') + '\n';
+            } else if (data.updateType === 'address') {
+              slackMsg += '> New Address: ' + [fd.address, fd.city, fd.state, fd.zip].filter(Boolean).join(', ') + '\n';
+            }
+
+            sendSlackMessage(slackCh, slackMsg, null);
+          }
+        } catch (slackErr) {
+          Logger.log('Slack notification failed (non-fatal): ' + slackErr.message);
+        }
+
+        return createResponse({ success: true, referenceId: data.referenceId });
+      } catch (updateErr) {
+        Logger.log('❌ Client update error: ' + updateErr.message);
+        return createErrorResponse(updateErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
     // --- END TELEGRAM MINI APP ---
 
     // --- API KEY VERIFICATION (Security Hardening) ---

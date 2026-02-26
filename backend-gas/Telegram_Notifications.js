@@ -65,7 +65,7 @@ function TG_notifyCourtDateReminder(caseData, daysUntil) {
   const courtDate = caseData.courtDate || 'your upcoming court date';
   const courtTime = caseData.courtTime || '';
   const courtroom = caseData.courtroom || '';
-  const caseNum   = caseData.caseNumber || '';
+  const caseNum = caseData.caseNumber || '';
 
   const urgencyLabel = daysUntil === 1 ? 'TOMORROW' : 'in ' + daysUntil + ' days';
   const urgencyEmoji = daysUntil === 1 ? '🚨' : (daysUntil <= 3 ? '⚠️' : '📅');
@@ -297,16 +297,16 @@ function TG_sendBulkCourtReminders() {
   }
 
   try {
-    const ss    = SpreadsheetApp.openById(config.GOOGLE_SHEET_ID);
+    const ss = SpreadsheetApp.openById(config.GOOGLE_SHEET_ID);
     const sheet = ss.getSheetByName('Cases');
     if (!sheet) {
       console.warn('TG_sendBulkCourtReminders: "Cases" sheet not found');
       return;
     }
 
-    const data    = sheet.getDataRange().getValues();
+    const data = sheet.getDataRange().getValues();
     const headers = data[0];
-    const today   = new Date();
+    const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const REMINDER_DAYS = [7, 3, 1];
@@ -327,20 +327,20 @@ function TG_sendBulkCourtReminders() {
       const courtDate = new Date(courtDateRaw);
       courtDate.setHours(0, 0, 0, 0);
 
-      const diffMs   = courtDate.getTime() - today.getTime();
+      const diffMs = courtDate.getTime() - today.getTime();
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
       if (!REMINDER_DAYS.includes(diffDays)) continue;
 
       const caseData = {
-        defendantPhone:  rowObj['DefendantPhone'] || rowObj['defendantPhone'] || '',
-        defendantName:   rowObj['DefendantName']  || rowObj['defendantName']  || 'Defendant',
-        indemnitorPhone: rowObj['IndemnitorPhone']|| rowObj['indemnitorPhone']|| '',
-        indemnitorName:  rowObj['IndemnitorName'] || rowObj['indemnitorName'] || 'Co-signer',
-        courtDate:       courtDate.toLocaleDateString('en-US'),
-        courtTime:       rowObj['CourtTime'] || rowObj['courtTime'] || '',
-        courtroom:       rowObj['Courtroom'] || rowObj['courtroom'] || '',
-        caseNumber:      rowObj['CaseNumber']|| rowObj['caseNumber']|| ''
+        defendantPhone: rowObj['DefendantPhone'] || rowObj['defendantPhone'] || '',
+        defendantName: rowObj['DefendantName'] || rowObj['defendantName'] || 'Defendant',
+        indemnitorPhone: rowObj['IndemnitorPhone'] || rowObj['indemnitorPhone'] || '',
+        indemnitorName: rowObj['IndemnitorName'] || rowObj['indemnitorName'] || 'Co-signer',
+        courtDate: courtDate.toLocaleDateString('en-US'),
+        courtTime: rowObj['CourtTime'] || rowObj['courtTime'] || '',
+        courtroom: rowObj['Courtroom'] || rowObj['courtroom'] || '',
+        caseNumber: rowObj['CaseNumber'] || rowObj['caseNumber'] || ''
       };
 
       const result = TG_notifyCourtDateReminder(caseData, diffDays);
@@ -676,8 +676,8 @@ function _getWANotifConfig() {
 function TG_notifyDocumentReadyObj(data) {
   return TG_notifyDocumentReady(
     data.memberPhone || data.phone || '',
-    data.memberName  || data.name  || 'Member',
-    data.signingLink || data.link  || '',
+    data.memberName || data.name || 'Member',
+    data.signingLink || data.link || '',
     data.documentName || 'bail bond documents'
   );
 }
@@ -689,8 +689,86 @@ function TG_notifyDocumentReadyObj(data) {
 function TG_notifyPaymentOverdueObj(data) {
   return TG_notifyPaymentOverdue(
     data.indemnitorPhone || data.phone || '',
-    data.indemnitorName  || data.name  || 'Indemnitor',
+    data.indemnitorName || data.name || 'Indemnitor',
     data.amountDue || data.amount || '',
-    data.dueDate   || data.date   || ''
+    data.dueDate || data.date || ''
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DAILY PAYMENT & CHECK-IN REPORT
+// Call via GAS time-driven trigger (daily at 6 PM EST)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Sends a daily Slack summary of payments and check-ins.
+ * Reads PaymentLog and CheckInLog sheets, filters to today's entries.
+ */
+function sendDailyPaymentReport() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var today = new Date();
+  var todayStr = Utilities.formatDate(today, 'America/New_York', 'yyyy-MM-dd');
+  var displayDate = Utilities.formatDate(today, 'America/New_York', 'MMM dd, yyyy');
+
+  // ── Payments ──
+  var paymentCount = 0;
+  var paymentTotal = 0;
+  var paymentSheet = ss.getSheetByName('PaymentLog');
+  if (paymentSheet && paymentSheet.getLastRow() > 1) {
+    var payData = paymentSheet.getDataRange().getValues();
+    for (var i = 1; i < payData.length; i++) {
+      var rowDate = payData[i][0]; // Timestamp column
+      if (rowDate instanceof Date) {
+        var rowStr = Utilities.formatDate(rowDate, 'America/New_York', 'yyyy-MM-dd');
+        if (rowStr === todayStr) {
+          paymentCount++;
+          paymentTotal += parseFloat(payData[i][4]) || 0; // Amount column
+        }
+      }
+    }
+  }
+
+  // ── Check-ins ──
+  var checkinCount = 0;
+  var checkinSheet = ss.getSheetByName('CheckInLog');
+  if (checkinSheet && checkinSheet.getLastRow() > 1) {
+    var ciData = checkinSheet.getDataRange().getValues();
+    for (var j = 1; j < ciData.length; j++) {
+      var ciDate = ciData[j][0];
+      if (ciDate instanceof Date) {
+        var ciStr = Utilities.formatDate(ciDate, 'America/New_York', 'yyyy-MM-dd');
+        if (ciStr === todayStr) {
+          checkinCount++;
+        }
+      }
+    }
+  }
+
+  // ── Build Slack Message ──
+  var totalFormatted = '$' + paymentTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  var msg =
+    '📊 *Daily Payment & Check-In Report — ' + displayDate + '*\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+    '💳 *Payments Today:* ' + paymentCount + '\n' +
+    '💰 *Total Collected:* ' + totalFormatted + '\n' +
+    '📍 *Check-Ins Today:* ' + checkinCount + '\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+    '_via Telegram Mini App_';
+
+  // Send to Slack
+  try {
+    var config = getConfig();
+    var slackChannel = config.SLACK_WEBHOOK_INTAKE || config.SLACK_WEBHOOK_SHAMROCK;
+    if (slackChannel) {
+      sendSlackMessage(slackChannel, msg, null);
+      Logger.log('✅ Daily payment report sent to Slack');
+    } else {
+      Logger.log('⚠️ No Slack channel configured for daily report');
+    }
+  } catch (err) {
+    Logger.log('❌ Failed to send daily payment report: ' + err.message);
+  }
+
+  return { paymentCount: paymentCount, paymentTotal: paymentTotal, checkinCount: checkinCount };
+}
+
