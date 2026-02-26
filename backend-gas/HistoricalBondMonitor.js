@@ -27,7 +27,7 @@
 var HBM_CONFIG = {
     // Historical bonds sheet (same spreadsheet the scrapers use)
     SHEET_ID: '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E',
-    HISTORICAL_TAB: 'HistoricalBonds',
+    HISTORICAL_TAB: 'Historical Bond Reports',
     ALERTS_TAB: 'RepeatOffenderAlerts',
 
     // Alert recipients
@@ -61,7 +61,7 @@ function loadHistoricalBondIndex() {
     var ss = SpreadsheetApp.openById(HBM_CONFIG.SHEET_ID);
     var tab = ss.getSheetByName(HBM_CONFIG.HISTORICAL_TAB);
     if (!tab) {
-        Logger.log('⚠️ HistoricalBonds tab not found');
+        Logger.log('⚠️ Historical bond tab ("' + HBM_CONFIG.HISTORICAL_TAB + '") not found in spreadsheet');
         return { index: new Map(), count: 0 };
     }
 
@@ -291,8 +291,13 @@ function fireRepeatOffenderAlert(match) {
 
     // 4. SLACK
     try {
-        NotificationService.sendSlack('#new-arrests-lee-county', textMsg);
-        Logger.log('💬 Slack alert sent');
+        var slackWebhook = PropertiesService.getScriptProperties().getProperty('SLACK_WEBHOOK_SHAMROCK');
+        if (slackWebhook) {
+            NotificationService.sendSlack(slackWebhook, textMsg);
+            Logger.log('💬 Slack alert sent');
+        } else {
+            Logger.log('⚠️ SLACK_WEBHOOK_SHAMROCK not configured');
+        }
     } catch (e) { Logger.log('⚠️ Slack failed: ' + e.message); }
 
     // 5. SHEET — RepeatOffenderAlerts tab

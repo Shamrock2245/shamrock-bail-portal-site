@@ -55,7 +55,8 @@
     "https://www.googleapis.com/auth/script.send_mail",
     "https://mail.google.com/",
     "https://www.googleapis.com/auth/calendar",
-    "https://www.googleapis.com/auth/script.scriptapp"
+    "https://www.googleapis.com/auth/script.scriptapp",
+    "https://www.googleapis.com/auth/business.manage"
   ],
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",

@@ -504,9 +504,77 @@ function doPost(e) {
     if (data.action === 'telegram_payment_lookup') {
       try {
         Logger.log('🔍 Payment lookup: ' + data.phone);
-        // Future: look up client by phone in IntakeQueue or Bonds sheet
-        // For now, return a generic success
-        return createResponse({ success: true, found: false, message: 'Lookup not yet implemented' });
+        var ss = SpreadsheetApp.getActiveSpreadsheet();
+        var cleanPh = (data.phone || '').replace(/\D/g, '');
+        if (cleanPh.length === 10) cleanPh = '1' + cleanPh;
+
+        var clientInfo = null;
+
+        // Search IntakeQueue for client info
+        var iqSheet = ss.getSheetByName('IntakeQueue');
+        if (iqSheet && iqSheet.getLastRow() > 1) {
+          var iqRows = iqSheet.getDataRange().getValues();
+          var hdrs = iqRows[0];
+          var ci = {};
+          hdrs.forEach(function (h, i) { ci[String(h).toLowerCase().trim()] = i; });
+
+          for (var r = iqRows.length - 1; r >= 1; r--) {
+            var rw = iqRows[r];
+            var ph = String(rw[ci['indphone'] || ci['ind phone'] || ci['phone']] || '').replace(/\D/g, '');
+            if (ph.length === 10) ph = '1' + ph;
+            if (ph === cleanPh || ph.slice(-10) === cleanPh.slice(-10)) {
+              var gv = function (keys) {
+                for (var k = 0; k < keys.length; k++) {
+                  var idx = ci[keys[k].toLowerCase()];
+                  if (idx !== undefined && rw[idx]) return String(rw[idx]);
+                }
+                return '';
+              };
+              clientInfo = {
+                name: gv(['DefName', 'Def Name', 'Name']),
+                bondAmount: parseFloat(gv(['BondAmt', 'Bond Amount'])) || 0,
+                charges: gv(['Charges', 'charges']),
+                caseNumber: gv(['CaseNumber', 'Case Number'])
+              };
+              break;
+            }
+          }
+        }
+
+        // Search PaymentLog for payment history
+        var payments = [];
+        var paySheet = ss.getSheetByName('PaymentLog');
+        if (paySheet && paySheet.getLastRow() > 1) {
+          var payRows = paySheet.getDataRange().getValues();
+          var payHdrs = payRows[0];
+          var pi = {};
+          payHdrs.forEach(function (h, i) { pi[String(h).toLowerCase().trim()] = i; });
+
+          for (var p = 1; p < payRows.length; p++) {
+            var payPh = String(payRows[p][pi['phone'] || 0] || '').replace(/\D/g, '');
+            if (payPh.length === 10) payPh = '1' + payPh;
+            if (payPh === cleanPh || payPh.slice(-10) === cleanPh.slice(-10)) {
+              payments.push({
+                date: payRows[p][pi['timestamp'] || 0] ? new Date(payRows[p][pi['timestamp'] || 0]).toLocaleDateString() : '',
+                amount: parseFloat(payRows[p][pi['amount'] || 0]) || 0,
+                method: String(payRows[p][pi['method'] || pi['type'] || 0] || 'Unknown'),
+                reference: String(payRows[p][pi['referenceid'] || pi['reference'] || 0] || '')
+              });
+            }
+          }
+        }
+
+        var totalPaid = payments.reduce(function (sum, p) { return sum + p.amount; }, 0);
+
+        return createResponse({
+          success: true,
+          found: !!clientInfo,
+          client: clientInfo,
+          payments: payments,
+          totalPaid: totalPaid,
+          remainingBalance: clientInfo ? Math.max(0, clientInfo.bondAmount - totalPaid) : null,
+          phone: data.phone
+        });
       } catch (lookupErr) {
         Logger.log('❌ Payment lookup error: ' + lookupErr.message);
         return createErrorResponse(lookupErr.message, ERROR_CODES.INTERNAL_ERROR);
@@ -555,7 +623,7 @@ function doPost(e) {
         return createErrorResponse(checkinErr.message, ERROR_CODES.INTERNAL_ERROR);
       }
     }
-    // ─── STATUS LOOKUP ───
+    // ─── STATUS LOOKUP (Returns Real Case Data) ───
     if (data.action === 'telegram_status_lookup') {
       try {
         Logger.log('🔍 Status lookup: ' + (data.phone || 'unknown'));
@@ -576,10 +644,84 @@ function doPost(e) {
           data.source || 'telegram_mini_app'
         ]);
 
-        // Return success (actual case data will be populated when CORS is enabled)
+        // --- SEARCH IntakeQueue for matching phone ---
+        var cleanPhone = (data.phone || '').replace(/\D/g, '');
+        if (cleanPhone.length === 10) cleanPhone = '1' + cleanPhone;
+        var caseData = null;
+
+        // Try IntakeQueue first (indemnitor phone)
+        var iq = ss.getSheetByName('IntakeQueue');
+        if (iq && iq.getLastRow() > 1) {
+          var iqData = iq.getDataRange().getValues();
+          var headers = iqData[0];
+
+          // Find column indices dynamically
+          var colIdx = {};
+          headers.forEach(function (h, i) { colIdx[String(h).toLowerCase().trim()] = i; });
+
+          for (var r = iqData.length - 1; r >= 1; r--) {
+            var row = iqData[r];
+            // Check indemnitor phone and defendant phone columns
+            var indPhone = String(row[colIdx['indphone'] || colIdx['ind phone'] || colIdx['phone']] || '').replace(/\D/g, '');
+            var defPhone = String(row[colIdx['defphone'] || colIdx['def phone']] || '').replace(/\D/g, '');
+            if (indPhone.length === 10) indPhone = '1' + indPhone;
+            if (defPhone.length === 10) defPhone = '1' + defPhone;
+
+            if (indPhone === cleanPhone || defPhone === cleanPhone ||
+              indPhone.slice(-10) === cleanPhone.slice(-10) ||
+              defPhone.slice(-10) === cleanPhone.slice(-10)) {
+              // Found a match — build case data
+              var getValue = function (keys) {
+                for (var k = 0; k < keys.length; k++) {
+                  var idx = colIdx[keys[k].toLowerCase()];
+                  if (idx !== undefined && row[idx]) return String(row[idx]);
+                }
+                return '';
+              };
+
+              caseData = {
+                name: getValue(['DefName', 'Def Name', 'defname', 'Defendant Name']) || getValue(['IndName', 'Ind Name', 'indname', 'Name']) || data.name,
+                phone: data.phone,
+                status: getValue(['Status', 'status']) || 'Active',
+                courtDates: {
+                  nextDate: getValue(['CourtDate', 'Court Date', 'courtdate', 'NextCourtDate']) || null,
+                  courtroom: getValue(['Courtroom', 'courtroom', 'Court Room']) || null,
+                  judge: getValue(['Judge', 'judge']) || null
+                },
+                payment: {
+                  nextDue: getValue(['NextPaymentDate', 'Next Payment', 'nextpaymentdate']) || null,
+                  amountDue: parseFloat(getValue(['AmountDue', 'Amount Due', 'amountdue'])) || null,
+                  remainingBalance: parseFloat(getValue(['RemainingBalance', 'Remaining Balance', 'Balance'])) || null,
+                  lastPayment: getValue(['LastPayment', 'Last Payment', 'lastpayment']) || null
+                },
+                caseSummary: {
+                  bondAmount: parseFloat(getValue(['BondAmt', 'Bond Amount', 'BondAmount', 'bondamt'])) || null,
+                  charges: getValue(['Charges', 'charges', 'DefCharges', 'Charge']) || null,
+                  postingDate: getValue(['PostingDate', 'Posting Date', 'postingdate', 'Timestamp']) || null,
+                  caseNumber: getValue(['CaseNumber', 'Case Number', 'casenumber', 'CaseNo']) || null
+                },
+                documents: []
+              };
+
+              // Strip empty court dates
+              if (!caseData.courtDates.nextDate && !caseData.courtDates.courtroom) {
+                caseData.courtDates = null;
+              }
+              // Strip empty payment
+              if (!caseData.payment.nextDue && !caseData.payment.amountDue) {
+                caseData.payment = null;
+              }
+
+              Logger.log('✅ Case found for phone: ' + cleanPhone.slice(-4));
+              break;
+            }
+          }
+        }
+
         return createResponse({
           success: true,
-          message: 'Lookup logged',
+          found: !!caseData,
+          caseData: caseData,
           phone: data.phone
         });
       } catch (lookupErr) {

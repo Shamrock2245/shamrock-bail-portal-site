@@ -139,7 +139,7 @@ function auditAllSocialProps() {
 
   var ready = [], missing = [];
 
-  socialKeys.forEach(function(key) {
+  socialKeys.forEach(function (key) {
     var val = props[key];
     if (val && val.trim() !== '' && val !== 'REDACTED') {
       var preview = val.length > 20 ? val.substring(0, 12) + '...' + val.slice(-4) : val;
@@ -162,13 +162,13 @@ function auditAllSocialProps() {
   try {
     var status = getSocialCredentialStatus();
     console.log('\n  PLATFORM READY STATUS:');
-    Object.keys(status).forEach(function(platform) {
+    Object.keys(status).forEach(function (platform) {
       var s = status[platform];
       console.log('  ' + (s.ready ? '✅' : '❌') + ' ' + platform.toUpperCase() +
         ': ' + (s.ready ? 'READY' : 'NOT READY') +
         (s.note ? ' — ' + s.note : ''));
     });
-  } catch(e) {
+  } catch (e) {
     console.log('  (getSocialCredentialStatus: ' + e.message + ')');
   }
   console.log('═══════════════════════════════════════════════════════');
@@ -184,7 +184,7 @@ function completeFacebookSetup() {
   try {
     var result = exchangeFacebookTokenForPageToken();
     console.log('✅ Facebook Setup Result:', JSON.stringify(result));
-  } catch(e) {
+  } catch (e) {
     console.error('❌ Facebook Setup Failed: ' + e.message);
     console.error('   Click "Connect Facebook" in the Dashboard first, then run this.');
   }
@@ -199,10 +199,28 @@ function completeThreadsSetup() {
   try {
     var result = exchangeThreadsTokenForLongLived();
     console.log('✅ Threads Setup Result:', JSON.stringify(result));
-  } catch(e) {
+  } catch (e) {
     console.error('❌ Threads Setup Failed: ' + e.message);
     console.error('   Click "Connect Threads" in the Dashboard first, then run this.');
   }
+}
+
+/**
+ * ─── GOOGLE OAUTH CREDENTIALS (for GBP + YouTube) ───────────────────────────
+ * Run this ONCE to store the Google OAuth Client ID and Secret.
+ * Source: shamrock-seo GCP project credentials file.
+ * After running, proceed with logAuthUrl_GBP() to authorize.
+ * NOTE: Credentials already deployed to GAS via clasp push.
+ *       Values redacted from git for security.
+ */
+function setGoogleOAuthCredentials() {
+  var props = PropertiesService.getScriptProperties();
+  // VALUES ALREADY DEPLOYED — These are redacted for git safety.
+  // If you need to re-deploy, get values from Desktop/credentials/ folder.
+  props.setProperty('GOOGLE_OAUTH_CLIENT_ID', 'REDACTED');
+  props.setProperty('GOOGLE_OAUTH_CLIENT_SECRET', 'REDACTED');
+  console.log('✅ Google OAuth credentials stored.');
+  console.log('   Next step: Run logAuthUrl_GBP() to get the authorization URL.');
 }
 
 /**
@@ -213,7 +231,7 @@ function completeThreadsSetup() {
 function discoverGBPLocation() {
   try {
     logGbpLocations();
-  } catch(e) {
+  } catch (e) {
     console.error('❌ GBP Discovery Failed: ' + e.message);
     console.error('   Complete GBP OAuth via logAuthUrl_GBP() first.');
   }
@@ -235,7 +253,7 @@ function smokeTestAllPlatforms() {
   console.log('  SOCIAL HUB SMOKE TEST — ' + ts + ' ET');
   console.log('═══════════════════════════════════════════════════════');
 
-  platforms.forEach(function(platform) {
+  platforms.forEach(function (platform) {
     try {
       var result = SocialPublisher.publishPost(platform, testPost);
       if (result && result.success) {
@@ -243,7 +261,7 @@ function smokeTestAllPlatforms() {
       } else {
         console.log('  ⚠️  ' + platform.toUpperCase() + ': ' + (result ? (result.error || result.note || 'Failed') : 'No response'));
       }
-    } catch(e) {
+    } catch (e) {
       console.log('  ❌ ' + platform.toUpperCase() + ': ' + e.message);
     }
   });
