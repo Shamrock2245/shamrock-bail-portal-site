@@ -26,6 +26,7 @@ import wixWindow from 'wix-window';
 
 import { validateStickyFooter } from 'public/uiValidator';
 import { initMobileOptimizations } from 'public/mobile-optimize';
+import { initGlobalSEO } from 'public/seoUtils';
 
 // Critical: Load immediately
 $w.onReady(function () {
@@ -50,6 +51,9 @@ $w.onReady(function () {
  * Initialize critical UI elements that must be ready immediately
  */
 function initCriticalUI() {
+    // GLOBAL SEO: Canonical URLs, schemas, OG tags on ALL public pages
+    initGlobalSEO();
+
     // Setup sticky header
     setupStickyHeader();
 

@@ -267,4 +267,138 @@ export function setCanonicalUrl(path) {
     ]);
 }
 
+/**
+ * GLOBAL SEO INJECTION
+ * Call this from masterPage.js on every page load.
+ * Sets canonical URL, Organization schema, OG defaults, and robots tag.
+ * Skips portal pages (they have their own noindex logic).
+ */
+export function initGlobalSEO() {
+    const currentPath = '/' + wixLocation.path.join('/');
+
+    // Skip portal pages (they already set noindex)
+    const noIndexPaths = ['/portal-staff', '/portal-indemnitor', '/portal-defendant', '/portal-landing'];
+    if (noIndexPaths.some(p => currentPath.startsWith(p))) {
+        return;
+    }
+
+    // 1. CANONICAL URL (Critical for indexing)
+    const canonicalUrl = `${SITE_URL}${currentPath === '/' ? '' : currentPath}`;
+    wixSeo.setLinks([
+        { rel: 'canonical', href: canonicalUrl }
+    ]);
+
+    // 2. ROBOTS: Explicitly tell Google to index public pages
+    // This overrides any implicit noindex from Wix
+    wixSeo.setMetaTags([
+        { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' },
+        { name: 'googlebot', content: 'index, follow' }
+    ]);
+
+    // 3. DEFAULT OPEN GRAPH (pages with their own OG override these)
+    const pageTitle = `Shamrock Bail Bonds | ${formatPageName(currentPath)}`;
+    const defaultDescription = '24/7 Bail Bond Service in Florida. Fast, confidential, and professional. Call (239) 332-BAIL for immediate help.';
+
+    wixSeo.setMetaTags([
+        { property: 'og:site_name', content: SITE_NAME },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: canonicalUrl },
+        { property: 'og:locale', content: 'en_US' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:site', content: '@ShamrockBail' },
+        // Only set defaults if the page hasn't set its own
+        { name: 'geo.region', content: 'US-FL' },
+        { name: 'geo.placename', content: 'Fort Myers' },
+        { name: 'geo.position', content: '26.6406;-81.8723' },
+        { name: 'ICBM', content: '26.6406, -81.8723' }
+    ]);
+
+    // 4. SITE-WIDE STRUCTURED DATA (Organization + WebSite + SearchAction)
+    const globalSchemas = [
+        // Organization (appears in Google Knowledge Panel)
+        {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "@id": `${SITE_URL}/#organization`,
+            "name": SITE_NAME,
+            "url": SITE_URL,
+            "telephone": PHONE_FORMATTED,
+            "email": "admin@shamrockbailbonds.biz",
+            "logo": {
+                "@type": "ImageObject",
+                "url": `${SITE_URL}/logo.png`
+            },
+            "sameAs": [
+                "https://www.facebook.com/ShamrockBail",
+                "https://www.instagram.com/shamrock_bail_bonds",
+                "https://www.youtube.com/@ShamrockBailBonds_FL",
+                "https://t.me/Shamrock_Bail_Bonds"
+            ],
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "1528 Broadway",
+                "addressLocality": "Fort Myers",
+                "addressRegion": "FL",
+                "postalCode": "33901",
+                "addressCountry": "US"
+            },
+            "contactPoint": [
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-239-332-2245",
+                    "contactType": "Customer Service",
+                    "areaServed": "US-FL",
+                    "availableLanguage": ["English", "Spanish"],
+                    "contactOption": "TollFree"
+                }
+            ]
+        },
+        // WebSite (enables Google Sitelinks Search Box)
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "@id": `${SITE_URL}/#website`,
+            "name": SITE_NAME,
+            "url": SITE_URL,
+            "publisher": { "@id": `${SITE_URL}/#organization` },
+            "potentialAction": {
+                "@type": "SearchAction",
+                "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": `${SITE_URL}/search?q={search_term_string}`
+                },
+                "query-input": "required name=search_term_string"
+            }
+        },
+        // WebPage (current page)
+        {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "@id": `${canonicalUrl}#webpage`,
+            "url": canonicalUrl,
+            "name": pageTitle,
+            "description": defaultDescription,
+            "isPartOf": { "@id": `${SITE_URL}/#website` },
+            "about": { "@id": `${SITE_URL}/#organization` },
+            "inLanguage": "en-US"
+        }
+    ];
+
+    wixSeo.setStructuredData(globalSchemas).catch(e => {
+        console.warn('Global SEO schema error:', e);
+    });
+}
+
+/**
+ * Format page name from URL path for SEO title fallback
+ */
+function formatPageName(path) {
+    if (path === '/' || path === '') return 'Fort Myers, FL';
+    const segments = path.split('/').filter(Boolean);
+    const last = segments[segments.length - 1];
+    return last
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export { SITE_URL, SITE_NAME, PHONE, PHONE_FORMATTED };
