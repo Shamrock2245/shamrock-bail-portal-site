@@ -426,37 +426,19 @@ function filterData() {
  * Now opens the Google Apps Script Dashboard
  */
 function setupMagicLinkGenerator() {
+    const GAS_DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
+
     try {
         // robust check: prioritize user's requested ID 'btnOpenDashboard', fallback to original
         const dashboardBtn = $w('#btnOpenDashboard').uniqueId ? $w('#btnOpenDashboard') : $w('#btnGenerateMagicLink');
 
         if (dashboardBtn && typeof dashboardBtn.onClick === 'function') {
             console.log('Staff Portal: Dashboard button found');
-            dashboardBtn.label = "Open Dashboard"; // Update label to reflect action
+            dashboardBtn.label = "Open Dashboard";
 
-            dashboardBtn.onClick(async () => {
-                try {
-                    dashboardBtn.disable();
-                    dashboardBtn.label = "Loading...";
-
-                    // using statically imported function
-                    // const { getDashboardUrl } = await import('backend/gasIntegration');
-                    const result = await getDashboardUrl();
-
-                    if (result.success && result.url) {
-                        console.log("Opening dashboard:", result.url);
-                        wixLocation.to(result.url);
-                    } else {
-                        console.error("Failed to get dashboard URL:", result.error);
-                        showStaffMessage("Error loading dashboard URL", "error");
-                    }
-                } catch (err) {
-                    console.error("Error opening dashboard:", err);
-                    showStaffMessage("Error opening dashboard", "error");
-                } finally {
-                    dashboardBtn.label = "Open Dashboard";
-                    dashboardBtn.enable();
-                }
+            dashboardBtn.onClick(() => {
+                console.log('Opening GAS Control Center...');
+                wixLocation.to(GAS_DASHBOARD_URL);
             });
         }
     } catch (e) {
