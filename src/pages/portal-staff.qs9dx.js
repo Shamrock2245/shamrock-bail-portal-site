@@ -145,6 +145,7 @@ $w.onReady(async function () {
     initFilters();
     setupLogoutButton();
     setupMagicLinkGenerator(); // Setup "Open Dashboard" button
+    setupBondTrackerButton();   // Setup "Open Bond Tracker" → Telegram Intake Sheet
     setupStartPaperworkButton(); // Setup "Start Paperwork" button (CRITICAL)
 
     try {
@@ -460,6 +461,42 @@ function setupMagicLinkGenerator() {
         }
     } catch (e) {
         console.warn('Staff Portal: No dashboard button configured');
+    }
+}
+
+/**
+ * Setup "Open Bond Tracker" button → Telegram Intake Sheet
+ * Opens the Google Sheets Telegram Intake tab directly.
+ */
+function setupBondTrackerButton() {
+    const TELEGRAM_INTAKE_URL = 'https://docs.google.com/spreadsheets/d/121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E/edit?gid=1267483027#gid=1267483027';
+
+    try {
+        // Try multiple possible element IDs (Wix editor names the button #button13)
+        let bondBtn;
+        const ids = ['#button13', '#btnOpenBondTracker', '#btnBondTracker'];
+        for (const id of ids) {
+            try {
+                const el = $w(id);
+                if (el && typeof el.onClick === 'function') {
+                    bondBtn = el;
+                    console.log(`Staff Portal: Bond Tracker button found as ${id}`);
+                    break;
+                }
+            } catch (e) { /* skip */ }
+        }
+
+        if (bondBtn) {
+            bondBtn.label = "Open Bond Tracker";
+            bondBtn.onClick(() => {
+                console.log('Opening Telegram Intake Sheet...');
+                wixLocation.to(TELEGRAM_INTAKE_URL);
+            });
+        } else {
+            console.warn('Staff Portal: Bond Tracker button not found (#button13 / #btnOpenBondTracker)');
+        }
+    } catch (e) {
+        console.warn('Staff Portal: Error setting up Bond Tracker button:', e);
     }
 }
 
