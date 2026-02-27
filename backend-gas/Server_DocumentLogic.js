@@ -130,3 +130,25 @@ function server_storePendingDocument(pendingDoc) {
 function server_sendSigningNotification(notification) {
     return callWixBackend('sendSigningNotification', notification);
 }
+
+/**
+ * Get the full packet manifest for a case.
+ * Called by Dashboard via google.script.run.server_getPacketManifest(data)
+ *
+ * @param {Object} data - Case data including defendant info and indemnitors array
+ * @return {Object} - Manifest with doc entries, status info, and counts
+ */
+function server_getPacketManifest(data) {
+    return handleGetPacketManifest(data);
+}
+
+/**
+ * Get a signing URL for a specific document in the packet.
+ * Called by Dashboard via google.script.run.server_getSigningUrl(data)
+ *
+ * @param {Object} data - { documentId, role, email, caseNumber, signerIndex }
+ * @return {Object} - { success, signingUrl, documentId, role, signerIndex, docLabel, expiresInMinutes }
+ */
+function server_getSigningUrl(data) {
+    return handleTelegramGetSigningUrl(data);
+}

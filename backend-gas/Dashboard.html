@@ -2680,7 +2680,7 @@
                             onchange="toggleDocItem(this)">
                         <div class="doc-info">
                             <div class="doc-name">4. Indemnity Agreement</div>
-                            <div class="doc-meta">Indemnitor fills out and signs</div>
+                            <div class="doc-meta">Per indemnitor — one copy each</div>
                         </div>
                     </label>
 
@@ -2734,7 +2734,7 @@
                             onchange="toggleDocItem(this)">
                         <div class="doc-info">
                             <div class="doc-name">10. SSA Release Form</div>
-                            <div class="doc-meta">Signatures by all parties</div>
+                            <div class="doc-meta">Per person — defendant + each indemnitor</div>
                         </div>
                     </label>
 
@@ -4064,6 +4064,7 @@
             `;
             container.insertAdjacentHTML('beforeend', indHtml);
             updateBadges();
+            updateDocumentCount();
         }
 
         function removeIndemnitor(num) {
@@ -4071,6 +4072,7 @@
             if (el) {
                 el.remove();
                 updateBadges();
+                updateDocumentCount();
 
                 const container = document.getElementById('indemnitors-container');
                 if (container.children.length === 0) {
@@ -4162,10 +4164,37 @@
                 });
             }
 
-            document.getElementById('selected-doc-count').textContent = checked;
+            // Count multiplied docs for multi-indemnitor
+            const indemnitorCount = document.querySelectorAll('.entity-card.indemnitor').length;
+            let extraDocs = 0;
+            // SSA Release: 1 per person (defendant=1 + each indemnitor)
+            const ssaCb = document.getElementById('doc-ssa-release');
+            if (ssaCb && ssaCb.checked && indemnitorCount > 0) {
+                extraDocs += indemnitorCount; // base SSA covers defendant, extras for indemnitors
+            }
+            // Indemnity Agreement: 1 per indemnitor (base covers first, extras for additional)
+            const indCb = document.getElementById('doc-indemnity-agreement');
+            if (indCb && indCb.checked && indemnitorCount > 1) {
+                extraDocs += (indemnitorCount - 1); // 1st indemnitor is the base
+            }
+
+            const totalDocs = checked + extraDocs;
+            document.getElementById('selected-doc-count').textContent = totalDocs;
             document.getElementById('appearance-bond-count').textContent = `${totalBondsCount} bonds`;
-            document.getElementById('estimated-pages').textContent = `~${checked * 1.5 + totalBondsCount}`;
-            document.getElementById('summary-docs').textContent = checked;
+            document.getElementById('estimated-pages').textContent = `~${totalDocs * 1.5 + totalBondsCount}`;
+            document.getElementById('summary-docs').textContent = totalDocs;
+
+            // Show multiplied doc info
+            const ssaMeta = document.querySelector('#doc-ssa-release')?.closest('.doc-item')?.querySelector('.doc-meta');
+            if (ssaMeta) {
+                const personCount = 1 + indemnitorCount; // defendant + indemnitors
+                ssaMeta.textContent = `Per person — ${personCount} cop${personCount === 1 ? 'y' : 'ies'} will be created`;
+            }
+            const indMeta = document.querySelector('#doc-indemnity-agreement')?.closest('.doc-item')?.querySelector('.doc-meta');
+            if (indMeta) {
+                const indCount = Math.max(1, indemnitorCount);
+                indMeta.textContent = `Per indemnitor — ${indCount} cop${indCount === 1 ? 'y' : 'ies'} will be created`;
+            }
         }
 
         /* =========================================================
@@ -6601,73 +6630,173 @@
                 return;
             }
 
-            UI.showLoading('Starting Workflow', 'Validating data...');
+            UI.showLoading('Preparing Signing Packet', 'Analyzing document requirements...');
 
             try {
-                // 1. Fetch
-                UI.updateLoading(10, 'Fetching templates...');
-                const selectedDocs = getSelectedDocuments();
-                if (selectedDocs.length === 0) throw new Error('No documents selected');
-                const pdfs = await fetchPDFsFromDrive(selectedDocs);
+                // ── Step 1: Build manifest from the backend ──
+                UI.updateLoading(10, 'Building document manifest...');
 
-                // 2. Fill
-                UI.updateLoading(30, 'Filling forms...');
-                const filledPdfs = await fillPDFsWithData(pdfs, formData);
+                const manifestData = {
+                    caseNumber: formData['case-number'] || formData['defendant-last-name'] + '_' + Date.now(),
+                    defendantFirstName: formData['defendant-first-name'],
+                    defendantLastName: formData['defendant-last-name'],
+                    defendantEmail: formData['defendant-email'] || '',
+                    indemnitors: (formData.indemnitors || []).map(function (ind) {
+                        return {
+                            firstName: ind.firstName || '',
+                            lastName: ind.lastName || '',
+                            email: ind.email || ''
+                        };
+                    })
+                };
 
-                // 3. Merge
-                UI.updateLoading(50, 'Merging packet...');
-                const mergedPdf = await mergePDFs(filledPdfs);
+                const manifest = await new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .server_getPacketManifest(manifestData);
+                });
 
-                // 4. Upload
-                UI.updateLoading(70, 'Uploading to secure storage...');
-                const fileUrl = await uploadPDFToTempStorage(mergedPdf, formData);
+                if (!manifest || !manifest.success) {
+                    throw new Error('Failed to generate manifest: ' + (manifest ? manifest.message : 'No response'));
+                }
 
-                // 5. Send to SignNow
-                UI.updateLoading(85, 'Sending to SignNow...');
+                const docs = manifest.manifest || [];
+                const signingDocs = docs.filter(d => d.rule !== 'print-only' && d.rule !== 'static');
+                const printDocs = docs.filter(d => d.rule === 'print-only');
+                const staticDocs = docs.filter(d => d.rule === 'static');
 
-                // Prepare Signers
-                const signers = [];
+                UI.updateLoading(20, `Manifest ready: ${docs.length} documents (${signingDocs.length} for signing)`);
+                await sleep(500);
 
-                // Indemnitors
-                if (formData.indemnitors && formData.indemnitors.length > 0) {
-                    formData.indemnitors.forEach((ind, index) => {
-                        signers.push({
-                            email: ind.email,
-                            role: `Indemnitor ${index + 1}`
+                // ── Step 2: Create SignNow copies + signing links for each doc ──
+                const results = [];
+                const errors = [];
+
+                for (let i = 0; i < signingDocs.length; i++) {
+                    const doc = signingDocs[i];
+                    const pct = 20 + Math.round((i / signingDocs.length) * 65);
+                    UI.updateLoading(pct, `Creating: ${doc.label} ${doc.signerName ? '(' + doc.signerName + ')' : ''} [${i + 1}/${signingDocs.length}]`);
+
+                    try {
+                        const urlResult = await new Promise((resolve, reject) => {
+                            google.script.run
+                                .withSuccessHandler(resolve)
+                                .withFailureHandler(reject)
+                                .server_getSigningUrl({
+                                    documentId: doc.docId,
+                                    role: doc.signerRole || 'Indemnitor',
+                                    email: doc.signerEmail || '',
+                                    caseNumber: manifestData.caseNumber,
+                                    signerIndex: doc.signerIndex
+                                });
                         });
-                    });
-                } else {
-                    // Fallback for single indemnitor form data
-                    signers.push({
-                        email: formData['indemnitor-email'],
-                        role: 'Indemnitor 1'
-                    });
+
+                        if (urlResult && urlResult.success) {
+                            results.push({
+                                label: doc.label,
+                                signerName: doc.signerName || '',
+                                signerRole: doc.signerRole || '',
+                                signerIndex: doc.signerIndex,
+                                signingUrl: urlResult.signingUrl,
+                                signNowDocId: urlResult.documentId,
+                                expiresInMinutes: urlResult.expiresInMinutes
+                            });
+                        } else {
+                            errors.push({ label: doc.label, error: urlResult ? urlResult.message : 'Unknown error' });
+                        }
+                    } catch (docErr) {
+                        console.error(`Error creating ${doc.label}:`, docErr);
+                        errors.push({ label: doc.label, error: docErr.message || 'Server error' });
+                    }
                 }
 
-                // Bail Agent (Always included)
-                signers.push({ email: 'admin@shamrockbailbonds.biz', role: 'Bail Agent' });
-                // Defendant (if email exists)
-                if (formData['defendant-email']) {
-                    signers.push({ email: formData['defendant-email'], role: 'Defendant' });
+                // ── Step 3: Store results and notify ──
+                UI.updateLoading(90, 'Finalizing packet...');
+
+                // Group signing links by signer for the results display
+                const bySigner = {};
+                results.forEach(r => {
+                    const key = r.signerName || r.signerRole || 'Default';
+                    if (!bySigner[key]) bySigner[key] = [];
+                    bySigner[key].push(r);
+                });
+
+                // Send Slack/SMS notifications for each signer
+                for (const [signerName, signerDocs] of Object.entries(bySigner)) {
+                    const firstDoc = signerDocs[0];
+                    if (firstDoc.signerRole !== 'Bail Agent') {
+                        try {
+                            await new Promise((resolve, reject) => {
+                                google.script.run
+                                    .withSuccessHandler(resolve)
+                                    .withFailureHandler(reject)
+                                    .server_sendSigningNotification({
+                                        documentId: firstDoc.signNowDocId,
+                                        email: formData['defendant-email'] || '',
+                                        phone: formData['defendant-phone'] || '',
+                                        defendantName: `${formData['defendant-first-name']} ${formData['defendant-last-name']}`,
+                                        link: firstDoc.signingUrl,
+                                        signerName: signerName,
+                                        docCount: signerDocs.length
+                                    });
+                            });
+                        } catch (notifyErr) {
+                            console.warn('Notification send failed:', notifyErr);
+                        }
+                    }
                 }
-
-                // Prepare Fields
-                const signatureFields = prepareSignatureFields(filledPdfs, formData);
-
-                const result = await sendToSignNow(fileUrl, signatureFields, signers, formData);
-
-                // 6. Finalize
-                UI.updateLoading(95, 'Finalizing...');
-                await storePendingDocument(result, formData);
-                await sendSigningNotifications(result, formData);
 
                 UI.hideLoading();
-                showSuccess('Packet sent successfully! Check Slack for status.');
+
+                // ── Step 4: Display Results ──
+                let html = '<div style="padding: 20px;">';
+                html += '<h3 style="color: var(--brand); margin-bottom: 16px;">✅ Signing Packet Created</h3>';
+                html += `<p style="margin-bottom: 16px; color: var(--text-secondary);">${results.length} documents ready for signing, ${errors.length} errors</p>`;
+
+                // Group results by signer
+                for (const [signerName, signerDocs] of Object.entries(bySigner)) {
+                    html += `<div style="margin-bottom: 16px; padding: 12px 16px; background: var(--surface-2); border-radius: var(--radius-sm);">`;
+                    html += `<h4 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">🧑 ${signerName} (${signerDocs[0].signerRole})</h4>`;
+                    html += '<div style="display: flex; flex-direction: column; gap: 4px;">';
+                    signerDocs.forEach(doc => {
+                        html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg); border-radius: 4px;">`;
+                        html += `<span style="font-size: 13px;">${doc.label}</span>`;
+                        html += `<a href="${doc.signingUrl}" target="_blank" style="font-size: 12px; color: var(--brand); text-decoration: none;">Open ↗</a>`;
+                        html += `</div>`;
+                    });
+                    html += '</div></div>';
+                }
+
+                // Show print-only docs
+                if (printDocs.length > 0) {
+                    html += '<div style="margin-top: 16px; padding: 12px 16px; background: var(--warning-bg); border-radius: var(--radius-sm); border: 1px solid var(--warning);">';
+                    html += '<h4 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">🖨️ Print Only (Wet Signature Required)</h4>';
+                    printDocs.forEach(doc => {
+                        html += `<div style="padding: 4px 0; font-size: 13px;">• ${doc.label}</div>`;
+                    });
+                    html += '</div>';
+                }
+
+                // Show errors
+                if (errors.length > 0) {
+                    html += '<div style="margin-top: 16px; padding: 12px 16px; background: var(--error-bg, #ffeef0); border-radius: var(--radius-sm); border: 1px solid var(--error, #f56565);">';
+                    html += '<h4 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">⚠️ Errors</h4>';
+                    errors.forEach(err => {
+                        html += `<div style="padding: 4px 0; font-size: 13px;">• ${err.label}: ${err.error}</div>`;
+                    });
+                    html += '</div>';
+                }
+
+                html += '</div>';
+                document.getElementById('generate-result').innerHTML = html;
+
+                showToast(`Packet created: ${results.length} docs ready, ${errors.length} errors`, results.length > 0 ? 'success' : 'error');
 
             } catch (err) {
                 UI.hideLoading();
-                console.error(err);
-                showToast(err.message, 'error');
+                console.error('Packet generation error:', err);
+                showToast(err.message || 'Packet generation failed', 'error');
             }
         }
 
