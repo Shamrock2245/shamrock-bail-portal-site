@@ -23,282 +23,144 @@
 // All templates are in production SignNow (api.signnow.com)
 
 const SIGNNOW_TEMPLATE_MAP = {
-    'paperwork-header': '6bf07c9baec04210aa41ab4bed767314fd9243b9', // Shamrock Paperwork Header
-    'faq-cosigners': '37725f4033cc4316a154a7edc2e0600da71f8938', // Shamrock Faq Cosigners
-    'faq-defendants': '41ea80f5087f4bbca274f545b6e270748182e013', // Shamrock Faq Defendant
-    'indemnity-agreement': '2c16525316f143338db14b4ef578aabe67bd47d8', // Shamrock Indemnity Agreement
-    'defendant-application': '5ca8b3a3dbc748aa8e33201fcbe87f985850573f', // Shamrock Defendant Application
-    'promissory-note': 'e01eb884a00a46408c056093ba0937e26715e3ae', // Shamrock Promissory Note
-    'disclosure-form': '08f56f268b2c4b45a1de434b278c840936d09ad9', // Shamrock Disclosure Form
-    'surety-terms': '4cd02a2dcb334fcc89499d277763fb541820ff40', // Shamrock Surety Terms Conditions
-    'master-waiver': 'cc7e8c7bd0c343088ecb55b965baee881dfd1950', // Shamrock Master Waiver
-    'ssa-release': '3aac5dd7cc03408594e56d4a7f1ddd9ccbdb8fe7', // Shamrock Ssa Release
-    'collateral-receipt': '903275f447284cce83e973253f2760c334eb3768', // Shamrock Collateral Premium Receipt
-    'payment-plan': 'ea13db9ec6e7462d963682e6b53f5ca0e46c892f'  // Shamrock Payment Plan Agreement
+    'paperwork-header': '6bf07c9baec04210aa41ab4bed767314fd9243b9',
+    'faq-cosigners': '0820b9fef3bd4c38a91643455881021f3f0c3a88',
+    'faq-defendants': '1524f1c816c54a72be76d14fe128e4a6034579dc',
+    'indemnity-agreement': '2c16525316f143338db14b4ef578aabe67bd47d8',
+    'defendant-application': '5ca8b3a3dbc748aa8e33201fcbe87f985850573f',
+    'promissory-note': 'e01eb884a00a46408c056093ba0937e26715e3ae',
+    'disclosure-form': '08f56f268b2c4b45a1de434b278c840936d09ad9',
+    'surety-terms': '4cd02a2dcb334fcc89499d277763fb541820ff40',
+    'master-waiver': '3b0e71188b3049cc8760d144e6c49df227ccd741',
+    'ssa-release': '3aac5dd7cc03408594e56d4a7f1ddd9ccbdb8fe7',
+    'collateral-receipt': '903275f447284cce83e973253f2760c334eb3768',
+    'payment-plan': 'ea13db9ec6e7462d963682e6b53f5ca0e46c892f'
 };
 
 // ============================================================================
-// Signature field definitions — PRODUCTION (osiforms calibrated)
+// SIGNATURE / INITIALS FIELD DEFINITIONS — PRODUCTION
 // ============================================================================
-// ✅ SOURCE OF TRUTH: Acrobat Pro form fields from osiforms PDFs (Feb 26 2026).
-//    Visually verified and corrected based on explicit user-provided business rules.
+// SOURCE OF TRUTH: Acrobat Pro osiforms PDFs (Feb 26–27 2026)
+// COORDINATE SYSTEM: Top-left origin, points (72 DPI) — matches SignNow API
 //
-// COORDINATE SYSTEM: Top-left origin, points (72 DPI) — matches SignNow API.
-//
-// KEY BUSINESS RULES:
-//   - Data fields are PRE-FILLED by Dashboard.html automation; this map is for SIGNATURES/INITIALS ONLY.
-//   - Indemnity Agreement: Signed by Indemnitor ONLY.
-//   - Defendant Application: Signed by Defendant ONLY.
-//   - SSA Release: One full form is generated PER PERSON (Defendant, Indemnitor, etc.).
-//   - FAQ Docs: Both Defendant and Indemnitor initial ALL pages of BOTH FAQs.
-//
-// ⚠️ 4 docs need SignNow template editor tag additions:
-//   - faq-cosigners (flat PDF, add initials tags)
-//   - faq-defendants (flat PDF, add initials tags)
-//   - master-waiver (verify/add signature tags on page 4)
-//   - collateral-receipt (verify depositor signature tag)
+// BUSINESS RULES:
+//   - Data fields are PRE-FILLED by Dashboard automation; this is SIGNATURES/INITIALS ONLY.
+//   - Indemnity Agreement: Indemnitor ONLY.
+//   - Defendant Application: Defendant ONLY (page 2).
+//   - SSA Release: One form PER PERSON (Defendant, each Indemnitor/Co-Signer).
+//   - FAQ Docs: Defendant + Indemnitor + up to 2 Co-Indemnitors initial EVERY page.
+//     Layout: bottom-left = Defendant + Indemnitor; bottom-right = Co-Indem 1 + Co-Indem 2.
+//   - Master Waiver page 4: Bail Agent → Defendant → Indemnitor → Co-Indemnitor.
+//   - Collateral Receipt: Depositor sig + Bail Agent at Item 9 + Bail Agent at bottom-right.
 // ============================================================================
 
 /**
- * Returns field definitions for a given document ID.
- * Production coordinates from osiforms Acrobat Pro originals.
- */
-/**
  * getSignatureFieldDefs(docId)
- *
  * Returns SignNow field placement definitions for each bail bond document.
- *
- * SOURCE OF TRUTH: Acrobat Pro form fields from osiforms PDFs (Feb 26 2026).
- *   Visually verified and corrected based on explicit user-provided business rules.
- *
- * COORDINATE SYSTEM: Top-left origin, points (72 DPI) — matches SignNow API.
- *
- * KEY BUSINESS RULES:
- *   - Data fields are PRE-FILLED by Dashboard.html automation; this map is for SIGNATURES/INITIALS ONLY.
- *   - Indemnity Agreement: Signed by Indemnitor ONLY.
- *   - Defendant Application: Signed by Defendant ONLY.
- *   - SSA Release: One full form is generated PER PERSON (Defendant, Indemnitor, etc.).
- *   - FAQ Docs: Both Defendant and Indemnitor initial ALL pages of BOTH FAQs.
  */
 function getSignatureFieldDefs(docId) {
     var FIELD_DEFS = {
 
-<<<<<<< Updated upstream
-        // ----------------------------------------------------
-        // paperwork-header
-        // File    : shamrock-paperwork-header.pdf
-        // Template: 6bf07c9baec04210aa41ab4bed767314fd9243b9
-        // Note    : Cover page only. No signatures. Names pre-filled by SignNow invite data.
-        'paperwork-header': [
-            // No signature fields — see note above
-        ],
-
-        // ----------------------------------------------------
-        // faq-cosigners
-        // File    : ShamrockBailBonds-FAQCosigners.pdf
-        // Template: 37725f4033cc4316a154a7edc2e0600da71f8938
-        // Note    : FLAT PDF. Both Defendant AND Indemnitor initial every page (business rule: cross-role awareness). Add SignNow initials tags manually.
-        // ⚠️  ACTION: Add SignNow signature/initials tags in template editor
-=======
-        // paperwork-header — Cover page. No signatures.
+        // ── paperwork-header ── Cover page. No signatures.
         'paperwork-header': [],
 
-        // faq-cosigners — FLAT PDF. Both Defendant AND Indemnitor initial every page.
-        // ⚠️ ACTION: Add SignNow initials tags in template editor
->>>>>>> Stashed changes
+        // ── faq-cosigners ── 2-page flat PDF
+        // 4 initials per page: Defendant (bottom-left), Indemnitor (bottom-left),
+        // Co-Indemnitor 1 (bottom-right), Co-Indemnitor 2 (bottom-right)
         'faq-cosigners': [
-            { type: 'initials', role: 'Defendant', page_number: 0, x: 50, y: 748, width: 60, height: 22 },
-            { type: 'initials', role: 'Indemnitor', page_number: 0, x: 490, y: 748, width: 60, height: 22 },
-            { type: 'initials', role: 'Defendant', page_number: 1, x: 50, y: 748, width: 60, height: 22 },
-<<<<<<< Updated upstream
-            { type: 'initials', role: 'Indemnitor', page_number: 1, x: 490, y: 748, width: 60, height: 22 },
+            // Page 1 — bottom-left
+            { type: 'initials', role: 'Defendant', page_number: 0, x: 30, y: 738, width: 60, height: 22 },
+            { type: 'initials', role: 'Indemnitor', page_number: 0, x: 30, y: 762, width: 60, height: 22 },
+            // Page 1 — bottom-right
+            { type: 'initials', role: 'Co-Indemnitor 1', page_number: 0, x: 490, y: 738, width: 60, height: 22 },
+            { type: 'initials', role: 'Co-Indemnitor 2', page_number: 0, x: 490, y: 762, width: 60, height: 22 },
+            // Page 2 — bottom-left
+            { type: 'initials', role: 'Defendant', page_number: 1, x: 30, y: 738, width: 60, height: 22 },
+            { type: 'initials', role: 'Indemnitor', page_number: 1, x: 30, y: 762, width: 60, height: 22 },
+            // Page 2 — bottom-right
+            { type: 'initials', role: 'Co-Indemnitor 1', page_number: 1, x: 490, y: 738, width: 60, height: 22 },
+            { type: 'initials', role: 'Co-Indemnitor 2', page_number: 1, x: 490, y: 762, width: 60, height: 22 }
         ],
 
-        // ----------------------------------------------------
-        // faq-defendants
-        // File    : ShamrockBailBonds-FAQDefe..pdf
-        // Template: 41ea80f5087f4bbca274f545b6e270748182e013
-        // Note    : FLAT PDF. Both Defendant AND Indemnitor initial every page (business rule: cross-role awareness). Add SignNow initials tags manually.
-        // ⚠️  ACTION: Add SignNow signature/initials tags in template editor
-=======
-            { type: 'initials', role: 'Indemnitor', page_number: 1, x: 490, y: 748, width: 60, height: 22 }
-        ],
-
-        // faq-defendants — FLAT PDF. Both Defendant AND Indemnitor initial every page.
-        // ⚠️ ACTION: Add SignNow initials tags in template editor
->>>>>>> Stashed changes
+        // ── faq-defendants ── 2-page flat PDF (same layout as faq-cosigners)
         'faq-defendants': [
-            { type: 'initials', role: 'Defendant', page_number: 0, x: 50, y: 748, width: 60, height: 22 },
-            { type: 'initials', role: 'Indemnitor', page_number: 0, x: 490, y: 748, width: 60, height: 22 },
-            { type: 'initials', role: 'Defendant', page_number: 1, x: 50, y: 748, width: 60, height: 22 },
-<<<<<<< Updated upstream
-            { type: 'initials', role: 'Indemnitor', page_number: 1, x: 490, y: 748, width: 60, height: 22 },
+            // Page 1 — bottom-left
+            { type: 'initials', role: 'Defendant', page_number: 0, x: 30, y: 738, width: 60, height: 22 },
+            { type: 'initials', role: 'Indemnitor', page_number: 0, x: 30, y: 762, width: 60, height: 22 },
+            // Page 1 — bottom-right
+            { type: 'initials', role: 'Co-Indemnitor 1', page_number: 0, x: 490, y: 738, width: 60, height: 22 },
+            { type: 'initials', role: 'Co-Indemnitor 2', page_number: 0, x: 490, y: 762, width: 60, height: 22 },
+            // Page 2 — bottom-left
+            { type: 'initials', role: 'Defendant', page_number: 1, x: 30, y: 738, width: 60, height: 22 },
+            { type: 'initials', role: 'Indemnitor', page_number: 1, x: 30, y: 762, width: 60, height: 22 },
+            // Page 2 — bottom-right
+            { type: 'initials', role: 'Co-Indemnitor 1', page_number: 1, x: 490, y: 738, width: 60, height: 22 },
+            { type: 'initials', role: 'Co-Indemnitor 2', page_number: 1, x: 490, y: 762, width: 60, height: 22 }
         ],
 
-        // ----------------------------------------------------
-        // indemnity-agreement
-        // File    : IndemnityAgreementFINAL.pdf
-        // Template: 2c16525316f143338db14b4ef578aabe67bd47d8
-        // Note    : RULE: Indemnitor signs. 1 signature only. All other fields are data-entry (pre-filled by Dashboard.html).
-        'indemnity-agreement': [
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 315, y: 935, width: 249, height: 27 },  // Per user confirmation, only Indemnitor signs this form.
-        ],
-
-        // ----------------------------------------------------
-        // defendant-application
-        // File    : AppforAppearanceBondFINAL.pdf
-        // Template: 5ca8b3a3dbc748aa8e33201fcbe87f985850573f
-        // Note    : RULE: Defendant signs. 1 signature on page 2. Page 1 is data-entry (pre-filled).
-        'defendant-application': [
-            { type: 'signature', role: 'Defendant', page_number: 1, x: 39, y: 752, width: 247, height: 29 },  // Per user confirmation, only Defendant signs this form (on page 2).
-        ],
-
-        // ----------------------------------------------------
-        // promissory-note
-        // File    : PromissorySide2FINAL.pdf
-        // Template: e01eb884a00a46408c056093ba0937e26715e3ae
-        // Note    : Defendant + Indemnitor sign at bottom. All other fields are data-entry.
-        'promissory-note': [
-            { type: 'signature', role: 'Defendant', page_number: 0, x: 33, y: 888, width: 235, height: 32 },
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 342, y: 888, width: 234, height: 32 },
-        ],
-
-        // ----------------------------------------------------
-        // disclosure-form
-        // File    : DisclosureFINAL.pdf
-        // Template: 08f56f268b2c4b45a1de434b278c840936d09ad9
-        // Note    : 6 signature fields across 2 sections. Co-Indemnitor slots map to Indemnitor role in SignNow.
-        'disclosure-form': [
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 82, y: 575, width: 213, height: 24 },  // Co-Indemnitor slot maps to Indemnitor role
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 324, y: 575, width: 232, height: 24 },  // Co-Indemnitor slot maps to Indemnitor role
-            { type: 'signature', role: 'Defendant', page_number: 0, x: 82, y: 844, width: 213, height: 24 },
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 324, y: 844, width: 232, height: 24 },
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 83, y: 889, width: 213, height: 24 },  // Co-Indemnitor slot maps to Indemnitor role
-            { type: 'signature', role: 'Bail Agent', page_number: 0, x: 324, y: 889, width: 232, height: 24 },
-        ],
-
-        // ----------------------------------------------------
-        // surety-terms
-        // File    : SuretyTermsandConditionsInformationsheetFINAL.pdf
-        // Template: 4cd02a2dcb334fcc89499d277763fb541820ff40
-        // Note    : Defendant + 3 Indemnitor slots. Third/fourth slots for co-indemnitors.
-        'surety-terms': [
-            { type: 'signature', role: 'Defendant', page_number: 0, x: 29, y: 820, width: 266, height: 22 },
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 333, y: 820, width: 247, height: 22 },
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 29, y: 897, width: 266, height: 22 },  // Co-Indemnitor slot maps to Indemnitor role
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 333, y: 897, width: 247, height: 22 },  // Co-Indemnitor slot maps to Indemnitor role
-        ],
-
-        // ----------------------------------------------------
-        // master-waiver
-        // File    : shamrock-master-waiver.pdf
-        // Template: cc7e8c7bd0c343088ecb55b965baee881dfd1950
-        // Note    : 4 pages. Signing on page 4 (index 3). Bail Agent = Surety Representative slot.
-        // ⚠️  ACTION: Add SignNow signature/initials tags in template editor
-        'master-waiver': [
-            { type: 'signature', role: 'Bail Agent', page_number: 3, x: 28, y: 453, width: 290, height: 27 },  // Surety Representative
-            { type: 'signature', role: 'Defendant', page_number: 3, x: 28, y: 482, width: 290, height: 27 },
-            { type: 'signature', role: 'Indemnitor', page_number: 3, x: 28, y: 510, width: 290, height: 27 },
-            { type: 'signature', role: 'Indemnitor', page_number: 3, x: 28, y: 537, width: 290, height: 27 },  // Co-Indemnitor
-        ],
-
-        // ----------------------------------------------------
-        // ssa-release
-        // File    : shamrock-ssa-release.pdf
-        // Template: 3aac5dd7cc03408594e56d4a7f1ddd9ccbdb8fe7
-        // Note    : RULE: One full form per person. The calling logic must generate a separate document for each signer (Defendant, Indemnitor, etc.). This definition is for one instance.
-        'ssa-release': [
-            { type: 'signature', role: 'Defendant', page_number: 0, x: 205, y: 618, width: 249, height: 30 },  // One form per person. Role will be overridden by calling logic for Indemnitors.
-        ],
-
-        // ----------------------------------------------------
-        // collateral-receipt
-        // File    : osi-premium-collateral-template.pdf
-        // Template: 903275f447284cce83e973253f2760c334eb3768
-        // Note    : Two sections: Collateral Receipt (depositor/indemnitor sig) + Premium Receipt (agent sig ×2).
-        // ⚠️  ACTION: Add SignNow signature/initials tags in template editor
-        'collateral-receipt': [
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 350, y: 580, width: 220, height: 25 },  // Depositor's Signature
-            { type: 'signature', role: 'Bail Agent', page_number: 0, x: 75, y: 793, width: 221, height: 20 },  // Receipt for Return of Collateral
-            { type: 'signature', role: 'Bail Agent', page_number: 0, x: 393, y: 945, width: 184, height: 23 },  // Premium Receipt section
-        ],
-
-        // ----------------------------------------------------
-        // payment-plan
-        // File    : shamrock-premium-finance-notice.pdf
-        // Template: ea13db9ec6e7462d963682e6b53f5ca0e46c892f
-        // Note    : 4 pages. Defendant + Indemnitor sign on final page only.
-        'payment-plan': [
-            { type: 'signature', role: 'Defendant', page_number: 3, x: 185, y: 99, width: 168, height: 27 },
-            { type: 'signature', role: 'Indemnitor', page_number: 3, x: 191, y: 127, width: 162, height: 27 },
-        ],
-
-=======
-            { type: 'initials', role: 'Indemnitor', page_number: 1, x: 490, y: 748, width: 60, height: 22 }
-        ],
-
-        // indemnity-agreement — Indemnitor signs. 1 signature only.
+        // ── indemnity-agreement ── Indemnitor signs ONLY. 1 sig at bottom.
         'indemnity-agreement': [
             { type: 'signature', role: 'Indemnitor', page_number: 0, x: 315, y: 935, width: 249, height: 27 }
         ],
 
-        // defendant-application — Defendant signs page 2 only.
+        // ── defendant-application ── Defendant signs page 2 ONLY.
         'defendant-application': [
             { type: 'signature', role: 'Defendant', page_number: 1, x: 39, y: 752, width: 247, height: 29 }
         ],
 
-        // promissory-note — Defendant + Indemnitor sign at bottom.
+        // ── promissory-note ── Defendant + Indemnitor sign at bottom.
         'promissory-note': [
             { type: 'signature', role: 'Defendant', page_number: 0, x: 33, y: 888, width: 235, height: 32 },
             { type: 'signature', role: 'Indemnitor', page_number: 0, x: 342, y: 888, width: 234, height: 32 }
         ],
 
-        // disclosure-form — 6 sigs across 2 sections. Co-Indemnitor → Indemnitor role.
+        // ── disclosure-form ── 6 sigs across 2 sections. Co-Indemnitor → Indemnitor role.
         'disclosure-form': [
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 82, y: 575, width: 213, height: 24 },
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 324, y: 575, width: 232, height: 24 },
+            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 82, y: 575, width: 213, height: 24 },  // Co-Indemnitor
+            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 324, y: 575, width: 232, height: 24 },  // Co-Indemnitor
             { type: 'signature', role: 'Defendant', page_number: 0, x: 82, y: 844, width: 213, height: 24 },
             { type: 'signature', role: 'Indemnitor', page_number: 0, x: 324, y: 844, width: 232, height: 24 },
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 83, y: 889, width: 213, height: 24 },
+            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 83, y: 889, width: 213, height: 24 },  // Co-Indemnitor
             { type: 'signature', role: 'Bail Agent', page_number: 0, x: 324, y: 889, width: 232, height: 24 }
         ],
 
-        // surety-terms — Defendant + 3 Indemnitor slots.
+        // ── surety-terms ── Defendant + 3 Indemnitor/Co-Indemnitor slots.
         'surety-terms': [
             { type: 'signature', role: 'Defendant', page_number: 0, x: 29, y: 820, width: 266, height: 22 },
             { type: 'signature', role: 'Indemnitor', page_number: 0, x: 333, y: 820, width: 247, height: 22 },
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 29, y: 897, width: 266, height: 22 },
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 333, y: 897, width: 247, height: 22 }
+            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 29, y: 897, width: 266, height: 22 },  // Co-Indemnitor
+            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 333, y: 897, width: 247, height: 22 }   // Co-Indemnitor
         ],
 
-        // master-waiver — 4 pages. Signing on page 4 (index 3). Bail Agent = Surety Rep.
-        // ⚠️ ACTION: Verify/add signature tags on page 4 in SignNow editor
+        // ── master-waiver ── Page 4 (index 3). 4 sigs stacked.
+        // Line 1: Bail Agent, Line 2: Defendant, Line 3: Indemnitor, Line 4: Co-Indemnitor
         'master-waiver': [
             { type: 'signature', role: 'Bail Agent', page_number: 3, x: 28, y: 453, width: 290, height: 27 },
             { type: 'signature', role: 'Defendant', page_number: 3, x: 28, y: 482, width: 290, height: 27 },
             { type: 'signature', role: 'Indemnitor', page_number: 3, x: 28, y: 510, width: 290, height: 27 },
-            { type: 'signature', role: 'Indemnitor', page_number: 3, x: 28, y: 537, width: 290, height: 27 }
+            { type: 'signature', role: 'Co-Indemnitor 1', page_number: 3, x: 28, y: 537, width: 290, height: 27 }
         ],
 
-        // ssa-release — One full form per person. Role overridden by calling logic.
+        // ── ssa-release ── One form per person. Calling logic generates separate doc per signer.
         'ssa-release': [
             { type: 'signature', role: 'Defendant', page_number: 0, x: 205, y: 618, width: 249, height: 30 }
         ],
 
-        // collateral-receipt — 2 sections: Collateral Receipt + Premium Receipt.
-        // ⚠️ ACTION: Verify depositor signature tag position in SignNow editor
+        // ── collateral-receipt ── 3 sigs:
+        //   1. Depositor/Indemnitor/Defendant above "Depositor's Signature"
+        //   2. Bail Agent at Item 9 "Received by:" above "Signature of Bail Agent"
+        //   3. Bail Agent at bottom-right after "Received by" above printed agent name
         'collateral-receipt': [
-            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 350, y: 580, width: 220, height: 25 },
-            { type: 'signature', role: 'Bail Agent', page_number: 0, x: 75, y: 793, width: 221, height: 20 },
-            { type: 'signature', role: 'Bail Agent', page_number: 0, x: 393, y: 945, width: 184, height: 23 }
+            { type: 'signature', role: 'Indemnitor', page_number: 0, x: 350, y: 580, width: 220, height: 25 },  // Depositor's Signature
+            { type: 'signature', role: 'Bail Agent', page_number: 0, x: 75, y: 793, width: 221, height: 20 },  // Item 9 "Received by" / "Signature of Bail Agent"
+            { type: 'signature', role: 'Bail Agent', page_number: 0, x: 393, y: 945, width: 184, height: 23 }   // Bottom-right "Received by" above printed name
         ],
 
-        // payment-plan — 4 pages. Sigs on final page only.
+        // ── payment-plan ── 4 pages. Sigs on final page only.
         'payment-plan': [
             { type: 'signature', role: 'Defendant', page_number: 3, x: 185, y: 99, width: 168, height: 27 },
             { type: 'signature', role: 'Indemnitor', page_number: 3, x: 191, y: 127, width: 162, height: 27 }
         ]
->>>>>>> Stashed changes
     };
     return FIELD_DEFS[docId] || [];
 }
