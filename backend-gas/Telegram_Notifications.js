@@ -1183,3 +1183,149 @@ function TG_processWeeklyPaymentProgress() {
     console.error('Weekly payment progress error: ' + e.message);
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE CLOSER — TELEGRAM FOLLOW-UP
+// Called by TheCloser.js to send abandoned intake follow-ups via Telegram.
+// Looks up the client's Telegram chat ID from the IntakeQueue sheet by phone.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Send an abandoned intake follow-up message via Telegram.
+ * Called by TheCloser.js — this is the Telegram channel for drip follow-ups.
+ *
+ * Looks up the client's Telegram chat ID from the IntakeQueue sheet by phone.
+ * If no chat ID is found (client hasn't messaged the bot yet), returns sent: false
+ * so TheCloser can fall back to SMS.
+ *
+ * @param {string} phone - Client phone number (any format)
+ * @param {string} messageText - Pre-formatted message body from CLOSER_MESSAGES
+ * @param {string} intakeId - Intake ID for logging
+ * @returns {{ sent: boolean, chatId?: string, error?: string }}
+ */
+function TG_sendCloserFollowUp(phone, messageText, intakeId) {
+  const client = new TelegramBotAPI();
+  if (!client.isConfigured()) {
+    return { sent: false, error: 'Telegram not configured' };
+  }
+
+  // Look up Telegram chat ID from IntakeQueue sheet by phone number
+  const chatId = _lookupTelegramChatIdByPhone(phone);
+  if (!chatId) {
+    return { sent: false, error: 'No Telegram chat ID found for phone ' + String(phone).slice(-4) };
+  }
+
+  // Build the message with a "Continue Application" inline button
+  const portalUrl = _getCloserPortalUrl();
+  const options = {};
+  if (portalUrl) {
+    options.reply_markup = JSON.stringify({
+      inline_keyboard: [[
+        { text: '➡️ Continue Application', url: portalUrl },
+        { text: '📞 Call Us', url: 'tel:+12392371809' }
+      ]]
+    });
+  }
+
+  try {
+    const result = client.sendMessage(chatId, messageText, options);
+    if (result.success) {
+      console.log('TG_sendCloserFollowUp: sent to chatId ' + chatId + ' (intake ' + intakeId + ')');
+      return { sent: true, chatId: chatId };
+    } else {
+      return { sent: false, error: result.error };
+    }
+  } catch (e) {
+    console.error('TG_sendCloserFollowUp error:', e.message);
+    return { sent: false, error: e.message };
+  }
+}
+
+/**
+ * Look up a Telegram chat ID from the IntakeQueue sheet by phone number.
+ * The IntakeQueue sheet stores TelegramUserID when a client messages the bot.
+ *
+ * @param {string} phone - Phone number to look up
+ * @returns {string|null} - Telegram chat ID, or null if not found
+ */
+function _lookupTelegramChatIdByPhone(phone) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const cleanPhone10 = String(phone).replace(/\D/g, '').slice(-10);
+
+    // Search IntakeQueue sheet first
+    const iq = ss.getSheetByName('IntakeQueue');
+    if (iq && iq.getLastRow() > 1) {
+      const data = iq.getDataRange().getValues();
+      const headers = data[0];
+      const colIdx = {};
+      headers.forEach(function (h, i) { colIdx[String(h).toLowerCase().trim()] = i; });
+
+      const tgCol = colIdx['telegramuserid'] !== undefined ? colIdx['telegramuserid']
+        : colIdx['telegram_user_id'] !== undefined ? colIdx['telegram_user_id']
+        : colIdx['tguserid'] !== undefined ? colIdx['tguserid']
+        : colIdx['chatid'] !== undefined ? colIdx['chatid']
+        : undefined;
+
+      const phoneCol = colIdx['indphone'] !== undefined ? colIdx['indphone']
+        : colIdx['ind phone'] !== undefined ? colIdx['ind phone']
+        : colIdx['phone'] !== undefined ? colIdx['phone']
+        : undefined;
+
+      if (tgCol !== undefined && phoneCol !== undefined) {
+        for (let r = data.length - 1; r >= 1; r--) {
+          const rowPhone = String(data[r][phoneCol] || '').replace(/\D/g, '').slice(-10);
+          const rowTgId = String(data[r][tgCol] || '').trim();
+          if (rowTgId && rowPhone === cleanPhone10) {
+            return rowTgId;
+          }
+        }
+      }
+    }
+
+    // Fallback: search TelegramUsers lookup sheet (if it exists)
+    const tgSheet = ss.getSheetByName('TelegramUsers');
+    if (tgSheet && tgSheet.getLastRow() > 1) {
+      const data = tgSheet.getDataRange().getValues();
+      const headers = data[0];
+      const colIdx = {};
+      headers.forEach(function (h, i) { colIdx[String(h).toLowerCase().trim()] = i; });
+
+      const tgCol = colIdx['telegramuserid'] !== undefined ? colIdx['telegramuserid']
+        : colIdx['userid'] !== undefined ? colIdx['userid']
+        : colIdx['chatid'] !== undefined ? colIdx['chatid']
+        : undefined;
+      const phoneCol = colIdx['phone'];
+
+      if (tgCol !== undefined && phoneCol !== undefined) {
+        for (let r = data.length - 1; r >= 1; r--) {
+          const rowPhone = String(data[r][phoneCol] || '').replace(/\D/g, '').slice(-10);
+          const rowTgId = String(data[r][tgCol] || '').trim();
+          if (rowTgId && rowPhone === cleanPhone10) {
+            return rowTgId;
+          }
+        }
+      }
+    }
+
+    return null;
+  } catch (e) {
+    console.error('_lookupTelegramChatIdByPhone error:', e.message);
+    return null;
+  }
+}
+
+/**
+ * Get the portal URL for the "Continue Application" inline button.
+ * @returns {string}
+ */
+function _getCloserPortalUrl() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    return props.getProperty('WIX_SITE_URL')
+      ? props.getProperty('WIX_SITE_URL') + '/portal-landing'
+      : 'https://www.shamrockbailbonds.biz/portal-landing';
+  } catch (e) {
+    return 'https://www.shamrockbailbonds.biz/portal-landing';
+  }
+}

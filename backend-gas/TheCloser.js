@@ -50,15 +50,18 @@ var CLOSER_CONFIG = {
 var CLOSER_MESSAGES = {
     '1h': {
         sms: '🍀 Hi {name}, this is Shamrock Bail Bonds. We noticed you started a bail application but didn\'t finish. We\'re standing by 24/7 to help you get your loved one home. Reply or call us: (239) 237-1809',
+        telegram: '🍀 Hi {name}!\n\nThis is Shamrock Bail Bonds. We noticed you started a bail application but didn\'t finish.\n\nWe\'re standing by 24/7 — just tap the button below to pick up where you left off.\n\n📞 (239) 237-1809',
         subject: '1-Hour Follow-Up'
     },
     '24h': {
         sms: '🍀 {name}, Shamrock Bail Bonds here. Your bail application is still waiting. Time matters — the sooner we start, the sooner they\'re home. Questions? Text back or call: (239) 237-1809',
         whatsapp: '🍀 Hi {name}! This is Shamrock Bail Bonds reaching out because you started a bail application yesterday. We know this is stressful — we\'re here to help, no judgment. Just reply here or call (239) 237-1809 to pick up where you left off.',
+        telegram: '🍀 {name}, your bail application is still waiting.\n\nEvery hour matters when someone you love is in custody. We\'re ready to move the moment you are.\n\nTap below to continue — or call us anytime:\n📞 (239) 237-1809',
         subject: '24-Hour Follow-Up'
     },
     '72h': {
         sms: '🍀 {name}, it\'s been a few days since you started your bail application with Shamrock Bail Bonds. If you still need help, we\'re here. If not, no worries — we wish you the best. Call anytime: (239) 237-1809',
+        telegram: '🍀 {name}, we\'re still here if you need us.\n\nYour bail application was started a few days ago. If your situation has changed, no worries — we understand.\n\nIf you still need help getting your loved one home, we\'re one tap away:\n📞 (239) 237-1809',
         subject: '72-Hour Final Follow-Up (The Closer)'
     }
 };
@@ -270,6 +273,42 @@ function _sendFollowUp(dripLevel, name, phone, intakeId) {
             }
         } catch (waErr) {
             Logger.log('  ❌ WhatsApp failed: ' + waErr.message);
+        }
+    }
+
+    // Telegram (all drip levels — if client has a Telegram chat ID on file)
+    // Looks up the Telegram chat ID from IntakeQueue by phone number.
+    // Falls back gracefully if TG_sendCloserFollowUp is not available.
+    if (template.telegram) {
+        try {
+            var tgBody = template.telegram.replace(/\{name\}/g, firstName);
+            var tgSent = false;
+
+            // Method 1: Use TG_sendCloserFollowUp if available (preferred)
+            if (typeof TG_sendCloserFollowUp === 'function') {
+                var tgResult = TG_sendCloserFollowUp(phone, tgBody, intakeId);
+                if (tgResult && tgResult.sent) {
+                    channels.push('telegram');
+                    tgSent = true;
+                    Logger.log('  📨 Telegram sent via TG_sendCloserFollowUp');
+                }
+            }
+
+            // Method 2: Use TG_notifyDocumentReady pattern (sendMessage by phone)
+            if (!tgSent && typeof TG_templateGeneralFollowup === 'function') {
+                var tgMsg = TG_templateGeneralFollowup(phone, firstName, '');
+                if (tgMsg && tgMsg.sent) {
+                    channels.push('telegram');
+                    tgSent = true;
+                    Logger.log('  📨 Telegram sent via TG_templateGeneralFollowup');
+                }
+            }
+
+            if (!tgSent) {
+                Logger.log('  ⚠️ Telegram: no chat ID found for ' + phone.slice(-4) + ' (client may not have messaged the bot yet)');
+            }
+        } catch (tgErr) {
+            Logger.log('  ❌ Telegram failed: ' + tgErr.message);
         }
     }
 
