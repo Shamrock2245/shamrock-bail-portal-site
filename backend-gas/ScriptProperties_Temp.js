@@ -254,6 +254,22 @@ function setGoogleOAuthCredentials() {
 }
 
 /**
+ * ─── GITHUB FINE-GRAINED PAT ────────────────────────────────────────────────
+ * Stores a fine-grained GitHub Personal Access Token scoped to the
+ * shamrock-telegram-app repository. Used for any GAS→GitHub interactions
+ * (e.g., triggering deployments, reading repo content, webhook payloads).
+ *
+ * Run this ONCE from the GAS IDE after deploying.
+ */
+function setGitHubToken() {
+  var props = PropertiesService.getScriptProperties();
+  // REDACTED for git — value already deployed to GAS via clasp push
+  props.setProperty('GITHUB_PAT', 'REDACTED');
+  console.log('✅ Set GITHUB_PAT successfully.');
+  console.log('   Scoped to: shamrock-telegram-app repo');
+}
+
+/**
  * ─── GBP LOCATION DISCOVERY ─────────────────────────────────────────────────
  * After completing GBP OAuth, run this to discover your GBP Location ID.
  * Copy the ID from the log and add GBP_LOCATION_ID to Script Properties.
