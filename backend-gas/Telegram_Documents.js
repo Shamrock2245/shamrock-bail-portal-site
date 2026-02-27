@@ -126,7 +126,7 @@ function buildPacketManifest(caseData) {
     var manifest = [];
     // If selectedDocIds provided, only include those docs; otherwise include all
     var selectedSet = (caseData.selectedDocIds && Array.isArray(caseData.selectedDocIds) && caseData.selectedDocIds.length > 0)
-        ? caseData.selectedDocIds.reduce(function(acc, id) { acc[id] = true; return acc; }, {})
+        ? caseData.selectedDocIds.reduce(function (acc, id) { acc[id] = true; return acc; }, {})
         : null;
 
     DOC_ORDER.forEach(function (docId) {
@@ -555,6 +555,18 @@ function handleTelegramGetSigningUrl(data) {
                 }
             }
 
+            // --- Step 3b: Pre-fill text fields with case data ---
+            if (data.formData) {
+                var prefillResult = prefillDocument_(signNowDocId, data.formData, docId, signerIndex);
+                if (prefillResult.success) {
+                    Logger.log('✅ Pre-filled ' + prefillResult.fieldCount + ' text fields');
+                } else {
+                    Logger.log('⚠️ Pre-fill partial/failed (signing still works): ' + prefillResult.error);
+                }
+            } else {
+                Logger.log('ℹ️ No formData provided — skipping pre-fill');
+            }
+
             // --- Step 4: Save the document ID for this case+signer ---
             saveSignNowDocId_(caseNumber, trackerDocKey, signNowDocId, ss, signerRole, signerIndex);
         }
@@ -588,6 +600,163 @@ function handleTelegramGetSigningUrl(data) {
         Logger.log('❌ Signing URL error: ' + e.toString());
         return { success: false, error: 'server_error', message: 'Unable to generate signing link. ' + e.message };
     }
+}
+
+
+// ============================================================================
+// 3a. HELPER: prefillDocument_ — Pre-fill text fields via SignNow API
+// ============================================================================
+// Uses PDF_Mappings.js field maps to populate document text fields.
+// For per-indemnitor/per-person docs, swaps Ind* fields to the correct signer.
+//
+// SignNow API: PUT /v2/documents/{id}/prefill-texts
+// Body: { fields: [{ field_name: "...", prefilled_text: "..." }] }
+// ============================================================================
+
+function prefillDocument_(signNowDocId, formData, docId, signerIndex) {
+    try {
+        // Build form data with correct indemnitor swapped in for this signer
+        var adjustedData = prepareFormDataForSigner_(formData, docId, signerIndex);
+
+        // Use existing PDF_mapDataToTags to get [{name, value}] for this doc type
+        var mappedFields = PDF_mapDataToTags(adjustedData, docId);
+
+        if (!mappedFields || mappedFields.length === 0) {
+            Logger.log('ℹ️ No mapped fields for doc type: ' + docId);
+            return { success: true, fieldCount: 0, message: 'No fields to pre-fill for this doc type' };
+        }
+
+        // Convert to SignNow prefill format: [{field_name, prefilled_text}]
+        var prefillFields = [];
+        for (var i = 0; i < mappedFields.length; i++) {
+            var f = mappedFields[i];
+            if (f.value && f.value.trim() !== '' && f.value !== 'undefined' && f.value !== 'null') {
+                prefillFields.push({
+                    field_name: f.name,
+                    prefilled_text: String(f.value)
+                });
+            }
+        }
+
+        if (prefillFields.length === 0) {
+            Logger.log('ℹ️ All mapped fields were empty for: ' + docId);
+            return { success: true, fieldCount: 0, message: 'All fields empty — nothing to pre-fill' };
+        }
+
+        Logger.log('📝 Pre-filling ' + prefillFields.length + ' fields on doc ' + signNowDocId.substring(0, 12) + '...');
+
+        // Call SignNow prefill-texts API (V2 endpoint)
+        var config = SN_getConfig();
+        var url = config.API_BASE + '/v2/documents/' + signNowDocId + '/prefill-texts';
+
+        var response = UrlFetchApp.fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            payload: JSON.stringify({ fields: prefillFields }),
+            muteHttpExceptions: true
+        });
+
+        var statusCode = response.getResponseCode();
+        var responseText = response.getContentText();
+
+        if (statusCode >= 200 && statusCode < 300) {
+            Logger.log('✅ Pre-fill successful: ' + prefillFields.length + ' fields');
+            return { success: true, fieldCount: prefillFields.length };
+        } else {
+            Logger.log('⚠️ Pre-fill API returned ' + statusCode + ': ' + responseText.substring(0, 200));
+            return { success: false, error: 'API ' + statusCode + ': ' + responseText.substring(0, 100), fieldCount: 0 };
+        }
+
+    } catch (e) {
+        Logger.log('⚠️ Pre-fill exception: ' + e.toString());
+        return { success: false, error: e.toString(), fieldCount: 0 };
+    }
+}
+
+/**
+ * prepareFormDataForSigner_(formData, docId, signerIndex)
+ *
+ * For per-indemnitor / per-person docs with signerIndex > 0, overlays the
+ * correct indemnitor's data onto the standard indemnitor-1-* keys so that
+ * buildMasterDataObject() in PDF_Mappings.js picks up the right person.
+ *
+ * For defendant (signerIndex 0) or shared/static docs, returns formData as-is.
+ */
+function prepareFormDataForSigner_(formData, docId, signerIndex) {
+    if (!formData) return {};
+
+    // Shallow copy to avoid mutating original
+    var data = {};
+    for (var key in formData) {
+        if (formData.hasOwnProperty(key)) {
+            data[key] = formData[key];
+        }
+    }
+
+    var rule = DOC_GENERATION_RULES[docId];
+    if (!rule) return data;
+
+    // For per-person docs where signerIndex === 0, this is the defendant.
+    // For SSA Release, the defendant version needs Def* fields in the Ind* slots
+    // since the SSA form has "FullName" / "Social" / "Phone" fields.
+    if (rule.rule === 'per-person' && signerIndex === 0) {
+        // SSA Release defendant copy: put defendant's SSN/Phone into form-level fields
+        data['indemnitor-1-first'] = data['defendant-first-name'] || '';
+        data['indemnitor-1-last'] = data['defendant-last-name'] || '';
+        data['indemnitor-1-ssn'] = data['defendant-ssn'] || '';
+        data['indemnitor-1-phone'] = data['defendant-phone'] || '';
+        data.indemnitorFullName = data.defendantFullName ||
+            ((data['defendant-first-name'] || '') + ' ' + (data['defendant-last-name'] || '')).trim();
+        data.indemnitorName = data.indemnitorFullName;
+        return data;
+    }
+
+    // For per-indemnitor or per-person docs with signerIndex > 0,
+    // swap data.indemnitors[signerIndex - 1] into the indemnitor-1-* keys
+    if ((rule.rule === 'per-indemnitor' || rule.rule === 'per-person') && signerIndex > 0) {
+        var indemnitors = data.indemnitors;
+        if (indemnitors && Array.isArray(indemnitors)) {
+            var idx = signerIndex - 1; // signerIndex 1 = first indemnitor (array index 0)
+            var ind = indemnitors[idx];
+            if (ind) {
+                // Map the indemnitor object keys → Dashboard form field keys
+                data['indemnitor-1-first'] = ind.firstName || '';
+                data['indemnitor-1-middle'] = ind.middleName || '';
+                data['indemnitor-1-last'] = ind.lastName || '';
+                data['indemnitor-1-relationship'] = ind.relationship || '';
+                data['indemnitor-1-relation'] = ind.relationship || '';
+                data['indemnitor-1-dob'] = ind.dob || '';
+                data['indemnitor-1-ssn'] = ind.ssn || '';
+                data['indemnitor-1-dl'] = ind.dl || '';
+                data['indemnitor-1-dl-state'] = ind.dlState || 'FL';
+                data['indemnitor-1-address'] = ind.address || '';
+                data['indemnitor-1-city'] = ind.city || '';
+                data['indemnitor-1-state'] = ind.state || 'FL';
+                data['indemnitor-1-zip'] = ind.zip || '';
+                data['indemnitor-1-phone'] = ind.phone || '';
+                data['indemnitor-1-email'] = ind.email || '';
+                data['indemnitor-1-employer'] = ind.employer || '';
+                data['indemnitor-1-employer-phone'] = ind.employerPhone || '';
+                data['indemnitor-1-supervisor'] = ind.supervisor || '';
+                data['indemnitor-1-ref1-name'] = ind.ref1Name || '';
+                data['indemnitor-1-ref1-phone'] = ind.ref1Phone || '';
+                data['indemnitor-1-ref1-relation'] = ind.ref1Relation || '';
+                data['indemnitor-1-ref1-address'] = ind.ref1Address || '';
+                data['indemnitor-1-ref2-name'] = ind.ref2Name || '';
+                data['indemnitor-1-ref2-phone'] = ind.ref2Phone || '';
+                data['indemnitor-1-ref2-relation'] = ind.ref2Relation || '';
+                data['indemnitor-1-ref2-address'] = ind.ref2Address || '';
+                // Update computed fields
+                data.indemnitorFullName = ((ind.firstName || '') + ' ' + (ind.lastName || '')).trim();
+                data.indemnitorName = data.indemnitorFullName;
+            }
+        }
+    }
+
+    return data;
 }
 
 

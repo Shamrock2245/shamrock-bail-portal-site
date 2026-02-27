@@ -6649,7 +6649,7 @@
                         };
                     }),
                     // Pass selected doc IDs so manifest only includes checked docs
-                    selectedDocIds: Array.from(document.querySelectorAll('.doc-item input[type="checkbox"]:checked')).map(function(cb) { return cb.dataset.template || cb.id.replace(/^doc-/, ''); })
+                    selectedDocIds: Array.from(document.querySelectorAll('.doc-item input[type="checkbox"]:checked')).map(function (cb) { return cb.dataset.template || cb.id.replace(/^doc-/, ''); })
                 };
 
                 const manifest = await new Promise((resolve, reject) => {
@@ -6690,7 +6690,8 @@
                                     role: doc.signerRole || 'Indemnitor',
                                     email: doc.signerEmail || '',
                                     caseNumber: manifestData.caseNumber,
-                                    signerIndex: doc.signerIndex
+                                    signerIndex: doc.signerIndex,
+                                    formData: manifestData
                                 });
                         });
 
@@ -8540,20 +8541,20 @@
                         // 2. Hydrate Defendant Info
                         // Prefer split first/last fields (Telegram path); fall back to name-split (Wix path)
                         const defFirst = item.defendantFirstName || (item.DefendantName || '').split(' ')[0] || '';
-                        const defLast  = item.defendantLastName  || (item.DefendantName || '').split(' ').slice(1).join(' ') || '';
+                        const defLast = item.defendantLastName || (item.DefendantName || '').split(' ').slice(1).join(' ') || '';
                         UI.setValue('defendant-first-name', defFirst);
-                        UI.setValue('defendant-last-name',  defLast);
+                        UI.setValue('defendant-last-name', defLast);
                         // Extended defendant fields (Telegram source has all of these)
-                        if (item.defendantDOB)      UI.setValue('defendant-dob',             item.defendantDOB);
-                        if (item.defendantPhone)    UI.setValue('defendant-phone',           item.defendantPhone);
-                        if (item.defendantEmail)    UI.setValue('defendant-email',           item.defendantEmail);
-                        if (item.defendantAddress)  UI.setValue('defendant-street-address',  item.defendantAddress);
-                        if (item.defendantCity)     UI.setValue('defendant-city',            item.defendantCity);
-                        if (item.defendantState)    UI.setValue('defendant-state',           item.defendantState);
-                        if (item.defendantZip)      UI.setValue('defendant-zipcode',         item.defendantZip);
-                        if (item.defendantDL)       UI.setValue('defendant-dl-number',       item.defendantDL);
-                        if (item.defendantCounty)   UI.setValue('defendant-county',          item.defendantCounty);
-                        if (item.defendantFacility) UI.setValue('defendant-facility',        item.defendantFacility);
+                        if (item.defendantDOB) UI.setValue('defendant-dob', item.defendantDOB);
+                        if (item.defendantPhone) UI.setValue('defendant-phone', item.defendantPhone);
+                        if (item.defendantEmail) UI.setValue('defendant-email', item.defendantEmail);
+                        if (item.defendantAddress) UI.setValue('defendant-street-address', item.defendantAddress);
+                        if (item.defendantCity) UI.setValue('defendant-city', item.defendantCity);
+                        if (item.defendantState) UI.setValue('defendant-state', item.defendantState);
+                        if (item.defendantZip) UI.setValue('defendant-zipcode', item.defendantZip);
+                        if (item.defendantDL) UI.setValue('defendant-dl-number', item.defendantDL);
+                        if (item.defendantCounty) UI.setValue('defendant-county', item.defendantCounty);
+                        if (item.defendantFacility) UI.setValue('defendant-facility', item.defendantFacility);
 
                         // 3. Hydrate Indemnitor Info
                         // Map IntakeQueue item to Indemnitor Form Structure
@@ -8562,37 +8563,37 @@
                         const raw = item._original || {};
                         const indemnitorData = {
                             // Name — Wix uses PascalCase; Telegram uses camelCase
-                            firstName:    item.FirstName         || item.indemnitorFirstName  || raw.indemnitorFirstName  || '',
-                            lastName:     item.LastName          || item.indemnitorLastName   || raw.indemnitorLastName   || '',
-                            email:        item.Email             || item.indemnitorEmail      || raw.indemnitorEmail      || '',
-                            phone:        item.Phone             || item.indemnitorPhone      || raw.indemnitorPhone      || '',
-                            relationship: item.Relationship      || item.indemnitorRelation   || 'Self',
+                            firstName: item.FirstName || item.indemnitorFirstName || raw.indemnitorFirstName || '',
+                            lastName: item.LastName || item.indemnitorLastName || raw.indemnitorLastName || '',
+                            email: item.Email || item.indemnitorEmail || raw.indemnitorEmail || '',
+                            phone: item.Phone || item.indemnitorPhone || raw.indemnitorPhone || '',
+                            relationship: item.Relationship || item.indemnitorRelation || 'Self',
                             // Expanded fields — Telegram has these at top level; Wix stores in raw
-                            middleName:       item.indemnitorMiddleName   || raw.indemnitorMiddleName   || '',
-                            dob:              item.indemnitorDOB          || raw.indemnitorDOB          || raw.dob || '',
-                            ssn:              item.indemnitorSSN          || raw.indemnitorSSN          || raw.ssn || '',
-                            dl:               item.indemnitorDL           || raw.indemnitorDL           || raw.dlNumber || '',
-                            dlState:          item.indemnitorDLState      || raw.indemnitorDLState      || raw.dlState || 'FL',
-                            address:          item.indemnitorAddress      || raw.indemnitorStreetAddress || raw.indemnitorAddress || '',
-                            city:             item.indemnitorCity         || raw.indemnitorCity         || '',
-                            state:            item.indemnitorState        || raw.indemnitorState        || 'FL',
-                            zip:              item.indemnitorZip          || raw.indemnitorZipCode      || raw.indemnitorZip || '',
+                            middleName: item.indemnitorMiddleName || raw.indemnitorMiddleName || '',
+                            dob: item.indemnitorDOB || raw.indemnitorDOB || raw.dob || '',
+                            ssn: item.indemnitorSSN || raw.indemnitorSSN || raw.ssn || '',
+                            dl: item.indemnitorDL || raw.indemnitorDL || raw.dlNumber || '',
+                            dlState: item.indemnitorDLState || raw.indemnitorDLState || raw.dlState || 'FL',
+                            address: item.indemnitorAddress || raw.indemnitorStreetAddress || raw.indemnitorAddress || '',
+                            city: item.indemnitorCity || raw.indemnitorCity || '',
+                            state: item.indemnitorState || raw.indemnitorState || 'FL',
+                            zip: item.indemnitorZip || raw.indemnitorZipCode || raw.indemnitorZip || '',
                             // Employment
-                            employer:         item.indemnitorEmployerName   || raw.indemnitorEmployerName   || '',
-                            employerPhone:    item.indemnitorEmployerPhone  || raw.indemnitorEmployerPhone  || '',
-                            employerCity:     item.indemnitorEmployerCity   || raw.indemnitorEmployerCity   || '',
-                            employerState:    item.indemnitorEmployerState  || raw.indemnitorEmployerState  || '',
-                            supervisor:       item.indemnitorSupervisorName  || raw.indemnitorSupervisorName  || '',
-                            supervisorPhone:  item.indemnitorSupervisorPhone || raw.indemnitorSupervisorPhone || '',
+                            employer: item.indemnitorEmployerName || raw.indemnitorEmployerName || '',
+                            employerPhone: item.indemnitorEmployerPhone || raw.indemnitorEmployerPhone || '',
+                            employerCity: item.indemnitorEmployerCity || raw.indemnitorEmployerCity || '',
+                            employerState: item.indemnitorEmployerState || raw.indemnitorEmployerState || '',
+                            supervisor: item.indemnitorSupervisorName || raw.indemnitorSupervisorName || '',
+                            supervisorPhone: item.indemnitorSupervisorPhone || raw.indemnitorSupervisorPhone || '',
                             // References
-                            ref1Name:     item.reference1Name     || raw.reference1Name     || raw.ref1Name     || '',
+                            ref1Name: item.reference1Name || raw.reference1Name || raw.ref1Name || '',
                             ref1Relation: item.reference1Relation || raw.reference1Relation || raw.ref1Relation || '',
-                            ref1Phone:    item.reference1Phone    || raw.reference1Phone    || raw.ref1Phone    || '',
-                            ref1Address:  item.reference1Address  || raw.reference1Address  || raw.ref1Address  || '',
-                            ref2Name:     item.reference2Name     || raw.reference2Name     || raw.ref2Name     || '',
+                            ref1Phone: item.reference1Phone || raw.reference1Phone || raw.ref1Phone || '',
+                            ref1Address: item.reference1Address || raw.reference1Address || raw.ref1Address || '',
+                            ref2Name: item.reference2Name || raw.reference2Name || raw.ref2Name || '',
                             ref2Relation: item.reference2Relation || raw.reference2Relation || raw.ref2Relation || '',
-                            ref2Phone:    item.reference2Phone    || raw.reference2Phone    || raw.ref2Phone    || '',
-                            ref2Address:  item.reference2Address  || raw.reference2Address  || raw.ref2Address  || ''
+                            ref2Phone: item.reference2Phone || raw.reference2Phone || raw.ref2Phone || '',
+                            ref2Address: item.reference2Address || raw.reference2Address || raw.ref2Address || ''
                         };
                         console.log("Hydrating Indemnitor:", indemnitorData);
                         addIndemnitor(indemnitorData);

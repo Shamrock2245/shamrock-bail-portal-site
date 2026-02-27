@@ -126,12 +126,12 @@ function handleDocumentComplete(documentId, payload) {
       try {
         const docName = payload?.document_name || '';
         const trackerMatch = docName.match(/^Shamrock_([^_]+(?:_[^_]+)*)_signer(-?\d+)_(.+)$/) ||
-                             docName.match(/^Shamrock_([^_]+(?:_[^_]+)*)_(.+)$/);
+          docName.match(/^Shamrock_([^_]+(?:_[^_]+)*)_(.+)$/);
         if (trackerMatch) {
-          const parsedDocId  = trackerMatch[1];
-          const parsedCase   = trackerMatch[trackerMatch.length - 1];
-          const signerIdx    = trackerMatch.length === 4 ? parseInt(trackerMatch[2]) : -1;
-          const trackerKey   = signerIdx >= 0 ? parsedDocId + ':signer-' + signerIdx : parsedDocId;
+          const parsedDocId = trackerMatch[1];
+          const parsedCase = trackerMatch[trackerMatch.length - 1];
+          const signerIdx = trackerMatch.length === 4 ? parseInt(trackerMatch[2]) : -1;
+          const trackerKey = signerIdx >= 0 ? parsedDocId + ':signer-' + signerIdx : parsedDocId;
           if (typeof updateDocSigningStatus_ === 'function') {
             updateDocSigningStatus_(parsedCase, trackerKey, 'signed');
           }
@@ -147,12 +147,12 @@ function handleDocumentComplete(documentId, payload) {
       if (typeof triggerPostSigningFromWebhook === 'function') {
         try {
           triggerPostSigningFromWebhook({
-            documentId:    documentId,
-            documentName:  payload?.document_name || '',
+            documentId: documentId,
+            documentName: payload?.document_name || '',
             defendantName: defendantName,
-            fileUrl:       result.fileUrl,
-            folderId:      result.folderId,
-            payload:       payload,
+            fileUrl: result.fileUrl,
+            folderId: result.folderId,
+            payload: payload,
           });
         } catch (pipelineErr) {
           // Non-fatal — Drive filing already succeeded; log and continue
@@ -343,10 +343,6 @@ function extractDefendantName(documentName) {
       return match[1].replace(/_/g, ' ').trim();
     }
   }
-  return documentName.split('_')[0];
-}
-  }
-
   return documentName.split('_')[0];
 }
 
