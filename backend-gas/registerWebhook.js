@@ -46,9 +46,14 @@ function registerTelegramWebhook() {
     Logger.log('🔗 Registering webhook: ' + webhookUrl);
 
     try {
-        const result = bot.setWebhook(webhookUrl);
+        // Include inline_query in allowed_updates for inline bot support
+        const result = bot._request('setWebhook', {
+            url: webhookUrl,
+            allowed_updates: ['message', 'edited_message', 'inline_query', 'callback_query', 'my_chat_member']
+        });
         Logger.log('✅ Webhook registered successfully');
         Logger.log('   URL: ' + webhookUrl);
+        Logger.log('   Allowed Updates: message, edited_message, inline_query, callback_query, my_chat_member');
         Logger.log('   Result: ' + JSON.stringify(result));
 
         // Verify it took
@@ -235,9 +240,59 @@ function fullBotSetup() {
     results.menuButton = setupBotMenuButton();
     Logger.log('');
 
+    results.triggers = installTelegramFeatureTriggers();
+    Logger.log('');
+
     Logger.log('═══════════════════════════════════════════');
     Logger.log('🍀 FULL BOT SETUP — Complete');
     Logger.log('═══════════════════════════════════════════');
 
     return results;
+}
+
+// =============================================================================
+// FEATURE TRIGGERS
+// =============================================================================
+
+/**
+ * Install time-driven triggers for Telegram features.
+ * Safe to run multiple times — deletes existing duplicates first.
+ */
+function installTelegramFeatureTriggers() {
+    Logger.log('⏰ Setting up Telegram feature triggers...');
+
+    var results = [];
+    var existing = ScriptApp.getProjectTriggers();
+
+    // --- Court Date Reminders: every 30 minutes ---
+    existing.forEach(function (t) {
+        if (t.getHandlerFunction() === 'TG_processCourtDateReminders') {
+            ScriptApp.deleteTrigger(t);
+            Logger.log('   🗑️ Removed old TG_processCourtDateReminders trigger');
+        }
+    });
+    ScriptApp.newTrigger('TG_processCourtDateReminders')
+        .timeBased()
+        .everyMinutes(30)
+        .create();
+    Logger.log('   ✅ TG_processCourtDateReminders → every 30 minutes');
+    results.push('courtReminders: every 30 min');
+
+    // --- Weekly Payment Progress: Mondays 10 AM ---
+    existing.forEach(function (t) {
+        if (t.getHandlerFunction() === 'TG_processWeeklyPaymentProgress') {
+            ScriptApp.deleteTrigger(t);
+            Logger.log('   🗑️ Removed old TG_processWeeklyPaymentProgress trigger');
+        }
+    });
+    ScriptApp.newTrigger('TG_processWeeklyPaymentProgress')
+        .timeBased()
+        .onWeekDay(ScriptApp.WeekDay.MONDAY)
+        .atHour(10)
+        .create();
+    Logger.log('   ✅ TG_processWeeklyPaymentProgress → Monday 10 AM');
+    results.push('paymentProgress: Monday 10 AM');
+
+    Logger.log('⏰ Triggers installed successfully');
+    return { success: true, triggers: results };
 }

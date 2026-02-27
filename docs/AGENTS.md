@@ -57,4 +57,41 @@ Leads are qualified based on a score of **≥ 70** (Hot).
 - [Foundation Spec](file:///Users/brendan/Desktop/shamrock-bail-portal-site/docs/ANTIGRAVITY-FOUNDATION-SPEC.md)
 - [Project Tasks](file:///Users/brendan/Desktop/shamrock-bail-portal-site/TASKS.md)
 - [Schema Guide](file:///Users/brendan/Desktop/shamrock-bail-portal-site/docs/SCHEMAS.md)
-- [Action Plan](file:///Users/brendan/Desktop/shamrock-bail-portal-site/ATLAS-ACTION-PLAN.md)
+- [Architecture](file:///Users/brendan/Desktop/shamrock-bail-portal-site/docs/ARCHITECTURE.md)
+
+## 7. Telegram Bot Operations (`@ShamrockBail_bot`)
+
+### Bot Setup
+- **BotFather Config:** Inline mode enabled, 6 commands registered, Mini App menu button set.
+- **Webhook:** `https://www.shamrockbailbonds.biz/_functions/telegramWebhook` with `allowed_updates: [message, edited_message, inline_query, callback_query, my_chat_member]`.
+- **Functions:** `registerTelegramWebhook()`, `setupBotCommands()`, `setupBotMenuButton()`, `installTelegramFeatureTriggers()` — all in `registerWebhook.js`.
+
+### Active Time-Driven Triggers
+| Function | Schedule | Purpose |
+|----------|----------|---------|
+| `TG_processCourtDateReminders` | Every 30 min | Sends pending court date reminders |
+| `TG_processWeeklyPaymentProgress` | Monday 10 AM | Sends payment plan progress updates |
+| `runLeeArrestsNow` | Every 1 hour | Scrapes Lee County arrest data |
+| `processCourtEmails` | 7 AM, 10 AM, 2 PM, 5 PM | Parses court date emails |
+
+### Key Script Properties (GAS)
+| Property | Purpose |
+|----------|---------|
+| `TELEGRAM_BOT_TOKEN` | Bot API authentication |
+| `TELEGRAM_MINIAPP_DOCUMENTS_URL` | Documents mini app URL for signing deep links |
+| `SWIPESIMPLE_PAYMENT_LINK` | Payment link for payment progress notifications |
+| `GOOGLE_CLOUD_VISION_API_KEY` | Optional — Vision API uses SA token by default |
+
+### Florida Premium Calculation Rules
+- **$100 per charge minimum** — always charged
+- **10% of bail face amount** — if bail ≥ $1,000 (use whichever is greater)
+- **$125 transfer fee** — for bonds outside Lee & Charlotte County
+- **Transfer fee waived** — for bonds > $25,000 OR Lee/Charlotte County
+- Logic is in `Telegram_InlineQuote.js` → `calculatePremium()`
+
+### Working on the Telegram Bot
+1. **Edit files** in `backend-gas/Telegram_*.js`.
+2. **Deploy:** `clasp push && clasp deploy -i <DEPLOYMENT_ID>`.
+3. **Re-register webhook** if `allowed_updates` changes: run `registerTelegramWebhook()` in GAS editor.
+4. **Test inline:** Type `@ShamrockBail_bot 5000 2 lee` in any Telegram chat.
+5. **Test office locator:** Share a GPS location with the bot.

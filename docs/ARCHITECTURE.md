@@ -51,8 +51,13 @@ This is the heart of the automation factory, containing all business logic.
 | **`DriveFilingService.gs`** | Manages all interactions with Google Drive, including creating case folders and saving documents. |
 | **`Utilities.js`** | **(New)** A centralized library of all common helper functions (`getFileExtension`, `formatDate_`, `getOrCreateDriveSubfolder`, etc.) to eliminate code duplication. |
 | **`Telegram_API.js`** | A robust client for the Telegram Bot API. Handles sending all message types, downloading files, and managing webhooks. |
-| **`Telegram_Notifications.js`** | Contains all functions for sending outbound business notifications (e.g., court date reminders, payment requests). |
+| **`Telegram_Notifications.js`** | Contains all functions for sending outbound business notifications (court date reminders with 4-touch sequences, one-tap signing deep links, payment progress updates with visual bars). Includes time-driven trigger functions. |
 | **`Telegram_Auth.js`** | Manages user authentication via OTP sent to their Telegram account. |
+| **`Telegram_InlineQuote.js`** | **(New)** Handles `@ShamrockBail_bot` inline queries. Calculates FL bail premiums ($100/charge min or 10%, transfer fee logic) and returns rich inline result cards. |
+| **`Telegram_Analytics.js`** | **(New)** Event logging (`logBotEvent`) and funnel analytics (`getBotAnalytics`). Tracks intake conversions, inline queries, OCR, and signing events to `BotAnalytics` sheet. |
+| **`Telegram_OCR.js`** | **(New)** ID photo OCR using Google Cloud Vision API `TEXT_DETECTION`. Parses Florida Driver License fields (name, DOB, DL#, address). Falls back to Drive storage if Vision API unavailable. |
+| **`LocationMetadataService.js`** | Manages location data enrichment, county detection, and `findNearestOffice()` for Shamrock office locations (Fort Myers HQ, Charlotte County). |
+| **`registerWebhook.js`** | Webhook registration, bot command setup, menu button config, and `installTelegramFeatureTriggers()` for time-driven triggers. |
 
 ### 2.2. Wix Velo (`src`)
 

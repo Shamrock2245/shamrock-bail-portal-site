@@ -2,7 +2,8 @@
 
 This project is the official **Shamrock Bail Bonds Portal**. It runs on **Wix Velo** (Frontend) and connects to a **Google Apps Script (GAS)** backend for secure workflows (AI Agents, PDFs, Signatures, Arrest Scrapers).
 
-**Current Status:** Production (Active) 🟢
+**Current Status:** Production (Active) 🟢  
+**GAS Deployment:** @364 | **Last Updated:** Feb 27, 2026
 
 ---
 
@@ -22,9 +23,12 @@ This project is the official **Shamrock Bail Bonds Portal**. It runs on **Wix Ve
 *   **Backend:** Google Apps Script (GAS) Web App (Serverless).
 *   **AI/LLM:** OpenAI GPT-4o-mini (via GAS `UrlFetchApp`).
 *   **Database:** Wix Collections (`IntakeQueue`, `Cases`, `PortalSessions`, `MagicLinks`) + Google Sheets (Operational Data).
-*   **Signatures:** SignNow API.
+*   **Signatures:** SignNow API (Embedded Signing via Telegram Deep Link).
 *   **Deployment:** `clasp` (GAS) + GitHub Integration (Wix).
-*   **Notifications:** Slack (Internal) + Twilio (External SMS).
+*   **Notifications:** Slack (Internal) + Twilio (External SMS/WhatsApp).
+*   **Messaging:** Telegram Bot API (Conversational Intake, Inline Quotes, Mini Apps).
+*   **OCR:** Google Cloud Vision API (FL Driver License Extraction).
+*   **Mini Apps:** Netlify-hosted Telegram WebApps (Intake, Documents, Payments, Check-in, Status).
 
 ---
 
@@ -35,6 +39,34 @@ The system employs specialized AI agents (powered by OpenAI) to automate complex
 *   **"The Analyst" (`AI_FlightRisk.js`)**: Risk Assessment & Underwriting. Evaluates flight risk based on charges, residency, and history. Returns 0-100 Score + Rationale.
 *   **"The Investigator" (`AI_Investigator.js`)**: Deep Vetting & Background Checks. Analyzes comprehensive background reports (TLO, IRB). Cross-references Defendant vs. Indemnitor data.
 *   **"The Concierge" (`ai-service.jsw`)**: Interactive AI chat assistant. Answers bail bond questions, looks up county/jail info, and provides case status (authenticated users only).
+
+---
+
+## 📱 Telegram Ecosystem
+
+The bot (`@ShamrockBail_bot`) is the primary client touchpoint, supporting full intake through delivery.
+
+### Core Capabilities
+| Feature | File(s) | Description |
+|---------|---------|-------------|
+| **Conversational Intake** | `Telegram_IntakeFlow.js` | Guided multi-step bail bond intake |
+| **Inline Quote Bot** | `Telegram_InlineQuote.js` | `@ShamrockBail_bot 5000 2 lee` → instant premium card |
+| **Court Date Reminders** | `Telegram_Notifications.js` | 4-touch sequence (7d, 3d, 1d, morning-of) |
+| **One-Tap Signing** | `Telegram_Notifications.js` | Deep link to Documents mini app |
+| **Bot Analytics** | `Telegram_Analytics.js` | Event logging + funnel conversion queries |
+| **ID OCR** | `Telegram_OCR.js` | Cloud Vision FL DL parser (name, DOB, DL#, address) |
+| **Office Locator** | `LocationMetadataService.js` | GPS → nearest office with Call/Directions |
+| **Payment Progress** | `Telegram_Notifications.js` | Visual progress bar + weekly auto-notifications |
+
+### Telegram Mini Apps (Netlify)
+| App | URL | Purpose |
+|-----|-----|---------|
+| Portal | `shamrock-telegram.netlify.app/` | Main menu |
+| Intake | `shamrock-telegram.netlify.app/intake` | New bond intake |
+| Documents | `shamrock-telegram.netlify.app/documents` | View + sign docs |
+| Payments | `shamrock-telegram.netlify.app/payments` | Make payments |
+| Check-in | `shamrock-telegram.netlify.app/checkin` | GPS + selfie check-in |
+| Status | `shamrock-telegram.netlify.app/status` | Case lookup |
 
 ---
 
@@ -115,9 +147,12 @@ For a complete, step-by-step guide, refer to the [**Deployment Checklist**](./do
 ---
 
 ## 📂 Documentation Index
-*   **[ARCHITECTURE.md](./docs/ARCHITECTURE.md):** 📜 **System Architecture** (The new source of truth).
+*   **[ARCHITECTURE.md](./docs/ARCHITECTURE.md):** 📜 **System Architecture** (Source of truth).
+*   **[AGENTS.md](./docs/AGENTS.md):** AI Agent handbook & operational guidelines.
 *   **[DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md):** Step-by-step deployment guide.
-*   **[TASKS.md](./TASKS.md):** Current project task list.
+*   **[TASKS.md](./TASKS.md):** Current project task list & roadmap.
+*   **[AI_CAPABILITIES.md](./docs/AI_CAPABILITIES.md):** Full AI feature catalog.
+*   **[CHANGELOG.md](./docs/CHANGELOG.md):** Version history.
 
 ---
 

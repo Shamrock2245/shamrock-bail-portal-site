@@ -772,3 +772,414 @@ function sendDailyPaymentReport() {
   return { paymentCount: paymentCount, paymentTotal: paymentTotal, checkinCount: checkinCount };
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COURT DATE REMINDER SEQUENCES (Feature #2)
+// 4-Touch System: 7 days, 3 days, 1 day, morning-of
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Schedule the full 4-touch court date reminder sequence.
+ * Creates rows in "CourtDateReminders" sheet that get picked up by a trigger.
+ * 
+ * @param {string} chatId    - Telegram chat ID
+ * @param {string} name      - Defendant name
+ * @param {string} courtDate - Court date (ISO or parseable)
+ * @param {string} caseNum   - Case reference
+ * @param {string} courtInfo - Optional court name/location
+ */
+function TG_scheduleCourtDateSequence(chatId, name, courtDate, caseNum, courtInfo) {
+  try {
+    var courtDateObj = new Date(courtDate);
+    if (isNaN(courtDateObj.getTime())) {
+      console.error('Invalid court date: ' + courtDate);
+      return { success: false, error: 'Invalid court date' };
+    }
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('CourtDateReminders');
+    if (!sheet) {
+      sheet = ss.insertSheet('CourtDateReminders');
+      sheet.appendRow([
+        'ChatId', 'Name', 'CourtDate', 'CaseNumber', 'CourtInfo',
+        'Touch', 'SendAt', 'Status', 'SentAt'
+      ]);
+      sheet.getRange(1, 1, 1, 9).setFontWeight('bold');
+      sheet.setFrozenRows(1);
+    }
+
+    // Define 4 touches
+    var touches = [
+      { touch: 1, label: '7-day', daysBefore: 7 },
+      { touch: 2, label: '3-day', daysBefore: 3 },
+      { touch: 3, label: '1-day', daysBefore: 1 },
+      { touch: 4, label: 'morning-of', daysBefore: 0 }
+    ];
+
+    var rows = [];
+    touches.forEach(function (t) {
+      var sendAt = new Date(courtDateObj);
+      sendAt.setDate(sendAt.getDate() - t.daysBefore);
+      // Morning-of: set to 7 AM EST; others: set to 9 AM EST
+      sendAt.setHours(t.daysBefore === 0 ? 7 : 9, 0, 0, 0);
+
+      // Only schedule if sendAt is in the future
+      if (sendAt > new Date()) {
+        rows.push([
+          String(chatId), name, courtDateObj.toISOString(), caseNum || '',
+          courtInfo || '', t.label, sendAt.toISOString(), 'pending', ''
+        ]);
+      }
+    });
+
+    if (rows.length > 0) {
+      sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 9).setValues(rows);
+    }
+
+    // Send immediate confirmation
+    var bot = new TelegramBotAPI();
+    var dateStr = Utilities.formatDate(courtDateObj, 'America/New_York', 'EEEE, MMMM d, yyyy');
+    bot.sendMessage(chatId,
+      '✅ *Court Date Registered*\n\n' +
+      '📅 *Date:* ' + dateStr + '\n' +
+      (courtInfo ? '🏛 *Court:* ' + courtInfo + '\n' : '') +
+      '\nYou will receive reminders:\n' +
+      '• 7 days before\n' +
+      '• 3 days before\n' +
+      '• 1 day before\n' +
+      '• Morning of your court date\n\n' +
+      '_Never miss a court date with Shamrock! 🍀_',
+      { parse_mode: 'Markdown' }
+    );
+
+    if (typeof logBotEvent === 'function') {
+      logBotEvent('court_date_scheduled', String(chatId), {
+        courtDate: courtDateObj.toISOString(),
+        touches: rows.length
+      });
+    }
+
+    return { success: true, touchesScheduled: rows.length };
+
+  } catch (e) {
+    console.error('Failed to schedule court date sequence: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Process pending court date reminders.
+ * Called by a time-driven trigger every 30 minutes.
+ */
+function TG_processCourtDateReminders() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('CourtDateReminders');
+    if (!sheet || sheet.getLastRow() < 2) return;
+
+    var data = sheet.getDataRange().getValues();
+    var now = new Date();
+    var sent = 0;
+
+    for (var i = 1; i < data.length; i++) {
+      var status = data[i][7]; // Status column
+      if (status !== 'pending') continue;
+
+      var sendAt = new Date(data[i][6]); // SendAt column
+      if (sendAt > now) continue; // Not time yet
+
+      var chatId = data[i][0];
+      var name = data[i][1];
+      var courtDate = new Date(data[i][2]);
+      var courtInfo = data[i][4];
+      var touch = data[i][5];
+
+      // Send the reminder
+      var ok = _sendCourtDateReminder(chatId, name, courtDate, courtInfo, touch);
+      if (ok) {
+        sheet.getRange(i + 1, 8).setValue('sent');
+        sheet.getRange(i + 1, 9).setValue(new Date().toISOString());
+        sent++;
+      } else {
+        sheet.getRange(i + 1, 8).setValue('failed');
+      }
+    }
+
+    if (sent > 0) {
+      console.log('✅ Sent ' + sent + ' court date reminders');
+    }
+
+  } catch (e) {
+    console.error('Court date reminder processor error: ' + e.message);
+  }
+}
+
+/**
+ * Send a single court date reminder message.
+ */
+function _sendCourtDateReminder(chatId, name, courtDate, courtInfo, touch) {
+  try {
+    var dateStr = Utilities.formatDate(courtDate, 'America/New_York', 'EEEE, MMMM d, yyyy');
+    var firstName = (name || 'there').split(' ')[0];
+
+    var messages = {
+      '7-day': '📅 *Court Date Reminder — 1 Week Away*\n\n' +
+        'Hey ' + firstName + ', just a heads up — your court date is in *7 days*.\n\n' +
+        '🏛 *Date:* ' + dateStr + '\n' +
+        (courtInfo ? '📍 *Court:* ' + courtInfo + '\n' : '') +
+        '\n_Need help preparing? Reply or call us anytime!_ 🍀',
+
+      '3-day': '⏰ *Court Date — 3 Days Away*\n\n' +
+        firstName + ', your court date is coming up in *3 days*.\n\n' +
+        '🏛 *Date:* ' + dateStr + '\n' +
+        (courtInfo ? '📍 *Court:* ' + courtInfo + '\n' : '') +
+        '\n✅ *Checklist:*\n' +
+        '• Confirm transportation\n' +
+        '• Dress appropriately\n' +
+        '• Arrive 30 minutes early\n' +
+        '• Bring valid ID\n\n' +
+        '_Questions? We\'re here 24/7._ 🍀',
+
+      '1-day': '🚨 *Court Date — TOMORROW*\n\n' +
+        firstName + ', your court appearance is *tomorrow*!\n\n' +
+        '🏛 *Date:* ' + dateStr + '\n' +
+        (courtInfo ? '📍 *Court:* ' + courtInfo + '\n' : '') +
+        '\n⚠️ *Important:*\n' +
+        '• Set your alarm\n' +
+        '• Plan to arrive 30 min early\n' +
+        '• Missing court can result in a warrant\n\n' +
+        '_You\'ve got this! Call if you need anything._ 🍀',
+
+      'morning-of': '🔔 *COURT DATE TODAY*\n\n' +
+        'Good morning ' + firstName + '! Today is your court date.\n\n' +
+        '🏛 *Date:* ' + dateStr + '\n' +
+        (courtInfo ? '📍 *Court:* ' + courtInfo + '\n' : '') +
+        '\n📞 If there\'s an emergency, call us *immediately*: (239) 332-2245\n\n' +
+        '_Good luck today! 🍀_'
+    };
+
+    var text = messages[touch] || messages['7-day'];
+
+    var bot = new TelegramBotAPI();
+    bot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+
+    if (typeof logBotEvent === 'function') {
+      logBotEvent('court_reminder_sent', String(chatId), { touch: touch });
+    }
+
+    return true;
+  } catch (e) {
+    console.error('Failed to send court reminder: ' + e.message);
+    return false;
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ONE-TAP SIGNING DEEP LINK (Feature #3)
+// Sends a deep link to the Telegram Documents Mini App
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Send a one-tap signing link via Telegram.
+ * Creates a deep link to the Telegram Documents mini-app for signing.
+ * 
+ * @param {string} chatId     - Telegram chat ID
+ * @param {string} caseNumber - Case/bond reference
+ * @param {string} docType    - Document type (e.g., 'bail_application')
+ * @param {string} signerName - Name of the person signing
+ */
+function TG_sendSigningDeepLink(chatId, caseNumber, docType, signerName) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var miniAppUrl = props.getProperty('TELEGRAM_MINIAPP_DOCUMENTS_URL')
+      || 'https://shamrock-telegram-documents.netlify.app';
+
+    // Construct deep link with signing context
+    var params = [
+      'case=' + encodeURIComponent(caseNumber || ''),
+      'doc=' + encodeURIComponent(docType || ''),
+      'signer=' + encodeURIComponent(signerName || ''),
+      'source=telegram_deeplink'
+    ].join('&');
+
+    // Use Telegram's web_app button
+    var bot = new TelegramBotAPI();
+    var firstName = (signerName || 'there').split(' ')[0];
+
+    bot.sendMessage(chatId,
+      '✍️ *Ready to Sign Your Documents*\n\n' +
+      'Hey ' + firstName + ', your bail documents are ready for signing.\n\n' +
+      '📋 *Case:* ' + (caseNumber || 'Pending') + '\n' +
+      '📄 *Document:* ' + _formatDocType(docType) + '\n\n' +
+      'Tap the button below to sign — it takes less than 2 minutes!\n\n' +
+      '_Powered by SignNow electronic signatures 🔒_',
+      {
+        parse_mode: 'Markdown',
+        reply_markup: JSON.stringify({
+          inline_keyboard: [[{
+            text: '✍️ Sign Now — One Tap',
+            web_app: { url: miniAppUrl + '?' + params }
+          }]]
+        })
+      }
+    );
+
+    if (typeof logBotEvent === 'function') {
+      logBotEvent('signing_link_sent', String(chatId), {
+        caseNumber: caseNumber,
+        docType: docType
+      });
+    }
+
+    return { success: true };
+
+  } catch (e) {
+    console.error('Failed to send signing deep link: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+function _formatDocType(docType) {
+  if (!docType) return 'Bail Bond Documents';
+  return docType
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAYMENT PROGRESS NOTIFICATIONS (Feature #8)
+// Visual progress updates for payment plans
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Send a payment progress notification to a client.
+ * Shows a visual progress bar with payment details.
+ * 
+ * @param {string} chatId     - Telegram chat ID
+ * @param {object} paymentData - { totalDue, totalPaid, nextDueDate, nextDueAmount, planName }
+ */
+function TG_sendPaymentProgressUpdate(chatId, paymentData) {
+  try {
+    var totalDue = parseFloat(paymentData.totalDue) || 0;
+    var totalPaid = parseFloat(paymentData.totalPaid) || 0;
+    var remaining = Math.max(0, totalDue - totalPaid);
+    var percent = totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0;
+
+    // Build visual progress bar (20 chars wide)
+    var barLength = 20;
+    var filled = Math.round(barLength * percent / 100);
+    var progressBar = '';
+    for (var i = 0; i < barLength; i++) {
+      progressBar += i < filled ? '█' : '░';
+    }
+
+    // Status emoji
+    var statusEmoji = percent >= 100 ? '🎉' : (percent >= 75 ? '🟢' : (percent >= 50 ? '🟡' : '🔵'));
+
+    var text = statusEmoji + ' *Payment Progress Update*\n\n'
+      + '```\n'
+      + progressBar + ' ' + percent + '%\n'
+      + '```\n\n'
+      + '💰 *Total Premium:* $' + totalDue.toLocaleString() + '\n'
+      + '✅ *Paid:* $' + totalPaid.toLocaleString() + '\n'
+      + '📊 *Remaining:* $' + remaining.toLocaleString() + '\n';
+
+    if (paymentData.nextDueDate) {
+      var nextDate = new Date(paymentData.nextDueDate);
+      var dateStr = Utilities.formatDate(nextDate, 'America/New_York', 'MMM d, yyyy');
+      text += '\n📅 *Next Payment:* $' + (parseFloat(paymentData.nextDueAmount) || 0).toLocaleString()
+        + ' due ' + dateStr + '\n';
+    }
+
+    if (percent >= 100) {
+      text += '\n🎉 *Congratulations! Your bond is fully paid off!* 🍀';
+    } else {
+      text += '\n_Make a payment anytime — reply "pay" or call (239) 332-2245._';
+    }
+
+    var replyMarkup = null;
+    if (percent < 100) {
+      var payUrl = PropertiesService.getScriptProperties().getProperty('SWIPESIMPLE_PAYMENT_LINK') || '';
+      if (payUrl) {
+        replyMarkup = JSON.stringify({
+          inline_keyboard: [[
+            { text: '💳 Make a Payment', url: payUrl }
+          ]]
+        });
+      }
+    }
+
+    var bot = new TelegramBotAPI();
+    var opts = { parse_mode: 'Markdown' };
+    if (replyMarkup) opts.reply_markup = replyMarkup;
+    bot.sendMessage(chatId, text, opts);
+
+    if (typeof logBotEvent === 'function') {
+      logBotEvent('payment_progress_sent', String(chatId), {
+        percent: percent,
+        remaining: remaining
+      });
+    }
+
+    return { success: true, percent: percent };
+
+  } catch (e) {
+    console.error('Failed to send payment progress: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Process all clients with active payment plans and send weekly progress updates.
+ * Called by a time-driven trigger (weekly, Mondays at 10 AM).
+ */
+function TG_processWeeklyPaymentProgress() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('PaymentPlans');
+    if (!sheet || sheet.getLastRow() < 2) {
+      console.log('No payment plans found');
+      return;
+    }
+
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var sent = 0;
+
+    // Find column indices
+    var chatIdCol = headers.indexOf('ChatId');
+    var totalDueCol = headers.indexOf('TotalDue');
+    var totalPaidCol = headers.indexOf('TotalPaid');
+    var nextDateCol = headers.indexOf('NextDueDate');
+    var nextAmtCol = headers.indexOf('NextDueAmount');
+    var statusCol = headers.indexOf('Status');
+
+    if (chatIdCol === -1 || totalDueCol === -1) {
+      console.warn('PaymentPlans sheet missing required columns');
+      return;
+    }
+
+    for (var i = 1; i < data.length; i++) {
+      var status = statusCol >= 0 ? String(data[i][statusCol]).toLowerCase() : 'active';
+      if (status !== 'active') continue;
+
+      var chatId = String(data[i][chatIdCol]);
+      if (!chatId) continue;
+
+      TG_sendPaymentProgressUpdate(chatId, {
+        totalDue: data[i][totalDueCol],
+        totalPaid: totalPaidCol >= 0 ? data[i][totalPaidCol] : 0,
+        nextDueDate: nextDateCol >= 0 ? data[i][nextDateCol] : null,
+        nextDueAmount: nextAmtCol >= 0 ? data[i][nextAmtCol] : null
+      });
+      sent++;
+    }
+
+    console.log('✅ Sent ' + sent + ' weekly payment progress updates');
+
+  } catch (e) {
+    console.error('Weekly payment progress error: ' + e.message);
+  }
+}

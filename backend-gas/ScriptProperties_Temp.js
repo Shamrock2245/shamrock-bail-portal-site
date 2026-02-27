@@ -112,8 +112,8 @@ function setTelegramProperties() {
  */
 function setPexelsApiKey() {
   var props = PropertiesService.getScriptProperties();
-  // ⚠️ REPLACE with your real Pexels API key
-  props.setProperty('PEXELS_API_KEY', 'PASTE_YOUR_PEXELS_KEY_HERE');
+  // REDACTED for git — value already deployed to GAS via clasp push 2026-02-27
+  props.setProperty('PEXELS_API_KEY', 'REDACTED');
   console.log('✅ Set PEXELS_API_KEY successfully.');
 }
 

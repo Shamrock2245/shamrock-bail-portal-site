@@ -27,7 +27,7 @@
  */
 function getTelegramConfig() {
   const props = PropertiesService.getScriptProperties();
-  
+
   return {
     botToken: props.getProperty('TELEGRAM_BOT_TOKEN') || '',
     baseUrl: 'https://api.telegram.org/bot',
@@ -47,16 +47,16 @@ class TelegramBotAPI {
     this.baseUrl = config.baseUrl + this.botToken;
     this.maxRetries = config.maxRetries;
     this.retryDelay = config.retryDelay;
-    
+
     if (!this.botToken) {
       console.warn('⚠️ TELEGRAM_BOT_TOKEN not configured in Script Properties');
     }
   }
-  
+
   // ===========================================================================
   // CORE API METHODS
   // ===========================================================================
-  
+
   /**
    * Make API request to Telegram
    * @param {string} method - API method name (e.g., 'sendMessage')
@@ -65,25 +65,25 @@ class TelegramBotAPI {
    */
   _request(method, params = {}) {
     const url = `${this.baseUrl}/${method}`;
-    
+
     const options = {
       method: 'post',
       contentType: 'application/json',
       payload: JSON.stringify(params),
       muteHttpExceptions: true
     };
-    
+
     let lastError = null;
-    
+
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
         const response = UrlFetchApp.fetch(url, options);
         const responseCode = response.getResponseCode();
         const responseText = response.getContentText();
-        
+
         if (responseCode === 200) {
           const data = JSON.parse(responseText);
-          
+
           if (data.ok) {
             return data.result;
           } else {
@@ -94,25 +94,25 @@ class TelegramBotAPI {
           console.error(`HTTP ${responseCode}: ${responseText}`);
           lastError = new Error(`HTTP ${responseCode}`);
         }
-        
+
       } catch (e) {
         console.error(`Telegram API request failed (attempt ${attempt}):`, e);
         lastError = e;
       }
-      
+
       // Retry with exponential backoff
       if (attempt < this.maxRetries) {
         Utilities.sleep(this.retryDelay * attempt);
       }
     }
-    
+
     throw lastError || new Error('Telegram API request failed');
   }
-  
+
   // ===========================================================================
   // MESSAGE SENDING
   // ===========================================================================
-  
+
   /**
    * Send text message
    * @param {string|number} chatId - Chat ID or username
@@ -122,7 +122,7 @@ class TelegramBotAPI {
    */
   sendMessage(chatId, text, options = {}) {
     console.log(`📤 Sending Telegram message to ${chatId}`);
-    
+
     const params = {
       chat_id: chatId,
       text: text,
@@ -130,7 +130,7 @@ class TelegramBotAPI {
       disable_web_page_preview: options.disable_preview || false,
       ...options
     };
-    
+
     try {
       const result = this._request('sendMessage', params);
       console.log(`✅ Message sent: ${result.message_id}`);
@@ -140,7 +140,7 @@ class TelegramBotAPI {
       return { success: false, error: e.message };
     }
   }
-  
+
   /**
    * Send photo
    * @param {string|number} chatId - Chat ID
@@ -151,7 +151,7 @@ class TelegramBotAPI {
    */
   sendPhoto(chatId, photo, caption = '', options = {}) {
     console.log(`📤 Sending photo to ${chatId}`);
-    
+
     const params = {
       chat_id: chatId,
       photo: photo,
@@ -159,7 +159,7 @@ class TelegramBotAPI {
       parse_mode: options.parse_mode || 'Markdown',
       ...options
     };
-    
+
     try {
       const result = this._request('sendPhoto', params);
       return { success: true, messageId: result.message_id, result: result };
@@ -168,7 +168,7 @@ class TelegramBotAPI {
       return { success: false, error: e.message };
     }
   }
-  
+
   /**
    * Send document
    * @param {string|number} chatId - Chat ID
@@ -179,7 +179,7 @@ class TelegramBotAPI {
    */
   sendDocument(chatId, document, caption = '', options = {}) {
     console.log(`📤 Sending document to ${chatId}`);
-    
+
     const params = {
       chat_id: chatId,
       document: document,
@@ -187,7 +187,7 @@ class TelegramBotAPI {
       parse_mode: options.parse_mode || 'Markdown',
       ...options
     };
-    
+
     try {
       const result = this._request('sendDocument', params);
       return { success: true, messageId: result.message_id, result: result };
@@ -196,7 +196,7 @@ class TelegramBotAPI {
       return { success: false, error: e.message };
     }
   }
-  
+
   /**
    * Send voice message (audio file)
    * @param {string|number} chatId - Chat ID
@@ -206,13 +206,13 @@ class TelegramBotAPI {
    */
   sendVoice(chatId, voice, options = {}) {
     console.log(`📤 Sending voice message to ${chatId}`);
-    
+
     const params = {
       chat_id: chatId,
       voice: voice,
       ...options
     };
-    
+
     try {
       const result = this._request('sendVoice', params);
       return { success: true, messageId: result.message_id, result: result };
@@ -221,7 +221,7 @@ class TelegramBotAPI {
       return { success: false, error: e.message };
     }
   }
-  
+
   /**
    * Send location
    * @param {string|number} chatId - Chat ID
@@ -237,7 +237,7 @@ class TelegramBotAPI {
       longitude: longitude,
       ...options
     };
-    
+
     try {
       const result = this._request('sendLocation', params);
       return { success: true, messageId: result.message_id, result: result };
@@ -246,11 +246,11 @@ class TelegramBotAPI {
       return { success: false, error: e.message };
     }
   }
-  
+
   // ===========================================================================
   // INTERACTIVE ELEMENTS
   // ===========================================================================
-  
+
   /**
    * Send message with inline keyboard
    * @param {string|number} chatId - Chat ID
@@ -268,12 +268,12 @@ class TelegramBotAPI {
     const keyboard = {
       inline_keyboard: buttons
     };
-    
+
     return this.sendMessage(chatId, text, {
       reply_markup: keyboard
     });
   }
-  
+
   /**
    * Request location from user
    * @param {string|number} chatId - Chat ID
@@ -291,12 +291,12 @@ class TelegramBotAPI {
       one_time_keyboard: true,
       resize_keyboard: true
     };
-    
+
     return this.sendMessage(chatId, text, {
       reply_markup: keyboard
     });
   }
-  
+
   /**
    * Answer callback query (from inline keyboard button)
    * @param {string} callbackQueryId - Callback query ID
@@ -310,7 +310,7 @@ class TelegramBotAPI {
       text: text,
       show_alert: showAlert
     };
-    
+
     try {
       this._request('answerCallbackQuery', params);
       return { success: true };
@@ -319,11 +319,11 @@ class TelegramBotAPI {
       return { success: false, error: e.message };
     }
   }
-  
+
   // ===========================================================================
   // FILE OPERATIONS
   // ===========================================================================
-  
+
   /**
    * Get file info
    * @param {string} fileId - Telegram file ID
@@ -337,7 +337,7 @@ class TelegramBotAPI {
       throw e;
     }
   }
-  
+
   /**
    * Download file
    * @param {string} fileId - Telegram file ID
@@ -345,31 +345,31 @@ class TelegramBotAPI {
    */
   downloadFile(fileId) {
     console.log(`⬇️ Downloading file: ${fileId}`);
-    
+
     try {
       // Get file info
       const fileInfo = this.getFile(fileId);
       const filePath = fileInfo.file_path;
-      
+
       // Download file
       const fileUrl = `https://api.telegram.org/file/bot${this.botToken}/${filePath}`;
       const response = UrlFetchApp.fetch(fileUrl);
       const blob = response.getBlob();
-      
+
       console.log(`✅ File downloaded: ${blob.getName()} (${blob.getBytes().length} bytes)`);
-      
+
       return blob;
-      
+
     } catch (e) {
       console.error('Failed to download file:', e);
       throw e;
     }
   }
-  
+
   // ===========================================================================
   // BOT MANAGEMENT
   // ===========================================================================
-  
+
   /**
    * Get bot info
    * @returns {object} - Bot information
@@ -382,7 +382,7 @@ class TelegramBotAPI {
       throw e;
     }
   }
-  
+
   /**
    * Set webhook URL
    * @param {string} url - Webhook URL
@@ -390,7 +390,7 @@ class TelegramBotAPI {
    */
   setWebhook(url) {
     console.log(`Setting webhook: ${url}`);
-    
+
     try {
       this._request('setWebhook', { url: url });
       console.log('✅ Webhook set successfully');
@@ -400,7 +400,7 @@ class TelegramBotAPI {
       return false;
     }
   }
-  
+
   /**
    * Delete webhook
    * @returns {boolean} - Success
@@ -415,7 +415,7 @@ class TelegramBotAPI {
       return false;
     }
   }
-  
+
   /**
    * Get webhook info
    * @returns {object} - Webhook information
@@ -428,11 +428,11 @@ class TelegramBotAPI {
       throw e;
     }
   }
-  
+
   // ===========================================================================
   // CHAT ACTIONS
   // ===========================================================================
-  
+
   /**
    * Send chat action (typing indicator)
    * @param {string|number} chatId - Chat ID
@@ -451,13 +451,41 @@ class TelegramBotAPI {
       return false;
     }
   }
-  
+
   /**
    * Show typing indicator
    * @param {string|number} chatId - Chat ID
    */
   showTyping(chatId) {
     this.sendChatAction(chatId, 'typing');
+  }
+
+  // ===========================================================================
+  // INLINE QUERY
+  // ===========================================================================
+
+  /**
+   * Answer an inline query with results
+   * @param {string} inlineQueryId - The inline query ID from the update
+   * @param {Array} results - Array of InlineQueryResult objects
+   * @param {object} options - Optional { cache_time, is_personal, next_offset }
+   * @returns {boolean} - Success
+   */
+  answerInlineQuery(inlineQueryId, results, options) {
+    options = options || {};
+    try {
+      this._request('answerInlineQuery', {
+        inline_query_id: inlineQueryId,
+        results: results,
+        cache_time: options.cache_time || 30,
+        is_personal: options.is_personal || false,
+        next_offset: options.next_offset || ''
+      });
+      return true;
+    } catch (e) {
+      console.error('Failed to answer inline query:', e);
+      return false;
+    }
   }
 }
 
@@ -505,19 +533,19 @@ function escapeTelegramMarkdown(text) {
  */
 function formatTelegramMessage(text, options = {}) {
   let formatted = text;
-  
+
   if (options.bold) {
     formatted = `*${formatted}*`;
   }
-  
+
   if (options.italic) {
     formatted = `_${formatted}_`;
   }
-  
+
   if (options.code) {
     formatted = `\`${formatted}\``;
   }
-  
+
   return formatted;
 }
 
@@ -532,14 +560,14 @@ function testTelegramConnection() {
   try {
     const bot = new TelegramBotAPI();
     const me = bot.getMe();
-    
+
     console.log('✅ Telegram bot connected!');
     console.log(`Bot name: ${me.first_name}`);
     console.log(`Username: @${me.username}`);
     console.log(`Bot ID: ${me.id}`);
-    
+
     return { success: true, bot: me };
-    
+
   } catch (e) {
     console.error('❌ Telegram connection failed:', e);
     return { success: false, error: e.message };
@@ -553,15 +581,15 @@ function testTelegramMessage(chatId, message = 'Hello from Shamrock Bail Bonds! 
   try {
     const bot = new TelegramBotAPI();
     const result = bot.sendMessage(chatId, message);
-    
+
     if (result.success) {
       console.log('✅ Test message sent successfully!');
     } else {
       console.error('❌ Failed to send test message:', result.error);
     }
-    
+
     return result;
-    
+
   } catch (e) {
     console.error('❌ Test failed:', e);
     return { success: false, error: e.message };

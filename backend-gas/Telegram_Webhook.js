@@ -31,6 +31,19 @@
 function handleTelegramInbound(update) {
   console.log('📩 Telegram update received:', JSON.stringify(update));
 
+  // ── Inline Query (Bail Quote Calculator) ─────────────────────────────────
+  if (update.inline_query) {
+    try {
+      if (typeof handleInlineQuery === 'function') {
+        handleInlineQuery(update.inline_query);
+        return { success: true, action: 'inline_query_answered' };
+      }
+    } catch (iqErr) {
+      console.error('Inline query error:', iqErr);
+    }
+    return { success: false, message: 'Inline query handler not available' };
+  }
+
   // Extract message or callback query
   const message = update.message;
   const callbackQuery = update.callback_query;
@@ -330,6 +343,9 @@ function _handleLocationMessage(data) {
       const result = handleLocationMessage(locationData);
 
       // Response is sent by the handler itself
+      // Also send nearest office info
+      _sendNearestOfficeInfo(data.chatId, location.latitude, location.longitude);
+
       return {
         success: result.success,
         action: 'location_captured',
@@ -340,12 +356,65 @@ function _handleLocationMessage(data) {
       console.warn('handleLocationMessage function not found');
       const bot = new TelegramBotAPI();
       bot.sendMessage(data.chatId, 'Thank you for sharing your location! 📍');
+
+      // Still send nearest office info
+      _sendNearestOfficeInfo(data.chatId, location.latitude, location.longitude);
+
       return { success: true, action: 'location_acknowledged' };
     }
 
   } catch (e) {
     console.error('Error handling location:', e);
     return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Send nearest Shamrock office info after receiving a location share.
+ * Non-fatal — wrapped in try/catch so it never breaks the main flow.
+ */
+function _sendNearestOfficeInfo(chatId, lat, lng) {
+  try {
+    if (typeof findNearestOffice !== 'function') return;
+
+    var office = findNearestOffice(lat, lng);
+    if (!office) return;
+
+    var distStr = office.distance < 1
+      ? 'less than 1 mile away'
+      : office.distance.toFixed(1) + ' miles away';
+
+    var mapsUrl = 'https://www.google.com/maps/dir/?api=1'
+      + '&origin=' + lat + ',' + lng
+      + '&destination=' + encodeURIComponent(office.address);
+
+    var text = '📍 *Nearest Shamrock Office*\n\n'
+      + '🏢 *' + office.name + '*\n'
+      + '📫 ' + office.address + '\n'
+      + '📞 ' + office.phone + '\n'
+      + '📏 ' + distStr + '\n\n'
+      + '_Available 24/7 — Call us anytime!_';
+
+    var bot = new TelegramBotAPI();
+    bot.sendMessage(chatId, text, {
+      parse_mode: 'Markdown',
+      reply_markup: JSON.stringify({
+        inline_keyboard: [[
+          { text: '📞 Call Now', url: 'tel:' + office.phone.replace(/[^\d+]/g, '') },
+          { text: '🗺️ Directions', url: mapsUrl }
+        ]]
+      })
+    });
+
+    // Log for analytics
+    if (typeof logBotEvent === 'function') {
+      logBotEvent('office_locator', String(chatId), {
+        office: office.name,
+        distance: office.distance
+      });
+    }
+  } catch (e) {
+    console.warn('Nearest office info failed (non-fatal): ' + e.message);
   }
 }
 

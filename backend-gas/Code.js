@@ -623,6 +623,53 @@ function doPost(e) {
         return createErrorResponse(checkinErr.message, ERROR_CODES.INTERNAL_ERROR);
       }
     }
+
+    // ─── BOT ANALYTICS (Feature #4) ───
+    if (data.action === 'get_bot_analytics') {
+      try {
+        var analytics = getBotAnalytics(data.options || { days: 7 });
+        return createResponse(analytics);
+      } catch (analyticsErr) {
+        return createErrorResponse(analyticsErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
+    // ─── COURT DATE SCHEDULE (Feature #2) ───
+    if (data.action === 'schedule_court_date') {
+      try {
+        Logger.log('📅 Court date scheduling: ' + data.chatId);
+        var courtResult = TG_scheduleCourtDateSequence(
+          data.chatId, data.name, data.courtDate, data.caseNumber, data.courtInfo
+        );
+        return createResponse(courtResult);
+      } catch (courtErr) {
+        return createErrorResponse(courtErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
+    // ─── SIGNING DEEP LINK (Feature #3) ───
+    if (data.action === 'send_signing_link') {
+      try {
+        Logger.log('✍️ Sending signing deep link to: ' + data.chatId);
+        var signResult = TG_sendSigningDeepLink(
+          data.chatId, data.caseNumber, data.docType, data.signerName
+        );
+        return createResponse(signResult);
+      } catch (signErr) {
+        return createErrorResponse(signErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
+    // ─── PREMIUM CALCULATOR API (Feature #1) ───
+    if (data.action === 'calculate_premium') {
+      try {
+        var premResult = calculatePremium(data.bailAmount, data.chargeCount, data.county);
+        return createResponse({ success: true, quote: premResult });
+      } catch (premErr) {
+        return createErrorResponse(premErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
     // ─── STATUS LOOKUP (Returns Real Case Data) ───
     if (data.action === 'telegram_status_lookup') {
       try {

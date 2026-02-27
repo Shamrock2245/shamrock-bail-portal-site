@@ -444,6 +444,63 @@ function toRadians(degrees) {
 }
 
 // =============================================================================
+// OFFICE LOCATOR
+// =============================================================================
+
+/**
+ * Shamrock Bail Bonds office locations.
+ * Add new offices here as the company expands.
+ */
+var SHAMROCK_OFFICES = [
+  {
+    name: 'Shamrock Bail Bonds — Fort Myers HQ',
+    address: '2422 Martin Luther King Blvd, Fort Myers, FL 33901',
+    phone: '(239) 332-2245',
+    lat: 26.6406,
+    lng: -81.8723,
+    counties: ['lee']
+  },
+  {
+    name: 'Shamrock Bail Bonds — Charlotte County',
+    address: '410 Taylor St, Punta Gorda, FL 33950',
+    phone: '(941) 639-5400',
+    lat: 26.9295,
+    lng: -82.0454,
+    counties: ['charlotte']
+  }
+];
+
+/**
+ * Find the nearest Shamrock office to a given GPS location.
+ * 
+ * @param {number} lat - User's latitude
+ * @param {number} lng - User's longitude
+ * @returns {object|null} - { name, address, phone, distance, counties }
+ */
+function findNearestOffice(lat, lng) {
+  if (!lat || !lng) return null;
+
+  var nearest = null;
+  var minDist = Infinity;
+
+  SHAMROCK_OFFICES.forEach(function (office) {
+    var dist = calculateDistance(lat, lng, office.lat, office.lng);
+    if (dist < minDist) {
+      minDist = dist;
+      nearest = {
+        name: office.name,
+        address: office.address,
+        phone: office.phone,
+        distance: dist,
+        counties: office.counties
+      };
+    }
+  });
+
+  return nearest;
+}
+
+// =============================================================================
 // EXPORTS
 // =============================================================================
 

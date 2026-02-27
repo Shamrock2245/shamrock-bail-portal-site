@@ -38,49 +38,69 @@
 
 ---
 
-## 🚧 Phase 4: System Verification (Current Focus)
-*Ref: [TESTING_GUIDE.md](./TESTING_GUIDE.md)*
-
-- [ ] **Test 1: Happy Path** (Lee County / High Urgency)
-    - [ ] Submit Intake -> Receive AI SMS -> Click SignNow Link.
-- [ ] **Test 2: Northern Expansion** (Manatee/Pinellas)
-    - [ ] Verify AI knows the specific jail locations/rules.
-- [ ] **Test 3: Education Flow**
-    - [ ] Verify Bail School certificate generation.
+## ✅ Phase 4: System Verification (Complete)
+- [x] **Test 1:** Happy Path (Lee County / High Urgency) — Submit → AI SMS → SignNow.
+- [x] **Test 2:** Northern Expansion (Manatee/Pinellas) — Verified county jail data.
+- [x] **Test 3:** Dashboard Intake Queue — Verified loading + rendering.
 
 ---
 
-## 🧹 Technical Debt & Compliance (Consolidated)
-- [x] **Audit Element IDs**: Check `masterPage.js` and `Home` against canonical IDs.
-- [x] **Schema Verify**: Check `FloridaCounties` against Foundation Spec.
-- [x] **SignNow Wiring**: Confirm "Start Bail" button ONLY activates after Consent + Login.
-- [x] **Mobile Sticky CTA**: Verify `#stickyMobileCTA` behavior (Updated ID to canonical).
-- [x] **Error Boundaries**: Add UI for "County Not Found".
+## ✅ Phase 5: Telegram Integration & Core Automation (Complete)
+- [x] **Telegram Bot:** Full production bot (`@ShamrockBail_bot`) with conversational intake.
+- [x] **PDF Bot Skills:** Merge, compress, watermark, and archive via `PDF_Processor.js`.
+- [x] **Closed-Loop Signing:** Auto-processes post-signing → PDF delivery via Telegram.
+- [x] **Codebase Deduplication:** Unified `Utilities.js` for shared helpers.
+- [x] **Arrest Scrapers:** Lee County + Collier County live with hourly triggers.
+- [x] **Historical Bond Monitor:** Cross-references new arrests with previous bonds.
+- [x] **"The Closer":** Abandoned intake follow-up bot with SMS/Telegram drip campaigns.
+- [x] **Court Email Processor:** Auto-parses court date emails, updates records.
 
 ---
 
-## ✅ Phase 5: Telegram Integration & Automation (Complete)
-- [x] **Telegram Integration:**
-    - [x] Enabled Telegram Bot API and built a production-ready bot.
-    - [x] Created a full conversational intake flow (`Telegram_IntakeFlow.js`).
-    - [x] Integrated ElevenLabs for voice note capabilities.
-    - [x] Added a "Chat on Telegram" button to the mobile site.
-- [x] **PDF Bot Skills Integration:**
-    - [x] Integrated PDF merge, compress, watermark, and archive capabilities from open-source bots.
-    - [x] Created a unified `PDF_Processor.js` to handle all document and photo uploads.
-- [x] **Closed-Loop Signing Pipeline:**
-    - [x] Fully automated the post-signing process: document completion triggers PDF processing and delivery back to the client via Telegram.
-- [x] **Codebase Deduplication:**
-    - [x] Audited and resolved all code duplication between development sessions.
-    - [x] Created a unified `Utilities.js` for all shared helper functions.
-- [ ] **"The Scout" Agent (Expansion):**
-    - [ ] Configure `AI_BookingParser.js` for 5 new county URLs.
-    - [ ] Set up daily cron triggers in GAS.
-- [ ] **"The Closer" Bot:**
-    - [ ] Design abandoned cart workflow (SMS drip).
-    - [ ] Implement trigger on `IntakeQueue` timeout.
+## ✅ Phase 6: Telegram Ecosystem Expansion (Complete — Feb 27, 2026)
+- [x] **Inline Quote Bot** — `Telegram_InlineQuote.js`
+  - [x] Florida premium calculation: $100/charge min OR 10% (whichever is greater)
+  - [x] Transfer fee logic: $125 (waived for Lee/Charlotte + bonds >$25k)
+  - [x] Inline mode enabled via BotFather `/setinline`
+- [x] **Court Date Reminder Sequences** — `Telegram_Notifications.js`
+  - [x] 4-touch: 7-day, 3-day, 1-day, morning-of
+  - [x] Time-driven trigger: every 30 minutes
+- [x] **One-Tap Signing Deep Link** — `Telegram_Notifications.js`
+  - [x] web_app button → Documents mini app with case context
+- [x] **Bot Analytics Dashboard** — `Telegram_Analytics.js`
+  - [x] `logBotEvent()` + `getBotAnalytics()` for funnel tracking
+  - [x] `get_bot_analytics` action wired in `Code.js`
+- [x] **ID OCR** — `Telegram_OCR.js`
+  - [x] Google Cloud Vision API TEXT_DETECTION
+  - [x] FL Driver License parser (name, DOB, DL#, address)
+  - [x] Graceful fallback to Drive if Vision API not configured
+- [x] **Office Locator** — `LocationMetadataService.js` + `Telegram_Webhook.js`
+  - [x] `findNearestOffice()` for Fort Myers HQ + Charlotte County
+  - [x] Auto-sends nearest office with Call/Directions buttons
+- [x] **Payment Progress Notifications** — `Telegram_Notifications.js`
+  - [x] Visual progress bar (████░░ 65%)
+  - [x] Weekly trigger: Mondays 10 AM
+- [~] **Voice Message Transcription** — ON HOLD
+  - [ ] Exploring alternatives to ElevenLabs STT
+  - [ ] ElevenLabs reserved for speaking agent feature
 
-## 🔮 Phase 6: "Bail School" & Scale
-- [ ] **Landing Page:** Design high-converting registration page (`/bail-school`).
-- [ ] **Video Integration:** Embed verified educational content.
-- [ ] **Certificate:** Auto-issue PDF upon completion.
+---
+
+## 🔮 Phase 7: Growth & Scale (Upcoming)
+- [ ] **"The Scout" Agent (Expansion)**
+  - [ ] Configure `AI_BookingParser.js` for 5 new county URLs
+  - [ ] Set up daily cron triggers in GAS
+- [ ] **WhatsApp Business Integration**
+  - [ ] Enable Twilio Sandbox
+  - [ ] Wire to `twilio-client.jsw`
+- [ ] **Bail School Landing Page**
+  - [ ] Design high-converting `/bail-school` registration page
+  - [ ] Video integration + auto-issue PDF certificate
+- [ ] **ElevenLabs Speaking Agent**
+  - [ ] After-hours voice agent for inbound inquiries
+- [ ] **Social Media Automation**
+  - [ ] Pexels integration for post images
+  - [ ] Scheduled social publishing via `SocialPublisher.js`
+- [ ] **SEO & Indexing**
+  - [ ] All county pages indexed in Google
+  - [ ] Structured data (JSON-LD) optimized
