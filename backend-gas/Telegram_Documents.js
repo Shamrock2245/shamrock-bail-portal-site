@@ -23,19 +23,182 @@
 // All templates are in production SignNow (api.signnow.com)
 
 const SIGNNOW_TEMPLATE_MAP = {
-    'paperwork-header': '6bf07c9baec04210aa41ab4bed767314fd9243b9',
-    'faq-cosigners': '0820b9fef3bd4c38a91643455881021f3f0c3a88',
-    'faq-defendants': '1524f1c816c54a72be76d14fe128e4a6034579dc',
-    'indemnity-agreement': '2c16525316f143338db14b4ef578aabe67bd47d8',
-    'defendant-application': '5ca8b3a3dbc748aa8e33201fcbe87f985850573f',
-    'promissory-note': 'e01eb884a00a46408c056093ba0937e26715e3ae',
-    'disclosure-form': '08f56f268b2c4b45a1de434b278c840936d09ad9',
-    'surety-terms': '4cd02a2dcb334fcc89499d277763fb541820ff40',
-    'master-waiver': '3b0e71188b3049cc8760d144e6c49df227ccd741',
-    'ssa-release': '3aac5dd7cc03408594e56d4a7f1ddd9ccbdb8fe7',
-    'collateral-receipt': '903275f447284cce83e973253f2760c334eb3768',
-    'payment-plan': 'ea13db9ec6e7462d963682e6b53f5ca0e46c892f'
+    // All IDs from Team Templates folder (4a920d8f...) in admin@shamrockbailbonds.biz
+    'paperwork-header': '9b9dad3e319f4b1580094e05f9844929d5a6f7de',  // shamrock-paperwork-header
+    'faq-cosigners': '0820b9fef3bd4c38a91643455881021f3f0c3a88',  // Shamrock Bail Bonds - FAQ Cosigners
+    'faq-defendants': '1524f1c816c54a72be76d14fe128e4a6034579dc',  // Shamrock Bail Bonds- FAQ Defe.
+    'indemnity-agreement': 'ed5e6ca0a3444796a127fbeb6a880658371aafd7',  // Indemnity Agreement FINAL
+    'defendant-application': 'd50adc808f3245f087b218d33da89e4ace15ecd4',  // App for Appearance Bond FINAL
+    'promissory-note': '460bd43c2f514305a3b296481713a00ee8311c79',  // Promissory Side 2 FINAL
+    'disclosure-form': 'fb8b57bf55ac4d5e8bff820b018a0bfd3b17a37a',  // Disclosure FINAL
+    'surety-terms': '192aeb246230446bb0d7f658765afd2832704964',  // Surety Terms and Conditions FINAL
+    'master-waiver': '3b0e71188b3049cc8760d144e6c49df227ccd741',  // shamrock-master-waiver
+    'ssa-release': '4800defff07541079760889d83109059585b0cea',  // shamrock-ssa-release
+    'collateral-receipt': '4b1f5611840f4de4bc891677617f5dbf6ff7ad05',  // osi-premium-collateral-template
+    'payment-plan': '1861b158d7a447d48be5ac1dd24755f727f0773b',  // shamrock-premium-finance-notice
+    'appearance-bond': '7ba703e101e04604a2f1458c21d3addfce9ca86b'   // Appearance Bond blank (PRINT ONLY)
 };
+
+// ============================================================================
+// DOCUMENT MULTIPLICATION RULES (Multi-Indemnitor Logic)
+// ============================================================================
+// Rule types:
+//   static        → Always 1 copy, no signer-specific content
+//   shared        → 1 copy, multiple signers sign the SAME document
+//   per-indemnitor → 1 copy PER indemnitor (each gets their own)
+//   per-person     → 1 copy PER person on the bond (defendant + each indemnitor)
+//   print-only     → Not sent to SignNow (e.g., Appearance Bond)
+// ============================================================================
+const DOC_GENERATION_RULES = {
+    'paperwork-header': { rule: 'static', label: 'Paperwork Header' },
+    'faq-cosigners': { rule: 'shared', label: 'FAQ - Cosigners' },
+    'faq-defendants': { rule: 'shared', label: 'FAQ - Defendants' },
+    'indemnity-agreement': { rule: 'per-indemnitor', label: 'Indemnity Agreement' },
+    'defendant-application': { rule: 'static', label: 'Defendant Application' },
+    'promissory-note': { rule: 'shared', label: 'Promissory Note' },
+    'disclosure-form': { rule: 'shared', label: 'Disclosure Form' },
+    'surety-terms': { rule: 'shared', label: 'Surety Terms & Conditions' },
+    'master-waiver': { rule: 'shared', label: 'Master Waiver' },
+    'ssa-release': { rule: 'per-person', label: 'SSA Release' },
+    'collateral-receipt': { rule: 'shared', label: 'Collateral & Premium Receipt' },
+    'payment-plan': { rule: 'shared', label: 'Payment Plan Agreement' },
+    'appearance-bond': { rule: 'print-only', label: 'Appearance Bond (Print Only)' }
+};
+
+// Canonical document order for packet assembly
+const DOC_ORDER = [
+    'paperwork-header', 'faq-cosigners', 'faq-defendants',
+    'indemnity-agreement', 'defendant-application', 'promissory-note',
+    'disclosure-form', 'surety-terms', 'master-waiver',
+    'ssa-release', 'collateral-receipt', 'payment-plan'
+];
+
+/**
+ * buildPacketManifest(caseData)
+ *
+ * Given case data with defendant + indemnitors[], returns a flat array of
+ * document entries that need to be created for this bond.
+ *
+ * Each entry: {
+ *   docId:        'ssa-release',
+ *   templateId:   '4800deff...',
+ *   label:        'SSA Release - John Smith',
+ *   rule:         'per-person',
+ *   signerIndex:  0,            // 0 = defendant, 1 = indemnitor 1, etc.
+ *   signerRole:   'Defendant',  // or 'Indemnitor', 'Co-Indemnitor 1', etc.
+ *   signerName:   'John Smith',
+ *   signerEmail:  'john@example.com'
+ * }
+ */
+function buildPacketManifest(caseData) {
+    var defendant = {
+        name: ((caseData.defendantFirstName || '') + ' ' + (caseData.defendantLastName || '')).trim() || 'Defendant',
+        email: caseData.defendantEmail || '',
+        role: 'Defendant',
+        index: 0
+    };
+
+    // Build signers list: defendant at index 0, indemnitors at 1+
+    var indemnitors = [];
+    if (caseData.indemnitors && Array.isArray(caseData.indemnitors)) {
+        caseData.indemnitors.forEach(function (ind, i) {
+            var name = ((ind.firstName || '') + ' ' + (ind.lastName || '')).trim();
+            indemnitors.push({
+                name: name || ('Indemnitor ' + (i + 1)),
+                email: ind.email || '',
+                role: i === 0 ? 'Indemnitor' : 'Co-Indemnitor ' + i,
+                index: i + 1
+            });
+        });
+    }
+
+    // If no indemnitors provided, create a placeholder
+    if (indemnitors.length === 0) {
+        indemnitors.push({
+            name: 'Indemnitor',
+            email: '',
+            role: 'Indemnitor',
+            index: 1
+        });
+    }
+
+    var allPersons = [defendant].concat(indemnitors);
+    var manifest = [];
+
+    DOC_ORDER.forEach(function (docId) {
+        var config = DOC_GENERATION_RULES[docId];
+        var templateId = SIGNNOW_TEMPLATE_MAP[docId];
+        if (!config || !templateId) return;
+
+        switch (config.rule) {
+            case 'static':
+                // 1 copy, no specific signer
+                manifest.push({
+                    docId: docId,
+                    templateId: templateId,
+                    label: config.label,
+                    rule: config.rule,
+                    signerIndex: -1,
+                    signerRole: 'none',
+                    signerName: '',
+                    signerEmail: ''
+                });
+                break;
+
+            case 'shared':
+                // 1 copy, all parties sign the same doc
+                manifest.push({
+                    docId: docId,
+                    templateId: templateId,
+                    label: config.label,
+                    rule: config.rule,
+                    signerIndex: -1,
+                    signerRole: 'all',
+                    signerName: '',
+                    signerEmail: ''
+                });
+                break;
+
+            case 'per-indemnitor':
+                // 1 copy PER indemnitor (NOT defendant)
+                indemnitors.forEach(function (ind) {
+                    manifest.push({
+                        docId: docId,
+                        templateId: templateId,
+                        label: config.label + ' — ' + ind.name,
+                        rule: config.rule,
+                        signerIndex: ind.index,
+                        signerRole: ind.role,
+                        signerName: ind.name,
+                        signerEmail: ind.email
+                    });
+                });
+                break;
+
+            case 'per-person':
+                // 1 copy PER person (defendant + each indemnitor)
+                allPersons.forEach(function (person) {
+                    manifest.push({
+                        docId: docId,
+                        templateId: templateId,
+                        label: config.label + ' — ' + person.name,
+                        rule: config.rule,
+                        signerIndex: person.index,
+                        signerRole: person.role,
+                        signerName: person.name,
+                        signerEmail: person.email
+                    });
+                });
+                break;
+
+            // print-only docs are excluded from signing manifest
+            default:
+                break;
+        }
+    });
+
+    return manifest;
+}
 
 // ============================================================================
 // SIGNATURE / INITIALS FIELD DEFINITIONS — PRODUCTION
@@ -295,30 +458,38 @@ function handleTelegramGetSigningUrl(data) {
         var signerRole = data.role || 'Indemnitor';
         var signerEmail = data.email || '';
         var caseNumber = data.caseNumber || '';
+        // signerIndex: 0 = defendant, 1 = indemnitor, 2 = co-indemnitor 1, etc.
+        // Used for per-person and per-indemnitor docs to create unique copies
+        var signerIndex = (data.signerIndex !== undefined && data.signerIndex !== null) ? Number(data.signerIndex) : -1;
 
-        Logger.log('🖊️ Signing URL request: doc=' + docId + ' role=' + signerRole + ' case=' + caseNumber);
+        Logger.log('🖊️ Signing URL request: doc=' + docId + ' role=' + signerRole + ' signerIdx=' + signerIndex + ' case=' + caseNumber);
 
         // Validate document ID
         if (!SIGNNOW_TEMPLATE_MAP[docId]) {
             return { success: false, error: 'invalid_doc', message: 'Unknown document: ' + docId };
         }
 
-        // Appearance bonds are print-only
-        if (docId === 'appearance-bonds') {
-            return { success: false, error: 'print_only', message: 'Appearance bonds require wet signature — not available for digital signing.' };
+        // Check generation rules
+        var docRule = DOC_GENERATION_RULES[docId];
+        if (docRule && docRule.rule === 'print-only') {
+            return { success: false, error: 'print_only', message: docRule.label + ' requires wet signature — not available for digital signing.' };
         }
-
-        // Paperwork header is read-only
-        if (docId === 'paperwork-header') {
+        if (docRule && docRule.rule === 'static' && docId === 'paperwork-header') {
             return { success: false, error: 'readonly', message: 'The paperwork header is a cover page and does not require signing.' };
         }
 
         var config = SN_getConfig();
         var templateId = SIGNNOW_TEMPLATE_MAP[docId];
 
-        // --- Step 1: Check if we already have a document copy for this case ---
+        // Build tracker key — includes signerIndex for per-person/per-indemnitor docs
+        var trackerDocKey = docId;
+        if (signerIndex >= 0 && docRule && (docRule.rule === 'per-person' || docRule.rule === 'per-indemnitor')) {
+            trackerDocKey = docId + ':signer-' + signerIndex;
+        }
+
+        // --- Step 1: Check if we already have a document copy for this case+signer ---
         var ss = SpreadsheetApp.getActiveSpreadsheet();
-        var existingDocId = getExistingSignNowDocId_(caseNumber, docId, ss);
+        var existingDocId = getExistingSignNowDocId_(caseNumber, trackerDocKey, ss);
 
         var signNowDocId;
 
@@ -330,9 +501,10 @@ function handleTelegramGetSigningUrl(data) {
             // --- Step 2: Create a new document from the template ---
             Logger.log('📋 Creating document from template: ' + templateId);
             var createUrl = config.API_BASE + '/template/' + templateId + '/copy';
-            var createPayload = {
-                document_name: 'Shamrock_' + docId + '_' + (caseNumber || Date.now())
-            };
+            var docName = 'Shamrock_' + docId;
+            if (signerIndex >= 0) docName += '_signer' + signerIndex;
+            docName += '_' + (caseNumber || Date.now());
+            var createPayload = { document_name: docName };
 
             var createRes = UrlFetchApp.fetch(createUrl, {
                 method: 'POST',
@@ -378,8 +550,8 @@ function handleTelegramGetSigningUrl(data) {
                 }
             }
 
-            // --- Step 4: Save the document ID for this case ---
-            saveSignNowDocId_(caseNumber, docId, signNowDocId, ss);
+            // --- Step 4: Save the document ID for this case+signer ---
+            saveSignNowDocId_(caseNumber, trackerDocKey, signNowDocId, ss, signerRole, signerIndex);
         }
 
         // --- Step 5: Create the embedded signing link ---
@@ -402,12 +574,56 @@ function handleTelegramGetSigningUrl(data) {
             signingUrl: linkResult.link,
             documentId: signNowDocId,
             role: signerRole,
+            signerIndex: signerIndex,
+            docLabel: (docRule ? docRule.label : docId),
             expiresInMinutes: 45
         };
 
     } catch (e) {
         Logger.log('❌ Signing URL error: ' + e.toString());
         return { success: false, error: 'server_error', message: 'Unable to generate signing link. ' + e.message };
+    }
+}
+
+
+// ============================================================================
+// 3b. HANDLER: get_packet_manifest
+// ============================================================================
+// Returns the full document manifest for a case, including per-person
+// and per-indemnitor doc multiplication.
+//
+// Callers: Dashboard "Generate Packet" button, Telegram Mini App docs page.
+// Input: { caseNumber, defendantFirstName, defendantLastName, defendantEmail, indemnitors[] }
+
+function handleGetPacketManifest(data) {
+    try {
+        Logger.log('📦 Packet manifest request for case: ' + (data.caseNumber || 'unknown'));
+
+        var manifest = buildPacketManifest(data);
+
+        // Also check which docs already have SignNow copies
+        var ss = SpreadsheetApp.getActiveSpreadsheet();
+        manifest.forEach(function (entry) {
+            var trackerDocKey = entry.docId;
+            if (entry.signerIndex >= 0 && (entry.rule === 'per-person' || entry.rule === 'per-indemnitor')) {
+                trackerDocKey = entry.docId + ':signer-' + entry.signerIndex;
+            }
+            var existingId = getExistingSignNowDocId_(data.caseNumber || '', trackerDocKey, ss);
+            entry.signNowDocId = existingId || null;
+            entry.status = existingId ? 'created' : 'pending';
+        });
+
+        return {
+            success: true,
+            caseNumber: data.caseNumber || '',
+            totalDocs: manifest.length,
+            pendingDocs: manifest.filter(function (e) { return e.status === 'pending'; }).length,
+            manifest: manifest
+        };
+
+    } catch (e) {
+        Logger.log('❌ Manifest error: ' + e.toString());
+        return { success: false, error: 'server_error', message: e.message };
     }
 }
 
@@ -544,12 +760,12 @@ function getExistingSignNowDocId_(caseKey, docId, ss) {
 /**
  * Save a SignNow document ID to the tracking sheet.
  */
-function saveSignNowDocId_(caseKey, docId, signNowDocId, ss) {
+function saveSignNowDocId_(caseKey, docId, signNowDocId, ss, signerRole, signerIndex) {
     var sheet = ss.getSheetByName('DocSigningTracker');
     if (!sheet) {
         sheet = ss.insertSheet('DocSigningTracker');
-        sheet.appendRow(['CaseKey', 'DocumentId', 'Status', 'SignNowDocId', 'CreatedAt', 'UpdatedAt']);
-        sheet.getRange(1, 1, 1, 6).setFontWeight('bold');
+        sheet.appendRow(['CaseKey', 'DocumentId', 'Status', 'SignNowDocId', 'CreatedAt', 'UpdatedAt', 'SignerRole', 'SignerIndex']);
+        sheet.getRange(1, 1, 1, 8).setFontWeight('bold');
     }
 
     sheet.appendRow([
@@ -558,7 +774,9 @@ function saveSignNowDocId_(caseKey, docId, signNowDocId, ss) {
         'created',
         signNowDocId,
         new Date().toISOString(),
-        new Date().toISOString()
+        new Date().toISOString(),
+        signerRole || '',
+        (signerIndex !== undefined && signerIndex !== null) ? signerIndex : -1
     ]);
 }
 

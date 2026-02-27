@@ -754,6 +754,18 @@ function doPost(e) {
       }
     }
 
+    // ─── GET PACKET MANIFEST (Multi-Indemnitor Doc List) ───
+    if (data.action === 'get_packet_manifest') {
+      try {
+        Logger.log('📦 Packet manifest request');
+        var manifestResult = handleGetPacketManifest(data);
+        return createResponse(manifestResult);
+      } catch (manifestErr) {
+        Logger.log('❌ Manifest error: ' + manifestErr.message);
+        return createErrorResponse(manifestErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
     // ─── DOCUMENT STATUS CHECK (Telegram Documents Mini-App) ───
     if (data.action === 'telegram_document_status') {
       try {
