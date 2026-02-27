@@ -13,31 +13,32 @@ const path = require('path');
 const SITE_URL = 'https://www.shamrockbailbonds.biz';
 const LAST_MOD = new Date().toISOString().split('T')[0];
 
-// All 67 Florida counties
+// All 67 Florida counties — MUST match actual live URL slugs
+// NOTE: Compound names use NO hyphens (indianriver, palmbeach, stjohns, stlucie)
+// Exception: miami-dade and santa-rosa keep hyphens (they're proper names)
 const floridaCounties = [
     'alachua', 'baker', 'bay', 'bradford', 'brevard', 'broward', 'calhoun',
     'charlotte', 'citrus', 'clay', 'collier', 'columbia', 'desoto', 'dixie',
     'duval', 'escambia', 'flagler', 'franklin', 'gadsden', 'gilchrist', 'glades',
     'gulf', 'hamilton', 'hardee', 'hendry', 'hernando', 'highlands', 'hillsborough',
-    'holmes', 'indian-river', 'jackson', 'jefferson', 'lafayette', 'lake', 'lee',
+    'holmes', 'indianriver', 'jackson', 'jefferson', 'lafayette', 'lake', 'lee',
     'leon', 'levy', 'liberty', 'madison', 'manatee', 'marion', 'martin', 'miami-dade',
-    'monroe', 'nassau', 'okaloosa', 'okeechobee', 'orange', 'osceola', 'palm-beach',
+    'monroe', 'nassau', 'okaloosa', 'okeechobee', 'orange', 'osceola', 'palmbeach',
     'pasco', 'pinellas', 'polk', 'putnam', 'santa-rosa', 'sarasota', 'seminole',
-    'st-johns', 'st-lucie', 'sumter', 'suwannee', 'taylor', 'union', 'volusia',
+    'stjohns', 'stlucie', 'sumter', 'suwannee', 'taylor', 'union', 'volusia',
     'wakulla', 'walton', 'washington'
 ];
 
 // Static pages with their priorities and change frequencies
+// MUST match actual live Wix page slugs
 const staticPages = [
     { url: '/', priority: '1.0', changefreq: 'weekly' },
     { url: '/how-bail-works', priority: '0.9', changefreq: 'monthly' },
-    { url: '/county-directory', priority: '0.9', changefreq: 'monthly' },
-    { url: '/become-a-bondsman', priority: '0.8', changefreq: 'monthly' },
-    { url: '/sheriffs-directory', priority: '0.8', changefreq: 'monthly' },
+    { url: '/how-to-become-a-bondsman', priority: '0.8', changefreq: 'monthly' },
     { url: '/contact', priority: '0.8', changefreq: 'monthly' },
     { url: '/about', priority: '0.7', changefreq: 'monthly' },
-    { url: '/faq', priority: '0.8', changefreq: 'monthly' },
     { url: '/blog', priority: '0.7', changefreq: 'weekly' },
+    { url: '/testimonials', priority: '0.7', changefreq: 'monthly' },
     { url: '/privacy-policy', priority: '0.3', changefreq: 'yearly' },
     { url: '/terms-of-service', priority: '0.3', changefreq: 'yearly' }
 ];
@@ -54,11 +55,10 @@ function generateSitemap() {
         xml += generateUrlEntry(page.url, page.priority, page.changefreq);
     });
 
-    // Add county pages
+    // Add county pages — uses /florida-bail-bonds/{slug} pattern
     floridaCounties.forEach(county => {
-        const safeSlug = encodeURIComponent(county.toLowerCase());
         xml += generateUrlEntry(
-            `/bail-bonds/${safeSlug}-county`,
+            `/florida-bail-bonds/${county}`,
             '0.8',
             'monthly'
         );

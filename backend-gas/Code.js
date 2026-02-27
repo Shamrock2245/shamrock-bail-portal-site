@@ -730,6 +730,42 @@ function doPost(e) {
       }
     }
 
+    // ─── DOCUMENT LOOKUP (Telegram Documents Mini-App) ───
+    if (data.action === 'telegram_document_lookup') {
+      try {
+        Logger.log('📄 Telegram document lookup request');
+        var docLookupResult = handleTelegramDocumentLookup(data);
+        return createResponse(docLookupResult);
+      } catch (docLookupErr) {
+        Logger.log('❌ Document lookup error: ' + docLookupErr.message);
+        return createErrorResponse(docLookupErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
+    // ─── GET SIGNING URL (Telegram Documents Mini-App) ───
+    if (data.action === 'telegram_get_signing_url') {
+      try {
+        Logger.log('🖊️ Telegram signing URL request');
+        var signUrlResult = handleTelegramGetSigningUrl(data);
+        return createResponse(signUrlResult);
+      } catch (signUrlErr) {
+        Logger.log('❌ Signing URL error: ' + signUrlErr.message);
+        return createErrorResponse(signUrlErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
+    // ─── DOCUMENT STATUS CHECK (Telegram Documents Mini-App) ───
+    if (data.action === 'telegram_document_status') {
+      try {
+        Logger.log('📊 Telegram document status check');
+        var docStatusResult = handleTelegramDocumentStatus(data);
+        return createResponse(docStatusResult);
+      } catch (docStatusErr) {
+        Logger.log('❌ Document status error: ' + docStatusErr.message);
+        return createErrorResponse(docStatusErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
     // ─── CLIENT UPDATE ───
     if (data.action === 'telegram_client_update') {
       try {

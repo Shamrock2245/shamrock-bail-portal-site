@@ -23,7 +23,6 @@
       "name": "Florida"
     }
   },
-  
   "localBusiness": {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
@@ -50,7 +49,15 @@
     "openingHoursSpecification": [
       {
         "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "dayOfWeek": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        ],
         "opens": "00:00",
         "closes": "23:59"
       }
@@ -61,7 +68,6 @@
       "reviewCount": "150"
     }
   },
-  
   "service": {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -81,7 +87,6 @@
       "priceCurrency": "USD"
     }
   },
-  
   "breadcrumbTemplate": {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -100,13 +105,12 @@
       }
     ]
   },
-  
   "countyPageTemplate": {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "name": "Shamrock Bail Bonds - {{COUNTY_NAME}} County",
     "description": "Bail bond services in {{COUNTY_NAME}} County, Florida. Fast jail release in {{COUNTY_SEAT}} and surrounding areas. Call 239-332-2245.",
-    "url": "https://www.shamrockbailbonds.biz/bail-bonds/{{COUNTY_SLUG}}-county",
+    "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/{{COUNTY_SLUG}}",
     "telephone": "+1-239-332-2245",
     "areaServed": {
       "@type": "AdministrativeArea",
@@ -114,18 +118,24 @@
     },
     "openingHoursSpecification": {
       "@type": "OpeningHoursSpecification",
-      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "dayOfWeek": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ],
       "opens": "00:00",
       "closes": "23:59"
     }
   },
-  
   "faqPageTemplate": {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": []
   },
-  
   "articleTemplate": {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -146,7 +156,6 @@
     "datePublished": "{{DATE_PUBLISHED}}",
     "dateModified": "{{DATE_MODIFIED}}"
   },
-  
   "howToTemplate": {
     "@context": "https://schema.org",
     "@type": "HowTo",

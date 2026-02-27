@@ -34,7 +34,7 @@ export function generateLocalBusinessSchema(county) {
         "@type": "BailBondBusiness",
         "name": "Shamrock Bail Bonds",
         "image": "https://www.shamrockbailbonds.com/logo.png",
-        "telephone": "+1-239-955-0301", // Should ideally be county-specific if you have local numbers
+        "telephone": "+1-239-332-2245",
         "url": `https://www.shamrockbailbonds.com/florida-bail-bonds/${county.slug}`,
         "address": {
             "@type": "PostalAddress",
