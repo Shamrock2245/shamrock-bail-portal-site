@@ -120,6 +120,26 @@ function handleDocumentComplete(documentId, payload) {
     if (result && result.success) {
       const defendantName = extractDefendantName(payload?.document_name);
       logCompletion(documentId, defendantName, result.fileUrl);
+      // ── Update DocSigningTracker ─────────────────────────────────────────────
+      // Document name format: Shamrock_<docId>_signer<N>_<caseNumber>
+      // Parse it to update the tracker row so staff can see signing status
+      try {
+        const docName = payload?.document_name || '';
+        const trackerMatch = docName.match(/^Shamrock_([^_]+(?:_[^_]+)*)_signer(-?\d+)_(.+)$/) ||
+                             docName.match(/^Shamrock_([^_]+(?:_[^_]+)*)_(.+)$/);
+        if (trackerMatch) {
+          const parsedDocId  = trackerMatch[1];
+          const parsedCase   = trackerMatch[trackerMatch.length - 1];
+          const signerIdx    = trackerMatch.length === 4 ? parseInt(trackerMatch[2]) : -1;
+          const trackerKey   = signerIdx >= 0 ? parsedDocId + ':signer-' + signerIdx : parsedDocId;
+          if (typeof updateDocSigningStatus_ === 'function') {
+            updateDocSigningStatus_(parsedCase, trackerKey, 'signed');
+          }
+        }
+      } catch (trackerErr) {
+        console.warn('[WebhookHandler] DocSigningTracker update failed (non-fatal):', trackerErr.message);
+      }
+      // ────────────────────────────────────────────────────────────────────────
 
       // ── Post-signing pipeline ────────────────────────────────────────────────
       // Trigger Telegram notification + ID upload request via PDF_Processor.js
@@ -305,20 +325,26 @@ function handleSyncIdUpload(upload) {
  */
 function extractDefendantName(documentName) {
   if (!documentName) return null;
-
-  // Try to extract name from common patterns
-  // e.g., "Bail_Packet_John_Doe_2024-01-15"
+  // Handle Shamrock_ naming convention: Shamrock_<docId>[_signer<N>]_<caseNumber>
+  // e.g., "Shamrock_indemnity-agreement_signer0_2024-001"
+  const shamrockMatch = documentName.match(/^Shamrock_[^_]+(?:_signer-?\d+)?_(.+)$/);
+  if (shamrockMatch) {
+    return shamrockMatch[1].replace(/_/g, ' ').trim();
+  }
+  // Legacy patterns
   const patterns = [
     /Bail[_\s]Packet[_\s](.+?)[_\s]\d{4}/i,
     /Bond[_\s](.+?)[_\s]\d{4}/i,
     /(.+?)[_\s]Bail[_\s]Bond/i
   ];
-
   for (const pattern of patterns) {
     const match = documentName.match(pattern);
     if (match) {
       return match[1].replace(/_/g, ' ').trim();
     }
+  }
+  return documentName.split('_')[0];
+}
   }
 
   return documentName.split('_')[0];

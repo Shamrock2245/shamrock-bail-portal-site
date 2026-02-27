@@ -124,8 +124,13 @@ function buildPacketManifest(caseData) {
 
     var allPersons = [defendant].concat(indemnitors);
     var manifest = [];
+    // If selectedDocIds provided, only include those docs; otherwise include all
+    var selectedSet = (caseData.selectedDocIds && Array.isArray(caseData.selectedDocIds) && caseData.selectedDocIds.length > 0)
+        ? caseData.selectedDocIds.reduce(function(acc, id) { acc[id] = true; return acc; }, {})
+        : null;
 
     DOC_ORDER.forEach(function (docId) {
+        if (selectedSet && !selectedSet[docId]) return; // Skip unselected docs
         var config = DOC_GENERATION_RULES[docId];
         var templateId = SIGNNOW_TEMPLATE_MAP[docId];
         if (!config || !templateId) return;

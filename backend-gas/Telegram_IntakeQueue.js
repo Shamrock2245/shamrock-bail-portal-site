@@ -502,6 +502,16 @@ function _mapCanonicalToDashboardFormat(data, intakeId) {
     indemnitorEmployerName: data.IndEmployer || '',
     indemnitorJobTitle: data.IndJobTitle || '',
     indemnitorIncome: data.IndIncome || '',
+    // Additional indemnitor fields (used by Dashboard hydration)
+    indemnitorMiddleName: data.IndMiddleName || '',
+    indemnitorSSN: data.IndSSN || '',
+    indemnitorDL: data.IndDL || '',
+    indemnitorDLState: data.IndDLState || 'FL',
+    indemnitorEmployerPhone: data.IndEmployerPhone || '',
+    indemnitorEmployerCity: data.IndEmployerCity || '',
+    indemnitorEmployerState: data.IndEmployerState || '',
+    indemnitorSupervisorName: data.IndSupervisorName || '',
+    indemnitorSupervisorPhone: data.IndSupervisorPhone || '',
 
     // References (array format for Dashboard)
     references: [
