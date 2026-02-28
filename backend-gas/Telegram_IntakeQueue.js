@@ -167,16 +167,18 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
         const wixMappedData = {
           // System & Consent
           source: 'telegram',
-          consentGiven: intakeData.consentGiven || false,
-          consentTimestamp: intakeData.consentTimestamp ? new Date(intakeData.consentTimestamp) : null,
-          notes: 'Submitted via Telegram Bot.',
+          consentGiven: intakeData.consent || intakeData.consentGiven || false,
+          consentTimestamp: intakeData.timestamp ? new Date(intakeData.timestamp) : (intakeData.consentTimestamp ? new Date(intakeData.consentTimestamp) : null),
+          notes: 'Submitted via Telegram Mini App.',
 
           // Case & Defendant
-          caseId: intakeId, // Use the generated intake ID
+          caseId: intakeId,
           defendantName: intakeData.DefName || '',
           defendantPhone: intakeData.DefPhone || '',
           defendantEmail: intakeData.DefEmail || '',
           county: intakeData.DefCounty || '',
+          charges: intakeData.DefCharges || '',
+          bondAmount: intakeData.DefBondAmount || '',
 
           // Indemnitor
           indemnitorName: intakeData.IndName || '',
@@ -285,6 +287,7 @@ function _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId) {
         'DefName', 'DefFirstName', 'DefLastName', 'DefDOB',
         'DefPhone', 'DefEmail', 'DefAddress', 'DefCity', 'DefState', 'DefZip',
         'DefDL', 'DefFacility', 'DefCounty', 'DefPhysical',
+        'DefCharges', 'DefBondAmount',
         // Indemnitor
         'IndName', 'IndFirstName', 'IndLastName', 'IndRelation',
         'IndPhone', 'IndEmail', 'IndAddress', 'IndCity', 'IndState', 'IndZip',
@@ -292,6 +295,9 @@ function _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId) {
         // References
         'Ref1Name', 'Ref1Phone', 'Ref1Relation', 'Ref1Address',
         'Ref2Name', 'Ref2Phone', 'Ref2Relation', 'Ref2Address',
+        // Location & Consent
+        'GPSLatitude', 'GPSLongitude', 'ManualLocation',
+        'ConsentGiven', 'ConsentTimestamp',
         // Metadata
         'RawJSON'
       ]);
@@ -318,6 +324,8 @@ function _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId) {
       intakeData.DefFacility || '',
       intakeData.DefCounty || '',
       intakeData.DefPhysical || '',
+      intakeData.DefCharges || '',
+      intakeData.DefBondAmount || '',
       // Indemnitor
       intakeData.IndName || '',
       intakeData.IndFirstName || '',
@@ -342,6 +350,12 @@ function _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId) {
       intakeData.Ref2Phone || '',
       intakeData.Ref2Relation || '',
       intakeData.Ref2Address || '',
+      // Location & Consent
+      intakeData.gpsLatitude || '',
+      intakeData.gpsLongitude || '',
+      intakeData.manualLocation || '',
+      intakeData.consent ? 'Yes' : 'No',
+      intakeData.timestamp || new Date().toISOString(),
       // Raw JSON for full fidelity
       JSON.stringify(intakeData)
     ]);
@@ -484,6 +498,8 @@ function _mapCanonicalToDashboardFormat(data, intakeId) {
     defendantCounty: data.DefCounty || '',
     defendantPhysical: data.DefPhysical || '',
     County: data.DefCounty || '',
+    defendantCharges: data.DefCharges || '',
+    defendantBondAmount: data.DefBondAmount || '',
 
     // Indemnitor (camelCase for Dashboard hydration)
     indemnitorFullName: data.IndName || '',
