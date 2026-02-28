@@ -18,6 +18,25 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-02-28 — v2.2.0 — Telegram Mini App Intake Hardening
+
+**Fixed:**
+- `shared/brand.js` — Changed global Telegram SDK declarations from `const` to `var` to fix `SyntaxError` when loaded alongside `app.js`.
+- `intake/app.js` — Complete rewrite: removed duplicate Telegram SDK declarations, wired all `brand.js` shared utilities.
+- `intake/index.html` — Removed duplicate `theme.css` include, ensured correct script load order.
+- `Telegram_IntakeQueue.js` — Consent field mapping: `consent` → `consentGiven` + `consentTimestamp`.
+
+**Added:**
+- `intake/app.js` — `captureLocationTiered()` (4-tier GPS cascade), `gasPost()` (real response handling), session persistence (`saveFormSession`/`loadFormSession`), `skipIdUpload()`, `useManualLocation()`.
+- `Telegram_IntakeQueue.js` — 7 new columns in `TelegramIntakeData` sheet: `DefCharges`, `DefBondAmount`, `GPSLatitude`, `GPSLongitude`, `ManualLocation`, `ConsentGiven`, `ConsentTimestamp`.
+- `Telegram_IntakeQueue.js` — Wix CMS sync now includes charges and bond amount.
+- `_mapCanonicalToDashboardFormat()` — Added `defendantCharges` and `defendantBondAmount` for Dashboard hydration.
+
+**Cleaned:**
+- Deleted 17 stale GAS deployments (was at 20/20 limit, now 4/20).
+
+---
+
 ### Template for Future Entries
 `YYYY-MM-DD — vX.Y.Z`
 - **Added**: new feature
