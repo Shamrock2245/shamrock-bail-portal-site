@@ -250,7 +250,8 @@ function setGoogleOAuthCredentials() {
   props.setProperty('GOOGLE_OAUTH_CLIENT_ID', 'REDACTED');
   props.setProperty('GOOGLE_OAUTH_CLIENT_SECRET', 'REDACTED');
   props.setProperty('GBP_LOCATION_ID', '8371915753604835374');
-  console.log('✅ Google OAuth credentials + GBP Location ID stored.');
+  props.setProperty('YOUTUBE_CHANNEL_ID', 'UC7DJBUpinY6ZqPjiSmpb0ow');
+  console.log('✅ Google OAuth credentials + GBP Location ID + YouTube Channel ID stored.');
 }
 
 /**
