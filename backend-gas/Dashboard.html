@@ -1591,6 +1591,9 @@
             <button class="tab" onclick="switchTab(this, 'social-hub')">
                 <span class="tab-icon">📣</span> Social Hub (Grok)
             </button>
+            <button class="tab" onclick="switchTab(this, 'video-studio')">
+                <span class="tab-icon">🎬</span> Video Studio
+            </button>
 
         </nav>
 
@@ -7817,6 +7820,1169 @@
             </div>
         </div>
     </div>
+    </div>
+
+    <!-- ============================================================
+     TAB: VIDEO STUDIO (LosslessCut Integration)
+     ============================================================ -->
+    <div id="video-studio-tab" class="tab-content" style="display:none;">
+
+        <!-- VIDEO STUDIO STYLES -->
+        <style>
+            .vs-grid {
+                display: grid;
+                grid-template-columns: 1fr 380px;
+                gap: 24px;
+            }
+
+            @media (max-width: 1024px) {
+                .vs-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            .vs-player-wrap {
+                position: relative;
+                background: #000;
+                border-radius: var(--radius);
+                overflow: hidden;
+                aspect-ratio: 16/9;
+            }
+
+            .vs-player-wrap video {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+            .vs-player-overlay {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(135deg, rgba(15, 23, 42, .9), rgba(30, 41, 59, .85));
+                cursor: pointer;
+                transition: opacity .3s;
+            }
+
+            .vs-player-overlay.hidden {
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            .vs-player-overlay .vs-drop-zone {
+                text-align: center;
+                padding: 60px 40px;
+                border: 2px dashed rgba(212, 175, 55, .4);
+                border-radius: var(--radius);
+                max-width: 500px;
+            }
+
+            .vs-player-overlay .vs-drop-zone:hover {
+                border-color: var(--accent);
+            }
+
+            .vs-player-overlay h3 {
+                color: #fff;
+                font-size: 20px;
+                margin-bottom: 8px;
+            }
+
+            .vs-player-overlay p {
+                color: rgba(255, 255, 255, .6);
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
+
+            .vs-timeline-container {
+                background: var(--surface-2);
+                border-radius: var(--radius-sm);
+                padding: 16px;
+                margin-top: 16px;
+            }
+
+            .vs-timeline {
+                position: relative;
+                height: 80px;
+                background: var(--surface-3);
+                border-radius: 8px;
+                overflow: hidden;
+                cursor: crosshair;
+                user-select: none;
+            }
+
+            .vs-timeline-progress {
+                position: absolute;
+                top: 0;
+                left: 0;
+                height: 100%;
+                background: linear-gradient(90deg, rgba(212, 175, 55, .15), rgba(212, 175, 55, .25));
+                pointer-events: none;
+                transition: width 0.1s linear;
+            }
+
+            .vs-timeline-playhead {
+                position: absolute;
+                top: 0;
+                width: 2px;
+                height: 100%;
+                background: var(--accent);
+                z-index: 10;
+                pointer-events: none;
+            }
+
+            .vs-timeline-segment {
+                position: absolute;
+                top: 0;
+                height: 100%;
+                background: rgba(16, 185, 129, .25);
+                border-left: 2px solid #10b981;
+                border-right: 2px solid #10b981;
+                z-index: 5;
+            }
+
+            .vs-timeline-thumbnails {
+                display: flex;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            .vs-timeline-thumbnails canvas {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .vs-time-display {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 8px;
+                font-family: 'SF Mono', 'Fira Code', monospace;
+            }
+
+            .vs-time-current {
+                font-size: 22px;
+                font-weight: 700;
+                color: var(--accent);
+            }
+
+            .vs-time-total {
+                font-size: 14px;
+                color: var(--text-secondary);
+            }
+
+            .vs-controls {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                margin-top: 12px;
+            }
+
+            .vs-controls button {
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                border: 1px solid var(--border);
+                background: var(--surface);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                font-size: 18px;
+                transition: all .2s;
+            }
+
+            .vs-controls button:hover {
+                background: var(--accent);
+                color: #fff;
+                border-color: var(--accent);
+            }
+
+            .vs-controls button.vs-play-btn {
+                width: 56px;
+                height: 56px;
+                font-size: 22px;
+                background: var(--accent);
+                color: #fff;
+                border-color: var(--accent);
+            }
+
+            .vs-segment-list {
+                margin-top: 16px;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+
+            .vs-segment-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 14px;
+                background: var(--surface-2);
+                border-radius: var(--radius-sm);
+                margin-bottom: 8px;
+                border: 1px solid var(--border);
+                transition: all .2s;
+            }
+
+            .vs-segment-item:hover {
+                border-color: var(--accent);
+            }
+
+            .vs-segment-item .vs-seg-color {
+                width: 8px;
+                height: 36px;
+                border-radius: 4px;
+                flex-shrink: 0;
+            }
+
+            .vs-segment-item .vs-seg-info {
+                flex: 1;
+            }
+
+            .vs-segment-item .vs-seg-label {
+                font-weight: 600;
+                font-size: 14px;
+            }
+
+            .vs-segment-item .vs-seg-time {
+                font-size: 12px;
+                color: var(--text-secondary);
+                font-family: 'SF Mono', monospace;
+            }
+
+            .vs-segment-item .vs-seg-actions {
+                display: flex;
+                gap: 6px;
+            }
+
+            .vs-segment-item .vs-seg-actions button {
+                width: 30px;
+                height: 30px;
+                border-radius: 6px;
+                border: 1px solid var(--border);
+                background: var(--surface);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 13px;
+                transition: all .2s;
+            }
+
+            .vs-segment-item .vs-seg-actions button:hover {
+                background: #ff4444;
+                color: #fff;
+                border-color: #ff4444;
+            }
+
+            .vs-connection-bar {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 16px;
+                background: var(--surface-2);
+                border-radius: var(--radius-sm);
+                margin-bottom: 16px;
+                border: 1px solid var(--border);
+            }
+
+            .vs-connection-dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                animation: vs-pulse 2s ease-in-out infinite;
+            }
+
+            .vs-connection-dot.connected {
+                background: var(--success);
+            }
+
+            .vs-connection-dot.disconnected {
+                background: #ff4444;
+                animation: none;
+            }
+
+            @keyframes vs-pulse {
+
+                0%,
+                100% {
+                    opacity: 1;
+                }
+
+                50% {
+                    opacity: .4;
+                }
+            }
+
+            .vs-cli-output {
+                background: #0d1117;
+                color: #c9d1d9;
+                font-family: 'SF Mono', 'Fira Code', monospace;
+                font-size: 13px;
+                padding: 16px;
+                border-radius: var(--radius-sm);
+                max-height: 200px;
+                overflow-y: auto;
+                white-space: pre-wrap;
+                word-break: break-all;
+                margin-top: 12px;
+                border: 1px solid #30363d;
+            }
+
+            .vs-cli-output .cmd {
+                color: #58a6ff;
+            }
+
+            .vs-cli-output .success {
+                color: #3fb950;
+            }
+
+            .vs-cli-output .error {
+                color: #f85149;
+            }
+
+            .vs-sidebar-section {
+                background: var(--surface);
+                border-radius: var(--radius);
+                border: 1px solid var(--border);
+                padding: 20px;
+                margin-bottom: 16px;
+            }
+
+            .vs-sidebar-section h4 {
+                font-size: 14px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .5px;
+                color: var(--text-secondary);
+                margin-bottom: 14px;
+            }
+
+            .vs-speed-btn {
+                padding: 4px 10px;
+                border-radius: 6px;
+                border: 1px solid var(--border);
+                background: var(--surface-2);
+                cursor: pointer;
+                font-size: 12px;
+            }
+
+            .vs-speed-btn.active {
+                background: var(--accent);
+                color: #fff;
+                border-color: var(--accent);
+            }
+        </style>
+
+        <div class="card" style="border-top: 4px solid var(--accent);">
+            <div class="card-header">
+                <h3><span class="icon">🎬</span> Video Studio</h3>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <div class="badge"
+                        style="background:var(--surface-2); color:var(--text); padding:6px 14px; border-radius:20px; font-size:12px; border:1px solid var(--border);">
+                        Powered by LosslessCut
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONNECTION STATUS BAR -->
+            <div class="vs-connection-bar" id="vs-connection-bar">
+                <div class="vs-connection-dot disconnected" id="vs-conn-dot"></div>
+                <span id="vs-conn-label" style="font-size:13px; font-weight:500;">Not Connected</span>
+                <div style="flex:1;"></div>
+                <button class="btn btn-sm" style="font-size:12px; padding:4px 12px;"
+                    onclick="VideoStudio.toggleConnection()">
+                    🔌 Connect to LosslessCut
+                </button>
+                <a href="https://github.com/mifi/lossless-cut/releases" target="_blank" class="btn btn-sm"
+                    style="font-size:12px; padding:4px 12px; text-decoration:none;">
+                    ⬇️ Download
+                </a>
+            </div>
+
+            <!-- MAIN GRID LAYOUT -->
+            <div class="vs-grid">
+
+                <!-- LEFT: VIDEO PLAYER + TIMELINE -->
+                <div>
+                    <!-- VIDEO PLAYER -->
+                    <div class="vs-player-wrap" id="vs-player-wrap">
+                        <video id="vs-video" preload="metadata" crossorigin="anonymous"></video>
+                        <div class="vs-player-overlay" id="vs-overlay">
+                            <div class="vs-drop-zone" id="vs-drop-zone">
+                                <div style="font-size:48px; margin-bottom:16px;">🎬</div>
+                                <h3>Drop a video file here</h3>
+                                <p>Or click to browse. Supports MP4, MOV, WebM, MKV.</p>
+                                <button class="btn btn-primary"
+                                    onclick="document.getElementById('vs-file-input').click()">
+                                    📂 Choose File
+                                </button>
+                                <input type="file" id="vs-file-input" accept="video/*" style="display:none;"
+                                    onchange="VideoStudio.loadFile(this.files[0])">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TIMELINE -->
+                    <div class="vs-timeline-container">
+                        <div class="vs-timeline" id="vs-timeline" onmousedown="VideoStudio.timelineSeek(event)"
+                            onmousemove="VideoStudio.timelineHover(event)">
+                            <div class="vs-timeline-progress" id="vs-timeline-progress"></div>
+                            <div class="vs-timeline-playhead" id="vs-timeline-playhead" style="left:0;">
+                            </div>
+                            <div id="vs-timeline-segments"></div>
+                            <div class="vs-timeline-thumbnails" id="vs-timeline-thumbs"></div>
+                        </div>
+
+                        <!-- TIME DISPLAY -->
+                        <div class="vs-time-display">
+                            <span class="vs-time-current" id="vs-time-current">00:00.000</span>
+                            <span class="vs-time-total" id="vs-time-total">/ 00:00.000</span>
+                        </div>
+
+                        <!-- PLAYBACK CONTROLS -->
+                        <div class="vs-controls">
+                            <button onclick="VideoStudio.seekRelative(-10)" title="Back 10s">⏪</button>
+                            <button onclick="VideoStudio.seekRelative(-1)" title="Back 1s">◀️</button>
+                            <button onclick="VideoStudio.prevFrame()" title="Previous Frame">⏮️</button>
+                            <button class="vs-play-btn" onclick="VideoStudio.togglePlay()" id="vs-play-btn"
+                                title="Play/Pause">▶️</button>
+                            <button onclick="VideoStudio.nextFrame()" title="Next Frame">⏭️</button>
+                            <button onclick="VideoStudio.seekRelative(1)" title="Forward 1s">▶️</button>
+                            <button onclick="VideoStudio.seekRelative(10)" title="Forward 10s">⏩</button>
+                        </div>
+
+                        <!-- SPEED CONTROLS -->
+                        <div style="display:flex; gap:6px; justify-content:center; margin-top:10px;">
+                            <button class="vs-speed-btn" onclick="VideoStudio.setSpeed(0.25)">0.25x</button>
+                            <button class="vs-speed-btn" onclick="VideoStudio.setSpeed(0.5)">0.5x</button>
+                            <button class="vs-speed-btn active" onclick="VideoStudio.setSpeed(1)">1x</button>
+                            <button class="vs-speed-btn" onclick="VideoStudio.setSpeed(1.5)">1.5x</button>
+                            <button class="vs-speed-btn" onclick="VideoStudio.setSpeed(2)">2x</button>
+                        </div>
+                    </div>
+
+                    <!-- CLI OUTPUT -->
+                    <div class="vs-cli-output" id="vs-cli-output" style="display:none;">
+                        <span class="cmd">$ LosslessCut --http-api</span>
+                        <br><span style="color:#8b949e;">Waiting for connection...</span>
+                    </div>
+                </div>
+
+                <!-- RIGHT: SIDEBAR -->
+                <div>
+
+                    <!-- SEGMENT CONTROLS -->
+                    <div class="vs-sidebar-section">
+                        <h4>✂️ Segments</h4>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+                            <button class="btn btn-primary btn-sm" onclick="VideoStudio.markIn()" id="vs-mark-in-btn">
+                                ▶ Mark In
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="VideoStudio.markOut()" id="vs-mark-out-btn">
+                                ◀ Mark Out
+                            </button>
+                        </div>
+                        <button class="btn btn-sm" style="width:100%; margin-bottom:8px;"
+                            onclick="VideoStudio.addSegment()">
+                            ➕ Add Segment at Current Time
+                        </button>
+                        <button class="btn btn-sm" style="width:100%;" onclick="VideoStudio.splitAtPlayhead()">
+                            ✂️ Split at Playhead
+                        </button>
+
+                        <!-- SEGMENT LIST -->
+                        <div class="vs-segment-list" id="vs-segment-list">
+                            <div
+                                style="text-align:center; padding:30px 0; color:var(--text-secondary); font-size:13px;">
+                                No segments yet. Mark In/Out to create segments.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EXPORT CONTROLS -->
+                    <div class="vs-sidebar-section">
+                        <h4>📤 Export</h4>
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <label style="font-size:12px; color:var(--text-secondary);">Output
+                                Format</label>
+                            <select id="vs-output-format" class="form-control" style="font-size:13px;">
+                                <option value="mp4">MP4 (H.264)</option>
+                                <option value="mov">MOV (QuickTime)</option>
+                                <option value="webm">WebM (VP9)</option>
+                                <option value="mkv">MKV (Matroska)</option>
+                                <option value="mp3">MP3 (Audio Only)</option>
+                                <option value="gif">GIF (Animated)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <label style="font-size:12px; color:var(--text-secondary);">Aspect
+                                Ratio</label>
+                            <select id="vs-aspect-ratio" class="form-control" style="font-size:13px;">
+                                <option value="original">Keep Original</option>
+                                <option value="16:9">16:9 (Landscape / YouTube)</option>
+                                <option value="9:16">9:16 (Portrait / TikTok / Reels)</option>
+                                <option value="1:1">1:1 (Square / Instagram)</option>
+                                <option value="4:5">4:5 (Instagram Portrait)</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-primary" style="width:100%; margin-bottom:8px;"
+                            onclick="VideoStudio.exportSegments()">
+                            🎬 Export Selected Segments
+                        </button>
+                        <button class="btn btn-sm" style="width:100%; margin-bottom:8px;"
+                            onclick="VideoStudio.exportAll()">
+                            📦 Export All Segments
+                        </button>
+                        <button class="btn btn-sm" style="width:100%;" onclick="VideoStudio.generateFFmpegCommands()">
+                            💻 Generate CLI Commands
+                        </button>
+                    </div>
+
+                    <!-- FILE INFO -->
+                    <div class="vs-sidebar-section" id="vs-file-info" style="display:none;">
+                        <h4>📁 File Info</h4>
+                        <div id="vs-file-info-content" style="font-size:13px; line-height:1.8;">
+                        </div>
+                    </div>
+
+                    <!-- QUICK ACTIONS -->
+                    <div class="vs-sidebar-section">
+                        <h4>⚡ Quick Actions</h4>
+                        <div style="display: flex; flex-direction:column; gap:8px;">
+                            <button class="btn btn-sm" onclick="VideoStudio.takeSnapshot()">📸 Take
+                                Snapshot</button>
+                            <button class="btn btn-sm" onclick="VideoStudio.extractAudio()">🎵 Extract
+                                Audio Track</button>
+                            <button class="btn btn-sm" onclick="VideoStudio.detectScenes()">🔍 Detect
+                                Scene Changes</button>
+                            <button class="btn btn-sm" onclick="VideoStudio.uploadToDrive()">☁️ Upload
+                                to Google Drive</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIDEO STUDIO JAVASCRIPT -->
+    <script>
+        var VideoStudio = (function () {
+            'use strict';
+
+            var LLC_API = 'http://localhost:8080';
+            var state = {
+                connected: false,
+                file: null,
+                fileName: '',
+                duration: 0,
+                currentTime: 0,
+                playing: false,
+                segments: [],
+                inPoint: null,
+                speed: 1,
+                fps: 30
+            };
+
+            // ===============================
+            // LOSSLESSCUT CONNECTION
+            // ===============================
+            function toggleConnection() {
+                if (state.connected) {
+                    disconnect_();
+                } else {
+                    connect_();
+                }
+            }
+
+            function connect_() {
+                updateCLI_('<span class="cmd">$ curl http://localhost:8080/api/action/openFiles</span>\nConnecting to LosslessCut...');
+                showCLI_();
+
+                fetch(LLC_API + '/api/action/openFiles', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '[]',
+                    signal: AbortSignal.timeout(3000)
+                })
+                    .then(function (r) {
+                        if (r.ok || r.status === 200) {
+                            state.connected = true;
+                            updateConnectionUI_(true, 'Connected to LosslessCut');
+                            updateCLI_('<span class="success">✅ Connected to LosslessCut on port 8080</span>');
+                            UI.showToast('Connected to LosslessCut!', 'success');
+                        } else {
+                            throw new Error('HTTP ' + r.status);
+                        }
+                    })
+                    .catch(function (err) {
+                        state.connected = false;
+                        updateConnectionUI_(false, 'Connection failed — is LosslessCut running with --http-api?');
+                        updateCLI_(
+                            '<span class="error">❌ Could not connect to LosslessCut</span>\n\n' +
+                            '<span style="color:#8b949e;">Make sure LosslessCut is running with the HTTP API enabled:</span>\n\n' +
+                            '<span class="cmd"># macOS:</span>\n' +
+                            '<span class="cmd">./LosslessCut.app/Contents/MacOS/LosslessCut --http-api</span>\n\n' +
+                            '<span style="color:#8b949e;">You can still use the built-in video preview and timeline below.</span>\n' +
+                            '<span style="color:#8b949e;">Export commands will be generated as CLI commands you can paste.</span>'
+                        );
+                    });
+            }
+
+            function disconnect_() {
+                state.connected = false;
+                updateConnectionUI_(false, 'Disconnected');
+                updateCLI_('<span style="color:#8b949e;">Disconnected from LosslessCut.</span>');
+            }
+
+            function updateConnectionUI_(connected, label) {
+                var dot = document.getElementById('vs-conn-dot');
+                var lbl = document.getElementById('vs-conn-label');
+                dot.className = 'vs-connection-dot ' + (connected ? 'connected' : 'disconnected');
+                lbl.textContent = label;
+            }
+
+            // ===============================
+            // FILE LOADING
+            // ===============================
+            function loadFile(file) {
+                if (!file) return;
+                state.file = file;
+                state.fileName = file.name;
+                state.segments = [];
+
+                var video = document.getElementById('vs-video');
+                var url = URL.createObjectURL(file);
+                video.src = url;
+
+                video.onloadedmetadata = function () {
+                    state.duration = video.duration;
+                    state.fps = 30; // Assume 30fps default
+                    document.getElementById('vs-overlay').classList.add('hidden');
+                    document.getElementById('vs-time-total').textContent = '/ ' + formatTime_(state.duration);
+                    generateThumbnails_(video);
+                    showFileInfo_(file, video);
+
+                    // If connected to LosslessCut, open there too
+                    if (state.connected) {
+                        // NOTE: Can't send local file path from browser to LLC easily
+                        // LLC needs absolute file paths which browser doesn't expose
+                        updateCLI_('<span style="color:#8b949e;">File loaded in browser preview. To open in LosslessCut, use:</span>\n<span class="cmd">curl -X POST http://localhost:8080/api/action/openFiles --json \'["' + file.name + '"]\'</span>');
+                    }
+                };
+
+                video.ontimeupdate = function () {
+                    state.currentTime = video.currentTime;
+                    updatePlayhead_();
+                    document.getElementById('vs-time-current').textContent = formatTime_(video.currentTime);
+                };
+
+                video.onplay = function () {
+                    state.playing = true;
+                    document.getElementById('vs-play-btn').textContent = '⏸️';
+                };
+                video.onpause = function () {
+                    state.playing = false;
+                    document.getElementById('vs-play-btn').textContent = '▶️';
+                };
+
+                renderSegments_();
+                UI.showToast('Loaded: ' + file.name, 'success');
+            }
+
+            function showFileInfo_(file, video) {
+                var info = document.getElementById('vs-file-info');
+                var content = document.getElementById('vs-file-info-content');
+                info.style.display = 'block';
+                var sizeMB = (file.size / 1048576).toFixed(2);
+                content.innerHTML =
+                    '<strong>Name:</strong> ' + file.name + '<br>' +
+                    '<strong>Size:</strong> ' + sizeMB + ' MB<br>' +
+                    '<strong>Duration:</strong> ' + formatTime_(video.duration) + '<br>' +
+                    '<strong>Resolution:</strong> ' + video.videoWidth + ' × ' + video.videoHeight + '<br>' +
+                    '<strong>Type:</strong> ' + (file.type || 'unknown');
+            }
+
+            // ===============================
+            // PLAYBACK CONTROLS
+            // ===============================
+            function togglePlay() {
+                var video = document.getElementById('vs-video');
+                if (!video.src) return;
+                if (video.paused) { video.play(); } else { video.pause(); }
+            }
+
+            function seekRelative(seconds) {
+                var video = document.getElementById('vs-video');
+                if (!video.src) return;
+                video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + seconds));
+            }
+
+            function nextFrame() {
+                var video = document.getElementById('vs-video');
+                if (!video.src) return;
+                video.pause();
+                video.currentTime += 1 / state.fps;
+            }
+
+            function prevFrame() {
+                var video = document.getElementById('vs-video');
+                if (!video.src) return;
+                video.pause();
+                video.currentTime = Math.max(0, video.currentTime - 1 / state.fps);
+            }
+
+            function setSpeed(speed) {
+                state.speed = speed;
+                var video = document.getElementById('vs-video');
+                if (video) video.playbackRate = speed;
+                document.querySelectorAll('.vs-speed-btn').forEach(function (btn) {
+                    btn.classList.toggle('active', parseFloat(btn.textContent) === speed);
+                });
+                if (state.connected) {
+                    llcAction_('setSpeed', JSON.stringify({ speed: speed }));
+                }
+            }
+
+            // ===============================
+            // TIMELINE
+            // ===============================
+            function timelineSeek(e) {
+                var video = document.getElementById('vs-video');
+                if (!video.src || !state.duration) return;
+                var rect = e.currentTarget.getBoundingClientRect();
+                var pct = (e.clientX - rect.left) / rect.width;
+                video.currentTime = pct * state.duration;
+            }
+
+            function timelineHover(e) {
+                // Future: show time tooltip on hover
+            }
+
+            function updatePlayhead_() {
+                if (!state.duration) return;
+                var pct = (state.currentTime / state.duration) * 100;
+                document.getElementById('vs-timeline-playhead').style.left = pct + '%';
+                document.getElementById('vs-timeline-progress').style.width = pct + '%';
+            }
+
+            function generateThumbnails_(video) {
+                var container = document.getElementById('vs-timeline-thumbs');
+                container.innerHTML = '';
+                var count = 20;
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                canvas.width = 120;
+                canvas.height = 68;
+
+                var thumbs = [];
+                for (var i = 0; i < count; i++) {
+                    var c = document.createElement('canvas');
+                    c.width = 120; c.height = 68;
+                    c.style.opacity = '0.6';
+                    container.appendChild(c);
+                    thumbs.push({ canvas: c, time: (i / count) * video.duration });
+                }
+
+                // Generate thumbnails asynchronously
+                var idx = 0;
+                var tempVideo = document.createElement('video');
+                tempVideo.src = video.src;
+                tempVideo.muted = true;
+                tempVideo.preload = 'auto';
+
+                tempVideo.onseeked = function () {
+                    var tc = thumbs[idx].canvas;
+                    var tctx = tc.getContext('2d');
+                    tctx.drawImage(tempVideo, 0, 0, 120, 68);
+                    idx++;
+                    if (idx < thumbs.length) {
+                        tempVideo.currentTime = thumbs[idx].time;
+                    } else {
+                        tempVideo.remove();
+                    }
+                };
+                tempVideo.onloadeddata = function () {
+                    if (thumbs.length > 0) tempVideo.currentTime = thumbs[0].time;
+                };
+            }
+
+            // ===============================
+            // SEGMENTS
+            // ===============================
+            function markIn() {
+                state.inPoint = state.currentTime;
+                document.getElementById('vs-mark-in-btn').textContent = '▶ In: ' + formatTime_(state.inPoint);
+                UI.showToast('In point: ' + formatTime_(state.inPoint), 'info');
+            }
+
+            function markOut() {
+                if (state.inPoint === null) {
+                    UI.showToast('Set an In point first!', 'warning');
+                    return;
+                }
+                var outPoint = state.currentTime;
+                if (outPoint <= state.inPoint) {
+                    UI.showToast('Out point must be after In point.', 'warning');
+                    return;
+                }
+
+                var colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+                state.segments.push({
+                    id: Date.now(),
+                    start: state.inPoint,
+                    end: outPoint,
+                    label: 'Segment ' + (state.segments.length + 1),
+                    color: colors[state.segments.length % colors.length]
+                });
+
+                state.inPoint = null;
+                document.getElementById('vs-mark-in-btn').textContent = '▶ Mark In';
+                renderSegments_();
+                UI.showToast('Segment added: ' + formatTime_(state.segments[state.segments.length - 1].start) + ' → ' + formatTime_(outPoint), 'success');
+            }
+
+            function addSegment() {
+                var t = state.currentTime;
+                var end = Math.min(t + 10, state.duration);
+                var colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+                state.segments.push({
+                    id: Date.now(),
+                    start: t,
+                    end: end,
+                    label: 'Segment ' + (state.segments.length + 1),
+                    color: colors[state.segments.length % colors.length]
+                });
+                renderSegments_();
+            }
+
+            function splitAtPlayhead() {
+                var t = state.currentTime;
+                if (!state.duration) return;
+                // Split any segment that contains the playhead
+                var split = false;
+                for (var i = state.segments.length - 1; i >= 0; i--) {
+                    var seg = state.segments[i];
+                    if (t > seg.start && t < seg.end) {
+                        var newSeg = { id: Date.now(), start: t, end: seg.end, label: seg.label + ' (B)', color: seg.color };
+                        seg.end = t;
+                        seg.label = seg.label.replace(/ \(B\)$/, '') + ' (A)';
+                        state.segments.splice(i + 1, 0, newSeg);
+                        split = true;
+                        break;
+                    }
+                }
+                if (!split) {
+                    // No segment at playhead, create two from whole
+                    UI.showToast('No segment at current position to split.', 'warning');
+                } else {
+                    renderSegments_();
+                    UI.showToast('Split at ' + formatTime_(t), 'success');
+                }
+            }
+
+            function removeSegment(id) {
+                state.segments = state.segments.filter(function (s) { return s.id !== id; });
+                renderSegments_();
+            }
+
+            function renderSegments_() {
+                // Render timeline segments
+                var container = document.getElementById('vs-timeline-segments');
+                container.innerHTML = '';
+                state.segments.forEach(function (seg) {
+                    var div = document.createElement('div');
+                    div.className = 'vs-timeline-segment';
+                    div.style.left = (seg.start / state.duration * 100) + '%';
+                    div.style.width = ((seg.end - seg.start) / state.duration * 100) + '%';
+                    div.style.background = seg.color + '33';
+                    div.style.borderColor = seg.color;
+                    container.appendChild(div);
+                });
+
+                // Render segment list
+                var list = document.getElementById('vs-segment-list');
+                if (state.segments.length === 0) {
+                    list.innerHTML = '<div style="text-align:center; padding:30px 0; color:var(--text-secondary); font-size:13px;">No segments yet. Mark In/Out to create segments.</div>';
+                    return;
+                }
+                list.innerHTML = '';
+                state.segments.forEach(function (seg, i) {
+                    var dur = seg.end - seg.start;
+                    var item = document.createElement('div');
+                    item.className = 'vs-segment-item';
+                    item.innerHTML =
+                        '<div class="vs-seg-color" style="background:' + seg.color + ';"></div>' +
+                        '<div class="vs-seg-info">' +
+                        '<div class="vs-seg-label">' + seg.label + '</div>' +
+                        '<div class="vs-seg-time">' + formatTime_(seg.start) + ' → ' + formatTime_(seg.end) + ' (' + dur.toFixed(1) + 's)</div>' +
+                        '</div>' +
+                        '<div class="vs-seg-actions">' +
+                        '<button onclick="VideoStudio.seekTo(' + seg.start + ')" title="Jump to start">▶️</button>' +
+                        '<button onclick="VideoStudio.removeSegment(' + seg.id + ')" title="Delete">🗑️</button>' +
+                        '</div>';
+                    list.appendChild(item);
+                });
+            }
+
+            function seekTo(t) {
+                var video = document.getElementById('vs-video');
+                if (video) video.currentTime = t;
+            }
+
+            // ===============================
+            // EXPORT
+            // ===============================
+            function exportSegments() {
+                if (state.segments.length === 0) {
+                    UI.showToast('No segments to export! Mark In/Out first.', 'warning');
+                    return;
+                }
+                if (state.connected) {
+                    llcExport_();
+                } else {
+                    generateFFmpegCommands();
+                }
+            }
+
+            function exportAll() {
+                if (state.segments.length === 0 && state.duration > 0) {
+                    state.segments.push({
+                        id: Date.now(),
+                        start: 0,
+                        end: state.duration,
+                        label: 'Full Export',
+                        color: '#10b981'
+                    });
+                    renderSegments_();
+                }
+                exportSegments();
+            }
+
+            function generateFFmpegCommands() {
+                if (state.segments.length === 0) {
+                    UI.showToast('No segments defined. Mark In/Out first.', 'warning');
+                    return;
+                }
+                var format = document.getElementById('vs-output-format').value;
+                var aspect = document.getElementById('vs-aspect-ratio').value;
+                var cmds = '';
+                var fileName = state.fileName || 'input.mp4';
+                var baseName = fileName.replace(/\.[^/.]+$/, '');
+
+                cmds += '<span class="cmd"># FFmpeg Lossless Cut Commands for: ' + fileName + '</span>\n\n';
+
+                state.segments.forEach(function (seg, i) {
+                    var outFile = baseName + '_segment' + (i + 1) + '.' + format;
+                    var ssArg = formatFFmpegTime_(seg.start);
+                    var durArg = (seg.end - seg.start).toFixed(3);
+
+                    var cmd = 'ffmpeg -ss ' + ssArg + ' -i "' + fileName + '" -t ' + durArg;
+
+                    // Aspect ratio filter
+                    if (aspect !== 'original') {
+                        var parts = aspect.split(':');
+                        if (aspect === '9:16') {
+                            cmd += ' -vf "crop=ih*9/16:ih,scale=1080:1920"';
+                        } else if (aspect === '1:1') {
+                            cmd += ' -vf "crop=min(iw\\,ih):min(iw\\,ih),scale=1080:1080"';
+                        } else if (aspect === '4:5') {
+                            cmd += ' -vf "crop=ih*4/5:ih,scale=1080:1350"';
+                        } else {
+                            cmd += ' -vf "scale=1920:1080"';
+                        }
+                        cmd += ' -c:a copy';
+                    } else {
+                        cmd += ' -c copy';
+                    }
+
+                    cmd += ' "' + outFile + '"';
+                    cmds += '<span class="cmd">$ ' + cmd + '</span>\n';
+                });
+
+                // Also generate LosslessCut CLI command
+                cmds += '\n<span style="color:#8b949e;"># Or use LosslessCut directly:</span>\n';
+                cmds += '<span class="cmd">$ LosslessCut "' + fileName + '"</span>\n';
+                cmds += '<span style="color:#8b949e;"># Then import these segments via File → Import Segments</span>\n';
+
+                showCLI_();
+                updateCLI_(cmds);
+
+                // Also copy plain text to clipboard
+                var plainCmds = cmds.replace(/<[^>]*>/g, '');
+                try {
+                    navigator.clipboard.writeText(plainCmds);
+                    UI.showToast('CLI commands copied to clipboard!', 'success');
+                } catch (e) {
+                    UI.showToast('Commands generated — see CLI output below.', 'info');
+                }
+            }
+
+            // ===============================
+            // LOSSLESSCUT API COMMANDS
+            // ===============================
+            function llcAction_(action, data) {
+                if (!state.connected) return;
+                var opts = { method: 'POST' };
+                if (data) {
+                    opts.headers = { 'Content-Type': 'application/json' };
+                    opts.body = data;
+                }
+                return fetch(LLC_API + '/api/action/' + action, opts)
+                    .then(function (r) { return r.text(); })
+                    .then(function (t) {
+                        updateCLI_('<span class="success">→ ' + action + ': ' + (t || 'OK') + '</span>');
+                        return t;
+                    })
+                    .catch(function (e) {
+                        updateCLI_('<span class="error">✗ ' + action + ': ' + e.message + '</span>');
+                    });
+            }
+
+            function llcExport_() {
+                updateCLI_('<span class="cmd">Sending export command to LosslessCut...</span>');
+                llcAction_('export').then(function () {
+                    UI.showToast('Export sent to LosslessCut!', 'success');
+                });
+            }
+
+            // ===============================
+            // QUICK ACTIONS
+            // ===============================
+            function takeSnapshot() {
+                var video = document.getElementById('vs-video');
+                if (!video.src) { UI.showToast('Load a video first.', 'warning'); return; }
+
+                var canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+
+                canvas.toBlob(function (blob) {
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = (state.fileName.replace(/\.[^/.]+$/, '') || 'snapshot') + '_' + formatTime_(state.currentTime).replace(/[:.]/g, '') + '.png';
+                    a.click();
+                    UI.showToast('📸 Snapshot saved!', 'success');
+                }, 'image/png');
+            }
+
+            function extractAudio() {
+                if (state.connected) {
+                    // Could do via LosslessCut API but limited
+                    llcAction_('extractAllTracks');
+                } else {
+                    var cmd = 'ffmpeg -i "' + (state.fileName || 'input.mp4') + '" -vn -acodec copy "' + (state.fileName || 'input').replace(/\.[^/.]+$/, '') + '_audio.aac"';
+                    showCLI_();
+                    updateCLI_('<span class="cmd"># Extract audio track:</span>\n<span class="cmd">$ ' + cmd + '</span>');
+                    try {
+                        navigator.clipboard.writeText(cmd);
+                        UI.showToast('Audio extraction command copied!', 'success');
+                    } catch (e) { UI.showToast('See CLI output for command.', 'info'); }
+                }
+            }
+
+            function detectScenes() {
+                if (state.connected) {
+                    llcAction_('detectBlackScenes');
+                    UI.showToast('Scene detection sent to LosslessCut...', 'info');
+                } else {
+                    var cmd = 'ffmpeg -i "' + (state.fileName || 'input.mp4') + '" -filter:v "select=\'gt(scene\\,0.3)\',showinfo" -f null - 2>&1 | grep showinfo';
+                    showCLI_();
+                    updateCLI_('<span class="cmd"># Detect scene changes:</span>\n<span class="cmd">$ ' + cmd + '</span>');
+                    try {
+                        navigator.clipboard.writeText(cmd);
+                        UI.showToast('Scene detection command copied!', 'success');
+                    } catch (e) { UI.showToast('See CLI output for command.', 'info'); }
+                }
+            }
+
+            function uploadToDrive() {
+                if (!state.file) { UI.showToast('No file loaded.', 'warning'); return; }
+                UI.showToast('Drive upload requires Google API — coming soon!', 'info');
+            }
+
+            // ===============================
+            // HELPERS
+            // ===============================
+            function formatTime_(s) {
+                if (!s || isNaN(s)) return '00:00.000';
+                var mins = Math.floor(s / 60);
+                var secs = s % 60;
+                return String(mins).padStart(2, '0') + ':' + secs.toFixed(3).padStart(6, '0');
+            }
+
+            function formatFFmpegTime_(s) {
+                var hrs = Math.floor(s / 3600);
+                var mins = Math.floor((s % 3600) / 60);
+                var secs = s % 60;
+                return String(hrs).padStart(2, '0') + ':' + String(mins).padStart(2, '0') + ':' + secs.toFixed(3).padStart(6, '0');
+            }
+
+            function showCLI_() {
+                document.getElementById('vs-cli-output').style.display = 'block';
+            }
+
+            function updateCLI_(html) {
+                var el = document.getElementById('vs-cli-output');
+                el.innerHTML = html;
+                el.scrollTop = el.scrollHeight;
+            }
+
+            // ===============================
+            // DRAG & DROP
+            // ===============================
+            (function initDragDrop() {
+                document.addEventListener('DOMContentLoaded', function () {
+                    var wrap = document.getElementById('vs-player-wrap');
+                    if (!wrap) return;
+
+                    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (e) {
+                        wrap.addEventListener(e, function (ev) { ev.preventDefault(); ev.stopPropagation(); });
+                    });
+
+                    wrap.addEventListener('drop', function (e) {
+                        var files = e.dataTransfer.files;
+                        if (files.length > 0 && files[0].type.startsWith('video/')) {
+                            loadFile(files[0]);
+                        }
+                    });
+                });
+            })();
+
+            // PUBLIC API
+            return {
+                toggleConnection: toggleConnection,
+                loadFile: loadFile,
+                togglePlay: togglePlay,
+                seekRelative: seekRelative,
+                nextFrame: nextFrame,
+                prevFrame: prevFrame,
+                setSpeed: setSpeed,
+                timelineSeek: timelineSeek,
+                timelineHover: timelineHover,
+                markIn: markIn,
+                markOut: markOut,
+                addSegment: addSegment,
+                splitAtPlayhead: splitAtPlayhead,
+                removeSegment: removeSegment,
+                seekTo: seekTo,
+                exportSegments: exportSegments,
+                exportAll: exportAll,
+                generateFFmpegCommands: generateFFmpegCommands,
+                takeSnapshot: takeSnapshot,
+                extractAudio: extractAudio,
+                detectScenes: detectScenes,
+                uploadToDrive: uploadToDrive
+            };
+        })();
+    </script>
 
     <!-- ============================================================
      TAB: AI CONSOLE (New)
@@ -7873,9 +9039,11 @@
                             ondragleave="this.style.borderColor='var(--border-strong)'; this.style.background='var(--surface-2)';"
                             ondrop="handleDrop(event)">
                             <div style="font-size: 42px; margin-bottom: 12px; opacity: 0.8;">📸</div>
-                            <strong style="display:block; font-size:16px; margin-bottom:4px;">Upload Booking Image or
+                            <strong style="display:block; font-size:16px; margin-bottom:4px;">Upload
+                                Booking Image or
                                 PDF</strong>
-                            <small style="color:var(--text-secondary);">Take a picture or drop a file (PNG, JPG,
+                            <small style="color:var(--text-secondary);">Take a picture or drop a file
+                                (PNG, JPG,
                                 PDF)</small>
                             <input type="file" id="clerk-file" style="display:none" onchange="handleFileSelect(this)">
                         </div>
@@ -7916,9 +9084,11 @@
                         </h4>
 
                         <div id="clerk-loading" style="display:none; text-align:center; padding:60px 20px;">
-                            <div style="font-size:32px; animation:spin 1s linear infinite; display:inline-block;">⚙️
+                            <div style="font-size:32px; animation:spin 1s linear infinite; display:inline-block;">
+                                ⚙️
                             </div>
-                            <p style="margin-top:16px; color:var(--text-secondary);">Analyzing document structure...</p>
+                            <p style="margin-top:16px; color:var(--text-secondary);">Analyzing document
+                                structure...</p>
                         </div>
 
                         <div id="clerk-output" style="max-height:500px; overflow-y:auto; color:var(--text);">
@@ -7984,7 +9154,8 @@
                                     <select id="analyst-history">
                                         <option value="First Offense">First Offense</option>
                                         <option value="Prior FTAs">History of FTAs</option>
-                                        <option value="Repeat Offender">Repeat Offender (No FTAs)</option>
+                                        <option value="Repeat Offender">Repeat Offender (No FTAs)
+                                        </option>
                                         <option value="Unknown">Unknown</option>
                                     </select>
                                 </div>
@@ -8021,7 +9192,8 @@
                 <div style="max-width: 800px; margin: 0 auto;">
                     <div style="text-align:center; margin-bottom:32px;">
                         <h4>Sentiment & Distress Monitor</h4>
-                        <p class="text-secondary">Analyze check-in notes for signs of distress, flight risk, or
+                        <p class="text-secondary">Analyze check-in notes for signs of distress, flight
+                            risk, or
                             deception.</p>
                     </div>
 
@@ -8031,7 +9203,8 @@
                             style="width:100%; border:none; padding:24px; font-size:16px; background:var(--surface-2); resize:none; outline:none;"></textarea>
                         <div
                             style="background:var(--surface); padding:16px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-                            <small class="text-secondary">AI detects emotional tone and keywords.</small>
+                            <small class="text-secondary">AI detects emotional tone and
+                                keywords.</small>
                             <button class="btn btn-danger" onclick="runMonitor()">
                                 👮 Check Risk
                             </button>
@@ -8047,7 +9220,8 @@
                 <div style="max-width: 1000px; margin: 0 auto;">
                     <div style="text-align:center; margin-bottom:32px;">
                         <h4>Background Check & Vetting Investigator</h4>
-                        <p class="text-secondary">Cross-reference Defendant and Indemnitor reports (TLO, IRB, iDiCore)
+                        <p class="text-secondary">Cross-reference Defendant and Indemnitor reports (TLO,
+                            IRB, iDiCore)
                             for hidden risks.</p>
                     </div>
 
@@ -9483,16 +10657,19 @@
                     style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid var(--primary); color: var(--primary); font-weight: 600;">
                     Google Drive</div>
                 <div class="tab" onclick="switchMediaTab('grok')" id="tab-grok"
-                    style="padding: 10px 20px; cursor: pointer; color: var(--text-secondary);">Grok/X.com</div>
+                    style="padding: 10px 20px; cursor: pointer; color: var(--text-secondary);">
+                    Grok/X.com</div>
                 <div class="tab" onclick="switchMediaTab('public')" id="tab-public"
-                    style="padding: 10px 20px; cursor: pointer; color: var(--text-secondary);">Public Domain</div>
+                    style="padding: 10px 20px; cursor: pointer; color: var(--text-secondary);">Public
+                    Domain</div>
             </div>
 
             <div id="media-content-drive" class="media-tab-content" style="flex: 1; overflow-y: auto;">
                 <div id="drive-media-grid"
                     style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">
                     <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 40px;">
-                        <i class="fas fa-spinner fa-spin fa-2x"></i><br /><br />Loading media from Google Drive...
+                        <i class="fas fa-spinner fa-spin fa-2x"></i><br /><br />Loading media from
+                        Google Drive...
                     </div>
                 </div>
             </div>
@@ -9510,11 +10687,13 @@
                         </button>
                     </div>
                     <small style="color: var(--text-secondary); display: block; margin-top: 6px;">
-                        <i class="fas fa-magic"></i> Grok AI suggests optimal keywords, then finds matching stock photos
+                        <i class="fas fa-magic"></i> Grok AI suggests optimal keywords, then finds
+                        matching stock photos
                         from Pexels.
                     </small>
                     <div id="grok-suggestions"
-                        style="display: none; margin-top: 8px; font-size: 12px; color: var(--text-muted);"></div>
+                        style="display: none; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                    </div>
                 </div>
                 <div id="grok-media-grid"
                     style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;">
@@ -9538,7 +10717,8 @@
                         </button>
                     </div>
                     <small style="color: var(--text-secondary); display: block; margin-top: 6px;">
-                        <i class="fas fa-camera"></i> Free-to-use images from Pexels. No attribution required.
+                        <i class="fas fa-camera"></i> Free-to-use images from Pexels. No attribution
+                        required.
                     </small>
                 </div>
                 <div id="public-media-grid"
