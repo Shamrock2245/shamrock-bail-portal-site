@@ -3512,10 +3512,16 @@
                 const phone = document.getElementById('outreach-phone').value.trim();
                 const message = this.generatePreview();
                 const provider = document.getElementById('outreach-provider').value;
+                const chatId = document.getElementById('outreach-chat-id')?.value?.trim();
 
                 if (!phone) {
                     UI.showToast('Please provide a phone number to send the message to.', 'warning');
                     document.getElementById('outreach-phone').focus();
+                    return;
+                }
+                if (provider === 'telegram' && !chatId) {
+                    UI.showToast('Telegram requires a Chat ID. Click 🔍 Lookup to find it from the phone number, or enter it manually.', 'warning');
+                    document.getElementById('outreach-chat-id').focus();
                     return;
                 }
                 if (!message || message.includes('[Agent First Name]') || message.includes('[Defendant\'s Name]')) {
@@ -3524,18 +3530,15 @@
                     }
                 }
 
-                UI.showLoading('Sending Message', `Sending via ${provider}...`);
+                UI.showLoading('Sending Message', `Sending via ${provider === 'telegram' ? 'Telegram' : 'SMS'}...`);
 
                 google.script.run
                     .withSuccessHandler(function (response) {
                         UI.hideLoading();
                         if (response && response.success) {
-                            UI.showToast('🚀 Message sent successfully!', 'success');
+                            const icon = provider === 'telegram' ? '📱' : '🚀';
+                            UI.showToast(`${icon} Message sent successfully via ${provider === 'telegram' ? 'Telegram' : 'SMS'}!`, 'success');
                             document.getElementById('outreach-paste-area').value = '';
-                            // Optional: clear fields after send
-                            // document.getElementById('outreach-defendant-name').value = '';
-                            // document.getElementById('outreach-phone').value = '';
-                            // document.getElementById('outreach-county').value = '';
                         } else {
                             UI.showToast('⚠️ Failed to send: ' + (response.error || 'Unknown error'), 'error');
                         }
@@ -3545,10 +3548,59 @@
                         UI.showToast('❌ Backend Error: ' + error.message, 'error');
                     })
                     .sendOutreachMessage({
-                        phone: phone,
+                        phone: provider === 'telegram' ? chatId : phone,
                         message: message,
                         provider: provider
                     });
+            },
+
+            onProviderChange: function () {
+                const provider = document.getElementById('outreach-provider').value;
+                const chatIdGroup = document.getElementById('outreach-chatid-group');
+                const phoneLabel = document.querySelector('#outreach-phone')?.closest('.form-group')?.querySelector('label');
+
+                if (provider === 'telegram') {
+                    chatIdGroup.style.display = '';
+                    if (phoneLabel) phoneLabel.textContent = 'Defendant/Contact Phone (for lookup)';
+                    // Auto-lookup if phone is already filled
+                    const phone = document.getElementById('outreach-phone').value.trim();
+                    if (phone) this.lookupChatId();
+                } else {
+                    chatIdGroup.style.display = 'none';
+                    if (phoneLabel) phoneLabel.textContent = 'Defendant/Contact Phone';
+                    document.getElementById('outreach-chat-id').value = '';
+                }
+            },
+
+            lookupChatId: function () {
+                const phone = document.getElementById('outreach-phone').value.trim();
+                if (!phone) {
+                    UI.showToast('Enter a phone number first, then click Lookup.', 'warning');
+                    document.getElementById('outreach-phone').focus();
+                    return;
+                }
+
+                const chatIdInput = document.getElementById('outreach-chat-id');
+                chatIdInput.value = 'Looking up...';
+                chatIdInput.disabled = true;
+
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        chatIdInput.disabled = false;
+                        if (result && result.chatId) {
+                            chatIdInput.value = result.chatId;
+                            UI.showToast(`✅ Found Telegram Chat ID: ${result.chatId} (from ${result.source})`, 'success');
+                        } else {
+                            chatIdInput.value = '';
+                            UI.showToast('No Telegram Chat ID found for this number. The contact may not have used the Telegram bot yet. You can enter a Chat ID manually.', 'info');
+                        }
+                    })
+                    .withFailureHandler(function (error) {
+                        chatIdInput.disabled = false;
+                        chatIdInput.value = '';
+                        UI.showToast('Lookup failed: ' + error.message, 'error');
+                    })
+                    .lookupTelegramChatId(phone);
             }
         };
 
@@ -7734,10 +7786,20 @@
                 <!-- Provider & Template Selection -->
                 <div class="form-group">
                     <label>Messaging Provider</label>
-                    <select id="outreach-provider" class="input">
+                    <select id="outreach-provider" class="input" onchange="OutreachMode.onProviderChange()">
                         <option value="twilio">SMS (Twilio)</option>
-                        <option value="telegram" disabled>Telegram (Coming Soon)</option>
+                        <option value="telegram">📱 Telegram</option>
                     </select>
+                </div>
+                <div class="form-group" id="outreach-chatid-group" style="display:none;">
+                    <label>Telegram Chat ID <small style="color:var(--muted)">(auto-lookup or enter
+                            manually)</small></label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="outreach-chat-id" class="input" placeholder="e.g. 123456789"
+                            style="flex:1">
+                        <button class="btn btn-secondary btn-sm" onclick="OutreachMode.lookupChatId()"
+                            title="Look up from phone number">🔍 Lookup</button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Message Template</label>

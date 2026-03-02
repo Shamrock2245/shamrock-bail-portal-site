@@ -3129,6 +3129,72 @@ function handleLogPingRequest(data) {
  * Dispatches an automated message via Twilio or Telegram.
  * @param {Object} payload - { phone, message, provider }
  */
+/**
+ * Look up a Telegram Chat ID from a phone number.
+ * Searches: CheckInLog, IntakeQueue, ClientUpdates, CaseStatusLookups
+ * Called from Dashboard Outreach UI when Telegram provider is selected.
+ */
+function lookupTelegramChatId(phone) {
+  const email = Session.getActiveUser().getEmail();
+  if (!isUserAllowed(email)) return { chatId: null, error: 'Unauthorized' };
+
+  if (!phone) return { chatId: null, error: 'No phone provided' };
+
+  var cleanPhone = phone.toString().replace(/\D/g, '');
+  if (cleanPhone.length === 10) cleanPhone = '1' + cleanPhone;
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Sheets to search (in order of reliability)
+  var sheetsToSearch = [
+    { name: 'CheckInLog', phoneCol: ['phone'], chatIdCol: ['telegramuserid'] },
+    { name: 'IntakeQueue', phoneCol: ['indphone', 'ind phone', 'phone', 'defphone', 'def phone'], chatIdCol: ['telegramuserid', 'telegram_user_id'] },
+    { name: 'ClientUpdates', phoneCol: ['phone'], chatIdCol: ['telegramuserid'] },
+    { name: 'CaseStatusLookups', phoneCol: ['phone'], chatIdCol: ['telegramuserid'] }
+  ];
+
+  for (var s = 0; s < sheetsToSearch.length; s++) {
+    var cfg = sheetsToSearch[s];
+    var sheet = ss.getSheetByName(cfg.name);
+    if (!sheet || sheet.getLastRow() <= 1) continue;
+
+    var rows = sheet.getDataRange().getValues();
+    var headers = rows[0];
+    var ci = {};
+    headers.forEach(function (h, i) { ci[String(h).toLowerCase().trim()] = i; });
+
+    // Find phone column index
+    var phoneIdx = -1;
+    for (var p = 0; p < cfg.phoneCol.length; p++) {
+      if (ci[cfg.phoneCol[p]] !== undefined) { phoneIdx = ci[cfg.phoneCol[p]]; break; }
+    }
+
+    // Find chatId column index
+    var chatIdx = -1;
+    for (var c = 0; c < cfg.chatIdCol.length; c++) {
+      if (ci[cfg.chatIdCol[c]] !== undefined) { chatIdx = ci[cfg.chatIdCol[c]]; break; }
+    }
+
+    if (phoneIdx === -1 || chatIdx === -1) continue;
+
+    // Search from bottom up (most recent first)
+    for (var r = rows.length - 1; r >= 1; r--) {
+      var rowPhone = String(rows[r][phoneIdx] || '').replace(/\D/g, '');
+      if (rowPhone.length === 10) rowPhone = '1' + rowPhone;
+
+      var chatId = String(rows[r][chatIdx] || '').trim();
+
+      if (chatId && (rowPhone === cleanPhone || rowPhone.slice(-10) === cleanPhone.slice(-10))) {
+        Logger.log('✅ Found Telegram Chat ID ' + chatId + ' for phone ' + cleanPhone.slice(-4) + ' in ' + cfg.name);
+        return { chatId: chatId, source: cfg.name };
+      }
+    }
+  }
+
+  Logger.log('⚠️ No Telegram Chat ID found for phone ' + cleanPhone.slice(-4));
+  return { chatId: null };
+}
+
 function sendOutreachMessage(payload) {
   const email = Session.getActiveUser().getEmail();
   if (!isUserAllowed(email)) return { success: false, error: "Unauthorized" };
