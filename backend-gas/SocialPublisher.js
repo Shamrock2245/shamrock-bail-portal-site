@@ -124,7 +124,22 @@ var SocialPublisher = (function () {
           grant_type: 'refresh_token'
         };
         break;
-      // TikTok and LinkedIn have different refresh flows, can be added later if needed.
+      case 'linkedin': {
+        var liClientId = PROPS.getProperty('LINKEDIN_CLIENT_ID');
+        var liClientSecret = PROPS.getProperty('LINKEDIN_CLIENT_SECRET');
+        if (!liClientId || !liClientSecret) {
+          throw new Error('LinkedIn OAuth credentials missing for token refresh.');
+        }
+        tokenUrl = 'https://www.linkedin.com/oauth/v2/accessToken';
+        payload = {
+          client_id: liClientId,
+          client_secret: liClientSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token'
+        };
+        break;
+      }
+      // TikTok refresh can be added later if needed.
       default:
         throw new Error('Token refresh not implemented for ' + platform);
     }
@@ -345,91 +360,118 @@ var SocialPublisher = (function () {
     return getDriveFilePublicUrl_(driveFileId);
   }
 
-  function uploadToLinkedIn_(fileId, accessToken, companyUrn) {
-    var file = DriveApp.getFileById(fileId);
-    var blob = file.getBlob();
+  /**
+   * LinkedIn API version for all /rest/ endpoint calls.
+   * Format: YYYYMM — update when migrating to a newer API version.
+   */
+  var LINKEDIN_API_VERSION = '202501';
 
-    var registerUrl = 'https://api.linkedin.com/v2/assets?action=registerUpload';
-    var registerPayload = {
-      registerUploadRequest: {
-        recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
-        owner: companyUrn,
-        supportedUploadMechanism: ['SYNCHRONOUS_UPLOAD']
+  /**
+   * Builds the standard LinkedIn headers used by /rest/ endpoints.
+   */
+  function linkedInHeaders_(accessToken) {
+    return {
+      'Authorization': 'Bearer ' + accessToken,
+      'X-Restli-Protocol-Version': '2.0.0',
+      'Linkedin-Version': LINKEDIN_API_VERSION,
+      'Content-Type': 'application/json'
+    };
+  }
+
+  /**
+   * Uploads an image to LinkedIn via the Images API (replaces legacy v2/assets).
+   * Supports both Google Drive file IDs and external URLs (EXTERNAL: prefix).
+   * @returns {string} Image URN (urn:li:image:...)
+   */
+  function uploadToLinkedIn_(driveFileId, accessToken, companyUrn) {
+    // Resolve the image blob — supports Drive IDs and EXTERNAL: URLs
+    var blob = resolveMediaBlob_(driveFileId);
+    if (!blob) throw new Error('Could not resolve media for LinkedIn upload.');
+
+    // Step 1: Initialize upload via Images API
+    var initUrl = 'https://api.linkedin.com/rest/images?action=initializeUpload';
+    var initPayload = {
+      initializeUploadRequest: {
+        owner: companyUrn
       }
     };
-    var registerRes = UrlFetchApp.fetch(registerUrl, {
+    var initRes = UrlFetchApp.fetch(initUrl, {
       method: 'post',
-      contentType: 'application/json',
-      headers: { 'Authorization': 'Bearer ' + accessToken, 'X-Restli-Protocol-Version': '2.0.0' },
-      payload: JSON.stringify(registerPayload),
+      headers: linkedInHeaders_(accessToken),
+      payload: JSON.stringify(initPayload),
       muteHttpExceptions: true
     });
-    if (registerRes.getResponseCode() >= 300) throw new Error('LinkedIn Register Upload error: ' + registerRes.getContentText());
+    if (initRes.getResponseCode() >= 300) {
+      throw new Error('LinkedIn Image Init error (' + initRes.getResponseCode() + '): ' + initRes.getContentText());
+    }
 
-    var regData = JSON.parse(registerRes.getContentText());
-    var uploadMechanism = regData.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'];
-    var uploadUrl = uploadMechanism.uploadUrl;
-    var assetUrn = regData.value.asset;
+    var initData = JSON.parse(initRes.getContentText());
+    var uploadUrl = initData.value.uploadUrl;
+    var imageUrn = initData.value.image; // urn:li:image:...
 
+    // Step 2: Upload the binary image
     var uploadRes = UrlFetchApp.fetch(uploadUrl, {
       method: 'put',
-      headers: { 'Authorization': 'Bearer ' + accessToken },
+      headers: {
+        'Authorization': 'Bearer ' + accessToken
+      },
       payload: blob,
       muteHttpExceptions: true
     });
-    if (uploadRes.getResponseCode() >= 300) throw new Error('LinkedIn Media Upload error: ' + uploadRes.getContentText());
+    if (uploadRes.getResponseCode() >= 300) {
+      throw new Error('LinkedIn Image Upload error (' + uploadRes.getResponseCode() + '): ' + uploadRes.getContentText());
+    }
 
-    return assetUrn;
+    return imageUrn;
   }
 
-  // ─── PRIVATE: LinkedIn API ──────────────────────────────────────────────────
+  // ─── PRIVATE: LinkedIn Posts API ────────────────────────────────────────────
 
   /**
-   * Posts a text update to a LinkedIn Company Page.
+   * Posts to a LinkedIn Company Page via the Posts API (/rest/posts).
+   * Migrated from deprecated ugcPosts endpoint (Feb 2023 sunset).
+   * Includes 401 auto-retry with token refresh.
    * Requires: LINKEDIN_ACCESS_TOKEN, LINKEDIN_COMPANY_URN
    */
   function postToLinkedIn_(content, postOptions) {
     var accessToken = PROPS.getProperty('LINKEDIN_ACCESS_TOKEN');
     var companyUrn = PROPS.getProperty('LINKEDIN_COMPANY_URN');
 
-    if (!accessToken) throw new Error('LinkedIn credentials missing. Check Script Properties: LINKEDIN_ACCESS_TOKEN, LINKEDIN_COMPANY_URN');
+    if (!accessToken) throw new Error('LinkedIn credentials missing. Set LINKEDIN_ACCESS_TOKEN in Script Properties (run logAuthUrl_LinkedIn()).');
     if (!companyUrn) throw new Error('LINKEDIN_COMPANY_URN not set. Format: urn:li:organization:12345678');
 
-    var url = 'https://api.linkedin.com/v2/ugcPosts';
+    var url = 'https://api.linkedin.com/rest/posts';
     var payload = {
       author: companyUrn,
-      lifecycleState: 'PUBLISHED',
-      specificContent: {
-        'com.linkedin.ugc.ShareContent': {
-          shareCommentary: { text: content },
-          shareMediaCategory: 'NONE'
-        }
+      commentary: content,
+      visibility: 'PUBLIC',
+      distribution: {
+        feedDistribution: 'MAIN_FEED',
+        targetEntities: [],
+        thirdPartyDistributionChannels: []
       },
-      visibility: {
-        'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
-      }
+      lifecycleState: 'PUBLISHED',
+      isReshareDisabledByAuthor: false
     };
 
+    // Attach image if provided
     if (postOptions && postOptions.driveFileId) {
       try {
-        var assetUrn = uploadToLinkedIn_(postOptions.driveFileId, accessToken, companyUrn);
-        payload.specificContent['com.linkedin.ugc.ShareContent'].shareMediaCategory = 'IMAGE';
-        payload.specificContent['com.linkedin.ugc.ShareContent'].media = [{
-          media: assetUrn,
-          status: 'READY'
-        }];
+        var imageUrn = uploadToLinkedIn_(postOptions.driveFileId, accessToken, companyUrn);
+        payload.content = {
+          media: {
+            title: 'Shamrock Bail Bonds',
+            id: imageUrn
+          }
+        };
       } catch (e) {
-        console.warn('LinkedIn Media Upload failed: ' + e.message);
+        console.warn('LinkedIn Media Upload failed (posting text-only): ' + e.message);
       }
     }
 
     var options = {
       method: 'post',
-      contentType: 'application/json',
-      headers: {
-        'Authorization': 'Bearer ' + accessToken,
-        'X-Restli-Protocol-Version': '2.0.0'
-      },
+      headers: linkedInHeaders_(accessToken),
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     };
@@ -437,9 +479,28 @@ var SocialPublisher = (function () {
     var response = UrlFetchApp.fetch(url, options);
     var code = response.getResponseCode();
 
-    if (code >= 200 && code < 300) {
-      var body = JSON.parse(response.getContentText());
-      return { success: true, id: body.id, platform: 'linkedin' };
+    if (code === 201 || (code >= 200 && code < 300)) {
+      // Posts API returns the post ID in the x-restli-id header
+      var headers = response.getHeaders();
+      var postId = headers['x-restli-id'] || headers['X-RestLi-Id'] || '';
+      return { success: true, id: postId, platform: 'linkedin' };
+    } else if (code === 401) {
+      // Token expired — attempt refresh and retry once
+      try {
+        var newToken = refreshAccessToken_('linkedin');
+        options.headers = linkedInHeaders_(newToken);
+        var retryResp = UrlFetchApp.fetch(url, options);
+        var retryCode = retryResp.getResponseCode();
+        if (retryCode === 201 || (retryCode >= 200 && retryCode < 300)) {
+          var retryHeaders = retryResp.getHeaders();
+          var retryPostId = retryHeaders['x-restli-id'] || retryHeaders['X-RestLi-Id'] || '';
+          return { success: true, id: retryPostId, platform: 'linkedin' };
+        } else {
+          throw new Error('LinkedIn API Error after token refresh (' + retryCode + '): ' + retryResp.getContentText());
+        }
+      } catch (refreshErr) {
+        throw new Error('LinkedIn API Error 401 (Refresh failed): ' + refreshErr.message);
+      }
     } else {
       throw new Error('LinkedIn API Error ' + code + ': ' + response.getContentText());
     }
@@ -1116,7 +1177,7 @@ var SocialPublisher = (function () {
             'response_type=code' +
             '&client_id=' + encodeURIComponent(liClientId) +
             '&redirect_uri=' + encodeURIComponent(callbackUrl) +
-            '&scope=w_member_social%20r_organization_social%20w_organization_social' +
+            '&scope=w_member_social%20w_organization_social%20r_organization_social' +
             '&state=' + encodeURIComponent(stateToken);
         }
         case 'tiktok': {
@@ -1275,7 +1336,7 @@ var SocialPublisher = (function () {
       // Returns true/false per platform — false = credentials not yet provisioned (graceful, no errors thrown)
       return {
         twitter: !!(PROPS.getProperty('TWITTER_API_KEY') && PROPS.getProperty('TWITTER_ACCESS_TOKEN')),
-        linkedin: !!(PROPS.getProperty('LINKEDIN_ACCESS_TOKEN')),
+        linkedin: !!(PROPS.getProperty('LINKEDIN_ACCESS_TOKEN') && PROPS.getProperty('LINKEDIN_COMPANY_URN')),
         gbp: !!(PROPS.getProperty('GBP_ACCESS_TOKEN') && PROPS.getProperty('GBP_LOCATION_ID')),
         tiktok: !!(PROPS.getProperty('TIKTOK_ACCESS_TOKEN')),
         youtube: !!(PROPS.getProperty('YOUTUBE_ACCESS_TOKEN') && PROPS.getProperty('YOUTUBE_CHANNEL_ID')),
