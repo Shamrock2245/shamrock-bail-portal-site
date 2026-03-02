@@ -898,6 +898,36 @@ function doPost(e) {
       }
     }
 
+    // ─── RISK MITIGATION & NETLIFY FUNCTION ACTIONS ───
+    // These actions are called by Netlify serverless functions (no API key)
+    if (data.action === 'post_slack_message') {
+      return createResponse(handlePostSlackMessage(data));
+    }
+    if (data.action === 'get_upcoming_court_dates') {
+      return createResponse(handleGetUpcomingCourtDates(data));
+    }
+    if (data.action === 'send_court_reminders') {
+      return createResponse(handleSendCourtReminders(data));
+    }
+    if (data.action === 'get_daily_stats') {
+      return createResponse(handleGetDailyStats(data));
+    }
+    if (data.action === 'get_unacknowledged_reminders') {
+      return createResponse(handleGetUnacknowledgedReminders(data));
+    }
+    if (data.action === 'escalate_to_cosigner') {
+      return createResponse(handleEscalateToCosigner(data));
+    }
+    if (data.action === 'get_forfeiture_cases') {
+      return createResponse(handleGetForfeitureCases(data));
+    }
+    if (data.action === 'get_recent_client_messages') {
+      return createResponse(handleGetRecentClientMessages(data));
+    }
+    if (data.action === 'flag_high_stress_case') {
+      return createResponse(handleFlagHighStressCase(data));
+    }
+
     // --- END TELEGRAM MINI APP ---
 
     // --- API KEY VERIFICATION (Security Hardening) ---
