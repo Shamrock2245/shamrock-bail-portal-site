@@ -267,6 +267,21 @@ function setGitHubToken() {
   // REDACTED for git — value already deployed to GAS via clasp push
   props.setProperty('GITHUB_PAT', 'REDACTED');
   console.log('✅ Set GITHUB_PAT successfully.');
+  console.log('   Scoped to: shamrock-bail-portal-site repo');
+}
+
+/**
+ * ─── GITHUB PAT — TELEGRAM APPS REPO ───────────────────────────────────────
+ * Stores a separate GitHub PAT scoped to the shamrock-telegram-app repository.
+ * Kept as a separate property so each repo can have independently-scoped tokens.
+ *
+ * Run this ONCE from the GAS IDE after pasting your real token.
+ */
+function setGitHubTokenTelegram() {
+  var props = PropertiesService.getScriptProperties();
+  // REDACTED for git — paste real value in GAS IDE before running
+  props.setProperty('GITHUB_PAT_TELEGRAM', 'REDACTED');
+  console.log('✅ Set GITHUB_PAT_TELEGRAM successfully.');
   console.log('   Scoped to: shamrock-telegram-app repo');
 }
 
