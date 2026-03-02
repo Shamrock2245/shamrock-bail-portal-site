@@ -35,9 +35,9 @@
             // Signal global readiness
             window.isGoogleMapsLoaded = true;
             console.log("📍 Google Maps API Loaded via Callback");
-            // If main app is already running, try to init maps
-            if (window.ShamrockApp && window.ShamrockApp.Maps) {
-                window.ShamrockApp.Maps.tryInit();
+            // If main app is already running, init address autocomplete
+            if (typeof setupAddressAutocomplete === 'function') {
+                setupAddressAutocomplete();
             }
         }
     </script>
@@ -3637,8 +3637,11 @@
             // Set up phone number auto-formatting
             setupPhoneFormatting();
 
-            // Set up address autocomplete
-            setupAddressAutocomplete();
+            // Set up address autocomplete (deferred — waits for async Maps API)
+            if (window.isGoogleMapsLoaded) {
+                setupAddressAutocomplete();
+            }
+            // Otherwise onMapsApiLoaded() callback will handle it
 
             // Update summary
             updateSummary();

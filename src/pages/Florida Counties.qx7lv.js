@@ -191,18 +191,8 @@ function setupSEO(county) {
         "paymentAccepted": "Cash, Credit Card, Debit Card"
     });
 
-    // C. FAQPage
-    if (faqs.length > 0) {
-        schemas.push({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": faqs.map(faq => ({
-                "@type": "Question",
-                "name": faq.question,
-                "acceptedAnswer": { "@type": "Answer", "text": faq.answer }
-            }))
-        });
-    }
+    // C. FAQPage — Deferred to populateMainUI() where CMS FAQs are loaded
+    //    with proper county name replacements. Schema is set there.
 
     // D. Service Schema (County-Specific Bail Bonds Service)
     schemas.push({
@@ -251,6 +241,9 @@ function setupSEO(county) {
         }
     });
 
+    // Store schemas on county object for later use by populateMainUI
+    // FAQPage will be added there after CMS FAQs are loaded
+    county._seoSchemas = schemas;
     wixSeo.setStructuredData(schemas).catch(e => { });
 }
 
@@ -424,6 +417,27 @@ async function populateMainUI(county, currentSlug) {
     } catch (err) {
         console.error('❌ Error loading FAQs:', err);
         faqs = (county.content && county.content.faq) || [];
+    }
+
+    // Update structured data with CMS FAQs (replaces initial schema set)
+    // We re-inject ALL schemas + FAQPage with the correct county-replaced text
+    if (faqs.length > 0) {
+        try {
+            const baseSchemas = county._seoSchemas || [];
+            const faqSchema = {
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": faqs.map(f => ({
+                    "@type": "Question",
+                    "name": f.question,
+                    "acceptedAnswer": { "@type": "Answer", "text": f.answer }
+                }))
+            };
+            wixSeo.setStructuredData([...baseSchemas, faqSchema]).catch(e => { });
+            console.log(`✅ FAQPage schema injected with ${faqs.length} CMS FAQs`);
+        } catch (seoErr) {
+            console.warn('FAQPage schema injection failed:', seoErr);
+        }
     }
 
     try {

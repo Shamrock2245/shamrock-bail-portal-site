@@ -147,7 +147,7 @@ function getHomepageSchema() {
 /**
  * Generates the schema for a specific County Page.
  */
-function getCountyPageSchema(countyName, countySlug) {
+function getCountyPageSchema(countyName, countySlug, faqs) {
     const schemas = [];
 
     // 1. Customized LocalBusiness Schema
@@ -169,6 +169,19 @@ function getCountyPageSchema(countyName, countySlug) {
         { "@type": "ListItem", "position": 3, "name": `${countyName} County`, "item": localBusiness.url }
     );
     schemas.push(breadcrumb);
+
+    // 3. FAQPage Schema (when FAQ data is provided)
+    if (Array.isArray(faqs) && faqs.length > 0) {
+        schemas.push({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": faqs.map(faq => ({
+                "@type": "Question",
+                "name": faq.question,
+                "acceptedAnswer": { "@type": "Answer", "text": faq.answer }
+            }))
+        });
+    }
 
     return schemas;
 }
