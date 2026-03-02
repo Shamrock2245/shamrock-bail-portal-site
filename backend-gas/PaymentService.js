@@ -4,11 +4,11 @@
  * Handles payment link generation and delivery for Shamrock Bail Bonds
  * Integrates with:
  * 1. SwipeSimple (Payment Processing)
- * 2. WhatsApp Cloud API (Link Delivery)
+ * 2. Telegram Bot API (Link Delivery + Reminders)
  * 3. SignNow Webhooks (Trigger on signature completion)
  * 
- * Version: 1.0.0
- * Date: 2026-02-19
+ * Version: 1.1.0
+ * Date: 2026-03-02
  */
 
 // =============================================================================
