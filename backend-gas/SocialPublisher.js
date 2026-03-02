@@ -1613,22 +1613,55 @@ function getSocialAuthUrl(platform) {
 
 /**
  * Native GAS callback for OAuth flows using /usercallback.
- * Defers to SocialPublisher.handleOAuthCallback.
+ * The state token created with ScriptApp.newStateToken() automatically
+ * deserializes withArgument() values into request.parameter.
+ * LinkedIn sends back: code, state (and potentially error, error_description).
  */
 function socialAuthCallback(request) {
+  Logger.log('═══ socialAuthCallback triggered ═══');
+  Logger.log('Parameters: ' + JSON.stringify(request.parameter || {}));
+
+  // Check for LinkedIn error responses first
+  if (request.parameter.error) {
+    var errorDesc = request.parameter.error_description || request.parameter.error;
+    Logger.log('❌ OAuth error from provider: ' + errorDesc);
+    return HtmlService.createHtmlOutput(
+      '<h1>Authorization Error</h1>' +
+      '<p><strong>Error:</strong> ' + request.parameter.error + '</p>' +
+      '<p><strong>Details:</strong> ' + errorDesc + '</p>' +
+      '<p>Please check your LinkedIn app settings and try again.</p>'
+    );
+  }
+
   var platform = request.parameter.platform;
   var code = request.parameter.code;
 
   if (!platform || !code) {
-    return HtmlService.createHtmlOutput('<h1>Error</h1><p>Missing platform or authorization code in callback request.</p>');
+    Logger.log('❌ Missing parameters — platform: ' + platform + ', code: ' + (code ? 'present' : 'missing'));
+    return HtmlService.createHtmlOutput(
+      '<h1>Callback Error</h1>' +
+      '<p>Missing platform or authorization code.</p>' +
+      '<p><strong>Received parameters:</strong> ' + Object.keys(request.parameter || {}).join(', ') + '</p>' +
+      '<p>Please try running <code>logAuthUrl_LinkedIn()</code> again in GAS and click the new URL.</p>'
+    );
   }
 
+  Logger.log('✅ Callback received — platform: ' + platform + ', code length: ' + code.length);
   var result = SocialPublisher.handleOAuthCallback(platform, code);
 
   if (result.success) {
-    return HtmlService.createHtmlOutput('<h1>Authorization Successful!</h1><p>' + result.message + '</p><p>You may now close this tab.</p>');
+    return HtmlService.createHtmlOutput(
+      '<h1 style="color:green">☘️ Authorization Successful!</h1>' +
+      '<p>' + result.message + '</p>' +
+      '<p>You may now close this tab and return to the GAS IDE.</p>' +
+      '<p>Next: Run <code>testLinkedInAPI()</code> to verify.</p>'
+    );
   } else {
-    return HtmlService.createHtmlOutput('<h1>Authorization Failed</h1><p>' + result.error + '</p>');
+    Logger.log('❌ handleOAuthCallback failed: ' + result.error);
+    return HtmlService.createHtmlOutput(
+      '<h1 style="color:red">Authorization Failed</h1>' +
+      '<p>' + result.error + '</p>'
+    );
   }
 }
 
