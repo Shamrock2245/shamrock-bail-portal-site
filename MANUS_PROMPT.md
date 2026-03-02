@@ -107,7 +107,7 @@ The foundation is solid. The bot handles intake through delivery. Now it's time 
 3. **Don't break what works.** The signing flow, intake queue, and Dashboard are production and making money. Test in isolation.
 4. **GAS is the factory.** Don't put heavy logic in Wix. Wix collects → GAS processes → GAS delivers.
 5. **Secrets go in Script Properties** (GAS) or **Wix Secrets Manager**. Never in code.
-6. **Deploy with `clasp push -f && clasp deploy -i <DEPLOYMENT_ID> -d "description"`**. The deployment ID is: `AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z`.
+6. **Deploy with `clasp push -f && clasp deploy -i <DEPLOYMENT_ID> -d "description"`**. The deployment ID is: `AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ`.
 7. **Git workflow:** Always use `/wix_safe_sync` workflow to handle Wix CLI filename weirdness.
 8. **Mobile first.** 90% of clients are on phones in a crisis. Buttons > 44px. One thumb, one eye.
 9. **Aesthetics matter.** If it looks cheap, fix it. Use loading states, animations, and real data.
@@ -128,7 +128,7 @@ The foundation is solid. The bot handles intake through delivery. Now it's time 
 | Architecture | `docs/ARCHITECTURE.md` |
 | Agent Handbook | `docs/AGENTS.md` |
 | Tasks | `TASKS.md` |
-| GAS Deploy ID | `AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z` |
+| GAS Deploy ID | `AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ` |
 | Current GAS Version | @365 |
 | Bot | `@ShamrockBail_bot` |
 | Webhook URL | `https://www.shamrockbailbonds.biz/_functions/telegramWebhook` |

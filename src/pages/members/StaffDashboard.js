@@ -49,7 +49,7 @@ import {
 import { generateAccessCode } from 'backend/accessCodes';
 
 // GAS Dashboard URL — update with actual deployed GAS URL
-const GAS_DASHBOARD_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+const GAS_DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
 const PHONE_TEL = 'tel:+12393322245';
 
 let memberData = null;
