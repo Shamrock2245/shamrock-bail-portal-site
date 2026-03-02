@@ -1180,7 +1180,7 @@ var SocialPublisher = (function () {
             'response_type=code' +
             '&client_id=' + encodeURIComponent(liClientId) +
             '&redirect_uri=' + encodeURIComponent(callbackUrl) +
-            '&scope=w_member_social%20openid%20profile' +
+            '&scope=w_member_social' +
             '&state=' + encodeURIComponent(stateToken);
         }
         case 'tiktok': {
