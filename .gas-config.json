@@ -2,5 +2,5 @@
     "_comment": "Single source of truth for GAS deployment URL. Run: ./scripts/update-gas-url.sh",
     "deploymentId": "AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ",
     "gasWebAppUrl": "https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec",
-    "lastUpdated": "2026-02-28T18:17:00-05:00"
+    "lastUpdated": "2026-03-02T08:22:00-05:00"
 }

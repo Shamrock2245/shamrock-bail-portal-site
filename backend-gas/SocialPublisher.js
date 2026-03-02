@@ -428,21 +428,24 @@ var SocialPublisher = (function () {
   // ─── PRIVATE: LinkedIn Posts API ────────────────────────────────────────────
 
   /**
-   * Posts to a LinkedIn Company Page via the Posts API (/rest/posts).
+   * Posts to LinkedIn via the Posts API (/rest/posts).
+   * Supports both Company Page posting (LINKEDIN_COMPANY_URN) and
+   * personal profile posting (LINKEDIN_PERSON_URN) as fallback.
    * Migrated from deprecated ugcPosts endpoint (Feb 2023 sunset).
    * Includes 401 auto-retry with token refresh.
-   * Requires: LINKEDIN_ACCESS_TOKEN, LINKEDIN_COMPANY_URN
    */
   function postToLinkedIn_(content, postOptions) {
     var accessToken = PROPS.getProperty('LINKEDIN_ACCESS_TOKEN');
     var companyUrn = PROPS.getProperty('LINKEDIN_COMPANY_URN');
+    var personUrn = PROPS.getProperty('LINKEDIN_PERSON_URN');
+    var authorUrn = companyUrn || personUrn;
 
     if (!accessToken) throw new Error('LinkedIn credentials missing. Set LINKEDIN_ACCESS_TOKEN in Script Properties (run logAuthUrl_LinkedIn()).');
-    if (!companyUrn) throw new Error('LINKEDIN_COMPANY_URN not set. Format: urn:li:organization:12345678');
+    if (!authorUrn) throw new Error('No LinkedIn author configured. Set LINKEDIN_COMPANY_URN (urn:li:organization:...) or LINKEDIN_PERSON_URN (urn:li:person:...) in Script Properties.');
 
     var url = 'https://api.linkedin.com/rest/posts';
     var payload = {
-      author: companyUrn,
+      author: authorUrn,
       commentary: content,
       visibility: 'PUBLIC',
       distribution: {
@@ -1177,7 +1180,7 @@ var SocialPublisher = (function () {
             'response_type=code' +
             '&client_id=' + encodeURIComponent(liClientId) +
             '&redirect_uri=' + encodeURIComponent(callbackUrl) +
-            '&scope=w_member_social%20w_organization_social%20r_organization_social' +
+            '&scope=w_member_social%20openid%20profile' +
             '&state=' + encodeURIComponent(stateToken);
         }
         case 'tiktok': {
@@ -1336,7 +1339,7 @@ var SocialPublisher = (function () {
       // Returns true/false per platform — false = credentials not yet provisioned (graceful, no errors thrown)
       return {
         twitter: !!(PROPS.getProperty('TWITTER_API_KEY') && PROPS.getProperty('TWITTER_ACCESS_TOKEN')),
-        linkedin: !!(PROPS.getProperty('LINKEDIN_ACCESS_TOKEN') && PROPS.getProperty('LINKEDIN_COMPANY_URN')),
+        linkedin: !!(PROPS.getProperty('LINKEDIN_ACCESS_TOKEN') && (PROPS.getProperty('LINKEDIN_COMPANY_URN') || PROPS.getProperty('LINKEDIN_PERSON_URN'))),
         gbp: !!(PROPS.getProperty('GBP_ACCESS_TOKEN') && PROPS.getProperty('GBP_LOCATION_ID')),
         tiktok: !!(PROPS.getProperty('TIKTOK_ACCESS_TOKEN')),
         youtube: !!(PROPS.getProperty('YOUTUBE_ACCESS_TOKEN') && PROPS.getProperty('YOUTUBE_CHANNEL_ID')),
