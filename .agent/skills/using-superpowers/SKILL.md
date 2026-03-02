@@ -1,10 +1,10 @@
-# Using Superpowers
-
-<SKILL_METADATA>
+---
+name: Using Superpowers
 description: Use when starting any conversation - establishes how to find and use skills
 version: 1.0.0
-author: sickn33
-</SKILL_METADATA>
+---
+
+# Using Superpowers
 
 <EXTREMELY-IMPORTANT>
 If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.

@@ -1,10 +1,10 @@
-# Production Code Audit
-
-<SKILL_METADATA>
+---
+name: Production Code Audit
 description: Comprehensive checklist and workflow for auditing code before production release
 version: 1.0.0
-author: sickn33
-</SKILL_METADATA>
+---
+
+# Production Code Audit
 
 ## Overview
 A standardized approach to verifying code quality, security, and performance before deployment.

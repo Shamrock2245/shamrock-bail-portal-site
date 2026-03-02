@@ -1,10 +1,10 @@
-# Twilio Communications
-
-<SKILL_METADATA>
+---
+name: Twilio Communications
 description: Patterns for robust SMS and Communication workflows using Twilio
 version: 1.0.0
-author: sickn33
-</SKILL_METADATA>
+---
+
+# Twilio Communications
 
 ## Patterns
 

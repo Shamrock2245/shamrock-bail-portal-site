@@ -1,10 +1,10 @@
-# Systematic Debugging
-
-<SKILL_METADATA>
+---
+name: Systematic Debugging
 description: A rigorous, step-by-step process for solving complex technical issues without guessing
 version: 1.0.0
-author: sickn33
-</SKILL_METADATA>
+---
+
+# Systematic Debugging
 
 ## Overview
 Random fixes waste time and create new bugs. Quick patches mask underlying issues.
