@@ -1,5 +1,6 @@
 import wixData from 'wix-data';
 import wixLocation from 'wix-location';
+import wixWindow from 'wix-window';
 import { LightboxController } from 'public/lightbox-controller';
 import { validateCustomSession, generateMagicLink, getStaffDashboardData } from 'backend/portal-auth';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
@@ -925,22 +926,76 @@ async function handleFinalizePaperwork(itemData) {
 }
 
 /**
- * Prompt user for text input (simple implementation)
- * TODO: Replace with proper Wix lightbox
+ * Prompt user for text input
+ * Uses wixWindow.openLightbox when a named lightbox exists;
+ * falls back to a Wix-safe inline prompt via wixWindow.openModal
+ * (avoids browser prompt() which is blocked in Wix preview).
  */
 async function promptForInput(title, placeholder) {
-    // For now, use browser prompt (replace with Wix lightbox later)
-    return prompt(title + ':', placeholder);
+    try {
+        // Try the dedicated input lightbox first (add 'StaffInputLightbox' in Editor if desired)
+        const result = await wixWindow.openLightbox('StaffInputLightbox', { title, placeholder });
+        if (result && result.value !== undefined) return result.value || null;
+    } catch (_) {
+        // Lightbox not found — use inline fallback via staff page elements
+    }
+    // Inline fallback: surface a hidden input panel on the staff page
+    // Staff page should have #staffPromptBox, #staffPromptLabel, #staffPromptInput, #staffPromptConfirmBtn
+    return new Promise((resolve) => {
+        try {
+            $w('#staffPromptLabel').text = title;
+            $w('#staffPromptInput').placeholder = placeholder;
+            $w('#staffPromptInput').value = '';
+            $w('#staffPromptBox').expand();
+            const cleanup = () => {
+                try { $w('#staffPromptBox').collapse(); } catch (_) {}
+            };
+            $w('#staffPromptConfirmBtn').onClick(() => {
+                const val = $w('#staffPromptInput').value.trim();
+                cleanup();
+                resolve(val || null);
+            });
+        } catch (e) {
+            // Elements not in Editor yet — resolve null so flow continues gracefully
+            console.warn('promptForInput: staff prompt elements not found. Resolving null.', e.message);
+            resolve(null);
+        }
+    });
 }
 
 /**
  * Prompt user for select option
- * TODO: Replace with proper Wix lightbox
+ * Uses wixWindow.openLightbox when available; falls back gracefully.
  */
 async function promptForSelect(title, options) {
-    // For now, use browser prompt (replace with Wix lightbox later)
-    const choice = prompt(title + ' (' + options.join('/') + '):', options[0]);
-    return options.includes(choice) ? choice : null;
+    try {
+        const result = await wixWindow.openLightbox('StaffSelectLightbox', { title, options });
+        if (result && result.value !== undefined) {
+            return options.includes(result.value) ? result.value : null;
+        }
+    } catch (_) {
+        // Lightbox not found
+    }
+    // Inline fallback via #staffSelectBox, #staffSelectLabel, #staffSelectDropdown, #staffSelectConfirmBtn
+    return new Promise((resolve) => {
+        try {
+            $w('#staffSelectLabel').text = title;
+            $w('#staffSelectDropdown').options = options.map(o => ({ label: o, value: o }));
+            $w('#staffSelectDropdown').value = options[0];
+            $w('#staffSelectBox').expand();
+            const cleanup = () => {
+                try { $w('#staffSelectBox').collapse(); } catch (_) {}
+            };
+            $w('#staffSelectConfirmBtn').onClick(() => {
+                const val = $w('#staffSelectDropdown').value;
+                cleanup();
+                resolve(options.includes(val) ? val : null);
+            });
+        } catch (e) {
+            console.warn('promptForSelect: staff select elements not found. Resolving null.', e.message);
+            resolve(null);
+        }
+    });
 }
 
 // Export for use in other parts of the staff portal

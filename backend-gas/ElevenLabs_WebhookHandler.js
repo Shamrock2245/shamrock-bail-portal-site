@@ -10,13 +10,25 @@
  */
 function handleElevenLabsWebhookSOC2(e) {
     // 1. Validate Signature (HMAC)
-    // ElevenLabs sends 'elevenlabs-signature' header. 
-    // We need to compute HMAC-SHA256 of the body using our webhook secret.
-    const signature = e.postData.contents; // Raw body needed for verification
-    const signatureHeader = e.parameter['elevenlabs-signature'] || (e.postData.headers ? e.postData.headers['elevenlabs-signature'] : null);
+    // verifyWebhookSignature() is defined in Compliance.js and is already used by
+    // SignNow and Twilio handlers. Reuse it here with ELEVENLABS_WEBHOOK_SECRET.
+    // If the secret is not yet set in Script Properties, the check is skipped with
+    // a warning so the handler stays live during the activation window.
+    const webhookSecret = (function() {
+        try { return PropertiesService.getScriptProperties().getProperty('ELEVENLABS_WEBHOOK_SECRET'); }
+        catch (_) { return null; }
+    })();
 
-    // TODO: strictly enforce signature verification once Secret is available
-    // For now, we log usage.
+    if (webhookSecret) {
+        if (!verifyWebhookSignature(e, 'ELEVENLABS_WEBHOOK_SECRET', 'elevenlabs-signature')) {
+            logSecurityEvent('ELEVENLABS_SIGNATURE_INVALID', { source: 'ElevenLabs' });
+            return ContentService.createTextOutput('Invalid signature').setMimeType(ContentService.MimeType.TEXT);
+        }
+    } else {
+        // Secret not yet configured — log a warning but continue (activation mode)
+        Logger.log('⚠️ ELEVENLABS_WEBHOOK_SECRET not set. Signature check skipped.');
+        logProcessingEvent('ELEVENLABS_WEBHOOK_NO_SECRET', { note: 'Set ELEVENLABS_WEBHOOK_SECRET in Script Properties to enforce HMAC.' });
+    }
 
     let payload;
     try {
@@ -62,21 +74,60 @@ function handlePostCallTranscription(payload) {
         });
     }
 
-    // TODO: Ideally, we match this to a specific Intake/Lead via metadata.conversation_id or similar.
-    // For now, we'll log to a "Conversations" sheet or Slack.
+    // Match transcript to an existing Intake record via phone number in call_metadata
+    // ElevenLabs populates call_metadata.caller_id or custom_parameters.phone
+    const callerPhone = (metadata && (metadata.caller_id || (metadata.custom_parameters && metadata.custom_parameters.phone))) || null;
+    let matchedCaseId = null;
 
+    if (callerPhone) {
+        try {
+            const normalizedPhone = callerPhone.replace(/\D/g, '').slice(-10);
+            const ss = SpreadsheetApp.openById(
+                PropertiesService.getScriptProperties().getProperty('INTAKE_SHEET_ID')
+            );
+            const sheet = ss.getSheetByName('IntakeQueue');
+            if (sheet) {
+                const data = sheet.getDataRange().getValues();
+                const headers = data[0].map(h => String(h).toLowerCase());
+                const phoneCol = headers.findIndex(h => h.includes('phone'));
+                const caseCol  = headers.findIndex(h => h.includes('caseid') || h.includes('case_id'));
+                if (phoneCol > -1 && caseCol > -1) {
+                    for (let r = 1; r < data.length; r++) {
+                        const rowPhone = String(data[r][phoneCol]).replace(/\D/g, '').slice(-10);
+                        if (rowPhone === normalizedPhone) {
+                            matchedCaseId = data[r][caseCol];
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (matchErr) {
+            Logger.log('\u26a0\ufe0f ElevenLabs phone match failed (non-fatal): ' + matchErr.message);
+        }
+    }
+
+    // Slack notification with case link if matched
     if (typeof NotificationService !== 'undefined') {
-        NotificationService.sendSlack('#ai-conversations', `🎙️ *New AI Conversation*\n\n${analysis ? analysis.call_summary : '(No summary)'}`);
+        const caseRef = matchedCaseId ? ' | Case: ' + matchedCaseId : '';
+        NotificationService.sendSlack(
+            '#ai-conversations',
+            '\uD83C\uDFA4 *New AI Conversation*' + caseRef + '\n\n' + (analysis ? analysis.call_summary : '(No summary)')
+        );
     }
 
     // Save to Google Drive (Archive)
     const folderId = PropertiesService.getScriptProperties().getProperty('GOOGLE_DRIVE_FOLDER_ID');
     if (folderId) {
-        const folder = DriveApp.getFolderById(folderId);
-        folder.createFile(`AI_Call_${payload.call_id}.txt`, fullText);
+        try {
+            const folder = DriveApp.getFolderById(folderId);
+            const fileName = 'AI_Call_' + payload.call_id + (matchedCaseId ? '_' + matchedCaseId : '') + '.txt';
+            folder.createFile(fileName, fullText);
+        } catch (driveErr) {
+            Logger.log('\u26a0\ufe0f Drive archive failed (non-fatal): ' + driveErr.message);
+        }
     }
 
-    return ContentService.createTextOutput("Transcription processed").setMimeType(ContentService.MimeType.TEXT);
+    return ContentService.createTextOutput('Transcription processed').setMimeType(ContentService.MimeType.TEXT);
 }
 
 /**

@@ -1203,6 +1203,49 @@ function handleAction(data) {
   if (action === 'sendSlackAlert') return NotificationService.sendSlack(data.channel, data.text, data.blocks);
   if (action === 'testEmailAdmin') return sendDashboardLinkEmail();
 
+  // 1.5a. PORTAL CLIENT MESSAGE (from indemnitor portal #sendMessageBtn)
+  if (action === 'portalClientMessage') {
+    try {
+      var msgData = data || {};
+      var caseId     = msgData.caseId     || 'unknown';
+      var senderName = msgData.senderName || 'Indemnitor';
+      var msgText    = msgData.message    || '';
+      var msgSource  = msgData.source     || 'portal';
+      var msgTime    = msgData.timestamp  || new Date().toISOString();
+
+      // Log to Slack #client-messages channel
+      if (typeof NotificationService !== 'undefined' && NotificationService.sendSlack) {
+        var slackText = '*Portal Message Received*\n' +
+          '*From:* ' + senderName + '\n' +
+          '*Case:* ' + caseId + '\n' +
+          '*Source:* ' + msgSource + '\n' +
+          '*Time:* ' + msgTime + '\n' +
+          '*Message:* ' + msgText;
+        NotificationService.sendSlack('#client-messages', slackText);
+      }
+
+      // Log to IntakeQueue sheet if caseId is known
+      try {
+        var ss = SpreadsheetApp.openById(
+          PropertiesService.getScriptProperties().getProperty('INTAKE_SHEET_ID')
+        );
+        var logSheet = ss.getSheetByName('ClientMessages') ||
+                       ss.insertSheet('ClientMessages');
+        if (logSheet.getLastRow() === 0) {
+          logSheet.appendRow(['Timestamp','CaseId','SenderName','SenderEmail','Source','Message']);
+        }
+        logSheet.appendRow([msgTime, caseId, senderName, msgData.senderEmail || '', msgSource, msgText]);
+      } catch (sheetErr) {
+        Logger.log('\u26a0\ufe0f ClientMessages sheet log failed (non-fatal): ' + sheetErr.message);
+      }
+
+      return { success: true, logged: true };
+    } catch (e) {
+      Logger.log('\u274c portalClientMessage error: ' + e.message);
+      return { success: false, error: e.message };
+    }
+  }
+
   // 1.6. BAIL SCHOOL
   if (action === 'generateCertificate') return handleCertificateGeneration(data);
 

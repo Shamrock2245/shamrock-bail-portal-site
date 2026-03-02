@@ -21,6 +21,8 @@ import wixWindow from 'wix-window';
 import wixData from 'wix-data';
 import { validateCustomSession, getIndemnitorDetails, linkDefendantToCase, onMagicLinkLoginV2 } from 'backend/portal-auth';
 import { submitIntakeForm } from 'backend/intakeQueue.jsw';
+import { callGasAction } from 'backend/gasIntegration';
+import { sendInAppNotification } from 'backend/notificationService';
 import wixSeo from 'wix-seo';
 import wixAnimations from 'wix-animations';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
@@ -842,16 +844,43 @@ async function handleSendMessage() {
 
     try {
         safeDisable('#sendMessageBtn');
-        // TODO: Implement message sending
-        // await sendMessage(message); 
-        showError('Message feature coming soon'); // Placeholder
 
-        // Clear logic
+        const caseId = currentSession?.caseId || indemnitorData?.caseId || null;
+        const senderName = (
+            (indemnitorData?.indemnitorFirstName || indemnitorData?.firstName || '') + ' ' +
+            (indemnitorData?.indemnitorLastName  || indemnitorData?.lastName  || '')
+        ).trim() || currentSession?.name || 'Indemnitor';
+
+        // 1. Notify GAS — logs to Sheets + triggers Slack alert to staff
+        await callGasAction('portalClientMessage', {
+            caseId:      caseId,
+            senderName:  senderName,
+            senderEmail: currentSession?.email || '',
+            message:     message.trim(),
+            source:      'indemnitor_portal',
+            timestamp:   new Date().toISOString()
+        });
+
+        // 2. Store in-app notification so staff dashboard can surface it
+        if (caseId) {
+            await sendInAppNotification(
+                'staff',
+                `Message from ${senderName}`,
+                message.trim(),
+                'client_message',
+                `/portal-staff?caseId=${caseId}`
+            );
+        }
+
+        // 3. Clear input and confirm
         if ($w('#messageInput').type === '$w.TextInput') {
             $w('#messageInput').value = '';
         }
+        showSuccess('Message sent! Our team will respond shortly.');
+
     } catch (e) {
-        console.error("Message Error", e);
+        console.error('Message Error', e);
+        showError('Could not send message. Please call us at (239) 332-2245.');
     } finally {
         safeEnable('#sendMessageBtn');
     }
