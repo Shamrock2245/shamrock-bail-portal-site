@@ -22,7 +22,10 @@ let countiesLoaded = false;
 $w.onReady(function () {
     const isMobile = wixWindow.formFactor === 'Mobile';
 
-    // Setup SEO and structured data
+    // Setup SEO meta tags (Homepage-specific)
+    setupHomepageMeta();
+
+    // Setup SEO structured data
     setupOrganizationSchema();
 
     // Critical: Setup above-the-fold elements only
@@ -295,6 +298,35 @@ function loadTestimonials() {
         const bodyTxt = $item('#testimonialText').uniqueId ? $item('#testimonialText') : $item('#quoteText');
         if (bodyTxt.uniqueId) bodyTxt.text = itemData.text;
     });
+}
+
+/**
+ * Setup Homepage-specific meta tags and title
+ * Targets Florida-wide bail bond keywords for maximum SERP visibility
+ */
+function setupHomepageMeta() {
+    const title = '24/7 Bail Bonds Florida | Shamrock Bail Bonds - Fort Myers Since 2012';
+    const description = 'Need bail bonds in Florida? Shamrock Bail Bonds serves all 67 counties 24/7. Fast jail release, payment plans, bilingual English & Spanish. Call (239) 332-2245 for immediate help.';
+    const url = 'https://www.shamrockbailbonds.biz';
+
+    wixSeo.setTitle(title);
+    wixSeo.setMetaTags([
+        { name: 'description', content: description },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:url', content: url },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:image', content: `${url}/logo.png` },
+        { property: 'og:image:width', content: '1200' },
+        { property: 'og:image:height', content: '630' },
+        { property: 'og:locale', content: 'en_US' },
+        { property: 'og:site_name', content: 'Shamrock Bail Bonds, LLC' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:image', content: `${url}/logo.png` },
+        { name: 'keywords', content: 'bail bonds Florida, Fort Myers bail bonds, 24/7 bail bondsman, Florida jail release, Lee County bail bonds, Collier County bail bonds, Charlotte County bail bonds, bail bond payment plans, immigration bail bonds Florida, bilingual bail bonds' }
+    ]);
 }
 
 /**

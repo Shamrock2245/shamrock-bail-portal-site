@@ -29,7 +29,9 @@ export function setPageMeta({ title, description, keywords, image }) {
     wixSeo.setTitle(title);
 
     // Set description
-    wixSeo.setMetaDescription(description);
+    wixSeo.setMetaTags([
+        { name: 'description', content: description }
+    ]);
 
     // Set keywords if provided
     if (keywords) {
@@ -268,9 +270,10 @@ export function setCanonicalUrl(path) {
 }
 
 /**
- * GLOBAL SEO INJECTION
+ * GLOBAL SEO + GEO INJECTION
  * Call this from masterPage.js on every page load.
- * Sets canonical URL, Organization schema, OG defaults, and robots tag.
+ * Sets canonical URL, Organization schema, OG defaults, robots, geo meta,
+ * ProfessionalService schema, and GEO (Generative Engine Optimization) signals.
  * Skips portal pages (they have their own noindex logic).
  */
 export function initGlobalSEO() {
@@ -289,50 +292,67 @@ export function initGlobalSEO() {
     ]);
 
     // 2. ROBOTS: Explicitly tell Google to index public pages
-    // This overrides any implicit noindex from Wix
     wixSeo.setMetaTags([
         { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' },
         { name: 'googlebot', content: 'index, follow' }
     ]);
 
-    // 3. DEFAULT OPEN GRAPH (pages with their own OG override these)
+    // 3. COMPREHENSIVE META TAGS (OG + Twitter + Geo)
     const pageTitle = `Shamrock Bail Bonds | ${formatPageName(currentPath)}`;
-    const defaultDescription = '24/7 Bail Bond Service in Florida. Fast, confidential, and professional. Call (239) 332-BAIL for immediate help.';
+    const defaultDescription = '24/7 bail bond services across all 67 Florida counties. Fast, confidential, bilingual support. Call (239) 332-2245 for immediate release.';
 
     wixSeo.setMetaTags([
+        // Open Graph
         { property: 'og:site_name', content: SITE_NAME },
         { property: 'og:type', content: 'website' },
         { property: 'og:url', content: canonicalUrl },
         { property: 'og:locale', content: 'en_US' },
+        { property: 'og:image', content: `${SITE_URL}/logo.png` },
+        { property: 'og:image:width', content: '1200' },
+        { property: 'og:image:height', content: '630' },
+        // Twitter Cards
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:site', content: '@ShamrockBail' },
-        // Only set defaults if the page hasn't set its own
+        { name: 'twitter:image', content: `${SITE_URL}/logo.png` },
+        // Geographic Meta (GEO signals for local search)
         { name: 'geo.region', content: 'US-FL' },
-        { name: 'geo.placename', content: 'Fort Myers' },
+        { name: 'geo.placename', content: 'Fort Myers, Florida' },
         { name: 'geo.position', content: '26.6406;-81.8723' },
-        { name: 'ICBM', content: '26.6406, -81.8723' }
+        { name: 'ICBM', content: '26.6406, -81.8723' },
+        // Dublin Core geographic metadata
+        { name: 'DC.title', content: pageTitle },
+        { name: 'DC.coverage', content: 'Florida, United States' },
+        { name: 'DC.language', content: 'en-US' }
     ]);
 
-    // 4. SITE-WIDE STRUCTURED DATA (Organization + WebSite + SearchAction)
+    // 4. SITE-WIDE STRUCTURED DATA
     const globalSchemas = [
-        // Organization (appears in Google Knowledge Panel)
+        // A. Organization (Google Knowledge Panel)
         {
             "@context": "https://schema.org",
             "@type": "Organization",
             "@id": `${SITE_URL}/#organization`,
             "name": SITE_NAME,
+            "legalName": "Shamrock Bail Bonds, LLC",
             "url": SITE_URL,
             "telephone": PHONE_FORMATTED,
             "email": "admin@shamrockbailbonds.biz",
+            "foundingDate": "2012",
+            "foundingLocation": "Fort Myers, FL",
             "logo": {
                 "@type": "ImageObject",
-                "url": `${SITE_URL}/logo.png`
+                "url": `${SITE_URL}/logo.png`,
+                "width": 512,
+                "height": 512
             },
+            "image": `${SITE_URL}/logo.png`,
             "sameAs": [
                 "https://www.facebook.com/ShamrockBail",
                 "https://www.instagram.com/shamrock_bail_bonds",
                 "https://www.youtube.com/@ShamrockBailBonds_FL",
-                "https://t.me/Shamrock_Bail_Bonds"
+                "https://t.me/Shamrock_Bail_Bonds",
+                "https://www.tiktok.com/@shamrockbailbonds",
+                "https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers"
             ],
             "address": {
                 "@type": "PostalAddress",
@@ -349,18 +369,156 @@ export function initGlobalSEO() {
                     "contactType": "Customer Service",
                     "areaServed": "US-FL",
                     "availableLanguage": ["English", "Spanish"],
-                    "contactOption": "TollFree"
+                    "hoursAvailable": {
+                        "@type": "OpeningHoursSpecification",
+                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                        "opens": "00:00",
+                        "closes": "23:59"
+                    }
+                },
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-239-332-5245",
+                    "contactType": "Emergency",
+                    "areaServed": "US-FL",
+                    "availableLanguage": ["English", "Spanish"]
+                },
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-239-955-0301",
+                    "contactType": "Customer Service",
+                    "areaServed": "US-FL",
+                    "availableLanguage": "Spanish"
                 }
-            ]
+            ],
+            // Semantic relevance signals for AI/GEO
+            "knowsAbout": [
+                "Bail Bonds",
+                "Surety Bonds",
+                "Florida Criminal Justice System",
+                "Jail Release Process",
+                "Court Appearances",
+                "Indemnitor Responsibilities",
+                "Bail Bond Payment Plans",
+                "Florida Statute 903",
+                "Pretrial Release"
+            ],
+            "slogan": "Fort Myers Since 2012"
         },
-        // WebSite (enables Google Sitelinks Search Box)
+
+        // B. ProfessionalService (more specific than LocalBusiness — ranks higher)
+        {
+            "@context": "https://schema.org",
+            "@type": "ProfessionalService",
+            "additionalType": "https://en.wikipedia.org/wiki/Bail_bondsman",
+            "@id": `${SITE_URL}/#profservice`,
+            "name": SITE_NAME,
+            "url": SITE_URL,
+            "telephone": PHONE_FORMATTED,
+            "image": `${SITE_URL}/logo.png`,
+            "priceRange": "$$",
+            "description": "Licensed bail bond agency serving all 67 Florida counties. Available 24 hours a day, 7 days a week with bilingual English and Spanish support. Fast jail release, payment plans available.",
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "1528 Broadway",
+                "addressLocality": "Fort Myers",
+                "addressRegion": "FL",
+                "postalCode": "33901",
+                "addressCountry": "US"
+            },
+            "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": "26.6406",
+                "longitude": "-81.8723"
+            },
+            "openingHoursSpecification": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "opens": "00:00",
+                "closes": "23:59"
+            },
+            "paymentAccepted": ["Cash", "Credit Card", "Debit Card", "Payment Plan"],
+            "currenciesAccepted": "USD",
+            // Florida-wide coverage: all 6 regions
+            "areaServed": [
+                { "@type": "State", "name": "Florida", "@id": "https://en.wikipedia.org/wiki/Florida" },
+                { "@type": "AdministrativeArea", "name": "Southwest Florida" },
+                { "@type": "AdministrativeArea", "name": "Southeast Florida" },
+                { "@type": "AdministrativeArea", "name": "Central Florida" },
+                { "@type": "AdministrativeArea", "name": "Tampa Bay Area" },
+                { "@type": "AdministrativeArea", "name": "North Florida" },
+                { "@type": "AdministrativeArea", "name": "Florida Panhandle" }
+            ],
+            // GeoCircle: 300-mile radius covers entire state from Fort Myers
+            "serviceArea": {
+                "@type": "GeoCircle",
+                "geoMidpoint": {
+                    "@type": "GeoCoordinates",
+                    "latitude": "26.6406",
+                    "longitude": "-81.8723"
+                },
+                "geoRadius": "482803" // ~300 miles in meters
+            },
+            "sameAs": [
+                "https://www.facebook.com/ShamrockBail",
+                "https://www.instagram.com/shamrock_bail_bonds"
+            ],
+            // Service catalog for rich results
+            "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "name": "Bail Bond Services",
+                "itemListElement": [
+                    {
+                        "@type": "Offer",
+                        "itemOffered": {
+                            "@type": "Service",
+                            "name": "Surety Bail Bonds",
+                            "description": "Standard bail bonds at 10% premium as regulated by Florida statute. Available for all charges."
+                        }
+                    },
+                    {
+                        "@type": "Offer",
+                        "itemOffered": {
+                            "@type": "Service",
+                            "name": "Emergency After-Hours Bail Bonds",
+                            "description": "24/7 emergency bail bond posting for immediate jail release, nights, weekends, and holidays."
+                        }
+                    },
+                    {
+                        "@type": "Offer",
+                        "itemOffered": {
+                            "@type": "Service",
+                            "name": "Immigration Bail Bonds",
+                            "description": "Specialized immigration bonds for ICE detainees in Florida. Bilingual Spanish support available."
+                        }
+                    },
+                    {
+                        "@type": "Offer",
+                        "itemOffered": {
+                            "@type": "Service",
+                            "name": "Bail Bond Payment Plans",
+                            "description": "Flexible payment plans for bail bond premiums. No credit check required for qualifying bonds."
+                        }
+                    }
+                ]
+            },
+            // Speakable: enables voice search / AI assistants to read this
+            "speakable": {
+                "@type": "SpeakableSpecification",
+                "cssSelector": ["h1", ".hero-subtitle", ".faq-question"]
+            }
+        },
+
+        // C. WebSite (enables Google Sitelinks Search Box)
         {
             "@context": "https://schema.org",
             "@type": "WebSite",
             "@id": `${SITE_URL}/#website`,
             "name": SITE_NAME,
+            "alternateName": "Shamrock Bail",
             "url": SITE_URL,
             "publisher": { "@id": `${SITE_URL}/#organization` },
+            "inLanguage": ["en-US", "es"],
             "potentialAction": {
                 "@type": "SearchAction",
                 "target": {
@@ -370,7 +528,8 @@ export function initGlobalSEO() {
                 "query-input": "required name=search_term_string"
             }
         },
-        // WebPage (current page)
+
+        // D. WebPage (current page context)
         {
             "@context": "https://schema.org",
             "@type": "WebPage",
@@ -380,7 +539,12 @@ export function initGlobalSEO() {
             "description": defaultDescription,
             "isPartOf": { "@id": `${SITE_URL}/#website` },
             "about": { "@id": `${SITE_URL}/#organization` },
-            "inLanguage": "en-US"
+            "provider": { "@id": `${SITE_URL}/#organization` },
+            "inLanguage": "en-US",
+            "speakable": {
+                "@type": "SpeakableSpecification",
+                "cssSelector": ["h1", "h2", ".hero-subtitle"]
+            }
         }
     ];
 
@@ -393,7 +557,7 @@ export function initGlobalSEO() {
  * Format page name from URL path for SEO title fallback
  */
 function formatPageName(path) {
-    if (path === '/' || path === '') return 'Fort Myers, FL';
+    if (path === '/' || path === '') return '24/7 Bail Bonds Fort Myers, FL';
     const segments = path.split('/').filter(Boolean);
     const last = segments[segments.length - 1];
     return last

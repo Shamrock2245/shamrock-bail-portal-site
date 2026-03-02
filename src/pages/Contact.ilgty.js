@@ -30,7 +30,13 @@ function updatePageSEO() {
         { "property": "og:title", "content": pageTitle },
         { "property": "og:description", "content": pageDesc },
         { "property": "og:url", "content": pageUrl },
-        { "property": "og:type", "content": "website" }
+        { "property": "og:type", "content": "website" },
+        { "property": "og:image", "content": "https://www.shamrockbailbonds.biz/logo.png" },
+        { "property": "og:locale", "content": "en_US" },
+        { "name": "twitter:card", "content": "summary_large_image" },
+        { "name": "twitter:title", "content": pageTitle },
+        { "name": "twitter:description", "content": pageDesc },
+        { "name": "twitter:image", "content": "https://www.shamrockbailbonds.biz/logo.png" }
     ]);
 
     // 2. Structured Data

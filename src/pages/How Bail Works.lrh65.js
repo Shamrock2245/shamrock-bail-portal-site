@@ -368,7 +368,28 @@ async function setupFAQ() {
 
 // --- 7. SEO Injection ---
 function updatePageSEO(faqItems) {
-    // 1. FAQ Schema
+    // 0. Meta Tags (Title, Description, OG, Twitter)
+    const title = 'How Bail Works in Florida | Bail Bond Process Explained | Shamrock Bail Bonds';
+    const description = 'Learn how bail bonds work in Florida. Step-by-step guide to posting bail, payment options, jail release times, and what co-signers need to know. 24/7 help: (239) 332-2245.';
+    const pageUrl = 'https://www.shamrockbailbonds.biz/how-bail-works';
+
+    wixSeo.setTitle(title);
+    wixSeo.setMetaTags([
+        { name: 'description', content: description },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:url', content: pageUrl },
+        { property: 'og:type', content: 'article' },
+        { property: 'og:image', content: 'https://www.shamrockbailbonds.biz/logo.png' },
+        { property: 'og:locale', content: 'en_US' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:image', content: 'https://www.shamrockbailbonds.biz/logo.png' },
+        { name: 'keywords', content: 'how bail works, bail bond process Florida, posting bail Florida, bail bond co-signer, jail release process, bail bond payment plans, Florida bail laws, how to get someone out of jail' }
+    ]);
+
+    // 1. FAQ Schema (with speakable for voice/GEO)
     const faqSchema = {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -379,41 +400,66 @@ function updatePageSEO(faqItems) {
                 "@type": "Answer",
                 "text": item.answer || item.a || "Answer"
             }
-        }))
+        })),
+        "speakable": {
+            "@type": "SpeakableSpecification",
+            "cssSelector": [".faq-question", ".faq-answer", "h1", "h2"]
+        }
     };
 
-    // 2. HowTo Schema (The Arrest Process)
-    // Matching data from setupBailProcess()
+    // 2. HowTo Schema
     const howToSchema = {
         "@context": "https://schema.org",
         "@type": "HowTo",
-        "name": "How the Bail Bond Process Works",
+        "name": "How to Post Bail in Florida",
+        "description": "A step-by-step guide to posting bail and getting someone released from jail in Florida.",
+        "totalTime": "PT2H",
+        "estimatedCost": {
+            "@type": "MonetaryAmount",
+            "currency": "USD",
+            "value": "10% of bail amount"
+        },
         "step": [
             {
                 "@type": "HowToStep",
-                "name": "Booking",
-                "text": "After arrest, the defendant is taken to jail for booking. This includes fingerprinting, photographing, and recording personal information. This process typically takes 2-4 hours."
+                "position": 1,
+                "name": "Contact a Bail Bondsman",
+                "text": "Call Shamrock Bail Bonds at (239) 332-2245. Available 24/7, including holidays.",
+                "url": "https://www.shamrockbailbonds.biz/contact"
             },
             {
                 "@type": "HowToStep",
-                "name": "Bail Setting",
-                "text": "A judge reviews the case and sets a bail amount. For common offenses, there may be a pre-set bail schedule. For more serious charges, a bail hearing may be required."
+                "position": 2,
+                "name": "Provide Defendant Information",
+                "text": "Share the defendant's full name, booking number, charges, and jail location.",
+                "url": "https://www.shamrockbailbonds.biz/how-bail-works"
             },
             {
                 "@type": "HowToStep",
-                "name": "Bail Payment Options",
-                "text": "Once bail is set, you have three options: Cash Bail (pay full to court), Property Bond (use collateral), or Bail Bond (pay 10% to bondsman)."
+                "position": 3,
+                "name": "Complete Paperwork",
+                "text": "Sign the bail bond application digitally. Co-signers (indemnitors) are usually required.",
+                "url": "https://www.shamrockbailbonds.biz/portal-landing"
             },
             {
                 "@type": "HowToStep",
-                "name": "Release",
-                "text": "After bail is posted, the jail processes the release. This can take anywhere from 2-12 hours depending on the facility."
+                "position": 4,
+                "name": "Pay the Premium",
+                "text": "Pay 10% of the bail amount (Florida-regulated rate). Payment plans available.",
+                "url": "https://www.shamrockbailbonds.biz/how-bail-works"
             },
             {
                 "@type": "HowToStep",
-                "name": "Court Appearances",
-                "text": "The defendant must appear at all scheduled court dates. Failure to appear results in bail forfeiture and an arrest warrant."
+                "position": 5,
+                "name": "Await Release",
+                "text": "The bond is posted at the jail. Release times vary by facility (typically 4-12 hours).",
+                "url": "https://www.shamrockbailbonds.biz/how-bail-works"
             }
+        ],
+        "tool": [
+            { "@type": "HowToTool", "name": "Valid government-issued photo ID" },
+            { "@type": "HowToTool", "name": "Defendant's booking information" },
+            { "@type": "HowToTool", "name": "Payment method (cash, credit/debit card)" }
         ]
     };
 
@@ -445,7 +491,7 @@ function updatePageSEO(faqItems) {
         "url": "https://www.shamrockbailbonds.biz",
         "logo": "https://www.shamrockbailbonds.biz/logo.png",
         "image": "https://www.shamrockbailbonds.biz/logo.png",
-        "description": "Florida's most responsive and reliable bail bond service, offering 24/7 assistance across the state.",
+        "description": "Florida's most responsive and reliable bail bond service, offering 24/7 assistance across all 67 counties.",
         "telephone": "+1-239-332-2245",
         "address": {
             "@type": "PostalAddress",
@@ -454,6 +500,10 @@ function updatePageSEO(faqItems) {
             "addressRegion": "FL",
             "postalCode": "33901",
             "addressCountry": "US"
+        },
+        "areaServed": {
+            "@type": "State",
+            "name": "Florida"
         },
         "sameAs": [
             "https://www.facebook.com/ShamrockBail",
