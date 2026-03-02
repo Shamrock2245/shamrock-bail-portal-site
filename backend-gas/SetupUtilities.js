@@ -383,3 +383,38 @@ function testWixHealth(apiKey) {
     return false;
   }
 }
+
+// =============================================================================
+// 4. ONE-TIME PROPERTY SETUP
+// =============================================================================
+
+/**
+ * Sets the two missing Script Properties identified by runSystemDiagnostics:
+ * - SPREADSHEET_ID (Telegram Intake sheet)
+ * - WIX_WEBHOOK_SECRET (HMAC verification for Wix→GAS webhooks)
+ *
+ * Run this once from the Apps Script editor, then it can be removed.
+ */
+function SETUP_MissingProperties() {
+  const props = PropertiesService.getScriptProperties();
+
+  // 1. SPREADSHEET_ID — The main Telegram Intake spreadsheet
+  const SPREADSHEET_ID = '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E';
+  props.setProperty('SPREADSHEET_ID', SPREADSHEET_ID);
+  console.log('✅ Set SPREADSHEET_ID = ' + SPREADSHEET_ID);
+
+  // Verify access
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    console.log('   📊 Verified: "' + ss.getName() + '"');
+  } catch (e) {
+    console.error('   ❌ Could not access spreadsheet: ' + e.message);
+  }
+
+  // 2. WIX_WEBHOOK_SECRET — For HMAC-verifying Wix webhook payloads
+  const WIX_WEBHOOK_SECRET = '48ac04b0aeae45346ebb7526a16ba04911ff3c0b1841af5de1f097d11da3859a';
+  props.setProperty('WIX_WEBHOOK_SECRET', WIX_WEBHOOK_SECRET);
+  console.log('✅ Set WIX_WEBHOOK_SECRET = [' + WIX_WEBHOOK_SECRET.substring(0, 8) + '...]');
+
+  console.log('\n🎯 Done! Run runSystemDiagnostics() to verify green status.');
+}

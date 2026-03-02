@@ -103,7 +103,13 @@ function setupSEO(county) {
         { "property": "og:title", "content": county.seo.meta_title },
         { "property": "og:description", "content": county.seo.meta_description },
         { "property": "og:url", "content": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}` },
-        { "property": "og:type", "content": "website" }
+        { "property": "og:type", "content": "website" },
+        { "property": "og:image", "content": "https://www.shamrockbailbonds.biz/logo.png" },
+        { "property": "og:locale", "content": "en_US" },
+        { "name": "twitter:card", "content": "summary_large_image" },
+        { "name": "twitter:title", "content": county.seo.meta_title },
+        { "name": "twitter:description", "content": county.seo.meta_description },
+        { "name": "twitter:image", "content": "https://www.shamrockbailbonds.biz/logo.png" }
     ]);
 
     // Structured Data (JSON-LD)
@@ -124,7 +130,8 @@ function setupSEO(county) {
     // B. LocalBusiness (Enhanced with full address and contact details)
     schemas.push({
         "@context": "https://schema.org",
-        "@type": "LocalBusiness",
+        "@type": ["LocalBusiness", "ProfessionalService"],
+        "additionalType": "https://schema.org/ProfessionalService",
         "@id": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}#localbusiness`,
         "name": `Shamrock Bail Bonds - ${county.county_name} County`,
         "description": county.seo.meta_description,
@@ -431,7 +438,11 @@ async function populateMainUI(county, currentSlug) {
                     "@type": "Question",
                     "name": f.question,
                     "acceptedAnswer": { "@type": "Answer", "text": f.answer }
-                }))
+                })),
+                "speakable": {
+                    "@type": "SpeakableSpecification",
+                    "cssSelector": [".faq-question", ".faq-answer", "h1", "h2"]
+                }
             };
             wixSeo.setStructuredData([...baseSchemas, faqSchema]).catch(e => { });
             console.log(`✅ FAQPage schema injected with ${faqs.length} CMS FAQs`);
