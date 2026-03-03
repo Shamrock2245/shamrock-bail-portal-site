@@ -3,7 +3,8 @@
  * Filename: lightboxes/ConsentLightbox.js
  * 
  * Modal for collecting user consent before starting bail paperwork.
- * Collects geolocation permission and terms acceptance.
+ * Collects geolocation permission, terms acceptance, privacy acceptance,
+ * and SMS/text message consent (required for A2P 10DLC compliance).
  * 
  * Lightbox Elements:
  * - #consentTitle: Title text
@@ -11,6 +12,7 @@
  * - #locationCheckbox: Geolocation consent checkbox
  * - #termsCheckbox: Terms acceptance checkbox
  * - #privacyCheckbox: Privacy policy checkbox
+ * - #smsConsentCheckbox: SMS/text message consent checkbox
  * - #agreeBtn: Agree and continue button
  * - #cancelBtn: Cancel button
  * - #locationStatus: Location status indicator
@@ -20,10 +22,11 @@
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 
-// Consent state
+// Consent state — ALL default to false (unchecked)
 let locationGranted = false;
 let termsAccepted = false;
 let privacyAccepted = false;
+let smsConsented = false;
 let userLocation = null;
 
 $w.onReady(function () {
@@ -32,13 +35,25 @@ $w.onReady(function () {
 });
 
 /**
- * Initialize lightbox
+ * Initialize lightbox — all checkboxes start UNCHECKED
  */
 function initializeLightbox() {
-    // Set initial states
+    // Disable agree button until ALL consents given
     $w('#agreeBtn').disable();
     $w('#errorMessage').hide();
     $w('#locationStatus').text = 'Location not shared';
+
+    // Force all checkboxes to unchecked state on load
+    try { $w('#locationCheckbox').checked = false; } catch (e) { /* optional */ }
+    try { $w('#termsCheckbox').checked = false; } catch (e) { /* optional */ }
+    try { $w('#privacyCheckbox').checked = false; } catch (e) { /* optional */ }
+    try { $w('#smsConsentCheckbox').checked = false; } catch (e) { /* optional */ }
+
+    // Reset consent state
+    locationGranted = false;
+    termsAccepted = false;
+    privacyAccepted = false;
+    smsConsented = false;
 
     // Set consent text
     $w('#consentText').text = `
@@ -49,6 +64,8 @@ function initializeLightbox() {
         2. Terms of Service: By proceeding, you agree to our terms of service and understand the bail bond process.
         
         3. Privacy Policy: Your information will be handled according to our privacy policy and only used for bail bond services.
+
+        4. Text Messages (SMS): You agree to receive text messages from Shamrock Bail Bonds including verification codes, court reminders, and case updates. Message frequency varies. Standard message and data rates may apply. Reply STOP at any time to opt out.
         
         All information is encrypted and securely stored.
     `;
@@ -81,6 +98,17 @@ function setupEventListeners() {
         privacyAccepted = event.target.checked;
         updateAgreeButton();
     });
+
+    // SMS Consent checkbox
+    try {
+        $w('#smsConsentCheckbox').onChange((event) => {
+            smsConsented = event.target.checked;
+            updateAgreeButton();
+        });
+    } catch (e) {
+        // If element doesn't exist yet in Wix Editor, log it
+        console.warn('⚠️ #smsConsentCheckbox not found in Editor. Add it to enable SMS consent.');
+    }
 
     // Agree button
     $w('#agreeBtn').onClick(handleAgree);
@@ -151,10 +179,10 @@ async function requestLocationPermission() {
 }
 
 /**
- * Update agree button state
+ * Update agree button state — requires ALL 4 consents
  */
 function updateAgreeButton() {
-    const allConsentsGiven = locationGranted && termsAccepted && privacyAccepted;
+    const allConsentsGiven = locationGranted && termsAccepted && privacyAccepted && smsConsented;
 
     if (allConsentsGiven) {
         $w('#agreeBtn').enable();
@@ -180,6 +208,7 @@ async function handleAgree() {
             location: userLocation,
             termsAccepted: termsAccepted,
             privacyAccepted: privacyAccepted,
+            smsConsented: smsConsented,  // SMS consent for A2P 10DLC compliance
             consentTimestamp: new Date().toISOString(),
             userAgent: navigator.userAgent
         };

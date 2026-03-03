@@ -44,6 +44,7 @@ import { setSessionToken, getSessionToken, clearSessionToken } from 'public/sess
 import { initAIChat } from 'public/ai-concierge';
 import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
+import { local } from 'wix-storage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGE INIT
@@ -99,6 +100,9 @@ $w.onReady(async function () {
     }
 
     // ── Default: Show the login form ─────────────────────────────────────────
+    // Check if user has already given consent (including SMS for A2P 10DLC)
+    await showConsentIfNeeded();
+
     setupLoginForm();
     setupTelegramWidget();
     setupAIConcierge();
@@ -323,6 +327,52 @@ async function sendMagicLinkFlow(emailOrPhone, button) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CONSENT LIGHTBOX
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Show the ConsentLightbox if the user hasn't consented yet.
+ * Consent is stored in localStorage so it only appears once per device.
+ * This is critical for A2P 10DLC SMS compliance — Twilio reviewers
+ * will verify that this opt-in flow exists.
+ */
+async function showConsentIfNeeded() {
+    try {
+        // Skip if not in browser (SSR)
+        if (wixWindow.rendering.env !== 'browser') return;
+
+        // Check if user already consented on this device
+        const hasConsented = local.getItem('shamrock_sms_consent');
+        if (hasConsented === 'true') {
+            console.log('✅ User has already given consent (including SMS). Skipping lightbox.');
+            return;
+        }
+
+        console.log('📋 Showing consent lightbox for first-time visitor...');
+
+        // Open the consent lightbox and wait for result
+        const consentResult = await wixWindow.openLightbox('ConsentLightbox');
+
+        if (consentResult && consentResult.success) {
+            // User agreed to all consents including SMS
+            local.setItem('shamrock_sms_consent', 'true');
+            local.setItem('shamrock_consent_timestamp', consentResult.consentTimestamp || new Date().toISOString());
+            console.log('✅ All consents captured (including SMS). Proceeding to login form.');
+        } else {
+            // User cancelled — show a message but still allow the page to load
+            console.warn('⚠️ User did not complete consent. Some features may be limited.');
+            showMessage(
+                'To use our services, you must agree to our terms and SMS notifications. You can try again by refreshing the page.',
+                'error'
+            );
+        }
+    } catch (e) {
+        // Don't block the page if lightbox fails
+        console.warn('⚠️ Consent lightbox error (non-blocking):', e.message);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TELEGRAM WIDGET
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -414,11 +464,11 @@ async function startSocialLogin(provider) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PORTAL_MAP = {
-    'defendant':   '/portal-defendant',
-    'indemnitor':  '/portal-indemnitor',
-    'coindemnitor':'/portal-indemnitor',
-    'staff':       '/portal-staff',
-    'admin':       '/portal-staff'
+    'defendant': '/portal-defendant',
+    'indemnitor': '/portal-indemnitor',
+    'coindemnitor': '/portal-indemnitor',
+    'staff': '/portal-staff',
+    'admin': '/portal-staff'
 };
 
 /**
@@ -453,9 +503,9 @@ function showMessage(text, type) {
         if (!el) return;
         el.text = text;
         try {
-            if (type === 'error')   el.style.color = '#FF4444';
+            if (type === 'error') el.style.color = '#FF4444';
             else if (type === 'success') el.style.color = '#00C851';
-            else                    el.style.color = '#33B5E5';
+            else el.style.color = '#33B5E5';
         } catch (e) { /* style API optional */ }
         el.show();
     } catch (e) { /* element optional */ }
@@ -481,17 +531,17 @@ function isValidEmailOrPhone(input) {
 
 function updatePageSEO() {
     const pageTitle = "Client Portal Login | Shamrock Bail Bonds";
-    const pageDesc  = "Secure client portal for Shamrock Bail Bonds. Manage your bail case, check in, and view paperwork.";
-    const pageUrl   = "https://www.shamrockbailbonds.biz/portal-landing";
+    const pageDesc = "Secure client portal for Shamrock Bail Bonds. Manage your bail case, check in, and view paperwork.";
+    const pageUrl = "https://www.shamrockbailbonds.biz/portal-landing";
 
     wixSeo.setTitle(pageTitle);
     wixSeo.setMetaTags([
-        { name: "description",   content: pageDesc },
-        { property: "og:title",  content: pageTitle },
+        { name: "description", content: pageDesc },
+        { property: "og:title", content: pageTitle },
         { property: "og:description", content: pageDesc },
-        { property: "og:url",    content: pageUrl },
-        { property: "og:type",   content: "website" },
-        { name: "robots",        content: "noindex, nofollow" }
+        { property: "og:url", content: pageUrl },
+        { property: "og:type", content: "website" },
+        { name: "robots", content: "noindex, nofollow" }
     ]);
     wixSeo.setStructuredData([
         {
