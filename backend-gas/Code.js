@@ -927,6 +927,10 @@ function doPost(e) {
     if (data.action === 'flag_high_stress_case') {
       return createResponse(handleFlagHighStressCase(data));
     }
+    // Homepage Telegram Hub section analytics (Phase 7 -- 2026-03-03)
+    if (data.action === 'logTelegramSectionEvent') {
+      return createResponse(logTelegramSectionEvent_(JSON.parse(data.data || '{}')));
+    }
 
     // --- END TELEGRAM MINI APP ---
 

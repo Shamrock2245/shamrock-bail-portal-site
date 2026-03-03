@@ -450,3 +450,41 @@ export async function getDashboardUrl() {
         return { success: false, error: e.message };
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// TELEGRAM HUB HOMEPAGE SECTION ANALYTICS
+// Added: 2026-03-03 | Phase 7 — Growth & Scale
+// Receives analytics events from the Telegram Hub HTML iframe
+// embed on the homepage and relays high-value events to GAS.
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Log a Telegram Hub section analytics event to GAS.
+ * Called from HOME.c1dmp.js via the HTML iframe postMessage bridge.
+ *
+ * @param {Object} eventData
+ * @param {string} eventData.event     - Event name (e.g. 'tg_cta_click')
+ * @param {string} eventData.label     - Event label (e.g. 'open_bot')
+ * @param {string} eventData.extra     - JSON string of extra props
+ * @param {string} eventData.pageUrl   - Current page URL
+ * @param {string} eventData.timestamp - ISO timestamp
+ * @returns {Promise<{success: boolean}>}
+ */
+export async function logTelegramSectionEvent(eventData) {
+    try {
+        const result = await callGasAction('logTelegramSectionEvent', {
+            data: JSON.stringify({
+                event:     eventData.event     || '',
+                label:     eventData.label     || '',
+                extra:     eventData.extra     || '{}',
+                pageUrl:   eventData.pageUrl   || '',
+                timestamp: eventData.timestamp || new Date().toISOString()
+            })
+        });
+        return result;
+    } catch (err) {
+        // Non-fatal — analytics failure must never break the page
+        console.error('[gasIntegration] logTelegramSectionEvent error:', err.message || err);
+        return { success: false, error: err.message };
+    }
+}

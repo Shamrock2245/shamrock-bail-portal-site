@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SEO META — Wix HTML iframe embeds are crawled; these tags
+       reinforce the page-level schema for the Telegram section.
+  ═══════════════════════════════════════════════════════════════ -->
+  <title>Shamrock Bail Bonds on Telegram | 24/7 Bail Bot, Bail School & Resources</title>
+  <meta name="description"
+        content="Connect with Shamrock Bail Bonds on Telegram. Start your bail bond in minutes with our AI-powered bot @ShamrockBail_bot, access free bail resources, and enroll in Shamrock Bail School — Florida's first Telegram-native bail education channel." />
+  <meta name="keywords"
+        content="bail bonds telegram bot, florida bail bonds app, shamrock bail bonds telegram, bail bond help 24/7, bail school florida, bail bond resources, how bail bonds work, lee county bail bonds, collier county bail bonds, fort myers bail bondsman" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://www.shamrockbailbonds.biz/#telegram-hub" />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:title"       content="Shamrock Bail Bonds — Telegram Hub" />
+  <meta property="og:description" content="Start your bail bond in minutes. 24/7 AI-powered Telegram bot, free bail resources, and Bail School enrollment." />
+  <meta property="og:url"         content="https://www.shamrockbailbonds.biz/#telegram-hub" />
+  <meta property="og:site_name"   content="Shamrock Bail Bonds" />
+  <meta property="og:image"       content="https://static.wixstatic.com/media/7dd020_d8b195cd1e654360aabdb286162fc8ce.svg" />
+  <meta property="og:image:width"  content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Shamrock Bail Bonds",
+    "url": "https://www.shamrockbailbonds.biz",
+    "telephone": "+12393322245",
+    "description": "24/7 licensed bail bond services across all 67 Florida counties. AI-powered Telegram bot for instant bail intake, document signing, and case status.",
+    "areaServed": {
+      "@type": "State",
+      "name": "Florida"
+    },
+    "sameAs": [
+      "https://t.me/ShamrockBail_bot"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+12393322245",
+      "contactType": "customer service",
+      "availableLanguage": ["English", "Spanish"],
+      "hoursAvailable": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+        "opens": "00:00",
+        "closes": "23:59"
+      }
+    }
+  }
+  </script>
+
+  <!-- Phosphor Icons CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+
+  <!-- Google Fonts: Poppins + Inter (matches Shamrock brand) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       DESIGN TOKENS — Shamrock brand palette
+    ═══════════════════════════════════════════════════════════════ */
+    :root {
+      --navy:        #1B3A5F;
+      --navy-deep:   #122840;
+      --navy-mid:    #1e4570;
+      --blue:        #0066CC;
+      --blue-hover:  #0052A3;
+      --gold:        #FDB913;
+      --gold-hover:  #E5A811;
+      --green:       #28A745;
+      --green-light: #E8F4E8;
+      --tg-blue:     #229ED9;
+      --tg-dark:     #1a8bbf;
+      --white:       #FFFFFF;
+      --gray-light:  #F8F9FA;
+      --gray-border: #E9ECEF;
+      --text-dark:   #333333;
+      --text-mid:    #6C757D;
+      --radius-sm:   8px;
+      --radius-md:   12px;
+      --radius-lg:   20px;
+      --shadow-sm:   0 2px 8px rgba(0,0,0,0.08);
+      --shadow-md:   0 4px 20px rgba(0,0,0,0.12);
+      --shadow-lg:   0 8px 40px rgba(0,0,0,0.18);
+      --transition:  all 0.3s ease;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      color: var(--text-dark);
+      background: transparent;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SECTION WRAPPER
+    ═══════════════════════════════════════════════════════════════ */
+    .tg-section {
+      background: linear-gradient(160deg, var(--navy-deep) 0%, var(--navy) 50%, var(--navy-mid) 100%);
+      padding: 72px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle shamrock-green glow accent */
+    .tg-section::before {
+      content: '';
+      position: absolute;
+      top: -120px;
+      right: -120px;
+      width: 480px;
+      height: 480px;
+      background: radial-gradient(circle, rgba(40,167,69,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .tg-section::after {
+      content: '';
+      position: absolute;
+      bottom: -80px;
+      left: -80px;
+      width: 360px;
+      height: 360px;
+      background: radial-gradient(circle, rgba(34,158,217,0.10) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .tg-container {
+      max-width: 1160px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SECTION HEADER
+    ═══════════════════════════════════════════════════════════════ */
+    .tg-header {
+      text-align: center;
+      margin-bottom: 52px;
+    }
+
+    .tg-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(34,158,217,0.15);
+      border: 1px solid rgba(34,158,217,0.35);
+      color: #5bc8f5;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    .tg-eyebrow i { font-size: 14px; }
+
+    .tg-headline {
+      font-family: 'Poppins', sans-serif;
+      font-size: clamp(28px, 5vw, 44px);
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    .tg-headline .accent {
+      color: var(--gold);
+    }
+
+    .tg-subhead {
+      font-size: clamp(15px, 2vw, 18px);
+      color: rgba(255,255,255,0.75);
+      max-width: 640px;
+      margin: 0 auto;
+      line-height: 1.65;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       HERO CTA ROW — Primary Telegram actions
+    ═══════════════════════════════════════════════════════════════ */
+    .tg-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 60px;
+    }
+
+    .tg-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 28px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+      min-height: 52px;
+    }
+
+    .tg-btn i { font-size: 20px; flex-shrink: 0; }
+
+    /* Telegram Blue primary */
+    .tg-btn--primary {
+      background: var(--tg-blue);
+      color: var(--white);
+      box-shadow: 0 4px 20px rgba(34,158,217,0.40);
+    }
+    .tg-btn--primary:hover {
+      background: var(--tg-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(34,158,217,0.50);
+    }
+
+    /* Gold secondary */
+    .tg-btn--gold {
+      background: var(--gold);
+      color: var(--navy);
+      box-shadow: 0 4px 20px rgba(253,185,19,0.35);
+    }
+    .tg-btn--gold:hover {
+      background: var(--gold-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(253,185,19,0.45);
+    }
+
+    /* Ghost outline */
+    .tg-btn--ghost {
+      background: transparent;
+      color: var(--white);
+      border: 2px solid rgba(255,255,255,0.35);
+    }
+    .tg-btn--ghost:hover {
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.65);
+      transform: translateY(-2px);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       MAIN GRID — Video + Feature Cards
+    ═══════════════════════════════════════════════════════════════ */
+    .tg-main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      margin-bottom: 52px;
+      align-items: start;
+    }
+
+    /* ── VIDEO PANEL ── */
+    .tg-video-panel {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .tg-video-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 20px 12px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.70);
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .tg-video-label .live-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .tg-video-wrap {
+      position: relative;
+      width: 100%;
+      background: #000;
+    }
+
+    .tg-video-wrap video {
+      width: 100%;
+      display: block;
+      max-height: 420px;
+      object-fit: cover;
+    }
+
+    /* Custom play overlay */
+    .tg-video-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(27,58,95,0.45);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .tg-video-overlay.hidden { display: none; }
+
+    .tg-play-btn {
+      width: 72px;
+      height: 72px;
+      background: rgba(34,158,217,0.90);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      box-shadow: 0 4px 24px rgba(34,158,217,0.50);
+    }
+
+    .tg-play-btn i {
+      font-size: 32px;
+      color: var(--white);
+      margin-left: 4px; /* optical center for play icon */
+    }
+
+    .tg-video-overlay:hover .tg-play-btn {
+      transform: scale(1.10);
+      background: var(--tg-blue);
+    }
+
+    .tg-video-caption {
+      padding: 14px 20px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.55);
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* ── FEATURE CARDS COLUMN ── */
+    .tg-features-col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .tg-feature-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: var(--radius-md);
+      padding: 20px 22px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      transition: var(--transition);
+      cursor: default;
+    }
+
+    .tg-feature-card:hover {
+      background: rgba(255,255,255,0.09);
+      border-color: rgba(34,158,217,0.35);
+      transform: translateX(4px);
+    }
+
+    .tg-feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 22px;
+    }
+
+    .tg-feature-icon--tg   { background: rgba(34,158,217,0.20); color: var(--tg-blue); }
+    .tg-feature-icon--gold { background: rgba(253,185,19,0.20); color: var(--gold); }
+    .tg-feature-icon--green{ background: rgba(40,167,69,0.20);  color: #4cd97b; }
+    .tg-feature-icon--blue { background: rgba(0,102,204,0.25);  color: #5ba8ff; }
+    .tg-feature-icon--red  { background: rgba(220,53,69,0.20);  color: #ff7b87; }
+
+    .tg-feature-text h4 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .tg-feature-text p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.60);
+      line-height: 1.55;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       MINI APPS STRIP
+    ═══════════════════════════════════════════════════════════════ */
+    .tg-apps-strip {
+      margin-bottom: 52px;
+    }
+
+    .tg-strip-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.40);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .tg-apps-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+
+    .tg-app-tile {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: var(--radius-md);
+      padding: 18px 12px 16px;
+      text-align: center;
+      text-decoration: none;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tg-app-tile:hover {
+      background: rgba(34,158,217,0.12);
+      border-color: rgba(34,158,217,0.40);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(34,158,217,0.20);
+    }
+
+    .tg-app-tile i {
+      font-size: 26px;
+      color: var(--tg-blue);
+    }
+
+    .tg-app-tile span {
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--white);
+      line-height: 1.3;
+    }
+
+    .tg-app-tile .tg-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      letter-spacing: 0.5px;
+    }
+
+    .tg-badge--live  { background: rgba(40,167,69,0.25);  color: #4cd97b; border: 1px solid rgba(40,167,69,0.35); }
+    .tg-badge--new   { background: rgba(253,185,19,0.20); color: var(--gold); border: 1px solid rgba(253,185,19,0.35); }
+    .tg-badge--soon  { background: rgba(108,117,125,0.25); color: rgba(255,255,255,0.50); border: 1px solid rgba(108,117,125,0.30); }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESOURCES GRID — Bail Bond Education
+    ═══════════════════════════════════════════════════════════════ */
+    .tg-resources {
+      margin-bottom: 52px;
+    }
+
+    .tg-section-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--white);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .tg-section-sub {
+      font-size: 14px;
+      color: rgba(255,255,255,0.55);
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .tg-resources-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .tg-resource-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: var(--radius-md);
+      padding: 22px 20px;
+      text-decoration: none;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tg-resource-card:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(253,185,19,0.35);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .tg-resource-card .rc-icon {
+      font-size: 28px;
+      color: var(--gold);
+    }
+
+    .tg-resource-card h5 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.35;
+    }
+
+    .tg-resource-card p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.55;
+      flex: 1;
+    }
+
+    .tg-resource-card .rc-link {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--tg-blue);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tg-resource-card .rc-link i { font-size: 14px; }
+
+    /* ═══════════════════════════════════════════════════════════════
+       BAIL SCHOOL BANNER
+    ═══════════════════════════════════════════════════════════════ */
+    .tg-school-banner {
+      background: linear-gradient(135deg, rgba(253,185,19,0.12) 0%, rgba(40,167,69,0.10) 100%);
+      border: 1px solid rgba(253,185,19,0.30);
+      border-radius: var(--radius-lg);
+      padding: 36px 40px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      margin-bottom: 52px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tg-school-banner::before {
+      content: '🍀';
+      position: absolute;
+      right: 40px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 80px;
+      opacity: 0.08;
+      pointer-events: none;
+    }
+
+    .tg-school-icon {
+      width: 72px;
+      height: 72px;
+      background: rgba(253,185,19,0.20);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 36px;
+      color: var(--gold);
+    }
+
+    .tg-school-content { flex: 1; }
+
+    .tg-school-content .school-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+
+    .tg-school-content h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: clamp(18px, 3vw, 24px);
+      font-weight: 800;
+      color: var(--white);
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+
+    .tg-school-content p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.6;
+      max-width: 520px;
+    }
+
+    .tg-school-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       STATS ROW
+    ═══════════════════════════════════════════════════════════════ */
+    .tg-stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 52px;
+    }
+
+    .tg-stat {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-md);
+      padding: 22px 16px;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .tg-stat:hover {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(34,158,217,0.25);
+    }
+
+    .tg-stat .stat-num {
+      font-family: 'Poppins', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .tg-stat .stat-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.4;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       BOTTOM CTA BAR
+    ═══════════════════════════════════════════════════════════════ */
+    .tg-bottom-cta {
+      background: rgba(34,158,217,0.10);
+      border: 1px solid rgba(34,158,217,0.25);
+      border-radius: var(--radius-lg);
+      padding: 32px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .tg-bottom-cta .cta-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Phosphor Telegram icon from Wix media */
+    .tg-logo-img {
+      width: 52px;
+      height: 52px;
+      filter: brightness(0) invert(1);
+      opacity: 0.90;
+      flex-shrink: 0;
+    }
+
+    .tg-bottom-cta h4 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+
+    .tg-bottom-cta p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.60);
+    }
+
+    .tg-bottom-cta .cta-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       TRUST BADGES
+    ═══════════════════════════════════════════════════════════════ */
+    .tg-trust-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 40px;
+      padding-top: 32px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .tg-trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.60);
+    }
+
+    .tg-trust-badge i {
+      font-size: 16px;
+      color: var(--green);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESPONSIVE — 5-TIER ADAPTIVE SYSTEM
+       xs  : < 480px   (small phones — iPhone SE, Galaxy A)
+       sm  : 480–767px (standard phones — iPhone 14, Pixel)
+       md  : 768–1023px (tablets — iPad, Surface)
+       lg  : 1024–1279px (small laptops, iPad Pro landscape)
+       xl  : 1280px+  (desktop, wide screens)
+
+       PRINCIPLES:
+       - Fluid type via clamp() — no hard font-size jumps
+       - Touch targets minimum 44px (WCAG 2.5.5)
+       - Video: autoplay muted on mobile, tap-to-unmute
+       - Iframe height signal sent via postMessage on resize
+       - Hover effects disabled on touch devices
+       - Grid reflows: 2-col → 1-col at tablet, stacked at phone
+    ═══════════════════════════════════════════════════════════════ */
+
+    /* ── WIDE SCREENS (1400px+) — expand container, larger spacing ── */
+    @media (min-width: 1400px) {
+      .tg-container { max-width: 1320px; }
+      .tg-section { padding: 88px 40px 96px; }
+      .tg-main-grid { gap: 48px; }
+      .tg-resources-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .tg-apps-grid { gap: 16px; }
+      .tg-stats-row { gap: 20px; }
+    }
+
+    /* ── LARGE DESKTOP (1280–1399px) — default, already optimized ── */
+
+    /* ── SMALL LAPTOP / LARGE TABLET LANDSCAPE (1024–1279px) ── */
+    @media (max-width: 1279px) and (min-width: 1024px) {
+      .tg-container { max-width: 960px; }
+      .tg-apps-grid { grid-template-columns: repeat(5, 1fr); }
+      .tg-resources-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* ── TABLET PORTRAIT + LANDSCAPE (768–1023px) ── */
+    @media (max-width: 1023px) and (min-width: 768px) {
+      .tg-section { padding: 60px 28px 72px; }
+      .tg-container { max-width: 100%; }
+
+      /* Stack video above features */
+      .tg-main-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+      }
+
+      /* Feature cards go 2-col on tablet */
+      .tg-features-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .tg-apps-grid { grid-template-columns: repeat(5, 1fr); gap: 10px; }
+      .tg-resources-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+      .tg-stats-row { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+      .tg-school-banner {
+        padding: 28px 28px;
+        gap: 24px;
+      }
+      .tg-school-banner::before { display: none; }
+
+      .tg-bottom-cta { padding: 28px 28px; }
+
+      /* Larger touch targets for tablet */
+      .tg-btn { min-height: 52px; padding: 14px 24px; }
+      .tg-app-tile { padding: 20px 10px 18px; }
+    }
+
+    /* ── STANDARD PHONE (480–767px) ── */
+    @media (max-width: 767px) and (min-width: 480px) {
+      .tg-section { padding: 52px 20px 64px; }
+
+      .tg-main-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      /* Feature cards: single column on phone */
+      .tg-features-col { display: flex; flex-direction: column; gap: 12px; }
+
+      .tg-apps-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .tg-resources-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .tg-stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+      .tg-cta-row { flex-direction: column; align-items: stretch; gap: 12px; }
+      .tg-btn { justify-content: center; min-height: 52px; font-size: 15px; }
+
+      .tg-school-banner {
+        flex-direction: column;
+        text-align: center;
+        padding: 28px 20px;
+        gap: 20px;
+      }
+      .tg-school-banner::before { display: none; }
+      .tg-school-actions {
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .tg-bottom-cta {
+        flex-direction: column;
+        text-align: center;
+        padding: 24px 20px;
+        gap: 20px;
+      }
+      .tg-bottom-cta .cta-left { flex-direction: column; align-items: center; }
+      .tg-bottom-cta .cta-right { justify-content: center; flex-wrap: wrap; }
+
+      .tg-section-title { font-size: 20px; }
+      .tg-stat .stat-num { font-size: 28px; }
+
+      .tg-trust-row { gap: 12px; }
+      .tg-trust-badge { font-size: 12px; }
+    }
+
+    /* ── SMALL PHONE (< 480px — iPhone SE, Galaxy A series) ── */
+    @media (max-width: 479px) {
+      .tg-section { padding: 40px 14px 52px; }
+
+      .tg-main-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .tg-features-col { display: flex; flex-direction: column; gap: 10px; }
+
+      /* 2-col apps on tiny screens */
+      .tg-apps-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      /* Show only first 4 app tiles on tiny screens, hide 5th */
+      .tg-app-tile:nth-child(5) { display: none; }
+
+      .tg-resources-grid { grid-template-columns: 1fr; gap: 10px; }
+      .tg-stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+      .tg-cta-row { flex-direction: column; align-items: stretch; gap: 10px; }
+      .tg-btn {
+        justify-content: center;
+        min-height: 52px;
+        font-size: 14px;
+        padding: 13px 18px;
+      }
+
+      /* Compact eyebrow on tiny screens */
+      .tg-eyebrow { font-size: 10px; letter-spacing: 1px; padding: 5px 12px; }
+
+      .tg-feature-card { padding: 16px 14px; gap: 12px; }
+      .tg-feature-icon { width: 38px; height: 38px; font-size: 18px; }
+      .tg-feature-text h4 { font-size: 13px; }
+      .tg-feature-text p { font-size: 12px; }
+
+      .tg-app-tile { padding: 16px 8px 14px; }
+      .tg-app-tile i { font-size: 22px; }
+      .tg-app-tile span { font-size: 11px; }
+
+      .tg-resource-card { padding: 16px 14px; }
+      .tg-resource-card h5 { font-size: 13px; }
+      .tg-resource-card p { font-size: 12px; }
+
+      .tg-school-banner {
+        flex-direction: column;
+        text-align: center;
+        padding: 24px 16px;
+        gap: 16px;
+      }
+      .tg-school-banner::before { display: none; }
+      .tg-school-icon { width: 56px; height: 56px; font-size: 28px; }
+      .tg-school-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .tg-bottom-cta {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px 16px;
+        gap: 16px;
+      }
+      .tg-bottom-cta .cta-left { flex-direction: column; align-items: center; }
+      .tg-bottom-cta .cta-right { flex-direction: column; align-items: stretch; gap: 10px; }
+      .tg-logo-img { width: 40px; height: 40px; }
+
+      .tg-stat { padding: 16px 10px; }
+      .tg-stat .stat-num { font-size: 26px; }
+      .tg-stat .stat-label { font-size: 11px; }
+
+      .tg-section-title { font-size: 18px; }
+      .tg-section-sub { font-size: 13px; }
+
+      .tg-trust-row { gap: 10px; padding-top: 24px; margin-top: 28px; }
+      .tg-trust-badge { font-size: 11px; }
+    }
+
+    /* ── TOUCH DEVICES — disable hover transforms to prevent sticky states ── */
+    @media (hover: none) and (pointer: coarse) {
+      .tg-btn:hover,
+      .tg-feature-card:hover,
+      .tg-app-tile:hover,
+      .tg-resource-card:hover,
+      .tg-stat:hover {
+        transform: none;
+        box-shadow: none;
+      }
+      /* Tap feedback instead */
+      .tg-btn:active { opacity: 0.80; transform: scale(0.97); }
+      .tg-app-tile:active { opacity: 0.75; transform: scale(0.96); }
+      .tg-resource-card:active { opacity: 0.80; }
+    }
+
+    /* ── REDUCED MOTION — respect user preference ── */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+      .live-dot { animation: none !important; }
+      .tg-btn, .tg-feature-card, .tg-app-tile, .tg-resource-card { transition: none !important; }
+    }
+
+    /* ── HIGH CONTRAST — accessibility ── */
+    @media (prefers-contrast: high) {
+      .tg-feature-card,
+      .tg-app-tile,
+      .tg-resource-card,
+      .tg-stat {
+        border-color: rgba(255,255,255,0.50) !important;
+      }
+      .tg-subhead,
+      .tg-feature-text p,
+      .tg-resource-card p {
+        color: rgba(255,255,255,0.90) !important;
+      }
+    }
+
+    /* ── PRINT — clean fallback ── */
+    @media print {
+      .tg-section {
+        background: #fff !important;
+        color: #000 !important;
+        padding: 20px 0 !important;
+      }
+      .tg-video-panel,
+      .tg-apps-strip,
+      .tg-school-banner { display: none !important; }
+      .tg-headline, .tg-section-title { color: #000 !important; }
+      .tg-subhead, .tg-feature-text p { color: #333 !important; }
+      .tg-btn--primary { background: #229ED9 !important; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SCROLL REVEAL ANIMATIONS
+    ═══════════════════════════════════════════════════════════════ */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: 0.10s; }
+    .reveal-delay-2 { transition-delay: 0.20s; }
+    .reveal-delay-3 { transition-delay: 0.30s; }
+    .reveal-delay-4 { transition-delay: 0.40s; }
+    .reveal-delay-5 { transition-delay: 0.50s; }
+
+    /* ── FOCUS STYLES — keyboard navigation (WCAG 2.4.7) ── */
+    .tg-btn:focus-visible,
+    .tg-app-tile:focus-visible,
+    .tg-resource-card:focus-visible,
+    .tg-video-overlay:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 3px;
+    }
+    /* Fallback for browsers without :focus-visible */
+    .tg-btn:focus:not(:focus-visible),
+    .tg-app-tile:focus:not(:focus-visible),
+    .tg-resource-card:focus:not(:focus-visible) {
+      outline: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TELEGRAM HUB SECTION
+     Wix placement: This is the HTML Component content for #section6
+     on the Shamrock homepage. The HTML Component iframe IS section6.
+     Velo element IDs:
+       #telegramHubEmbed   — the HTML Component (this file's iframe)
+       #telegramHubSection — the Section strip (#section6)
+     Anchor: #telegram-hub (for deep links + SEO)
+═══════════════════════════════════════════════════════════════ -->
+<section class="tg-section" id="telegram-hub" aria-label="Shamrock Bail Bonds Telegram Hub">
+  <div class="tg-container">
+
+    <!-- ── HEADER ── -->
+    <header class="tg-header reveal">
+      <div class="tg-eyebrow">
+        <i class="ph ph-paper-plane-tilt"></i>
+        Available 24/7 on Telegram
+      </div>
+      <h2 class="tg-headline">
+        Bail Bonds in Your Pocket.<br />
+        <span class="accent">Start in Minutes on Telegram.</span>
+      </h2>
+      <p class="tg-subhead">
+        Shamrock Bail Bonds operates Florida's most advanced bail bond Telegram channel —
+        AI-powered intake, instant document signing, court reminders, and the Shamrock Bail School,
+        all from one tap on your phone.
+      </p>
+    </header>
+
+    <!-- ── PRIMARY CTAs ── -->
+    <div class="tg-cta-row reveal reveal-delay-1">
+      <a href="https://t.me/ShamrockBail_bot"
+         target="_blank"
+         rel="noopener"
+         class="tg-btn tg-btn--primary"
+         data-analytics-event="tg_cta_click"
+         data-analytics-label="open_bot"
+         aria-label="Open @ShamrockBail_bot on Telegram">
+        <img src="https://static.wixstatic.com/shapes/7dd020_d8b195cd1e654360aabdb286162fc8ce.svg"
+             alt="Telegram"
+             style="width:22px;height:22px;filter:brightness(0) invert(1);" />
+        Open @ShamrockBail_bot
+      </a>
+      <a href="https://shamrock-telegram.netlify.app"
+         target="_blank"
+         rel="noopener"
+         class="tg-btn tg-btn--gold"
+         data-analytics-event="tg_cta_click"
+         data-analytics-label="open_miniapps"
+         aria-label="Open Shamrock Bail Mini Apps">
+        <i class="ph ph-device-mobile"></i>
+        Open Mini Apps
+      </a>
+      <a href="tel:+12393322245"
+         class="tg-btn tg-btn--ghost"
+         data-analytics-event="tg_cta_click"
+         data-analytics-label="call_now"
+         aria-label="Call Shamrock Bail Bonds 24/7">
+        <i class="ph ph-phone"></i>
+        Call 24/7: (239) 332-2245
+      </a>
+    </div>
+
+    <!-- ── MAIN GRID: VIDEO + FEATURES ── -->
+    <div class="tg-main-grid">
+
+      <!-- VIDEO PANEL -->
+      <div class="tg-video-panel reveal reveal-delay-1">
+        <div class="tg-video-label">
+          <span class="live-dot"></span>
+          Live Demo — Shamrock Telegram App
+        </div>
+        <div class="tg-video-wrap">
+          <video
+            id="tgDemoVideo"
+            preload="metadata"
+            playsinline
+            muted
+            loop
+            poster="https://static.wixstatic.com/shapes/7dd020_d8b195cd1e654360aabdb286162fc8ce.svg"
+            aria-label="Shamrock Bail Bonds Telegram app demo video"
+          >
+            <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663114672972/xJKtavDYHLEQRhtC.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <div class="tg-video-overlay" id="videoOverlay" role="button" tabindex="0" aria-label="Play demo video">
+            <div class="tg-play-btn">
+              <i class="ph-fill ph-play"></i>
+            </div>
+          </div>
+        </div>
+        <div class="tg-video-caption">
+          <i class="ph ph-info" style="vertical-align:middle;margin-right:4px;"></i>
+          See how clients start a bail bond, sign documents, and check in — all from Telegram.
+        </div>
+      </div>
+
+      <!-- FEATURE CARDS -->
+      <div class="tg-features-col">
+
+        <div class="tg-feature-card reveal reveal-delay-1">
+          <div class="tg-feature-icon tg-feature-icon--tg">
+            <i class="ph ph-robot"></i>
+          </div>
+          <div class="tg-feature-text">
+            <h4>AI-Powered Bail Bot</h4>
+            <p>@ShamrockBail_bot guides you through the entire intake process conversationally — no forms, no hold music, no office visit required. Available every minute of every day.</p>
+          </div>
+        </div>
+
+        <div class="tg-feature-card reveal reveal-delay-2">
+          <div class="tg-feature-icon tg-feature-icon--gold">
+            <i class="ph ph-file-signature"></i>
+          </div>
+          <div class="tg-feature-text">
+            <h4>One-Tap Document Signing</h4>
+            <p>Receive your full bail bond packet via Telegram. Sign legally binding documents from your phone with a single tap — no printer, no fax, no notary needed.</p>
+          </div>
+        </div>
+
+        <div class="tg-feature-card reveal reveal-delay-3">
+          <div class="tg-feature-icon tg-feature-icon--green">
+            <i class="ph ph-calendar-check"></i>
+          </div>
+          <div class="tg-feature-text">
+            <h4>Automated Court Reminders</h4>
+            <p>Never miss a court date. The bot sends 4-touch reminders: 7 days, 3 days, 1 day, and morning-of — directly to your Telegram, automatically.</p>
+          </div>
+        </div>
+
+        <div class="tg-feature-card reveal reveal-delay-4">
+          <div class="tg-feature-icon tg-feature-icon--blue">
+            <i class="ph ph-map-pin"></i>
+          </div>
+          <div class="tg-feature-text">
+            <h4>GPS Check-In & ID Verification</h4>
+            <p>Defendants check in with GPS location and a selfie directly through Telegram. Florida Driver License OCR extracts your info instantly — no manual entry.</p>
+          </div>
+        </div>
+
+        <div class="tg-feature-card reveal reveal-delay-5">
+          <div class="tg-feature-icon tg-feature-icon--red">
+            <i class="ph ph-credit-card"></i>
+          </div>
+          <div class="tg-feature-text">
+            <h4>Instant Payment Links</h4>
+            <p>Pay your bail bond premium securely via one-tap payment links sent directly to your Telegram. Flexible payment plans available — no hidden fees.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── MINI APPS STRIP ── -->
+    <div class="tg-apps-strip reveal">
+      <p class="tg-strip-label">Telegram Mini Apps — Open directly from the bot</p>
+      <div class="tg-apps-grid">
+
+        <a href="https://shamrock-telegram.netlify.app/intake/"
+           target="_blank" rel="noopener"
+           class="tg-app-tile"
+           data-analytics-event="miniapp_click"
+           data-analytics-label="intake"
+           aria-label="Bail Intake Mini App">
+          <i class="ph ph-clipboard-text"></i>
+          <span>Bail Intake</span>
+          <span class="tg-badge tg-badge--live">LIVE</span>
+        </a>
+
+        <a href="https://shamrock-telegram.netlify.app/documents/"
+           target="_blank" rel="noopener"
+           class="tg-app-tile"
+           data-analytics-event="miniapp_click"
+           data-analytics-label="documents"
+           aria-label="Sign Documents Mini App">
+          <i class="ph ph-file-magnifying-glass"></i>
+          <span>Sign Docs</span>
+          <span class="tg-badge tg-badge--live">LIVE</span>
+        </a>
+
+        <a href="https://shamrock-telegram.netlify.app/payment/"
+           target="_blank" rel="noopener"
+           class="tg-app-tile"
+           data-analytics-event="miniapp_click"
+           data-analytics-label="payment"
+           aria-label="Make a Payment Mini App">
+          <i class="ph ph-wallet"></i>
+          <span>Payments</span>
+          <span class="tg-badge tg-badge--live">LIVE</span>
+        </a>
+
+        <a href="https://shamrock-telegram.netlify.app/status/"
+           target="_blank" rel="noopener"
+           class="tg-app-tile"
+           data-analytics-event="miniapp_click"
+           data-analytics-label="status"
+           aria-label="Case Status Mini App">
+          <i class="ph ph-detective"></i>
+          <span>Case Status</span>
+          <span class="tg-badge tg-badge--live">LIVE</span>
+        </a>
+
+        <a href="https://shamrock-telegram.netlify.app/updates/"
+           target="_blank" rel="noopener"
+           class="tg-app-tile"
+           data-analytics-event="miniapp_click"
+           data-analytics-label="updates"
+           aria-label="Update My Info Mini App">
+          <i class="ph ph-megaphone"></i>
+          <span>My Updates</span>
+          <span class="tg-badge tg-badge--live">LIVE</span>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- ── STATS ROW ── -->
+    <div class="tg-stats-row reveal">
+      <div class="tg-stat">
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">Bot availability — no hold times, no voicemail</div>
+      </div>
+      <div class="tg-stat">
+        <div class="stat-num">67</div>
+        <div class="stat-label">Florida counties served — statewide coverage</div>
+      </div>
+      <div class="tg-stat">
+        <div class="stat-num">&lt;5m</div>
+        <div class="stat-label">Average intake completion time via Telegram</div>
+      </div>
+      <div class="tg-stat">
+        <div class="stat-num">100%</div>
+        <div class="stat-label">Mobile-native — built for one thumb, one eye</div>
+      </div>
+    </div>
+
+    <!-- ── BAIL RESOURCES GRID ── -->
+    <div class="tg-resources reveal">
+      <h3 class="tg-section-title">Free Bail Bond Resources on Our Telegram Channel</h3>
+      <p class="tg-section-sub">Join the channel for ongoing education, Florida law updates, and bail bond guides — all free.</p>
+
+      <div class="tg-resources-grid">
+
+        <a href="https://t.me/ShamrockBail_bot"
+           target="_blank" rel="noopener"
+           class="tg-resource-card"
+           data-analytics-event="resource_click"
+           data-analytics-label="how_bail_works">
+          <i class="ph ph-scales rc-icon"></i>
+          <h5>How Bail Bonds Work in Florida</h5>
+          <p>Step-by-step guide to the Florida bail process — from arrest to release. Understand your rights and what to expect.</p>
+          <span class="rc-link"><i class="ph ph-arrow-right"></i> Read on Telegram</span>
+        </a>
+
+        <a href="https://t.me/ShamrockBail_bot"
+           target="_blank" rel="noopener"
+           class="tg-resource-card"
+           data-analytics-event="resource_click"
+           data-analytics-label="bail_cost">
+          <i class="ph ph-currency-dollar rc-icon"></i>
+          <h5>What Does a Bail Bond Cost?</h5>
+          <p>Florida bail bonds are 10% of the total bail amount. Learn about payment plans, collateral, and what fees are legal.</p>
+          <span class="rc-link"><i class="ph ph-arrow-right"></i> Read on Telegram</span>
+        </a>
+
+        <a href="https://t.me/ShamrockBail_bot"
+           target="_blank" rel="noopener"
+           class="tg-resource-card"
+           data-analytics-event="resource_click"
+           data-analytics-label="indemnitor_guide">
+          <i class="ph ph-handshake rc-icon"></i>
+          <h5>Indemnitor / Co-Signer Guide</h5>
+          <p>What it means to co-sign a bail bond, your responsibilities, and how to protect yourself. Essential reading before you sign.</p>
+          <span class="rc-link"><i class="ph ph-arrow-right"></i> Read on Telegram</span>
+        </a>
+
+        <a href="https://t.me/ShamrockBail_bot"
+           target="_blank" rel="noopener"
+           class="tg-resource-card"
+           data-analytics-event="resource_click"
+           data-analytics-label="court_dates">
+          <i class="ph ph-calendar-x rc-icon"></i>
+          <h5>What Happens If You Miss Court?</h5>
+          <p>Missing a court date after posting bail has serious consequences. Know the risks, the timeline, and what Shamrock does to help.</p>
+          <span class="rc-link"><i class="ph ph-arrow-right"></i> Read on Telegram</span>
+        </a>
+
+        <a href="https://t.me/ShamrockBail_bot"
+           target="_blank" rel="noopener"
+           class="tg-resource-card"
+           data-analytics-event="resource_click"
+           data-analytics-label="county_jails">
+          <i class="ph ph-map-trifold rc-icon"></i>
+          <h5>Florida County Jail Directory</h5>
+          <p>Phone numbers, addresses, and inmate lookup links for every major Florida county jail — updated and verified by our team.</p>
+          <span class="rc-link"><i class="ph ph-arrow-right"></i> View Directory</span>
+        </a>
+
+        <a href="https://t.me/ShamrockBail_bot"
+           target="_blank" rel="noopener"
+           class="tg-resource-card"
+           data-analytics-event="resource_click"
+           data-analytics-label="fl_statutes">
+          <i class="ph ph-book-open rc-icon"></i>
+          <h5>Florida Bail Statutes 648</h5>
+          <p>Plain-English summaries of Florida Statute 648 — the law that governs bail bond agents, premiums, and your rights as a client.</p>
+          <span class="rc-link"><i class="ph ph-arrow-right"></i> Read on Telegram</span>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- ── BAIL SCHOOL BANNER ── -->
+    <div class="tg-school-banner reveal" id="bail-school-teaser">
+      <div class="tg-school-icon">
+        <i class="ph ph-graduation-cap"></i>
+      </div>
+      <div class="tg-school-content">
+        <div class="school-eyebrow">Coming Soon — Enrollment Open</div>
+        <h3>Shamrock Bail School</h3>
+        <p>
+          Florida's first Telegram-native bail bond education program. Complete your 120-hour pre-licensing course,
+          access continuing education, and earn your certificate — all through the Shamrock Bail School channel.
+          Licensed agents, aspiring bondsmen, and indemnitors welcome.
+        </p>
+      </div>
+      <div class="tg-school-actions">
+        <a href="https://www.shamrockbailbonds.biz/bail-school"
+           class="tg-btn tg-btn--gold"
+           data-analytics-event="bail_school_click"
+           data-analytics-label="learn_more"
+           aria-label="Learn about Shamrock Bail School">
+          <i class="ph ph-graduation-cap"></i>
+          Learn More
+        </a>
+        <a href="https://t.me/ShamrockBail_bot"
+           target="_blank" rel="noopener"
+           class="tg-btn tg-btn--ghost"
+           data-analytics-event="bail_school_click"
+           data-analytics-label="join_channel"
+           aria-label="Join Shamrock Bail School on Telegram">
+          <img src="https://static.wixstatic.com/shapes/7dd020_d8b195cd1e654360aabdb286162fc8ce.svg"
+               alt="Telegram"
+               style="width:18px;height:18px;filter:brightness(0) invert(1);opacity:0.85;" />
+          Join Channel
+        </a>
+      </div>
+    </div>
+
+    <!-- ── BOTTOM CTA BAR ── -->
+    <div class="tg-bottom-cta reveal">
+      <div class="cta-left">
+        <img src="https://static.wixstatic.com/shapes/7dd020_d8b195cd1e654360aabdb286162fc8ce.svg"
+             alt="Telegram logo"
+             class="tg-logo-img"
+             width="52" height="52" />
+        <div>
+          <h4>Start Your Bail Bond Right Now</h4>
+          <p>Message @ShamrockBail_bot on Telegram — no wait, no office, no hold music.</p>
+        </div>
+      </div>
+      <div class="cta-right">
+        <a href="https://t.me/ShamrockBail_bot"
+           target="_blank" rel="noopener"
+           class="tg-btn tg-btn--primary"
+           data-analytics-event="tg_cta_click"
+           data-analytics-label="bottom_open_bot"
+           aria-label="Open Shamrock Bail Bot on Telegram">
+          <img src="https://static.wixstatic.com/shapes/7dd020_d8b195cd1e654360aabdb286162fc8ce.svg"
+               alt="Telegram"
+               style="width:20px;height:20px;filter:brightness(0) invert(1);" />
+          Open Bot Now
+        </a>
+        <a href="tel:+12393322245"
+           class="tg-btn tg-btn--ghost"
+           data-analytics-event="tg_cta_click"
+           data-analytics-label="bottom_call"
+           aria-label="Call Shamrock Bail Bonds">
+          <i class="ph ph-phone"></i>
+          (239) 332-2245
+        </a>
+      </div>
+    </div>
+
+    <!-- ── TRUST BADGES ── -->
+    <div class="tg-trust-row reveal">
+      <span class="tg-trust-badge"><i class="ph-fill ph-check-circle"></i> Licensed &amp; Insured in Florida</span>
+      <span class="tg-trust-badge"><i class="ph-fill ph-check-circle"></i> All 67 Florida Counties</span>
+      <span class="tg-trust-badge"><i class="ph-fill ph-check-circle"></i> Encrypted &amp; Secure</span>
+      <span class="tg-trust-badge"><i class="ph-fill ph-check-circle"></i> No Hidden Fees</span>
+      <span class="tg-trust-badge"><i class="ph-fill ph-check-circle"></i> English &amp; Spanish</span>
+      <span class="tg-trust-badge"><i class="ph-fill ph-check-circle"></i> 24/7 Live Support</span>
+    </div>
+
+  </div><!-- /.tg-container -->
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ANALYTICS + INTERACTION SCRIPTS
+     All events fire window.parent.postMessage() so the Wix Velo
+     page code can receive them and log to Wix Analytics / GAS.
+═══════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── 1. VIDEO PLAYER ── */
+  var video   = document.getElementById('tgDemoVideo');
+  var overlay = document.getElementById('videoOverlay');
+
+  function playVideo() {
+    video.muted = false;
+    video.play().then(function () {
+      overlay.classList.add('hidden');
+      fireEvent('video_play', 'telegram_demo');
+    }).catch(function () {
+      // Autoplay blocked — play muted
+      video.muted = true;
+      video.play();
+      overlay.classList.add('hidden');
+      fireEvent('video_play_muted', 'telegram_demo');
+    });
+  }
+
+  overlay.addEventListener('click', playVideo);
+  overlay.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); playVideo(); }
+  });
+
+  video.addEventListener('ended', function () {
+    overlay.classList.remove('hidden');
+  });
+
+  /* ── 2. SCROLL REVEAL ── */
+  var revealEls = document.querySelectorAll('.reveal');
+
+  function checkReveal() {
+    revealEls.forEach(function (el) {
+      var rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.92) {
+        el.classList.add('visible');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', checkReveal, { passive: true });
+  window.addEventListener('resize', checkReveal, { passive: true });
+  checkReveal(); // run on load
+
+  /* ── 3. ANALYTICS — postMessage to Wix parent ── */
+  function fireEvent(eventName, label, extra) {
+    var payload = {
+      type:      'shamrock_analytics',
+      event:     eventName,
+      label:     label || '',
+      section:   'telegram_hub',
+      timestamp: Date.now(),
+      extra:     extra || {}
+    };
+    try {
+      window.parent.postMessage(JSON.stringify(payload), '*');
+    } catch (e) { /* silent — iframe may be sandboxed */ }
+
+    // Also log to console for debugging
+    if (typeof console !== 'undefined') {
+      console.log('[ShamrockAnalytics]', eventName, label);
+    }
+  }
+
+  /* ── 4. CTA CLICK TRACKING ── */
+  document.querySelectorAll('[data-analytics-event]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var evt   = el.getAttribute('data-analytics-event');
+      var label = el.getAttribute('data-analytics-label');
+      fireEvent(evt, label);
+    });
+  });
+
+  /* ── 5. SECTION VISIBILITY TRACKING ── */
+  var sectionSeen = false;
+  var section     = document.getElementById('telegram-hub');
+
+  function checkSectionVisible() {
+    if (sectionSeen) return;
+    var rect = section.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      sectionSeen = true;
+      fireEvent('section_view', 'telegram_hub');
+    }
+  }
+
+  window.addEventListener('scroll', checkSectionVisible, { passive: true });
+  checkSectionVisible();
+
+  /* ── 6. VIDEO ENGAGEMENT TRACKING ── */
+  var videoMilestones = { 25: false, 50: false, 75: false, 100: false };
+
+  video.addEventListener('timeupdate', function () {
+    if (!video.duration) return;
+    var pct = Math.floor((video.currentTime / video.duration) * 100);
+    [25, 50, 75, 100].forEach(function (m) {
+      if (pct >= m && !videoMilestones[m]) {
+        videoMilestones[m] = true;
+        fireEvent('video_progress', 'telegram_demo', { milestone: m });
+      }
+    });
+  });
+
+  /* ── 7. OUTBOUND LINK TRACKING ── */
+  document.querySelectorAll('a[href^="https://t.me"], a[href^="https://shamrock-telegram"]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      fireEvent('outbound_click', el.href);
+    });
+  });
+
+  /* ── 8. IFRAME HEIGHT SIGNAL — tells Wix HTML Component to resize ── */
+  function sendHeight() {
+    var h = document.documentElement.scrollHeight || document.body.scrollHeight;
+    try {
+      window.parent.postMessage(JSON.stringify({
+        type:   'shamrock_iframe_height',
+        height: h
+      }), '*');
+    } catch (e) { /* sandboxed — silent */ }
+  }
+
+  // Send on load, after fonts/images settle, and on resize
+  sendHeight();
+  setTimeout(sendHeight, 400);
+  setTimeout(sendHeight, 1200);
+  window.addEventListener('resize', sendHeight, { passive: true });
+
+  // Also observe DOM mutations (reveal animations change layout height)
+  if (typeof MutationObserver !== 'undefined') {
+    new MutationObserver(sendHeight).observe(document.body, {
+      subtree: true, childList: true, attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  /* ── 9. SECTION READY SIGNAL ── */
+  fireEvent('section_loaded', 'telegram_hub');
+
+})();
+</script>
+
+</body>
+</html>

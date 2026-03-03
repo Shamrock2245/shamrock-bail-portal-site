@@ -45,6 +45,9 @@ $w.onReady(function () {
     setTimeout(() => {
         initTestimonials();
     }, isMobile ? 4000 : 2000);
+
+    // Telegram Hub Section — analytics bridge (non-blocking)
+    initTelegramHubSection();
 });
 
 /**
@@ -475,6 +478,86 @@ function setupOrganizationSchema() {
     ];
 
     wixSeo.setStructuredData(schemas).catch(e => console.error('Schema error:', e));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TELEGRAM HUB SECTION — Analytics Bridge
+// Wires the HTML iframe embed (#telegramHubEmbed) postMessage
+// events to Wix Analytics + GAS backend.
+// Element IDs required in Wix Editor:
+//   #telegramHubEmbed   — HTML Component iframe (paste telegram-hub-section.html)
+//   #telegramHubSection — Section strip (for scroll viewport tracking)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Initialize Telegram Hub section analytics bridge.
+ * Called from $w.onReady() — non-blocking, all errors caught.
+ */
+function initTelegramHubSection() {
+    // Wire HTML embed message listener
+    try {
+        const embed = $w('#telegramHubEmbed');
+        if (embed && embed.onMessage) {
+            embed.onMessage(handleTelegramHubMessage);
+        }
+    } catch (e) {
+        console.log('[TelegramHub] #telegramHubEmbed not found — add HTML Component to page');
+    }
+    // Section scroll-into-view tracking
+    try {
+        $w('#telegramHubSection').onViewportEnter(() => {
+            trackEvent('TelegramHub_SectionVisible', { section: 'telegram_hub' });
+        });
+    } catch (e) { /* element may not exist yet — add Section ID in Wix Editor */ }
+}
+
+/**
+ * Handle postMessage events from the Telegram Hub iframe.
+ * @param {Object} event - Wix HTML Component message event
+ */
+function handleTelegramHubMessage(event) {
+    let data;
+    try {
+        data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+    } catch (e) { return; }
+    if (!data) return;
+
+    // Iframe auto-height: resize the HTML Component to match its content
+    if (data.type === 'shamrock_iframe_height' && data.height) {
+        try {
+            const embed = $w('#telegramHubEmbed');
+            if (embed && embed.height !== undefined) {
+                embed.height = data.height;
+            }
+        } catch (e) { /* element may not be present — non-fatal */ }
+        return;
+    }
+
+    if (data.type !== 'shamrock_analytics') return;
+
+    const evtName  = data.event   || 'unknown';
+    const label    = data.label   || '';
+    const section  = data.section || 'telegram_hub';
+    const extra    = data.extra   || {};
+
+    // Log to Wix Analytics
+    trackEvent('TelegramHub_' + evtName, { label, section });
+
+    // Relay high-value events to GAS (non-blocking, fire-and-forget)
+    const HIGH_VALUE = ['tg_cta_click', 'miniapp_click', 'bail_school_click', 'video_play', 'outbound_click'];
+    if (HIGH_VALUE.includes(evtName)) {
+        import('backend/gasIntegration.jsw')
+            .then(({ logTelegramSectionEvent }) => {
+                logTelegramSectionEvent({
+                    event:     evtName,
+                    label:     label,
+                    extra:     JSON.stringify(extra),
+                    pageUrl:   '',
+                    timestamp: new Date().toISOString()
+                }).catch(() => { /* non-fatal */ });
+            })
+            .catch(() => { /* non-fatal */ });
+    }
 }
 
 /**
