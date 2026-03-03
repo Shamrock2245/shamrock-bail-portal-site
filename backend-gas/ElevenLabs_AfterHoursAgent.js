@@ -60,8 +60,11 @@ var AFTER_HOURS_AGENT_CONFIG = {
         "- If the caller provides information for the defendant, use it."
     ].join('\n'),
 
-    // Voice: Confident, warm, professional American male
+    // Voice: Confident, warm, professional American female
     voiceId: 'cgSgspJ2msm6clMCkdW9', // Jessica - clear, professional
+
+    // Live Agent ID (created 2026-03-03)
+    // agent_2001kjth4na5ftqvdf1pp3gfb1cb
 
     language: 'en',
     maxDurationSeconds: 300, // 5 minutes max per call
@@ -355,7 +358,7 @@ function sendAfterHoursConfirmationSMS_(phone, name) {
 
     var greeting = name ? ('Hi ' + name.split(' ')[0] + ', ') : '';
     var message = greeting + 'This is Shamrock Bail Bonds. We received your call and a licensed bondsman will reach out within 15 minutes. ' +
-        'If urgent, call our office at (239) 555-BAIL. — Shamrock Bail Bonds 🍀';
+        'If urgent, call our office at (239) 332-2245. — Shamrock Bail Bonds 🍀';
 
     try {
         // Use existing Twilio client if available

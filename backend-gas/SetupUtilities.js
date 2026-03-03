@@ -418,3 +418,57 @@ function SETUP_MissingProperties() {
 
   console.log('\n🎯 Done! Run runSystemDiagnostics() to verify green status.');
 }
+
+/**
+ * Sets ElevenLabs integration Script Properties.
+ * Agent: Shamrock After-Hours Intake (created 2026-03-03)
+ * Phone: +1 727-295-2245 (imported into ElevenLabs via Twilio connector)
+ *
+ * Run this once from the Apps Script editor, then it can be removed.
+ */
+function SETUP_ElevenLabsProperties() {
+  var props = PropertiesService.getScriptProperties();
+  var existing = props.getProperties();
+
+  console.log('🔊 Configuring ElevenLabs Integration Properties...');
+  console.log('='.repeat(50));
+
+  // 1. ELEVENLABS_AGENT_ID — The after-hours voice agent
+  var AGENT_ID = 'agent_2001kjth4na5ftqvdf1pp3gfb1cb';
+  props.setProperty('ELEVENLABS_AGENT_ID', AGENT_ID);
+  console.log('✅ Set ELEVENLABS_AGENT_ID = ' + AGENT_ID);
+
+  // 2. Verify ELEVENLABS_API_KEY exists
+  if (existing['ELEVENLABS_API_KEY']) {
+    console.log('✅ ELEVENLABS_API_KEY already set [' + existing['ELEVENLABS_API_KEY'].substring(0, 8) + '...]');
+  } else {
+    console.warn('⚠️ ELEVENLABS_API_KEY is MISSING!');
+    console.log('   Go to https://elevenlabs.io/app/settings/api-keys');
+    console.log('   Copy your API key and set it:');
+    console.log('   PropertiesService.getScriptProperties().setProperty("ELEVENLABS_API_KEY", "sk_...");');
+  }
+
+  // 3. Check ELEVENLABS_WEBHOOK_SECRET
+  if (existing['ELEVENLABS_WEBHOOK_SECRET']) {
+    console.log('✅ ELEVENLABS_WEBHOOK_SECRET already set');
+  } else {
+    console.warn('⚠️ ELEVENLABS_WEBHOOK_SECRET not set yet.');
+    console.log('   After configuring webhooks in ElevenLabs console,');
+    console.log('   copy the signing secret and run:');
+    console.log('   PropertiesService.getScriptProperties().setProperty("ELEVENLABS_WEBHOOK_SECRET", "whsec_...");');
+  }
+
+  console.log('='.repeat(50));
+  console.log('\n🎯 Done! Agent phone: +1 727-295-2245');
+  console.log('   Run runSystemDiagnostics() to verify full system health.');
+}
+
+/**
+ * Sets the ElevenLabs webhook signing secret.
+ * Run once from the Apps Script editor, then remove.
+ */
+function SETUP_ElevenLabsWebhookSecret() {
+  var secret = 'wsec_8f42d182dfe8357ba4b02172d9df26816bff3f1c7a7c8b6051b605cfbcf20770';
+  PropertiesService.getScriptProperties().setProperty('ELEVENLABS_WEBHOOK_SECRET', secret);
+  console.log('✅ Set ELEVENLABS_WEBHOOK_SECRET = [' + secret.substring(0, 12) + '...]');
+}
