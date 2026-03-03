@@ -24,6 +24,8 @@ function handleSOC2Webhook(e) {
                 return handleElevenLabsWebhookSOC2(e);
             case "elevenlabs_tool":
                 return handleElevenLabsToolCall(e);
+            case "elevenlabs_init":
+                return handleElevenLabsConversationInit(e);
             case "slack":
             case "Slack":
                 if (typeof handleSlackWebhookSOC2 === 'function') {

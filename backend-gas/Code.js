@@ -135,6 +135,13 @@ const ERROR_CODES = {
 function doGet(e) {
   if (!e) e = { parameter: {} };
 
+  // ElevenLabs Conversation Init — handle via GET to avoid GAS POST redirect issues
+  if (e.parameter && e.parameter.source === 'elevenlabs_init') {
+    if (typeof handleElevenLabsConversationInit === 'function') {
+      return handleElevenLabsConversationInit(e);
+    }
+  }
+
   // 1. Check for JSON mode explicitly
   if (e.parameter.format === 'json') {
     if (e.parameter.mode === 'scrape') {
@@ -371,15 +378,16 @@ function doPost(e) {
   }
 
   try {
-    if (!e || !e.postData) throw new Error("No POST data received");
-
-    // 2. Route Webhooks (SOC II Verified)
-    // Checks e.pathInfo (e.g. /signnow, /twilio) OR e.parameter.source
-    if (e.pathInfo || (e.parameter && e.parameter.source)) {
+    // 2. Route Webhooks FIRST (SOC II Verified)
+    // Must happen BEFORE postData check — some webhooks (e.g. ElevenLabs init)
+    // may send params as query params without a JSON body.
+    if (e && (e.pathInfo || (e.parameter && e.parameter.source))) {
       if (typeof handleSOC2Webhook === 'function') {
         return handleSOC2Webhook(e);
       }
     }
+
+    if (!e || !e.postData) throw new Error("No POST data received");
 
     // Fail Fast: Parse JSON
     let data;
@@ -1211,11 +1219,11 @@ function handleAction(data) {
   if (action === 'portalClientMessage') {
     try {
       var msgData = data || {};
-      var caseId     = msgData.caseId     || 'unknown';
+      var caseId = msgData.caseId || 'unknown';
       var senderName = msgData.senderName || 'Indemnitor';
-      var msgText    = msgData.message    || '';
-      var msgSource  = msgData.source     || 'portal';
-      var msgTime    = msgData.timestamp  || new Date().toISOString();
+      var msgText = msgData.message || '';
+      var msgSource = msgData.source || 'portal';
+      var msgTime = msgData.timestamp || new Date().toISOString();
 
       // Log to Slack #client-messages channel
       if (typeof NotificationService !== 'undefined' && NotificationService.sendSlack) {
@@ -1234,9 +1242,9 @@ function handleAction(data) {
           PropertiesService.getScriptProperties().getProperty('INTAKE_SHEET_ID')
         );
         var logSheet = ss.getSheetByName('ClientMessages') ||
-                       ss.insertSheet('ClientMessages');
+          ss.insertSheet('ClientMessages');
         if (logSheet.getLastRow() === 0) {
-          logSheet.appendRow(['Timestamp','CaseId','SenderName','SenderEmail','Source','Message']);
+          logSheet.appendRow(['Timestamp', 'CaseId', 'SenderName', 'SenderEmail', 'Source', 'Message']);
         }
         logSheet.appendRow([msgTime, caseId, senderName, msgData.senderEmail || '', msgSource, msgText]);
       } catch (sheetErr) {

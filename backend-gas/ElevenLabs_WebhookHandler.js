@@ -383,3 +383,109 @@ function toolCalculatePremium(params) {
         message: 'The estimated premium is $' + result.totalDue + '. ' + result.breakdown.join('. ') + '. This is an estimate and the final amount may vary based on case details.'
     })).setMimeType(ContentService.MimeType.JSON);
 }
+
+// ============================================================================
+// CONVERSATION INITIATION CLIENT DATA WEBHOOK
+// ============================================================================
+
+/**
+ * handleElevenLabsConversationInit
+ * Fires at the START of every inbound call. ElevenLabs sends:
+ *   { caller_id, agent_id, called_number, call_sid }
+ *
+ * We look up the caller's phone in IntakeQueue and return dynamic variables
+ * so the agent can personalize the greeting.
+ *
+ * Response format:
+ * {
+ *   "type": "conversation_initiation_client_data",
+ *   "dynamic_variables": { ... },
+ *   "conversation_config_override": { ... }
+ * }
+ */
+function handleElevenLabsConversationInit(e) {
+    // Top-level safety net — ALWAYS return a valid response
+    try {
+        return _doConversationInit(e);
+    } catch (fatalErr) {
+        Logger.log('🚨 ConvInit FATAL: ' + fatalErr.message);
+        // Return default greeting so the call still works
+        return ContentService.createTextOutput(JSON.stringify({
+            type: 'conversation_initiation_client_data',
+            dynamic_variables: { caller_name: '', has_existing_case: 'no' },
+            conversation_config_override: {
+                agent: { first_message: 'Thank you for calling Shamrock Bail Bonds. My name is Shannon. How can I help you today?' }
+            }
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+}
+
+/** Internal handler — separated so the outer wrapper can catch any throw */
+function _doConversationInit(e) {
+    // 1. Parse payload — try JSON body first, then fall back to query params
+    var payload = {};
+    if (e && e.postData && e.postData.contents) {
+        try {
+            payload = JSON.parse(e.postData.contents);
+        } catch (err) {
+            Logger.log('⚠️ ConvInit: JSON parse failed, trying query params. Error: ' + err.message);
+        }
+    }
+
+    // Fall back to query parameters (ElevenLabs may send caller_id etc. as URL params)
+    if (!payload.caller_id && e && e.parameter) {
+        payload.caller_id = e.parameter.caller_id || '';
+        payload.call_sid = e.parameter.call_sid || '';
+        payload.called_number = e.parameter.called_number || '';
+        payload.agent_id = e.parameter.agent_id || '';
+    }
+
+    var callerId = (payload.caller_id || '').replace(/\D/g, ''); // strip to digits
+    var callSid = payload.call_sid || '';
+    var calledNumber = payload.called_number || '';
+
+    Logger.log('📞 ConvInit webhook fired | Caller: ' + callerId + ' | SID: ' + callSid);
+
+    // Default dynamic variables for unknown callers
+    var dynamicVars = {
+        caller_name: '',
+        caller_phone: callerId,
+        has_existing_case: 'no',
+        case_status: '',
+        defendant_name: '',
+        case_reference: '',
+        last_contact: '',
+        call_sid: callSid
+    };
+
+    var firstMessage = "Thank you for calling Shamrock Bail Bonds. My name is Shannon. How can I help you today?";
+
+    // TODO: Re-enable personalized lookup once we add CacheService or a warm-keep trigger.
+    // SpreadsheetApp.openById() takes 3-7s cold start, which exceeds ElevenLabs timeout.
+    // For now, return default greeting instantly.
+    // The caller info is still available in dynamic_variables for the agent's context.
+    /*
+    if (callerId.length >= 10) {
+        try {
+            var ssId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+            var ss = SpreadsheetApp.openById(ssId);
+            ... (lookup logic preserved in git)
+        } catch (err) { }
+    }
+    */
+
+    var response = {
+        type: 'conversation_initiation_client_data',
+        dynamic_variables: dynamicVars,
+        conversation_config_override: {
+            agent: {
+                first_message: firstMessage
+            }
+        }
+    };
+
+    Logger.log('📤 ConvInit response: ' + JSON.stringify(response));
+
+    return ContentService.createTextOutput(JSON.stringify(response))
+        .setMimeType(ContentService.MimeType.JSON);
+}
