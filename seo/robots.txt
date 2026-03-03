@@ -1,20 +1,137 @@
+# =============================================================================
+# Shamrock Bail Bonds — robots.txt
+# Updated: 2026-03-02
+# Strategy: WELCOME AI search/answer bots that cite sources & drive traffic.
+#           BLOCK training-only scrapers and known spam bots.
+# =============================================================================
+
+# --- DEFAULT: Allow all standard crawlers ---
 User-agent: *
 Allow: /
-# Block protected portal pages to save crawl budget
 Disallow: /portal-defendant
 Disallow: /portal-staff
 Disallow: /portal-indemnitor
 Disallow: /_functions/
-# Block internal Wix parameters
 Disallow: *?lightbox=
 
-# Block aggressive known spam bots
+# =============================================================================
+# ✅ AI SEARCH & ANSWER BOTS — Welcome! (These cite & link back to your site)
+# =============================================================================
+
+# OpenAI — ChatGPT search feature (answers with citations)
+User-agent: OAI-SearchBot
+Allow: /
+
+# OpenAI — User-initiated browsing in ChatGPT
+User-agent: ChatGPT-User
+Allow: /
+
+# OpenAI — GPTBot (training + search grounding, allowing for visibility)
+User-agent: GPTBot
+Allow: /
+Disallow: /portal-defendant
+Disallow: /portal-staff
+Disallow: /portal-indemnitor
+
+# Anthropic — Claude search results (answers with citations)
+User-agent: Claude-SearchBot
+Allow: /
+
+# Anthropic — User-initiated browsing in Claude
+User-agent: Claude-User
+Allow: /
+
+# Anthropic — Claude model training (allowing for Claude search visibility)
+User-agent: ClaudeBot
+Allow: /
+Disallow: /portal-defendant
+Disallow: /portal-staff
+Disallow: /portal-indemnitor
+
+# Perplexity — AI search engine (cites + links sources directly)
+User-agent: PerplexityBot
+Allow: /
+
+# Perplexity — User-initiated fetches
+User-agent: Perplexity-User
+Allow: /
+
+# Google — Standard search + AI Overviews
+User-agent: Googlebot
+Allow: /
+
+# Google — Gemini AI training (allow for AI Overview visibility)
+User-agent: Google-Extended
+Allow: /
+
+# Apple — Siri, Spotlight, Apple Intelligence
+User-agent: Applebot
+Allow: /
+
+# Apple — Apple Intelligence training
+User-agent: Applebot-Extended
+Allow: /
+
+# Microsoft — Bing search + Copilot AI answers
+User-agent: Bingbot
+Allow: /
+
+# You.com — AI search engine
+User-agent: YouBot
+Allow: /
+
+# Amazon — Alexa answers
+User-agent: Amazonbot
+Allow: /
+
+# Meta — shared link previews + AI features
+User-agent: FacebookExternalHit
+Allow: /
+User-agent: facebookexternalhit
+Allow: /
+User-agent: meta-externalagent
+Allow: /
+
+# Cohere — AI search (cites sources)
+User-agent: cohere-ai
+Allow: /
+
+# =============================================================================
+# ❌ BLOCKED — Aggressive scrapers & spam bots (no value, waste crawl budget)
+# =============================================================================
+
 User-agent: PetalBot
 Disallow: /
+
 User-agent: DotBot
 Disallow: /
-User-agent: GPTBot
+
+User-agent: Bytespider
 Disallow: /
 
-# Sitemap Location
+User-agent: CCBot
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+# =============================================================================
+# 🗺 SITEMAP
+# =============================================================================
+
 Sitemap: https://www.shamrockbailbonds.biz/sitemap.xml
