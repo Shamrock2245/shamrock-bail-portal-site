@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
 
   <!-- ═══════════════════════════════════════════════════════════════
        SEO META — Wix HTML iframe embeds are crawled; these tags
        reinforce the page-level schema for the Telegram section.
   ═══════════════════════════════════════════════════════════════ -->
-  <title>Shamrock Bail Bonds on Telegram | 24/7 Bail Bot, Bail School & Resources</title>
+  <title>Shamrock Bail Bonds on Telegram | 24/7 Bail Bot, Bail School &amp; Resources</title>
   <meta name="description"
         content="Connect with Shamrock Bail Bonds on Telegram. Start your bail bond in minutes with our AI-powered bot @ShamrockBail_bot, access free bail resources, and enroll in Shamrock Bail School — Florida's first Telegram-native bail education channel." />
   <meta name="keywords"
@@ -17,12 +17,12 @@
   <link rel="canonical" href="https://www.shamrockbailbonds.biz/#telegram-hub" />
 
   <!-- Open Graph -->
-  <meta property="og:type"        content="website" />
-  <meta property="og:title"       content="Shamrock Bail Bonds — Telegram Hub" />
-  <meta property="og:description" content="Start your bail bond in minutes. 24/7 AI-powered Telegram bot, free bail resources, and Bail School enrollment." />
-  <meta property="og:url"         content="https://www.shamrockbailbonds.biz/#telegram-hub" />
-  <meta property="og:site_name"   content="Shamrock Bail Bonds" />
-  <meta property="og:image"       content="https://static.wixstatic.com/media/7dd020_d8b195cd1e654360aabdb286162fc8ce.svg" />
+  <meta property="og:type"         content="website" />
+  <meta property="og:title"        content="Shamrock Bail Bonds — Telegram Hub" />
+  <meta property="og:description"  content="Start your bail bond in minutes. 24/7 AI-powered Telegram bot, free bail resources, and Bail School enrollment." />
+  <meta property="og:url"          content="https://www.shamrockbailbonds.biz/#telegram-hub" />
+  <meta property="og:site_name"    content="Shamrock Bail Bonds" />
+  <meta property="og:image"        content="https://static.wixstatic.com/media/7dd020_d8b195cd1e654360aabdb286162fc8ce.svg" />
   <meta property="og:image:width"  content="1200" />
   <meta property="og:image:height" content="630" />
 
@@ -35,18 +35,13 @@
     "url": "https://www.shamrockbailbonds.biz",
     "telephone": "+12393322245",
     "description": "24/7 licensed bail bond services across all 67 Florida counties. AI-powered Telegram bot for instant bail intake, document signing, and case status.",
-    "areaServed": {
-      "@type": "State",
-      "name": "Florida"
-    },
-    "sameAs": [
-      "https://t.me/ShamrockBail_bot"
-    ],
+    "areaServed": { "@type": "State", "name": "Florida" },
+    "sameAs": ["https://t.me/ShamrockBail_bot"],
     "contactPoint": {
       "@type": "ContactPoint",
       "telephone": "+12393322245",
       "contactType": "customer service",
-      "availableLanguage": ["English", "Spanish"],
+      "availableLanguage": ["English","Spanish"],
       "hoursAvailable": {
         "@type": "OpeningHoursSpecification",
         "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
@@ -75,41 +70,36 @@
       --navy-deep:   #122840;
       --navy-mid:    #1e4570;
       --blue:        #0066CC;
-      --blue-hover:  #0052A3;
       --gold:        #FDB913;
       --gold-hover:  #E5A811;
       --green:       #28A745;
-      --green-light: #E8F4E8;
       --tg-blue:     #229ED9;
       --tg-dark:     #1a8bbf;
       --white:       #FFFFFF;
-      --gray-light:  #F8F9FA;
-      --gray-border: #E9ECEF;
-      --text-dark:   #333333;
-      --text-mid:    #6C757D;
       --radius-sm:   8px;
       --radius-md:   12px;
       --radius-lg:   20px;
-      --shadow-sm:   0 2px 8px rgba(0,0,0,0.08);
       --shadow-md:   0 4px 20px rgba(0,0,0,0.12);
-      --shadow-lg:   0 8px 40px rgba(0,0,0,0.18);
       --transition:  all 0.3s ease;
     }
 
     /* ═══════════════════════════════════════════════════════════════
-       RESET & BASE
+       RESET & BASE — MOBILE FIRST
+       Default styles = phone layout. Scale up with min-width queries.
     ═══════════════════════════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     html { scroll-behavior: smooth; }
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 16px;
-      color: var(--text-dark);
+      color: #333;
       background: transparent;
       -webkit-font-smoothing: antialiased;
+      /* CRITICAL: prevent horizontal scroll inside iframe */
       overflow-x: hidden;
+      width: 100%;
+      max-width: 100%;
     }
 
     /* ═══════════════════════════════════════════════════════════════
@@ -117,19 +107,18 @@
     ═══════════════════════════════════════════════════════════════ */
     .tg-section {
       background: linear-gradient(160deg, var(--navy-deep) 0%, var(--navy) 50%, var(--navy-mid) 100%);
-      padding: 72px 24px 80px;
+      /* MOBILE: tight padding */
+      padding: 40px 16px 52px;
       position: relative;
       overflow: hidden;
+      width: 100%;
     }
 
-    /* Subtle shamrock-green glow accent */
     .tg-section::before {
       content: '';
       position: absolute;
-      top: -120px;
-      right: -120px;
-      width: 480px;
-      height: 480px;
+      top: -120px; right: -120px;
+      width: 480px; height: 480px;
       background: radial-gradient(circle, rgba(40,167,69,0.12) 0%, transparent 70%);
       pointer-events: none;
     }
@@ -137,27 +126,26 @@
     .tg-section::after {
       content: '';
       position: absolute;
-      bottom: -80px;
-      left: -80px;
-      width: 360px;
-      height: 360px;
+      bottom: -80px; left: -80px;
+      width: 360px; height: 360px;
       background: radial-gradient(circle, rgba(34,158,217,0.10) 0%, transparent 70%);
       pointer-events: none;
     }
 
     .tg-container {
-      max-width: 1160px;
+      width: 100%;
+      max-width: 100%;
       margin: 0 auto;
       position: relative;
       z-index: 1;
     }
 
     /* ═══════════════════════════════════════════════════════════════
-       SECTION HEADER
+       SECTION HEADER — mobile first
     ═══════════════════════════════════════════════════════════════ */
     .tg-header {
       text-align: center;
-      margin-bottom: 52px;
+      margin-bottom: 28px;
     }
 
     .tg-eyebrow {
@@ -168,113 +156,89 @@
       border: 1px solid rgba(34,158,217,0.35);
       color: #5bc8f5;
       font-family: 'Poppins', sans-serif;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
-      letter-spacing: 1.5px;
+      letter-spacing: 1.2px;
       text-transform: uppercase;
-      padding: 6px 16px;
+      padding: 5px 14px;
       border-radius: 20px;
-      margin-bottom: 20px;
-    }
-
-    .tg-eyebrow i { font-size: 14px; }
-
-    .tg-headline {
-      font-family: 'Poppins', sans-serif;
-      font-size: clamp(28px, 5vw, 44px);
-      font-weight: 800;
-      color: var(--white);
-      line-height: 1.15;
       margin-bottom: 16px;
     }
 
-    .tg-headline .accent {
-      color: var(--gold);
+    .tg-eyebrow i { font-size: 13px; }
+
+    .tg-headline {
+      font-family: 'Poppins', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1.15;
+      margin-bottom: 14px;
     }
 
+    .tg-headline .accent { color: var(--gold); }
+
     .tg-subhead {
-      font-size: clamp(15px, 2vw, 18px);
+      font-size: 15px;
       color: rgba(255,255,255,0.75);
-      max-width: 640px;
-      margin: 0 auto;
-      line-height: 1.65;
+      line-height: 1.6;
     }
 
     /* ═══════════════════════════════════════════════════════════════
-       HERO CTA ROW — Primary Telegram actions
+       HERO CTA ROW — mobile: full-width stacked buttons
     ═══════════════════════════════════════════════════════════════ */
     .tg-cta-row {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 16px;
-      margin-bottom: 60px;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 36px;
     }
 
     .tg-btn {
-      display: inline-flex;
+      display: flex;
       align-items: center;
+      justify-content: center;
       gap: 10px;
       font-family: 'Poppins', sans-serif;
       font-size: 15px;
       font-weight: 600;
-      padding: 14px 28px;
+      padding: 15px 20px;
       border-radius: var(--radius-sm);
       text-decoration: none;
       border: none;
       cursor: pointer;
       transition: var(--transition);
-      white-space: nowrap;
+      /* WCAG 2.5.5: minimum 44px touch target */
       min-height: 52px;
+      width: 100%;
     }
 
     .tg-btn i { font-size: 20px; flex-shrink: 0; }
 
-    /* Telegram Blue primary */
     .tg-btn--primary {
       background: var(--tg-blue);
       color: var(--white);
       box-shadow: 0 4px 20px rgba(34,158,217,0.40);
     }
-    .tg-btn--primary:hover {
-      background: var(--tg-dark);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 28px rgba(34,158,217,0.50);
-    }
-
-    /* Gold secondary */
     .tg-btn--gold {
       background: var(--gold);
       color: var(--navy);
       box-shadow: 0 4px 20px rgba(253,185,19,0.35);
     }
-    .tg-btn--gold:hover {
-      background: var(--gold-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 28px rgba(253,185,19,0.45);
-    }
-
-    /* Ghost outline */
     .tg-btn--ghost {
       background: transparent;
       color: var(--white);
       border: 2px solid rgba(255,255,255,0.35);
     }
-    .tg-btn--ghost:hover {
-      background: rgba(255,255,255,0.10);
-      border-color: rgba(255,255,255,0.65);
-      transform: translateY(-2px);
-    }
 
     /* ═══════════════════════════════════════════════════════════════
-       MAIN GRID — Video + Feature Cards
+       MAIN GRID — mobile: single column, video first
     ═══════════════════════════════════════════════════════════════ */
     .tg-main-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 32px;
-      margin-bottom: 52px;
-      align-items: start;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-bottom: 36px;
     }
 
     /* ── VIDEO PANEL ── */
@@ -290,9 +254,9 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 16px 20px 12px;
+      padding: 12px 16px 10px;
       font-family: 'Poppins', sans-serif;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       color: rgba(255,255,255,0.70);
       letter-spacing: 0.5px;
@@ -300,8 +264,7 @@
     }
 
     .tg-video-label .live-dot {
-      width: 8px;
-      height: 8px;
+      width: 8px; height: 8px;
       background: var(--green);
       border-radius: 50%;
       animation: pulse-dot 2s infinite;
@@ -322,11 +285,10 @@
     .tg-video-wrap video {
       width: 100%;
       display: block;
-      max-height: 420px;
+      max-height: 260px;
       object-fit: cover;
     }
 
-    /* Custom play overlay */
     .tg-video-overlay {
       position: absolute;
       inset: 0;
@@ -341,8 +303,7 @@
     .tg-video-overlay.hidden { display: none; }
 
     .tg-play-btn {
-      width: 72px;
-      height: 72px;
+      width: 60px; height: 60px;
       background: rgba(34,158,217,0.90);
       border-radius: 50%;
       display: flex;
@@ -352,217 +313,218 @@
       box-shadow: 0 4px 24px rgba(34,158,217,0.50);
     }
 
-    .tg-play-btn i {
-      font-size: 32px;
-      color: var(--white);
-      margin-left: 4px; /* optical center for play icon */
-    }
-
-    .tg-video-overlay:hover .tg-play-btn {
-      transform: scale(1.10);
-      background: var(--tg-blue);
-    }
+    .tg-play-btn i { font-size: 28px; color: var(--white); margin-left: 3px; }
 
     .tg-video-caption {
-      padding: 14px 20px;
-      font-size: 13px;
+      padding: 10px 16px;
+      font-size: 12px;
       color: rgba(255,255,255,0.55);
       text-align: center;
       border-top: 1px solid rgba(255,255,255,0.08);
     }
 
-    /* ── FEATURE CARDS COLUMN ── */
+    /* ── FEATURE CARDS — mobile: single column ── */
     .tg-features-col {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 10px;
     }
 
     .tg-feature-card {
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: var(--radius-md);
-      padding: 20px 22px;
+      padding: 16px 14px;
       display: flex;
       align-items: flex-start;
-      gap: 16px;
+      gap: 14px;
       transition: var(--transition);
-      cursor: default;
-    }
-
-    .tg-feature-card:hover {
-      background: rgba(255,255,255,0.09);
-      border-color: rgba(34,158,217,0.35);
-      transform: translateX(4px);
     }
 
     .tg-feature-icon {
-      width: 44px;
-      height: 44px;
+      width: 40px; height: 40px;
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      font-size: 22px;
+      font-size: 20px;
     }
 
-    .tg-feature-icon--tg   { background: rgba(34,158,217,0.20); color: var(--tg-blue); }
-    .tg-feature-icon--gold { background: rgba(253,185,19,0.20); color: var(--gold); }
-    .tg-feature-icon--green{ background: rgba(40,167,69,0.20);  color: #4cd97b; }
-    .tg-feature-icon--blue { background: rgba(0,102,204,0.25);  color: #5ba8ff; }
-    .tg-feature-icon--red  { background: rgba(220,53,69,0.20);  color: #ff7b87; }
+    .tg-feature-icon--tg    { background: rgba(34,158,217,0.20); color: var(--tg-blue); }
+    .tg-feature-icon--gold  { background: rgba(253,185,19,0.20);  color: var(--gold); }
+    .tg-feature-icon--green { background: rgba(40,167,69,0.20);   color: #4cd97b; }
+    .tg-feature-icon--blue  { background: rgba(0,102,204,0.25);   color: #5ba8ff; }
+    .tg-feature-icon--red   { background: rgba(220,53,69,0.20);   color: #ff7b87; }
 
     .tg-feature-text h4 {
       font-family: 'Poppins', sans-serif;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--white);
-      margin-bottom: 4px;
+      margin-bottom: 3px;
       line-height: 1.3;
     }
 
     .tg-feature-text p {
-      font-size: 13px;
+      font-size: 12px;
       color: rgba(255,255,255,0.60);
-      line-height: 1.55;
+      line-height: 1.5;
     }
 
     /* ═══════════════════════════════════════════════════════════════
-       MINI APPS STRIP
+       MINI APPS STRIP — mobile: 2-col grid
     ═══════════════════════════════════════════════════════════════ */
-    .tg-apps-strip {
-      margin-bottom: 52px;
-    }
+    .tg-apps-strip { margin-bottom: 36px; }
 
     .tg-strip-label {
       font-family: 'Poppins', sans-serif;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
-      letter-spacing: 1.8px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       color: rgba(255,255,255,0.40);
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 14px;
     }
 
     .tg-apps-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    /* Show all 5 on mobile by making last one span full width */
+    .tg-app-tile:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
     }
 
     .tg-app-tile {
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.09);
       border-radius: var(--radius-md);
-      padding: 18px 12px 16px;
+      /* WCAG: min 44px touch target */
+      padding: 16px 10px 14px;
       text-align: center;
       text-decoration: none;
       transition: var(--transition);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
+      min-height: 80px;
     }
 
-    .tg-app-tile:hover {
-      background: rgba(34,158,217,0.12);
-      border-color: rgba(34,158,217,0.40);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(34,158,217,0.20);
-    }
-
-    .tg-app-tile i {
-      font-size: 26px;
-      color: var(--tg-blue);
-    }
+    .tg-app-tile i { font-size: 24px; color: var(--tg-blue); }
 
     .tg-app-tile span {
       font-family: 'Poppins', sans-serif;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--white);
       line-height: 1.3;
     }
 
     .tg-app-tile .tg-badge {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 600;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 10px;
       letter-spacing: 0.5px;
     }
 
-    .tg-badge--live  { background: rgba(40,167,69,0.25);  color: #4cd97b; border: 1px solid rgba(40,167,69,0.35); }
-    .tg-badge--new   { background: rgba(253,185,19,0.20); color: var(--gold); border: 1px solid rgba(253,185,19,0.35); }
+    .tg-badge--live  { background: rgba(40,167,69,0.25);   color: #4cd97b; border: 1px solid rgba(40,167,69,0.35); }
+    .tg-badge--new   { background: rgba(253,185,19,0.20);  color: var(--gold); border: 1px solid rgba(253,185,19,0.35); }
     .tg-badge--soon  { background: rgba(108,117,125,0.25); color: rgba(255,255,255,0.50); border: 1px solid rgba(108,117,125,0.30); }
 
     /* ═══════════════════════════════════════════════════════════════
-       RESOURCES GRID — Bail Bond Education
+       STATS ROW — mobile: 2-col
     ═══════════════════════════════════════════════════════════════ */
-    .tg-resources {
-      margin-bottom: 52px;
+    .tg-stats-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 36px;
     }
+
+    .tg-stat {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-md);
+      padding: 18px 12px;
+      text-align: center;
+    }
+
+    .tg-stat .stat-num {
+      font-family: 'Poppins', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+
+    .tg-stat .stat-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.4;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESOURCES GRID — mobile: 1-col
+    ═══════════════════════════════════════════════════════════════ */
+    .tg-resources { margin-bottom: 36px; }
 
     .tg-section-title {
       font-family: 'Poppins', sans-serif;
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
       color: var(--white);
       text-align: center;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .tg-section-sub {
-      font-size: 14px;
+      font-size: 13px;
       color: rgba(255,255,255,0.55);
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 20px;
     }
 
     .tg-resources-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
+      grid-template-columns: 1fr;
+      gap: 10px;
     }
 
     .tg-resource-card {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.09);
       border-radius: var(--radius-md);
-      padding: 22px 20px;
+      padding: 18px 16px;
       text-decoration: none;
       transition: var(--transition);
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      /* WCAG: min tap target */
+      min-height: 44px;
     }
 
-    .tg-resource-card:hover {
-      background: rgba(255,255,255,0.08);
-      border-color: rgba(253,185,19,0.35);
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .tg-resource-card .rc-icon {
-      font-size: 28px;
-      color: var(--gold);
-    }
+    .tg-resource-card .rc-icon { font-size: 24px; color: var(--gold); }
 
     .tg-resource-card h5 {
       font-family: 'Poppins', sans-serif;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--white);
       line-height: 1.35;
     }
 
     .tg-resource-card p {
-      font-size: 13px;
+      font-size: 12px;
       color: rgba(255,255,255,0.55);
-      line-height: 1.55;
+      line-height: 1.5;
       flex: 1;
     }
 
@@ -575,62 +537,52 @@
       gap: 4px;
     }
 
-    .tg-resource-card .rc-link i { font-size: 14px; }
+    .tg-resource-card .rc-link i { font-size: 13px; }
 
     /* ═══════════════════════════════════════════════════════════════
-       BAIL SCHOOL BANNER
+       BAIL SCHOOL BANNER — mobile: stacked
     ═══════════════════════════════════════════════════════════════ */
     .tg-school-banner {
       background: linear-gradient(135deg, rgba(253,185,19,0.12) 0%, rgba(40,167,69,0.10) 100%);
       border: 1px solid rgba(253,185,19,0.30);
       border-radius: var(--radius-lg);
-      padding: 36px 40px;
+      padding: 24px 18px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 32px;
-      margin-bottom: 52px;
+      gap: 16px;
+      margin-bottom: 36px;
+      text-align: center;
       position: relative;
       overflow: hidden;
     }
 
-    .tg-school-banner::before {
-      content: '🍀';
-      position: absolute;
-      right: 40px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 80px;
-      opacity: 0.08;
-      pointer-events: none;
-    }
-
     .tg-school-icon {
-      width: 72px;
-      height: 72px;
+      width: 60px; height: 60px;
       background: rgba(253,185,19,0.20);
-      border-radius: 16px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      font-size: 36px;
+      font-size: 30px;
       color: var(--gold);
     }
 
-    .tg-school-content { flex: 1; }
+    .tg-school-content { width: 100%; }
 
-    .tg-school-content .school-eyebrow {
-      font-size: 11px;
+    .school-eyebrow {
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 1.5px;
       text-transform: uppercase;
       color: var(--gold);
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
 
     .tg-school-content h3 {
       font-family: 'Poppins', sans-serif;
-      font-size: clamp(18px, 3vw, 24px);
+      font-size: 20px;
       font-weight: 800;
       color: var(--white);
       margin-bottom: 8px;
@@ -638,83 +590,42 @@
     }
 
     .tg-school-content p {
-      font-size: 14px;
+      font-size: 13px;
       color: rgba(255,255,255,0.65);
       line-height: 1.6;
-      max-width: 520px;
     }
 
     .tg-school-actions {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      flex-shrink: 0;
+      width: 100%;
     }
 
     /* ═══════════════════════════════════════════════════════════════
-       STATS ROW
-    ═══════════════════════════════════════════════════════════════ */
-    .tg-stats-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-bottom: 52px;
-    }
-
-    .tg-stat {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--radius-md);
-      padding: 22px 16px;
-      text-align: center;
-      transition: var(--transition);
-    }
-
-    .tg-stat:hover {
-      background: rgba(255,255,255,0.07);
-      border-color: rgba(34,158,217,0.25);
-    }
-
-    .tg-stat .stat-num {
-      font-family: 'Poppins', sans-serif;
-      font-size: 32px;
-      font-weight: 800;
-      color: var(--gold);
-      line-height: 1;
-      margin-bottom: 6px;
-    }
-
-    .tg-stat .stat-label {
-      font-size: 12px;
-      color: rgba(255,255,255,0.55);
-      line-height: 1.4;
-    }
-
-    /* ═══════════════════════════════════════════════════════════════
-       BOTTOM CTA BAR
+       BOTTOM CTA BAR — mobile: stacked
     ═══════════════════════════════════════════════════════════════ */
     .tg-bottom-cta {
       background: rgba(34,158,217,0.10);
       border: 1px solid rgba(34,158,217,0.25);
       border-radius: var(--radius-lg);
-      padding: 32px 40px;
+      padding: 22px 18px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-      flex-wrap: wrap;
+      gap: 16px;
+      text-align: center;
     }
 
     .tg-bottom-cta .cta-left {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 16px;
+      gap: 10px;
     }
 
-    /* Phosphor Telegram icon from Wix media */
     .tg-logo-img {
-      width: 52px;
-      height: 52px;
+      width: 44px; height: 44px;
       filter: brightness(0) invert(1);
       opacity: 0.90;
       flex-shrink: 0;
@@ -722,320 +633,65 @@
 
     .tg-bottom-cta h4 {
       font-family: 'Poppins', sans-serif;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--white);
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .tg-bottom-cta p {
-      font-size: 14px;
+      font-size: 13px;
       color: rgba(255,255,255,0.60);
     }
 
     .tg-bottom-cta .cta-right {
       display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
     }
 
     /* ═══════════════════════════════════════════════════════════════
-       TRUST BADGES
+       TRUST BADGES — mobile: 2-col wrap
     ═══════════════════════════════════════════════════════════════ */
     .tg-trust-row {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 16px;
-      margin-top: 40px;
-      padding-top: 32px;
+      gap: 10px;
+      margin-top: 28px;
+      padding-top: 24px;
       border-top: 1px solid rgba(255,255,255,0.08);
     }
 
     .tg-trust-badge {
       display: flex;
       align-items: center;
-      gap: 7px;
-      font-size: 13px;
+      gap: 6px;
+      font-size: 11px;
       color: rgba(255,255,255,0.60);
     }
 
-    .tg-trust-badge i {
-      font-size: 16px;
-      color: var(--green);
-    }
-
-    /* ═══════════════════════════════════════════════════════════════
-       RESPONSIVE — 5-TIER ADAPTIVE SYSTEM
-       xs  : < 480px   (small phones — iPhone SE, Galaxy A)
-       sm  : 480–767px (standard phones — iPhone 14, Pixel)
-       md  : 768–1023px (tablets — iPad, Surface)
-       lg  : 1024–1279px (small laptops, iPad Pro landscape)
-       xl  : 1280px+  (desktop, wide screens)
-
-       PRINCIPLES:
-       - Fluid type via clamp() — no hard font-size jumps
-       - Touch targets minimum 44px (WCAG 2.5.5)
-       - Video: autoplay muted on mobile, tap-to-unmute
-       - Iframe height signal sent via postMessage on resize
-       - Hover effects disabled on touch devices
-       - Grid reflows: 2-col → 1-col at tablet, stacked at phone
-    ═══════════════════════════════════════════════════════════════ */
-
-    /* ── WIDE SCREENS (1400px+) — expand container, larger spacing ── */
-    @media (min-width: 1400px) {
-      .tg-container { max-width: 1320px; }
-      .tg-section { padding: 88px 40px 96px; }
-      .tg-main-grid { gap: 48px; }
-      .tg-resources-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
-      .tg-apps-grid { gap: 16px; }
-      .tg-stats-row { gap: 20px; }
-    }
-
-    /* ── LARGE DESKTOP (1280–1399px) — default, already optimized ── */
-
-    /* ── SMALL LAPTOP / LARGE TABLET LANDSCAPE (1024–1279px) ── */
-    @media (max-width: 1279px) and (min-width: 1024px) {
-      .tg-container { max-width: 960px; }
-      .tg-apps-grid { grid-template-columns: repeat(5, 1fr); }
-      .tg-resources-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-
-    /* ── TABLET PORTRAIT + LANDSCAPE (768–1023px) ── */
-    @media (max-width: 1023px) and (min-width: 768px) {
-      .tg-section { padding: 60px 28px 72px; }
-      .tg-container { max-width: 100%; }
-
-      /* Stack video above features */
-      .tg-main-grid {
-        grid-template-columns: 1fr;
-        gap: 28px;
-      }
-
-      /* Feature cards go 2-col on tablet */
-      .tg-features-col {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
-      }
-
-      .tg-apps-grid { grid-template-columns: repeat(5, 1fr); gap: 10px; }
-      .tg-resources-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
-      .tg-stats-row { grid-template-columns: repeat(4, 1fr); gap: 12px; }
-
-      .tg-school-banner {
-        padding: 28px 28px;
-        gap: 24px;
-      }
-      .tg-school-banner::before { display: none; }
-
-      .tg-bottom-cta { padding: 28px 28px; }
-
-      /* Larger touch targets for tablet */
-      .tg-btn { min-height: 52px; padding: 14px 24px; }
-      .tg-app-tile { padding: 20px 10px 18px; }
-    }
-
-    /* ── STANDARD PHONE (480–767px) ── */
-    @media (max-width: 767px) and (min-width: 480px) {
-      .tg-section { padding: 52px 20px 64px; }
-
-      .tg-main-grid {
-        grid-template-columns: 1fr;
-        gap: 24px;
-      }
-
-      /* Feature cards: single column on phone */
-      .tg-features-col { display: flex; flex-direction: column; gap: 12px; }
-
-      .tg-apps-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-      .tg-resources-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-      .tg-stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-
-      .tg-cta-row { flex-direction: column; align-items: stretch; gap: 12px; }
-      .tg-btn { justify-content: center; min-height: 52px; font-size: 15px; }
-
-      .tg-school-banner {
-        flex-direction: column;
-        text-align: center;
-        padding: 28px 20px;
-        gap: 20px;
-      }
-      .tg-school-banner::before { display: none; }
-      .tg-school-actions {
-        flex-direction: row;
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      .tg-bottom-cta {
-        flex-direction: column;
-        text-align: center;
-        padding: 24px 20px;
-        gap: 20px;
-      }
-      .tg-bottom-cta .cta-left { flex-direction: column; align-items: center; }
-      .tg-bottom-cta .cta-right { justify-content: center; flex-wrap: wrap; }
-
-      .tg-section-title { font-size: 20px; }
-      .tg-stat .stat-num { font-size: 28px; }
-
-      .tg-trust-row { gap: 12px; }
-      .tg-trust-badge { font-size: 12px; }
-    }
-
-    /* ── SMALL PHONE (< 480px — iPhone SE, Galaxy A series) ── */
-    @media (max-width: 479px) {
-      .tg-section { padding: 40px 14px 52px; }
-
-      .tg-main-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
-      }
-
-      .tg-features-col { display: flex; flex-direction: column; gap: 10px; }
-
-      /* 2-col apps on tiny screens */
-      .tg-apps-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-      /* Show only first 4 app tiles on tiny screens, hide 5th */
-      .tg-app-tile:nth-child(5) { display: none; }
-
-      .tg-resources-grid { grid-template-columns: 1fr; gap: 10px; }
-      .tg-stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-
-      .tg-cta-row { flex-direction: column; align-items: stretch; gap: 10px; }
-      .tg-btn {
-        justify-content: center;
-        min-height: 52px;
-        font-size: 14px;
-        padding: 13px 18px;
-      }
-
-      /* Compact eyebrow on tiny screens */
-      .tg-eyebrow { font-size: 10px; letter-spacing: 1px; padding: 5px 12px; }
-
-      .tg-feature-card { padding: 16px 14px; gap: 12px; }
-      .tg-feature-icon { width: 38px; height: 38px; font-size: 18px; }
-      .tg-feature-text h4 { font-size: 13px; }
-      .tg-feature-text p { font-size: 12px; }
-
-      .tg-app-tile { padding: 16px 8px 14px; }
-      .tg-app-tile i { font-size: 22px; }
-      .tg-app-tile span { font-size: 11px; }
-
-      .tg-resource-card { padding: 16px 14px; }
-      .tg-resource-card h5 { font-size: 13px; }
-      .tg-resource-card p { font-size: 12px; }
-
-      .tg-school-banner {
-        flex-direction: column;
-        text-align: center;
-        padding: 24px 16px;
-        gap: 16px;
-      }
-      .tg-school-banner::before { display: none; }
-      .tg-school-icon { width: 56px; height: 56px; font-size: 28px; }
-      .tg-school-actions {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-      }
-
-      .tg-bottom-cta {
-        flex-direction: column;
-        text-align: center;
-        padding: 20px 16px;
-        gap: 16px;
-      }
-      .tg-bottom-cta .cta-left { flex-direction: column; align-items: center; }
-      .tg-bottom-cta .cta-right { flex-direction: column; align-items: stretch; gap: 10px; }
-      .tg-logo-img { width: 40px; height: 40px; }
-
-      .tg-stat { padding: 16px 10px; }
-      .tg-stat .stat-num { font-size: 26px; }
-      .tg-stat .stat-label { font-size: 11px; }
-
-      .tg-section-title { font-size: 18px; }
-      .tg-section-sub { font-size: 13px; }
-
-      .tg-trust-row { gap: 10px; padding-top: 24px; margin-top: 28px; }
-      .tg-trust-badge { font-size: 11px; }
-    }
-
-    /* ── TOUCH DEVICES — disable hover transforms to prevent sticky states ── */
-    @media (hover: none) and (pointer: coarse) {
-      .tg-btn:hover,
-      .tg-feature-card:hover,
-      .tg-app-tile:hover,
-      .tg-resource-card:hover,
-      .tg-stat:hover {
-        transform: none;
-        box-shadow: none;
-      }
-      /* Tap feedback instead */
-      .tg-btn:active { opacity: 0.80; transform: scale(0.97); }
-      .tg-app-tile:active { opacity: 0.75; transform: scale(0.96); }
-      .tg-resource-card:active { opacity: 0.80; }
-    }
-
-    /* ── REDUCED MOTION — respect user preference ── */
-    @media (prefers-reduced-motion: reduce) {
-      .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
-      .live-dot { animation: none !important; }
-      .tg-btn, .tg-feature-card, .tg-app-tile, .tg-resource-card { transition: none !important; }
-    }
-
-    /* ── HIGH CONTRAST — accessibility ── */
-    @media (prefers-contrast: high) {
-      .tg-feature-card,
-      .tg-app-tile,
-      .tg-resource-card,
-      .tg-stat {
-        border-color: rgba(255,255,255,0.50) !important;
-      }
-      .tg-subhead,
-      .tg-feature-text p,
-      .tg-resource-card p {
-        color: rgba(255,255,255,0.90) !important;
-      }
-    }
-
-    /* ── PRINT — clean fallback ── */
-    @media print {
-      .tg-section {
-        background: #fff !important;
-        color: #000 !important;
-        padding: 20px 0 !important;
-      }
-      .tg-video-panel,
-      .tg-apps-strip,
-      .tg-school-banner { display: none !important; }
-      .tg-headline, .tg-section-title { color: #000 !important; }
-      .tg-subhead, .tg-feature-text p { color: #333 !important; }
-      .tg-btn--primary { background: #229ED9 !important; }
-    }
+    .tg-trust-badge i { font-size: 14px; color: var(--green); }
 
     /* ═══════════════════════════════════════════════════════════════
        SCROLL REVEAL ANIMATIONS
     ═══════════════════════════════════════════════════════════════ */
     .reveal {
       opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.55s ease, transform 0.55s ease;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
     }
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .reveal-delay-1 { transition-delay: 0.10s; }
-    .reveal-delay-2 { transition-delay: 0.20s; }
-    .reveal-delay-3 { transition-delay: 0.30s; }
-    .reveal-delay-4 { transition-delay: 0.40s; }
-    .reveal-delay-5 { transition-delay: 0.50s; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.08s; }
+    .reveal-delay-2 { transition-delay: 0.16s; }
+    .reveal-delay-3 { transition-delay: 0.24s; }
+    .reveal-delay-4 { transition-delay: 0.32s; }
+    .reveal-delay-5 { transition-delay: 0.40s; }
 
-    /* ── FOCUS STYLES — keyboard navigation (WCAG 2.4.7) ── */
+    /* ═══════════════════════════════════════════════════════════════
+       FOCUS STYLES — keyboard navigation (WCAG 2.4.7)
+    ═══════════════════════════════════════════════════════════════ */
     .tg-btn:focus-visible,
     .tg-app-tile:focus-visible,
     .tg-resource-card:focus-visible,
@@ -1043,12 +699,280 @@
       outline: 3px solid var(--gold);
       outline-offset: 3px;
     }
-    /* Fallback for browsers without :focus-visible */
     .tg-btn:focus:not(:focus-visible),
     .tg-app-tile:focus:not(:focus-visible),
-    .tg-resource-card:focus:not(:focus-visible) {
-      outline: none;
+    .tg-resource-card:focus:not(:focus-visible) { outline: none; }
+
+    /* ═══════════════════════════════════════════════════════════════
+       TOUCH DEVICES — disable hover transforms (sticky state fix)
+    ═══════════════════════════════════════════════════════════════ */
+    @media (hover: none) and (pointer: coarse) {
+      .tg-btn:hover,
+      .tg-feature-card:hover,
+      .tg-app-tile:hover,
+      .tg-resource-card:hover,
+      .tg-stat:hover { transform: none; box-shadow: none; }
+      /* Tap feedback */
+      .tg-btn:active        { opacity: 0.80; transform: scale(0.97); }
+      .tg-app-tile:active   { opacity: 0.75; transform: scale(0.96); }
+      .tg-resource-card:active { opacity: 0.80; }
     }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SCALE UP: STANDARD PHONE (480px+)
+    ═══════════════════════════════════════════════════════════════ */
+    @media (min-width: 480px) {
+      .tg-section { padding: 48px 20px 60px; }
+      .tg-headline { font-size: 28px; }
+      .tg-apps-grid { grid-template-columns: repeat(3, 1fr); }
+      .tg-app-tile:last-child:nth-child(odd) { grid-column: auto; }
+      .tg-resources-grid { grid-template-columns: repeat(2, 1fr); }
+      .tg-school-actions { flex-direction: row; justify-content: center; flex-wrap: wrap; }
+      .tg-school-actions .tg-btn { width: auto; }
+      .tg-cta-row { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+      .tg-btn { width: auto; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SCALE UP: TABLET (768px+)
+    ═══════════════════════════════════════════════════════════════ */
+    @media (min-width: 768px) {
+      .tg-section { padding: 60px 28px 72px; }
+      .tg-container { max-width: 720px; }
+      .tg-header { margin-bottom: 40px; }
+      .tg-headline { font-size: 34px; }
+      .tg-subhead { font-size: 16px; max-width: 560px; margin: 0 auto; }
+      .tg-cta-row { margin-bottom: 48px; }
+      .tg-main-grid { gap: 24px; margin-bottom: 48px; }
+
+      /* 2-col feature cards on tablet */
+      .tg-features-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .tg-apps-grid { grid-template-columns: repeat(5, 1fr); gap: 10px; }
+      .tg-stats-row { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+      .tg-resources-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+      .tg-section-title { font-size: 20px; }
+
+      .tg-school-banner {
+        flex-direction: row;
+        text-align: left;
+        padding: 28px 28px;
+        gap: 24px;
+      }
+      .tg-school-actions { flex-direction: column; width: auto; }
+      .tg-school-actions .tg-btn { width: auto; }
+
+      .tg-bottom-cta {
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+        padding: 28px 28px;
+      }
+      .tg-bottom-cta .cta-left { flex-direction: row; }
+      .tg-bottom-cta .cta-right { flex-direction: row; width: auto; }
+      .tg-video-wrap video { max-height: 340px; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SCALE UP: SMALL LAPTOP / LARGE TABLET LANDSCAPE (1024px+)
+    ═══════════════════════════════════════════════════════════════ */
+    @media (min-width: 1024px) {
+      .tg-section { padding: 72px 32px 80px; }
+      .tg-container { max-width: 960px; }
+      .tg-header { margin-bottom: 52px; }
+      .tg-headline { font-size: 40px; }
+      .tg-subhead { font-size: 17px; max-width: 620px; }
+
+      /* Side-by-side video + features */
+      .tg-main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        align-items: start;
+      }
+
+      .tg-features-col {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .tg-feature-card { padding: 18px 20px; gap: 16px; }
+      .tg-feature-icon { width: 44px; height: 44px; font-size: 22px; }
+      .tg-feature-text h4 { font-size: 14px; }
+      .tg-feature-text p { font-size: 13px; }
+
+      .tg-feature-card:hover {
+        background: rgba(255,255,255,0.09);
+        border-color: rgba(34,158,217,0.35);
+        transform: translateX(4px);
+      }
+
+      .tg-resources-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .tg-section-title { font-size: 22px; }
+      .tg-video-wrap video { max-height: 380px; }
+      .tg-play-btn { width: 72px; height: 72px; }
+      .tg-play-btn i { font-size: 32px; }
+
+      .tg-school-banner { padding: 32px 36px; gap: 28px; }
+      .tg-school-icon { width: 72px; height: 72px; font-size: 36px; }
+      .tg-school-content h3 { font-size: 22px; }
+
+      .tg-bottom-cta { padding: 32px 40px; }
+      .tg-logo-img { width: 52px; height: 52px; }
+      .tg-bottom-cta h4 { font-size: 18px; }
+
+      .tg-stat .stat-num { font-size: 32px; }
+      .tg-stat .stat-label { font-size: 12px; }
+      .tg-trust-badge { font-size: 13px; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SCALE UP: FULL DESKTOP (1280px+)
+    ═══════════════════════════════════════════════════════════════ */
+    @media (min-width: 1280px) {
+      .tg-container { max-width: 1160px; }
+      .tg-headline { font-size: 44px; }
+      .tg-subhead { font-size: 18px; max-width: 640px; }
+      .tg-apps-grid { gap: 12px; }
+      .tg-stats-row { gap: 16px; }
+      .tg-resources-grid { gap: 16px; }
+      .tg-video-wrap video { max-height: 420px; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SCALE UP: WIDE SCREENS (1400px+)
+    ═══════════════════════════════════════════════════════════════ */
+    @media (min-width: 1400px) {
+      .tg-container { max-width: 1320px; }
+      .tg-section { padding: 88px 40px 96px; }
+      .tg-main-grid { gap: 48px; }
+      .tg-apps-grid { gap: 16px; }
+      .tg-stats-row { gap: 20px; }
+      .tg-resources-grid { gap: 20px; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       REDUCED MOTION
+    ═══════════════════════════════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+      .live-dot { animation: none !important; }
+      .tg-btn, .tg-feature-card, .tg-app-tile, .tg-resource-card { transition: none !important; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       HIGH CONTRAST
+    ═══════════════════════════════════════════════════════════════ */
+    @media (prefers-contrast: high) {
+      .tg-feature-card, .tg-app-tile, .tg-resource-card, .tg-stat {
+        border-color: rgba(255,255,255,0.50) !important;
+      }
+      .tg-subhead, .tg-feature-text p, .tg-resource-card p {
+        color: rgba(255,255,255,0.90) !important;
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PRINT
+    ═══════════════════════════════════════════════════════════════ */
+    @media print {
+      .tg-section { background: #fff !important; color: #000 !important; padding: 20px 0 !important; }
+      .tg-video-panel, .tg-apps-strip, .tg-school-banner { display: none !important; }
+      .tg-headline, .tg-section-title { color: #000 !important; }
+      .tg-subhead, .tg-feature-text p { color: #333 !important; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       JS-INJECTED DEVICE CLASS OVERRIDES
+       When Wix iframe reports wrong width, JS injects .device-mobile,
+       .device-tablet, or .device-desktop on <html> and we force the
+       correct layout regardless of media query state.
+    ═══════════════════════════════════════════════════════════════ */
+
+    /* Force mobile layout when JS detects mobile */
+    html.device-mobile .tg-section  { padding: 40px 16px 52px !important; }
+    html.device-mobile .tg-headline { font-size: 26px !important; }
+    html.device-mobile .tg-subhead  { font-size: 15px !important; }
+    html.device-mobile .tg-cta-row  { flex-direction: column !important; gap: 12px !important; }
+    html.device-mobile .tg-btn      { width: 100% !important; justify-content: center !important; }
+    html.device-mobile .tg-main-grid {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 20px !important;
+    }
+    html.device-mobile .tg-features-col {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 10px !important;
+    }
+    html.device-mobile .tg-apps-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    html.device-mobile .tg-stats-row {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    html.device-mobile .tg-resources-grid {
+      grid-template-columns: 1fr !important;
+    }
+    html.device-mobile .tg-school-banner {
+      flex-direction: column !important;
+      text-align: center !important;
+      padding: 24px 18px !important;
+    }
+    html.device-mobile .tg-school-actions {
+      flex-direction: column !important;
+      width: 100% !important;
+    }
+    html.device-mobile .tg-school-actions .tg-btn { width: 100% !important; }
+    html.device-mobile .tg-bottom-cta {
+      flex-direction: column !important;
+      text-align: center !important;
+      padding: 22px 18px !important;
+    }
+    html.device-mobile .tg-bottom-cta .cta-left  { flex-direction: column !important; }
+    html.device-mobile .tg-bottom-cta .cta-right {
+      flex-direction: column !important;
+      width: 100% !important;
+    }
+    html.device-mobile .tg-video-wrap video { max-height: 260px !important; }
+    html.device-mobile .tg-container { max-width: 100% !important; padding: 0 !important; }
+
+    /* Force tablet layout */
+    html.device-tablet .tg-section  { padding: 60px 28px 72px !important; }
+    html.device-tablet .tg-main-grid {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 24px !important;
+    }
+    html.device-tablet .tg-features-col {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 14px !important;
+    }
+    html.device-tablet .tg-apps-grid {
+      grid-template-columns: repeat(5, 1fr) !important;
+    }
+    html.device-tablet .tg-stats-row {
+      grid-template-columns: repeat(4, 1fr) !important;
+    }
+    html.device-tablet .tg-resources-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    html.device-tablet .tg-school-banner {
+      flex-direction: row !important;
+      text-align: left !important;
+    }
+    html.device-tablet .tg-bottom-cta {
+      flex-direction: row !important;
+      text-align: left !important;
+    }
+    html.device-tablet .tg-bottom-cta .cta-left  { flex-direction: row !important; }
+    html.device-tablet .tg-bottom-cta .cta-right { flex-direction: row !important; width: auto !important; }
   </style>
 </head>
 
@@ -1056,12 +980,9 @@
 
 <!-- ═══════════════════════════════════════════════════════════════
      TELEGRAM HUB SECTION
-     Wix placement: This is the HTML Component content for #section6
-     on the Shamrock homepage. The HTML Component iframe IS section6.
-     Velo element IDs:
-       #telegramHubEmbed   — the HTML Component (this file's iframe)
-       #telegramHubSection — the Section strip (#section6)
-     Anchor: #telegram-hub (for deep links + SEO)
+     Wix placement: HTML Component content for #section6 / #telegramHubSection
+     HTML Component element ID: #telegramHubEmbed
+     Anchor: #telegram-hub
 ═══════════════════════════════════════════════════════════════ -->
 <section class="tg-section" id="telegram-hub" aria-label="Shamrock Bail Bonds Telegram Hub">
   <div class="tg-container">
@@ -1086,20 +1007,18 @@
     <!-- ── PRIMARY CTAs ── -->
     <div class="tg-cta-row reveal reveal-delay-1">
       <a href="https://t.me/ShamrockBail_bot"
-         target="_blank"
-         rel="noopener"
+         target="_blank" rel="noopener"
          class="tg-btn tg-btn--primary"
          data-analytics-event="tg_cta_click"
          data-analytics-label="open_bot"
          aria-label="Open @ShamrockBail_bot on Telegram">
         <img src="https://static.wixstatic.com/shapes/7dd020_d8b195cd1e654360aabdb286162fc8ce.svg"
              alt="Telegram"
-             style="width:22px;height:22px;filter:brightness(0) invert(1);" />
+             style="width:22px;height:22px;filter:brightness(0) invert(1);flex-shrink:0;" />
         Open @ShamrockBail_bot
       </a>
       <a href="https://shamrock-telegram.netlify.app"
-         target="_blank"
-         rel="noopener"
+         target="_blank" rel="noopener"
          class="tg-btn tg-btn--gold"
          data-analytics-event="tg_cta_click"
          data-analytics-label="open_miniapps"
@@ -1189,7 +1108,7 @@
             <i class="ph ph-map-pin"></i>
           </div>
           <div class="tg-feature-text">
-            <h4>GPS Check-In & ID Verification</h4>
+            <h4>GPS Check-In &amp; ID Verification</h4>
             <p>Defendants check in with GPS location and a selfie directly through Telegram. Florida Driver License OCR extracts your info instantly — no manual entry.</p>
           </div>
         </div>
@@ -1251,18 +1170,18 @@
            data-analytics-event="miniapp_click"
            data-analytics-label="status"
            aria-label="Case Status Mini App">
-          <i class="ph ph-detective"></i>
+          <i class="ph ph-magnifying-glass"></i>
           <span>Case Status</span>
           <span class="tg-badge tg-badge--live">LIVE</span>
         </a>
 
-        <a href="https://shamrock-telegram.netlify.app/updates/"
+        <a href="https://shamrock-telegram.netlify.app/checkin/"
            target="_blank" rel="noopener"
            class="tg-app-tile"
            data-analytics-event="miniapp_click"
-           data-analytics-label="updates"
-           aria-label="Update My Info Mini App">
-          <i class="ph ph-megaphone"></i>
+           data-analytics-label="checkin"
+           aria-label="Check-In Mini App">
+          <i class="ph ph-map-pin-line"></i>
           <span>My Updates</span>
           <span class="tg-badge tg-badge--live">LIVE</span>
         </a>
@@ -1274,27 +1193,26 @@
     <div class="tg-stats-row reveal">
       <div class="tg-stat">
         <div class="stat-num">24/7</div>
-        <div class="stat-label">Bot availability — no hold times, no voicemail</div>
+        <div class="stat-label">Always Available</div>
       </div>
       <div class="tg-stat">
         <div class="stat-num">67</div>
-        <div class="stat-label">Florida counties served — statewide coverage</div>
+        <div class="stat-label">Florida Counties</div>
       </div>
       <div class="tg-stat">
         <div class="stat-num">&lt;5m</div>
-        <div class="stat-label">Average intake completion time via Telegram</div>
+        <div class="stat-label">Intake Time</div>
       </div>
       <div class="tg-stat">
         <div class="stat-num">100%</div>
-        <div class="stat-label">Mobile-native — built for one thumb, one eye</div>
+        <div class="stat-label">Mobile-First</div>
       </div>
     </div>
 
-    <!-- ── BAIL RESOURCES GRID ── -->
+    <!-- ── RESOURCES GRID ── -->
     <div class="tg-resources reveal">
-      <h3 class="tg-section-title">Free Bail Bond Resources on Our Telegram Channel</h3>
-      <p class="tg-section-sub">Join the channel for ongoing education, Florida law updates, and bail bond guides — all free.</p>
-
+      <h3 class="tg-section-title">Free Bail Bond Resources</h3>
+      <p class="tg-section-sub">Everything you need to know — available on our Telegram channel</p>
       <div class="tg-resources-grid">
 
         <a href="https://t.me/ShamrockBail_bot"
@@ -1397,7 +1315,7 @@
            aria-label="Join Shamrock Bail School on Telegram">
           <img src="https://static.wixstatic.com/shapes/7dd020_d8b195cd1e654360aabdb286162fc8ce.svg"
                alt="Telegram"
-               style="width:18px;height:18px;filter:brightness(0) invert(1);opacity:0.85;" />
+               style="width:18px;height:18px;filter:brightness(0) invert(1);opacity:0.85;flex-shrink:0;" />
           Join Channel
         </a>
       </div>
@@ -1424,7 +1342,7 @@
            aria-label="Open Shamrock Bail Bot on Telegram">
           <img src="https://static.wixstatic.com/shapes/7dd020_d8b195cd1e654360aabdb286162fc8ce.svg"
                alt="Telegram"
-               style="width:20px;height:20px;filter:brightness(0) invert(1);" />
+               style="width:20px;height:20px;filter:brightness(0) invert(1);flex-shrink:0;" />
           Open Bot Now
         </a>
         <a href="tel:+12393322245"
@@ -1452,15 +1370,71 @@
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     ANALYTICS + INTERACTION SCRIPTS
-     All events fire window.parent.postMessage() so the Wix Velo
-     page code can receive them and log to Wix Analytics / GAS.
+     SCRIPTS
+     1. Device detection — injects class on <html> BEFORE first paint
+     2. Video player
+     3. Scroll reveal
+     4. Analytics postMessage bridge
+     5. Iframe height signal
 ═══════════════════════════════════════════════════════════════ -->
 <script>
 (function () {
   'use strict';
 
-  /* ── 1. VIDEO PLAYER ── */
+  /* ── 1. DEVICE CLASS INJECTION (runs before paint) ──────────────
+     Wix iframes can report incorrect window.innerWidth on mobile.
+     We detect the ACTUAL device using screen.width (physical pixels
+     divided by devicePixelRatio) and inject a class on <html>.
+     CSS then uses html.device-mobile / .device-tablet / .device-desktop
+     overrides to force the correct layout regardless of media queries.
+  ──────────────────────────────────────────────────────────────── */
+  (function injectDeviceClass() {
+    var html = document.documentElement;
+
+    // Use screen.width / devicePixelRatio for true CSS pixel width
+    var dpr = window.devicePixelRatio || 1;
+    var screenCssPx = Math.round(screen.width / dpr);
+
+    // Also check window.innerWidth (may be correct in some Wix versions)
+    var innerW = window.innerWidth || 0;
+
+    // Use the smaller of the two — the real device is never wider than screen
+    var effectiveWidth = Math.min(
+      screenCssPx > 0 ? screenCssPx : 9999,
+      innerW > 0      ? innerW      : 9999
+    );
+
+    // Touch detection as additional signal
+    var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+    // User agent mobile check as fallback
+    var uaMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    var deviceClass;
+    if (effectiveWidth <= 767 || (isTouch && uaMobile && effectiveWidth <= 1024)) {
+      deviceClass = effectiveWidth <= 479 ? 'device-xs device-mobile' : 'device-mobile';
+    } else if (effectiveWidth <= 1023 || (isTouch && effectiveWidth <= 1280)) {
+      deviceClass = 'device-tablet';
+    } else {
+      deviceClass = 'device-desktop';
+    }
+
+    html.className = (html.className + ' ' + deviceClass).trim();
+
+    // Re-check after fonts/layout settle (Wix may resize the iframe)
+    setTimeout(function () {
+      var w = window.innerWidth || screen.width;
+      if (w <= 767 && !html.classList.contains('device-mobile')) {
+        html.classList.remove('device-tablet', 'device-desktop');
+        html.classList.add('device-mobile');
+      } else if (w <= 1023 && !html.classList.contains('device-tablet')) {
+        html.classList.remove('device-mobile', 'device-desktop');
+        html.classList.add('device-tablet');
+      }
+    }, 300);
+  })();
+
+  /* ── 2. VIDEO PLAYER ──────────────────────────────────────────── */
   var video   = document.getElementById('tgDemoVideo');
   var overlay = document.getElementById('videoOverlay');
 
@@ -1470,7 +1444,6 @@
       overlay.classList.add('hidden');
       fireEvent('video_play', 'telegram_demo');
     }).catch(function () {
-      // Autoplay blocked — play muted
       video.muted = true;
       video.play();
       overlay.classList.add('hidden');
@@ -1479,6 +1452,10 @@
   }
 
   overlay.addEventListener('click', playVideo);
+  overlay.addEventListener('touchend', function (e) {
+    e.preventDefault();
+    playVideo();
+  }, { passive: false });
   overlay.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); playVideo(); }
   });
@@ -1487,13 +1464,13 @@
     overlay.classList.remove('hidden');
   });
 
-  /* ── 2. SCROLL REVEAL ── */
+  /* ── 3. SCROLL REVEAL ─────────────────────────────────────────── */
   var revealEls = document.querySelectorAll('.reveal');
 
   function checkReveal() {
     revealEls.forEach(function (el) {
       var rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight * 0.92) {
+      if (rect.top < window.innerHeight * 0.94) {
         el.classList.add('visible');
       }
     });
@@ -1501,9 +1478,11 @@
 
   window.addEventListener('scroll', checkReveal, { passive: true });
   window.addEventListener('resize', checkReveal, { passive: true });
-  checkReveal(); // run on load
+  // Run immediately + after short delay (fonts may shift layout)
+  checkReveal();
+  setTimeout(checkReveal, 250);
 
-  /* ── 3. ANALYTICS — postMessage to Wix parent ── */
+  /* ── 4. ANALYTICS — postMessage to Wix parent ────────────────── */
   function fireEvent(eventName, label, extra) {
     var payload = {
       type:      'shamrock_analytics',
@@ -1515,24 +1494,23 @@
     };
     try {
       window.parent.postMessage(JSON.stringify(payload), '*');
-    } catch (e) { /* silent — iframe may be sandboxed */ }
-
-    // Also log to console for debugging
+    } catch (e) { /* sandboxed — silent */ }
     if (typeof console !== 'undefined') {
       console.log('[ShamrockAnalytics]', eventName, label);
     }
   }
 
-  /* ── 4. CTA CLICK TRACKING ── */
+  /* ── 4a. CTA CLICK TRACKING ── */
   document.querySelectorAll('[data-analytics-event]').forEach(function (el) {
     el.addEventListener('click', function () {
-      var evt   = el.getAttribute('data-analytics-event');
-      var label = el.getAttribute('data-analytics-label');
-      fireEvent(evt, label);
+      fireEvent(
+        el.getAttribute('data-analytics-event'),
+        el.getAttribute('data-analytics-label')
+      );
     });
   });
 
-  /* ── 5. SECTION VISIBILITY TRACKING ── */
+  /* ── 4b. SECTION VISIBILITY TRACKING ── */
   var sectionSeen = false;
   var section     = document.getElementById('telegram-hub');
 
@@ -1548,9 +1526,8 @@
   window.addEventListener('scroll', checkSectionVisible, { passive: true });
   checkSectionVisible();
 
-  /* ── 6. VIDEO ENGAGEMENT TRACKING ── */
+  /* ── 4c. VIDEO ENGAGEMENT MILESTONES ── */
   var videoMilestones = { 25: false, 50: false, 75: false, 100: false };
-
   video.addEventListener('timeupdate', function () {
     if (!video.duration) return;
     var pct = Math.floor((video.currentTime / video.duration) * 100);
@@ -1562,14 +1539,14 @@
     });
   });
 
-  /* ── 7. OUTBOUND LINK TRACKING ── */
+  /* ── 4d. OUTBOUND LINK TRACKING ── */
   document.querySelectorAll('a[href^="https://t.me"], a[href^="https://shamrock-telegram"]').forEach(function (el) {
     el.addEventListener('click', function () {
       fireEvent('outbound_click', el.href);
     });
   });
 
-  /* ── 8. IFRAME HEIGHT SIGNAL — tells Wix HTML Component to resize ── */
+  /* ── 5. IFRAME HEIGHT SIGNAL — tells Wix HTML Component to resize ── */
   function sendHeight() {
     var h = document.documentElement.scrollHeight || document.body.scrollHeight;
     try {
@@ -1580,13 +1557,12 @@
     } catch (e) { /* sandboxed — silent */ }
   }
 
-  // Send on load, after fonts/images settle, and on resize
   sendHeight();
-  setTimeout(sendHeight, 400);
-  setTimeout(sendHeight, 1200);
+  setTimeout(sendHeight, 300);
+  setTimeout(sendHeight, 800);
+  setTimeout(sendHeight, 1500);
   window.addEventListener('resize', sendHeight, { passive: true });
 
-  // Also observe DOM mutations (reveal animations change layout height)
   if (typeof MutationObserver !== 'undefined') {
     new MutationObserver(sendHeight).observe(document.body, {
       subtree: true, childList: true, attributes: true,
@@ -1594,7 +1570,7 @@
     });
   }
 
-  /* ── 9. SECTION READY SIGNAL ── */
+  /* ── 6. SECTION READY SIGNAL ── */
   fireEvent('section_loaded', 'telegram_hub');
 
 })();
