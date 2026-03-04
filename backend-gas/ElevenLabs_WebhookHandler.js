@@ -245,6 +245,8 @@ function handleElevenLabsToolCall(e) {
                 return toolCheckInmateStatus(payload);
             case 'send_directions':
                 return toolSendDirections(payload);
+            case 'send_sms':
+                return toolSendSMS(payload);
             default:
                 return ContentService.createTextOutput(JSON.stringify({
                     status: 'error', message: 'Unknown tool: ' + toolName
@@ -326,12 +328,84 @@ function toolLookupDefendant(params) {
     if (match) {
         return ContentService.createTextOutput(JSON.stringify({
             status: 'found',
+            source: 'intake_queue',
+            is_prior_client: false,
             defendant: match
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    // 2. Search Historical Bond Reports (prior clients)
+    if (name) {
+        try {
+            var histSheet = ss.getSheetByName('Historical Bond Reports');
+            if (histSheet && histSheet.getLastRow() > 1) {
+                var histData = histSheet.getDataRange().getValues();
+                var histHeaders = histData[0];
+                var hIdx = {};
+                histHeaders.forEach(function (h, i) { hIdx[String(h).toLowerCase().trim()] = i; });
+
+                // Build search terms — split name into parts for matching
+                var nameParts = name.split(/\s+/);
+
+                for (var hr = histData.length - 1; hr >= 1; hr--) {
+                    var hRow = histData[hr];
+                    var hGetVal = function (keys) {
+                        for (var k = 0; k < keys.length; k++) {
+                            var idx = hIdx[keys[k].toLowerCase()];
+                            if (idx !== undefined && hRow[idx]) return String(hRow[idx]);
+                        }
+                        return '';
+                    };
+
+                    var hFirst = hGetVal(['first name', 'first_name', 'firstname']).toLowerCase();
+                    var hLast = hGetVal(['last name', 'last_name', 'lastname']).toLowerCase();
+                    var hFull = (hFirst + ' ' + hLast).trim();
+
+                    // Match: full name contains search OR search contains full name
+                    var histNameMatch = false;
+                    if (hFull && name) {
+                        histNameMatch = (hFull.indexOf(name) > -1 || name.indexOf(hFull) > -1);
+                    }
+                    // Also try last name + first name partial
+                    if (!histNameMatch && nameParts.length >= 2 && hLast && hFirst) {
+                        histNameMatch = nameParts.some(function (p) { return p === hLast; }) &&
+                            nameParts.some(function (p) { return p === hFirst || hFirst.indexOf(p) === 0; });
+                    }
+
+                    if (histNameMatch) {
+                        match = {
+                            defendant_name: hGetVal(['first name', 'first_name', 'firstname']) + ' ' + hGetVal(['last name', 'last_name', 'lastname']),
+                            bond_amount: hGetVal(['bond amount', 'bond_amount', 'bondamt', 'bond']),
+                            charges: hGetVal(['charges', 'charge', 'offense']),
+                            facility: hGetVal(['facility', 'jail', 'county']),
+                            county: hGetVal(['county']),
+                            bond_date: hGetVal(['date', 'bond date', 'bond_date', 'created']),
+                            status: 'Prior Client',
+                            indemnitor_name: hGetVal(['indemnitor', 'indemnitor name', 'cosigner']),
+                            indemnitor_phone: hGetVal(['indemnitor phone', 'cosigner phone', 'phone'])
+                        };
+                        break;
+                    }
+                }
+
+                if (match) {
+                    return ContentService.createTextOutput(JSON.stringify({
+                        status: 'found',
+                        source: 'historical_bond_reports',
+                        is_prior_client: true,
+                        defendant: match,
+                        message: 'This person is a prior client. We have handled a bond for them previously.'
+                    })).setMimeType(ContentService.MimeType.JSON);
+                }
+            }
+        } catch (histErr) {
+            Logger.log('Historical bond lookup failed (non-fatal): ' + histErr.message);
+        }
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
         status: 'not_found',
+        is_prior_client: false,
         message: 'No records found for ' + (name || bookingNum) + '. This may be a new case.'
     })).setMimeType(ContentService.MimeType.JSON);
 }
@@ -903,6 +977,101 @@ function toolSendDirections(params) {
             google_maps_link: mapsLink,
             message: 'I wasn\'t able to send the text right now, but let me give you the address verbally. ' +
                 'The ' + label + ' is at ' + address + '.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+}
+
+/**
+ * Tool: send_sms
+ * Sends a custom text message to a phone number via Twilio.
+ * Used by the agent to text court dates, directions, confirmations, etc.
+ *
+ * Expected params: { "to_phone": "...", "message": "..." }
+ */
+function toolSendSMS(params) {
+    var toPhone = (params.to_phone || params.caller_phone || '').trim();
+    var message = (params.message || '').trim();
+
+    if (!toPhone) {
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'error',
+            message: 'A phone number is required to send a text message.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (!message) {
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'error',
+            message: 'A message body is required.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Safety: cap message length and add branding
+    if (message.length > 1500) {
+        message = message.substring(0, 1500) + '...';
+    }
+
+    // Prepend branding if not already present
+    if (message.indexOf('Shamrock') === -1) {
+        message = '🍀 Shamrock Bail Bonds\n\n' + message;
+    }
+
+    // Append footer
+    message += '\n\nQuestions? Call (239) 332-2245';
+
+    // Daily rate limit check (prevent runaway usage)
+    var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    var cache = CacheService.getScriptCache();
+    var cacheKey = 'sms_count_' + today;
+    var dailyCount = parseInt(cache.get(cacheKey) || '0');
+
+    if (dailyCount >= 75) {
+        Logger.log('⚠️ SMS daily rate limit reached: ' + dailyCount);
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'rate_limited',
+            message: 'I\'m unable to send additional text messages right now. Please try again later or call us at 239-332-2245.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var smsResult = sendSmsViaTwilio(toPhone, message);
+
+    if (smsResult && smsResult.success) {
+        // Increment daily counter (expires in 24h)
+        cache.put(cacheKey, String(dailyCount + 1), 86400);
+
+        // Log to sheet
+        try {
+            var ssId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+            if (ssId) {
+                var ss = SpreadsheetApp.openById(ssId);
+                var logSheet = ss.getSheetByName('ShannonCallLog');
+                if (logSheet) {
+                    // Append a lightweight log entry
+                    logSheet.appendRow([
+                        new Date(),
+                        'SMS-TOOL',
+                        toPhone,
+                        '',
+                        '',
+                        'SMS Sent',
+                        message.substring(0, 200),
+                        'N/A',
+                        'Agent sent SMS to ' + toPhone
+                    ]);
+                }
+            }
+        } catch (logErr) {
+            Logger.log('SMS log write failed (non-fatal): ' + logErr.message);
+        }
+
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'sent',
+            message: 'I just sent that information to your phone via text message. You should receive it in the next few seconds.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    } else {
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'error',
+            message: 'I wasn\'t able to send the text right now. Let me give you the information verbally instead.'
         })).setMimeType(ContentService.MimeType.JSON);
     }
 }
