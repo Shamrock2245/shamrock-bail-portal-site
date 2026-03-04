@@ -17,10 +17,10 @@ export async function routeCountyPage(request) {
     const countySlug = rawSlug.toLowerCase().trim().replace(/-county$/i, '');
 
     console.log(`[County Router] Request Path: ${request.path.join('/')}`);
-    console.log(`[County Router] Raw slug: '${rawSlug}' → Normalised: '${countySlug}'`);
+    console.log(`[County Router] Raw slug: '${rawSlug}' -> Normalised: '${countySlug}'`);
 
     if (!countySlug) {
-        // No slug — let the page handle it gracefully
+        // No slug -- let the page handle it gracefully
         return ok(COUNTY_PAGE_NAME, {
             title: 'Florida Bail Bonds',
             description: 'Professional bail bond services throughout Florida',

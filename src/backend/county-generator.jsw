@@ -29,7 +29,7 @@ export async function generateCountyPage(countySlug) {
   // 1. CHECK CACHE
   const cachedItem = _cache[cacheKey];
   if (cachedItem && (Date.now() - cachedItem.timestamp < CACHE_TTL)) {
-    // console.log(`🚀 Serving cached page for: ${countySlug}`);
+    // console.log(` Serving cached page for: ${countySlug}`);
     return cachedItem.data;
   }
 

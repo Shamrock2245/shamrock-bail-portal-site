@@ -3,11 +3,11 @@
  * Implements the "Secret Sauce" qualification logic.
  * 
  * Rules:
- * - Threshold: ≥ 70 is "Qualified" (Hot).
- * - Bond Amount ≥ $500: +30 points
- * - Bond Amount ≥ $1,500: +20 points (cumulative, total +50)
- * - Recent Arrest (≤ 1 day): +10 points
- * - Recent Arrest (≤ 2 days): +20 points (Note: Usually more recent is more points, 
+ * - Threshold:  70 is "Qualified" (Hot).
+ * - Bond Amount  $500: +30 points
+ * - Bond Amount  $1,500: +20 points (cumulative, total +50)
+ * - Recent Arrest ( 1 day): +10 points
+ * - Recent Arrest ( 2 days): +20 points (Note: Usually more recent is more points, 
  *   but following exact rules provided in system prompt)
  * - Serious Charge Keywords (Battery, DUI, Theft, Domestic): +20 points
  * 

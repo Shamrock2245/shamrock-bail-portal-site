@@ -13,16 +13,16 @@ import { generateCountyPage } from 'backend/county-generator';
 const Select = (selector) => /** @type {any} */($w)(selector);
 
 $w.onReady(async function () {
-    console.log("🚀 Dynamic County Page Loading... (Optimized v2)");
+    console.log(" Dynamic County Page Loading... (Optimized v2)");
 
     // 1. EXTRACT SLUG
     const path = wixLocation.path;
     const countySlug = path.length > 0 ? path[path.length - 1] : null;
 
-    console.log(`🔎 Frontend detected slug: "${countySlug}"`);
+    console.log(` Frontend detected slug: "${countySlug}"`);
 
     if (!countySlug) {
-        console.error("❌ No slug found in URL path:", path);
+        console.error("[X] No slug found in URL path:", path);
         return;
     }
 
@@ -31,25 +31,25 @@ $w.onReady(async function () {
     Select('#dynamicDataset').onReady(() => {
         // console.log("Dataset Ready - Applying Filter...");
         Select('#dynamicDataset').setFilter(wixData.filter().eq('countySlug', countySlug))
-            .catch(e => console.log("⚠️ Dataset filter failed:", e));
+            .catch(e => console.log("[!] Dataset filter failed:", e));
     });
 
     try {
         // Show loading state if element exists
         try { Select('#loadingIndicator').show(); } catch (e) { }
 
-        // console.log("⏳ Calling backend generateCountyPage...");
+        // console.log(" Calling backend generateCountyPage...");
 
         // 2. FETCH MAIN DATA (Critical Path)
         // We prioritize the main content. Nearby counties can load later.
         const pageResult = await generateCountyPage(countySlug.toLowerCase());
 
-        // console.log("📥 Backend Response:", pageResult);
+        // console.log(" Backend Response:", pageResult);
 
         const { success, data } = pageResult;
 
         if (!success || !data) {
-            console.warn(`⚠️ County data not found for slug: ${countySlug}.`);
+            console.warn(`[!] County data not found for slug: ${countySlug}.`);
             try { Select('#loadingIndicator').hide(); } catch (e) { }
             try {
                 Select('#countyName').text = "County Not Found";
@@ -63,7 +63,7 @@ $w.onReady(async function () {
         }
 
         const county = data;
-        // console.log(`✅ Loaded Data for: ${county.county_name_full}. Starting UI Update...`);
+        // console.log(`[OK] Loaded Data for: ${county.county_name_full}. Starting UI Update...`);
 
         // 3. GENERATE SEO (Meta + Schema) - Critical for SEO
         setupSEO(county);
@@ -198,7 +198,7 @@ function setupSEO(county) {
         "paymentAccepted": "Cash, Credit Card, Debit Card"
     });
 
-    // C. FAQPage — Deferred to populateMainUI() where CMS FAQs are loaded
+    // C. FAQPage -- Deferred to populateMainUI() where CMS FAQs are loaded
     //    with proper county name replacements. Schema is set there.
 
     // D. Service Schema (County-Specific Bail Bonds Service)
@@ -265,12 +265,12 @@ function setText(selectorOrArray, value) {
                 el.text = value || "";
                 el.expand();
                 found = true;
-                // console.log(`✅ Set text for ${selector}`);
+                // console.log(`[OK] Set text for ${selector}`);
             }
         } catch (e) { }
     }
     if (!found) {
-        // console.warn(`⚠️ Text element not found for value: "${value?.substring(0, 20)}..." in selectors: ${selectors.join(', ')}`);
+        // console.warn(`[!] Text element not found for value: "${value?.substring(0, 20)}..." in selectors: ${selectors.join(', ')}`);
     }
 }
 
@@ -354,7 +354,7 @@ async function populateMainUI(county, currentSlug) {
     let faqs = [];
     try {
         const countyName = county.name || county.countyName || county.county_name || "Unknown County";
-        console.log(`📝 Loading FAQs for county: ${countyName}`);
+        console.log(` Loading FAQs for county: ${countyName}`);
 
         let faqResult;
 
@@ -400,7 +400,7 @@ async function populateMainUI(county, currentSlug) {
         }
 
         if (faqResult && faqResult.items.length > 0) {
-            console.log(`✅ Loaded ${faqResult.items.length} FAQs from CMS for ${countyName}`);
+            console.log(`[OK] Loaded ${faqResult.items.length} FAQs from CMS for ${countyName}`);
 
             // Dynamically replace "Lee County" with actual county name in questions and answers
             faqs = faqResult.items.map(item => {
@@ -418,11 +418,11 @@ async function populateMainUI(county, currentSlug) {
                 };
             });
         } else {
-            console.warn(`⚠️ No CMS FAQs for ${countyName}, using embedded fallback...`);
+            console.warn(`[!] No CMS FAQs for ${countyName}, using embedded fallback...`);
             faqs = (county.content && county.content.faq) || [];
         }
     } catch (err) {
-        console.error('❌ Error loading FAQs:', err);
+        console.error('[X] Error loading FAQs:', err);
         faqs = (county.content && county.content.faq) || [];
     }
 
@@ -445,7 +445,7 @@ async function populateMainUI(county, currentSlug) {
                 }
             };
             wixSeo.setStructuredData([...baseSchemas, faqSchema]).catch(e => { });
-            console.log(`✅ FAQPage schema injected with ${faqs.length} CMS FAQs`);
+            console.log(`[OK] FAQPage schema injected with ${faqs.length} CMS FAQs`);
         } catch (seoErr) {
             console.warn('FAQPage schema injection failed:', seoErr);
         }
@@ -465,7 +465,7 @@ async function populateMainUI(county, currentSlug) {
 
                 if (qText.uniqueId) {
                     qText.text = question;
-                    console.log(`✅ Set question: ${question.substring(0, 50)}...`);
+                    console.log(`[OK] Set question: ${question.substring(0, 50)}...`);
                 }
 
                 // --- Unified FAQ Handling Logic ---
@@ -495,7 +495,7 @@ async function populateMainUI(county, currentSlug) {
                             // Do NOT call collapseText() here, because we want the full text to be visible when the accordion opens.
                             // We rely on answerGroup.collapse() below to hide it initially.
                         } catch (e) {
-                            console.error(`❌ Error setting CollapsibleText:`, e);
+                            console.error(`[X] Error setting CollapsibleText:`, e);
                             aText.text = answer; // Fallback
                         }
                     } else {
@@ -578,15 +578,15 @@ async function loadNearbyCounties(region, currentSlug) {
 }
 
 async function debugCMS() {
-    console.log("🕵️‍♀️ STARTING CMS DIAGNOSTIC CHECK (County Page)...");
+    console.log(" STARTING CMS DIAGNOSTIC CHECK (County Page)...");
     const collectionsToCheck = ['Import22', 'Faqs', 'FloridaCounties'];
 
     for (const colId of collectionsToCheck) {
         try {
             const count = await wixData.query(colId).limit(1).count();
-            console.log(`🔎 Collection '${colId}': Found ${count} items.`);
+            console.log(` Collection '${colId}': Found ${count} items.`);
         } catch (e) {
-            console.warn(`❌ Collection '${colId}': Query failed. Error: ${e.message}`);
+            console.warn(`[X] Collection '${colId}': Query failed. Error: ${e.message}`);
         }
     }
 }

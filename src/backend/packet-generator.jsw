@@ -35,7 +35,7 @@ export async function generatePDFPacket(caseId, defendantInfo) {
             }
         };
 
-        console.log(`📤 Requesting PDF Packet for ${defendantInfo.name}...`);
+        console.log(` Requesting PDF Packet for ${defendantInfo.name}...`);
 
         const response = await fetchWithRetry(gasUrl, {
             method: 'POST',
@@ -60,7 +60,7 @@ export async function generatePDFPacket(caseId, defendantInfo) {
         };
 
     } catch (error) {
-        console.error("❌ PDF Packet Generation Failed:", error);
+        console.error("[X] PDF Packet Generation Failed:", error);
         return { success: false, error: error.message };
     }
 }

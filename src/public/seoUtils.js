@@ -406,7 +406,7 @@ export function initGlobalSEO() {
             "slogan": "Fort Myers Since 2012"
         },
 
-        // B. ProfessionalService (more specific than LocalBusiness — ranks higher)
+        // B. ProfessionalService (more specific than LocalBusiness -- ranks higher)
         {
             "@context": "https://schema.org",
             "@type": "ProfessionalService",

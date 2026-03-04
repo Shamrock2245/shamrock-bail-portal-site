@@ -13,7 +13,7 @@ import { getSecret } from 'wix-secrets-backend';
  */
 export async function logStealthPing(defendantId, defendantName, staffId) {
     try {
-        console.log(`📡 Logging Stealth Ping: ${defendantName} by ${staffId}`);
+        console.log(` Logging Stealth Ping: ${defendantName} by ${staffId}`);
 
         // 1. Log to Wix CMS (Audit Trail)
         // We use a generic 'SystemLogs' or specific 'LocationPings'
@@ -44,7 +44,7 @@ export async function logStealthPing(defendantId, defendantName, staffId) {
         const apiKey = await getSecret('GAS_API_KEY');
 
         if (!gasUrl) {
-            console.error("❌ No GAS URL found");
+            console.error("[X] No GAS URL found");
             return { success: false, error: "Missing GAS Configuration" };
         }
 

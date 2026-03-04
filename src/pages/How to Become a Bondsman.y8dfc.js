@@ -3,7 +3,7 @@ import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
 
 $w.onReady(function () {
-    console.log("🚀 Bail School Page Loaded...");
+    console.log(" Bail School Page Loaded...");
 
     // Basic Navigation Handlers (matches other pages)
     const startBtn = $w('#startBailProcessBtn');
@@ -105,6 +105,6 @@ function updatePageSEO() {
             ]
         }
     ])
-        .then(() => console.log("✅ Bail School SEO Set"))
-        .catch(e => console.error("❌ Bail School SEO Error", e));
+        .then(() => console.log("[OK] Bail School SEO Set"))
+        .catch(e => console.error("[X] Bail School SEO Error", e));
 }

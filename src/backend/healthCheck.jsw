@@ -11,7 +11,7 @@ import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
 
 export async function runHealthCheck() {
-    console.log("🏥 Health Check: Starting...");
+    console.log(" Health Check: Starting...");
 
     try {
         const url = await getSecret('GAS_WEB_APP_URL');
@@ -40,15 +40,15 @@ export async function runHealthCheck() {
         const data = await response.json();
 
         if (data.success) {
-            console.log("✅ Health Check PASSED: GAS is online.");
+            console.log("[OK] Health Check PASSED: GAS is online.");
             return { status: 'healthy', latency: 'OK' };
         } else {
-            console.error("❌ Health Check FAILED: GAS returned error.", data);
+            console.error("[X] Health Check FAILED: GAS returned error.", data);
             return { status: 'unhealthy', error: data.error };
         }
 
     } catch (error) {
-        console.error("🚨 Health Check CRITICAL FAILURE:", error.message);
+        console.error(" Health Check CRITICAL FAILURE:", error.message);
         return { status: 'critical', error: error.message };
     }
 }

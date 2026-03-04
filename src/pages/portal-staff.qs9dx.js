@@ -30,14 +30,14 @@ $w.onReady(async function () {
     // Check for session token in URL (passed from magic link redirect)
     const query = wixLocation.query;
     if (query.st) {
-        console.log("🔗 Session token in URL, storing...");
+        console.log(" Session token in URL, storing...");
         setSessionToken(query.st);
     }
 
     // CUSTOM AUTH CHECK - Replace Wix Members
     const sessionToken = query.st || getSessionToken();
     if (!sessionToken) {
-        console.warn("⛔ No session token found. Redirecting to Portal Landing.");
+        console.warn(" No session token found. Redirecting to Portal Landing.");
         wixLocation.to('/portal-landing');
         return;
     }
@@ -55,21 +55,21 @@ $w.onReady(async function () {
             session = validationResult;
         } else if (validationResult && validationResult.reason === 'error') {
             // DATABASE/NETWORK ERROR - DO NOT LOGOUT
-            console.error("⚠️ Session validation failed due to network/DB error:", validationResult.message);
+            console.error("[!] Session validation failed due to network/DB error:", validationResult.message);
             $w('#welcomeText').text = "Connection Error. Retrying...";
             // Optional: Add a retry button or auto-retry logic here? 
             // For now, let's STOP execution but NOT redirect, allowing user to refresh.
             return;
         } else {
             // DEFINITELY INVALID or EXPIRED
-            console.warn("⛔ Invalid or expired session. Redirecting.", validationResult);
+            console.warn(" Invalid or expired session. Redirecting.", validationResult);
             clearSessionToken();
             wixLocation.to('/portal-landing');
             return;
         }
 
     } catch (err) {
-        console.error("❌ Critical error during session validation:", err);
+        console.error("[X] Critical error during session validation:", err);
         // Do not aggressively logout on unhandled errors
         $w('#welcomeText').text = "System Error. Please refresh.";
         return;
@@ -77,12 +77,12 @@ $w.onReady(async function () {
 
     // Check role authorization (staff or admin)
     if (session.role !== 'staff' && session.role !== 'admin') {
-        console.warn(`⛔ Wrong role: ${session.role}. This is the staff portal.`);
+        console.warn(` Wrong role: ${session.role}. This is the staff portal.`);
         wixLocation.to('/portal-landing');
         return;
     }
 
-    console.log("✅ Staff authenticated:", session.personId);
+    console.log("[OK] Staff authenticated:", session.personId);
     currentSession = session;
 
     // 1. Load Data
@@ -146,7 +146,7 @@ $w.onReady(async function () {
     initFilters();
     setupLogoutButton();
     setupMagicLinkGenerator(); // Setup "Open Dashboard" button
-    setupBondTrackerButton();   // Setup "Open Bond Tracker" → Telegram Intake Sheet
+    setupBondTrackerButton();   // Setup "Open Bond Tracker" -> Telegram Intake Sheet
     setupStartPaperworkButton(); // Setup "Start Paperwork" button (CRITICAL)
 
     try {
@@ -448,7 +448,7 @@ function setupMagicLinkGenerator() {
 }
 
 /**
- * Setup "Open Bond Tracker" button → Telegram Intake Sheet
+ * Setup "Open Bond Tracker" button -> Telegram Intake Sheet
  * Opens the Google Sheets Telegram Intake tab directly.
  */
 function setupBondTrackerButton() {
@@ -629,7 +629,7 @@ async function triggerStealthPoke(userData) {
     }
 
     try {
-        showStaffMessage("Sending Stealth Poke... 🥷", "info");
+        showStaffMessage("Sending Stealth Poke... ", "info");
 
         // const { sendStealthPingSms } = await import('backend/twilio-client');
 
@@ -638,7 +638,7 @@ async function triggerStealthPoke(userData) {
         const result = await sendStealthPingSms(_id, defendantPhone, staffId, defendantName);
 
         if (result.success) {
-            showStaffMessage("Poke Sent! 📍 Wait for ping...", "success");
+            showStaffMessage("Poke Sent!  Wait for ping...", "success");
         } else {
             showStaffMessage("Poke Failed: " + result.message, "error");
         }
@@ -693,7 +693,7 @@ function runPremiumAnimations() {
         }
 
         timeline.play();
-        console.log("✨ Premium animations started");
+        console.log(" Premium animations started");
 
     } catch (e) {
         console.warn("Animation error (non-critical):", e);
@@ -716,19 +716,19 @@ function updateActionableInsights(stats) {
     if (!msgEl || !codeEl || !urlEl) return;
 
     // Default Good State
-    let statusTitle = "🟢 System Active";
+    let statusTitle = " System Active";
     let statusDetail = "All systems operational.";
     let statusColor = "#28a745"; // Green
 
     // 1. Check Failures (Critical)
     if (stats.failedChecks > 0) {
-        statusTitle = "🔴 Action Required";
+        statusTitle = " Action Required";
         statusDetail = `${stats.failedChecks} Failed Background Check(s)`;
         statusColor = "#dc3545"; // Red
     }
     // 2. Check Pending High Load (Warning)
     else if (stats.pendingSignatures > 5) {
-        statusTitle = "🟠 High Load";
+        statusTitle = " High Load";
         statusDetail = `${stats.pendingSignatures} Signatures Pending`;
         statusColor = "#ffc107"; // Amber
     }
@@ -809,11 +809,11 @@ function setupStartPaperworkButton() {
             return;
         }
 
-        console.log('✅ Staff Portal: #startPaperworkBtn found and configured');
+        console.log('[OK] Staff Portal: #startPaperworkBtn found and configured');
 
         startBtn.onClick(async () => {
             try {
-                console.log('🚀 Start Paperwork clicked');
+                console.log(' Start Paperwork clicked');
                 startBtn.disable();
                 startBtn.label = "Loading...";
 
@@ -859,14 +859,14 @@ function setupStartPaperworkButton() {
 }
 
 /**
- * Handle Finalize Paperwork - Transition IntakeQueue → Cases
+ * Handle Finalize Paperwork - Transition IntakeQueue -> Cases
  * Called when staff clicks "Finalize Paperwork" button
  * 
  * @param {Object} itemData - Case/Intake record from repeater
  */
 async function handleFinalizePaperwork(itemData) {
     try {
-        console.log('🎯 Finalizing paperwork for:', itemData.defendantName);
+        console.log(' Finalizing paperwork for:', itemData.defendantName);
 
         // Step 1: Verify signatures are complete
         if (itemData.paperworkStatus !== 'signed' && itemData.paperworkStatus !== 'completed') {
@@ -907,16 +907,16 @@ async function handleFinalizePaperwork(itemData) {
         });
 
         if (result.success) {
-            showStaffMessage('✅ Case finalized! IntakeQueue → Cases complete.', 'success');
+            showStaffMessage('[OK] Case finalized! IntakeQueue -> Cases complete.', 'success');
 
             // Refresh dashboard data
             const dashboardData = await getStaffDashboardData();
             allCases = dashboardData.cases;
             $w('#caseListRepeater').data = allCases;
 
-            console.log('✅ Case finalized:', result);
+            console.log('[OK] Case finalized:', result);
         } else {
-            showStaffMessage('❌ Failed to finalize: ' + result.error, 'error');
+            showStaffMessage('[X] Failed to finalize: ' + result.error, 'error');
         }
 
     } catch (error) {
@@ -937,7 +937,7 @@ async function promptForInput(title, placeholder) {
         const result = await wixWindow.openLightbox('StaffInputLightbox', { title, placeholder });
         if (result && result.value !== undefined) return result.value || null;
     } catch (_) {
-        // Lightbox not found — use inline fallback via staff page elements
+        // Lightbox not found -- use inline fallback via staff page elements
     }
     // Inline fallback: surface a hidden input panel on the staff page
     // Staff page should have #staffPromptBox, #staffPromptLabel, #staffPromptInput, #staffPromptConfirmBtn
@@ -956,7 +956,7 @@ async function promptForInput(title, placeholder) {
                 resolve(val || null);
             });
         } catch (e) {
-            // Elements not in Editor yet — resolve null so flow continues gracefully
+            // Elements not in Editor yet -- resolve null so flow continues gracefully
             console.warn('promptForInput: staff prompt elements not found. Resolving null.', e.message);
             resolve(null);
         }

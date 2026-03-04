@@ -5,7 +5,7 @@ import { geocodeAddressToCityStateZip, reverseGeocodeToCityStateZip } from 'back
  * Run this function directly in the Wix Editor (click the green Play icon)
  */
 export async function verifyMapsConfiguration() {
-    console.log("🗺️ Starting Google Maps API Verification...");
+    console.log(" Starting Google Maps API Verification...");
     const results = {
         geocoding: { success: false, message: '' },
         reverseGeocoding: { success: false, message: '' },
@@ -14,19 +14,19 @@ export async function verifyMapsConfiguration() {
 
     try {
         // 1. Test Geocoding (Address -> Coords -> Details)
-        console.log("📍 Testing Geocoding...");
+        console.log(" Testing Geocoding...");
         const address = "1600 Amphitheatre Parkway, Mountain View, CA";
         const geoResult = await geocodeAddressToCityStateZip(address);
 
         if (geoResult.city === 'Mountain View' && geoResult.state === 'CA') {
             results.geocoding.success = true;
-            results.geocoding.message = "✅ Geocoding working. Correctly identified Mountain View, CA.";
+            results.geocoding.message = "[OK] Geocoding working. Correctly identified Mountain View, CA.";
         } else {
-            results.geocoding.message = `❌ Geocoding returned unexpected data: ${JSON.stringify(geoResult)}`;
+            results.geocoding.message = `[X] Geocoding returned unexpected data: ${JSON.stringify(geoResult)}`;
         }
 
         // 2. Test Reverse Geocoding (Coords -> Address)
-        console.log("📍 Testing Reverse Geocoding...");
+        console.log(" Testing Reverse Geocoding...");
         // Shamrock Bail Bonds (approximate coords for test or generic US location)
         // Let's use the Googleplex coords again: 37.4221, -122.0841
         const lat = 37.4221;
@@ -36,23 +36,23 @@ export async function verifyMapsConfiguration() {
 
         if (reverseResult.city === 'Mountain View' && reverseResult.state === 'CA') {
             results.reverseGeocoding.success = true;
-            results.reverseGeocoding.message = "✅ Reverse Geocoding working. Correctly identified Mountain View, CA.";
+            results.reverseGeocoding.message = "[OK] Reverse Geocoding working. Correctly identified Mountain View, CA.";
         } else {
-            results.reverseGeocoding.message = `❌ Reverse Geocoding returned unexpected data: ${JSON.stringify(reverseResult)}`;
+            results.reverseGeocoding.message = `[X] Reverse Geocoding returned unexpected data: ${JSON.stringify(reverseResult)}`;
         }
 
         // Final Verdict
         if (results.geocoding.success && results.reverseGeocoding.success) {
             results.overallSuccess = true;
-            console.log("✅ SUCCESS: Google Maps is fully configured.");
+            console.log("[OK] SUCCESS: Google Maps is fully configured.");
         } else {
-            console.error("❌ FAILURE: Google Maps configuration has issues.");
+            console.error("[X] FAILURE: Google Maps configuration has issues.");
         }
 
         return results;
 
     } catch (error) {
-        console.error("💥 Critical Error during verification:", error);
+        console.error(" Critical Error during verification:", error);
         return {
             success: false,
             error: error.message,

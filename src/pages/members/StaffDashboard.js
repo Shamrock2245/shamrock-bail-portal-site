@@ -4,31 +4,31 @@
  * Staff-only page for managing cases, intake queue, and document status.
  *
  * FEATURES:
- *   1. Intake Queue — view pending indemnitor submissions, match to cases
- *   2. Case list — filter by county, status
- *   3. Document status — per-case signing progress
+ *   1. Intake Queue -- view pending indemnitor submissions, match to cases
+ *   2. Case list -- filter by county, status
+ *   3. Document status -- per-case signing progress
  *   4. Generate magic links for defendants/indemnitors
  *   5. Quick access to Dashboard.html (GAS)
  *
  * URL: /members/staff-dashboard
  *
  * Page Element IDs (set in Wix Editor):
- *   #welcomeText           — "Welcome, [Name]"
- *   #tabIntake             — Tab: Intake Queue
- *   #tabCases              — Tab: Cases
- *   #intakeSection         — Intake queue container
- *   #intakeSearchInput     — Search box for intake records
- *   #intakeRepeater        — Repeater: intake queue records
- *   #noIntakeMessage       — "No pending intakes"
- *   #casesSection          — Cases container
- *   #countyFilter          — Dropdown: filter by county
- *   #statusFilter          — Dropdown: filter by status
- *   #casesRepeater         — Repeater: cases list
- *   #noCasesMessage        — "No cases found"
- *   #gasLinkBtn            — Button: open Dashboard.html (GAS)
- *   #loadingSpinner        — Loading indicator
- *   #errorBanner           — Error message banner
- *   #successBanner         — Success message banner
+ *   #welcomeText           -- "Welcome, [Name]"
+ *   #tabIntake             -- Tab: Intake Queue
+ *   #tabCases              -- Tab: Cases
+ *   #intakeSection         -- Intake queue container
+ *   #intakeSearchInput     -- Search box for intake records
+ *   #intakeRepeater        -- Repeater: intake queue records
+ *   #noIntakeMessage       -- "No pending intakes"
+ *   #casesSection          -- Cases container
+ *   #countyFilter          -- Dropdown: filter by county
+ *   #statusFilter          -- Dropdown: filter by status
+ *   #casesRepeater         -- Repeater: cases list
+ *   #noCasesMessage        -- "No cases found"
+ *   #gasLinkBtn            -- Button: open Dashboard.html (GAS)
+ *   #loadingSpinner        -- Loading indicator
+ *   #errorBanner           -- Error message banner
+ *   #successBanner         -- Success message banner
  */
 
 import wixLocation from 'wix-location';
@@ -48,7 +48,7 @@ import {
 } from 'backend/pendingDocuments';
 import { generateAccessCode } from 'backend/accessCodes';
 
-// GAS Dashboard URL — update with actual deployed GAS URL
+// GAS Dashboard URL -- update with actual deployed GAS URL
 const GAS_DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
 const PHONE_TEL = 'tel:+12393322245';
 
@@ -57,9 +57,9 @@ let intakeRecords = [];
 let caseRecords = [];
 let activeTab = 'intake'; // 'intake' | 'cases'
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // PAGE INIT
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 $w.onReady(async function () {
     showLoading(true);
@@ -93,9 +93,9 @@ $w.onReady(async function () {
     trackEvent('StaffDashboard_View', { memberId: memberData?.id });
 });
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // AUTH & ROLE
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 async function checkLogin() {
     try {
@@ -115,7 +115,7 @@ async function verifyStaffRole() {
         );
     } catch {
         // If role check fails, allow access (Wix Members may not have roles configured yet)
-        console.warn('[StaffDashboard] Role check failed — allowing access');
+        console.warn('[StaffDashboard] Role check failed -- allowing access');
         return true;
     }
 }
@@ -135,9 +135,9 @@ async function loadMemberData() {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // DISPLAY
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 function displayWelcome() {
     const name = memberData?.firstName || 'Staff';
@@ -146,9 +146,9 @@ function displayWelcome() {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // TABS
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 function setupTabs() {
     if ($w('#tabIntake').valid) {
@@ -177,9 +177,9 @@ function showSection(section) {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // INTAKE QUEUE
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 async function loadIntakeQueue(searchTerm) {
     showLoading(true);
@@ -301,9 +301,9 @@ async function handleRejectIntake(intakeId) {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // CASES
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 async function loadCases() {
     showLoading(true);
@@ -426,9 +426,9 @@ async function openCaseDocuments(caseId, caseNumber) {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // EVENT LISTENERS
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 function setupEventListeners() {
     // Intake search
@@ -462,9 +462,9 @@ function setupEventListeners() {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // HELPERS
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 function showLoading(visible) {
     if ($w('#loadingSpinner').valid) {

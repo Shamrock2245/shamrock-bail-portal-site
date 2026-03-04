@@ -15,7 +15,7 @@ import wixData from 'wix-data';
  */
 export async function testPortalSessionsCollection() {
     try {
-        console.log('🧪 Testing Portal Sessions collection...');
+        console.log(' Testing Portal Sessions collection...');
 
         // Try to insert a test session
         const testSession = {
@@ -28,7 +28,7 @@ export async function testPortalSessionsCollection() {
         };
 
         const insertResult = await wixData.insert('PortalSessions', testSession, { suppressAuth: true });
-        console.log('✅ Insert successful:', insertResult._id);
+        console.log('[OK] Insert successful:', insertResult._id);
 
         // Try to query it back
         const queryResult = await wixData.query('PortalSessions')
@@ -36,14 +36,14 @@ export async function testPortalSessionsCollection() {
             .find({ suppressAuth: true });
 
         if (queryResult.items.length > 0) {
-            console.log('✅ Query successful: Found', queryResult.items.length, 'item(s)');
+            console.log('[OK] Query successful: Found', queryResult.items.length, 'item(s)');
         } else {
-            console.warn('⚠️ Query returned 0 results (unexpected)');
+            console.warn('[!] Query returned 0 results (unexpected)');
         }
 
         // Clean up test data
         await wixData.remove('PortalSessions', insertResult._id, { suppressAuth: true });
-        console.log('✅ Cleanup successful');
+        console.log('[OK] Cleanup successful');
 
         return {
             success: true,
@@ -52,7 +52,7 @@ export async function testPortalSessionsCollection() {
         };
 
     } catch (error) {
-        console.error('❌ Portal Sessions collection error:', error);
+        console.error('[X] Portal Sessions collection error:', error);
         return {
             success: false,
             error: error.message,
@@ -66,7 +66,7 @@ export async function testPortalSessionsCollection() {
  */
 export async function testMagiclinksCollection() {
     try {
-        console.log('🧪 Testing Magiclinks collection...');
+        console.log(' Testing Magiclinks collection...');
 
         // Try to insert a test magic link
         const testLink = {
@@ -79,7 +79,7 @@ export async function testMagiclinksCollection() {
         };
 
         const insertResult = await wixData.insert('Magiclinks', testLink, { suppressAuth: true });
-        console.log('✅ Insert successful:', insertResult._id);
+        console.log('[OK] Insert successful:', insertResult._id);
 
         // Try to query it back
         const queryResult = await wixData.query('Magiclinks')
@@ -87,14 +87,14 @@ export async function testMagiclinksCollection() {
             .find({ suppressAuth: true });
 
         if (queryResult.items.length > 0) {
-            console.log('✅ Query successful: Found', queryResult.items.length, 'item(s)');
+            console.log('[OK] Query successful: Found', queryResult.items.length, 'item(s)');
         } else {
-            console.warn('⚠️ Query returned 0 results (unexpected)');
+            console.warn('[!] Query returned 0 results (unexpected)');
         }
 
         // Clean up test data
         await wixData.remove('Magiclinks', insertResult._id, { suppressAuth: true });
-        console.log('✅ Cleanup successful');
+        console.log('[OK] Cleanup successful');
 
         return {
             success: true,
@@ -103,7 +103,7 @@ export async function testMagiclinksCollection() {
         };
 
     } catch (error) {
-        console.error('❌ Magiclinks collection error:', error);
+        console.error('[X] Magiclinks collection error:', error);
         return {
             success: false,
             error: error.message,
@@ -116,7 +116,7 @@ export async function testMagiclinksCollection() {
  * Test both collections at once
  */
 export async function testAllAuthCollections() {
-    console.log('🧪 Testing all authentication collections...\n');
+    console.log(' Testing all authentication collections...\n');
 
     const results = {
         portalSessions: await testPortalSessionsCollection(),
@@ -125,10 +125,10 @@ export async function testAllAuthCollections() {
 
     const allPassed = results.portalSessions.success && results.magiclinks.success;
 
-    console.log('\n📊 Test Summary:');
-    console.log('Portal Sessions:', results.portalSessions.success ? '✅ PASS' : '❌ FAIL');
-    console.log('Magiclinks:', results.magiclinks.success ? '✅ PASS' : '❌ FAIL');
-    console.log('\nOverall:', allPassed ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED');
+    console.log('\n Test Summary:');
+    console.log('Portal Sessions:', results.portalSessions.success ? '[OK] PASS' : '[X] FAIL');
+    console.log('Magiclinks:', results.magiclinks.success ? '[OK] PASS' : '[X] FAIL');
+    console.log('\nOverall:', allPassed ? '[OK] ALL TESTS PASSED' : '[X] SOME TESTS FAILED');
 
     return {
         allPassed,

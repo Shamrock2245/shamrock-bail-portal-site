@@ -23,23 +23,23 @@ export function validateStickyFooter(footerId = '#boxStickyFooter') {
 
         // 1. Existence Check
         if (!footer) {
-            console.error(`❌ UI Validator: Sticky Footer '${footerId}' NOT FOUND on this page.`);
+            console.error(`[X] UI Validator: Sticky Footer '${footerId}' NOT FOUND on this page.`);
             return;
         }
 
         // 2. Collapse State Check
         if (footer.collapsed) {
-            console.error(`❌ UI Validator: Sticky Footer '${footerId}' is COLLAPSED.`);
+            console.error(`[X] UI Validator: Sticky Footer '${footerId}' is COLLAPSED.`);
             return;
         }
 
         // 3. Hidden State Check
         if (footer.hidden) {
-            console.error(`❌ UI Validator: Sticky Footer '${footerId}' is HIDDEN.`);
+            console.error(`[X] UI Validator: Sticky Footer '${footerId}' is HIDDEN.`);
             return;
         }
 
         // 4. Success Log
-        console.log(`✅ UI Validator: Sticky Footer '${footerId}' is present and visible.`);
+        console.log(`[OK] UI Validator: Sticky Footer '${footerId}' is present and visible.`);
     });
 }

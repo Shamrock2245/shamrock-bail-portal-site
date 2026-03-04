@@ -174,7 +174,7 @@ function setupEmergencyCallButton() {
  * button to get permanently stuck:
  *
  *  1. btn.disable() was called but btn.enable() was in the finally block which
- *     only ran AFTER wixLocation.to() — but Wix navigation cancels JS execution
+ *     only ran AFTER wixLocation.to() -- but Wix navigation cancels JS execution
  *     mid-flight, so finally never ran and the button stayed disabled.
  *
  *  2. The fallback on geolocation denial navigated to '/' (home), which just
@@ -198,7 +198,7 @@ function setupFindJailButton() {
         } catch (e) { /* not found */ }
     }
 
-    if (!btn) return; // Button not on this page — non-fatal
+    if (!btn) return; // Button not on this page -- non-fatal
 
     // Override any static Editor link so our onClick is the sole handler
     try { btn.link = ''; } catch (e) { /* read-only in some contexts */ }
@@ -221,9 +221,9 @@ function setupFindJailButton() {
 async function handleFindJailClick(btn) {
     const originalLabel = (btn && btn.label) || 'Find My Jail';
 
-    // Optimistically update label; do NOT disable — disabling causes stuck state
+    // Optimistically update label; do NOT disable -- disabling causes stuck state
     // when Wix navigation interrupts the finally block.
-    try { if (btn) btn.label = 'Locating…'; } catch (e) { /* non-fatal */ }
+    try { if (btn) btn.label = 'Locating...'; } catch (e) { /* non-fatal */ }
 
     try {
         // 1. Request geolocation (user may be prompted for permission)
@@ -243,12 +243,12 @@ async function handleFindJailClick(btn) {
             const targetSlug = rawSlug.replace(/-county$/i, '').trim();
             wixLocation.to(`/florida-bail-bonds/${targetSlug}`);
         } else {
-            // No nearest county found — send to county list page
+            // No nearest county found -- send to county list page
             wixLocation.to('/florida-bail-bonds');
         }
 
     } catch (error) {
-        // Geolocation denied, timed out, or unavailable — always reset label first
+        // Geolocation denied, timed out, or unavailable -- always reset label first
         try { if (btn) btn.label = originalLabel; } catch (e) { /* non-fatal */ }
 
         const errMsg = (error && error.message) || String(error);

@@ -35,9 +35,9 @@ function setupUI() {
     if ($w('#consentText')) {
         $w('#consentText').text = `By continuing, you agree to:
 
-• Sign documents electronically (legally binding)
-• Allow location capture at signing time
-• Receive communications about your case
+* Sign documents electronically (legally binding)
+* Allow location capture at signing time
+* Receive communications about your case
 
 This is required for electronic signing.`;
     }

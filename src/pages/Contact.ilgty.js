@@ -3,7 +3,7 @@ import { getCounties } from 'public/countyUtils';
 import wixSeo from 'wix-seo';
 
 $w.onReady(async function () {
-    console.log("🚀 Contact Page Loaded");
+    console.log(" Contact Page Loaded");
 
     // Initialize Event Handlers
     $w('#btnSubmit').onClick(handleSubmit);
@@ -90,8 +90,8 @@ function updatePageSEO() {
             }
         }
     ])
-        .then(() => console.log("✅ Contact Page SEO Set"))
-        .catch(e => console.error("❌ Contact Page SEO Error", e));
+        .then(() => console.log("[OK] Contact Page SEO Set"))
+        .catch(e => console.error("[X] Contact Page SEO Error", e));
 }
 
 async function loadJails() {
@@ -191,6 +191,6 @@ function showError(msg) {
 
 function resetButton() {
     const $btn = $w('#btnSubmit');
-    $btn.label = "Submit Request →";
+    $btn.label = "Submit Request ->";
     $btn.enable();
 }

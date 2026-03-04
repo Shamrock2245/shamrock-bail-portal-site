@@ -4,7 +4,7 @@ import wixSeo from 'wix-seo';
 import { COLLECTIONS } from 'public/collectionIds';
 
 $w.onReady(function () {
-    console.log("🚀 How Bail Works Page Loading...");
+    console.log(" How Bail Works Page Loading...");
 
     // 1. Setup Data for Repeaters
     setupBailProcess();
@@ -28,7 +28,7 @@ $w.onReady(function () {
 });
 
 async function debugCMS() {
-    console.log("🕵️‍♀️ STARTING CMS DIAGNOSTIC CHECK...");
+    console.log(" STARTING CMS DIAGNOSTIC CHECK...");
 
     const collectionsToCheck = [
         'Import22', 'Faqs', // Potential FAQ IDs (Import22 is the correct collection ID)
@@ -38,12 +38,12 @@ async function debugCMS() {
     for (const colId of collectionsToCheck) {
         try {
             const count = await wixData.query(colId).limit(1).count();
-            console.log(`🔎 Collection '${colId}': Found ${count} items.`);
+            console.log(` Collection '${colId}': Found ${count} items.`);
         } catch (e) {
-            console.warn(`❌ Collection '${colId}': Query failed (might not exist). Error: ${e.message}`);
+            console.warn(`[X] Collection '${colId}': Query failed (might not exist). Error: ${e.message}`);
         }
     }
-    console.log("🕵️‍♀️ DIAGNOSTIC CHECK COMPLETE.");
+    console.log(" DIAGNOSTIC CHECK COMPLETE.");
 }
 
 // --- 1. The Arrest Process ---
@@ -175,31 +175,31 @@ async function setupCommonBailAmounts() {
         }
 
         if (result && result.items.length > 0) {
-            console.log(`✅ Loaded ${result.items.length} Common Charges from CMS.`);
+            console.log(`[OK] Loaded ${result.items.length} Common Charges from CMS.`);
             data = result.items;
         } else {
             // Second try specifically if first returned empty (not error, but empty)
             const result2 = await wixData.query('Common Charges').ascending('sortOrder').limit(50).find();
             if (result2.items.length > 0) {
-                console.log(`✅ Loaded ${result2.items.length} from 'Common Charges'.`);
+                console.log(`[OK] Loaded ${result2.items.length} from 'Common Charges'.`);
                 data = result2.items;
             } else {
-                console.warn("⚠️ No Common Charges in CMS (checked both aliases), using fallback data.");
+                console.warn("[!] No Common Charges in CMS (checked both aliases), using fallback data.");
             }
         }
     } catch (err) {
-        console.error("❌ Failed to load Common Charges from CMS:", err);
+        console.error("[X] Failed to load Common Charges from CMS:", err);
     }
 
     // Use the correct ID from Wix Editor: #amountsRepeater
     const element = $w('#amountsRepeater');
 
     if (element) {
-        console.log('✅ Found #amountsRepeater element, type:', element.type);
+        console.log('[OK] Found #amountsRepeater element, type:', element.type);
 
         // DETECT ELEMENT TYPE: Check if it's a Table or a Repeater
         if (element.type === 'Table' || element.type === '$w.Table') {
-            console.log("📊 Found Table element:", element.id);
+            console.log(" Found Table element:", element.id);
 
             // Map CMS fields to table columns - BE ROBUST
             // The table likely expects columns 'offense' and 'range' OR 'bailRange'
@@ -225,11 +225,11 @@ async function setupCommonBailAmounts() {
             });
 
             element.rows = tableRows;
-            console.log("✅ Table rows set:", tableRows.length, "rows");
+            console.log("[OK] Table rows set:", tableRows.length, "rows");
 
         } else {
             // It's a Repeater
-            console.log("🔄 Found Repeater element:", element.id);
+            console.log(" Found Repeater element:", element.id);
 
             element.onItemReady(($item, itemData) => {
                 // Map CMS field names (may have spaces or different casing)
@@ -253,7 +253,7 @@ async function setupCommonBailAmounts() {
             element.data = data;
         }
     } else {
-        console.error('❌ #amountsRepeater element NOT found on page');
+        console.error('[X] #amountsRepeater element NOT found on page');
     }
 }
 
@@ -312,21 +312,21 @@ async function setupFAQ() {
         }
 
         if (result && result.items.length > 0) {
-            console.log(`✅ Loaded ${result.items.length} FAQs from CMS.`);
+            console.log(`[OK] Loaded ${result.items.length} FAQs from CMS.`);
             data = result.items;
         } else {
-            console.warn("⚠️ No FAQs found in either Import22 or Faqs collections.");
+            console.warn("[!] No FAQs found in either Import22 or Faqs collections.");
         }
 
     } catch (err) {
-        console.error("❌ Failed to load FAQs from CMS (All attempts failed):", err);
+        console.error("[X] Failed to load FAQs from CMS (All attempts failed):", err);
     }
 
     // Bind data to the FAQ repeater
     // Use the correct ID from Wix Editor: #faqRepeater
     const rep = $w('#faqRepeater');
     if (rep) {
-        console.log('✅ Found #faqRepeater element');
+        console.log('[OK] Found #faqRepeater element');
 
         rep.onItemReady(($item, itemData) => {
             console.log("Rendering FAQ Item:", itemData);
@@ -357,9 +357,9 @@ async function setupFAQ() {
         });
 
         rep.data = data;
-        console.log(`✅ FAQ Repeater populated with ${data.length} items.`);
+        console.log(`[OK] FAQ Repeater populated with ${data.length} items.`);
     } else {
-        console.error('❌ #faqRepeater not found on page');
+        console.error('[X] #faqRepeater not found on page');
     }
 
     // Trigger SEO Update with FAQ structured data

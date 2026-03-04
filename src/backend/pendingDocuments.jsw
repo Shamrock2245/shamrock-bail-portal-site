@@ -6,29 +6,29 @@
  * Wix client portal for embedded signing.
  *
  * FLOW:
- *   GAS generates packet → creates SignNow invite → stores link here
- *   → Client opens Wix portal → reads link from here → opens embedded signing
- *   → SignNow webhook fires → this module updates status → loop closes
+ *   GAS generates packet -> creates SignNow invite -> stores link here
+ *   -> Client opens Wix portal -> reads link from here -> opens embedded signing
+ *   -> SignNow webhook fires -> this module updates status -> loop closes
  *
  * CMS Collection: PendingDocuments
  * Fields (must exist in Wix CMS):
- *   - title           (Text)      — Auto-generated doc ID (e.g., "DOC-2026-001")
- *   - caseId          (Text)      — Reference to the case
- *   - documentKey     (Text)      — e.g., "financial_indemnity_v1"
- *   - documentName    (Text)      — Human-readable name
- *   - signerEmail     (Text)      — Email of the person who must sign
- *   - signerRole      (Text)      — "defendant" | "indemnitor" | "staff"
- *   - signNowDocId    (Text)      — SignNow document ID
- *   - signingUrl      (Text)      — Embedded signing URL (from SignNow)
- *   - status          (Text)      — "pending" | "viewed" | "signed" | "expired" | "error"
- *   - sentAt          (Date/Time) — When the invite was sent
- *   - signedAt        (Date/Time) — When signing was completed
- *   - expiresAt       (Date/Time) — When the signing link expires
- *   - signedPdfUrl    (Text)      — URL to the completed signed PDF
- *   - idUploadUrl     (Text)      — URL of uploaded government ID (post-sign)
- *   - idUploadedAt    (Date/Time) — When ID was uploaded
- *   - webhookPayload  (Text)      — Raw JSON from SignNow webhook (for audit)
- *   - memberId        (Text)      — Wix member ID (if known)
+ *   - title           (Text)      -- Auto-generated doc ID (e.g., "DOC-2026-001")
+ *   - caseId          (Text)      -- Reference to the case
+ *   - documentKey     (Text)      -- e.g., "financial_indemnity_v1"
+ *   - documentName    (Text)      -- Human-readable name
+ *   - signerEmail     (Text)      -- Email of the person who must sign
+ *   - signerRole      (Text)      -- "defendant" | "indemnitor" | "staff"
+ *   - signNowDocId    (Text)      -- SignNow document ID
+ *   - signingUrl      (Text)      -- Embedded signing URL (from SignNow)
+ *   - status          (Text)      -- "pending" | "viewed" | "signed" | "expired" | "error"
+ *   - sentAt          (Date/Time) -- When the invite was sent
+ *   - signedAt        (Date/Time) -- When signing was completed
+ *   - expiresAt       (Date/Time) -- When the signing link expires
+ *   - signedPdfUrl    (Text)      -- URL to the completed signed PDF
+ *   - idUploadUrl     (Text)      -- URL of uploaded government ID (post-sign)
+ *   - idUploadedAt    (Date/Time) -- When ID was uploaded
+ *   - webhookPayload  (Text)      -- Raw JSON from SignNow webhook (for audit)
+ *   - memberId        (Text)      -- Wix member ID (if known)
  *
  * File: backend/pendingDocuments.jsw
  */
@@ -37,9 +37,9 @@ import wixData from 'wix-data';
 
 const COLLECTION = 'PendingDocuments';
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // READ OPERATIONS
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 /**
  * Get all pending documents for a given signer email.
@@ -124,7 +124,7 @@ export async function getDocumentBySignNowId(signNowDocId) {
 }
 
 /**
- * Get case completion summary — how many docs are signed vs. pending.
+ * Get case completion summary -- how many docs are signed vs. pending.
  * Used by staff dashboard status chips.
  *
  * @param {string} caseId - The case ID
@@ -157,9 +157,9 @@ export async function getCaseDocumentSummary(caseId) {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // WRITE OPERATIONS
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 /**
  * Create a new PendingDocument record.
@@ -290,9 +290,9 @@ export async function recordIdUploadById(recordId, idUploadUrl) {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // CLEANUP
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 /**
  * Mark all expired documents as "expired" (maintenance function).
@@ -325,9 +325,9 @@ export async function cleanupExpiredDocuments() {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // PRIVATE HELPERS
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 /**
  * Internal helper: update a document's status and optional fields.

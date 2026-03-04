@@ -130,7 +130,7 @@ export async function logRouterRedirect(params) {
     
     try {
         const queryKeys = Object.keys(query || {}).join(',') || 'none';
-        console.log(`[Router] Redirect: ${from} → ${to} (query: ${queryKeys})`);
+        console.log(`[Router] Redirect: ${from} -> ${to} (query: ${queryKeys})`);
         
         // Only log if there's a token in the query (important redirect)
         if (query && (query.token || query.st)) {

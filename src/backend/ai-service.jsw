@@ -60,7 +60,7 @@ async function callOpenAI(messages, tools = []) {
 
                 // If 429 (Rate Limit) or 5xx (Server Error), we retry
                 if (response.status === 429 || response.status >= 500) {
-                    console.warn(`⚠️ OpenAI API Retry ${i + 1}/3 (Status: ${response.status})`);
+                    console.warn(`[!] OpenAI API Retry ${i + 1}/3 (Status: ${response.status})`);
                     await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Linear backoff
                     continue;
                 }
@@ -68,7 +68,7 @@ async function callOpenAI(messages, tools = []) {
                 break; // Exit loop on 200 or 400 (client error)
             } catch (err) {
                 error = err;
-                console.warn(`⚠️ OpenAI Network Retry ${i + 1}/3: ${err.message}`);
+                console.warn(`[!] OpenAI Network Retry ${i + 1}/3: ${err.message}`);
                 await new Promise(r => setTimeout(r, 1000));
             }
         }

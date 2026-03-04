@@ -31,7 +31,7 @@ import allCountiesData from 'backend/data/allFloridaCounties.json';
  * - Upsert based on 'countySlug'.
  */
 export async function syncCountiesToCms() {
-    console.log('🔄 Starting CMS County Sync (Rich Data Merge)...');
+    console.log(' Starting CMS County Sync (Rich Data Merge)...');
 
     try {
         const config = await getConfig();
@@ -147,16 +147,16 @@ export async function syncCountiesToCms() {
                     added++;
                 }
             } catch (err) {
-                console.error(`❌ Failed to sync county: ${finalSlug}`, err);
+                console.error(`[X] Failed to sync county: ${finalSlug}`, err);
                 errors++;
             }
         }
 
-        console.log(`✅ Sync Complete: ${added} added, ${updated} updated, ${errors} errors.`);
+        console.log(`[OK] Sync Complete: ${added} added, ${updated} updated, ${errors} errors.`);
 
         // Verify specifically for Lee (Primary)
         if (updated > 0 || added > 0) {
-            console.log("🔍 Sample Data Check (Lee):", richDataMap['lee'] ? "Found Rich Data" : "Missing Rich Data");
+            console.log(" Sample Data Check (Lee):", richDataMap['lee'] ? "Found Rich Data" : "Missing Rich Data");
         }
 
         return { success: true, added, updated, errors };

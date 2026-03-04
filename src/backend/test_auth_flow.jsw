@@ -7,7 +7,7 @@ export async function testFullAuthFlow() {
     const log = (msg) => logs.push(`${new Date().toISOString()} - ${msg}`);
 
     try {
-        log('🚀 Starting Auth Flow Test');
+        log(' Starting Auth Flow Test');
 
         // 1. Generate Link
         const personId = 'test_user_' + Date.now();
@@ -18,14 +18,14 @@ export async function testFullAuthFlow() {
         const token = await generateMagicLink(personId, role, null, { email, name: 'Test User' });
 
         if (!token) throw new Error('Token generation failed');
-        log(`✅ Token generated: ${token.substring(0, 5)}...`);
+        log(`[OK] Token generated: ${token.substring(0, 5)}...`);
 
         // 2. Validate Link (Login)
         log('2. Validating link (Simulating Login)...');
         const loginResult = await onMagicLinkLoginV2(token);
 
         if (!loginResult.ok) throw new Error(`Login failed: ${loginResult.message}`);
-        log(`✅ Login successful. Session Token: ${loginResult.sessionToken?.substring(0, 5)}...`);
+        log(`[OK] Login successful. Session Token: ${loginResult.sessionToken?.substring(0, 5)}...`);
 
         // 3. Validate Session
         const sessionToken = loginResult.sessionToken;
@@ -33,22 +33,22 @@ export async function testFullAuthFlow() {
         const sessionResult = await validateCustomSession(sessionToken);
 
         if (!sessionResult.valid) throw new Error(`Session validation failed: ${sessionResult.reason}`);
-        log(`✅ Session Validated! Person: ${sessionResult.personId}, Role: ${sessionResult.role}`);
+        log(`[OK] Session Validated! Person: ${sessionResult.personId}, Role: ${sessionResult.role}`);
 
         // 4. Verify Collections
         log('4. Verifying DB Records...');
         const linkRecord = await wixData.query('Magiclinks').eq('token', token).find({ suppressAuth: true });
         if (linkRecord.items.length === 0) throw new Error('Magic Link record missing');
         if (!linkRecord.items[0].used) throw new Error('Magic Link not marked as USED');
-        log('✅ Magic Link marked used correctly.');
+        log('[OK] Magic Link marked used correctly.');
 
         const sessionRecord = await wixData.query('Portal Sessions').eq('sessionToken', sessionToken).find({ suppressAuth: true });
         if (sessionRecord.items.length === 0) throw new Error('Session record missing');
         if (!sessionRecord.items[0].isActive) throw new Error('Session is not ACTIVE');
-        log('✅ Session record exists and is active.');
+        log('[OK] Session record exists and is active.');
 
 
-        log('🎉 TEST PASSED: Full flow is healthy.');
+        log(' TEST PASSED: Full flow is healthy.');
 
         // 5. Extra: Test Email Lookup (Simulate Social Login)
         log('5. Testing Email Lookup (Social Simulation)...');
@@ -61,7 +61,7 @@ export async function testFullAuthFlow() {
 
     } catch (error) {
 
-        log(`❌ TEST FAILED: ${error.message}`);
+        log(`[X] TEST FAILED: ${error.message}`);
         console.error("Auth Test Failed:", error);
         return { success: false, logs: logs, error: error.message };
     }

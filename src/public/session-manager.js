@@ -50,7 +50,7 @@ export const SessionManager = {
         if (sessionData) {
           session.setItem(SESSION_DATA_KEY, JSON.stringify(sessionData));
         }
-        console.log('SessionManager: Token stored in session storage ✓');
+        console.log('SessionManager: Token stored in session storage v');
         success = true;
       }
     } catch (e) {
@@ -64,7 +64,7 @@ export const SessionManager = {
         if (sessionData) {
           local.setItem(SESSION_DATA_KEY, JSON.stringify(sessionData));
         }
-        console.log('SessionManager: Token stored in local storage ✓');
+        console.log('SessionManager: Token stored in local storage v');
         success = true;
       }
     } catch (e) {
@@ -74,7 +74,7 @@ export const SessionManager = {
     // Layer 3: Memory (last resort - survives within page load)
     memorySession = sessionToken;
     memorySessionData = sessionData;
-    console.log('SessionManager: Token stored in memory ✓');
+    console.log('SessionManager: Token stored in memory v');
 
     // Verification
     const verify = this.getSession();

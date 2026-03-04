@@ -70,10 +70,10 @@ function initializeLightbox() {
         Please upload clear photos of your government-issued ID (driver's license, state ID, or passport).
         
         Requirements:
-        • All text must be clearly readable
-        • No glare or shadows
-        • Full ID visible in frame
-        • Both front and back required for driver's license/state ID
+        * All text must be clearly readable
+        * No glare or shadows
+        * Full ID visible in frame
+        * Both front and back required for driver's license/state ID
     `;
 }
 
@@ -135,7 +135,7 @@ async function handleFrontIdUpload(event) {
         $w('#frontIdPreview').src = frontIdBase64;
         $w('#frontIdPreview').show();
 
-        $w('#frontIdStatus').text = '✓ Front ID uploaded';
+        $w('#frontIdStatus').text = 'v Front ID uploaded';
         $w('#frontIdStatus').style.color = '#28A745';
 
         updateSubmitButton();
@@ -169,7 +169,7 @@ async function handleBackIdUpload(event) {
         $w('#backIdPreview').src = backIdBase64;
         $w('#backIdPreview').show();
 
-        $w('#backIdStatus').text = '✓ Back ID uploaded';
+        $w('#backIdStatus').text = 'v Back ID uploaded';
         $w('#backIdStatus').style.color = '#28A745';
 
         updateSubmitButton();
@@ -214,13 +214,13 @@ async function openCamera(side) {
                 frontIdBase64 = capturedImage;
                 $w('#frontIdPreview').src = capturedImage;
                 $w('#frontIdPreview').show();
-                $w('#frontIdStatus').text = '✓ Front ID captured';
+                $w('#frontIdStatus').text = 'v Front ID captured';
                 $w('#frontIdStatus').style.color = '#28A745';
             } else {
                 backIdBase64 = capturedImage;
                 $w('#backIdPreview').src = capturedImage;
                 $w('#backIdPreview').show();
-                $w('#backIdStatus').text = '✓ Back ID captured';
+                $w('#backIdStatus').text = 'v Back ID captured';
                 $w('#backIdStatus').style.color = '#28A745';
             }
 

@@ -88,7 +88,7 @@ async function handleDocumentSigned(webhookData) {
 
   // Send Slack notification
   await notifySlack({
-    text: `✍️ *Document Signed*\n\nDocument ID: ${document_id}\nSigner: ${signer_email}`,
+    text: ` *Document Signed*\n\nDocument ID: ${document_id}\nSigner: ${signer_email}`,
     channel: '#bail-documents'
   });
 }
@@ -129,7 +129,7 @@ async function handleDocumentCompleted(webhookData) {
 
       // Send Slack notification
       await notifySlack({
-        text: `✅ *Document Completed & Saved to Drive*\n\nDocument: ${document_name}\nID: ${document_id}\n\nAll signatures collected and filed.`,
+        text: `[OK] *Document Completed & Saved to Drive*\n\nDocument: ${document_name}\nID: ${document_id}\n\nAll signatures collected and filed.`,
         channel: '#bail-documents',
         icon_emoji: ':white_check_mark:'
       });
@@ -140,7 +140,7 @@ async function handleDocumentCompleted(webhookData) {
 
     // Send error notification
     await notifySlack({
-      text: `❌ *Error Processing Completed Document*\n\nDocument ID: ${document_id}\nError: ${error.message}`,
+      text: `[X] *Error Processing Completed Document*\n\nDocument ID: ${document_id}\nError: ${error.message}`,
       channel: '#bail-documents',
       icon_emoji: ':x:'
     });
@@ -157,7 +157,7 @@ async function handleFieldInvite(webhookData) {
 
   // Send Slack notification
   await notifySlack({
-    text: `📧 *Signing Invite Sent*\n\nDocument ID: ${document_id}\nRecipient: ${signer_email}`,
+    text: ` *Signing Invite Sent*\n\nDocument ID: ${document_id}\nRecipient: ${signer_email}`,
     channel: '#bail-documents'
   });
 }

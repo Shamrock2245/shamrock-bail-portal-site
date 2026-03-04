@@ -40,22 +40,22 @@ function getPrivacyText() {
 We collect information you provide (name, contact, ID) to process bail bonds and comply with legal requirements.
 
 HOW WE USE YOUR DATA:
-• Process bail bond applications
-• Verify identity and prevent fraud
-• Communicate about your case
-• Comply with court and legal requirements
+* Process bail bond applications
+* Verify identity and prevent fraud
+* Communicate about your case
+* Comply with court and legal requirements
 
 WE SHARE DATA WITH:
-• Courts and law enforcement (as required)
-• Insurance companies (for underwriting)
-• Service providers (for operations)
+* Courts and law enforcement (as required)
+* Insurance companies (for underwriting)
+* Service providers (for operations)
 
 We do NOT sell your personal information.
 
 YOUR RIGHTS:
-• Access your information
-• Request corrections
-• Request deletion (subject to legal requirements)
+* Access your information
+* Request corrections
+* Request deletion (subject to legal requirements)
 
 SECURITY:
 We use encryption and secure storage to protect your data.

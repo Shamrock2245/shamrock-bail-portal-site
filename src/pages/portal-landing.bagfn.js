@@ -5,8 +5,8 @@
  *
  * AUTHENTICATION FLOW:
  *
- * A. MAGIC LINK (Primary — email or SMS):
- *    1. User enters email or phone → "Get Started"
+ * A. MAGIC LINK (Primary -- email or SMS):
+ *    1. User enters email or phone -> "Get Started"
  *    2. Backend sends magic link to /portal-landing?token=...
  *    3. This page intercepts the token, validates it, creates a session,
  *       then redirects to /portal-indemnitor?st=<sessionToken>
@@ -22,14 +22,14 @@
  *    Shows the email/phone input form.
  *
  * Required Wix Editor Elements:
- *   #emailPhoneInput  — textarea/input for email or phone
- *   #getStartedBtn    — primary CTA button
- *   #statusMessage    — text element for feedback
- *   #loadingBox       — optional loading container
- *   #otpInputBox      — optional OTP container (hidden by default)
- *   #googleLoginBtn   — optional Google login button
- *   #telegramHtml     — optional Telegram widget HTML component
- *   #boxAIChat        — optional AI concierge container
+ *   #emailPhoneInput  -- textarea/input for email or phone
+ *   #getStartedBtn    -- primary CTA button
+ *   #statusMessage    -- text element for feedback
+ *   #loadingBox       -- optional loading container
+ *   #otpInputBox      -- optional OTP container (hidden by default)
+ *   #googleLoginBtn   -- optional Google login button
+ *   #telegramHtml     -- optional Telegram widget HTML component
+ *   #boxAIChat        -- optional AI concierge container
  */
 
 import wixLocation from 'wix-location';
@@ -46,60 +46,60 @@ import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
 import { local } from 'wix-storage';
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // PAGE INIT
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 $w.onReady(async function () {
-    console.log("🚀 Portal Landing: Initializing...");
+    console.log(" Portal Landing: Initializing...");
 
     updatePageSEO();
 
     const query = wixLocation.query;
 
-    // ── Priority 1: Magic link token in URL (?token=...) ─────────────────────
+    // -- Priority 1: Magic link token in URL (?token=...) ---------------------
     // This is the primary entry point when a user clicks the link in their email.
     // MUST be handled BEFORE anything else, and ONLY in the browser (not SSR).
     if (query.token && wixWindow.rendering.env === 'browser') {
-        console.log("🔗 Magic link token detected in URL — processing...");
+        console.log(" Magic link token detected in URL -- processing...");
         showMessage("Logging you in securely...", "info");
         showLoading();
         await handleMagicLinkToken(query.token);
-        return; // Stop — redirect will happen inside handleMagicLinkToken
+        return; // Stop -- redirect will happen inside handleMagicLinkToken
     }
 
-    // ── Priority 2: Session token in URL (?st=... or ?sessionToken=...) ──────
+    // -- Priority 2: Session token in URL (?st=... or ?sessionToken=...) ------
     // Used by OAuth callbacks and legacy redirects.
     const sessionToken = query.st || query.sessionToken;
     if (sessionToken && wixWindow.rendering.env === 'browser') {
-        console.log("🔗 Session token detected in URL — validating...");
+        console.log(" Session token detected in URL -- validating...");
         showMessage("Verifying your session...", "info");
         showLoading();
         await handleSessionTokenRedirect(sessionToken);
         return;
     }
 
-    // ── Priority 3: Existing valid session in browser storage ────────────────
+    // -- Priority 3: Existing valid session in browser storage ----------------
     // If the user already has a session, skip the login form entirely.
     const existingToken = getSessionToken();
     if (existingToken && wixWindow.rendering.env === 'browser') {
-        console.log("🔍 Existing session found — validating...");
+        console.log(" Existing session found -- validating...");
         try {
             const session = await validateCustomSession(existingToken);
             if (session && session.valid && session.role) {
-                console.log(`✅ Existing session valid (${session.role}). Redirecting...`);
+                console.log(`[OK] Existing session valid (${session.role}). Redirecting...`);
                 showMessage("Welcome back! Redirecting...", "success");
                 redirectToPortal(session.role);
                 return;
             }
         } catch (e) {
-            // Session invalid or expired — fall through to login form
-            console.warn("⚠️ Existing session invalid, showing login form:", e.message);
+            // Session invalid or expired -- fall through to login form
+            console.warn("[!] Existing session invalid, showing login form:", e.message);
         }
         clearSessionToken();
     }
 
-    // ── Default: Show the login form ─────────────────────────────────────────
+    // -- Default: Show the login form -----------------------------------------
     // Check if user has already given consent (including SMS for A2P 10DLC)
     await showConsentIfNeeded();
 
@@ -108,9 +108,9 @@ $w.onReady(async function () {
     setupAIConcierge();
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // MAGIC LINK TOKEN HANDLER
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 /**
  * Validate a magic link token from the URL and redirect to the indemnitor portal.
@@ -123,12 +123,12 @@ async function handleMagicLinkToken(token) {
         const result = await onMagicLinkLoginV2(token);
 
         if (result.ok && result.sessionToken) {
-            console.log("✅ Magic link valid — session created");
+            console.log("[OK] Magic link valid -- session created");
 
             // Store session in browser storage
             setSessionToken(result.sessionToken);
 
-            // Determine target role — default everyone to indemnitor.
+            // Determine target role -- default everyone to indemnitor.
             // Defendants can identify themselves via the case-lookup widget
             // at the top of the indemnitor portal.
             const role = result.role || 'indemnitor';
@@ -143,7 +143,7 @@ async function handleMagicLinkToken(token) {
         } else {
             // Token invalid or expired
             const reason = result.message || 'Link expired or already used.';
-            console.warn("⚠️ Magic link rejected:", reason);
+            console.warn("[!] Magic link rejected:", reason);
 
             hideLoading();
             showMessage(
@@ -163,7 +163,7 @@ async function handleMagicLinkToken(token) {
         }
 
     } catch (error) {
-        console.error("❌ Critical error validating magic link token:", error);
+        console.error("[X] Critical error validating magic link token:", error);
         hideLoading();
         clearSessionToken();
         showMessage("System error. Please try again or call (239) 332-2245.", "error");
@@ -171,9 +171,9 @@ async function handleMagicLinkToken(token) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // SESSION TOKEN REDIRECT HANDLER
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 /**
  * Validate a session token from the URL (?st=...) and redirect to the
@@ -187,14 +187,14 @@ async function handleSessionTokenRedirect(token) {
         const session = await validateCustomSession(token);
 
         if (session && session.valid && session.role) {
-            console.log(`✅ Session valid (${session.role}). Redirecting...`);
+            console.log(`[OK] Session valid (${session.role}). Redirecting...`);
             redirectToPortal(session.role);
         } else {
             throw new Error("Session invalid or role missing");
         }
 
     } catch (err) {
-        console.error("❌ Session token validation failed:", err);
+        console.error("[X] Session token validation failed:", err);
         clearSessionToken();
         hideLoading();
         showMessage("Login session expired. Please enter your email below.", "error");
@@ -202,21 +202,21 @@ async function handleSessionTokenRedirect(token) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // LOGIN FORM
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 /**
  * Set up the email/phone input form.
  */
 function setupLoginForm() {
-    console.log("🎨 Setting up login form...");
+    console.log(" Setting up login form...");
 
     const input = $w('#emailPhoneInput');
     const button = $w('#getStartedBtn');
 
     if (!input || !button) {
-        console.error("❌ #emailPhoneInput or #getStartedBtn not found in Wix Editor!");
+        console.error("[X] #emailPhoneInput or #getStartedBtn not found in Wix Editor!");
         showMessage("Configuration error. Please contact support.", "error");
         return;
     }
@@ -244,12 +244,12 @@ function setupLoginForm() {
         if (googleBtn) googleBtn.onClick(() => startSocialLogin('google'));
     } catch (e) { /* optional */ }
 
-    // Facebook login — collapsed per user request
+    // Facebook login -- collapsed per user request
     try {
         $w('#facebookLoginBtn').collapse();
     } catch (e) { /* optional */ }
 
-    console.log("✅ Login form ready");
+    console.log("[OK] Login form ready");
 }
 
 /**
@@ -292,9 +292,9 @@ async function sendMagicLinkFlow(emailOrPhone, button) {
         const result = await sendMagicLinkSimplified(emailOrPhone);
 
         if (result.success) {
-            button.label = "Sent! ✓";
+            button.label = "Sent! v";
             showMessage(
-                "Check your email or phone — your secure link is on the way. It expires in 24 hours.",
+                "Check your email or phone -- your secure link is on the way. It expires in 24 hours.",
                 "success"
             );
             try { $w('#emailPhoneInput').value = ""; } catch (e) { /* optional */ }
@@ -312,28 +312,28 @@ async function sendMagicLinkFlow(emailOrPhone, button) {
             }, 1000);
 
         } else {
-            console.error("❌ Magic link send failed:", result.message);
+            console.error("[X] Magic link send failed:", result.message);
             showMessage(result.message || "Unable to send link. Please try again.", "error");
             button.label = originalLabel;
             button.enable();
         }
 
     } catch (error) {
-        console.error("❌ Critical error sending magic link:", error);
+        console.error("[X] Critical error sending magic link:", error);
         showMessage("System error. Please try again or call (239) 332-2245.", "error");
         button.label = originalLabel;
         button.enable();
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // CONSENT LIGHTBOX
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 /**
  * Show the ConsentLightbox if the user hasn't consented yet.
  * Consent is stored in localStorage so it only appears once per device.
- * This is critical for A2P 10DLC SMS compliance — Twilio reviewers
+ * This is critical for A2P 10DLC SMS compliance -- Twilio reviewers
  * will verify that this opt-in flow exists.
  */
 async function showConsentIfNeeded() {
@@ -344,11 +344,11 @@ async function showConsentIfNeeded() {
         // Check if user already consented on this device
         const hasConsented = local.getItem('shamrock_sms_consent');
         if (hasConsented === 'true') {
-            console.log('✅ User has already given consent (including SMS). Skipping lightbox.');
+            console.log('[OK] User has already given consent (including SMS). Skipping lightbox.');
             return;
         }
 
-        console.log('📋 Showing consent lightbox for first-time visitor...');
+        console.log(' Showing consent lightbox for first-time visitor...');
 
         // Open the consent lightbox and wait for result
         const consentResult = await wixWindow.openLightbox('ConsentLightbox');
@@ -357,10 +357,10 @@ async function showConsentIfNeeded() {
             // User agreed to all consents including SMS
             local.setItem('shamrock_sms_consent', 'true');
             local.setItem('shamrock_consent_timestamp', consentResult.consentTimestamp || new Date().toISOString());
-            console.log('✅ All consents captured (including SMS). Proceeding to login form.');
+            console.log('[OK] All consents captured (including SMS). Proceeding to login form.');
         } else {
-            // User cancelled — show a message but still allow the page to load
-            console.warn('⚠️ User did not complete consent. Some features may be limited.');
+            // User cancelled -- show a message but still allow the page to load
+            console.warn('[!] User did not complete consent. Some features may be limited.');
             showMessage(
                 'To use our services, you must agree to our terms and SMS notifications. You can try again by refreshing the page.',
                 'error'
@@ -368,20 +368,20 @@ async function showConsentIfNeeded() {
         }
     } catch (e) {
         // Don't block the page if lightbox fails
-        console.warn('⚠️ Consent lightbox error (non-blocking):', e.message);
+        console.warn('[!] Consent lightbox error (non-blocking):', e.message);
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // TELEGRAM WIDGET
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function setupTelegramWidget() {
     try {
         const telegramHtml = $w('#telegramHtml');
         if (!telegramHtml) return;
 
-        console.log("📱 Telegram Login Widget: attaching listener");
+        console.log(" Telegram Login Widget: attaching listener");
 
         telegramHtml.onMessage(async (event) => {
             try {
@@ -405,7 +405,7 @@ function setupTelegramWidget() {
                     showMessage(result.message || "Telegram login failed. Please try email.", "error");
                 }
             } catch (error) {
-                console.error("❌ Telegram login error:", error);
+                console.error("[X] Telegram login error:", error);
                 hideLoading();
                 showMessage("Error verifying Telegram login. Please try email.", "error");
             }
@@ -415,9 +415,9 @@ function setupTelegramWidget() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // AI CONCIERGE
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function setupAIConcierge() {
     try {
@@ -432,16 +432,16 @@ function setupAIConcierge() {
                     openBtn: $w('#btnAIOpen')
                 }
             });
-            console.log("🤖 AI Concierge initialized");
+            console.log(" AI Concierge initialized");
         }
     } catch (e) {
         // AI concierge is optional
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // SOCIAL LOGIN
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 async function startSocialLogin(provider) {
     showMessage(`Connecting to ${provider}...`, "info");
@@ -454,14 +454,14 @@ async function startSocialLogin(provider) {
         }
         wixLocation.to(authUrl);
     } catch (error) {
-        console.error("❌ Social login error:", error);
+        console.error("[X] Social login error:", error);
         showMessage(`Could not connect to ${provider}. Please use email.`, "error");
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // REDIRECT HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 const PORTAL_MAP = {
     'defendant': '/portal-defendant',
@@ -477,7 +477,7 @@ const PORTAL_MAP = {
  */
 function redirectToPortal(role) {
     const destination = PORTAL_MAP[role] || '/portal-indemnitor';
-    console.log(`🚀 Redirecting to: ${destination}`);
+    console.log(` Redirecting to: ${destination}`);
     wixLocation.to(destination);
 }
 
@@ -489,13 +489,13 @@ function redirectToPortal(role) {
 function redirectToPortalWithToken(role, sessionToken) {
     const destination = PORTAL_MAP[role] || '/portal-indemnitor';
     const url = `${destination}?st=${encodeURIComponent(sessionToken)}`;
-    console.log(`🚀 Redirecting to: ${url}`);
+    console.log(` Redirecting to: ${url}`);
     wixLocation.to(url);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // UI HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function showMessage(text, type) {
     try {
@@ -525,9 +525,9 @@ function isValidEmailOrPhone(input) {
     return emailPattern.test(input) || phonePattern.test(input);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // SEO
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 function updatePageSEO() {
     const pageTitle = "Client Portal Login | Shamrock Bail Bonds";

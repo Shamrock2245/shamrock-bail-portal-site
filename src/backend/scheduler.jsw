@@ -13,7 +13,7 @@ import { sendSms } from 'backend/twilio-client';
  * Sends SMS to defendants with court dates in the next 48 hours (approximated as "the day after tomorrow")
  */
 export async function sendCourtDateReminders() {
-    console.log('⚖️ Scheduler: Starting Court Date Reminders...');
+    console.log(' Scheduler: Starting Court Date Reminders...');
     let sentCount = 0;
     let errorCount = 0;
 
@@ -35,7 +35,7 @@ export async function sendCourtDateReminders() {
         const results = await query.find();
 
         if (results.totalCount === 0) {
-            console.log('✅ No court dates found for target range.');
+            console.log('[OK] No court dates found for target range.');
             return;
         }
 
@@ -55,10 +55,10 @@ export async function sendCourtDateReminders() {
 
             const res = await sendSms(item.defendantPhone, message);
             if (res.success) {
-                console.log(`✅ SMS sent to ${item.defendantName} (${item.caseNumber})`);
+                console.log(`[OK] SMS sent to ${item.defendantName} (${item.caseNumber})`);
                 sentCount++;
             } else {
-                console.error(`❌ Failed to send SMS to ${item.defendantName}:`, res.error);
+                console.error(`[X] Failed to send SMS to ${item.defendantName}:`, res.error);
                 errorCount++;
             }
         }
@@ -67,7 +67,7 @@ export async function sendCourtDateReminders() {
         console.error('Court Reminder Job Error:', error);
     }
 
-    console.log(`⚖️ Reminder Job Complete. Sent: ${sentCount}, Errors: ${errorCount}`);
+    console.log(` Reminder Job Complete. Sent: ${sentCount}, Errors: ${errorCount}`);
     return { sent: sentCount, errors: errorCount };
 }
 
@@ -77,7 +77,7 @@ export async function sendCourtDateReminders() {
  * Sends SMS to defendants/indemnitors with payments due in 3 days
  */
 export async function sendPaymentReminders() {
-    console.log('💰 Scheduler: Starting Payment Reminders...');
+    console.log(' Scheduler: Starting Payment Reminders...');
     let sentCount = 0;
 
     try {
@@ -97,7 +97,7 @@ export async function sendPaymentReminders() {
         const results = await query.find({ suppressAuth: true });
 
         if (results.totalCount === 0) {
-            console.log('✅ No payments due in 3 days.');
+            console.log('[OK] No payments due in 3 days.');
             return;
         }
 
@@ -118,10 +118,10 @@ export async function sendPaymentReminders() {
 
             const res = await sendSms(recipientPhone, message);
             if (res.success) {
-                console.log(`✅ Payment SMS sent to ${recipientName}`);
+                console.log(`[OK] Payment SMS sent to ${recipientName}`);
                 sentCount++;
             } else {
-                console.error(`❌ Failed to send Payment SMS to ${recipientName}:`, res.error);
+                console.error(`[X] Failed to send Payment SMS to ${recipientName}:`, res.error);
             }
         }
 
@@ -129,7 +129,7 @@ export async function sendPaymentReminders() {
         console.error('Payment Reminder Job Error:', error);
     }
 
-    console.log(`💰 Payment Reminder Job Complete. Sent: ${sentCount}`);
+    console.log(` Payment Reminder Job Complete. Sent: ${sentCount}`);
     return { sent: sentCount };
 }
 
@@ -141,7 +141,7 @@ export async function sendPaymentReminders() {
  * Generates a report of all active defendants and their check-in status
  */
 export async function sendCheckInComplianceReport() {
-    console.log('📊 Scheduler: Generate Compliance Report...');
+    console.log(' Scheduler: Generate Compliance Report...');
     try {
         const activeCases = await wixData.query(COLLECTIONS.CASES)
             .eq('status', 'Active')
@@ -196,7 +196,7 @@ export async function sendCheckInComplianceReport() {
             })
         });
 
-        console.log(`✅ Compliance report sent for ${reportData.length} defendants.`);
+        console.log(`[OK] Compliance report sent for ${reportData.length} defendants.`);
 
     } catch (error) {
         console.error('Compliance Report Error:', error);
@@ -208,7 +208,7 @@ export async function sendCheckInComplianceReport() {
  * intended to run daily via jobs.config
  */
 export async function checkMissedCheckIns() {
-    console.log('⏰ Watchdog: Starting Missed Check-in Scan...');
+    console.log(' Watchdog: Starting Missed Check-in Scan...');
 
     try {
         // 1. Get all "Active" Defendants
@@ -254,10 +254,10 @@ export async function checkMissedCheckIns() {
 
         // 3. Report Results
         if (missedCheckIns.length > 0) {
-            console.log(`⚠️ ALERT: ${missedCheckIns.length} defendants missed check-in.`);
+            console.log(`[!] ALERT: ${missedCheckIns.length} defendants missed check-in.`);
             await sendAdminAlert(missedCheckIns);
         } else {
-            console.log('✅ All active defendants accounted for.');
+            console.log('[OK] All active defendants accounted for.');
         }
 
     } catch (error) {
@@ -290,7 +290,7 @@ async function sendAdminAlert(missingList) {
  * Intended to run daily (e.g., at 03:00 AM)
  */
 export async function cleanupExpiredData() {
-    console.log('🧹 Scheduler: Starting Data Cleanup...');
+    console.log(' Scheduler: Starting Data Cleanup...');
     const now = new Date();
     let deletedSessions = 0;
     let deletedLinks = 0;
@@ -311,7 +311,7 @@ export async function cleanupExpiredData() {
             const ids = expiredSessions.items.map(s => s._id);
             const res = await wixData.bulkRemove(COLLECTIONS.PORTAL_SESSIONS, ids, { suppressAuth: true });
             deletedSessions = res.removed;
-            console.log(`✅ Removed ${deletedSessions} expired sessions.`);
+            console.log(`[OK] Removed ${deletedSessions} expired sessions.`);
         }
 
         // 2. Clean up Expired Magic Links
@@ -325,7 +325,7 @@ export async function cleanupExpiredData() {
             const ids = expiredLinks.items.map(l => l._id);
             const res = await wixData.bulkRemove(COLLECTIONS.MAGIC_LINKS, ids, { suppressAuth: true });
             deletedLinks = res.removed;
-            console.log(`✅ Removed ${deletedLinks} expired magic links.`);
+            console.log(`[OK] Removed ${deletedLinks} expired magic links.`);
         }
 
     } catch (error) {

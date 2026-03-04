@@ -6,9 +6,9 @@
  * Handles magic links, session management, and role-based access
  * 
  * STAFF LOGIN POLICY:
- * - admin@shamrockbailbonds.biz → Admin role (full access)
- * - shamrockbailoffice@gmail.com → Staff role (standard access)
- * - All other users → Default to indemnitor role (or defendant if found in Cases)
+ * - admin@shamrockbailbonds.biz -> Admin role (full access)
+ * - shamrockbailoffice@gmail.com -> Staff role (standard access)
+ * - All other users -> Default to indemnitor role (or defendant if found in Cases)
  * 
  * @version 2.0.0
  * @updated 2026-01-23
@@ -151,7 +151,7 @@ export async function lookupUserByContact(contact) {
         // 1. Check if it's a staff account
         if (isEmail(contact) && isStaffAccount(contact, staffConfig)) {
             const staffDetails = getStaffAccountDetails(contact, staffConfig);
-            console.log(`✅ Staff account identified: ${staffDetails.name} (${staffDetails.role})`);
+            console.log(`[OK] Staff account identified: ${staffDetails.name} (${staffDetails.role})`);
             return {
                 found: true,
                 personId: staffDetails.personId,
@@ -244,7 +244,7 @@ export async function lookupUserByContact(contact) {
  */
 export async function createCustomSession(personId, role, caseId = null, contactInfo = {}) {
     try {
-        console.log(`🔐 Creating session for ${role} (${personId})...`);
+        console.log(` Creating session for ${role} (${personId})...`);
 
         // HARDENING: Enforce Allowlisted Roles
         const ALLOWED_ROLES = ['indemnitor', 'defendant', 'staff', 'admin', 'coindemnitor'];
@@ -270,12 +270,12 @@ export async function createCustomSession(personId, role, caseId = null, contact
                 // Check if it has enough time remaining (e.g., > 4 hours)
                 const remainingTime = new Date(activeSession.expiresAt).getTime() - new Date().getTime();
                 if (remainingTime > 4 * 60 * 60 * 1000) {
-                    console.log(`♻️ Reusing existing valid session: ${activeSession._id}`);
+                    console.log(` Reusing existing valid session: ${activeSession._id}`);
                     return activeSession.sessionToken;
                 }
             }
         } catch (checkErr) {
-            console.warn("⚠️ Error checking existing sessions:", checkErr);
+            console.warn("[!] Error checking existing sessions:", checkErr);
             // Continue to create new one if check fails
         }
 
@@ -299,7 +299,7 @@ export async function createCustomSession(personId, role, caseId = null, contact
 
         await wixData.insert(CONFIG.SESSIONS_COLLECTION, sessionData, { suppressAuth: true });
 
-        console.log(`✅ New Session created for ${personId} with role ${targetRole}`);
+        console.log(`[OK] New Session created for ${personId} with role ${targetRole}`);
         return sessionToken;
 
     } catch (error) {
@@ -328,7 +328,7 @@ export async function validateCustomSession(sessionToken) {
             .find({ suppressAuth: true });
 
         if (results.items.length === 0) {
-            console.warn(`⚠️ Session validation failed: Token not found or inactive. Token: ${sessionToken.substring(0, 10)}...`);
+            console.warn(`[!] Session validation failed: Token not found or inactive. Token: ${sessionToken.substring(0, 10)}...`);
             return { valid: false, reason: 'invalid' };
         }
 
@@ -336,7 +336,7 @@ export async function validateCustomSession(sessionToken) {
 
         // Check expiration
         if (new Date(session.expiresAt) < new Date()) {
-            console.warn(`⚠️ Session expired. Expiry: ${session.expiresAt}, Now: ${new Date()}`);
+            console.warn(`[!] Session expired. Expiry: ${session.expiresAt}, Now: ${new Date()}`);
             // Mark as inactive
             session.isActive = false;
             await wixData.update(CONFIG.SESSIONS_COLLECTION, session, { suppressAuth: true });
@@ -357,7 +357,7 @@ export async function validateCustomSession(sessionToken) {
         };
 
     } catch (error) {
-        console.error('❌ Error validating session:', error);
+        console.error('[X] Error validating session:', error);
         // CRITICAL FIX: Return 'error' reason so frontend knows it's a system/network issue
         // and doesn't immediately log the user out.
         return { valid: false, reason: 'error', message: error.message };
@@ -420,7 +420,7 @@ export async function generateMagicLink(personId, role, caseId = null, options =
 
         await wixData.insert(CONFIG.MAGIC_LINKS_COLLECTION, linkData, { suppressAuth: true });
 
-        console.log(`✅ Magic link generated for ${personId} (${options.email || 'no-email'})`);
+        console.log(`[OK] Magic link generated for ${personId} (${options.email || 'no-email'})`);
         return token;
 
     } catch (error) {
@@ -455,11 +455,11 @@ export async function onMagicLinkLoginV2(token) {
             const usedAt = new Date(linkData.usedAt);
             const timeDiff = now - usedAt;
             if (!linkData.usedAt || Number.isNaN(usedAt.getTime())) {
-                console.warn('⚠️ Token marked used without valid usedAt; treating as used.');
+                console.warn('[!] Token marked used without valid usedAt; treating as used.');
                 return { ok: false, message: 'Link already used' };
             }
             if (timeDiff < CONFIG.MAGIC_LINK_GRACE_PERIOD_MS) {
-                console.log('⚠️ Token reused within grace period (Scanner defense)');
+                console.log('[!] Token reused within grace period (Scanner defense)');
                 // Create session anyway
                 const sessionToken = await createCustomSession(
                     linkData.personId,
@@ -617,7 +617,7 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
             getGasApiKey()
         ]);
 
-        console.log('🔧 sendMagicLinkEmail DEBUG:');
+        console.log(' sendMagicLinkEmail DEBUG:');
         console.log('  - GAS URL:', gasUrl ? 'SET' : 'MISSING');
         console.log('  - API Key:', apiKey ? 'SET' : 'MISSING');
         console.log('  - Recipient:', email.replace(/(.{2})(.*)(@.*)/, '$1***$3'));
@@ -662,7 +662,7 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
             htmlBody: emailBody
         };
 
-        console.log('📤 Sending email request to GAS...');
+        console.log(' Sending email request to GAS...');
 
         const response = await fetchWithRetry(gasUrl, {
             method: 'POST',
@@ -670,10 +670,10 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
             body: JSON.stringify(payload)
         });
 
-        console.log('📥 GAS Response Status:', response.status);
+        console.log(' GAS Response Status:', response.status);
 
         const responseText = await response.text();
-        console.log('📥 GAS Response Body:', responseText);
+        console.log(' GAS Response Body:', responseText);
 
         if (!response.ok) {
             const maskedUrl = gasUrl.length > 20 ? '...' + gasUrl.slice(-20) : gasUrl;
@@ -684,9 +684,9 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
         let data;
         try {
             data = JSON.parse(responseText);
-            console.log('✅ Parsed GAS response:', data);
+            console.log('[OK] Parsed GAS response:', data);
         } catch (e) {
-            console.warn('⚠️ Could not parse GAS response as JSON');
+            console.warn('[!] Could not parse GAS response as JSON');
             data = { success: true }; // Assume success if we got 200 OK
         }
 
@@ -695,15 +695,15 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
                 JSON.stringify(data.error) :
                 (data.error || 'Unknown error');
 
-            console.error('❌ GAS returned success: false:', errorMsg);
+            console.error('[X] GAS returned success: false:', errorMsg);
             throw new Error('GAS error: ' + errorMsg);
         }
 
-        console.log('✅ Email sent successfully!');
+        console.log('[OK] Email sent successfully!');
         return { success: true };
 
     } catch (error) {
-        console.error('❌ CRITICAL ERROR in sendMagicLinkEmail:', error);
+        console.error('[X] CRITICAL ERROR in sendMagicLinkEmail:', error);
         console.error('   Error message:', error.message);
         console.error('   Error stack:', error.stack);
         return { success: false, error: error.message };
@@ -909,7 +909,7 @@ export async function linkDefendantToCase(caseNumber, indemnitorName) {
         const targetCase = caseNumber ? caseNumber.trim() : null;
         const targetName = indemnitorName ? indemnitorName.trim().toLowerCase() : null;
 
-        console.log(`🔍 Searching for case. Number: ${targetCase}, Indemnitor: ${targetName}`);
+        console.log(` Searching for case. Number: ${targetCase}, Indemnitor: ${targetName}`);
 
         let matches = [];
 
@@ -921,7 +921,7 @@ export async function linkDefendantToCase(caseNumber, indemnitorName) {
 
             if (caseResults.items.length > 0) {
                 matches = caseResults.items;
-                console.log(`✅ Found by Case Number: ${matches.length}`);
+                console.log(`[OK] Found by Case Number: ${matches.length}`);
             }
         }
 
@@ -929,7 +929,7 @@ export async function linkDefendantToCase(caseNumber, indemnitorName) {
         // Only search if we haven't found a match yet, OR if the user wants "Either" (and case lookup failed)
         // If the user provided a name but the case lookup failed (or wasn't provided), we search by name.
         if (matches.length === 0 && targetName) {
-            console.log(`🔍 Searching by Indemnitor Name: ${targetName}`);
+            console.log(` Searching by Indemnitor Name: ${targetName}`);
             // Use contains for "Last Name" matching "First Middle Last"
             const nameResults = await wixData.query(CONFIG.CASES_COLLECTION)
                 .contains('indemnitorName', targetName) // Case-insensitive in Wix usually, but good to check
@@ -943,7 +943,7 @@ export async function linkDefendantToCase(caseNumber, indemnitorName) {
                 matches = nameResults.items.filter(item =>
                     (item.indemnitorName || '').toLowerCase().includes(targetName)
                 );
-                console.log(`✅ Found by Indemnitor Name: ${matches.length}`);
+                console.log(`[OK] Found by Indemnitor Name: ${matches.length}`);
             }
         }
 
@@ -955,7 +955,7 @@ export async function linkDefendantToCase(caseNumber, indemnitorName) {
         // If we found multiple by name, we take the top one (latest).
         const caseData = matches[0];
 
-        console.log(`🎯 Matched Case: ${caseData.caseNumber}`);
+        console.log(` Matched Case: ${caseData.caseNumber}`);
 
         // Success! Generate a Session Token for the DEFENDANT role on this case
         const sessionToken = await createCustomSession(
@@ -1533,18 +1533,18 @@ export async function onTelegramLogin(telegramData) {
             .digest('hex');
 
         if (calculatedHash !== telegramData.hash) {
-            console.error('❌ Telegram auth failed: Invalid hash');
+            console.error('[X] Telegram auth failed: Invalid hash');
             return { ok: false, message: 'Authentication failed: Invalid signature' };
         }
 
         // Check auth_date (prevent replay attacks > 24 hours old)
         const now = Math.floor(Date.now() / 1000);
         if (now - telegramData.auth_date > 86400) {
-            console.error('❌ Telegram auth failed: Data is too old');
+            console.error('[X] Telegram auth failed: Data is too old');
             return { ok: false, message: 'Authentication expired, please try again' };
         }
 
-        console.log(`✅ Telegram auth successful for user ID: ${telegramData.id} (${telegramData.first_name})`);
+        console.log(`[OK] Telegram auth successful for user ID: ${telegramData.id} (${telegramData.first_name})`);
 
         // 3. Find User & Create Session
         let personId = 'telegram_' + telegramData.id;
@@ -1570,7 +1570,7 @@ export async function onTelegramLogin(telegramData) {
         };
 
     } catch (error) {
-        console.error('❌ CRITICAL ERROR in onTelegramLogin:', error);
+        console.error('[X] CRITICAL ERROR in onTelegramLogin:', error);
         return { ok: false, message: 'System error processing Telegram login: ' + error.message };
     }
 }

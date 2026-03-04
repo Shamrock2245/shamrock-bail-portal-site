@@ -10,27 +10,27 @@
  * URL: /members/defendant-dashboard
  *
  * Page Element IDs (set in Wix Editor):
- *   #welcomeText          — "Welcome, [Name]"
- *   #caseStatusBadge      — Status chip (Pending / Active / Complete)
- *   #caseInfoSection      — Case details container
- *   #caseNumber           — Case number text
- *   #chargesText          — Charges description
- *   #bondAmount           — Bond amount
- *   #courtName            — Court name
- *   #docsSection          — Documents section container
- *   #docsRepeater         — Repeater: pending documents list
- *   #noDocsMessage        — "No documents pending" text
- *   #signNowOverlay       — Lightbox/overlay for embedded signing
- *   #idUploadSection      — ID upload section (shown after signing)
- *   #idUploadBtn          — Upload ID button
- *   #idFileInput          — File input (UploadButton element)
- *   #idUploadStatus       — Upload status text
- *   #checkInSection       — Check-in section
- *   #checkInBtn           — Start check-in button
- *   #lastCheckInText      — Last check-in timestamp
- *   #supportBtn           — Call support button
- *   #loadingSpinner       — Loading indicator
- *   #errorBanner          — Error message banner
+ *   #welcomeText          -- "Welcome, [Name]"
+ *   #caseStatusBadge      -- Status chip (Pending / Active / Complete)
+ *   #caseInfoSection      -- Case details container
+ *   #caseNumber           -- Case number text
+ *   #chargesText          -- Charges description
+ *   #bondAmount           -- Bond amount
+ *   #courtName            -- Court name
+ *   #docsSection          -- Documents section container
+ *   #docsRepeater         -- Repeater: pending documents list
+ *   #noDocsMessage        -- "No documents pending" text
+ *   #signNowOverlay       -- Lightbox/overlay for embedded signing
+ *   #idUploadSection      -- ID upload section (shown after signing)
+ *   #idUploadBtn          -- Upload ID button
+ *   #idFileInput          -- File input (UploadButton element)
+ *   #idUploadStatus       -- Upload status text
+ *   #checkInSection       -- Check-in section
+ *   #checkInBtn           -- Start check-in button
+ *   #lastCheckInText      -- Last check-in timestamp
+ *   #supportBtn           -- Call support button
+ *   #loadingSpinner       -- Loading indicator
+ *   #errorBanner          -- Error message banner
  */
 
 import wixLocation from 'wix-location';
@@ -44,9 +44,9 @@ const PHONE_TEL = 'tel:+12393322245';
 let memberData = null;
 let pendingDocs = [];
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // PAGE INIT
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 $w.onReady(async function () {
     showLoading(true);
@@ -72,9 +72,9 @@ $w.onReady(async function () {
     trackEvent('DefendantDashboard_View', { memberId: memberData.id });
 });
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // AUTH
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 async function checkLogin() {
     try {
@@ -101,9 +101,9 @@ async function loadMemberData() {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // DISPLAY
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 function displayWelcome() {
     const name = memberData.firstName || 'there';
@@ -154,20 +154,20 @@ function renderDocumentsRepeater() {
 
         if (itemData.canSign) {
             $item('#signBtn').enable();
-            $item('#signBtn').label = 'Sign Now →';
+            $item('#signBtn').label = 'Sign Now ->';
             $item('#signBtn').onClick(() => {
                 openSigningOverlay(itemData.signingUrl, itemData._id);
             });
         } else {
             $item('#signBtn').disable();
-            $item('#signBtn').label = itemData.status === 'signed' ? 'Signed ✓' : 'Unavailable';
+            $item('#signBtn').label = itemData.status === 'signed' ? 'Signed v' : 'Unavailable';
         }
     });
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // SIGNING
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 function openSigningOverlay(signingUrl, docRecordId) {
     if (!signingUrl) {
@@ -183,7 +183,7 @@ function openSigningOverlay(signingUrl, docRecordId) {
         docRecordId: docRecordId
     }).then((result) => {
         if (result && result.completed) {
-            // Signing complete — show ID upload section
+            // Signing complete -- show ID upload section
             $w('#idUploadSection').show();
             $w('#idUploadStatus').text = 'Signing complete! Please upload your government ID below.';
             trackEvent('Defendant_Sign_Complete', { docId: docRecordId });
@@ -195,9 +195,9 @@ function openSigningOverlay(signingUrl, docRecordId) {
     });
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // ID UPLOAD
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 async function handleIdUpload() {
     try {
@@ -230,8 +230,8 @@ async function handleIdUpload() {
             uploadDate: new Date()
         });
 
-        $w('#idUploadStatus').text = 'ID uploaded successfully! ✓';
-        $w('#idUploadBtn').label = 'Uploaded ✓';
+        $w('#idUploadStatus').text = 'ID uploaded successfully! v';
+        $w('#idUploadBtn').label = 'Uploaded v';
 
         trackEvent('Defendant_ID_Upload', { memberId: memberData.id });
 
@@ -242,9 +242,9 @@ async function handleIdUpload() {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // CHECK-IN
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 async function startCheckIn() {
     trackEvent('CheckIn_Start', { memberId: memberData.id });
@@ -260,9 +260,9 @@ async function startCheckIn() {
     });
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // EVENT LISTENERS
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 function setupEventListeners() {
     // ID upload
@@ -294,9 +294,9 @@ function setupEventListeners() {
     }
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // HELPERS
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 function showLoading(visible) {
     if ($w('#loadingSpinner').valid) {
@@ -315,8 +315,8 @@ function showError(message) {
 function formatStatus(status) {
     const labels = {
         pending: 'Awaiting Signature',
-        viewed: 'Opened — Please Sign',
-        signed: 'Signed ✓',
+        viewed: 'Opened -- Please Sign',
+        signed: 'Signed v',
         expired: 'Expired',
         error: 'Error'
     };

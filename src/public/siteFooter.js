@@ -208,7 +208,7 @@ function setCopyrightYear() {
 
     try {
         if ($w('#copyrightText').type) {
-            $w('#copyrightText').text = `© ${currentYear} Shamrock Bail Bonds, LLC. All rights reserved.`;
+            $w('#copyrightText').text = `(C) ${currentYear} Shamrock Bail Bonds, LLC. All rights reserved.`;
         }
     } catch (e) { }
 

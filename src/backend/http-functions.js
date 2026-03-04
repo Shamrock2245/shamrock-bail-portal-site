@@ -589,7 +589,7 @@ function renderCloseScript(data, targetUrl) {
           const data = ${safeData};
           const targetUrl = "${finalUrl}";
           
-          console.log('🚀 Redirecting to:', targetUrl);
+          console.log(' Redirecting to:', targetUrl);
           
           // Immediate JS Redirect using replace (better for history)
           try {
@@ -785,12 +785,12 @@ export async function post_twilioStatus(request) {
             accountSid: params.get('AccountSid')
         };
 
-        logSafe('📱 Twilio Status Callback:', statusData);
+        logSafe(' Twilio Status Callback:', statusData);
 
         if (statusData.messageStatus === 'delivered') {
-            console.log(`✅ SMS Delivered: ${statusData.messageSid} to ${statusData.to}`);
+            console.log(`[OK] SMS Delivered: ${statusData.messageSid} to ${statusData.to}`);
         } else if (statusData.messageStatus === 'undelivered' || statusData.messageStatus === 'failed') {
-            logSafe(`❌ SMS Failed: ${statusData.messageSid} to ${statusData.to}`, {
+            logSafe(`[X] SMS Failed: ${statusData.messageSid} to ${statusData.to}`, {
                 errorCode: statusData.errorCode,
                 errorMessage: statusData.errorMessage
             }, 'error');
@@ -1369,14 +1369,14 @@ export async function post_intakeWebhook(request) {
             });
         }
 
-        console.log(`📥 Intake Webhook received for: ${intakeId}`);
+        console.log(` Intake Webhook received for: ${intakeId}`);
 
         // Get GAS configuration
         const gasApiKey = await getSecret('GAS_API_KEY');
         const gasUrl = await getSecret('GAS_WEBHOOK_URL').catch(() => null);
         if (!gasUrl) {
             console.error('[intakeWebhook] GAS_WEBHOOK_URL not set in Wix Secrets Manager. Cannot notify GAS.');
-            // Continue — don't fail the intake just because GAS notification failed
+            // Continue -- don't fail the intake just because GAS notification failed
         }
 
         // Prepare notification payload for GAS
@@ -1406,13 +1406,13 @@ export async function post_intakeWebhook(request) {
             body: JSON.stringify(gasPayload)
         }).then(response => {
             if (response.ok) {
-                console.log('✅ GAS notified successfully');
+                console.log('[OK] GAS notified successfully');
             } else {
-                console.error('⚠️ Failed to notify GAS:', response.statusText);
+                console.error('[!] Failed to notify GAS:', response.statusText);
                 // Polling backup will catch it
             }
         }).catch(error => {
-            console.error('⚠️ Error notifying GAS:', error);
+            console.error('[!] Error notifying GAS:', error);
             // Polling backup will catch it
         });
 
@@ -1651,7 +1651,7 @@ export async function post_openAIWebhook(request) {
             // so we don't break the integration while debugging.
         }
 
-        console.log("🤖 OpenAI Webhook Received:", bodyText.substring(0, 500)); // Log first 500 chars
+        console.log(" OpenAI Webhook Received:", bodyText.substring(0, 500)); // Log first 500 chars
 
         return ok({
             headers: { "Content-Type": "application/json" },
@@ -1727,7 +1727,7 @@ export async function get_outreachLeads(request) {
  * This endpoint is called by Telegram when users interact with the bot
  */
 export async function post_telegramWebhook(request) {
-    console.log('📩 Telegram webhook triggered');
+    console.log(' Telegram webhook triggered');
 
     try {
         // Parse request body
@@ -1827,7 +1827,7 @@ export async function get_setupTelegramWebhook(request) {
  * POST /_functions/post_intakeSubmit
  * Receive completed Telegram intake data from GAS and write to IntakeQueue CMS.
  *
- * Called by Telegram_IntakeFlow.js → pushIntakeToWix() after the indemnitor
+ * Called by Telegram_IntakeFlow.js -> pushIntakeToWix() after the indemnitor
  * completes the conversational intake and uploads their ID photo.
  *
  * Request body:
@@ -1854,12 +1854,12 @@ export async function get_setupTelegramWebhook(request) {
  * { "success": true, "intakeId": "wix-cms-record-id" }
  */
 export async function post_intakeSubmit(request) {
-    console.log('📥 Telegram intake submission received');
+    console.log(' Telegram intake submission received');
 
     try {
         const body = await request.body.json();
 
-        // ── Auth ──────────────────────────────────────────────────────────────
+        // -- Auth --------------------------------------------------------------
         const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
         if (!validApiKey) {
             console.error('CRITICAL: GAS_API_KEY secret missing');
@@ -1870,7 +1870,7 @@ export async function post_intakeSubmit(request) {
             return forbidden({ body: { success: false, message: 'Invalid API key' } });
         }
 
-        // ── Validate required fields ──────────────────────────────────────────
+        // -- Validate required fields ------------------------------------------
         const required = ['indemnitorName', 'indemnitorPhone', 'defendantName', 'county'];
         for (const field of required) {
             if (!body[field]) {
@@ -1880,7 +1880,7 @@ export async function post_intakeSubmit(request) {
             }
         }
 
-        // ── Build IntakeQueue record ──────────────────────────────────────────
+        // -- Build IntakeQueue record ------------------------------------------
         // Matches the IntakeQueue CMS collection schema exactly
         const intakeRecord = {
             // Source metadata
@@ -1914,10 +1914,10 @@ export async function post_intakeSubmit(request) {
             createdAt: new Date()
         };
 
-        // ── Insert into IntakeQueue ───────────────────────────────────────────
+        // -- Insert into IntakeQueue -------------------------------------------
         const result = await wixData.insert('IntakeQueue', intakeRecord);
 
-        console.log(`✅ Intake record created: ${result._id} for ${body.indemnitorName}`);
+        console.log(`[OK] Intake record created: ${result._id} for ${body.indemnitorName}`);
 
         return ok({
             headers: { 'Content-Type': 'application/json' },
@@ -1951,25 +1951,25 @@ export async function post_intakeSubmit(request) {
  * }
  */
 export async function post_sendSigningLink(request) {
-    console.log('📤 Send signing link via Telegram triggered');
+    console.log(' Send signing link via Telegram triggered');
 
     try {
         const body = await request.body.json();
 
-        // ── Auth ──────────────────────────────────────────────────────────────
+        // -- Auth --------------------------------------------------------------
         const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
         if (!validApiKey || !body.apiKey || body.apiKey !== validApiKey) {
             return forbidden({ body: { success: false, message: 'Invalid API key' } });
         }
 
-        // ── Validate ──────────────────────────────────────────────────────────
+        // -- Validate ----------------------------------------------------------
         if (!body.telegramChatId || !body.signingLink) {
             return badRequest({
                 body: { success: false, message: 'Missing telegramChatId or signingLink' }
             });
         }
 
-        // ── Send via Telegram Bot API ─────────────────────────────────────────
+        // -- Send via Telegram Bot API -----------------------------------------
         const botToken = await getSecret('TELEGRAM_BOT_TOKEN').catch(() => null);
         if (!botToken) {
             return serverError({ body: { success: false, message: 'TELEGRAM_BOT_TOKEN not configured' } });
@@ -1978,17 +1978,17 @@ export async function post_sendSigningLink(request) {
         const paymentLink = body.paymentLink || 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
         const defendantName = body.defendantName || 'your loved one';
 
-        const messageText = `📋 *Your Bail Bond Paperwork is Ready!*
+        const messageText = ` *Your Bail Bond Paperwork is Ready!*
 
 The documents for *${defendantName}* are ready to sign.
 
-*Step 1 — Sign the paperwork:*
-👉 [Tap here to sign](${body.signingLink})
+*Step 1 -- Sign the paperwork:*
+ [Tap here to sign](${body.signingLink})
 
-*Step 2 — Pay the premium:*
-💳 [Tap here to pay](${paymentLink})
+*Step 2 -- Pay the premium:*
+ [Tap here to pay](${paymentLink})
 
-Once both are complete, we post the bond immediately. 🚀
+Once both are complete, we post the bond immediately. 
 
 Questions? Reply here or call *(239) 332-2245*`;
 
@@ -1998,9 +1998,9 @@ Questions? Reply here or call *(239) 332-2245*`;
             parse_mode: 'Markdown',
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: '✍️ Sign Documents', url: body.signingLink }],
-                    [{ text: '💳 Pay Premium', url: paymentLink }],
-                    [{ text: '📞 Call Us Now', url: 'tel:+12393322245' }]
+                    [{ text: ' Sign Documents', url: body.signingLink }],
+                    [{ text: ' Pay Premium', url: paymentLink }],
+                    [{ text: ' Call Us Now', url: 'tel:+12393322245' }]
                 ]
             }
         };
@@ -2023,7 +2023,7 @@ Questions? Reply here or call *(239) 332-2245*`;
             });
         }
 
-        console.log(`✅ Signing link sent to chatId ${body.telegramChatId}`);
+        console.log(`[OK] Signing link sent to chatId ${body.telegramChatId}`);
 
         return ok({
             headers: { 'Content-Type': 'application/json' },
@@ -2144,7 +2144,7 @@ export async function get_gasSecrets(request) {
 
 /**
  * GET /_functions/gasSecretsBundle
- * Bulk secrets bridge — returns ALL GAS-required secrets in one authenticated call.
+ * Bulk secrets bridge -- returns ALL GAS-required secrets in one authenticated call.
  *
  * This complements the per-secret get_gasSecrets endpoint. It is used by
  * Setup_Properties_Telegram.gs to fetch all secrets in a single HTTP call,
@@ -2152,7 +2152,7 @@ export async function get_gasSecrets(request) {
  *
  * Authentication: Requires ?apiKey=GAS_API_KEY in query string.
  *
- * Called by: Setup_Properties_Telegram.gs → setupAllProperties() (Phase 2 bulk fetch)
+ * Called by: Setup_Properties_Telegram.gs -> setupAllProperties() (Phase 2 bulk fetch)
  */
 export async function get_gasSecretsBundle(request) {
     const responseHeaders = {
@@ -2161,7 +2161,7 @@ export async function get_gasSecretsBundle(request) {
     };
 
     try {
-        // ── Auth ──────────────────────────────────────────────────────────────
+        // -- Auth --------------------------------------------------------------
         const providedKey = (request.query && request.query['apiKey']) || '';
         const validKey = await getSecret('GAS_API_KEY').catch(() => null);
 
@@ -2181,7 +2181,7 @@ export async function get_gasSecretsBundle(request) {
             });
         }
 
-        // ── Fetch all secrets in parallel ─────────────────────────────────────
+        // -- Fetch all secrets in parallel -------------------------------------
         const secretNames = [
             'TELEGRAM_BOT_TOKEN',
             'ELEVENLABS_API_KEY',

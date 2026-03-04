@@ -40,7 +40,7 @@ $w.onReady(async function () {
     // SEO: Prevent Indexing (Protected Page)
     wixSeo.setMetaTags([{ "name": "robots", "content": "noindex, nofollow" }]);
 
-    console.log("🚀 Indemnitor Portal: Page Code Loaded");
+    console.log(" Indemnitor Portal: Page Code Loaded");
 
     // 0.5 Populate counties on page load (safe to do early)
     await loadCounties();
@@ -52,11 +52,11 @@ $w.onReady(async function () {
     // gate can intercept it. This prevents the 404 on cold token arrivals.
     const query = wixLocation.query;
     if (query.token && wixWindow.rendering.env === 'browser') {
-        console.log("🔗 Indemnitor Portal: Raw magic link token detected — bouncing to portal-landing for proper validation...");
+        console.log(" Indemnitor Portal: Raw magic link token detected -- bouncing to portal-landing for proper validation...");
         wixLocation.to(`/portal-landing?token=${encodeURIComponent(query.token)}`);
-        return; // Stop — portal-landing will validate and redirect back with ?st=
+        return; // Stop -- portal-landing will validate and redirect back with ?st=
     } else if (query.st && wixWindow.rendering.env === 'browser') {
-        console.log("🔗 Indemnitor Portal: Found session token in URL, storing...");
+        console.log(" Indemnitor Portal: Found session token in URL, storing...");
         // Wait for storage to ensure it's set before initialization reads it
         await setSessionToken(query.st);
         wixLocation.queryParams.remove(['st']);
@@ -76,19 +76,19 @@ async function initializePage() {
         // Show loading state
         showLoading(true);
 
-        console.log("🚀 Indemnitor Portal: Initializing...");
+        console.log(" Indemnitor Portal: Initializing...");
 
         // 2. Custom Authentication Check (ROBUST)
         const sessionToken = getSessionToken();
-        console.log("🔍 Session Token Present:", !!sessionToken);
+        console.log(" Session Token Present:", !!sessionToken);
 
         if (!sessionToken) {
-            console.warn("⛔ Indemnitor Portal: No session token found. Redirecting to Landing.");
+            console.warn(" Indemnitor Portal: No session token found. Redirecting to Landing.");
             wixLocation.to('/portal-landing?auth_error=1');
             return;
         }
 
-        console.log("🔍 Validating Session...");
+        console.log(" Validating Session...");
         let session = null;
         try {
             const validationResult = await validateCustomSession(sessionToken);
@@ -97,19 +97,19 @@ async function initializePage() {
                 session = validationResult;
             } else if (validationResult && validationResult.reason === 'error') {
                 // DATABASE/NETWORK ERROR - DO NOT LOGOUT
-                console.error("⚠️ Session validation failed due to network/DB error:", validationResult.message);
+                console.error("[!] Session validation failed due to network/DB error:", validationResult.message);
                 showError("Connection Error. Please check your internet and refresh.");
                 showLoading(false);
                 return; // Stop loading but don't logout
             } else {
                 // DEFINITELY INVALID or EXPIRED
-                console.warn("⛔ Indemnitor session invalid/expired. Redirecting.", validationResult);
+                console.warn(" Indemnitor session invalid/expired. Redirecting.", validationResult);
                 clearSessionToken();
                 wixLocation.to('/portal-landing?auth_error=1');
                 return;
             }
         } catch (err) {
-            console.error("❌ Critical error during session validation:", err);
+            console.error("[X] Critical error during session validation:", err);
             showError("System Error. Please refresh.");
             showLoading(false);
             return;
@@ -119,12 +119,12 @@ async function initializePage() {
         // Note: A user might be both, so we ideally just check if they are allowed here.
         // For now, if they have a valid session, let them in, but we might check session.role === 'indemnitor' if we enforce separation.
         currentSession = session;
-        console.log(`✅ Indemnitor Portal: Authenticated as ${session.personId} (${session.role})`);
+        console.log(`[OK] Indemnitor Portal: Authenticated as ${session.personId} (${session.role})`);
 
         // 3. Load Data from Backend
         indemnitorData = await getIndemnitorDetails(sessionToken);
         if (!indemnitorData) {
-            console.error("❌ Failed to load indemnitor details");
+            console.error("[X] Failed to load indemnitor details");
             showError("Error loading your profile. Please contact support.");
             // fallback?
         }
@@ -134,18 +134,18 @@ async function initializePage() {
 
         // 5. Setup UI
         if (!currentIntake) {
-            console.log("🆕 No existing intake found. Starting fresh.");
+            console.log(" No existing intake found. Starting fresh.");
             setupIntakeForm();
             // FIX: Attach submit handler AFTER setupIntakeForm() completes
             setTimeout(() => attachSubmitHandler(), 100);
         } else {
-            console.log("📂 Existing intake found. Checking for Choice UI...");
+            console.log(" Existing intake found. Checking for Choice UI...");
             // CHECK: Does the user have the "New vs Resume" UI built?
             if ($w('#boxChoice').valid) {
                 setupChoiceScreen();
             } else {
                 // Fallback for legacy UI
-                console.log("⚠️ #boxChoice not found. Defaulting to Dashboard.");
+                console.log("[!] #boxChoice not found. Defaulting to Dashboard.");
                 showBondDashboard();
             }
         }
@@ -213,7 +213,7 @@ async function checkExistingIntake() {
 
         if (results.items.length > 0) {
             currentIntake = results.items[0];
-            console.log("✅ Found existing intake:", currentIntake._id);
+            console.log("[OK] Found existing intake:", currentIntake._id);
         }
     } catch (error) {
         console.error('Error checking existing intake:', error);
@@ -352,7 +352,7 @@ function animateChoiceScreen() {
  * Handle "Start New Bond" Click
  */
 function handleStartNewBond() {
-    console.log("🆕 Starting New Bond...");
+    console.log(" Starting New Bond...");
     currentIntake = null; // Clear current intake from memory (does not delete from DB)
 
     safeHide('#boxChoice');
@@ -364,7 +364,7 @@ function handleStartNewBond() {
  * Handle "Resume Bond" Click
  */
 function handleResumeBond() {
-    console.log("📂 Resuming Existing Bond...");
+    console.log(" Resuming Existing Bond...");
     safeHide('#boxChoice');
     showBondDashboard();
 }
@@ -387,12 +387,12 @@ function setupEventListeners() {
     if (eventListenersReady) return;
     eventListenersReady = true;
 
-    console.log("🔧 setupEventListeners: Starting...");
+    console.log(" setupEventListeners: Starting...");
 
     // DIAGNOSTIC: List all buttons on page
     try {
         const allButtons = $w('Button');
-        console.log("📋 All buttons found on page:", allButtons.map(btn => `${btn.id} (${btn.label || btn.text || 'no label'})`));
+        console.log(" All buttons found on page:", allButtons.map(btn => `${btn.id} (${btn.label || btn.text || 'no label'})`));
     } catch (e) {
         console.warn("Could not enumerate buttons:", e);
     }
@@ -443,10 +443,10 @@ function attachSubmitHandler(attempt = 0) {
             $w(id).onClick(handleSubmitIntake);
             if ($w(id).valid) {
                 activeSubmitBtnId = id;
-                console.log(`✅ Bound to ${id} (valid=true)`);
+                console.log(`[OK] Bound to ${id} (valid=true)`);
                 break; // Found the Winner
             } else {
-                console.log(`⚠️ Bound to ${id} (valid=false) - trying anyway`);
+                console.log(`[!] Bound to ${id} (valid=false) - trying anyway`);
             }
         } catch (e) {
             // Ignore
@@ -455,7 +455,7 @@ function attachSubmitHandler(attempt = 0) {
 
     if (!activeSubmitBtnId) {
         if (attempt + 1 >= maxAttempts) {
-            console.error(`❌ CRITICAL UI ERROR: No VALID submit button found. Checked: ${candidateIds.join(', ')}`);
+            console.error(`[X] CRITICAL UI ERROR: No VALID submit button found. Checked: ${candidateIds.join(', ')}`);
             // Don't show confusing error to user if the brute force binding worked silently
             // Just warn in console.
             return;
@@ -474,11 +474,11 @@ function attachSubmitHandler(attempt = 0) {
             if (!btn.enabled) btn.enable();
         }
     } catch (e) {
-        console.warn(`⚠️ Could not modify button visibility: ${e.message}`);
+        console.warn(`[!] Could not modify button visibility: ${e.message}`);
     }
 
     submitHandlerAttached = true;
-    console.log(`✅ Submit handler fully attached to ${activeSubmitBtnId}`);
+    console.log(`[OK] Submit handler fully attached to ${activeSubmitBtnId}`);
 }
 
 /**
@@ -493,16 +493,16 @@ function handleLogout() {
  * Handle intake form submission
  */
 async function handleSubmitIntake() {
-    console.log("💆 handleSubmitIntake: Button clicked!");
+    console.log(" handleSubmitIntake: Button clicked!");
     console.log("   isSubmitting:", isSubmitting);
 
     if (isSubmitting) {
-        console.warn("⚠️ Already submitting, ignoring click");
+        console.warn("[!] Already submitting, ignoring click");
         return;
     }
 
     try {
-        console.log("🚀 Starting submission process...");
+        console.log(" Starting submission process...");
         isSubmitting = true;
         safeDisable(activeSubmitBtnId);
         safeSetText(activeSubmitBtnId, 'Submitting...');
@@ -510,7 +510,7 @@ async function handleSubmitIntake() {
 
         const validation = validateIntakeForm();
         if (!validation.valid) {
-            console.warn("⚠️ Validation failed:", validation.message);
+            console.warn("[!] Validation failed:", validation.message);
             showError(validation.message);
             isSubmitting = false; // Re-enable immediately
             safeEnable(activeSubmitBtnId);
@@ -520,13 +520,13 @@ async function handleSubmitIntake() {
         }
 
         const formData = collectIntakeFormData();
-        console.log("📦 Payload prepared:", JSON.stringify(formData, null, 2));
+        console.log(" Payload prepared:", JSON.stringify(formData, null, 2));
 
         const result = await submitIntakeForm(formData);
-        console.log("📡 Backend response:", result);
+        console.log(" Backend response:", result);
 
         if (result.success) {
-            console.log('✅ Submission successful:', result);
+            console.log('[OK] Submission successful:', result);
             showLoading(false);
 
             // Use safe wrappers to prevent "is not a function" errors
@@ -534,9 +534,9 @@ async function handleSubmitIntake() {
             safeHide('#groupStep3');
             safeShow('#groupSuccess');
 
-            const successMsg = `🎉 Success! Your Case ID is: ${result.caseId}\n\n` +
+            const successMsg = ` Success! Your Case ID is: ${result.caseId}\n\n` +
                 `Stand by. Our AI agent is reviewing your file and will email you the completed SignNow documents to review and sign shortly.\n\n` +
-                `💳 Next Steps:\n` +
+                ` Next Steps:\n` +
                 `If you know the premium due, please feel free to pay your defendant's bond securely using our payment page. Be sure to add any notes that you would like.\n\n` +
                 `If the premium isn't paid after this submission, then there will be a payment plan signed and sent to you. If you prefer other payment methods, please discuss that with your agent.\n\n` +
                 `Redirecting to our secure payment portal...`;
@@ -546,7 +546,7 @@ async function handleSubmitIntake() {
             wixWindow.scrollTo(0, 0);
 
             setTimeout(() => {
-                console.log("🔄 Redirecting to payments page ->");
+                console.log(" Redirecting to payments page ->");
                 wixLocation.to('/payments');
             }, 10000);
         } else {
@@ -554,7 +554,7 @@ async function handleSubmitIntake() {
         }
 
     } catch (error) {
-        console.error('❌ Submit error stack:', error.stack);
+        console.error('[X] Submit error stack:', error.stack);
         showError(error.message || 'Error submitting form.');
     } finally {
         isSubmitting = false;
@@ -662,14 +662,14 @@ function resolveFieldValue(fieldKey) {
  * Logs what the form "sees" to help identify ID mismatches.
  */
 function debugFormState() {
-    console.log("🕵️‍♂️ STARTING FORM DIAGNOSTIC 🕵️‍♂️");
+    console.log(" STARTING FORM DIAGNOSTIC ");
     const report = {};
     Object.keys(FIELD_MAP).forEach(key => {
         const res = resolveFieldValue(key);
-        report[key] = res.source ? `✅ Found in ${res.source} ("${String(res.value).substring(0, 15)}...")` : `❌ NOT FOUND (Checked: ${FIELD_MAP[key].join(', ')})`;
+        report[key] = res.source ? `[OK] Found in ${res.source} ("${String(res.value).substring(0, 15)}...")` : `[X] NOT FOUND (Checked: ${FIELD_MAP[key].join(', ')})`;
     });
     console.log(JSON.stringify(report, null, 2));
-    console.log("🕵️‍♂️ END DIAGNOSTIC 🕵️‍♂️");
+    console.log(" END DIAGNOSTIC ");
 }
 
 /**
@@ -851,7 +851,7 @@ async function handleSendMessage() {
             (indemnitorData?.indemnitorLastName  || indemnitorData?.lastName  || '')
         ).trim() || currentSession?.name || 'Indemnitor';
 
-        // 1. Notify GAS — logs to Sheets + triggers Slack alert to staff
+        // 1. Notify GAS -- logs to Sheets + triggers Slack alert to staff
         await callGasAction('portalClientMessage', {
             caseId:      caseId,
             senderName:  senderName,
@@ -1064,7 +1064,7 @@ export {
 /**
  * Setup "Are you the Defendant?" Link Logic
  *
- * ⚠️ UI CONFIGURATION REQUIRED ⚠️
+ * [!] UI CONFIGURATION REQUIRED [!]
  * You MUST rename your elements in the Wix Editor Layers Panel to match these IDs:
  *
  * 1. The Container Box   => #groupDefendantLink  (Was: group22)
@@ -1085,7 +1085,7 @@ function setupDefendantLink() {
         safeOnInput(selector, () => {
             // Check availability to prevent errors
             if ($w('#groupDefendantLink').valid && !$w('#groupDefendantLink').collapsed) {
-                console.log("🙈 Hiding Defendant Link (User is Indemnitor)");
+                console.log(" Hiding Defendant Link (User is Indemnitor)");
                 safeCollapse('#groupDefendantLink');
             }
         });

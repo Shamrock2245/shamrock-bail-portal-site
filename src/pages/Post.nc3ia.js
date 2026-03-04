@@ -100,8 +100,8 @@ async function updatePostSEO() {
                 ]
             }
         ])
-            .then(() => console.log("✅ Deep Blog Post SEO Set for:", post.title))
-            .catch(e => console.error("❌ Blog Post SEO Error", e));
+            .then(() => console.log("[OK] Deep Blog Post SEO Set for:", post.title))
+            .catch(e => console.error("[X] Blog Post SEO Error", e));
 
     } catch (err) {
         console.error("Failed to load post data for SEO", err);

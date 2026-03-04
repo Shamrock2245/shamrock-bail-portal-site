@@ -49,7 +49,7 @@ export async function notifyGASOfCompletion(courseId, studentName) {
     }
 
     try {
-        console.log(`🎓 Bail School: Requesting certificate for ${studentName} (Course: ${courseId})`);
+        console.log(` Bail School: Requesting certificate for ${studentName} (Course: ${courseId})`);
 
         // 2. Prepare Payload for GAS
         const payload = {
@@ -67,7 +67,7 @@ export async function notifyGASOfCompletion(courseId, studentName) {
         return result;
 
     } catch (error) {
-        console.error("🎓 Bail School Error:", error);
+        console.error(" Bail School Error:", error);
         throw new Error("Failed to generate certificate.");
     }
 }
@@ -80,6 +80,6 @@ export async function notifyGASOfCompletion(courseId, studentName) {
 export async function grantCourseAccess(memberId, courseId) {
     // Implementation: Update 'StudentEnrollments' collection
     // This would be called by wix-pay-backend events
-    console.log(`🔓 Granting access to ${courseId} for ${memberId}`);
+    console.log(` Granting access to ${courseId} for ${memberId}`);
     return true;
 }

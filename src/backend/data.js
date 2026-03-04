@@ -9,7 +9,7 @@ import { notifyGASOfNewIntake } from 'backend/gasIntegration.jsw';
  */
 export async function Cases_afterInsert(item, context) {
     try {
-        console.log(`🪝 Hook: Cases_afterInsert for Case ${item.caseNumber}`);
+        console.log(` Hook: Cases_afterInsert for Case ${item.caseNumber}`);
 
         if (item.email) {
             await sendMemberNotification(NOTIFICATION_TYPES.WELCOME, {
@@ -22,10 +22,10 @@ export async function Cases_afterInsert(item, context) {
                     county: item.county
                 }
             });
-            console.log(`✅ Welcome notification triggered for ${item.email}`);
+            console.log(`[OK] Welcome notification triggered for ${item.email}`);
         }
     } catch (error) {
-        console.error('❌ Cases_afterInsert failed:', error);
+        console.error('[X] Cases_afterInsert failed:', error);
     }
 
     return item;
@@ -36,7 +36,7 @@ export async function Cases_afterInsert(item, context) {
  * Validates data before insertion
  */
 export function IntakeQueue_beforeInsert(item, context) {
-    console.log('🪝 Hook: IntakeQueue_beforeInsert for case:', item.caseId);
+    console.log(' Hook: IntakeQueue_beforeInsert for case:', item.caseId);
 
     // Ensure required fields are present
     if (!item.caseId) {
@@ -64,15 +64,15 @@ export function IntakeQueue_beforeInsert(item, context) {
  * Triggers notifications after successful insertion
  */
 export function IntakeQueue_afterInsert(item, context) {
-    console.log('🪝 Hook: IntakeQueue_afterInsert for case:', item.caseId);
+    console.log(' Hook: IntakeQueue_afterInsert for case:', item.caseId);
 
     // Notify GAS asynchronously (non-blocking)
     notifyGASOfNewIntake(item.caseId)
         .then(() => {
-            console.log('✅ GAS notified successfully for case:', item.caseId);
+            console.log('[OK] GAS notified successfully for case:', item.caseId);
         })
         .catch(err => {
-            console.error('❌ GAS notification failed for case:', item.caseId, err);
+            console.error('[X] GAS notification failed for case:', item.caseId, err);
         });
 
     // Send email notification to staff
@@ -82,7 +82,7 @@ export function IntakeQueue_afterInsert(item, context) {
         county: item.county,
         caseId: item.caseId
     }).catch(err => {
-        console.error('❌ Staff notification failed:', err);
+        console.error('[X] Staff notification failed:', err);
     });
 
     return item;
@@ -93,7 +93,7 @@ export function IntakeQueue_afterInsert(item, context) {
  * Triggers when intake status changes
  */
 export function IntakeQueue_afterUpdate(item, context) {
-    console.log('🪝 Hook: IntakeQueue_afterUpdate for case:', item.caseId);
+    console.log(' Hook: IntakeQueue_afterUpdate for case:', item.caseId);
 
     // If status changed to 'completed', send completion notifications
     if (item.status === 'completed' && item.gasSyncStatus === 'synced') {
@@ -102,7 +102,7 @@ export function IntakeQueue_afterUpdate(item, context) {
             defendantName: item.defendantName,
             indemnitorName: item.indemnitorName
         }).catch(err => {
-            console.error('❌ Completion notification failed:', err);
+            console.error('[X] Completion notification failed:', err);
         });
     }
 
@@ -117,7 +117,7 @@ export function IntakeQueue_afterUpdate(item, context) {
                 defendantName: item.defendantName
             }
         }).catch(err => {
-            console.error('❌ Signing notification failed:', err);
+            console.error('[X] Signing notification failed:', err);
         });
     }
 
@@ -133,7 +133,7 @@ export async function Signing_Sessions_afterUpdate(item, context) {
     try {
         // Check if status transitioned to completed
         if (item.status === 'completed' || item.status === 'Signed') {
-            console.log(`🪝 Hook: Signing_Sessions_afterUpdate - Session ${item._id} is COMPLETE`);
+            console.log(` Hook: Signing_Sessions_afterUpdate - Session ${item._id} is COMPLETE`);
 
             // 1. Update the parent Case status
             if (item.caseId) {
@@ -147,7 +147,7 @@ export async function Signing_Sessions_afterUpdate(item, context) {
                     // Don't overwrite main status if it's already Active/Discharged? 
                     // Maybe just update paperworkStatus.
                     await wixData.update(COLLECTIONS.CASES, caseItem);
-                    console.log(`✅ Updated Case ${item.caseId} paperworkStatus to 'Signed'`);
+                    console.log(`[OK] Updated Case ${item.caseId} paperworkStatus to 'Signed'`);
                 }
             }
 
@@ -171,7 +171,7 @@ export async function Signing_Sessions_afterUpdate(item, context) {
             }
         }
     } catch (error) {
-        console.error('❌ Signing_Sessions_afterUpdate failed:', error);
+        console.error('[X] Signing_Sessions_afterUpdate failed:', error);
     }
 
     return item;

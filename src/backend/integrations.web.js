@@ -60,7 +60,7 @@ export async function post_documentsAdd(request) {
     
     // Send Slack notification
     await notifySlack({
-      text: `📄 *New Document Ready for Signing*\n\n👤 Defendant: ${defendantName}\n✍️ Signer: ${signerName} (${signerRole})\n📧 Email: ${signerEmail}\n📋 Document: ${documentName}`,
+      text: ` *New Document Ready for Signing*\n\n Defendant: ${defendantName}\n Signer: ${signerName} (${signerRole})\n Email: ${signerEmail}\n Document: ${documentName}`,
       channel: '#bail-documents'
     });
     
@@ -199,7 +199,7 @@ export async function post_documentsStatus(request) {
     // Send Slack notification for completed documents
     if (status === 'signed' || status === 'completed') {
       await notifySlack({
-        text: `✅ *Document Signed!*\n\n👤 Defendant: ${doc.defendantName}\n✍️ Signer: ${doc.signerName}\n📋 Document: ${doc.documentName}\n⏰ Signed: ${new Date().toLocaleString()}`,
+        text: `[OK] *Document Signed!*\n\n Defendant: ${doc.defendantName}\n Signer: ${doc.signerName}\n Document: ${doc.documentName}\n Signed: ${new Date().toLocaleString()}`,
         channel: '#bail-documents'
       });
     }
@@ -300,11 +300,11 @@ export async function post_arrestLeadsAdd(request) {
     if (hotLeadsCount > 0) {
       const hotLeads = leads.filter(l => l.leadStatus === 'Hot' || l.leadScore >= 70);
       const leadsText = hotLeads.slice(0, 5).map(l => 
-        `• ${l.fullName} - ${l.county} County - $${l.bondAmount} - Score: ${l.leadScore}`
+        `* ${l.fullName} - ${l.county} County - $${l.bondAmount} - Score: ${l.leadScore}`
       ).join('\n');
       
       await notifySlack({
-        text: `🔥 *${hotLeadsCount} New HOT Lead${hotLeadsCount > 1 ? 's' : ''}!*\n\n${leadsText}${hotLeadsCount > 5 ? `\n\n...and ${hotLeadsCount - 5} more` : ''}`,
+        text: ` *${hotLeadsCount} New HOT Lead${hotLeadsCount > 1 ? 's' : ''}!*\n\n${leadsText}${hotLeadsCount > 5 ? `\n\n...and ${hotLeadsCount - 5} more` : ''}`,
         channel: '#hot-leads'
       });
     }
@@ -563,9 +563,9 @@ export async function post_contactFormSubmit(request) {
     });
     
     // Send Slack notification
-    const urgencyEmoji = urgency === 'urgent' ? '🚨' : urgency === 'high' ? '⚠️' : '📧';
+    const urgencyEmoji = urgency === 'urgent' ? '' : urgency === 'high' ? '[!]' : '';
     await notifySlack({
-      text: `${urgencyEmoji} *New Contact Form Submission*\n\n👤 Name: ${name}\n📧 Email: ${email}\n📞 Phone: ${phone || 'N/A'}\n📍 County: ${county || 'N/A'}\n💬 Message: ${message}`,
+      text: `${urgencyEmoji} *New Contact Form Submission*\n\n Name: ${name}\n Email: ${email}\n Phone: ${phone || 'N/A'}\n County: ${county || 'N/A'}\n Message: ${message}`,
       channel: '#website-leads'
     });
     

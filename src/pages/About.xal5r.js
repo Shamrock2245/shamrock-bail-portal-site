@@ -3,7 +3,7 @@ import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
 
 $w.onReady(function () {
-    console.log("🚀 About Page Loading...");
+    console.log(" About Page Loading...");
 
     // Basic Navigation (if applicable)
     const startBtn = $w('#startBailProcessBtn');
@@ -77,6 +77,6 @@ function updatePageSEO() {
             }
         }
     ])
-        .then(() => console.log("✅ About Page SEO Set"))
-        .catch(e => console.error("❌ About Page SEO Error", e));
+        .then(() => console.log("[OK] About Page SEO Set"))
+        .catch(e => console.error("[X] About Page SEO Error", e));
 }

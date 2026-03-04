@@ -21,7 +21,7 @@ import { getSecret } from 'wix-secrets-backend';
  * @returns {object} - Response
  */
 export async function handleTelegramWebhook(update) {
-  console.log('📩 Telegram webhook received:', JSON.stringify(update));
+  console.log(' Telegram webhook received:', JSON.stringify(update));
 
   try {
     // Validate update object
@@ -78,7 +78,7 @@ export async function handleTelegramWebhook(update) {
     }
 
     const gasResult = await gasResponse.json();
-    console.log('✅ GAS processed Telegram message:', gasResult);
+    console.log('[OK] GAS processed Telegram message:', gasResult);
 
     return {
       success: true,
@@ -117,7 +117,7 @@ export async function setTelegramWebhook(botToken, webhookUrl) {
     const result = await response.json();
 
     if (result.ok) {
-      console.log('✅ Telegram webhook set successfully');
+      console.log('[OK] Telegram webhook set successfully');
       return { success: true, result: result };
     } else {
       console.error('Failed to set webhook:', result);

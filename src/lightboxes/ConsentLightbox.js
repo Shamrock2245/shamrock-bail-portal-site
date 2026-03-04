@@ -22,7 +22,7 @@
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 
-// Consent state — ALL default to false (unchecked)
+// Consent state -- ALL default to false (unchecked)
 let locationGranted = false;
 let termsAccepted = false;
 let privacyAccepted = false;
@@ -35,7 +35,7 @@ $w.onReady(function () {
 });
 
 /**
- * Initialize lightbox — all checkboxes start UNCHECKED
+ * Initialize lightbox -- all checkboxes start UNCHECKED
  */
 function initializeLightbox() {
     // Disable agree button until ALL consents given
@@ -107,7 +107,7 @@ function setupEventListeners() {
         });
     } catch (e) {
         // If element doesn't exist yet in Wix Editor, log it
-        console.warn('⚠️ #smsConsentCheckbox not found in Editor. Add it to enable SMS consent.');
+        console.warn('[!] #smsConsentCheckbox not found in Editor. Add it to enable SMS consent.');
     }
 
     // Agree button
@@ -149,7 +149,7 @@ async function requestLocationPermission() {
         };
 
         locationGranted = true;
-        $w('#locationStatus').text = '✓ Location shared successfully';
+        $w('#locationStatus').text = 'v Location shared successfully';
         $w('#locationStatus').style.color = '#28A745';
 
         updateAgreeButton();
@@ -179,7 +179,7 @@ async function requestLocationPermission() {
 }
 
 /**
- * Update agree button state — requires ALL 4 consents
+ * Update agree button state -- requires ALL 4 consents
  */
 function updateAgreeButton() {
     const allConsentsGiven = locationGranted && termsAccepted && privacyAccepted && smsConsented;

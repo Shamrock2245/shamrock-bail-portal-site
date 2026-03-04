@@ -5,7 +5,7 @@
  * It provides endpoints for GAS to query IntakeQueue and update records.
  * 
  * GAS Web App URL: Loaded at runtime from Wix Secrets Manager (GAS_WEBHOOK_URL).
- *                   Never hardcoded. See backend/secretsManager.jsw → getGasWebAppUrl().
+ *                   Never hardcoded. See backend/secretsManager.jsw -> getGasWebAppUrl().
  *
  * File: backend/gasIntegration.jsw
  */
@@ -451,12 +451,12 @@ export async function getDashboardUrl() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
+// 
 // TELEGRAM HUB HOMEPAGE SECTION ANALYTICS
-// Added: 2026-03-03 | Phase 7 — Growth & Scale
+// Added: 2026-03-03 | Phase 7 -- Growth & Scale
 // Receives analytics events from the Telegram Hub HTML iframe
 // embed on the homepage and relays high-value events to GAS.
-// ═══════════════════════════════════════════════════════════════
+// 
 
 /**
  * Log a Telegram Hub section analytics event to GAS.
@@ -483,7 +483,7 @@ export async function logTelegramSectionEvent(eventData) {
         });
         return result;
     } catch (err) {
-        // Non-fatal — analytics failure must never break the page
+        // Non-fatal -- analytics failure must never break the page
         console.error('[gasIntegration] logTelegramSectionEvent error:', err.message || err);
         return { success: false, error: err.message };
     }

@@ -202,7 +202,7 @@ export async function sendStealthPingSms(personId, phone, staffId = 'system', de
 
 // =============================================================================
 // INTAKE NOTIFICATION FUNCTIONS
-// Replaces WhatsApp — uses Twilio SMS for all operational alerts.
+// Replaces WhatsApp -- uses Twilio SMS for all operational alerts.
 // =============================================================================
 
 /**
@@ -210,7 +210,7 @@ export async function sendStealthPingSms(personId, phone, staffId = 'system', de
  * submitted via the Telegram bot or Wix portal.
  *
  * Sent immediately after the intake is saved to the queue.
- * Does NOT confirm bond approval — only confirms receipt of information.
+ * Does NOT confirm bond approval -- only confirms receipt of information.
  *
  * @param {string} phone - Indemnitor's phone number
  * @param {string} indemnitorName - Co-signer's first name
@@ -225,14 +225,14 @@ export async function sendIntakeConfirmationSms(phone, indemnitorName, intakeId,
         `We received your bail bond inquiry for ${defendantName || 'your loved one'}.`,
         `Your reference number is: ${intakeId}`,
         `An agent will contact you shortly. For immediate assistance call: (239) 955-0178`,
-        `— Shamrock Bail Bonds`
+        `-- Shamrock Bail Bonds`
     ].join('\n');
     return sendSms(phone, body);
 }
 
 /**
  * Send an agent alert SMS when a new intake arrives.
- * Used as a backup to Slack and email — ensures agents are notified
+ * Used as a backup to Slack and email -- ensures agents are notified
  * even when not at a desk.
  *
  * @param {string} agentPhone - Agent's mobile number
@@ -245,7 +245,7 @@ export async function sendIntakeConfirmationSms(phone, indemnitorName, intakeId,
 export async function sendAgentIntakeAlertSms(agentPhone, intakeId, defendantName, facility, source) {
     const sourceLabel = source === 'telegram' ? 'Telegram Bot' : 'Wix Portal';
     const body = [
-        `NEW INTAKE — Shamrock Bail Bonds`,
+        `NEW INTAKE -- Shamrock Bail Bonds`,
         `Source: ${sourceLabel}`,
         `Defendant: ${defendantName || 'Unknown'}`,
         `Facility: ${facility || 'Unknown'}`,
@@ -274,7 +274,7 @@ export async function sendCourtDateReminderSms(phone, recipientName, defendantNa
         `Date: ${courtDate}`,
         `Location: ${courtLocation || 'See your paperwork for location'}`,
         `Failure to appear will result in bond forfeiture. Call us: (239) 955-0178`,
-        `— Shamrock Bail Bonds`
+        `-- Shamrock Bail Bonds`
     ].join('\n');
     return sendSms(phone, body);
 }
@@ -295,7 +295,7 @@ export async function sendDischargeNotificationSms(phone, indemnitorName, defend
         `The bond for ${defendantName || 'your defendant'} has been discharged.`,
         `Your obligations as co-signer are now complete.`,
         `Thank you for trusting Shamrock Bail Bonds. Call us anytime: (239) 955-0178`,
-        `— Shamrock Bail Bonds`
+        `-- Shamrock Bail Bonds`
     ].join('\n');
     return sendSms(phone, body);
 }
@@ -313,11 +313,11 @@ export async function sendDischargeNotificationSms(phone, indemnitorName, defend
 export async function sendForfeitureWarningSms(phone, indemnitorName, defendantName, missedDate) {
     const firstName = (indemnitorName || '').split(' ')[0] || 'there';
     const body = [
-        `URGENT — Shamrock Bail Bonds`,
+        `URGENT -- Shamrock Bail Bonds`,
         `Hi ${firstName}, ${defendantName || 'your defendant'} missed their court date on ${missedDate || 'a recent date'}.`,
         `The bond is at risk of forfeiture. You must contact us IMMEDIATELY.`,
         `Call now: (239) 955-0178`,
-        `— Shamrock Bail Bonds`
+        `-- Shamrock Bail Bonds`
     ].join('\n');
     return sendSms(phone, body);
 }

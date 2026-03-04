@@ -402,7 +402,7 @@ import { callGasAction } from 'backend/gasIntegration';
  */
 async function triggerHighValueAlert(eventType, properties) {
   try {
-    console.log('🔥 HIGH-VALUE EVENT:', {
+    console.log(' HIGH-VALUE EVENT:', {
       eventType,
       county: properties.county,
       page: properties.page,
@@ -410,7 +410,7 @@ async function triggerHighValueAlert(eventType, properties) {
     });
 
     // Construct Slack Payload
-    const title = `🔥 High Value Event: ${eventType}`;
+    const title = ` High Value Event: ${eventType}`;
     const text = `New activity detected in ${properties.county || 'unknown'} county.`;
 
     const blocks = [

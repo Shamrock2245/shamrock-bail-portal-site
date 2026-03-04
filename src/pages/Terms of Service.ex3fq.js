@@ -3,7 +3,7 @@ import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
 
 $w.onReady(function () {
-    console.log("📄 Terms of Service Loaded");
+    console.log(" Terms of Service Loaded");
 
     // Optional: Print Functionality
     const printBtn = $w('#printTermsBtn');

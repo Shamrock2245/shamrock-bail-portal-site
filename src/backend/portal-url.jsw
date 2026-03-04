@@ -93,7 +93,7 @@ function validateAndNormalizeUrl(url) {
         const hostname = urlObj.hostname;
 
         if (!URL_CONFIG.VALID_DOMAINS.includes(hostname)) {
-            console.warn(`⚠️ URL domain ${hostname} not in whitelist. Proceeding anyway.`);
+            console.warn(`[!] URL domain ${hostname} not in whitelist. Proceeding anyway.`);
         }
 
         return { valid: true, url: normalized, error: null };
@@ -122,7 +122,7 @@ export async function getPortalBaseUrl() {
             sources.push({ source: 'Secrets Manager', url: secretUrl });
         }
     } catch (error) {
-        console.warn('⚠️ Could not read PORTAL_BASE_URL from Secrets Manager:', error?.message);
+        console.warn('[!] Could not read PORTAL_BASE_URL from Secrets Manager:', error?.message);
     }
 
     // Layer 2: Try runtime config
@@ -133,7 +133,7 @@ export async function getPortalBaseUrl() {
             sources.push({ source: 'Runtime Config', url: configDomain });
         }
     } catch (error) {
-        console.warn('⚠️ Could not read brand.domain from config:', error?.message);
+        console.warn('[!] Could not read brand.domain from config:', error?.message);
     }
 
     // Layer 3: Add hardcoded fallbacks
@@ -146,16 +146,16 @@ export async function getPortalBaseUrl() {
         const validation = validateAndNormalizeUrl(url);
 
         if (validation.valid) {
-            console.log(`✅ Portal base URL resolved from ${source}: ${validation.url}`);
+            console.log(`[OK] Portal base URL resolved from ${source}: ${validation.url}`);
             return validation.url;
         } else {
-            console.warn(`⚠️ Invalid URL from ${source}: ${validation.error}`);
+            console.warn(`[!] Invalid URL from ${source}: ${validation.error}`);
         }
     }
 
     // Emergency fallback - should never reach here
     const emergency = URL_CONFIG.FALLBACK_URLS[0];
-    console.error('🚨 All URL sources failed validation. Using emergency fallback:', emergency);
+    console.error(' All URL sources failed validation. Using emergency fallback:', emergency);
     return emergency;
 }
 
@@ -193,7 +193,7 @@ export async function buildPortalUrl(path = '', queryParams = {}) {
 
         return validation.url;
     } catch (error) {
-        console.error('🚨 Error building portal URL:', error);
+        console.error(' Error building portal URL:', error);
         // Return emergency fallback
         return `${URL_CONFIG.FALLBACK_URLS[0]}${path}`;
     }

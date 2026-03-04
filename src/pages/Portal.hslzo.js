@@ -12,7 +12,7 @@ import wixLocation from 'wix-location';
 import { validateCustomSession } from 'backend/portal-auth';
 
 $w.onReady(async function () {
-    console.log("🔄 Portal redirect page loaded");
+    console.log(" Portal redirect page loaded");
     
     try {
         // Check if user has an active session
@@ -29,11 +29,11 @@ $w.onReady(async function () {
             };
             
             const destination = roleRedirects[session.role] || '/portal-landing';
-            console.log(`✅ Valid session, redirecting to ${destination}`);
+            console.log(`[OK] Valid session, redirecting to ${destination}`);
             wixLocation.to(destination);
         } else {
             // No valid session - redirect to landing page
-            console.log("⚠️ No valid session, redirecting to portal-landing");
+            console.log("[!] No valid session, redirecting to portal-landing");
             wixLocation.to('/portal-landing');
         }
     } catch (error) {

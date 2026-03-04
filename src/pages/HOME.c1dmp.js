@@ -46,7 +46,7 @@ $w.onReady(function () {
         initTestimonials();
     }, isMobile ? 4000 : 2000);
 
-    // Telegram Hub Section — analytics bridge (non-blocking)
+    // Telegram Hub Section -- analytics bridge (non-blocking)
     initTelegramHubSection();
 });
 
@@ -109,14 +109,14 @@ function setupCTAButtons() {
  *
  * FIX (2026-03-04): Resolve the canonical dropdown element ID once and reuse
  * it throughout this function so that onChange fires on the same element that
- * has options set. Previously the ID resolution was inconsistent — options were
+ * has options set. Previously the ID resolution was inconsistent -- options were
  * written to #countySelector but onChange was wired to #countyDropdown (or
  * vice-versa), so the change event never fired and the page appeared "stuck".
  */
 async function loadCountyDropdown() {
     if (countiesLoaded) return;
 
-    // ── Resolve the ONE canonical dropdown element ─────────────────────────
+    // -- Resolve the ONE canonical dropdown element -------------------------
     // Check #countySelector first (confirmed ID in Wix Editor screenshot).
     // Fall back to #countyDropdown for legacy support.
     // We resolve ONCE here and reuse the same reference everywhere below.
@@ -164,7 +164,7 @@ async function loadCountyDropdown() {
             }
         }
 
-        // ── Populate dropdown options ───────────────────────────────────────
+        // -- Populate dropdown options ---------------------------------------
         if (Array.isArray(countiesData) && countiesData.length > 0) {
             dropdown.options = countiesData.map(county => {
                 const slug = (county.slug || '').replace(/-county$/i, '').trim();
@@ -176,10 +176,10 @@ async function loadCountyDropdown() {
             });
             dropdown.placeholder = 'Select a County';
 
-            // ── Wire onChange on the SAME element that has options ──────────
+            // -- Wire onChange on the SAME element that has options ----------
             dropdown.onChange(() => handleCountySelection(dropdown));
         } else {
-            dropdown.placeholder = 'Counties unavailable — call us';
+            dropdown.placeholder = 'Counties unavailable -- call us';
         }
 
         // Setup Get Started button (support both IDs)
@@ -198,12 +198,12 @@ async function loadCountyDropdown() {
 
     } catch (error) {
         console.error('[County Dropdown] Load error:', error);
-        try { dropdown.placeholder = 'Error loading — call (239) 332-2245'; } catch (e) { /* non-fatal */ }
+        try { dropdown.placeholder = 'Error loading -- call (239) 332-2245'; } catch (e) { /* non-fatal */ }
     }
 }
 
 /**
- * Inline fallback county list — used only when backend call fails entirely.
+ * Inline fallback county list -- used only when backend call fails entirely.
  * Keeps the dropdown functional even if the CMS or backend is unreachable.
  */
 function getFallbackCounties() {
@@ -225,7 +225,7 @@ function getFallbackCounties() {
  * Handle county selection.
  *
  * FIX (2026-03-04): Accept the resolved dropdown element as a parameter
- * instead of re-resolving the ID (which was the source of the stuck bug —
+ * instead of re-resolving the ID (which was the source of the stuck bug --
  * the re-resolution sometimes picked the wrong element and read an empty value).
  *
  * @param {Object} [dropdownEl] - The resolved Wix dropdown element
@@ -246,7 +246,7 @@ function handleCountySelection(dropdownEl) {
 
     if (selectedCounty) {
         trackEvent('county_selected', { county: selectedCounty });
-        // Auto-navigate immediately on selection — no extra button click needed
+        // Auto-navigate immediately on selection -- no extra button click needed
         navigateToCounty(selectedCounty);
     }
 }
@@ -297,20 +297,20 @@ function handleGetStarted(dropdownEl) {
  */
 async function navigateToCounty(selectedCounty) {
     if (!selectedCounty) {
-        console.warn('[County Nav] navigateToCounty called with empty value — aborting.');
+        console.warn('[County Nav] navigateToCounty called with empty value -- aborting.');
         return;
     }
 
-    // Normalise: lowercase, trim, strip trailing '-county' or ' county', spaces → hyphens
+    // Normalise: lowercase, trim, strip trailing '-county' or ' county', spaces -> hyphens
     const cleanSlug = String(selectedCounty)
         .toLowerCase()
         .trim()
-        .replace(/-county$/i, '')      // strip -county suffix (e.g. "lee-county" → "lee")
-        .replace(/\s+county$/i, '')    // strip " county" suffix (e.g. "lee county" → "lee")
+        .replace(/-county$/i, '')      // strip -county suffix (e.g. "lee-county" -> "lee")
+        .replace(/\s+county$/i, '')    // strip " county" suffix (e.g. "lee county" -> "lee")
         .replace(/\s+/g, '-');         // spaces to hyphens
 
     if (!cleanSlug) {
-        console.warn('[County Nav] Slug normalised to empty string — aborting.');
+        console.warn('[County Nav] Slug normalised to empty string -- aborting.');
         return;
     }
 
@@ -569,18 +569,18 @@ function setupOrganizationSchema() {
     wixSeo.setStructuredData(schemas).catch(e => console.error('Schema error:', e));
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TELEGRAM HUB SECTION — Analytics Bridge
+// 
+// TELEGRAM HUB SECTION -- Analytics Bridge
 // Wires the HTML iframe embed (#telegramHubEmbed) postMessage
 // events to Wix Analytics + GAS backend.
 // Element IDs required in Wix Editor:
-//   #telegramHubEmbed   — HTML Component iframe (paste telegram-hub-section.html)
-//   #telegramHubSection — Section strip (for scroll viewport tracking)
-// ═══════════════════════════════════════════════════════════════
+//   #telegramHubEmbed   -- HTML Component iframe (paste telegram-hub-section.html)
+//   #telegramHubSection -- Section strip (for scroll viewport tracking)
+// 
 
 /**
  * Initialize Telegram Hub section analytics bridge.
- * Called from $w.onReady() — non-blocking, all errors caught.
+ * Called from $w.onReady() -- non-blocking, all errors caught.
  */
 function initTelegramHubSection() {
     // Wire HTML embed message listener
@@ -590,14 +590,14 @@ function initTelegramHubSection() {
             embed.onMessage(handleTelegramHubMessage);
         }
     } catch (e) {
-        console.log('[TelegramHub] #telegramHubEmbed not found — add HTML Component to page');
+        console.log('[TelegramHub] #telegramHubEmbed not found -- add HTML Component to page');
     }
     // Section scroll-into-view tracking
     try {
         $w('#telegramHubSection').onViewportEnter(() => {
             trackEvent('TelegramHub_SectionVisible', { section: 'telegram_hub' });
         });
-    } catch (e) { /* element may not exist yet — add Section ID in Wix Editor */ }
+    } catch (e) { /* element may not exist yet -- add Section ID in Wix Editor */ }
 }
 
 /**
@@ -618,7 +618,7 @@ function handleTelegramHubMessage(event) {
             if (embed && embed.height !== undefined) {
                 embed.height = data.height;
             }
-        } catch (e) { /* element may not be present — non-fatal */ }
+        } catch (e) { /* element may not be present -- non-fatal */ }
         return;
     }
 

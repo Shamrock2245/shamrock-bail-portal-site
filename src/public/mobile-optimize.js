@@ -12,7 +12,7 @@ import wixWindow from 'wix-window';
  */
 export function initMobileOptimizations() {
     if (wixWindow.formFactor === 'Mobile') {
-        console.log("📱 Mobile Optimizations: Starting...");
+        console.log(" Mobile Optimizations: Starting...");
         optimizeInputs();
         collapseHeavyElements();
     }
@@ -36,7 +36,7 @@ function collapseHeavyElements() {
         const el = $w(id);
         if (el && el.uniqueId) { // Check if valid
             el.collapse()
-                .then(() => console.log(`📱 Collapsed: ${id}`))
+                .then(() => console.log(` Collapsed: ${id}`))
                 .catch(() => { }); // Ignore errors if element missing
         }
     });
@@ -53,5 +53,5 @@ function optimizeInputs() {
     const phoneInputs = ['$w("#inputPhoneNumber")', '$w("#phone")']; // Add actual IDs
 
     // Note: Velo often handles this via Editor settings, but we can double check logic here if needed.
-    console.log("📱 Mobile Optimizations: Inputs checked");
+    console.log(" Mobile Optimizations: Inputs checked");
 }

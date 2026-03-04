@@ -38,7 +38,7 @@ $w.onReady(function () {
     // Setup Approve Button
     if (approveBtn.length) {
         if (isApproved) {
-            approveBtn.label = "Approved ✅";
+            approveBtn.label = "Approved [OK]";
             approveBtn.disable();
         } else {
             approveBtn.onClick(async () => {
@@ -72,7 +72,7 @@ $w.onReady(function () {
 
                     // Update UI
                     $w('#detailsStatusText').text = "Approved";
-                    approveBtn.label = "Approved ✅";
+                    approveBtn.label = "Approved [OK]";
 
                     // Enable Action Buttons
                     actionButtons.forEach(btn => {

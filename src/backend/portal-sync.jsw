@@ -76,7 +76,7 @@ async function upsertCase(data) {
 
     // Trigger Notification if discharged
     if (oldStatus !== 'Discharged' && newStatus === 'Discharged') {
-        console.log(`⚖️ Case ${item.caseNumber} Discharged. Sending notification...`);
+        console.log(` Case ${item.caseNumber} Discharged. Sending notification...`);
         try {
             await sendMemberNotification(NOTIFICATION_TYPES.CASE_DISCHARGED, {
                 memberId: item.memberId, // Might be null for custom auth, implies no email

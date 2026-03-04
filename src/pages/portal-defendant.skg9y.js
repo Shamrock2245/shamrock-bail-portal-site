@@ -28,7 +28,7 @@ $w.onReady(async function () {
     // SEO: Prevent Indexing (Protected Page)
     wixSeo.setMetaTags([{ "name": "robots", "content": "noindex, nofollow" }]);
 
-    console.log("🚀 Portal Defendant v2.0 Loaded (Simplified Auth)");
+    console.log(" Portal Defendant v2.0 Loaded (Simplified Auth)");
 
     // 0. Setup Listeners IMMEDIATELY
     LightboxController.init($w);
@@ -42,7 +42,7 @@ $w.onReady(async function () {
         const query = wixLocation.query;
         const shouldAutoStartPaperwork = query.autoPaperwork === '1' || query.autoPaperwork === 'true';
         if (query.st) {
-            console.log("🔗 Session token in URL, storing...");
+            console.log(" Session token in URL, storing...");
             setSessionToken(query.st);
         }
 
@@ -51,7 +51,7 @@ $w.onReady(async function () {
         // console.log("DEBUG: Checking Token:", sessionToken);
 
         if (!sessionToken) {
-            console.warn("⛔ No session token found. Redirecting to Portal Landing.");
+            console.warn(" No session token found. Redirecting to Portal Landing.");
             $w('#textUserWelcome').text = "Authentication Error: No session found. Please try logging in again.";
             $w('#textUserWelcome').show();
             console.log("DEBUG: Query args:", wixLocation.query);
@@ -69,19 +69,19 @@ $w.onReady(async function () {
                 session = validationResult;
             } else if (validationResult && validationResult.reason === 'error') {
                 // DATABASE/NETWORK ERROR - DO NOT LOGOUT
-                console.error("⚠️ Session validation failed due to network/DB error:", validationResult.message);
+                console.error("[!] Session validation failed due to network/DB error:", validationResult.message);
                 $w('#textUserWelcome').text = "Connection Error. Please check your internet and refresh.";
                 $w('#textUserWelcome').show();
                 return;
             } else {
                 // DEFINITELY INVALID or EXPIRED
-                console.warn("⛔ Defendant session invalid/expired. Redirecting.", validationResult);
+                console.warn(" Defendant session invalid/expired. Redirecting.", validationResult);
                 // clearSessionToken(); // Optional: keep for debugging if needed, but safer to clear here
                 wixLocation.to('/portal-landing');
                 return;
             }
         } catch (err) {
-            console.error("❌ Critical error during session validation:", err);
+            console.error("[X] Critical error during session validation:", err);
             $w('#textUserWelcome').text = "System Error. Please refresh.";
             $w('#textUserWelcome').show();
             return;
@@ -89,12 +89,12 @@ $w.onReady(async function () {
 
         if (!session) {
             // Should be caught above, but safety check
-            console.warn("⛔ Session is null after validation checks.");
+            console.warn(" Session is null after validation checks.");
             return;
         }
 
         if (!session.role) {
-            console.warn("⛔ Session has no role.");
+            console.warn(" Session has no role.");
             $w('#textUserWelcome').text = "Authentication Error: Session missing role.";
             $w('#textUserWelcome').show();
             return;
@@ -102,7 +102,7 @@ $w.onReady(async function () {
 
         // Check role authorization
         if (session.role !== 'defendant') {
-            const msg = `⛔ Wrong role: ${session.role}. This is the defendant portal.`;
+            const msg = ` Wrong role: ${session.role}. This is the defendant portal.`;
             console.warn(msg);
             $w('#textUserWelcome').text = msg;
             $w('#textUserWelcome').show();
@@ -110,7 +110,7 @@ $w.onReady(async function () {
             return;
         }
 
-        console.log("✅ Defendant authenticated:", session.personId);
+        console.log("[OK] Defendant authenticated:", session.personId);
         currentSession = session;
 
         // Fetch Data using sessionToken (session.personId is extracted on backend)
@@ -153,7 +153,7 @@ $w.onReady(async function () {
         }
 
         if (shouldAutoStartPaperwork) {
-            console.log("📄 Auto-starting defendant paperwork flow...");
+            console.log(" Auto-starting defendant paperwork flow...");
             await handlePaperworkStart();
         }
 
@@ -170,10 +170,10 @@ $w.onReady(async function () {
         const allowedStatuses = ['sent', 'packet sent', 'signed', 'completed', 'active', 'downloaded'];
 
         if (allowedStatuses.some(s => pwStatus.includes(s))) {
-            console.log("📍 Initiating background location tracker (Paperwork Status Valid)...");
+            console.log(" Initiating background location tracker (Paperwork Status Valid)...");
             silentPingLocation(data?.caseStatus);
         } else {
-            console.log(`📍 Background tracker skipped. Paperwork status '${data?.paperworkStatus}' does not meet tracking criteria.`);
+            console.log(` Background tracker skipped. Paperwork status '${data?.paperworkStatus}' does not meet tracking criteria.`);
         }
 
     } catch (e) {
@@ -630,7 +630,7 @@ async function handleDownloadPaperwork() {
             // Actually, let's create a temporary public link if possible? No.
 
             // Fallback: Notify success
-            $w('#textUserWelcome').text = "✅ Packet Sent to Email!";
+            $w('#textUserWelcome').text = "[OK] Packet Sent to Email!";
             // TRIGGERS EMAIL via GAS side if I added it? No `generateUnsignedPacket` just returned data.
             // I should explicitly ask GAS to email it as well?
             // For now, let's rely on the user having the file. 

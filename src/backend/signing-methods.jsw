@@ -116,7 +116,7 @@ export async function sendViaSMS(params) {
 
         } else {
             // CASE 2: New Document from Template (Default Flow)
-            console.log("📄 No document ID provided. Requesting new packet from GAS Template...");
+            console.log(" No document ID provided. Requesting new packet from GAS Template...");
             const templateResult = await callGasBackend({
                 action: 'createSigningRequest',
                 method: 'sms_return_links',
