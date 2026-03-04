@@ -239,6 +239,7 @@ function doGet(e) {
     }
 
 
+
     if (e.parameter.action) return handleGetAction(e);
     if (e.parameter.setup === 'signnow') {
       const url = ScriptApp.getService().getUrl();
