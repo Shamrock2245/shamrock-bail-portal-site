@@ -5965,13 +5965,28 @@
         }
 
         /**
-         * Fill PDFs with form data using pdf-lib - IMPROVED VERSION
+         * Fetch field mappings from server for all templates in one batch call.
+         * Returns a map: { templateKey: [{name, value}] }
+         */
+        function fetchFieldMappingsBatch(formData, templateKeys) {
+            return new Promise((resolve, reject) => {
+                google.script.run
+                    .withSuccessHandler(resolve)
+                    .withFailureHandler(err => {
+                        console.error('Failed to fetch field mappings:', err);
+                        resolve({}); // Degrade gracefully — return empty mappings
+                    })
+                    .server_mapDataToTagsBatch(formData, templateKeys);
+            });
+        }
+
+        /**
+         * Fill PDFs with form data using pdf-lib.
+         * Field mappings are fetched server-side via server_mapDataToTagsBatch.
          */
         async function fillPDFsWithData(pdfDocs, formData) {
             const { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, rgb } = PDFLib;
             const filledPdfs = [];
-            let fieldCount = 0;
-            let skippedFields = [];
 
             console.log(`Starting to fill ${pdfDocs.length} documents...`);
             console.log('Form data structure:', {
@@ -5980,58 +5995,46 @@
                 chargesCount: formData.charges ? formData.charges.length : 0
             });
 
+            // ── Step 1: Fetch ALL field mappings from server in one batch ──
+            const uniqueKeys = [...new Set(pdfDocs.map(d => d.key))];
+            console.log('Fetching field mappings for:', uniqueKeys);
+            const allMappings = await fetchFieldMappingsBatch(formData, uniqueKeys);
+            console.log('Received mappings for', Object.keys(allMappings).length, 'templates');
+
+            // ── Step 2: Fill each PDF using the cached mappings ──
             for (const doc of pdfDocs) {
-                // Reset counters
-                fieldCount = 0;
+                let fieldCount = 0;
 
                 try {
                     console.log(`Filling ${doc.key}...`);
                     const pdfDoc = await PDFDocument.load(doc.bytes);
                     const form = pdfDoc.getForm();
 
-                    // --- DEBUG: LOG ALL FIELDS ---
+                    // Debug: log all PDF fields
                     const fields = form.getFields();
                     const page1 = pdfDoc.getPages()[0];
                     const { width, height } = page1.getSize();
-                    console.log(`[DEBUG] ${doc.key}: ${fields.length} fields. Page 1 Size: ${width}x${height} (pts) [${width / 72}x${height / 72} in]`, fields.map(f => f.getName()));
+                    console.log(`[DEBUG] ${doc.key}: ${fields.length} fields. Page 1 Size: ${width}x${height} (pts)`, fields.map(f => f.getName()));
 
-                    // --- NEW FAQ INITIAL LOGIC ---
-                    if (doc.key === 'faq-defendants' || doc.key === 'faq-cosigners') {
-                        const pages = pdfDoc.getPages();
-                        const role = doc.key === 'faq-defendants' ? 'Defendant' : 'Indemnitor';
-                        const tag = `{{t:i;r:y;o:"${role}"}}`;
-                        console.log(`Injecting initial tags for ${role} on ${pages.length} pages...`);
+                    // Get the pre-fetched mappings for this template
+                    const mappedFields = allMappings[doc.key] || [];
+                    console.log(`  Using ${mappedFields.length} mapped fields for ${doc.key}`);
 
-                        pages.forEach(page => {
-                            const { width, height } = page.getSize();
-                            // Bottom right corner, small white text (invisible to user, visible to SignNow parser)
-                            page.drawText(tag, {
-                                x: width - 150,
-                                y: 30,
-                                size: 8,
-                                color: rgb(1, 1, 1)
-                            });
-                        });
-                    }
-
-                    // --- NEW MANUS MAPPING LOGIC ---
-                    // 1. Get the list of fields to fill for this specific template
-                    const mappedFields = PDF_mapDataToTags(formData, doc.key);
-                    console.log(`  Retrieving ${mappedFields.length} mapped fields for ${doc.key}`);
-
-                    // 2. Iterate and Fill
+                    // Fill each mapped field
                     for (const item of mappedFields) {
                         try {
                             const field = form.getField(item.name);
                             if (!field) {
-                                console.warn(`  [MISSING] Mapping expects '${item.name}' but PDF does not have it.`);
+                                // Only warn for non-empty values to reduce console noise
+                                if (item.value && String(item.value).trim()) {
+                                    console.warn(`  [MISSING] '${item.name}' not in PDF (value: ${String(item.value).substring(0, 30)})`);
+                                }
                                 continue;
                             }
 
                             if (field instanceof PDFTextField) {
-                                field.setText(String(item.value));
+                                field.setText(String(item.value || ''));
                                 fieldCount++;
-                                console.log(`  ✓ Filled: ${item.name}`);
                             } else if (field instanceof PDFCheckBox) {
                                 if (item.value === true || item.value === 'true' || item.value === 'yes' || item.value === '1') {
                                     field.check();
@@ -6043,30 +6046,24 @@
                         }
                     }
 
-                    // Flatten form to save data
+                    // Flatten form to lock in data
                     form.flatten();
 
                     const pdfBytes = await pdfDoc.save();
-                    const pdfBase64 = await new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-                        reader.readAsDataURL(new Blob([pdfBytes]));
-                    });
 
                     filledPdfs.push({
                         key: doc.key,
                         name: doc.name,
-                        data: pdfBase64,
-                        pageCount: pdfDoc.getPageCount(), // Added for signature offset calculation
-                        // Preserve copy metadata
+                        bytes: pdfBytes,
+                        pageCount: pdfDoc.getPageCount(),
                         isCopy: doc.isCopy,
                         indemnitorIndex: doc.indemnitorIndex
                     });
-                    console.log(`  Completed ${doc.key} with ${fieldCount} fields filled. Pages: ${pdfDoc.getPageCount()}`);
+                    console.log(`  ✅ ${doc.key}: ${fieldCount} fields filled, ${pdfDoc.getPageCount()} pages`);
 
                 } catch (err) {
                     console.error(`Error filling PDF ${doc.name}:`, err);
-                    filledPdfs.push(doc); // Return original if failure
+                    filledPdfs.push(doc); // Return original on failure
                 }
             }
             return filledPdfs;
@@ -6083,7 +6080,12 @@
             for (const doc of pdfDocs) {
                 try {
                     console.log(`Merging ${doc.key}...`);
-                    const pdf = await PDFDocument.load(doc.bytes);
+                    // Accept both Uint8Array (from fillPDFsWithData) and base64 strings
+                    let pdfData = doc.bytes;
+                    if (typeof pdfData === 'string') {
+                        pdfData = Uint8Array.from(atob(pdfData), c => c.charCodeAt(0));
+                    }
+                    const pdf = await PDFDocument.load(pdfData);
                     const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
                     pages.forEach(page => mergedPdf.addPage(page));
                     console.log(`✓ Merged ${doc.key}`);
@@ -6268,21 +6270,48 @@
          */
         function fetchPDFsFromDrive(selectedDocs) {
             return new Promise((resolve, reject) => {
-                const fileIds = selectedDocs.map(doc => doc.key);
+                const templateKeys = selectedDocs.map(doc => doc.key);
+                console.log('Fetching PDFs for template keys:', templateKeys);
+
                 google.script.run
                     .withSuccessHandler(response => {
-                        // Map back to expected format for fillPDFsWithData
-                        const results = response.map((data, index) => ({
-                            key: selectedDocs[index].key,
-                            name: selectedDocs[index].name,
-                            bytes: Uint8Array.from(atob(data), c => c.charCodeAt(0)),
-                            isCopy: selectedDocs[index].isCopy || false,
-                            indemnitorIndex: selectedDocs[index].indemnitorIndex
-                        }));
+                        if (!response || !Array.isArray(response)) {
+                            reject(new Error('Server returned invalid response for PDF templates'));
+                            return;
+                        }
+
+                        const results = [];
+                        response.forEach((base64Data, index) => {
+                            if (!base64Data) {
+                                console.warn(`⚠️ No PDF data for template: ${selectedDocs[index].key} (skipping)`);
+                                return; // Skip null entries
+                            }
+                            try {
+                                results.push({
+                                    key: selectedDocs[index].key,
+                                    name: selectedDocs[index].name,
+                                    bytes: Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)),
+                                    isCopy: selectedDocs[index].isCopy || false,
+                                    indemnitorIndex: selectedDocs[index].indemnitorIndex
+                                });
+                            } catch (e) {
+                                console.error(`Failed to decode PDF for ${selectedDocs[index].key}:`, e);
+                            }
+                        });
+
+                        if (results.length === 0) {
+                            reject(new Error('No valid PDF templates could be fetched. Check template key mappings.'));
+                            return;
+                        }
+
+                        console.log(`✅ Fetched ${results.length}/${selectedDocs.length} PDFs`);
                         resolve(results);
                     })
-                    .withFailureHandler(reject)
-                    .server_getPDFTemplatesBatch(fileIds);
+                    .withFailureHandler(err => {
+                        console.error('server_getPDFTemplatesBatch failed:', err);
+                        reject(new Error('Failed to fetch PDF templates from server: ' + (err.message || err)));
+                    })
+                    .server_getPDFTemplatesBatch(templateKeys);
             });
         }
 
@@ -6401,16 +6430,13 @@
         }
 
         /**
-         * Main Orchestrator
+         * Main Orchestrator — Generate & Send signing packet
+         * Uses server-side SignNow template flow (same as Telegram)
          */
         async function generateAndSendWithWixPortal() {
             const method = document.getElementById('signing-method').value;
             if (method === 'download') {
                 previewPacket(); // Reuse preview for download
-                return;
-            }
-            if (method === 'kiosk') {
-                showToast('Kiosk mode not yet implemented on V2 Dashboard', 'warning');
                 return;
             }
 
@@ -6420,73 +6446,132 @@
                 return;
             }
 
-            UI.showLoading('Starting Workflow', 'Validating data...');
+            const selectedDocs = getSelectedDocuments();
+            if (selectedDocs.length === 0) {
+                showToast('No documents selected', 'error');
+                return;
+            }
+
+            const caseNumber = formData['case-number'] || formData['booking-number'] || '';
+            const methodLabel = method === 'kiosk' ? 'Kiosk Signing' : method === 'sms' ? 'SMS' : 'Email';
+
+            UI.showLoading(`Generating ${methodLabel} Packet`, 'Creating documents in SignNow...');
 
             try {
-                // 1. Fetch
-                UI.updateLoading(10, 'Fetching templates...');
-                const selectedDocs = getSelectedDocuments();
-                if (selectedDocs.length === 0) throw new Error('No documents selected');
-                const pdfs = await fetchPDFsFromDrive(selectedDocs);
+                UI.updateLoading(20, `Processing ${selectedDocs.length} documents...`);
 
-                // 2. Fill
-                UI.updateLoading(30, 'Filling forms...');
-                const filledPdfs = await fillPDFsWithData(pdfs, formData);
-
-                // 3. Merge
-                UI.updateLoading(50, 'Merging packet...');
-                const mergedPdf = await mergePDFs(filledPdfs);
-
-                // 4. Upload
-                UI.updateLoading(70, 'Uploading to secure storage...');
-                const fileUrl = await uploadPDFToTempStorage(mergedPdf, formData);
-
-                // 5. Send to SignNow
-                UI.updateLoading(85, 'Sending to SignNow...');
-
-                // Prepare Signers
-                const signers = [];
-
-                // Indemnitors
-                if (formData.indemnitors && formData.indemnitors.length > 0) {
-                    formData.indemnitors.forEach((ind, index) => {
-                        signers.push({
-                            email: ind.email,
-                            role: `Indemnitor ${index + 1}`
+                // Call server-side orchestrator (reuses Telegram SignNow flow)
+                const result = await new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .server_generateSigningPacket({
+                            formData: formData,
+                            selectedDocs: selectedDocs,
+                            signingMethod: method,
+                            caseNumber: caseNumber
                         });
-                    });
-                } else {
-                    // Fallback for single indemnitor form data
-                    signers.push({
-                        email: formData['indemnitor-email'],
-                        role: 'Indemnitor 1'
-                    });
+                });
+
+                UI.updateLoading(90, 'Finalizing...');
+
+                if (!result.success) {
+                    throw new Error(result.error || 'No documents were processed successfully');
                 }
-
-                // Bail Agent (Always included)
-                signers.push({ email: 'admin@shamrockbailbonds.biz', role: 'Bail Agent' });
-                // Defendant (if email exists)
-                if (formData['defendant-email']) {
-                    signers.push({ email: formData['defendant-email'], role: 'Defendant' });
-                }
-
-                // Prepare Fields
-                const signatureFields = prepareSignatureFields(filledPdfs, formData);
-
-                const result = await sendToSignNow(fileUrl, signatureFields, signers, formData);
-
-                // 6. Finalize
-                UI.updateLoading(95, 'Finalizing...');
-                await storePendingDocument(result, formData);
-                await sendSigningNotifications(result, formData);
 
                 UI.hideLoading();
-                showSuccess('Packet sent successfully! Check Slack for status.');
+
+                // Handle result based on signing method
+                if (method === 'kiosk') {
+                    // Show kiosk signing links
+                    const successDocs = result.documents.filter(d => d.success && d.signingUrl);
+                    if (successDocs.length === 0) {
+                        showToast('No signing links were generated', 'error');
+                        return;
+                    }
+
+                    // Show kiosk modal with signing links
+                    showKioskModal(successDocs, formData);
+
+                } else {
+                    // Email/SMS — show success summary
+                    const successCount = result.documents.filter(d => d.success).length;
+                    const failCount = result.documents.filter(d => !d.success).length;
+
+                    let message = `✅ ${successCount} document${successCount !== 1 ? 's' : ''} created in SignNow`;
+                    if (failCount > 0) {
+                        message += ` (${failCount} failed)`;
+                    }
+                    message += `. Signing links are ready.`;
+
+                    showToast(message, failCount > 0 ? 'warning' : 'success');
+
+                    // Log results to console for debugging
+                    console.log('📦 Packet results:', result.documents);
+                }
 
             } catch (err) {
                 UI.hideLoading();
-                console.error(err);
-                showToast(err.message, 'error');
+                console.error('Packet generation error:', err);
+                showToast('Error: ' + (err.message || err), 'error');
+            }
+        }
+
+        /**
+         * Show Kiosk Signing Modal
+         * Displays signing links for in-person signing on the device
+         */
+        function showKioskModal(documents, formData) {
+            const existingModal = document.getElementById('kiosk-modal');
+            if (existingModal) existingModal.remove();
+
+            const defendantName = `${formData['defendant-first-name'] || ''} ${formData['defendant-last-name'] || ''}`.trim();
+
+            const docLinks = documents.map((doc, i) => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--surface-alt, #1a1d23);border-radius:8px;margin-bottom:8px;">
+                    <div>
+                        <strong>${doc.label || doc.docId}</strong>
+                        <span style="opacity:0.6;margin-left:8px;font-size:12px;">${doc.role || ''}</span>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="window.open('${doc.signingUrl}', '_blank')" style="white-space:nowrap;">
+                        ✍️ Sign Now
+                    </button>
+                </div>
+            `).join('');
+
+            const modal = document.createElement('div');
+            modal.id = 'kiosk-modal';
+            modal.innerHTML = `
+                <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;">
+                    <div style="background:var(--surface);border-radius:var(--radius-lg);width:100%;max-width:600px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow);">
+                        <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
+                            <h3 style="margin:0;font-size:18px;">✍️ Kiosk Signing — ${defendantName}</h3>
+                            <p style="margin:8px 0 0;opacity:0.7;font-size:14px;">Tap each document to open for signing. Links expire in 45 minutes.</p>
+                        </div>
+                        <div style="padding:16px 24px;overflow-y:auto;flex:1;">
+                            ${docLinks}
+                        </div>
+                        <div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:12px;">
+                            <button class="btn btn-success" onclick="openAllKioskDocs()" style="min-width:150px;">📋 Open All</button>
+                            <button class="btn btn-danger" onclick="document.getElementById('kiosk-modal').remove()">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Store for "Open All" button
+            window._kioskDocs = documents;
+        }
+
+        /**
+         * Open all kiosk signing docs in sequence
+         */
+        function openAllKioskDocs() {
+            if (window._kioskDocs) {
+                window._kioskDocs.forEach((doc, i) => {
+                    setTimeout(() => window.open(doc.signingUrl, '_blank'), i * 500);
+                });
             }
         }
 

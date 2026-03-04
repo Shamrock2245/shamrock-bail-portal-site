@@ -113,26 +113,26 @@ SECTION 4: FLORIDA COUNTY JAIL & CLERK DIRECTORY (ALL 67 COUNTIES)
 --- CORE SERVICE AREA (Southwest Florida — Full Details) ---
 
 LEE COUNTY (FORT MYERS — HOME BASE)
+  Facility: Lee County Jail
   Jail Phone: (239) 477-1500
-  Jail Address: 2115 Dr Martin Luther King Jr Blvd, Fort Myers, FL 33901
+  Jail Address: 14750 Six Mile Cypress Parkway, Fort Myers, Florida 33912
   Courthouse: 1700 Monroe St, Fort Myers, FL 33901
-  Sheriff Phone: (239) 477-1500
-  Sheriff Booking Search: https://www.sheriffleefl.org/booking-search/
+  Sheriff Booking Search: https://www.sheriffleefl.org
   Clerk of Court: Lee County Clerk of Court
   Clerk Phone: (239) 533-5000
   Clerk Website: https://www.leeclerk.org/
   Court Records: https://matrix.leeclerk.org/
   Process: Cosigner signs paperwork. We digitally sign the bond and deliver it to the jail.
   First Appearance: Daily at 9:00 AM.
-  Tips: Wait times at Ortiz can be 2-4 hours after bond is posted. Parking is free at the jail but paid at the court. Inmates released 24/7 but shift change 6PM-7PM may cause delays.
+  Tips: Wait times can be 2-4 hours after bond is posted. Parking is free at the jail but paid at the court. Inmates released 24/7 but shift change 6PM-7PM may cause delays.
   Status: Active
 
 COLLIER COUNTY (NAPLES)
+  Facility: Naples Jail (Collier County Sheriff)
   Jail Phone: (239) 252-9500
-  Jail Address: 3319 Tamiami Trail E, Naples, FL 34112
+  Jail Address: 3347 Tamiami Trail East, Naples, Florida 34112
   Courthouse: 3315 Tamiami Trail E, Naples, FL 34112 (Same Complex)
-  Sheriff Phone: (239) 252-9543
-  Sheriff Booking Search: https://www2.colliersheriff.org/arrestsearch/
+  Sheriff Booking Search: https://www2.colliersheriff.org
   Clerk of Court: Collier County Clerk of Court
   Clerk Phone: (239) 252-2646
   Clerk Website: https://www.collierclerk.com/
@@ -142,11 +142,11 @@ COLLIER COUNTY (NAPLES)
   Status: Active
 
 CHARLOTTE COUNTY (PUNTA GORDA)
+  Facility: Charlotte County Jail
   Jail Phone: (941) 833-6300
-  Jail Address: 26601 Airport Rd, Punta Gorda, FL 33982
+  Jail Address: 26601 Airport Road, Punta Gorda, Florida 33982
   Courthouse: 350 E Marion Ave, Punta Gorda, FL 33950
-  Sheriff Phone: (941) 833-6356
-  Sheriff Booking Search: https://www.ccso.org/forms/arrestdb.cfm
+  Sheriff Booking Search: https://www.ccso.org
   Clerk of Court: Charlotte County Clerk of Court
   Clerk Phone: (941) 637-2199
   Clerk Website: https://www.charlotteclerk.com/
@@ -156,11 +156,11 @@ CHARLOTTE COUNTY (PUNTA GORDA)
   Status: Active
 
 HENDRY COUNTY (LABELLE)
-  Jail Phone: (863) 674-5674
-  Jail Address: 101 S Main St, LaBelle, FL 33935
+  Facility: Hendry County Jail
+  Jail Phone: (863) 674-5600
+  Jail Address: 101 South Bridge Street, Labelle, Florida 33935
   Courthouse: 25 E Hickpochee Ave, LaBelle, FL 33935
-  Sheriff Phone: (863) 674-5600
-  Sheriff Booking Search: http://www.hendrysheriff.org/arrests_and_jail_info/arrest_and_inmate_search.php
+  Sheriff Booking Search: https://www.hendrysheriff.org
   Clerk of Court: Hendry County Clerk of Court
   Clerk Phone: (863) 675-5217
   Clerk Website: https://www.hendryclerk.org/
@@ -170,193 +170,401 @@ HENDRY COUNTY (LABELLE)
   Status: Active
 
 GLADES COUNTY (MOORE HAVEN)
-  Jail Phone: (863) 946-0062
-  Jail Address: 1297 FL-78, Moore Haven, FL 33471
+  Facility: Glades County Jail
+  Jail Phone: (863) 946-1600
+  Jail Address: 1297 East State Road 78, Moore Haven, Florida 33471
   Courthouse: 500 Ave J, Moore Haven, FL 33471
-  Sheriff Booking Search: https://smartweb.gladessheriff.org/smartwebclient/Jail.aspx
+  Sheriff Booking Search: https://smartweb.gladessheriff.org
   Process: Glades County detainees are often housed in neighboring counties (Hendry/Okeechobee) due to facility limits.
   Status: Active
+  Clerk Address: 500 Avenue J Room 102, Moore Haven, Florida 33471
+  Clerk Phone: (863) 946-6010
+  Clerk Website: https://www.gladesclerk.com
 
 
---- MAJOR FLORIDA COUNTIES (Full Contact Details) ---
+--- ALL 67 FLORIDA COUNTIES (Complete Jail Directory) ---
 
 ALACHUA COUNTY (GAINESVILLE)
-  Sheriff Phone: (352) 367-4000
-  Sheriff Booking Search: https://acso.us/inmate-search/
+  Facility: Alachua County Jail
+  Jail Phone: (352) 491-4444
+  Jail Address: 3333 NE 39th Avenue, Gainesville, Florida 32609
+  Sheriff Booking Search: https://acso.us
   Clerk Phone: (352) 374-3636
   Clerk Website: https://www.alachuacounty.us/Depts/Clerk/Pages/Clerk.aspx
   Court Records: https://www.alachuaclerk.org/court_records/
 
 BAKER COUNTY (MACCLENNY)
-  Sheriff Phone: (904) 259-2231
-  Sheriff Booking Search: https://www.bakercountysheriffsoffice.com/
+  Facility: Baker County Jail
+  Jail Phone: (904) 259-2231
+  Jail Address: 1 Sheriff's Office Drive, Macclenny, Florida 32063
+  Sheriff Booking Search: https://www.bakercountysheriffsoffice.com
   Clerk Phone: (904) 259-8113
   Clerk Website: http://www.bakerclerk.com/
 
 BAY COUNTY (PANAMA CITY)
-  Sheriff Phone: (850) 785-5245
-  Sheriff Booking Search: https://www.baysomobile.org/is/
+  Facility: Bay County Jail
+  Jail Phone: (850) 785-5245
+  Jail Address: 5700 Star Lane, Panama City, Florida 32404
+  Sheriff Booking Search: https://www.baysomobile.org
   Clerk Phone: (850) 763-9061
   Clerk Website: https://www.baycoclerk.com/
   Court Records: https://records2.baycoclerk.com/
 
 BRADFORD COUNTY (STARKE)
-  Sheriff Phone: (904) 966-2276
-  Sheriff Booking Search: http://smartweb.bradfordsheriff.org/smartwebclient/Jail.aspx
+  Facility: Bradford County Jail
+  Jail Phone: (904) 966-6178
+  Jail Address: 945 A North Temple Avenue, Starke, Florida 32091
+  Sheriff Booking Search: https://smartweb.bradfordsheriff.org
   Clerk Phone: (904) 966-6280
   Clerk Website: https://www.bradfordcountyclerk.com/
 
 BREVARD COUNTY (TITUSVILLE/MELBOURNE/COCOA)
-  Sheriff Phone: (321) 690-1500
-  Sheriff Booking Search: https://www.brevardsheriff.com/bookings/
+  Facility: Brevard County Jail
+  Jail Phone: (321) 690-1500
+  Jail Address: 860 Camp Road, Cocoa, Florida 32927
+  Sheriff Booking Search: https://www.brevardsheriff.com
   Clerk Phone: (321) 637-5413
   Clerk Website: https://www.brevardclerk.us/
   Court Records: https://vweb1.brevardclerk.us/
 
 BROWARD COUNTY (FORT LAUDERDALE)
-  Jail Address: 555 SE 1st Ave, Fort Lauderdale, FL 33301
+  Facility: Broward Main Jail
+  Jail Phone: (954) 831-5900
+  Jail Address: 555 SE 1st Avenue, Ft. Lauderdale, Florida 33301
   Courthouse: 201 SE 6th St, Fort Lauderdale, FL 33301
-  Sheriff Phone: (954) 831-5900
-  Sheriff Booking Search: https://www.sheriff.org/DOD/Pages/ArrestSearch.aspx
+  Sheriff Booking Search: https://www.sheriff.org
   Clerk Phone: (954) 831-6565
   Clerk Website: https://www.browardclerk.org/
   Court Records: https://www.browardclerk.org/Web2
   Process: Accepts e-affidavits. First Appearance held twice daily. Most paperwork is digital.
 
-CALHOUN COUNTY
-  Sheriff Booking Search: https://mws-hrs.com/calhounsheriff/calhounsheriff/JailRosterReport.pdf
+CALHOUN COUNTY (BLOUNTSTOWN)
+  Facility: Calhoun County Jail
+  Jail Phone: (850) 674-5049
+  Jail Address: 20776 Central Avenue East, Blountstown, Florida 32424
+  Clerk Address: 20859 Central Avenue East, Room 130, Blountstown, Florida 32424
+  Clerk Phone: (850) 674-4545
+  Clerk Website: https://calhounclerk.com
 
-CITRUS COUNTY
-  Sheriff Booking Search: https://www.sheriffcitrus.org/public_info/recent_arrest.php
+CITRUS COUNTY (INVERNESS/LECANTO)
+  Facility: Citrus County Detention Facility
+  Jail Phone: (352) 527-3332
+  Jail Address: 2604 W. Woodland Ridge Drive, Lecanto, Florida 34461
+  Sheriff Booking Search: https://www.sheriffcitrus.org
+  Clerk Address: 110 North Apopka Avenue, Inverness, Florida 34450
+  Clerk Phone: (352) 341-6424
+  Clerk Website: https://www.citrusclerk.org
 
-CLAY COUNTY
-  Sheriff Booking Search: https://claysheriff.policetocitizen.com/DailyBulletin
+CLAY COUNTY (GREEN COVE SPRINGS)
+  Facility: Clay County Jail
+  Jail Phone: (904) 529-5952
+  Jail Address: 901 Orange Avenue, Green Cove Springs, Florida 32043
+  Sheriff Booking Search: https://claysheriff.policetocitizen.com
+  Clerk Address: 825 North Orange Avenue, Green Cove Springs, Florida 32043
+  Clerk Phone: (904) 269-6302
+  Clerk Website: https://clayclerk.com
 
-COLUMBIA COUNTY
-  Sheriff Booking Search: http://50.204.15.10/smartwebclient/jail.aspx
+COLUMBIA COUNTY (LAKE CITY)
+  Facility: Columbia County Jail
+  Jail Phone: (386) 755-7000
+  Jail Address: 389 NW Quinten Street, Lake City, Florida 32055
+  Clerk Address: 173 NE Hernando Avenue, Lake City, Florida 32055
+  Clerk Phone: (386) 758-1342
+  Clerk Website: https://columbiaclerk.com
 
 DESOTO COUNTY (ARCADIA)
-  Sheriff Booking Search: https://jail.desotosheriff.org/DCN/
-  Status: Active
+  Facility: DeSoto County Jail
+  Jail Phone: (863) 993-4710
+  Jail Address: 208 East Cypress Street, Arcadia, Florida 34266
+  Sheriff Booking Search: https://jail.desotosheriff.org
+  Clerk Address: 115 East Oak Street, Room 101, Arcadia, Florida 34266
+  Clerk Phone: (863) 993-4876
+  Clerk Website: https://www.desotoclerk.com
 
-DIXIE COUNTY
-  Sheriff Booking Search: https://smartcop.dixiecountysheriff.com/SmartWEBClient/jail.aspx
+DIXIE COUNTY (CROSS CITY)
+  Facility: Dixie County Jail
+  Jail Phone: (352) 498-1231
+  Jail Address: 386 NE 255 Street, Cross City, Florida 32628
+  Clerk Address: P.O. Box 1206, Cross City, Florida 32628
+  Clerk Phone: (352) 498-1200
+  Clerk Website: https://dixieclerk.com
 
 DUVAL COUNTY (JACKSONVILLE)
-  Sheriff Phone: (904) 630-5760
-  Sheriff Booking Search: https://inmatesearch.jaxsheriff.org/login
+  Facility: Duval County Jail
+  Jail Phone: (904) 630-5787
+  Jail Address: Multiple Locations, Jacksonville, Florida 32218
+  Sheriff Booking Search: https://inmatesearch.jaxsheriff.org
   Clerk Phone: (904) 255-2000
   Clerk Website: https://www.duvalclerk.com/
   Court Records: https://core.duvalclerk.com/
 
 ESCAMBIA COUNTY (PENSACOLA)
-  Sheriff Booking Search: https://inmatelookup.myescambia.com/smartwebclient/jail.aspx
+  Facility: Escambia Main Jail
+  Jail Phone: (850) 436-9863
+  Jail Address: 2935 North L Street, Pensacola, Florida 32501
+  Sheriff Booking Search: https://inmatelookup.myescambia.com
+  Clerk Address: 190 West Government Street, Pensacola, Florida 32502
+  Clerk Phone: (850) 595-4360
+  Clerk Website: https://www.escambiaclerk.com
 
-FLAGLER COUNTY
-  Sheriff Booking Search: https://nwwebcad.fcpsn.org/NewWorld.InmateInquiry/FL0180000
+FLAGLER COUNTY (BUNNELL)
+  Facility: Flagler County Jail
+  Jail Phone: (386) 437-4116
+  Jail Address: 1002 Justice Lane, Bunnell, Florida 32110
+  Sheriff Booking Search: https://www.flaglersheriff.com
+  Clerk Address: Kim C. Hammond Justice Center, 1769 E Moody Blvd, Bunnell, Florida 32110
+  Clerk Phone: (386) 313-4400
+  Clerk Website: https://flaglerclerk.com
 
-FRANKLIN COUNTY
-  Sheriff Booking Search: https://www.franklinsheriff.com/arrest-log/
+FRANKLIN COUNTY (EASTPOINT)
+  Facility: Franklin County Jail
+  Jail Phone: (850) 670-8500
+  Jail Address: 270 State Road 65, Eastpoint, Florida 32328
+  Sheriff Booking Search: https://www.franklinsheriff.com
+  Clerk Address: 33 Market Street, Suite 203, Apalachicola, Florida 32320
+  Clerk Phone: (850) 653-8861
+  Clerk Website: https://www.franklinclerk.com
 
-GADSDEN COUNTY
-  Sheriff Booking Search: https://gadsdensheriff.com/inmate-lookup/
+GADSDEN COUNTY (QUINCY)
+  Facility: Gadsden County Jail
+  Jail Phone: (850) 875-8844
+  Jail Address: 339 East Jefferson Street, Quincy, Florida 32351
+  Clerk Address: 10 East Jefferson Street, Quincy, Florida 32351
+  Clerk Phone: (850) 875-8601
+  Clerk Website: https://www.gadsdenclerk.com
 
-GILCHRIST COUNTY
-  Sheriff Booking Search: https://www.gcso.us/contact-us/
+GILCHRIST COUNTY (TRENTON)
+  Facility: Gilchrist County Jail
+  Jail Phone: (352) 463-3490
+  Jail Address: 9239 South US Highway 129, Trenton, Florida 32693
+  Clerk Address: 112 South Main Street, Trenton, Florida 32693
+  Clerk Phone: (352) 463-3170
+  Clerk Website: https://www.gilchristclerk.com
 
-GULF COUNTY
-  Sheriff Booking Search: http://www.gulfsheriff.com/arrest-log.cfm
+GULF COUNTY (PORT ST. JOE)
+  Facility: Gulf County Jail
+  Jail Phone: (850) 227-1124
+  Jail Address: 1000 Cecil G. Costin Sr. Boulevard, Port St. Joe, Florida 32456
+  Sheriff Booking Search: https://www.gulfcounty-fl.gov
+  Clerk Address: 1000 Cecil G. Costin Sr. Blvd, Rm 149, Port St. Joe, Florida 32456
+  Clerk Phone: (850) 229-6112
+  Clerk Website: https://gulfclerk.com
 
-HAMILTON COUNTY
-  Sheriff Booking Search: http://inmate.hamiltonsheriff.com/smartwebclient/jail.aspx
+HAMILTON COUNTY (JASPER)
+  Facility: Hamilton County Jail
+  Jail Phone: (386) 792-7131
+  Jail Address: 3995 County Road 51 North, Jasper, Florida 32052
+  Sheriff Booking Search: https://inmate.hamiltonsheriff.com
+  Clerk Address: 207 NE 1st Street, Room 106, Jasper, Florida 32052
+  Clerk Phone: (386) 792-1288
+  Clerk Website: https://hamiltonclerk.com
 
-HARDEE COUNTY
-  Sheriff Booking Search: https://www.hardeeso.com/bureaus/inmate_search.php
+HARDEE COUNTY (WAUCHULA)
+  Facility: Hardee County Jail
+  Jail Phone: (863) 773-0304
+  Jail Address: 900 East Summit Street, Wauchula, Florida 33873
+  Sheriff Booking Search: https://www.hardeeso.com
+  Clerk Address: 417 West Main Street, Suite 202, Wauchula, Florida 33873
+  Clerk Phone: (863) 773-4174
+  Clerk Website: https://www.hardeeclerk.com
 
-HERNANDO COUNTY
-  Sheriff Booking Search: https://www.hernandosheriff.org/applications/records/default.aspx
+HERNANDO COUNTY (BROOKSVILLE)
+  Facility: Hernando County Jail
+  Jail Phone: (352) 544-2334
+  Jail Address: 16425 Spring Hill Drive, Brooksville, Florida 34604
+  Sheriff Booking Search: https://www.hernandosheriff.org
+  Clerk Address: 20 North Main Street, Brooksville, Florida 34601
+  Clerk Phone: (352) 754-4201
+  Clerk Website: https://hernandoclerk.com
 
-HIGHLANDS COUNTY
-  Sheriff Booking Search: https://www.highlandssheriff.org/inmateSearch
+HIGHLANDS COUNTY (SEBRING)
+  Facility: Highlands County Jail
+  Jail Phone: (863) 402-7201
+  Jail Address: 434 Fernleaf Avenue, Sebring, Florida 33870
+  Sheriff Booking Search: https://www.highlandsheriff.org
+  Clerk Address: 590 South Commerce Avenue, Sebring, Florida 33870
+  Clerk Phone: (863) 402-6565
+  Clerk Website: https://highlandsclerkfl.gov
 
 HILLSBOROUGH COUNTY (TAMPA)
-  Jail Address: 1201 Orient Rd, Tampa, FL 33619
+  Facility: Hillsborough County Jail
+  Jail Phone: (813) 247-8300
+  Jail Address: 1201 Orient Road, Tampa, Florida 33619
   Courthouse: 800 E Twiggs St, Tampa, FL 33602
-  Sheriff Phone: (813) 247-8300
-  Sheriff Booking Search: https://webapps.hcso.tampa.fl.us/ArrestInquiry
+  Sheriff Booking Search: https://www.hcso.tampa.fl.us
   Clerk Phone: (813) 276-8100
   Clerk Website: https://www.hillsclerk.com/
   Court Records: https://hover.hillsclerk.com/
   Process: We use the Fast Release digital portal. Signatures can be done via mobile.
 
-HOLMES COUNTY
-  Sheriff Booking Search: https://holmescosheriff.org/jail-division.html
+HOLMES COUNTY (BONIFAY)
+  Facility: Holmes County Jail
+  Jail Phone: (850) 547-3681
+  Jail Address: 3207 Lonny Lindsey Drive, Bonifay, Florida 32425
+  Sheriff Booking Search: https://www.holmescoso.org
+  Clerk Address: P.O. Box 397, Bonifay, Florida 32425
+  Clerk Phone: (850) 547-1100
+  Clerk Website: https://holmesclerk.com
 
-INDIAN RIVER COUNTY
-  Sheriff Booking Search: https://www.ircsheriff.org/inmate-search
+INDIAN RIVER COUNTY (VERO BEACH)
+  Facility: Indian River County Jail
+  Jail Phone: (772) 569-6700
+  Jail Address: 4055 41st Avenue, Vero Beach, Florida 32960
+  Sheriff Booking Search: https://www.ircsheriff.org
+  Clerk Address: P.O. Box 1028, Vero Beach, Florida 32961
+  Clerk Phone: (772) 770-5185
+  Clerk Website: https://indianriverclerk.com
 
-JACKSON COUNTY
-  Sheriff Booking Search: https://jacksoncountyfl.gov/services/correctional-facility/
+JACKSON COUNTY (MARIANNA)
+  Facility: Jackson County Jail
+  Jail Phone: (850) 482-9651
+  Jail Address: 2737 Penn Avenue, Marianna, Florida 32448
+  Sheriff Booking Search: https://www.jacksoncountysheriffsoffice.com
+  Clerk Address: P.O. Drawer 510, Marianna, Florida 32447
+  Clerk Phone: (850) 482-9552
+  Clerk Website: https://www.jacksonclerk.com
 
-JEFFERSON COUNTY
-  Sheriff Booking Search: https://www.jcso-fl.org/
+JEFFERSON COUNTY (MONTICELLO)
+  Facility: Jefferson County Jail
+  Jail Phone: (850) 997-5094
+  Jail Address: 171 Industrial Park Road, Monticello, Florida 32344
+  Sheriff Booking Search: https://www.jeffersoncountysheriffsoffice.com
+  Clerk Address: 1 Courthouse Circle, Monticello, Florida 32344
+  Clerk Phone: (850) 342-0218
+  Clerk Website: https://www.jeffersonclerk.com
 
-LAFAYETTE COUNTY
-  Sheriff Booking Search: https://www.lafayetteso.org/index.html
+LAFAYETTE COUNTY (MAYO)
+  Facility: Lafayette County Jail
+  Jail Phone: (386) 294-1301
+  Jail Address: 231 NW Monroe Avenue, Mayo, Florida 32066
+  Sheriff Booking Search: https://lafayettesheriff.com
+  Clerk Address: P.O. Box 88, Mayo, Florida 32066
+  Clerk Phone: (386) 294-1600
+  Clerk Website: https://www.lafayetteclerk.com
 
-LAKE COUNTY
-  Sheriff Booking Search: https://www.lcso.org/inmates/
+LAKE COUNTY (TAVARES)
+  Facility: Lake County Jail
+  Jail Phone: (352) 343-9501
+  Jail Address: 551 West Main Street, Tavares, Florida 32778
+  Sheriff Booking Search: https://www.lcso.org
+  Clerk Address: 550 West Main Street, Tavares, Florida 32778
+  Clerk Phone: (352) 742-4100
+  Clerk Website: https://www.lakecountyclerk.org
 
 LEON COUNTY (TALLAHASSEE)
-  Sheriff Booking Search: https://www.leoncountyso.com/departments/detention-facility/inmate-search
+  Facility: Leon County Jail
+  Jail Phone: (850) 606-3500
+  Jail Address: 535 Appleyard Drive, Tallahassee, Florida 32304
+  Sheriff Booking Search: https://www.leoncountyso.com
+  Clerk Address: Tallahassee, Florida 32302
+  Clerk Phone: (850) 606-4000
+  Clerk Website: https://cvweb.clerk.leon.fl.us
 
-LEVY COUNTY
-  Sheriff Booking Search: https://levyso.com/detention-bureau/
+LEVY COUNTY (BRONSON)
+  Facility: Levy County Jail
+  Jail Phone: (352) 486-5121
+  Jail Address: 9150 NE 80th Avenue, Bronson, Florida 32621
+  Sheriff Booking Search: https://www.levyso.com
+  Clerk Address: 355 South Court Street, Bronson, Florida 32621
+  Clerk Phone: (352) 486-5266
+  Clerk Website: https://circuit8.org
 
-LIBERTY COUNTY
-  Sheriff Booking Search: https://libertycountysheriff.org/jail/
+LIBERTY COUNTY (BRISTOL)
+  Facility: Liberty County Jail
+  Jail Phone: (850) 643-2235
+  Jail Address: 12832 NW Central Avenue, Bristol, Florida 32321
+  Sheriff Booking Search: https://www.libertysheriff.org
+  Clerk Address: 10818 NW SR 20, Bristol, Florida 32321
+  Clerk Phone: (850) 643-2215
+  Clerk Website: https://libertyclerk.com
 
-MADISON COUNTY
-  Sheriff Booking Search: https://madisonjail.org/
+MADISON COUNTY (MADISON)
+  Facility: Madison County Jail
+  Jail Phone: (850) 973-4151
+  Jail Address: 823 Pinckney Street, Madison, Florida 32340
+  Sheriff Booking Search: https://www.madisonso.com
+  Clerk Address: P.O. Box 237, Madison, Florida 32341
+  Clerk Phone: (850) 973-1500
+  Clerk Website: https://www.madisonclerk.com
 
-MANATEE COUNTY (BRADENTON)
-  Sheriff Phone: (941) 723-5132
-  Sheriff Booking Search: https://www.manateesheriff.com/arrest_inquiries/
+MANATEE COUNTY (BRADENTON/PALMETTO)
+  Facility: Manatee County Jail
+  Jail Phone: (941) 747-3011
+  Jail Address: 14470 Harlee Road, Palmetto, Florida 34221
+  Sheriff Booking Search: https://www.manateesheriff.com
   Clerk Phone: (941) 749-1800
   Clerk Website: https://www.manateeclerk.com/
   Court Records: https://records.manateeclerk.com/
-  Status: Active
 
 MARION COUNTY (OCALA)
-  Sheriff Booking Search: http://jail.marionso.com/
+  Facility: Marion County Jail
+  Jail Phone: (352) 351-8077
+  Jail Address: 700 NW 30th Avenue, Ocala, Florida 34475
+  Sheriff Booking Search: https://www.marionso.com
+  Clerk Address: 110 NW 1st Avenue, Ocala, Florida 34475
+  Clerk Phone: (352) 671-5510
+  Clerk Website: https://www.marioncountyclerk.org
 
-MARTIN COUNTY
-  Sheriff Booking Search: https://www.mcsofl.org/224/Recent-Bookings
+MARTIN COUNTY (STUART)
+  Facility: Martin County Jail
+  Jail Phone: (772) 220-7000
+  Jail Address: 800 SE Monterey Road, Stuart, Florida 34994
+  Sheriff Booking Search: https://www.sheriff.martin.fl.us
+  Clerk Address: 100 E Ocean Blvd, Stuart, Florida 34994
+  Clerk Phone: (772) 288-5576
+  Clerk Website: https://www.martinclerk.com
 
 MIAMI-DADE COUNTY (MIAMI)
-  Sheriff Phone: (786) 263-7000
-  Sheriff Booking Search: https://www.miamidade.gov/Apps/mdcr/inmateSearch/
+  Facility: Miami-Dade County Jail
+  Jail Phone: (786) 263-7000
+  Jail Address: 1321 NW 13th Street, Miami, Florida 33125
+  Sheriff Booking Search: https://www.miamidade.gov
   Clerk Phone: (305) 275-1155
   Clerk Website: https://www.miami-dadeclerk.com/
   Court Records: https://www2.miami-dadeclerk.com/public-records/
 
 MONROE COUNTY (KEY WEST)
-  Sheriff Booking Search: https://www.keysso.net/arrests
+  Facility: Monroe County Jail
+  Jail Phone: (305) 292-7000
+  Jail Address: 5525 College Road, Key West, Florida 33040
+  Sheriff Booking Search: https://www.keysso.net
+  Clerk Address: 500 Whitehead Street, Key West, Florida 33040
+  Clerk Phone: (305) 292-3963
+  Clerk Website: https://monroe-clerk.com
 
-NASSAU COUNTY
-  Sheriff Booking Search: https://dssinmate.nassauso.com/NewWorld.InmateInquiry/nassau
+NASSAU COUNTY (YULEE)
+  Facility: Nassau County Jail
+  Jail Phone: (904) 548-4002
+  Jail Address: 76212 Nicholas Cutinha Road, Yulee, Florida 32097
+  Sheriff Booking Search: https://www.nassauso.com
+  Clerk Address: 76347 Veterans Way, Suite 456, Yulee, Florida 32097
+  Clerk Phone: (904) 548-4600
+  Clerk Website: https://www.nassauclerk.com
 
-OKALOOSA COUNTY
-  Sheriff Booking Search: https://www.sheriff-okaloosa.org/news/arrest-information/
+OKALOOSA COUNTY (CRESTVIEW)
+  Facility: Okaloosa County Jail
+  Jail Phone: (850) 689-5690
+  Jail Address: 1200 East James Lee Boulevard, Crestview, Florida 32539
+  Sheriff Booking Search: https://www.okaloosasheriff.com
+  Clerk Address: 101 East James Lee Blvd, Crestview, Florida 32536
+  Clerk Phone: (850) 689-5000
+  Clerk Website: https://www.okaloosaclerk.com
 
-OKEECHOBEE COUNTY
-  Sheriff Booking Search: https://www.okeesheriff.org/inmate-search
+OKEECHOBEE COUNTY (OKEECHOBEE)
+  Facility: Okeechobee County Jail
+  Jail Phone: (863) 763-3117
+  Jail Address: 504 NW 4th Street, Okeechobee, Florida 34972
+  Sheriff Booking Search: https://www.okeechobeecountysheriff.com
+  Clerk Address: 312 NW 3rd Street, Okeechobee, Florida 34972
+  Clerk Phone: (863) 763-2131
+  Clerk Website: https://www.clerk.co.okeechobee.fl.us
 
 ORANGE COUNTY (ORLANDO)
-  Jail Address: 3723 Vision Blvd, Orlando, FL 32839
+  Facility: Orange County Jail
+  Jail Phone: (407) 836-3400
+  Jail Address: 3723 Vision Boulevard, Orlando, Florida 32839
   Courthouse: 425 N Orange Ave, Orlando, FL 32801
-  Sheriff Phone: (407) 836-3400
-  Sheriff Booking Search: https://netapps.ocfl.net/BestJail/Home/Inmates
+  Sheriff Booking Search: https://netapps.ocfl.net
   Clerk Phone: (407) 836-2000
   Clerk Website: https://www.myorangeclerk.com/
   Court Records: https://myeclerk.myorangeclerk.com/
@@ -364,50 +572,96 @@ ORANGE COUNTY (ORLANDO)
   Tips: Release is very slow (6-10 hours).
 
 OSCEOLA COUNTY (KISSIMMEE)
-  Sheriff Booking Search: https://www.osceola.org/agencies-departments/corrections/corrections-reports.stml
+  Facility: Osceola County Jail
+  Jail Phone: (407) 742-4444
+  Jail Address: 402 Simpson Road, Kissimmee, Florida 34744
+  Sheriff Booking Search: https://www.osceolasheriff.org
+  Clerk Address: 2 Courthouse Square, Suite 2000, Kissimmee, Florida 34741
+  Clerk Phone: (407) 742-3500
+  Clerk Website: https://osceolaclerk.com
 
 PALM BEACH COUNTY (WEST PALM BEACH)
-  Jail Address: 3228 Gun Club Rd, West Palm Beach, FL 33406
+  Facility: Palm Beach County Jail
+  Jail Phone: (561) 688-4400
+  Jail Address: 3228 Gun Club Road, West Palm Beach, Florida 33406
   Courthouse: 205 N Dixie Hwy, West Palm Beach, FL 33401
-  Sheriff Phone: (561) 688-3000
-  Sheriff Booking Search: https://www.pbso.org/arrest-jail_menu
+  Sheriff Booking Search: https://www.pbso.org
   Clerk Phone: (561) 355-2996
   Clerk Website: https://www.mypalmbeachclerk.com/
   Court Records: https://appsgp.mypalmbeachclerk.com/eCaseView/
   Process: Indemnitors must be approved via PBSO visual verification (Zoom or In-Person).
   Status: Active
 
-PASCO COUNTY
-  Sheriff Booking Search: https://jailinfo.pascocorrections.net/JMC/#/inCustody
+PASCO COUNTY (LAND O' LAKES)
+  Facility: Pasco County Jail
+  Jail Phone: (800) 854-2862
+  Jail Address: 20101 Central Boulevard, Land O'Lakes, Florida 34637
+  Sheriff Booking Search: https://www.pascosheriff.com
+  Clerk Address: 38053 Live Oak Avenue, Dade City, Florida 33523
+  Clerk Phone: (352) 521-4542
+  Clerk Website: https://www.pascoclerk.com
 
 PINELLAS COUNTY (CLEARWATER/ST. PETE)
-  Jail Address: 14400 49th St N, Clearwater, FL 33762
-  Sheriff Phone: (727) 464-6415
-  Sheriff Booking Search: https://pcsoweb.com/InmateBooking
+  Facility: Pinellas County Jail
+  Jail Phone: (727) 582-6200
+  Jail Address: 14400 49th Street North, Clearwater, Florida 33762
+  Sheriff Booking Search: https://www.pcsoweb.com
   Clerk Phone: (727) 464-7000
   Clerk Website: https://www.mypinellasclerk.gov/
   Court Records: https://ccmspa.pinellascounty.org/PublicAccess/default.aspx
   Process: Strictly digital for agents. No physical signature required at the jail.
 
 POLK COUNTY (BARTOW/LAKELAND)
-  Jail Address: 2390 Bob Phillips Rd, Bartow, FL 33830
-  Sheriff Phone: (863) 292-3400
-  Sheriff Booking Search: https://www.polksheriff.org/detention/jail-inquiry
+  Facility: Polk County Jail
+  Jail Phone: (863) 534-6123
+  Jail Address: 2390 Bob Phillips Road, Bartow, Florida 33830
+  Sheriff Booking Search: https://www.polksheriff.org
   Clerk Phone: (863) 534-4000
   Clerk Website: https://www.polkcountyclerk.net/
   Court Records: https://pro.polkcountyclerk.net/PRO
   Process: Paper bonds standard. ID must match perfectly.
 
-PUTNAM COUNTY
-  Sheriff Booking Search: http://smartweb.pcso.us/smartwebclient/jail.aspx
+PUTNAM COUNTY (PALATKA)
+  Facility: Putnam County Jail
+  Jail Phone: (386) 329-0854
+  Jail Address: 130 Orie Griffin Boulevard, Palatka, Florida 32177
+  Sheriff Booking Search: https://www.putnamsheriff.org
+  Clerk Address: 410 Saint Johns Avenue, Palatka, Florida 32177
+  Clerk Phone: (386) 326-7600
+  Clerk Website: https://putnamclerk.com
 
-SANTA ROSA COUNTY
-  Sheriff Booking Search: https://santarosasheriff.org/jail-view/
+ST. JOHNS COUNTY (ST. AUGUSTINE)
+  Facility: St. Johns County Jail
+  Jail Phone: (904) 824-8304
+  Jail Address: 3955 Lewis Speedway, St. Augustine, Florida 32084
+  Sheriff Booking Search: https://www.sjso.org
+  Clerk Address: 4010 Lewis Speedway, St. Augustine, Florida 32084
+  Clerk Phone: (904) 819-3600
+  Clerk Website: https://stjohnsclerk.com
 
-SARASOTA COUNTY
-  Jail Address: 2020 Main St, Sarasota, FL 34237
-  Sheriff Phone: (941) 861-4601
-  Sheriff Booking Search: https://www.sarasotasheriff.org/arrest-reports/index.php
+ST. LUCIE COUNTY (FORT PIERCE)
+  Facility: St. Lucie County Jail
+  Jail Phone: (772) 462-3450
+  Jail Address: 900 North Rock Road, Fort Pierce, Florida 34945
+  Sheriff Booking Search: https://www.stluciesheriff.com
+  Clerk Address: P.O. Box 700, Ft. Pierce, Florida 34954
+  Clerk Phone: (772) 462-6900
+  Clerk Website: https://stlucieclerk.gov
+
+SANTA ROSA COUNTY (MILTON)
+  Facility: Santa Rosa County Jail
+  Jail Phone: (850) 983-1100
+  Jail Address: 5755 East Milton Road, Milton, Florida 32583
+  Sheriff Booking Search: https://www.santarosasheriff.org
+  Clerk Address: P.O. Box 472, Milton, Florida 32572
+  Clerk Phone: (850) 981-5554
+  Clerk Website: https://santarosaclerk.com
+
+SARASOTA COUNTY (SARASOTA)
+  Facility: Sarasota County Jail
+  Jail Phone: (941) 861-4165
+  Jail Address: 2020 Main Street, Sarasota, Florida 34237
+  Sheriff Booking Search: https://www.sarasotasheriff.org
   Clerk Phone: (941) 861-7400
   Clerk Website: https://www.sarasotaclerk.com/
   Court Records: https://secure.sarasotaclerk.com/Login.aspx?session=0
@@ -415,49 +669,89 @@ SARASOTA COUNTY
   Status: Active
 
 SEMINOLE COUNTY (SANFORD)
-  Sheriff Phone: (407) 665-1200
-  Sheriff Booking Search: https://www.seminolesheriff.org/WebBond/Inmates.aspx
+  Facility: Seminole County Jail
+  Jail Phone: (407) 665-1200
+  Jail Address: 211 Bush Boulevard, Sanford, Florida 32773
+  Sheriff Booking Search: https://www.seminolesheriff.org
   Clerk Phone: (407) 665-4300
   Clerk Website: https://www.seminoleclerk.org/
   Court Records: https://courtrecords.seminoleclerk.org/criminal/default.aspx
 
-ST. JOHNS COUNTY
-  Sheriff Booking Search: https://www.sjso.org/detention-center/sj-inmate-search/
+SUMTER COUNTY (BUSHNELL)
+  Facility: Sumter County Jail
+  Jail Phone: (352) 793-0225
+  Jail Address: 219 East Anderson Avenue, Bushnell, Florida 33513
+  Sheriff Booking Search: https://www.sumtercountysheriff.org
+  Clerk Address: 215 East McCollum Avenue, Bushnell, Florida 33513
+  Clerk Phone: (352) 569-6600
+  Clerk Website: https://www.sumterclerk.com
 
-ST. LUCIE COUNTY
-  Sheriff Booking Search: https://www.stluciesheriff.com/215/Inmate-Lookup
+SUWANNEE COUNTY (LIVE OAK)
+  Facility: Suwannee County Jail
+  Jail Phone: (386) 364-3776
+  Jail Address: 200 South Ohio Avenue, Live Oak, Florida 32064
+  Sheriff Booking Search: https://www.suwanneesheriff.com
+  Clerk Address: 200 South Ohio Avenue, Live Oak, Florida 32064
+  Clerk Phone: (386) 362-0500
+  Clerk Website: https://www.suwgov.org
 
-SUMTER COUNTY
-  Sheriff Booking Search: https://portal.sumtercountysheriff.org/smartwebclient/jail.aspx
+TAYLOR COUNTY (PERRY)
+  Facility: Taylor County Jail
+  Jail Phone: (850) 584-4333
+  Jail Address: 589 East US Highway 27, Perry, Florida 32347
+  Sheriff Booking Search: https://www.taylorsheriff.org
+  Clerk Address: 108 North Jefferson Street Suite 102, Perry, Florida 32348
+  Clerk Phone: (850) 838-3506
+  Clerk Website: https://taylorclerk.com
 
-SUWANNEE COUNTY
-  Sheriff Booking Search: https://smartcop.suwanneesheriff.com/smartwebclient/jail.aspx
-
-TAYLOR COUNTY
-  Sheriff Booking Search: http://smartcop.taylorsheriff.org:8989/SmartWEBClient/Jail.aspx
-
-UNION COUNTY
-  Sheriff Booking Search: http://www.unionsheriff.us/county-jail.php
+UNION COUNTY (LAKE BUTLER)
+  Facility: Union County Jail
+  Jail Phone: (386) 496-2501
+  Jail Address: 50 NW 1st Street, Lake Butler, Florida 32054
+  Sheriff Booking Search: https://www.unionsheriff.us
+  Clerk Address: 55 West Main Street, Room 103, Lake Butler, Florida 32054
+  Clerk Phone: (386) 496-3711
+  Clerk Website: https://unionclerk.com
 
 VOLUSIA COUNTY (DAYTONA BEACH/DELAND)
-  Sheriff Phone: (386) 254-1555
-  Sheriff Booking Search: https://volusiamug.vcgov.org/
+  Facility: Volusia County Jail
+  Jail Phone: (386) 254-1555
+  Jail Address: 1354 Indian Lake Road, Daytona Beach, Florida 32124
+  Sheriff Booking Search: https://www.volusiasheriff.org
   Clerk Phone: (386) 736-5915
   Clerk Website: https://www.clerk.org/
   Court Records: https://ccms.clerk.org/
 
-WAKULLA COUNTY
-  Sheriff Booking Search: https://www.wcso.org/
+WAKULLA COUNTY (CRAWFORDVILLE)
+  Facility: Wakulla County Jail
+  Jail Phone: (850) 745-7100
+  Jail Address: 15 Oak Street, Crawfordville, Florida 32327
+  Sheriff Booking Search: https://www.wakullasheriff.com
+  Clerk Address: 3056 Crawfordville Highway, Crawfordville, Florida 32327
+  Clerk Phone: (850) 926-0905
+  Clerk Website: https://wakullaclerk.org
 
-WALTON COUNTY
-  Sheriff Booking Search: https://nwscorrections.waltonso.org/NewWorld.InMateInquiry/WaltonCounty
+WALTON COUNTY (DEFUNIAK SPRINGS)
+  Facility: Walton County Jail
+  Jail Phone: (850) 892-8111
+  Jail Address: 796 Triple G Road, DeFuniak Springs, Florida 32433
+  Sheriff Booking Search: https://www.waltonso.org
+  Clerk Address: 571 U.S. Highway 90 East, DeFuniak Springs, Florida 32435
+  Clerk Phone: (850) 892-8115
+  Clerk Website: https://waltonclerk.com
 
-WASHINGTON COUNTY
-  Sheriff Booking Search: https://www.wcso.us/inmateRoster
+WASHINGTON COUNTY (CHIPLEY)
+  Facility: Washington County Jail
+  Jail Phone: (850) 638-6110
+  Jail Address: 1293 Jackson Avenue, Chipley, Florida 32428
+  Sheriff Booking Search: https://www.wcso.us
+  Clerk Address: 1293 Jackson Avenue, Chipley, Florida 32428
+  Clerk Phone: (850) 638-6289
+  Clerk Website: https://www.washingtonclerk.com
 
 
 ALL 67 COUNTIES COVERED
-We cover every Florida county through our statewide network. For counties not listed above with full details, we locate the nearest licensed agent to post the bond. Our main number (239) 332-2245 routes to an agent for any county.
+We cover every Florida county through our statewide network. Our main number (239) 332-2245 routes to an agent for any county. Every county above now includes the jail facility name, phone number, and physical address.
 
 
 =========================================
