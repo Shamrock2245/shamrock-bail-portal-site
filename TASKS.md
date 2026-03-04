@@ -93,7 +93,9 @@
   - [x] Two-path conversation flow: Path A (notify bondsman) / Path B (send paperwork)
   - [x] SignNow signing link creation + SMS delivery via Twilio
   - [x] ShannonCallLog Google Sheet (full transcript recording)
-  - [x] Knowledge base: FAQs, county jail guide, paperwork descriptions
+  - [x] Knowledge base: All 67 FL counties, FL Statutes 648/903, bond schedules, FAQs, 8 paperwork descriptions
+  - [x] 8 ElevenLabs webhook tools: calculate_premium, create_intake, lookup_defendant, send_payment_link, schedule_callback, transfer_to_bondsman, check_inmate_status, send_directions
+  - [x] RAG-indexed knowledge base uploaded to ElevenLabs
 - [x] **SEO & Indexing**
   - [x] All county pages indexed in Google
   - [x] Structured data (JSON-LD) optimized
@@ -114,8 +116,12 @@
 
 ---
 
-## 🔮 Phase 7.5: Shannon Enhancements (Upcoming)
+## 🔮 Phase 7.5: Shannon Enhancements (In Progress)
+- [x] **Comprehensive knowledge base** — all 67 FL counties, statutes, bond schedules
+- [x] **5 new webhook tools** — send_payment_link, schedule_callback, transfer_to_bondsman, check_inmate_status, send_directions
+- [x] **RAG optimization** — knowledge base indexed, duplicates cleaned
 - [ ] **Telegram signing link delivery** during Shannon calls
 - [ ] **Shannon → "The Closer" handoff** for abandoned intake follow-up
 - [ ] **Multi-language support** (Spanish priority — Collier/Lee demographics)
 - [ ] **Shannon call analytics dashboard** in GAS
+- [ ] **Wire new webhook tool backends** — GAS handlers for send_payment_link, schedule_callback, transfer_to_bondsman, check_inmate_status, send_directions
