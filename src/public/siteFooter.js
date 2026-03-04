@@ -20,7 +20,7 @@ import wixData from 'wix-data';
 const CONTACT = {
     phone: '239-332-2245',
     phoneTel: 'tel:+12393322245',
-    email: 'info@shamrockbailbonds.biz',
+    email: 'admin@shamrockbailbonds.biz',
     address: '1528 Broadway, Ft. Myers, FL 33901'
 };
 
