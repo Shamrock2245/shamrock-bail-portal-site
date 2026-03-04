@@ -52,6 +52,16 @@ export async function handleTelegramWebhook(update) {
       timestamp: new Date().toISOString()
     };
 
+    // Add webhook secret for GAS-side verification
+    try {
+      const webhookSecret = await getSecret('TELEGRAM_WEBHOOK_SECRET');
+      if (webhookSecret) {
+        gasPayload.webhookSecret = webhookSecret;
+      }
+    } catch (secretErr) {
+      console.warn('TELEGRAM_WEBHOOK_SECRET not found in Wix Secrets (non-fatal)');
+    }
+
     const gasWebhookUrl = await getSecret('GAS_WEBHOOK_URL');
     if (!gasWebhookUrl) {
       console.error('GAS_WEBHOOK_URL secret is not set');

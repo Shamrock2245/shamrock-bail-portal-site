@@ -42,6 +42,11 @@ function handleElevenLabsWebhookSOC2(e) {
 
     // 2. Route by Event Type
     if (payload.type === 'post_call_transcription') {
+        // Idempotency: Skip duplicate post-call events
+        if (payload.call_id && typeof IdempotencyGuard !== 'undefined' &&
+            IdempotencyGuard.isDuplicate('elevenlabs_postcall', payload.call_id)) {
+            return ContentService.createTextOutput('Duplicate post-call skipped').setMimeType(ContentService.MimeType.TEXT);
+        }
         return handlePostCallTranscription(payload);
     }
 
@@ -226,6 +231,20 @@ function handleElevenLabsToolCall(e) {
     }
 
     Logger.log('🔧 ElevenLabs Tool Call: ' + toolName + ' | Params: ' + JSON.stringify(payload));
+
+    // Idempotency: Prevent duplicate tool actions (e.g. double-SMS)
+    // Uses a composite key of tool name + phone + 5-minute window
+    if (typeof IdempotencyGuard !== 'undefined') {
+        var toolPhone = payload.caller_phone || payload.phone_number || payload.phone || '';
+        var toolWindow = Math.floor(Date.now() / 300000); // 5-minute buckets
+        var toolIdempKey = IdempotencyGuard.compositeKey(toolName, toolPhone, toolWindow);
+        if (toolPhone && IdempotencyGuard.isDuplicate('elevenlabs_tool', toolIdempKey, 600)) {
+            Logger.log('⚡ Idempotency: Duplicate tool call skipped [' + toolName + '] phone=' + toolPhone);
+            return ContentService.createTextOutput(JSON.stringify({
+                status: 'skipped', message: 'Duplicate tool call detected'
+            })).setMimeType(ContentService.MimeType.JSON);
+        }
+    }
 
     try {
         switch (toolName) {

@@ -158,6 +158,13 @@ function handleSignNowCompletedDocument(webhookData) {
     // 1. Extract document info from webhook
     const documentId = webhookData.document_id || webhookData.id;
     if (!documentId) throw new Error('No document ID in webhook');
+
+    // Idempotency: Prevent duplicate file downloads and uploads
+    if (typeof IdempotencyGuard !== 'undefined' &&
+        IdempotencyGuard.isDuplicate('drive_filing', documentId)) {
+      console.log('⚡ Idempotency: Duplicate Drive filing skipped for doc ' + documentId);
+      return { success: true, skipped: true, reason: 'duplicate_filing' };
+    }
     
     console.log('Processing completed SignNow document:', documentId);
     

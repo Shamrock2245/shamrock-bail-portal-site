@@ -161,6 +161,11 @@ function doGet(e) {
 
   // Shannon Send Paperwork Tool — forwarded from Netlify proxy
   if (e.parameter && e.parameter.source === 'send_paperwork' && e.parameter.data) {
+    // Auth: Verify shared secret
+    if (!verifyElevenLabsToolSecret_(e)) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Unauthorized' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     try {
       const paperworkData = JSON.parse(decodeURIComponent(e.parameter.data));
       Logger.log('📄 Shannon send-paperwork request: ' + JSON.stringify(paperworkData));
@@ -180,6 +185,11 @@ function doGet(e) {
 
   // Shannon Notify Bondsman Tool (Path A) — log intake + Slack alert
   if (e.parameter && e.parameter.source === 'notify_bondsman' && e.parameter.data) {
+    // Auth: Verify shared secret
+    if (!verifyElevenLabsToolSecret_(e)) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Unauthorized' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     try {
       const intakeData = JSON.parse(decodeURIComponent(e.parameter.data));
       Logger.log('📞 Shannon notify-bondsman request: ' + JSON.stringify(intakeData));
@@ -473,6 +483,17 @@ function doPost(e) {
 
     // NEW: Telegram webhook handling
     if (data.action === 'telegram_inbound_message') {
+      // Auth: Verify Telegram webhook relay secret
+      if (typeof verifyTelegramWebhookSecret_ === 'function' && !verifyTelegramWebhookSecret_(e)) {
+        return createErrorResponse('Unauthorized', ERROR_CODES.UNAUTHORIZED);
+      }
+
+      // Idempotency: Skip duplicate Telegram updates
+      var tgUpdateId = data.update && data.update.update_id ? String(data.update.update_id) : '';
+      if (tgUpdateId && typeof IdempotencyGuard !== 'undefined' && IdempotencyGuard.isDuplicate('telegram', tgUpdateId)) {
+        return createResponse({ success: true, skipped: true, reason: 'duplicate_update' });
+      }
+
       if (typeof handleTelegramInbound === 'function') {
         return createResponse(handleTelegramInbound(data.update));
       } else {

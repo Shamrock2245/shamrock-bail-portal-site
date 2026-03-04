@@ -23,8 +23,18 @@ function handleSOC2Webhook(e) {
             case "ElevenLabs":
                 return handleElevenLabsWebhookSOC2(e);
             case "elevenlabs_tool":
+                // Auth: Verify shared secret before processing tool calls
+                if (!verifyElevenLabsToolSecret_(e)) {
+                    logSecurityEvent('ELEVENLABS_TOOL_AUTH_FAIL', { tool: e.parameter.tool });
+                    return ContentService.createTextOutput('Unauthorized').setMimeType(ContentService.MimeType.TEXT);
+                }
                 return handleElevenLabsToolCall(e);
             case "elevenlabs_init":
+                // Auth: Verify shared secret for conversation init
+                if (!verifyElevenLabsToolSecret_(e)) {
+                    logSecurityEvent('ELEVENLABS_INIT_AUTH_FAIL', {});
+                    return ContentService.createTextOutput('Unauthorized').setMimeType(ContentService.MimeType.TEXT);
+                }
                 return handleElevenLabsConversationInit(e);
             case "slack":
             case "Slack":
@@ -62,6 +72,12 @@ function handleSignNowWebhookSOC2(e) {
     }
 
     logProcessingEvent("SIGNNOW_WEBHOOK_RECEIVED", payload);
+
+    // Idempotency: Skip duplicate SignNow events
+    var snEventId = payload.document_id || payload.id || '';
+    if (snEventId && typeof IdempotencyGuard !== 'undefined' && IdempotencyGuard.isDuplicate('signnow', snEventId)) {
+        return ContentService.createTextOutput('Duplicate event skipped').setMimeType(ContentService.MimeType.TEXT);
+    }
 
     // DELEGATE TO EXISTING BUSINESS LOGIC
     // Passes off perfectly to WebhookHandler.js which routes appropriately to DriveFilingService

@@ -33,7 +33,7 @@ var CLOSER_CONFIG = {
     FOLLOWUP_LOG: 'CloserFollowUpLog',
 
     // Statuses that indicate an intake is "abandoned"
-    ABANDONED_STATUSES: ['pending', 'incomplete', 'abandoned', 'started', ''],
+    ABANDONED_STATUSES: ['pending', 'incomplete', 'abandoned', 'started', '', 'new - ai intake'],
 
     // Do not follow up on these statuses
     COMPLETED_STATUSES: ['completed', 'signed', 'active', 'posted', 'declined', 'closed'],
@@ -49,20 +49,26 @@ var CLOSER_CONFIG = {
 
 var CLOSER_MESSAGES = {
     '1h': {
-        sms: '🍀 Hi {name}, this is Shamrock Bail Bonds. We noticed you started a bail application but didn\'t finish. We\'re standing by 24/7 to help you get your loved one home. Reply or call us: (239) 237-1809',
-        telegram: '🍀 Hi {name}!\n\nThis is Shamrock Bail Bonds. We noticed you started a bail application but didn\'t finish.\n\nWe\'re standing by 24/7 — just tap the button below to pick up where you left off.\n\n📞 (239) 237-1809',
+        sms: '🍀 Hi {name}, this is Shamrock Bail Bonds. We noticed you started a bail application but didn\'t finish. We\'re standing by 24/7 to help you get your loved one home. Reply or call us: (239) 955-0178',
+        telegram: '🍀 Hi {name}!\n\nThis is Shamrock Bail Bonds. We noticed you started a bail application but didn\'t finish.\n\nWe\'re standing by 24/7 — just tap the button below to pick up where you left off.\n\n📞 (239) 955-0178',
         subject: '1-Hour Follow-Up'
     },
     '24h': {
-        sms: '🍀 {name}, Shamrock Bail Bonds here. Your bail application is still waiting. Time matters — the sooner we start, the sooner they\'re home. Questions? Text back or call: (239) 237-1809',
-        whatsapp: '🍀 Hi {name}! This is Shamrock Bail Bonds reaching out because you started a bail application yesterday. We know this is stressful — we\'re here to help, no judgment. Just reply here or call (239) 237-1809 to pick up where you left off.',
-        telegram: '🍀 {name}, your bail application is still waiting.\n\nEvery hour matters when someone you love is in custody. We\'re ready to move the moment you are.\n\nTap below to continue — or call us anytime:\n📞 (239) 237-1809',
+        sms: '🍀 {name}, Shamrock Bail Bonds here. Your bail application is still waiting. Time matters — the sooner we start, the sooner they\'re home. Questions? Text back or call: (239) 955-0178',
+        whatsapp: '🍀 Hi {name}! This is Shamrock Bail Bonds reaching out because you started a bail application yesterday. We know this is stressful — we\'re here to help, no judgment. Just reply here or call (239) 955-0178 to pick up where you left off.',
+        telegram: '🍀 {name}, your bail application is still waiting.\n\nEvery hour matters when someone you love is in custody. We\'re ready to move the moment you are.\n\nTap below to continue — or call us anytime:\n📞 (239) 955-0178',
         subject: '24-Hour Follow-Up'
     },
     '72h': {
-        sms: '🍀 {name}, it\'s been a few days since you started your bail application with Shamrock Bail Bonds. If you still need help, we\'re here. If not, no worries — we wish you the best. Call anytime: (239) 237-1809',
-        telegram: '🍀 {name}, we\'re still here if you need us.\n\nYour bail application was started a few days ago. If your situation has changed, no worries — we understand.\n\nIf you still need help getting your loved one home, we\'re one tap away:\n📞 (239) 237-1809',
+        sms: '🍀 {name}, it\'s been a few days since you started your bail application with Shamrock Bail Bonds. If you still need help, we\'re here. If not, no worries — we wish you the best. Call anytime: (239) 955-0178',
+        telegram: '🍀 {name}, we\'re still here if you need us.\n\nYour bail application was started a few days ago. If your situation has changed, no worries — we understand.\n\nIf you still need help getting your loved one home, we\'re one tap away:\n📞 (239) 955-0178',
         subject: '72-Hour Final Follow-Up (The Closer)'
+    },
+    // Shannon AI Agent follow-up — tailored for callers who spoke to the voice AI
+    'shannon': {
+        sms: '🍀 Hi {name}, this is Shamrock Bail Bonds. You spoke with our agent Shannon earlier about a bail bond. We want to make sure you have everything you need. Ready to move forward? Reply here or call: (239) 955-0178',
+        telegram: '🍀 Hi {name}!\n\nYou recently spoke with Shannon, our bail bond assistant. We\'re ready to help get your loved one home.\n\nTap below to continue — or call us:\n📞 (239) 955-0178',
+        subject: 'Shannon AI Intake Follow-Up'
     }
 };
 
@@ -116,10 +122,14 @@ function runTheCloser() {
         var phone = String(_getVal(row, colIdx, ['indphone', 'ind phone', 'phone']) || '');
         var name = String(_getVal(row, colIdx, ['indname', 'ind name', 'name']) || '');
         var timestamp = _getVal(row, colIdx, ['timestamp', 'date', 'created']);
+        var source = String(_getVal(row, colIdx, ['source', 'intakesource']) || '').toLowerCase().trim();
 
         // Skip if completed or no phone
         if (CLOSER_CONFIG.COMPLETED_STATUSES.indexOf(status) !== -1) continue;
         if (!phone || phone.replace(/\D/g, '').length < 10) continue;
+
+        // Check if this is an abandoned intake we should follow up on
+        if (CLOSER_CONFIG.ABANDONED_STATUSES.indexOf(status) === -1) continue;
 
         // Determine age of the intake
         var createdDate;
@@ -133,9 +143,18 @@ function runTheCloser() {
         var ageMs = now.getTime() - createdDate.getTime();
         var intakeId = phone.replace(/\D/g, '').slice(-10) + '_' + createdDate.getTime();
 
+        // Detect Shannon AI source for tailored messaging
+        var isShannonIntake = (source === 'elevenlabs after-hours' || source === 'shannon ai');
+
         // Determine which drip to send
         var dripLevel = _getDripLevel(ageMs, intakeId, sentFollowUps);
         if (!dripLevel) continue;
+
+        // Shannon intakes get the dedicated 'shannon' template on first contact,
+        // then fall through to normal drip cadence for subsequent touches
+        if (isShannonIntake && dripLevel === '1h') {
+            dripLevel = 'shannon';
+        }
 
         processed++;
 
