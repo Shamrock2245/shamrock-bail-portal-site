@@ -78,7 +78,7 @@ You may opt out of receiving text messages at any time by replying **STOP** to a
 When you first provide your phone number and consent to receive messages, you will receive a confirmation text: *"Shamrock Bail Bonds: You are opted in to receive verification codes, court reminders, and case updates via SMS. Reply STOP to opt out. Msg&data rates may apply."*
 
 ### Help
-For help with our text messaging program, reply **HELP** to any message or contact us at (239) 332-2245 or info@shamrockbailbonds.com.
+For help with our text messaging program, reply **HELP** to any message or contact us at (239) 332-2245 or admin@shamrockbailbonds.biz.
 
 ### Supported Carriers
 Major US carriers are supported including AT&T, Verizon, T-Mobile, Sprint, and others. Carriers are not liable for delayed or undelivered messages.
@@ -111,5 +111,5 @@ The Calipott Building
 1520 Broadway
 Fort Myers, FL 33901
 Phone: (239) 332-2245
-Email: info@shamrockbailbonds.com
+Email: admin@shamrockbailbonds.biz
 Website: https://shamrockbail.com

@@ -159,7 +159,7 @@ Hover Background: #E5A811 (darker gold)
 
 **Column 3 - Contact Info**
 - Phone: 239-332-2245
-- Email: info@shamrockbailbonds.biz
+- Email: admin@shamrockbailbonds.biz
 - Address
 
 **Column 4 - Service Areas**

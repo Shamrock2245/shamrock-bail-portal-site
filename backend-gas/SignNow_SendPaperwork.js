@@ -191,7 +191,6 @@ function handleShannonSendPaperwork(data) {
                 const fileName = `${doc.key}_${defParts.last || 'Unknown'}_${dateStr}.pdf`;
                 const pdfBase64 = Utilities.base64Encode(doc.bytes);
                 const result = SN_uploadDocument(pdfBase64, fileName);
-
                 if (result.success) {
                     uploadedDocs.push({ key: doc.key, documentId: result.documentId, fileName });
                 } else {
@@ -200,6 +199,8 @@ function handleShannonSendPaperwork(data) {
             } catch (e) {
                 SN_log('Shannon_UploadErr', { key: doc.key, err: e.toString() });
             }
+            // Rate-limit: 500ms between uploads to avoid SignNow 429 on 12 sequential requests
+            Utilities.sleep(500);
         }
 
         if (uploadedDocs.length === 0) {
@@ -442,9 +443,16 @@ function _shannon_sendInvite(config, entityId, entityType, data, uploadedDocs) {
                 return { success: true };
             }
 
-            // If group invite fails, fall back to individual invite on first doc
-            SN_log('Shannon_GroupInviteFallback', 'Falling back to individual invite');
-            return _shannon_sendSingleDocInvite(config, uploadedDocs[0].documentId, data, consentMessage);
+            // Group invite failed — fall back to individual invites on ALL docs
+            SN_log('Shannon_GroupInviteFallback', `Group invite failed (HTTP ${code}). Sending ${uploadedDocs.length} individual invites.`);
+            let anySuccess = false;
+            for (let i = 0; i < uploadedDocs.length; i++) {
+                const msg = i === 0 ? consentMessage : `Please review and sign: ${uploadedDocs[i].key.replace(/-/g, ' ')}`;
+                const r = _shannon_sendSingleDocInvite(config, uploadedDocs[i].documentId, data, msg);
+                if (r.success) anySuccess = true;
+                Utilities.sleep(300); // brief pause between individual invites
+            }
+            return { success: anySuccess };
 
         } else {
             // ----- SINGLE DOCUMENT INVITE -----
@@ -478,7 +486,7 @@ function _shannon_sendSingleDocInvite(config, documentId, data, message) {
                 subject: 'Shamrock Bail Bonds — Complete Your Bail Bond Paperwork',
                 message: message
             }],
-            from: 'info@shamrockbailbonds.com'
+            from: 'admin@shamrockbailbonds.biz'
         };
 
         const response = fetchWithRetry(url, {
@@ -505,10 +513,13 @@ function _shannon_sendSingleDocInvite(config, documentId, data, message) {
 
 /**
  * Log the event to the ShannonPaperwork spreadsheet tab.
+ * NOTE: getActiveSpreadsheet() returns null in a doGet/web-app context.
+ * We use openById() with INTAKE_SHEET_ID (same sheet used by the rest of GAS).
  */
 function _shannon_logToSheet(data, entityId, docCount, success) {
     try {
-        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const sheetId = PropertiesService.getScriptProperties().getProperty('INTAKE_SHEET_ID') || '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E';
+        const ss = SpreadsheetApp.openById(sheetId);
         let sheet = ss.getSheetByName('ShannonPaperwork');
         if (!sheet) {
             sheet = ss.insertSheet('ShannonPaperwork');

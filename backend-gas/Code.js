@@ -2781,8 +2781,7 @@ function isUserAllowed(email) {
   const ALLOWED_USERS = [
     'brendan@shamrockbailbonds.biz',
     'admin@shamrockbailbonds.biz',
-    'info@shamrockbailbonds.biz',
-    'shamrockbailoffice@gmail.com'
+    'shamrockbailoffice@gmail.com' // staff Gmail — kept as explicit exception
   ];
 
   if (ALLOWED_USERS.includes(emailLower)) return true;

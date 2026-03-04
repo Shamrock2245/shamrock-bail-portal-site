@@ -268,7 +268,7 @@ Scalable data structure to support all 67 Florida counties with minimal duplicat
   "contact": {
     "primary_phone": "+12393322245",
     "spanish_phone": "+12995503010",
-    "email": "info@shamrockbailbonds.biz"
+    "email": "admin@shamrockbailbonds.biz"
   },
   
   "location": {
