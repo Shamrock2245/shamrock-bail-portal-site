@@ -142,6 +142,42 @@ function doGet(e) {
     }
   }
 
+  // ElevenLabs Post-Call — forwarded from Netlify proxy to avoid 302 redirect
+  if (e.parameter && e.parameter.source === 'elevenlabs_webhook' && e.parameter.postcall_data) {
+    try {
+      const payload = JSON.parse(decodeURIComponent(e.parameter.postcall_data));
+      Logger.log('🎙️ Post-call webhook forwarded from Netlify | Call: ' + (payload.call_id || 'unknown'));
+      if (typeof routeElevenLabsWebhook === 'function') {
+        return routeElevenLabsWebhook(payload);
+      } else if (typeof handlePostCallTranscription === 'function' && payload.type === 'post_call_transcription') {
+        return handlePostCallTranscription(payload);
+      }
+      return ContentService.createTextOutput('Post-call processed').setMimeType(ContentService.MimeType.TEXT);
+    } catch (parseErr) {
+      Logger.log('❌ Post-call parse error: ' + parseErr.message);
+      return ContentService.createTextOutput('Parse error: ' + parseErr.message).setMimeType(ContentService.MimeType.TEXT);
+    }
+  }
+
+  // Shannon Send Paperwork Tool — forwarded from Netlify proxy
+  if (e.parameter && e.parameter.source === 'send_paperwork' && e.parameter.data) {
+    try {
+      const paperworkData = JSON.parse(decodeURIComponent(e.parameter.data));
+      Logger.log('📄 Shannon send-paperwork request: ' + JSON.stringify(paperworkData));
+      if (typeof handleShannonSendPaperwork === 'function') {
+        const result = handleShannonSendPaperwork(paperworkData);
+        return ContentService.createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Handler not found' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (parseErr) {
+      Logger.log('❌ Send-paperwork parse error: ' + parseErr.message);
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: parseErr.message }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   // 1. Check for JSON mode explicitly
   if (e.parameter.format === 'json') {
     if (e.parameter.mode === 'scrape') {
