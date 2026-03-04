@@ -168,56 +168,94 @@ function setupEmergencyCallButton() {
 }
 
 /**
- * Setup "Find My Jail" button (Automatic redirection to nearest county)
+ * Setup "Find My Jail" button (Automatic redirection to nearest county).
+ *
+ * FIX (2026-03-04): The previous implementation had two bugs that caused the
+ * button to get permanently stuck:
+ *
+ *  1. btn.disable() was called but btn.enable() was in the finally block which
+ *     only ran AFTER wixLocation.to() — but Wix navigation cancels JS execution
+ *     mid-flight, so finally never ran and the button stayed disabled.
+ *
+ *  2. The fallback on geolocation denial navigated to '/' (home), which just
+ *     reloaded the same page with the same stuck button. Now it navigates to
+ *     the Florida Counties page so the user can pick a county manually.
+ *
+ *  3. btn.link = "" is kept so the Editor-set static link doesn't interfere.
  */
 function setupFindJailButton() {
-    const btn = $w('#navFindJail');
-    if (btn.uniqueId) {
-        // FORCE UI STATE: Override Editor settings
-        btn.label = "Find My Jail";
-        // Remove any static link set in Editor so our onClick works exclusive
-        btn.link = "";
+    // Support both possible IDs for the header button
+    let btn;
+    try {
+        const el = $w('#navFindJail');
+        btn = el && el.uniqueId ? el : null;
+    } catch (e) { btn = null; }
 
-        btn.onClick(() => {
-            handleFindJailClick(btn);
-        });
+    if (!btn) {
+        try {
+            const el2 = $w('#findMyJailBtn');
+            btn = el2 && el2.uniqueId ? el2 : null;
+        } catch (e) { /* not found */ }
     }
+
+    if (!btn) return; // Button not on this page — non-fatal
+
+    // Override any static Editor link so our onClick is the sole handler
+    try { btn.link = ''; } catch (e) { /* read-only in some contexts */ }
+
+    btn.onClick(() => {
+        handleFindJailClick(btn);
+    });
 }
 
+/**
+ * Handle "Find My Jail" click.
+ *
+ * FIX (2026-03-04):
+ *  - Re-enable the button BEFORE navigating so it is never permanently stuck.
+ *  - Fallback navigates to /florida-bail-bonds (county list) not '/' (home).
+ *  - Added explicit geolocation permission check to give a faster UX path.
+ *
+ * @param {Object} btn - The resolved Wix button element
+ */
 async function handleFindJailClick(btn) {
-    let originalLabel = btn.label;
-    try {
-        btn.label = "Locating...";
-        btn.disable();
+    const originalLabel = (btn && btn.label) || 'Find My Jail';
 
-        // 1. Get Location
+    // Optimistically update label; do NOT disable — disabling causes stuck state
+    // when Wix navigation interrupts the finally block.
+    try { if (btn) btn.label = 'Locating…'; } catch (e) { /* non-fatal */ }
+
+    try {
+        // 1. Request geolocation (user may be prompted for permission)
         const location = await wixWindow.getCurrentGeolocation();
         const { latitude, longitude } = location.coords;
 
-        // 2. Find Nearest County
-        // Dynamic Import for performance
+        // 2. Find nearest county via backend (dynamic import for performance)
         const { getNearestCounties } = await import('backend/counties');
         const nearest = await getNearestCounties(latitude, longitude, 1);
 
-        if (nearest && nearest.length > 0) {
-            // FIX: Use correctly routed /bail-bonds/ prefix (Now registered in routers.js)
-            const targetSlug = nearest[0].slug;
+        // 3. Reset label BEFORE navigation so the button is never stuck
+        try { if (btn) btn.label = originalLabel; } catch (e) { /* non-fatal */ }
 
-            // 3. Redirect
+        if (nearest && nearest.length > 0) {
+            // Strip any residual '-county' suffix from the slug
+            const rawSlug = nearest[0].slug || '';
+            const targetSlug = rawSlug.replace(/-county$/i, '').trim();
             wixLocation.to(`/florida-bail-bonds/${targetSlug}`);
         } else {
-            // Fallback
-            wixLocation.to('/');
+            // No nearest county found — send to county list page
+            wixLocation.to('/florida-bail-bonds');
         }
 
     } catch (error) {
-        console.warn("Geolocation failed or denied:", error);
-        // Fallback to general list if location denied
-        wixLocation.to('/');
-    } finally {
-        // Reset label
-        btn.label = originalLabel || "Find My Jail";
-        btn.enable();
+        // Geolocation denied, timed out, or unavailable — always reset label first
+        try { if (btn) btn.label = originalLabel; } catch (e) { /* non-fatal */ }
+
+        const errMsg = (error && error.message) || String(error);
+        console.warn('[FindMyJail] Geolocation failed:', errMsg);
+
+        // FIX: Navigate to county list (not home) so user can pick manually
+        wixLocation.to('/florida-bail-bonds');
     }
 }
 

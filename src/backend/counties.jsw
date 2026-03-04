@@ -182,9 +182,14 @@ function toRad(deg) {
 // ... keep getCountyBySlug and getCountiesByRegion ...
 
 export async function getCountyBySlug(slug) {
+    if (!slug) throw new Error('getCountyBySlug: slug is required');
+
+    // Normalise the incoming slug so callers don't need to pre-clean it
+    const normalised = slug.toLowerCase().trim().replace(/-county$/i, '');
+
     const counties = await getCounties();
-    const county = counties.find(c => c.slug === slug);
-    if (!county) throw new Error(`County not found: ${slug}`);
+    const county = counties.find(c => c.slug === normalised);
+    if (!county) throw new Error(`County not found: ${slug} (normalised: ${normalised})`);
     return county;
 }
 
@@ -200,27 +205,39 @@ async function fetchCountiesFromDatabase() {
 import allCountiesData from 'backend/data/allFloridaCounties.json';
 
 /**
- * Get static county data (optimized for performance)
+ * Get static county data (optimized for performance).
+ *
+ * HARDENED (2026-03-04):
+ *  - slug is always stripped of the '-county' suffix so the frontend never
+ *    receives a slug like 'lee-county' that would produce a double-suffix URL.
+ *  - name is always the bare county name (e.g. 'Lee') so the dropdown label
+ *    does not include the word 'County' twice.
+ *  - county_name field from JSON (PascalCase) is preferred; falls back to name.
+ *
  * @returns {Array} Array of county objects with minimal data for dropdown
  */
 function getStaticCounties() {
-    // Use the comprehensive JSON data
     const list = allCountiesData.counties || [];
 
-    // Return only essential fields for dropdown to reduce payload size
     return list.map(c => {
-        const slug = c.slug || '';
-        const slugKey = slug.replace('-county', '');
-        const coords = COUNTY_COORDINATES[slugKey] || {};
+        // Normalise slug: strip '-county' suffix, lowercase, trim
+        const rawSlug = (c.slug || '').toLowerCase().trim();
+        const slug = rawSlug.replace(/-county$/i, '');
+
+        // Normalise name: strip trailing ' County' so label reads 'Lee' not 'Lee County'
+        const rawName = c.county_name || c.name || slug;
+        const name = rawName.replace(/\s+county$/i, '').trim();
+
+        const coords = COUNTY_COORDINATES[slug] || {};
 
         return {
-            name: c.county_name || c.name,
-            slug: slug.replace('-county', ''),
+            name,
+            slug,
             region: c.region || 'unknown',
             lat: coords.lat,
             lon: coords.lon
         };
-    });
+    }).filter(c => c.slug); // Drop any entries with empty slugs
 }
 
 /**

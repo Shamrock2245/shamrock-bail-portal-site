@@ -106,108 +106,179 @@ function setupCTAButtons() {
 
 /**
  * Load county dropdown data (deferred)
+ *
+ * FIX (2026-03-04): Resolve the canonical dropdown element ID once and reuse
+ * it throughout this function so that onChange fires on the same element that
+ * has options set. Previously the ID resolution was inconsistent — options were
+ * written to #countySelector but onChange was wired to #countyDropdown (or
+ * vice-versa), so the change event never fired and the page appeared "stuck".
  */
 async function loadCountyDropdown() {
     if (countiesLoaded) return;
 
+    // ── Resolve the ONE canonical dropdown element ─────────────────────────
+    // Check #countySelector first (confirmed ID in Wix Editor screenshot).
+    // Fall back to #countyDropdown for legacy support.
+    // We resolve ONCE here and reuse the same reference everywhere below.
+    let dropdown;
     try {
-        // Confirmed ID from screenshot is #countySelector
-        const dropdown = $w('#countySelector').uniqueId ? $w('#countySelector') : $w('#countyDropdown');
-        if (dropdown.uniqueId) {
-            dropdown.placeholder = 'Loading counties...';
-        }
+        const el = $w('#countySelector');
+        dropdown = el && el.uniqueId ? el : $w('#countyDropdown');
+    } catch (e) {
+        try { dropdown = $w('#countyDropdown'); } catch (e2) { /* no dropdown found */ }
+    }
 
-        // Dynamic Imports
+    if (!dropdown || !dropdown.uniqueId) {
+        console.warn('[County Dropdown] Neither #countySelector nor #countyDropdown found on page.');
+        return;
+    }
+
+    try {
+        dropdown.placeholder = 'Loading counties...';
+
+        // Dynamic import for performance
         const { getCounties } = await import('backend/counties');
 
-        // Check cache first to avoid backend roundtrip
+        // Check session cache first to avoid backend roundtrip
         const cachedCounties = session.getItem('counties');
         if (cachedCounties) {
-            countiesData = JSON.parse(cachedCounties);
-        } else {
-            // Fetch from backend (now optimized in backend/counties.jsw)
-            const response = await getCounties();
-
-            if (Array.isArray(response)) {
-                countiesData = response;
-                // Cache for 1 hour
-                session.setItem('counties', JSON.stringify(countiesData), {
-                    ttl: 3600
-                });
-            } else {
-                console.warn("Invalid counties data format", response);
-                countiesData = []; // Fallback
+            try {
+                countiesData = JSON.parse(cachedCounties);
+            } catch (parseErr) {
+                console.warn('[County Dropdown] Cache parse failed, re-fetching.', parseErr);
+                countiesData = null;
             }
         }
 
-        // Populate dropdown
-        if (dropdown.uniqueId && Array.isArray(countiesData)) {
-            dropdown.options = countiesData.map(county => {
-                // Ensure we use the slug field (already stripped of -county suffix in backend)
-                const slug = county.slug || '';
-                const displayName = county.name || county.county_name || slug;
-
-                return {
-                    label: displayName,
-                    value: slug  // CRITICAL: Use slug for routing, not name
-                };
-            });
-            dropdown.placeholder = 'Select County Name';
-            dropdown.onChange(() => handleCountySelection());
+        if (!countiesData) {
+            // Fetch from backend
+            const response = await getCounties();
+            if (Array.isArray(response) && response.length > 0) {
+                countiesData = response;
+                // Cache for session duration (TTL param is ignored by wix-storage session,
+                // but kept for forward-compatibility)
+                try { session.setItem('counties', JSON.stringify(countiesData)); } catch (e) { /* non-fatal */ }
+            } else {
+                console.warn('[County Dropdown] Invalid counties response:', response);
+                countiesData = getFallbackCounties();
+            }
         }
 
-        // Setup Get Started button (Support both IDs)
-        const getStartedBtn = $w('#getStartedButton').uniqueId ? $w('#getStartedButton') : $w('#getStartedBtn');
-        if (getStartedBtn.uniqueId) {
-            getStartedBtn.onClick(() => handleGetStarted());
+        // ── Populate dropdown options ───────────────────────────────────────
+        if (Array.isArray(countiesData) && countiesData.length > 0) {
+            dropdown.options = countiesData.map(county => {
+                const slug = (county.slug || '').replace(/-county$/i, '').trim();
+                const displayName = county.name || county.county_name || slug;
+                return {
+                    label: displayName,
+                    value: slug  // CRITICAL: slug is used for URL routing
+                };
+            });
+            dropdown.placeholder = 'Select a County';
+
+            // ── Wire onChange on the SAME element that has options ──────────
+            dropdown.onChange(() => handleCountySelection(dropdown));
+        } else {
+            dropdown.placeholder = 'Counties unavailable — call us';
+        }
+
+        // Setup Get Started button (support both IDs)
+        let getStartedBtn;
+        try {
+            const btn = $w('#getStartedButton');
+            getStartedBtn = btn && btn.uniqueId ? btn : $w('#getStartedBtn');
+        } catch (e) {
+            try { getStartedBtn = $w('#getStartedBtn'); } catch (e2) { /* not found */ }
+        }
+        if (getStartedBtn && getStartedBtn.uniqueId) {
+            getStartedBtn.onClick(() => handleGetStarted(dropdown));
         }
 
         countiesLoaded = true;
 
     } catch (error) {
-        console.error('Error loading counties:', error);
-        // Try both potential IDs for error handling
-        const dropdown = $w('#countySelector').uniqueId ? $w('#countySelector') : $w('#countyDropdown');
-        if (dropdown.uniqueId) {
-            dropdown.placeholder = 'Error loading counties';
-        }
+        console.error('[County Dropdown] Load error:', error);
+        try { dropdown.placeholder = 'Error loading — call (239) 332-2245'; } catch (e) { /* non-fatal */ }
     }
 }
 
 /**
- * Handle county selection
+ * Inline fallback county list — used only when backend call fails entirely.
+ * Keeps the dropdown functional even if the CMS or backend is unreachable.
  */
-function handleCountySelection() {
-    // Support both ID conventions
-    const dropdown = $w('#countyDropdown').uniqueId ? $w('#countyDropdown') : $w('#countySelector');
-    const selectedCounty = dropdown.value;
+function getFallbackCounties() {
+    return [
+        { name: 'Lee', slug: 'lee' },
+        { name: 'Collier', slug: 'collier' },
+        { name: 'Charlotte', slug: 'charlotte' },
+        { name: 'Sarasota', slug: 'sarasota' },
+        { name: 'Miami-Dade', slug: 'miami-dade' },
+        { name: 'Broward', slug: 'broward' },
+        { name: 'Palm Beach', slug: 'palm-beach' },
+        { name: 'Hillsborough', slug: 'hillsborough' },
+        { name: 'Orange', slug: 'orange' },
+        { name: 'Pinellas', slug: 'pinellas' }
+    ];
+}
+
+/**
+ * Handle county selection.
+ *
+ * FIX (2026-03-04): Accept the resolved dropdown element as a parameter
+ * instead of re-resolving the ID (which was the source of the stuck bug —
+ * the re-resolution sometimes picked the wrong element and read an empty value).
+ *
+ * @param {Object} [dropdownEl] - The resolved Wix dropdown element
+ */
+function handleCountySelection(dropdownEl) {
+    // Use passed element; fall back to ID resolution only as last resort
+    let dropdown = dropdownEl;
+    if (!dropdown || !dropdown.uniqueId) {
+        try {
+            const el = $w('#countySelector');
+            dropdown = el && el.uniqueId ? el : $w('#countyDropdown');
+        } catch (e) {
+            try { dropdown = $w('#countyDropdown'); } catch (e2) { return; }
+        }
+    }
+
+    const selectedCounty = dropdown ? dropdown.value : '';
 
     if (selectedCounty) {
-        const getStartedBtn = $w('#getStartedButton').uniqueId ? $w('#getStartedButton') : $w('#getStartedBtn');
-        if (getStartedBtn.uniqueId) {
-            getStartedBtn.enable();
-        }
-
         trackEvent('county_selected', { county: selectedCounty });
-
-        // Auto navigate
+        // Auto-navigate immediately on selection — no extra button click needed
         navigateToCounty(selectedCounty);
     }
 }
 
 /**
- * Handle Get Started button click
+ * Handle Get Started button click.
+ *
+ * FIX (2026-03-04): Accept the resolved dropdown element as a parameter.
+ *
+ * @param {Object} [dropdownEl] - The resolved Wix dropdown element
  */
-function handleGetStarted() {
-    const dropdown = $w('#countySelector').uniqueId ? $w('#countySelector') : $w('#countyDropdown');
-    const selectedCounty = dropdown.value;
+function handleGetStarted(dropdownEl) {
+    let dropdown = dropdownEl;
+    if (!dropdown || !dropdown.uniqueId) {
+        try {
+            const el = $w('#countySelector');
+            dropdown = el && el.uniqueId ? el : $w('#countyDropdown');
+        } catch (e) {
+            try { dropdown = $w('#countyDropdown'); } catch (e2) { return; }
+        }
+    }
+
+    const selectedCounty = dropdown ? dropdown.value : '';
 
     if (!selectedCounty) {
-        const errorText = $w('#countyError');
-        if (errorText.uniqueId) {
-            errorText.show();
-            errorText.text = 'Please select a county';
-        }
+        try {
+            const errorText = $w('#countyError');
+            if (errorText && errorText.uniqueId) {
+                errorText.text = 'Please select a county';
+                errorText.show();
+            }
+        } catch (e) { /* element may not exist */ }
         return;
     }
 
@@ -215,17 +286,35 @@ function handleGetStarted() {
     navigateToCounty(selectedCounty);
 }
 
+/**
+ * Navigate to the selected county page.
+ *
+ * FIX (2026-03-04): Added guard against empty/null slug so the page can
+ * never get stuck in a navigation loop. Also strips the '-county' suffix
+ * that the JSON data sometimes includes, and normalises spaces to hyphens.
+ *
+ * @param {string} selectedCounty - The slug value from the dropdown
+ */
 async function navigateToCounty(selectedCounty) {
-    // Debug: Log the selected value to ensure it's the slug
-    console.log('Navigating to county:', selectedCounty);
+    if (!selectedCounty) {
+        console.warn('[County Nav] navigateToCounty called with empty value — aborting.');
+        return;
+    }
 
-    // Ensure we're using the slug (strip any spaces or 'county' suffix just in case)
+    // Normalise: lowercase, trim, strip trailing '-county' or ' county', spaces → hyphens
     const cleanSlug = String(selectedCounty)
         .toLowerCase()
         .trim()
-        .replace(/\s+county$/i, '')  // Remove ' county' or ' County' suffix
-        .replace(/\s+/g, '-');  // Replace spaces with hyphens
-    console.log('Clean slug:', cleanSlug);
+        .replace(/-county$/i, '')      // strip -county suffix (e.g. "lee-county" → "lee")
+        .replace(/\s+county$/i, '')    // strip " county" suffix (e.g. "lee county" → "lee")
+        .replace(/\s+/g, '-');         // spaces to hyphens
+
+    if (!cleanSlug) {
+        console.warn('[County Nav] Slug normalised to empty string — aborting.');
+        return;
+    }
+
+    console.log(`[County Nav] Navigating to /florida-bail-bonds/${cleanSlug}`);
     wixLocation.to(`/florida-bail-bonds/${cleanSlug}`);
 }
 
