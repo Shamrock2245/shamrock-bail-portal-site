@@ -3,7 +3,7 @@
 This project is the official **Shamrock Bail Bonds Portal**. It runs on **Wix Velo** (Frontend) and connects to a **Google Apps Script (GAS)** backend for secure workflows (AI Agents, PDFs, Signatures, Arrest Scrapers).
 
 **Current Status:** Production (Active) 🟢  
-**GAS Deployment:** @367 | **Last Updated:** Feb 28, 2026
+**GAS Deployment:** @367+ | **Last Updated:** Mar 3, 2026
 
 ---
 
@@ -26,9 +26,11 @@ This project is the official **Shamrock Bail Bonds Portal**. It runs on **Wix Ve
 *   **Signatures:** SignNow API (Embedded Signing via Telegram Deep Link).
 *   **Deployment:** `clasp` (GAS) + GitHub Integration (Wix).
 *   **Notifications:** Slack (Internal) + Twilio (External SMS/WhatsApp).
+*   **Voice AI:** ElevenLabs Conversational AI ("Shannon" — After-Hours Intake Agent).
 *   **Messaging:** Telegram Bot API (Conversational Intake, Inline Quotes, Mini Apps).
 *   **OCR:** Google Cloud Vision API (FL Driver License Extraction).
 *   **Mini Apps:** Netlify-hosted Telegram WebApps (Intake, Documents, Payments, Check-in, Status).
+*   **Edge Functions:** Netlify Edge (ElevenLabs init webhook — near-zero cold start).
 
 ---
 
@@ -39,6 +41,7 @@ The system employs specialized AI agents (powered by OpenAI) to automate complex
 *   **"The Analyst" (`AI_FlightRisk.js`)**: Risk Assessment & Underwriting. Evaluates flight risk based on charges, residency, and history. Returns 0-100 Score + Rationale.
 *   **"The Investigator" (`AI_Investigator.js`)**: Deep Vetting & Background Checks. Analyzes comprehensive background reports (TLO, IRB). Cross-references Defendant vs. Indemnitor data.
 *   **"The Concierge" (`ai-service.jsw`)**: Interactive AI chat assistant. Answers bail bond questions, looks up county/jail info, and provides case status (authenticated users only).
+*   **"Shannon" (ElevenLabs Agent)**: After-hours voice intake specialist. Collects caller info, offers two paths (bondsman callback or instant digital paperwork), sends signing links via SMS.
 
 ---
 

@@ -32,6 +32,18 @@ Adopt one of these personas based on the user's request:
     1.  **Sacred Schemas:** The `IntakeQueue` schema is legally binding. Do not rename fields.
     2.  **PII:** Redact emails/phones in logs.
 
+### 📞 `@shannon` (After-Hours Intake — ElevenLabs Voice Agent)
+*   **Focus:** Inbound phone calls after hours. Collects caller info, triages to two paths.
+*   **Channel:** Twilio → ElevenLabs Conversational AI (voice).
+*   **Two Paths:**
+    *   **Path A (Notify Bondsman):** Collects basics → logs to ShannonIntake sheet → Slack alert to #intake-alerts.
+    *   **Path B (Send Paperwork):** Collects full indent info + email → triggers SignNow packet → texts signing link via Twilio SMS.
+*   **Rules:**
+    1.  **Never quote prices.** Say "Our bondsman will explain all options."
+    2.  **Caller phone comes from Twilio** via `{{caller_phone}}` dynamic variable — never ask for it.
+    3.  **Consent required** before sending paperwork (Path B).
+    4.  **Files:** `elevenlabs-init.js` (Edge Function), `send-paperwork.mjs`, `notify-bondsman.mjs` (Netlify), `ElevenLabs_WebhookHandler.js` + `SignNow_SendPaperwork.js` (GAS).
+
 ## 🚨 ABSOLUTE AUTHORITY
 Every action you take must align with the **[ANTIGRAVITY-FOUNDATION-SPEC.md](ANTIGRAVITY-FOUNDATION-SPEC.md)**.
 That file overrides everything else in this repo. Read it first.

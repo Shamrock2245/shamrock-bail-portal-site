@@ -86,7 +86,19 @@
 
 ---
 
-## 🔮 Phase 7: Growth & Scale (Upcoming)
+## 🔮 Phase 7: Growth & Scale (In Progress)
+- [x] **ElevenLabs After-Hours Agent ("Shannon")**
+  - [x] Inbound Twilio → ElevenLabs voice agent integration
+  - [x] Init webhook as Netlify Edge Function (near-zero cold start)
+  - [x] Two-path conversation flow: Path A (notify bondsman) / Path B (send paperwork)
+  - [x] SignNow signing link creation + SMS delivery via Twilio
+  - [x] ShannonCallLog Google Sheet (full transcript recording)
+  - [x] Knowledge base: FAQs, county jail guide, paperwork descriptions
+- [x] **SEO & Indexing**
+  - [x] All county pages indexed in Google
+  - [x] Structured data (JSON-LD) optimized
+  - [x] OG/Twitter meta tags + geo tags per county
+  - [x] AI crawler friendly `robots.txt`
 - [ ] **"The Scout" Agent (Expansion)**
   - [ ] Configure `AI_BookingParser.js` for 5 new county URLs
   - [ ] Set up daily cron triggers in GAS
@@ -96,11 +108,14 @@
 - [ ] **Bail School Landing Page**
   - [ ] Design high-converting `/bail-school` registration page
   - [ ] Video integration + auto-issue PDF certificate
-- [ ] **ElevenLabs Speaking Agent**
-  - [ ] After-hours voice agent for inbound inquiries
 - [ ] **Social Media Automation**
   - [ ] Pexels integration for post images
   - [ ] Scheduled social publishing via `SocialPublisher.js`
-- [ ] **SEO & Indexing**
-  - [ ] All county pages indexed in Google
-  - [ ] Structured data (JSON-LD) optimized
+
+---
+
+## 🔮 Phase 7.5: Shannon Enhancements (Upcoming)
+- [ ] **Telegram signing link delivery** during Shannon calls
+- [ ] **Shannon → "The Closer" handoff** for abandoned intake follow-up
+- [ ] **Multi-language support** (Spanish priority — Collier/Lee demographics)
+- [ ] **Shannon call analytics dashboard** in GAS
