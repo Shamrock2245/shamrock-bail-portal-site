@@ -115,13 +115,69 @@ function handlePostCallTranscription(payload) {
         );
     }
 
-    // Save to Google Drive (Archive)
+    // ── Save to Google Sheets: ShannonCallLog tab ─────────────────────────────
+    // PRIMARY human-readable log. Find it at:
+    //   Google Sheets → (SPREADSHEET_ID) → tab "ShannonCallLog"
+    // Columns: Timestamp | Call ID | Caller Phone | Matched Case ID | Duration (s)
+    //          | Outcome | AI Summary | Paperwork Sent | Full Transcript
+    try {
+        const ssId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') ||
+                     PropertiesService.getScriptProperties().getProperty('INTAKE_SHEET_ID');
+        if (ssId) {
+            const ss = SpreadsheetApp.openById(ssId);
+            let logSheet = ss.getSheetByName('ShannonCallLog');
+            if (!logSheet) {
+                logSheet = ss.insertSheet('ShannonCallLog');
+                logSheet.appendRow([
+                    'Timestamp', 'Call ID', 'Caller Phone', 'Matched Case ID',
+                    'Duration (s)', 'Outcome', 'AI Summary', 'Paperwork Sent', 'Full Transcript'
+                ]);
+                logSheet.getRange(1, 1, 1, 9)
+                    .setFontWeight('bold')
+                    .setBackground('#1a472a')
+                    .setFontColor('#ffffff');
+                logSheet.setFrozenRows(1);
+                logSheet.setColumnWidth(9, 600); // wide column for transcript text
+            }
+            const durationSecs = payload.call_duration_secs || payload.duration_seconds || '';
+            const outcome = analysis
+                ? (analysis.call_successful === true ? 'Success'
+                    : analysis.call_successful === false ? 'Unsuccessful'
+                    : String(analysis.call_successful || 'Unknown'))
+                : 'Unknown';
+            const summary = analysis ? (analysis.call_summary || '') : '';
+            // Detect if paperwork was dispatched during this call
+            let paperworkSent = 'No';
+            if (payload.tool_calls && Array.isArray(payload.tool_calls)) {
+                paperworkSent = payload.tool_calls.some(function (t) {
+                    return t.tool_name === 'send_paperwork';
+                }) ? 'Yes' : 'No';
+            }
+            logSheet.appendRow([
+                new Date(),
+                payload.call_id || '',
+                callerPhone || '',
+                matchedCaseId || '',
+                durationSecs,
+                outcome,
+                summary,
+                paperworkSent,
+                fullText
+            ]);
+            Logger.log('\u2705 Shannon call logged to ShannonCallLog | Call: ' + payload.call_id);
+        }
+    } catch (sheetErr) {
+        Logger.log('\u26a0\ufe0f ShannonCallLog sheet write failed (non-fatal): ' + sheetErr.message);
+    }
+
+    // ── Save to Google Drive (full-text backup) ────────────────────────────────
     const folderId = PropertiesService.getScriptProperties().getProperty('GOOGLE_DRIVE_FOLDER_ID');
     if (folderId) {
         try {
             const folder = DriveApp.getFolderById(folderId);
             const fileName = 'AI_Call_' + payload.call_id + (matchedCaseId ? '_' + matchedCaseId : '') + '.txt';
             folder.createFile(fileName, fullText);
+            Logger.log('\u2705 Shannon call archived to Drive: ' + fileName);
         } catch (driveErr) {
             Logger.log('\u26a0\ufe0f Drive archive failed (non-fatal): ' + driveErr.message);
         }
