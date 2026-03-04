@@ -250,16 +250,22 @@ function handleShannonSendPaperwork(data) {
         // 7. RETURN — Friendly message for Shannon to read back
         // -----------------------------------------------------------------
         if (inviteResult.success) {
+            // --- Get a signing link for SMS delivery ---
+            let signingLink = null;
+            try {
+                signingLink = _shannon_createSigningLink(config, entityId, entityType);
+            } catch (linkErr) {
+                SN_log('Shannon_SigningLinkErr', linkErr.toString());
+            }
+
             return {
                 success: true,
                 message: `I've sent your complete bail bond paperwork — all ${uploadedDocs.length} documents — to ${data.caller_email} for electronic signature. ` +
-                    `This includes the FAQ sheets, indemnity agreement, defendant application, promissory note, disclosure form, ` +
-                    `surety terms, master waiver, SSA release, collateral receipt, and payment plan. ` +
                     `Please check your email, review each document, and sign where indicated. ` +
-                    `Any fields we didn't fill in today can be completed directly in the signing interface. ` +
-                    `By signing, you consent to the collection of your personal information and location data for bail bond underwriting and compliance.`,
+                    `Any fields we didn't fill in today can be completed directly in the signing interface.`,
                 documentsCount: uploadedDocs.length,
-                entityId: entityId
+                entityId: entityId,
+                signing_link: signingLink
             };
         } else {
             return {
@@ -549,6 +555,77 @@ function _shannon_logToSheet(data, entityId, docCount, success) {
 /**
  * Send Slack notification via whichever Slack helper is available.
  */
+
+/**
+ * Create a one-click signing link for the caller.
+ * Uses SignNow's document invite/link API.
+ * Returns the signing URL string, or null on failure.
+ */
+function _shannon_createSigningLink(config, entityId, entityType) {
+    try {
+        if (entityType === 'group') {
+            // For document groups, we use embedded signing link
+            const url = `${config.API_BASE}/v2/document-groups/${entityId}/embedded-invites`;
+            const payload = {
+                invites: [{
+                    order: 1,
+                    signers: [{
+                        email: '',
+                        role_id: '',
+                        auth_method: 'none',
+                        redirect_uri: 'https://shamrockbailbonds.biz/thank-you'
+                    }]
+                }]
+            };
+            // Try create_signing_link endpoint instead
+            const linkUrl = `${config.API_BASE}/link`;
+            const linkPayload = { document_id: entityId };
+            const response = fetchWithRetry(linkUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                payload: JSON.stringify(linkPayload),
+                muteHttpExceptions: true
+            });
+            const code = response.getResponseCode();
+            if (code >= 200 && code < 300) {
+                const json = JSON.parse(response.getContentText());
+                SN_log('Shannon_SigningLink', { entityId, link: json.url || json.url_no_signup });
+                return json.url || json.url_no_signup || null;
+            }
+            SN_log('Shannon_SigningLinkFail_Group', { status: code, body: response.getContentText().substring(0, 200) });
+            // Fall back — try with first doc in the group
+            return null;
+        }
+
+        // For single documents — use the simpler signing link API
+        const url = `${config.API_BASE}/link`;
+        const payload = { document_id: entityId };
+        const response = fetchWithRetry(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            payload: JSON.stringify(payload),
+            muteHttpExceptions: true
+        });
+        const code = response.getResponseCode();
+        if (code >= 200 && code < 300) {
+            const json = JSON.parse(response.getContentText());
+            SN_log('Shannon_SigningLink', { entityId, link: json.url || json.url_no_signup });
+            return json.url || json.url_no_signup || null;
+        }
+        SN_log('Shannon_SigningLinkFail', { status: code, body: response.getContentText().substring(0, 200) });
+        return null;
+    } catch (e) {
+        SN_log('Shannon_SigningLinkErr', e.toString());
+        return null;
+    }
+}
+
 function _shannon_notifySlack(message) {
     try {
         if (typeof sendSlackNotification === 'function') {
