@@ -566,3 +566,91 @@ function _shannon_notifySlack(message) {
         SN_log('Shannon_SlackErr', e.toString());
     }
 }
+
+
+// ============================================================================
+// PATH A: NOTIFY BONDSMAN — Caller wants a bondsman to call them back
+// ============================================================================
+
+/**
+ * Handles the Shannon "notify bondsman" tool call (Path A).
+ * Called from Code.js doGet when source === 'notify_bondsman'
+ *
+ * Shannon asks: "Would you like to get our paperwork started now, or would
+ * you prefer to pass your info to a licensed bondsman who'll call you right back?"
+ * If the caller picks "just have someone call me back" → this runs.
+ *
+ * @param {object} data - Parsed data from ElevenLabs tool call
+ * @param {string} data.caller_name - Full name of the caller
+ * @param {string} data.caller_phone - Caller's phone number
+ * @param {string} data.defendant_name - Full name of the defendant
+ * @param {string} data.county - County where defendant is held
+ * @param {string} [data.notes] - Any extra notes Shannon captured
+ * @returns {object} Result for ElevenLabs to read back to caller
+ */
+function handleShannonNotifyBondsman(data) {
+    try {
+        SN_log('Shannon_PathA_Start', data);
+
+        if (!data.caller_name || !data.caller_phone) {
+            return {
+                success: false,
+                message: "I need your name and phone number so our bondsman can call you back."
+            };
+        }
+
+        // --- 1. Log to Spreadsheet ---
+        try {
+            const ss = SpreadsheetApp.getActiveSpreadsheet();
+            let sheet = ss.getSheetByName('ShannonIntake');
+            if (!sheet) {
+                sheet = ss.insertSheet('ShannonIntake');
+                sheet.appendRow([
+                    'Timestamp', 'Caller Name', 'Caller Phone', 'Defendant Name',
+                    'County', 'Notes', 'Path', 'Status'
+                ]);
+                sheet.getRange(1, 1, 1, 8).setFontWeight('bold');
+            }
+            sheet.appendRow([
+                new Date(),
+                data.caller_name || '',
+                data.caller_phone || '',
+                data.defendant_name || '',
+                data.county || '',
+                data.notes || '',
+                'A — Callback Requested',
+                'Pending'
+            ]);
+        } catch (e) {
+            SN_log('Shannon_PathA_SheetErr', e.toString());
+        }
+
+        // --- 2. Slack Alert ---
+        const slackMsg =
+            `🔔 *Shannon — Bondsman Callback Requested*\n` +
+            `📞 *Caller:* ${data.caller_name} — ${data.caller_phone}\n` +
+            `👤 *Defendant:* ${data.defendant_name || 'Not provided'}\n` +
+            `📍 *County:* ${data.county || 'Not specified'}\n` +
+            (data.notes ? `📝 *Notes:* ${data.notes}\n` : '') +
+            `⏰ *Time:* ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}`;
+
+        _shannon_notifySlack(slackMsg);
+
+        // --- 3. Return message for Shannon to read ---
+        return {
+            success: true,
+            message: `I've passed your information to our bondsman team. ` +
+                `Someone will be calling you back at ${data.caller_phone} very shortly — ` +
+                `usually within a few minutes. They'll have all the details we discussed. ` +
+                `Is there anything else I can help you with while you wait?`
+        };
+
+    } catch (error) {
+        SN_log('Shannon_PathA_Error', error.toString());
+        return {
+            success: false,
+            message: "I've noted your information. A bondsman will be calling you back very shortly."
+        };
+    }
+}
+

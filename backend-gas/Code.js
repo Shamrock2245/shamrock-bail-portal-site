@@ -178,6 +178,25 @@ function doGet(e) {
     }
   }
 
+  // Shannon Notify Bondsman Tool (Path A) — log intake + Slack alert
+  if (e.parameter && e.parameter.source === 'notify_bondsman' && e.parameter.data) {
+    try {
+      const intakeData = JSON.parse(decodeURIComponent(e.parameter.data));
+      Logger.log('📞 Shannon notify-bondsman request: ' + JSON.stringify(intakeData));
+      if (typeof handleShannonNotifyBondsman === 'function') {
+        const result = handleShannonNotifyBondsman(intakeData);
+        return ContentService.createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Handler not found' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (parseErr) {
+      Logger.log('❌ Notify-bondsman parse error: ' + parseErr.message);
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Parse error' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   // 1. Check for JSON mode explicitly
   if (e.parameter.format === 'json') {
     if (e.parameter.mode === 'scrape') {
