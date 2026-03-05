@@ -345,7 +345,7 @@ function saveMem0Memory_(phone, facts) {
     if (!normalizedPhone || normalizedPhone.length < 7) return;
 
     // Build a natural-language memory string Mem0 can index
-    var memoryText = 'Caller called Shamrock Bail Bonds on ' + facts.call_date + '. ';
+    var memoryText = 'Caller called Shamrock Bail Bonds on ' + facts.call_date + ' and spoke with AI Agent Shannon. ';
     if (facts.defendant_name) memoryText += 'Regarding: ' + facts.defendant_name + '. ';
     if (facts.outcome) memoryText += 'Outcome: ' + facts.outcome + '. ';
     if (facts.call_summary) memoryText += 'Summary: ' + facts.call_summary.slice(0, 400) + '. ';
@@ -363,7 +363,13 @@ function saveMem0Memory_(phone, facts) {
                     { role: 'user', content: 'I need help with a bail bond.' },
                     { role: 'assistant', content: memoryText }
                 ],
-                user_id: normalizedPhone
+                user_id: normalizedPhone,
+                metadata: {
+                    category: 'call_history',
+                    source: 'webhook',
+                    agent_involved: 'shannon'
+                },
+                enable_graph: true
             }),
             muteHttpExceptions: true
         });
