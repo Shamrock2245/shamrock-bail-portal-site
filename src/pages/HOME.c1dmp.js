@@ -23,10 +23,12 @@ $w.onReady(function () {
     const isMobile = wixWindow.formFactor === 'Mobile';
 
     // Setup SEO meta tags (Homepage-specific)
-    setupHomepageMeta();
+    // HARDENED: wrapped in try/catch -- a SEO API failure must NOT crash onReady
+    // or the county dropdown and all other handlers will never be registered.
+    try { setupHomepageMeta(); } catch (e) { console.warn('[SEO] setupHomepageMeta failed:', e); }
 
     // Setup SEO structured data
-    setupOrganizationSchema();
+    try { setupOrganizationSchema(); } catch (e) { console.warn('[SEO] setupOrganizationSchema failed:', e); }
 
     // Critical: Setup above-the-fold elements only
     setupHeroSection();

@@ -37,7 +37,7 @@ $w.onReady(function () {
     if (wixWindow.formFactor === 'Mobile') {
         // Mobile: Prioritize interaction over heavy visuals
         setupMobileMenu();
-        initMobileOptimizations(); // Now strictly for mobile
+        try { initMobileOptimizations(); } catch (e) { /* non-fatal */ } // Now strictly for mobile
 
         // Defer non-criticals significantly on mobile
         deferNonCriticalOperations(true);
@@ -52,13 +52,15 @@ $w.onReady(function () {
  */
 function initCriticalUI() {
     // GLOBAL SEO: Canonical URLs, schemas, OG tags on ALL public pages
-    initGlobalSEO();
+    // HARDENED: wrapped in try/catch -- a SEO API failure must NOT crash initCriticalUI
+    // or setupFindJailButton() and all other handlers will never be registered.
+    try { initGlobalSEO(); } catch (e) { console.warn('[SEO] initGlobalSEO failed:', e); }
 
     // Setup sticky header
-    setupStickyHeader();
+    try { setupStickyHeader(); } catch (e) { /* non-fatal */ }
 
     // UI Validator (Automated check for Mobile CTA)
-    validateStickyFooter('#stickyMobileCTA');
+    try { validateStickyFooter('#stickyMobileCTA'); } catch (e) { /* non-fatal */ }
 
     // Setup emergency call button (critical for bail bonds)
     setupEmergencyCallButton();
