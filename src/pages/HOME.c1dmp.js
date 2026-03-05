@@ -1,27 +1,110 @@
 /**
  * HOME.c1dmp.js - Shamrock Bail Bonds Home Page
  *
- * CRITICAL FIX (2026-03-05):
- * Dynamic import() calls (await import('backend/...')) generate a webpack
- * chunk registration: this.webpackChunkc1dmp = this.webpackChunkc1dmp || []
- * In Wix's worker context, 'this' is undefined in strict mode, so that line
- * throws TypeError and the ENTIRE module fails to load -- meaning NO event
- * handlers (county dropdown, Get Started, Find My Jail) ever get registered.
+ * PERMANENT FIX (2026-03-05):
+ * ============================================================
+ * In Wix Velo, ALL imports from 'backend/...' modules are compiled
+ * by the Wix bundler into dynamic webpack chunk loads (a.e(chunkId))
+ * regardless of whether you write `import` or `import()` in source.
  *
- * Fix: Replace ALL dynamic import() calls with static imports at the top of
- * the file. Static imports compile to $ns[] lookups which work correctly.
+ * The dynamic chunk loader calls:
+ *   a.l(url, callback) -> document.createElement("script")
+ * document is NOT available in Wix's worker context, so the chunk
+ * load silently fails and any awaited backend call never resolves.
+ *
+ * Additionally, the webpack chunk registration:
+ *   n = this.webpackChunkc1dmp = this.webpackChunkc1dmp || []
+ * crashes with TypeError in Wix's strict-mode worker because `this`
+ * is undefined at the top level of an IIFE.
+ *
+ * SOLUTION: Remove ALL backend imports. Use only Wix platform modules
+ * (wix-location, wix-window, wix-storage, wix-seo) and inline data.
+ * County data is hardcoded below -- no backend call needed.
+ * ============================================================
  */
 
 import { session } from 'wix-storage';
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import wixSeo from 'wix-seo';
-import { getCounties } from 'backend/counties';
-import { logTelegramSectionEvent } from 'backend/gasIntegration.jsw';
 
-// State
-let countiesData = null;
-let countiesLoaded = false;
+// ---------------------------------------------------------------------------
+// Inline county data -- no backend call, no dynamic chunk, no crash
+// ---------------------------------------------------------------------------
+
+const FLORIDA_COUNTIES = [
+    { name: 'Alachua', slug: 'alachua' },
+    { name: 'Baker', slug: 'baker' },
+    { name: 'Bay', slug: 'bay' },
+    { name: 'Bradford', slug: 'bradford' },
+    { name: 'Brevard', slug: 'brevard' },
+    { name: 'Broward', slug: 'broward' },
+    { name: 'Calhoun', slug: 'calhoun' },
+    { name: 'Charlotte', slug: 'charlotte' },
+    { name: 'Citrus', slug: 'citrus' },
+    { name: 'Clay', slug: 'clay' },
+    { name: 'Collier', slug: 'collier' },
+    { name: 'Columbia', slug: 'columbia' },
+    { name: 'DeSoto', slug: 'desoto' },
+    { name: 'Dixie', slug: 'dixie' },
+    { name: 'Duval', slug: 'duval' },
+    { name: 'Escambia', slug: 'escambia' },
+    { name: 'Flagler', slug: 'flagler' },
+    { name: 'Franklin', slug: 'franklin' },
+    { name: 'Gadsden', slug: 'gadsden' },
+    { name: 'Gilchrist', slug: 'gilchrist' },
+    { name: 'Glades', slug: 'glades' },
+    { name: 'Gulf', slug: 'gulf' },
+    { name: 'Hamilton', slug: 'hamilton' },
+    { name: 'Hardee', slug: 'hardee' },
+    { name: 'Hendry', slug: 'hendry' },
+    { name: 'Hernando', slug: 'hernando' },
+    { name: 'Highlands', slug: 'highlands' },
+    { name: 'Hillsborough', slug: 'hillsborough' },
+    { name: 'Holmes', slug: 'holmes' },
+    { name: 'Indian River', slug: 'indian-river' },
+    { name: 'Jackson', slug: 'jackson' },
+    { name: 'Jefferson', slug: 'jefferson' },
+    { name: 'Lafayette', slug: 'lafayette' },
+    { name: 'Lake', slug: 'lake' },
+    { name: 'Lee', slug: 'lee' },
+    { name: 'Leon', slug: 'leon' },
+    { name: 'Levy', slug: 'levy' },
+    { name: 'Liberty', slug: 'liberty' },
+    { name: 'Madison', slug: 'madison' },
+    { name: 'Manatee', slug: 'manatee' },
+    { name: 'Marion', slug: 'marion' },
+    { name: 'Martin', slug: 'martin' },
+    { name: 'Miami-Dade', slug: 'miami-dade' },
+    { name: 'Monroe', slug: 'monroe' },
+    { name: 'Nassau', slug: 'nassau' },
+    { name: 'Okaloosa', slug: 'okaloosa' },
+    { name: 'Okeechobee', slug: 'okeechobee' },
+    { name: 'Orange', slug: 'orange' },
+    { name: 'Osceola', slug: 'osceola' },
+    { name: 'Palm Beach', slug: 'palm-beach' },
+    { name: 'Pasco', slug: 'pasco' },
+    { name: 'Pinellas', slug: 'pinellas' },
+    { name: 'Polk', slug: 'polk' },
+    { name: 'Putnam', slug: 'putnam' },
+    { name: 'Santa Rosa', slug: 'santa-rosa' },
+    { name: 'Sarasota', slug: 'sarasota' },
+    { name: 'Seminole', slug: 'seminole' },
+    { name: 'St. Johns', slug: 'st-johns' },
+    { name: 'St. Lucie', slug: 'st-lucie' },
+    { name: 'Sumter', slug: 'sumter' },
+    { name: 'Suwannee', slug: 'suwannee' },
+    { name: 'Taylor', slug: 'taylor' },
+    { name: 'Union', slug: 'union' },
+    { name: 'Volusia', slug: 'volusia' },
+    { name: 'Wakulla', slug: 'wakulla' },
+    { name: 'Walton', slug: 'walton' },
+    { name: 'Washington', slug: 'washington' }
+];
+
+// ---------------------------------------------------------------------------
+// onReady
+// ---------------------------------------------------------------------------
 
 $w.onReady(function () {
     const isMobile = wixWindow.formFactor === 'Mobile';
@@ -34,10 +117,8 @@ $w.onReady(function () {
     setupHeroSection();
     setupCTAButtons();
 
-    // Load county dropdown -- shorter delay if session-cached
-    const hasCachedCounties = session.getItem('counties');
-    const dropdownDelay = isMobile ? (hasCachedCounties ? 50 : 1000) : (hasCachedCounties ? 100 : 500);
-    setTimeout(() => { loadCountyDropdown(); }, dropdownDelay);
+    // Load county dropdown immediately -- data is inline, no async needed
+    loadCountyDropdown();
 
     // Defer testimonials
     setTimeout(() => { initTestimonials(); }, isMobile ? 4000 : 2000);
@@ -90,126 +171,64 @@ function setupCTAButtons() {
 }
 
 // ---------------------------------------------------------------------------
-// County Dropdown
+// County Dropdown -- INLINE DATA, NO BACKEND CALL
 // ---------------------------------------------------------------------------
 
 /**
- * Load county dropdown data.
- * Uses static import of getCounties (no dynamic import -- avoids webpack chunk crash).
+ * Load county dropdown using inline FLORIDA_COUNTIES data.
+ * No backend import, no dynamic chunk, no webpack crash.
  */
-async function loadCountyDropdown() {
-    if (countiesLoaded) return;
-
+function loadCountyDropdown() {
     // Resolve the one canonical dropdown element
-    let dropdown;
+    let dropdown = null;
     try {
         const el = $w('#countySelector');
-        dropdown = (el && el.uniqueId) ? el : $w('#countyDropdown');
-    } catch (e) {
-        try { dropdown = $w('#countyDropdown'); } catch (e2) { /* not found */ }
+        dropdown = (el && el.uniqueId) ? el : null;
+    } catch (e) { /* try fallback */ }
+
+    if (!dropdown) {
+        try {
+            const el = $w('#countyDropdown');
+            dropdown = (el && el.uniqueId) ? el : null;
+        } catch (e) { /* not found */ }
     }
 
-    if (!dropdown || !dropdown.uniqueId) {
-        console.warn('[County Dropdown] Neither #countySelector nor #countyDropdown found.');
+    if (!dropdown) {
+        console.warn('[County Dropdown] Neither #countySelector nor #countyDropdown found on page.');
         return;
     }
 
     try {
-        dropdown.placeholder = 'Loading counties...';
+        // Populate directly from inline data -- synchronous, no async needed
+        dropdown.options = FLORIDA_COUNTIES.map(county => ({
+            label: county.name,
+            value: county.slug
+        }));
+        dropdown.placeholder = 'Select a County';
 
-        // Check session cache first
-        const cachedRaw = session.getItem('counties');
-        if (cachedRaw) {
-            try { countiesData = JSON.parse(cachedRaw); } catch (e) { countiesData = null; }
-        }
-
-        if (!countiesData) {
-            // Static import -- no webpack chunk generated
-            const response = await getCounties();
-            if (Array.isArray(response) && response.length > 0) {
-                countiesData = response;
-                try { session.setItem('counties', JSON.stringify(countiesData)); } catch (e) { /* non-fatal */ }
-            } else {
-                console.warn('[County Dropdown] Invalid response, using fallback:', response);
-                countiesData = getFallbackCounties();
-            }
-        }
-
-        if (Array.isArray(countiesData) && countiesData.length > 0) {
-            dropdown.options = countiesData.map(county => {
-                const slug = (county.slug || '').replace(/-county$/i, '').trim();
-                const displayName = county.name || county.county_name || slug;
-                return { label: displayName, value: slug };
-            });
-            dropdown.placeholder = 'Select a County';
-            dropdown.onChange(() => { handleCountySelection(dropdown); });
-        } else {
-            dropdown.placeholder = 'Counties unavailable -- call us';
-        }
+        // Wire onChange handler
+        dropdown.onChange(() => { handleCountySelection(dropdown); });
 
         // Wire Get Started button
-        let getStartedBtn;
+        let getStartedBtn = null;
         try {
             const btn = $w('#getStartedButton');
-            getStartedBtn = (btn && btn.uniqueId) ? btn : $w('#getStartedBtn');
-        } catch (e) {
-            try { getStartedBtn = $w('#getStartedBtn'); } catch (e2) { /* not found */ }
+            getStartedBtn = (btn && btn.uniqueId) ? btn : null;
+        } catch (e) { /* try fallback */ }
+        if (!getStartedBtn) {
+            try {
+                const btn = $w('#getStartedBtn');
+                getStartedBtn = (btn && btn.uniqueId) ? btn : null;
+            } catch (e) { /* not found */ }
         }
-        if (getStartedBtn && getStartedBtn.uniqueId) {
+        if (getStartedBtn) {
             getStartedBtn.onClick(() => { handleGetStarted(dropdown); });
         }
 
-        countiesLoaded = true;
-
     } catch (error) {
-        console.error('[County Dropdown] Load error:', error);
-        try { dropdown.placeholder = 'Error loading -- call (239) 332-2245'; } catch (e) { /* non-fatal */ }
+        console.error('[County Dropdown] Setup error:', error);
+        try { dropdown.placeholder = 'Call (239) 332-2245 for help'; } catch (e) { /* non-fatal */ }
     }
-}
-
-function getFallbackCounties() {
-    return [
-        { name: 'Alachua', slug: 'alachua' },
-        { name: 'Bay', slug: 'bay' },
-        { name: 'Brevard', slug: 'brevard' },
-        { name: 'Broward', slug: 'broward' },
-        { name: 'Charlotte', slug: 'charlotte' },
-        { name: 'Citrus', slug: 'citrus' },
-        { name: 'Clay', slug: 'clay' },
-        { name: 'Collier', slug: 'collier' },
-        { name: 'Columbia', slug: 'columbia' },
-        { name: 'Duval', slug: 'duval' },
-        { name: 'Escambia', slug: 'escambia' },
-        { name: 'Flagler', slug: 'flagler' },
-        { name: 'Hernando', slug: 'hernando' },
-        { name: 'Highlands', slug: 'highlands' },
-        { name: 'Hillsborough', slug: 'hillsborough' },
-        { name: 'Indian River', slug: 'indian-river' },
-        { name: 'Lake', slug: 'lake' },
-        { name: 'Lee', slug: 'lee' },
-        { name: 'Leon', slug: 'leon' },
-        { name: 'Manatee', slug: 'manatee' },
-        { name: 'Marion', slug: 'marion' },
-        { name: 'Martin', slug: 'martin' },
-        { name: 'Miami-Dade', slug: 'miami-dade' },
-        { name: 'Nassau', slug: 'nassau' },
-        { name: 'Okaloosa', slug: 'okaloosa' },
-        { name: 'Orange', slug: 'orange' },
-        { name: 'Osceola', slug: 'osceola' },
-        { name: 'Palm Beach', slug: 'palm-beach' },
-        { name: 'Pasco', slug: 'pasco' },
-        { name: 'Pinellas', slug: 'pinellas' },
-        { name: 'Polk', slug: 'polk' },
-        { name: 'Putnam', slug: 'putnam' },
-        { name: 'Santa Rosa', slug: 'santa-rosa' },
-        { name: 'Sarasota', slug: 'sarasota' },
-        { name: 'Seminole', slug: 'seminole' },
-        { name: 'St. Johns', slug: 'st-johns' },
-        { name: 'St. Lucie', slug: 'st-lucie' },
-        { name: 'Sumter', slug: 'sumter' },
-        { name: 'Volusia', slug: 'volusia' },
-        { name: 'Walton', slug: 'walton' }
-    ];
 }
 
 // ---------------------------------------------------------------------------
@@ -221,9 +240,13 @@ function handleCountySelection(dropdownEl) {
     if (!dropdown || !dropdown.uniqueId) {
         try {
             const el = $w('#countySelector');
-            dropdown = (el && el.uniqueId) ? el : $w('#countyDropdown');
-        } catch (e) {
-            try { dropdown = $w('#countyDropdown'); } catch (e2) { return; }
+            dropdown = (el && el.uniqueId) ? el : null;
+        } catch (e) { /* try fallback */ }
+        if (!dropdown) {
+            try {
+                const el = $w('#countyDropdown');
+                dropdown = (el && el.uniqueId) ? el : null;
+            } catch (e) { return; }
         }
     }
     const selectedCounty = dropdown ? dropdown.value : '';
@@ -238,9 +261,13 @@ function handleGetStarted(dropdownEl) {
     if (!dropdown || !dropdown.uniqueId) {
         try {
             const el = $w('#countySelector');
-            dropdown = (el && el.uniqueId) ? el : $w('#countyDropdown');
-        } catch (e) {
-            try { dropdown = $w('#countyDropdown'); } catch (e2) { return; }
+            dropdown = (el && el.uniqueId) ? el : null;
+        } catch (e) { /* try fallback */ }
+        if (!dropdown) {
+            try {
+                const el = $w('#countyDropdown');
+                dropdown = (el && el.uniqueId) ? el : null;
+            } catch (e) { return; }
         }
     }
     const selectedCounty = dropdown ? dropdown.value : '';
@@ -271,7 +298,7 @@ function navigateToCounty(selectedCounty) {
         .replace(/\s+/g, '-');
 
     if (!cleanSlug) {
-        console.warn('[County Nav] Slug normalised to empty string -- aborting.');
+        console.warn('[County Nav] Slug normalization produced empty string.');
         return;
     }
     console.log('[County Nav] Navigating to /florida-bail-bonds/' + cleanSlug);
@@ -455,7 +482,7 @@ function setupOrganizationSchema() {
 }
 
 // ---------------------------------------------------------------------------
-// Telegram Hub Section -- Analytics Bridge
+// Telegram Hub Section -- Analytics Bridge (no backend call)
 // ---------------------------------------------------------------------------
 
 function initTelegramHubSection() {
@@ -494,23 +521,10 @@ function handleTelegramHubMessage(event) {
     const evtName = data.event || 'unknown';
     const label = data.label || '';
     const section = data.section || 'telegram_hub';
-    const extra = data.extra || {};
 
     trackEvent('TelegramHub_' + evtName, { label, section });
-
-    // Relay high-value events to GAS -- uses static import, no webpack chunk
-    const HIGH_VALUE = ['tg_cta_click', 'miniapp_click', 'bail_school_click', 'video_play', 'outbound_click'];
-    if (HIGH_VALUE.includes(evtName)) {
-        try {
-            logTelegramSectionEvent({
-                event: evtName,
-                label: label,
-                extra: JSON.stringify(extra),
-                pageUrl: '',
-                timestamp: new Date().toISOString()
-            }).catch(() => { /* non-fatal */ });
-        } catch (e) { /* non-fatal */ }
-    }
+    // Note: backend relay removed -- backend imports cause dynamic chunk crash.
+    // High-value events are tracked via wixWindow.trackEvent above.
 }
 
 // ---------------------------------------------------------------------------

@@ -1,54 +1,126 @@
 /**
  * masterPage.js - Shamrock Bail Bonds
  *
- * CRITICAL: No dynamic import() calls in this file.
- * Dynamic imports generate this.webpackChunkmasterPage registration which
- * crashes in Wix's strict-mode worker context (this === undefined).
- * All imports MUST be static (top-level) only.
+ * PERMANENT FIX (2026-03-05):
+ * ============================================================
+ * In Wix Velo, ALL imports from 'backend/...' and 'public/...' modules
+ * are compiled by the Wix bundler into dynamic webpack chunk loads.
+ * The chunk loader uses document.createElement("script") which is
+ * unavailable in Wix's worker context, causing silent failures.
+ *
+ * Additionally, the webpack chunk registration:
+ *   n = this.webpackChunkmasterPage = this.webpackChunkmasterPage || []
+ * crashes with TypeError in Wix's strict-mode worker because `this`
+ * is undefined inside a strict-mode IIFE.
+ *
+ * SOLUTION: Remove ALL backend and public utility imports.
+ * Use only Wix platform modules and inline all logic.
+ * Find My Jail uses inline county coordinates -- no backend call.
+ * ============================================================
  */
 
 import { session } from 'wix-storage';
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
-import { getNearestCounties } from 'backend/counties';
 
-import { validateStickyFooter } from 'public/uiValidator';
-import { initMobileOptimizations } from 'public/mobile-optimize';
-import { initGlobalSEO } from 'public/seoUtils';
+// ---------------------------------------------------------------------------
+// Inline county coordinates for Find My Jail geolocation
+// ---------------------------------------------------------------------------
 
-// Critical: Load immediately
+const COUNTY_COORDS = {
+    "alachua":      { lat: 29.67, lon: -82.35 },
+    "baker":        { lat: 30.33, lon: -82.29 },
+    "bay":          { lat: 30.26, lon: -85.63 },
+    "bradford":     { lat: 29.95, lon: -82.16 },
+    "brevard":      { lat: 28.30, lon: -80.70 },
+    "broward":      { lat: 26.15, lon: -80.45 },
+    "calhoun":      { lat: 30.41, lon: -85.20 },
+    "charlotte":    { lat: 26.90, lon: -81.92 },
+    "citrus":       { lat: 28.85, lon: -82.47 },
+    "clay":         { lat: 29.98, lon: -81.86 },
+    "collier":      { lat: 26.10, lon: -81.39 },
+    "columbia":     { lat: 30.22, lon: -82.63 },
+    "desoto":       { lat: 27.20, lon: -81.81 },
+    "dixie":        { lat: 29.60, lon: -83.15 },
+    "duval":        { lat: 30.33, lon: -81.67 },
+    "escambia":     { lat: 30.65, lon: -87.35 },
+    "flagler":      { lat: 29.47, lon: -81.30 },
+    "franklin":     { lat: 29.80, lon: -84.80 },
+    "gadsden":      { lat: 30.56, lon: -84.63 },
+    "gilchrist":    { lat: 29.72, lon: -82.78 },
+    "glades":       { lat: 26.95, lon: -81.18 },
+    "gulf":         { lat: 29.93, lon: -85.22 },
+    "hamilton":     { lat: 30.51, lon: -82.95 },
+    "hardee":       { lat: 27.49, lon: -81.79 },
+    "hendry":       { lat: 26.54, lon: -81.14 },
+    "hernando":     { lat: 28.56, lon: -82.46 },
+    "highlands":    { lat: 27.35, lon: -81.35 },
+    "hillsborough": { lat: 27.91, lon: -82.35 },
+    "holmes":       { lat: 30.86, lon: -85.81 },
+    "indian-river": { lat: 27.67, lon: -80.49 },
+    "jackson":      { lat: 30.79, lon: -85.22 },
+    "jefferson":    { lat: 30.41, lon: -83.90 },
+    "lafayette":    { lat: 30.07, lon: -83.18 },
+    "lake":         { lat: 28.75, lon: -81.72 },
+    "lee":          { lat: 26.58, lon: -81.85 },
+    "leon":         { lat: 30.46, lon: -84.27 },
+    "levy":         { lat: 29.27, lon: -82.61 },
+    "liberty":      { lat: 30.25, lon: -84.86 },
+    "madison":      { lat: 30.45, lon: -83.47 },
+    "manatee":      { lat: 27.49, lon: -82.35 },
+    "marion":       { lat: 29.19, lon: -82.13 },
+    "martin":       { lat: 27.08, lon: -80.42 },
+    "miami-dade":   { lat: 25.61, lon: -80.56 },
+    "monroe":       { lat: 25.10, lon: -81.10 },
+    "nassau":       { lat: 30.61, lon: -81.76 },
+    "okaloosa":     { lat: 30.66, lon: -86.58 },
+    "okeechobee":   { lat: 27.25, lon: -80.89 },
+    "orange":       { lat: 28.51, lon: -81.32 },
+    "osceola":      { lat: 28.06, lon: -81.15 },
+    "palm-beach":   { lat: 26.63, lon: -80.44 },
+    "pasco":        { lat: 28.30, lon: -82.46 },
+    "pinellas":     { lat: 27.90, lon: -82.74 },
+    "polk":         { lat: 27.96, lon: -81.87 },
+    "putnam":       { lat: 29.62, lon: -81.73 },
+    "santa-rosa":   { lat: 30.69, lon: -87.01 },
+    "sarasota":     { lat: 27.18, lon: -82.35 },
+    "seminole":     { lat: 28.72, lon: -81.21 },
+    "st-johns":     { lat: 29.93, lon: -81.42 },
+    "st-lucie":     { lat: 27.38, lon: -80.43 },
+    "sumter":       { lat: 28.71, lon: -82.08 },
+    "suwannee":     { lat: 30.19, lon: -83.00 },
+    "taylor":       { lat: 30.05, lon: -83.61 },
+    "union":        { lat: 30.04, lon: -82.37 },
+    "volusia":      { lat: 29.03, lon: -81.07 },
+    "wakulla":      { lat: 30.15, lon: -84.37 },
+    "walton":       { lat: 30.64, lon: -86.17 },
+    "washington":   { lat: 30.61, lon: -85.66 }
+};
+
+// ---------------------------------------------------------------------------
+// onReady
+// ---------------------------------------------------------------------------
+
 $w.onReady(function () {
     // 1. Immediate Critical Setup (Universal)
     initCriticalUI();
 
     // 2. Mobile-Specific Optimization Path
     if (wixWindow.formFactor === 'Mobile') {
-        // Mobile: Prioritize interaction over heavy visuals
         setupMobileMenu();
-        try { initMobileOptimizations(); } catch (e) { /* non-fatal */ } // Now strictly for mobile
-
-        // Defer non-criticals significantly on mobile
         deferNonCriticalOperations(true);
     } else {
-        // Desktop: Standard loading
         deferNonCriticalOperations(false);
     }
 });
 
-/**
- * Initialize critical UI elements that must be ready immediately
- */
-function initCriticalUI() {
-    // GLOBAL SEO: Canonical URLs, schemas, OG tags on ALL public pages
-    // HARDENED: wrapped in try/catch -- a SEO API failure must NOT crash initCriticalUI
-    // or setupFindJailButton() and all other handlers will never be registered.
-    try { initGlobalSEO(); } catch (e) { console.warn('[SEO] initGlobalSEO failed:', e); }
+// ---------------------------------------------------------------------------
+// Critical UI
+// ---------------------------------------------------------------------------
 
+function initCriticalUI() {
     // Setup sticky header
     try { setupStickyHeader(); } catch (e) { /* non-fatal */ }
-
-    // UI Validator (Automated check for Mobile CTA)
-    try { validateStickyFooter('#stickyMobileCTA'); } catch (e) { /* non-fatal */ }
 
     // Setup emergency call button (critical for bail bonds)
     setupEmergencyCallButton();
@@ -56,8 +128,7 @@ function initCriticalUI() {
     // Setup "Find My Jail" button
     setupFindJailButton();
 
-    // Check if user is logged in (for portal access)
-    // We do this non-blockingly
+    // Check auth status
     checkAuthStatus();
 
     // Footer Payment Link Tracking
@@ -65,126 +136,81 @@ function initCriticalUI() {
     setupMobilePaymentBtn();
 }
 
-/**
- * Setup footer payment link tracking
- */
 function setupFooterPaymentLink() {
-    const link = $w('#footerPaymentLink');
-    if (link.uniqueId) {
-        link.onClick(() => {
-            trackEvent('payment_link_clicked', {
-                location: 'footer'
+    try {
+        const link = $w('#footerPaymentLink');
+        if (link && link.uniqueId) {
+            link.onClick(() => {
+                trackEvent('payment_link_clicked', { location: 'footer' });
             });
-        });
-    }
-
+        }
+    } catch (e) { /* non-fatal */ }
 }
 
 function setupMobilePaymentBtn() {
-    const link = $w('#mobileMakePaymentBtn');
-    if (link.uniqueId) {
-        link.onClick(() => {
-            trackEvent('payment_link_clicked', {
-                location: 'mobile_menu'
+    try {
+        const link = $w('#mobileMakePaymentBtn');
+        if (link && link.uniqueId) {
+            link.onClick(() => {
+                trackEvent('payment_link_clicked', { location: 'mobile_menu' });
             });
-        });
-    }
+        }
+    } catch (e) { /* non-fatal */ }
 }
 
-/**
- * Setup mobile menu with minimal overhead
- */
 function setupMobileMenu() {
-    const mobileMenuBtn = $w('#mobileMenuButton');
-    const mobileMenu = $w('#mobileMenu');
-
-    if (mobileMenuBtn.uniqueId && mobileMenu.uniqueId) {
-        mobileMenuBtn.onClick(() => {
-            mobileMenu.expand();
-        });
-    }
+    try {
+        const mobileMenuBtn = $w('#mobileMenuButton');
+        const mobileMenu = $w('#mobileMenu');
+        if (mobileMenuBtn && mobileMenuBtn.uniqueId && mobileMenu && mobileMenu.uniqueId) {
+            mobileMenuBtn.onClick(() => { mobileMenu.expand(); });
+        }
+    } catch (e) { /* non-fatal */ }
 }
 
-/**
- * Defer non-critical operations to improve initial load time
- * @param {boolean} isMobile - Whether to use aggressive mobile deferrals
- */
-function deferNonCriticalOperations(isMobile = false) {
-    const baseDelay = isMobile ? 3000 : 1000; // Slower start on mobile to free up thread
-
-    // Defer analytics
-    setTimeout(() => {
-        initAnalytics();
-    }, baseDelay + 1000);
-
-    // Defer geolocation
-    setTimeout(() => {
-        initGeolocation();
-    }, baseDelay + 2000);
-
-    // Defer chat widget (Aggressive deferral on mobile)
-    setTimeout(() => {
-        initChatWidget();
-    }, isMobile ? 8000 : 4000);
-
-    // Defer tracking pixels
-    setTimeout(() => {
-        initTrackingPixels();
-    }, isMobile ? 8000 : 4000);
+function deferNonCriticalOperations(isMobile) {
+    const baseDelay = isMobile ? 3000 : 1000;
+    setTimeout(() => { initAnalytics(); }, baseDelay + 1000);
+    setTimeout(() => { initGeolocation(); }, baseDelay + 2000);
 }
 
-/**
- * Setup sticky header with optimized scroll logic
- */
 function setupStickyHeader() {
-    // Note: Velo does not support window.requestAnimationFrame directly.
-    // relying on Wix's native fixed header/elements is best for performance.
-    // If strict custom logic is needed, use onViewportLeave of a sentinel element.
-    const header = $w('#SITE_HEADER');
-    if (!header.uniqueId) return;
+    // Wix native fixed header handles this -- no custom logic needed
 }
 
-/**
- * Setup emergency call button (critical for bail bonds business)
- */
 function setupEmergencyCallButton() {
-    const btn = $w('#emergencyCallButton');
-    if (btn.uniqueId) {
-        btn.onClick(() => {
-            // Track call button click - fire and forget
-            trackEvent('emergency_call_clicked');
-        });
-    }
+    try {
+        const btn = $w('#emergencyCallButton');
+        if (btn && btn.uniqueId) {
+            btn.onClick(() => { trackEvent('emergency_call_clicked'); });
+        }
+    } catch (e) { /* non-fatal */ }
 }
 
+// ---------------------------------------------------------------------------
+// Find My Jail -- INLINE GEOLOCATION, NO BACKEND CALL
+// ---------------------------------------------------------------------------
+
 /**
- * Setup "Find My Jail" button (Automatic redirection to nearest county).
+ * Setup "Find My Jail" button.
  *
- * FIX (2026-03-04): The previous implementation had two bugs that caused the
- * button to get permanently stuck:
+ * Uses inline county coordinate table to find the nearest county.
+ * No backend import, no dynamic chunk, no webpack crash.
  *
- *  1. btn.disable() was called but btn.enable() was in the finally block which
- *     only ran AFTER wixLocation.to() -- but Wix navigation cancels JS execution
- *     mid-flight, so finally never ran and the button stayed disabled.
- *
- *  2. The fallback on geolocation denial navigated to '/' (home), which just
- *     reloaded the same page with the same stuck button. Now it navigates to
- *     the Florida Counties page so the user can pick a county manually.
- *
- *  3. btn.link = "" is kept so the Editor-set static link doesn't interfere.
+ * Supports both #navFindJail and #findMyJailBtn element IDs.
  */
 function setupFindJailButton() {
-    // Support both possible IDs for the header button
-    let btn;
+    let btn = null;
+
     try {
         const el = $w('#navFindJail');
-        btn = el && el.uniqueId ? el : null;
-    } catch (e) { btn = null; }
+        btn = (el && el.uniqueId) ? el : null;
+    } catch (e) { /* try fallback */ }
 
     if (!btn) {
         try {
-            const el2 = $w('#findMyJailBtn');
-            btn = el2 && el2.uniqueId ? el2 : null;
+            const el = $w('#findMyJailBtn');
+            btn = (el && el.uniqueId) ? el : null;
         } catch (e) { /* not found */ }
     }
 
@@ -193,46 +219,37 @@ function setupFindJailButton() {
     // Override any static Editor link so our onClick is the sole handler
     try { btn.link = ''; } catch (e) { /* read-only in some contexts */ }
 
-    btn.onClick(() => {
-        handleFindJailClick(btn);
-    });
+    btn.onClick(() => { handleFindJailClick(btn); });
 }
 
 /**
  * Handle "Find My Jail" click.
  *
- * FIX (2026-03-04):
- *  - Re-enable the button BEFORE navigating so it is never permanently stuck.
- *  - Fallback navigates to /florida-bail-bonds (county list) not '/' (home).
- *  - Added explicit geolocation permission check to give a faster UX path.
- *
- * @param {Object} btn - The resolved Wix button element
+ * Uses wixWindow.getCurrentGeolocation() and inline COUNTY_COORDS table
+ * to find the nearest Florida county. Falls back to /florida-bail-bonds
+ * if geolocation is denied or unavailable.
  */
 async function handleFindJailClick(btn) {
     const originalLabel = (btn && btn.label) || 'Find My Jail';
 
-    // Optimistically update label; do NOT disable -- disabling causes stuck state
+    // Update label optimistically; do NOT disable -- disabling causes stuck state
     // when Wix navigation interrupts the finally block.
     try { if (btn) btn.label = 'Locating...'; } catch (e) { /* non-fatal */ }
 
     try {
-        // 1. Request geolocation (user may be prompted for permission)
+        // 1. Request geolocation
         const location = await wixWindow.getCurrentGeolocation();
         const { latitude, longitude } = location.coords;
 
-        // 2. Find nearest county via backend (static import -- avoids webpack chunk crash)
-        const nearest = await getNearestCounties(latitude, longitude, 1);
+        // 2. Find nearest county using inline coordinate table
+        const nearestSlug = findNearestCounty(latitude, longitude);
 
         // 3. Reset label BEFORE navigation so the button is never stuck
         try { if (btn) btn.label = originalLabel; } catch (e) { /* non-fatal */ }
 
-        if (nearest && nearest.length > 0) {
-            // Strip any residual '-county' suffix from the slug
-            const rawSlug = nearest[0].slug || '';
-            const targetSlug = rawSlug.replace(/-county$/i, '').trim();
-            wixLocation.to(`/florida-bail-bonds/${targetSlug}`);
+        if (nearestSlug) {
+            wixLocation.to('/florida-bail-bonds/' + nearestSlug);
         } else {
-            // No nearest county found -- send to county list page
             wixLocation.to('/florida-bail-bonds');
         }
 
@@ -243,78 +260,100 @@ async function handleFindJailClick(btn) {
         const errMsg = (error && error.message) || String(error);
         console.warn('[FindMyJail] Geolocation failed:', errMsg);
 
-        // FIX: Navigate to county list (not home) so user can pick manually
+        // Navigate to county list so user can pick manually
         wixLocation.to('/florida-bail-bonds');
     }
 }
 
 /**
- * Check authentication status (lightweight check)
+ * Find the nearest Florida county slug using Haversine distance.
+ * Pure inline calculation -- no backend call needed.
+ *
+ * @param {number} lat - User latitude
+ * @param {number} lon - User longitude
+ * @returns {string|null} County slug or null
  */
+function findNearestCounty(lat, lon) {
+    let nearestSlug = null;
+    let minDist = Infinity;
+
+    const slugs = Object.keys(COUNTY_COORDS);
+    for (let i = 0; i < slugs.length; i++) {
+        const slug = slugs[i];
+        const coords = COUNTY_COORDS[slug];
+        const dist = haversineDistance(lat, lon, coords.lat, coords.lon);
+        if (dist < minDist) {
+            minDist = dist;
+            nearestSlug = slug;
+        }
+    }
+
+    return nearestSlug;
+}
+
+/**
+ * Haversine distance in km between two lat/lon points.
+ */
+function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ---------------------------------------------------------------------------
+// Auth check
+// ---------------------------------------------------------------------------
+
 async function checkAuthStatus() {
     try {
         const isLoggedIn = session.getItem('isLoggedIn');
         if (isLoggedIn === 'true') {
-            // Show logged-in UI
-            const loginBtn = $w('#loginButton');
-            if (loginBtn.uniqueId) loginBtn.hide();
-
-            const portalBtn = $w('#portalButton');
-            if (portalBtn.uniqueId) portalBtn.show();
+            try {
+                const loginBtn = $w('#loginButton');
+                if (loginBtn && loginBtn.uniqueId) loginBtn.hide();
+            } catch (e) { /* non-fatal */ }
+            try {
+                const portalBtn = $w('#portalButton');
+                if (portalBtn && portalBtn.uniqueId) portalBtn.show();
+            } catch (e) { /* non-fatal */ }
         }
     } catch (error) {
         console.error('Auth check error:', error);
     }
 }
 
-/**
- * Initialize analytics (deferred)
- */
+// ---------------------------------------------------------------------------
+// Deferred operations
+// ---------------------------------------------------------------------------
+
 function initAnalytics() {
-    // Google Analytics or other analytics code
-    // console.log('Analytics initialized');
+    // Analytics initialization (deferred, non-blocking)
 }
 
-/**
- * Initialize geolocation (deferred)
- */
 async function initGeolocation() {
     try {
-        // Only init if user hasn't denied permission
         const geoPermission = session.getItem('geoPermission');
         if (geoPermission !== 'denied') {
-            // Lazy load geolocation logic if complex
-            // console.log("Geolocation init triggered");
+            // Geolocation pre-warm (optional)
         }
     } catch (error) {
         console.error('Geolocation error:', error);
     }
 }
 
-/**
- * Initialize chat widget (deferred)
- */
-function initChatWidget() {
-    // Only load chat widget if user has been on site for 5+ seconds
-    // console.log('Chat widget initialized');
-}
+// ---------------------------------------------------------------------------
+// Analytics
+// ---------------------------------------------------------------------------
 
-/**
- * Initialize tracking pixels (deferred)
- */
-function initTrackingPixels() {
-    // Facebook Pixel, etc.
-    // console.log('Tracking pixels initialized');
-}
-
-/**
- * Track events (lightweight wrapper)
- */
-function trackEvent(eventName, eventData = {}) {
+function trackEvent(eventName, eventData) {
     try {
-        wixWindow.trackEvent("CustomEvent", {
+        wixWindow.trackEvent('CustomEvent', {
             event: eventName,
-            detail: eventData
+            detail: eventData || {}
         });
     } catch (e) {
         // Fail silently to not impact user
