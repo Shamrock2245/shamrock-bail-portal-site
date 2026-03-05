@@ -433,6 +433,8 @@ function handleElevenLabsToolCall(e) {
                 return toolSendDirections(payload);
             case 'send_sms':
                 return toolSendSMS(payload);
+            case 'check_caller_history':
+                return toolCheckCallerHistory(payload);
             default:
                 return ContentService.createTextOutput(JSON.stringify({
                     status: 'error', message: 'Unknown tool: ' + toolName
@@ -707,6 +709,111 @@ function toolCalculatePremium(params) {
         total_due: result.totalDue,
         breakdown: result.breakdown.join('; '),
         message: 'The estimated premium is $' + result.totalDue + '. ' + result.breakdown.join('. ') + '. This is an estimate and the final amount may vary based on case details.'
+    })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * toolCheckCallerHistory
+ * Tool called by the agent to check if a specific phone number has a history.
+ * Checks IntakeQueue first, then Mem0 API for deeper context.
+ */
+function toolCheckCallerHistory(payload) {
+    Logger.log('CALLING TOOL: check_caller_history');
+    var callerPhone = payload.callerPhone || payload.caller_phone || '';
+
+    // Normalize phone (strip non-digits)
+    var numOnly = String(callerPhone).replace(/\D/g, '');
+    if (numOnly.length >= 10) {
+        numOnly = numOnly.slice(-10);
+    }
+
+    if (!numOnly || numOnly.length < 10) {
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'error',
+            message: 'A valid 10-digit phone number is required.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var historyResult = {
+        found: false,
+        name: null,
+        defendant: null,
+        notes: null,
+        mem0_context: null
+    };
+
+    // 1. Check IntakeQueue
+    try {
+        var intakeSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('IntakeQueue');
+        if (intakeSheet) {
+            var data = intakeSheet.getDataRange().getValues();
+            var headers = data[0];
+            var colIndemnitorPhone = headers.indexOf('IndemnitorPhone');
+            var colIndemnitorName = headers.indexOf('IndemnitorName');
+            var colDefendantName = headers.indexOf('DefendantName');
+            var colStatus = headers.indexOf('Status');
+
+            // Search backwards (most recent first)
+            for (var i = data.length - 1; i > 0; i--) {
+                var rowPhone = String(data[i][colIndemnitorPhone]).replace(/\D/g, '');
+                if (rowPhone.length >= 10 && rowPhone.slice(-10) === numOnly) {
+                    historyResult.found = true;
+                    historyResult.name = data[i][colIndemnitorName] || null;
+                    historyResult.defendant = data[i][colDefendantName] || null;
+                    historyResult.notes = "Found existing case (" + (data[i][colStatus] || 'Active') + ")";
+                    break;
+                }
+            }
+        }
+    } catch (e) {
+        Logger.log('Error checking IntakeQueue for history: ' + e.toString());
+    }
+
+    // 2. Check Mem0 API
+    try {
+        var mem0ApiKey = PropertiesService.getScriptProperties().getProperty('MEMO_API_KEY');
+        if (mem0ApiKey) {
+            var mem0Url = 'https://api.mem0.ai/v1/memories/?user_id=' + numOnly;
+            var response = UrlFetchApp.fetch(mem0Url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Token ' + mem0ApiKey,
+                    'Content-Type': 'application/json'
+                },
+                muteHttpExceptions: true
+            });
+
+            if (response.getResponseCode() === 200) {
+                var mem0Data = JSON.parse(response.getContentText());
+                if (mem0Data && mem0Data.length > 0) {
+                    historyResult.found = true;
+                    // Extract memory strings
+                    var memories = mem0Data.map(function (m) { return m.memory; });
+                    historyResult.mem0_context = memories.join(". ");
+                }
+            }
+        }
+    } catch (e) {
+        Logger.log('Error checking Mem0 for history: ' + e.toString());
+    }
+
+    // Build the agent response string
+    var agentResponse = "";
+    if (!historyResult.found) {
+        agentResponse = "No history found for this caller.";
+    } else {
+        agentResponse = "HISTORY FOUND. \n";
+        if (historyResult.name) agentResponse += "Caller Name: " + historyResult.name + "\n";
+        if (historyResult.defendant) agentResponse += "Defendant they were helping: " + historyResult.defendant + "\n";
+        if (historyResult.notes) agentResponse += "Status: " + historyResult.notes + "\n";
+        if (historyResult.mem0_context) agentResponse += "Previous Call Notes (Mem0): " + historyResult.mem0_context + "\n";
+
+        agentResponse += "\nIMPORTANT: Acknowledge that they have called before. If they previously asked about a specific defendant, ask if they are calling about them again.";
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({
+        status: 'success',
+        caller_history: agentResponse
     })).setMimeType(ContentService.MimeType.JSON);
 }
 
