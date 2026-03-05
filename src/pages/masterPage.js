@@ -1,28 +1,16 @@
 /**
- * Optimized masterPage.js for Shamrock Bail Bonds
- * 
- * KEY OPTIMIZATIONS:
- * 1. Defer non-critical operations
- * 2. Lazy load heavy components
- * 3. Minimize initial page load work
- * 4. Use async/await for better performance
- * 5. Dynamic imports to reduce initial bundle size
- */
-
-/**
- * Optimized masterPage.js for Shamrock Bail Bonds
- * 
- * KEY OPTIMIZATIONS:
- * 1. Defer non-critical operations
- * 2. Lazy load heavy components
- * 3. Minimize initial page load work
- * 4. Use async/await for better performance
+ * masterPage.js - Shamrock Bail Bonds
+ *
+ * CRITICAL: No dynamic import() calls in this file.
+ * Dynamic imports generate this.webpackChunkmasterPage registration which
+ * crashes in Wix's strict-mode worker context (this === undefined).
+ * All imports MUST be static (top-level) only.
  */
 
 import { session } from 'wix-storage';
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
-// import { getNearestCounties } from 'backend/counties'; // Moved to dynamic import
+import { getNearestCounties } from 'backend/counties';
 
 import { validateStickyFooter } from 'public/uiValidator';
 import { initMobileOptimizations } from 'public/mobile-optimize';
@@ -232,8 +220,7 @@ async function handleFindJailClick(btn) {
         const location = await wixWindow.getCurrentGeolocation();
         const { latitude, longitude } = location.coords;
 
-        // 2. Find nearest county via backend (dynamic import for performance)
-        const { getNearestCounties } = await import('backend/counties');
+        // 2. Find nearest county via backend (static import -- avoids webpack chunk crash)
         const nearest = await getNearestCounties(latitude, longitude, 1);
 
         // 3. Reset label BEFORE navigation so the button is never stuck
