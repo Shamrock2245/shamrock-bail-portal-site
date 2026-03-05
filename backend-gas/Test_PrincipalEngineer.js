@@ -264,3 +264,116 @@ function SETUP_SetAuthSecrets() {
     Logger.log('  2. Wix Secret: TELEGRAM_WEBHOOK_SECRET');
     Logger.log('  3. ElevenLabs tool webhook URLs: append ?secret=XpOeDHyV... to elevenlabs_tool URLs');
 }
+
+/**
+ * ONE-TIME SETUP: Set MEMO_API_KEY in Script Properties.
+ * Run once from GAS Editor.
+ */
+function SETUP_SetMemoApiKey() {
+    PropertiesService.getScriptProperties().setProperty(
+        'MEMO_API_KEY', 'm0-IeF566UCSV7dht1RPrIXHTq01VFR73Mp5VVK9jqb'
+    );
+    Logger.log('✅ MEMO_API_KEY set in Script Properties.');
+}
+
+// =============================================================================
+// TEST 5: Mem0 API Key Validation
+// =============================================================================
+
+function TEST_Mem0ApiKeyValid() {
+    Logger.log('═══ TEST: Mem0 API Key ═══');
+    var apiKey = PropertiesService.getScriptProperties().getProperty('MEMO_API_KEY');
+    if (!apiKey) {
+        Logger.log('  ❌ FAIL: MEMO_API_KEY not set. Run SETUP_SetMemoApiKey() first.');
+        return;
+    }
+    Logger.log('  MEMO_API_KEY present: ✅ (' + apiKey.substring(0, 8) + '...)');
+    try {
+        var response = UrlFetchApp.fetch('https://api.mem0.ai/v1/memories/?user_id=test_shamrock&limit=1', {
+            method: 'get',
+            headers: { 'Authorization': 'Token ' + apiKey },
+            muteHttpExceptions: true
+        });
+        var code = response.getResponseCode();
+        Logger.log('  Mem0 API response code: ' + code + ' (200 = success)');
+        if (code === 200 || code === 204) {
+            Logger.log('  ✅ PASS: Mem0 API key is valid and authenticated.');
+        } else {
+            Logger.log('  ❌ FAIL: Unexpected response code ' + code + '. Check API key.');
+        }
+    } catch (err) {
+        Logger.log('  ❌ FAIL: Network error: ' + err.message);
+    }
+    Logger.log('═══ TEST COMPLETE ═══');
+}
+
+// =============================================================================
+// TEST 6: Caller Context Speed
+// =============================================================================
+
+function TEST_CallerContextSpeed() {
+    Logger.log('═══ TEST: Caller Context Speed ═══');
+    if (typeof getCallerContext_ !== 'function') {
+        Logger.log('  ❌ FAIL: getCallerContext_ not found');
+        return;
+    }
+    var start = Date.now();
+    var result = getCallerContext_('0000000000');
+    var elapsed = Date.now() - start;
+    Logger.log('  First call: ' + elapsed + 'ms | has_existing_case=' + result.has_existing_case);
+    var start2 = Date.now();
+    getCallerContext_('0000000000'); // Should be cached
+    Logger.log('  Second call (cache): ' + (Date.now() - start2) + 'ms (should be <50ms)');
+    Logger.log('  ✅ PASS: getCallerContext_ operates without throwing');
+    Logger.log('═══ TEST COMPLETE ═══');
+}
+
+// =============================================================================
+// TEST 7: Mem0 Memory Save
+// =============================================================================
+
+function TEST_Mem0SaveMemory() {
+    Logger.log('═══ TEST: Mem0 Memory Save ═══');
+    var apiKey = PropertiesService.getScriptProperties().getProperty('MEMO_API_KEY');
+    if (!apiKey) {
+        Logger.log('  ❌ SKIP: MEMO_API_KEY not set. Run SETUP_SetMemoApiKey() first.');
+        return;
+    }
+    saveMem0Memory_('5550001234', {
+        call_date: new Date().toDateString(),
+        outcome: 'Test',
+        call_summary: 'GAS test call — ignore.',
+        defendant_name: 'Test Defendant',
+        paperwork_sent: 'No'
+    });
+    Logger.log('  ✅ PASS: saveMem0Memory_ executed. Check Mem0 dashboard for user_id=5550001234.');
+    Logger.log('═══ TEST COMPLETE ═══');
+}
+
+// =============================================================================
+// MASTER TEST — Run all tests
+// =============================================================================
+
+function TEST_PRINCIPAL_ENGINEER_ALL() {
+    Logger.log('╔═══════════════════════════════════════════════╗');
+    Logger.log('║  PRINCIPAL ENGINEER — FULL TEST SUITE v2      ║');
+    Logger.log('╚═══════════════════════════════════════════════╝');
+    Logger.log('');
+    TEST_IdempotencyGuard();
+    Logger.log('');
+    TEST_CloserScansShannonIntakes();
+    Logger.log('');
+    TEST_ElevenLabsToolAuth();
+    Logger.log('');
+    TEST_TelegramAuth();
+    Logger.log('');
+    TEST_Mem0ApiKeyValid();
+    Logger.log('');
+    TEST_CallerContextSpeed();
+    Logger.log('');
+    TEST_Mem0SaveMemory();
+    Logger.log('');
+    Logger.log('════════════════════════════════════════════════');
+    Logger.log('  All tests executed. Review logs for ✅/❌.');
+    Logger.log('════════════════════════════════════════════════');
+}

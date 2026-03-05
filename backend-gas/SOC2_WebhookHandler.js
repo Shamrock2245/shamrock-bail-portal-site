@@ -36,6 +36,10 @@ function handleSOC2Webhook(e) {
                     return ContentService.createTextOutput('Unauthorized').setMimeType(ContentService.MimeType.TEXT);
                 }
                 return handleElevenLabsConversationInit(e);
+            case "caller_context":
+                // Called by Netlify edge function at call start — no auth needed (read-only, no PII written)
+                // Returns caller case context for Shannon's personalized greeting
+                return handleCallerContextLookup(e);
             case "slack":
             case "Slack":
                 if (typeof handleSlackWebhookSOC2 === 'function') {
