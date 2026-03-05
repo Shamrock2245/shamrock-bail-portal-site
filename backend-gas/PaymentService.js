@@ -412,3 +412,85 @@ Questions? Just reply!`;
 // =============================================================================
 
 // Functions are global in GAS - no explicit exports needed
+
+/**
+ * Send a generic payment link via Email or SMS (Twilio)
+ * Called from the Dashboard UI when an alternate contact is provided
+ * 
+ * @param {string} contactInfo - Email address or Phone number
+ * @param {string} defendantName - Full name of the defendant
+ * @param {string} amountStr - Premium amount as a string (e.g., "$150.00")
+ * @returns {object} - { success: boolean, message?: string, error?: string }
+ */
+function sendGenericPaymentLink(contactInfo, defendantName, amountStr) {
+  try {
+    if (!contactInfo) {
+      throw new Error("Contact information is required.");
+    }
+
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactInfo);
+
+    // Clean amount
+    const amountNum = parseFloat(amountStr.replace(/[^0-9.]/g, ''));
+    if (isNaN(amountNum) || amountNum <= 0) {
+      throw new Error("Invalid payment amount.");
+    }
+
+    // Since we don't have a full caseData object here, we generate a mock one
+    // just enough to satisfy calculatePaymentAmount and generatePaymentLink
+    const mockCaseData = {
+      caseNumber: 'MANUAL_' + new Date().getTime(),
+      defendantName: defendantName || 'Defendant',
+      // We reverse-engineer the bond amount from the premium (assuming premium is 10%)
+      // If amountNum IS the total premium + fee, this is an approximation
+      // For the sake of the link generation, this is usually acceptable or we can just pass the amount directly
+      bondAmount: amountNum * 10
+    };
+
+    // Calculate amounts (Note: This will add processing fee again if amountNum was just premium)
+    // To handle manual amounts accurately without double-charging fees if they are already included,
+    // we bypass calculatePaymentAmount and construct the amounts object directly if needed.
+    // For simplicity, let's treat amountNum as the FINAL total amount to be billed.
+
+    const amounts = {
+      bondAmount: amountNum * 10, // Approximation
+      premium: amountNum,
+      processingFee: 0, // Assume fee is already in the manual amount or we don't add it
+      total: amountNum
+    };
+
+    const paymentLink = generatePaymentLink(mockCaseData, amounts);
+
+    const messageBody = `Bail Bond Payment Link for ${mockCaseData.defendantName}\n\nAmount Due: $${amounts.total.toFixed(2)}\n\nPay securely here:\n${paymentLink}\n\nThank you, Shamrock Bail Bonds.`;
+
+    let result;
+
+    if (isEmail) {
+      // Send via Email
+      const subject = `Payment Link - Shamrock Bail Bonds - ${mockCaseData.defendantName}`;
+      result = NotificationService.sendEmail(contactInfo, subject, messageBody);
+
+      if (result.success) {
+        logProcessingEvent('MANUAL_PAYMENT_LINK_SENT', { method: 'email', contact: contactInfo, amount: amounts.total });
+        return { success: true };
+      } else {
+        throw new Error(result.error || "Failed to send email");
+      }
+    } else {
+      // Assume Phone Number
+      // Use NotificationService.sendSms (Twilio)
+      result = NotificationService.sendSms(contactInfo, messageBody);
+
+      if (result.success) {
+        logProcessingEvent('MANUAL_PAYMENT_LINK_SENT', { method: 'sms', contact: contactInfo, amount: amounts.total });
+        return { success: true };
+      } else {
+        throw new Error(result.error || "Failed to send SMS");
+      }
+    }
+
+  } catch (e) {
+    console.error('Error in sendGenericPaymentLink:', e);
+    return { success: false, error: e.message };
+  }
+}

@@ -2506,6 +2506,24 @@
                                         title="Password redacted. Payment links are sent with paperwork email.">[REDACTED]</code>
                                 </div>
                             </div>
+
+                            <hr style="border: 0; border-top: 1px solid var(--border); margin: 16px 0;">
+
+                            <div
+                                style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">
+                                Send Alternate Payment Link
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <input type="text" id="alternate-payment-contact"
+                                        placeholder="Email or Phone Number"
+                                        style="font-size: 13px; padding: 6px 8px; width: 100%;">
+                                </div>
+                                <button onclick="sendAlternatePaymentLink()" class="btn btn-sm btn-primary"
+                                    style="width: 100%;">
+                                    <i class="fas fa-paper-plane"></i> Send Link
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4280,6 +4298,40 @@
             navigator.clipboard.writeText(script).then(() => {
                 showToast('⚠️ Script copied! Paste into SwipeSimple Console (F12).', 'success');
             }).catch(err => showToast('Failed to copy script', 'error'));
+        }
+
+        function sendAlternatePaymentLink() {
+            const contactInfo = document.getElementById('alternate-payment-contact')?.value || '';
+            if (!contactInfo.trim()) {
+                showToast('Please enter an email or phone number', 'warning');
+                return;
+            }
+
+            const firstName = document.getElementById('defendant-first-name')?.value || '';
+            const lastName = document.getElementById('defendant-last-name')?.value || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            const amountStr = document.getElementById('payment-premium-due')?.textContent || '';
+
+            const btn = event.currentTarget || document.querySelector('button[onclick="sendAlternatePaymentLink()"]');
+            if (btn) btn.disabled = true;
+
+            showToast('Sending payment link...', 'info');
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    if (btn) btn.disabled = false;
+                    if (response.success) {
+                        showToast('Payment link sent successfully!', 'success');
+                        document.getElementById('alternate-payment-contact').value = '';
+                    } else {
+                        showToast('Error: ' + response.error, 'error');
+                    }
+                })
+                .withFailureHandler(function (error) {
+                    if (btn) btn.disabled = false;
+                    showToast('Failed to send link: ' + error.message, 'error');
+                })
+                .sendGenericPaymentLink(contactInfo, fullName, amountStr);
         }
 
         /* =========================================================
