@@ -15,9 +15,7 @@ function getConfig_() { var base = { SHEET_ID: '121z5R6Hpqur54GNPC8L26ccfDPLHTJc
 var LEE = getConfig_();
 
 // ========== MENU & TRIGGERS ==========
-function onOpen() { SpreadsheetApp.getUi().createMenu('🟩 Bail Suite').addSubMenu(SpreadsheetApp.getUi().createMenu('Arrests (Lee)').addItem('▶️ Run now', 'runLeeArrestsNow').addItem('🔄 Backfill existing records', 'backfillExistingRecords').addItem('🖼️ Embed mugshot images', 'embedAllMugshots').addItem('⏰ Install hourly trigger', 'installLeeArrestsHourly').addItem('🛑 Disable triggers', 'disableLeeArrestsTriggers')).addToUi() }
-function installLeeArrestsHourly() { ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'runLeeArrestsNow') ScriptApp.deleteTrigger(t) }); ScriptApp.newTrigger('runLeeArrestsNow').timeBased().everyHours(1).create(); Logger.log('⏰ Installed hourly trigger for runLeeArrestsNow') }
-function disableLeeArrestsTriggers() { var n = 0; ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'runLeeArrestsNow') { ScriptApp.deleteTrigger(t); n++ } }); Logger.log('🛑 Removed ' + n + ' trigger(s) for runLeeArrestsNow') }
+// Legacy trigger and onOpen functions have been moved to ComprehensiveMenuSystem.js
 
 // ========== ENTRY ==========
 function runLeeArrestsNow() {
