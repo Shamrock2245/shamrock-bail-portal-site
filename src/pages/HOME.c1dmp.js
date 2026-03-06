@@ -340,7 +340,7 @@ function loadTestimonials() {
 
 function setupHomepageMeta() {
     const title = '24/7 Bail Bonds Florida | Shamrock Bail Bonds - Fort Myers Since 2012';
-    const description = 'Need bail bonds in Florida? Shamrock Bail Bonds serves all 67 counties 24/7. Fast jail release, payment plans, bilingual English & Spanish. Call (239) 332-2245 for immediate help.';
+    const description = 'Shamrock Bail Bonds is located in Lee County, FL. We are the bail bonding agency of choice for fast, professional, discreet service. We serve all of Florida. Located steps away from the Lee County Jail and in the heartbeat of the Legal Community in Downtown Fort Myers.';
     const url = 'https://www.shamrockbailbonds.biz';
 
     wixSeo.setTitle(title);
