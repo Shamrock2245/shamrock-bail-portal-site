@@ -1,27 +1,25 @@
 /**
  * masterPage.js - Shamrock Bail Bonds
  *
- * PERMANENT FIX (2026-03-05):
+ * PERMANENT FIX (2026-03-05 rev2):
  * ============================================================
- * In Wix Velo, ALL imports from 'backend/...' and 'public/...' modules
- * are compiled by the Wix bundler into dynamic webpack chunk loads.
- * The chunk loader uses document.createElement("script") which is
- * unavailable in Wix's worker context, causing silent failures.
+ * ZERO IMPORTS REQUIRED -- DO NOT ADD ANY IMPORT STATEMENTS.
  *
- * Additionally, the webpack chunk registration:
+ * Root cause (confirmed from live bundle analysis):
+ * ANY ES module import (even wix-location, wix-storage etc.) causes
+ * Wix's bundler to add a webpack JSONP chunk-loading runtime:
  *   n = this.webpackChunkmasterPage = this.webpackChunkmasterPage || []
- * crashes with TypeError in Wix's strict-mode worker because `this`
- * is undefined inside a strict-mode IIFE.
+ * Inside Wix's strict-mode worker IIFE, 'this' is undefined -> crash.
+ * The entire module fails to load; onReady never runs.
  *
- * SOLUTION: Remove ALL backend and public utility imports.
- * Use only Wix platform modules and inline all logic.
- * Find My Jail uses inline county coordinates -- no backend call.
+ * SOLUTION: Zero imports. wixLocation, wixWindow, and session are
+ * Velo runtime globals -- always available without importing.
+ * With zero imports, no webpack JSONP runtime is generated.
  * ============================================================
  */
 
-import { session } from 'wix-storage';
-import wixLocation from 'wix-location';
-import wixWindow from 'wix-window';
+/* global $w, wixLocation, wixWindow, session */
+// NO IMPORT STATEMENTS -- see comment above.
 
 // ---------------------------------------------------------------------------
 // Inline county coordinates for Find My Jail geolocation

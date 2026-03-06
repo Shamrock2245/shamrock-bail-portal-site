@@ -1,32 +1,28 @@
 /**
  * HOME.c1dmp.js - Shamrock Bail Bonds Home Page
  *
- * PERMANENT FIX (2026-03-05):
+ * PERMANENT FIX (2026-03-05 rev2):
  * ============================================================
- * In Wix Velo, ALL imports from 'backend/...' modules are compiled
- * by the Wix bundler into dynamic webpack chunk loads (a.e(chunkId))
- * regardless of whether you write `import` or `import()` in source.
+ * ZERO IMPORTS REQUIRED -- DO NOT ADD ANY IMPORT STATEMENTS.
  *
- * The dynamic chunk loader calls:
- *   a.l(url, callback) -> document.createElement("script")
- * document is NOT available in Wix's worker context, so the chunk
- * load silently fails and any awaited backend call never resolves.
- *
- * Additionally, the webpack chunk registration:
+ * Root cause (confirmed from live bundle analysis):
+ * Wix's bundler wraps user code in a factory: (function(globals){return function(){"use strict";...}()})
+ * Inside the inner strict-mode IIFE, 'this' is undefined.
+ * ANY ES module import (even wix-location, wix-storage etc.) causes
+ * the bundler to add a webpack JSONP chunk-loading runtime that does:
  *   n = this.webpackChunkc1dmp = this.webpackChunkc1dmp || []
- * crashes with TypeError in Wix's strict-mode worker because `this`
- * is undefined at the top level of an IIFE.
+ * This crashes with TypeError because this=undefined.
+ * The entire module fails to load; onReady never runs.
  *
- * SOLUTION: Remove ALL backend imports. Use only Wix platform modules
- * (wix-location, wix-window, wix-storage, wix-seo) and inline data.
- * County data is hardcoded below -- no backend call needed.
+ * SOLUTION: Zero imports. wixLocation, wixWindow, wixSeo, and
+ * session (wix-storage) are Velo runtime globals -- always available
+ * without importing. With zero imports, no webpack JSONP runtime is
+ * generated, no crash, onReady runs, all handlers register correctly.
  * ============================================================
  */
 
-import { session } from 'wix-storage';
-import wixLocation from 'wix-location';
-import wixWindow from 'wix-window';
-import wixSeo from 'wix-seo';
+/* global $w, wixLocation, wixWindow, wixSeo, session */
+// NO IMPORT STATEMENTS -- see comment above.
 
 // ---------------------------------------------------------------------------
 // Inline county data -- no backend call, no dynamic chunk, no crash
