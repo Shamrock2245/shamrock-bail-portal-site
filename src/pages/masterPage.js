@@ -1,98 +1,83 @@
 /**
  * masterPage.js - Shamrock Bail Bonds
- *
- * PERMANENT FIX (2026-03-05 rev2):
- * ============================================================
- * ZERO IMPORTS REQUIRED -- DO NOT ADD ANY IMPORT STATEMENTS.
- *
- * Root cause (confirmed from live bundle analysis):
- * ANY ES module import (even wix-location, wix-storage etc.) causes
- * Wix's bundler to add a webpack JSONP chunk-loading runtime:
- *   n = this.webpackChunkmasterPage = this.webpackChunkmasterPage || []
- * Inside Wix's strict-mode worker IIFE, 'this' is undefined -> crash.
- * The entire module fails to load; onReady never runs.
- *
- * SOLUTION: Zero imports. wixLocation, wixWindow, and session are
- * Velo runtime globals -- always available without importing.
- * With zero imports, no webpack JSONP runtime is generated.
- * ============================================================
  */
 
-/* global $w, wixLocation, wixWindow, session */
-// NO IMPORT STATEMENTS -- see comment above.
+import wixLocation from 'wix-location';
+import wixWindow from 'wix-window';
+import { session } from 'wix-storage';
 
 // ---------------------------------------------------------------------------
 // Inline county coordinates for Find My Jail geolocation
 // ---------------------------------------------------------------------------
 
 const COUNTY_COORDS = {
-    "alachua":      { lat: 29.67, lon: -82.35 },
-    "baker":        { lat: 30.33, lon: -82.29 },
-    "bay":          { lat: 30.26, lon: -85.63 },
-    "bradford":     { lat: 29.95, lon: -82.16 },
-    "brevard":      { lat: 28.30, lon: -80.70 },
-    "broward":      { lat: 26.15, lon: -80.45 },
-    "calhoun":      { lat: 30.41, lon: -85.20 },
-    "charlotte":    { lat: 26.90, lon: -81.92 },
-    "citrus":       { lat: 28.85, lon: -82.47 },
-    "clay":         { lat: 29.98, lon: -81.86 },
-    "collier":      { lat: 26.10, lon: -81.39 },
-    "columbia":     { lat: 30.22, lon: -82.63 },
-    "desoto":       { lat: 27.20, lon: -81.81 },
-    "dixie":        { lat: 29.60, lon: -83.15 },
-    "duval":        { lat: 30.33, lon: -81.67 },
-    "escambia":     { lat: 30.65, lon: -87.35 },
-    "flagler":      { lat: 29.47, lon: -81.30 },
-    "franklin":     { lat: 29.80, lon: -84.80 },
-    "gadsden":      { lat: 30.56, lon: -84.63 },
-    "gilchrist":    { lat: 29.72, lon: -82.78 },
-    "glades":       { lat: 26.95, lon: -81.18 },
-    "gulf":         { lat: 29.93, lon: -85.22 },
-    "hamilton":     { lat: 30.51, lon: -82.95 },
-    "hardee":       { lat: 27.49, lon: -81.79 },
-    "hendry":       { lat: 26.54, lon: -81.14 },
-    "hernando":     { lat: 28.56, lon: -82.46 },
-    "highlands":    { lat: 27.35, lon: -81.35 },
+    "alachua": { lat: 29.67, lon: -82.35 },
+    "baker": { lat: 30.33, lon: -82.29 },
+    "bay": { lat: 30.26, lon: -85.63 },
+    "bradford": { lat: 29.95, lon: -82.16 },
+    "brevard": { lat: 28.30, lon: -80.70 },
+    "broward": { lat: 26.15, lon: -80.45 },
+    "calhoun": { lat: 30.41, lon: -85.20 },
+    "charlotte": { lat: 26.90, lon: -81.92 },
+    "citrus": { lat: 28.85, lon: -82.47 },
+    "clay": { lat: 29.98, lon: -81.86 },
+    "collier": { lat: 26.10, lon: -81.39 },
+    "columbia": { lat: 30.22, lon: -82.63 },
+    "desoto": { lat: 27.20, lon: -81.81 },
+    "dixie": { lat: 29.60, lon: -83.15 },
+    "duval": { lat: 30.33, lon: -81.67 },
+    "escambia": { lat: 30.65, lon: -87.35 },
+    "flagler": { lat: 29.47, lon: -81.30 },
+    "franklin": { lat: 29.80, lon: -84.80 },
+    "gadsden": { lat: 30.56, lon: -84.63 },
+    "gilchrist": { lat: 29.72, lon: -82.78 },
+    "glades": { lat: 26.95, lon: -81.18 },
+    "gulf": { lat: 29.93, lon: -85.22 },
+    "hamilton": { lat: 30.51, lon: -82.95 },
+    "hardee": { lat: 27.49, lon: -81.79 },
+    "hendry": { lat: 26.54, lon: -81.14 },
+    "hernando": { lat: 28.56, lon: -82.46 },
+    "highlands": { lat: 27.35, lon: -81.35 },
     "hillsborough": { lat: 27.91, lon: -82.35 },
-    "holmes":       { lat: 30.86, lon: -85.81 },
+    "holmes": { lat: 30.86, lon: -85.81 },
     "indian-river": { lat: 27.67, lon: -80.49 },
-    "jackson":      { lat: 30.79, lon: -85.22 },
-    "jefferson":    { lat: 30.41, lon: -83.90 },
-    "lafayette":    { lat: 30.07, lon: -83.18 },
-    "lake":         { lat: 28.75, lon: -81.72 },
-    "lee":          { lat: 26.58, lon: -81.85 },
-    "leon":         { lat: 30.46, lon: -84.27 },
-    "levy":         { lat: 29.27, lon: -82.61 },
-    "liberty":      { lat: 30.25, lon: -84.86 },
-    "madison":      { lat: 30.45, lon: -83.47 },
-    "manatee":      { lat: 27.49, lon: -82.35 },
-    "marion":       { lat: 29.19, lon: -82.13 },
-    "martin":       { lat: 27.08, lon: -80.42 },
-    "miami-dade":   { lat: 25.61, lon: -80.56 },
-    "monroe":       { lat: 25.10, lon: -81.10 },
-    "nassau":       { lat: 30.61, lon: -81.76 },
-    "okaloosa":     { lat: 30.66, lon: -86.58 },
-    "okeechobee":   { lat: 27.25, lon: -80.89 },
-    "orange":       { lat: 28.51, lon: -81.32 },
-    "osceola":      { lat: 28.06, lon: -81.15 },
-    "palm-beach":   { lat: 26.63, lon: -80.44 },
-    "pasco":        { lat: 28.30, lon: -82.46 },
-    "pinellas":     { lat: 27.90, lon: -82.74 },
-    "polk":         { lat: 27.96, lon: -81.87 },
-    "putnam":       { lat: 29.62, lon: -81.73 },
-    "santa-rosa":   { lat: 30.69, lon: -87.01 },
-    "sarasota":     { lat: 27.18, lon: -82.35 },
-    "seminole":     { lat: 28.72, lon: -81.21 },
-    "st-johns":     { lat: 29.93, lon: -81.42 },
-    "st-lucie":     { lat: 27.38, lon: -80.43 },
-    "sumter":       { lat: 28.71, lon: -82.08 },
-    "suwannee":     { lat: 30.19, lon: -83.00 },
-    "taylor":       { lat: 30.05, lon: -83.61 },
-    "union":        { lat: 30.04, lon: -82.37 },
-    "volusia":      { lat: 29.03, lon: -81.07 },
-    "wakulla":      { lat: 30.15, lon: -84.37 },
-    "walton":       { lat: 30.64, lon: -86.17 },
-    "washington":   { lat: 30.61, lon: -85.66 }
+    "jackson": { lat: 30.79, lon: -85.22 },
+    "jefferson": { lat: 30.41, lon: -83.90 },
+    "lafayette": { lat: 30.07, lon: -83.18 },
+    "lake": { lat: 28.75, lon: -81.72 },
+    "lee": { lat: 26.58, lon: -81.85 },
+    "leon": { lat: 30.46, lon: -84.27 },
+    "levy": { lat: 29.27, lon: -82.61 },
+    "liberty": { lat: 30.25, lon: -84.86 },
+    "madison": { lat: 30.45, lon: -83.47 },
+    "manatee": { lat: 27.49, lon: -82.35 },
+    "marion": { lat: 29.19, lon: -82.13 },
+    "martin": { lat: 27.08, lon: -80.42 },
+    "miami-dade": { lat: 25.61, lon: -80.56 },
+    "monroe": { lat: 25.10, lon: -81.10 },
+    "nassau": { lat: 30.61, lon: -81.76 },
+    "okaloosa": { lat: 30.66, lon: -86.58 },
+    "okeechobee": { lat: 27.25, lon: -80.89 },
+    "orange": { lat: 28.51, lon: -81.32 },
+    "osceola": { lat: 28.06, lon: -81.15 },
+    "palm-beach": { lat: 26.63, lon: -80.44 },
+    "pasco": { lat: 28.30, lon: -82.46 },
+    "pinellas": { lat: 27.90, lon: -82.74 },
+    "polk": { lat: 27.96, lon: -81.87 },
+    "putnam": { lat: 29.62, lon: -81.73 },
+    "santa-rosa": { lat: 30.69, lon: -87.01 },
+    "sarasota": { lat: 27.18, lon: -82.35 },
+    "seminole": { lat: 28.72, lon: -81.21 },
+    "st-johns": { lat: 29.93, lon: -81.42 },
+    "st-lucie": { lat: 27.38, lon: -80.43 },
+    "sumter": { lat: 28.71, lon: -82.08 },
+    "suwannee": { lat: 30.19, lon: -83.00 },
+    "taylor": { lat: 30.05, lon: -83.61 },
+    "union": { lat: 30.04, lon: -82.37 },
+    "volusia": { lat: 29.03, lon: -81.07 },
+    "wakulla": { lat: 30.15, lon: -84.37 },
+    "walton": { lat: 30.64, lon: -86.17 },
+    "washington": { lat: 30.61, lon: -85.66 }
 };
 
 // ---------------------------------------------------------------------------
@@ -297,8 +282,8 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 

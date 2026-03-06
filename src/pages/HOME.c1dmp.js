@@ -1,28 +1,11 @@
 /**
  * HOME.c1dmp.js - Shamrock Bail Bonds Home Page
- *
- * PERMANENT FIX (2026-03-05 rev2):
- * ============================================================
- * ZERO IMPORTS REQUIRED -- DO NOT ADD ANY IMPORT STATEMENTS.
- *
- * Root cause (confirmed from live bundle analysis):
- * Wix's bundler wraps user code in a factory: (function(globals){return function(){"use strict";...}()})
- * Inside the inner strict-mode IIFE, 'this' is undefined.
- * ANY ES module import (even wix-location, wix-storage etc.) causes
- * the bundler to add a webpack JSONP chunk-loading runtime that does:
- *   n = this.webpackChunkc1dmp = this.webpackChunkc1dmp || []
- * This crashes with TypeError because this=undefined.
- * The entire module fails to load; onReady never runs.
- *
- * SOLUTION: Zero imports. wixLocation, wixWindow, wixSeo, and
- * session (wix-storage) are Velo runtime globals -- always available
- * without importing. With zero imports, no webpack JSONP runtime is
- * generated, no crash, onReady runs, all handlers register correctly.
- * ============================================================
  */
 
-/* global $w, wixLocation, wixWindow, wixSeo, session */
-// NO IMPORT STATEMENTS -- see comment above.
+import wixLocation from 'wix-location';
+import wixWindow from 'wix-window';
+import wixSeo from 'wix-seo';
+import { session } from 'wix-storage';
 
 // ---------------------------------------------------------------------------
 // Inline county data -- no backend call, no dynamic chunk, no crash
@@ -412,17 +395,17 @@ function setupOrganizationSchema() {
                     "availableLanguage": ["English", "Spanish"],
                     "hoursAvailable": {
                         "@type": "OpeningHoursSpecification",
-                        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
                         "opens": "00:00", "closes": "23:59"
                     }
                 },
-                { "@type": "ContactPoint", "telephone": "+1-239-332-5245", "contactType": "Emergency", "areaServed": "FL", "availableLanguage": ["English","Spanish"] },
+                { "@type": "ContactPoint", "telephone": "+1-239-332-5245", "contactType": "Emergency", "areaServed": "FL", "availableLanguage": ["English", "Spanish"] },
                 { "@type": "ContactPoint", "telephone": "+1-239-955-0301", "contactType": "Customer Service", "areaServed": "FL", "availableLanguage": "Spanish" }
             ],
             "areaServed": { "@type": "State", "name": "Florida", "@id": "https://en.wikipedia.org/wiki/Florida" },
             "openingHoursSpecification": {
                 "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
                 "opens": "00:00", "closes": "23:59"
             },
             "priceRange": "$$",
@@ -450,7 +433,7 @@ function setupOrganizationSchema() {
             "openingHoursSpecification": [
                 {
                     "@type": "OpeningHoursSpecification",
-                    "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
                     "opens": "00:00", "closes": "23:59"
                 }
             ]
@@ -463,12 +446,12 @@ function setupOrganizationSchema() {
             "areaServed": [{ "@type": "State", "name": "Florida" }],
             "availableChannel": {
                 "@type": "ServiceChannel",
-                "servicePhone": { "@type": "ContactPoint", "telephone": "+1-239-332-2245", "availableLanguage": ["English","Spanish"] },
+                "servicePhone": { "@type": "ContactPoint", "telephone": "+1-239-332-2245", "availableLanguage": ["English", "Spanish"] },
                 "serviceUrl": "https://www.shamrockbailbonds.biz"
             },
             "hoursAvailable": {
                 "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
                 "opens": "00:00", "closes": "23:59"
             }
         }
