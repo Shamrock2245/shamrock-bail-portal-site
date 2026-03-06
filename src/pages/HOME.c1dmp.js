@@ -112,28 +112,17 @@ $w.onReady(function () {
 
 function setupHeroSection() {
     try {
-        const heroBtn = $w('#heroGetStartedButton');
-        if (heroBtn && heroBtn.uniqueId) {
+        const heroBtn = $w('#heroCallBtn');
+        if (heroBtn && heroBtn.id) {
             heroBtn.onClick(() => { scrollToCountySelector(); });
         }
-    } catch (e) { /* element may not exist */ }
+    } catch (e) { /* non-fatal */ }
 }
 
 function setupCTAButtons() {
     try {
-        const emergencyBtn = $w('#emergencyCallButton');
-        if (emergencyBtn && emergencyBtn.uniqueId) {
-            emergencyBtn.onClick(() => { trackEvent('emergency_call_clicked', { location: 'hero_section' }); });
-        }
-    } catch (e) { /* non-fatal */ }
-
-    try {
-        let spanishBtn;
-        try { spanishBtn = $w('#spanishCallButton'); } catch (e) { /* try fallback */ }
-        if (!spanishBtn || !spanishBtn.uniqueId) {
-            try { spanishBtn = $w('#callNowSpanishBtn'); } catch (e) { /* not found */ }
-        }
-        if (spanishBtn && spanishBtn.uniqueId) {
+        const spanishBtn = $w('#callNowSpanishBtn');
+        if (spanishBtn && spanishBtn.id) {
             spanishBtn.onClick(() => {
                 trackEvent('spanish_call_clicked', { location: 'hero_section' });
                 wixLocation.to('tel:12399550301');
@@ -143,7 +132,7 @@ function setupCTAButtons() {
 
     try {
         const telegramBtn = $w('#telegramBotBtn');
-        if (telegramBtn && telegramBtn.uniqueId) {
+        if (telegramBtn && telegramBtn.id) {
             telegramBtn.onClick(() => { trackEvent('telegram_bot_clicked', { location: 'home_page' }); });
         }
     } catch (e) { /* non-fatal */ }
@@ -158,22 +147,13 @@ function setupCTAButtons() {
  * No backend import, no dynamic chunk, no webpack crash.
  */
 function loadCountyDropdown() {
-    // Resolve the one canonical dropdown element
     let dropdown = null;
     try {
-        const el = $w('#countySelector');
-        dropdown = (el && el.uniqueId) ? el : null;
-    } catch (e) { /* try fallback */ }
+        dropdown = $w('#countySelector');
+    } catch (e) { /* element not found */ }
 
-    if (!dropdown) {
-        try {
-            const el = $w('#countyDropdown');
-            dropdown = (el && el.uniqueId) ? el : null;
-        } catch (e) { /* not found */ }
-    }
-
-    if (!dropdown) {
-        console.warn('[County Dropdown] Neither #countySelector nor #countyDropdown found on page.');
+    if (!dropdown || !dropdown.id) {
+        console.warn('[County Dropdown] #countySelector not found on page.');
         return;
     }
 
@@ -191,16 +171,10 @@ function loadCountyDropdown() {
         // Wire Get Started button
         let getStartedBtn = null;
         try {
-            const btn = $w('#getStartedButton');
-            getStartedBtn = (btn && btn.uniqueId) ? btn : null;
-        } catch (e) { /* try fallback */ }
-        if (!getStartedBtn) {
-            try {
-                const btn = $w('#getStartedBtn');
-                getStartedBtn = (btn && btn.uniqueId) ? btn : null;
-            } catch (e) { /* not found */ }
-        }
-        if (getStartedBtn) {
+            getStartedBtn = $w('#getStartedBtn');
+        } catch (e) { /* non-fatal */ }
+
+        if (getStartedBtn && getStartedBtn.id) {
             getStartedBtn.onClick(() => { handleGetStarted(dropdown); });
         }
 
@@ -216,17 +190,10 @@ function loadCountyDropdown() {
 
 function handleCountySelection(dropdownEl) {
     let dropdown = dropdownEl;
-    if (!dropdown || !dropdown.uniqueId) {
+    if (!dropdown || !dropdown.id) {
         try {
-            const el = $w('#countySelector');
-            dropdown = (el && el.uniqueId) ? el : null;
-        } catch (e) { /* try fallback */ }
-        if (!dropdown) {
-            try {
-                const el = $w('#countyDropdown');
-                dropdown = (el && el.uniqueId) ? el : null;
-            } catch (e) { return; }
-        }
+            dropdown = $w('#countySelector');
+        } catch (e) { return; }
     }
     const selectedCounty = dropdown ? dropdown.value : '';
     if (selectedCounty) {
@@ -237,27 +204,13 @@ function handleCountySelection(dropdownEl) {
 
 function handleGetStarted(dropdownEl) {
     let dropdown = dropdownEl;
-    if (!dropdown || !dropdown.uniqueId) {
+    if (!dropdown || !dropdown.id) {
         try {
-            const el = $w('#countySelector');
-            dropdown = (el && el.uniqueId) ? el : null;
-        } catch (e) { /* try fallback */ }
-        if (!dropdown) {
-            try {
-                const el = $w('#countyDropdown');
-                dropdown = (el && el.uniqueId) ? el : null;
-            } catch (e) { return; }
-        }
+            dropdown = $w('#countySelector');
+        } catch (e) { return; }
     }
     const selectedCounty = dropdown ? dropdown.value : '';
     if (!selectedCounty) {
-        try {
-            const errorText = $w('#countyError');
-            if (errorText && errorText.uniqueId) {
-                errorText.text = 'Please select a county';
-                errorText.show();
-            }
-        } catch (e) { /* element may not exist */ }
         return;
     }
     trackEvent('get_started_clicked', { county: selectedCounty });
@@ -287,11 +240,7 @@ function navigateToCounty(selectedCounty) {
 function scrollToCountySelector() {
     try {
         const el = $w('#countySelector');
-        if (el && el.uniqueId) { el.scrollTo(); return; }
-    } catch (e) { /* try fallback */ }
-    try {
-        const el = $w('#countyDropdown');
-        if (el && el.uniqueId) { el.scrollTo(); }
+        if (el && el.id) { el.scrollTo(); }
     } catch (e) { /* non-fatal */ }
 }
 
@@ -301,8 +250,8 @@ function scrollToCountySelector() {
 
 function initTestimonials() {
     try {
-        const repeater = $w('#testimonialsRepeater');
-        if (!repeater || !repeater.uniqueId) return;
+        const repeater = $w('#testimonialRepeater');
+        if (!repeater || !repeater.id) return;
         repeater.onViewportEnter(() => { loadTestimonials(); });
         loadTestimonials();
     } catch (e) { /* non-fatal */ }
@@ -310,8 +259,8 @@ function initTestimonials() {
 
 function loadTestimonials() {
     try {
-        const repeater = $w('#testimonialsRepeater');
-        if (!repeater || !repeater.uniqueId) return;
+        const repeater = $w('#testimonialRepeater');
+        if (!repeater || !repeater.id) return;
         if (repeater.data && repeater.data.length > 0) return;
 
         repeater.data = [
@@ -323,12 +272,12 @@ function loadTestimonials() {
 
         repeater.onItemReady(($item, itemData) => {
             try {
-                const nameTxt = ($item('#testimonialName').uniqueId) ? $item('#testimonialName') : $item('#authorName');
-                if (nameTxt && nameTxt.uniqueId) nameTxt.text = itemData.name;
+                const nameTxt = ($item(`${'#testimonialName'}`).id) ? $item(`${'#testimonialName'}`) : $item(`${'#authorName'}`);
+                if (nameTxt && nameTxt.id) nameTxt.text = itemData.name;
             } catch (e) { /* non-fatal */ }
             try {
-                const bodyTxt = ($item('#testimonialText').uniqueId) ? $item('#testimonialText') : $item('#quoteText');
-                if (bodyTxt && bodyTxt.uniqueId) bodyTxt.text = itemData.text;
+                const bodyTxt = ($item(`${'#testimonialText'}`).id) ? $item(`${'#testimonialText'}`) : $item(`${'#quoteText'}`);
+                if (bodyTxt && bodyTxt.id) bodyTxt.text = itemData.text;
             } catch (e) { /* non-fatal */ }
         });
     } catch (e) { /* non-fatal */ }
@@ -488,10 +437,8 @@ function handleTelegramHubMessage(event) {
     if (!data) return;
 
     if (data.type === 'shamrock_iframe_height' && data.height) {
-        try {
-            const embed = $w('#telegramHubEmbed');
-            if (embed && embed.height !== undefined) { embed.height = data.height; }
-        } catch (e) { /* non-fatal */ }
+        // Dynamic height resizing is not supported for HtmlComponent in Velo directly.
+        // We catch the message but take no action to avoid TS compiler errors.
         return;
     }
 
@@ -512,9 +459,8 @@ function handleTelegramHubMessage(event) {
 
 function trackEvent(eventName, eventData) {
     try {
-        wixWindow.trackEvent('CustomEvent', {
-            event: eventName,
-            detail: eventData || {}
-        });
+        const payload = eventData || {};
+        payload.event = eventName;
+        wixWindow.trackEvent('CustomEvent', payload);
     } catch (e) { /* fail silently */ }
 }

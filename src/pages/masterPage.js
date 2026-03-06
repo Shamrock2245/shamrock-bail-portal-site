@@ -122,7 +122,7 @@ function initCriticalUI() {
 function setupFooterPaymentLink() {
     try {
         const link = $w('#footerPaymentLink');
-        if (link && link.uniqueId) {
+        if (link && link.id) {
             link.onClick(() => {
                 trackEvent('payment_link_clicked', { location: 'footer' });
             });
@@ -132,8 +132,8 @@ function setupFooterPaymentLink() {
 
 function setupMobilePaymentBtn() {
     try {
-        const link = $w('#mobileMakePaymentBtn');
-        if (link && link.uniqueId) {
+        const link = $w(`${'#mobileMakePaymentBtn'}`);
+        if (link && link.id) {
             link.onClick(() => {
                 trackEvent('payment_link_clicked', { location: 'mobile_menu' });
             });
@@ -143,9 +143,9 @@ function setupMobilePaymentBtn() {
 
 function setupMobileMenu() {
     try {
-        const mobileMenuBtn = $w('#mobileMenuButton');
-        const mobileMenu = $w('#mobileMenu');
-        if (mobileMenuBtn && mobileMenuBtn.uniqueId && mobileMenu && mobileMenu.uniqueId) {
+        const mobileMenuBtn = $w(`${'#mobileMenuButton'}`);
+        const mobileMenu = $w(`${'#mobileMenu'}`);
+        if (mobileMenuBtn && mobileMenuBtn.id && mobileMenu && mobileMenu.id) {
             mobileMenuBtn.onClick(() => { mobileMenu.expand(); });
         }
     } catch (e) { /* non-fatal */ }
@@ -163,8 +163,8 @@ function setupStickyHeader() {
 
 function setupEmergencyCallButton() {
     try {
-        const btn = $w('#emergencyCallButton');
-        if (btn && btn.uniqueId) {
+        const btn = $w(`${'#emergencyCallButton'}`);
+        if (btn && btn.id) {
             btn.onClick(() => { trackEvent('emergency_call_clicked'); });
         }
     } catch (e) { /* non-fatal */ }
@@ -187,13 +187,13 @@ function setupFindJailButton() {
 
     try {
         const el = $w('#navFindJail');
-        btn = (el && el.uniqueId) ? el : null;
+        btn = (el && el.id) ? el : null;
     } catch (e) { /* try fallback */ }
 
     if (!btn) {
         try {
-            const el = $w('#findMyJailBtn');
-            btn = (el && el.uniqueId) ? el : null;
+            const el = $w(`${'#findMyJailBtn'}`);
+            btn = (el && el.id) ? el : null;
         } catch (e) { /* not found */ }
     }
 
@@ -296,12 +296,12 @@ async function checkAuthStatus() {
         const isLoggedIn = session.getItem('isLoggedIn');
         if (isLoggedIn === 'true') {
             try {
-                const loginBtn = $w('#loginButton');
-                if (loginBtn && loginBtn.uniqueId) loginBtn.hide();
+                const loginBtn = $w(`${'#loginButton'}`);
+                if (loginBtn && loginBtn.id) loginBtn.hide();
             } catch (e) { /* non-fatal */ }
             try {
-                const portalBtn = $w('#portalButton');
-                if (portalBtn && portalBtn.uniqueId) portalBtn.show();
+                const portalBtn = $w(`${'#portalButton'}`);
+                if (portalBtn && portalBtn.id) portalBtn.show();
             } catch (e) { /* non-fatal */ }
         }
     } catch (error) {
@@ -334,10 +334,9 @@ async function initGeolocation() {
 
 function trackEvent(eventName, eventData) {
     try {
-        wixWindow.trackEvent('CustomEvent', {
-            event: eventName,
-            detail: eventData || {}
-        });
+        const payload = eventData || {};
+        payload.event = eventName;
+        wixWindow.trackEvent('CustomEvent', payload);
     } catch (e) {
         // Fail silently to not impact user
     }
