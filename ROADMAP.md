@@ -27,7 +27,7 @@ Regardless of how the client interacts, the backend factory seamlessly processes
 
 ## Phase 3: Geographic Expansion ("The Scout")
 - Implement heavy, localized county web scrapers to parse jail rosters automatically.
-- Target Counties: Charlotte (Completed), Lee (Completed), DeSoto (Completed), Sarasota, Collier.
+- Target Counties: Charlotte (Completed), Lee (Completed), DeSoto (Completed), Hendry (Completed), Manatee (Completed), Sarasota, Collier.
 - Automate complete case-file creation dynamically upon parsing a new arrest matching our risk profile.
 
 ## Phase 4: Full Automation (The "Zero-Touch" Bond)

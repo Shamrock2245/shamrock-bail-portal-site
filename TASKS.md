@@ -101,9 +101,9 @@
   - [x] Structured data (JSON-LD) optimized
   - [x] OG/Twitter meta tags + geo tags per county
   - [x] AI crawler friendly `robots.txt`
-- [ ] **"The Scout" Agent (Expansion)**
-  - [ ] Configure `AI_BookingParser.js` for 5 new county URLs
-  - [ ] Set up daily cron triggers in GAS
+- [x] **"The Scout" Agent (Expansion)**
+  - [x] Configure Python scrapers (`curl_cffi` / `BeautifulSoup`) for new county URLs (Charlotte, Hendry, Manatee, DeSoto)
+  - [ ] Set up daily cron triggers in GAS / GitHub Actions
 - [ ] **WhatsApp Business Integration**
   - [ ] Enable Twilio Sandbox
   - [ ] Wire to `twilio-client.jsw`

@@ -13,7 +13,7 @@ This document outlines the vital signs, health checks, and monitoring protocols 
 - **Memory Syncing**: Ensure Mem0 properties (`user_id`, `agent_id`, `metadata`) sync cleanly so Shannon retains cross-session memory of repeat callers. If Shannon drops context, investigate RAG knowledge limits and document parsing errors in her Knowledge Base.
 
 ## 3. Scraper Health ("The Clerk" & "The Scout")
-- **Bot Detection & Bypasses**: Monitor scraping logs for IP blocks (403, 503), Cloudflare/hCaptcha challenge failures, or unexpected DOM changes. Maintain proxy rotation and headless browser (DrissionPage) stealth configurations.
+- **Bot Detection & Bypasses**: Monitor scraping logs for IP blocks (403, 503), Cloudflare/hCaptcha challenge failures, or unexpected DOM changes. Maintain proxy rotation, `curl_cffi` TLS impersonation, and headless browser (DrissionPage) stealth configurations.
 - **Rate Limiting Discipline**: Avoid brute-force polling. Enforce reasonable delays (e.g., wait at least 15 minutes between polling heavy domains like Sarasota Sheriff). For targets like DeSoto (ASP.NET), respect enforced 2-second delays between fetches to avoid silent IP bans.
 - **Job Execution Metrics**: Track the success/failure metrics of GitHub Actions running the scraper workflows. Ensure timely completion against cron schedule expectations.
 

@@ -16,3 +16,6 @@ scripts/seo/service_account.json
 scripts/seo/service_account.json.json
 scripts/seo/indexing_report_*.json
 docs/twilio-docs.md
+.env
+venv/
+.env*
