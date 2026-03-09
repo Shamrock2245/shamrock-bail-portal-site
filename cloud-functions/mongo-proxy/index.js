@@ -109,13 +109,113 @@ const ACTIONS = {
     }
 };
 
+// ── Webhook Handlers ────────────────────────────────────────────────
+async function handleTwilioWebhook(req, res) {
+    try {
+        const payload = req.body || {};
+        const from = payload.From || "Unknown";
+        const body = payload.Body || "";
+        const messageSid = payload.SmsMessageSid || payload.MessageSid || "N/A";
+
+        // Log to MongoDB
+        const client = await getClient();
+        const db = client.db("ShamrockBailDB");
+        const commsCol = db.collection("Communications");
+
+        const commDoc = {
+            direction: "inbound",
+            platform: "twilio",
+            from: from,
+            to: payload.To || "",
+            body: body,
+            messageId: messageSid,
+            rawPayload: payload,
+            timestamp: new Date()
+        };
+        await commsCol.insertOne(commDoc);
+        console.log(`✅ Logged incoming Twilio message from ${from}`);
+
+        // Relay to Node-RED
+        const nodeRedUrl = process.env.NODE_RED_WEBHOOK_URL;
+        if (nodeRedUrl) {
+            fetch(`${nodeRedUrl}/whatsapp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            }).catch(e => console.error("Failed to relay Twilio to Node-RED:", e));
+        } else {
+            console.warn("NODE_RED_WEBHOOK_URL not set, skipping relay.");
+        }
+
+        // Return empty TwiML so Twilio knows we got it
+        res.set("Content-Type", "text/xml");
+        res.status(200).send("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>");
+    } catch (err) {
+        console.error("❌ Twilio Webhook Error:", err);
+        res.status(500).send("Server Error");
+    }
+}
+
+async function handleTelegramWebhook(req, res) {
+    try {
+        const payload = req.body || {};
+        let message = payload.message || (payload.callback_query && payload.callback_query.message);
+        let from = message ? (message.chat ? message.chat.id.toString() : "Unknown") : "Unknown";
+        let body = message ? message.text : "";
+        let messageId = message ? (message.message_id ? message.message_id.toString() : "N/A") : "N/A";
+
+        // Log to MongoDB
+        const client = await getClient();
+        const db = client.db("ShamrockBailDB");
+        const commsCol = db.collection("Communications");
+
+        const commDoc = {
+            direction: "inbound",
+            platform: "telegram",
+            from: from,
+            body: body,
+            messageId: messageId,
+            rawPayload: payload,
+            timestamp: new Date()
+        };
+        await commsCol.insertOne(commDoc);
+        console.log(`✅ Logged incoming Telegram message from ${from}`);
+
+        // Relay to Node-RED
+        const nodeRedUrl = process.env.NODE_RED_WEBHOOK_URL;
+        if (nodeRedUrl) {
+            fetch(`${nodeRedUrl}/telegram`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            }).catch(e => console.error("Failed to relay Telegram to Node-RED:", e));
+        } else {
+            console.warn("NODE_RED_WEBHOOK_URL not set, skipping relay.");
+        }
+
+        res.status(200).send("OK");
+    } catch (err) {
+        console.error("❌ Telegram Webhook Error:", err);
+        res.status(500).send("Server Error");
+    }
+}
+
 // ── Cloud Function Entry Point ──────────────────────────────────────
 functions.http("mongoProxy", async (req, res) => {
     // CORS
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type, x-api-key");
+    res.set("Access-Control-Allow-Headers", "Content-Type, x-api-key, x-twilio-signature");
     if (req.method === "OPTIONS") return res.status(204).send("");
+
+    // Route Incoming Webhooks
+    const path = req.path || "";
+    if (path.includes("/twilio")) {
+        return handleTwilioWebhook(req, res);
+    }
+    if (path.includes("/telegram")) {
+        return handleTelegramWebhook(req, res);
+    }
 
     // Auth: check API key
     const expectedKey = process.env.PROXY_API_KEY;
