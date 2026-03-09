@@ -67,7 +67,7 @@ That file overrides everything else in this repo. Read it first.
 - **Google Apps Script (GAS)**: Backend API (Serverless). Handles PDF generation, SignNow calls, and Admin notifications.
 - **SignNow API**: Digital signature workflow (Embedded Lightbox + Email Fallback).
 - **Google Sheets**: Operational database backup and Admin Dashboard.
-- **Node.js (v18+)**: County scrapers and data processing.
+- **Node.js (v18+)**: County scrapers and data processing **only** (standalone Python/Node scripts — NOT the core app backend, which is GAS exclusively).
 
 ## 3. The Sacred Guardrails
 1.  **34-Column Schema**: Leads/Intake payloads must match the structure defined in `backend-gas/Dashboard.html` logic. See [SCHEMAS.md](file:///Users/brendan/Desktop/shamrock-bail-portal-site/docs/SCHEMAS.md).
