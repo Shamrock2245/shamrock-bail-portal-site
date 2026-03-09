@@ -2,9 +2,14 @@
  * masterPage.js - Shamrock Bail Bonds
  */
 
+// Type-bypass helper for dynamic element IDs not recognized by Wix TS checker
+const $d = (/** @type {string} */ id) => /** @type {any} */($w)(id);
+
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import { session } from 'wix-storage';
+// @ts-ignore -- prefetchPageResources: speeds up portal navigation for all site visitors
+import { site as wixSite } from '@wix/site-site';
 
 // ---------------------------------------------------------------------------
 // Inline county coordinates for Find My Jail geolocation
@@ -95,6 +100,15 @@ $w.onReady(function () {
     } else {
         deferNonCriticalOperations(false);
     }
+
+    // 3. Prefetch portal-landing globally (primary CTA target for all pages)
+    // Delays until after initial paint to not compete with critical resources
+    const isMobile = wixWindow.formFactor === 'Mobile';
+    setTimeout(() => {
+        try {
+            wixSite.prefetchPageResources({ pages: ['/portal-landing'] }).catch(() => { });
+        } catch (e) { /* non-fatal */ }
+    }, isMobile ? 4000 : 2000);
 });
 
 // ---------------------------------------------------------------------------
@@ -132,7 +146,7 @@ function setupFooterPaymentLink() {
 
 function setupMobilePaymentBtn() {
     try {
-        const link = $w(`${'#mobileMakePaymentBtn'}`);
+        const link = $d('#mobileMakePaymentBtn');
         if (link && link.id) {
             link.onClick(() => {
                 trackEvent('payment_link_clicked', { location: 'mobile_menu' });
@@ -143,8 +157,8 @@ function setupMobilePaymentBtn() {
 
 function setupMobileMenu() {
     try {
-        const mobileMenuBtn = $w(`${'#mobileMenuButton'}`);
-        const mobileMenu = $w(`${'#mobileMenu'}`);
+        const mobileMenuBtn = $d('#mobileMenuButton');
+        const mobileMenu = $d('#mobileMenu');
         if (mobileMenuBtn && mobileMenuBtn.id && mobileMenu && mobileMenu.id) {
             mobileMenuBtn.onClick(() => { mobileMenu.expand(); });
         }
@@ -152,9 +166,10 @@ function setupMobileMenu() {
 }
 
 function deferNonCriticalOperations(isMobile) {
-    const baseDelay = isMobile ? 3000 : 1000;
-    setTimeout(() => { initAnalytics(); }, baseDelay + 1000);
-    setTimeout(() => { initGeolocation(); }, baseDelay + 2000);
+    // Reduced delays: mobile 1500ms (was 3000ms), desktop 500ms (was 1000ms)
+    const baseDelay = isMobile ? 1500 : 500;
+    setTimeout(() => { initAnalytics(); }, baseDelay);
+    setTimeout(() => { initGeolocation(); }, baseDelay + 500);
 }
 
 function setupStickyHeader() {
@@ -163,7 +178,7 @@ function setupStickyHeader() {
 
 function setupEmergencyCallButton() {
     try {
-        const btn = $w(`${'#emergencyCallButton'}`);
+        const btn = $d('#emergencyCallButton');
         if (btn && btn.id) {
             btn.onClick(() => { trackEvent('emergency_call_clicked'); });
         }
@@ -192,7 +207,7 @@ function setupFindJailButton() {
 
     if (!btn) {
         try {
-            const el = $w(`${'#findMyJailBtn'}`);
+            const el = $d('#findMyJailBtn');
             btn = (el && el.id) ? el : null;
         } catch (e) { /* not found */ }
     }
@@ -296,17 +311,15 @@ async function checkAuthStatus() {
         const isLoggedIn = session.getItem('isLoggedIn');
         if (isLoggedIn === 'true') {
             try {
-                const loginBtn = $w(`${'#loginButton'}`);
+                const loginBtn = $d('#loginButton');
                 if (loginBtn && loginBtn.id) loginBtn.hide();
             } catch (e) { /* non-fatal */ }
             try {
-                const portalBtn = $w(`${'#portalButton'}`);
+                const portalBtn = $d('#portalButton');
                 if (portalBtn && portalBtn.id) portalBtn.show();
             } catch (e) { /* non-fatal */ }
         }
-    } catch (error) {
-        console.error('Auth check error:', error);
-    }
+    } catch (error) { /* non-fatal: auth elements may not exist on all pages */ }
 }
 
 // ---------------------------------------------------------------------------
@@ -314,18 +327,11 @@ async function checkAuthStatus() {
 // ---------------------------------------------------------------------------
 
 function initAnalytics() {
-    // Analytics initialization (deferred, non-blocking)
+    // Placeholder: analytics providers (e.g. GA4 events) wired here when needed
 }
 
 async function initGeolocation() {
-    try {
-        const geoPermission = session.getItem('geoPermission');
-        if (geoPermission !== 'denied') {
-            // Geolocation pre-warm (optional)
-        }
-    } catch (error) {
-        console.error('Geolocation error:', error);
-    }
+    // Placeholder: geolocation pre-warm (e.g. permission priming) wired here when needed
 }
 
 // ---------------------------------------------------------------------------

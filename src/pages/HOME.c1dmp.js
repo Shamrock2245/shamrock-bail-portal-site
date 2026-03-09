@@ -6,6 +6,8 @@ import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import wixSeo from 'wix-seo';
 import { session } from 'wix-storage';
+// @ts-ignore -- prefetchPageResources: Wix SDK, speeds up next-page navigation
+import { site as wixSite } from '@wix/site-site';
 
 // ---------------------------------------------------------------------------
 // Inline county data -- no backend call, no dynamic chunk, no crash
@@ -88,9 +90,12 @@ const FLORIDA_COUNTIES = [
 $w.onReady(function () {
     const isMobile = wixWindow.formFactor === 'Mobile';
 
-    // SEO -- wrapped in try/catch so a failure cannot crash onReady
+    // SEO meta -- synchronous, required for correct crawling
     try { setupHomepageMeta(); } catch (e) { console.warn('[SEO] setupHomepageMeta failed:', e); }
-    try { setupOrganizationSchema(); } catch (e) { console.warn('[SEO] setupOrganizationSchema failed:', e); }
+    // Defer schema to yield to first paint
+    setTimeout(() => {
+        try { setupOrganizationSchema(); } catch (e) { console.warn('[SEO] setupOrganizationSchema failed:', e); }
+    }, 0);
 
     // Above-the-fold setup
     setupHeroSection();
@@ -99,11 +104,22 @@ $w.onReady(function () {
     // Load county dropdown immediately -- data is inline, no async needed
     loadCountyDropdown();
 
-    // Defer testimonials
-    setTimeout(() => { initTestimonials(); }, isMobile ? 4000 : 2000);
+    // Testimonials: register viewport trigger; data loads on scroll, not on page load
+    // Mobile: defer registration slightly to let above-fold render first
+    setTimeout(() => { initTestimonials(); }, isMobile ? 1500 : 800);
 
     // Telegram Hub analytics bridge (non-blocking)
     initTelegramHubSection();
+
+    // Prefetch high-likelihood next pages after first paint
+    // This is totally non-blocking; Wix fetches resources in the background
+    setTimeout(() => {
+        try {
+            wixSite.prefetchPageResources({
+                pages: ['/portal-landing', '/florida-bail-bonds/lee']
+            }).catch(() => { }); // errors are non-fatal
+        } catch (e) { /* non-fatal */ }
+    }, isMobile ? 3000 : 1500);
 });
 
 // ---------------------------------------------------------------------------
@@ -168,6 +184,23 @@ function loadCountyDropdown() {
         // Wire onChange handler
         dropdown.onChange(() => { handleCountySelection(dropdown); });
 
+        // Prefetch: fire prefetchPageResources when user focuses the dropdown
+        // This means the county page is already loading BEFORE they finish selecting
+        try {
+            if (typeof dropdown.onFocus === 'function') {
+                dropdown.onFocus(() => {
+                    // Prefetch top counties — user intent signal
+                    wixSite.prefetchPageResources({
+                        pages: [
+                            '/florida-bail-bonds/lee',
+                            '/florida-bail-bonds/collier',
+                            '/florida-bail-bonds/charlotte'
+                        ]
+                    }).catch(() => { });
+                });
+            }
+        } catch (e) { /* onFocus may not be supported on all dropdown types */ }
+
         // Wire Get Started button
         let getStartedBtn = null;
         try {
@@ -188,6 +221,9 @@ function loadCountyDropdown() {
 // County selection handlers
 // ---------------------------------------------------------------------------
 
+// Debounce timer for county selection (prevents accidental mobile double-taps)
+let _countySelectTimer = null;
+
 function handleCountySelection(dropdownEl) {
     let dropdown = dropdownEl;
     if (!dropdown || !dropdown.id) {
@@ -198,7 +234,15 @@ function handleCountySelection(dropdownEl) {
     const selectedCounty = dropdown ? dropdown.value : '';
     if (selectedCounty) {
         trackEvent('county_selected', { county: selectedCounty });
-        navigateToCounty(selectedCounty);
+        // Prefetch the specific county page on selection (before 200ms fires)
+        try {
+            wixSite.prefetchPageResources({
+                pages: ['/florida-bail-bonds/' + selectedCounty]
+            }).catch(() => { });
+        } catch (e) { /* non-fatal */ }
+        // 200ms debounce: prevents accidental mobile touch from triggering immediate navigation
+        clearTimeout(_countySelectTimer);
+        _countySelectTimer = setTimeout(() => { navigateToCounty(selectedCounty); }, 200);
     }
 }
 
@@ -229,11 +273,7 @@ function navigateToCounty(selectedCounty) {
         .replace(/\s+county$/i, '')
         .replace(/\s+/g, '-');
 
-    if (!cleanSlug) {
-        console.warn('[County Nav] Slug normalization produced empty string.');
-        return;
-    }
-    console.log('[County Nav] Navigating to /florida-bail-bonds/' + cleanSlug);
+    if (!cleanSlug) return;
     wixLocation.to('/florida-bail-bonds/' + cleanSlug);
 }
 
@@ -252,8 +292,8 @@ function initTestimonials() {
     try {
         const repeater = $w('#testimonialRepeater');
         if (!repeater || !repeater.id) return;
+        // Only load on viewport enter -- avoids fetching off-screen data on page load
         repeater.onViewportEnter(() => { loadTestimonials(); });
-        loadTestimonials();
     } catch (e) { /* non-fatal */ }
 }
 
@@ -419,9 +459,7 @@ function initTelegramHubSection() {
         if (embed && embed.onMessage) {
             embed.onMessage(handleTelegramHubMessage);
         }
-    } catch (e) {
-        console.log('[TelegramHub] #telegramHubEmbed not found -- add HTML Component to page');
-    }
+    } catch (e) { /* #telegramHubEmbed not on page */ }
     try {
         $w('#telegramHubSection').onViewportEnter(() => {
             trackEvent('TelegramHub_SectionVisible', { section: 'telegram_hub' });

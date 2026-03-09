@@ -206,37 +206,31 @@ function updatePageSEO() {
 function setupRepeater() {
     try {
         const repeater = $w('#caseListRepeater');
-        if (!repeater) {
-            console.error("CRITICAL: #caseListRepeater NOT FOUND on page");
-            return;
-        }
-
-        console.log("Setup Repeater: #caseListRepeater found. Attaching onItemReady...");
+        if (!repeater) return;
 
         repeater.onItemReady(($item, itemData) => {
-            console.log(`Repeater Item Ready: ${itemData._id} - ${itemData.defendantName}`);
 
             // Map Fields
             try {
                 if ($item('#caseNumberText')) {
                     $item('#caseNumberText').text = itemData.caseNumber;
-                } else { console.warn("Missing element: #caseNumberText"); }
+                }
 
                 if ($item('#defendantNameText')) {
                     $item('#defendantNameText').text = itemData.defendantName;
-                } else { console.warn("Missing element: #defendantNameText"); }
+                }
 
                 if ($item('#bondAmountText')) {
                     $item('#bondAmountText').text = itemData.bondAmount;
-                } else { console.warn("Missing element: #bondAmountText"); }
+                }
 
                 if ($item('#caseStatusText')) {
                     $item('#caseStatusText').text = itemData.status;
-                } else { console.warn("Missing element: #caseStatusText"); }
+                }
 
                 if ($item('#paperworkStatusText')) {
                     $item('#paperworkStatusText').text = itemData.paperworkStatus;
-                } else { console.warn("Missing element: #paperworkStatusText"); }
+                }
 
             } catch (e) {
                 console.error('Error mapping repeater fields:', e);
@@ -253,7 +247,6 @@ function setupRepeater() {
                     }
 
                     mapBtn.onClick(() => {
-                        console.log("View Map clicked for", itemData.defendantName);
                         if (itemData.address) {
                             const query = encodeURIComponent(itemData.address);
                             wixLocation.to(`https://www.google.com/maps/search/?api=1&query=${query}`);
@@ -280,7 +273,6 @@ function setupRepeater() {
                     }
 
                     filesBtn.onClick(() => {
-                        console.log("View Files clicked for", itemData.defendantName);
                         if (itemData.driveFolderUrl) {
                             wixLocation.to(itemData.driveFolderUrl);
                         } else {
@@ -300,7 +292,6 @@ function setupRepeater() {
                 const pokeBtn = $item('#btnStealthPoke');
                 if (pokeBtn) {
                     pokeBtn.onClick(async () => {
-                        console.log("Stealth Poke clicked for", itemData.defendantName);
                         triggerStealthPoke(itemData);
                     });
                 }
@@ -948,7 +939,7 @@ async function promptForInput(title, placeholder) {
             $w('#staffPromptInput').value = '';
             $w('#staffPromptBox').expand();
             const cleanup = () => {
-                try { $w('#staffPromptBox').collapse(); } catch (_) {}
+                try { $w('#staffPromptBox').collapse(); } catch (_) { }
             };
             $w('#staffPromptConfirmBtn').onClick(() => {
                 const val = $w('#staffPromptInput').value.trim();
@@ -984,7 +975,7 @@ async function promptForSelect(title, options) {
             $w('#staffSelectDropdown').value = options[0];
             $w('#staffSelectBox').expand();
             const cleanup = () => {
-                try { $w('#staffSelectBox').collapse(); } catch (_) {}
+                try { $w('#staffSelectBox').collapse(); } catch (_) { }
             };
             $w('#staffSelectConfirmBtn').onClick(() => {
                 const val = $w('#staffSelectDropdown').value;

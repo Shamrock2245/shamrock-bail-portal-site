@@ -29,12 +29,15 @@ import { getSessionToken, setSessionToken, clearSessionToken } from 'public/sess
 
 // Page state
 let currentSession = null;
-let indemnitorData = null; // Replaces memberData
+let indemnitorData = null;
 let currentIntake = null;
 let isSubmitting = false;
 let submitHandlerAttached = false;
 let eventListenersReady = false;
-let activeSubmitBtnId = '#btnSubmitForm'; // Default, will be auto-detected
+let activeSubmitBtnId = '#btnSubmitForm';
+
+// In-memory county cache: populated once per session, avoids repeated CMS round-trips
+let _cachedCountyOptions = null;
 
 $w.onReady(async function () {
     // SEO: Prevent Indexing (Protected Page)
@@ -164,24 +167,29 @@ async function initializePage() {
  * Load counties for dropdown
  */
 async function loadCounties() {
+    // Return cached options if already loaded this session
+    if (_cachedCountyOptions) {
+        safeSetOptions('#county', _cachedCountyOptions);
+        safeSetPlaceholder('#county', 'Select County');
+        return;
+    }
+
     try {
         const results = await wixData.query('FloridaCounties')
             .eq('active', true)
             .ascending('countyName')
-            .limit(100) // Ensure all 67 counties are loaded
+            .limit(100)
             .find();
 
-        const countyOptions = results.items.map(item => ({
+        _cachedCountyOptions = results.items.map(item => ({
             label: item.countyName,
-            value: item.countyName // Using name as value to match backend expectation
+            value: item.countyName
         }));
 
-        safeSetOptions('#county', countyOptions);
+        safeSetOptions('#county', _cachedCountyOptions);
         safeSetPlaceholder('#county', 'Select County');
     } catch (error) {
         console.error('Error loading counties:', error);
-
-        // Audit Fix: User Feedback & Fallback
         const fallbackCounties = [
             { label: "Lee", value: "Lee" },
             { label: "Collier", value: "Collier" },
@@ -189,6 +197,7 @@ async function loadCounties() {
             { label: "Hendry", value: "Hendry" },
             { label: "Glades", value: "Glades" }
         ];
+        _cachedCountyOptions = fallbackCounties;
         safeSetOptions('#county', fallbackCounties);
         safeSetPlaceholder('#county', 'Select County (Offline Mode)');
         showError("Network warning: Using offline county list.");
@@ -387,19 +396,7 @@ function setupEventListeners() {
     if (eventListenersReady) return;
     eventListenersReady = true;
 
-    console.log(" setupEventListeners: Starting...");
-
-    // DIAGNOSTIC: List all buttons on page
-    try {
-        const allButtons = $w('Button');
-        console.log(" All buttons found on page:", allButtons.map(btn => `${btn.id} (${btn.label || btn.text || 'no label'})`));
-    } catch (e) {
-        console.warn("Could not enumerate buttons:", e);
-    }
-
-    // NOTE: attachSubmitHandler() is now called from setupIntakeForm() with a delay
-    // This ensures the button is in the DOM before we try to attach the handler
-
+    // NOTE: attachSubmitHandler() is called from setupIntakeForm() with a delay
     safeOnClick('#signPaperworkBtn', handleSignPaperwork);
     safeOnClick('#makePaymentBtn', handleMakePayment);
     safeOnClick('#sendMessageBtn', handleSendMessage);
@@ -430,42 +427,30 @@ function setupEventListeners() {
 function attachSubmitHandler(attempt = 0) {
     if (submitHandlerAttached) return;
 
-    const maxAttempts = 20;
-    const delayMs = 500; // Increased delay for stability
+    const maxAttempts = 10;   // Reduced from 20 (5s max vs 10s)
+    const delayMs = 300;      // Reduced from 500ms
 
-    // AGGRESSIVE ID DISCOVERY
     const candidateIds = ['#btnSubmitPortal', '#btnSubmitInfo', '#btnSubmitForm', '#button1', '#submitBtn'];
 
-    // Find the first valid one
     for (const id of candidateIds) {
-        // Just Try To Bind Everything (Brute Force)
         try {
             $w(id).onClick(handleSubmitIntake);
             if ($w(id).valid) {
                 activeSubmitBtnId = id;
-                console.log(`[OK] Bound to ${id} (valid=true)`);
-                break; // Found the Winner
-            } else {
-                console.log(`[!] Bound to ${id} (valid=false) - trying anyway`);
+                break;
             }
-        } catch (e) {
-            // Ignore
-        }
+        } catch (e) { /* try next */ }
     }
 
     if (!activeSubmitBtnId) {
         if (attempt + 1 >= maxAttempts) {
-            console.error(`[X] CRITICAL UI ERROR: No VALID submit button found. Checked: ${candidateIds.join(', ')}`);
-            // Don't show confusing error to user if the brute force binding worked silently
-            // Just warn in console.
+            console.error(`[X] No valid submit button found after ${maxAttempts} attempts. Checked: ${candidateIds.join(', ')}`);
             return;
         }
-
         setTimeout(() => attachSubmitHandler(attempt + 1), delayMs);
         return;
     }
 
-    // Force enable and show
     try {
         const btn = $w(activeSubmitBtnId);
         if (btn.collapsed) btn.expand();
@@ -478,7 +463,6 @@ function attachSubmitHandler(attempt = 0) {
     }
 
     submitHandlerAttached = true;
-    console.log(`[OK] Submit handler fully attached to ${activeSubmitBtnId}`);
 }
 
 /**
@@ -677,8 +661,6 @@ function debugFormState() {
  * 2026 UPDATE: Uses FIELD_MAP Resolution
  */
 function validateIntakeForm() {
-    debugFormState(); // Run diagnostic on every attempt
-
     const errors = [];
 
     // Defendant Name
@@ -848,17 +830,17 @@ async function handleSendMessage() {
         const caseId = currentSession?.caseId || indemnitorData?.caseId || null;
         const senderName = (
             (indemnitorData?.indemnitorFirstName || indemnitorData?.firstName || '') + ' ' +
-            (indemnitorData?.indemnitorLastName  || indemnitorData?.lastName  || '')
+            (indemnitorData?.indemnitorLastName || indemnitorData?.lastName || '')
         ).trim() || currentSession?.name || 'Indemnitor';
 
         // 1. Notify GAS -- logs to Sheets + triggers Slack alert to staff
         await callGasAction('portalClientMessage', {
-            caseId:      caseId,
-            senderName:  senderName,
+            caseId: caseId,
+            senderName: senderName,
             senderEmail: currentSession?.email || '',
-            message:     message.trim(),
-            source:      'indemnitor_portal',
-            timestamp:   new Date().toISOString()
+            message: message.trim(),
+            source: 'indemnitor_portal',
+            timestamp: new Date().toISOString()
         });
 
         // 2. Store in-app notification so staff dashboard can surface it

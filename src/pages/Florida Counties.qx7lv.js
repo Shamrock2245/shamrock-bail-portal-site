@@ -38,13 +38,8 @@ $w.onReady(async function () {
         // Show loading state if element exists
         try { Select('#loadingIndicator').show(); } catch (e) { }
 
-        // console.log(" Calling backend generateCountyPage...");
-
         // 2. FETCH MAIN DATA (Critical Path)
-        // We prioritize the main content. Nearby counties can load later.
         const pageResult = await generateCountyPage(countySlug.toLowerCase());
-
-        // console.log(" Backend Response:", pageResult);
 
         const { success, data } = pageResult;
 
@@ -56,31 +51,25 @@ $w.onReady(async function () {
                 Select('#countyName').expand();
                 Select('#heroSubtitle').text = "We serve all of Florida, but this specific page is unavailable. Call us now for immediate help.";
                 Select('#heroSubtitle').expand();
-                Select('#heroCallButton').expand(); // Always give them a way to call
-                Select('#countyContent').collapse(); // Hide broken sections
+                Select('#heroCallButton').expand();
+                Select('#countyContent').collapse();
             } catch (e) { }
             return;
         }
 
         const county = data;
-        // console.log(`[OK] Loaded Data for: ${county.county_name_full}. Starting UI Update...`);
 
         // 3. GENERATE SEO (Meta + Schema) - Critical for SEO
         setupSEO(county);
 
-        // 4. POPULATE UI - Critical for LCP
+        // 4. POPULATE UI + inject final schema (including FAQs)
         await populateMainUI(county, countySlug);
 
         // 5. DEFER NON-CRITICAL (Nearby Counties)
-        // Mobile: Defer significantly (3s) to prioritize main content interaction
-        // Desktop: Slight deferral (0.5s)
         const isMobile = wixWindow.formFactor === 'Mobile';
         setTimeout(() => {
             loadNearbyCounties(county.region, countySlug);
         }, isMobile ? 3000 : 500);
-
-        // 6. DEBUG CMS (User Request)
-        debugCMS();
 
         // Hide loader / Show content
         try { Select('#loadingIndicator').hide(); } catch (e) { }
@@ -88,7 +77,6 @@ $w.onReady(async function () {
 
     } catch (err) {
         console.error("CRITICAL ERROR in Florida Counties Page:", err);
-        // Fallback: If everything fails, try to show SOMETHING
         $w('#countyName').text = "Bail Bonds in Florida";
         try { Select('#loadingIndicator').hide(); } catch (e) { }
     }
@@ -248,10 +236,9 @@ function setupSEO(county) {
         }
     });
 
-    // Store schemas on county object for later use by populateMainUI
-    // FAQPage will be added there after CMS FAQs are loaded
+    // Store schemas on county object; FAQPage will be added after CMS FAQs load in populateMainUI
     county._seoSchemas = schemas;
-    wixSeo.setStructuredData(schemas).catch(e => { });
+    // Note: setStructuredData is called ONCE in populateMainUI after FAQs are loaded
 }
 
 // --- HELPER UI FUNCTIONS ---
@@ -354,71 +341,45 @@ async function populateMainUI(county, currentSlug) {
     let faqs = [];
     try {
         const countyName = county.name || county.countyName || county.county_name || "Unknown County";
-        console.log(` Loading FAQs for county: ${countyName}`);
+        const countyShort = countyName.replace(' County', '').trim();
 
         let faqResult;
 
-        // 1. Try 'Import22' (Primary Collection)
-        // STRATEGY: Try strict match "Lee County" first, then "Lee", then ANY (Broadest fallback)
+        // Optimized: Single query using hasSome to check both "Lee County" and "Lee" forms
+        // Falls back to generic county-agnostic FAQs in one step
         try {
-            console.log(`Checking Import22 for: ${countyName}`);
-            // Attempt 1: "Lee County"
             faqResult = await wixData.query('Import22')
                 .eq('isActive', true)
-                .contains('relatedCounty', countyName) // Use contains instead of eq for safety
+                .hasSome('relatedCounty', [countyName, countyShort])
                 .ascending('sortOrder')
                 .limit(15)
                 .find();
 
-            // Attempt 2: "Lee" (if no results) - Broad search
-            if (faqResult.items.length === 0) {
-                console.log("Strict search empty. Trying broad county search...");
-                faqResult = await wixData.query('Import22')
-                    .contains('relatedCounty', countyName.replace(' County', '').trim())
-                    .limit(15)
-                    .find();
-            }
-
-            // Attempt 3: Emergency Fallback - Just get SOME content
-            if (faqResult.items.length === 0) {
-                console.log("County search empty. Fetching generic FAQs...");
+            // One fallback: generic FAQs if no county match
+            if (!faqResult || faqResult.items.length === 0) {
                 faqResult = await wixData.query('Import22')
                     .limit(10)
                     .find();
             }
-
-        } catch (e) { console.warn("Import22 failed, trying 'Faqs'...", e); }
-
-        // 2. Fallback to 'Faqs' Collection
-        if (!faqResult || faqResult.items.length === 0) {
+        } catch (e) {
+            // Fallback to Faqs collection
             try {
                 faqResult = await wixData.query('Faqs')
-                    .contains('relatedCounty', countyName)
+                    .hasSome('relatedCounty', [countyName, countyShort])
                     .limit(15)
                     .find();
-            } catch (e) { }
+            } catch (e2) { /* no-op, will use embedded fallback */ }
         }
 
         if (faqResult && faqResult.items.length > 0) {
-            console.log(`[OK] Loaded ${faqResult.items.length} FAQs from CMS for ${countyName}`);
-
-            // Dynamically replace "Lee County" with actual county name in questions and answers
             faqs = faqResult.items.map(item => {
                 let question = item.title || item.question || '';
                 let answer = item.answer || '';
-
-                // Replace "Lee County" with the actual county name
                 question = question.replace(/Lee County/gi, countyName);
                 answer = answer.replace(/Lee County/gi, countyName);
-
-                return {
-                    _id: item._id,
-                    question: question,
-                    answer: answer
-                };
+                return { _id: item._id, question, answer };
             });
         } else {
-            console.warn(`[!] No CMS FAQs for ${countyName}, using embedded fallback...`);
             faqs = (county.content && county.content.faq) || [];
         }
     } catch (err) {
@@ -426,8 +387,7 @@ async function populateMainUI(county, currentSlug) {
         faqs = (county.content && county.content.faq) || [];
     }
 
-    // Update structured data with CMS FAQs (replaces initial schema set)
-    // We re-inject ALL schemas + FAQPage with the correct county-replaced text
+    // Inject final structured data (base schemas + FAQPage) in a single call
     if (faqs.length > 0) {
         try {
             const baseSchemas = county._seoSchemas || [];
@@ -444,8 +404,8 @@ async function populateMainUI(county, currentSlug) {
                     "cssSelector": [".faq-question", ".faq-answer", "h1", "h2"]
                 }
             };
+            // Single consolidated call — replaces the early call in setupSEO
             wixSeo.setStructuredData([...baseSchemas, faqSchema]).catch(e => { });
-            console.log(`[OK] FAQPage schema injected with ${faqs.length} CMS FAQs`);
         } catch (seoErr) {
             console.warn('FAQPage schema injection failed:', seoErr);
         }
