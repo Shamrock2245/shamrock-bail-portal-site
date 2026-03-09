@@ -719,6 +719,20 @@ function doPost(e) {
       }
     }
 
+    // ─── TWILIO INBOUND SMS HANDLER ───
+    if (data.action === 'twilio_check_in') {
+      try {
+        Logger.log('📞 Incoming Twilio Message: ' + data.fromNumber);
+        if (typeof handleClientCheckInReply === 'function') {
+          handleClientCheckInReply(data.fromNumber, data.body);
+          return createResponse({ success: true, message: 'Check-in processed' });
+        }
+        return createErrorResponse('Check-in system disabled', ERROR_CODES.INTERNAL_ERROR);
+      } catch (e) {
+        return createErrorResponse(e.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
     // ─── COURT DATE SCHEDULE (Feature #2) ───
     if (data.action === 'schedule_court_date') {
       try {
@@ -1380,6 +1394,97 @@ function handleAction(data) {
   if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
   if (action === 'health') return { success: true, version: '5.9', timestamp: new Date().toISOString() };
 
+
+  // --- CLERICAL OPERATIONS ---
+  if (action === 'scrapeLee') {
+    try {
+      if (typeof scrapeLeeCounty === 'function') {
+        scrapeLeeCounty();
+        if (typeof NotificationService !== 'undefined' && NotificationService.sendSlack) {
+          NotificationService.sendSlack('#alerts', '🛠️ *Manual Trigger:* Lee County Scraper executed via Dashboard.');
+        }
+        return { success: true, message: 'Lee County Scrape initiated' };
+      }
+      return { success: false, error: 'Function scrapeLeeCounty not found' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  if (action === 'processCourtEmails') {
+    try {
+      if (typeof processCourtEmails === 'function') {
+        const results = processCourtEmails();
+        if (typeof NotificationService !== 'undefined' && NotificationService.sendSlack && results) {
+          NotificationService.sendSlack('#alerts', `🛠️ *Manual Trigger:* Court Emails Processed.\n✅ ${results.processed || 0} | ⏭️ ${results.skipped || 0} | ❌ ${results.errors || 0}`);
+        }
+        return { success: true, results: results };
+      }
+      return { success: false, error: 'Function processCourtEmails not found' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // 7. REPORTING ENGINE
+  if (action === 'generateReport') {
+    if (typeof api_generateReporting === 'function') {
+      return api_generateReporting(data.reportType, data.payload || {});
+    } else {
+      return { success: false, error: 'Reporting Engine not loaded' };
+    }
+  }
+
+  // 8. COURT REMINDERS (Triggers & Manual Runs)
+  if (action === 'installCourtReminders') {
+    if (typeof installCourtReminderTrigger === 'function') {
+      installCourtReminderTrigger();
+      return { success: true, message: 'Court Reminder Daily Trigger Installed (9 AM ET)' };
+    }
+    return { success: false, error: 'Court Reminder System not found' };
+  }
+
+  if (action === 'runCourtReminders') {
+    if (typeof processDailyCourtReminders === 'function') {
+      processDailyCourtReminders();
+      return { success: true, message: 'Court Reminders Processed Manually' };
+    }
+    return { success: false, error: 'Court Reminder System not found' };
+  }
+
+  // 9. CLIENT CHECK-INS (Triggers & Manual Runs)
+  if (action === 'installClientCheckIns') {
+    if (typeof installClientCheckInTrigger === 'function') {
+      installClientCheckInTrigger();
+      return { success: true, message: 'Client Check-In Weekly Trigger Installed (Sun 11 AM ET)' };
+    }
+    return { success: false, error: 'Client Check-In System not found' };
+  }
+
+  if (action === 'runClientCheckIns') {
+    if (typeof sendAutomatedCheckIns === 'function') {
+      sendAutomatedCheckIns();
+      return { success: true, message: 'Automated Client Check-Ins Processed Manually' };
+    }
+    return { success: false, error: 'Client Check-In System not found' };
+  }
+
+  // 10. PAYMENT PLAN RECONCILIATION
+  if (action === 'installPaymentPlanRecon') {
+    if (typeof installPaymentPlanReconTrigger === 'function') {
+      installPaymentPlanReconTrigger();
+      return { success: true, message: 'Payment Plan Recon Weekly Trigger Installed (Fri 2 PM ET)' };
+    }
+    return { success: false, error: 'Payment Plan Recon System not found' };
+  }
+
+  if (action === 'runPaymentPlanRecon') {
+    if (typeof reconcilePaymentPlans === 'function') {
+      var result = reconcilePaymentPlans();
+      return { success: true, message: 'Payment Plan Reconciliation Processed Manually', data: result };
+    }
+    return { success: false, error: 'Payment Plan Recon System not found' };
+  }
 
   // 8. DOCUMENT GENERATION (Magic Tags)
   if (action === 'generate_document') {
