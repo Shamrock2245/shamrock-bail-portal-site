@@ -2251,29 +2251,13 @@ function createEmbeddedLink(documentId, email, role, expirationMinutes) {
   }
   return { success: false, error: 'No link returned', debug: res };
 }
+/**
+ * @deprecated Use SN_uploadDocument() from SignNow_Integration_Complete.js.
+ * Shim for backward compatibility — all callers route to the canonical implementation.
+ */
 function uploadFilledPdfToSignNow(pdfBase64, fileName) {
-  // ... (Keep existing implementation if needed, omitted for brevity but should be in full file)
-  // Re-implementing simplified for safety
-  const config = getConfig();
-  if (!config.SIGNNOW_ACCESS_TOKEN) return { success: false, error: 'Missing SN Token' };
-  try {
-    const boundary = '----Bound' + Utilities.getUuid();
-    const pdfBytes = Utilities.base64Decode(pdfBase64);
-    let head = '--' + boundary + '\r\n' + 'Content-Disposition: form-data; name="file"; filename="' + fileName + '"\r\n' + 'Content-Type: application/pdf\r\n\r\n';
-    let tail = '\r\n--' + boundary + '--\r\n';
-    const payload = Utilities.newBlob(head).getBytes().concat(pdfBytes).concat(Utilities.newBlob(tail).getBytes());
-
-    const options = {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + config.SIGNNOW_ACCESS_TOKEN, 'Content-Type': 'multipart/form-data; boundary=' + boundary },
-      payload: payload,
-      muteHttpExceptions: true
-    };
-    const res = UrlFetchApp.fetch(config.SIGNNOW_API_BASE + '/document', options);
-    const json = JSON.parse(res.getContentText());
-    if (res.getResponseCode() < 300) return { success: true, documentId: json.id };
-    return { success: false, error: json.error || 'Upload failed' };
-  } catch (e) { return { success: false, error: e.message }; }
+  Logger.log('[Code.js] uploadFilledPdfToSignNow() → delegating to SN_uploadDocument() [canonical]');
+  return SN_uploadDocument(pdfBase64, fileName);
 }
 function createSigningRequest(data) {
   // Convert simplified signer objects to SignNow API format

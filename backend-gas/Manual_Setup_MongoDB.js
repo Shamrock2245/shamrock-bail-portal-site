@@ -15,7 +15,7 @@ function setupMongoDBProperties() {
 
     // 2. The proxy API key used to secure the Cloud Function
     //    Must match PROXY_API_KEY in the Cloud Function environment
-    props.setProperty('PROXY_API_KEY', 'shamrock-super-secret-proxy-key-2026');
+    props.setProperty('PROXY_API_KEY', '<SET_YOUR_PROXY_API_KEY_HERE>'); // ⚠️  Replace with your actual key — NEVER commit real secrets
 
     // 3. Cluster & DB names (for reference)
     props.setProperty('MONGO_CLUSTER', 'Shamrock');
