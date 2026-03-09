@@ -53,6 +53,14 @@ class TelegramBotAPI {
     }
   }
 
+  /**
+   * Check if the bot token is configured
+   * @returns {boolean}
+   */
+  isConfigured() {
+    return !!this.botToken;
+  }
+
   // ===========================================================================
   // CORE API METHODS
   // ===========================================================================

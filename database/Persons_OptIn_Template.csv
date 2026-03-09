@@ -1,0 +1,2 @@
+title,firstName,lastName,phone,email,smsConsent,caseReference
+"John Doe","John","Doe","(555) 555-5555","john@example.com",TRUE,"240001234"

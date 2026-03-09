@@ -59,7 +59,7 @@ function AI_parseBookingSheet(inputData) {
     4. **Charges**: Extract ALL charges found. 
        - If a bond amount is listed as $5000.00, return generic number 5000.
     5. **Jail/Facility**: Look for "Housing", "Facility", "Jail", or "Custody" location.
-    6. **Court/County**: Look for "Court", "County", or "Jurisdiction" (e.g. "Lee", "Collier", "Charlotte").
+    6. **Court/County**: Look for "Court", "County", or "Jurisdiction" (e.g. "Lee", "Collier", "Orange", "Charlotte", "Manatee", "Sarasota", "Hendry", "Pinellas", "Glades").
     7. **Dates**: Extract Arrest Date and Booking Date.
     
     **ROBUSTNESS**:
@@ -76,7 +76,7 @@ function AI_parseBookingSheet(inputData) {
       "bookingNumber": "String",
       "arrestDate": "YYYY-MM-DD or null",
       "jailFacility": "String or null",
-      "county": "String (e.g. Lee, Collier, Orange) or null",
+      "county": "String (e.g. Lee, Collier, Orange, Charlotte, Manatee, Sarasota, Hendry, Pinellas, Glades) or null",
       "address": { 
         "street": "String", 
         "city": "String", 

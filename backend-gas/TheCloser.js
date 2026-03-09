@@ -259,12 +259,17 @@ function _sendFollowUp(dripLevel, name, phone, intakeId) {
             else if (cleanPhone.length === 11 && cleanPhone[0] === '1') cleanPhone = '+' + cleanPhone;
             else cleanPhone = '+' + cleanPhone;
 
-            if (typeof sendTwilioSMS === 'function') {
-                sendTwilioSMS(cleanPhone, smsBody);
+            // Determine best SMS sender
+            if (typeof NotificationService !== 'undefined' && typeof NotificationService.sendSms === 'function') {
+                NotificationService.sendSms(cleanPhone, smsBody);
                 channels.push('sms');
-                Logger.log('  📱 SMS sent to ' + cleanPhone.slice(-4));
+                Logger.log('  📱 SMS sent via NotificationService to ' + cleanPhone.slice(-4));
+            } else if (typeof sendSmsViaTwilio === 'function') {
+                sendSmsViaTwilio(cleanPhone, smsBody);
+                channels.push('sms');
+                Logger.log('  📱 SMS sent via sendSmsViaTwilio to ' + cleanPhone.slice(-4));
             } else {
-                Logger.log('  ⚠️ sendTwilioSMS not available');
+                Logger.log('  ⚠️ SMS sending function not available (NotificationService.sendSms or sendSmsViaTwilio)');
             }
         } catch (smsErr) {
             Logger.log('  ❌ SMS failed: ' + smsErr.message);

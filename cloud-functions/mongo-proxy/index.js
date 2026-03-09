@@ -200,6 +200,45 @@ async function handleTelegramWebhook(req, res) {
     }
 }
 
+async function handleWixWebhook(req, res) {
+    try {
+        const payload = req.body || {};
+        const caseId = payload.caseId || "Unknown";
+
+        // Log to MongoDB
+        const client = await getClient();
+        const db = client.db("ShamrockBailDB");
+        const eventsCol = db.collection("WixIntakeEvents");
+
+        const eventDoc = {
+            source: "wix_velo",
+            type: "intake_submission",
+            caseId: caseId,
+            rawPayload: payload,
+            timestamp: new Date()
+        };
+        await eventsCol.insertOne(eventDoc);
+        console.log(`✅ Logged incoming Wix intake event for Case: ${caseId}`);
+
+        // Relay to Node-RED
+        const nodeRedUrl = process.env.NODE_RED_WEBHOOK_URL;
+        if (nodeRedUrl) {
+            fetch(`${nodeRedUrl}/wix-intake`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            }).catch(e => console.error("Failed to relay Wix Intake to Node-RED:", e));
+        } else {
+            console.warn("NODE_RED_WEBHOOK_URL not set, skipping relay.");
+        }
+
+        res.status(200).json({ success: true, message: "Handshake completed successfully" });
+    } catch (err) {
+        console.error("❌ Wix Webhook Error:", err);
+        res.status(500).json({ error: "Server Error" });
+    }
+}
+
 // ── Cloud Function Entry Point ──────────────────────────────────────
 functions.http("mongoProxy", async (req, res) => {
     // CORS
@@ -216,8 +255,17 @@ functions.http("mongoProxy", async (req, res) => {
     if (path.includes("/telegram")) {
         return handleTelegramWebhook(req, res);
     }
+    if (path.includes("/wix-intake")) {
+        // Authenticate Wix webhook requests with PROXY_API_KEY
+        const expectedKey = process.env.PROXY_API_KEY;
+        const providedKey = req.headers["x-api-key"];
+        if (expectedKey && providedKey !== expectedKey) {
+            return res.status(401).json({ error: "Unauthorized — invalid x-api-key" });
+        }
+        return handleWixWebhook(req, res);
+    }
 
-    // Auth: check API key
+    // Auth: check API key for database operations
     const expectedKey = process.env.PROXY_API_KEY;
     const providedKey = req.headers["x-api-key"];
     if (expectedKey && providedKey !== expectedKey) {

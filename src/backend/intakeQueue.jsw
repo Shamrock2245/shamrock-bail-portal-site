@@ -13,6 +13,9 @@ import { COLLECTIONS } from 'public/collectionIds';
 import { notifyGASOfNewIntake, callGasAction } from './gasIntegration.jsw';
 import { getConfig } from 'backend/config-loader';
 
+import { getMongoProxyUrl, getMongoProxyApiKey } from 'backend/secretsManager';
+import { fetch } from 'wix-fetch';
+
 /**
  * Submit indemnitor intake form to IntakeQueue
  * 
@@ -42,16 +45,36 @@ export async function submitIntakeForm(intakeData) {
         const savedRecord = await wixData.insert(COLLECTIONS.INTAKE_QUEUE, newRecord, { suppressAuth: true });
         console.log(`[OK] Intake saved to Wix Collection: ${savedRecord._id} (Case: ${caseId})`);
 
-        // 4. Notify GAS (Async - don't block heavily, but wait for result to log)
+        // 4. Wix -> Node-RED Handshake via Proxy
+        try {
+            const proxyUrl = await getMongoProxyUrl();
+            const proxyKey = await getMongoProxyApiKey();
+
+            if (proxyUrl && proxyKey) {
+                console.log(`[>>] Executing Handshake: Wix -> Node-RED via Proxy`);
+                await fetch(`${proxyUrl}/wix-intake`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': proxyKey
+                    },
+                    body: JSON.stringify(newRecord)
+                });
+            } else {
+                console.warn('[!] Missing Proxy Secrets for Node-RED Handshake');
+            }
+        } catch (handshakeErr) {
+            console.error('[X] Handshake Error (Node-RED/Proxy):', handshakeErr);
+        }
+
+        // 5. Notify GAS (Async - fallback/legacy data pipeline)
         try {
             await notifyGASOfNewIntake(caseId);
         } catch (gasError) {
             console.error('[!] GAS Notification failed (non-fatal):', gasError);
-            // We continue, as the record is saved. A cron job can pick up pending syncs.
         }
 
-        // 5. Notify Staff (Slack)
-        // Fire and forget to speed up response
+        // 6. Notify Staff (Slack)
         notifyStaffOfNewIntake(savedRecord).catch(err => console.error('Slack Notification Failed:', err));
 
         return {
