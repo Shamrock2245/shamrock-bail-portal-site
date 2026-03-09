@@ -127,16 +127,41 @@ function handleTwilioWebhookSOC2(e) {
         console.error('Error processing SMS logic:', err);
     }
 
-    // Return TwiML (Auto-Reply)
-    // We could make this dynamic based on keywords (e.g. "STOP", "HELP")
-    // Twilio handles STOP/HELP automatically if configured, but explicit handling is good.
-
+    // Return TwiML (Auto-Reply or Conversational State Machine)
     let replyMsg = "Thank you for contacting Shamrock Bail Bonds. An agent will be with you shortly. If this is an emergency, please call 239-332-2245.";
 
     // Simple Keyword Matching
-    const lowerBody = (payload.Body || '').toLowerCase();
+    const lowerBody = (payload.Body || '').toLowerCase().trim();
     if (lowerBody.includes('check in') || lowerBody.includes('checkin')) {
         replyMsg = "To check in, please visit: https://shamrockbailbonds.biz/check-in";
+    } else {
+        // Omni-Channel Intake Integration
+        let isIntakeMessage = false;
+
+        // 1. Check if user is already in active flow
+        if (typeof getConversationState === 'function') {
+            const state = getConversationState(from);
+            if (state && state.step && state.step !== 'greeting' && state.step !== 'complete') {
+                isIntakeMessage = true;
+            }
+        }
+
+        // 2. Check for start keywords
+        if (['bail', 'help', 'start', 'post bail', 'arrested', 'jail', 'bond'].some(k => lowerBody.includes(k)) || lowerBody === '1') {
+            isIntakeMessage = true;
+        }
+
+        if (isIntakeMessage && typeof processIntakeMessage === 'function') {
+            try {
+                // Pipe message to the universal state machine
+                const intakeResult = processIntakeMessage(from, body, "Client");
+                if (intakeResult && intakeResult.text) {
+                    replyMsg = intakeResult.text;
+                }
+            } catch (intakeErr) {
+                console.error("Twilio Intake error:", intakeErr);
+            }
+        }
     }
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${replyMsg}</Message></Response>`;

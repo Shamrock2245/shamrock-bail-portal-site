@@ -1,0 +1,17 @@
+{
+    "name": "shamrock-mongo-proxy",
+    "version": "1.0.0",
+    "description": "Google Cloud Function — REST proxy for MongoDB Atlas (replaces deprecated Data API)",
+    "main": "index.js",
+    "engines": {
+        "node": ">=18"
+    },
+    "scripts": {
+        "start": "functions-framework --target=mongoProxy",
+        "deploy": "gcloud functions deploy mongo-proxy --gen2 --runtime=nodejs20 --region=us-east1 --trigger-http --allow-unauthenticated --entry-point=mongoProxy --set-secrets=MONGO_URI=MONGO_URI:latest,PROXY_API_KEY=PROXY_API_KEY:latest --memory=256MB --timeout=60s --max-instances=10 --project=swfl-arrest-scrapers"
+    },
+    "dependencies": {
+        "@google-cloud/functions-framework": "^3.3.0",
+        "mongodb": "^6.3.0"
+    }
+}
