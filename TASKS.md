@@ -86,6 +86,14 @@
 
 ---
 
+## ✅ Phase 6.5: Automated Reporting & Agency Management (Complete — Mar 08, 2026)
+- [x] **Bond Reporting Engine:** Weekly liability, agent commissions, and void/discharge reconciliation.
+- [x] **Court Reminder System:** Automated WhatsApp/SMS loops (7, 3, 1 days prior).
+- [x] **Client Check-In System:** Automated weekly SMS check-ins with text response tracking.
+- [x] **Payment Plan Reconciliation:** SwipeSimple delinquency tracking for active accounts.
+
+---
+
 ## 🔮 Phase 7: Growth & Scale (In Progress)
 - [x] **ElevenLabs After-Hours Agent ("Shannon")**
   - [x] Inbound Twilio → ElevenLabs voice agent integration

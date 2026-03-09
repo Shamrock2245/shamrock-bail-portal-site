@@ -46,6 +46,17 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-03-08 — Phase 5: Automated Reporting & Agency Management
+
+**Added:**
+- `backend-gas/BondReportingEngine.js` — Automated weekly liability tracking, Agent Commissions (1099), and Void/Discharge Reconciliation.
+- `backend-gas/CourtReminderSystem.js` — Automated SMS/WhatsApp court reminders (7, 3, 1 day prior) checking duplicate logs securely.
+- `backend-gas/ClientCheckInSystem.js` — Weekly SMS check-ins for active clients, with webhook processing for text replies.
+- `backend-gas/PaymentPlanReconciliation.js` — SwipeSimple integration for identifying delinquent payment plans (>30 days).
+- Handlers exposed in `backend-gas/Code.js` (`installCourtReminders`, `runClientCheckIns`, etc.) for manual triggering from Node-RED dashboard.
+
+---
+
 ### 2026-02-27 — v2.1.0 — Automation Factory Gap-Fill
 
 **Fixed:**
