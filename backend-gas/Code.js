@@ -135,6 +135,26 @@ const ERROR_CODES = {
 function doGet(e) {
   if (!e) e = { parameter: {} };
 
+  if (e.parameter && e.parameter.testDoc) {
+    if (typeof generateMotionForRemission === 'function') {
+      try {
+        var result = generateMotionForRemission({
+          defendantName: "NATHAN STONE",
+          county: "LEE",
+          courtName: "CIRCUIT",
+          caseNumber: "24-CF-000001",
+          bondAmount: "5000",
+          estreatureDate: "June 1, 2024",
+          apprehensionDate: "June 5, 2024",
+          bondDate: "January 15, 2024"
+        }, null);
+        return ContentService.createTextOutput("Testing Nathan Stone Doc Generated. Link: " + result.url);
+      } catch (err) {
+        return ContentService.createTextOutput("Error: " + err.message);
+      }
+    }
+  }
+
   // ElevenLabs Conversation Init — handle via GET to avoid GAS POST redirect issues
   if (e.parameter && e.parameter.source === 'elevenlabs_init') {
     if (typeof handleElevenLabsConversationInit === 'function') {
@@ -1421,6 +1441,61 @@ function handleAction(data) {
         return { success: true, results: results };
       }
       return { success: false, error: 'Function processCourtEmails not found' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // TEMP: EMAIL RESEARCH
+  if (action === 'researchEmails') {
+    if (typeof api_researchEmails === 'function') {
+      return api_researchEmails(data.query || '');
+    }
+    return { success: false, error: 'Function not found' };
+  }
+
+  // 6.6 COURT DOCUMENT GENERATION (Stipulations, Motions, Affidavits)
+  if (action === 'generateCourtDocument') {
+    try {
+      const type = data.docType; // 'motion', 'stipulation', 'order', 'affidavit'
+      const caseData = data.caseData || {};
+      const folderId = data.folderId || null;
+
+      let result = null;
+      if (type === 'motion') result = generateMotionForRemission(caseData, folderId);
+      else if (type === 'stipulation') result = generateStipulation(caseData, folderId);
+      else if (type === 'order') result = generateOrder(caseData, folderId);
+      else if (type === 'affidavit') result = generateAffidavit(caseData, folderId);
+      else throw new Error("Invalid document type requested: " + type);
+
+      return { success: true, docId: result.docId, url: result.url };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // 6.5 CALENDAR INTEGRATION (Dashboard Widget)
+  if (action === 'getUpcomingCourtDates') {
+    try {
+      const calendarId = 'admin@shamrockbailbonds.biz';
+      const calendar = CalendarApp.getCalendarById(calendarId);
+      if (!calendar) return { success: false, error: 'Calendar not found' };
+
+      const now = new Date();
+      const lookahead = new Date();
+      lookahead.setDate(now.getDate() + 30); // Next 30 days
+
+      const events = calendar.getEvents(now, lookahead);
+      const mappedEvents = events.map(e => ({
+        title: e.getTitle(),
+        startTime: e.getStartTime().toISOString(),
+        endTime: e.getEndTime().toISOString(),
+        location: e.getLocation(),
+        description: e.getDescription(),
+        color: e.getColor()
+      }));
+
+      return { success: true, events: mappedEvents };
     } catch (e) {
       return { success: false, error: e.message };
     }
