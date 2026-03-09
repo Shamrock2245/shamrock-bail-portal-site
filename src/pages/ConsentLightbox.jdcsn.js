@@ -1,18 +1,12 @@
 /**
  * ConsentLightbox.jdcsn.js
- * Simple, non-intrusive consent lightbox for electronic signing
- * Clean design with clear options
- * 
- * Expected Elements:
- * - #consentText: Brief consent explanation
- * - #agreeBtn: Agree button
- * - #declineBtn: Decline button (optional)
- * - #privacyLink: Link to privacy policy (optional)
+ * Premium consent lightbox for electronic signing and location tracking.
+ * Uses an HTML embed for a glassmorphism UI.
  */
 
 import wixWindow from 'wix-window';
 import wixData from 'wix-data';
-import { getSessionToken } from 'public/session-manager';
+import { getSessionToken, getSessionData } from 'public/session-manager';
 import { validateCustomSession } from 'backend/portal-auth';
 
 let sessionData = null;
@@ -23,91 +17,59 @@ $w.onReady(async function () {
     if (sessionToken) {
         try {
             sessionData = await validateCustomSession(sessionToken);
-        } catch (e) { /* Continue without session data */ }
+        } catch (e) {
+            console.warn("Could not validate session quietly.");
+        }
     }
 
-    setupUI();
-    setupEventHandlers();
+    // Try to get cached synchronous data instead if backend validation fails
+    if (!sessionData) {
+        sessionData = getSessionData();
+    }
+
+    setupHtmlHandler();
 });
 
-function setupUI() {
-    // Set concise consent text
-    if ($w('#consentText')) {
-        $w('#consentText').text = `By continuing, you agree to:
+function setupHtmlHandler() {
+    const htmlElement = $w('#htmlConsent');
 
-* Sign documents electronically (legally binding)
-* Allow location capture at signing time
-* Receive communications about your case
+    if (htmlElement) {
+        // Listen to messages from the HTML embed
+        htmlElement.onMessage(async (event) => {
+            const data = event.data;
 
-This is required for electronic signing.`;
-    }
-
-    // Set button labels
-    if ($w('#agreeBtn')) {
-        $w('#agreeBtn').label = 'I Agree';
-    }
-    if ($w('#declineBtn')) {
-        $w('#declineBtn').label = 'Not Now';
-    }
-}
-
-function setupEventHandlers() {
-    // Agree button
-    try {
-        if ($w('#agreeBtn')) {
-            $w('#agreeBtn').onClick(handleAgree);
-        }
-    } catch (e) { console.warn('Agree button not found'); }
-
-    // Decline button
-    try {
-        if ($w('#declineBtn')) {
-            $w('#declineBtn').onClick(handleDecline);
-        }
-    } catch (e) { /* Decline button optional */ }
-
-    // Privacy link
-    try {
-        if ($w('#privacyLink')) {
-            $w('#privacyLink').onClick(() => {
+            if (data.type === 'agree') {
+                await processAgreement();
+            } else if (data.type === 'decline') {
+                wixWindow.lightbox.close({ success: false, declined: true });
+            } else if (data.type === 'privacy') {
                 wixWindow.openLightbox('PrivacyLightbox');
-            });
-        }
-    } catch (e) { /* Privacy link optional */ }
-
-    // Close button
-    try {
-        if ($w('#closeBtn')) {
-            $w('#closeBtn').onClick(() => {
-                wixWindow.lightbox.close({ success: false, cancelled: true });
-            });
-        }
-    } catch (e) { /* Close button optional */ }
+            }
+        });
+    } else {
+        console.error("HTML Consent Element (#htmlConsent) not found on the page.");
+    }
 }
 
-async function handleAgree() {
-    // Disable button
-    if ($w('#agreeBtn')) {
-        $w('#agreeBtn').disable();
-        $w('#agreeBtn').label = 'Saving...';
-    }
-
+async function processAgreement() {
     try {
-        // Capture GPS quietly
+        // Capture GPS quietly as part of the consent record
         let gps = null;
         try {
             const loc = await wixWindow.getCurrentGeolocation();
             gps = { lat: loc.coords.latitude, lng: loc.coords.longitude };
-        } catch (e) { /* GPS optional */ }
+        } catch (e) {
+            console.warn("GPS capture skipped during Consent Validation.");
+        }
 
         const consentRecord = {
             consentedAt: new Date().toISOString(),
-            consentType: 'electronic_signing',
+            consentType: 'electronic_signing_and_location',
             gps: gps,
-            version: '1.0'
+            version: '2.0' // Upgraded to v2 for Location + SMS tracking
         };
 
-        // Save to database if we have session
+        // Save to database if we have an active session
         if (sessionData && sessionData.personId) {
             try {
                 const existing = await wixData.query('Portal Users')
@@ -127,23 +89,18 @@ async function handleAgree() {
             }
         }
 
-        // Store locally as backup
+        // Store locally as a backup & fast-check for the geolocation-client.js
         const key = sessionData?.personId ? `consent_${sessionData.personId}` : 'consent_user';
         wixWindow.browserStorage.local.setItem(key, JSON.stringify(consentRecord));
 
-        // Close with success
+        // Close with success, allowing the location feature to proceed!
         wixWindow.lightbox.close({ success: true, consentRecord: consentRecord });
 
     } catch (error) {
-        console.error('Consent error:', error);
-        if ($w('#agreeBtn')) {
-            $w('#agreeBtn').enable();
-            $w('#agreeBtn').label = 'Try Again';
+        console.error('Consent processing error:', error);
+        // Send a message back to the HTML iframe telling it to stop loading state
+        if ($w('#htmlConsent')) {
+            $w('#htmlConsent').postMessage({ type: 'error' });
         }
     }
-}
-
-function handleDecline() {
-    // Simple decline - no scary confirmation
-    wixWindow.lightbox.close({ success: false, declined: true });
 }

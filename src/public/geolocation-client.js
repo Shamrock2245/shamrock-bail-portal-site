@@ -11,9 +11,11 @@
  * - Device and IP fingerprinting
  */
 
+
 import { detectCounty } from 'backend/geocoding'; // Uses Google Maps API or internal Bounding Box logic (Plan Phase 2)
 import wixWindow from 'wix-window';
-import { session } from 'wix-storage';
+import { session, local } from 'wix-storage';
+import { getSessionToken, getSessionData } from 'public/session-manager';
 
 /**
  * Capture user geolocation with consent
@@ -22,7 +24,31 @@ import { session } from 'wix-storage';
  */
 export async function captureGeolocation(requireConsent = true) {
   try {
-    // Check if geolocation is available
+    // 1. Consent Check Workflow
+    if (requireConsent) {
+      // Create the dynamic storage key based on session
+      const sessionData = getSessionData(); // Assumes this is synchronous or already cached
+      const key = sessionData?.personId ? `consent_${sessionData.personId} ` : 'consent_user';
+
+      const existingConsent = local.getItem(key);
+
+      if (!existingConsent) {
+        console.log("Consent missing. Opening ConsentLightbox...");
+        // Pause and wait for the lightbox
+        const lightboxResult = await wixWindow.openLightbox('ConsentLightbox');
+
+        if (!lightboxResult || !lightboxResult.success) {
+          return {
+            success: false,
+            error: 'User declined consent or closed lightbox',
+            fallback: 'ip'
+          };
+        }
+        console.log("Consent granted via Lightbox.");
+      }
+    }
+
+    // 2. Check if geolocation is available
     // Type-safe check for Velo/Worker environments
     if (!navigator || !('geolocation' in navigator)) {
       return {
@@ -32,8 +58,9 @@ export async function captureGeolocation(requireConsent = true) {
       };
     }
 
-    // Request user location
+    // 3. Request user location
     const position = await new Promise((resolve, reject) => {
+
       const options = {
         enableHighAccuracy: true,
         timeout: 10000,
