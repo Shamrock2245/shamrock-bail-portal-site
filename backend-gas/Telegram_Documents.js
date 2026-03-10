@@ -533,9 +533,10 @@ function handleTelegramGetSigningUrl(data) {
             // --- Step 3: Add signature/initials fields to the document ---
             var fieldDefs = getSignatureFieldDefs(docId);
             if (fieldDefs.length > 0) {
-                var snFields = fieldDefs.map(function (f) {
+                var snFields = fieldDefs.map(function (f, idx) {
                     return {
                         type: f.type,
+                        name: f.role.replace(/\s+/g, '') + '_' + f.type + '_p' + f.page_number + '_' + idx,
                         role: f.role,
                         page_number: f.page_number,
                         x: f.x,
