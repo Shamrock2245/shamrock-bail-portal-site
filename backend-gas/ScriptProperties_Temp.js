@@ -264,10 +264,39 @@ function setGoogleOAuthCredentials() {
  */
 function setGitHubToken() {
   var props = PropertiesService.getScriptProperties();
-  // REDACTED for git — value already deployed to GAS via clasp push
+  // Updated 2026-03-10 — new fine-grained PAT scoped to all Shamrock2245 repos
   props.setProperty('GITHUB_PAT', 'REDACTED');
   console.log('✅ Set GITHUB_PAT successfully.');
-  console.log('   Scoped to: shamrock-bail-portal-site repo');
+  console.log('   Scoped to: ALL Shamrock2245 repos');
+}
+
+/**
+ * ─── SLACK BOT TOKEN ────────────────────────────────────────────────────────
+ * Stores the Slack Bot Token for internal alerting (Intake leads, Bounty
+ * Board alerts, SignNow notifications, etc.).
+ * Used by Node-RED flows and GAS webhook handlers.
+ *
+ * Run this ONCE from the GAS IDE.
+ */
+function setSlackBotToken() {
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('SLACK_BOT_TOKEN', 'REDACTED');
+  console.log('✅ Set SLACK_BOT_TOKEN successfully.');
+  console.log('   Used for: #alerts, #new-cases, #bonds-live Slack channels');
+}
+
+/**
+ * ─── NODE-RED / NGROK STATIC URL ────────────────────────────────────────────
+ * Stores the permanent ngrok base URL so GAS can call Node-RED webhooks.
+ * Updated 2026-03-10 — switched from dynamic to static free domain.
+ *
+ * Run this ONCE from the GAS IDE.
+ */
+function setNodeRedEndpoint() {
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('NODE_RED_BASE_URL', 'https://pseudospherical-etta-untactually.ngrok-free.dev');
+  console.log('✅ Set NODE_RED_BASE_URL successfully.');
+  console.log('   Static domain — survives ngrok restarts');
 }
 
 /**
