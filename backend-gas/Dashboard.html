@@ -3085,8 +3085,8 @@
                 'paperwork-header': '15sTaIIwhzHk96I8X3rxz7GtLMU-F5zo1',
                 'faq-cosigners': '1bjmH2w-XS5Hhe828y_Jmv9DqaS_gSZM7',
                 'faq-defendants': '16j9Z8eTii-J_p4o6A2LrzgzptGB8aOhR',
-                'indemnity-agreement': '1p4bYIiZ__JnJHhlmVwLyPJZpsmSdGq12',
-                'defendant-application': '1cokWm8qCDpiGxYD6suZEjm9i8MoABeVe',
+                'indemnity-agreement': '1Raa2gzHOlO5kSJOeDE25eBh2H8LcjN5L',
+                'defendant-application': '1JxBubXg0up1NeFBaWgi6qGNA133tSCxG',
                 'promissory-note': '104-ArZiCm3cgfQcT5rIO0x_OWiaw6Ddt',
                 'disclosure-form': '1qIIDudp7r3J7-6MHlL2US34RcrU9KZKY',
                 'surety-terms': '1VfmyUTpchfwJTlENlR72JxmoE_NCF-uf',
@@ -5453,6 +5453,12 @@
             // Override signing method for the logic
             formData.signingMethod = document.getElementById('signing-method').value;
 
+            // Inject signer contact info into formData for backend processing
+            formData.defendantEmail = defendantEmail;
+            formData.indemnitorEmail = indemnitorEmail;
+            formData.defendantPhone = defendantPhone;
+            formData.indemnitorPhone = indemnitorPhone;
+
             showProgress('Sending to Client Portal', [
                 'Collecting form data',
                 'Fetching PDF templates',
@@ -5544,111 +5550,9 @@
             }
         }
 
-        /**
-         * Fetch PDFs from Google Drive with Batching & Caching
-         * Optimized to prevent "Exceeded Maximum Execution Time" and "Java Runtime" errors
-         */
-        async function fetchPDFsFromDrive(documents) {
-            console.log('Fetching PDFs for:', documents);
-            const results = [];
-            const CACHE_PREFIX = 'PDF_CACHE_v1_';
-
-            // 1. Check IndexedDB Cache (with sessionStorage fallback)
-            console.log('🔍 Checking PDF Cache...');
-            const missingDocs = [];
-            for (const doc of documents) {
-                try {
-                    const templateKey = doc.templateKey || doc.key; // Use templateKey for caching
-                    const cached = await pdfCache.get(templateKey);
-                    if (cached) {
-                        const binaryString = atob(cached);
-                        const bytes = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {
-                            bytes[i] = binaryString.charCodeAt(i);
-                        }
-                        results.push({ key: doc.key, name: doc.name, bytes: bytes, templateKey: templateKey, indices: doc.indices });
-                        console.log(`✅ Loaded ${templateKey} from cache`);
-                    } else {
-                        missingDocs.push(doc);
-                    }
-                } catch (e) {
-                    console.warn('Cache access error:', e);
-                    missingDocs.push(doc);
-                }
-            }
-
-            // 2. Batch Fetch Missing Documents
-            if (missingDocs.length > 0) {
-                console.log(`📥 Fetching ${missingDocs.length} documents from server (Batch Mode)...`);
-
-                // Identify unique template keys needed from missingDocs
-                const uniqueMissingKeys = [...new Set(missingDocs.map(d => d.templateKey || d.key))];
-
-                // BATCH REQUEST TO GAS
-                // We fetch all needed templates in one go to minimize execution time
-                const BATCH_SIZE = 1; // Fetch 1 at a time to prevent payload limits with large PDFs
-                for (let i = 0; i < uniqueMissingKeys.length; i += BATCH_SIZE) {
-                    const batch = uniqueMissingKeys.slice(i, i + BATCH_SIZE);
-                    try {
-                        const response = await callGAS('getPDFTemplates', { templateIds: batch });
-
-                        if (!response || !response.success || !response.templates) {
-                            throw new Error(response?.error || 'Failed to fetch templates');
-                        }
-
-                        // Process batch results
-                        for (const key of batch) {
-                            const templateData = response.templates[key];
-                            if (templateData && templateData.success && templateData.pdfBase64) {
-                                // Decode
-                                const binaryString = atob(templateData.pdfBase64);
-                                const bytes = new Uint8Array(binaryString.length);
-                                for (let j = 0; j < binaryString.length; j++) {
-                                    bytes[j] = binaryString.charCodeAt(j);
-                                }
-
-                                // Save to IndexedDB for caching
-                                try {
-                                    await pdfCache.set(key, templateData.pdfBase64);
-                                } catch (cacheErr) {
-                                    console.warn(`⚠️ Failed to cache ${key}, will re-fetch if needed:`, cacheErr.message);
-                                    // Continue processing - caching is optional
-                                }
-
-                            } else {
-                                console.error(`❌ Failed to fetch ${key}:`, templateData?.error);
-                            }
-                        }
-
-
-                    } catch (err) {
-                        console.error('Batch Fetch Error:', err);
-                        throw err;
-                    }
-                }
-
-                // Now that all unique missing templates are fetched and cached,
-                // add the actual requested documents (which might be duplicates of templates) to results
-                for (const doc of missingDocs) {
-                    const templateKey = doc.templateKey || doc.key;
-                    const cachedBase64 = await pdfCache.get(templateKey);
-
-                    if (cachedBase64) {
-                        const binaryString = atob(cachedBase64);
-                        const bytes = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {
-                            bytes[i] = binaryString.charCodeAt(i);
-                        }
-                        results.push({ key: doc.key, name: doc.name, bytes: bytes, templateKey: templateKey, indices: doc.indices });
-                    } else {
-                        console.error(`Missing template data for ${doc.key} (template: ${templateKey})`);
-                        throw new Error(`Failed to load template: ${doc.name}`);
-                    }
-                }
-            }
-
-            return results;
-        }
+        // NOTE: fetchPDFsFromDrive is defined in the SERVER PROXY section below (line ~6323)
+        // It uses google.script.run.server_getPDFTemplatesBatch() to fetch templates
+        // Template key → Drive ID mapping lives in Server_DocumentLogic.js (PDF_DRIVE_FILE_IDS)
 
         function calculateTotalBondAmount(formData) {
             if (!formData.charges || formData.charges.length === 0) return '0.00';

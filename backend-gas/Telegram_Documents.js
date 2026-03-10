@@ -548,8 +548,8 @@ function handleTelegramGetSigningUrl(data) {
 
                 var addResult = SN_addFields(signNowDocId, snFields);
                 if (!addResult.success) {
-                    Logger.log('⚠️ Field addition partial/failed: ' + JSON.stringify(addResult));
-                    // Continue anyway — fields may already exist
+                    Logger.log('❌ Field addition FAILED — signing will not work without roles: ' + JSON.stringify(addResult));
+                    return { success: false, error: 'field_error', message: 'Failed to add signature fields to document: ' + (addResult.error || 'unknown') };
                 } else {
                     Logger.log('✅ Added ' + snFields.length + ' fields to document');
                 }

@@ -31,6 +31,24 @@ function SN_processCompleteWorkflow(params) {
         const documentId = uploadResult.documentId;
         SN_log('Upload_Success', { documentId, fileName });
 
+        // Step 1.5: Add signature fields for each signer role
+        // Without fields, SignNow can't create role-based embedded invites
+        const signerFields = SN_buildSignatureFields(params);
+        if (signerFields.length > 0) {
+            const addFieldsResult = SN_addFields(documentId, signerFields);
+            if (!addFieldsResult.success) {
+                SN_log('AddFields_Failed', addFieldsResult);
+                return {
+                    success: false,
+                    error: 'Failed to add signing fields: ' + (addFieldsResult.error || 'Unknown error'),
+                    documentId: documentId
+                };
+            }
+            SN_log('AddFields_Success', { documentId, fieldCount: signerFields.length });
+        } else {
+            SN_log('AddFields_Skip', 'No signer emails provided — no fields to add');
+        }
+
         // Step 2: Create signing links for all parties
         const formData = {
             defendantEmail: params.defendantEmail || params.formData?.defendantEmail,
@@ -52,7 +70,7 @@ function SN_processCompleteWorkflow(params) {
             SN_log('Links_Failed', linksResult);
             return {
                 success: false,
-                error: 'Failed to create signing links',
+                error: 'Failed to create signing links: ' + JSON.stringify(linksResult),
                 documentId: documentId
             };
         }

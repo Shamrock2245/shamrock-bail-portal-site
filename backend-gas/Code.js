@@ -76,20 +76,22 @@ function getConfig() {
 // ============================================================================
 // TEMPLATE CONFIGURATION
 // ============================================================================
+// SINGLE SOURCE OF TRUTH: Synced with Server_DocumentLogic.js → PDF_DRIVE_FILE_IDS
+// Source PDFs live in /osiforms/ folder. If you re-upload, update BOTH files.
 const TEMPLATE_DRIVE_IDS = {
-  'paperwork-header': '1khIgXwq1TcL2s3M8k9eMzFZaHPtMj9J_',
-  'faq-cosigners': '1Biws7af2OyiNV6b95emUU2PmPODPNZJR',
-  'faq-defendants': '1tGit87xr0b1meX0iVJQQh6w6r7uEbwYe',
-  'indemnity-agreement': '1a2lUxpbBZLhz_xYS0Q8JGYfsfwnuGiLQ',
-  'defendant-application': '1_uDAIF_0N79GUFNt1bA9TsGgx_8p11Ij',
-  'promissory-note': '1vbyzaX4KozMwQsyaYWiVcS7Cb5voQuBN',
-  'disclosure-form': '1oegrie_W8edgOjw9UzkR-C0_xJJeKtjR',
-  'surety-terms': '1xy15JudqXaPECpQQ4-cf9220rv7vBXIR',
-  'master-waiver': '17Oh1NHPPqerdrSyWMKyyGMy88UUk2fEM',
-  'ssa-release': '18wotgdzjYhvS3O9vAUqzfxZ9tQk_3Z_p',
-  'collateral-receipt': '1RnViP5Ehjd98Pv5lRNVkoR6CS6hDicBx',
-  'payment-plan': '1lZGPk2gOxtFt2-NMol8H9QV7ahI2EWiA',
-  'appearance-bond': '15NQf1Bdmvbp9b_h6xosZYGhalHEplfeQ',
+  'paperwork-header': '15sTaIIwhzHk96I8X3rxz7GtLMU-F5zo1',
+  'faq-cosigners': '1bjmH2w-XS5Hhe828y_Jmv9DqaS_gSZM7',
+  'faq-defendants': '16j9Z8eTii-J_p4o6A2LrzgzptGB8aOhR',
+  'indemnity-agreement': '1Raa2gzHOlO5kSJOeDE25eBh2H8LcjN5L',
+  'defendant-application': '1JxBubXg0up1NeFBaWgi6qGNA133tSCxG',
+  'promissory-note': '104-ArZiCm3cgfQcT5rIO0x_OWiaw6Ddt',
+  'disclosure-form': '1qIIDudp7r3J7-6MHlL2US34RcrU9KZKY',
+  'surety-terms': '1VfmyUTpchfwJTlENlR72JxmoE_NCF-uf',
+  'master-waiver': '181mgKQN-VxvQOyzDquFs8cFHUN0tjrMs',
+  'ssa-release': '1govKv_N1wl0FIePV8Xfa8mFmZ9JT8mNu',
+  'collateral-receipt': '1IAYq4H2b0N0vPnJN7b2vZPaHg_RNKCmP',
+  'payment-plan': '1v-qkaegm6MDymiaPK45JqfXXX2_KOj8A',
+  'appearance-bond': '15SDM1oBysTw76bIL7Xt0Uhti8uRZKABs',
 };
 
 function getPDFTemplates(data) {
@@ -3253,55 +3255,6 @@ function client_forceCleanup() {
   } catch (e) {
     return { success: false, error: e.message };
   }
-}
-
-function client_batchSaveToWixPortal(data) {
-  const email = Session.getActiveUser().getEmail();
-  if (!isUserAllowed(email)) return { error: "Unauthorized" };
-  return batchSaveToWixPortal(data);
-}
-
-function client_sendToWixPortal(data) {
-  const email = Session.getActiveUser().getEmail();
-  if (!isUserAllowed(email)) return { error: "Unauthorized" };
-
-  console.log('client_sendToWixPortal started');
-
-  // 1. Process with SignNow (Upload + Invite)
-  // Ensure delivery method is 'embedded' for portal use if not specified
-  if (!data.deliveryMethod) data.deliveryMethod = 'embedded';
-
-  const snResult = SN_processCompleteWorkflow(data);
-
-  if (!snResult.success) {
-    console.error('SignNow Workflow Failed:', snResult.error);
-    return snResult;
-  }
-
-  // 2. Save Links to Wix Portal
-  if (snResult.signingLinks && snResult.signingLinks.length > 0) {
-    const defendantName = `${data['defendant-first-name']} ${data['defendant-last-name']}`;
-    const caseNumber = data.charges && data.charges[0] ? data.charges[0].caseNumber : '';
-
-    // Transform to Wix Portal Format
-    const documents = snResult.signingLinks.map(link => ({
-      signerEmail: link.email,
-      signerName: link.firstName + ' ' + link.lastName,
-      signerPhone: link.phone,
-      signerRole: link.role,
-      signingLink: link.link, // SignNow returns 'link'
-      documentId: snResult.documentId,
-      defendantName: defendantName,
-      caseNumber: caseNumber,
-      documentName: data.fileName || 'Bail Bond Packet',
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-    }));
-
-    const wixResult = batchSaveToWixPortal({ documents: documents });
-    return { success: true, documentId: snResult.documentId, wixResult: wixResult };
-  }
-
-  return { success: true, documentId: snResult.documentId, message: "No signing links generated (download mode?)" };
 }
 
 function client_batchSaveToWixPortal(data) {

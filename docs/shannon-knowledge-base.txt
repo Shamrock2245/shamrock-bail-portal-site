@@ -1,46 +1,36 @@
-SHAMROCK BAIL BONDS — COMPREHENSIVE KNOWLEDGE BASE FOR SHANNON (AI AGENT)
-===========================================================================
-Last Updated: March 3, 2026
+SHAMROCK BAIL BONDS — KNOWLEDGE BASE FOR SHANNON (AI AGENT)
+=============================================================
 
-=====================================
-SECTION 1: ABOUT SHAMROCK BAIL BONDS
-=====================================
-
-- Company: Shamrock Bail Bonds, LLC
-- Office: 1528 Broadway, Ft. Myers, FL 33901
-- Phone: (239) 332-2245
-- Email: admin@shamrockbailbonds.biz
-- Website: shamrockbailbonds.biz
+ABOUT SHAMROCK BAIL BONDS
+- Company: Shamrock Bail Bonds
+- Office: 1528 Broadway, Fort Myers, FL 33901
+- Phone: (239) 332-2245, (239) 332-5245
 - Hours: 24 hours a day, 7 days a week, 365 days a year
+- Website: shamrockbailbonds.biz
 - Service Area: All 67 Florida counties (statewide)
 - Tagline: "The Uber of Bail Bonds" — Fast. Frictionless. Everywhere.
-- Payment Link: https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd
 
 
-=======================================
-SECTION 2: FREQUENTLY ASKED QUESTIONS
-=======================================
-
-Q: How much does a bail bond cost?
-A: Our bondsman will explain all the options and pricing when they call you back. Every case is different.
+FREQUENTLY ASKED QUESTIONS
+---------------------------
 
 Q: Can bail be reduced?
 A: Yes. An attorney can file a motion to reduce bail if it is excessive or circumstances change. We can recommend attorneys if needed.
 
 Q: Can I get my premium back?
-A: No. The premium is a non-refundable service fee earned by the bondsman. This is standard across all bail bond agencies in Florida per Florida Statute 648.
+A: No. The 10% premium is a non-refundable service fee earned by the bondsman. This is standard across all bail bond agencies in Florida.
 
-Q: What if I can't afford the full premium upfront?
+Q: What if I can't afford 10%?
 A: We offer flexible payment plans. Our bondsman will explain all options when they call you back.
 
 Q: How long does release take?
-A: Typical release times are 2-8 hours after we post the bond, depending on the jail and time of day. Some counties are faster than others. Lee County averages 2-4 hours. Collier is often faster at 1-2 hours.
+A: Typical release times are 2-8 hours after we post the bond, depending on the jail and time of day. Some counties are faster than others.
 
 Q: What is the difference between bail and a bond?
-A: Bail is the full amount set by the court that guarantees the defendant will appear. A bail bond is a service where a bail bond agent posts the full bail on your behalf, and you pay a percentage as a premium.
+A: Bail is the full amount set by the court. A bond is the 10% service we provide so you don't have to pay the full amount.
 
 Q: Can anyone be denied bail?
-A: Yes. Under Florida Statute 903, bail can be denied for capital offenses (where proof of guilt is evident), extreme flight risks, or when the defendant poses a danger to the community. Only a judge can deny bail.
+A: Yes. Bail can be denied for capital offenses, flight risks, or danger to the community.
 
 Q: What do I need to get someone out of jail?
 A: You'll need: (1) The defendant's full name, (2) The county/jail they're in, (3) A valid government-issued ID, (4) The bond amount (if known — we can look it up), and (5) A way to pay the premium (cash, card, or payment plan).
@@ -49,35 +39,22 @@ Q: What are your hours?
 A: We are available 24/7, 365 days a year. Call us anytime at (239) 332-2245.
 
 Q: Do you cover my county?
-A: Yes! Shamrock covers all 67 Florida counties through our statewide network of licensed agents.
+A: Yes! Shamrock covers all 67 Florida counties through our statewide network of agents.
 
 Q: How does the bail process work?
-A: Step 1 - Call us. Step 2 - We gather the defendant's information. Step 3 - A cosigner signs the bond paperwork (can be done digitally on your phone). Step 4 - We post the bond at the jail. Step 5 - The defendant is released (usually 2-8 hours). Step 6 - The defendant must appear at all court dates.
+A: Step 1 - Call us. Step 2 - We gather the defendant's information. Step 3 - A cosigner signs the bond paperwork (can be done digitally). Step 4 - We post the bond at the jail. Step 5 - The defendant is released (usually 2-8 hours). Step 6 - The defendant must appear at all court dates.
 
 Q: What happens if the defendant misses court?
-A: Under Florida Statute 903.26, if the defendant fails to appear, the bond is forfeited and a bench warrant is issued. The cosigner becomes financially responsible for the full bond amount. That's why court dates are critical.
+A: If the defendant fails to appear, the bond is forfeited and a warrant is issued. The cosigner becomes financially responsible for the full bond amount. That's why court dates are critical.
 
 Q: What is a cosigner/indemnitor?
-A: A cosigner (also called an indemnitor) is the person who guarantees the defendant will appear in court. They are financially responsible if the defendant doesn't show up. Under Florida law, the indemnitor signs an agreement accepting this responsibility.
-
-Q: Can I bail someone out from another state?
-A: Yes! We can handle everything remotely. You can sign paperwork from your phone no matter where you are. Our agent will post the bond locally in Florida.
-
-Q: What is a first appearance hearing?
-A: A first appearance hearing is a court proceeding where the judge reviews the charges, sets or confirms bail, and appoints a public defender if the defendant cannot afford an attorney. This typically happens within 24 hours of arrest.
-
-Q: What happens to collateral after the case is over?
-A: Under Florida Statute 648.442, collateral must be returned within a reasonable time after the bond obligation is discharged, provided all fees and premiums have been paid.
-
-Q: Do you accept credit cards?
-A: Yes. We accept all major credit cards, debit cards, cash, and payment plans. We can send you a secure payment link right to your phone.
+A: A cosigner (also called an indemnitor) is the person who guarantees the defendant will appear in court. They are financially responsible if the defendant doesn't show up.
 
 
-=============================================
-SECTION 3: BAIL BOND PAPERWORK DESCRIPTIONS
-=============================================
+BAIL BOND PAPERWORK (WHAT YOU WILL SIGN)
+-----------------------------------------
 
-When you bail someone out, you'll sign these documents electronically on your phone via our secure SignNow system. No need to visit our office — everything can be done digitally while on the phone:
+When you bail someone out, you'll sign these documents electronically on your phone via our secure SignNow system:
 
 1. APPEARANCE BOND
    The official court document that guarantees the defendant will appear at all scheduled court hearings. This is filed directly with the court.
@@ -86,7 +63,7 @@ When you bail someone out, you'll sign these documents electronically on your ph
    Your promise (as the cosigner) to pay the full bond amount if the defendant fails to appear in court. This is the most important document — it means you are financially responsible.
 
 3. DISCLOSURE FORM
-   Required by Florida law (F.S. 648.44). Explains your rights and responsibilities as a cosigner, including the non-refundable nature of the premium and your obligations.
+   Required by Florida law. Explains your rights and responsibilities as a cosigner, including the non-refundable nature of the premium and your obligations.
 
 4. SURETY TERMS AND CONDITIONS
    The rules of the bond — what the defendant must and must not do while out on bond (appear at court, not leave the state without permission, etc.).
@@ -100,824 +77,87 @@ When you bail someone out, you'll sign these documents electronically on your ph
 7. SSA RELEASE / WAIVER
    Standard release and waiver forms required for processing.
 
-8. DEFENDANT APPLICATION
-   Application form the defendant completes with personal information, employment, and references.
-
 All documents are sent to your phone or email for electronic signature. You do not need to come to our office to sign — everything can be done from your phone while we're on the call together.
 
 
-==========================================================================
-SECTION 4: FLORIDA COUNTY JAIL & CLERK DIRECTORY (ALL 67 COUNTIES)
-==========================================================================
-
---- CORE SERVICE AREA (Southwest Florida — Full Details) ---
+FLORIDA COUNTY JAIL GUIDE (CORE SERVICE AREA)
+----------------------------------------------
 
 LEE COUNTY (FORT MYERS — HOME BASE)
-  Facility: Lee County Jail
-  Jail Phone: (239) 477-1500
-  Jail Address: 14750 Six Mile Cypress Parkway, Fort Myers, Florida 33912
-  Courthouse: 1700 Monroe St, Fort Myers, FL 33901
-  Sheriff Booking Search: https://www.sheriffleefl.org
-  Clerk of Court: Lee County Clerk of Court
-  Clerk Phone: (239) 533-5000
-  Clerk Website: https://www.leeclerk.org/
-  Court Records: https://matrix.leeclerk.org/
-  Process: Cosigner signs paperwork. We digitally sign the bond and deliver it to the jail.
-  First Appearance: Daily at 9:00 AM.
-  Tips: Wait times can be 2-4 hours after bond is posted. Parking is free at the jail but paid at the court. Inmates released 24/7 but shift change 6PM-7PM may cause delays.
-  Status: Active
+- Jail: 2501 Ortiz Ave, Fort Myers, FL 33905
+- Court: 1700 Monroe St, Fort Myers, FL 33901
+- Process: The cosigner must come to our office first to sign. We then digitally sign the bond and physically deliver it to the jail. First Appearance court is held daily at 9:00 AM.
+- Tips: Wait times at Ortiz can be 2-4 hours after bond is posted. Parking is free at the jail but paid at the court. Inmates are released 24/7, but shift change is 6PM-7PM (expect delays).
 
 COLLIER COUNTY (NAPLES)
-  Facility: Naples Jail (Collier County Sheriff)
-  Jail Phone: (239) 252-9500
-  Jail Address: 3347 Tamiami Trail East, Naples, Florida 34112
-  Courthouse: 3315 Tamiami Trail E, Naples, FL 34112 (Same Complex)
-  Sheriff Booking Search: https://www2.colliersheriff.org
-  Clerk of Court: Collier County Clerk of Court
-  Clerk Phone: (239) 252-2646
-  Clerk Website: https://www.collierclerk.com/
-  Court Records: https://collierclerk.com/records-search/
-  Process: Collier County accepts Remote Posting (E-Bond). We can email the bond paperwork directly to the booking desk. You do not need to come to the jail physically.
-  Tips: Collier usually processes releases very quickly (1-2 hours). Ensure the defendant has a ride; taxis are scarce at night.
-  Status: Active
+- Jail: 3315 Tamiami Trail E, Naples, FL 34112
+- Court: 3315 Tamiami Trail E, Naples, FL 34112 (Same Complex)
+- Process: Collier County accepts 'Remote Posting' (E-Bond). We can email the bond paperwork directly to the booking desk. You do not need to come to the jail physically.
+- Tips: Collier usually processes releases very quickly (1-2 hours). Ensure the defendant has a ride; taxis are scarce at night.
 
 CHARLOTTE COUNTY (PUNTA GORDA)
-  Facility: Charlotte County Jail
-  Jail Phone: (941) 833-6300
-  Jail Address: 26601 Airport Road, Punta Gorda, Florida 33982
-  Courthouse: 350 E Marion Ave, Punta Gorda, FL 33950
-  Sheriff Booking Search: https://www.ccso.org
-  Clerk of Court: Charlotte County Clerk of Court
-  Clerk Phone: (941) 637-2199
-  Clerk Website: https://www.charlotteclerk.com/
-  Court Records: https://records.charlotteclerk.com/records/
-  Process: Charlotte requires original wet signatures. An agent will meet you at the jail lobby. First Appearance at 1:30 PM.
-  Tips: The jail lobby closes at 10 PM, but the bond window is 24/7.
-  Status: Active
+- Jail: 26601 Airport Rd, Punta Gorda, FL 33982
+- Court: 350 E Marion Ave, Punta Gorda, FL 33950
+- Process: Charlotte requires original wet signatures. An agent will meet you at the jail lobby to sign the paperwork. First Appearance is at 1:30 PM.
+- Tips: The jail lobby closes at 10 PM, but the bond window is 24/7.
 
 HENDRY COUNTY (LABELLE)
-  Facility: Hendry County Jail
-  Jail Phone: (863) 674-5600
-  Jail Address: 101 South Bridge Street, Labelle, Florida 33935
-  Courthouse: 25 E Hickpochee Ave, LaBelle, FL 33935
-  Sheriff Booking Search: https://www.hendrysheriff.org
-  Clerk of Court: Hendry County Clerk of Court
-  Clerk Phone: (863) 675-5217
-  Clerk Website: https://www.hendryclerk.org/
-  Court Records: https://officialrecords.hendryclerk.org/
-  Process: Hendry is physically processed. Paper bonds only. Please allow extra travel time.
-  Tips: Call ahead to confirm the magistrate has set the bond amount. Releases often happen out the side door, not the main lobby.
-  Status: Active
+- Jail: 101 S Main St, LaBelle, FL 33935
+- Court: 25 E Hickpochee Ave, LaBelle, FL 33935
+- Process: Hendry is physically processed. Paper bonds only. Please allow extra travel time for the agent to drive to LaBelle.
+- Tips: Call ahead to confirm the magistrate has set the bond amount. Releases often happen out the side door, not the main lobby.
 
 GLADES COUNTY (MOORE HAVEN)
-  Facility: Glades County Jail
-  Jail Phone: (863) 946-1600
-  Jail Address: 1297 East State Road 78, Moore Haven, Florida 33471
-  Courthouse: 500 Ave J, Moore Haven, FL 33471
-  Sheriff Booking Search: https://smartweb.gladessheriff.org
-  Process: Glades County detainees are often housed in neighboring counties (Hendry/Okeechobee) due to facility limits.
-  Status: Active
-  Clerk Address: 500 Avenue J Room 102, Moore Haven, Florida 33471
-  Clerk Phone: (863) 946-6010
-  Clerk Website: https://www.gladesclerk.com
-
-
---- ALL 67 FLORIDA COUNTIES (Complete Jail Directory) ---
-
-ALACHUA COUNTY (GAINESVILLE)
-  Facility: Alachua County Jail
-  Jail Phone: (352) 491-4444
-  Jail Address: 3333 NE 39th Avenue, Gainesville, Florida 32609
-  Sheriff Booking Search: https://acso.us
-  Clerk Phone: (352) 374-3636
-  Clerk Website: https://www.alachuacounty.us/Depts/Clerk/Pages/Clerk.aspx
-  Court Records: https://www.alachuaclerk.org/court_records/
-
-BAKER COUNTY (MACCLENNY)
-  Facility: Baker County Jail
-  Jail Phone: (904) 259-2231
-  Jail Address: 1 Sheriff's Office Drive, Macclenny, Florida 32063
-  Sheriff Booking Search: https://www.bakercountysheriffsoffice.com
-  Clerk Phone: (904) 259-8113
-  Clerk Website: http://www.bakerclerk.com/
-
-BAY COUNTY (PANAMA CITY)
-  Facility: Bay County Jail
-  Jail Phone: (850) 785-5245
-  Jail Address: 5700 Star Lane, Panama City, Florida 32404
-  Sheriff Booking Search: https://www.baysomobile.org
-  Clerk Phone: (850) 763-9061
-  Clerk Website: https://www.baycoclerk.com/
-  Court Records: https://records2.baycoclerk.com/
-
-BRADFORD COUNTY (STARKE)
-  Facility: Bradford County Jail
-  Jail Phone: (904) 966-6178
-  Jail Address: 945 A North Temple Avenue, Starke, Florida 32091
-  Sheriff Booking Search: https://smartweb.bradfordsheriff.org
-  Clerk Phone: (904) 966-6280
-  Clerk Website: https://www.bradfordcountyclerk.com/
-
-BREVARD COUNTY (TITUSVILLE/MELBOURNE/COCOA)
-  Facility: Brevard County Jail
-  Jail Phone: (321) 690-1500
-  Jail Address: 860 Camp Road, Cocoa, Florida 32927
-  Sheriff Booking Search: https://www.brevardsheriff.com
-  Clerk Phone: (321) 637-5413
-  Clerk Website: https://www.brevardclerk.us/
-  Court Records: https://vweb1.brevardclerk.us/
-
-BROWARD COUNTY (FORT LAUDERDALE)
-  Facility: Broward Main Jail
-  Jail Phone: (954) 831-5900
-  Jail Address: 555 SE 1st Avenue, Ft. Lauderdale, Florida 33301
-  Courthouse: 201 SE 6th St, Fort Lauderdale, FL 33301
-  Sheriff Booking Search: https://www.sheriff.org
-  Clerk Phone: (954) 831-6565
-  Clerk Website: https://www.browardclerk.org/
-  Court Records: https://www.browardclerk.org/Web2
-  Process: Accepts e-affidavits. First Appearance held twice daily. Most paperwork is digital.
-
-CALHOUN COUNTY (BLOUNTSTOWN)
-  Facility: Calhoun County Jail
-  Jail Phone: (850) 674-5049
-  Jail Address: 20776 Central Avenue East, Blountstown, Florida 32424
-  Clerk Address: 20859 Central Avenue East, Room 130, Blountstown, Florida 32424
-  Clerk Phone: (850) 674-4545
-  Clerk Website: https://calhounclerk.com
-
-CITRUS COUNTY (INVERNESS/LECANTO)
-  Facility: Citrus County Detention Facility
-  Jail Phone: (352) 527-3332
-  Jail Address: 2604 W. Woodland Ridge Drive, Lecanto, Florida 34461
-  Sheriff Booking Search: https://www.sheriffcitrus.org
-  Clerk Address: 110 North Apopka Avenue, Inverness, Florida 34450
-  Clerk Phone: (352) 341-6424
-  Clerk Website: https://www.citrusclerk.org
-
-CLAY COUNTY (GREEN COVE SPRINGS)
-  Facility: Clay County Jail
-  Jail Phone: (904) 529-5952
-  Jail Address: 901 Orange Avenue, Green Cove Springs, Florida 32043
-  Sheriff Booking Search: https://claysheriff.policetocitizen.com
-  Clerk Address: 825 North Orange Avenue, Green Cove Springs, Florida 32043
-  Clerk Phone: (904) 269-6302
-  Clerk Website: https://clayclerk.com
-
-COLUMBIA COUNTY (LAKE CITY)
-  Facility: Columbia County Jail
-  Jail Phone: (386) 755-7000
-  Jail Address: 389 NW Quinten Street, Lake City, Florida 32055
-  Clerk Address: 173 NE Hernando Avenue, Lake City, Florida 32055
-  Clerk Phone: (386) 758-1342
-  Clerk Website: https://columbiaclerk.com
-
-DESOTO COUNTY (ARCADIA)
-  Facility: DeSoto County Jail
-  Jail Phone: (863) 993-4710
-  Jail Address: 208 East Cypress Street, Arcadia, Florida 34266
-  Sheriff Booking Search: https://jail.desotosheriff.org
-  Clerk Address: 115 East Oak Street, Room 101, Arcadia, Florida 34266
-  Clerk Phone: (863) 993-4876
-  Clerk Website: https://www.desotoclerk.com
-
-DIXIE COUNTY (CROSS CITY)
-  Facility: Dixie County Jail
-  Jail Phone: (352) 498-1231
-  Jail Address: 386 NE 255 Street, Cross City, Florida 32628
-  Clerk Address: P.O. Box 1206, Cross City, Florida 32628
-  Clerk Phone: (352) 498-1200
-  Clerk Website: https://dixieclerk.com
-
-DUVAL COUNTY (JACKSONVILLE)
-  Facility: Duval County Jail
-  Jail Phone: (904) 630-5787
-  Jail Address: Multiple Locations, Jacksonville, Florida 32218
-  Sheriff Booking Search: https://inmatesearch.jaxsheriff.org
-  Clerk Phone: (904) 255-2000
-  Clerk Website: https://www.duvalclerk.com/
-  Court Records: https://core.duvalclerk.com/
-
-ESCAMBIA COUNTY (PENSACOLA)
-  Facility: Escambia Main Jail
-  Jail Phone: (850) 436-9863
-  Jail Address: 2935 North L Street, Pensacola, Florida 32501
-  Sheriff Booking Search: https://inmatelookup.myescambia.com
-  Clerk Address: 190 West Government Street, Pensacola, Florida 32502
-  Clerk Phone: (850) 595-4360
-  Clerk Website: https://www.escambiaclerk.com
-
-FLAGLER COUNTY (BUNNELL)
-  Facility: Flagler County Jail
-  Jail Phone: (386) 437-4116
-  Jail Address: 1002 Justice Lane, Bunnell, Florida 32110
-  Sheriff Booking Search: https://www.flaglersheriff.com
-  Clerk Address: Kim C. Hammond Justice Center, 1769 E Moody Blvd, Bunnell, Florida 32110
-  Clerk Phone: (386) 313-4400
-  Clerk Website: https://flaglerclerk.com
-
-FRANKLIN COUNTY (EASTPOINT)
-  Facility: Franklin County Jail
-  Jail Phone: (850) 670-8500
-  Jail Address: 270 State Road 65, Eastpoint, Florida 32328
-  Sheriff Booking Search: https://www.franklinsheriff.com
-  Clerk Address: 33 Market Street, Suite 203, Apalachicola, Florida 32320
-  Clerk Phone: (850) 653-8861
-  Clerk Website: https://www.franklinclerk.com
-
-GADSDEN COUNTY (QUINCY)
-  Facility: Gadsden County Jail
-  Jail Phone: (850) 875-8844
-  Jail Address: 339 East Jefferson Street, Quincy, Florida 32351
-  Clerk Address: 10 East Jefferson Street, Quincy, Florida 32351
-  Clerk Phone: (850) 875-8601
-  Clerk Website: https://www.gadsdenclerk.com
-
-GILCHRIST COUNTY (TRENTON)
-  Facility: Gilchrist County Jail
-  Jail Phone: (352) 463-3490
-  Jail Address: 9239 South US Highway 129, Trenton, Florida 32693
-  Clerk Address: 112 South Main Street, Trenton, Florida 32693
-  Clerk Phone: (352) 463-3170
-  Clerk Website: https://www.gilchristclerk.com
-
-GULF COUNTY (PORT ST. JOE)
-  Facility: Gulf County Jail
-  Jail Phone: (850) 227-1124
-  Jail Address: 1000 Cecil G. Costin Sr. Boulevard, Port St. Joe, Florida 32456
-  Sheriff Booking Search: https://www.gulfcounty-fl.gov
-  Clerk Address: 1000 Cecil G. Costin Sr. Blvd, Rm 149, Port St. Joe, Florida 32456
-  Clerk Phone: (850) 229-6112
-  Clerk Website: https://gulfclerk.com
-
-HAMILTON COUNTY (JASPER)
-  Facility: Hamilton County Jail
-  Jail Phone: (386) 792-7131
-  Jail Address: 3995 County Road 51 North, Jasper, Florida 32052
-  Sheriff Booking Search: https://inmate.hamiltonsheriff.com
-  Clerk Address: 207 NE 1st Street, Room 106, Jasper, Florida 32052
-  Clerk Phone: (386) 792-1288
-  Clerk Website: https://hamiltonclerk.com
-
-HARDEE COUNTY (WAUCHULA)
-  Facility: Hardee County Jail
-  Jail Phone: (863) 773-0304
-  Jail Address: 900 East Summit Street, Wauchula, Florida 33873
-  Sheriff Booking Search: https://www.hardeeso.com
-  Clerk Address: 417 West Main Street, Suite 202, Wauchula, Florida 33873
-  Clerk Phone: (863) 773-4174
-  Clerk Website: https://www.hardeeclerk.com
-
-HERNANDO COUNTY (BROOKSVILLE)
-  Facility: Hernando County Jail
-  Jail Phone: (352) 544-2334
-  Jail Address: 16425 Spring Hill Drive, Brooksville, Florida 34604
-  Sheriff Booking Search: https://www.hernandosheriff.org
-  Clerk Address: 20 North Main Street, Brooksville, Florida 34601
-  Clerk Phone: (352) 754-4201
-  Clerk Website: https://hernandoclerk.com
-
-HIGHLANDS COUNTY (SEBRING)
-  Facility: Highlands County Jail
-  Jail Phone: (863) 402-7201
-  Jail Address: 434 Fernleaf Avenue, Sebring, Florida 33870
-  Sheriff Booking Search: https://www.highlandsheriff.org
-  Clerk Address: 590 South Commerce Avenue, Sebring, Florida 33870
-  Clerk Phone: (863) 402-6565
-  Clerk Website: https://highlandsclerkfl.gov
+- Jail: 1297 FL-78, Moore Haven, FL 33471
+- Court: 500 Ave J, Moore Haven, FL 33471
+- Process: Glades County detainees are often housed in neighboring counties (Hendry/Okeechobee) due to facility limits.
 
 HILLSBOROUGH COUNTY (TAMPA)
-  Facility: Hillsborough County Jail
-  Jail Phone: (813) 247-8300
-  Jail Address: 1201 Orient Road, Tampa, Florida 33619
-  Courthouse: 800 E Twiggs St, Tampa, FL 33602
-  Sheriff Booking Search: https://www.hcso.tampa.fl.us
-  Clerk Phone: (813) 276-8100
-  Clerk Website: https://www.hillsclerk.com/
-  Court Records: https://hover.hillsclerk.com/
-  Process: We use the Fast Release digital portal. Signatures can be done via mobile.
-
-HOLMES COUNTY (BONIFAY)
-  Facility: Holmes County Jail
-  Jail Phone: (850) 547-3681
-  Jail Address: 3207 Lonny Lindsey Drive, Bonifay, Florida 32425
-  Sheriff Booking Search: https://www.holmescoso.org
-  Clerk Address: P.O. Box 397, Bonifay, Florida 32425
-  Clerk Phone: (850) 547-1100
-  Clerk Website: https://holmesclerk.com
-
-INDIAN RIVER COUNTY (VERO BEACH)
-  Facility: Indian River County Jail
-  Jail Phone: (772) 569-6700
-  Jail Address: 4055 41st Avenue, Vero Beach, Florida 32960
-  Sheriff Booking Search: https://www.ircsheriff.org
-  Clerk Address: P.O. Box 1028, Vero Beach, Florida 32961
-  Clerk Phone: (772) 770-5185
-  Clerk Website: https://indianriverclerk.com
-
-JACKSON COUNTY (MARIANNA)
-  Facility: Jackson County Jail
-  Jail Phone: (850) 482-9651
-  Jail Address: 2737 Penn Avenue, Marianna, Florida 32448
-  Sheriff Booking Search: https://www.jacksoncountysheriffsoffice.com
-  Clerk Address: P.O. Drawer 510, Marianna, Florida 32447
-  Clerk Phone: (850) 482-9552
-  Clerk Website: https://www.jacksonclerk.com
-
-JEFFERSON COUNTY (MONTICELLO)
-  Facility: Jefferson County Jail
-  Jail Phone: (850) 997-5094
-  Jail Address: 171 Industrial Park Road, Monticello, Florida 32344
-  Sheriff Booking Search: https://www.jeffersoncountysheriffsoffice.com
-  Clerk Address: 1 Courthouse Circle, Monticello, Florida 32344
-  Clerk Phone: (850) 342-0218
-  Clerk Website: https://www.jeffersonclerk.com
-
-LAFAYETTE COUNTY (MAYO)
-  Facility: Lafayette County Jail
-  Jail Phone: (386) 294-1301
-  Jail Address: 231 NW Monroe Avenue, Mayo, Florida 32066
-  Sheriff Booking Search: https://lafayettesheriff.com
-  Clerk Address: P.O. Box 88, Mayo, Florida 32066
-  Clerk Phone: (386) 294-1600
-  Clerk Website: https://www.lafayetteclerk.com
-
-LAKE COUNTY (TAVARES)
-  Facility: Lake County Jail
-  Jail Phone: (352) 343-9501
-  Jail Address: 551 West Main Street, Tavares, Florida 32778
-  Sheriff Booking Search: https://www.lcso.org
-  Clerk Address: 550 West Main Street, Tavares, Florida 32778
-  Clerk Phone: (352) 742-4100
-  Clerk Website: https://www.lakecountyclerk.org
-
-LEON COUNTY (TALLAHASSEE)
-  Facility: Leon County Jail
-  Jail Phone: (850) 606-3500
-  Jail Address: 535 Appleyard Drive, Tallahassee, Florida 32304
-  Sheriff Booking Search: https://www.leoncountyso.com
-  Clerk Address: Tallahassee, Florida 32302
-  Clerk Phone: (850) 606-4000
-  Clerk Website: https://cvweb.clerk.leon.fl.us
-
-LEVY COUNTY (BRONSON)
-  Facility: Levy County Jail
-  Jail Phone: (352) 486-5121
-  Jail Address: 9150 NE 80th Avenue, Bronson, Florida 32621
-  Sheriff Booking Search: https://www.levyso.com
-  Clerk Address: 355 South Court Street, Bronson, Florida 32621
-  Clerk Phone: (352) 486-5266
-  Clerk Website: https://circuit8.org
-
-LIBERTY COUNTY (BRISTOL)
-  Facility: Liberty County Jail
-  Jail Phone: (850) 643-2235
-  Jail Address: 12832 NW Central Avenue, Bristol, Florida 32321
-  Sheriff Booking Search: https://www.libertysheriff.org
-  Clerk Address: 10818 NW SR 20, Bristol, Florida 32321
-  Clerk Phone: (850) 643-2215
-  Clerk Website: https://libertyclerk.com
-
-MADISON COUNTY (MADISON)
-  Facility: Madison County Jail
-  Jail Phone: (850) 973-4151
-  Jail Address: 823 Pinckney Street, Madison, Florida 32340
-  Sheriff Booking Search: https://www.madisonso.com
-  Clerk Address: P.O. Box 237, Madison, Florida 32341
-  Clerk Phone: (850) 973-1500
-  Clerk Website: https://www.madisonclerk.com
-
-MANATEE COUNTY (BRADENTON/PALMETTO)
-  Facility: Manatee County Jail
-  Jail Phone: (941) 747-3011
-  Jail Address: 14470 Harlee Road, Palmetto, Florida 34221
-  Sheriff Booking Search: https://www.manateesheriff.com
-  Clerk Phone: (941) 749-1800
-  Clerk Website: https://www.manateeclerk.com/
-  Court Records: https://records.manateeclerk.com/
-
-MARION COUNTY (OCALA)
-  Facility: Marion County Jail
-  Jail Phone: (352) 351-8077
-  Jail Address: 700 NW 30th Avenue, Ocala, Florida 34475
-  Sheriff Booking Search: https://www.marionso.com
-  Clerk Address: 110 NW 1st Avenue, Ocala, Florida 34475
-  Clerk Phone: (352) 671-5510
-  Clerk Website: https://www.marioncountyclerk.org
-
-MARTIN COUNTY (STUART)
-  Facility: Martin County Jail
-  Jail Phone: (772) 220-7000
-  Jail Address: 800 SE Monterey Road, Stuart, Florida 34994
-  Sheriff Booking Search: https://www.sheriff.martin.fl.us
-  Clerk Address: 100 E Ocean Blvd, Stuart, Florida 34994
-  Clerk Phone: (772) 288-5576
-  Clerk Website: https://www.martinclerk.com
-
-MIAMI-DADE COUNTY (MIAMI)
-  Facility: Miami-Dade County Jail
-  Jail Phone: (786) 263-7000
-  Jail Address: 1321 NW 13th Street, Miami, Florida 33125
-  Sheriff Booking Search: https://www.miamidade.gov
-  Clerk Phone: (305) 275-1155
-  Clerk Website: https://www.miami-dadeclerk.com/
-  Court Records: https://www2.miami-dadeclerk.com/public-records/
-
-MONROE COUNTY (KEY WEST)
-  Facility: Monroe County Jail
-  Jail Phone: (305) 292-7000
-  Jail Address: 5525 College Road, Key West, Florida 33040
-  Sheriff Booking Search: https://www.keysso.net
-  Clerk Address: 500 Whitehead Street, Key West, Florida 33040
-  Clerk Phone: (305) 292-3963
-  Clerk Website: https://monroe-clerk.com
-
-NASSAU COUNTY (YULEE)
-  Facility: Nassau County Jail
-  Jail Phone: (904) 548-4002
-  Jail Address: 76212 Nicholas Cutinha Road, Yulee, Florida 32097
-  Sheriff Booking Search: https://www.nassauso.com
-  Clerk Address: 76347 Veterans Way, Suite 456, Yulee, Florida 32097
-  Clerk Phone: (904) 548-4600
-  Clerk Website: https://www.nassauclerk.com
-
-OKALOOSA COUNTY (CRESTVIEW)
-  Facility: Okaloosa County Jail
-  Jail Phone: (850) 689-5690
-  Jail Address: 1200 East James Lee Boulevard, Crestview, Florida 32539
-  Sheriff Booking Search: https://www.okaloosasheriff.com
-  Clerk Address: 101 East James Lee Blvd, Crestview, Florida 32536
-  Clerk Phone: (850) 689-5000
-  Clerk Website: https://www.okaloosaclerk.com
-
-OKEECHOBEE COUNTY (OKEECHOBEE)
-  Facility: Okeechobee County Jail
-  Jail Phone: (863) 763-3117
-  Jail Address: 504 NW 4th Street, Okeechobee, Florida 34972
-  Sheriff Booking Search: https://www.okeechobeecountysheriff.com
-  Clerk Address: 312 NW 3rd Street, Okeechobee, Florida 34972
-  Clerk Phone: (863) 763-2131
-  Clerk Website: https://www.clerk.co.okeechobee.fl.us
+- Jail: 1201 Orient Rd, Tampa, FL 33619
+- Court: 800 E Twiggs St, Tampa, FL 33602
+- Process: We use the 'Fast Release' digital portal. Signatures can be done via mobile.
 
 ORANGE COUNTY (ORLANDO)
-  Facility: Orange County Jail
-  Jail Phone: (407) 836-3400
-  Jail Address: 3723 Vision Boulevard, Orlando, Florida 32839
-  Courthouse: 425 N Orange Ave, Orlando, FL 32801
-  Sheriff Booking Search: https://netapps.ocfl.net
-  Clerk Phone: (407) 836-2000
-  Clerk Website: https://www.myorangeclerk.com/
-  Court Records: https://myeclerk.myorangeclerk.com/
-  Process: Must present Power of Attorney physically at window.
-  Tips: Release is very slow (6-10 hours).
+- Jail: 3723 Vision Blvd, Orlando, FL 32839
+- Court: 425 N Orange Ave, Orlando, FL 32801
+- Process: We must present the 'Power of Attorney' physically at the window.
+- Tips: Release process is very slow (6-10 hours).
 
-OSCEOLA COUNTY (KISSIMMEE)
-  Facility: Osceola County Jail
-  Jail Phone: (407) 742-4444
-  Jail Address: 402 Simpson Road, Kissimmee, Florida 34744
-  Sheriff Booking Search: https://www.osceolasheriff.org
-  Clerk Address: 2 Courthouse Square, Suite 2000, Kissimmee, Florida 34741
-  Clerk Phone: (407) 742-3500
-  Clerk Website: https://osceolaclerk.com
+BROWARD COUNTY (FORT LAUDERDALE)
+- Jail: 555 SE 1st Ave, Fort Lauderdale, FL 33301
+- Court: 201 SE 6th St, Fort Lauderdale, FL 33301
+- Process: Accepts e-affidavits. First Appearance held twice daily. Most paperwork is digital.
 
-PALM BEACH COUNTY (WEST PALM BEACH)
-  Facility: Palm Beach County Jail
-  Jail Phone: (561) 688-4400
-  Jail Address: 3228 Gun Club Road, West Palm Beach, Florida 33406
-  Courthouse: 205 N Dixie Hwy, West Palm Beach, FL 33401
-  Sheriff Booking Search: https://www.pbso.org
-  Clerk Phone: (561) 355-2996
-  Clerk Website: https://www.mypalmbeachclerk.com/
-  Court Records: https://appsgp.mypalmbeachclerk.com/eCaseView/
-  Process: Indemnitors must be approved via PBSO visual verification (Zoom or In-Person).
-  Status: Active
-
-PASCO COUNTY (LAND O' LAKES)
-  Facility: Pasco County Jail
-  Jail Phone: (800) 854-2862
-  Jail Address: 20101 Central Boulevard, Land O'Lakes, Florida 34637
-  Sheriff Booking Search: https://www.pascosheriff.com
-  Clerk Address: 38053 Live Oak Avenue, Dade City, Florida 33523
-  Clerk Phone: (352) 521-4542
-  Clerk Website: https://www.pascoclerk.com
+PALM BEACH COUNTY
+- Jail: 3228 Gun Club Rd, West Palm Beach, FL 33406
+- Court: 205 N Dixie Hwy, West Palm Beach, FL 33401
+- Process: Indemnitors must be approved via PBSO visual verification (Zoom or In-Person).
 
 PINELLAS COUNTY (CLEARWATER/ST. PETE)
-  Facility: Pinellas County Jail
-  Jail Phone: (727) 582-6200
-  Jail Address: 14400 49th Street North, Clearwater, Florida 33762
-  Sheriff Booking Search: https://www.pcsoweb.com
-  Clerk Phone: (727) 464-7000
-  Clerk Website: https://www.mypinellasclerk.gov/
-  Court Records: https://ccmspa.pinellascounty.org/PublicAccess/default.aspx
-  Process: Strictly digital for agents. No physical signature required at the jail.
+- Jail: 14400 49th St N, Clearwater, FL 33762
+- Process: Strictly digital for agents. No physical signature required at the jail.
 
-POLK COUNTY (BARTOW/LAKELAND)
-  Facility: Polk County Jail
-  Jail Phone: (863) 534-6123
-  Jail Address: 2390 Bob Phillips Road, Bartow, Florida 33830
-  Sheriff Booking Search: https://www.polksheriff.org
-  Clerk Phone: (863) 534-4000
-  Clerk Website: https://www.polkcountyclerk.net/
-  Court Records: https://pro.polkcountyclerk.net/PRO
-  Process: Paper bonds standard. ID must match perfectly.
+SARASOTA COUNTY
+- Jail: 2020 Main St, Sarasota, FL 34237
+- Process: E-Bonds accepted for low-level offenses. Releases take 4-6 hours.
 
-PUTNAM COUNTY (PALATKA)
-  Facility: Putnam County Jail
-  Jail Phone: (386) 329-0854
-  Jail Address: 130 Orie Griffin Boulevard, Palatka, Florida 32177
-  Sheriff Booking Search: https://www.putnamsheriff.org
-  Clerk Address: 410 Saint Johns Avenue, Palatka, Florida 32177
-  Clerk Phone: (386) 326-7600
-  Clerk Website: https://putnamclerk.com
+POLK COUNTY (BARTOW)
+- Jail: 2390 Bob Phillips Rd, Bartow, FL 33830
+- Process: Paper bonds standard. Sheriff Grady Judd's policies are strict; ID must match perfectly.
 
-ST. JOHNS COUNTY (ST. AUGUSTINE)
-  Facility: St. Johns County Jail
-  Jail Phone: (904) 824-8304
-  Jail Address: 3955 Lewis Speedway, St. Augustine, Florida 32084
-  Sheriff Booking Search: https://www.sjso.org
-  Clerk Address: 4010 Lewis Speedway, St. Augustine, Florida 32084
-  Clerk Phone: (904) 819-3600
-  Clerk Website: https://stjohnsclerk.com
+ALL OTHER FLORIDA COUNTIES
+We cover every Florida county through our statewide network. For counties not listed above, we locate the nearest licensed agent to post the bond.
 
-ST. LUCIE COUNTY (FORT PIERCE)
-  Facility: St. Lucie County Jail
-  Jail Phone: (772) 462-3450
-  Jail Address: 900 North Rock Road, Fort Pierce, Florida 34945
-  Sheriff Booking Search: https://www.stluciesheriff.com
-  Clerk Address: P.O. Box 700, Ft. Pierce, Florida 34954
-  Clerk Phone: (772) 462-6900
-  Clerk Website: https://stlucieclerk.gov
-
-SANTA ROSA COUNTY (MILTON)
-  Facility: Santa Rosa County Jail
-  Jail Phone: (850) 983-1100
-  Jail Address: 5755 East Milton Road, Milton, Florida 32583
-  Sheriff Booking Search: https://www.santarosasheriff.org
-  Clerk Address: P.O. Box 472, Milton, Florida 32572
-  Clerk Phone: (850) 981-5554
-  Clerk Website: https://santarosaclerk.com
-
-SARASOTA COUNTY (SARASOTA)
-  Facility: Sarasota County Jail
-  Jail Phone: (941) 861-4165
-  Jail Address: 2020 Main Street, Sarasota, Florida 34237
-  Sheriff Booking Search: https://www.sarasotasheriff.org
-  Clerk Phone: (941) 861-7400
-  Clerk Website: https://www.sarasotaclerk.com/
-  Court Records: https://secure.sarasotaclerk.com/Login.aspx?session=0
-  Process: E-Bonds accepted for low-level offenses. Releases take 4-6 hours.
-  Status: Active
-
-SEMINOLE COUNTY (SANFORD)
-  Facility: Seminole County Jail
-  Jail Phone: (407) 665-1200
-  Jail Address: 211 Bush Boulevard, Sanford, Florida 32773
-  Sheriff Booking Search: https://www.seminolesheriff.org
-  Clerk Phone: (407) 665-4300
-  Clerk Website: https://www.seminoleclerk.org/
-  Court Records: https://courtrecords.seminoleclerk.org/criminal/default.aspx
-
-SUMTER COUNTY (BUSHNELL)
-  Facility: Sumter County Jail
-  Jail Phone: (352) 793-0225
-  Jail Address: 219 East Anderson Avenue, Bushnell, Florida 33513
-  Sheriff Booking Search: https://www.sumtercountysheriff.org
-  Clerk Address: 215 East McCollum Avenue, Bushnell, Florida 33513
-  Clerk Phone: (352) 569-6600
-  Clerk Website: https://www.sumterclerk.com
-
-SUWANNEE COUNTY (LIVE OAK)
-  Facility: Suwannee County Jail
-  Jail Phone: (386) 364-3776
-  Jail Address: 200 South Ohio Avenue, Live Oak, Florida 32064
-  Sheriff Booking Search: https://www.suwanneesheriff.com
-  Clerk Address: 200 South Ohio Avenue, Live Oak, Florida 32064
-  Clerk Phone: (386) 362-0500
-  Clerk Website: https://www.suwgov.org
-
-TAYLOR COUNTY (PERRY)
-  Facility: Taylor County Jail
-  Jail Phone: (850) 584-4333
-  Jail Address: 589 East US Highway 27, Perry, Florida 32347
-  Sheriff Booking Search: https://www.taylorsheriff.org
-  Clerk Address: 108 North Jefferson Street Suite 102, Perry, Florida 32348
-  Clerk Phone: (850) 838-3506
-  Clerk Website: https://taylorclerk.com
-
-UNION COUNTY (LAKE BUTLER)
-  Facility: Union County Jail
-  Jail Phone: (386) 496-2501
-  Jail Address: 50 NW 1st Street, Lake Butler, Florida 32054
-  Sheriff Booking Search: https://www.unionsheriff.us
-  Clerk Address: 55 West Main Street, Room 103, Lake Butler, Florida 32054
-  Clerk Phone: (386) 496-3711
-  Clerk Website: https://unionclerk.com
-
-VOLUSIA COUNTY (DAYTONA BEACH/DELAND)
-  Facility: Volusia County Jail
-  Jail Phone: (386) 254-1555
-  Jail Address: 1354 Indian Lake Road, Daytona Beach, Florida 32124
-  Sheriff Booking Search: https://www.volusiasheriff.org
-  Clerk Phone: (386) 736-5915
-  Clerk Website: https://www.clerk.org/
-  Court Records: https://ccms.clerk.org/
-
-WAKULLA COUNTY (CRAWFORDVILLE)
-  Facility: Wakulla County Jail
-  Jail Phone: (850) 745-7100
-  Jail Address: 15 Oak Street, Crawfordville, Florida 32327
-  Sheriff Booking Search: https://www.wakullasheriff.com
-  Clerk Address: 3056 Crawfordville Highway, Crawfordville, Florida 32327
-  Clerk Phone: (850) 926-0905
-  Clerk Website: https://wakullaclerk.org
-
-WALTON COUNTY (DEFUNIAK SPRINGS)
-  Facility: Walton County Jail
-  Jail Phone: (850) 892-8111
-  Jail Address: 796 Triple G Road, DeFuniak Springs, Florida 32433
-  Sheriff Booking Search: https://www.waltonso.org
-  Clerk Address: 571 U.S. Highway 90 East, DeFuniak Springs, Florida 32435
-  Clerk Phone: (850) 892-8115
-  Clerk Website: https://waltonclerk.com
-
-WASHINGTON COUNTY (CHIPLEY)
-  Facility: Washington County Jail
-  Jail Phone: (850) 638-6110
-  Jail Address: 1293 Jackson Avenue, Chipley, Florida 32428
-  Sheriff Booking Search: https://www.wcso.us
-  Clerk Address: 1293 Jackson Avenue, Chipley, Florida 32428
-  Clerk Phone: (850) 638-6289
-  Clerk Website: https://www.washingtonclerk.com
-
-
-ALL 67 COUNTIES COVERED
-We cover every Florida county through our statewide network. Our main number (239) 332-2245 routes to an agent for any county. Every county above now includes the jail facility name, phone number, and physical address.
-
-
-=========================================
-SECTION 5: FLORIDA BOND SCHEDULE RULES
-=========================================
-
-Florida does not have a single statewide bond schedule. Each county's Chief Judge issues a local Administrative Order that sets standard bond amounts for most offenses. Key rules:
-
-GENERAL BOND GUIDELINES:
-- Misdemeanors: Typically $500-$5,000 (varies by charge severity and county)
-- Third-Degree Felonies: Typically $2,500-$15,000
-- Second-Degree Felonies: Typically $5,000-$50,000
-- First-Degree Felonies: Typically $10,000-$250,000+
-- Life/Capital Felonies: No bond or judge-set only (no standard schedule)
-
-COMMON CHARGE EXAMPLES:
-- DUI (1st offense): $500-$1,500
-- DUI (2nd or more): $1,000-$5,000
-- Domestic Battery: $1,500-$5,000 (often requires magistrate hearing)
-- Petit Theft / Shoplifting: $500-$1,000
-- Grand Theft: $2,500-$10,000
-- Possession of Cannabis (<20g): $500-$1,000
-- Possession of Controlled Substance: $2,500-$15,000
-- Aggravated Battery: $15,000-$50,000
-- Robbery: $25,000-$100,000
-- Burglary (Structure): $10,000-$50,000
-- Burglary (Dwelling): $25,000-$100,000+
-- Sexual Battery: Judge-set only (no standard bond)
-- Murder: No bond / judge-set only
-- Violation of Probation: Often no bond until VOP hearing
-
-IMPORTANT NOTES ON BONDS:
-- Bond amounts are SET BY THE JUDGE. The above are typical ranges, not guarantees.
-- Each charge gets a SEPARATE bond amount per F.S. 903.046
-- "No bond" means the defendant must wait for a judge to set bail at first appearance
-- Domestic violence charges often require a mandatory hold until first appearance
-- Some charges require special conditions (GPS monitoring, no contact orders, etc.)
-- Bond amounts can be reduced or increased at the judge's discretion
-
-
-=============================================
-SECTION 6: FLORIDA STATUTE 648 — BAIL BOND AGENTS
-=============================================
-(Chapter 648, Florida Statutes — Bail Bond Regulatory Law)
-
-PURPOSE: Governs the licensing, conduct, and regulation of all bail bond agents in Florida.
-
-KEY PROVISIONS SHANNON SHOULD KNOW:
-
-6.1 LICENSING REQUIREMENTS (F.S. 648.34)
-- Must be at least 18 years old
-- Must be a U.S. citizen or legal alien with work authorization
-- Must be a Florida resident
-- Must hold a high school diploma or equivalent
-- Must complete a 120-hour professional certification course
-- Must pass a certification exam (score 80% or higher)
-- Must undergo a background check through the Department of Justice
-- Licensed and regulated by the Florida Department of Financial Services
-
-6.2 PROHIBITED ACTS (F.S. 648.44)
-- CANNOT suggest or advise the employment of any particular attorney
-- CANNOT solicit business in jails, courthouses, or on court/jail property
-- CANNOT initiate solicitations at a detainee's or family's residence between 9:00 PM and 8:00 AM
-- CANNOT wear or display identification other than department-issued license at correctional facilities
-- CANNOT sign or countersign blank bonds
-- CANNOT allow unlicensed individuals to execute bonds
-- CANNOT charge fees outside the approved rate
-
-6.3 PREMIUM AND FINANCIAL RULES (F.S. 648.44)
-- The premium is NON-REFUNDABLE once the bond is executed
-- No fees, expenses, or charges can be deducted from collateral
-- All funds received must be accurately reported and accounted for
-- Collateral must be returned when the bond obligation is discharged (F.S. 648.442)
-- Build-up funds pledged to indemnify an insurer must be properly managed
-
-6.4 AGENCY REQUIREMENTS (F.S. 648.382, 648.387)
-- A person cannot own or control a bail bond agency unless they are a licensed and appointed bail bond agent
-- Each agency location must designate a primary bail bond agent in charge
-- Insurers must have a managing general agent in Florida to supervise operations
-- Licensees must maintain detailed records of all bonds executed
-
-6.5 PENALTIES (F.S. 648.571, 648.572)
-- General violations: Second-degree misdemeanor
-- Serious infractions (aiding unlicensed persons, operating after felony conviction): Third-degree felony
-- The Department of Financial Services can suspend or revoke licenses
-
-
-=============================================
-SECTION 7: FLORIDA STATUTE 903 — BAIL LAW
-=============================================
-(Chapter 903, Florida Statutes — The Bail System)
-
-PURPOSE: Establishes the constitutional and statutory framework for the bail system in Florida, including rules for setting bail, bond forfeiture, and pretrial release.
-
-KEY PROVISIONS SHANNON SHOULD KNOW:
-
-7.1 PURPOSE OF BAIL (F.S. 903.046)
-- To ensure the defendant's appearance at all court proceedings
-- To protect the community from unreasonable danger
-- Each charge must have a SEPARATE and SPECIFIC bail amount
-- Only a JUDGE can set, reduce, or modify bail
-
-7.2 TYPES OF BAIL (F.S. 903.011-903.09)
-- CASH BOND: Full bail amount deposited with the court. Refunded when case concludes (minus fees).
-- SURETY BOND: A bail bond agent and surety company post the bond. Defendant pays a premium (non-refundable).
-- RECOGNIZANCE (ROR): Release without monetary obligation, based on promise to appear.
-- PRETRIAL RELEASE: Release with conditions (check-ins, curfew, GPS, etc.) — requires court approval.
-
-7.3 CRITERIA FOR SETTING BAIL (F.S. 903.046)
-The court considers:
-- Nature and circumstances of the offense
-- Weight of the evidence against the defendant
-- Defendant's ties to the community (family, employment, length of residency)
-- Financial ability to post bail
-- Defendant's history of court appearances
-- Danger the defendant poses to the community
-- Source of funds used to post bail
-- Whether the defendant is already on probation, parole, or other release
-
-7.4 BOND FORFEITURE (F.S. 903.26, 903.27)
-- Bond is FORFEITED if the defendant fails to appear as required
-- Court declares forfeiture and issues a bench warrant
-- The surety (bail bond agent) has a specific timeframe to locate and surrender the defendant
-- If the defendant is found and surrendered within the allowed period, the forfeiture may be discharged or reduced
-- The COSIGNER is financially responsible for the FULL bail amount if forfeiture is finalized
-
-7.5 SURETY'S RIGHT TO ARREST (F.S. 903.22)
-- A surety (or bail bond agent) has the right to arrest the defendant BEFORE bond forfeiture for the purpose of surrendering them to the court
-- This is how "bounty hunting" works — the agent finds and returns the defendant to custody
-
-7.6 PRETRIAL RELEASE VIOLATIONS (F.S. 903.0471)
-- If a defendant violates conditions of pretrial release, bail may be revoked
-- Defendant may be held without bond until a hearing
-- Violations include: new arrests, failure to check in, violating no-contact orders, failing drug tests
-
-7.7 RESTRICTIONS ON BAIL (F.S. 903.133, 903.132)
-- Capital felonies: NO bail if proof of guilt is evident or presumption is great
-- Certain violent crimes after prior conviction: Judge may deny bail
-- Probation/community control violators: May be held without bail pending hearing
-
-
-=============================================
-SECTION 8: GENERAL TIPS FOR CALLERS
-=============================================
-
-- Always bring a valid government-issued ID when visiting the jail
+GENERAL TIPS:
+- Always bring a valid government-issued ID
 - Do not bring weapons, drugs, or contraband to the jail
 - Court dates are mandatory — missing one means a warrant and bond forfeiture
 - Dress appropriately for court (no shorts, tank tops, or flip-flops)
-- Keep your bail bond agent's phone number handy: (239) 332-2245
-- Notify your bondsman immediately if your address or phone number changes
-- If the defendant is re-arrested, contact us immediately
-- Payment plans are available — ask your bondsman for details
 
 
-=============================================
-SECTION 9: IMPORTANT RULES FOR SHANNON
-=============================================
-
-1. NEVER discuss exact pricing, percentages, or fee amounts. Say: "Our bondsman will explain all the options when they call you back."
-2. NEVER promise exact release times — only give estimates ("typically 2-8 hours depending on the jail").
-3. NEVER recommend or suggest specific attorneys.
-4. ALWAYS be empathetic — callers are in distress and worried about a loved one.
-5. ALWAYS confirm the defendant's full name, county/jail location, and caller's contact info.
-6. ALWAYS inform callers that Shamrock covers ALL 67 Florida counties.
-7. If asked about Florida law, share the general information in this knowledge base but add: "For specific legal advice about your case, you should consult with an attorney."
-8. The caller's phone number comes from Twilio via {{caller_phone}} — never ask for their phone number.
-9. Get CONSENT before sending paperwork (Path B).
-10. When sending paperwork, confirm the caller's EMAIL address — speak it back to them letter by letter.
+IMPORTANT RULES FOR SHANNON:
+- Never discuss exact pricing, percentages, or fee amounts
+- If asked about cost, say: "Our bondsman will explain all the options when they call you back."
+- Never promise release times — only give estimates
+- Always be empathetic — callers are in distress
+- Always confirm the defendant's name, county, and caller's contact info

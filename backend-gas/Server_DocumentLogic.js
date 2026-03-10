@@ -63,13 +63,41 @@ function server_getPDFTemplatesBatch(templateKeys) {
     const results = [];
     templateKeys.forEach(function (key) {
         try {
+            // PRIMARY: Google Drive
             var driveId = PDF_DRIVE_FILE_IDS[key];
-            if (!driveId) {
-                console.warn('No Drive file ID mapped for template key: ' + key);
-                results.push(null);
-                return;
+            if (driveId) {
+                try {
+                    results.push(getPDFContent(driveId));
+                    return; // success — move to next key
+                } catch (driveErr) {
+                    console.warn('⚠️ Drive fetch failed for ' + key + ': ' + driveErr.message + ' — trying SignNow fallback');
+                }
             }
-            results.push(getPDFContent(driveId));
+
+            // FALLBACK: SignNow Teams Templates
+            // Uses SIGNNOW_TEMPLATE_MAP from Telegram_Documents.js
+            var snTemplateId = (typeof SIGNNOW_TEMPLATE_MAP !== 'undefined') ? SIGNNOW_TEMPLATE_MAP[key] : null;
+            if (snTemplateId) {
+                var config = SN_getConfig();
+                var downloadUrl = config.API_BASE + '/document/' + snTemplateId + '/download?type=collapsed';
+                var resp = UrlFetchApp.fetch(downloadUrl, {
+                    method: 'GET',
+                    headers: { 'Authorization': 'Bearer ' + config.ACCESS_TOKEN },
+                    muteHttpExceptions: true
+                });
+                if (resp.getResponseCode() === 200) {
+                    var base64 = Utilities.base64Encode(resp.getBlob().getBytes());
+                    console.log('✅ Loaded ' + key + ' from SignNow fallback');
+                    results.push(base64);
+                    return;
+                } else {
+                    console.error('❌ SignNow fallback also failed for ' + key + ': HTTP ' + resp.getResponseCode());
+                }
+            }
+
+            // Both failed
+            console.error('❌ No source available for template: ' + key);
+            results.push(null);
         } catch (e) {
             console.warn('Skipping template ' + key + ': ' + e.message);
             results.push(null);
@@ -187,10 +215,17 @@ function server_generateSigningPacket(params) {
             var signerIndex = (docEntry.signerIndex !== undefined) ? Number(docEntry.signerIndex) : -1;
 
             // Use the Telegram signing flow handler
+            // Email resolution: try direct keys, then signer section, then indemnitors array
+            var signerEmail = docEntry.signerEmail
+                || formData['indemnitor-email']
+                || formData['signer-indemnitor-email']
+                || (formData.indemnitors && formData.indemnitors[0] ? formData.indemnitors[0].email : '')
+                || '';
+
             var signingResult = handleTelegramGetSigningUrl({
                 documentId: docId,
                 role: docEntry.signerRole || 'Indemnitor',
-                email: docEntry.signerEmail || formData['indemnitor-email'] || '',
+                email: signerEmail,
                 caseNumber: caseNumber,
                 signerIndex: signerIndex,
                 formData: formData  // This triggers prefillDocument_ inside the handler
@@ -203,6 +238,7 @@ function server_generateSigningPacket(params) {
                 signingUrl: signingResult.signingUrl || null,
                 success: signingResult.success,
                 error: signingResult.error || null,
+                message: signingResult.message || null,
                 role: signingResult.role || docEntry.signerRole || 'Indemnitor',
                 signerIndex: signerIndex
             });
@@ -217,8 +253,16 @@ function server_generateSigningPacket(params) {
         var successCount = results.filter(function (r) { return r.success; }).length;
         Logger.log('📦 Packet complete: ' + successCount + '/' + results.length + ' docs processed');
 
+        // Build detailed error summary for the client
+        var errors = results.filter(function (r) { return !r.success; }).map(function (r) {
+            var detail = r.error || 'unknown';
+            if (r.message) detail += ' (' + r.message + ')';
+            return r.docId + ': ' + detail;
+        });
+
         return {
             success: successCount > 0,
+            error: successCount === 0 ? ('All ' + results.length + ' docs failed: ' + errors.join('; ')) : null,
             mode: signingMethod,
             totalDocs: results.length,
             successCount: successCount,
@@ -227,7 +271,7 @@ function server_generateSigningPacket(params) {
 
     } catch (e) {
         Logger.log('❌ Packet generation error: ' + e.toString());
-        return { success: false, error: e.message, documents: [] };
+        return { success: false, error: 'server_generateSigningPacket crashed: ' + e.message, documents: [] };
     }
 }
 

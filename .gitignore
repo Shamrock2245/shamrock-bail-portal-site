@@ -20,3 +20,8 @@ docs/twilio-docs.md
 venv/
 .env*
 *.real
+
+# Secrets - never commit
+backend-gas/ScriptProperties_Temp.js
+backend-gas/Get_Token_Temp.js
+backend-gas/Setup_OAuth_Props.js

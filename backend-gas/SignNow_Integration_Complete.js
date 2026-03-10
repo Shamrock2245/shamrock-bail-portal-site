@@ -205,61 +205,152 @@ function SN_createAllSignerLinks(documentId, formData, options = {}) {
  */
 function SN_createEmbeddedLink(documentId, role, email, options) {
   const config = SN_getConfig();
-  const endpoint = config.API_BASE + `/document/${documentId}/embedded/invite`;
 
-  const payload = {
-    role: role,
-    to: email, // Optional in some flows, but good for tracking
-    auth_method: 'none',
-    link_expiration: options.expiration || (INTEGRATION_CONFIG.LINK_EXPIRATION_MINUTES || 45),
-    redirect_uri: options.redirect_uri || INTEGRATION_CONFIG.REDIRECT_URI,
-    decline_redirect_uri: options.decline_redirect_uri || INTEGRATION_CONFIG.DECLINE_REDIRECT_URI,
-    close_redirect_uri: options.close_redirect_uri || INTEGRATION_CONFIG.CLOSE_REDIRECT_URI
-  };
-
-  // Use LockService to prevent race conditions on the same document?
-  const lock = LockService.getScriptLock();
   try {
-    lock.waitLock(10000); // Wait up to 10s
+    // Step 1: GET the document to find role unique_ids
+    // The v2 embedded-invites endpoint requires role_id (unique ID), not role name
+    SN_log('EmbeddedLink_Start', { documentId, role, email });
 
-    // Attempt 1
-    let response = UrlFetchApp.fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + config.ACCESS_TOKEN, 'Content-Type': 'application/json' },
-      payload: JSON.stringify(payload),
+    const docResponse = UrlFetchApp.fetch(config.API_BASE + '/document/' + documentId, {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + config.ACCESS_TOKEN },
       muteHttpExceptions: true
     });
 
-    let json = JSON.parse(response.getContentText());
+    if (docResponse.getResponseCode() !== 200) {
+      return { success: false, error: 'Failed to get document: HTTP ' + docResponse.getResponseCode() + ' - ' + docResponse.getContentText() };
+    }
 
-    // CHECK FOR CONFLICT (Invite Exists)
-    if (json.errors && json.errors[0] && json.errors[0].message && json.errors[0].message.includes('already exists')) {
-      SN_log('Conflict_Handler', `Invite for ${role} exists. Cancelling old invites...`);
+    const docJson = JSON.parse(docResponse.getContentText());
 
-      // Cancel previous invites for this document
-      const cancelRes = SN_cancelInvites(documentId);
-      if (cancelRes) {
-        // Retry Creation (Attempt 2)
+    // Find the role's unique_id from the document's roles array
+    var roleId = null;
+    if (docJson.roles && docJson.roles.length > 0) {
+      for (var i = 0; i < docJson.roles.length; i++) {
+        if (docJson.roles[i].name === role) {
+          roleId = docJson.roles[i].unique_id;
+          break;
+        }
+      }
+    }
+
+    if (!roleId) {
+      SN_log('EmbeddedLink_NoRole', { role, availableRoles: docJson.roles ? docJson.roles.map(function (r) { return r.name; }) : [] });
+      return { success: false, error: 'Role "' + role + '" not found on document. Available: ' + JSON.stringify(docJson.roles ? docJson.roles.map(function (r) { return r.name; }) : []) };
+    }
+
+    SN_log('EmbeddedLink_RoleFound', { role, roleId });
+
+    // Step 2: Create embedded invite using v2 API
+    const endpoint = config.API_BASE + '/v2/documents/' + documentId + '/embedded-invites';
+
+    const payload = {
+      invites: [{
+        email: email || 'signer@shamrockbailbonds.biz',
+        role_id: roleId,
+        order: 1,
+        auth_method: 'none',
+        force_new_signature: 0,
+        redirect_uri: options.redirect_uri || '',
+        decline_redirect_uri: options.decline_redirect_uri || '',
+        close_redirect_uri: options.close_redirect_uri || '',
+        redirect_target: 'self'
+      }]
+    };
+
+    SN_log('EmbeddedLink_Request', { endpoint, payload });
+
+    const lock = LockService.getScriptLock();
+    lock.waitLock(10000);
+
+    try {
+      var response = UrlFetchApp.fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+          'Content-Type': 'application/json'
+        },
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+
+      var responseText = response.getContentText();
+      var json = JSON.parse(responseText);
+      SN_log('EmbeddedLink_Response', { code: response.getResponseCode(), body: responseText.substring(0, 500) });
+
+      // Check for conflict (invite already exists) and retry
+      if (response.getResponseCode() === 409 || (json.errors && json.errors[0] && json.errors[0].message && json.errors[0].message.includes('already exists'))) {
+        SN_log('Conflict_Handler', 'Invite exists. Cancelling and retrying...');
+        SN_cancelInvites(documentId);
+
         response = UrlFetchApp.fetch(endpoint, {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + config.ACCESS_TOKEN, 'Content-Type': 'application/json' },
           payload: JSON.stringify(payload),
           muteHttpExceptions: true
         });
-        json = JSON.parse(response.getContentText());
+        responseText = response.getContentText();
+        json = JSON.parse(responseText);
       }
-    }
 
-    if (json.data && json.data.link) {
-      return { success: true, link: json.data.link };
-    } else {
-      return { success: false, error: JSON.stringify(json) };
+      // v2 response: extract the embedded invite ID
+      // Response format: { "data": [{ "id": "invite_id_here", ... }] }
+      var embeddedInviteId = null;
+
+      if (response.getResponseCode() >= 200 && response.getResponseCode() < 300) {
+        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+          embeddedInviteId = json.data[0].id;
+        } else if (json.data && json.data.id) {
+          embeddedInviteId = json.data.id;
+        } else if (json.id) {
+          embeddedInviteId = json.id;
+        }
+      }
+
+      if (!embeddedInviteId) {
+        return { success: false, error: 'Failed to create embedded invite (HTTP ' + response.getResponseCode() + '): ' + responseText.substring(0, 500) };
+      }
+
+      SN_log('EmbeddedLink_InviteCreated', { embeddedInviteId: embeddedInviteId });
+
+      // Step 3: Generate the actual signing link from the embedded invite ID
+      var linkEndpoint = config.API_BASE + '/v2/documents/' + documentId + '/embedded-invites/' + embeddedInviteId + '/link';
+
+      var linkPayload = {
+        auth_method: 'none',
+        link_expiration: options.expiration || 45
+      };
+
+      var linkResponse = UrlFetchApp.fetch(linkEndpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+          'Content-Type': 'application/json'
+        },
+        payload: JSON.stringify(linkPayload),
+        muteHttpExceptions: true
+      });
+
+      var linkResponseText = linkResponse.getContentText();
+      var linkJson = JSON.parse(linkResponseText);
+      SN_log('EmbeddedLink_LinkResponse', { code: linkResponse.getResponseCode(), body: linkResponseText.substring(0, 500) });
+
+      // Extract signing link from response
+      var signingLink = linkJson.link || (linkJson.data && linkJson.data.link) || null;
+
+      if (signingLink) {
+        return { success: true, link: signingLink };
+      }
+
+      return { success: false, error: 'No signing link in link response (HTTP ' + linkResponse.getResponseCode() + '): ' + linkResponseText.substring(0, 500) };
+
+    } finally {
+      lock.releaseLock();
     }
 
   } catch (e) {
+    SN_log('EmbeddedLink_Error', e.toString());
     return { success: false, error: e.toString() };
-  } finally {
-    lock.releaseLock();
   }
 }
 
@@ -355,6 +446,54 @@ function SN_uploadDocument(pdfBase64, fileName) {
   } else {
     return { success: false, error: JSON.stringify(json) };
   }
+}
+
+/**
+ * Build signature fields for a merged bail packet
+ * Creates SignNow-compatible field definitions for each signer role.
+ * Fields are placed on the first page of the document.
+ * 
+ * @param {object} params - The workflow params (formData, selectedDocs, etc.)
+ * @returns {Array} Array of SignNow field objects
+ */
+function SN_buildSignatureFields(params) {
+  const fields = [];
+  const formData = params.formData || params;
+
+  // Check which signers we need
+  const defendantEmail = formData.defendantEmail || formData['signer-defendant-email'] || '';
+  const indemnitorEmail = formData.indemnitorEmail || formData['signer-indemnitor-email'] || '';
+
+  // Defendant signature field (bottom-left area of page 1)
+  if (defendantEmail) {
+    fields.push({
+      x: 30,
+      y: 700,
+      width: 200,
+      height: 30,
+      page_number: 0, // 0-indexed in SignNow API
+      role: 'Defendant',
+      required: true,
+      type: 'signature'
+    });
+  }
+
+  // Indemnitor signature field (bottom-right area of page 1)
+  if (indemnitorEmail) {
+    fields.push({
+      x: 350,
+      y: 700,
+      width: 200,
+      height: 30,
+      page_number: 0,
+      role: 'Indemnitor',
+      required: true,
+      type: 'signature'
+    });
+  }
+
+  SN_log('BuildFields', { fieldCount: fields.length, roles: fields.map(f => f.role) });
+  return fields;
 }
 
 /**
