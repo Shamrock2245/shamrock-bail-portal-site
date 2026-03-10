@@ -124,6 +124,15 @@ function runTheCloser() {
         var timestamp = _getVal(row, colIdx, ['timestamp', 'date', 'created']);
         var source = String(_getVal(row, colIdx, ['source', 'intakesource']) || '').toLowerCase().trim();
 
+        // ── Respect opt-out / do-not-contact flags ────────────────────────────
+        // These columns may be set by the Communication Preferences portal page
+        // or by an inbound STOP reply handler. Check both camelCase and snake_case.
+        var doNotContact = _getVal(row, colIdx, ['donotcontact', 'do_not_contact', 'optout', 'opt_out']);
+        if (doNotContact === true || String(doNotContact).toLowerCase() === 'true') {
+            Logger.log('🚫 Skipping ' + (name || phone.slice(-4)) + ' — doNotContact flag set.');
+            continue;
+        }
+
         // Skip if completed or no phone
         if (CLOSER_CONFIG.COMPLETED_STATUSES.indexOf(status) !== -1) continue;
         if (!phone || phone.replace(/\D/g, '').length < 10) continue;

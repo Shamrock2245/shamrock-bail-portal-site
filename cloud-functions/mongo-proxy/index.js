@@ -135,17 +135,9 @@ async function handleTwilioWebhook(req, res) {
         await commsCol.insertOne(commDoc);
         console.log(`✅ Logged incoming Twilio message from ${from}`);
 
-        // Relay to Node-RED
-        const nodeRedUrl = process.env.NODE_RED_WEBHOOK_URL;
-        if (nodeRedUrl) {
-            fetch(`${nodeRedUrl}/whatsapp`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            }).catch(e => console.error("Failed to relay Twilio to Node-RED:", e));
-        } else {
-            console.warn("NODE_RED_WEBHOOK_URL not set, skipping relay.");
-        }
+        // TODO: Wire to replacement orchestrator when ready.
+        // Node-RED relay has been removed — inbound Twilio messages are logged to MongoDB above.
+        // The GAS webhook handler (SOC2_WebhookHandler.js, path=twilio) is the active processor.
 
         // Return empty TwiML so Twilio knows we got it
         res.set("Content-Type", "text/xml");
@@ -181,17 +173,9 @@ async function handleTelegramWebhook(req, res) {
         await commsCol.insertOne(commDoc);
         console.log(`✅ Logged incoming Telegram message from ${from}`);
 
-        // Relay to Node-RED
-        const nodeRedUrl = process.env.NODE_RED_WEBHOOK_URL;
-        if (nodeRedUrl) {
-            fetch(`${nodeRedUrl}/telegram`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            }).catch(e => console.error("Failed to relay Telegram to Node-RED:", e));
-        } else {
-            console.warn("NODE_RED_WEBHOOK_URL not set, skipping relay.");
-        }
+        // TODO: Wire to replacement orchestrator when ready.
+        // Node-RED relay has been removed — inbound Telegram messages are logged to MongoDB above.
+        // The GAS webhook handler (SOC2_WebhookHandler.js, path=telegram) is the active processor.
 
         res.status(200).send("OK");
     } catch (err) {
@@ -220,17 +204,9 @@ async function handleWixWebhook(req, res) {
         await eventsCol.insertOne(eventDoc);
         console.log(`✅ Logged incoming Wix intake event for Case: ${caseId}`);
 
-        // Relay to Node-RED
-        const nodeRedUrl = process.env.NODE_RED_WEBHOOK_URL;
-        if (nodeRedUrl) {
-            fetch(`${nodeRedUrl}/wix-intake`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            }).catch(e => console.error("Failed to relay Wix Intake to Node-RED:", e));
-        } else {
-            console.warn("NODE_RED_WEBHOOK_URL not set, skipping relay.");
-        }
+        // TODO: Wire to replacement orchestrator when ready.
+        // Node-RED relay has been removed — inbound Wix intake events are logged to MongoDB above.
+        // The GAS webhook handler (SOC2_WebhookHandler.js) is the active processor.
 
         res.status(200).json({ success: true, message: "Handshake completed successfully" });
     } catch (err) {

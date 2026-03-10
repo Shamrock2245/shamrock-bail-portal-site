@@ -28,7 +28,7 @@ export async function captureGeolocation(requireConsent = true) {
     if (requireConsent) {
       // Create the dynamic storage key based on session
       const sessionData = getSessionData(); // Assumes this is synchronous or already cached
-      const key = sessionData?.personId ? `consent_${sessionData.personId} ` : 'consent_user';
+      const key = sessionData?.personId ? `consent_${sessionData.personId}` : 'consent_user';
 
       const existingConsent = local.getItem(key);
 
