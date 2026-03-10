@@ -1,18 +1,45 @@
 /**
  * HOME.c1dmp.js - Shamrock Bail Bonds Home Page
+ *
+ * ============================================================
+ * PERMANENT CONSTRAINT — DO NOT ADD IMPORT STATEMENTS
+ * ============================================================
+ * Root cause (confirmed from live Wix bundle analysis, 2026-03-05):
+ *
+ * ANY ES module import — including wix-location, wix-window,
+ * wix-storage, @wix/site-site — causes Wix's bundler to inject
+ * a webpack JSONP chunk-loading runtime:
+ *
+ *   n = this.webpackChunkc1dmp = this.webpackChunkc1dmp || []
+ *
+ * Inside Wix's strict-mode worker IIFE, `this` is undefined.
+ * This line throws TypeError. The ENTIRE module fails to load.
+ * onReady never runs. No event handlers ever register.
+ *
+ * SOLUTION: Zero imports. wixLocation, wixWindow, wixSeo, session,
+ * and wixSite are Velo runtime globals — always available without
+ * importing. With zero imports, no webpack JSONP runtime is
+ * generated, no crash, onReady runs, all handlers register.
+ *
+ * ============================================================
+ * ELEMENT IDs — CONFIRMED FROM LIVE DOM INSPECTION 2026-03-10
+ * ============================================================
+ * Dropdown:         comp-mjiotw4a
+ * Get Started btn:  comp-mjip0apd
+ * (Find My Jail is in masterPage.js: comp-ml15h39u)
+ *
+ * These are the real Wix comp- IDs. The elements have NO Velo
+ * nicknames set in the Editor. $w('#countySelector') etc. return
+ * null because those nicknames do not exist.
+ * ============================================================
  */
 
-import wixLocation from 'wix-location';
-import wixWindow from 'wix-window';
-import wixSeo from 'wix-seo';
-import { session } from 'wix-storage';
-// @ts-ignore -- prefetchPageResources: Wix SDK, speeds up next-page navigation
-import { site as wixSite } from '@wix/site-site';
+/* global $w, wixLocation, wixWindow, wixSeo, session, wixSite */
+// NO IMPORT STATEMENTS — see constraint above.
 
 // ---------------------------------------------------------------------------
 // Inline county data -- no backend call, no dynamic chunk, no crash
 // ---------------------------------------------------------------------------
-
 const FLORIDA_COUNTIES = [
     { name: 'Alachua', slug: 'alachua' },
     { name: 'Baker', slug: 'baker' },
@@ -84,6 +111,14 @@ const FLORIDA_COUNTIES = [
 ];
 
 // ---------------------------------------------------------------------------
+// Element ID constants -- confirmed from live DOM inspection 2026-03-10
+// ---------------------------------------------------------------------------
+// These are the real Wix comp- IDs. Nickname fallbacks are included in case
+// the Editor is ever updated to assign nicknames to these elements.
+const DROPDOWN_IDS    = ['#comp-mjiotw4a', '#countySelector', '#countyDropdown'];
+const GET_STARTED_IDS = ['#comp-mjip0apd', '#getStartedButton', '#getStartedBtn'];
+
+// ---------------------------------------------------------------------------
 // onReady
 // ---------------------------------------------------------------------------
 
@@ -105,21 +140,10 @@ $w.onReady(function () {
     loadCountyDropdown();
 
     // Testimonials: register viewport trigger; data loads on scroll, not on page load
-    // Mobile: defer registration slightly to let above-fold render first
     setTimeout(() => { initTestimonials(); }, isMobile ? 1500 : 800);
 
     // Telegram Hub analytics bridge (non-blocking)
     initTelegramHubSection();
-
-    // Prefetch high-likelihood next pages after first paint
-    // This is totally non-blocking; Wix fetches resources in the background
-    setTimeout(() => {
-        try {
-            wixSite.prefetchPageResources({
-                pages: ['/portal-landing', '/florida-bail-bonds/lee']
-            }).catch(() => { }); // errors are non-fatal
-        } catch (e) { /* non-fatal */ }
-    }, isMobile ? 3000 : 1500);
 });
 
 // ---------------------------------------------------------------------------
@@ -159,56 +183,48 @@ function setupCTAButtons() {
 // ---------------------------------------------------------------------------
 
 /**
+ * Resolve a Wix element by trying multiple IDs in order.
+ * Returns the first element found, or null.
+ */
+function resolveElement(ids) {
+    for (let i = 0; i < ids.length; i++) {
+        try {
+            const el = $w(ids[i]);
+            if (el && el.uniqueId) return el;
+        } catch (e) { /* try next */ }
+    }
+    return null;
+}
+
+/**
  * Load county dropdown using inline FLORIDA_COUNTIES data.
  * No backend import, no dynamic chunk, no webpack crash.
+ * Uses real comp- IDs confirmed from live DOM inspection 2026-03-10.
  */
 function loadCountyDropdown() {
-    let dropdown = null;
-    try {
-        dropdown = $w('#countySelector');
-    } catch (e) { /* element not found */ }
+    const dropdown = resolveElement(DROPDOWN_IDS);
 
-    if (!dropdown || !dropdown.id) {
-        console.warn('[County Dropdown] #countySelector not found on page.');
+    if (!dropdown) {
+        console.warn('[County Dropdown] Dropdown element not found. Tried: ' + DROPDOWN_IDS.join(', '));
         return;
     }
 
     try {
         // Populate directly from inline data -- synchronous, no async needed
-        dropdown.options = FLORIDA_COUNTIES.map(county => ({
-            label: county.name,
-            value: county.slug
-        }));
+        dropdown.options = FLORIDA_COUNTIES.map(function(county) {
+            return { label: county.name, value: county.slug };
+        });
         dropdown.placeholder = 'Select a County';
 
         // Wire onChange handler
-        dropdown.onChange(() => { handleCountySelection(dropdown); });
-
-        // Prefetch: fire prefetchPageResources when user focuses the dropdown
-        // This means the county page is already loading BEFORE they finish selecting
-        try {
-            if (typeof dropdown.onFocus === 'function') {
-                dropdown.onFocus(() => {
-                    // Prefetch top counties — user intent signal
-                    wixSite.prefetchPageResources({
-                        pages: [
-                            '/florida-bail-bonds/lee',
-                            '/florida-bail-bonds/collier',
-                            '/florida-bail-bonds/charlotte'
-                        ]
-                    }).catch(() => { });
-                });
-            }
-        } catch (e) { /* onFocus may not be supported on all dropdown types */ }
+        dropdown.onChange(function() { handleCountySelection(dropdown); });
 
         // Wire Get Started button
-        let getStartedBtn = null;
-        try {
-            getStartedBtn = $w('#getStartedBtn');
-        } catch (e) { /* non-fatal */ }
-
-        if (getStartedBtn && getStartedBtn.id) {
-            getStartedBtn.onClick(() => { handleGetStarted(dropdown); });
+        const getStartedBtn = resolveElement(GET_STARTED_IDS);
+        if (getStartedBtn) {
+            getStartedBtn.onClick(function() { handleGetStarted(dropdown); });
+        } else {
+            console.warn('[County Dropdown] Get Started button not found. Tried: ' + GET_STARTED_IDS.join(', '));
         }
 
     } catch (error) {
@@ -221,42 +237,24 @@ function loadCountyDropdown() {
 // County selection handlers
 // ---------------------------------------------------------------------------
 
-// Debounce timer for county selection (prevents accidental mobile double-taps)
 let _countySelectTimer = null;
 
 function handleCountySelection(dropdownEl) {
-    let dropdown = dropdownEl;
-    if (!dropdown || !dropdown.id) {
-        try {
-            dropdown = $w('#countySelector');
-        } catch (e) { return; }
-    }
-    const selectedCounty = dropdown ? dropdown.value : '';
+    const dropdown = dropdownEl || resolveElement(DROPDOWN_IDS);
+    if (!dropdown) return;
+    const selectedCounty = dropdown.value;
     if (selectedCounty) {
         trackEvent('county_selected', { county: selectedCounty });
-        // Prefetch the specific county page on selection (before 200ms fires)
-        try {
-            wixSite.prefetchPageResources({
-                pages: ['/florida-bail-bonds/' + selectedCounty]
-            }).catch(() => { });
-        } catch (e) { /* non-fatal */ }
-        // 200ms debounce: prevents accidental mobile touch from triggering immediate navigation
         clearTimeout(_countySelectTimer);
-        _countySelectTimer = setTimeout(() => { navigateToCounty(selectedCounty); }, 200);
+        _countySelectTimer = setTimeout(function() { navigateToCounty(selectedCounty); }, 200);
     }
 }
 
 function handleGetStarted(dropdownEl) {
-    let dropdown = dropdownEl;
-    if (!dropdown || !dropdown.id) {
-        try {
-            dropdown = $w('#countySelector');
-        } catch (e) { return; }
-    }
-    const selectedCounty = dropdown ? dropdown.value : '';
-    if (!selectedCounty) {
-        return;
-    }
+    const dropdown = dropdownEl || resolveElement(DROPDOWN_IDS);
+    if (!dropdown) return;
+    const selectedCounty = dropdown.value;
+    if (!selectedCounty) return;
     trackEvent('get_started_clicked', { county: selectedCounty });
     navigateToCounty(selectedCounty);
 }
@@ -274,14 +272,13 @@ function navigateToCounty(selectedCounty) {
         .replace(/\s+/g, '-');
 
     if (!cleanSlug) return;
+    console.log('[County Nav] Navigating to /florida-bail-bonds/' + cleanSlug);
     wixLocation.to('/florida-bail-bonds/' + cleanSlug);
 }
 
 function scrollToCountySelector() {
-    try {
-        const el = $w('#countySelector');
-        if (el && el.id) { el.scrollTo(); }
-    } catch (e) { /* non-fatal */ }
+    const el = resolveElement(DROPDOWN_IDS);
+    if (el) { try { el.scrollTo(); } catch (e) { /* non-fatal */ } }
 }
 
 // ---------------------------------------------------------------------------
@@ -292,8 +289,7 @@ function initTestimonials() {
     try {
         const repeater = $w('#testimonialRepeater');
         if (!repeater || !repeater.id) return;
-        // Only load on viewport enter -- avoids fetching off-screen data on page load
-        repeater.onViewportEnter(() => { loadTestimonials(); });
+        repeater.onViewportEnter(function() { loadTestimonials(); });
     } catch (e) { /* non-fatal */ }
 }
 
@@ -310,13 +306,13 @@ function loadTestimonials() {
             { _id: '4', name: 'Rafael I.', text: 'They treated us like people, not a number. That mattered more than anything.', rating: 5 }
         ];
 
-        repeater.onItemReady(($item, itemData) => {
+        repeater.onItemReady(function($item, itemData) {
             try {
-                const nameTxt = ($item(`${'#testimonialName'}`).id) ? $item(`${'#testimonialName'}`) : $item(`${'#authorName'}`);
+                const nameTxt = $item('#testimonialName') || $item('#authorName');
                 if (nameTxt && nameTxt.id) nameTxt.text = itemData.name;
             } catch (e) { /* non-fatal */ }
             try {
-                const bodyTxt = ($item(`${'#testimonialText'}`).id) ? $item(`${'#testimonialText'}`) : $item(`${'#quoteText'}`);
+                const bodyTxt = $item('#testimonialText') || $item('#quoteText');
                 if (bodyTxt && bodyTxt.id) bodyTxt.text = itemData.text;
             } catch (e) { /* non-fatal */ }
         });
@@ -446,7 +442,7 @@ function setupOrganizationSchema() {
         }
     ];
 
-    wixSeo.setStructuredData(schemas).catch(e => console.error('Schema error:', e));
+    wixSeo.setStructuredData(schemas).catch(function(e) { console.error('Schema error:', e); });
 }
 
 // ---------------------------------------------------------------------------
@@ -461,7 +457,7 @@ function initTelegramHubSection() {
         }
     } catch (e) { /* #telegramHubEmbed not on page */ }
     try {
-        $w('#telegramHubSection').onViewportEnter(() => {
+        $w('#telegramHubSection').onViewportEnter(function() {
             trackEvent('TelegramHub_SectionVisible', { section: 'telegram_hub' });
         });
     } catch (e) { /* element may not exist */ }
@@ -475,8 +471,6 @@ function handleTelegramHubMessage(event) {
     if (!data) return;
 
     if (data.type === 'shamrock_iframe_height' && data.height) {
-        // Dynamic height resizing is not supported for HtmlComponent in Velo directly.
-        // We catch the message but take no action to avoid TS compiler errors.
         return;
     }
 
@@ -486,9 +480,7 @@ function handleTelegramHubMessage(event) {
     const label = data.label || '';
     const section = data.section || 'telegram_hub';
 
-    trackEvent('TelegramHub_' + evtName, { label, section });
-    // Note: backend relay removed -- backend imports cause dynamic chunk crash.
-    // High-value events are tracked via wixWindow.trackEvent above.
+    trackEvent('TelegramHub_' + evtName, { label: label, section: section });
 }
 
 // ---------------------------------------------------------------------------

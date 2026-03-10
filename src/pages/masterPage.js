@@ -1,15 +1,40 @@
 /**
  * masterPage.js - Shamrock Bail Bonds
+ *
+ * ============================================================
+ * PERMANENT CONSTRAINT — DO NOT ADD IMPORT STATEMENTS
+ * ============================================================
+ * Root cause (confirmed from live Wix bundle analysis, 2026-03-05):
+ *
+ * ANY ES module import — including wix-location, wix-window,
+ * wix-storage, @wix/site-site — causes Wix's bundler to inject
+ * a webpack JSONP chunk-loading runtime:
+ *
+ *   n = this.webpackChunkmasterPage = this.webpackChunkmasterPage || []
+ *
+ * Inside Wix's strict-mode worker IIFE, `this` is undefined.
+ * This line throws TypeError. The ENTIRE module fails to load.
+ * onReady never runs. No event handlers ever register.
+ *
+ * SOLUTION: Zero imports. wixLocation, wixWindow, session are
+ * Velo runtime globals — always available without importing.
+ *
+ * ============================================================
+ * ELEMENT IDs — CONFIRMED FROM LIVE DOM INSPECTION 2026-03-10
+ * ============================================================
+ * Find My Jail button: comp-ml15h39u
+ * (Dropdown + Get Started are in HOME.c1dmp.js)
+ *
+ * These are the real Wix comp- IDs. The elements have NO Velo
+ * nicknames set in the Editor. $w('#navFindJail') returns null.
+ * ============================================================
  */
+
+/* global $w, wixLocation, wixWindow, session */
+// NO IMPORT STATEMENTS — see constraint above.
 
 // Type-bypass helper for dynamic element IDs not recognized by Wix TS checker
 const $d = (/** @type {string} */ id) => /** @type {any} */($w)(id);
-
-import wixLocation from 'wix-location';
-import wixWindow from 'wix-window';
-import { session } from 'wix-storage';
-// @ts-ignore -- prefetchPageResources: speeds up portal navigation for all site visitors
-import { site as wixSite } from '@wix/site-site';
 
 // ---------------------------------------------------------------------------
 // Inline county coordinates for Find My Jail geolocation
@@ -86,6 +111,12 @@ const COUNTY_COORDS = {
 };
 
 // ---------------------------------------------------------------------------
+// Element ID constants -- confirmed from live DOM inspection 2026-03-10
+// ---------------------------------------------------------------------------
+// Primary: real comp- IDs. Fallback: Velo nicknames (if ever set in Editor).
+const FIND_JAIL_IDS = ['#comp-ml15h39u', '#navFindJail', '#findMyJailBtn'];
+
+// ---------------------------------------------------------------------------
 // onReady
 // ---------------------------------------------------------------------------
 
@@ -100,15 +131,6 @@ $w.onReady(function () {
     } else {
         deferNonCriticalOperations(false);
     }
-
-    // 3. Prefetch portal-landing globally (primary CTA target for all pages)
-    // Delays until after initial paint to not compete with critical resources
-    const isMobile = wixWindow.formFactor === 'Mobile';
-    setTimeout(() => {
-        try {
-            wixSite.prefetchPageResources({ pages: ['/portal-landing'] }).catch(() => { });
-        } catch (e) { /* non-fatal */ }
-    }, isMobile ? 4000 : 2000);
 });
 
 // ---------------------------------------------------------------------------
@@ -116,19 +138,10 @@ $w.onReady(function () {
 // ---------------------------------------------------------------------------
 
 function initCriticalUI() {
-    // Setup sticky header
     try { setupStickyHeader(); } catch (e) { /* non-fatal */ }
-
-    // Setup emergency call button (critical for bail bonds)
     setupEmergencyCallButton();
-
-    // Setup "Find My Jail" button
     setupFindJailButton();
-
-    // Check auth status
     checkAuthStatus();
-
-    // Footer Payment Link Tracking
     setupFooterPaymentLink();
     setupMobilePaymentBtn();
 }
@@ -137,7 +150,7 @@ function setupFooterPaymentLink() {
     try {
         const link = $w('#footerPaymentLink');
         if (link && link.id) {
-            link.onClick(() => {
+            link.onClick(function() {
                 trackEvent('payment_link_clicked', { location: 'footer' });
             });
         }
@@ -148,7 +161,7 @@ function setupMobilePaymentBtn() {
     try {
         const link = $d('#mobileMakePaymentBtn');
         if (link && link.id) {
-            link.onClick(() => {
+            link.onClick(function() {
                 trackEvent('payment_link_clicked', { location: 'mobile_menu' });
             });
         }
@@ -160,16 +173,15 @@ function setupMobileMenu() {
         const mobileMenuBtn = $d('#mobileMenuButton');
         const mobileMenu = $d('#mobileMenu');
         if (mobileMenuBtn && mobileMenuBtn.id && mobileMenu && mobileMenu.id) {
-            mobileMenuBtn.onClick(() => { mobileMenu.expand(); });
+            mobileMenuBtn.onClick(function() { mobileMenu.expand(); });
         }
     } catch (e) { /* non-fatal */ }
 }
 
 function deferNonCriticalOperations(isMobile) {
-    // Reduced delays: mobile 1500ms (was 3000ms), desktop 500ms (was 1000ms)
     const baseDelay = isMobile ? 1500 : 500;
-    setTimeout(() => { initAnalytics(); }, baseDelay);
-    setTimeout(() => { initGeolocation(); }, baseDelay + 500);
+    setTimeout(function() { initAnalytics(); }, baseDelay);
+    setTimeout(function() { initGeolocation(); }, baseDelay + 500);
 }
 
 function setupStickyHeader() {
@@ -180,7 +192,7 @@ function setupEmergencyCallButton() {
     try {
         const btn = $d('#emergencyCallButton');
         if (btn && btn.id) {
-            btn.onClick(() => { trackEvent('emergency_call_clicked'); });
+            btn.onClick(function() { trackEvent('emergency_call_clicked'); });
         }
     } catch (e) { /* non-fatal */ }
 }
@@ -190,34 +202,37 @@ function setupEmergencyCallButton() {
 // ---------------------------------------------------------------------------
 
 /**
+ * Resolve a Wix element by trying multiple IDs in order.
+ * Returns the first element found, or null.
+ */
+function resolveElement(ids) {
+    for (let i = 0; i < ids.length; i++) {
+        try {
+            const el = $w(ids[i]);
+            if (el && el.uniqueId) return el;
+        } catch (e) { /* try next */ }
+    }
+    return null;
+}
+
+/**
  * Setup "Find My Jail" button.
  *
- * Uses inline county coordinate table to find the nearest county.
- * No backend import, no dynamic chunk, no webpack crash.
- *
- * Supports both #navFindJail and #findMyJailBtn element IDs.
+ * Primary: comp-ml15h39u (real DOM ID confirmed 2026-03-10)
+ * Fallback: Velo nicknames #navFindJail, #findMyJailBtn
  */
 function setupFindJailButton() {
-    let btn = null;
-
-    try {
-        const el = $w('#navFindJail');
-        btn = (el && el.id) ? el : null;
-    } catch (e) { /* try fallback */ }
+    const btn = resolveElement(FIND_JAIL_IDS);
 
     if (!btn) {
-        try {
-            const el = $d('#findMyJailBtn');
-            btn = (el && el.id) ? el : null;
-        } catch (e) { /* not found */ }
+        console.warn('[FindMyJail] Button not found. Tried: ' + FIND_JAIL_IDS.join(', '));
+        return;
     }
-
-    if (!btn) return; // Button not on this page -- non-fatal
 
     // Override any static Editor link so our onClick is the sole handler
     try { btn.link = ''; } catch (e) { /* read-only in some contexts */ }
 
-    btn.onClick(() => { handleFindJailClick(btn); });
+    btn.onClick(function() { handleFindJailClick(btn); });
 }
 
 /**
@@ -227,49 +242,35 @@ function setupFindJailButton() {
  * to find the nearest Florida county. Falls back to /florida-bail-bonds
  * if geolocation is denied or unavailable.
  */
-async function handleFindJailClick(btn) {
+function handleFindJailClick(btn) {
     const originalLabel = (btn && btn.label) || 'Find My Jail';
 
-    // Update label optimistically; do NOT disable -- disabling causes stuck state
-    // when Wix navigation interrupts the finally block.
     try { if (btn) btn.label = 'Locating...'; } catch (e) { /* non-fatal */ }
 
-    try {
-        // 1. Request geolocation
-        const location = await wixWindow.getCurrentGeolocation();
-        const { latitude, longitude } = location.coords;
+    wixWindow.getCurrentGeolocation()
+        .then(function(location) {
+            const lat = location.coords.latitude;
+            const lon = location.coords.longitude;
+            const nearestSlug = findNearestCounty(lat, lon);
 
-        // 2. Find nearest county using inline coordinate table
-        const nearestSlug = findNearestCounty(latitude, longitude);
+            try { if (btn) btn.label = originalLabel; } catch (e) { /* non-fatal */ }
 
-        // 3. Reset label BEFORE navigation so the button is never stuck
-        try { if (btn) btn.label = originalLabel; } catch (e) { /* non-fatal */ }
-
-        if (nearestSlug) {
-            wixLocation.to('/florida-bail-bonds/' + nearestSlug);
-        } else {
+            if (nearestSlug) {
+                wixLocation.to('/florida-bail-bonds/' + nearestSlug);
+            } else {
+                wixLocation.to('/florida-bail-bonds');
+            }
+        })
+        .catch(function(error) {
+            try { if (btn) btn.label = originalLabel; } catch (e) { /* non-fatal */ }
+            const errMsg = (error && error.message) || String(error);
+            console.warn('[FindMyJail] Geolocation failed:', errMsg);
             wixLocation.to('/florida-bail-bonds');
-        }
-
-    } catch (error) {
-        // Geolocation denied, timed out, or unavailable -- always reset label first
-        try { if (btn) btn.label = originalLabel; } catch (e) { /* non-fatal */ }
-
-        const errMsg = (error && error.message) || String(error);
-        console.warn('[FindMyJail] Geolocation failed:', errMsg);
-
-        // Navigate to county list so user can pick manually
-        wixLocation.to('/florida-bail-bonds');
-    }
+        });
 }
 
 /**
  * Find the nearest Florida county slug using Haversine distance.
- * Pure inline calculation -- no backend call needed.
- *
- * @param {number} lat - User latitude
- * @param {number} lon - User longitude
- * @returns {string|null} County slug or null
  */
 function findNearestCounty(lat, lon) {
     let nearestSlug = null;
@@ -293,7 +294,7 @@ function findNearestCounty(lat, lon) {
  * Haversine distance in km between two lat/lon points.
  */
 function haversineDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Earth radius in km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -306,7 +307,7 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 // Auth check
 // ---------------------------------------------------------------------------
 
-async function checkAuthStatus() {
+function checkAuthStatus() {
     try {
         const isLoggedIn = session.getItem('isLoggedIn');
         if (isLoggedIn === 'true') {
@@ -319,7 +320,7 @@ async function checkAuthStatus() {
                 if (portalBtn && portalBtn.id) portalBtn.show();
             } catch (e) { /* non-fatal */ }
         }
-    } catch (error) { /* non-fatal: auth elements may not exist on all pages */ }
+    } catch (error) { /* non-fatal */ }
 }
 
 // ---------------------------------------------------------------------------
@@ -327,11 +328,11 @@ async function checkAuthStatus() {
 // ---------------------------------------------------------------------------
 
 function initAnalytics() {
-    // Placeholder: analytics providers (e.g. GA4 events) wired here when needed
+    // Placeholder: analytics providers wired here when needed
 }
 
-async function initGeolocation() {
-    // Placeholder: geolocation pre-warm (e.g. permission priming) wired here when needed
+function initGeolocation() {
+    // Placeholder: geolocation pre-warm wired here when needed
 }
 
 // ---------------------------------------------------------------------------
