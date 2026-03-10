@@ -2,24 +2,17 @@
  * HOME.c1dmp.js - Shamrock Bail Bonds Home Page
  *
  * ============================================================
- * PERMANENT CONSTRAINT — DO NOT ADD IMPORT STATEMENTS
+ * IMPORT RULES — READ BEFORE EDITING
  * ============================================================
- * Root cause (confirmed from live Wix bundle analysis, 2026-03-05):
+ * ALLOWED:   import from 'wix-*'  (compile to $ns lookups, safe)
+ * FORBIDDEN: import from 'backend/*'  (creates dynamic chunk → crash)
+ * FORBIDDEN: import from 'public/*'   (creates dynamic chunk → crash)
  *
- * ANY ES module import — including wix-location, wix-window,
- * wix-storage, @wix/site-site — causes Wix's bundler to inject
- * a webpack JSONP chunk-loading runtime:
- *
- *   n = this.webpackChunkc1dmp = this.webpackChunkc1dmp || []
- *
- * Inside Wix's strict-mode worker IIFE, `this` is undefined.
- * This line throws TypeError. The ENTIRE module fails to load.
- * onReady never runs. No event handlers ever register.
- *
- * SOLUTION: Zero imports. wixLocation, wixWindow, wixSeo, session,
- * and wixSite are Velo runtime globals — always available without
- * importing. With zero imports, no webpack JSONP runtime is
- * generated, no crash, onReady runs, all handlers register.
+ * Root cause (confirmed 2026-03-10):
+ * backend/* and public/* imports inject a webpack JSONP runtime
+ * INSIDE the strict-mode inner function where `this` is undefined.
+ * wix-* imports compile to $ns["wix-location"] etc. in the OUTER
+ * AMD factory scope — no crash.
  *
  * ============================================================
  * ELEMENT IDs — CONFIRMED FROM LIVE DOM INSPECTION 2026-03-10
@@ -27,18 +20,16 @@
  * Dropdown:         comp-mjiotw4a
  * Get Started btn:  comp-mjip0apd
  * (Find My Jail is in masterPage.js: comp-ml15h39u)
- *
- * These are the real Wix comp- IDs. The elements have NO Velo
- * nicknames set in the Editor. $w('#countySelector') etc. return
- * null because those nicknames do not exist.
  * ============================================================
  */
 
-/* global $w, wixLocation, wixWindow, wixSeo, session, wixSite */
-// NO IMPORT STATEMENTS — see constraint above.
+import wixLocation from 'wix-location';
+import wixWindow from 'wix-window';
+import wixSeo from 'wix-seo';
+import { session } from 'wix-storage';
 
 // ---------------------------------------------------------------------------
-// Inline county data -- no backend call, no dynamic chunk, no crash
+// Inline county data -- no backend call, no dynamic chunk
 // ---------------------------------------------------------------------------
 const FLORIDA_COUNTIES = [
     { name: 'Alachua', slug: 'alachua' },
@@ -113,8 +104,6 @@ const FLORIDA_COUNTIES = [
 // ---------------------------------------------------------------------------
 // Element ID constants -- confirmed from live DOM inspection 2026-03-10
 // ---------------------------------------------------------------------------
-// These are the real Wix comp- IDs. Nickname fallbacks are included in case
-// the Editor is ever updated to assign nicknames to these elements.
 const DROPDOWN_IDS    = ['#comp-mjiotw4a', '#countySelector', '#countyDropdown'];
 const GET_STARTED_IDS = ['#comp-mjip0apd', '#getStartedButton', '#getStartedBtn'];
 
@@ -198,7 +187,7 @@ function resolveElement(ids) {
 
 /**
  * Load county dropdown using inline FLORIDA_COUNTIES data.
- * No backend import, no dynamic chunk, no webpack crash.
+ * No backend import, no dynamic chunk.
  * Uses real comp- IDs confirmed from live DOM inspection 2026-03-10.
  */
 function loadCountyDropdown() {

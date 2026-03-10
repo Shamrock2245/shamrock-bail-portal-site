@@ -2,39 +2,29 @@
  * masterPage.js - Shamrock Bail Bonds
  *
  * ============================================================
- * PERMANENT CONSTRAINT — DO NOT ADD IMPORT STATEMENTS
+ * IMPORT RULES — READ BEFORE EDITING
  * ============================================================
- * Root cause (confirmed from live Wix bundle analysis, 2026-03-05):
+ * ALLOWED:   import from 'wix-*'  (compile to $ns lookups, safe)
+ * FORBIDDEN: import from 'backend/*'  (creates dynamic chunk → crash)
+ * FORBIDDEN: import from 'public/*'   (creates dynamic chunk → crash)
  *
- * ANY ES module import — including wix-location, wix-window,
- * wix-storage, @wix/site-site — causes Wix's bundler to inject
- * a webpack JSONP chunk-loading runtime:
- *
- *   n = this.webpackChunkmasterPage = this.webpackChunkmasterPage || []
- *
- * Inside Wix's strict-mode worker IIFE, `this` is undefined.
- * This line throws TypeError. The ENTIRE module fails to load.
- * onReady never runs. No event handlers ever register.
- *
- * SOLUTION: Zero imports. wixLocation, wixWindow, session are
- * Velo runtime globals — always available without importing.
+ * Root cause (confirmed 2026-03-10):
+ * backend/* and public/* imports inject a webpack JSONP runtime
+ * INSIDE the strict-mode inner function where `this` is undefined.
+ * wix-* imports compile to $ns["wix-location"] etc. in the OUTER
+ * AMD factory scope — no crash.
  *
  * ============================================================
  * ELEMENT IDs — CONFIRMED FROM LIVE DOM INSPECTION 2026-03-10
  * ============================================================
  * Find My Jail button: comp-ml15h39u
  * (Dropdown + Get Started are in HOME.c1dmp.js)
- *
- * These are the real Wix comp- IDs. The elements have NO Velo
- * nicknames set in the Editor. $w('#navFindJail') returns null.
  * ============================================================
  */
 
-/* global $w, wixLocation, wixWindow, session */
-// NO IMPORT STATEMENTS — see constraint above.
-
-// Type-bypass helper for dynamic element IDs not recognized by Wix TS checker
-const $d = (/** @type {string} */ id) => /** @type {any} */($w)(id);
+import wixLocation from 'wix-location';
+import wixWindow from 'wix-window';
+import { session } from 'wix-storage';
 
 // ---------------------------------------------------------------------------
 // Inline county coordinates for Find My Jail geolocation
@@ -113,7 +103,6 @@ const COUNTY_COORDS = {
 // ---------------------------------------------------------------------------
 // Element ID constants -- confirmed from live DOM inspection 2026-03-10
 // ---------------------------------------------------------------------------
-// Primary: real comp- IDs. Fallback: Velo nicknames (if ever set in Editor).
 const FIND_JAIL_IDS = ['#comp-ml15h39u', '#navFindJail', '#findMyJailBtn'];
 
 // ---------------------------------------------------------------------------
@@ -121,11 +110,13 @@ const FIND_JAIL_IDS = ['#comp-ml15h39u', '#navFindJail', '#findMyJailBtn'];
 // ---------------------------------------------------------------------------
 
 $w.onReady(function () {
+    const isMobile = wixWindow.formFactor === 'Mobile';
+
     // 1. Immediate Critical Setup (Universal)
     initCriticalUI();
 
     // 2. Mobile-Specific Optimization Path
-    if (wixWindow.formFactor === 'Mobile') {
+    if (isMobile) {
         setupMobileMenu();
         deferNonCriticalOperations(true);
     } else {
@@ -159,7 +150,7 @@ function setupFooterPaymentLink() {
 
 function setupMobilePaymentBtn() {
     try {
-        const link = $d('#mobileMakePaymentBtn');
+        const link = $w('#mobileMakePaymentBtn');
         if (link && link.id) {
             link.onClick(function() {
                 trackEvent('payment_link_clicked', { location: 'mobile_menu' });
@@ -170,8 +161,8 @@ function setupMobilePaymentBtn() {
 
 function setupMobileMenu() {
     try {
-        const mobileMenuBtn = $d('#mobileMenuButton');
-        const mobileMenu = $d('#mobileMenu');
+        const mobileMenuBtn = $w('#mobileMenuButton');
+        const mobileMenu = $w('#mobileMenu');
         if (mobileMenuBtn && mobileMenuBtn.id && mobileMenu && mobileMenu.id) {
             mobileMenuBtn.onClick(function() { mobileMenu.expand(); });
         }
@@ -190,7 +181,7 @@ function setupStickyHeader() {
 
 function setupEmergencyCallButton() {
     try {
-        const btn = $d('#emergencyCallButton');
+        const btn = $w('#emergencyCallButton');
         if (btn && btn.id) {
             btn.onClick(function() { trackEvent('emergency_call_clicked'); });
         }
@@ -312,11 +303,11 @@ function checkAuthStatus() {
         const isLoggedIn = session.getItem('isLoggedIn');
         if (isLoggedIn === 'true') {
             try {
-                const loginBtn = $d('#loginButton');
+                const loginBtn = $w('#loginButton');
                 if (loginBtn && loginBtn.id) loginBtn.hide();
             } catch (e) { /* non-fatal */ }
             try {
-                const portalBtn = $d('#portalButton');
+                const portalBtn = $w('#portalButton');
                 if (portalBtn && portalBtn.id) portalBtn.show();
             } catch (e) { /* non-fatal */ }
         }
