@@ -207,8 +207,8 @@ function SN_createEmbeddedLink(documentId, role, email, options) {
   const config = SN_getConfig();
 
   try {
-    // Step 1: GET the document to find role unique_ids
-    // The v2 embedded-invites endpoint requires role_id (unique ID), not role name
+    // Step 1: GET the document to find ALL role unique_ids
+    // SignNow v2 embedded-invites REQUIRES all roles to be included in the request
     SN_log('EmbeddedLink_Start', { documentId, role, email });
 
     const docResponse = UrlFetchApp.fetch(config.API_BASE + '/document/' + documentId, {
@@ -223,42 +223,76 @@ function SN_createEmbeddedLink(documentId, role, email, options) {
 
     const docJson = JSON.parse(docResponse.getContentText());
 
-    // Find the role's unique_id from the document's roles array
-    var roleId = null;
-    if (docJson.roles && docJson.roles.length > 0) {
+    // Get ALL roles on the document
+    if (!docJson.roles || docJson.roles.length === 0) {
+      return { success: false, error: 'Document has no roles defined. Fields may not have been added correctly.' };
+    }
+
+    SN_log('EmbeddedLink_AllRoles', { roles: docJson.roles.map(function (r) { return r.name + ':' + r.unique_id; }) });
+
+    // Find the target role - try exact match, then case-insensitive
+    var targetRoleObj = null;
+    for (var i = 0; i < docJson.roles.length; i++) {
+      if (docJson.roles[i].name === role) {
+        targetRoleObj = docJson.roles[i];
+        break;
+      }
+    }
+    if (!targetRoleObj) {
+      // Try case-insensitive match
       for (var i = 0; i < docJson.roles.length; i++) {
-        if (docJson.roles[i].name === role) {
-          roleId = docJson.roles[i].unique_id;
+        if (docJson.roles[i].name.toLowerCase() === role.toLowerCase()) {
+          targetRoleObj = docJson.roles[i];
           break;
         }
       }
     }
-
-    if (!roleId) {
-      SN_log('EmbeddedLink_NoRole', { role, availableRoles: docJson.roles ? docJson.roles.map(function (r) { return r.name; }) : [] });
-      return { success: false, error: 'Role "' + role + '" not found on document. Available: ' + JSON.stringify(docJson.roles ? docJson.roles.map(function (r) { return r.name; }) : []) };
+    if (!targetRoleObj) {
+      // If target role not found, use the first available role
+      SN_log('EmbeddedLink_RoleFallback', { requested: role, using: docJson.roles[0].name });
+      targetRoleObj = docJson.roles[0];
     }
 
-    SN_log('EmbeddedLink_RoleFound', { role, roleId });
+    SN_log('EmbeddedLink_TargetRole', { name: targetRoleObj.name, id: targetRoleObj.unique_id });
 
-    // Step 2: Create embedded invite using v2 API
-    const endpoint = config.API_BASE + '/v2/documents/' + documentId + '/embedded-invites';
+    // Step 2: Build invites array with ALL roles (SignNow requires this)
+    // Use the actual signer email for the target role, placeholder emails for others
+    // IMPORTANT: email must NOT match the document owner (causes error 19004006)
+    var signerEmail = email || 'signer@shamrockbailbonds.biz';
+    var invites = [];
+    var orderCounter = 1;
 
-    const payload = {
-      invites: [{
-        email: email || 'signer@shamrockbailbonds.biz',
-        role_id: roleId,
-        order: 1,
+    for (var i = 0; i < docJson.roles.length; i++) {
+      var r = docJson.roles[i];
+      var inviteEmail;
+
+      if (r.unique_id === targetRoleObj.unique_id) {
+        // Target role - use the actual signer email
+        inviteEmail = signerEmail;
+      } else {
+        // Non-target roles - use unique placeholder emails
+        // Must be different from each other AND from the doc owner
+        inviteEmail = r.name.toLowerCase().replace(/[^a-z0-9]/g, '') + '.placeholder@shamrockbailbonds.biz';
+      }
+
+      invites.push({
+        email: inviteEmail,
+        role_id: r.unique_id,
+        order: orderCounter,
         auth_method: 'none',
         force_new_signature: 0,
-        redirect_uri: options.redirect_uri || '',
-        decline_redirect_uri: options.decline_redirect_uri || '',
-        close_redirect_uri: options.close_redirect_uri || '',
+        redirect_uri: (r.unique_id === targetRoleObj.unique_id) ? (options.redirect_uri || '') : '',
+        decline_redirect_uri: (r.unique_id === targetRoleObj.unique_id) ? (options.decline_redirect_uri || '') : '',
+        close_redirect_uri: (r.unique_id === targetRoleObj.unique_id) ? (options.close_redirect_uri || '') : '',
         redirect_target: 'self'
-      }]
-    };
+      });
+      orderCounter++;
+    }
 
-    SN_log('EmbeddedLink_Request', { endpoint, payload });
+    var endpoint = config.API_BASE + '/v2/documents/' + documentId + '/embedded-invites';
+    var payload = { invites: invites };
+
+    SN_log('EmbeddedLink_Request', { endpoint, inviteCount: invites.length, roles: invites.map(function (inv) { return inv.email; }) });
 
     const lock = LockService.getScriptLock();
     lock.waitLock(10000);
@@ -293,28 +327,32 @@ function SN_createEmbeddedLink(documentId, role, email, options) {
         json = JSON.parse(responseText);
       }
 
-      // v2 response: extract the embedded invite ID
-      // Response format: { "data": [{ "id": "invite_id_here", ... }] }
-      var embeddedInviteId = null;
+      // Extract the embedded invite ID for our TARGET role
+      // Response format: { "data": [{ "id": "...", "email": "...", "role_id": "...", ... }, ...] }
+      var targetInviteId = null;
 
-      if (response.getResponseCode() >= 200 && response.getResponseCode() < 300) {
-        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
-          embeddedInviteId = json.data[0].id;
-        } else if (json.data && json.data.id) {
-          embeddedInviteId = json.data.id;
-        } else if (json.id) {
-          embeddedInviteId = json.id;
+      if (response.getResponseCode() >= 200 && response.getResponseCode() < 300 && json.data) {
+        var dataArr = Array.isArray(json.data) ? json.data : [json.data];
+        for (var i = 0; i < dataArr.length; i++) {
+          if (dataArr[i].role_id === targetRoleObj.unique_id || dataArr[i].email === signerEmail) {
+            targetInviteId = dataArr[i].id;
+            break;
+          }
+        }
+        // Fallback: use first invite if we can't match
+        if (!targetInviteId && dataArr.length > 0) {
+          targetInviteId = dataArr[0].id;
         }
       }
 
-      if (!embeddedInviteId) {
+      if (!targetInviteId) {
         return { success: false, error: 'Failed to create embedded invite (HTTP ' + response.getResponseCode() + '): ' + responseText.substring(0, 500) };
       }
 
-      SN_log('EmbeddedLink_InviteCreated', { embeddedInviteId: embeddedInviteId });
+      SN_log('EmbeddedLink_InviteCreated', { targetInviteId: targetInviteId, targetRole: targetRoleObj.name });
 
-      // Step 3: Generate the actual signing link from the embedded invite ID
-      var linkEndpoint = config.API_BASE + '/v2/documents/' + documentId + '/embedded-invites/' + embeddedInviteId + '/link';
+      // Step 3: Generate the actual signing link for the target role's invite
+      var linkEndpoint = config.API_BASE + '/v2/documents/' + documentId + '/embedded-invites/' + targetInviteId + '/link';
 
       var linkPayload = {
         auth_method: 'none',
@@ -335,7 +373,7 @@ function SN_createEmbeddedLink(documentId, role, email, options) {
       var linkJson = JSON.parse(linkResponseText);
       SN_log('EmbeddedLink_LinkResponse', { code: linkResponse.getResponseCode(), body: linkResponseText.substring(0, 500) });
 
-      // Extract signing link from response
+      // Extract signing link from response: { "data": { "link": "https://..." } }
       var signingLink = linkJson.link || (linkJson.data && linkJson.data.link) || null;
 
       if (signingLink) {
