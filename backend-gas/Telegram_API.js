@@ -40,7 +40,7 @@ function getTelegramConfig() {
 // TELEGRAM BOT API CLIENT CLASS
 // =============================================================================
 
-class TelegramBotAPI {
+var TelegramBotAPI = class {
   constructor() {
     const config = getTelegramConfig();
     this.botToken = config.botToken;
@@ -495,7 +495,7 @@ class TelegramBotAPI {
       return false;
     }
   }
-}
+};
 
 // =============================================================================
 // HELPER FUNCTIONS

@@ -261,9 +261,13 @@ function _sendFollowUp(dripLevel, name, phone, intakeId) {
 
             // Determine best SMS sender
             if (typeof NotificationService !== 'undefined' && typeof NotificationService.sendSms === 'function') {
-                NotificationService.sendSms(cleanPhone, smsBody);
-                channels.push('sms');
-                Logger.log('  📱 SMS sent via NotificationService to ' + cleanPhone.slice(-4));
+                var smsResult = NotificationService.sendSms(cleanPhone, smsBody);
+                if (smsResult && smsResult.success) {
+                    channels.push('sms');
+                    Logger.log('  📱 SMS sent via NotificationService to ' + cleanPhone.slice(-4));
+                } else {
+                    Logger.log('  ❌ SMS failed: ' + (smsResult ? smsResult.error : 'Unknown error'));
+                }
             } else if (typeof sendSmsViaTwilio === 'function') {
                 sendSmsViaTwilio(cleanPhone, smsBody);
                 channels.push('sms');
@@ -285,7 +289,15 @@ function _sendFollowUp(dripLevel, name, phone, intakeId) {
             else if (waPhone.length === 11 && waPhone[0] === '1') waPhone = '+' + waPhone;
             else waPhone = '+' + waPhone;
 
-            if (typeof sendTwilioWhatsApp === 'function') {
+            if (typeof NotificationService !== 'undefined' && typeof NotificationService.sendWhatsApp === 'function') {
+                var waResult = NotificationService.sendWhatsApp(cleanPhone, waBody); // NotificationService prefixes 'whatsapp:'
+                if (waResult && waResult.success) {
+                    channels.push('whatsapp');
+                    Logger.log('  💬 WhatsApp sent via NotificationService to ' + cleanPhone.slice(-4));
+                } else {
+                    Logger.log('  ❌ WhatsApp failed: ' + (waResult ? waResult.error : 'Unknown error'));
+                }
+            } else if (typeof sendTwilioWhatsApp === 'function') {
                 sendTwilioWhatsApp(waPhone, waBody);
                 channels.push('whatsapp');
                 Logger.log('  💬 WhatsApp sent to ' + waPhone.slice(-4));

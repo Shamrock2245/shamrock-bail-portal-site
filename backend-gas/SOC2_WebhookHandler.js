@@ -18,7 +18,12 @@ function handleSOC2Webhook(e) {
                 return handleSignNowWebhookSOC2(e);
             case "twilio":
             case "Twilio":
+            case "twilio-process":
                 return handleTwilioWebhookSOC2(e);
+            case "telegram":
+            case "Telegram":
+            case "telegram-process":
+                return handleTelegramWebhookSOC2(e);
             case "elevenlabs":
             case "ElevenLabs":
                 return handleElevenLabsWebhookSOC2(e);
@@ -96,11 +101,19 @@ function handleSignNowWebhookSOC2(e) {
 }
 
 /**
- * Handles webhooks from Twilio with signature verification.
+ * Handles webhooks from Twilio with signature verification or trusted internal relay.
  * @param {object} e The event parameter.
  */
 function handleTwilioWebhookSOC2(e) {
-    if (!verifyWebhookSignature(e, "TWILIO_AUTH_TOKEN", "x-twilio-signature")) {
+    let isTrustedRelay = false;
+    try {
+        const expectedKey = PropertiesService.getScriptProperties().getProperty("PROXY_API_KEY");
+        if (expectedKey && e && e.parameter && e.parameter.apiKey === expectedKey) {
+            isTrustedRelay = true;
+        }
+    } catch (err) { }
+
+    if (!isTrustedRelay && !verifyWebhookSignature(e, "TWILIO_AUTH_TOKEN", "x-twilio-signature")) {
         return ContentService.createTextOutput("Invalid signature").setMimeType(ContentService.MimeType.TEXT);
     }
 
@@ -164,7 +177,53 @@ function handleTwilioWebhookSOC2(e) {
         }
     }
 
-    const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${replyMsg}</Message></Response>`;
-    return ContentService.createTextOutput(xml).setMimeType(ContentService.MimeType.XML);
+    return ContentService.createTextOutput(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Response><Message>" + replyMsg + "</Message></Response>"
+    ).setMimeType(ContentService.MimeType.XML);
+}
+
+/**
+ * Handles webhooks from Telegram (or trusted proxies like Node-RED).
+ * @param {object} e The event parameter.
+ */
+function handleTelegramWebhookSOC2(e) {
+    let isTrustedRelay = false;
+    try {
+        const expectedKey = PropertiesService.getScriptProperties().getProperty("PROXY_API_KEY");
+        if (expectedKey && e && e.parameter && e.parameter.apiKey === expectedKey) {
+            isTrustedRelay = true;
+        }
+    } catch (err) { }
+
+    // Auth: Verify Telegram webhook relay secret if not trusted
+    if (!isTrustedRelay) {
+        if (typeof verifyTelegramWebhookSecret_ === 'function' && !verifyTelegramWebhookSecret_(e)) {
+            return ContentService.createTextOutput('Unauthorized').setMimeType(ContentService.MimeType.TEXT);
+        }
+    }
+
+    let payload;
+    try {
+        payload = JSON.parse(e.postData.contents);
+    } catch (parseErr) {
+        logSecurityEvent("WEBHOOK_PAYLOAD_PARSE_ERROR", { error: parseErr.toString() });
+        return ContentService.createTextOutput("Invalid JSON").setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    logProcessingEvent("TELEGRAM_WEBHOOK_RECEIVED", { update_id: payload.update_id });
+
+    // Idempotency: Skip duplicate Telegram updates
+    var tgUpdateId = payload.update_id ? String(payload.update_id) : '';
+    if (tgUpdateId && typeof IdempotencyGuard !== 'undefined' && IdempotencyGuard.isDuplicate('telegram', tgUpdateId)) {
+        return ContentService.createTextOutput('Duplicate event skipped').setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    if (typeof handleTelegramInbound === 'function') {
+        const result = handleTelegramInbound(payload);
+        return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
+    } else {
+        console.error('handleTelegramInbound function not found');
+        return ContentService.createTextOutput("Internal Error").setMimeType(ContentService.MimeType.TEXT);
+    }
 }
 

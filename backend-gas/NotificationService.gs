@@ -187,6 +187,62 @@ var NotificationService = (function() {
     },
 
     /**
+     * Send WhatsApp message via Twilio.
+     * Uses Script Properties for credentials.
+     */
+    sendWhatsApp: function(to, body) {
+      try {
+        const props = getConfig_();
+        const sid = props.getProperty('TWILIO_ACCOUNT_SID');
+        const token = props.getProperty('TWILIO_AUTH_TOKEN');
+        const from = props.getProperty('TWILIO_PHONE_NUMBER');
+
+        if (!sid || !token || !from) {
+          throw new Error('Missing Twilio credentials in Script Properties');
+        }
+
+        // Format Number (E.164) and prefix with whatsapp:
+        let formattedTo = to.toString().replace(/\D/g, '');
+        if (formattedTo.length === 10) formattedTo = '+1' + formattedTo;
+        else if (formattedTo.length === 11 && formattedTo.startsWith('1')) formattedTo = '+' + formattedTo;
+        else if (!formattedTo.startsWith('+')) formattedTo = '+' + formattedTo;
+        formattedTo = 'whatsapp:' + formattedTo;
+        
+        const formatterFrom = 'whatsapp:' + from;
+
+        const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+        const headers = {
+          "Authorization": "Basic " + Utilities.base64Encode(`${sid}:${token}`)
+        };
+
+        const payload = {
+          "To": formattedTo,
+          "From": formatterFrom,
+          "Body": body
+        };
+
+        const res = UrlFetchApp.fetch(url, {
+          method: "POST",
+          headers: headers,
+          payload: payload,
+          muteHttpExceptions: true
+        });
+
+        const json = JSON.parse(res.getContentText());
+        
+        if (res.getResponseCode() < 300) {
+          return { success: true, sid: json.sid };
+        } else {
+          throw new Error(json.message || json.detail || 'Twilio WhatsApp Error');
+        }
+
+      } catch (e) {
+        logError_('sendWhatsApp', e.message);
+        return { success: false, error: e.message };
+      }
+    },
+
+    /**
      * Send Email via MailApp.
      * Simple wrapper for consistency.
      */
