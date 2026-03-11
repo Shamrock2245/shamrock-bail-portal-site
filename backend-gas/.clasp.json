@@ -1,6 +1,7 @@
 {
-  "scriptId": "1-AidUbJivXw_t2eUw4mMX5GiJjvWtqL8SGuHDLaBCYFKYt8Pcba6uZIt",
+  "scriptId": "12BRRdYuyVJpQODJq2-OpUhQdZ9YLt4bbAFWmOUyJPWM_EcazKTiu3dYo",
   "rootDir": "",
+  "projectId": "shamrock-bail-portal-site",
   "scriptExtensions": [
     ".js",
     ".gs"
@@ -11,6 +12,5 @@
   "jsonExtensions": [
     ".json"
   ],
-  "filePushOrder": [],
-  "skipSubdirectories": false
+  "filePushOrder": []
 }
