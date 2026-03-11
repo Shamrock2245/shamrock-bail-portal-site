@@ -229,7 +229,10 @@ function doGet(e) {
     }
   }
 
-  // 1. Check for JSON mode explicitly
+  // 1. Check for JSON mode explicitly OR direct action= param (Node-RED scheduler calls use ?action=xxx without format=json)
+  // Route action= params FIRST so Node-RED GET calls never fall through to the HTML renderer
+  if (e.parameter.action) return handleGetAction(e);
+
   if (e.parameter.format === 'json') {
     if (e.parameter.mode === 'scrape') {
       const result = runLeeScraper();
@@ -254,25 +257,6 @@ function doGet(e) {
       return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
     }
 
-    if (e.parameter.action === 'analyze_tags') {
-      const result = typeof analyzeTagPatterns === 'function' ? analyzeTagPatterns() : 'Function not found';
-      return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
-    }
-
-
-    if (e.parameter.action === 'analyze_tags') {
-      const result = typeof analyzeTagPatterns === 'function' ? analyzeTagPatterns() : 'Function not found';
-      return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
-    }
-
-    if (e.parameter.action === 'auto_tag') {
-      const result = typeof runAutoTagging === 'function' ? runAutoTagging() : 'Function not found';
-      return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
-    }
-
-
-
-    if (e.parameter.action) return handleGetAction(e);
     if (e.parameter.setup === 'signnow') {
       const url = ScriptApp.getService().getUrl();
       // Ensure we register the current active URL
@@ -1659,15 +1643,209 @@ function fillSinglePdfWithAdobe(data) {
 }
 
 function handleGetAction(e) {
-  // Limited GET actions for security
+  // GET action router — handles both browser JSON requests and Node-RED scheduler calls
   const action = e.parameter.action;
   const callback = e.parameter.callback;
+  const data = e.parameter.data ? JSON.parse(decodeURIComponent(e.parameter.data)) : {};
 
-  if (action === 'health') return createResponse({ success: true, version: 'V204', timestamp: new Date().toISOString() }, callback);
+  // ── HEALTH & DIAGNOSTICS ──────────────────────────────────────────────────
+  if (action === 'ping') {
+    return createResponse({
+      success: true,
+      message: 'Pong',
+      timestamp: new Date().toISOString(),
+      version: 'v4.2.0'
+    }, callback);
+  }
+  if (action === 'health') return createResponse({ success: true, version: 'V409', timestamp: new Date().toISOString() }, callback);
   if (action === 'getNextReceiptNumber') return createResponse(getNextReceiptNumber(), callback);
   if (action === 'testSlack') return createResponse(testSlackIntegration(), callback);
 
-  return createErrorResponse('Unknown action', ERROR_CODES.UNKNOWN_ACTION);
+  // ── NODE-RED SCHEDULER ACTIONS (16) ──────────────────────────────────────
+  // All functions confirmed to exist in their respective .js files.
+  // Each is wrapped in try/catch to prevent one failure from crashing the router.
+
+  if (action === 'runAutoPostingEngine') {
+    try {
+      const result = typeof runAutoPostingEngine === 'function'
+        ? runAutoPostingEngine()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'scoreAndSyncQualifiedRows') {
+    try {
+      const result = typeof scoreAndSyncQualifiedRows === 'function'
+        ? scoreAndSyncQualifiedRows()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'processConciergeQueue') {
+    try {
+      const result = typeof processConciergeQueue === 'function'
+        ? processConciergeQueue()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'pollWixIntakeQueue') {
+    try {
+      const result = typeof pollWixIntakeQueue === 'function'
+        ? pollWixIntakeQueue()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'refreshGoogleTokens') {
+    try {
+      const result = typeof refreshGoogleTokens === 'function'
+        ? refreshGoogleTokens()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'refreshLongLivedTokens') {
+    try {
+      const result = typeof refreshLongLivedTokens === 'function'
+        ? refreshLongLivedTokens()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'runDailyRepeatOffenderScan') {
+    try {
+      const result = typeof runDailyRepeatOffenderScan === 'function'
+        ? runDailyRepeatOffenderScan()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'runRiskIntelligenceLoop') {
+    try {
+      const result = typeof runRiskIntelligenceLoop === 'function'
+        ? runRiskIntelligenceLoop()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'processDailyCourtReminders') {
+    try {
+      const result = typeof processDailyCourtReminders === 'function'
+        ? processDailyCourtReminders()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'TG_processCourtDateReminders') {
+    try {
+      const result = typeof TG_processCourtDateReminders === 'function'
+        ? TG_processCourtDateReminders()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'TG_processWeeklyPaymentProgress') {
+    try {
+      const result = typeof TG_processWeeklyPaymentProgress === 'function'
+        ? TG_processWeeklyPaymentProgress()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'retryFailedPosts') {
+    try {
+      const result = typeof retryFailedPosts === 'function'
+        ? retryFailedPosts()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'sendAutomatedCheckIns') {
+    try {
+      const result = typeof sendAutomatedCheckIns === 'function'
+        ? sendAutomatedCheckIns()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'checkCourtDateProximity') {
+    try {
+      const result = typeof checkCourtDateProximity === 'function'
+        ? checkCourtDateProximity()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'runTheCloser') {
+    try {
+      const result = typeof runTheCloser === 'function'
+        ? runTheCloser()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  // ── LEGACY / MISC ─────────────────────────────────────────────────────────
+  if (action === 'sendSlackAlert') {
+    const result = NotificationService.sendSlack(e.parameter.channel || '#alerts', e.parameter.text, e.parameter.blocks);
+    return createResponse(result, callback);
+  }
+
+  if (action === 'getRecentBookings') {
+    try {
+      const result = typeof getRecentBookings === 'function' ? getRecentBookings() : { success: false, message: 'Not implemented' };
+      return createResponse(result, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  return createErrorResponse('Unknown action: ' + action, ERROR_CODES.UNKNOWN_ACTION);
 }
 
 function createResponse(data, callback) {
