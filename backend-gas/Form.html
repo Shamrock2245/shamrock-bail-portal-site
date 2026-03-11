@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shamrock Bail Bonds - Bond Application</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        :root {
+            --shamrock-green: #00A86B;
+            --shamrock-dark: #008556;
+            --shamrock-light: #4CD4A0;
+            --accent-blue: #2563EB;
+            --accent-purple: #7C3AED;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --bg-gray: #F9FAFB;
+            --border-color: #E5E7EB;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #00A86B 0%, #2563EB 100%);
+            min-height: 100vh;
+            padding: 24px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--shamrock-green) 0%, var(--shamrock-dark) 100%);
+            color: white;
+            padding: 48px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><path d="M50 10 L60 30 L80 30 L65 45 L70 65 L50 50 L30 65 L35 45 L20 30 L40 30 Z" fill="rgba(255,255,255,0.05)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+        
+        .header-subtitle {
+            font-size: 1.1em;
+            opacity: 0.95;
+            font-weight: 400;
+        }
+        
+        .auto-fill-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-top: 16px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        
+        .auto-fill-badge::before {
+            content: '✓';
+            background: white;
+            color: var(--shamrock-green);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: var(--bg-gray);
+            border-bottom: 2px solid var(--border-color);
+            padding: 0 40px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 20px 24px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            position: relative;
+        }
+        
+        .tab:hover { 
+            background: rgba(0, 168, 107, 0.05);
+            color: var(--shamrock-green);
+        }
+        
+        .tab.active {
+            background: white;
+            color: var(--shamrock-green);
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--shamrock-green);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            padding: 48px 40px;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        .tab-content.active { 
+            display: block; 
+        }
+        
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(10px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+        
+        /* Form Elements */
+        .section-title {
+            font-size: 1.75em;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid var(--shamrock-green);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95em;
+        }
+        
+        label.required::after {
+            content: ' *';
+            color: var(--danger);
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--shamrock-green);
+            box-shadow: 0 0 0 3px rgba(0, 168, 107, 0.1);
+        }
+        
+        input[readonly] {
+            background: var(--bg-gray);
+            cursor: not-allowed;
+        }
+        
+        input.auto-filled {
+            border-color: var(--shamrock-light);
+            background: rgba(0, 168, 107, 0.02);
+        }
+        
+        /* Charge Items */
+        .charge-item {
+            background: var(--bg-gray);
+            padding: 28px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--shamrock-green);
+            transition: all 0.3s ease;
+        }
+        
+        .charge-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .charge-item h4 {
+            color: var(--shamrock-green);
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: var(--shamrock-green);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--shamrock-dark);
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: var(--bg-gray);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+        
+        /* Premium Summary */
+        .premium-summary {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+            padding: 28px;
+            border-radius: 16px;
+            margin: 24px 0;
+            border-left: 4px solid var(--warning);
+        }
+        
+        .premium-summary h4 {
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+        
+        .premium-total {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--shamrock-green);
+            margin-top: 12px;
+        }
+        
+        /* Progress Indicator */
+        .progress-bar {
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--shamrock-green);
+            transition: width 0.3s ease;
+        }
+        
+        /* Info Cards */
+        .info-card {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%);
+            border: 2px solid rgba(37, 99, 235, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+        
+        .info-card-title {
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+            
+            .header {
+                padding: 32px 24px;
+            }
+            
+            .header h1 {
+                font-size: 1.75em;
+            }
+            
+            .tabs {
+                padding: 0 16px;
+                flex-wrap: wrap;
+            }
+            
+            .tab {
+                flex: 1 1 50%;
+                min-width: 120px;
+            }
+            
+            .tab-content {
+                padding: 32px 24px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Loading State */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1>🍀 Shamrock Bail Bonds</h1>
+                <div class="header-subtitle">Bond Application Form - Automated Data Entry</div>
+                <div class="auto-fill-badge" id="autoFillBadge" style="display: none;">
+                    Data auto-populated from arrest record
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 33%"></div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(0)">
+                👤 Defendant Info
+            </button>
+            <button class="tab" onclick="switchTab(1)">
+                ⚖️ Charges & Bond
+            </button>
+            <button class="tab" onclick="switchTab(2)">
+                🤝 Indemnitor Info
+            </button>
+            <button class="tab" onclick="switchTab(3)">
+                📋 Review & Submit
+            </button>
+        </div>
+        
+        <!-- Tab 1: Defendant Info -->
+        <div class="tab-content active">
+            <h3 class="section-title">Defendant Information</h3>
+            
+            <div class="info-card">
+                <div class="info-card-title">📌 Auto-Populated Fields</div>
+                <p>Fields marked with a green tint have been automatically filled from the arrest record. Please review and update as needed.</p>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Full Legal Name</label>
+                    <input type="text" id="defendantFullName" placeholder="Last, First Middle" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Date of Birth</label>
+                    <input type="date" id="defendantDOB" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Social Security Number</label>
+                    <input type="text" id="defendantSSN" placeholder="XXX-XX-XXXX">
+                </div>
+                <div class="form-group">
+                    <label>Driver's License Number</label>
+                    <input type="text" id="defendantDL" placeholder="License number">
+                </div>
+            </div>
+            
+            <h4 style="margin: 32px 0 20px; font-size: 1.3em; color: var(--text-primary);">Address</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Street Address</label>
+                    <input type="text" id="defendantStreetAddress" placeholder="123 Main St" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">City</label>
+                    <input type="text" id="defendantCity" placeholder="Fort Myers" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">State</label>
+                    <select id="defendantDLState" required>
+                        <option value="FL">Florida</option>
+                        <option value="AL">Alabama</option>
+                        <option value="GA">Georgia</option>
+                        <!-- Add more states as needed -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="required">ZIP Code</label>
+                    <input type="text" id="defendantZip" placeholder="33901" required>
+                </div>
+            </div>
+            
+            <h4 style="margin: 32px 0 20px; font-size: 1.3em; color: var(--text-primary);">Physical Description</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Race</label>
+                    <input type="text" id="defendantRace">
+                </div>
+                <div class="form-group">
+                    <label>Sex</label>
+                    <select id="defendantSex">
+                        <option value="">Select</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Height</label>
+                    <input type="text" id="defendantHeight" placeholder="5'10&quot;">
+                </div>
+                <div class="form-group">
+                    <label>Weight</label>
+                    <input type="text" id="defendantWeight" placeholder="180 lbs">
+                </div>
+            </div>
+            
+            <div style="text-align: right; margin-top: 32px;">
+                <button class="btn btn-primary" onclick="switchTab(1)">
+                    Next: Charges & Bond →
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tab 2: Charges & Bond -->
+        <div class="tab-content">
+            <h3 class="section-title">Charges & Bond Information</h3>
+            
+            <div class="premium-summary">
+                <h4>💰 Premium Calculation (Florida Law)</h4>
+                <p style="margin-bottom: 12px;">Each charge: Greater of $100 or 10% of bond amount</p>
+                <div id="premiumBreakdown" style="font-size: 0.95em; margin: 12px 0;">
+                    Add charges to see premium breakdown
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 2px solid rgba(0,0,0,0.1);">
+                    <div>
+                        <div style="font-size: 0.9em; color: var(--text-secondary);">Total Bond Amount</div>
+                        <div style="font-size: 1.5em; font-weight: 700;" id="totalBond">$0.00</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.9em; color: var(--text-secondary);">Total Premium Due</div>
+                        <div class="premium-total" id="totalPremium">$0.00</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="chargesContainer"></div>
+            
+            <button class="btn btn-success" onclick="addCharge()">
+                + Add Charge
+            </button>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 32px;">
+                <button class="btn btn-secondary" onclick="switchTab(0)">
+                    ← Back
+                </button>
+                <button class="btn btn-primary" onclick="switchTab(2)">
+                    Next: Indemnitor Info →
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tab 3: Indemnitor Info -->
+        <div class="tab-content">
+            <h3 class="section-title">Indemnitor Information</h3>
+            
+            <div class="info-card">
+                <div class="info-card-title">ℹ️ About the Indemnitor</div>
+                <p>The indemnitor is the person who agrees to be financially responsible for the defendant. This section must be filled out manually.</p>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Full Name</label>
+                    <input type="text" id="indemnitorFullName" placeholder="First Last" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Relationship to Defendant</label>
+                    <input type="text" id="indemnitorRelationship" placeholder="Mother, Spouse, Friend, etc." required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Phone Number</label>
+                    <input type="tel" id="indemnitorPhone" placeholder="(239) 555-1234" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Email Address</label>
+                    <input type="email" id="indemnitorEmail" placeholder="email@example.com" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Date of Birth</label>
+                    <input type="date" id="indemnitorDOB" required>
+                </div>
+                <div class="form-group">
+                    <label>Social Security Number</label>
+                    <input type="text" id="indemnitorSSN" placeholder="XXX-XX-XXXX">
+                </div>
+            </div>
+            
+            <h4 style="margin: 32px 0 20px; font-size: 1.3em; color: var(--text-primary);">Indemnitor Address</h4>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">Street Address</label>
+                    <input type="text" id="indemnitorStreetAddress" placeholder="123 Main St" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">City</label>
+                    <input type="text" id="indemnitorCity" placeholder="Fort Myers" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">State</label>
+                    <select id="indemnitorState" required>
+                        <option value="FL">Florida</option>
+                        <option value="AL">Alabama</option>
+                        <option value="GA">Georgia</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="required">ZIP Code</label>
+                    <input type="text" id="indemnitorZip" placeholder="33901" required>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 32px;">
+                <button class="btn btn-secondary" onclick="switchTab(1)">
+                    ← Back
+                </button>
+                <button class="btn btn-primary" onclick="switchTab(3)">
+                    Next: Review & Submit →
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tab 4: Review & Submit -->
+        <div class="tab-content">
+            <h3 class="section-title">Review & Submit</h3>
+            
+            <div class="info-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(0, 168, 107, 0.05) 100%); border-color: rgba(0, 168, 107, 0.2);">
+                <div class="info-card-title" style="color: var(--shamrock-green);">✓ Ready to Submit</div>
+                <p>Please review all information above. Once submitted, this application will be sent to SignNow for electronic signatures.</p>
+            </div>
+            
+            <div style="background: var(--bg-gray); padding: 28px; border-radius: 16px; margin: 24px 0;">
+                <h4 style="margin-bottom: 16px; font-size: 1.2em;">Summary</h4>
+                <div style="display: grid; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color);">
+                        <span style="color: var(--text-secondary);">Defendant:</span>
+                        <span style="font-weight: 600;" id="reviewDefendantName">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color);">
+                        <span style="color: var(--text-secondary);">Number of Charges:</span>
+                        <span style="font-weight: 600;" id="reviewChargeCount">0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color);">
+                        <span style="color: var(--text-secondary);">Total Bond Amount:</span>
+                        <span style="font-weight: 600;" id="reviewTotalBond">$0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0;">
+                        <span style="color: var(--text-secondary);">Total Premium Due:</span>
+                        <span style="font-weight: 700; font-size: 1.3em; color: var(--shamrock-green);" id="reviewTotalPremium">$0.00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 32px;">
+                <button class="btn btn-secondary" onclick="switchTab(2)">
+                    ← Back
+                </button>
+                <button class="btn btn-primary" onclick="submitForm()" style="font-size: 1.1em; padding: 16px 32px;">
+                    Submit Application →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let charges = [];
+        let chargeCounter = 0;
+        
+        // Initialize - get data from injected script
+        window.onload = function() {
+            // Check for injected form data
+            const bookingNumber = window.FORM_DATA ? window.FORM_DATA.booking : null;
+            const rowIndex = window.FORM_DATA ? window.FORM_DATA.row : null;
+            
+            console.log('Form data:', { bookingNumber, rowIndex });
+            
+            if (bookingNumber && rowIndex) {
+                // Load arrest data from spreadsheet
+                document.getElementById('autoFillBadge').style.display = 'inline-flex';
+                loadArrestData(bookingNumber, parseInt(rowIndex));
+            } else {
+                // No arrest data, start with blank form
+                console.log('No URL parameters found, starting with blank form');
+                addCharge();
+            }
+        };
+        
+        function switchTab(index) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach((tab, i) => {
+                if (i === index) {
+                    tab.classList.add('active');
+                    contents[i].classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                    contents[i].classList.remove('active');
+                }
+            });
+            
+            // Update progress bar
+            const progress = ((index + 1) / 4) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            
+            // Update review tab if switching to it
+            if (index === 3) {
+                updateReviewTab();
+            }
+        }
+        
+        function addCharge() {
+            chargeCounter++;
+            const chargeId = chargeCounter;
+            
+            const chargeHtml = `
+                <div class="charge-item" id="charge-${chargeId}">
+                    <h4>Charge #${chargeId}</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="required">Offense/Charge Description</label>
+                            <input type="text" id="charge${chargeId}Description" oninput="updatePremiums()" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Case Number</label>
+                            <input type="text" id="charge${chargeId}CaseNumber" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="required">Bond Amount ($)</label>
+                            <input type="number" id="charge${chargeId}BondAmount" step="0.01" oninput="updatePremiums()" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Premium ($) - Auto-Calculated</label>
+                            <input type="number" id="charge${chargeId}Premium" step="0.01" readonly style="background: var(--bg-gray);">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Court Location</label>
+                            <input type="text" id="charge${chargeId}CourtLocation" placeholder="Circuit Court">
+                        </div>
+                        <div class="form-group">
+                            <label>Hearing Date & Time</label>
+                            <input type="text" id="charge${chargeId}Hearing" placeholder="MM/DD/YYYY, HH:MM AM/PM">
+                        </div>
+                    </div>
+                    ${chargeId > 1 ? '<button class="btn btn-danger" onclick="removeCharge(' + chargeId + ')">Remove Charge</button>' : ''}
+                </div>
+            `;
+            
+            document.getElementById('chargesContainer').insertAdjacentHTML('beforeend', chargeHtml);
+            charges.push(chargeId);
+            updatePremiums();
+        }
+        
+        function removeCharge(id) {
+            document.getElementById(`charge-${id}`).remove();
+            charges = charges.filter(c => c !== id);
+            updatePremiums();
+        }
+        
+        function calculatePremium(bondAmount) {
+            const amount = parseFloat(bondAmount) || 0;
+            if (amount < 1000) {
+                return 100;
+            }
+            return amount * 0.10;
+        }
+        
+        function updatePremiums() {
+            let totalBond = 0;
+            let totalPremium = 0;
+            let breakdown = '';
+            
+            charges.forEach((id, index) => {
+                const bondInput = document.getElementById(`charge${id}BondAmount`);
+                const premiumInput = document.getElementById(`charge${id}Premium`);
+                const descInput = document.getElementById(`charge${id}Description`);
+                
+                if (bondInput && bondInput.value) {
+                    const bondAmount = parseFloat(bondInput.value) || 0;
+                    const premium = calculatePremium(bondAmount);
+                    
+                    if (premiumInput) {
+                        premiumInput.value = premium.toFixed(2);
+                    }
+                    
+                    totalBond += bondAmount;
+                    totalPremium += premium;
+                    
+                    const desc = descInput ? (descInput.value.substring(0, 40) || `Charge #${index + 1}`) : `Charge #${index + 1}`;
+                    breakdown += `<div style="margin: 5px 0; padding: 8px; background: white; border-radius: 8px;">${desc}: $${bondAmount.toFixed(2)} → <strong>$${premium.toFixed(2)}</strong></div>`;
+                }
+            });
+            
+            document.getElementById('premiumBreakdown').innerHTML = breakdown || '<div>Add charges to see premium breakdown</div>';
+            document.getElementById('totalBond').textContent = '$' + totalBond.toFixed(2);
+            document.getElementById('totalPremium').textContent = '$' + totalPremium.toFixed(2);
+        }
+        
+        function updateReviewTab() {
+            const defendantName = document.getElementById('defendantFullName').value || '-';
+            const chargeCount = charges.length;
+            const totalBond = document.getElementById('totalBond').textContent;
+            const totalPremium = document.getElementById('totalPremium').textContent;
+            
+            document.getElementById('reviewDefendantName').textContent = defendantName;
+            document.getElementById('reviewChargeCount').textContent = chargeCount;
+            document.getElementById('reviewTotalBond').textContent = totalBond;
+            document.getElementById('reviewTotalPremium').textContent = totalPremium;
+        }
+        
+        function loadArrestData(bookingNumber, rowIndex) {
+            console.log('Loading arrest data for booking:', bookingNumber);
+            
+            google.script.run
+                .withSuccessHandler(populateFormFromArrest)
+                .withFailureHandler(function(error) {
+                    console.error('Error loading arrest data:', error);
+                    alert('Error loading arrest data: ' + error.message);
+                    addCharge();
+                })
+                .getArrestDataForForm(bookingNumber, rowIndex);
+        }
+        
+        function populateFormFromArrest(data) {
+            console.log('Populating form with arrest data:', data);
+            
+            // Defendant section
+            const fields = {
+                'defendantFullName': data.Full_Name,
+                'defendantDOB': data.DOB,
+                'defendantStreetAddress': data.Address,
+                'defendantCity': data.City,
+                'defendantDLState': data.State || 'FL',
+                'defendantZip': data.ZIP,
+                'defendantRace': data.Race,
+                'defendantSex': data.Sex,
+                'defendantHeight': data.Height,
+                'defendantWeight': data.Weight,
+                'defendantSSN': data.Person_ID
+            };
+            
+            // Populate and mark as auto-filled
+            for (const [fieldId, value] of Object.entries(fields)) {
+                if (value) {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.value = value;
+                        field.classList.add('auto-filled');
+                    }
+                }
+            }
+            
+            // Charges section
+            const chargesStr = data.Charges || '';
+            const chargesArray = chargesStr.split(' | ').filter(c => c.trim() !== '');
+            
+            if (chargesArray.length > 0) {
+                const totalBond = parseFloat(data.Bond_Amount) || 0;
+                const bondPerCharge = totalBond / chargesArray.length;
+                const caseNumbers = (data.Case_Number || '').split(',').map(c => c.trim());
+                const courtLocation = data.Court_Location || '';
+                const courtDate = data.Court_Date || '';
+                const courtTime = data.Court_Time || '';
+                const hearing = courtDate && courtTime ? courtDate + ', ' + courtTime : '';
+                
+                chargesArray.forEach((charge, index) => {
+                    addCharge();
+                    const chargeId = charges[charges.length - 1];
+                    
+                    const fields = {
+                        [`charge${chargeId}Description`]: charge,
+                        [`charge${chargeId}BondAmount`]: bondPerCharge.toFixed(2),
+                        [`charge${chargeId}CaseNumber`]: caseNumbers[index] || caseNumbers[0] || '',
+                        [`charge${chargeId}CourtLocation`]: courtLocation,
+                        [`charge${chargeId}Hearing`]: hearing
+                    };
+                    
+                    for (const [fieldId, value] of Object.entries(fields)) {
+                        if (value) {
+                            const field = document.getElementById(fieldId);
+                            if (field) {
+                                field.value = value;
+                                field.classList.add('auto-filled');
+                            }
+                        }
+                    }
+                });
+                
+                updatePremiums();
+            } else {
+                addCharge();
+            }
+            
+            // Mark form as opened
+            google.script.run.markFormOpened(data.Booking_Number);
+            
+            console.log('Form populated successfully');
+        }
+        
+        function submitForm() {
+            // Validation
+            const defendantName = document.getElementById('defendantFullName').value;
+            const indemnitorName = document.getElementById('indemnitorFullName').value;
+            
+            if (!defendantName || !indemnitorName || charges.length === 0) {
+                alert('Please fill in all required fields before submitting.');
+                return;
+            }
+            
+            // TODO: Implement actual submission to SignNow
+            alert('Form submission will be implemented with SignNow integration.\n\nFor now, this is a preview of the complete form.');
+        }
+    </script>
+</body>
+</html>
+

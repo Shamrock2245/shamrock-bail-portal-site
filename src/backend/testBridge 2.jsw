@@ -1,0 +1,14 @@
+import { notifyGASOfNewIntake } from 'backend/gasIntegration';
+
+export async function testBridge() {
+    console.log('Testing Wix-GAS Bridge connection...');
+    try {
+        // Attempt to push a dummy case ID to GAS
+        const result = await notifyGASOfNewIntake('TEST-CASE-ID-001');
+        console.log('Bridge Test Result:', result);
+        return result;
+    } catch (e) {
+        console.error('Bridge Test Error:', e);
+        throw e;
+    }
+}

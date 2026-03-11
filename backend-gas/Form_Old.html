@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shamrock Bail Bonds - Smart Paperwork System v3</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .company-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .import-section {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 25px;
+            margin: 20px;
+            border-radius: 15px;
+            color: white;
+        }
+        
+        .import-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .import-btn {
+            background: white;
+            color: #f5576c;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .import-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 3px solid #e9ecef;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            border: none;
+            background: transparent;
+            position: relative;
+        }
+        
+        .tab:hover { background: rgba(102, 126, 234, 0.1); }
+        
+        .tab.active {
+            background: white;
+            color: #667eea;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 40px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-content.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .charge-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .add-charge-btn, .remove-charge-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+        
+        .add-charge-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .remove-charge-btn {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .premium-summary {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .premium-summary h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .info-box {
+            background: #d1ecf1;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍀 Shamrock Bail Bonds</h1>
+            <p>Smart Paperwork System v3.0</p>
+            <div class="company-info">
+                <strong>1528 Broadway, Fort Myers, FL 33901</strong><br>
+                📞 239-332-2245
+            </div>
+        </div>
+        
+        <div class="import-section">
+            <h3>🔗 Quick Import from Booking Sheet</h3>
+            <p style="margin-bottom: 15px;">Extract data using the bookmarklet, then click below to import:</p>
+            <button class="import-btn" onclick="importFromClipboard()">📋 Import from Clipboard</button>
+            <p style="font-size: 0.9em; margin-top: 10px; opacity: 0.9;">
+                First: Run bookmarklet on booking sheet | Then: Click this button
+            </p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(0)">📋 Bond & Charges</button>
+            <button class="tab" onclick="switchTab(1)">👤 Defendant</button>
+            <button class="tab" onclick="switchTab(2)">📝 Indemnitor</button>
+        </div>
+        
+        <div class="tab-content active">
+            <h2 class="section-title">Charges & Offenses</h2>
+            
+            <div class="info-box">
+                <strong>💡 Smart Tip:</strong> Add each charge/offense below. Premium is automatically calculated as $100 minimum OR 10% of bond amount (whichever is greater).
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Court Type *</label>
+                    <select id="courtType" required>
+                        <option value="Co/Cir">County/Circuit (Co/Cir)</option>
+                        <option value="Co">County (Co)</option>
+                        <option value="Cir">Circuit (Cir)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="chargesContainer"></div>
+            
+            <button class="add-charge-btn" onclick="addCharge()">+ Add Charge/Offense</button>
+            
+            <div class="premium-summary">
+                <h4>💰 Premium Calculation Summary</h4>
+                <div id="premiumBreakdown"></div>
+                <hr style="margin: 15px 0; border: none; border-top: 2px solid #856404;">
+                <div style="display: flex; justify-content: space-between; font-size: 1.2em; font-weight: bold;">
+                    <span>Total Bond Amount:</span>
+                    <span id="totalBond">$0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 1.2em; font-weight: bold; margin-top: 10px;">
+                    <span>Total Premium Due:</span>
+                    <span id="totalPremium">$0.00</span>
+                </div>
+            </div>
+            
+            <h3 class="section-title" style="margin-top: 40px;">Collateral Information</h3>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="hasCollateral" onchange="toggleCollateral()">
+                    Collateral is being provided for this bond
+                </label>
+            </div>
+            
+            <div id="collateralSection" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Receipt Number</label>
+                        <input type="text" id="collateralReceiptNumber">
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="collateralDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <input type="number" id="collateralAmount" step="0.01">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select id="collateralType">
+                            <option value="">Select Type</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Check">Check</option>
+                            <option value="Money Order">Money Order</option>
+                            <option value="Vehicle">Vehicle</option>
+                            <option value="Real Property">Real Property</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Depositor Name</label>
+                        <input type="text" id="collateralDepositor">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="collateralDescription" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content">
+            <h2 class="section-title">Defendant Information</h2>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Full Legal Name *</label>
+                    <input type="text" id="defendantFullName" required>
+                </div>
+                <div class="form-group">
+                    <label>Arrest Number</label>
+                    <input type="text" id="defendantArrestNumber" placeholder="From booking sheet">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nickname / Alias</label>
+                    <input type="text" id="defendantAlias">
+                </div>
+                <div class="form-group">
+                    <label>Date of Birth *</label>
+                    <input type="date" id="defendantDOB" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Social Security Number</label>
+                    <input type="text" id="defendantSSN" placeholder="XXX-XX-XXXX">
+                </div>
+                <div class="form-group">
+                    <label>Driver's License Number</label>
+                    <input type="text" id="defendantDL">
+                </div>
+                <div class="form-group">
+                    <label>DL State</label>
+                    <input type="text" id="defendantDLState" value="FL" maxlength="2">
+                </div>
+            </div>
+            
+            <h3 class="section-title">Contact Information</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Street Address *</label>
+                    <input type="text" id="defendantStreetAddress" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>City *</label>
+                    <input type="text" id="defendantCity" required>
+                </div>
+                <div class="form-group">
+                    <label>State *</label>
+                    <input type="text" id="defendantState" value="FL" maxlength="2" required>
+                </div>
+                <div class="form-group">
+                    <label>ZIP Code *</label>
+                    <input type="text" id="defendantZip" maxlength="5" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="defendantPhone" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="defendantEmail">
+                </div>
+            </div>
+            
+            <h3 class="section-title">Physical Description</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Height</label>
+                    <input type="text" id="defendantHeight" placeholder="e.g., 6'01&quot;">
+                </div>
+                <div class="form-group">
+                    <label>Weight (lbs)</label>
+                    <input type="number" id="defendantWeight">
+                </div>
+                <div class="form-group">
+                    <label>Eye Color</label>
+                    <input type="text" id="defendantEyes">
+                </div>
+                <div class="form-group">
+                    <label>Hair Color</label>
+                    <input type="text" id="defendantHair">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Race</label>
+                    <input type="text" id="defendantRace" maxlength="1">
+                </div>
+                <div class="form-group">
+                    <label>Sex</label>
+                    <select id="defendantSex">
+                        <option value="">Select</option>
+                        <option value="M">M</option>
+                        <option value="F">F</option>
+                    </select>
+                </div>
+            </div>
+            
+            <h3 class="section-title">Employment</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Employer Name</label>
+                    <input type="text" id="defendantEmployer">
+                </div>
+                <div class="form-group">
+                    <label>Boss/Supervisor</label>
+                    <input type="text" id="defendantBoss">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Employer Address</label>
+                    <input type="text" id="defendantEmployerAddress">
+                </div>
+                <div class="form-group">
+                    <label>Employer Phone</label>
+                    <input type="tel" id="defendantEmployerPhone">
+                </div>
+            </div>
+            
+            <h3 class="section-title">Vehicle Information</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Vehicle (Year, Make, Model, Color)</label>
+                    <input type="text" id="defendantVehicle" placeholder="e.g., 2020 Honda Accord, Silver">
+                </div>
+                <div class="form-group">
+                    <label>License Plate Number</label>
+                    <input type="text" id="defendantPlate">
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content">
+            <h2 class="section-title">Primary Indemnitor</h2>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="indemnitorFullName" required>
+                </div>
+                <div class="form-group">
+                    <label>Relationship to Defendant *</label>
+                    <input type="text" id="indemnitorRelationship" placeholder="e.g., Mother, Spouse, Friend" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Date of Birth</label>
+                    <input type="date" id="indemnitorDOB">
+                </div>
+                <div class="form-group">
+                    <label>Social Security Number</label>
+                    <input type="text" id="indemnitorSSN" placeholder="XXX-XX-XXXX">
+                </div>
+                <div class="form-group">
+                    <label>Driver's License Number</label>
+                    <input type="text" id="indemnitorDL">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Street Address *</label>
+                    <input type="text" id="indemnitorStreetAddress" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>City *</label>
+                    <input type="text" id="indemnitorCity" required>
+                </div>
+                <div class="form-group">
+                    <label>State *</label>
+                    <input type="text" id="indemnitorState" value="FL" maxlength="2" required>
+                </div>
+                <div class="form-group">
+                    <label>ZIP Code *</label>
+                    <input type="text" id="indemnitorZip" maxlength="5" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Cell Phone *</label>
+                    <input type="tel" id="indemnitorPhone" required>
+                </div>
+                <div class="form-group">
+                    <label>Email * (For Signatures)</label>
+                    <input type="email" id="indemnitorEmail" required>
+                </div>
+            </div>
+            
+            <h3 class="section-title">Employment & Financial</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Employer Name</label>
+                    <input type="text" id="indemnitorEmployer">
+                </div>
+                <div class="form-group">
+                    <label>Employer Phone</label>
+                    <input type="tel" id="indemnitorEmployerPhone">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Employer Address</label>
+                <input type="text" id="indemnitorEmployerAddress">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Home Owner?</label>
+                    <select id="indemnitorHomeOwner">
+                        <option value="">Select</option>
+                        <option value="YES">YES</option>
+                        <option value="NO">NO</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mortgage Company</label>
+                    <input type="text" id="indemnitorMortgage">
+                </div>
+                <div class="form-group">
+                    <label>Amount Owed</label>
+                    <input type="number" id="indemnitorAmountOwed" step="0.01">
+                </div>
+            </div>
+            
+            <h3 class="section-title">References</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Reference 1 - Name</label>
+                    <input type="text" id="reference1Name">
+                </div>
+                <div class="form-group">
+                    <label>Relation</label>
+                    <input type="text" id="reference1Relation">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="reference1Phone">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Reference 1 - Address</label>
+                <input type="text" id="reference1Address">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Reference 2 - Name</label>
+                    <input type="text" id="reference2Name">
+                </div>
+                <div class="form-group">
+                    <label>Relation</label>
+                    <input type="text" id="reference2Relation">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="reference2Phone">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Reference 2 - Address</label>
+                <input type="text" id="reference2Address">
+            </div>
+            
+            <h3 class="section-title">Co-Indemnitor (For Higher Risk Bonds)</h3>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="hasCoIndemnitor" onchange="toggleCoIndemnitor()">
+                    Add Co-Indemnitor or Additional Indemnitor
+                </label>
+            </div>
+            
+            <div id="coIndemnitorSection" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="coIndemnitorFullName">
+                    </div>
+                    <div class="form-group">
+                        <label>Email (For Signatures)</label>
+                        <input type="email" id="coIndemnitorEmail">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Street Address</label>
+                        <input type="text" id="coIndemnitorAddress">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" id="coIndemnitorCity">
+                    </div>
+                    <div class="form-group">
+                        <label>State</label>
+                        <input type="text" id="coIndemnitorState" value="FL" maxlength="2">
+                    </div>
+                    <div class="form-group">
+                        <label>ZIP</label>
+                        <input type="text" id="coIndemnitorZip" maxlength="5">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="coIndemnitorPhone">
+                    </div>
+                    <div class="form-group">
+                        <label>SSN</label>
+                        <input type="text" id="coIndemnitorSSN">
+                    </div>
+                    <div class="form-group">
+                        <label>Driver's License</label>
+                        <input type="text" id="coIndemnitorDL">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear All</button>
+            <button class="btn btn-primary" onclick="saveProgress()">💾 Save Progress</button>
+            <button class="btn btn-success" id="generateButton" onclick="generateDocuments(this)">📄 Generate All Documents</button>
+        </div>
+    </div>
+
+    <script>
+      const AGENT_NAME = "Shamrock Bail Bonds"; // Or agent's name
+      const AGENT_EMAIL = "admin@shamrockbailbonds.biz"; // Agent's email for CCs
+    </script>
+
+
+    <script>
+        let charges = [];
+        let chargeCounter = 0;
+        
+        // Initialize with one charge
+        window.onload = function() {
+            // Check if we have booking data from template
+            const bookingNumber = '<?= bookingNumber ?>';
+            const rowIndex = '<?= rowIndex ?>';
+            
+            if (bookingNumber && bookingNumber !== '' && rowIndex && rowIndex !== '') {
+                // Load arrest data from spreadsheet
+                loadArrestData(bookingNumber, rowIndex);
+            } else {
+                // No arrest data, start with blank form
+                addCharge();
+            }
+            
+            loadProgress();
+            
+            // Set execution date to today
+            const today = new Date().toISOString().split('T')[0];
+            if (document.getElementById('collateralDate')) {
+                document.getElementById('collateralDate').value = today;
+            }
+        };
+        
+        /**
+         * Loads arrest data from spreadsheet and populates form
+         */
+        function loadArrestData(bookingNumber, rowIndex) {
+            console.log('Loading arrest data for booking:', bookingNumber);
+            
+            google.script.run
+                .withSuccessHandler(populateFormFromArrest)
+                .withFailureHandler(function(error) {
+                    console.error('Error loading arrest data:', error);
+                    alert('Error loading arrest data: ' + error.message);
+                    // Fall back to blank form
+                    addCharge();
+                })
+                .getArrestDataForForm(bookingNumber, rowIndex);
+        }
+        
+        /**
+         * Populates form fields from arrest data
+         */
+        function populateFormFromArrest(data) {
+            console.log('Populating form with arrest data:', data);
+            
+            // === DEFENDANT SECTION ===
+            if (data.Full_Name) document.getElementById('defendantFullName').value = data.Full_Name;
+            if (data.DOB) document.getElementById('defendantDOB').value = data.DOB;
+            if (data.Address) document.getElementById('defendantStreetAddress').value = data.Address;
+            if (data.City) document.getElementById('defendantCity').value = data.City;
+            if (data.State) document.getElementById('defendantDLState').value = data.State || 'FL';
+            if (data.ZIP) document.getElementById('defendantZip').value = data.ZIP;
+            if (data.Race) document.getElementById('defendantRace').value = data.Race;
+            if (data.Sex) document.getElementById('defendantSex').value = data.Sex;
+            if (data.Height) document.getElementById('defendantHeight').value = data.Height;
+            if (data.Weight) document.getElementById('defendantWeight').value = data.Weight;
+            if (data.Person_ID) document.getElementById('defendantSSN').value = data.Person_ID; // Arrest number
+            
+            // === BOOKING/ARREST INFO ===
+            if (data.Booking_Number) {
+                // Store booking number in a hidden field or data attribute
+                const bookingField = document.getElementById('defendantAlias');
+                if (bookingField) {
+                    bookingField.value = 'Booking #' + data.Booking_Number;
+                }
+            }
+            
+            // === CHARGES SECTION ===
+            // Parse charges (pipe-separated)
+            const chargesStr = data.Charges || '';
+            const chargesArray = chargesStr.split(' | ').filter(c => c.trim() !== '');
+            
+            if (chargesArray.length > 0) {
+                const totalBond = parseFloat(data.Bond_Amount) || 0;
+                const bondPerCharge = totalBond / chargesArray.length;
+                const caseNumbers = (data.Case_Number || '').split(',').map(c => c.trim());
+                const courtLocation = data.Court_Location || '';
+                const courtDate = data.Court_Date || '';
+                const courtTime = data.Court_Time || '';
+                const hearing = courtDate && courtTime ? courtDate + ', ' + courtTime : '';
+                
+                // Add charges
+                chargesArray.forEach((charge, index) => {
+                    addCharge();
+                    const chargeId = charges[charges.length - 1];
+                    
+                    document.getElementById(`charge${chargeId}Description`).value = charge;
+                    document.getElementById(`charge${chargeId}BondAmount`).value = bondPerCharge.toFixed(2);
+                    
+                    if (caseNumbers[index]) {
+                        document.getElementById(`charge${chargeId}CaseNumber`).value = caseNumbers[index];
+                    } else if (caseNumbers[0]) {
+                        document.getElementById(`charge${chargeId}CaseNumber`).value = caseNumbers[0];
+                    }
+                    
+                    if (courtLocation) {
+                        document.getElementById(`charge${chargeId}CourtLocation`).value = courtLocation;
+                    }
+                    
+                    if (hearing) {
+                        document.getElementById(`charge${chargeId}Hearing`).value = hearing;
+                    }
+                });
+                
+                updatePremiums();
+            } else {
+                // No charges, add blank charge
+                addCharge();
+            }
+            
+            // Mark form as opened
+            google.script.run.markFormOpened(data.Booking_Number);
+            
+            console.log('Form populated successfully');
+        }
+        
+        function switchTab(index) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach((tab, i) => {
+                if (i === index) {
+                    tab.classList.add('active');
+                    contents[i].classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                    contents[i].classList.remove('active');
+                }
+            });
+        }
+        
+        function addCharge() {
+            chargeCounter++;
+            const chargeId = chargeCounter;
+            
+            const chargeHtml = `
+                <div class="charge-item" id="charge-${chargeId}">
+                    <h4 style="margin-bottom: 15px;">Charge #${chargeId}</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Offense/Charge Description *</label>
+                            <input type="text" id="charge${chargeId}Description" oninput="updatePremiums()" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Case Number *</label>
+                            <input type="text" id="charge${chargeId}CaseNumber" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Bond Amount ($) *</label>
+                            <input type="number" id="charge${chargeId}BondAmount" step="0.01" oninput="updatePremiums()" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Premium ($) - Auto-Calculated (FL Law)</label>
+                            <input type="number" id="charge${chargeId}Premium" step="0.01" readonly style="background: #e9ecef;">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Court Location (from booking sheet)</label>
+                            <input type="text" id="charge${chargeId}CourtLocation" placeholder="Circuit Court">
+                        </div>
+                        <div class="form-group">
+                            <label>Hearing Date & Time (from booking sheet)</label>
+                            <input type="text" id="charge${chargeId}Hearing" placeholder="MM/DD/YYYY, HH:MM AM/PM">
+                        </div>
+                    </div>
+                    ${chargeId > 1 ? '<button class="remove-charge-btn" onclick="removeCharge(' + chargeId + ')">Remove Charge</button>' : ''}
+                </div>
+            `;
+            
+            document.getElementById('chargesContainer').insertAdjacentHTML('beforeend', chargeHtml);
+            charges.push(chargeId);
+            updatePremiums();
+        }
+        
+        function removeCharge(id) {
+            document.getElementById(`charge-${id}`).remove();
+            charges = charges.filter(c => c !== id);
+            updatePremiums();
+        }
+        
+        /**
+         * Calculates premium based on Florida state law.
+         * Min $100 for bonds < $1000. 10% for bonds >= $1000.
+         */
+        function calculatePremium(bondAmount) {
+            const amount = parseFloat(bondAmount) || 0;
+            if (amount < 1000) {
+                return 100;
+            }
+            return amount * 0.10;
+        }
+        
+        function updatePremiums() {
+            let totalBond = 0;
+            let totalPremium = 0;
+            let breakdown = '';
+            
+            charges.forEach((id, index) => {
+                const bondInput = document.getElementById(`charge${id}BondAmount`);
+                const premiumInput = document.getElementById(`charge${id}Premium`);
+                const descInput = document.getElementById(`charge${id}Description`);
+                
+                if (bondInput && bondInput.value) {
+                    const bondAmount = parseFloat(bondInput.value) || 0;
+                    const premium = calculatePremium(bondAmount);
+                    
+                    if (premiumInput) {
+                        premiumInput.value = premium.toFixed(2);
+                    }
+                    
+                    totalBond += bondAmount;
+                    totalPremium += premium;
+                    
+                    const desc = descInput ? (descInput.value.substring(0, 40) + '...' || `Charge #${index + 1}`) : `Charge #${index + 1}`;
+                    breakdown += `<div style="margin: 5px 0;">${desc}: $${bondAmount.toFixed(2)} → $${premium.toFixed(2)}</div>`;
+                }
+            });
+            
+            document.getElementById('premiumBreakdown').innerHTML = breakdown || '<div>Add charges to see premium breakdown</div>';
+            document.getElementById('totalBond').textContent = '$' + totalBond.toFixed(2);
+            document.getElementById('totalPremium').textContent = '$' + totalPremium.toFixed(2);
+        }
+        
+        function toggleCollateral() {
+            const section = document.getElementById('collateralSection');
+            const checkbox = document.getElementById('hasCollateral');
+            section.style.display = checkbox.checked ? 'block' : 'none';
+        }
+        
+        function toggleCoIndemnitor() {
+            const section = document.getElementById('coIndemnitorSection');
+            const checkbox = document.getElementById('hasCoIndemnitor');
+            section.style.display = checkbox.checked ? 'block' : 'none';
+        }
+        
+        async function importFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                const data = JSON.parse(text);
+                
+                // Populate defendant fields
+                if (data.defendantFullName) document.getElementById('defendantFullName').value = data.defendantFullName;
+                if (data.defendantArrestNumber) document.getElementById('defendantArrestNumber').value = data.defendantArrestNumber;
+                if (data.defendantDOB) document.getElementById('defendantDOB').value = data.defendantDOB;
+                if (data.defendantRace) document.getElementById('defendantRace').value = data.defendantRace;
+                if (data.defendantSex) document.getElementById('defendantSex').value = data.defendantSex;
+                if (data.defendantHeight) document.getElementById('defendantHeight').value = data.defendantHeight;
+                if (data.defendantWeight) document.getElementById('defendantWeight').value = data.defendantWeight;
+                if (data.defendantStreetAddress) document.getElementById('defendantStreetAddress').value = data.defendantStreetAddress;
+                if (data.defendantCity) document.getElementById('defendantCity').value = data.defendantCity;
+                if (data.defendantState) document.getElementById('defendantState').value = data.defendantState;
+                if (data.defendantZip) document.getElementById('defendantZip').value = data.defendantZip;
+                
+                // Populate charges
+                if (data.charges && data.charges.length > 0) {
+                    // Clear existing charges
+                    charges.forEach(id => {
+                        const elem = document.getElementById(`charge-${id}`);
+                        if (elem) elem.remove();
+                    });
+                    charges = [];
+                    chargeCounter = 0;
+                    
+                    // Add charges from data
+                    data.charges.forEach((charge, index) => {
+                        addCharge();
+                        const id = chargeCounter;
+                        if (charge.description) document.getElementById(`charge${id}Description`).value = charge.description;
+                        if (charge.caseNumber) document.getElementById(`charge${id}CaseNumber`).value = charge.caseNumber;
+                        if (charge.bondAmount) document.getElementById(`charge${id}BondAmount`).value = charge.bondAmount;
+                        if (charge.courtLocation) document.getElementById(`charge${id}CourtLocation`).value = charge.courtLocation;
+                        if (charge.hearing) document.getElementById(`charge${id}Hearing`).value = charge.hearing;
+                    });
+                    
+                    updatePremiums();
+                }
+                
+                alert('✅ Data imported successfully!\n\nDefendant info and charges have been populated.\n\nPlease review and fill in the Indemnitor information.');
+                switchTab(1); // Switch to defendant tab to show imported data
+                
+            } catch (error) {
+                alert('❌ Could not import data from clipboard.\n\nMake sure you:\n1. Ran the bookmarklet on the booking sheet\n2. Clicked "Import from Clipboard" button\n\nError: ' + error.message);
+            }
+        }
+        
+        function saveProgress() {
+            const data = collectFormData(false); // Don't include totals
+            localStorage.setItem('shamrockBailBondData', JSON.stringify(data));
+            console.log('Progress saved.');
+        }
+        
+        function loadProgress() {
+            const saved = localStorage.getItem('shamrockBailBondData');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    // Restore form data
+                    Object.keys(data).forEach(key => {
+                        const element = document.getElementById(key);
+                        if (element) {
+                            if (element.type === 'checkbox') {
+                                element.checked = data[key];
+                            } else {
+                                element.value = data[key];
+                            }
+                        }
+                    });
+                    // Manually trigger updates
+                    toggleCollateral();
+                    toggleCoIndemnitor();
+                    updatePremiums();
+                } catch (e) {
+                    console.error('Could not load saved data:', e);
+                }
+            }
+        }
+        
+        function clearAll() {
+            if (confirm('Are you sure you want to clear all data?')) {
+                document.querySelectorAll('input, select, textarea').forEach(el => {
+                    if (el.type === 'checkbox') {
+                        el.checked = false;
+                    } else if (el.id === 'defendantState' || el.id === 'indemnitorState' || el.id === 'coIndemnitorState') {
+                        el.value = 'FL'; // Reset state
+                    } else if (el.id === 'courtType') {
+                         el.value = 'Co/Cir'; // Reset court
+                    } else {
+                        el.value = '';
+                    }
+                });
+                
+                // Reset charges
+                charges.forEach(id => {
+                    const elem = document.getElementById(`charge-${id}`);
+                    if (elem) elem.remove();
+                });
+                charges = [];
+                chargeCounter = 0;
+                addCharge();
+                
+                // Trigger UI updates
+                toggleCollateral();
+                toggleCoIndemnitor();
+                updatePremiums();
+                
+                localStorage.removeItem('shamrockBailBondData');
+                alert('✅ All data cleared!');
+            }
+        }
+        
+        function collectFormData(includeTotals = true) {
+            const data = {};
+            document.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.id) {
+                    data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+                }
+            });
+            
+            if (includeTotals) {
+              data.totalBond = document.getElementById('totalBond').textContent;
+              data.totalPremium = document.getElementById('totalPremium').textContent;
+            }
+            return data;
+        }
+
+        // ========================================================
+        // NEW FUNCTIONS TO TALK TO GOOGLE APPS SCRIPT
+        // ========================================================
+
+        /**
+         * Main function called by the "Generate All Documents" button.
+         * This sends all form data to our Code.gs "backend".
+         */
+        function generateDocuments(btn) {
+            // 1. Show a "loading" spinner to the agent
+            btn.innerHTML = '🔄 Sending to SignNow... Please wait...';
+            btn.disabled = true;
+
+            // 2. Collect all form data
+            const data = collectFormData(true); // Include totals
+            data.charges = [];
+            
+            charges.forEach(id => {
+                const charge = {
+                    // Note: In HTML, charge IDs are 1-based (charge1, charge2)
+                    // The 'id' here is just the counter (1, 2, 3)
+                    id: id,
+                    description: document.getElementById(`charge${id}Description`)?.value || '',
+                    caseNumber: document.getElementById(`charge${id}CaseNumber`)?.value || '',
+                    bondAmount: document.getElementById(`charge${id}BondAmount`)?.value || '',
+                    premium: document.getElementById(`charge${id}Premium`)?.value || '',
+                    courtLocation: document.getElementById(`charge${id}CourtLocation`)?.value || '',
+                    hearing: document.getElementById(`charge${id}Hearing`)?.value || ''
+                };
+                data.charges.push(charge);
+            });
+            
+            // 3. Add Agent info
+            data.agentName = AGENT_NAME;
+            data.agentEmail = AGENT_EMAIL;
+            
+            // 4. Send the data to our "backend" (Code.gs)
+            google.script.run
+                .withSuccessHandler(onInviteSuccess)
+                .withFailureHandler(onInviteFailure)
+                .sendSignNowInvite(data);
+        }
+
+        /**
+         * Callback function that runs if the backend call is successful.
+         */
+        function onInviteSuccess(response) {
+            alert('✅ SUCCESS! \n\n' + response);
+            const btn = document.getElementById('generateButton');
+            btn.innerHTML = '📄 Generate All Documents';
+            btn.disabled = false;
+            
+            // Optional: Clear form on success
+            // clearAll(); 
+        }
+
+        /**
+         * Callback function that runs if the backend call fails.
+         */
+        function onInviteFailure(error) {
+            alert('❌ ERROR! \n\n' + error.message);
+            const btn = document.getElementById('generateButton');
+            btn.innerHTML = '📄 Generate All Documents';
+            btn.disabled = false;
+        }
+        
+        // Auto-save every 2 minutes
+        setInterval(saveProgress, 120000);
+    </script>
+</body>
+</html>
