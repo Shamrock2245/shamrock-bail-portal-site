@@ -530,31 +530,12 @@ function handleTelegramGetSigningUrl(data) {
             signNowDocId = createJson.id;
             Logger.log('✅ Document copy created: ' + signNowDocId);
 
-            // --- Step 3: Add signature/initials fields to the document ---
-            var fieldDefs = getSignatureFieldDefs(docId);
-            if (fieldDefs.length > 0) {
-                var snFields = fieldDefs.map(function (f, idx) {
-                    return {
-                        type: f.type,
-                        name: f.role.replace(/\s+/g, '') + '_' + f.type + '_p' + f.page_number + '_' + idx,
-                        role: f.role,
-                        page_number: f.page_number,
-                        x: f.x,
-                        y: f.y,
-                        width: f.width,
-                        height: f.height,
-                        required: true
-                    };
-                });
-
-                var addResult = SN_addFields(signNowDocId, snFields);
-                if (!addResult.success) {
-                    Logger.log('❌ Field addition FAILED — signing will not work without roles: ' + JSON.stringify(addResult));
-                    return { success: false, error: 'field_error', message: 'Failed to add signature fields to document: ' + (addResult.error || 'unknown') };
-                } else {
-                    Logger.log('✅ Added ' + snFields.length + ' fields to document');
-                }
-            }
+            // NOTE (Manus handoff 2026-03-12): SN_addFields block REMOVED.
+            // Templates are now fully pre-tagged with named text fields.
+            // The old PUT /document/{id} call here was REPLACING template fields
+            // with hardcoded pixel-coordinate fields, wiping the named fields
+            // needed for prefill. Copied documents now inherit all fields from
+            // the template automatically — which is the correct behavior.
 
             // --- Step 3b: Pre-fill text fields with case data ---
             if (data.formData) {
@@ -986,7 +967,225 @@ function updateDocSigningStatus_(caseKey, docId, newStatus, ss) {
 
 
 // ============================================================================
-// 6. UTILITY: Template Field Setup (Run Once)
+// 6. DOCUMENT GROUP WORKFLOW: Bundle + Single Email Invite
+// ============================================================================
+// The core "Send Paperwork" flow per the engineering handoff:
+//   1. buildPacketManifest → list of docs to create
+//   2. For each: copy template → prefill text fields → add sig fields → collect IDs
+//   3. Bundle into a SignNow Document Group
+//   4. Send ONE email invite to the indemnitor with the full packet
+//   5. Write doc IDs back to DocSigningTracker sheet
+//
+// CALLERS: Test_PacketSend.gs, server_sendSigningPacket (Dashboard button)
+// ============================================================================
+
+/**
+ * sendPacketAsDocumentGroup(caseData)
+ *
+ * End-to-end packet send: copies templates, prefills, creates Document Group,
+ * sends a single email invite to the indemnitor.
+ *
+ * @param {Object} caseData - Full case data (defendant, indemnitor, charges, etc.)
+ * @returns {Object} { success, groupId, documentIds[], inviteResult, error }
+ */
+function sendPacketAsDocumentGroup(caseData) {
+    try {
+        Logger.log('📦 sendPacketAsDocumentGroup: Starting for case ' + (caseData.caseNumber || 'unknown'));
+
+        var config = SN_getConfig();
+        var manifest = buildPacketManifest(caseData);
+        Logger.log('   Manifest: ' + manifest.length + ' documents');
+
+        var createdDocs = [];
+        var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+        // --- Step 1: Copy templates + prefill for each doc ---
+        manifest.forEach(function(entry) {
+            if (entry.rule === 'print-only') {
+                Logger.log('   ⏭️ Skipping print-only: ' + entry.docId);
+                return;
+            }
+
+            var docName = 'Shamrock_' + entry.docId;
+            if (entry.signerIndex >= 0) docName += '_signer' + entry.signerIndex;
+            docName += '_' + (caseData.caseNumber || Date.now());
+
+            // Copy template
+            var copyUrl = config.API_BASE + '/template/' + entry.templateId + '/copy';
+            var copyRes = UrlFetchApp.fetch(copyUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                payload: JSON.stringify({ document_name: docName }),
+                muteHttpExceptions: true
+            });
+
+            if (copyRes.getResponseCode() !== 200) {
+                Logger.log('   ❌ Copy failed for ' + entry.docId + ': ' + copyRes.getContentText().substring(0, 200));
+                return;
+            }
+
+            var docId = JSON.parse(copyRes.getContentText()).id;
+            Logger.log('   ✅ Created: ' + entry.docId + ' → ' + docId);
+
+            // Add signature/initials fields (reuse existing function)
+            var fieldDefs = getSignatureFieldDefs(entry.docId);
+            if (fieldDefs.length > 0) {
+                var snFields = fieldDefs.map(function(f, idx) {
+                    return {
+                        type: f.type,
+                        name: f.role.replace(/\s+/g, '') + '_' + f.type + '_p' + f.page_number + '_' + idx,
+                        role: f.role,
+                        page_number: f.page_number,
+                        x: f.x,
+                        y: f.y,
+                        width: f.width,
+                        height: f.height,
+                        required: true
+                    };
+                });
+                var addResult = SN_addFields(docId, snFields);
+                Logger.log('   Fields: ' + (addResult.success ? '✅ ' + snFields.length + ' added' : '⚠️ ' + (addResult.error || '')));
+            }
+
+            // Prefill text fields (reuse existing function)
+            var prefillResult = prefillDocument_(docId, caseData, entry.docId, entry.signerIndex);
+            Logger.log('   Prefill: ' + (prefillResult.success ? '✅ ' + prefillResult.fieldCount + ' fields' : '⚠️ ' + (prefillResult.error || 'no fields')));
+
+            // Track in sheet
+            var trackerDocKey = entry.docId;
+            if (entry.signerIndex >= 0 && (entry.rule === 'per-person' || entry.rule === 'per-indemnitor')) {
+                trackerDocKey = entry.docId + ':signer-' + entry.signerIndex;
+            }
+            saveSignNowDocId_(caseData.caseNumber || '', trackerDocKey, docId, ss, entry.signerRole, entry.signerIndex);
+
+            createdDocs.push({ key: entry.docId, documentId: docId, label: entry.label });
+        });
+
+        if (createdDocs.length === 0) {
+            return { success: false, error: 'No documents were created. Template copy may have failed.' };
+        }
+
+        Logger.log('   📋 Created ' + createdDocs.length + ' documents');
+
+        // --- Step 2: Create Document Group ---
+        var groupName = 'Shamrock_' + (caseData.caseNumber || '') + '_' + new Date().toISOString().split('T')[0];
+        var groupUrl = config.API_BASE + '/documentgroup';
+        var groupRes = UrlFetchApp.fetch(groupUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            payload: JSON.stringify({
+                document_ids: createdDocs.map(function(d) { return d.documentId; }),
+                group_name: groupName
+            }),
+            muteHttpExceptions: true
+        });
+
+        var groupJson = JSON.parse(groupRes.getContentText());
+        if (!groupJson.id) {
+            Logger.log('❌ Document Group creation failed: ' + groupRes.getContentText().substring(0, 300));
+            return {
+                success: false,
+                error: 'Document Group creation failed',
+                documentIds: createdDocs.map(function(d) { return d.documentId; }),
+                apiResponse: groupRes.getContentText().substring(0, 300)
+            };
+        }
+
+        var groupId = groupJson.id;
+        Logger.log('   ✅ Document Group created: ' + groupId);
+
+        // --- Step 3: Send Group Invite to Indemnitor ---
+        var indemnitorEmail = (caseData.indemnitors && caseData.indemnitors[0])
+            ? caseData.indemnitors[0].email
+            : caseData['indemnitor-1-email'] || '';
+
+        if (!indemnitorEmail) {
+            Logger.log('⚠️ No indemnitor email — skipping invite');
+            return {
+                success: true,
+                groupId: groupId,
+                documentIds: createdDocs,
+                inviteResult: { skipped: true, reason: 'No indemnitor email provided' }
+            };
+        }
+
+        var defName = caseData.defendantFullName || ((caseData['defendant-first-name'] || '') + ' ' + (caseData['defendant-last-name'] || '')).trim();
+        var inviteUrl = config.API_BASE + '/documentgroup/' + groupId + '/groupinvite';
+        var invitePayload = {
+            invite_steps: [{
+                order: 1,
+                invite_emails: [{
+                    email: indemnitorEmail,
+                    role: 'Indemnitor',
+                    order: 1,
+                    subject: 'Shamrock Bail Bonds — Please Sign: ' + defName + ' (Case #' + (caseData.caseNumber || '') + ')',
+                    message: 'Please review and sign the attached bail bond documents.\n\n' +
+                        'Defendant: ' + defName + '\n' +
+                        'Bond: $' + (caseData.bondAmount || '') + '\n' +
+                        'Premium: $' + (caseData.totalPremium || '') + '\n' +
+                        'Court Date: ' + (caseData['defendant-court-date'] || '') + ' at ' + (caseData['defendant-court-time'] || '') + '\n\n' +
+                        'Call Shamrock Bail Bonds with any questions: (239) 298-8889'
+                }]
+            }]
+        };
+
+        var inviteRes = UrlFetchApp.fetch(inviteUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            payload: JSON.stringify(invitePayload),
+            muteHttpExceptions: true
+        });
+
+        var inviteJson;
+        try {
+            inviteJson = JSON.parse(inviteRes.getContentText());
+        } catch (e) {
+            inviteJson = { raw: inviteRes.getContentText().substring(0, 300) };
+        }
+
+        Logger.log('   Invite result: HTTP ' + inviteRes.getResponseCode() + ' — ' + inviteRes.getContentText().substring(0, 300));
+
+        // --- Step 4: Send Slack notification ---
+        try {
+            if (typeof NotificationService !== 'undefined' && typeof NotificationService.sendSlack === 'function') {
+                NotificationService.sendSlack('#new-cases', '📋 *Signing Packet Sent*\n' +
+                    '• Defendant: ' + defName + '\n' +
+                    '• Case: ' + (caseData.caseNumber || 'N/A') + '\n' +
+                    '• Sent to: ' + indemnitorEmail + '\n' +
+                    '• Documents: ' + createdDocs.length);
+            } else if (typeof sendSlackMessage === 'function') {
+                sendSlackMessage('#new-cases', '📋 Signing Packet Sent — ' + defName + ' (' + createdDocs.length + ' docs) → ' + indemnitorEmail);
+            }
+        } catch (slackErr) {
+            Logger.log('⚠️ Slack notification failed (non-blocking): ' + slackErr.message);
+        }
+
+        return {
+            success: inviteRes.getResponseCode() >= 200 && inviteRes.getResponseCode() < 300,
+            groupId: groupId,
+            documentIds: createdDocs,
+            inviteResult: inviteJson,
+            indemnitorEmail: indemnitorEmail
+        };
+
+    } catch (e) {
+        Logger.log('❌ sendPacketAsDocumentGroup failed: ' + e.toString());
+        return { success: false, error: e.toString() };
+    }
+}
+
+
+// ============================================================================
+// 7. UTILITY: Template Field Setup (Run Once)
 // ============================================================================
 // Use this function to verify template field status across all templates.
 // Run from the Script Editor to audit.

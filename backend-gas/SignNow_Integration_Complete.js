@@ -459,6 +459,36 @@ function SN_log(action, message) {
 }
 
 /**
+ * Get the role names on a SignNow document.
+ * Used by _shannon_sendInvite to build complete invite_actions for group invites.
+ * 
+ * @param {string} documentId - The SignNow document ID
+ * @returns {{ roles: string[] }} Object with array of role name strings
+ */
+function SN_getDocumentRoles(documentId) {
+  const config = SN_getConfig();
+  try {
+    const res = UrlFetchApp.fetch(config.API_BASE + '/document/' + documentId, {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + config.ACCESS_TOKEN },
+      muteHttpExceptions: true
+    });
+    const code = res.getResponseCode();
+    if (code >= 200 && code < 300) {
+      const doc = JSON.parse(res.getContentText());
+      const roles = (doc.roles || []).map(r => r.name);
+      SN_log('GetDocRoles', { documentId: documentId.substring(0, 8) + '...', roles });
+      return { roles: roles.length > 0 ? roles : ['Indemnitor'] };
+    }
+    SN_log('GetDocRoles_HttpErr', { documentId, status: code });
+    return { roles: ['Indemnitor'] };  // safe fallback
+  } catch (e) {
+    SN_log('GetDocRoles_Err', { documentId, error: e.toString() });
+    return { roles: ['Indemnitor'] };  // safe fallback
+  }
+}
+
+/**
  * Helper to upload a PDF to SignNow
  */
 function SN_uploadDocument(pdfBase64, fileName) {

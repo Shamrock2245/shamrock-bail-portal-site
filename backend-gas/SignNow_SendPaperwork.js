@@ -403,24 +403,49 @@ function _shannon_sendInvite(config, entityId, entityType, data, uploadedDocs) {
         if (entityType === 'group') {
             // ----- DOCUMENT GROUP INVITE -----
             // SignNow API: POST /documentgroup/{id}/groupinvite
+            // FIX (Manus handoff 2026-03-12): invite_actions must list EVERY
+            // (document, role) pair or SignNow returns error 65582.
             const url = `${config.API_BASE}/documentgroup/${entityId}/groupinvite`;
 
-            // Build invite steps — one step per document in the group
-            const invite_steps = uploadedDocs.map((doc, idx) => ({
-                order: idx + 1,
+            // Role → email map — Defendant uses admin placeholder until released
+            const roleEmailMap = {
+                'Indemnitor': data.caller_email,
+                'Defendant':  'admin@shamrockbailbonds.biz',   // placeholder until defendant is released
+                'Bail Agent': 'admin@shamrockbailbonds.biz'
+            };
+
+            // Build invite_actions: one entry per (document, role) pair
+            const invite_actions = [];
+            for (const doc of uploadedDocs) {
+                const docDetail = SN_getDocumentRoles(doc.documentId);
+                for (const roleName of docDetail.roles) {
+                    invite_actions.push({
+                        email:                roleEmailMap[roleName] || data.caller_email,
+                        role_name:            roleName,
+                        action:               'sign',
+                        document_id:          doc.documentId,
+                        allow_reassign:       '0',
+                        decline_by_signature: '0'
+                    });
+                }
+            }
+
+            SN_log('Shannon_InviteActions', { count: invite_actions.length, docs: uploadedDocs.length });
+
+            // Single invite step covering all documents
+            const invite_steps = [{
+                order: 1,
                 invite_emails: [{
-                    email: data.caller_email,
-                    subject: 'Shamrock Bail Bonds — Complete Your Bail Bond Paperwork',
-                    message: idx === 0 ? consentMessage : `Please review and sign: ${doc.key.replace(/-/g, ' ')}`,
+                    email:   data.caller_email,
+                    role:    'Indemnitor',
+                    order:   1,
+                    subject: `Shamrock Bail Bonds — Please Sign: ${data.defendant_name}`,
+                    message: consentMessage,
                     reminder: 4,
                     expiration_days: 7
                 }],
-                invite_actions: [{
-                    email: data.caller_email,
-                    role_name: 'Indemnitor',
-                    action: 'sign'
-                }]
-            }));
+                invite_actions: invite_actions
+            }];
 
             const payload = {
                 invite_steps,
@@ -443,7 +468,7 @@ function _shannon_sendInvite(config, entityId, entityType, data, uploadedDocs) {
 
             const code = response.getResponseCode();
             const json = JSON.parse(response.getContentText());
-            SN_log('Shannon_GroupInvite', { entityId, status: code, response: JSON.stringify(json).substring(0, 200) });
+            SN_log('Shannon_GroupInvite', { entityId, status: code, actionCount: invite_actions.length, response: JSON.stringify(json).substring(0, 300) });
 
             if (code >= 200 && code < 300) {
                 return { success: true };
@@ -456,7 +481,7 @@ function _shannon_sendInvite(config, entityId, entityType, data, uploadedDocs) {
                 const msg = i === 0 ? consentMessage : `Please review and sign: ${uploadedDocs[i].key.replace(/-/g, ' ')}`;
                 const r = _shannon_sendSingleDocInvite(config, uploadedDocs[i].documentId, data, msg);
                 if (r.success) anySuccess = true;
-                Utilities.sleep(300); // brief pause between individual invites
+                Utilities.sleep(300);
             }
             return { success: anySuccess };
 
