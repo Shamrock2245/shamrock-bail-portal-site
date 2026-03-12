@@ -21,7 +21,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const CONFIG = {
+const COURT_CONFIG = {
   // Master Sheet for Email Lookups
   masterSheetId: '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E',
 
@@ -116,12 +116,12 @@ function processCourtEmails() {
 
   try {
     Logger.log('🚀 Starting Unified Court Email Processor...');
-    Logger.log(`📅 Target Calendar: ${CONFIG.calendarId}`);
+    Logger.log(`📅 Target Calendar: ${COURT_CONFIG.calendarId}`);
 
     // Ensure labels exist
     setupLabels();
 
-    const emails = getUnprocessedEmails(CONFIG.lookbackDays);
+    const emails = getUnprocessedEmails(COURT_CONFIG.lookbackDays);
     Logger.log(`📧 Found ${emails.length} unprocessed emails`);
 
     if (emails.length === 0) return { processed: 0, skipped: 0, errors: 0 };
@@ -130,11 +130,11 @@ function processCourtEmails() {
     let skipped = 0;
     let errors = 0;
 
-    const batchSize = Math.min(CONFIG.batchSize, emails.length);
+    const batchSize = Math.min(COURT_CONFIG.batchSize, emails.length);
 
     for (let i = 0; i < batchSize; i++) {
       // Time Safety Check
-      if (new Date().getTime() - startTime > CONFIG.maxExecutionTime) {
+      if (new Date().getTime() - startTime > COURT_CONFIG.maxExecutionTime) {
         Logger.log('⏳ Time limit reached. Scheduling continuation trigger...');
         createContinuationTrigger();
         return { processed, skipped, errors, continuation: true };
@@ -158,7 +158,7 @@ function processCourtEmails() {
       } catch (error) {
         errors++;
         Logger.log(`❌ Critical Error processing email: ${error.message}`);
-        labelEmail(message, CONFIG.labels.error);
+        labelEmail(message, COURT_CONFIG.labels.error);
       }
     }
 
@@ -182,11 +182,11 @@ function processEmail(message) {
   const subject = message.getSubject();
 
   // prioritize Forfeiture > Discharge > Court Date
-  if (CONFIG.keywords.forfeiture.some(k => subject.includes(k))) {
+  if (COURT_CONFIG.keywords.forfeiture.some(k => subject.includes(k))) {
     return processForfeitureEmail(message);
-  } else if (CONFIG.keywords.discharge.some(k => subject.includes(k))) {
+  } else if (COURT_CONFIG.keywords.discharge.some(k => subject.includes(k))) {
     return processDischargeEmail(message);
-  } else if (CONFIG.keywords.courtDate.some(k => subject.includes(k))) {
+  } else if (COURT_CONFIG.keywords.courtDate.some(k => subject.includes(k))) {
     return processCourtDateEmail(message);
   } else {
     // If it matched the search query but not our specific keywords loop
@@ -221,11 +221,11 @@ function processCourtDateEmail(message) {
   // Send Notifications
   notifyParties(data);
 
-  if (CONFIG.slackWebhooks.courtDates) {
-    postToSlack(CONFIG.slackWebhooks.courtDates, formatCourtDateSlackMessage(data));
+  if (COURT_CONFIG.slackWebhooks.courtDates) {
+    postToSlack(COURT_CONFIG.slackWebhooks.courtDates, formatCourtDateSlackMessage(data));
   }
 
-  labelEmail(message, CONFIG.labels.courtDate);
+  labelEmail(message, COURT_CONFIG.labels.courtDate);
   return { success: true };
 }
 
@@ -360,11 +360,11 @@ function processForfeitureEmail(message) {
     Logger.log(`⚠️ Telegram forfeiture notification failed (non-fatal): ${tgErr.message}`);
   }
 
-  if (CONFIG.slackWebhooks.forfeitures) {
-    postToSlack(CONFIG.slackWebhooks.forfeitures, formatForfeitureSlackMessage(data));
+  if (COURT_CONFIG.slackWebhooks.forfeitures) {
+    postToSlack(COURT_CONFIG.slackWebhooks.forfeitures, formatForfeitureSlackMessage(data));
   }
 
-  labelEmail(message, CONFIG.labels.forfeiture);
+  labelEmail(message, COURT_CONFIG.labels.forfeiture);
   return { success: true };
 }
 
@@ -381,11 +381,11 @@ function processDischargeEmail(message) {
   addDischargeToSheet(data); // Added from Utils.gs
   notifyDischargeParties(data);
 
-  if (CONFIG.slackWebhooks.discharges) {
-    postToSlack(CONFIG.slackWebhooks.discharges, formatDischargeSlackMessage(data));
+  if (COURT_CONFIG.slackWebhooks.discharges) {
+    postToSlack(COURT_CONFIG.slackWebhooks.discharges, formatDischargeSlackMessage(data));
   }
 
-  labelEmail(message, CONFIG.labels.discharge);
+  labelEmail(message, COURT_CONFIG.labels.discharge);
   return { success: true };
 }
 
@@ -658,13 +658,13 @@ function extractTextFromPDF(attachment) {
  * Create Court Date Event
  */
 function createCourtDateEvent(data) {
-  const calendar = CalendarApp.getCalendarById(CONFIG.calendarId);
-  if (!calendar) throw new Error(`Target calendar ${CONFIG.calendarId} not found`);
+  const calendar = CalendarApp.getCalendarById(COURT_CONFIG.calendarId);
+  if (!calendar) throw new Error(`Target calendar ${COURT_CONFIG.calendarId} not found`);
 
   const title = `Court: ${data.defendant} $${data.caseNumber}`;
   const description = `Court Appearance\n\nDefendant: ${data.defendant}\nCase: ${data.caseNumber}\nRoom: ${data.courtroom}`;
 
-  if (CONFIG.preventDuplicates) {
+  if (COURT_CONFIG.preventDuplicates) {
     const existing = calendar.getEventsForDay(data.courtDate);
     if (existing.some(e => e.getTitle() === title)) {
       Logger.log('⚠️ Duplicate event found, skipping creation.');
@@ -673,7 +673,7 @@ function createCourtDateEvent(data) {
   }
 
   // Guests: Reviewer + Defendant (if any)
-  let guestList = CONFIG.reviewerEmail;
+  let guestList = COURT_CONFIG.reviewerEmail;
   if (data.defendantEmail) guestList += `,${data.defendantEmail}`;
 
   const options = {
@@ -684,7 +684,7 @@ function createCourtDateEvent(data) {
   };
 
   const event = calendar.createEvent(title, data.courtDate, new Date(data.courtDate.getTime() + 60 * 60 * 1000), options);
-  event.setColor(CONFIG.colors.courtDate);
+  event.setColor(COURT_CONFIG.colors.courtDate);
   Logger.log(`📅 Created Event: ${title} | Shared with: ${guestList}`);
 }
 
@@ -692,19 +692,19 @@ function createCourtDateEvent(data) {
  * Create Forfeiture Events
  */
 function createForfeitureEvents(data) {
-  const calendar = CalendarApp.getCalendarById(CONFIG.calendarId);
+  const calendar = CalendarApp.getCalendarById(COURT_CONFIG.calendarId);
 
   // Event 1: The Forfeiture Date (Past)
   calendar.createEvent(`FORFEITURE: ${data.defendant}`, data.forfeitureDate, data.forfeitureDate, {
     description: `Case: ${data.caseNumber}\nAmount: $${data.amount}\nPower: ${data.powerNumber}`,
-    guests: CONFIG.reviewerEmail
-  }).setColor(CONFIG.colors.forfeitureDate);
+    guests: COURT_CONFIG.reviewerEmail
+  }).setColor(COURT_CONFIG.colors.forfeitureDate);
 
   // Event 2: Received Notification (Today - All Day)
   calendar.createAllDayEvent(`⚠️ FORFEITURE RECEIVED: ${data.defendant}`, new Date(), {
     description: `Case: ${data.caseNumber}\nAmount: $${data.amount}\nCheck File!`,
-    guests: CONFIG.reviewerEmail
-  }).setColor(CONFIG.colors.forfeitureReceived);
+    guests: COURT_CONFIG.reviewerEmail
+  }).setColor(COURT_CONFIG.colors.forfeitureReceived);
 
   Logger.log(`📅 Created Forfeiture Events for ${data.defendant}`);
 }
@@ -713,12 +713,12 @@ function createForfeitureEvents(data) {
  * Create Discharge Event
  */
 function createDischargeEvent(data) {
-  const calendar = CalendarApp.getCalendarById(CONFIG.calendarId);
+  const calendar = CalendarApp.getCalendarById(COURT_CONFIG.calendarId);
 
   calendar.createAllDayEvent(`✅ DISCHARGE: ${data.defendant}`, data.dischargeDate, {
     description: `Case: ${data.caseNumber}\nBond Discharged.`,
-    guests: CONFIG.reviewerEmail
-  }).setColor(CONFIG.colors.discharge);
+    guests: COURT_CONFIG.reviewerEmail
+  }).setColor(COURT_CONFIG.colors.discharge);
 
   Logger.log(`📅 Created Discharge Event for ${data.defendant}`);
 }
@@ -744,7 +744,7 @@ function lookupCaseContacts(name, caseNumber) {
   if (!name || name === 'Unknown') return result;
 
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.masterSheetId);
+    const ss = SpreadsheetApp.openById(COURT_CONFIG.masterSheetId);
 
     // 1. Search 'Bookings' Sheet (Best Source)
     const bookingSheet = ss.getSheetByName('Bookings');
@@ -803,7 +803,7 @@ function getUnprocessedEmails(days) {
   // Optimization: Pre-filter by subject terms to reduce noise
   // query += ` (subject:court OR subject:appearance OR subject:forfeiture OR subject:discharge OR subject:release)`;
 
-  const threads = GmailApp.search(query, 0, CONFIG.maxEmailsPerRun);
+  const threads = GmailApp.search(query, 0, COURT_CONFIG.maxEmailsPerRun);
   const messages = [];
 
   threads.forEach(t => t.getMessages().forEach(m => {
@@ -822,18 +822,18 @@ function isFromWhitelistedSender(from) {
   const f = from.toLowerCase();
 
   // 1. Check Specific
-  if (CONFIG.emailWhitelist.specific.some(s => f.includes(s))) return true;
+  if (COURT_CONFIG.emailWhitelist.specific.some(s => f.includes(s))) return true;
 
   // 2. Check Domains
-  if (CONFIG.emailWhitelist.domains.some(d => f.includes(`@${d}`))) return true;
+  if (COURT_CONFIG.emailWhitelist.domains.some(d => f.includes(`@${d}`))) return true;
 
   // 3. Check Patterns
-  return CONFIG.emailWhitelist.patterns.some(p => p.test(f));
+  return COURT_CONFIG.emailWhitelist.patterns.some(p => p.test(f));
 }
 
 function isAlreadyProcessed(m) {
   const labels = m.getThread().getLabels();
-  return labels.some(l => Object.values(CONFIG.labels).includes(l.getName()));
+  return labels.some(l => Object.values(COURT_CONFIG.labels).includes(l.getName()));
 }
 
 function labelEmail(m, l) {
@@ -842,7 +842,7 @@ function labelEmail(m, l) {
 }
 
 function setupLabels() {
-  Object.values(CONFIG.labels).forEach(l => {
+  Object.values(COURT_CONFIG.labels).forEach(l => {
     if (!GmailApp.getUserLabelByName(l)) GmailApp.createLabel(l);
   });
 }
@@ -942,7 +942,7 @@ function deleteContinuationTriggers() {
 
 function addCourtDateToSheet(data) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.masterSheetId);
+    const ss = SpreadsheetApp.openById(COURT_CONFIG.masterSheetId);
     let sheet = ss.getSheetByName('Upcoming Court Dates');
 
     if (!sheet) {
@@ -983,7 +983,7 @@ function addCourtDateToSheet(data) {
 
 function addForfeitureToSheet(data) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.masterSheetId);
+    const ss = SpreadsheetApp.openById(COURT_CONFIG.masterSheetId);
     let sheet = ss.getSheetByName('Forfeitures');
 
     if (!sheet) {
@@ -1030,7 +1030,7 @@ function addForfeitureToSheet(data) {
 
 function addDischargeToSheet(data) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.masterSheetId);
+    const ss = SpreadsheetApp.openById(COURT_CONFIG.masterSheetId);
     let sheet = ss.getSheetByName('Discharges');
 
     if (!sheet) {
@@ -1107,14 +1107,14 @@ function processHistoricalEmails() {
 
   let totalProcessed = 0;
 
-  CONFIG.senders.forEach(sender => {
-    CONFIG.subjects.forEach(keyword => {
+  COURT_CONFIG.senders.forEach(sender => {
+    COURT_CONFIG.subjects.forEach(keyword => {
       if ((Date.now() - startTime) > MAX_RUNTIME_MS) {
         Logger.log(`⏰ Time limit reached. Processed ${totalProcessed} emails.`);
         return;
       }
 
-      const query = `from:${sender} subject:${keyword} after:${afterDate} -label:${CONFIG.labels.processed}`;
+      const query = `from:${sender} subject:${keyword} after:${afterDate} -label:${COURT_CONFIG.labels.processed}`;
       const threads = GmailApp.search(query, 0, 50);
 
       threads.forEach(thread => {
@@ -1155,11 +1155,11 @@ function processDateRange(startDate, endDate) {
 
   let totalProcessed = 0;
 
-  CONFIG.senders.forEach(sender => {
-    CONFIG.subjects.forEach(keyword => {
+  COURT_CONFIG.senders.forEach(sender => {
+    COURT_CONFIG.subjects.forEach(keyword => {
       if ((Date.now() - startTime) > MAX_RUNTIME_MS) return;
 
-      const query = `from:${sender} subject:${keyword} after:${startDate} before:${endDate} -label:${CONFIG.labels.processed}`;
+      const query = `from:${sender} subject:${keyword} after:${startDate} before:${endDate} -label:${COURT_CONFIG.labels.processed}`;
       const threads = GmailApp.search(query, 0, 100);
 
       threads.forEach(thread => {

@@ -2827,6 +2827,10 @@
                     <button class="btn btn-success btn-lg" onclick="generateAndSend()" id="generate-btn">
                         &#9654; Generate & Send to SignNow
                     </button>
+                    <button class="btn btn-lg" onclick="sendSigningPacketViaEmail()" id="send-packet-btn"
+                        style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #fff; box-shadow: 0 4px 15px rgba(99, 102, 241, .3);">
+                        📋 Send Signing Packet
+                    </button>
                 </div>
 
                 <!-- Result Area -->
@@ -5105,6 +5109,68 @@
             }
 
             resultDiv.innerHTML = content;
+        }
+
+        /**
+         * Send Signing Packet via Document Group (Server-Side)
+         * Uses buildPacketManifest → template copy → prefill → Document Group → email invite
+         */
+        async function sendSigningPacketViaEmail() {
+            const formData = collectFormData();
+
+            if (!formData['defendant-first-name'] || !formData['defendant-last-name']) {
+                showToast('Please enter defendant name', 'error');
+                return;
+            }
+
+            // Need at least one indemnitor email
+            const indEmail = formData['indemnitor-1-email'] || '';
+            if (!indEmail) {
+                showToast('Please enter an indemnitor email address', 'error');
+                return;
+            }
+
+            UI.showLoading('Sending Signing Packet', 'Copying templates and pre-filling...');
+
+            try {
+                const packetData = {
+                    formData: formData,
+                    signingMethod: 'email'
+                };
+
+                google.script.run
+                    .withSuccessHandler(function(result) {
+                        UI.hideLoading();
+                        if (result && result.success) {
+                            showToast('✅ Signing packet sent to ' + (result.indemnitorEmail || indEmail), 'success');
+                            const resultDiv = document.getElementById('result-area');
+                            if (resultDiv) {
+                                resultDiv.innerHTML = `
+                                    <div style="background: var(--success-bg); border: 2px solid var(--success); border-radius: var(--radius); padding: 24px; margin-top: 20px;">
+                                        <h3 style="color: var(--success); margin-bottom: 12px;">📋 Signing Packet Sent!</h3>
+                                        <p><strong>Group ID:</strong> <code>${result.groupId || 'N/A'}</code></p>
+                                        <p><strong>Documents:</strong> ${(result.documentIds || []).length}</p>
+                                        <p><strong>Sent to:</strong> ${result.indemnitorEmail || indEmail}</p>
+                                        <p style="margin-top: 12px; color: var(--muted);">The indemnitor will receive an email with all documents to sign.</p>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            showToast('Packet send failed: ' + (result ? result.error : 'Unknown error'), 'error');
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        UI.hideLoading();
+                        showToast('Server error: ' + err.message, 'error');
+                        console.error('sendSigningPacket error:', err);
+                    })
+                    .server_sendSigningPacket(packetData);
+
+            } catch (err) {
+                UI.hideLoading();
+                showToast('Error: ' + err.message, 'error');
+                console.error('sendSigningPacketViaEmail error:', err);
+            }
         }
 
         /**

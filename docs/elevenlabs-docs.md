@@ -42718,3 +42718,2414 @@ let dataTask = session.dataTask(with: request as URLRequest, completionHandler: 
 
 dataTask.resume()
 ```
+***
+
+title: Generate audio in real-time
+subtitle: Learn how to generate audio in real-time via a WebSocket connection.
+------------------------------------------------------------------------------
+
+WebSocket streaming is a method of sending and receiving data over a single, long-lived connection. This method is useful for real-time applications where you need to stream audio data as it becomes available.
+
+If you want to quickly test out the latency (time to first byte) of a WebSocket connection to the ElevenLabs text-to-speech API, you can install `elevenlabs-latency` via `npm` and follow the instructions [here](https://www.npmjs.com/package/elevenlabs-latency?activeTab=readme).
+
+<Note>
+  WebSockets can be used with the Text to Speech and Agents Platform products. This guide will
+  demonstrate how to use them with the Text to Speech API. WebSockets are not available for the
+  `eleven_v3` model.
+</Note>
+
+## Requirements
+
+* An ElevenLabs account with an API key (here’s how to [find your API key](/docs/api-reference/authentication)).
+* Python or Node.js (or another JavaScript runtime) installed on your machine
+
+## Setup
+
+Install required dependencies:
+
+<CodeBlocks>
+  ```python Python
+  pip install python-dotenv
+  pip install websockets
+  ```
+
+  ```typescript TypeScript
+  npm install dotenv
+  npm install @types/dotenv --save-dev
+  npm install ws
+  ```
+</CodeBlocks>
+
+Next, create a `.env` file in your project directory and add your API key:
+
+```bash .env
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+```
+
+## Initiate the websocket connection
+
+After choosing a voice from the Voice Library and the text to speech model you wish to use, initiate a WebSocket connection to the text to speech API.
+
+<CodeBlocks>
+  ```python text-to-speech-websocket.py
+  import os
+  from dotenv import load_dotenv
+  import websockets
+
+  # Load the API key from the .env file
+  load_dotenv()
+  ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+
+  voice_id = 'Xb7hH8MSUJpSbSDYk0k2'
+
+  # For use cases where latency is important, we recommend using the 'eleven_flash_v2_5' model.
+  model_id = 'eleven_flash_v2_5'
+
+  async def text_to_speech_ws_streaming(voice_id, model_id):
+      uri = f"wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input?model_id={model_id}"
+
+      async with websockets.connect(uri) as websocket:
+         ...
+  ```
+
+  ```typescript text-to-speech-websocket.ts
+  import * as dotenv from 'dotenv';
+  import * as fs from 'node:fs';
+  import WebSocket from 'ws';
+
+  // Load the API key from the .env file
+  dotenv.config();
+  const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+
+  const voiceId = 'Xb7hH8MSUJpSbSDYk0k2';
+
+  // For use cases where latency is important, we recommend using the 'eleven_flash_v2_5' model.
+  const model = 'eleven_flash_v2_5';
+
+  const uri = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=${model}`;
+  const websocket = new WebSocket(uri, {
+    headers: { 'xi-api-key': `${ELEVENLABS_API_KEY}` },
+  });
+
+  // Create a directory for saving the audio
+  const outputDir = './output';
+
+  try {
+    fs.accessSync(outputDir, fs.constants.R_OK | fs.constants.W_OK);
+  } catch (err) {
+    fs.mkdirSync(outputDir);
+  }
+
+  // Create a write stream for saving the audio into mp3
+  const writeStream = fs.createWriteStream(outputDir + '/test.mp3', {
+    flags: 'a',
+  });
+  ```
+</CodeBlocks>
+
+## Send the input text
+
+Once the WebSocket connection is open, set up voice settings first. Next, send the text message to the API.
+
+<CodeBlocks>
+  ```python text-to-speech-websocket.py
+  async def text_to_speech_ws_streaming(voice_id, model_id):
+      async with websockets.connect(uri) as websocket:
+          await websocket.send(json.dumps({
+              "text": " ",
+              "voice_settings": {"stability": 0.5, "similarity_boost": 0.8, "use_speaker_boost": False},
+              "generation_config": {
+                  "chunk_length_schedule": [120, 160, 250, 290]
+              },
+              "xi_api_key": ELEVENLABS_API_KEY,
+          }))
+
+          text = "The twilight sun cast its warm golden hues upon the vast rolling fields, saturating the landscape with an ethereal glow. Silently, the meandering brook continued its ceaseless journey, whispering secrets only the trees seemed privy to."
+          await websocket.send(json.dumps({"text": text}))
+
+          # Send empty string to indicate the end of the text sequence which will close the WebSocket connection
+          await websocket.send(json.dumps({"text": ""}))
+  ```
+
+  ```typescript text-to-speech-websocket.ts
+  const text =
+    'The twilight sun cast its warm golden hues upon the vast rolling fields, saturating the landscape with an ethereal glow. Silently, the meandering brook continued its ceaseless journey, whispering secrets only the trees seemed privy to.';
+
+  websocket.on('open', async () => {
+    websocket.send(
+      JSON.stringify({
+        text: ' ',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.8,
+          use_speaker_boost: false,
+        },
+        generation_config: { chunk_length_schedule: [120, 160, 250, 290] },
+      })
+    );
+
+    websocket.send(JSON.stringify({ text: text }));
+
+    // Send empty string to indicate the end of the text sequence which will close the websocket connection
+    websocket.send(JSON.stringify({ text: '' }));
+  });
+  ```
+</CodeBlocks>
+
+## Save the audio to file
+
+Read the incoming message from the WebSocket connection and write the audio chunks to a local file.
+
+<CodeBlocks>
+  ```python text-to-speech-websocket.py
+  import asyncio
+
+  async def write_to_local(audio_stream):
+      """Write the audio encoded in base64 string to a local mp3 file."""
+
+      with open(f'./output/test.mp3', "wb") as f:
+          async for chunk in audio_stream:
+              if chunk:
+                  f.write(chunk)
+
+  async def listen(websocket):
+      """Listen to the websocket for audio data and stream it."""
+
+      while True:
+          try:
+              message = await websocket.recv()
+              data = json.loads(message)
+              if data.get("audio"):
+                  yield base64.b64decode(data["audio"])
+              elif data.get('isFinal'):
+                  break
+
+          except websockets.exceptions.ConnectionClosed:
+              print("Connection closed")
+              break
+
+  async def text_to_speech_ws_streaming(voice_id, model_id):
+      async with websockets.connect(uri) as websocket:
+            ...
+            # Add listen task to submit the audio chunks to the write_to_local function
+            listen_task = asyncio.create_task(write_to_local(listen(websocket)))
+
+            await listen_task
+
+  asyncio.run(text_to_speech_ws_streaming(voice_id, model_id))
+  ```
+
+  ```typescript text-to-speech-websocket.ts
+  // Helper function to write the audio encoded in base64 string into local file
+  function writeToLocal(base64str: any, writeStream: fs.WriteStream) {
+    const audioBuffer: Buffer = Buffer.from(base64str, 'base64');
+    writeStream.write(audioBuffer, (err) => {
+      if (err) {
+        console.error('Error writing to file:', err);
+      }
+    });
+  }
+
+  // Listen to the incoming message from the websocket connection
+  websocket.on('message', function incoming(event) {
+    const data = JSON.parse(event.toString());
+    if (data['audio']) {
+      writeToLocal(data['audio'], writeStream);
+    }
+  });
+
+  // Close the writeStream when the websocket connection closes
+  websocket.on('close', () => {
+    writeStream.end();
+  });
+  ```
+</CodeBlocks>
+
+## Run the script
+
+You can run the script by executing the following command in your terminal. An mp3 audio file will be saved in the `output` directory.
+
+<CodeBlocks>
+  ```python Python
+  python text-to-speech-websocket.py
+  ```
+
+  ```typescript TypeScript
+  npx tsx text-to-speech-websocket.ts
+  ```
+</CodeBlocks>
+
+## Advanced configuration
+
+The use of WebSockets comes with some advanced settings that you can use to fine-tune your real-time audio generation.
+
+### Buffering
+
+When generating real-time audio, two important concepts should be taken into account: Time To First Byte (TTFB) and Buffering. To produce high quality audio and deduce context, the model requires a certain threshold of input text. The more text that is sent in a WebSocket connection, the better the audio quality. If the threshold is not met, the model will add the text to a buffer and generate audio once the buffer is full.
+
+In terms of latency, TTFB is the time it takes for the first byte of audio to be sent to the client. This is important because it affects the perceived latency of the audio. As such, you might want to control the buffer size to balance between quality and latency.
+
+To manage this, you can use the `chunk_length_schedule` parameter when either initializing the WebSocket connection or when sending text. This parameter is an array of integers that represent the number of characters that will be sent to the model before generating audio. For example, if you set `chunk_length_schedule` to `[120, 160, 250, 290]`, the model will generate audio after 120, 160, 250, and 290 characters have been sent, respectively.
+
+Here's an example of how this works with the default settings for `chunk_length_schedule`:
+
+<img src="file:a48f924b-5ad8-443f-8ab4-c73d86aecda8" />
+
+In the above diagram, audio is only generated after the second message is sent to the server. This is because the first message is below the threshold of 120 characters, while the second message brings the total number of characters above the threshold. The third message is above the threshold of 160 characters, so audio is immediately generated and returned to the client.
+
+You can specify a custom value for `chunk_length_schedule` when initializing the WebSocket connection or when sending text.
+
+<CodeBlocks>
+  ```python
+  await websocket.send(json.dumps({
+      "text": text,
+      "generation_config": {
+          # Generate audio after 50, 120, 160, and 290 characters have been sent
+          "chunk_length_schedule": [50, 120, 160, 290]
+      },
+      "xi_api_key": ELEVENLABS_API_KEY,
+  }))
+  ```
+
+  ```typescript
+  websocket.send(
+    JSON.stringify({
+      text: text,
+      // Generate audio after 50, 120, 160, and 290 characters have been sent
+      generation_config: { chunk_length_schedule: [50, 120, 160, 290] },
+      xi_api_key: ELEVENLABS_API_KEY,
+    })
+  );
+  ```
+</CodeBlocks>
+
+In the case that you want force the immediate return of the audio, you can use `flush: true` to clear out the buffer and force generate any buffered text. This can be useful, for example, when you have reached the end of a document and want to generate audio for the final section.
+
+<img src="file:d6be92c8-4654-4532-bb82-a7764f1e2a89" />
+
+This can be specified on a per-message basis by setting `flush: true` in the message.
+
+<CodeBlocks>
+  ```python
+  await websocket.send(json.dumps({"text": "Generate this audio immediately.", "flush": True}))
+  ```
+
+  ```typescript
+  websocket.send(JSON.stringify({ text: 'Generate this audio immediately.', flush: true }));
+  ```
+</CodeBlocks>
+
+In addition, closing the websocket will automatically force generate any buffered text.
+
+### Voice settings
+
+When initializing the WebSocket connections, you can specify the voice settings for the subsequent generations. This allows you to control the speed, stability, and other voice characteristics of the generated audio.
+
+<CodeBlocks>
+  ```python
+  await websocket.send(json.dumps({
+      "text": text,
+      "voice_settings": {"stability": 0.5, "similarity_boost": 0.8, "use_speaker_boost": False},
+  }))
+  ```
+
+  ```typescript
+  websocket.send(
+    JSON.stringify({
+      text: text,
+      voice_settings: { stability: 0.5, similarity_boost: 0.8, use_speaker_boost: false },
+    })
+  );
+  ```
+</CodeBlocks>
+
+This can be overridden on a per-message basis by specifying a different `voice_settings` in the message.
+
+### Pronunciation dictionaries
+
+You can use pronunciation dictionaries to control the pronunciation of specific words or phrases. This can be useful for ensuring that certain words are pronounced correctly or for adding emphasis to certain words or phrases.
+
+Unlike `voice_settings` and `generation_config`, pronunciation dictionaries must be specified in the "Initialize Connection" message. See the [API Reference](/docs/api-reference/text-to-speech/v-1-text-to-speech-voice-id-stream-input#send.Initialize%20Connection.pronunciation_dictionary_locators) for more information.
+
+<Tip>
+  When using phoneme-based pronunciation dictionaries with WebSockets, you must add `enable_ssml_parsing=true` as a query parameter to the WebSocket URI. For example:
+
+  ```
+  wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input?model_id={model_id}&enable_ssml_parsing=true
+  ```
+</Tip>
+
+## Best practice
+
+* We suggest using the default setting for `chunk_length_schedule` in `generation_config`.
+* When developing a real-time conversational agent application, we advise using `flush: true` along with the text at the end of conversation turn to ensure timely audio generation.
+* If the default setting doesn't provide optimal latency for your use case, you can modify the `chunk_length_schedule`. However, be mindful that reducing latency through this adjustment may come at the expense of quality.
+
+## Tips
+
+* The WebSocket connection will automatically close after 20 seconds of inactivity. To keep the connection open, you can send a single space character `" "`. Please note that this string must include a space, as sending a fully empty string, `""`, will close the WebSocket.
+* Send an empty string to close the WebSocket connection after sending the last text message.
+* You can use `alignment` to get the word-level timestamps for each word in the text. This can be useful for aligning the audio with the text in a video or for other applications that require precise timing. See the [API Reference](/docs/api-reference/text-to-speech/v-1-text-to-speech-voice-id-stream-input#receive.Audio%20Output.alignment) for more information.
+
+***
+
+title: Libraries & SDKs
+subtitle: Explore language-specific libraries for using the ElevenLabs API.
+---------------------------------------------------------------------------
+
+## Official REST API libraries
+
+ElevenLabs provides officially supported libraries that are updated with the latest features available in the [REST API](/docs/api-reference/introduction).
+
+| Language          | GitHub                                                           | Package Manager                                                |
+| ----------------- | ---------------------------------------------------------------- | -------------------------------------------------------------- |
+| Python            | [GitHub README](https://github.com/elevenlabs/elevenlabs-python) | [PyPI](https://pypi.org/project/elevenlabs/)                   |
+| Javascript (Node) | [GitHub README](https://github.com/elevenlabs/elevenlabs-js)     | [npm](https://www.npmjs.com/package/@elevenlabs/elevenlabs-js) |
+
+## Official Agents Platform libraries
+
+These libraries are designed for use with ElevenLabs [Agents Platform](/docs/agents-platform/overview).
+
+| Language     | Documentation                                            | Package Manager                                                                 |
+| ------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Javascript   | [Docs](/docs/agents-platform/libraries/java-script)      | [npm](https://www.npmjs.com/package/@elevenlabs/client)                         |
+| React        | [Docs](/docs/agents-platform/libraries/react)            | [npm](https://www.npmjs.com/package/@elevenlabs/react)                          |
+| React Native | [Docs](/docs/agents-platform/libraries/react-native)     | [npm](https://www.npmjs.com/package/@elevenlabs/react-native)                   |
+| Python       | [Docs](/docs/agents-platform/libraries/python)           | [PyPI](https://pypi.org/project/elevenlabs/)                                    |
+| Swift        | [Docs](/docs/agents-platform/libraries/swift)            | [Github](https://github.com/elevenlabs/ElevenLabsSwift)                         |
+| Kotlin       | [Docs](/docs/agents-platform/libraries/kotlin)           | [Maven](https://central.sonatype.com/artifact/io.elevenlabs/elevenlabs-android) |
+| Flutter      | [Docs](https://github.com/elevenlabs/elevenlabs-flutter) | [Pub](https://pub.dev/packages/elevenlabs_agents)                               |
+
+## Third-party libraries
+
+These libraries are not officially supported by ElevenLabs, but are community-maintained.
+
+| Library       | Documentation                                                                | Package Manager                                              |
+| ------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Vercel AI SDK | [Docs](/docs/developers/guides/cookbooks/speech-to-text/batch/vercel-ai-sdk) | [npm](https://www.npmjs.com/package/ai)                      |
+| .NET          | [Docs](https://github.com/RageAgainstThePixel/ElevenLabs-DotNet)             | [NuGet](https://www.nuget.org/packages/ElevenLabs-DotNet)    |
+| Unity         | [Docs](https://github.com/RageAgainstThePixel/com.rest.elevenlabs)           | [OpenUPM](https://openupm.com/packages/com.rest.elevenlabs/) |
+
+***
+
+title: Errors
+subtitle: Explore error messages and solutions.
+-----------------------------------------------
+
+## API errors
+
+ElevenLabs uses standard HTTP status codes to indicate the success or failure of a request. Additionally, all API requests return a JSON object with a `detail` property that contains information about the error.
+
+In general, a `200` HTTP status code indicates a successful request. A `4xx` code indicates a problem with the request, like an invalid parameter or missing required field. A `500` HTTP status code indicates a problem with ElevenLabs' servers, which should be rare.
+
+### Error properties
+
+| Property     | Description                                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `type`       | The type of error that occurred. See the table below for possible values.                                                 |
+| `code`       | The code of the error. These are more specific than the type, and can be used to determine the cause of the error.        |
+| `message`    | The message of the error. This provides more details about the error.                                                     |
+| `status`     | The status of the error. This is a legacy field that is no longer used, instead use the `code` property.                  |
+| `request_id` | The request ID of the error. This is a unique identifier for the request that can be used to troubleshoot the error.      |
+| `param`      | The parameter that caused the error. In the case of a validation error, this will indicate the parameter that is invalid. |
+
+### Example error response
+
+Here's the response for an API request that used an incorrect model ID:
+
+```json
+{
+  "detail": {
+    "type": "validation_error",
+    "code": "invalid_parameters",
+    "message": "The 'keyterms' parameter is only supported with the 'scribe_v2' model. You specified 'scribe_v1'.",
+    "status": "invalid_parameters",
+    "request_id": "3c807fc4c3a1705f9638ecc764a91c01",
+    "param": "keyterms"
+  }
+}
+```
+
+Using the error properties, we can see that the error is a validation error, and the code is `invalid_parameters`. The message provides more details about the error, and the `request_id` is a unique identifier for the request that can be used to troubleshoot the error. The `param` property indicates the parameter that caused the error.
+
+### SDK error handling
+
+The ElevenLabs SDKs provide typed error classes that give you access to the error details.
+
+<CodeBlock>
+  ```python
+  from elevenlabs import ElevenLabs, ApiError
+
+  elevenlabs = ElevenLabs()
+
+  try:
+      audio = elevenlabs.text_to_speech.convert(
+          voice_id="invalid-voice-id",
+          model_id="eleven_v3",
+          text="Hello, world!",
+      )
+  except ApiError as e:
+      print(f"Status code: {e.status_code}")
+
+      # Access the error body
+      if e.body and "detail" in e.body:
+          detail = e.body["detail"]
+          print(f"Error type: {detail.get('type')}")
+          print(f"Error code: {detail.get('code')}")
+          print(f"Message: {detail.get('message')}")
+          print(f"Request ID: {detail.get('request_id')}")
+
+          # Handle specific error types
+          if detail.get("type") == "rate_limit_error":
+              print("Rate limited - implement exponential backoff")
+          elif detail.get("type") == "authentication_error":
+              print("Check your API key")
+  ```
+
+  ```typescript
+  import { ElevenLabs, ElevenLabsError } from 'elevenlabs';
+
+  const elevenlabs = new ElevenLabs();
+
+  try {
+    const audio = await elevenlabs.textToSpeech.convert('invalid-voice-id', {
+      text: 'Hello, world!',
+      modelId: 'eleven_v3',
+    });
+  } catch (error) {
+    if (error instanceof ElevenLabsError) {
+      console.log(`Status code: ${error.statusCode}`);
+
+      // Access the error body
+      const detail = (error.body as any)?.detail;
+      if (detail) {
+        console.log(`Error type: ${detail.type}`);
+        console.log(`Error code: ${detail.code}`);
+        console.log(`Message: ${detail.message}`);
+        console.log(`Request ID: ${detail.request_id}`);
+
+        // Handle specific error types
+        if (detail.type === 'rate_limit_error') {
+          console.log('Rate limited - implement exponential backoff');
+        } else if (detail.type === 'authentication_error') {
+          console.log('Check your API key');
+        }
+      }
+    }
+  }
+  ```
+
+  If you're unable to resolve the error, [contact our support team](https://help.elevenlabs.io/hc/en-us/requests/new) with the `request_id` from the error response, the full error message, and steps to reproduce the issue.
+</CodeBlock>
+
+#### Rate limiting and concurrency
+
+If you receive a 429 HTTP status code, it means you have either made too many requests in a short period of time and exceeded the rate limit for the API endpoint, or you have exceeded the concurrency limit for the API endpoint. The error `code` will be `rate_limit_exceeded` or `concurrent_limit_exceeded` respectively.
+
+In the case of rate limiting, you should implement exponential backoff in your code when a 429 error is received. This means adding a delay before retrying the request.
+
+In the case of concurrency, you should wait for the current requests to complete before making new ones. See the [Concurrency and priority](/docs/overview/models#concurrency-and-priority) section for more information.
+
+### Error types
+
+An error comes with a `type` property that indicates the type of error that occurred. See the table below for possible values.
+
+| Type                   | Description                                                                   | HTTP Status Code |
+| ---------------------- | ----------------------------------------------------------------------------- | ---------------- |
+| `validation_error`     | The request contains invalid parameter values.                                | 400              |
+| `invalid_request`      | The request structure is malformed or missing required fields.                | 400              |
+| `authentication_error` | Authentication failed - invalid or missing API key/token.                     | 401              |
+| `payment_required`     | User has insufficient credits or payment is required.                         | 402              |
+| `authorization_error`  | The authenticated user doesn't have the required permissions for this action. | 403              |
+| `not_found`            | The requested resource was not found.                                         | 404              |
+| `conflict`             | The request conflicts with the current state of the resource.                 | 409              |
+| `rate_limit_error`     | Too many requests - try again later.                                          | 429              |
+| `internal_error`       | An unexpected server error occurred.                                          | 500              |
+| `service_unavailable`  | The service is temporarily unavailable, this should be a rare occurrence.     | 503              |
+
+### Error codes
+
+<table searchable>
+  <thead>
+    <tr>
+      <th>
+        Code
+      </th>
+
+      <th>
+        Type
+      </th>
+
+      <th>
+        Description
+      </th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {/* NOT_FOUND (404) - Voice-related */}
+
+    <tr>
+      <td>
+        `voice_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified voice ID does not exist. Verify the voice ID and try again.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `sample_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified voice sample was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `voice_collection_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified voice collection does not exist.
+      </td>
+    </tr>
+
+    {/* NOT_FOUND (404) - User/Account-related */}
+
+    <tr>
+      <td>
+        `user_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified user was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `auth_account_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The authentication account was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `workspace_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified workspace does not exist.
+      </td>
+    </tr>
+
+    {/* NOT_FOUND (404) - Content-related */}
+
+    <tr>
+      <td>
+        `project_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified project was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `history_item_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified history item does not exist.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `collection_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified collection was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `document_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified document does not exist.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `file_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified file was not found.
+      </td>
+    </tr>
+
+    {/* NOT_FOUND (404) - Feature-specific */}
+
+    <tr>
+      <td>
+        `conversation_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified conversation does not exist.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `agent_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified agent was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `dubbing_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified dubbing project does not exist.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `song_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified song was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `read_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified read was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `pronunciation_dictionary_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified pronunciation dictionary does not exist.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `knowledge_base_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified knowledge base was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `phone_number_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified phone number does not exist.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `tool_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified tool was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `snapshot_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified snapshot does not exist.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `task_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified task was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `model_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified model does not exist.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `transcript_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified transcript was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `keywords_list_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified keywords list was not found.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `category_not_found`
+      </td>
+
+      <td>
+        `not_found`
+      </td>
+
+      <td>
+        The specified category was not found.
+      </td>
+    </tr>
+
+    {/* VALIDATION_ERROR (400) - Text/Input validation */}
+
+    <tr>
+      <td>
+        `text_too_long`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The provided text exceeds the maximum allowed length.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `text_too_short`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The provided text is shorter than the minimum required length.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `invalid_text`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The provided text contains invalid characters or formatting.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `empty_text`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The text field cannot be empty.
+      </td>
+    </tr>
+
+    {/* VALIDATION_ERROR (400) - Parameter validation */}
+
+    <tr>
+      <td>
+        `invalid_parameters`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        One or more request parameters are invalid. Check the `param` property for the invalid
+        parameter.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `missing_required_field`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        A required field is missing from the request. Check the `param` property for the missing
+        field.
+      </td>
+    </tr>
+
+    {/* VALIDATION_ERROR (400) - Voice settings */}
+
+    <tr>
+      <td>
+        `invalid_voice_settings`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The voice settings contain invalid values. Check the `param` property for the invalid voice
+        settings.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `invalid_voice_id`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The voice ID format is invalid.
+      </td>
+    </tr>
+
+    {/* VALIDATION_ERROR (400) - Model settings */}
+
+    <tr>
+      <td>
+        `unsupported_model`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The specified model is not supported for this operation.
+      </td>
+    </tr>
+
+    {/* VALIDATION_ERROR (400) - Audio/Media validation */}
+
+    <tr>
+      <td>
+        `invalid_audio`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The provided audio is invalid or corrupted.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `invalid_audio_format`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The specified audio format is not supported.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `invalid_output_format`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The requested output format is not supported.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `audio_too_long`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The audio exceeds the maximum allowed duration.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `audio_too_short`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The audio is shorter than the minimum required duration.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `invalid_file_type`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The file type is not supported.
+      </td>
+    </tr>
+
+    {/* VALIDATION_ERROR (400) - Pagination/Query */}
+
+    <tr>
+      <td>
+        `invalid_page_size`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The page size parameter is outside the allowed range.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `invalid_cursor`
+      </td>
+
+      <td>
+        `validation_error`
+      </td>
+
+      <td>
+        The pagination cursor is invalid or expired.
+      </td>
+    </tr>
+
+    {/* INVALID_REQUEST (400) */}
+
+    <tr>
+      <td>
+        `bad_request`
+      </td>
+
+      <td>
+        `invalid_request`
+      </td>
+
+      <td>
+        The request could not be understood by the server.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `malformed_json`
+      </td>
+
+      <td>
+        `invalid_request`
+      </td>
+
+      <td>
+        The request body contains invalid JSON.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `invalid_content_type`
+      </td>
+
+      <td>
+        `invalid_request`
+      </td>
+
+      <td>
+        The Content-Type header is missing or invalid.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `request_too_large`
+      </td>
+
+      <td>
+        `invalid_request`
+      </td>
+
+      <td>
+        The request body exceeds the maximum allowed size.
+      </td>
+    </tr>
+
+    {/* AUTHENTICATION_ERROR (401) */}
+
+    <tr>
+      <td>
+        `invalid_api_key`
+      </td>
+
+      <td>
+        `authentication_error`
+      </td>
+
+      <td>
+        The provided API key is invalid.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `missing_api_key`
+      </td>
+
+      <td>
+        `authentication_error`
+      </td>
+
+      <td>
+        No API key was provided in the request.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `invalid_authorization_header`
+      </td>
+
+      <td>
+        `authentication_error`
+      </td>
+
+      <td>
+        The Authorization header format is invalid.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `unauthorized`
+      </td>
+
+      <td>
+        `authentication_error`
+      </td>
+
+      <td>
+        Authentication is required to access this resource.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `sign_in_required`
+      </td>
+
+      <td>
+        `authentication_error`
+      </td>
+
+      <td>
+        You must be signed in to perform this action.
+      </td>
+    </tr>
+
+    {/* AUTHORIZATION_ERROR (403) */}
+
+    <tr>
+      <td>
+        `forbidden`
+      </td>
+
+      <td>
+        `authorization_error`
+      </td>
+
+      <td>
+        Access to this resource is forbidden.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `insufficient_permissions`
+      </td>
+
+      <td>
+        `authorization_error`
+      </td>
+
+      <td>
+        You do not have the required permissions for this action.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `workspace_access_denied`
+      </td>
+
+      <td>
+        `authorization_error`
+      </td>
+
+      <td>
+        You do not have access to this workspace.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `feature_not_available`
+      </td>
+
+      <td>
+        `authorization_error`
+      </td>
+
+      <td>
+        This feature is not available on your current plan.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `subscription_required`
+      </td>
+
+      <td>
+        `authorization_error`
+      </td>
+
+      <td>
+        A paid subscription is required to access this feature.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `voice_access_denied`
+      </td>
+
+      <td>
+        `authorization_error`
+      </td>
+
+      <td>
+        You do not have access to this voice.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `model_access_denied`
+      </td>
+
+      <td>
+        `authorization_error`
+      </td>
+
+      <td>
+        You do not have access to this model.
+      </td>
+    </tr>
+
+    {/* CONFLICT (409) */}
+
+    <tr>
+      <td>
+        `conflict`
+      </td>
+
+      <td>
+        `conflict`
+      </td>
+
+      <td>
+        A conflict occurred.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `resource_already_exists`
+      </td>
+
+      <td>
+        `conflict`
+      </td>
+
+      <td>
+        A resource with the same identifier already exists.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `voice_already_exists`
+      </td>
+
+      <td>
+        `conflict`
+      </td>
+
+      <td>
+        A voice with this name already exists.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `already_running`
+      </td>
+
+      <td>
+        `conflict`
+      </td>
+
+      <td>
+        The operation is already running.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `already_processing`
+      </td>
+
+      <td>
+        `conflict`
+      </td>
+
+      <td>
+        The resource is already being processed.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `concurrent_modification`
+      </td>
+
+      <td>
+        `conflict`
+      </td>
+
+      <td>
+        The resource was modified by another request. Retry with the latest version.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `slug_already_exists`
+      </td>
+
+      <td>
+        `conflict`
+      </td>
+
+      <td>
+        A resource with this slug already exists.
+      </td>
+    </tr>
+
+    {/* RATE_LIMIT_ERROR (429) */}
+
+    <tr>
+      <td>
+        `rate_limit_exceeded`
+      </td>
+
+      <td>
+        `rate_limit_error`
+      </td>
+
+      <td>
+        Too many requests. Wait before retrying.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `concurrent_limit_exceeded`
+      </td>
+
+      <td>
+        `rate_limit_error`
+      </td>
+
+      <td>
+        Maximum number of concurrent requests exceeded. Higher subscription tiers have a higher
+        concurrency limit.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `system_busy`
+      </td>
+
+      <td>
+        `rate_limit_error`
+      </td>
+
+      <td>
+        The system is currently busy. Try again later.
+      </td>
+    </tr>
+
+    {/* PAYMENT_REQUIRED (402) */}
+
+    <tr>
+      <td>
+        `insufficient_credits`
+      </td>
+
+      <td>
+        `payment_required`
+      </td>
+
+      <td>
+        Your account does not have enough credits for this operation.
+      </td>
+    </tr>
+
+    {/* INTERNAL_ERROR (500) */}
+
+    <tr>
+      <td>
+        `internal_error`
+      </td>
+
+      <td>
+        `internal_error`
+      </td>
+
+      <td>
+        An unexpected error occurred. Contact support if this persists.
+      </td>
+    </tr>
+
+    {/* SERVICE_UNAVAILABLE (503) */}
+
+    <tr>
+      <td>
+        `service_unavailable`
+      </td>
+
+      <td>
+        `service_unavailable`
+      </td>
+
+      <td>
+        The service is temporarily unavailable. Try again later.
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        `maintenance`
+      </td>
+
+      <td>
+        `service_unavailable`
+      </td>
+
+      <td>
+        The service is undergoing scheduled maintenance.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+***
+
+title: Agent Tooling
+subtitle: Tools for agents to build with ElevenLabs.
+----------------------------------------------------
+
+## Overview
+
+Agent tooling includes reusable skills and local integrations that help you automate ElevenLabs workflows in developer tools and assistants.
+
+## Agent skills
+
+Agent Skills are reusable building blocks for common ElevenLabs workflows. They follow the Agent Skills specification and can be used with compatible coding assistants. Install the skills with:
+
+```bash
+npx skills add elevenlabs/skills
+```
+
+The official collection is hosted in the [elevenlabs/skills](https://github.com/elevenlabs/skills) repository.
+Open each skill for a prompt you can paste into your assistant after installing the skills.
+
+<AccordionGroup>
+  <Accordion title="Text to speech">
+    Convert text to speech using ElevenLabs voices.
+
+    ```text
+    Use the text to speech skill to generate audio for the script below.
+    Model: eleven_v3
+    Voice: "Juniper" (or default).
+    Output: Save the MP3 file locally and return the file path.
+    Script: "Welcome to ElevenLabs. Today we will walk through the new agent tooling."
+    ```
+  </Accordion>
+
+  <Accordion title="Speech to text">
+    Transcribe audio to text with timestamps.
+
+    ```text
+    Use the speech to text skill to transcribe the audio file path/to/file.mp3.
+    Return a transcript that contains speaker IDs and timestamps at the start of each paragraph.
+    ```
+  </Accordion>
+
+  <Accordion title="Realtime speech to text">
+    Stream live transcription with low latency.
+
+    ```text
+    Use the speech to text skill to start a real-time transcription session for microphone input.
+    Model: scribe_v2_realtime.
+    Stream partial transcripts and return committed transcripts with word-level timestamps.
+    ```
+  </Accordion>
+
+  <Accordion title="Agents">
+    Build conversational voice agents.
+
+    ```text
+    Use the Agents skill to create a voice agent named "Support Concierge".
+    Persona: friendly, concise, asks clarifying questions when needed.
+    Goals: answer pricing questions and route enterprise leads to sales.
+    ```
+  </Accordion>
+
+  <Accordion title="Sound effects">
+    Generate sound effects from text prompts.
+
+    ```text
+    Use the Sound effects skill to generate a 3-second effect: "Wooden door creaks open, then a soft slam."
+    Output WAV at 48 kHz and return the file path.
+    ```
+  </Accordion>
+
+  <Accordion title="Music">
+    Generate music tracks from prompts.
+
+    ```text
+    Use the Music skill to generate a 30-second instrumental loop.
+    Style: lo-fi hip hop, warm, chill.
+    BPM: 80. No vocals.
+    Return the audio file path.
+    ```
+  </Accordion>
+
+  <Accordion title="Setup API key">
+    Get and configure an ElevenLabs API key.
+
+    ```text
+    How do I get my ElevenLabs API key?
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## ElevenLabs MCP server
+
+The ElevenLabs MCP server is a local Model Context Protocol server for the ElevenLabs platform. It runs on your machine so tools like Claude and Cursor can call ElevenLabs APIs through simple prompts.
+
+<CardGroup>
+  <Card title="ElevenLabs MCP" icon="plug" href="https://github.com/elevenlabs/elevenlabs-mcp">
+    Install and run the MCP server locally.
+  </Card>
+</CardGroup>
+
+***
+
+title: Models
+description: Learn about the models that power the ElevenLabs API.
+------------------------------------------------------------------
+
+## Flagship models
+
+### Text to Speech
+
+<CardGroup cols={2} rows={2}>
+  <Card title="Eleven v3" href="/docs/overview/models#eleven-v3">
+    Our most emotionally rich, expressive speech synthesis model
+
+    <div>
+      <div>
+        Dramatic delivery and performance
+      </div>
+
+      <div>
+        70+ languages supported
+      </div>
+
+      <div>
+        5,000 character limit
+      </div>
+
+      <div>
+        Support for natural multi-speaker dialogue
+      </div>
+    </div>
+  </Card>
+
+  <Card title="Eleven Multilingual v2" href="/docs/overview/models#multilingual-v2">
+    Lifelike, consistent quality speech synthesis model
+
+    <div>
+      <div>
+        Natural-sounding output
+      </div>
+
+      <div>
+        29 languages supported
+      </div>
+
+      <div>
+        10,000 character limit
+      </div>
+
+      <div>
+        Most stable on long-form generations
+      </div>
+    </div>
+  </Card>
+
+  <Card title="Eleven Flash v2.5" href="/docs/overview/models#flash-v25">
+    Our fast, affordable speech synthesis model
+
+    <div>
+      <div>
+        Ultra-low latency (~75ms†)
+      </div>
+
+      <div>
+        32 languages supported
+      </div>
+
+      <div>
+        40,000 character limit
+      </div>
+
+      <div>
+        Faster model, 50% lower price per character
+      </div>
+    </div>
+  </Card>
+</CardGroup>
+
+### Speech to Text
+
+<CardGroup cols={2} rows={1}>
+  <Card title="Scribe v2" href="/docs/overview/models#scribe-v2">
+    State-of-the-art speech recognition model
+
+    <div>
+      <div>
+        Accurate transcription in 90+ languages
+      </div>
+
+      <div>
+        Keyterm prompting, up to 100 terms
+      </div>
+
+      <div>
+        Entity detection, up to 56
+      </div>
+
+      <div>
+        Precise word-level timestamps
+      </div>
+
+      <div>
+        Speaker diarization, up to 32 speakers
+      </div>
+
+      <div>
+        Dynamic audio tagging
+      </div>
+
+      <div>
+        Smart language detection
+      </div>
+    </div>
+  </Card>
+
+  <Card title="Scribe v2 Realtime" href="/docs/overview/models#scribe-v2-realtime">
+    Real-time speech recognition model
+
+    <div>
+      <div>
+        Accurate transcription in 90+ languages
+      </div>
+
+      <div>
+        Real-time transcription
+      </div>
+
+      <div>
+        Low latency (~150ms†)
+      </div>
+
+      <div>
+        Precise word-level timestamps
+      </div>
+    </div>
+  </Card>
+</CardGroup>
+
+### Music
+
+<CardGroup cols={1} rows={1}>
+  <Card title="Eleven Music" href="/docs/overview/models#eleven-music">
+    Studio-grade music with natural language prompts in any style
+
+    <div>
+      <div>
+        Complete control over genre, style, and structure
+      </div>
+
+      <div>
+        Vocals or just instrumental
+      </div>
+
+      <div>
+        Multilingual, including English, Spanish, German, Japanese and more
+      </div>
+
+      <div>
+        Edit the sound and lyrics of individual sections or the whole song
+      </div>
+    </div>
+  </Card>
+</CardGroup>
+
+<div>
+  <div>
+    <a href="https://elevenlabs.io/pricing/api">
+      Pricing
+    </a>
+  </div>
+</div>
+
+## Models overview
+
+The ElevenLabs API offers a range of audio models optimized for different use cases, quality levels, and performance requirements.
+
+| Model ID                     | Description                                                          | Languages                                                                                                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `eleven_v3`                  | Human-like and expressive speech generation                          | [70+ languages](/docs/overview/models#supported-languages)                                                                                                                    |
+| `eleven_ttv_v3`              | Human-like and expressive voice design model (Text to Voice)         | [70+ languages](/docs/overview/models#supported-languages)                                                                                                                    |
+| `eleven_multilingual_v2`     | Our most lifelike model with rich emotional expression               | `en`, `ja`, `zh`, `de`, `hi`, `fr`, `ko`, `pt`, `it`, `es`, `id`, `nl`, `tr`, `fil`, `pl`, `sv`, `bg`, `ro`, `ar`, `cs`, `el`, `fi`, `hr`, `ms`, `sk`, `da`, `ta`, `uk`, `ru` |
+| `eleven_flash_v2_5`          | Ultra-fast model optimized for real-time use (\~75ms†)               | All `eleven_multilingual_v2` languages plus: `hu`, `no`, `vi`                                                                                                                 |
+| `eleven_flash_v2`            | Ultra-fast model optimized for real-time use (\~75ms†)               | `en`                                                                                                                                                                          |
+| `eleven_multilingual_sts_v2` | State-of-the-art multilingual voice changer model (Speech to Speech) | `en`, `ja`, `zh`, `de`, `hi`, `fr`, `ko`, `pt`, `it`, `es`, `id`, `nl`, `tr`, `fil`, `pl`, `sv`, `bg`, `ro`, `ar`, `cs`, `el`, `fi`, `hr`, `ms`, `sk`, `da`, `ta`, `uk`, `ru` |
+| `eleven_multilingual_ttv_v2` | State-of-the-art multilingual voice designer model (Text to Voice)   | `en`, `ja`, `zh`, `de`, `hi`, `fr`, `ko`, `pt`, `it`, `es`, `id`, `nl`, `tr`, `fil`, `pl`, `sv`, `bg`, `ro`, `ar`, `cs`, `el`, `fi`, `hr`, `ms`, `sk`, `da`, `ta`, `uk`, `ru` |
+| `eleven_english_sts_v2`      | English-only voice changer model (Speech to Speech)                  | `en`                                                                                                                                                                          |
+| `scribe_v2_realtime`         | Real-time speech recognition model                                   | [90+ languages](/docs/overview/capabilities/speech-to-text#supported-languages)                                                                                               |
+| `scribe_v2`                  | State-of-the-art speech recognition model                            | [90+ languages](/docs/overview/capabilities/speech-to-text#supported-languages)                                                                                               |
+| `scribe_v1`                  | State-of-the-art speech recognition. Outclassed by v2 models         | [90+ languages](/docs/overview/capabilities/speech-to-text#supported-languages)                                                                                               |
+| `eleven_text_to_sound_v2`    | Sound effects generation from text prompts                           | N/A                                                                                                                                                                           |
+| `music_v1`                   | Studio-grade music generation from text prompts                      | `en`, `es`, `de`, `ja`, and more                                                                                                                                              |
+
+<small>
+  † Excluding application & network latency
+</small>
+
+### Deprecated models
+
+<Error>
+  The `eleven_monolingual_v1` and `eleven_multilingual_v1` models are deprecated and will be removed in the future. Please migrate to newer models for continued service.
+</Error>
+
+<Warning>
+  The `eleven_turbo_v2_5` and `eleven_turbo_v2` models are functionally equivalent to the
+  `eleven_flash_v2_5` and `eleven_flash_v2` models respectively, except the latency on the Flash
+  models is lower on average. We recommend using the Flash models over Turbo models in all use
+  cases.
+</Warning>
+
+| Model ID                 | Description                                                     | Languages                                                                                                                                                                                       | Replacement model suggestion |
+| ------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `eleven_monolingual_v1`  | First generation TTS model (outclassed by v2 models)            | `en`                                                                                                                                                                                            | `eleven_multilingual_v2`     |
+| `eleven_multilingual_v1` | First multilingual model (outclassed by v2 models)              | `en`, `fr`, `de`, `hi`, `it`, `pl`, `pt`, `es`                                                                                                                                                  | `eleven_multilingual_v2`     |
+| `eleven_turbo_v2_5`      | First generation low-latency model (outclassed by Flash models) | `en`, `ja`, `zh`, `de`, `hi`, `fr`, `ko`, `pt`, `it`, `es`, `id`, `nl`, `tr`, `fil`, `pl`, `sv`, `bg`, `ro`, `ar`, `cs`, `el`, `fi`, `hr`, `ms`, `sk`, `da`, `ta`, `uk`, `ru`, `hu`, `no`, `vi` | `eleven_flash_v2_5`          |
+| `eleven_turbo_v2`        | First generation low-latency model (outclassed by Flash models) | `en`                                                                                                                                                                                            | `eleven_flash_v2`            |
+
+## Eleven v3
+
+Eleven v3 is our latest and most advanced speech synthesis model. It is a state-of-the-art model that produces natural, life-like speech with high emotional range and contextual understanding across multiple languages.
+
+This model works well in the following scenarios:
+
+* **Character Discussions**: Excellent for audio experiences with multiple characters that interact with each other.
+* **Audiobook Production**: Perfect for long-form narration with complex emotional delivery.
+* **Emotional Dialogue**: Generate natural, lifelike dialogue with high emotional range and contextual understanding.
+
+With Eleven v3 comes a new Text to Dialogue API, which allows you to generate natural, lifelike dialogue with high emotional range and contextual understanding across multiple languages. Eleven v3 can also be used with the Text to Speech API to generate natural, lifelike speech with high emotional range and contextual understanding across multiple languages.
+
+Read more about the Text to Dialogue API [here](/docs/overview/capabilities/text-to-dialogue).
+
+### Supported languages
+
+The Eleven v3 model supports 70+ languages, including:
+
+*Afrikaans (afr), Arabic (ara), Armenian (hye), Assamese (asm), Azerbaijani (aze), Belarusian (bel), Bengali (ben), Bosnian (bos), Bulgarian (bul), Catalan (cat), Cebuano (ceb), Chichewa (nya), Croatian (hrv), Czech (ces), Danish (dan), Dutch (nld), English (eng), Estonian (est), Filipino (fil), Finnish (fin), French (fra), Galician (glg), Georgian (kat), German (deu), Greek (ell), Gujarati (guj), Hausa (hau), Hebrew (heb), Hindi (hin), Hungarian (hun), Icelandic (isl), Indonesian (ind), Irish (gle), Italian (ita), Japanese (jpn), Javanese (jav), Kannada (kan), Kazakh (kaz), Kirghiz (kir), Korean (kor), Latvian (lav), Lingala (lin), Lithuanian (lit), Luxembourgish (ltz), Macedonian (mkd), Malay (msa), Malayalam (mal), Mandarin Chinese (cmn), Marathi (mar), Nepali (nep), Norwegian (nor), Pashto (pus), Persian (fas), Polish (pol), Portuguese (por), Punjabi (pan), Romanian (ron), Russian (rus), Serbian (srp), Sindhi (snd), Slovak (slk), Slovenian (slv), Somali (som), Spanish (spa), Swahili (swa), Swedish (swe), Tamil (tam), Telugu (tel), Thai (tha), Turkish (tur), Ukrainian (ukr), Urdu (urd), Vietnamese (vie), Welsh (cym).*
+
+## Multilingual v2
+
+Eleven Multilingual v2 is our most advanced, emotionally-aware speech synthesis model. It produces natural, lifelike speech with high emotional range and contextual understanding across multiple languages.
+
+The model delivers consistent voice quality and personality across all supported languages while maintaining the speaker's unique characteristics and accent.
+
+This model excels in scenarios requiring high-quality, emotionally nuanced speech:
+
+* **Character Voiceovers**: Ideal for gaming and animation due to its emotional range.
+* **Professional Content**: Well-suited for corporate videos and e-learning materials.
+* **Multilingual Projects**: Maintains consistent voice quality across language switches.
+* **Stable Quality**: Produces consistent, high-quality audio output.
+
+While it has a higher latency & cost per character than Flash models, it delivers superior quality for projects where lifelike speech is important.
+
+Our multilingual v2 models support 29 languages:
+
+*English (USA, UK, Australia, Canada), Japanese, Chinese, German, Hindi, French (France, Canada), Korean, Portuguese (Brazil, Portugal), Italian, Spanish (Spain, Mexico), Indonesian, Dutch, Turkish, Filipino, Polish, Swedish, Bulgarian, Romanian, Arabic (Saudi Arabia, UAE), Czech, Greek, Finnish, Croatian, Malay, Slovak, Danish, Tamil, Ukrainian & Russian.*
+
+## Flash v2.5
+
+Eleven Flash v2.5 is our fastest speech synthesis model, designed for real-time applications and Agents Platform. It delivers high-quality speech with ultra-low latency (\~75ms†) across 32 languages.
+
+The model balances speed and quality, making it ideal for interactive applications while maintaining natural-sounding output and consistent voice characteristics across languages.
+
+This model is particularly well-suited for:
+
+* **Agents Platform**: Perfect for real-time voice agents and chatbots.
+* **Interactive Applications**: Ideal for games and applications requiring immediate response.
+* **Large-Scale Processing**: Efficient for bulk text-to-speech conversion.
+
+With its lower price point and 75ms latency, Flash v2.5 is the cost-effective option for anyone needing fast, reliable speech synthesis across multiple languages.
+
+Flash v2.5 supports 32 languages - all languages from v2 models plus:
+
+*Hungarian, Norwegian & Vietnamese*
+
+<small>
+  † Excluding application & network latency
+</small>
+
+### Considerations
+
+<AccordionGroup>
+  <Accordion title="Text normalization with numbers">
+    When using Flash v2.5, numbers aren't normalized by default in a way you might expect. For example, phone numbers might be read out in way that isn't clear for the user. Dates and currencies are affected in a similar manner.
+
+    By default, normalization is disabled for Flash v2.5 to maintain the low latency. However, Enterprise customers can now enable text normalization for v2.5 models by setting the `apply_text_normalization` parameter to "on" in your request.
+
+    The Multilingual v2 model does a better job of normalizing numbers, so we recommend using it for phone numbers and other cases where number normalization is important.
+
+    For low-latency or Agents Platform applications, best practice is to have your LLM [normalize the text](/docs/overview/capabilities/text-to-speech/best-practices#text-normalization) before passing it to the TTS model, or use the `apply_text_normalization` parameter (Enterprise plans only for v2.5 models).
+  </Accordion>
+</AccordionGroup>
+
+## Model selection guide
+
+<AccordionGroup>
+  <Accordion title="Requirements">
+    <CardGroup cols={1}>
+      <Card title="Quality">
+        Use `eleven_multilingual_v2`
+
+        Best for high-fidelity audio output with rich emotional expression
+      </Card>
+
+      <Card title="Low-latency">
+        Use Flash models
+
+        Optimized for real-time applications (\~75ms latency)
+      </Card>
+
+      <Card title="Multilingual">
+        Use either either `eleven_multilingual_v2` or `eleven_flash_v2_5`
+
+        Both support up to 32 languages
+      </Card>
+
+      <Card title="Balanced">
+        Use `eleven_flash_v2_5`
+
+        Good balance between quality and speed
+      </Card>
+    </CardGroup>
+  </Accordion>
+
+  <Accordion title="Use case">
+    <CardGroup cols={1}>
+      <Card title="Content creation">
+        Use `eleven_multilingual_v2`
+
+        Ideal for professional content, audiobooks & video narration.
+      </Card>
+
+      <Card title="Agents Platform">
+        Use `eleven_flash_v2_5`, `eleven_flash_v2` or`eleven_multilingual_v2`
+
+        Perfect for real-time conversational applications
+      </Card>
+
+      <Card title="Voice changer">
+        Use `eleven_multilingual_sts_v2`
+
+        Specialized for Speech-to-Speech conversion
+      </Card>
+    </CardGroup>
+  </Accordion>
+</AccordionGroup>
+
+## Character limits
+
+The maximum number of characters supported in a single text-to-speech request varies by model.
+
+| Model ID                 | Character limit | Approximate audio duration |
+| ------------------------ | --------------- | -------------------------- |
+| `eleven_v3`              | 5,000           | \~5 minutes                |
+| `eleven_flash_v2_5`      | 40,000          | \~40 minutes               |
+| `eleven_flash_v2`        | 30,000          | \~30 minutes               |
+| `eleven_multilingual_v2` | 10,000          | \~10 minutes               |
+| `eleven_multilingual_v1` | 10,000          | \~10 minutes               |
+| `eleven_english_sts_v2`  | 10,000          | \~10 minutes               |
+| `eleven_english_sts_v1`  | 10,000          | \~10 minutes               |
+
+<Note>
+  For longer content, consider splitting the input into multiple requests.
+</Note>
+
+## Scribe v2
+
+Scribe v2 is our state-of-the-art speech recognition model designed for accurate transcription across 90+ languages. It provides precise word-level timestamps and advanced features like speaker diarization and dynamic audio tagging.
+
+This model excels in scenarios requiring accurate speech-to-text conversion:
+
+* **Transcription Services**: Perfect for converting audio/video content to text
+* **Meeting Documentation**: Ideal for capturing and documenting conversations
+* **Content Analysis**: Well-suited for audio content processing and analysis
+* **Multilingual Recognition**: Supports accurate transcription across 90+ languages
+
+Key features:
+
+* Accurate transcription with word-level timestamps
+* Speaker diarization for multi-speaker audio
+* Dynamic audio tagging for enhanced context
+* Support for 90+ languages
+* Entity detection
+* Keyterm prompting
+
+Read more about Scribe v2 [here](/docs/overview/capabilities/speech-to-text).
+
+## Scribe v2 Realtime
+
+Scribe v2 Realtime, our fastest and most accurate live speech recognition model, delivers state-of-the-art accuracy in over 90 languages with an ultra-low 150ms of latency.
+
+This model excels in conversational use cases:
+
+* **Live meeting transcription**: Perfect for realtime transcription
+* **AI Agents**: Ideal for live conversations
+* **Multilingual Recognition**: Supports accurate transcription across 90+ languages with automatic language recognition
+
+Key features:
+
+* Ultra-low latency: Get partial transcriptions in \~150 milliseconds
+* Streaming support: Send audio in chunks while receiving transcripts in real-time
+* Multiple audio formats: Support for PCM (8kHz to 48kHz) and μ-law encoding
+* Voice Activity Detection (VAD): Automatic speech segmentation based on silence detection
+* Manual commit control: Full control over when to finalize transcript segments
+
+Read more about Scribe v2 Realtime [here](/docs/overview/capabilities/speech-to-text).
+
+## Eleven Music
+
+Eleven Music is our studio-grade music generation model. It allows you to generate music with natural language prompts in any style.
+
+This model is excellent for the following scenarios:
+
+* **Game Soundtracks**: Create immersive soundtracks for games
+* **Podcast Backgrounds**: Enhance podcasts with professional music
+* **Marketing**: Add background music to ad reels
+
+Key features:
+
+* Complete control over genre, style, and structure
+* Vocals or just instrumental
+* Multilingual, including English, Spanish, German, Japanese and more
+* Edit the sound and lyrics of individual sections or the whole song
+
+Read more about Eleven Music [here](/docs/overview/capabilities/music).
+
+## Concurrency and priority
+
+Your subscription plan determines how many requests can be processed simultaneously and the priority level of your requests in the queue.
+Speech to Text has an elevated concurrency limit.
+Once the concurrency limit is met, subsequent requests are processed in a queue alongside lower-priority requests.
+In practice this typically only adds \~50ms of latency.
+
+| Plan       | Concurrency Limit<br /> (Multilingual v2) | Concurrency Limit<br /> (Flash) | STT Concurrency Limit | Realtime STT Concurrency limit | Music Concurrency limit | Priority level |
+| ---------- | ----------------------------------------- | ------------------------------- | --------------------- | ------------------------------ | ----------------------- | -------------- |
+| Free       | 2                                         | 4                               | 8                     | 6                              | 0                       | 3              |
+| Starter    | 3                                         | 6                               | 12                    | 9                              | 2                       | 4              |
+| Creator    | 5                                         | 10                              | 20                    | 15                             | 2                       | 5              |
+| Pro        | 10                                        | 20                              | 40                    | 30                             | 2                       | 5              |
+| Scale      | 15                                        | 30                              | 60                    | 45                             | 5                       | 5              |
+| Business   | 15                                        | 30                              | 60                    | 45                             | 5                       | 5              |
+| Enterprise | Elevated                                  | Elevated                        | Elevated              | Elevated                       | Highest                 | 6              |
+
+<Note>
+  Startup grants recipients receive Scale level benefits.
+</Note>
+
+The response headers include `current-concurrent-requests` and `maximum-concurrent-requests` which you can use to monitor your concurrency.
+
+### API requests per minute vs concurrent requests
+
+It's important to understand that **API requests per minute** and **concurrent requests** are different metrics that depend on your usage patterns.
+
+API requests per minute can be different from concurrent requests since it depends on the length of time for each request and how the requests are batched.
+
+**Example 1: Spaced requests**
+If you had 180 requests per minute that each took 1 second to complete and you sent them each 0.33 seconds apart, the max concurrent requests would be 3 and the average would be 3 since there would always be 3 in flight.
+
+**Example 2: Batched requests**
+However, if you had a different usage pattern such as 180 requests per minute that each took 3 seconds to complete but all fired at once, the max concurrent requests would be 180 and the average would be 9 (first 3 seconds of the minute saw 180 requests at once, final 57 seconds saw 0 requests).
+
+Since our system cares about concurrency, requests per minute matter less than how long each of the requests take and the pattern of when they are sent.
+
+How endpoint requests are made impacts concurrency limits:
+
+* With HTTP, each request counts individually toward your concurrency limit.
+* With a WebSocket, only the time where our model is generating audio counts towards your concurrency limit, this means a for most of the time an open websocket doesn't count towards your concurrency limit at all.
+
+### Understanding concurrency limits
+
+The concurrency limit associated with your plan should not be interpreted as the maximum number of simultaneous conversations, phone calls character voiceovers, etc that can be handled at once.
+The actual number depends on several factors, including the specific AI voices used and the characteristics of the use case.
+
+As a general rule of thumb, a concurrency limit of 5 can typically support up to approximately 100 simultaneous audio broadcasts.
+
+This is because of the speed it takes for audio to be generated relative to the time it takes for the TTS request to be processed.
+The diagram below is an example of how 4 concurrent calls with different users can be facilitated while only hitting 2 concurrent requests.
+
+<Frame background="subtle">
+  <img src="file:03a412b2-d6cf-47e7-9cfb-d79e4793b384" alt="Concurrency limits" />
+</Frame>
+
+<AccordionGroup>
+  <Accordion title="Building AI Voice Agents">
+    Where TTS is used to facilitate dialogue, a concurrency limit of 5 can support about 100 broadcasts for balanced conversations between AI agents and human participants.
+
+    For use cases in which the AI agent speaks less frequently than the human, such as customer support interactions, more than 100 simultaneous conversations could be supported.
+  </Accordion>
+
+  <Accordion title="Character voiceovers">
+    Generally, more than 100 simultaneous character voiceovers can be supported for a concurrency limit of 5.
+
+    The number can vary depending on the character’s dialogue frequency, the length of pauses, and in-game actions between lines.
+  </Accordion>
+
+  <Accordion title="Live Dubbing">
+    Concurrent dubbing streams generally follow the provided heuristic.
+
+    If the broadcast involves periods of conversational pauses (e.g. because of a soundtrack, visual scenes, etc), more simultaneous dubbing streams than the suggestion may be possible.
+  </Accordion>
+</AccordionGroup>
+
+If you exceed your plan's concurrency limits at any point and you are on the Enterprise plan, model requests may still succeed, albeit slower, on a best efforts basis depending on available capacity.
+
+<Note>
+  To increase your concurrency limit & queue priority, [upgrade your subscription
+  plan](https://elevenlabs.io/pricing/api).
+
+  Enterprise customers can request a higher concurrency limit by contacting their account manager.
+</Note>
+
+### Scale testing concurrency limits
+
+Scale testing can be useful to identify client side scaling issues and to verify concurrency limits are set correctly for your usecase.
+
+It is heavily recommended to test end-to-end workflows as close to real world usage as possible, simulating and measuring how many users can be supported is the recommended methodology for achieving this. It is important to:
+
+* Simulate users, not raw requests
+* Simulate typical user behavior such as waiting for audio playback, user speaking or transcription to finish before making requests
+* Ramp up the number of users slowly over a period of minutes
+* Introduce randomness to request timings and to the size of requests
+* Capture latency metrics and any returned error codes from the API
+
+For example, to test an agent system designed to support 100 simultaneous conversations you would create up to 100 individual "users" each simulating a conversation. Conversations typically consist of a repeating cycle of \~10 seconds of user talking, followed by the TTS API call for \~150 characters, followed by \~10 seconds of audio playback to the user. Therefore, each user should follow the pattern of making a websocket Text-to-Speech API call for 150 characters of text every 20 seconds, with a small amount of randomness introduced to the wait period and the number of characters requested. The test would consist of spawning one user per second until 100 exist and then testing for 10 minutes in total to test overall stability.
+
+<AccordionGroup>
+  <Accordion title="Scale testing script example">
+    This example uses [locust](https://locust.io/) as the testing framework with direct API calls to the ElevenLabs API.
+
+    It follows the example listed above, testing a conversational agent system with each user sending 1 request every 20 seconds.
+
+    <CodeBlocks>
+      ```python title="Python" {12}
+      import json
+      import random
+      import time
+      import gevent
+      import locust
+      from locust import User, task, events, constant_throughput
+      import websocket
+
+      # Averages up to 10 seconds of audio when played, depends on the voice speed
+      DEFAULT_TEXT = (
+          "Hello, this is a test message. I am testing if a long input will cause issues for the model "
+          "like this sentence. "
+      )
+
+      TEXT_ARRAY = [
+          "Hello.",
+          "Hello, this is a test message.",
+          DEFAULT_TEXT,
+          DEFAULT_TEXT * 2,
+          DEFAULT_TEXT * 3
+      ]
+
+      # Custom command line arguments
+      @events.init_command_line_parser.add_listener
+      def on_parser_init(parser):
+          parser.add_argument("--api-key", default="YOUR_API_KEY", help="API key for authentication")
+          parser.add_argument("--encoding", default="mp3_22050_32", help="Encoding")
+          parser.add_argument("--text", default=DEFAULT_TEXT, help="Text to use")
+          parser.add_argument("--use-text-array", default="false", help="Text to use")
+          parser.add_argument("--voice-id", default="aria", help="Text to use")
+
+
+      class WebSocketTTSUser(User):
+          # Each user will send a request every 20 seconds, regardless of how long each request takes
+          wait_time = constant_throughput(0.05)
+
+          def __init__(self, *args, **kwargs):
+              super().__init__(*args, **kwargs)
+              self.api_key = self.environment.parsed_options.api_key
+              self.voice_id = self.environment.parsed_options.voice_id
+              self.text = self.environment.parsed_options.text
+              self.encoding = self.environment.parsed_options.encoding
+              self.use_text_array = self.environment.parsed_options.use_text_array
+              if self.use_text_array:
+                  self.text = random.choice(TEXT_ARRAY)
+              self.all_recieved = False
+
+          @task
+          def tts_task(self):
+              # Do jitter waiting of up to 1 second
+              # Users appear to be spawned every second so this ensures requests are not aligned
+              gevent.sleep(random.random())
+
+              max_wait_time = 10
+
+              # Connection details
+              uri = f"{self.environment.host}/v1/text-to-speech/{self.voice_id}/stream-input?auto_mode=true&output_format={self.encoding}"
+              headers = {"xi-api-key": self.api_key}
+
+              ws = None
+              self.all_recieved = False
+              try:
+                  init_msg = {"text": " "}
+                  # Use proper header format for websocket - this is case sensitive!
+                  ws = websocket.create_connection(uri, header=headers)
+                  ws.send(json.dumps(init_msg))
+
+                  # Start measuring after websocket initiated but before any messages are sent
+                  send_request_time = time.perf_counter()
+                  ws.send(json.dumps({"text": self.text}))
+
+                  # Send to flush and receive the audio
+                  ws.send(json.dumps({"text": ""}))
+
+                  def _receive():
+                      t_first_response = None
+                      audio_size = 0
+                      try:
+                          while True:
+                              # Wait up to 10 seconds for a response
+                              ws.settimeout(max_wait_time)
+                              response = ws.recv()
+                              response_data = json.loads(response)
+
+                              if "audio" in response_data and response_data["audio"]:
+                                  audio_size = audio_size + len(response_data["audio"])
+
+                              if t_first_response is None:
+                                  t_first_response = time.perf_counter()
+                                  first_byte_ms = (
+                                      t_first_response - send_request_time
+                                  ) * 1000
+                                  if audio_size is None:
+                                      # The first response should always have audio
+                                      locust.events.request.fire(
+                                          request_type="websocket",
+                                          name="Bad Response (no audio)",
+                                          response_time=first_byte_ms,
+                                          response_length=audio_size,
+                                          exception=Exception("Response has no audio"),
+                                      )
+                                      break
+
+                              if "isFinal" in response_data and response_data["isFinal"]:
+                                  # Fire this event once finished streaming, but report the important TTFB metric
+                                  locust.events.request.fire(
+                                      request_type="websocket",
+                                      name="TTS Stream Success (First Byte)",
+                                      response_time=first_byte_ms,
+                                      response_length=audio_size,
+                                      exception=None,
+                                  )
+                                  break
+
+                      except websocket.WebSocketTimeoutException:
+                          locust.events.request.fire(
+                              request_type="websocket",
+                              name="TTS Stream Timeout",
+                              response_time=max_wait_time * 1000,
+                              response_length=audio_size,
+                              exception=Exception("Timeout waiting for response"),
+                          )
+                      except Exception as e:
+                          # Typically JSON decode error if the server returns HTTP backoff error
+                          locust.events.request.fire(
+                              request_type="websocket",
+                              name="TTS Stream Failure",
+                              response_time=0,
+                              response_length=0,
+                              exception=e,
+                          )
+                      finally:
+                          self.all_recieved = True
+
+                  gevent.spawn(_receive)
+
+                  # Sleep until recieved so new tasks aren't spawned
+                  while not self.all_recieved:
+                      gevent.sleep(1)
+
+              except websocket.WebSocketTimeoutException:
+                  locust.events.request.fire(
+                      request_type="websocket",
+                      name="TTS Stream Timeout",
+                      response_time=max_wait_time * 1000,
+                      response_length=0,
+                      exception=Exception("Timeout waiting for response"),
+                  )
+              except Exception as e:
+                  locust.events.request.fire(
+                      request_type="websocket",
+                      name="TTS Stream Failure",
+                      response_time=0,
+                      response_length=0,
+                      exception=e,
+                  )
+              finally:
+                  # Try and close the websocket gracefully
+                  try:
+                      if ws:
+                          ws.close()
+                  except Exception:
+                      pass
+
+      ```
+    </CodeBlocks>
+  </Accordion>
+</AccordionGroup>
+

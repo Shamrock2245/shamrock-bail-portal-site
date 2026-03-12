@@ -339,3 +339,21 @@ function server_getPacketManifest(data) {
 function server_getSigningUrl(data) {
     return handleTelegramGetSigningUrl(data);
 }
+
+/**
+ * Send the full signing packet as a Document Group via email invite.
+ * Called by Dashboard via google.script.run.server_sendSigningPacket(data)
+ *
+ * @param {Object} data - { formData: {...}, signingMethod: 'email'|'embedded' }
+ * @returns {Object} { success, groupId, documentIds[], inviteResult, error }
+ */
+function server_sendSigningPacket(data) {
+    try {
+        var formData = data.formData || data;
+        return sendPacketAsDocumentGroup(formData);
+    } catch (e) {
+        Logger.log('❌ server_sendSigningPacket error: ' + e.message);
+        return { success: false, error: e.message };
+    }
+}
+
