@@ -3,26 +3,45 @@
  * SignNow_SendPaperwork.js — Shannon Mid-Call Paperwork Tool
  * ============================================================================
  * Called by ElevenLabs agent tool via Netlify proxy → GAS.
+ * Also called by Dashboard.html "Send Paperwork" button.
  *
  * Uses the FULL 12-document pipeline:
- *   1. Fetch all 12 PDFs from Google Drive (same TEMPLATE_DRIVE_IDS as Dashboard)
- *   2. Upload each individually to SignNow
- *   3. Add signature/initials fields to each document
- *   4. Create a Document Group linking all docs together
- *   5. Send a group signing invite via email with consent language
+ *   1. Copy each template directly from SignNow (no Drive fetch needed)
+ *   2. Prefill text fields with known case data
+ *   3. Create a Document Group linking all docs together
+ *   4. Send a group signing invite via email with consent language
  *
  * Shannon collects: caller_name, caller_email, caller_phone, defendant_name, county
  * Everything else stays blank for the signer to fill when they open the signing link.
  *
  * Reuses existing GAS functions:
- *   - TEMPLATE_DRIVE_IDS (Code.js global)
- *   - SN_getConfig, SN_uploadDocument, SN_addFields (SignNow_Integration_Complete.js)
- *   - fetchWithRetry (SignNow_Integration_Complete.js)
- *   - SN_log (SignNow_Integration_Complete.js)
+ *   - SN_getConfig, SN_getDocumentRoles (SignNow_Integration_Complete.js)
+ *   - fetchWithRetry, SN_log (SignNow_Integration_Complete.js)
  *
  * Architecture: ElevenLabs → Netlify (proxy) → GAS (factory) → SignNow API
+ *              Dashboard.html → GAS doPost → SignNow API
  * ============================================================================
  */
+
+// ============================================================================
+// SIGNNOW TEMPLATE IDs — Source of truth for all 12 documents
+// These are the tagged templates in the Shamrock SignNow account.
+// DO NOT fetch from Google Drive — templates live in SignNow.
+// ============================================================================
+const SIGNNOW_TEMPLATE_IDS = {
+    'paperwork-header':      '9b9dad3e319f4b1580094e05f9844929d5a6f7de',  // shamrock-paperwork-header
+    'faq-cosigners':         '0820b9fef3bd4c38a91643455881021f3f0c3a88',  // Shamrock Bail Bonds - FAQ Cosigners
+    'faq-defendants':        '1524f1c816c54a72be76d14fe128e4a6034579dc',  // Shamrock Bail Bonds- FAQ Defe.
+    'indemnity-agreement':   'ed5e6ca0a3444796a127fbeb6a880658371aafd7',  // Indemnity Agreement FINAL
+    'defendant-application': 'd50adc808f3245f087b218d33da89e4ace15ecd4',  // App for Appearance Bond FINAL
+    'promissory-note':       '460bd43c2f514305a3b296481713a00ee8311c79',  // Promissory Side 2 FINAL
+    'disclosure-form':       'fb8b57bf55ac4d5e8bff820b018a0bfd3b17a37a',  // Disclosure FINAL
+    'surety-terms':          '192aeb246230446bb0d7f658765afd2832704964',  // Surety Terms and Conditions FINAL
+    'master-waiver':         '3b0e71188b3049cc8760d144e6c49df227ccd741',  // shamrock-master-waiver
+    'ssa-release':           '4800defff07541079760889d83109059585b0cea',  // shamrock-ssa-release
+    'collateral-receipt':    '4b1f5611840f4de4bc891677617f5dbf6ff7ad05',  // osi-premium-collateral-template
+    'payment-plan':          '1861b158d7a447d48be5ac1dd24755f727f0773b'   // shamrock-premium-finance-notice
+};
 
 // ============================================================================
 // TEMPLATE ORDER — ALL 12 SIGNING DOCUMENTS
@@ -153,77 +172,67 @@ function handleShannonSendPaperwork(data) {
         const config = SN_getConfig();
 
         // -----------------------------------------------------------------
-        // 1. FETCH — Pull all 12 PDFs from Google Drive
+        // 1. COPY — Copy each SignNow template directly (no Drive fetch)
+        // Templates are tagged and live in SignNow. No PDF upload needed.
         // -----------------------------------------------------------------
-        SN_log('Shannon_FetchPDFs', { count: SHANNON_TEMPLATE_ORDER.length });
-        const pdfDocs = [];
+        SN_log('Shannon_CopyTemplates', { count: SHANNON_TEMPLATE_ORDER.length });
+        const uploadedDocs = [];
+        const dateStr = new Date().toISOString().split('T')[0];
+        const caseLabel = (data.case_number || defParts.last || 'Unknown').replace(/[^a-zA-Z0-9]/g, '_');
 
         for (const templateKey of SHANNON_TEMPLATE_ORDER) {
-            // Use global TEMPLATE_DRIVE_IDS from Code.js
-            const driveId = TEMPLATE_DRIVE_IDS[templateKey];
-            if (!driveId) {
-                SN_log('Shannon_NoDriveID', templateKey);
+            const templateId = SIGNNOW_TEMPLATE_IDS[templateKey];
+            if (!templateId) {
+                SN_log('Shannon_NoTemplateID', templateKey);
                 continue;
             }
             try {
-                const file = DriveApp.getFileById(driveId);
-                const blob = file.getBlob();
-                pdfDocs.push({ key: templateKey, bytes: blob.getBytes() });
-            } catch (e) {
-                SN_log('Shannon_FetchErr', { templateKey, err: e.toString() });
-                // Continue — don't fail the entire packet for one missing PDF
-            }
-        }
-
-        if (pdfDocs.length === 0) {
-            return { success: false, message: "I'm having trouble accessing the documents right now. Our team will follow up with you." };
-        }
-        SN_log('Shannon_Fetched', { count: pdfDocs.length });
-
-        // -----------------------------------------------------------------
-        // 2. UPLOAD — Upload each PDF individually to SignNow
-        // -----------------------------------------------------------------
-        const uploadedDocs = [];
-        const dateStr = new Date().toISOString().split('T')[0];
-
-        for (const doc of pdfDocs) {
-            try {
-                const fileName = `${doc.key}_${defParts.last || 'Unknown'}_${dateStr}.pdf`;
-                const pdfBase64 = Utilities.base64Encode(doc.bytes);
-                const result = SN_uploadDocument(pdfBase64, fileName);
-                if (result.success) {
-                    uploadedDocs.push({ key: doc.key, documentId: result.documentId, fileName });
-                } else {
-                    SN_log('Shannon_UploadFail', { key: doc.key, err: result.error });
+                const copyUrl = `${config.API_BASE}/template/${templateId}/copy`;
+                const copyRes = fetchWithRetry(copyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+                        'Content-Type': 'application/json'
+                    },
+                    payload: JSON.stringify({
+                        document_name: `Shamrock_${caseLabel}_${templateKey}`
+                    }),
+                    muteHttpExceptions: true
+                });
+                const copyJson = JSON.parse(copyRes.getContentText());
+                if (!copyJson.id) {
+                    SN_log('Shannon_CopyFail', { templateKey, response: JSON.stringify(copyJson).substring(0, 200) });
+                    continue;
                 }
+                const documentId = copyJson.id;
+                SN_log('Shannon_Copied', { templateKey, documentId });
+
+                // Prefill known fields immediately after copy
+                _shannon_prefillDoc(config, documentId, data, defParts, callerParts, todayStr);
+
+                uploadedDocs.push({ key: templateKey, documentId, fileName: `Shamrock_${caseLabel}_${templateKey}` });
             } catch (e) {
-                SN_log('Shannon_UploadErr', { key: doc.key, err: e.toString() });
+                SN_log('Shannon_CopyErr', { templateKey, err: e.toString() });
+                // Continue — don't fail the entire packet for one template
             }
-            // Rate-limit: 500ms between uploads to avoid SignNow 429 on 12 sequential requests
-            Utilities.sleep(500);
+            Utilities.sleep(300); // rate-limit: 300ms between copies
         }
 
         if (uploadedDocs.length === 0) {
-            return { success: false, message: "I couldn't upload the documents right now. Our team will send them to you manually." };
+            return { success: false, message: "I'm having trouble preparing the documents right now. Our team will follow up with you." };
         }
-        SN_log('Shannon_Uploaded', { count: uploadedDocs.length });
+        SN_log('Shannon_CopiedAll', { count: uploadedDocs.length });
 
         // -----------------------------------------------------------------
-        // 3. FIELDS — Add signature/initials fields to each uploaded doc
+        // 2. FIELDS — (SKIPPED) Fields are already on templates.
+        // The SN_addFields block has been removed. Templates have all
+        // signature and text fields pre-tagged via the SignNow template editor.
         // -----------------------------------------------------------------
-        for (const doc of uploadedDocs) {
-            const fieldDefs = SHANNON_SIG_FIELDS[doc.key] || [];
-            if (fieldDefs.length === 0) continue;
-
-            try {
-                _shannon_addDocFields(config, doc.documentId, fieldDefs);
-            } catch (e) {
-                SN_log('Shannon_FieldErr', { key: doc.key, err: e.toString() });
-            }
-        }
+        // NOTE: The old _shannon_addDocFields calls are intentionally removed.
+        // Do NOT re-add them — they would overwrite the template fields.
 
         // -----------------------------------------------------------------
-        // 4. GROUP — Create a SignNow Document Group
+        // 3. GROUP — Create a SignNow Document Group
         // -----------------------------------------------------------------
         let groupId = null;
         if (uploadedDocs.length > 1) {
@@ -233,12 +242,12 @@ function handleShannonSendPaperwork(data) {
         const entityType = groupId ? 'group' : 'document';
 
         // -----------------------------------------------------------------
-        // 5. INVITE — Send email invite with consent language
+        // 4. INVITE — Send email invite with consent language
         // -----------------------------------------------------------------
         const inviteResult = _shannon_sendInvite(config, entityId, entityType, data, uploadedDocs);
 
         // -----------------------------------------------------------------
-        // 6. LOG — Spreadsheet + Slack
+        // 5. LOG — Spreadsheet + Slack
         // -----------------------------------------------------------------
         _shannon_logToSheet(data, entityId, uploadedDocs.length, inviteResult.success);
         _shannon_notifySlack(
@@ -247,7 +256,7 @@ function handleShannonSendPaperwork(data) {
         );
 
         // -----------------------------------------------------------------
-        // 7. RETURN — Friendly message for Shannon to read back
+        // 6. RETURN — Friendly message for Shannon to read back
         // -----------------------------------------------------------------
         if (inviteResult.success) {
             // --- Get a signing link for SMS delivery ---
@@ -300,46 +309,97 @@ function _shannon_splitName(fullName) {
 }
 
 /**
- * Add signature/initials fields to a single SignNow document.
- * Builds the roles array and fields array from our field definitions.
+ * Prefill known text fields on a copied SignNow document.
+ * Uses PUT /v2/documents/{id}/prefill-texts
+ * Fields that are blank stay blank — signer fills them in the signing interface.
+ *
+ * @param {object} config - SN_getConfig() result
+ * @param {string} documentId - The copied document ID
+ * @param {object} data - Raw intake data from Shannon / Dashboard / Wix
+ * @param {object} defParts - { first, middle, last } for defendant
+ * @param {object} callerParts - { first, middle, last } for indemnitor/caller
+ * @param {string} todayStr - Today's date as locale string
  */
-function _shannon_addDocFields(config, documentId, fieldDefs) {
-    // Collect unique roles
-    const roleNames = [...new Set(fieldDefs.map(f => f.role))];
-    const roles = roleNames.map((name, idx) => ({
-        unique_id: `role_${idx}`,
-        signing_order: name === 'Indemnitor' ? 1 : name === 'Defendant' ? 2 : 3,
-        name: name
-    }));
-    const roleMap = {};
-    roleNames.forEach((name, idx) => { roleMap[name] = `role_${idx}`; });
+function _shannon_prefillDoc(config, documentId, data, defParts, callerParts, todayStr) {
+    try {
+        // Build the canonical field map — only include fields we actually have data for
+        const raw = {
+            // Defendant fields
+            DefName:       [defParts.first, defParts.middle, defParts.last].filter(Boolean).join(' ') || null,
+            DefFirst:      defParts.first || null,
+            DefMiddle:     defParts.middle || null,
+            DefLast:       defParts.last || null,
+            DefDOB:        data.defendant_dob || null,
+            DefAddress:    data.defendant_address || null,
+            DefCity:       data.defendant_city || null,
+            DefState:      data.defendant_state || 'FL',
+            DefZip:        data.defendant_zip || null,
+            DefPhone:      data.defendant_phone || null,
+            DefEmail:      data.defendant_email || null,
+            DefSSN:        data.defendant_ssn || null,
+            DefDL:         data.defendant_dl || null,
+            DefEmployer:   data.defendant_employer || null,
+            DefEmpPhone:   data.defendant_employer_phone || null,
+            DefCharge:     data.charge || data.charges || null,
+            DefCaseNum:    data.case_number || null,
+            DefBookingNum: data.booking_number || null,
+            DefJail:       data.jail || data.facility || null,
+            DefCounty:     data.county || null,
+            DefBondAmt:    data.bond_amount || null,
+            // Indemnitor fields
+            IndName:       [callerParts.first, callerParts.middle, callerParts.last].filter(Boolean).join(' ') || null,
+            IndFirst:      callerParts.first || null,
+            IndLast:       callerParts.last || null,
+            IndEmail:      data.caller_email || null,
+            IndPhone:      data.caller_phone || null,
+            IndAddress:    data.caller_address || null,
+            IndCity:       data.caller_city || null,
+            IndState:      data.caller_state || 'FL',
+            IndZip:        data.caller_zip || null,
+            IndDOB:        data.caller_dob || null,
+            IndSSN:        data.caller_ssn || null,
+            IndDL:         data.caller_dl || null,
+            IndEmployer:   data.caller_employer || null,
+            IndEmpPhone:   data.caller_employer_phone || null,
+            IndRelation:   data.caller_relation || null,
+            // Bond / case fields
+            TotalBond:     data.bond_amount || null,
+            Premium:       data.premium || null,
+            CaseNum:       data.case_number || null,
+            County:        data.county || null,
+            AgreementDate: todayStr,
+            AgencyName:    'Shamrock Bail Bonds',
+            AgencyAddress: '1528 Broadway, Fort Myers, FL 33901',
+            AgencyPhone:   '(941) 304-2245'
+        };
 
-    // Build API fields
-    const fields = fieldDefs.map(f => ({
-        type: f.type,
-        x: f.x,
-        y: f.y,
-        width: f.width,
-        height: f.height,
-        page_number: f.page_number,
-        required: true,
-        role_id: roleMap[f.role]
-    }));
+        // Build prefill_texts array — only non-null values
+        const prefill_texts = Object.entries(raw)
+            .filter(([, v]) => v !== null && v !== undefined && v !== '')
+            .map(([field_name, prefilled_text]) => ({ field_name, prefilled_text: String(prefilled_text) }));
 
-    const url = `${config.API_BASE}/document/${documentId}`;
-    const response = fetchWithRetry(url, {
-        method: 'PUT',
-        headers: {
-            'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
-            'Content-Type': 'application/json'
-        },
-        payload: JSON.stringify({ roles, fields }),
-        muteHttpExceptions: true
-    });
+        if (prefill_texts.length === 0) {
+            SN_log('Shannon_PrefillSkip', { documentId, reason: 'no data to prefill' });
+            return;
+        }
 
-    const code = response.getResponseCode();
-    SN_log('Shannon_DocFields', { documentId, fieldCount: fields.length, status: code });
-    return code >= 200 && code < 300;
+        const url = `${config.API_BASE}/v2/documents/${documentId}/prefill-texts`;
+        const response = fetchWithRetry(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            payload: JSON.stringify({ fields: prefill_texts }),
+            muteHttpExceptions: true
+        });
+
+        const code = response.getResponseCode();
+        SN_log('Shannon_Prefilled', { documentId, fieldCount: prefill_texts.length, status: code });
+    } catch (e) {
+        SN_log('Shannon_PrefillErr', { documentId, err: e.toString() });
+        // Non-fatal — document is still usable, signer fills in manually
+    }
 }
 
 /**
