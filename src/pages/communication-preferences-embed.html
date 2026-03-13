@@ -127,13 +127,15 @@
         .consent-card {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             background: rgba(15, 23, 42, 0.5);
             border: 1px solid rgba(148, 163, 184, 0.12);
             border-radius: 12px;
             padding: 14px 16px;
             transition: border-color 0.2s, background 0.2s;
             cursor: pointer;
+            overflow: hidden;
+            min-height: 48px;
         }
 
         .consent-card:hover {
@@ -182,6 +184,9 @@
         .toggle-wrap {
             position: relative;
             flex-shrink: 0;
+            width: 44px;
+            height: 24px;
+            margin-left: auto;
         }
 
         .toggle-wrap input {
@@ -192,11 +197,14 @@
         }
 
         .toggle-slider {
+            display: block;
             width: 44px;
             height: 24px;
             background: rgba(100, 116, 139, 0.4);
             border-radius: 12px;
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
             cursor: pointer;
             transition: background 0.25s;
         }
@@ -330,6 +338,78 @@
             font-size: 0.72rem;
             color: #475569;
             margin-top: 16px;
+        }
+
+        /* ── Mobile Responsive ────────────────────────── */
+        @media (max-width: 480px) {
+            .container {
+                padding: 16px 14px 28px;
+            }
+
+            .page-header h1 {
+                font-size: 1.35rem;
+            }
+
+            .page-header p {
+                font-size: 0.82rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .field-group input {
+                font-size: 16px; /* Prevents iOS auto-zoom */
+                padding: 14px 14px;
+            }
+
+            .consent-card {
+                padding: 12px 14px;
+                gap: 10px;
+            }
+
+            .consent-card .icon {
+                width: 32px;
+                height: 32px;
+                font-size: 0.95rem;
+            }
+
+            .consent-card .info .channel-name {
+                font-size: 0.85rem;
+            }
+
+            .consent-card .info .channel-desc {
+                font-size: 0.7rem;
+            }
+
+            .btn-save {
+                padding: 16px;
+                font-size: 0.95rem;
+                min-height: 52px;
+            }
+
+            .disclaimer {
+                font-size: 0.68rem;
+                padding: 10px 12px;
+            }
+
+            .status-toast {
+                left: 14px;
+                right: 14px;
+                transform: translateY(80px);
+                text-align: center;
+            }
+
+            .status-toast.show {
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 360px) {
+            .consent-card .info .channel-desc {
+                display: none;
+            }
         }
     </style>
 </head>
