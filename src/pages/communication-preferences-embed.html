@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Communication Preferences</title>
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: transparent;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 24px 20px 32px;
+        }
+
+        /* ── Header ───────────────────────────────────── */
+        .page-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .page-header h1 {
+            font-size: 1.65rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+        }
+
+        .page-header p {
+            font-size: 0.88rem;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        /* ── Contact Info Section ─────────────────────── */
+        .section-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .form-grid .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .field-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #cbd5e1;
+            margin-bottom: 5px;
+        }
+
+        .field-group label .optional {
+            font-weight: 400;
+            text-transform: none;
+            color: #64748b;
+            font-size: 0.72rem;
+        }
+
+        .field-group label .required {
+            color: #f59e0b;
+        }
+
+        .field-group input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.92rem;
+            color: #e2e8f0;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .field-group input:focus {
+            outline: none;
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+        }
+
+        .field-group input::placeholder {
+            color: #475569;
+        }
+
+        /* ── Divider ──────────────────────────────────── */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.2), transparent);
+            margin: 8px 0 24px;
+        }
+
+        /* ── Consent Channels ────────────────────────── */
+        .consent-channels {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .consent-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 12px;
+            padding: 14px 16px;
+            transition: border-color 0.2s, background 0.2s;
+            cursor: pointer;
+        }
+
+        .consent-card:hover {
+            border-color: rgba(34, 211, 238, 0.3);
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        .consent-card.checked {
+            border-color: rgba(34, 211, 238, 0.4);
+            background: rgba(34, 211, 238, 0.06);
+        }
+
+        .consent-card .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .consent-card .icon.sms    { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .consent-card .icon.wa     { background: rgba(37, 211, 102, 0.15); color: #25d366; }
+        .consent-card .icon.tg     { background: rgba(0, 136, 204, 0.15); color: #0088cc; }
+        .consent-card .icon.email  { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+
+        .consent-card .info {
+            flex: 1;
+        }
+
+        .consent-card .info .channel-name {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .consent-card .info .channel-desc {
+            font-size: 0.76rem;
+            color: #64748b;
+            margin-top: 1px;
+        }
+
+        /* ── Custom Toggle ────────────────────────────── */
+        .toggle-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .toggle-wrap input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .toggle-slider {
+            width: 44px;
+            height: 24px;
+            background: rgba(100, 116, 139, 0.4);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.25s;
+        }
+
+        .toggle-slider::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: #94a3b8;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.25s, background 0.25s;
+        }
+
+        .toggle-wrap input:checked + .toggle-slider {
+            background: rgba(34, 211, 238, 0.5);
+        }
+
+        .toggle-wrap input:checked + .toggle-slider::after {
+            transform: translateX(20px);
+            background: #22d3ee;
+        }
+
+        /* ── Compliance Disclaimer ────────────────────── */
+        .disclaimer {
+            font-size: 0.72rem;
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            padding: 12px 14px;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 8px;
+            border-left: 3px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .disclaimer strong {
+            color: #94a3b8;
+        }
+
+        /* ── Save Button ──────────────────────────────── */
+        .btn-save {
+            width: 100%;
+            padding: 15px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #0f172a;
+            background: linear-gradient(135deg, #22d3ee, #06b6d4);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(34, 211, 238, 0.3);
+        }
+
+        .btn-save:active {
+            transform: translateY(0);
+        }
+
+        .btn-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-save.saving {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-save.saving::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(15, 23, 42, 0.3);
+            border-top-color: #0f172a;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* ── Status Toast ─────────────────────────────── */
+        .status-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .status-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .status-toast.success {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-toast.error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* ── Last Updated ─────────────────────────────── */
+        .last-updated {
+            text-align: center;
+            font-size: 0.72rem;
+            color: #475569;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1>Communication Preferences</h1>
+            <p>Securely link your contact info to your case to receive urgent updates and paperwork.</p>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="section-label">Your Contact Information</div>
+        <div class="form-grid">
+            <div class="field-group">
+                <label>First Name <span class="required">*</span></label>
+                <input type="text" id="firstName" placeholder="John" autocomplete="given-name" />
+            </div>
+            <div class="field-group">
+                <label>Last Name <span class="required">*</span></label>
+                <input type="text" id="lastName" placeholder="Doe" autocomplete="family-name" />
+            </div>
+            <div class="field-group full-width">
+                <label>Mobile Phone Number <span class="required">*</span></label>
+                <input type="tel" id="phone" placeholder="(555) 555-5555" autocomplete="tel" />
+            </div>
+            <div class="field-group full-width">
+                <label>Email Address <span class="optional">(Optional)</span></label>
+                <input type="email" id="email" placeholder="john@example.com" autocomplete="email" />
+            </div>
+            <div class="field-group full-width">
+                <label>Case / Booking Number <span class="optional">(Optional)</span></label>
+                <input type="text" id="caseNumber" placeholder="E.g. 240001234" />
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Communication Channel Consent -->
+        <div class="section-label">Communication Channels</div>
+        <div class="consent-channels">
+            <!-- SMS -->
+            <label class="consent-card checked" data-channel="sms">
+                <div class="icon sms">💬</div>
+                <div class="info">
+                    <div class="channel-name">SMS Text Messages</div>
+                    <div class="channel-desc">Court reminders, case updates, paperwork links</div>
+                </div>
+                <div class="toggle-wrap">
+                    <input type="checkbox" id="toggleSms" checked>
+                    <span class="toggle-slider"></span>
+                </div>
+            </label>
+
+            <!-- WhatsApp -->
+            <label class="consent-card checked" data-channel="whatsapp">
+                <div class="icon wa">📱</div>
+                <div class="info">
+                    <div class="channel-name">WhatsApp</div>
+                    <div class="channel-desc">Messaging via WhatsApp for updates &amp; reminders</div>
+                </div>
+                <div class="toggle-wrap">
+                    <input type="checkbox" id="toggleWhatsapp" checked>
+                    <span class="toggle-slider"></span>
+                </div>
+            </label>
+
+            <!-- Telegram -->
+            <label class="consent-card" data-channel="telegram">
+                <div class="icon tg">✈️</div>
+                <div class="info">
+                    <div class="channel-name">Telegram</div>
+                    <div class="channel-desc">Receive updates via Telegram bot</div>
+                </div>
+                <div class="toggle-wrap">
+                    <input type="checkbox" id="toggleTelegram">
+                    <span class="toggle-slider"></span>
+                </div>
+            </label>
+
+            <!-- Email -->
+            <label class="consent-card checked" data-channel="email">
+                <div class="icon email">📧</div>
+                <div class="info">
+                    <div class="channel-name">Email</div>
+                    <div class="channel-desc">Documents, receipts, and important notices</div>
+                </div>
+                <div class="toggle-wrap">
+                    <input type="checkbox" id="toggleEmail" checked>
+                    <span class="toggle-slider"></span>
+                </div>
+            </label>
+        </div>
+
+        <!-- Compliance Disclaimer -->
+        <div class="disclaimer">
+            <strong>By saving your preferences,</strong> you explicitly consent to receive transactional
+            and informational messages from Shamrock Bail Bonds via your selected channels.
+            Message frequency varies based on your case status. Message and data rates may apply.
+            Reply STOP at any time to opt out, or HELP for assistance. Your information is never
+            shared with third parties for marketing purposes.
+        </div>
+
+        <!-- Save Button -->
+        <button class="btn-save" id="btnSave">Save Preferences</button>
+
+        <!-- Last Updated -->
+        <div class="last-updated" id="lastUpdated"></div>
+    </div>
+
+    <!-- Status Toast -->
+    <div class="status-toast" id="statusToast"></div>
+
+    <script>
+        // ── Toggle visual state ──────────────────────────────────
+        document.querySelectorAll('.consent-card').forEach(card => {
+            const checkbox = card.querySelector('input[type="checkbox"]');
+            checkbox.addEventListener('change', () => {
+                card.classList.toggle('checked', checkbox.checked);
+            });
+        });
+
+        // ── Gather form data ─────────────────────────────────────
+        function getFormData() {
+            return {
+                firstName:    document.getElementById('firstName').value.trim(),
+                lastName:     document.getElementById('lastName').value.trim(),
+                phone:        document.getElementById('phone').value.trim(),
+                email:        document.getElementById('email').value.trim(),
+                caseNumber:   document.getElementById('caseNumber').value.trim(),
+                smsOptIn:     document.getElementById('toggleSms').checked,
+                whatsappOptIn:document.getElementById('toggleWhatsapp').checked,
+                telegramOptIn:document.getElementById('toggleTelegram').checked,
+                emailOptIn:   document.getElementById('toggleEmail').checked
+            };
+        }
+
+        // ── Set form data (from parent page) ─────────────────────
+        function setFormData(data) {
+            if (data.firstName)  document.getElementById('firstName').value = data.firstName;
+            if (data.lastName)   document.getElementById('lastName').value = data.lastName;
+            if (data.phone)      document.getElementById('phone').value = data.phone;
+            if (data.email)      document.getElementById('email').value = data.email;
+            if (data.caseNumber) document.getElementById('caseNumber').value = data.caseNumber;
+
+            ['sms', 'whatsapp', 'telegram', 'email'].forEach(ch => {
+                const key = ch + 'OptIn';
+                const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
+                const card = toggle.closest('.consent-card');
+                if (data[key] !== undefined) {
+                    toggle.checked = data[key] !== false;
+                    card.classList.toggle('checked', toggle.checked);
+                }
+            });
+
+            if (data.lastUpdated) {
+                document.getElementById('lastUpdated').textContent = 'Last updated: ' + data.lastUpdated;
+            }
+        }
+
+        // ── Validation ───────────────────────────────────────────
+        function validate() {
+            const d = getFormData();
+            if (!d.firstName || !d.lastName) return 'First name and last name are required.';
+            if (!d.phone)                    return 'Phone number is required.';
+            if (!d.smsOptIn && !d.whatsappOptIn && !d.telegramOptIn && !d.emailOptIn) {
+                return 'Please select at least one communication channel.';
+            }
+            return null;
+        }
+
+        // ── Show status toast ────────────────────────────────────
+        function showToast(message, isError) {
+            const toast = document.getElementById('statusToast');
+            toast.textContent = message;
+            toast.className = 'status-toast show ' + (isError ? 'error' : 'success');
+            setTimeout(() => { toast.classList.remove('show'); }, 4000);
+        }
+
+        // ── Save button ──────────────────────────────────────────
+        const btnSave = document.getElementById('btnSave');
+
+        btnSave.addEventListener('click', () => {
+            const error = validate();
+            if (error) {
+                showToast(error, true);
+                return;
+            }
+
+            btnSave.classList.add('saving');
+            btnSave.disabled = true;
+
+            // Send data to parent Wix page
+            window.parent.postMessage({
+                type: 'savePreferences',
+                data: getFormData()
+            }, '*');
+        });
+
+        // ── Listen for messages FROM the parent Wix page ─────────
+        window.addEventListener('message', (event) => {
+            const msg = event.data;
+            if (!msg || !msg.type) return;
+
+            switch (msg.type) {
+                case 'loadPreferences':
+                    setFormData(msg.data || {});
+                    break;
+
+                case 'saveSuccess':
+                    btnSave.classList.remove('saving');
+                    btnSave.disabled = false;
+                    showToast('✅ Preferences saved successfully!', false);
+                    if (msg.data && msg.data.lastUpdated) {
+                        document.getElementById('lastUpdated').textContent = 'Last updated: ' + msg.data.lastUpdated;
+                    }
+                    break;
+
+                case 'saveError':
+                    btnSave.classList.remove('saving');
+                    btnSave.disabled = false;
+                    showToast(msg.message || 'Error saving preferences.', true);
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -2,26 +2,17 @@
  * Communication Preferences — Shamrock Bail Bonds Portal
  * Page ID: f870g
  *
- * Allows authenticated portal users (indemnitors and defendants) to manage
- * their communication opt-in/opt-out preferences for:
- *   - SMS (Twilio)
- *   - WhatsApp (Twilio)
- *   - Telegram
- *   - Email
+ * This page uses an embedded HtmlComponent (#html1) for the form UI.
+ * The HTML embed handles all visual rendering and user input.
+ * This page code handles:
+ *   1. Session authentication
+ *   2. Loading existing preferences from 'Portal Users' CMS
+ *   3. Receiving save requests via postMessage from the HTML embed
+ *   4. Writing updated preferences to the CMS
+ *   5. Sending success/error responses back to the HTML embed
  *
- * Data is read from and written to the 'Portal Users' CMS collection.
- * TheCloser.js (GAS) reads smsOptIn / whatsappOptIn before sending any
- * drip message, so this page is the authoritative opt-out gate.
- *
- * Element IDs expected on the Wix page:
- *   #toggleSms          — Toggle switch for SMS
- *   #toggleWhatsapp     — Toggle switch for WhatsApp
- *   #toggleTelegram     — Toggle switch for Telegram
- *   #toggleEmail        — Toggle switch for Email
- *   #btnSavePrefs       — Save button
- *   #txtStatus          — Status text element
- *   #txtLastUpdated     — "Last updated" text element
- *   #loadingSpinner     — Loading indicator (show/hide)
+ * The HTML embed element ID should be: #html1
+ * (Change the ID below if you named it differently in the Wix Editor)
  */
 
 import wixData from 'wix-data';
@@ -30,29 +21,17 @@ import { local } from 'wix-storage';
 import { getSessionToken, getSessionData } from 'public/session-manager';
 import { validateCustomSession } from 'backend/portal-auth';
 
+// ── Config ─────────────────────────────────────────────────────────────────────
+// Change this if your HTML embed has a different element ID in the Wix Editor
+const HTML_ELEMENT_ID = '#html1';
+
 // ── State ──────────────────────────────────────────────────────────────────────
 let sessionData = null;
-let userRecord   = null;
+let userRecord = null;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-function showStatus(msg, isError) {
-    try {
-        const el = $w('#txtStatus');
-        el.text = msg;
-        el.style.color = isError ? '#e53e3e' : '#38a169';
-        el.show();
-        setTimeout(() => { try { el.hide(); } catch (_) {} }, 4000);
-    } catch (_) { console.log('[CommPrefs] Status:', msg); }
-}
-
-function setLoading(on) {
-    try {
-        on ? $w('#loadingSpinner').show() : $w('#loadingSpinner').hide();
-    } catch (_) { /* spinner element may not exist on all layouts */ }
-}
-
 function formatDate(d) {
-    if (!d) return 'Never';
+    if (!d) return '';
     try {
         return new Date(d).toLocaleDateString('en-US', {
             month: 'short', day: 'numeric', year: 'numeric',
@@ -61,108 +40,120 @@ function formatDate(d) {
     } catch (_) { return String(d); }
 }
 
-// ── Load preferences from Portal Users record ──────────────────────────────────
-async function loadPreferences() {
-    if (!sessionData || !sessionData.personId) {
-        showStatus('Session expired. Please log in again.', true);
-        return;
-    }
+// ── Load preferences from CMS and push to HTML embed ───────────────────────────
+async function loadAndPushPreferences() {
+    if (!sessionData || !sessionData.personId) return;
 
-    setLoading(true);
     try {
         const results = await wixData.query('Portal Users')
             .eq('personId', sessionData.personId)
             .limit(1)
             .find({ suppressAuth: true });
 
-        if (results.items.length === 0) {
-            showStatus('Could not load your preferences. Please try again.', true);
-            setLoading(false);
-            return;
-        }
+        if (results.items.length === 0) return;
 
         userRecord = results.items[0];
 
-        // Defaults: all channels opt-in unless explicitly set to false
-        try { $w('#toggleSms').checked       = userRecord.smsOptIn       !== false; } catch (_) {}
-        try { $w('#toggleWhatsapp').checked  = userRecord.whatsappOptIn  !== false; } catch (_) {}
-        try { $w('#toggleTelegram').checked  = userRecord.telegramOptIn  !== false; } catch (_) {}
-        try { $w('#toggleEmail').checked     = userRecord.emailOptIn     !== false; } catch (_) {}
-
+        // Send existing data into the HTML embed to pre-fill the form
         const lastUpdated = userRecord.prefsUpdatedAt || userRecord.updatedAt;
-        try {
-            $w('#txtLastUpdated').text = 'Last updated: ' + formatDate(lastUpdated);
-        } catch (_) {}
+        $w(HTML_ELEMENT_ID).postMessage({
+            type: 'loadPreferences',
+            data: {
+                firstName:    userRecord.firstName || '',
+                lastName:     userRecord.lastName || '',
+                phone:        userRecord.phone || '',
+                email:        userRecord.email || '',
+                caseNumber:   userRecord.caseNumber || userRecord.bookingNumber || '',
+                smsOptIn:     userRecord.smsOptIn !== false,
+                whatsappOptIn: userRecord.whatsappOptIn !== false,
+                telegramOptIn: userRecord.telegramOptIn !== false,
+                emailOptIn:   userRecord.emailOptIn !== false,
+                lastUpdated:  formatDate(lastUpdated)
+            }
+        });
 
     } catch (err) {
-        console.error('[CommPrefs] loadPreferences error:', err);
-        showStatus('Error loading preferences.', true);
-    } finally {
-        setLoading(false);
+        console.error('[CommPrefs] loadAndPushPreferences error:', err);
     }
 }
 
-// ── Save preferences to Portal Users record ────────────────────────────────────
-async function savePreferences() {
-    if (!userRecord) {
-        showStatus('No record loaded. Please refresh the page.', true);
-        return;
-    }
-
-    setLoading(true);
+// ── Save preferences received from the HTML embed ──────────────────────────────
+async function savePreferences(formData) {
     try {
-        let smsOn      = true;
-        let waOn       = true;
-        let tgOn       = true;
-        let emailOn    = true;
-        try { smsOn   = $w('#toggleSms').checked; }      catch (_) {}
-        try { waOn    = $w('#toggleWhatsapp').checked; } catch (_) {}
-        try { tgOn    = $w('#toggleTelegram').checked; } catch (_) {}
-        try { emailOn = $w('#toggleEmail').checked; }    catch (_) {}
+        // If we already have a record, update it; otherwise create a new one
+        const now = new Date();
+        const isoNow = now.toISOString();
 
-        const updated = Object.assign({}, userRecord, {
-            smsOptIn:       smsOn,
-            whatsappOptIn:  waOn,
-            telegramOptIn:  tgOn,
-            emailOptIn:     emailOn,
-            prefsUpdatedAt: new Date().toISOString(),
-            updatedAt:      new Date()
+        if (userRecord) {
+            // Update existing record
+            const updated = Object.assign({}, userRecord, {
+                firstName:      formData.firstName,
+                lastName:       formData.lastName,
+                phone:          formData.phone,
+                email:          formData.email,
+                caseNumber:     formData.caseNumber,
+                smsOptIn:       formData.smsOptIn,
+                whatsappOptIn:  formData.whatsappOptIn,
+                telegramOptIn:  formData.telegramOptIn,
+                emailOptIn:     formData.emailOptIn,
+                prefsUpdatedAt: isoNow,
+                updatedAt:      now
+            });
+
+            await wixData.update('Portal Users', updated, { suppressAuth: true });
+            userRecord = updated;
+        } else {
+            // Create new record
+            const newRecord = {
+                personId:       sessionData?.personId || '',
+                firstName:      formData.firstName,
+                lastName:       formData.lastName,
+                phone:          formData.phone,
+                email:          formData.email,
+                caseNumber:     formData.caseNumber,
+                smsOptIn:       formData.smsOptIn,
+                whatsappOptIn:  formData.whatsappOptIn,
+                telegramOptIn:  formData.telegramOptIn,
+                emailOptIn:     formData.emailOptIn,
+                prefsUpdatedAt: isoNow,
+                createdAt:      now,
+                updatedAt:      now
+            };
+
+            userRecord = await wixData.insert('Portal Users', newRecord, { suppressAuth: true });
+        }
+
+        // Cache locally for fast-path checks
+        if (sessionData?.personId) {
+            local.setItem(
+                'commPrefs_' + sessionData.personId,
+                JSON.stringify({
+                    smsOptIn:      formData.smsOptIn,
+                    whatsappOptIn: formData.whatsappOptIn,
+                    telegramOptIn: formData.telegramOptIn,
+                    emailOptIn:    formData.emailOptIn,
+                    savedAt:       isoNow
+                })
+            );
+        }
+
+        // Tell the HTML embed save succeeded
+        $w(HTML_ELEMENT_ID).postMessage({
+            type: 'saveSuccess',
+            data: { lastUpdated: formatDate(isoNow) }
         });
-
-        await wixData.update('Portal Users', updated, { suppressAuth: true });
-
-        // Cache locally so fast-path checks (e.g. geolocation-client.js) can read without a DB call
-        local.setItem(
-            'commPrefs_' + sessionData.personId,
-            JSON.stringify({
-                smsOptIn:      updated.smsOptIn,
-                whatsappOptIn: updated.whatsappOptIn,
-                telegramOptIn: updated.telegramOptIn,
-                emailOptIn:    updated.emailOptIn,
-                savedAt:       updated.prefsUpdatedAt
-            })
-        );
-
-        userRecord = updated;
-
-        try {
-            $w('#txtLastUpdated').text = 'Last updated: ' + formatDate(updated.prefsUpdatedAt);
-        } catch (_) {}
-
-        showStatus('✅ Preferences saved successfully.', false);
 
     } catch (err) {
         console.error('[CommPrefs] savePreferences error:', err);
-        showStatus('Error saving preferences. Please try again.', true);
-    } finally {
-        setLoading(false);
+        $w(HTML_ELEMENT_ID).postMessage({
+            type: 'saveError',
+            message: 'Error saving preferences. Please try again.'
+        });
     }
 }
 
-// ── Page ready ─────────────────────────────────────────────────────────────────
+// ── Page Ready ─────────────────────────────────────────────────────────────────
 $w.onReady(async function () {
-    setLoading(true);
-
     // 1. Authenticate session
     const token = getSessionToken();
     if (token) {
@@ -173,26 +164,29 @@ $w.onReady(async function () {
         }
     }
 
-    // Fallback: try cached session data
     if (!sessionData) {
         sessionData = getSessionData();
     }
 
-    if (!sessionData || !sessionData.personId) {
-        // Not logged in — redirect to portal landing
-        wixWindow.to('/portal');
-        return;
-    }
+    // Note: We don't force-redirect if not logged in —
+    // the form still works for anonymous users contacting us.
 
-    // 2. Load current preferences
-    await loadPreferences();
-
-    // 3. Wire save button
+    // 2. Wire up the HTML embed message listener
     try {
-        $w('#btnSavePrefs').onClick(async () => {
-            await savePreferences();
+        $w(HTML_ELEMENT_ID).onMessage(async (event) => {
+            const msg = event.data;
+            if (!msg || !msg.type) return;
+
+            if (msg.type === 'savePreferences' && msg.data) {
+                await savePreferences(msg.data);
+            }
         });
     } catch (e) {
-        console.warn('[CommPrefs] Save button not found:', e.message);
+        console.warn('[CommPrefs] HTML element not found:', e.message);
+    }
+
+    // 3. Load existing preferences if authenticated
+    if (sessionData && sessionData.personId) {
+        await loadAndPushPreferences();
     }
 });
