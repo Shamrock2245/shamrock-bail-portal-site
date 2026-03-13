@@ -20,6 +20,7 @@ import wixWindow from 'wix-window';
 import { local } from 'wix-storage';
 import { getSessionToken, getSessionData } from 'public/session-manager';
 import { validateCustomSession } from 'backend/portal-auth';
+import { syncCommPrefsToGas } from 'backend/comm-prefs-sync';
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 // Change this if your HTML embed has a different element ID in the Wix Editor
@@ -142,6 +143,20 @@ async function savePreferences(formData) {
             type: 'saveSuccess',
             data: { lastUpdated: formatDate(isoNow) }
         });
+
+        // ── Sync to GAS backend (fire-and-forget) ──────────────────────────
+        // This writes prefs to the CommPrefs Google Sheet so TheCloser,
+        // CourtReminders, etc. can check opt-in before sending messages.
+        syncCommPrefsToGas({
+            phone:          formData.phone,
+            firstName:      formData.firstName,
+            lastName:       formData.lastName,
+            email:          formData.email,
+            smsOptIn:       formData.smsOptIn,
+            whatsappOptIn:  formData.whatsappOptIn,
+            telegramOptIn:  formData.telegramOptIn,
+            emailOptIn:     formData.emailOptIn
+        }).catch(err => console.warn('[CommPrefs] GAS sync failed (non-fatal):', err));
 
     } catch (err) {
         console.error('[CommPrefs] savePreferences error:', err);

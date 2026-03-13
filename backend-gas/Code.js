@@ -717,6 +717,21 @@ function doPost(e) {
       }
     }
 
+    // ─── COMMUNICATION PREFERENCES (Portal → GAS Sync) ───
+    if (data.action === 'updateCommPrefs') {
+      try {
+        Logger.log('📋 Communication preferences update: ' + (data.phone || 'unknown'));
+        if (typeof handleUpdateCommPrefs === 'function') {
+          var prefsResult = handleUpdateCommPrefs(data);
+          return createResponse(prefsResult);
+        }
+        return createErrorResponse('CommPrefsGate not loaded', ERROR_CODES.INTERNAL_ERROR);
+      } catch (prefsErr) {
+        Logger.log('❌ CommPrefs update error: ' + prefsErr.message);
+        return createErrorResponse(prefsErr.message, ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
     // ─── BOT ANALYTICS (Feature #4) ───
     if (data.action === 'get_bot_analytics') {
       try {

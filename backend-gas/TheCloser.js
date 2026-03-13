@@ -261,7 +261,10 @@ function _sendFollowUp(dripLevel, name, phone, intakeId) {
 
     // SMS (always, if we have a Twilio setup)
     if (template.sms) {
-        try {
+        // ── Respect Communication Preferences opt-out ──
+        if (typeof checkCommPrefsAllowed === 'function' && !checkCommPrefsAllowed(phone, 'sms')) {
+            Logger.log('  🚫 SMS skipped — client opted out via Communication Preferences');
+        } else { try {
             var smsBody = template.sms.replace(/\{name\}/g, firstName);
             var cleanPhone = phone.replace(/\D/g, '');
             if (cleanPhone.length === 10) cleanPhone = '+1' + cleanPhone;
@@ -286,12 +289,15 @@ function _sendFollowUp(dripLevel, name, phone, intakeId) {
             }
         } catch (smsErr) {
             Logger.log('  ❌ SMS failed: ' + smsErr.message);
-        }
+        }}
     }
 
     // WhatsApp (24h drip only)
     if (template.whatsapp) {
-        try {
+        // ── Respect Communication Preferences opt-out ──
+        if (typeof checkCommPrefsAllowed === 'function' && !checkCommPrefsAllowed(phone, 'whatsapp')) {
+            Logger.log('  🚫 WhatsApp skipped — client opted out via Communication Preferences');
+        } else { try {
             var waBody = template.whatsapp.replace(/\{name\}/g, firstName);
             var waPhone = phone.replace(/\D/g, '');
             if (waPhone.length === 10) waPhone = '+1' + waPhone;
@@ -318,14 +324,17 @@ function _sendFollowUp(dripLevel, name, phone, intakeId) {
             }
         } catch (waErr) {
             Logger.log('  ❌ WhatsApp failed: ' + waErr.message);
-        }
+        }}
     }
 
     // Telegram (all drip levels — if client has a Telegram chat ID on file)
     // Looks up the Telegram chat ID from IntakeQueue by phone number.
     // Falls back gracefully if TG_sendCloserFollowUp is not available.
     if (template.telegram) {
-        try {
+        // ── Respect Communication Preferences opt-out ──
+        if (typeof checkCommPrefsAllowed === 'function' && !checkCommPrefsAllowed(phone, 'telegram')) {
+            Logger.log('  🚫 Telegram skipped — client opted out via Communication Preferences');
+        } else { try {
             var tgBody = template.telegram.replace(/\{name\}/g, firstName);
             var tgSent = false;
 
@@ -354,7 +363,7 @@ function _sendFollowUp(dripLevel, name, phone, intakeId) {
             }
         } catch (tgErr) {
             Logger.log('  ❌ Telegram failed: ' + tgErr.message);
-        }
+        }}
     }
 
     return {

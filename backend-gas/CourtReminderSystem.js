@@ -87,15 +87,25 @@ function processDailyCourtReminders() {
                 // (Assuming Twilio handles standard 10DLC SMS. Add WhatsApp syntax later if requested)
                 try {
                     if (defPhone && String(defPhone).trim().length >= 10) {
-                        var resD = NotificationService.sendSms(defPhone, message);
-                        if (resD && resD.success) sentToD = true;
+                        // ── Respect Communication Preferences opt-out ──
+                        if (typeof checkCommPrefsAllowed === 'function' && !checkCommPrefsAllowed(defPhone, 'sms')) {
+                            Logger.log('🚫 Court reminder SMS skipped for defendant — opted out');
+                        } else {
+                            var resD = NotificationService.sendSms(defPhone, message);
+                            if (resD && resD.success) sentToD = true;
+                        }
                     }
                 } catch (e) { Logger.log('Failed SMS to Defendant: ' + e.message); }
 
                 try {
                     if (indPhone && String(indPhone).trim().length >= 10 && indPhone !== defPhone) {
-                        var resI = NotificationService.sendSms(indPhone, message);
-                        if (resI && resI.success) sentToI = true;
+                        // ── Respect Communication Preferences opt-out ──
+                        if (typeof checkCommPrefsAllowed === 'function' && !checkCommPrefsAllowed(indPhone, 'sms')) {
+                            Logger.log('🚫 Court reminder SMS skipped for indemnitor — opted out');
+                        } else {
+                            var resI = NotificationService.sendSms(indPhone, message);
+                            if (resI && resI.success) sentToI = true;
+                        }
                     }
                 } catch (e) { Logger.log('Failed SMS to Indemnitor: ' + e.message); }
 

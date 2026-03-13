@@ -1,0 +1,70 @@
+/**
+ * comm-prefs-sync.jsw — Wix Backend Module
+ * Shamrock Bail Bonds
+ *
+ * Syncs client communication preferences from Wix CMS → GAS backend
+ * so that TheCloser, CourtReminders, and other outbound handlers
+ * can check opt-in/opt-out status before sending messages.
+ *
+ * Called from: Communication Preferences.f870g.js (page code)
+ * Target:      GAS doPost → action 'updateCommPrefs' → CommPrefsGate.js
+ */
+
+import { fetch } from 'wix-fetch';
+import { getGasWebAppUrl } from 'backend/secretsManager';
+import { getSecret } from 'wix-secrets-backend';
+
+/**
+ * Push communication preferences to the GAS backend.
+ * This writes to the CommPrefs Google Sheet tab, which is read by
+ * TheCloser, CourtReminderSystem, etc. before sending SMS/WhatsApp/Telegram.
+ *
+ * @param {Object} prefs — { phone, firstName, lastName, email, smsOptIn, whatsappOptIn, telegramOptIn, emailOptIn }
+ * @returns {Object}     — { success, message }
+ */
+export async function syncCommPrefsToGas(prefs) {
+    try {
+        if (!prefs || !prefs.phone) {
+            return { success: false, error: 'Phone number is required for GAS sync.' };
+        }
+
+        const gasUrl = await getGasWebAppUrl();
+        const apiKey = await getSecret('GAS_API_KEY');
+
+        if (!gasUrl) {
+            console.warn('[CommPrefsSync] No GAS URL configured — skipping sync.');
+            return { success: false, error: 'GAS URL not configured.' };
+        }
+
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'updateCommPrefs',
+                apiKey: apiKey || '',
+                phone:          prefs.phone,
+                firstName:      prefs.firstName || '',
+                lastName:       prefs.lastName || '',
+                email:          prefs.email || '',
+                smsOptIn:       prefs.smsOptIn !== false,
+                whatsappOptIn:  prefs.whatsappOptIn !== false,
+                telegramOptIn:  prefs.telegramOptIn !== false,
+                emailOptIn:     prefs.emailOptIn !== false
+            })
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('[CommPrefsSync] GAS sync result:', JSON.stringify(result));
+            return { success: true, result };
+        } else {
+            const errText = await response.text();
+            console.error('[CommPrefsSync] GAS sync failed:', errText);
+            return { success: false, error: 'GAS returned ' + response.status };
+        }
+
+    } catch (err) {
+        console.error('[CommPrefsSync] Error syncing to GAS:', err);
+        return { success: false, error: err.message };
+    }
+}
