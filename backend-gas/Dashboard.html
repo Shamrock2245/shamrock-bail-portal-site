@@ -7077,10 +7077,22 @@
                         style="background-color: var(--surface-2);" readonly></textarea>
                 </div>
 
+                <!-- AI Variant Selector (Hidden by default) -->
+                <div id="outreach-ai-variants" class="form-group" style="grid-column: span 2; display:none;">
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <span style="background:linear-gradient(135deg, #8b5cf6, #6366f1); color:#fff; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">AI</span>
+                        Pick a Variant
+                    </label>
+                    <div id="outreach-variant-cards" style="display:flex; flex-direction:column; gap:10px; margin-top:8px;"></div>
+                </div>
+
                 <div class="form-group"
                     style="grid-column: span 2; display: flex; justify-content: flex-end; gap: 10px;">
                     <button class="btn btn-secondary" onclick="OutreachMode.generatePreview()">🔄 Refresh
                         Preview</button>
+                    <button class="btn btn-secondary" onclick="OutreachMode.aiRewrite()" style="background:linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); color:#fff; border:none;">
+                        ✨ AI Rewrite with Grok
+                    </button>
                     <button class="btn btn-primary" onclick="OutreachMode.sendMessage()">🚀 Send Message</button>
                 </div>
             </div>
@@ -7176,6 +7188,10 @@
                 <button type="button" class="tab" onclick="toggleAgentTab(this, 'agent-investigator')"
                     style="flex:1; justify-content:center;">
                     <span class="tab-icon">🕵️</span> The Investigator
+                </button>
+                <button type="button" class="tab" onclick="toggleAgentTab(this, 'agent-grok')"
+                    style="flex:1; justify-content:center;">
+                    <span class="tab-icon">🧠</span> Grok Chat
                 </button>
             </div>
 
@@ -7413,6 +7429,54 @@
                     </button>
 
                     <div id="investigator-output" style="min-height:200px;"></div>
+                </div>
+            </div>
+
+            <!-- AGENT 5: GROK CHAT -->
+            <div id="agent-grok" class="agent-view" style="display:none; animation: fadeIn 0.3s ease;">
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <div>
+                            <h4 style="margin-bottom:4px;">Ask Shamrock Anything</h4>
+                            <p class="text-secondary" style="font-size:13px;">Powered by xAI Grok · Full Shamrock Knowledge Base (67 Counties)</p>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.testConnection()" title="Test API">
+                                🔌 Test
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.clearChat()" title="Clear Chat">
+                                🗑️ Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Suggested Questions -->
+                    <div id="grok-suggestions" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;">
+                        <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.askSuggestion(this)" style="font-size:12px;">📍 Lee County release process?</button>
+                        <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.askSuggestion(this)" style="font-size:12px;">💬 Draft a follow-up text for a Charlotte lead</button>
+                        <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.askSuggestion(this)" style="font-size:12px;">📊 Compare Collier vs Hillsborough bonding</button>
+                        <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.askSuggestion(this)" style="font-size:12px;">📱 Social post idea: 24/7 availability</button>
+                    </div>
+
+                    <!-- Chat Messages Area -->
+                    <div id="grok-chat-messages"
+                        style="background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; min-height:400px; max-height:500px; overflow-y:auto; margin-bottom:16px; display:flex; flex-direction:column; gap:16px;">
+                        <div style="text-align:center; padding:60px 20px; color:var(--muted);">
+                            <div style="font-size:48px; margin-bottom:12px;">🧠</div>
+                            <p>Ask me anything about Shamrock operations, county procedures, or draft client messages.</p>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="grok-chat-input"
+                            placeholder="Ask Grok anything about Shamrock..."
+                            style="flex:1; padding:14px 18px; border:2px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); font-size:15px; transition:var(--transition);"
+                            onkeydown="if(event.key==='Enter') GrokChatUI.send()">
+                        <button class="btn btn-primary" onclick="GrokChatUI.send()" style="min-width:120px;">
+                            🚀 Send
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -8475,88 +8539,9 @@
                     // Maps is now handled by callback or lazy-load on tab switch
 
                     // --- Module: Social Hub ---
-                    window.generateSocialPosts = function () {
-                        const basePost = document.getElementById('social-base-post').value;
-                        if (!basePost) {
-                            UI.showToast('Please enter a base post/idea', 'error');
-                            return;
-                        }
-
-                        const checkboxes = document.querySelectorAll('.social-platform:checked');
-                        const platforms = Array.from(checkboxes).map(cb => cb.value);
-
-                        if (platforms.length === 0) {
-                            UI.showToast('Please select at least one target platform', 'error');
-                            return;
-                        }
-
-                        const btn = document.getElementById('btn-generate-social');
-                        const originalText = btn.innerHTML;
-                        btn.innerHTML = '⏳ Generating with Grok...';
-                        btn.disabled = true;
-
-                        const container = document.getElementById('social-variants-container');
-                        container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--text-secondary);"><div style="font-size:32px; animation:spin 1s linear infinite; display:inline-block;">⚙️</div><p style="margin-top:16px;">Grok is crafting optimal posts for ' + platforms.length + ' platforms...</p></div>';
-
-                        google.script.run
-                            .withSuccessHandler(res => {
-                                btn.innerHTML = originalText;
-                                btn.disabled = false;
-
-                                if (res.success) {
-                                    UI.showToast('Variants Generated Successfully!', 'success');
-                                    renderSocialVariants(res.variants);
-                                    document.getElementById('btn-broadcast-social').disabled = false;
-                                } else {
-                                    UI.showToast('Generation Failed: ' + res.error, 'error');
-                                    container.innerHTML = '<div style="color:var(--error); padding:20px;">Error: ' + res.error + '</div>';
-                                }
-                            })
-                            .withFailureHandler(err => {
-                                btn.innerHTML = originalText;
-                                btn.disabled = false;
-                                console.error(err);
-                                UI.showToast('System Error: ' + err.message, 'error');
-                                container.innerHTML = '<div style="color:var(--error); padding:20px;">System Error: ' + err.message + '</div>';
-                            })
-                            .client_generateSocialPosts(basePost, platforms);
-                    };
-
-                    window.renderSocialVariants = function (variants) {
-                        const container = document.getElementById('social-variants-container');
-                        container.innerHTML = '';
-
-                        Object.keys(variants).forEach(platform => {
-                            const text = variants[platform];
-
-                            const div = document.createElement('div');
-                            div.style.cssText = 'background: var(--surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 12px;';
-
-                            const header = document.createElement('div');
-                            header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;';
-                            header.innerHTML = '<strong style="text-transform: capitalize; color: var(--accent); font-size: 15px;">' + platform + '</strong><span style="font-size: 11px; color: var(--muted); font-weight: bold;">' + text.length + ' chars</span>';
-
-                            const textarea = document.createElement('textarea');
-                            textarea.className = 'social-variant-edit';
-                            textarea.dataset.platform = platform;
-                            textarea.rows = 4;
-                            textarea.style.cssText = 'width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 8px; font-size: 14px;';
-                            textarea.value = text;
-
-                            const utils = document.createElement('div');
-                            utils.style.cssText = 'display: flex; justify-content: flex-end; gap: 8px;';
-                            utils.innerHTML = '<button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(this.parentElement.previousElementSibling.value); UI.showToast(\'Copied!\',\'success\')">Copy</button>';
-
-                            div.appendChild(header);
-                            div.appendChild(textarea);
-                            div.appendChild(utils);
-                            container.appendChild(div);
-                        });
-                    };
-
-                    window.broadcastSocialPosts = function () {
-                        UI.showToast('API Broadcasting is scheduled for Phase 8.', 'info');
-                    };
+                    // NOTE: generateSocialPosts, broadcastSocialPosts, and rendering
+                    // are handled by the GrokIntegration module (see separate <script> block).
+                    // Global exports set below in the GROK INTEGRATION section.
 
                     // --- Module: Blog Audio ---
                     window.generateBlogAudio = function (btn) {
@@ -8615,6 +8600,11 @@
                     window.refreshAllCountyStatus = Stats.refreshAll;
                     window.toggleAgentTab = UI.toggleAgentTab;
                     window.switchTab = UI.switchTab; // CRITICAL FIX: Expose switchTab globally
+
+                    // --- GROK INTEGRATION: Global Exports ---
+                    window.generateSocialPosts = GrokIntegration.generateSocialPosts;
+                    window.broadcastSocialPosts = GrokIntegration.broadcastSocialPosts;
+                    window.GrokChatUI = GrokIntegration.Chat;
 
                     window.forceQualifiedCleanup = function () {
                         if (!confirm('⚠️ ARE YOU SURE?\n\nThis will CLEAR ALL DATA in the "Shamrock_Arrests_Master" and "Qualified_exceptions" tabs and re-sync from source counties.\n\nThis process cannot be undone.')) return;
@@ -8843,6 +8833,423 @@
                 console.log(toastMsg);
                 alert(toastMsg);
             }
+        }
+    </script>
+
+    <!-- ============================================================
+         GROK INTEGRATION MODULE
+         ============================================================ -->
+    <script>
+        /**
+         * GrokIntegration — Social Hub, Outreach AI Rewrite, and Grok Chat.
+         * All functions call GAS backend via google.script.run.
+         */
+        const GrokIntegration = (function () {
+
+            // ─── Social Hub ───
+            function generateSocialPosts() {
+                const basePost = document.getElementById('social-base-post').value.trim();
+                if (!basePost) {
+                    UI.showToast('Please enter a base post or idea first.', 'warning');
+                    document.getElementById('social-base-post').focus();
+                    return;
+                }
+
+                const platforms = [];
+                document.querySelectorAll('.social-platform:checked').forEach(cb => platforms.push(cb.value));
+                if (platforms.length === 0) {
+                    UI.showToast('Select at least one platform.', 'warning');
+                    return;
+                }
+
+                const container = document.getElementById('social-variants-container');
+                container.innerHTML = `
+                    <div style="text-align:center; padding:60px 20px;">
+                        <div style="font-size:32px; animation:spin 1s linear infinite; display:inline-block;">⚙️</div>
+                        <p style="margin-top:16px; color:var(--text-secondary);">Grok is crafting ${platforms.length} platform variants...</p>
+                    </div>`;
+
+                const btn = document.getElementById('btn-generate-social');
+                btn.disabled = true;
+                btn.innerHTML = '⏳ Generating...';
+
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        btn.disabled = false;
+                        btn.innerHTML = '🤖 Generate with Grok';
+
+                        if (!res.success) {
+                            container.innerHTML = `<div style="color:var(--error); padding:20px;">❌ ${res.error}</div>`;
+                            UI.showToast('Generation failed: ' + res.error, 'error');
+                            return;
+                        }
+
+                        let html = '';
+                        for (const [platform, variant] of Object.entries(res.variants)) {
+                            const overClass = variant.isOverLimit ? 'color:var(--error); font-weight:700;' : 'color:var(--muted);';
+                            const hashtagsHtml = variant.hashtags.length > 0
+                                ? `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">${variant.hashtags.map(h => `<span style="background:var(--surface-3); padding:2px 8px; border-radius:10px; font-size:11px;">#${h.replace(/^#/, '')}</span>`).join('')}</div>`
+                                : '';
+
+                            html += `
+                            <div class="social-variant-card" data-platform="${platform}"
+                                style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; transition:var(--transition);">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <span style="font-size:20px;">${variant.icon}</span>
+                                        <strong style="font-size:14px;">${variant.platformName}</strong>
+                                        <span style="${overClass} font-size:12px;">${variant.charCount}/${variant.maxChars}</span>
+                                    </div>
+                                    <div style="display:flex; gap:6px;">
+                                        <button class="btn btn-secondary btn-sm" onclick="GrokIntegration.copySocialVariant(this, '${platform}')" style="font-size:12px;">📋 Copy</button>
+                                        <label style="display:flex; align-items:center; gap:4px; font-size:12px; cursor:pointer;">
+                                            <input type="checkbox" class="social-approve" data-platform="${platform}" checked> Approve
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="social-variant-text" data-platform="${platform}"
+                                    style="font-size:14px; line-height:1.6; white-space:pre-wrap; color:var(--text);">${variant.text}</div>
+                                ${hashtagsHtml}
+                            </div>`;
+                        }
+
+                        container.innerHTML = html;
+                        document.getElementById('btn-broadcast-social').disabled = false;
+                        UI.showToast(`✅ ${Object.keys(res.variants).length} variants generated!`, 'success');
+                    })
+                    .withFailureHandler(function (err) {
+                        btn.disabled = false;
+                        btn.innerHTML = '🤖 Generate with Grok';
+                        container.innerHTML = `<div style="color:var(--error); padding:20px;">❌ Error: ${err.message}</div>`;
+                        UI.showToast('Grok error: ' + err.message, 'error');
+                    })
+                    .grokGenerateSocialPosts({ basePost, platforms });
+            }
+
+            function copySocialVariant(btn, platform) {
+                const textEl = document.querySelector(`.social-variant-text[data-platform="${platform}"]`);
+                if (textEl) {
+                    navigator.clipboard.writeText(textEl.textContent).then(() => {
+                        btn.innerHTML = '✅ Copied!';
+                        setTimeout(() => btn.innerHTML = '📋 Copy', 2000);
+                    });
+                }
+            }
+
+            function broadcastSocialPosts() {
+                const approved = [];
+                document.querySelectorAll('.social-approve:checked').forEach(cb => {
+                    const platform = cb.dataset.platform;
+                    const textEl = document.querySelector(`.social-variant-text[data-platform="${platform}"]`);
+                    if (textEl) {
+                        approved.push({ platform, text: textEl.textContent });
+                    }
+                });
+
+                if (approved.length === 0) {
+                    UI.showToast('No posts approved for broadcast.', 'warning');
+                    return;
+                }
+
+                // Copy all approved posts to clipboard as formatted text
+                const formatted = approved.map(p => `--- ${p.platform.toUpperCase()} ---\n${p.text}`).join('\n\n');
+                navigator.clipboard.writeText(formatted).then(() => {
+                    UI.showToast(`📋 ${approved.length} approved posts copied to clipboard!`, 'success');
+                });
+            }
+
+
+            // ─── Outreach AI Rewrite ───
+            function aiRewriteOutreach() {
+                const defendantName = document.getElementById('outreach-defendant-name').value.trim();
+                const county = document.getElementById('outreach-county').value.trim();
+                const agentName = document.getElementById('outreach-agent-name').value.trim();
+                const template = document.getElementById('outreach-template').value;
+
+                if (!defendantName) {
+                    UI.showToast('Enter a defendant name first.', 'warning');
+                    return;
+                }
+
+                UI.showLoading('Grok AI', 'Generating personalized message variants...');
+
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        UI.hideLoading();
+                        if (!res.success) {
+                            UI.showToast('AI Rewrite failed: ' + res.error, 'error');
+                            return;
+                        }
+
+                        const variants = res.variants || [];
+                        if (variants.length === 0) {
+                            UI.showToast('No variants returned.', 'warning');
+                            return;
+                        }
+
+                        // Set first variant as the preview
+                        document.getElementById('outreach-message-preview').value = variants[0];
+
+                        // Show variant cards
+                        const container = document.getElementById('outreach-variant-cards');
+                        const wrapper = document.getElementById('outreach-ai-variants');
+                        wrapper.style.display = 'block';
+
+                        container.innerHTML = variants.map((v, i) => `
+                            <div onclick="OutreachMode.selectVariant(this, ${i})"
+                                style="padding:14px 16px; border:2px solid ${i === 0 ? 'var(--accent)' : 'var(--border)'}; border-radius:var(--radius-sm); cursor:pointer; background:${i === 0 ? 'rgba(var(--accent-rgb), 0.05)' : 'var(--surface)'}; transition:var(--transition); font-size:14px; line-height:1.5;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                    <span style="font-weight:600; font-size:12px; color:var(--text-secondary);">Variant ${i + 1}</span>
+                                    <span style="font-size:11px; color:var(--muted);">${v.length} chars</span>
+                                </div>
+                                ${v}
+                            </div>
+                        `).join('');
+
+                        // Store variants for selection
+                        window._outreachVariants = variants;
+                        UI.showToast(`✨ ${variants.length} AI variants generated!`, 'success');
+                    })
+                    .withFailureHandler(function (err) {
+                        UI.hideLoading();
+                        UI.showToast('Grok error: ' + err.message, 'error');
+                    })
+                    .grokGenerateOutreachMessage({
+                        defendantName,
+                        county,
+                        agentName,
+                        template
+                    });
+            }
+
+
+            // ─── Grok Chat ───
+            const Chat = {
+                history: [],
+
+                send: function () {
+                    const input = document.getElementById('grok-chat-input');
+                    const message = input.value.trim();
+                    if (!message) return;
+
+                    input.value = '';
+                    const container = document.getElementById('grok-chat-messages');
+
+                    // Hide suggestions after first message
+                    const suggestions = document.getElementById('grok-suggestions');
+                    if (suggestions) suggestions.style.display = 'none';
+
+                    // Clear placeholder if first message
+                    if (Chat.history.length === 0) {
+                        container.innerHTML = '';
+                    }
+
+                    // Add user message bubble
+                    container.innerHTML += `
+                        <div style="display:flex; justify-content:flex-end;">
+                            <div style="background:var(--accent); color:#000; padding:12px 16px; border-radius:var(--radius-sm) var(--radius-sm) 4px var(--radius-sm); max-width:75%; font-size:14px; line-height:1.5;">
+                                ${escapeHtml(message)}
+                            </div>
+                        </div>`;
+
+                    // Add loading bubble
+                    const loadingId = 'grok-loading-' + Date.now();
+                    container.innerHTML += `
+                        <div id="${loadingId}" style="display:flex; justify-content:flex-start;">
+                            <div style="background:var(--surface); border:1px solid var(--border); padding:12px 16px; border-radius:var(--radius-sm) var(--radius-sm) var(--radius-sm) 4px; max-width:75%;">
+                                <div style="display:flex; gap:4px; align-items:center;">
+                                    <span style="animation:pulse 1s infinite;">🧠</span>
+                                    <span style="color:var(--muted); font-size:13px;">Grok is thinking...</span>
+                                </div>
+                            </div>
+                        </div>`;
+
+                    container.scrollTop = container.scrollHeight;
+
+                    // Track history
+                    Chat.history.push({ role: 'user', content: message });
+
+                    google.script.run
+                        .withSuccessHandler(function (res) {
+                            const loadEl = document.getElementById(loadingId);
+                            if (loadEl) loadEl.remove();
+
+                            if (!res.success) {
+                                container.innerHTML += `
+                                    <div style="display:flex; justify-content:flex-start;">
+                                        <div style="background:var(--error-bg); color:var(--error); padding:12px 16px; border-radius:var(--radius-sm); max-width:75%; font-size:14px;">
+                                            ❌ ${res.error}
+                                        </div>
+                                    </div>`;
+                                return;
+                            }
+
+                            const reply = res.reply;
+                            Chat.history.push({ role: 'assistant', content: reply });
+
+                            // Simple markdown-to-HTML conversion
+                            const formattedReply = reply
+                                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                                .replace(/\n- /g, '<br>• ')
+                                .replace(/\n\d+\. /g, function(m) { return '<br>' + m.trim() + ' '; })
+                                .replace(/\n/g, '<br>')
+                                .replace(/`([^`]+)`/g, '<code style="background:var(--surface-3); padding:2px 6px; border-radius:4px; font-size:12px;">$1</code>');
+
+                            container.innerHTML += `
+                                <div style="display:flex; justify-content:flex-start;">
+                                    <div style="background:var(--surface); border:1px solid var(--border); padding:14px 18px; border-radius:var(--radius-sm) var(--radius-sm) var(--radius-sm) 4px; max-width:80%; font-size:14px; line-height:1.7; color:var(--text);">
+                                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px; font-size:12px; color:var(--muted);">
+                                            <span>🧠</span> Grok
+                                        </div>
+                                        ${formattedReply}
+                                    </div>
+                                </div>`;
+
+                            container.scrollTop = container.scrollHeight;
+                        })
+                        .withFailureHandler(function (err) {
+                            const loadEl = document.getElementById(loadingId);
+                            if (loadEl) loadEl.remove();
+                            container.innerHTML += `
+                                <div style="display:flex; justify-content:flex-start;">
+                                    <div style="background:var(--error-bg); color:var(--error); padding:12px 16px; border-radius:var(--radius-sm); max-width:75%; font-size:14px;">
+                                        ❌ Error: ${err.message}
+                                    </div>
+                                </div>`;
+                        })
+                        .grokChat({
+                            message: message,
+                            conversationHistory: Chat.history.slice(0, -1)
+                        });
+                },
+
+                askSuggestion: function (btn) {
+                    const text = btn.textContent.trim().replace(/^[^\s]+\s/, ''); // Remove emoji prefix
+                    document.getElementById('grok-chat-input').value = text;
+                    Chat.send();
+                },
+
+                clearChat: function () {
+                    Chat.history = [];
+                    const container = document.getElementById('grok-chat-messages');
+                    container.innerHTML = `
+                        <div style="text-align:center; padding:60px 20px; color:var(--muted);">
+                            <div style="font-size:48px; margin-bottom:12px;">🧠</div>
+                            <p>Ask me anything about Shamrock operations, county procedures, or draft client messages.</p>
+                        </div>`;
+                    const suggestions = document.getElementById('grok-suggestions');
+                    if (suggestions) suggestions.style.display = 'flex';
+                    UI.showToast('Chat cleared.', 'info');
+                },
+
+                testConnection: function () {
+                    UI.showLoading('Grok', 'Testing API connection...');
+                    google.script.run
+                        .withSuccessHandler(function (res) {
+                            UI.hideLoading();
+                            if (res.success) {
+                                UI.showToast(`✅ Grok connected! Model: ${res.model} — Response: "${res.message}"`, 'success');
+                            } else {
+                                UI.showToast('❌ Grok connection failed: ' + res.error, 'error');
+                            }
+                        })
+                        .withFailureHandler(function (err) {
+                            UI.hideLoading();
+                            UI.showToast('❌ Connection test error: ' + err.message, 'error');
+                        })
+                        .testGrokConnection();
+                }
+            };
+
+            // ─── Utility ───
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            return {
+                generateSocialPosts,
+                broadcastSocialPosts,
+                copySocialVariant,
+                Chat
+            };
+        })();
+
+        // Outreach AI Rewrite (extend existing OutreachMode)
+        if (window.OutreachMode) {
+            OutreachMode.aiRewrite = function () {
+                const defendantName = document.getElementById('outreach-defendant-name').value.trim();
+                const county = document.getElementById('outreach-county').value.trim();
+                const agentName = document.getElementById('outreach-agent-name').value.trim();
+                const template = document.getElementById('outreach-template').value;
+
+                if (!defendantName) {
+                    UI.showToast('Enter a defendant name first.', 'warning');
+                    return;
+                }
+
+                UI.showLoading('Grok AI', 'Generating personalized message variants...');
+
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        UI.hideLoading();
+                        if (!res.success) {
+                            UI.showToast('AI Rewrite failed: ' + res.error, 'error');
+                            return;
+                        }
+
+                        const variants = res.variants || [];
+                        if (variants.length === 0) {
+                            UI.showToast('No variants returned.', 'warning');
+                            return;
+                        }
+
+                        document.getElementById('outreach-message-preview').value = variants[0];
+                        document.getElementById('outreach-message-preview').readOnly = false;
+
+                        const container = document.getElementById('outreach-variant-cards');
+                        const wrapper = document.getElementById('outreach-ai-variants');
+                        wrapper.style.display = 'block';
+
+                        window._outreachVariants = variants;
+
+                        container.innerHTML = variants.map(function (v, i) {
+                            return '<div onclick="OutreachMode.selectVariant(' + i + ')"' +
+                                ' style="padding:14px 16px; border:2px solid ' + (i === 0 ? 'var(--accent)' : 'var(--border)') +
+                                '; border-radius:var(--radius-sm); cursor:pointer; background:' + (i === 0 ? 'rgba(var(--accent-rgb), 0.05)' : 'var(--surface)') +
+                                '; transition:var(--transition); font-size:14px; line-height:1.5;">' +
+                                '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">' +
+                                '<span style="font-weight:600; font-size:12px; color:var(--text-secondary);">Variant ' + (i + 1) + '</span>' +
+                                '<span style="font-size:11px; color:var(--muted);">' + v.length + ' chars</span>' +
+                                '</div>' + v + '</div>';
+                        }).join('');
+
+                        UI.showToast('✨ ' + variants.length + ' AI variants generated!', 'success');
+                    })
+                    .withFailureHandler(function (err) {
+                        UI.hideLoading();
+                        UI.showToast('Grok error: ' + err.message, 'error');
+                    })
+                    .grokGenerateOutreachMessage({
+                        defendantName: defendantName,
+                        county: county,
+                        agentName: agentName,
+                        template: template
+                    });
+            };
+
+            OutreachMode.selectVariant = function (index) {
+                if (window._outreachVariants && window._outreachVariants[index]) {
+                    document.getElementById('outreach-message-preview').value = window._outreachVariants[index];
+                    // Update card borders
+                    var cards = document.getElementById('outreach-variant-cards').children;
+                    for (var i = 0; i < cards.length; i++) {
+                        cards[i].style.borderColor = (i === index) ? 'var(--accent)' : 'var(--border)';
+                        cards[i].style.background = (i === index) ? 'rgba(var(--accent-rgb), 0.05)' : 'var(--surface)';
+                    }
+                }
+            };
         }
     </script>
 </body>

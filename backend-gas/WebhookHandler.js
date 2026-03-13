@@ -91,6 +91,7 @@ function handleSignNowWebhook(payload) {
   switch (event) {
     case 'document.complete':
     case 'document_complete':
+      MongoLogger.logSignNow('document_complete', { documentId: documentId, document_name: payload.document_name, rawPayload: payload });
       return handleDocumentComplete(documentId, payload);
 
     case 'document.update':
@@ -99,6 +100,7 @@ function handleSignNowWebhook(payload) {
 
     case 'invite.sent':
     case 'invite_sent':
+      MongoLogger.logSignNow('invite_sent', { documentId: documentId, rawPayload: payload });
       return handleInviteSent(documentId, payload);
 
     default:

@@ -553,6 +553,7 @@ function doPost(e) {
     if (data.action === 'telegram_payment_log') {
       try {
         Logger.log('💳 Telegram Mini App payment log: ' + data.referenceId);
+        MongoLogger.logPayment(data);
         // Log to PaymentLog sheet
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         let sheet = ss.getSheetByName('PaymentLog');
@@ -674,6 +675,7 @@ function doPost(e) {
     if (data.action === 'telegram_checkin_log') {
       try {
         Logger.log('📍 Telegram Mini App check-in: ' + data.referenceId);
+        MongoLogger.logCheckIn(data, 'telegram');
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         let sheet = ss.getSheetByName('CheckInLog');
         if (!sheet) {
@@ -729,6 +731,7 @@ function doPost(e) {
     if (data.action === 'twilio_check_in') {
       try {
         Logger.log('📞 Incoming Twilio Message: ' + data.fromNumber);
+        MongoLogger.logCheckIn(data, 'twilio');
         if (typeof handleClientCheckInReply === 'function') {
           handleClientCheckInReply(data.fromNumber, data.body);
           return createResponse({ success: true, message: 'Check-in processed' });
@@ -743,6 +746,7 @@ function doPost(e) {
     if (data.action === 'schedule_court_date') {
       try {
         Logger.log('📅 Court date scheduling: ' + data.chatId);
+        MongoLogger.logCourtDate(data, 'scheduled');
         var courtResult = TG_scheduleCourtDateSequence(
           data.chatId, data.name, data.courtDate, data.caseNumber, data.courtInfo
         );
@@ -1237,9 +1241,12 @@ function runCollierArrestsNow() {
 function handleAction(data) {
   const action = data.action;
 
+  // ── MongoDB Activity Audit Trail ──
+  MongoLogger.logActivity(action, data.source || 'gas');
+
   // 1. INTAKE & QUEUE
-  if (action === 'intakeSubmission') return handleIntakeSubmission(data);
-  if (action === 'newIntake') return handleNewIntake(data.caseId, data.data);
+  if (action === 'intakeSubmission') { MongoLogger.logIntake(data, 'web'); return handleIntakeSubmission(data); }
+  if (action === 'newIntake') { MongoLogger.logIntake(data, 'web'); return handleNewIntake(data.caseId, data.data); }
   if (action === 'fetchPendingIntakes') {
     // Wix CMS path — wrapped in try/catch so a Wix API failure never blocks
     // the Google Sheets path (which has the confirmed Telegram intake data).
@@ -1297,7 +1304,7 @@ function handleAction(data) {
   if (action === 'getTelegramIntakeData') return getTelegramIntakeFullData(data.intakeId);
 
   // Telegram Mini App (authenticated path — fallback if API key is sent)
-  if (action === 'telegram_mini_app_intake') return saveTelegramIntakeToQueue(data, data.telegramUserId || 'mini_app_unknown');
+  if (action === 'telegram_mini_app_intake') { MongoLogger.logIntake(data, 'mini_app'); return saveTelegramIntakeToQueue(data, data.telegramUserId || 'mini_app_unknown'); }
   if (action === 'telegram_mini_app_upload') {
     const folder = DriveApp.getFolderById(getConfig().GOOGLE_DRIVE_FOLDER_ID);
     const decoded = Utilities.base64Decode(data.base64Data);
@@ -1315,6 +1322,7 @@ function handleAction(data) {
   // 1.5a. PORTAL CLIENT MESSAGE (from indemnitor portal #sendMessageBtn)
   if (action === 'portalClientMessage') {
     try {
+      MongoLogger.logComm(data, 'portal');
       var msgData = data || {};
       var caseId = msgData.caseId || 'unknown';
       var senderName = msgData.senderName || 'Indemnitor';
@@ -1376,16 +1384,16 @@ function handleAction(data) {
   if (action === 'getFieldMapping') return getMappingForDocumentTemplate(data.templateKey, data.intakeData);
 
   // 2. SIGNING & DOCS
-  if (action === 'sendForSignature') return handleSendForSignature(data);
+  if (action === 'sendForSignature') { MongoLogger.logSignNow('packet_sent', data); return handleSendForSignature(data); }
   if (action === 'createPortalSigningSession') return createPortalSigningSession(data);
 
   // 4. CHECK-INS
-  if (action === 'logDefendantLocation') return handleLocationLog(data.data);
+  if (action === 'logDefendantLocation') { MongoLogger.logCheckIn(data.data || data, 'web'); return handleLocationLog(data.data); }
   if (action === 'log_ping_request') return handleLogPingRequest(data);
 
   // 5. AI AGENTS (Public API)
   if (action === 'parseBookingSheet') return AI_parseBookingSheet(data.fileData);
-  if (action === 'testAIAnalyst') return AI_analyzeFlightRisk(data.lead);
+  if (action === 'testAIAnalyst') { MongoLogger.logLeadScore(data.lead || data, 'TheAnalyst'); return AI_analyzeFlightRisk(data.lead); }
   if (action === 'testAIMonitor') return AI_analyzeCheckIn(data.checkIn);
 
   // 3. PROFILES (Stub/Future)
