@@ -801,9 +801,8 @@ function collectIntakeFormData() {
  */
 function handleSignPaperwork() {
     if (currentIntake?.signNowIndemnitorLink) {
-        wixWindow.openLightbox('SignNowLightbox', {
-            url: currentIntake.signNowIndemnitorLink
-        });
+        // Paperwork is emailed directly via SignNow — open signing link in new tab (Audit M-01)
+        wixWindow.openUrl(currentIntake.signNowIndemnitorLink, { target: '_blank' });
     }
 }
 

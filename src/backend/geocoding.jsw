@@ -196,7 +196,11 @@ async function geocodeWithGoogle(latitude, longitude) {
     // For now, we'll use a placeholder approach
 
     // Construct Google Geocoding API URL
-    const apiKey = 'YOUR_GOOGLE_API_KEY'; // Replace with Wix Secret
+    const apiKey = await getSecret('GOOGLE_MAPS_API_KEY');
+    if (!apiKey) {
+      console.warn('[Geocoding] GOOGLE_MAPS_API_KEY not set in Wix Secrets Manager');
+      return { success: false };
+    }
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
 
     const response = await fetch(url);

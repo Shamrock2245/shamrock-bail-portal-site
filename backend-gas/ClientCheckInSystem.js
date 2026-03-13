@@ -81,6 +81,11 @@ function sendAutomatedCheckIns() {
 
             var sent = false;
             try {
+                // ── Audit H-03: Respect communication preferences ──
+                if (typeof checkCommPrefsAllowed === 'function' && !checkCommPrefsAllowed(targetPhone, 'sms')) {
+                    Logger.log('[CommPrefs] SMS opt-out for check-in: ' + String(targetPhone).slice(-4));
+                    continue; // Skip to next client
+                }
                 // Use the Unified Notification Service
                 var res = NotificationService.sendSms(targetPhone, message);
                 if (res && res.success) sent = true;

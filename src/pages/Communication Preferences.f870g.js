@@ -21,6 +21,7 @@ import { local } from 'wix-storage';
 import { getSessionToken, getSessionData } from 'public/session-manager';
 import { validateCustomSession } from 'backend/portal-auth';
 import { syncCommPrefsToGas } from 'backend/comm-prefs-sync';
+import { COLLECTIONS } from 'public/collectionIds';
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 // Change this if your HTML embed has a different element ID in the Wix Editor
@@ -46,7 +47,7 @@ async function loadAndPushPreferences() {
     if (!sessionData || !sessionData.personId) return;
 
     try {
-        const results = await wixData.query('Portal Users')
+        const results = await wixData.query(COLLECTIONS.PORTAL_USERS)
             .eq('personId', sessionData.personId)
             .limit(1)
             .find({ suppressAuth: true });
@@ -101,7 +102,7 @@ async function savePreferences(formData) {
                 updatedAt:      now
             });
 
-            await wixData.update('Portal Users', updated, { suppressAuth: true });
+            await wixData.update(COLLECTIONS.PORTAL_USERS, updated, { suppressAuth: true });
             userRecord = updated;
         } else {
             // Create new record
@@ -121,7 +122,7 @@ async function savePreferences(formData) {
                 updatedAt:      now
             };
 
-            userRecord = await wixData.insert('Portal Users', newRecord, { suppressAuth: true });
+            userRecord = await wixData.insert(COLLECTIONS.PORTAL_USERS, newRecord, { suppressAuth: true });
         }
 
         // Cache locally for fast-path checks
@@ -193,6 +194,15 @@ $w.onReady(async function () {
             if (!msg || !msg.type) return;
 
             if (msg.type === 'savePreferences' && msg.data) {
+                // ── Audit M-03: Validate at least one channel is selected ──
+                const d = msg.data;
+                if (!d.smsOptIn && !d.whatsappOptIn && !d.telegramOptIn && !d.emailOptIn) {
+                    $w(HTML_ELEMENT_ID).postMessage({
+                        type: 'saveError',
+                        message: 'Please select at least one communication channel.'
+                    });
+                    return;
+                }
                 await savePreferences(msg.data);
             }
         });

@@ -7,44 +7,31 @@
  * NOTE: The actual pages use hyphenated URLs (portal-defendant, portal-indemnitor, portal-staff)
  * This router handles the /portal/ prefix and redirects to the correct hyphenated URLs.
  * 
+ * AUDIT FIX C-02: Replaced broken isLoggedIn/getUserRole imports with
+ * validateCustomSession (the actual auth pattern used by all portal pages).
+ * 
  * @module routers
  */
 
 import { redirect } from 'wix-router';
-import { isLoggedIn, getUserRole, ROLES } from './portal-auth';
-import { routeCountyPage } from './bail-bonds-router';
+import { validateCustomSession } from 'backend/portal-auth';
+import { routeCountyPage } from 'backend/bail-bonds-router';
 
-/**
- * @typedef {Object} WixRouterRequest
- * @property {string} path
- * @property {Object} query
- * @property {string} [prefix]
- * @property {Object} [user]
- * @property {string} [user.id]
- * @property {string} [user.role]
- */
-
-/**
- * @typedef {Object} WixRouterResponse
- * @property {Object} status
- * @property {Object} [body]
- * @property {Object} [headers]
- */
+const ROLES = {
+  DEFENDANT: 'defendant',
+  INDEMNITOR: 'indemnitor',
+  COINDEMNITOR: 'coindemnitor',
+  STAFF: 'staff',
+  ADMIN: 'admin'
+};
 
 /**
  * Router for the /portal/ prefix.
- * Handles routing for the main portal landing page and role-specific portals.
+ * Uses session token from query params (?st=...) for authentication,
+ * matching the pattern used across all portal pages.
  * 
- * IMPORTANT: Pages are configured as Main Pages with hyphenated URLs:
- * - /portal-landing
- * - /portal-defendant
- * - /portal-indemnitor
- * - /portal-staff
- * 
- * This router redirects /portal/* requests to the correct hyphenated URLs.
- * 
- * @param {WixRouterRequest} request
- * @returns {WixRouterResponse}
+ * @param {Object} request - Wix Router Request
+ * @returns {Object} - Wix Router Response (redirect)
  */
 export async function portal_Router(request) {
   const path = request.path;
@@ -60,16 +47,26 @@ export async function portal_Router(request) {
   }
 
   try {
-    // 1. Check Login Status
-    // If not logged in, send to landing (passing query params in case it's a magic link token)
-    if (!isLoggedIn()) {
+    // 1. Check for session token (matches portal page auth pattern)
+    const token = query.st || '';
+    let userRole = null;
+
+    if (token) {
+      const session = await validateCustomSession(token);
+      if (session && session.valid) {
+        userRole = session.role;
+        console.log(`[Router] Validated session — Role: ${userRole}, Path: ${path}`);
+      } else {
+        console.log(`[Router] Invalid/expired session token, redirecting to landing`);
+      }
+    }
+
+    // 2. If no valid session, send to landing page
+    if (!userRole) {
       return redirectWithQuery('/portal-landing');
     }
 
-    // 2. Check User Role
-    const userRole = await getUserRole();
-    console.log(`[Router] User ${request.user ? request.user.id : 'Anon'} Role: ${userRole || 'None'}, Path: ${path}`);
-
+    // 3. Route based on path and validated role
     switch (path[0]) {
       case 'defendant':
         if (userRole === ROLES.DEFENDANT) {

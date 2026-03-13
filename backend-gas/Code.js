@@ -717,20 +717,9 @@ function doPost(e) {
       }
     }
 
-    // ─── COMMUNICATION PREFERENCES (Portal → GAS Sync) ───
-    if (data.action === 'updateCommPrefs') {
-      try {
-        Logger.log('📋 Communication preferences update: ' + (data.phone || 'unknown'));
-        if (typeof handleUpdateCommPrefs === 'function') {
-          var prefsResult = handleUpdateCommPrefs(data);
-          return createResponse(prefsResult);
-        }
-        return createErrorResponse('CommPrefsGate not loaded', ERROR_CODES.INTERNAL_ERROR);
-      } catch (prefsErr) {
-        Logger.log('❌ CommPrefs update error: ' + prefsErr.message);
-        return createErrorResponse(prefsErr.message, ERROR_CODES.INTERNAL_ERROR);
-      }
-    }
+    // ─── COMMUNICATION PREFERENCES ───
+    // MOVED to handleAction() for API key enforcement (Audit C-01)
+    // updateCommPrefs now requires authenticated API key
 
     // ─── BOT ANALYTICS (Feature #4) ───
     if (data.action === 'get_bot_analytics') {
@@ -1258,6 +1247,21 @@ function handleAction(data) {
 
   // ── MongoDB Activity Audit Trail ──
   MongoLogger.logActivity(action, data.source || 'gas');
+
+  // ─── COMMUNICATION PREFERENCES (Portal → GAS Sync) ───
+  // Moved here from pre-auth zone for API key enforcement (Audit C-01)
+  if (action === 'updateCommPrefs') {
+    try {
+      Logger.log('📋 Communication preferences update: ' + (data.phone || 'unknown'));
+      if (typeof handleUpdateCommPrefs === 'function') {
+        return handleUpdateCommPrefs(data);
+      }
+      return { success: false, error: 'CommPrefsGate not loaded' };
+    } catch (prefsErr) {
+      Logger.log('❌ CommPrefs update error: ' + prefsErr.message);
+      return { success: false, error: prefsErr.message };
+    }
+  }
 
   // 1. INTAKE & QUEUE
   if (action === 'intakeSubmission') { MongoLogger.logIntake(data, 'web'); return handleIntakeSubmission(data); }
