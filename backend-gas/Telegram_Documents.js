@@ -625,10 +625,55 @@ function prefillDocument_(signNowDocId, formData, docId, signerIndex) {
             return { success: true, fieldCount: 0, message: 'All fields empty — nothing to pre-fill' };
         }
 
-        Logger.log('📝 Pre-filling ' + prefillFields.length + ' fields on doc ' + signNowDocId.substring(0, 12) + '...');
+        // -------------------------------------------------------------------
+        // CRITICAL: SignNow's prefill API rejects the ENTIRE batch if ANY
+        // field_name doesn't exist on the document. We must query the doc
+        // first to discover its actual text fields, then filter our payload.
+        // -------------------------------------------------------------------
+        var config = SN_getConfig();
+
+        // GET the document to discover actual text field names
+        var docUrl = config.API_BASE + '/document/' + signNowDocId;
+        var docRes = UrlFetchApp.fetch(docUrl, {
+            headers: { 'Authorization': 'Bearer ' + config.ACCESS_TOKEN },
+            muteHttpExceptions: true
+        });
+
+        var existingFieldNames = [];
+        if (docRes.getResponseCode() === 200) {
+            var docData = JSON.parse(docRes.getContentText());
+            // Collect field names from all possible field arrays
+            ['texts', 'fields', 'tags'].forEach(function(prop) {
+                (docData[prop] || []).forEach(function(item) {
+                    var name = item.field_name || item.name || item.label || '';
+                    if (name) existingFieldNames.push(name);
+                });
+            });
+        }
+
+        // Filter prefill payload to only include fields that actually exist
+        var validPrefillFields = prefillFields;
+        if (existingFieldNames.length > 0) {
+            validPrefillFields = prefillFields.filter(function(pf) {
+                return existingFieldNames.indexOf(pf.field_name) !== -1;
+            });
+            var skippedCount = prefillFields.length - validPrefillFields.length;
+            if (skippedCount > 0) {
+                var skippedNames = prefillFields
+                    .filter(function(pf) { return existingFieldNames.indexOf(pf.field_name) === -1; })
+                    .map(function(pf) { return pf.field_name; });
+                Logger.log('⚠️ Skipping ' + skippedCount + ' fields not on template: ' + skippedNames.join(', '));
+            }
+        }
+
+        if (validPrefillFields.length === 0) {
+            Logger.log('ℹ️ No matching fields on template for: ' + docId + ' (template has ' + existingFieldNames.length + ' text fields)');
+            return { success: true, fieldCount: 0, message: 'No matching fields on template' };
+        }
+
+        Logger.log('📝 Pre-filling ' + validPrefillFields.length + '/' + prefillFields.length + ' fields on doc ' + signNowDocId.substring(0, 12) + '...');
 
         // Call SignNow prefill-texts API (V2 endpoint)
-        var config = SN_getConfig();
         var url = config.API_BASE + '/v2/documents/' + signNowDocId + '/prefill-texts';
 
         var response = UrlFetchApp.fetch(url, {
@@ -637,7 +682,7 @@ function prefillDocument_(signNowDocId, formData, docId, signerIndex) {
                 'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
                 'Content-Type': 'application/json'
             },
-            payload: JSON.stringify({ fields: prefillFields }),
+            payload: JSON.stringify({ fields: validPrefillFields }),
             muteHttpExceptions: true
         });
 
@@ -645,8 +690,8 @@ function prefillDocument_(signNowDocId, formData, docId, signerIndex) {
         var responseText = response.getContentText();
 
         if (statusCode >= 200 && statusCode < 300) {
-            Logger.log('✅ Pre-fill successful: ' + prefillFields.length + ' fields');
-            return { success: true, fieldCount: prefillFields.length };
+            Logger.log('✅ Pre-fill successful: ' + validPrefillFields.length + ' fields');
+            return { success: true, fieldCount: validPrefillFields.length };
         } else {
             Logger.log('⚠️ Pre-fill API returned ' + statusCode + ': ' + responseText.substring(0, 200));
             return { success: false, error: 'API ' + statusCode + ': ' + responseText.substring(0, 100), fieldCount: 0 };

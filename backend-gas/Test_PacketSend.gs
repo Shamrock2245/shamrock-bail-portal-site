@@ -113,6 +113,152 @@ function test_sendPacketForCristian_FINAL() {
 
 
 // ============================================================================
+// 1b. PREFILL FIELD NAME AUDIT — Verify field names match templates
+// ============================================================================
+// This diagnostic function:
+//   1. Builds formData using _shannon_buildFormData (same as Shannon flow)
+//   2. For each template: calls PDF_mapDataToTags to get the field→value pairs
+//   3. Copies the template, calls the prefill API, and logs the HTTP response
+//   4. Shows exactly which fields matched and which didn't
+//
+// Run this AFTER deploying the code changes to verify the fix worked.
+
+function test_prefillFieldNameAudit() {
+  var config = SN_getConfig();
+
+  // Simulate Shannon data with full test values
+  var shannonData = {
+    caller_name:     'Brian Rodriguez',
+    caller_email:    'brianrodriguez1502@gmail.com',
+    caller_phone:    '(239) 555-0199',
+    defendant_name:  'Cristian Kevin Felipe Ramos',
+    defendant_dob:   '04/30/2002',
+    county:          'Lee',
+    bond_amount:     '2500.00',
+    premium_amount:  '250.00',
+    case_number:     '26CF014864',
+    court_date:      '04/13/2026',
+    court_time:      '8:30 AM',
+    court_location:  'Lee County Circuit Court',
+    charge:          'LARC (GRAND THEFT PROPERTY VALUE $750-$5K)',
+    booking_number:  '1021243',
+    arrest_date:     '03/12/2026',
+    jail_facility:   'Lee County Jail'
+  };
+
+  // Build formData using the Shannon translator (same path as production)
+  var formData = _shannon_buildFormData(shannonData);
+
+  Logger.log('=== PREFILL FIELD NAME AUDIT ===');
+  Logger.log('FormData keys: ' + Object.keys(formData).length);
+  Logger.log('Non-empty values: ' + Object.values(formData).filter(function(v) { return v && v !== ''; }).length);
+  Logger.log('');
+
+  // Test each template
+  var templateKeys = Object.keys(SIGNNOW_TEMPLATE_MAP);
+  var results = [];
+
+  templateKeys.forEach(function(docKey) {
+    if (docKey === 'appearance-bond') return;
+
+    Logger.log('══ ' + docKey + ' ══');
+
+    // Step 1: Map fields (dry run — no API call yet)
+    try {
+      var mappedFields = PDF_mapDataToTags(formData, docKey);
+      var nonEmpty = (mappedFields || []).filter(function(f) {
+        return f.value && f.value.trim() !== '' && f.value !== 'undefined' && f.value !== 'null';
+      });
+
+      Logger.log('   Mapped fields: ' + (mappedFields ? mappedFields.length : 0));
+      Logger.log('   Non-empty:     ' + nonEmpty.length);
+
+      if (nonEmpty.length > 0) {
+        nonEmpty.forEach(function(f) {
+          Logger.log('     → ' + f.name + ' = "' + f.value + '"');
+        });
+      } else {
+        Logger.log('   ⚠️ No fields mapped — check PDF_Mappings for this docKey');
+      }
+
+      // Step 2: Copy template and try prefill
+      var templateId = SIGNNOW_TEMPLATE_MAP[docKey];
+      var copyUrl = config.API_BASE + '/template/' + templateId + '/copy';
+      var copyRes = UrlFetchApp.fetch(copyUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
+          'Content-Type': 'application/json'
+        },
+        payload: JSON.stringify({ document_name: 'AUDIT_' + docKey + '_' + Date.now() }),
+        muteHttpExceptions: true
+      });
+
+      var copyJson = JSON.parse(copyRes.getContentText());
+      if (!copyJson.id) {
+        Logger.log('   ❌ Copy failed: ' + JSON.stringify(copyJson).substring(0, 200));
+        results.push({ docKey: docKey, status: 'copy_failed' });
+        return;
+      }
+
+      var docId = copyJson.id;
+
+      // Step 3: Actually call prefillDocument_ (the shared pipeline)
+      var prefillResult = prefillDocument_(docId, formData, docKey, -1);
+      Logger.log('   Prefill result: ' + JSON.stringify(prefillResult));
+
+      // Step 4: Verify — read back the document to check prefilled values
+      var verifyUrl = config.API_BASE + '/document/' + docId;
+      var verifyRes = UrlFetchApp.fetch(verifyUrl, {
+        headers: { 'Authorization': 'Bearer ' + config.ACCESS_TOKEN },
+        muteHttpExceptions: true
+      });
+      var verifyDoc = JSON.parse(verifyRes.getContentText());
+      var prefilledTexts = (verifyDoc.texts || []).filter(function(t) {
+        return t.prefilled_text && t.prefilled_text.trim() !== '';
+      });
+      Logger.log('   Verified prefilled texts: ' + prefilledTexts.length);
+      prefilledTexts.forEach(function(t) {
+        Logger.log('     ✅ ' + (t.field_name || t.name) + ' = "' + t.prefilled_text + '"');
+      });
+
+      // Clean up — delete the test copy
+      try {
+        UrlFetchApp.fetch(config.API_BASE + '/document/' + docId, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + config.ACCESS_TOKEN },
+          muteHttpExceptions: true
+        });
+      } catch (e) { /* ignore cleanup errors */ }
+
+      results.push({
+        docKey: docKey,
+        status: prefillResult.success ? 'success' : 'fail',
+        mappedFields: mappedFields ? mappedFields.length : 0,
+        prefilledFields: prefillResult.fieldCount || 0,
+        verifiedPrefilled: prefilledTexts.length
+      });
+
+    } catch (e) {
+      Logger.log('   ❌ Exception: ' + e.message);
+      results.push({ docKey: docKey, status: 'exception', error: e.message });
+    }
+
+    Logger.log('');
+    Utilities.sleep(500); // rate limit
+  });
+
+  // Summary
+  Logger.log('=== AUDIT SUMMARY ===');
+  results.forEach(function(r) {
+    var symbol = r.status === 'success' ? '✅' : '❌';
+    Logger.log(symbol + ' ' + r.docKey + ': mapped=' + r.mappedFields + ', prefilled=' + r.prefilledFields + ', verified=' + r.verifiedPrefilled);
+  });
+
+  return results;
+}
+
+
 // 2. DEEP DISCOVERY: Dump ALL fields from each SignNow template
 // ============================================================================
 // This discovers what SignNow actually imported from the Adobe PDFs.

@@ -7,7 +7,7 @@
  *
  * Uses the FULL 12-document pipeline:
  *   1. Copy each template directly from SignNow (no Drive fetch needed)
- *   2. Prefill text fields with known case data
+ *   2. Prefill text fields with known case data via PDF_Mappings.js
  *   3. Create a Document Group linking all docs together
  *   4. Send a group signing invite via email with consent language
  *
@@ -17,31 +17,16 @@
  * Reuses existing GAS functions:
  *   - SN_getConfig, SN_getDocumentRoles (SignNow_Integration_Complete.js)
  *   - fetchWithRetry, SN_log (SignNow_Integration_Complete.js)
+ *   - prefillDocument_ (Telegram_Documents.js) — shared prefill pipeline
+ *   - PDF_mapDataToTags (PDF_Mappings.js) — field name mapping
+ *
+ * TEMPLATE IDS live in SIGNNOW_TEMPLATE_MAP (Telegram_Documents.js).
+ * Do NOT duplicate template IDs here.
  *
  * Architecture: ElevenLabs → Netlify (proxy) → GAS (factory) → SignNow API
  *              Dashboard.html → GAS doPost → SignNow API
  * ============================================================================
  */
-
-// ============================================================================
-// SIGNNOW TEMPLATE IDs — Source of truth for all 12 documents
-// These are the tagged templates in the Shamrock SignNow account.
-// DO NOT fetch from Google Drive — templates live in SignNow.
-// ============================================================================
-const SIGNNOW_TEMPLATE_IDS = {
-    'paperwork-header':      '9b9dad3e319f4b1580094e05f9844929d5a6f7de',  // shamrock-paperwork-header
-    'faq-cosigners':         '0820b9fef3bd4c38a91643455881021f3f0c3a88',  // Shamrock Bail Bonds - FAQ Cosigners
-    'faq-defendants':        '1524f1c816c54a72be76d14fe128e4a6034579dc',  // Shamrock Bail Bonds- FAQ Defe.
-    'indemnity-agreement':   'ed5e6ca0a3444796a127fbeb6a880658371aafd7',  // Indemnity Agreement FINAL
-    'defendant-application': 'd50adc808f3245f087b218d33da89e4ace15ecd4',  // App for Appearance Bond FINAL
-    'promissory-note':       '460bd43c2f514305a3b296481713a00ee8311c79',  // Promissory Side 2 FINAL
-    'disclosure-form':       'fb8b57bf55ac4d5e8bff820b018a0bfd3b17a37a',  // Disclosure FINAL
-    'surety-terms':          '192aeb246230446bb0d7f658765afd2832704964',  // Surety Terms and Conditions FINAL
-    'master-waiver':         '3b0e71188b3049cc8760d144e6c49df227ccd741',  // shamrock-master-waiver
-    'ssa-release':           '4800defff07541079760889d83109059585b0cea',  // shamrock-ssa-release
-    'collateral-receipt':    '4b1f5611840f4de4bc891677617f5dbf6ff7ad05',  // osi-premium-collateral-template
-    'payment-plan':          '1861b158d7a447d48be5ac1dd24755f727f0773b'   // shamrock-premium-finance-notice
-};
 
 // ============================================================================
 // TEMPLATE ORDER — ALL 12 SIGNING DOCUMENTS
@@ -62,80 +47,10 @@ const SHANNON_TEMPLATE_ORDER = [
     'payment-plan'           // 12. Only if payment plan is used
 ];
 
-// ============================================================================
-// SIGNATURE FIELD POSITIONS — from Dashboard.html CONFIG.signatureFields
-// ============================================================================
-// These are the calibrated coordinates for each document type.
-// Each entry: { type, role, page_number, x, y, width, height }
-const SHANNON_SIG_FIELDS = {
-    'paperwork-header': [],
-    'faq-cosigners': [
-        { type: 'initials', role: 'Defendant', page_number: 0, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 0, x: 502, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Defendant', page_number: 1, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 1, x: 502, y: 30, width: 50, height: 22 }
-    ],
-    'faq-defendants': [
-        { type: 'initials', role: 'Defendant', page_number: 0, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 0, x: 502, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Defendant', page_number: 1, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 1, x: 502, y: 30, width: 50, height: 22 }
-    ],
-    'indemnity-agreement': [
-        { type: 'signature', role: 'Indemnitor', page_number: 0, x: 330, y: 95, width: 230, height: 34 }
-    ],
-    'defendant-application': [
-        { type: 'signature', role: 'Bail Agent', page_number: 0, x: 85, y: 95, width: 210, height: 34 },
-        { type: 'signature', role: 'Defendant', page_number: 0, x: 335, y: 95, width: 210, height: 34 },
-        { type: 'signature', role: 'Defendant', page_number: 1, x: 155, y: 110, width: 300, height: 34 }
-    ],
-    'promissory-note': [
-        { type: 'signature', role: 'Defendant', page_number: 0, x: 85, y: 95, width: 210, height: 34 },
-        { type: 'signature', role: 'Indemnitor', page_number: 0, x: 325, y: 95, width: 210, height: 34 }
-    ],
-    'disclosure-form': [
-        { type: 'signature', role: 'Defendant', page_number: 0, x: 85, y: 515, width: 180, height: 35 },
-        { type: 'signature', role: 'Indemnitor', page_number: 0, x: 315, y: 515, width: 180, height: 35 },
-        { type: 'signature', role: 'Bail Agent', page_number: 0, x: 315, y: 470, width: 180, height: 35 }
-    ],
-    'surety-terms': [
-        { type: 'signature', role: 'Defendant', page_number: 0, x: 85, y: 140, width: 200, height: 34 },
-        { type: 'signature', role: 'Indemnitor', page_number: 0, x: 325, y: 140, width: 200, height: 34 }
-    ],
-    'master-waiver': [
-        { type: 'initials', role: 'Defendant', page_number: 0, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 0, x: 502, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Defendant', page_number: 1, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 1, x: 502, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Defendant', page_number: 2, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 2, x: 502, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Defendant', page_number: 3, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 3, x: 502, y: 30, width: 50, height: 22 },
-        { type: 'signature', role: 'Bail Agent', page_number: 3, x: 195, y: 465, width: 145, height: 26 },
-        { type: 'signature', role: 'Defendant', page_number: 3, x: 155, y: 487, width: 185, height: 26 },
-        { type: 'signature', role: 'Indemnitor', page_number: 3, x: 165, y: 509, width: 175, height: 26 }
-    ],
-    'ssa-release': [
-        { type: 'signature', role: 'Defendant', page_number: 0, x: 140, y: 145, width: 330, height: 40 }
-    ],
-    'collateral-receipt': [
-        { type: 'signature', role: 'Bail Agent', page_number: 0, x: 95, y: 355, width: 200, height: 32 },
-        { type: 'signature', role: 'Indemnitor', page_number: 0, x: 350, y: 305, width: 210, height: 32 },
-        { type: 'signature', role: 'Bail Agent', page_number: 0, x: 90, y: 165, width: 210, height: 32 }
-    ],
-    'payment-plan': [
-        { type: 'initials', role: 'Defendant', page_number: 0, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 0, x: 502, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Defendant', page_number: 1, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 1, x: 502, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Defendant', page_number: 2, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 2, x: 502, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Defendant', page_number: 3, x: 60, y: 30, width: 50, height: 22 },
-        { type: 'initials', role: 'Indemnitor', page_number: 3, x: 502, y: 30, width: 50, height: 22 },
-        { type: 'signature', role: 'Defendant', page_number: 3, x: 180, y: 658, width: 185, height: 28 },
-        { type: 'signature', role: 'Indemnitor', page_number: 3, x: 186, y: 630, width: 185, height: 28 }
-    ]
-};
+// NOTE: SHANNON_SIG_FIELDS removed (2026-03-13).
+// Signature/initials fields are pre-tagged on templates in SignNow.
+// Field definitions live in getSignatureFieldDefs() in Telegram_Documents.js.
+// Adding them here via PUT would OVERWRITE the template-tagged fields.
 
 
 // ============================================================================
@@ -166,22 +81,23 @@ function handleShannonSendPaperwork(data) {
             return { success: false, message: "I need the defendant's full name to prepare the paperwork." };
         }
 
-        const callerParts = _shannon_splitName(data.caller_name);
         const defParts = _shannon_splitName(data.defendant_name);
-        const todayStr = new Date().toLocaleDateString('en-US');
         const config = SN_getConfig();
+
+        // Build Dashboard-format formData so the shared prefill pipeline works
+        const formData = _shannon_buildFormData(data);
 
         // -----------------------------------------------------------------
         // 1. COPY — Copy each SignNow template directly (no Drive fetch)
         // Templates are tagged and live in SignNow. No PDF upload needed.
+        // Uses SIGNNOW_TEMPLATE_MAP from Telegram_Documents.js (single source of truth).
         // -----------------------------------------------------------------
         SN_log('Shannon_CopyTemplates', { count: SHANNON_TEMPLATE_ORDER.length });
         const uploadedDocs = [];
-        const dateStr = new Date().toISOString().split('T')[0];
         const caseLabel = (data.case_number || defParts.last || 'Unknown').replace(/[^a-zA-Z0-9]/g, '_');
 
         for (const templateKey of SHANNON_TEMPLATE_ORDER) {
-            const templateId = SIGNNOW_TEMPLATE_IDS[templateKey];
+            const templateId = SIGNNOW_TEMPLATE_MAP[templateKey];
             if (!templateId) {
                 SN_log('Shannon_NoTemplateID', templateKey);
                 continue;
@@ -207,8 +123,15 @@ function handleShannonSendPaperwork(data) {
                 const documentId = copyJson.id;
                 SN_log('Shannon_Copied', { templateKey, documentId });
 
-                // Prefill known fields immediately after copy
-                _shannon_prefillDoc(config, documentId, data, defParts, callerParts, todayStr);
+                // Prefill using the SHARED pipeline (PDF_Mappings.js field names)
+                // prefillDocument_ lives in Telegram_Documents.js — uses PDF_mapDataToTags
+                // which maps through SHAMROCK_FIELD_MAPPINGS to Adobe Acrobat field names
+                var prefillResult = prefillDocument_(documentId, formData, templateKey, -1);
+                if (prefillResult.success) {
+                    SN_log('Shannon_Prefilled', { templateKey, documentId, fieldCount: prefillResult.fieldCount });
+                } else {
+                    SN_log('Shannon_PrefillWarn', { templateKey, documentId, error: prefillResult.error });
+                }
 
                 uploadedDocs.push({ key: templateKey, documentId, fileName: `Shamrock_${caseLabel}_${templateKey}` });
             } catch (e) {
@@ -225,11 +148,8 @@ function handleShannonSendPaperwork(data) {
 
         // -----------------------------------------------------------------
         // 2. FIELDS — (SKIPPED) Fields are already on templates.
-        // The SN_addFields block has been removed. Templates have all
-        // signature and text fields pre-tagged via the SignNow template editor.
+        // Templates have all signature and text fields pre-tagged.
         // -----------------------------------------------------------------
-        // NOTE: The old _shannon_addDocFields calls are intentionally removed.
-        // Do NOT re-add them — they would overwrite the template fields.
 
         // -----------------------------------------------------------------
         // 3. GROUP — Create a SignNow Document Group
@@ -309,97 +229,81 @@ function _shannon_splitName(fullName) {
 }
 
 /**
- * Prefill known text fields on a copied SignNow document.
- * Uses PUT /v2/documents/{id}/prefill-texts
- * Fields that are blank stay blank — signer fills them in the signing interface.
+ * Translate Shannon's ElevenLabs tool-call keys into Dashboard-format formData.
+ * This makes Shannon's data compatible with buildMasterDataObject() in PDF_Mappings.js,
+ * which is called by prefillDocument_() → PDF_mapDataToTags().
  *
- * @param {object} config - SN_getConfig() result
- * @param {string} documentId - The copied document ID
- * @param {object} data - Raw intake data from Shannon / Dashboard / Wix
- * @param {object} defParts - { first, middle, last } for defendant
- * @param {object} callerParts - { first, middle, last } for indemnitor/caller
- * @param {string} todayStr - Today's date as locale string
+ * Shannon collects: caller_name, caller_email, caller_phone, defendant_name, county, etc.
+ * Dashboard expects: defendant-first-name, indemnitor-1-first, defendant-county, etc.
+ *
+ * @param {object} data - Raw data from ElevenLabs tool call
+ * @returns {object} formData in Dashboard format for PDF_mapDataToTags pipeline
  */
-function _shannon_prefillDoc(config, documentId, data, defParts, callerParts, todayStr) {
-    try {
-        // Build the canonical field map — only include fields we actually have data for
-        const raw = {
-            // Defendant fields
-            DefName:       [defParts.first, defParts.middle, defParts.last].filter(Boolean).join(' ') || null,
-            DefFirst:      defParts.first || null,
-            DefMiddle:     defParts.middle || null,
-            DefLast:       defParts.last || null,
-            DefDOB:        data.defendant_dob || null,
-            DefAddress:    data.defendant_address || null,
-            DefCity:       data.defendant_city || null,
-            DefState:      data.defendant_state || 'FL',
-            DefZip:        data.defendant_zip || null,
-            DefPhone:      data.defendant_phone || null,
-            DefEmail:      data.defendant_email || null,
-            DefSSN:        data.defendant_ssn || null,
-            DefDL:         data.defendant_dl || null,
-            DefEmployer:   data.defendant_employer || null,
-            DefEmpPhone:   data.defendant_employer_phone || null,
-            DefCharge:     data.charge || data.charges || null,
-            DefCaseNum:    data.case_number || null,
-            DefBookingNum: data.booking_number || null,
-            DefJail:       data.jail || data.facility || null,
-            DefCounty:     data.county || null,
-            DefBondAmt:    data.bond_amount || null,
-            // Indemnitor fields
-            IndName:       [callerParts.first, callerParts.middle, callerParts.last].filter(Boolean).join(' ') || null,
-            IndFirst:      callerParts.first || null,
-            IndLast:       callerParts.last || null,
-            IndEmail:      data.caller_email || null,
-            IndPhone:      data.caller_phone || null,
-            IndAddress:    data.caller_address || null,
-            IndCity:       data.caller_city || null,
-            IndState:      data.caller_state || 'FL',
-            IndZip:        data.caller_zip || null,
-            IndDOB:        data.caller_dob || null,
-            IndSSN:        data.caller_ssn || null,
-            IndDL:         data.caller_dl || null,
-            IndEmployer:   data.caller_employer || null,
-            IndEmpPhone:   data.caller_employer_phone || null,
-            IndRelation:   data.caller_relation || null,
-            // Bond / case fields
-            TotalBond:     data.bond_amount || null,
-            Premium:       data.premium || null,
-            CaseNum:       data.case_number || null,
-            County:        data.county || null,
-            AgreementDate: todayStr,
-            AgencyName:    'Shamrock Bail Bonds',
-            AgencyAddress: '1528 Broadway, Fort Myers, FL 33901',
-            AgencyPhone:   '(941) 304-2245'
-        };
+function _shannon_buildFormData(data) {
+    const callerParts = _shannon_splitName(data.caller_name || '');
+    const defParts = _shannon_splitName(data.defendant_name || '');
+    const todayStr = new Date().toLocaleDateString('en-US');
+    const now = new Date();
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-        // Build prefill_texts array — only non-null values
-        const prefill_texts = Object.entries(raw)
-            .filter(([, v]) => v !== null && v !== undefined && v !== '')
-            .map(([field_name, prefilled_text]) => ({ field_name, prefilled_text: String(prefilled_text) }));
+    return {
+        // --- Defendant fields (Dashboard key format) ---
+        'defendant-first-name':    defParts.first || '',
+        'defendant-middle-name':   defParts.middle || '',
+        'defendant-last-name':     defParts.last || '',
+        'defendantFullName':       data.defendant_name || '',
+        'defendant-dob':           data.defendant_dob || '',
+        'defendant-ssn':           data.defendant_ssn || '',
+        'defendant-street-address': data.defendant_address || '',
+        'defendant-city':          data.defendant_city || '',
+        'defendant-state':         data.defendant_state || 'FL',
+        'defendant-zipcode':       data.defendant_zip || '',
+        'defendant-phone':         data.defendant_phone || '',
+        'defendant-email':         data.defendant_email || '',
+        'defendant-dl-number':     data.defendant_dl || '',
+        'defendant-booking-number': data.booking_number || '',
+        'defendant-jail-facility': data.jail || data.facility || '',
+        'defendant-county':        data.county || '',
+        'defendant-charges':       data.charge || data.charges || '',
+        'defendant-arrest-date':   data.arrest_date || '',
+        'defendant-court-date':    data.court_date || '',
+        'defendant-court-time':    data.court_time || '',
+        'defendant-court-location': data.court_location || '',
 
-        if (prefill_texts.length === 0) {
-            SN_log('Shannon_PrefillSkip', { documentId, reason: 'no data to prefill' });
-            return;
-        }
+        // --- Indemnitor fields (caller = indemnitor) ---
+        'indemnitor-1-first':      callerParts.first || '',
+        'indemnitor-1-last':       callerParts.last || '',
+        'indemnitor-1-email':      data.caller_email || '',
+        'indemnitor-1-phone':      data.caller_phone || '',
+        'indemnitor-1-address':    data.caller_address || '',
+        'indemnitor-1-city':       data.caller_city || '',
+        'indemnitor-1-state':      data.caller_state || 'FL',
+        'indemnitor-1-zip':        data.caller_zip || '',
+        'indemnitor-1-dob':        data.caller_dob || '',
+        'indemnitor-1-ssn':        data.caller_ssn || '',
+        'indemnitor-1-dl':         data.caller_dl || '',
+        'indemnitor-1-employer':   data.caller_employer || '',
+        'indemnitor-1-employer-phone': data.caller_employer_phone || '',
+        'indemnitor-1-relation':   data.caller_relation || '',
+        'indemnitorFullName':      data.caller_name || '',
+        'indemnitorName':          data.caller_name || '',
 
-        const url = `${config.API_BASE}/v2/documents/${documentId}/prefill-texts`;
-        const response = fetchWithRetry(url, {
-            method: 'PUT',
-            headers: {
-                'Authorization': 'Bearer ' + config.ACCESS_TOKEN,
-                'Content-Type': 'application/json'
-            },
-            payload: JSON.stringify({ fields: prefill_texts }),
-            muteHttpExceptions: true
-        });
+        // --- Bond / case fields ---
+        'bondAmount':              data.bond_amount || '',
+        'case-number':             data.case_number || '',
+        'county':                  data.county || '',
+        'totalPremium':            data.premium || data.premium_amount || '',
+        'charges':                 data.charge || data.charges || '',
 
-        const code = response.getResponseCode();
-        SN_log('Shannon_Prefilled', { documentId, fieldCount: prefill_texts.length, status: code });
-    } catch (e) {
-        SN_log('Shannon_PrefillErr', { documentId, err: e.toString() });
-        // Non-fatal — document is still usable, signer fills in manually
-    }
+        // --- Date fields ---
+        'date':                    todayStr,
+
+        // --- Agency constants (always filled) ---
+        'agent-name':              'Shamrock Bail Bonds',
+        'agency-name':             'Shamrock Bail Bonds',
+        'agency-address':          '1528 Broadway, Fort Myers, FL 33901',
+        'agency-phone':            '(941) 304-2245'
+    };
 }
 
 /**

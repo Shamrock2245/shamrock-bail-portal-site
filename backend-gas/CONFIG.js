@@ -291,6 +291,37 @@ loadDynamicConfig();
  * Get configuration value by path (e.g., 'ARRESTS.DAYS_BACK')
  */
 function getConfig(path) {
+  // When called with no argument, return the full config from Code.js's cached version
+  // (which includes Script Properties like WIX_API_KEY, SIGNNOW tokens, etc.)
+  if (!path) {
+    // Delegate to Code.js's _CONFIG_CACHE if available, else return static CONFIG
+    if (typeof _CONFIG_CACHE !== 'undefined' && _CONFIG_CACHE) return _CONFIG_CACHE;
+    // Build from Script Properties to match Code.js's getConfig() shape
+    try {
+      var props = PropertiesService.getScriptProperties();
+      return {
+        SIGNNOW_API_BASE: props.getProperty('SIGNNOW_API_BASE_URL') || 'https://api.signnow.com',
+        SIGNNOW_ACCESS_TOKEN: props.getProperty('SIGNNOW_API_TOKEN') || '',
+        SIGNNOW_FOLDER_ID: props.getProperty('SIGNNOW_FOLDER_ID') || '',
+        SIGNNOW_TEMPLATE_ID: props.getProperty('SIGNNOW_TEMPLATE_ID') || '',
+        TWILIO_ACCOUNT_SID: props.getProperty('TWILIO_ACCOUNT_SID') || '',
+        TWILIO_AUTH_TOKEN: props.getProperty('TWILIO_AUTH_TOKEN') || '',
+        TWILIO_PHONE_NUMBER: props.getProperty('TWILIO_PHONE_NUMBER') || '',
+        GOOGLE_DRIVE_FOLDER_ID: props.getProperty('GOOGLE_DRIVE_FOLDER_ID') || '',
+        GOOGLE_DRIVE_OUTPUT_FOLDER_ID: props.getProperty('GOOGLE_DRIVE_OUTPUT_FOLDER_ID') || '',
+        WIX_API_KEY: props.getProperty('GAS_API_KEY') || '',
+        WIX_SITE_URL: props.getProperty('WIX_SITE_URL') || 'https://www.shamrockbailbonds.biz',
+        SLACK_WEBHOOK_INTAKE: props.getProperty('SLACK_WEBHOOK_INTAKE') || '',
+        SLACK_WEBHOOK_SHAMROCK: props.getProperty('SLACK_WEBHOOK_SHAMROCK') || '',
+        SLACK_WEBHOOK_NEW_CASES: props.getProperty('SLACK_WEBHOOK_NEW_CASES') || '',
+        SLACK_WEBHOOK_COURT_DATES: props.getProperty('SLACK_WEBHOOK_COURT_DATES') || '',
+        PAYMENT_LINK: 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
+      };
+    } catch (e) {
+      return CONFIG;
+    }
+  }
+
   var parts = path.split('.');
   var value = CONFIG;
   
