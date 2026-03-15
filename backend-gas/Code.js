@@ -1574,6 +1574,124 @@ function handleAction(data) {
     return { success: false, error: 'Payment Plan Recon System not found' };
   }
 
+  // ── NODE-RED DASHBOARD BUTTON ALIASES ──────────────────────────────────────
+  // These route action names sent by Node-RED dashboard buttons to existing
+  // GAS functions. Node-RED uses slightly different action names than the
+  // original Code.js handlers, so these aliases bridge the gap.
+
+  // 11a. SCRAPER — Dynamic county scraping from Node-RED
+  if (action === 'scrapeCounty') {
+    try {
+      const county = (data.county || 'lee').toLowerCase();
+      const scraperMap = {
+        'lee': 'scrapeLeeCounty',
+        'collier': 'runCollierArrestsNow',
+        'charlotte': 'scrapeCharlotteCounty'
+      };
+      const fnName = scraperMap[county];
+      if (fnName && typeof this[fnName] === 'function') {
+        this[fnName]();
+      } else if (typeof scrapeLeeCounty === 'function' && county === 'lee') {
+        scrapeLeeCounty();
+      } else if (typeof runCollierArrestsNow === 'function' && county === 'collier') {
+        runCollierArrestsNow();
+      } else {
+        return { success: false, error: 'No scraper found for county: ' + county };
+      }
+      if (typeof NotificationService !== 'undefined' && NotificationService.sendSlack) {
+        NotificationService.sendSlack('#alerts', '🛠️ *Manual Trigger:* ' + county.charAt(0).toUpperCase() + county.slice(1) + ' County Scraper executed via Node-RED Dashboard.');
+      }
+      return { success: true, message: county + ' County Scrape initiated', county: county };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // 11b. BOND REPORTING ENGINE — Liability Report
+  if (action === 'generateLiabilityReport') {
+    try {
+      if (typeof generateWeeklyLiabilityReport === 'function') {
+        const result = generateWeeklyLiabilityReport();
+        if (typeof NotificationService !== 'undefined' && NotificationService.sendSlack) {
+          NotificationService.sendSlack('#alerts', '📊 *Liability Report* generated via Node-RED Dashboard.');
+        }
+        return { success: true, message: 'Liability Report generated', data: result };
+      }
+      return { success: false, error: 'Function generateWeeklyLiabilityReport not found' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // 11c. BOND REPORTING ENGINE — Commission (1099) Report
+  if (action === 'generateCommissionReport') {
+    try {
+      if (typeof generateAgentCommissionReport === 'function') {
+        const year = (data.reportParams && data.reportParams.year) || new Date().getFullYear();
+        const month = new Date().getMonth() + 1;
+        const result = generateAgentCommissionReport(month, year);
+        if (typeof NotificationService !== 'undefined' && NotificationService.sendSlack) {
+          NotificationService.sendSlack('#alerts', '💰 *Commission Report* (' + year + ') generated via Node-RED Dashboard.');
+        }
+        return { success: true, message: 'Commission Report generated for ' + year, data: result };
+      }
+      return { success: false, error: 'Function generateAgentCommissionReport not found' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // 11d. BOND REPORTING ENGINE — Void/Discharge Reconciliation
+  if (action === 'reconcileVoidDischarges') {
+    try {
+      if (typeof generateVoidDischargeReconciliation === 'function') {
+        const daysBack = (data.reconParams && data.reconParams.lookbackDays) || 30;
+        const result = generateVoidDischargeReconciliation(daysBack);
+        if (typeof NotificationService !== 'undefined' && NotificationService.sendSlack) {
+          NotificationService.sendSlack('#alerts', '🔍 *Void/Discharge Reconciliation* (' + daysBack + ' days back) completed via Node-RED Dashboard.');
+        }
+        return { success: true, message: 'Void/Discharge Recon completed (' + daysBack + ' day lookback)', data: result };
+      }
+      return { success: false, error: 'Function generateVoidDischargeReconciliation not found' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // 11e. CHECK-IN ALIASES (Node-RED sends 'installCheckIns' / 'runCheckIns')
+  if (action === 'installCheckIns') {
+    if (typeof installClientCheckInTrigger === 'function') {
+      installClientCheckInTrigger();
+      return { success: true, message: 'Client Check-In Weekly Trigger Installed' };
+    }
+    return { success: false, error: 'Client Check-In System not found' };
+  }
+
+  if (action === 'runCheckIns') {
+    if (typeof sendAutomatedCheckIns === 'function') {
+      const result = sendAutomatedCheckIns();
+      return { success: true, message: 'Automated Client Check-Ins Processed', data: result };
+    }
+    return { success: false, error: 'Client Check-In System not found' };
+  }
+
+  // 11f. PAYMENT RECON ALIASES (Node-RED sends 'installPaymentRecon' / 'runPaymentRecon')
+  if (action === 'installPaymentRecon') {
+    if (typeof installPaymentPlanReconTrigger === 'function') {
+      installPaymentPlanReconTrigger();
+      return { success: true, message: 'Payment Plan Recon Trigger Installed' };
+    }
+    return { success: false, error: 'Payment Plan Recon System not found' };
+  }
+
+  if (action === 'runPaymentRecon') {
+    if (typeof reconcilePaymentPlans === 'function') {
+      var reconResult = reconcilePaymentPlans();
+      return { success: true, message: 'Payment Plan Reconciliation Processed', data: reconResult };
+    }
+    return { success: false, error: 'Payment Plan Recon System not found' };
+  }
+
   // 8. DOCUMENT GENERATION (Magic Tags)
   if (action === 'generate_document') {
     try {
