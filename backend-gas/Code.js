@@ -1692,6 +1692,52 @@ function handleAction(data) {
     return { success: false, error: 'Payment Plan Recon System not found' };
   }
 
+  // 11g. COURT REMINDER OVERRIDE (Node-RED Dashboard form — T-002)
+  if (action === 'sendCourtReminderOverride') {
+    try {
+      const params = data.params || data;
+      const phone = params.phone || '';
+      const defendantName = params.defendantName || 'Defendant';
+      const courtDate = params.courtDate || '';
+      const courtLocation = params.courtLocation || '';
+      const caseNumber = params.caseNumber || '';
+
+      if (!phone || !courtDate) {
+        return { success: false, error: 'Phone and court date are required' };
+      }
+
+      // Format the SMS message
+      var smsBody = '🍀 Shamrock Bail Bonds — Court Date Reminder\n\n' +
+        'Defendant: ' + defendantName + '\n' +
+        'Court Date: ' + courtDate + '\n';
+      if (courtLocation) smsBody += 'Location: ' + courtLocation + '\n';
+      if (caseNumber) smsBody += 'Case #: ' + caseNumber + '\n';
+      smsBody += '\nPlease arrive 30 minutes early. Questions? Call (239) 332-2245.';
+
+      // Send via NotificationService (Twilio)
+      var smsResult = null;
+      if (typeof NotificationService !== 'undefined' && NotificationService.sendSms) {
+        smsResult = NotificationService.sendSms(phone, smsBody);
+      } else {
+        return { success: false, error: 'NotificationService not available' };
+      }
+
+      // Log to Slack
+      if (typeof NotificationService !== 'undefined' && NotificationService.sendSlack) {
+        NotificationService.sendSlack('#court-dates',
+          '📱 *Court Reminder Override* sent via Node-RED Dashboard\n' +
+          '*To:* ' + phone + '\n' +
+          '*Defendant:* ' + defendantName + '\n' +
+          '*Court Date:* ' + courtDate + '\n' +
+          '*Location:* ' + (courtLocation || 'N/A'));
+      }
+
+      return { success: true, message: 'Court reminder override sent to ' + phone, smsResult: smsResult };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
   // 8. DOCUMENT GENERATION (Magic Tags)
   if (action === 'generate_document') {
     try {
