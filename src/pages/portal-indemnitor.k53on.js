@@ -416,6 +416,11 @@ function setupEventListeners() {
     // Logout Button (New for Custom Auth)
     safeOnClick('#logoutBtn', handleLogout);
 
+    // Communication Preferences (Audit M-04: Dashboard must link to Comm Prefs page)
+    safeOnClick('#btnCommPrefs', () => {
+        wixLocation.to('/communication-preferences');
+    });
+
     // Choice Screen Buttons
     safeOnClick('#btnResumeBond', handleResumeBond);
     safeOnClick('#btnStartNewBond', handleStartNewBond);
