@@ -144,9 +144,14 @@ async function initializePage() {
         } else {
             console.log(" Existing intake found. Checking for Choice UI...");
             // CHECK: Does the user have the "New vs Resume" UI built?
-            if ($w('#boxChoice').valid) {
-                setupChoiceScreen();
-            } else {
+            try {
+                const boxChoice = $w('#boxChoice');
+                if (boxChoice && boxChoice.id) {
+                    setupChoiceScreen();
+                } else {
+                    throw new Error('not found');
+                }
+            } catch (_) {
                 // Fallback for legacy UI
                 console.log("[!] #boxChoice not found. Defaulting to Dashboard.");
                 showBondDashboard();
@@ -346,7 +351,6 @@ function animateChoiceScreen() {
             "y": 0,
             "opacity": 1,
             "duration": 400,
-            "stagger": 100, // Stagger items by 100ms
             "easing": "easeOutQuad"
         }, 100);
 
@@ -439,8 +443,8 @@ function attachSubmitHandler(attempt = 0) {
 
     for (const id of candidateIds) {
         try {
-            $w(id).onClick(handleSubmitIntake);
-            if ($w(id).valid) {
+            /** @type {any} */ ($w(id)).onClick(handleSubmitIntake);
+            if (/** @type {any} */ ($w(id)).id) {
                 activeSubmitBtnId = id;
                 break;
             }
@@ -457,7 +461,7 @@ function attachSubmitHandler(attempt = 0) {
     }
 
     try {
-        const btn = $w(activeSubmitBtnId);
+        const btn = /** @type {any} */ ($w(activeSubmitBtnId));
         if (btn.collapsed) btn.expand();
         if (btn.hidden) btn.show();
         if (typeof btn.enable === 'function') {
@@ -547,7 +551,7 @@ async function handleSubmitIntake() {
         showError(error.message || 'Error submitting form.');
     } finally {
         isSubmitting = false;
-        if (activeSubmitBtnId && $w(activeSubmitBtnId).valid) {
+        if (activeSubmitBtnId && /** @type {any} */ ($w(activeSubmitBtnId)).id) {
             safeEnable(activeSubmitBtnId);
             safeSetText(activeSubmitBtnId, 'Submit Info');
         }
@@ -700,7 +704,7 @@ function validateIntakeForm() {
     const consent = resolveFieldValue('consent');
     if (consent.source && !consent.value) { // Use .value (checked state)
         errors.push('You must agree to the Terms & Conditions.');
-    } else if (!consent.source && $w('#checkboxConsent').valid && !$w('#checkboxConsent').checked) {
+    } else if (!consent.source && /** @type {any} */ ($w('#checkboxConsent')).id && !/** @type {any} */ ($w('#checkboxConsent')).checked) {
         // Fallback explicit check
         errors.push('You must agree to the Terms & Conditions.');
     }
@@ -807,7 +811,7 @@ function collectIntakeFormData() {
 function handleSignPaperwork() {
     if (currentIntake?.signNowIndemnitorLink) {
         // Paperwork is emailed directly via SignNow — open signing link in new tab (Audit M-01)
-        wixWindow.openUrl(currentIntake.signNowIndemnitorLink, { target: '_blank' });
+        wixLocation.to(currentIntake.signNowIndemnitorLink);
     }
 }
 
@@ -859,8 +863,8 @@ async function handleSendMessage() {
         }
 
         // 3. Clear input and confirm
-        if ($w('#messageInput').type === '$w.TextInput') {
-            $w('#messageInput').value = '';
+        if (/** @type {any} */ ($w('#messageInput')).type === '$w.TextInput') {
+            /** @type {any} */ ($w('#messageInput')).value = '';
         }
         showSuccess('Message sent! Our team will respond shortly.');
 
@@ -960,7 +964,7 @@ function showSuccess(msg) {
     // Try both UI patterns (Group vs Message)
     // Try both UI patterns (Group vs Message)
     try {
-        if ($w('#textSuccessMessage').valid) $w('#textSuccessMessage').text = msg;
+        if (/** @type {any} */ ($w('#textSuccessMessage')).id) /** @type {any} */ ($w('#textSuccessMessage')).text = msg;
         safeShow('#groupSuccess');
         safeHide('#errorGroup');
         setTimeout(() => safeHide('#groupSuccess'), 5000);
@@ -1070,7 +1074,7 @@ function setupDefendantLink() {
     triggerFields.forEach(selector => {
         safeOnInput(selector, () => {
             // Check availability to prevent errors
-            if ($w('#groupDefendantLink').valid && !$w('#groupDefendantLink').collapsed) {
+            if (/** @type {any} */ ($w('#groupDefendantLink')).id && !$w('#groupDefendantLink').collapsed) {
                 console.log(" Hiding Defendant Link (User is Indemnitor)");
                 safeCollapse('#groupDefendantLink');
             }
