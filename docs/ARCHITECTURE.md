@@ -1,78 +1,197 @@
-# Shamrock Bail Bonds Automation: System Architecture
+# Shamrock Bail Bonds: System Architecture
 
-**Version:** 2.1 (Multi-Indemnitor Signing Pipeline)
-**Date:** 2026-02-27
-**Author:** Manus AI / Antigravity
+**Version:** 3.0
+**Date:** 2026-03-15
+**Author:** Shamrock Engineering & AI Agents
 
-This document outlines the unified, deduplicated architecture of the Shamrock Bail Bonds automation factory. It reflects the merged and cleaned codebase after the audit of Antigravity and Manus session work.
+---
 
 ## 1. Core Principle: Single Source of Truth
 
-To eliminate redundancy and ensure data integrity, the system adheres to a strict single-source-of-truth principle for all key functionalities. Duplicate files and functions have been removed, and all logic is now centralized in canonical modules.
+The system adheres to a strict single-source-of-truth principle. Google Apps Script (GAS) is the **central nervous system** — every client surface, automation, and data pipeline connects through it. Duplicate logic is eliminated; business rules live in exactly one place.
 
-## 2. System Components & Data Flow
+---
 
-The automation pipeline is composed of several interconnected modules, each with a clearly defined responsibility.
+## 2. High-Level System Architecture
 
 ```mermaid
 graph TD
-    A[Telegram Client] -->|Inbound Msg| B(Wix Endpoint);
-    B -->|Forwards to| C(GAS Webhook);
-    C -->|Routes to| D{Message Type?};
-    D -->|Text| E[Manus_Brain.js];
-    D -->|Photo/Doc| F[PDF_Processor.js];
-    D -->|Location| G[LocationMetadataService.js];
-    E -->|Intake Flow| H(Telegram_IntakeFlow.js);
-    H -->|Data to| I[Wix Collections];
-    F -->|ID Photos| J(ID Verification Flow);
-    J -->|Stores in| K[Google Drive];
-    F -->|Signed Docs| L(Post-Signing Pipeline);
-    L -->|Merges/Watermarks| K;
-    L -->|Sends to Client| A;
-    M[SignNow Webhook] -->|signing_complete| N(SOC2_WebhookHandler.js);
-    N -->|Triggers| L;
+    subgraph "Client Surfaces"
+        WEB[Wix Portal<br/>shamrockbailbonds.biz]
+        TG_BOT[Telegram Bot<br/>@ShamrockBail_bot]
+        TG_MINI[Telegram Mini Apps<br/>7 PWA screens]
+        SHANNON[Shannon Voice AI<br/>ElevenLabs]
+        PHONE[Phone / SMS<br/>Twilio]
+    end
+
+    subgraph "Edge Layer (Netlify)"
+        EDGE_EL[elevenlabs-init.js]
+        EDGE_CD[county-detect.js]
+        EDGE_TV[twilio-voice-inbound.js]
+        SFNS["17 Serverless Functions<br/>(AI, compliance, notifications)"]
+    end
+
+    subgraph "Backend Intelligence (GAS)"
+        CODE["Code.js<br/>doPost() / doGet()<br/>Single Entry Point"]
+        AI_AGENTS["AI Agents<br/>Clerk, Analyst, Investigator,<br/>Concierge, Closer"]
+        SIGNNOW_INT["SignNow Integration<br/>14-doc packet generation"]
+        TG_FLOW["Telegram Flows<br/>Intake, OCR, Notifications"]
+        NR_HANDLERS["NodeRedHandlers.js<br/>17+ data endpoints"]
+        MONGO_LOG["MongoLogger.gs<br/>Event persistence"]
+    end
+
+    subgraph "Operations (Node-RED)"
+        NR_DASH["Operations Dashboard<br/>8 pages, glassmorphism UI"]
+        NR_CRON["Scheduler<br/>51+ automated jobs"]
+        NR_WEBHOOKS["Webhook Endpoints<br/>14 inbound routes"]
+    end
+
+    subgraph "Data Pipeline (Scrapers)"
+        SCRAPERS["19 County Scrapers<br/>Python + Node.js + GAS"]
+        HETZNER["Hetzner Cloud<br/>Dockerized fleet"]
+        GH_ACTIONS["GitHub Actions<br/>15 workflows"]
+    end
+
+    subgraph "Data Stores"
+        WIX_CMS["Wix CMS<br/>IntakeQueue, Cases,<br/>PortalSessions, MagicLinks"]
+        GSHEETS["Google Sheets<br/>Master DB, Arrests,<br/>PaymentLog, CheckInLog"]
+        MONGODB["MongoDB Atlas<br/>Arrest analytics,<br/>event audit trail"]
+        GDRIVE["Google Drive<br/>Case folders, signed PDFs"]
+    end
+
+    subgraph "External Services"
+        SIGNNOW[SignNow]
+        TWILIO[Twilio SMS/WhatsApp]
+        SLACK["Slack (12+ channels)"]
+        OPENAI[OpenAI GPT-4o]
+        VISION[Cloud Vision OCR]
+    end
+
+    WEB -->|http-functions.js| CODE
+    TG_BOT -->|Wix webhook| CODE
+    TG_MINI -->|fetch| CODE
+    SHANNON --> EDGE_EL --> CODE
+    PHONE --> EDGE_TV --> CODE
+
+    CODE --> AI_AGENTS
+    CODE --> SIGNNOW_INT
+    CODE --> TG_FLOW
+    CODE --> NR_HANDLERS
+    CODE --> MONGO_LOG
+
+    NR_CRON -->|HTTP GET/POST| CODE
+    NR_WEBHOOKS -->|Relay| CODE
+    NR_DASH ---|reads| NR_HANDLERS
+
+    SCRAPERS --> GSHEETS
+    SCRAPERS --> MONGODB
+    SCRAPERS --> SLACK
+    HETZNER -.->|hosts| SCRAPERS
+    GH_ACTIONS -.->|triggers| SCRAPERS
+
+    CODE --> WIX_CMS
+    CODE --> GSHEETS
+    MONGO_LOG --> MONGODB
+    CODE --> GDRIVE
+
+    SIGNNOW_INT --> SIGNNOW
+    CODE --> TWILIO
+    CODE --> SLACK
+    AI_AGENTS --> OPENAI
+    CODE --> VISION
 ```
 
-### 2.1. Google Apps Script (`backend-gas`)
+---
 
-This is the heart of the automation factory, containing all business logic.
+## 3. Component Details
 
-| File | Responsibility |
-| :--- | :--- |
-| **`Code.js`** | Main entry point. Routes all incoming webhooks (`doPost`) and exposes client-callable functions (`doGet`). |
-| **`Telegram_Webhook.js`** | Handles all inbound Telegram messages. Routes to the appropriate handler based on message type (text, photo, document, location, command). |
-| **`Telegram_Documents.js`** | **(V2)** Manages the document signing pipeline. Contains `SIGNNOW_TEMPLATE_MAP`, `DOC_GENERATION_RULES`, `buildPacketManifest()`, and signing URL generation. Handles multi-indemnitor document multiplication. |
-| **`Server_DocumentLogic.js`** | Bridge between Dashboard UI and backend handlers. Provides `server_getPacketManifest()`, `server_getSigningUrl()`, and Drive file operations. |
-| **`PDF_Processor.js`** | **(Unified)** Handles all document and photo uploads. Presents a task menu to the user (ID, Signed Docs, etc.) and manages the guided ID verification flow (front, back, selfie). Also runs the post-signing pipeline. |
-| **`Telegram_IntakeFlow.js`** | Manages the conversational state machine for new client intake via Telegram. Collects all necessary defendant and indemnitor information. |
-| **`Manus_Brain.js`** | Routes general text messages to the appropriate AI model or conversational flow. |
-| **`WebhookHandler.js`** | Handles SignNow webhooks, specifically the `document.complete` event, which it delegates to `DriveFilingService` and now triggers the `PDF_Processor` post-signing pipeline. |
-| **`SOC2_WebhookHandler.js`** | Secure entry point for all webhooks, performing signature verification before passing the payload to the main handlers. |
-| **`DriveFilingService.gs`** | Manages all interactions with Google Drive, including creating case folders and saving documents. |
-| **`Utilities.js`** | **(New)** A centralized library of all common helper functions (`getFileExtension`, `formatDate_`, `getOrCreateDriveSubfolder`, etc.) to eliminate code duplication. |
-| **`Telegram_API.js`** | A robust client for the Telegram Bot API. Handles sending all message types, downloading files, and managing webhooks. |
-| **`Telegram_Notifications.js`** | Contains all functions for sending outbound business notifications (court date reminders with 4-touch sequences, one-tap signing deep links, payment progress updates with visual bars). Includes time-driven trigger functions. |
-| **`Telegram_Auth.js`** | Manages user authentication via OTP sent to their Telegram account. |
-| **`Telegram_InlineQuote.js`** | **(New)** Handles `@ShamrockBail_bot` inline queries. Calculates FL bail premiums ($100/charge min or 10%, transfer fee logic) and returns rich inline result cards. |
-| **`Telegram_Analytics.js`** | **(New)** Event logging (`logBotEvent`) and funnel analytics (`getBotAnalytics`). Tracks intake conversions, inline queries, OCR, and signing events to `BotAnalytics` sheet. |
-| **`Telegram_OCR.js`** | **(New)** ID photo OCR using Google Cloud Vision API `TEXT_DETECTION`. Parses Florida Driver License fields (name, DOB, DL#, address). Falls back to Drive storage if Vision API unavailable. |
-| **`LocationMetadataService.js`** | Manages location data enrichment, county detection, and `findNearestOffice()` for Shamrock office locations (Fort Myers HQ, Charlotte County). |
-| **`registerWebhook.js`** | Webhook registration, bot command setup, menu button config, and `installTelegramFeatureTriggers()` for time-driven triggers. |
+### 3.1 Google Apps Script (`backend-gas/`) — "The Factory"
 
-### 2.2. Wix Velo (`src`)
+Single entry point via `Code.js` → `doPost()` (50+ action routes) and `doGet()` → `handleGetAction()` (16+ routes).
 
-The Wix site serves as the mobile-first frontend for clients and the dashboard for staff.
+| Module | Key Files | Responsibility |
+|--------|-----------|----------------|
+| **Core Router** | `Code.js` | Routes all webhooks, exposes GET endpoints for Node-RED |
+| **Telegram** | `Telegram_Webhook.js`, `Telegram_IntakeFlow.js`, `Telegram_API.js`, `Telegram_Notifications.js`, `Telegram_Auth.js`, `Telegram_OCR.js`, `Telegram_InlineQuote.js`, `Telegram_Analytics.js` | Bot message routing, conversational intake (30+ steps), OTP auth, DL OCR, inline quotes, 4-touch court reminders |
+| **AI Agents** | `AI_BookingParser.js`, `AI_FlightRisk.js`, `AI_Investigator.js`, `AIConcierge.js`, `TheCloser.js`, `Manus_Brain.js` | Booking parsing, risk scoring (0-100), background checks, chat, drip campaigns, Telegram AI routing |
+| **SignNow** | `SignNow_SendPaperwork.js`, `Telegram_Documents.js`, `Server_DocumentLogic.js`, `SOC2_WebhookHandler.js` | 14-doc packet generation, field hydration, embedded signing, webhook verification |
+| **Document Processing** | `PDF_Processor.js`, `DriveFilingService.gs` | Post-signing pipeline (merge, watermark), ID verification flow, Drive case folders |
+| **Scrapers (Internal)** | `ArrestScraper_Lee.js`, `ArrestScraper_Collier.js` | GAS-native scrapers for Lee and Collier counties |
+| **Lead Management** | `LeadScoringSystem.js`, `LeadScoringConfig.js` | Urgency × bond amount × county scoring, auto-prioritization |
+| **Compliance** | `CourtReminderSystem.js`, `ClientCheckInSystem.js`, `BondReportingEngine.js`, `PaymentPlanReconciliation.js` | SMS reminder sequences, GPS/selfie check-ins, liability reports, delinquency flagging |
+| **Communication** | `CommPrefsManager.js`, `TheCloser.js` | Client opt-in/out preferences, SMS/WhatsApp drip campaigns |
+| **Infrastructure** | `MongoLogger.gs`, `WixPortalIntegration.js`, `NodeRedHandlers.js`, `Utilities.js`, `ElevenLabs_WebhookHandler.js` | MongoDB event logging, Wix CMS sync, Node-RED data endpoints, Shannon post-call processing |
+
+### 3.2 Wix Velo (`src/`) — "The Clipboard"
+
+Mobile-first frontend. Collects data but does NOT own heavy logic.
 
 | File | Responsibility |
-| :--- | :--- |
-| **`http-functions.js`** | Exposes the public webhook endpoint that receives messages from Telegram and forwards them to the GAS web app. |
-| **`wix-crm-backend`** | Handles interactions with the Wix CRM, including creating and updating contact records. |
-| **`portal-auth.jsw`** | Manages user login and session management for the client portal. |
-| **`Dashboard.html`** | **(GAS)** The staff-facing dashboard for managing cases, viewing intake queue submissions, and generating document packets. |
+|------|----------------|
+| `http-functions.js` | Public webhook endpoint — forwards Telegram/SignNow payloads to GAS |
+| `portal-auth.jsw` | Magic link authentication, session management |
+| `ai-service.jsw` | AI Concierge chat bridge (Wix → GAS) |
+| `portal-defendant.js` | Defendant dashboard — appearance app, check-ins, court dates |
+| `portal-indemnitor.js` | Indemnitor dashboard — financial forms, ID upload, SignNow signing |
+| `Dashboard.html` (GAS) | Staff intake queue, case management, packet generation |
 
-## 3. Document Signing Pipeline (V2 — Multi-Indemnitor)
+### 3.3 Node-RED (`shamrock-node-red/`) — "Operations Hub"
 
-The signing system uses **SignNow as the single source of truth** for all document templates. Templates are stored in the SignNow "Team Templates" folder and referenced by ID in `SIGNNOW_TEMPLATE_MAP`.
+Dockerized at `localhost:1880`. Premium glassmorphism UI. Static ngrok domain for inbound webhooks.
+
+| Component | Details |
+|-----------|---------|
+| **Dashboard Pages** | 8: Operations Radar, Concierge Ops, Analyst/Risk Ops, Revenue & Closing, DevOps & Infrastructure, Agency Management, Operations, Bounty Board |
+| **Scheduled Jobs** | 51+ cron automations — scraper triggers, court date checks, compliance sweeps, health monitoring, daily briefings |
+| **Webhook Endpoints** | 14 inbound routes — Twilio SMS/WhatsApp relay, Slack commands, payment notifications, scraper callbacks |
+| **GAS Bridge** | `NodeRedHandlers.js` provides 17+ data endpoints for dashboard widgets via HTTP GET/POST |
+| **Key Flows** | Auto-posting engine, qualified arrest sync, Concierge queue polling, Google token refresh, bond renewals, forfeiture monitoring |
+
+### 3.4 Telegram Mini Apps (`shamrock-telegram-app/`) — PWA Client Interface
+
+7 mini-apps hosted on Netlify at `shamrock-telegram.netlify.app`.
+
+| App | Path | Purpose |
+|-----|------|---------|
+| Hub | `/` | Central navigation |
+| Intake | `/intake/` | 5-step bail intake form |
+| Defendant | `/defendant/` | Self-service portal |
+| Documents | `/documents/` | View + sign docs (SignNow) |
+| Payment | `/payment/` | Payments + GPS/selfie check-in |
+| Status | `/status/` | Case lookup from GAS data |
+| Updates | `/updates/` | Contact changes, tips, extensions |
+
+**Backend:** 17 Netlify serverless functions (AI concierge, charge analysis, compliance digest, court reminders, risk scoring, etc.) + 3 edge functions (ElevenLabs init, county detect, Twilio voice).
+
+### 3.5 Arrest Scrapers (`swfl-arrest-scrapers/`) — "The Scout"
+
+19 active county scrapers. Dual-stack: Python (DrissionPage) + Node.js (Puppeteer) + GAS (internal).
+
+| Component | Details |
+|-----------|---------|
+| **Counties** | Brevard, Charlotte, Collier, DeSoto, Hendry, Highlands, Hillsborough, Indian River, Lake, Lee, Manatee, Martin, Orange, Osceola, Palm Beach, Pinellas, Polk, Sarasota, Seminole |
+| **Pipeline** | Scrape → Normalize (39-column schema) → Deduplicate (County + Booking_Number) → Score (0-100) → Sheets (row 2 insert) → MongoDB Atlas → Slack alert |
+| **CI/CD** | 15 GitHub Actions workflows with staggered cron schedules |
+| **Infrastructure** | Hetzner Cloud VPS (`cpx21`, Ubuntu 24.04) hosting Dockerized scraper fleet |
+| **Expansion** | Wave 1: 13 SmartCOP clones (30 min each). Goal: 67 counties. |
+
+### 3.6 Shannon — Voice AI (`ElevenLabs Conversational AI`)
+
+24/7 after-hours voice intake agent.
+
+| Component | Details |
+|-----------|---------|
+| **Platform** | ElevenLabs Conversational AI |
+| **Init Proxy** | Netlify Edge Function `elevenlabs-init.js` (avoids GAS 302 redirect) |
+| **Capabilities** | Collect caller info, send SignNow links via SMS during call, live transfer to 3 bondsman numbers |
+| **Post-Call** | `ElevenLabs_WebhookHandler.js` processes transcripts, writes to IntakeQueue |
+| **GAS Files** | `ElevenLabs_AfterHoursAgent.js`, `ElevenLabs_WebhookHandler.js` |
+
+---
+
+## 4. Document Signing Pipeline (V2 — Multi-Indemnitor)
+
+SignNow is the **single source of truth** for all 14 document templates (Team Templates folder).
 
 ```mermaid
 graph LR
@@ -88,8 +207,6 @@ graph LR
     J -->|displayed in| A;
 ```
 
-### Document Generation Rules
-
 | Rule | Behavior | Example |
 |------|----------|---------|
 | `static` | One copy per bond, agent signs | Appearance Bond |
@@ -98,20 +215,56 @@ graph LR
 | `per-person` | One copy per person (defendant + each indemnitor) | SSA Release |
 | `print-only` | Not sent to SignNow | FAQ sheets |
 
-### Tracking
+**Tracking:** `DocSigningTracker` spreadsheet with composite key `docId:signer-N`.
 
-Each document copy is tracked in the `DocSigningTracker` spreadsheet with a composite key: `docId:signer-N`. Columns include `SignerRole` and `SignerIndex` for unique identification.
+---
 
-## 4. Key Architectural Decisions & Resolutions
+## 5. Inter-Repo Data Flows
 
-*   **Unified Document/Photo Handling:** All inbound photos and documents are now routed through `PDF_Processor.js`. This provides a consistent user experience with a clear task menu and leverages the robust, stateful ID verification flow from the `Telegram_PhotoHandler.js` (which has been merged and deleted).
+| Source → Destination | Mechanism | What Flows |
+|---|---|---|
+| Wix Portal → GAS | `http-functions.js` POST | Intake forms, magic link auth, CMS data |
+| GAS → Wix CMS | `WixPortalIntegration.js` | Case updates, intake sync, doc status |
+| Telegram Bot → GAS | Wix HTTP webhook → `doPost()` | All bot messages, inline queries, callbacks |
+| Telegram Mini-App → GAS | Direct `fetch()` | Intake, payments, check-ins, uploads |
+| Shannon → GAS | Netlify Edge → `doGet()` | Voice transcripts, send-paperwork calls |
+| Node-RED → GAS | HTTP POST/GET (`NodeRedHandlers.js`) | 17+ data queries for dashboard |
+| GAS → Node-RED | JSON responses | Dashboard widget data |
+| GAS → Slack | Outbound webhooks (12+ channels) | Arrests, intakes, signing events, errors |
+| GAS → Twilio | `UrlFetchApp` | SMS confirmations, court reminders |
+| Scrapers → Sheets + MongoDB | `SheetsWriter` / Cloud Functions proxy | 39-column arrest records |
+| Scrapers → Slack | Direct webhook | Hot lead alerts, health reports |
+| SignNow → GAS | Webhook `document.complete` | Triggers post-signing pipeline |
 
-*   **Centralized Utilities:** All common helper functions have been moved to `Utilities.js`. All other files have been refactored to call this single source of truth, reducing code size and maintenance effort.
+---
 
-*   **Closed-Loop Signing:** The `handleDocumentComplete` function in `WebhookHandler.js` now triggers the `triggerPostSigningFromWebhook` function in `PDF_Processor.js`. This creates a fully automated loop: a client signs a document in SignNow, the webhook is received, the final PDF is processed (merged, watermarked), and the client is immediately sent the final document and a request for ID photos via Telegram.
+## 6. Data Stores
 
-*   **SignNow as Template Source:** All 13 document templates live exclusively in SignNow (Team Templates folder). The system no longer generates PDFs from Google Drive templates. This eliminates hydration failures and ensures consistent field mapping.
+| Store | Purpose | Key Collections/Tabs |
+|-------|---------|---------------------|
+| **Wix CMS** | Client-facing data | `IntakeQueue`, `Cases`, `PortalSessions`, `MagicLinks`, `PendingDocuments`, `MemberDocuments` |
+| **Google Sheets** | Operational source of truth | One tab per county (arrests), `Qualified_Arrests`, `IntakeQueue`, `PaymentLog`, `CheckInLog`, `Ingestion_Log`, `BotAnalytics`, `DocSigningTracker` |
+| **MongoDB Atlas** | Analytics & audit trail | Centralized arrests (cross-county dedup), event audit log (intakes, payments, signing, court dates) |
+| **Google Drive** | Document storage | Case folders, signed PDFs, call transcripts, templates |
 
-*   **Manifest-Driven Document Generation:** Instead of merging PDFs into a single file, the system generates individual SignNow template copies per document, per signer. This enables proper per-person tracking, individual signing links, and correct document multiplication for multi-indemnitor bonds.
+---
 
-This unified architecture is now cleaner, more maintainable, and fully aligned with the project goal of a zero-re-entry automation factory.
+## 7. Key Architectural Decisions
+
+1. **GAS as Single Backend:** All business logic routes through `Code.js`. Node-RED, Wix, and Telegram are consumers — not logic owners.
+
+2. **Manifest-Driven Signing:** Individual SignNow template copies per document, per signer. Enables per-person tracking and multi-indemnitor multiplication.
+
+3. **Closed-Loop Signing:** `document.complete` webhook → `PDF_Processor` post-signing pipeline → merged/watermarked PDFs → sent to client → ID upload request. Fully automated.
+
+4. **MongoDB for Events, Sheets for Operations:** Sheets remain the operational source of truth (staff reads Sheets). MongoDB stores the event audit trail and analytics layer.
+
+5. **Node-RED for Orchestration, Not Logic:** Node-RED handles scheduling, webhook relay, and dashboard visualization. It calls GAS endpoints — it never contains business rules.
+
+6. **Edge Functions for Latency:** Shannon voice AI init and Twilio voice routing use Netlify Edge Functions to avoid GAS cold-start/302 redirect issues.
+
+7. **Idempotent Writes:** All data writes check for duplicates. Arrest dedup key: `Booking_Number` + `County`. Intake dedup: phone + timestamp.
+
+---
+
+*Last Updated: March 15, 2026*
