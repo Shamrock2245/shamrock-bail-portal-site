@@ -131,3 +131,37 @@ function saveConfigFromUI(formObject) {
 
     return { success: true, message: `Updated ${updated} settings successfully.` };
 }
+
+/**
+ * dumpNodeRedEnv
+ * Run this from the GAS IDE to get all environment variables needed for Node-RED.
+ * Copy the output from the Execution Log and paste into shamrock-node-red/.env
+ */
+function dumpNodeRedEnv() {
+  var props = PropertiesService.getScriptProperties();
+  var lines = [];
+  
+  lines.push('# ── Auto-exported from GAS Script Properties ──');
+  lines.push('# Generated: ' + new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  lines.push('');
+  lines.push('GAS_WEBHOOK_URL=' + (props.getProperty('GAS_WEB_APP_URL') || props.getProperty('GAS_WEBHOOK_URL') || ''));
+  lines.push('GAS_API_KEY=' + (props.getProperty('GAS_API_KEY') || ''));
+  lines.push('');
+  lines.push('SLACK_BOT_TOKEN=' + (props.getProperty('SLACK_BOT_TOKEN') || ''));
+  lines.push('SLACK_WEBHOOK_OPS=' + (props.getProperty('SLACK_WEBHOOK_SHAMROCK') || props.getProperty('SLACK_WEBHOOK_GENERAL') || ''));
+  lines.push('SLACK_WEBHOOK_ALERTS=' + (props.getProperty('SLACK_WEBHOOK_ALERTS') || props.getProperty('SLACK_WEBHOOK_GENERAL') || ''));
+  lines.push('SLACK_WEBHOOK_LEADS=' + (props.getProperty('SLACK_WEBHOOK_LEADS') || ''));
+  lines.push('');
+  lines.push('TWILIO_ACCOUNT_SID=' + (props.getProperty('TWILIO_ACCOUNT_SID') || ''));
+  lines.push('TWILIO_AUTH_TOKEN=' + (props.getProperty('TWILIO_AUTH_TOKEN') || ''));
+  lines.push('TWILIO_PHONE_NUMBER=' + (props.getProperty('TWILIO_PHONE_NUMBER') || ''));
+  lines.push('');
+  lines.push('ELEVENLABS_API_KEY=' + (props.getProperty('ELEVENLABS_API_KEY') || ''));
+  lines.push('ELEVENLABS_AGENT_ID=' + (props.getProperty('ELEVENLABS_AGENT_ID') || ''));
+  lines.push('');
+  lines.push('SIGNNOW_API_KEY=' + (props.getProperty('SIGNNOW_PRODUCTION_TOKEN') || ''));
+  lines.push('');
+  lines.push('WEBHOOK_HMAC_SECRET=' + (props.getProperty('WEBHOOK_HMAC_SECRET') || props.getProperty('ELEVENLABS_WEBHOOK_SECRET') || ''));
+  
+  Logger.log(lines.join('\n'));
+}
