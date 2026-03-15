@@ -1539,6 +1539,60 @@ function handleAction(data) {
     }
     return { success: false, error: 'Court Reminder System not found' };
   }
+  // 8.5 BOND RENEWAL CHECK (T-007: Node-RED Bond Renewal Pipeline)
+  if (action === 'getBondRenewals') {
+    try {
+      const daysAhead = data.params?.daysAhead || [30, 60, 90];
+      const maxDays = Math.max(...daysAhead);
+      const ss = SpreadsheetApp.openById(MASTER_SHEET_ID);
+      const casesSheet = ss.getSheetByName('Cases');
+      if (!casesSheet) return { success: false, error: 'Cases sheet not found' };
+      
+      const allData = casesSheet.getDataRange().getValues();
+      const headers = allData[0];
+      const bondDateCol = headers.indexOf('Bond_Date') !== -1 ? headers.indexOf('Bond_Date') : headers.indexOf('bond_date');
+      const nameCol = headers.indexOf('Defendant_Name') !== -1 ? headers.indexOf('Defendant_Name') : headers.indexOf('defendant_name');
+      const bondNumCol = headers.indexOf('Bond_Number') !== -1 ? headers.indexOf('Bond_Number') : headers.indexOf('bond_number');
+      const statusCol = headers.indexOf('Status') !== -1 ? headers.indexOf('Status') : headers.indexOf('status');
+      const phoneCol = headers.indexOf('Indemnitor_Phone') !== -1 ? headers.indexOf('Indemnitor_Phone') : headers.indexOf('indemnitor_phone');
+      const amountCol = headers.indexOf('Bond_Amount') !== -1 ? headers.indexOf('Bond_Amount') : headers.indexOf('bond_amount');
+      
+      const now = new Date();
+      const renewals = [];
+      
+      for (let i = 1; i < allData.length; i++) {
+        const row = allData[i];
+        const status = statusCol >= 0 ? String(row[statusCol]).toLowerCase() : '';
+        if (status === 'discharged' || status === 'forfeited' || status === 'void') continue;
+        
+        const bondDate = bondDateCol >= 0 ? new Date(row[bondDateCol]) : null;
+        if (!bondDate || isNaN(bondDate.getTime())) continue;
+        
+        // Bond renewal = 1 year from bond date
+        const expirationDate = new Date(bondDate);
+        expirationDate.setFullYear(expirationDate.getFullYear() + 1);
+        
+        const daysRemaining = Math.ceil((expirationDate - now) / (1000 * 60 * 60 * 24));
+        
+        if (daysRemaining > 0 && daysRemaining <= maxDays) {
+          renewals.push({
+            defendantName: nameCol >= 0 ? row[nameCol] : 'Unknown',
+            bondNumber: bondNumCol >= 0 ? row[bondNumCol] : '',
+            expirationDate: expirationDate.toISOString().split('T')[0],
+            daysRemaining: daysRemaining,
+            indemnitorPhone: phoneCol >= 0 ? row[phoneCol] : '',
+            bondAmount: amountCol >= 0 ? row[amountCol] : 0,
+            urgency: daysRemaining <= 30 ? 'urgent' : daysRemaining <= 60 ? 'soon' : 'upcoming'
+          });
+        }
+      }
+      
+      renewals.sort((a, b) => a.daysRemaining - b.daysRemaining);
+      return { success: true, renewals: renewals, count: renewals.length };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
 
   // 9. CLIENT CHECK-INS (Triggers & Manual Runs)
   if (action === 'installClientCheckIns') {
