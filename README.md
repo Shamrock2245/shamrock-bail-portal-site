@@ -3,7 +3,7 @@
 This project is the official **Shamrock Bail Bonds Portal**. It runs on **Wix Velo** (Frontend) and connects to a **Google Apps Script (GAS)** backend for secure workflows (AI Agents, PDFs, Signatures, Arrest Scrapers).
 
 **Current Status:** Production (Active) 🟢  
-**GAS Deployment:** @367+ | **Last Updated:** Mar 3, 2026
+**GAS Deployment:** v415+ | **Last Updated:** Mar 15, 2026
 
 ---
 
@@ -22,7 +22,7 @@ This project is the official **Shamrock Bail Bonds Portal**. It runs on **Wix Ve
 *   **Frontend:** Wix Velo (JavaScript), Wix CMS Collections, Wix Members Area.
 *   **Backend:** Google Apps Script (GAS) Web App (Serverless).
 *   **AI/LLM:** OpenAI GPT-4o-mini (via GAS `UrlFetchApp`).
-*   **Database:** Wix Collections (`IntakeQueue`, `Cases`, `PortalSessions`, `MagicLinks`) + Google Sheets (Operational Data).
+*   **Database:** Wix Collections (`IntakeQueue`, `Cases`, `PortalSessions`, `MagicLinks`) + Google Sheets (Operational Data) + MongoDB Atlas (Arrest Analytics via Cloud Functions proxy).
 *   **Signatures:** SignNow API (Embedded Signing via Telegram Deep Link).
 *   **Deployment:** `clasp` (GAS) + GitHub Integration (Wix).
 *   **Notifications:** Slack (Internal) + Twilio (External SMS/WhatsApp).
@@ -96,9 +96,10 @@ For a detailed breakdown of all system components, data flows, and architectural
 5.  **Completion:** The final, executed documents are processed and sent back to the client via Telegram.
 
 ### 2. Lead Scoring & Arrest Monitoring
-1.  **Arrest Scraper:** GAS scripts monitor Lee County, Collier County jail websites.
-2.  **Auto-Scoring:** Leads are scored based on urgency, bond amount, and county.
-3.  **Slack Alerts:** High-priority arrests trigger Slack notifications to `#new-arrests-lee-county`.
+1.  **Arrest Scrapers:** 19 county scrapers across Florida (Python/DrissionPage + Node.js/Puppeteer + GAS).
+2.  **Auto-Scoring:** Leads scored 0-100 based on urgency, bond amount, and county (`LeadScoringSystem.js`).
+3.  **Slack Alerts:** High-priority arrests trigger Slack notifications to `#new-arrests-{county}`.
+4.  **MongoDB Logging:** All business events logged to MongoDB Atlas via `MongoLogger.gs`.
 
 ### 3. Defendant Portal
 1.  Log in via magic link (email/SMS).
