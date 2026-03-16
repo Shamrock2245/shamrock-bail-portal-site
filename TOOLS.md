@@ -16,11 +16,18 @@ This document outlines all tools, MCP servers, agent skills, and external servic
 | **Slack** | Internal comms | Post messages, list channels, get history, thread replies, reactions |
 | **Google Maps** | Geolocation | Place search, routing, office locator integration |
 | **Google Sheets** | Data operations | Read/write spreadsheet data, create sheets, batch updates |
+| **MongoDB** | Database operations | Query/insert/update arrest data, event logs, analytics aggregation |
 | **Netlify** | Edge deployment | Deploy sites, manage edge functions, environment variables |
 | **Fetch** | Web scraping | HTTP requests, HTML-to-markdown conversion for scraper research |
 | **Filesystem** | File operations | Read/write/search files across allowed directories |
 | **Python** | Script execution | Run Python scripts for data processing, automation helpers |
 | **Sequential Thinking** | Complex reasoning | Multi-step problem decomposition and analysis |
+
+> [!TIP]
+> **Potential future MCPs to consider:**
+> - **Twilio MCP** — Direct SMS/WhatsApp sending, call management, number lookup (currently managed via GAS `UrlFetchApp`)
+> - **Docker MCP** — Container management on Hetzner VPS for scraper fleet
+> - **Cloudflare MCP** — DNS management, Workers KV for edge caching if needed
 
 ---
 
