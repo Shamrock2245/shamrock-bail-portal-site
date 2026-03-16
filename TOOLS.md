@@ -1,46 +1,115 @@
-# Tools & Resources
+# 🛠 Tools & Resources
 
-This document outlines the specific set of agents, integrations, and tools the AI uses to complete objectives for Shamrock Bail Bonds.
+> **Last Updated:** March 16, 2026
 
-## Core MCP Servers (Model Context Protocol)
-Agents have access to specialized MCP servers to execute tasks:
-1.  **ElevenLabs MCP**
-    -   **Usage**: Create agents, check caller history, isolate audio, generate text-to-speech.
-    -   **Primary Agent**: "Shannon" (Inbound triage and call handling).
+This document outlines all tools, MCP servers, agent skills, and external services used by the Shamrock AI ecosystem.
 
-2.  **SignNow MCP**
-    -   **Usage**: Create embedded signing, create invites from templates, list documents, get document status.
-    -   **Primary Purpose**: Contract generation and delivery.
+---
 
-3.  **Wix MCP Remote**
-    -   **Usage**: Search REST documentation, search Velo documentation, call the Wix Site API.
-    -   **Primary Purpose**: Manage CMS collections, Wix Automation triggers, or deep UI code generation.
+## MCP Servers (Model Context Protocol)
 
-4.  **Google Maps Platform Code Assist**
-    -   **Usage**: Retrieve integration instructions for places, routing, or geometry.
+| Server | Purpose | Key Actions |
+|--------|---------|-------------|
+| **ElevenLabs** | Voice AI management | Create/manage agents, TTS, voice cloning, call history, audio isolation |
+| **SignNow** | Contract signing | Create invites from templates, list/get documents, embedded signing sessions |
+| **GitHub** | Source control | Push files, create branches/PRs, sync repos, manage issues |
+| **Slack** | Internal comms | Post messages, list channels, get history, thread replies, reactions |
+| **Google Maps** | Geolocation | Place search, routing, office locator integration |
+| **Google Sheets** | Data operations | Read/write spreadsheet data, create sheets, batch updates |
+| **Netlify** | Edge deployment | Deploy sites, manage edge functions, environment variables |
+| **Fetch** | Web scraping | HTTP requests, HTML-to-markdown conversion for scraper research |
+| **Filesystem** | File operations | Read/write/search files across allowed directories |
+| **Python** | Script execution | Run Python scripts for data processing, automation helpers |
+| **Sequential Thinking** | Complex reasoning | Multi-step problem decomposition and analysis |
 
-5.  **GitHub MCP Server**
-    -   **Usage**: Syncing changes, creating pull requests, managing issues.
-    -   **Workflows**: Ensure branch integrity (`/git_smart_sync`).
+---
 
-6.  **Slack MCP Server**
-    -   **Usage**: Create channels, post messages.
-    -   **Primary Purpose**: Internal Command Center notifications (`#intake-alerts`).
+## Agent Skills (`.agent/skills/`)
 
-7.  **Fetch & Sequential Thinking**
-    -   **Usage**: Web scraper (DrissionPage/Fetch) for "The Scout" and "The Clerk" to access county jail rosters. Systematic debugging for complex code issues.
+Always consult the relevant `SKILL.md` before modifying complex logic.
 
-## Internal Agent Skills (in `.agent/skills/`)
-Before modifying complex logic, you MUST consult the specific `SKILL.md` if applicable:
--   `ui-ux-pro-max`: Premium Design & Styling Rules.
--   `wix_gas_bridge_integrity`: Rules for fixing the 403 Forbidden bridge.
--   `pdf_template_manager`: SignNow PDF coordinate mapping rules.
--   `twilio-communications`: Robust SMS and Communication workflows.
--   `bail_school_manager`: Specialized scheduling or integrations.
--   `systematic-debugging`: For resolving scraping bans or unhandled exceptions.
+| Skill | File | Purpose |
+|-------|------|---------|
+| **UI/UX Pro Max** | `ui-ux-pro-max/` | Premium design intelligence — 50+ styles, 95+ palettes, design system generation |
+| **Wix-GAS Bridge Integrity** | `wix_gas_bridge_integrity/` | Diagnose and repair 403 Forbidden errors between Wix and GAS |
+| **PDF Template Manager** | `pdf_template_manager/` | SignNow PDF coordinate mapping for 14-document bail bond packet |
+| **Twilio Communications** | `twilio-communications/` | Robust SMS/WhatsApp patterns, 10DLC compliance |
+| **SignNow API Helper** | `signnow_api_helper/` | Official SignNow API documentation access and code generation |
+| **SignNow MCP Server** | `signnow_mcp_server/` | Action-performing server for SignNow workflow execution |
+| **ElevenLabs MCP Server** | `elevenlabs_mcp_server/` | Official ElevenLabs MCP for TTS and audio generation |
+| **Bail School Manager** | `bail_school_manager/` | Course bookings, reminders, certificate generation |
+| **Systematic Debugging** | `systematic-debugging/` | Rigorous step-by-step troubleshooting without guessing |
+| **Error Handling Patterns** | `error_handling_patterns/` | Standardized JSON error responses (replace generic 500s) |
+| **Production Code Audit** | `production-code-audit/` | Pre-release checklist and audit workflow |
+| **Audit Security** | `audit_security/` | Pre-flight security checks for secrets and PII |
+| **UI Visual Validator** | `ui-visual-validator/` | Automated check of Sticky Mobile CTA and responsive rules |
+| **Netlify Best Practices** | `netlify_best_practices/` | Edge Functions, Blobs, and AI Gateway patterns |
 
-## External Dependences
--   **Google Apps Script (GAS)**: The "Factory". Handled via Clasp (`backend-gas/`).
--   **Wix Velo**: The "Clipboard". Handled locally or via Wix Editor.
--   **Twilio**: API for SMS and WhatsApp.
--   **Netlify**: Edge Functions for Webhook routing/middleware.
+---
+
+## Workflows (`.agent/workflows/`)
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `/deploy_gas_versioned` | Manual | Deploy GAS backend with version description via `clasp` |
+| `/clasp_safe_push` | Manual | Safe `clasp push` with auth handling |
+| `/git_smart_sync` | Manual | Stash → pull → rebase → push — handles conflicts gracefully |
+| `/wix_safe_sync` | Manual | Sync Wix Editor changes with remote, handle rebase/naming |
+| `/ui-ux-pro-max` | Manual | Generate premium design systems and apply styling |
+| `/documentation_cleanup` | Manual | Audit, update, and archive documentation |
+
+---
+
+## External Services & APIs
+
+### Core Infrastructure
+
+| Service | Purpose | Credentials Location |
+|---------|---------|---------------------|
+| **Google Apps Script** | Backend "Factory" — all business logic | GAS Script Properties |
+| **Wix Velo** | Frontend "Clipboard" — portal UI | Wix Secrets Manager |
+| **MongoDB Atlas** | Arrest data storage, event logging | GAS Script Properties (`MONGODB_URI`) |
+| **Google Sheets** | Operational database (arrest records, intake queue, logs) | Service Account JSON |
+| **Google Drive** | Case file folders, signed PDFs, templates | Service Account |
+
+### Communication
+
+| Service | Purpose | Credentials Location |
+|---------|---------|---------------------|
+| **Twilio** | SMS & WhatsApp (10DLC compliant) | GAS Script Properties + Wix Secrets |
+| **Slack** | Internal ops (12+ webhook channels) | Bot Token in Node-RED `.env` |
+| **Telegram Bot API** | Client messaging, mini-apps | GAS Script Properties (`TELEGRAM_BOT_TOKEN`) |
+
+### AI & Processing
+
+| Service | Purpose | Credentials Location |
+|---------|---------|---------------------|
+| **OpenAI** | GPT-4o-mini for 6 AI agents | GAS Script Properties (`OPENAI_API_KEY`) |
+| **ElevenLabs** | Shannon voice agent | GAS Script Properties + Netlify env |
+| **Google Cloud Vision** | FL Driver License OCR | GAS Script Properties |
+| **Mem0** | AI memory & persistence — long-term context for agents across sessions | API key / local config |
+
+### Signing & Payments
+
+| Service | Purpose | Credentials Location |
+|---------|---------|---------------------|
+| **SignNow** | 14-doc bail bond packet | GAS Script Properties (`SIGNNOW_*`) |
+| **SwipeSimple** | Payment links, virtual terminal | Dashboard UI (secure injection) |
+
+### Hosting & CI/CD
+
+| Service | Purpose | Credentials Location |
+|---------|---------|---------------------|
+| **Netlify** | Telegram Mini-Apps + Edge Functions | Netlify dashboard env vars |
+| **Hetzner Cloud** | VPS for scraper fleet + GH runners | SSH keys, Hetzner API token |
+| **GitHub Actions** | CI/CD for scrapers (10+ workflows) | GitHub Secrets |
+| **Docker** | Containerized scraper execution | `.env` files |
+
+---
+
+## Key Rules
+
+1. **Never hardcode API keys** — Use `env.get()`, Wix Secrets Manager, or GAS Script Properties.
+2. **Always check skills first** — If modifying a component that has a skill, read the `SKILL.md`.
+3. **Run workflows** — Use the defined workflows for deployment, syncing, and design tasks.
+4. **Security before push** — Run `audit_security` skill before any production deployment.

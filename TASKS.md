@@ -1,135 +1,125 @@
-# 📋 Project Tasks & Roadmap
+# 📋 Project Tasks
 
-> **Mission:** Build the "Uber of Bail Bonds" for Florida. High-speed, AI-powered, and fully compliant.
+> **Mission:** Build the "Uber of Bail Bonds" for Florida — Fast. Frictionless. Everywhere.  
+> **Last Updated:** March 16, 2026
 
 ---
 
 ## ✅ Phase 1: Foundation & Security (Complete)
-- [x] **Monorepo Migration:** Unified Wix Velo + GAS backend.
-- [x] **Security Audit:** PII Redaction, Secret Manager Integration (`GAS_WEB_APP_URL`).
-- [x] **Compliance:** SOC II logging patterns implemented.
-- [x] **Handoff:** `FINAL_DEPLOYMENT_HANDOFF.md` created.
+- [x] Monorepo migration — unified Wix Velo + GAS backend
+- [x] Security audit — PII redaction, Secret Manager integration
+- [x] SOC II logging patterns implemented
+- [x] Core 34-column intake schema defined (`IntakeQueue`)
 
 ## ✅ Phase 2: Core Portals (Complete)
-- [x] **Indemnitor Portal:** Financial Indemnity Form + SignNow Lightbox.
-- [x] **Defendant Portal:** Appearance Application + GPS Check-in.
-- [x] **Magic Links:** Secure, session-based auth (No passwords).
-- [x] **PDF Engine:** Automated layout mapping for precise court forms.
+- [x] Indemnitor Portal — Financial Indemnity Form + SignNow Lightbox
+- [x] Defendant Portal — Appearance Application + GPS Check-in
+- [x] Magic Links — secure session-based auth (no passwords)
+- [x] PDF Engine — automated layout mapping for court forms
 
-## ✅ Phase 3: AI Concierge & RAG (Complete)
-- [x] **Gemini 1.5 Integration:** Wired `RAGService.js` to Google AI.
-- [x] **Knowledge Base:** Expanded to 12+ Counties (Lee, Collier, Manatee, etc.).
-- [x] **SMS Agent:** "Headless" concierge that monitors leads and texts intelligently.
-- [x] **Config:** Secure API Key rotation (`SAFE_updateGeminiKey`).
+## ✅ Phase 3: AI Concierge & Telegram Integration (Complete)
+- [x] OpenAI GPT-4o integration — 6 specialized AI agents built
+- [x] Telegram Bot (`@ShamrockBail_bot`) — full conversational intake
+- [x] Inline Quote Bot — `@ShamrockBail_bot 5000 2 lee` → instant premium
+- [x] Court Date Reminders — 4-touch SMS sequence (7d, 3d, 1d, morning-of)
+- [x] ID OCR — Google Cloud Vision FL Driver License parser
+- [x] Office Locator — GPS → nearest office with Call/Directions
+- [x] Payment Progress Notifications — visual progress bars (████░░ 65%)
+- [x] Telegram Mini-Apps (7) — Portal, Intake, Documents, Payments, Check-in, Status, Signing
 
----
-## ✅ Phase 3.5: Maintenance & Payment Features (Complete)
-- [x] **GAS Project Guide:** Definitive documentation (`GAS_Project_Guide.md`).
-- [x] **Backend Fixes:** `IntakeQueue` reference logic & Tab Routing cleanup.
-- [x] **Universal Payment Link:** Integrated SwipeSimple into Portals, SMS, and Email workflows.
-- [x] **Dashboard:** Repaired tab structure and added headers.
-- [x] **Liability Display:** Fixed hardcoded $50k placeholder; made dynamic.
-- [x] **Submit Button Fix:** Robust ID detection (`#btnSubmitInfo` / `#btnSubmitForm`) for Indemnitor Portal.
-- [x] **Git Sync:** Full parity achieved between local desktop and remote repo.
+## ✅ Phase 4: Core Automation (Complete)
+- [x] "The Clerk" — booking data scraping and OCR
+- [x] "The Analyst" — risk assessment with 0-100 flight risk scoring
+- [x] "The Investigator" — deep background check analysis
+- [x] "The Closer" — abandoned intake drip campaigns
+- [x] Court Email Processor — auto-parse court date emails
+- [x] Bond Reporting Engine — weekly liability, commissions, reconciliation
+- [x] Client Check-In System — weekly SMS with text response tracking
+- [x] Payment Plan Reconciliation — SwipeSimple delinquency tracking
+- [x] Universal Payment Link — SwipeSimple in portals, SMS, email
 
-## ✅ Phase 3.6: Operational Tools (Complete)
-- [x] **Stealth Poke:** Location logging + SMS backend (`location-tracker.jsw`).
-- [x] **Staff Portal 2.0:** "View Map" and "Files" buttons wired to real data.
+## ✅ Phase 5: Shannon Voice AI (Complete)
+- [x] ElevenLabs Conversational AI — "Shannon" 24/7 after-hours intake
+- [x] Inbound Twilio → ElevenLabs routing
+- [x] Init webhook as Netlify Edge Function (near-zero cold start)
+- [x] Two-path flow: Path A (notify bondsman) / Path B (send paperwork)
+- [x] SignNow link creation + SMS delivery during active calls
+- [x] ShannonCallLog Google Sheet (full transcript recording)
+- [x] Knowledge base — all 67 FL counties, statutes, bond schedules, FAQs
+- [x] 8 webhook tools — calculate_premium, create_intake, lookup_defendant, send_payment_link, schedule_callback, transfer_to_bondsman, check_inmate_status, send_directions
+- [x] Live call transfer — 3 phone numbers (primary, secondary, Spanish line)
 
----
+## ✅ Phase 6: Infrastructure & Operations (Complete)
+- [x] Node-RED Ops Dashboard — 19 flow tabs, 643+ nodes, 51 crons, 14 webhooks
+- [x] 8-page dashboard with premium glassmorphism UI
+- [x] Global error handler → Slack alerts
+- [x] Webhook authentication (HMAC) on all 14 endpoints
+- [x] Bond Renewal Reminder Pipeline
+- [x] Quick-Bond Calculator Widget
+- [x] Error Aggregation Dashboard
+- [x] Agent Activity Scoreboard (9 agents with status/KPIs)
+- [x] Reusable "POST to GAS" subflow in Shamrock palette
+- [x] SLACK_TOKEN fix — `env.get('SLACK_BOT_TOKEN')` in Configure Global Vars
 
-## ✅ Phase 4: System Verification (Complete)
-- [x] **Test 1:** Happy Path (Lee County / High Urgency) — Submit → AI SMS → SignNow.
-- [x] **Test 2:** Northern Expansion (Manatee/Pinellas) — Verified county jail data.
-- [x] **Test 3:** Dashboard Intake Queue — Verified loading + rendering.
+## ✅ Phase 7: Geographic Expansion — 19 Counties (Complete)
+- [x] 19 active county scrapers — Brevard, Charlotte, Collier, DeSoto, Hendry, Highlands, Hillsborough, Indian River, Lake, Lee, Manatee, Martin, Orange, Osceola, Palm Beach, Pinellas, Polk, Sarasota, Seminole
+- [x] 15 GitHub Actions workflows for scheduled runs
+- [x] Python/DrissionPage as primary engine
+- [x] Docker Compose for containerized execution
+- [x] MongoDB Atlas writer (`mongo_writer.py`) — bulk upsert with dedup
+- [x] Lead scoring system (`LeadScoringSystem.js`) with auto-prioritization
+- [x] Slack alerts per county (#new-arrests-{county})
+- [x] Hetzner Cloud VPS for self-hosted GitHub Actions runners
+- [x] SEO — all county pages indexed, JSON-LD, OG/Twitter meta, geo tags
 
----
-
-## ✅ Phase 5: Telegram Integration & Core Automation (Complete)
-- [x] **Telegram Bot:** Full production bot (`@ShamrockBail_bot`) with conversational intake.
-- [x] **PDF Bot Skills:** Merge, compress, watermark, and archive via `PDF_Processor.js`.
-- [x] **Closed-Loop Signing:** Auto-processes post-signing → PDF delivery via Telegram.
-- [x] **Codebase Deduplication:** Unified `Utilities.js` for shared helpers.
-- [x] **Arrest Scrapers:** Lee County + Collier County live with hourly triggers.
-- [x] **Historical Bond Monitor:** Cross-references new arrests with previous bonds.
-- [x] **"The Closer":** Abandoned intake follow-up bot with SMS/Telegram drip campaigns.
-- [x] **Court Email Processor:** Auto-parses court date emails, updates records.
-
----
-
-## ✅ Phase 6: Telegram Ecosystem Expansion (Complete — Feb 27, 2026)
-- [x] **Inline Quote Bot** — `Telegram_InlineQuote.js`
-  - [x] Florida premium calculation: $100/charge min OR 10% (whichever is greater)
-  - [x] Transfer fee logic: $125 (waived for Lee/Charlotte + bonds >$25k)
-  - [x] Inline mode enabled via BotFather `/setinline`
-- [x] **Court Date Reminder Sequences** — `Telegram_Notifications.js`
-  - [x] 4-touch: 7-day, 3-day, 1-day, morning-of
-  - [x] Time-driven trigger: every 30 minutes
-- [x] **One-Tap Signing Deep Link** — `Telegram_Notifications.js`
-  - [x] web_app button → Documents mini app with case context
-- [x] **Bot Analytics Dashboard** — `Telegram_Analytics.js`
-  - [x] `logBotEvent()` + `getBotAnalytics()` for funnel tracking
-  - [x] `get_bot_analytics` action wired in `Code.js`
-- [x] **ID OCR** — `Telegram_OCR.js`
-  - [x] Google Cloud Vision API TEXT_DETECTION
-  - [x] FL Driver License parser (name, DOB, DL#, address)
-  - [x] Graceful fallback to Drive if Vision API not configured
-- [x] **Office Locator** — `LocationMetadataService.js` + `Telegram_Webhook.js`
-  - [x] `findNearestOffice()` for Fort Myers HQ + Charlotte County
-  - [x] Auto-sends nearest office with Call/Directions buttons
-- [x] **Payment Progress Notifications** — `Telegram_Notifications.js`
-  - [x] Visual progress bar (████░░ 65%)
-  - [x] Weekly trigger: Mondays 10 AM
-- [~] **Voice Message Transcription** — ON HOLD
-  - [ ] Exploring alternatives to ElevenLabs STT
-  - [ ] ElevenLabs reserved for speaking agent feature
+## ✅ Phase 7.5: MongoDB & Communication Preferences (Complete)
+- [x] MongoDB Atlas event logging via `MongoLogger.gs`
+- [x] All critical business events logged — intakes, signing, payments, court dates, check-ins, comms, leads
+- [x] Communication Preferences — `CommPrefsManager.js` in GAS
+- [x] Wix portal comm prefs page — `Communication Preferences.f870g.js` → `comm-prefs-sync.jsw` → GAS
+- [x] `pymongo[srv]` dependency added to scrapers
+- [x] Scraper pipeline Step 5b — non-fatal MongoDB write after Sheets
 
 ---
 
-## ✅ Phase 6.5: Automated Reporting & Agency Management (Complete — Mar 08, 2026)
-- [x] **Bond Reporting Engine:** Weekly liability, agent commissions, and void/discharge reconciliation.
-- [x] **Court Reminder System:** Automated WhatsApp/SMS loops (7, 3, 1 days prior).
-- [x] **Client Check-In System:** Automated weekly SMS check-ins with text response tracking.
-- [x] **Payment Plan Reconciliation:** SwipeSimple delinquency tracking for active accounts.
+## 🔄 Phase 8: Growth & Scale (In Progress)
 
----
-
-## 🔮 Phase 7: Growth & Scale (In Progress)
-- [x] **ElevenLabs After-Hours Agent ("Shannon")**
-  - [x] Inbound Twilio → ElevenLabs voice agent integration
-  - [x] Init webhook as Netlify Edge Function (near-zero cold start)
-  - [x] Two-path conversation flow: Path A (notify bondsman) / Path B (send paperwork)
-  - [x] SignNow signing link creation + SMS delivery via Twilio
-  - [x] ShannonCallLog Google Sheet (full transcript recording)
-  - [x] Knowledge base: All 67 FL counties, FL Statutes 648/903, bond schedules, FAQs, 8 paperwork descriptions
-  - [x] 8 ElevenLabs webhook tools: calculate_premium, create_intake, lookup_defendant, send_payment_link, schedule_callback, transfer_to_bondsman, check_inmate_status, send_directions
-  - [x] RAG-indexed knowledge base uploaded to ElevenLabs
-- [x] **SEO & Indexing**
-  - [x] All county pages indexed in Google
-  - [x] Structured data (JSON-LD) optimized
-  - [x] OG/Twitter meta tags + geo tags per county
-  - [x] AI crawler friendly `robots.txt`
-- [x] **"The Scout" Agent (Expansion)**
-  - [x] Configure Python scrapers (`curl_cffi` / `BeautifulSoup`) for new county URLs (Charlotte, Hendry, Manatee, DeSoto)
-  - [ ] Set up daily cron triggers in GAS / GitHub Actions
+### 🔴 Immediate Priority
 - [ ] **WhatsApp Business Integration**
-  - [ ] Enable Twilio Sandbox
-  - [ ] Wire to `twilio-client.jsw`
+  - [ ] Enable Twilio WhatsApp Sandbox
+  - [ ] Wire to Node-RED relay
+  - [ ] Test WhatsApp campaigns tab (currently disabled pending 10DLC)
+
+### 🟡 This Quarter
+- [ ] **"The Closer" Drip Campaigns**
+  - [ ] Automated SMS/WhatsApp follow-up sequences for abandoned intakes
+  - [ ] Wire Node-RED → GAS `TheCloser.js` endpoints
+- [ ] **Wave 1 SmartCOP Blitz** (13 counties)
+  - [ ] Clone DeSoto scraper → Bradford, Dixie, Escambia, Gadsden, Gilchrist, Glades, Hamilton, Levy, Putnam, Santa Rosa, Sumter, Suwannee, Taylor
+  - [ ] ~30 min per county. Post-wave target: 32 counties (48% FL coverage)
+- [ ] **Shannon Enhancements**
+  - [ ] Multi-language support (Spanish priority — Collier/Lee demographics)
+  - [ ] Shannon → "The Closer" handoff for abandoned intakes
+  - [ ] Shannon call analytics dashboard
+  - [ ] Telegram signing link delivery during calls
+
+### 🟢 Backlog
 - [ ] **Bail School Landing Page**
-  - [ ] Design high-converting `/bail-school` registration page
+  - [ ] High-converting `/bail-school` registration page
   - [ ] Video integration + auto-issue PDF certificate
 - [ ] **Social Media Automation**
   - [ ] Pexels integration for post images
   - [ ] Scheduled social publishing via `SocialPublisher.js`
+- [ ] **MongoDB Primary Migration**
+  - [ ] Migrate primary data store from Sheets → MongoDB Atlas
+  - [ ] Keep Sheets as backup/dashboard view
+- [ ] **Wave 2–5 County Expansion**
+  - [ ] Wave 2: 19 standard DrissionPage counties (Q3 2026)
+  - [ ] Wave 3: 13 complex targets — CAPTCHAs, SPAs (Q4 2026)
+  - [ ] Wave 4: 3 PDF-based counties (Q1 2027)
+  - [ ] Wave 5: 5 manual investigation counties (Q2 2027)
+  - [ ] Goal: 67/67 counties (100% FL coverage)
 
 ---
 
-## 🔮 Phase 7.5: Shannon Enhancements (In Progress)
-- [x] **Comprehensive knowledge base** — all 67 FL counties, statutes, bond schedules
-- [x] **5 new webhook tools** — send_payment_link, schedule_callback, transfer_to_bondsman, check_inmate_status, send_directions
-- [x] **RAG optimization** — knowledge base indexed, duplicates cleaned
-- [ ] **Telegram signing link delivery** during Shannon calls
-- [ ] **Shannon → "The Closer" handoff** for abandoned intake follow-up
-- [ ] **Multi-language support** (Spanish priority — Collier/Lee demographics)
-- [ ] **Shannon call analytics dashboard** in GAS
-- [ ] **Wire new webhook tool backends** — GAS handlers for send_payment_link, schedule_callback, transfer_to_bondsman, check_inmate_status, send_directions
+*Maintained by Shamrock Engineering & AI Agents*
