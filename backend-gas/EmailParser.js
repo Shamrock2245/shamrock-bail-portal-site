@@ -131,6 +131,7 @@ function extractCourtDataFromText(text) {
  * @return {String|null} The matched text, or null if not found
  */
 function extractPattern(text, pattern) {
+  if (!text) return null;
   var match = text.match(pattern);
   
   if (match && match[1]) {
