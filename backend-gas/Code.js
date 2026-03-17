@@ -1856,6 +1856,54 @@ function handleAction(data) {
   }
   // ------------------------------
 
+  // ── NODE-RED REPEAT OFFENDER HANDLERS ────────────────────────────────────
+  // Routes to NodeRedHandlers_RepeatOffender.js
+
+  if (action === 'lookupCosigners') {
+    try {
+      const result = typeof handleLookupCosigners === 'function'
+        ? handleLookupCosigners(data)
+        : { success: false, error: 'handleLookupCosigners not loaded' };
+      return result;
+    } catch (e) { return { success: false, error: e.message }; }
+  }
+
+  if (action === 'writeRepeatOffenderAlerts') {
+    try {
+      const result = typeof handleWriteRepeatOffenderAlerts === 'function'
+        ? handleWriteRepeatOffenderAlerts(data)
+        : { success: false, error: 'handleWriteRepeatOffenderAlerts not loaded' };
+      return result;
+    } catch (e) { return { success: false, error: e.message }; }
+  }
+
+  if (action === 'sendRepeatOffenderOutreach') {
+    try {
+      const result = typeof handleSendRepeatOffenderOutreach === 'function'
+        ? handleSendRepeatOffenderOutreach(data)
+        : { success: false, error: 'handleSendRepeatOffenderOutreach not loaded' };
+      return result;
+    } catch (e) { return { success: false, error: e.message }; }
+  }
+
+  if (action === 'runDripCampaign') {
+    try {
+      const result = typeof handleRunDripCampaign === 'function'
+        ? handleRunDripCampaign(data)
+        : { success: false, error: 'handleRunDripCampaign not loaded' };
+      return result;
+    } catch (e) { return { success: false, error: e.message }; }
+  }
+
+  if (action === 'getCommPreferences') {
+    try {
+      const result = typeof handleGetCommPreferences === 'function'
+        ? handleGetCommPreferences(data)
+        : { success: false, error: 'handleGetCommPreferences not loaded' };
+      return result;
+    } catch (e) { return { success: false, error: e.message }; }
+  }
+
   return { success: false, error: 'Unknown Action: ' + action };
 }
 
