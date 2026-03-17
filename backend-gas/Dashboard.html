@@ -7539,7 +7539,7 @@
 
                     run: function () {
                         const inputEl = document.getElementById('clerk-input');
-                        const textInput = inputEl ? inputEl.value : '';
+                        const textInput = inputEl ? inputEl.value.trim() : '';
                         const payload = state.filePayload || textInput;
 
                         if (!payload) return UI.showToast('⚠️ Provide file or text.', 'warning');
@@ -7549,9 +7549,12 @@
                         // Hide output initially
                         output.style.display = 'none';
 
-                        UI.showLoading('The Clerk', 'Extracting data from booking sheet...');
+                        // Detect if input is a URL — route to URL extractor instead of image parser
+                        const isUrl = typeof payload === 'string' && /^https?:\/\//i.test(payload);
 
-                        google.script.run
+                        UI.showLoading('The Clerk', isUrl ? 'Fetching booking data from URL...' : 'Extracting data from booking sheet...');
+
+                        const runner = google.script.run
                             .withSuccessHandler(res => {
                                 UI.hideLoading();
                                 output.style.display = 'block';
@@ -7567,8 +7570,14 @@
                                 UI.hideLoading();
                                 output.style.display = 'block';
                                 output.innerHTML = `<div class="error-box">❌ Error: ${err.message}</div>`;
-                            })
-                            .client_parseBooking(payload);
+                            });
+
+                        // Route: URL → client_extractFromUrl, File/Text → client_parseBooking
+                        if (isUrl) {
+                            runner.client_extractFromUrl(payload);
+                        } else {
+                            runner.client_parseBooking(payload);
+                        }
                     },
 
                     populate: function (res) {

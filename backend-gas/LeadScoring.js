@@ -14,10 +14,10 @@ function scoreAllLeads() {
   
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('Lee_County_Arrests');
+    var sheet = ss.getSheetByName('Lee');
     
     if (!sheet) {
-      ui.alert('Lee_County_Arrests sheet not found.');
+      ui.alert('Lee sheet not found.');
       return;
     }
     
@@ -203,7 +203,7 @@ function scoreArrestLead(record) {
 function getHotLeads() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('Lee_County_Arrests');
+    var sheet = ss.getSheetByName('Lee');
     
     if (!sheet) {
       return [];
@@ -257,7 +257,7 @@ function getHotLeads() {
 function autoScoreNewArrests(startRow, endRow) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('Lee_County_Arrests');
+    var sheet = ss.getSheetByName('Lee');
     
     if (!sheet) {
       return;

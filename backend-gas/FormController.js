@@ -49,10 +49,10 @@ function openBondFormForSelectedRow() {
 function getArrestDataForForm(bookingNumber, rowIndex) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('Lee_County_Arrests');
+    var sheet = ss.getSheetByName('Lee');
     
     if (!sheet) {
-      throw new Error('Lee_County_Arrests sheet not found');
+      throw new Error('Lee sheet not found');
     }
     
     // Get headers
@@ -127,10 +127,10 @@ function calculateTotalPremium(bondAmount, numberOfCharges) {
 function saveFormDataToSheet(formData) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('Lee_County_Arrests');
+    var sheet = ss.getSheetByName('Lee');
     
     if (!sheet) {
-      throw new Error('Lee_County_Arrests sheet not found');
+      throw new Error('Lee sheet not found');
     }
     
     // Find the row by booking number
@@ -170,10 +170,10 @@ function saveFormDataToSheet(formData) {
 function updateBondStatus(bookingNumber, status) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('Lee_County_Arrests');
+    var sheet = ss.getSheetByName('Lee');
     
     if (!sheet) {
-      throw new Error('Lee_County_Arrests sheet not found');
+      throw new Error('Lee sheet not found');
     }
     
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
@@ -215,7 +215,7 @@ function markFormOpened(bookingNumber) {
   // You can also update a Form_Opened_Date column if it exists
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('Lee_County_Arrests');
+    var sheet = ss.getSheetByName('Lee');
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     var dateCol = headers.indexOf('Form_Opened_Date') + 1;
     

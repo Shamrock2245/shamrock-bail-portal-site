@@ -21,10 +21,10 @@ var SEARCH_CONFIG = {
  */
 function generateSearchLinksForRow(rowIndex) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('Lee_County_Arrests');
+  var sheet = ss.getSheetByName('Lee');
   
   if (!sheet) {
-    Logger.log('❌ Lee_County_Arrests sheet not found');
+    Logger.log('❌ Lee sheet not found');
     return;
   }
   
@@ -73,10 +73,10 @@ function generateSearchLinksForRow(rowIndex) {
  */
 function generateAllSearchLinks() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('Lee_County_Arrests');
+  var sheet = ss.getSheetByName('Lee');
   
   if (!sheet) {
-    SpreadsheetApp.getUi().alert('❌ Lee_County_Arrests sheet not found');
+    SpreadsheetApp.getUi().alert('❌ Lee sheet not found');
     return;
   }
   
@@ -131,8 +131,8 @@ function generateSearchLinksForSelectedRow() {
     return;
   }
   
-  if (sheet.getName() !== 'Lee_County_Arrests') {
-    SpreadsheetApp.getUi().alert('❌ Please select a row in the Lee_County_Arrests sheet');
+  if (sheet.getName() !== 'Lee') {
+    SpreadsheetApp.getUi().alert('❌ Please select a row in the Lee sheet');
     return;
   }
   
@@ -252,8 +252,8 @@ function openAllSearchLinks() {
     return;
   }
   
-  if (sheet.getName() !== 'Lee_County_Arrests') {
-    SpreadsheetApp.getUi().alert('❌ Please select a row in the Lee_County_Arrests sheet');
+  if (sheet.getName() !== 'Lee') {
+    SpreadsheetApp.getUi().alert('❌ Please select a row in the Lee sheet');
     return;
   }
   

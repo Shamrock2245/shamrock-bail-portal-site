@@ -128,8 +128,8 @@ var CONFIG = {
   
   // ===== ARRESTS (Lee County) =====
   ARRESTS: {
-    SHEET_ID: '1jq1-N7sCbwSiYPLAdI2ZnxhLzym1QsOSuHPy-Gw07Qc', // shamrock-leads-leecounty
-    TAB_NAME: 'Lee_County_Arrests',                         // target tab (will auto-create)
+    SHEET_ID: '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E', // Lee County Arrests (new spreadsheet)
+    TAB_NAME: 'Lee',                                         // target tab in new spreadsheet
     TIMEZONE: 'America/New_York',
 
     ENDPOINTS: {

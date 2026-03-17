@@ -1,6 +1,6 @@
 # 🏗 Architecture & System
 
-> **Last Updated:** March 16, 2026  
+> **Last Updated:** March 17, 2026  
 > **Status:** 🟢 Production — All Systems Operational
 
 ---
@@ -19,7 +19,7 @@ We enforce a distributed, service-oriented architecture. The frontend (Wix) exis
 |-------|-----------|------|
 | **Frontend / UI** | Wix Velo | Premium UI — Glassmorphism, animations, magic link auth. Collects data, passes it to GAS. |
 | **Backend / Factory** | Google Apps Script (GAS) | Single entry point (`Code.js doPost()/doGet()`). 190+ files. All business logic. v415+. |
-| **AI / LLM** | OpenAI GPT-4o-mini (via GAS) | 6 specialized agents: Clerk, Analyst, Investigator, Concierge, Closer, Manus Brain. |
+| **AI / LLM** | OpenAI GPT-4o-mini (via GAS) | 9 digital employees: Clerk, Analyst, Investigator, Concierge, Closer, Manus Brain, Shannon, Watchdog, Bounty Hunter. |
 | **Voice AI** | ElevenLabs Conversational AI | "Shannon" — 24/7 after-hours phone intake agent with live call transfer. |
 | **Database** | Wix CMS + Google Sheets + MongoDB Atlas | Wix CMS for portal data. Sheets for ops. MongoDB for arrest analytics & event logging. |
 | **Signing** | SignNow API | 14-document packet generation. Embedded mobile-first signing. Webhook-driven completion. |
@@ -120,11 +120,13 @@ shamrock-bail-portal-site    ←→    GAS Backend (Factory)
 
 ---
 
-## Key Rules
+## Related Documents
 
-1. **Wix is the Clipboard**: Collects data and displays it. No heavy lifting.
-2. **GAS is the Factory**: All PDF generation, business logic, and long-polling happens in GAS. Single entry point: `Code.js`.
-3. **Secrets are Sacred**: API keys in Wix Secrets Manager and GAS Script Properties. Never in frontend code.
-4. **Node-RED is the Router**: Scheduling, monitoring, data relay — not business logic.
-5. **Finish the Factory**: Don't redesign what works. Connect existing pipes to new outputs.
-6. **If it looks cheap, it's broken**: Premium aesthetics at all times. No "Loading..." text. Spinners only.
+| Document | Purpose |
+|----------|---------|
+| [RULES.md](RULES.md) | Prime Directives, security rules, schema governance |
+| [AGENTS.md](AGENTS.md) | All 9 AI agent personas, prompts, and handoff patterns |
+| [OPERATIONS.md](OPERATIONS.md) | Voice AI, compliance, health monitoring, scraping, analytics |
+| [TOOLS.md](TOOLS.md) | MCP servers, agent skills, workflows, external services |
+| [USER.md](USER.md) | Brendan's preferences, priorities, working style |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Deep-dive system architecture with Mermaid diagrams |

@@ -1,34 +1,45 @@
-# Documentation Index
+# 📚 Documentation Index
 
-## 🟢 Active & Critical
+> **Last Updated:** March 17, 2026
 
-- **[ANTIGRAVITY-FOUNDATION-SPEC.md](ANTIGRAVITY-FOUNDATION-SPEC.md)**: The Supreme Law. Overrides all else.
-- **[AGENTS.md](../AGENTS.md)**: Handbooks and Guidelines for AI Agents.
-- **[SCHEMAS.md](SCHEMAS.md)**: Application payload definitions.
-- **[INTAKE_QUEUE_SCHEMA.md](INTAKE_QUEUE_SCHEMA.md)**: Definition of the central intake queue.
-- **[API_SPEC.md](API_SPEC.md)**: API Contracts and Backend Interfaces.
-- **[SECURITY.md](SECURITY.md)**: Security protocols and PII handling.
-- **[AUTOMATION_USAGE_GUIDE.md](AUTOMATION_USAGE_GUIDE.md)**: How to use automated tools and agents.
+## Core Documentation (Root — 6 Files)
 
-## 🟡 Specialized Guides
+| File | Purpose |
+|------|---------|
+| [SYSTEM.md](../SYSTEM.md) | Architecture, tech stack, inter-repo data flows, hosting |
+| [RULES.md](../RULES.md) | Prime Directives, security, build discipline, schema governance |
+| [AGENTS.md](../AGENTS.md) | All 9 AI agent personas, prompts, handoff patterns, MCP tools |
+| [OPERATIONS.md](../OPERATIONS.md) | Voice AI, compliance, health, integrations, scraping, analytics |
+| [TOOLS.md](../TOOLS.md) | MCP servers, skills, workflows, external services |
+| [USER.md](../USER.md) | Brendan's preferences, priorities, working style |
 
-- **[ID_NAMING_CONVENTION.md](ID_NAMING_CONVENTION.md)**: Naming rules for Velo Elements.
-- **[ELEMENT-ID-CHEATSHEET.md](ELEMENT-ID-CHEATSHEET.md)**: Reference for Critical Element IDs.
-- **[WIX_GAS_BRIDGE.md](WIX_GAS_BRIDGE.md)**: Technical spec for the Wix <-> GAS Integration.
-- **[WIX_SYNC_FIX_GUIDE.md](WIX_SYNC_FIX_GUIDE.md)**: How to fix common Wix CLI sync errors.
-- **[STYLEGUIDE.md](STYLEGUIDE.md)**: Design system and UI standards.
+## Quick References (Root)
 
-## 🟣 Setup & Config
+| File | Purpose |
+|------|---------|
+| [ONBOARDING.md](../ONBOARDING.md) | Start-here guide for new agents/developers |
+| [COUNTY_STATUS.md](../COUNTY_STATUS.md) | 19-county scraper status ledger |
+| [TASKS.md](../TASKS.md) | Active task tracker and phase completion log |
+| [ROADMAP.md](../ROADMAP.md) | Long-term strategic roadmap |
+| [LOGBOOK.md](../LOGBOOK.md) | Audit log (append-only) |
+| [STANDARD_OPERATING_PROCEDURES.md](../STANDARD_OPERATING_PROCEDURES.md) | Safe deployment and sync procedures |
+| [SECRETS_ROTATION_GUIDE.md](../SECRETS_ROTATION_GUIDE.md) | Emergency key rotation procedures |
+| [TESTING_GUIDE.md](../TESTING_GUIDE.md) | Test procedures and verification |
+| [CHANGELOG.md](../CHANGELOG.md) | Change log |
 
-- **[LOADING_INDICATOR_SETUP.md](LOADING_INDICATOR_SETUP.md)**: Guide for the global loading spinner.
-- **[SIMPLIFIED_LOGIN_SYSTEM.md](SIMPLIFIED_LOGIN_SYSTEM.md)**: Authentication flow details.
+## Deep-Dive References (docs/)
 
-## 🔵 Project Management
+| File | Purpose |
+|------|---------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Detailed system architecture with Mermaid diagrams |
+| [ANTIGRAVITY-FOUNDATION-SPEC.md](ANTIGRAVITY-FOUNDATION-SPEC.md) | Canonical Wix contract — element IDs, CMS rules, analytics |
+| [SCHEMAS.md](SCHEMAS.md) | Data schemas, CMS collections, payload formats |
+| [ELEMENT-ID-CHEATSHEET.md](ELEMENT-ID-CHEATSHEET.md) | All Wix element IDs for Ghost ID checks |
 
-- **[TASKS.md](../TASKS.md)**: Active Task Board.
-- **[CHANGELOG.md](CHANGELOG.md)**: Version history.
-- **[CONTRIBUTING.md](CONTRIBUTING.md)**: Guide for new contributors/agents.
-- **[GLOSSARY.md](GLOSSARY.md)**: Domain terminology.
+## Agent Skills & Workflows
 
-## 🗄️ Archive
-- See `archive/` directory for historical specs and audits.
+Located in `.agent/skills/` and `.agent/workflows/` — these are tool/workflow instructions, not behavioral guidance.
+
+## Archive
+
+Historical documentation (pre-consolidation) preserved in `docs/archive/`.

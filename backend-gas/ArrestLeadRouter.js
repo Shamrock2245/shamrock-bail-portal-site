@@ -3,7 +3,7 @@
  * Arrest Lead Router (for Lee County arrests)
  * ==========================================================
  * Purpose:
- *   - Find unrouted rows in Lee_County_Arrests
+ *   - Find unrouted rows in Lee tab
  *   - Send payloads to Slack (optional) and/or copy to a destination sheet (optional)
  *   - Mark rows as routed to avoid duplicates
  *
@@ -16,8 +16,8 @@
 var ROUTER = (function () {
   var CFG = {
     // Source sheet (where the scraper writes)
-    SOURCE_SHEET_ID: '1jq1-N7sCbwSiYPLAdI2ZnxhLzym1QsOSuHPy-Gw07Qc',
-    SOURCE_TAB_NAME: 'Lee_County_Arrests',
+    SOURCE_SHEET_ID: '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E',
+    SOURCE_TAB_NAME: 'Lee',
 
     // Optional destination (mirror routed rows)
     DEST_SHEET_ID: '',            // e.g. '1AbC....'  (leave blank to skip)
