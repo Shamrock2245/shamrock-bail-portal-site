@@ -57,6 +57,27 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .review-header button{background:#1e2740;border:none;color:#d4a843;font-size:12px;font-weight:600;padding:6px 12px;border-radius:6px;cursor:pointer}
 .review-body{padding:0 16px 14px;font-size:13px;color:#8b95a8;line-height:1.8}
 .review-body strong{color:#e0e6f0}
+.consent-card{background:#131a2e;border:1.5px solid #1e2740;border-radius:12px;padding:16px;margin-bottom:14px;transition:border .3s}
+.consent-card.granted{border-color:#4ade80}
+.consent-card .cc-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.consent-card .cc-icon{font-size:20px}
+.consent-card .cc-title{font-size:14px;font-weight:600;color:#fff;flex:1}
+.consent-card .cc-badge{font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;text-transform:uppercase;letter-spacing:.5px}
+.cc-badge.pending{background:#1e2740;color:#8b95a8}
+.cc-badge.granted{background:rgba(74,222,128,.15);color:#4ade80}
+.cc-badge.denied{background:rgba(239,68,68,.15);color:#ef4444}
+.consent-card .cc-body{font-size:13px;color:#8b95a8;line-height:1.6;margin-bottom:12px}
+.consent-card .cc-action{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.consent-card .cc-action input{width:20px;height:20px;margin-top:2px;accent-color:#4ade80;flex-shrink:0;cursor:pointer}
+.consent-card .cc-action span{font-size:13px;color:#a0aec0;line-height:1.5}
+.consent-card .cc-timestamp{font-size:11px;color:#4ade80;margin-top:8px;display:none}
+.consent-card.granted .cc-timestamp{display:block}
+.loc-result{margin-top:10px;padding:10px 14px;background:#0a0f1c;border-radius:8px;font-size:12px;color:#8b95a8;display:none}
+.loc-result.show{display:block}
+.loc-result .loc-coords{color:#4ade80;font-weight:600}
+.loc-btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;transition:all .2s}
+.loc-btn:active{transform:scale(.97)}
+.loc-btn:disabled{opacity:.5;cursor:not-allowed}
 .consent-label{display:flex;align-items:flex-start;gap:10px;background:#131a2e;border:1.5px solid #1e2740;border-radius:10px;padding:14px;cursor:pointer;margin-bottom:12px;font-size:13px;line-height:1.5;color:#a0aec0}
 .consent-label input{width:20px;height:20px;margin-top:2px;accent-color:#d4a843;flex-shrink:0}
 .nav-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(10,15,28,.95);backdrop-filter:blur(10px);border-top:1px solid #1e2740;padding:12px 16px;display:flex;gap:12px;z-index:100}
@@ -288,11 +309,83 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <!-- STEP 7: Review & Submit -->
   <div class="step" data-step="6">
     <div class="step-title">✅ Review & Submit</div>
-    <div class="step-sub">Please review your information before submitting.</div>
+    <div class="step-sub">Please review your information, then complete all consent agreements below.</div>
     <div id="review-content"></div>
-    <div class="field"><label>Print Your Full Name <span class="req">*</span></label><input id="def-print-name" required placeholder="Type your full legal name"></div>
-    <label class="consent-label"><input type="checkbox" id="consent-truth"><span>I affirm that the foregoing declarations are the truth and are made for the purpose of inducing the Surety to become surety on the bond applied for herein.</span></label>
-    <label class="consent-label"><input type="checkbox" id="consent-tracking"><span>I authorize the use of special technology including phone tracing and GPS monitoring for the duration of this bond.</span></label>
+
+    <div class="section-label">Your Signature</div>
+    <div class="field"><label>Print Your Full Legal Name <span class="req">*</span></label><input id="def-print-name" required placeholder="Type your full legal name as it appears on your ID"></div>
+
+    <div class="section-label">Required Consents</div>
+
+    <!-- 1. Truthfulness Declaration -->
+    <div class="consent-card" id="card-truth">
+      <div class="cc-header">
+        <span class="cc-icon">📜</span>
+        <span class="cc-title">Declaration of Truthfulness</span>
+        <span class="cc-badge pending" id="badge-truth">Pending</span>
+      </div>
+      <div class="cc-body">The Defendant hereby affirms that all declarations and answers given in this application are the truth, without reservation, and are made for the purpose of inducing O'Shaughnahill Surety & Insurance, Inc. to become surety on the bond applied for herein.</div>
+      <label class="cc-action"><input type="checkbox" id="consent-truth" onchange="W.updateConsent('truth')"><span>I confirm this declaration is truthful and accurate.</span></label>
+      <div class="cc-timestamp" id="ts-truth"></div>
+    </div>
+
+    <!-- 2. Background Check & Info Release -->
+    <div class="consent-card" id="card-background">
+      <div class="cc-header">
+        <span class="cc-icon">🔍</span>
+        <span class="cc-title">Background Check Authorization</span>
+        <span class="cc-badge pending" id="badge-background">Pending</span>
+      </div>
+      <div class="cc-body">The Defendant authorizes and directs relatives, employers, bankers, the Federal Social Security Administration, and any other persons or agencies to release any and all information requested by the Surety or its Agent for the purpose of verifying the statements made in this application.</div>
+      <label class="cc-action"><input type="checkbox" id="consent-background" onchange="W.updateConsent('background')"><span>I authorize background checks and information release.</span></label>
+      <div class="cc-timestamp" id="ts-background"></div>
+    </div>
+
+    <!-- 3. GPS & Location Monitoring -->
+    <div class="consent-card" id="card-location">
+      <div class="cc-header">
+        <span class="cc-icon">📍</span>
+        <span class="cc-title">GPS & Location Monitoring</span>
+        <span class="cc-badge pending" id="badge-location">Pending</span>
+      </div>
+      <div class="cc-body">The Surety and its Agent have the right to use special technology to track the Defendant for the duration of this bond. This includes, but is not limited to, phone tracing and GPS monitoring.</div>
+      <label class="cc-action"><input type="checkbox" id="consent-location" onchange="W.handleLocationConsent()"><span>I consent to GPS monitoring and location tracking for the duration of my bond.</span></label>
+      <button class="loc-btn" id="loc-btn" onclick="W.requestLocation()" style="display:none">📍 Enable Location Services</button>
+      <div class="loc-result" id="loc-result"><span class="loc-coords" id="loc-coords"></span></div>
+      <div class="cc-timestamp" id="ts-location"></div>
+    </div>
+
+    <!-- 4. Bond Conditions -->
+    <div class="consent-card" id="card-conditions">
+      <div class="cc-header">
+        <span class="cc-icon">⚖️</span>
+        <span class="cc-title">Bond Conditions Acknowledgment</span>
+        <span class="cc-badge pending" id="badge-conditions">Pending</span>
+      </div>
+      <div class="cc-body">
+        I understand and agree that any of the following events shall constitute a breach of my obligations and the Surety shall have the right to apprehend, arrest, and surrender me:
+        <br><br>
+        (a) Departing the jurisdiction of the court without written consent<br>
+        (b) Moving to a new address without notifying the Surety in writing<br>
+        (c) Committing any act constituting reasonable evidence of intent to cause forfeiture<br>
+        (d) Being arrested and incarcerated for any offense other than a minor traffic violation<br>
+        (e) Making any material false statement in this application
+      </div>
+      <label class="cc-action"><input type="checkbox" id="consent-conditions" onchange="W.updateConsent('conditions')"><span>I acknowledge and agree to all bond conditions listed above.</span></label>
+      <div class="cc-timestamp" id="ts-conditions"></div>
+    </div>
+
+    <!-- 5. Electronic Signature -->
+    <div class="consent-card" id="card-esign">
+      <div class="cc-header">
+        <span class="cc-icon">✍️</span>
+        <span class="cc-title">Electronic Signature Consent</span>
+        <span class="cc-badge pending" id="badge-esign">Pending</span>
+      </div>
+      <div class="cc-body">By typing your name above and checking this box, you consent to use your typed name as your electronic signature on this Application for Appearance Bond and any related documents sent via SignNow.</div>
+      <label class="cc-action"><input type="checkbox" id="consent-esign" onchange="W.updateConsent('esign')"><span>I agree that my typed name constitutes my legal electronic signature.</span></label>
+      <div class="cc-timestamp" id="ts-esign"></div>
+    </div>
   </div>
 </div>
 
@@ -329,6 +422,8 @@ var W = {
   step: 0,
   total: 7,
   toggles: { spouse: false, arrested: false, otherbond: false },
+  consents: { truth: null, background: null, location: null, conditions: null, esign: null },
+  locationData: null,
 
   init() {
     var hasDraft = localStorage.getItem('shamrock-defendant-draft');
@@ -383,10 +478,17 @@ var W = {
     }
     if (this.step === 6) {
       var pn = document.getElementById('def-print-name');
-      var c1 = document.getElementById('consent-truth');
-      var c2 = document.getElementById('consent-tracking');
       if (!pn.value.trim()) { pn.classList.add('error'); this.toast('Please print your full name.'); return false; }
-      if (!c1.checked || !c2.checked) { this.toast('Please agree to both consent statements.'); return false; }
+      var keys = ['truth','background','location','conditions','esign'];
+      var labels = ['Declaration of Truthfulness','Background Check','GPS Monitoring','Bond Conditions','E-Signature'];
+      for (var i = 0; i < keys.length; i++) {
+        if (!this.consents[keys[i]]) {
+          this.toast(labels[i] + ' consent is required.');
+          document.getElementById('card-' + keys[i]).style.border = '1.5px solid #ef4444';
+          setTimeout(function(k){ document.getElementById('card-' + k).style.border = ''; }.bind(null, keys[i]), 2000);
+          return false;
+        }
+      }
       return true;
     }
     return true;
@@ -484,6 +586,13 @@ var W = {
         facebook: g('def-facebook'), instagram: g('def-instagram')
       },
       printName: g('def-print-name'),
+      consents: {
+        truthfulness: { granted: !!this.consents.truth, timestamp: this.consents.truth },
+        backgroundCheck: { granted: !!this.consents.background, timestamp: this.consents.background },
+        gpsMonitoring: { granted: !!this.consents.location, timestamp: this.consents.location, location: this.locationData },
+        bondConditions: { granted: !!this.consents.conditions, timestamp: this.consents.conditions },
+        electronicSignature: { granted: !!this.consents.esign, timestamp: this.consents.esign }
+      },
       submittedAt: new Date().toISOString(),
       formType: 'defendant_appearance_bond'
     };
@@ -574,10 +683,12 @@ var W = {
       var fields = {};
       document.querySelectorAll('input:not([type=file]):not([type=checkbox]):not([type=radio]),select,textarea').forEach(function(el) { if (el.id) fields[el.id] = el.value; });
       // Save checkboxes
-      ['def-glasses','def-dentures','def-beard','consent-truth','consent-tracking'].forEach(function(id) {
+      ['def-glasses','def-dentures','def-beard','consent-truth','consent-background','consent-location','consent-conditions','consent-esign'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) fields['_cb_' + id] = el.checked;
       });
+      fields._consents = this.consents;
+      fields._locationData = this.locationData;
       var hand = document.querySelector('input[name="hand"]:checked');
       fields._hand = hand ? hand.value : 'right';
       fields._toggles = this.toggles;
@@ -602,10 +713,16 @@ var W = {
         if (el) el.value = fields[k];
       }
       // Restore checkboxes
-      ['def-glasses','def-dentures','def-beard','consent-truth','consent-tracking'].forEach(function(id) {
+      ['def-glasses','def-dentures','def-beard','consent-truth','consent-background','consent-location','consent-conditions','consent-esign'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el && fields['_cb_' + id] !== undefined) el.checked = fields['_cb_' + id];
       });
+      if (fields._consents) {
+        this.consents = fields._consents;
+        var ckeys = Object.keys(this.consents);
+        for (var j = 0; j < ckeys.length; j++) { if (this.consents[ckeys[j]]) this.refreshConsentUI(ckeys[j]); }
+      }
+      if (fields._locationData) this.locationData = fields._locationData;
       // Restore radio
       if (fields._hand) {
         var r = document.querySelector('input[name="hand"][value="' + fields._hand + '"]');
@@ -620,6 +737,97 @@ var W = {
   },
 
   clearDraft() { try { localStorage.removeItem('shamrock-defendant-draft'); } catch(e) {} },
+
+  updateConsent(key) {
+    var cb = document.getElementById('consent-' + key);
+    if (cb.checked) {
+      this.consents[key] = new Date().toISOString();
+    } else {
+      this.consents[key] = null;
+    }
+    this.refreshConsentUI(key);
+    // Notify parent immediately for each consent
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'shamrock-consent-update', consent: key, granted: cb.checked, timestamp: this.consents[key] }, '*');
+    }
+  },
+
+  refreshConsentUI(key) {
+    var card = document.getElementById('card-' + key);
+    var badge = document.getElementById('badge-' + key);
+    var ts = document.getElementById('ts-' + key);
+    if (this.consents[key]) {
+      card.classList.add('granted');
+      badge.textContent = 'Granted';
+      badge.className = 'cc-badge granted';
+      ts.textContent = '✓ Agreed ' + new Date(this.consents[key]).toLocaleString();
+    } else {
+      card.classList.remove('granted');
+      badge.textContent = 'Pending';
+      badge.className = 'cc-badge pending';
+      ts.textContent = '';
+    }
+  },
+
+  handleLocationConsent() {
+    var cb = document.getElementById('consent-location');
+    if (cb.checked) {
+      this.consents.location = new Date().toISOString();
+      document.getElementById('loc-btn').style.display = '';
+      this.requestLocation();
+    } else {
+      this.consents.location = null;
+      this.locationData = null;
+      document.getElementById('loc-btn').style.display = 'none';
+      document.getElementById('loc-result').classList.remove('show');
+    }
+    this.refreshConsentUI('location');
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'shamrock-consent-update', consent: 'location', granted: cb.checked, timestamp: this.consents.location }, '*');
+    }
+  },
+
+  requestLocation() {
+    var btn = document.getElementById('loc-btn');
+    var result = document.getElementById('loc-result');
+    var coords = document.getElementById('loc-coords');
+    btn.disabled = true;
+    btn.innerHTML = '📍 Acquiring location...';
+    if (!navigator.geolocation) {
+      btn.innerHTML = '📍 Location not supported';
+      result.classList.add('show');
+      coords.textContent = 'Geolocation not available on this device.';
+      return;
+    }
+    var self = this;
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        self.locationData = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          capturedAt: new Date().toISOString()
+        };
+        btn.innerHTML = '✅ Location captured';
+        btn.disabled = true;
+        result.classList.add('show');
+        coords.textContent = pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6) + ' (±' + Math.round(pos.coords.accuracy) + 'm)';
+        // Notify parent of location capture
+        if (window.parent !== window) {
+          window.parent.postMessage({ type: 'shamrock-location-captured', location: self.locationData }, '*');
+        }
+      },
+      function(err) {
+        btn.innerHTML = '📍 Retry Location';
+        btn.disabled = false;
+        result.classList.add('show');
+        var msg = err.code === 1 ? 'Permission denied. Please allow location access.' : 'Could not determine location. Tap to retry.';
+        coords.textContent = msg;
+        coords.style.color = '#ef4444';
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  },
 
   toast(msg) {
     var t = document.getElementById('toast');
