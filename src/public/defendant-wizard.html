@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Defendant Application | Shamrock Bail Bonds</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#0a0f1c;color:#e0e6f0;min-height:100vh;font-size:15px;-webkit-font-smoothing:antialiased}
+.wizard{max-width:540px;margin:0 auto;padding:16px 16px 100px}
+.header{text-align:center;padding:20px 0 8px}
+.header img{width:56px;height:56px;border-radius:50%;border:2px solid #d4a843}
+.header h1{font-size:18px;font-weight:700;color:#fff;margin:8px 0 2px}
+.header p{font-size:12px;color:#8b95a8;margin-top:2px}
+.progress{display:flex;align-items:center;gap:4px;padding:16px 0 20px}
+.dot{width:100%;height:4px;border-radius:4px;background:#1e2740;transition:background .3s}
+.dot.active{background:#d4a843}
+.dot.done{background:#4ade80}
+.step{display:none;animation:fadeIn .3s ease}
+.step.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.step-title{font-size:17px;font-weight:700;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.step-sub{font-size:13px;color:#8b95a8;margin-bottom:20px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:#a0aec0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.field label .req{color:#d4a843}
+.row{display:flex;gap:12px}
+.row .field{flex:1;min-width:0}
+.row3{display:flex;gap:10px}
+.row3 .field{flex:1;min-width:0}
+input,select,textarea{width:100%;padding:14px;background:#131a2e;border:1.5px solid #1e2740;border-radius:10px;color:#e0e6f0;font-size:16px;font-family:inherit;transition:border .2s;-webkit-appearance:none;appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#d4a843}
+input.error,select.error{border-color:#ef4444}
+textarea{min-height:70px;resize:vertical}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%238b95a8'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+::placeholder{color:#4a5568}
+.section-label{font-size:13px;font-weight:700;color:#d4a843;text-transform:uppercase;letter-spacing:.8px;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #1e2740}
+.check-group{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 16px}
+.check-item{display:flex;align-items:center;gap:8px;background:#131a2e;border:1.5px solid #1e2740;border-radius:10px;padding:10px 14px;cursor:pointer;transition:border .2s;flex:1;min-width:120px}
+.check-item:hover{border-color:#d4a843}
+.check-item input[type=checkbox],.check-item input[type=radio]{width:18px;height:18px;accent-color:#d4a843;cursor:pointer}
+.check-item span{font-size:13px;color:#e0e6f0}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:#131a2e;border:1.5px solid #1e2740;border-radius:10px;padding:14px;margin-bottom:16px;cursor:pointer}
+.toggle-row span{font-size:14px;font-weight:500}
+.toggle-switch{width:44px;height:24px;background:#1e2740;border-radius:12px;position:relative;transition:background .3s}
+.toggle-switch::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#4a5568;border-radius:50%;transition:all .3s}
+.toggle-row.on .toggle-switch{background:#d4a843}
+.toggle-row.on .toggle-switch::after{left:23px;background:#fff}
+.conditional{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.conditional.open{max-height:800px}
+.contact-card{background:#131a2e;border:1.5px solid #1e2740;border-radius:12px;padding:16px;margin-bottom:16px}
+.contact-card h4{font-size:13px;font-weight:700;color:#d4a843;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.review-section{background:#131a2e;border:1.5px solid #1e2740;border-radius:12px;margin-bottom:12px;overflow:hidden}
+.review-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer}
+.review-header h4{font-size:14px;font-weight:600;color:#fff}
+.review-header button{background:#1e2740;border:none;color:#d4a843;font-size:12px;font-weight:600;padding:6px 12px;border-radius:6px;cursor:pointer}
+.review-body{padding:0 16px 14px;font-size:13px;color:#8b95a8;line-height:1.8}
+.review-body strong{color:#e0e6f0}
+.consent-label{display:flex;align-items:flex-start;gap:10px;background:#131a2e;border:1.5px solid #1e2740;border-radius:10px;padding:14px;cursor:pointer;margin-bottom:12px;font-size:13px;line-height:1.5;color:#a0aec0}
+.consent-label input{width:20px;height:20px;margin-top:2px;accent-color:#d4a843;flex-shrink:0}
+.nav-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(10,15,28,.95);backdrop-filter:blur(10px);border-top:1px solid #1e2740;padding:12px 16px;display:flex;gap:12px;z-index:100}
+.btn{flex:1;padding:16px;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s}
+.btn-back{background:#1e2740;color:#a0aec0}
+.btn-next{background:linear-gradient(135deg,#d4a843,#b8922e);color:#0a0f1c}
+.btn-next:active{transform:scale(.98)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-submit{background:linear-gradient(135deg,#4ade80,#22c55e);color:#0a0f1c;font-size:16px}
+#success{display:none;position:fixed;inset:0;background:rgba(10,15,28,.97);z-index:200;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px}
+#success.show{display:flex}
+#success h2{font-size:28px;color:#4ade80;margin-bottom:8px}
+#success p{color:#8b95a8;font-size:14px;max-width:340px;line-height:1.6}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#ef4444;color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:300;text-align:center;max-width:90%}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#autosave{position:fixed;top:12px;right:12px;background:#1e2740;color:#4ade80;padding:6px 12px;border-radius:8px;font-size:11px;opacity:0;transition:opacity .3s;z-index:100}
+#autosave.show{opacity:1}
+#draft-popup{display:none;position:fixed;inset:0;background:rgba(10,15,28,.85);z-index:250;align-items:center;justify-content:center}
+#draft-popup.show{display:flex}
+#draft-popup .card{background:#1a2235;border:1.5px solid #1e2740;border-radius:16px;padding:28px;text-align:center;max-width:340px;width:90%}
+#draft-popup h3{color:#fff;font-size:17px;margin-bottom:4px}
+#draft-popup p{color:#8b95a8;font-size:13px;margin-bottom:20px}
+#draft-popup .btns{display:flex;gap:10px}
+#draft-popup .btns button{flex:1;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+#draft-popup .btn-resume{background:linear-gradient(135deg,#d4a843,#b8922e);color:#0a0f1c}
+#draft-popup .btn-new{background:#1e2740;color:#a0aec0}
+</style>
+</head>
+<body>
+<div class="wizard">
+  <div class="header">
+    <img src="https://static.wixstatic.com/media/4e4d4a_08b3d828248a43c4aa87a2a2bd891c0c~mv2.png/v1/fill/w_180,h_180,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Site-Logo%202_edited_edited_edited_edited.png" alt="Shamrock Bail Bonds" style="height:64px;width:64px;margin-bottom:8px;border-radius:50%">
+    <h1>Bail Bond Application</h1>
+    <p>Application for Appearance Bond</p>
+  </div>
+  <div class="progress" id="progress"></div>
+
+  <!-- STEP 1: Personal Info -->
+  <div class="step active" data-step="0">
+    <div class="step-title">🛡️ Your Information</div>
+    <div class="step-sub">Tell us about yourself. All information is kept confidential.</div>
+    <div class="row">
+      <div class="field"><label>First Name <span class="req">*</span></label><input id="def-first" required placeholder="First name"></div>
+      <div class="field"><label>Last Name <span class="req">*</span></label><input id="def-last" required placeholder="Last name"></div>
+    </div>
+    <div class="field"><label>Nickname / Alias</label><input id="def-alias" placeholder="Any nicknames or aliases"></div>
+    <div class="field"><label>Street Address <span class="req">*</span></label><input id="def-address" required placeholder="Street address"></div>
+    <div class="row3">
+      <div class="field"><label>City <span class="req">*</span></label><input id="def-city" required placeholder="City"></div>
+      <div class="field"><label>St <span class="req">*</span></label><select id="def-state"><option value="">St</option><option value="FL">FL</option><option value="AL">AL</option><option value="AK">AK</option><option value="AZ">AZ</option><option value="AR">AR</option><option value="CA">CA</option><option value="CO">CO</option><option value="CT">CT</option><option value="DE">DE</option><option value="GA">GA</option><option value="HI">HI</option><option value="ID">ID</option><option value="IL">IL</option><option value="IN">IN</option><option value="IA">IA</option><option value="KS">KS</option><option value="KY">KY</option><option value="LA">LA</option><option value="ME">ME</option><option value="MD">MD</option><option value="MA">MA</option><option value="MI">MI</option><option value="MN">MN</option><option value="MS">MS</option><option value="MO">MO</option><option value="MT">MT</option><option value="NE">NE</option><option value="NV">NV</option><option value="NH">NH</option><option value="NJ">NJ</option><option value="NM">NM</option><option value="NY">NY</option><option value="NC">NC</option><option value="ND">ND</option><option value="OH">OH</option><option value="OK">OK</option><option value="OR">OR</option><option value="PA">PA</option><option value="RI">RI</option><option value="SC">SC</option><option value="SD">SD</option><option value="TN">TN</option><option value="TX">TX</option><option value="UT">UT</option><option value="VT">VT</option><option value="VA">VA</option><option value="WA">WA</option><option value="WV">WV</option><option value="WI">WI</option><option value="WY">WY</option></select></div>
+      <div class="field"><label>ZIP <span class="req">*</span></label><input id="def-zip" required placeholder="ZIP" maxlength="5" inputmode="numeric"></div>
+    </div>
+    <div class="field"><label>How Long at This Address</label><input id="def-howlong" placeholder="e.g. 2 years"></div>
+    <div class="field"><label>Former Address</label><input id="def-former-address" placeholder="Previous address (if less than 2 years)"></div>
+    <div class="row">
+      <div class="field"><label>Phone <span class="req">*</span></label><input id="def-phone" type="tel" required placeholder="(___) ___-____"></div>
+      <div class="field"><label>Email <span class="req">*</span></label><input id="def-email" type="email" required placeholder="email@example.com"></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>Date of Birth <span class="req">*</span></label><input id="def-dob" type="date" required></div>
+      <div class="field"><label>SSN <span class="req">*</span></label><input id="def-ssn" placeholder="___-__-____" maxlength="11" inputmode="numeric"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Physical Description -->
+  <div class="step" data-step="1">
+    <div class="step-title">📋 Physical Description</div>
+    <div class="step-sub">This information is required by the surety company.</div>
+    <div class="row3">
+      <div class="field"><label>Height</label><input id="def-height" placeholder='e.g. 5\'10"'></div>
+      <div class="field"><label>Weight</label><input id="def-weight" placeholder="e.g. 180 lbs" inputmode="numeric"></div>
+      <div class="field"><label>Race</label><input id="def-race" placeholder="Race"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Eye Color</label><input id="def-eyes" placeholder="e.g. Brown"></div>
+      <div class="field"><label>Hair Color</label><input id="def-hair" placeholder="e.g. Black"></div>
+    </div>
+    <div class="section-label">Handedness</div>
+    <div class="check-group">
+      <label class="check-item"><input type="radio" name="hand" value="left"><span>Left Handed</span></label>
+      <label class="check-item"><input type="radio" name="hand" value="right" checked><span>Right Handed</span></label>
+    </div>
+    <div class="section-label">Additional Features</div>
+    <div class="check-group">
+      <label class="check-item"><input type="checkbox" id="def-glasses"><span>Glasses</span></label>
+      <label class="check-item"><input type="checkbox" id="def-dentures"><span>Dentures</span></label>
+      <label class="check-item"><input type="checkbox" id="def-beard"><span>Beard/Mustache</span></label>
+    </div>
+    <div class="field"><label>Identifying Marks or Tattoos</label><textarea id="def-marks" placeholder="Describe any scars, tattoos, or identifying marks"></textarea></div>
+  </div>
+
+  <!-- STEP 3: Employment -->
+  <div class="step" data-step="2">
+    <div class="step-title">💼 Employment</div>
+    <div class="step-sub">Current and previous employment information.</div>
+    <div class="section-label">Current Employer</div>
+    <div class="field"><label>Employer Name</label><input id="def-employer" placeholder="Company name"></div>
+    <div class="row">
+      <div class="field"><label>Boss / Supervisor</label><input id="def-boss" placeholder="Supervisor name"></div>
+      <div class="field"><label>How Long</label><input id="def-emp-howlong" placeholder="e.g. 3 years"></div>
+    </div>
+    <div class="field"><label>Employer Address</label><input id="def-emp-address" placeholder="Employer street address"></div>
+    <div class="field"><label>Employer Phone</label><input id="def-emp-phone" type="tel" placeholder="(___) ___-____"></div>
+    <div class="section-label">Previous Employment</div>
+    <div class="field"><label>Previous Employer</label><input id="def-prev-employer" placeholder="Previous employer name"></div>
+    <div class="field"><label>How Long</label><input id="def-prev-howlong" placeholder="e.g. 1 year"></div>
+  </div>
+
+  <!-- STEP 4: Family & Household -->
+  <div class="step" data-step="3">
+    <div class="step-title">👨‍👩‍👧 Family & Household</div>
+    <div class="step-sub">Information about your immediate family.</div>
+    <div class="section-label">Spouse Information</div>
+    <div class="toggle-row" onclick="W.toggle('spouse')">
+      <span>Are you married?</span>
+      <div class="toggle-switch"></div>
+    </div>
+    <div class="conditional" id="cond-spouse">
+      <div class="field"><label>Spouse's Employer</label><input id="def-spouse-employer" placeholder="Spouse's place of employment"></div>
+      <div class="field"><label>Spouse's Work Address</label><input id="def-spouse-address" placeholder="Spouse's employer address"></div>
+      <div class="field"><label>Spouse's Phone</label><input id="def-spouse-phone" type="tel" placeholder="(___) ___-____"></div>
+    </div>
+    <div class="section-label">Children</div>
+    <div class="field"><label>Children's Names, Ages, and Schools</label><textarea id="def-children" placeholder="e.g. John (8) - Lincoln Elementary, Sarah (5) - N/A"></textarea></div>
+  </div>
+
+  <!-- STEP 5: References & Contacts -->
+  <div class="step" data-step="4">
+    <div class="step-title">📇 References & Contacts</div>
+    <div class="step-sub">People who can vouch for you. The more you provide, the better.</div>
+
+    <div class="contact-card">
+      <h4>Parent / Guardian</h4>
+      <div class="field"><label>Name</label><input id="ref-parent-name" placeholder="Parent or guardian name"></div>
+      <div class="field"><label>Address</label><input id="ref-parent-address" placeholder="Address"></div>
+      <div class="field"><label>Phone</label><input id="ref-parent-phone" type="tel" placeholder="(___) ___-____"></div>
+    </div>
+
+    <div class="contact-card">
+      <h4>Spouse's Parents</h4>
+      <div class="field"><label>Name</label><input id="ref-inlaws-name" placeholder="In-laws name"></div>
+      <div class="field"><label>Address</label><input id="ref-inlaws-address" placeholder="Address"></div>
+      <div class="field"><label>Phone</label><input id="ref-inlaws-phone" type="tel" placeholder="(___) ___-____"></div>
+    </div>
+
+    <div class="contact-card">
+      <h4>Sibling #1</h4>
+      <div class="field"><label>Name</label><input id="ref-sib1-name" placeholder="Brother or sister name"></div>
+      <div class="field"><label>Address</label><input id="ref-sib1-address" placeholder="Address"></div>
+      <div class="field"><label>Phone</label><input id="ref-sib1-phone" type="tel" placeholder="(___) ___-____"></div>
+    </div>
+
+    <div class="contact-card">
+      <h4>Sibling #2</h4>
+      <div class="field"><label>Name</label><input id="ref-sib2-name" placeholder="Brother or sister name"></div>
+      <div class="field"><label>Address</label><input id="ref-sib2-address" placeholder="Address"></div>
+      <div class="field"><label>Phone</label><input id="ref-sib2-phone" type="tel" placeholder="(___) ___-____"></div>
+    </div>
+
+    <div class="contact-card">
+      <h4>Best Friend</h4>
+      <div class="field"><label>Name</label><input id="ref-friend-name" placeholder="Best friend name"></div>
+      <div class="field"><label>Address</label><input id="ref-friend-address" placeholder="Address"></div>
+      <div class="field"><label>Phone</label><input id="ref-friend-phone" type="tel" placeholder="(___) ___-____"></div>
+    </div>
+
+    <div class="contact-card">
+      <h4>Attorney</h4>
+      <div class="field"><label>Name</label><input id="ref-attorney-name" placeholder="Attorney name (if any)"></div>
+      <div class="field"><label>Address</label><input id="ref-attorney-address" placeholder="Address"></div>
+      <div class="field"><label>Phone</label><input id="ref-attorney-phone" type="tel" placeholder="(___) ___-____"></div>
+    </div>
+  </div>
+
+  <!-- STEP 6: Legal & Vehicle -->
+  <div class="step" data-step="5">
+    <div class="step-title">⚖️ Legal & Vehicle</div>
+    <div class="step-sub">Criminal history, vehicle, and identification details.</div>
+
+    <div class="section-label">Criminal History</div>
+    <div class="toggle-row" onclick="W.toggle('arrested')">
+      <span>Have you been arrested before?</span>
+      <div class="toggle-switch"></div>
+    </div>
+    <div class="conditional" id="cond-arrested">
+      <div class="row">
+        <div class="field"><label>Convicted?</label><select id="def-convicted"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+        <div class="field"><label>Offense</label><input id="def-offense" placeholder="Charge/offense"></div>
+      </div>
+    </div>
+
+    <div class="toggle-row" onclick="W.toggle('otherbond')">
+      <span>Currently under another bail bond?</span>
+      <div class="toggle-switch"></div>
+    </div>
+    <div class="conditional" id="cond-otherbond">
+      <div class="field"><label>Agent or Surety</label><input id="def-other-surety" placeholder="Bond agent or surety company name"></div>
+    </div>
+
+    <div class="section-label">Vehicle Information</div>
+    <div class="row">
+      <div class="field"><label>Year</label><input id="def-veh-year" placeholder="Year" maxlength="4" inputmode="numeric"></div>
+      <div class="field"><label>Make</label><input id="def-veh-make" placeholder="Make"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Model</label><input id="def-veh-model" placeholder="Model"></div>
+      <div class="field"><label>Color</label><input id="def-veh-color" placeholder="Color"></div>
+    </div>
+    <div class="field"><label>License Plate Number</label><input id="def-veh-plate" placeholder="Plate number"></div>
+    <div class="field"><label>When & Where Purchased</label><input id="def-veh-purchased" placeholder="e.g. Jan 2024, Tampa FL"></div>
+    <div class="row">
+      <div class="field"><label>Amount Owing</label><input id="def-veh-owed" placeholder="$ remaining" inputmode="numeric"></div>
+      <div class="field"><label>To Whom</label><input id="def-veh-lender" placeholder="Lender / lienholder"></div>
+    </div>
+
+    <div class="section-label">Identification</div>
+    <div class="row">
+      <div class="field"><label>Driver's License # <span class="req">*</span></label><input id="def-dl" required placeholder="DL number"></div>
+      <div class="field"><label>DL State <span class="req">*</span></label><select id="def-dl-state"><option value="">State</option><option value="FL">FL</option><option value="AL">AL</option><option value="AK">AK</option><option value="AZ">AZ</option><option value="AR">AR</option><option value="CA">CA</option><option value="CO">CO</option><option value="CT">CT</option><option value="DE">DE</option><option value="GA">GA</option><option value="HI">HI</option><option value="ID">ID</option><option value="IL">IL</option><option value="IN">IN</option><option value="IA">IA</option><option value="KS">KS</option><option value="KY">KY</option><option value="LA">LA</option><option value="ME">ME</option><option value="MD">MD</option><option value="MA">MA</option><option value="MI">MI</option><option value="MN">MN</option><option value="MS">MS</option><option value="MO">MO</option><option value="MT">MT</option><option value="NE">NE</option><option value="NV">NV</option><option value="NH">NH</option><option value="NJ">NJ</option><option value="NM">NM</option><option value="NY">NY</option><option value="NC">NC</option><option value="ND">ND</option><option value="OH">OH</option><option value="OK">OK</option><option value="OR">OR</option><option value="PA">PA</option><option value="RI">RI</option><option value="SC">SC</option><option value="SD">SD</option><option value="TN">TN</option><option value="TX">TX</option><option value="UT">UT</option><option value="VT">VT</option><option value="VA">VA</option><option value="WA">WA</option><option value="WV">WV</option><option value="WI">WI</option><option value="WY">WY</option></select></div>
+    </div>
+
+    <div class="section-label">Social Media</div>
+    <div class="row">
+      <div class="field"><label>Facebook Username</label><input id="def-facebook" placeholder="@username"></div>
+      <div class="field"><label>Instagram Username</label><input id="def-instagram" placeholder="@username"></div>
+    </div>
+  </div>
+
+  <!-- STEP 7: Review & Submit -->
+  <div class="step" data-step="6">
+    <div class="step-title">✅ Review & Submit</div>
+    <div class="step-sub">Please review your information before submitting.</div>
+    <div id="review-content"></div>
+    <div class="field"><label>Print Your Full Name <span class="req">*</span></label><input id="def-print-name" required placeholder="Type your full legal name"></div>
+    <label class="consent-label"><input type="checkbox" id="consent-truth"><span>I affirm that the foregoing declarations are the truth and are made for the purpose of inducing the Surety to become surety on the bond applied for herein.</span></label>
+    <label class="consent-label"><input type="checkbox" id="consent-tracking"><span>I authorize the use of special technology including phone tracing and GPS monitoring for the duration of this bond.</span></label>
+  </div>
+</div>
+
+<!-- Nav Bar -->
+<div class="nav-bar" id="nav-bar">
+  <button class="btn btn-back" id="btn-back" onclick="W.prev()">Back</button>
+  <button class="btn btn-next" id="btn-next" onclick="W.next()">Continue</button>
+</div>
+
+<!-- Success Overlay -->
+<div id="success">
+  <h2>☘️ Application Submitted</h2>
+  <p>Your application has been received. A Shamrock agent will review your information and contact you shortly.</p>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+<div id="autosave">✓ Draft saved</div>
+
+<!-- Draft Resume Popup -->
+<div id="draft-popup">
+  <div class="card">
+    <h3>Welcome Back</h3>
+    <p>You have an unfinished application.</p>
+    <div class="btns">
+      <button class="btn-resume" onclick="W.closeDraftPopup(true)">Resume</button>
+      <button class="btn-new" onclick="W.closeDraftPopup(false)">Start New</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var W = {
+  step: 0,
+  total: 7,
+  toggles: { spouse: false, arrested: false, otherbond: false },
+
+  init() {
+    var hasDraft = localStorage.getItem('shamrock-defendant-draft');
+    if (hasDraft) {
+      document.getElementById('draft-popup').classList.add('show');
+    }
+    this.buildProgress();
+    this.initPhoneMasks();
+    this.initSSNMask();
+    this.updateUI();
+    setInterval(function(){ W.saveDraft(); }, 30000);
+  },
+
+  closeDraftPopup(resume) {
+    document.getElementById('draft-popup').classList.remove('show');
+    if (resume) this.loadDraft();
+    else this.clearDraft();
+  },
+
+  buildProgress() {
+    var p = document.getElementById('progress');
+    for (var i = 0; i < this.total; i++) p.innerHTML += '<div class="dot" data-i="'+i+'"></div>';
+  },
+
+  updateUI() {
+    var steps = document.querySelectorAll('.step');
+    for (var i = 0; i < steps.length; i++) steps[i].classList.toggle('active', i === this.step);
+    var dots = document.querySelectorAll('.dot');
+    for (var i = 0; i < dots.length; i++) { dots[i].classList.toggle('active', i === this.step); dots[i].classList.toggle('done', i < this.step); }
+    document.getElementById('btn-back').style.display = this.step === 0 ? 'none' : '';
+    var nb = document.getElementById('btn-next');
+    if (this.step === this.total - 1) { nb.textContent = '☘️ Submit Application'; nb.className = 'btn btn-submit'; nb.onclick = function(){ W.submit(); }; }
+    else { nb.textContent = 'Continue'; nb.className = 'btn btn-next'; nb.onclick = function(){ W.next(); }; }
+    window.scrollTo(0, 0);
+  },
+
+  validate() {
+    if (this.step === 0) {
+      var req = ['def-first','def-last','def-address','def-city','def-state','def-zip','def-phone','def-email','def-dob'];
+      var ok = true;
+      for (var i = 0; i < req.length; i++) { var el = document.getElementById(req[i]); if (!el.value.trim()) { el.classList.add('error'); ok = false; } }
+      if (!ok) this.toast('Please fill in all required fields.');
+      return ok;
+    }
+    if (this.step === 5) {
+      var dl = document.getElementById('def-dl'), dls = document.getElementById('def-dl-state');
+      var ok = true;
+      if (!dl.value.trim()) { dl.classList.add('error'); ok = false; }
+      if (!dls.value) { dls.classList.add('error'); ok = false; }
+      if (!ok) this.toast('Driver\'s License is required.');
+      return ok;
+    }
+    if (this.step === 6) {
+      var pn = document.getElementById('def-print-name');
+      var c1 = document.getElementById('consent-truth');
+      var c2 = document.getElementById('consent-tracking');
+      if (!pn.value.trim()) { pn.classList.add('error'); this.toast('Please print your full name.'); return false; }
+      if (!c1.checked || !c2.checked) { this.toast('Please agree to both consent statements.'); return false; }
+      return true;
+    }
+    return true;
+  },
+
+  next() {
+    if (!this.validate()) return;
+    if (this.step === this.total - 2) this.buildReview();
+    if (this.step < this.total - 1) { this.step++; this.updateUI(); }
+  },
+
+  prev() { if (this.step > 0) { this.step--; this.updateUI(); } },
+
+  goTo(s) { if (s <= this.step) { this.step = s; this.updateUI(); } },
+
+  toggle(key) {
+    this.toggles[key] = !this.toggles[key];
+    var c = document.getElementById('cond-' + key);
+    var rows = document.querySelectorAll('.toggle-row');
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].getAttribute('onclick').indexOf(key) > -1) rows[i].classList.toggle('on', this.toggles[key]);
+    }
+    c.classList.toggle('open', this.toggles[key]);
+  },
+
+  initPhoneMasks() {
+    var phones = ['def-phone','def-emp-phone','def-spouse-phone','ref-parent-phone','ref-inlaws-phone','ref-sib1-phone','ref-sib2-phone','ref-friend-phone','ref-attorney-phone'];
+    phones.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', function() {
+        var v = this.value.replace(/\D/g,'').substring(0,10);
+        if (v.length >= 7) this.value = '(' + v.substring(0,3) + ') ' + v.substring(3,6) + '-' + v.substring(6);
+        else if (v.length >= 4) this.value = '(' + v.substring(0,3) + ') ' + v.substring(3);
+        else if (v.length > 0) this.value = '(' + v;
+      });
+    });
+  },
+
+  initSSNMask() {
+    var el = document.getElementById('def-ssn');
+    if (el) el.addEventListener('input', function() {
+      var v = this.value.replace(/\D/g,'').substring(0,9);
+      if (v.length > 5) this.value = v.substring(0,3) + '-' + v.substring(3,5) + '-' + v.substring(5);
+      else if (v.length > 3) this.value = v.substring(0,3) + '-' + v.substring(3);
+      else this.value = v;
+    });
+  },
+
+  collectData() {
+    var g = function(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; };
+    var hand = document.querySelector('input[name="hand"]:checked');
+    return {
+      defendant: {
+        firstName: g('def-first'), lastName: g('def-last'), alias: g('def-alias'),
+        address: g('def-address'), city: g('def-city'), state: g('def-state'), zip: g('def-zip'),
+        howLong: g('def-howlong'), formerAddress: g('def-former-address'),
+        phone: g('def-phone'), email: g('def-email'), dob: g('def-dob'), ssn: g('def-ssn')
+      },
+      physical: {
+        height: g('def-height'), weight: g('def-weight'), race: g('def-race'),
+        eyes: g('def-eyes'), hair: g('def-hair'), hand: hand ? hand.value : 'right',
+        glasses: document.getElementById('def-glasses').checked,
+        dentures: document.getElementById('def-dentures').checked,
+        beard: document.getElementById('def-beard').checked,
+        marks: g('def-marks')
+      },
+      employment: {
+        employer: g('def-employer'), boss: g('def-boss'), howLong: g('def-emp-howlong'),
+        address: g('def-emp-address'), phone: g('def-emp-phone'),
+        previous: g('def-prev-employer'), previousHowLong: g('def-prev-howlong')
+      },
+      family: {
+        married: this.toggles.spouse,
+        spouseEmployer: g('def-spouse-employer'), spouseAddress: g('def-spouse-address'), spousePhone: g('def-spouse-phone'),
+        children: g('def-children')
+      },
+      references: {
+        parent: { name: g('ref-parent-name'), address: g('ref-parent-address'), phone: g('ref-parent-phone') },
+        inlaws: { name: g('ref-inlaws-name'), address: g('ref-inlaws-address'), phone: g('ref-inlaws-phone') },
+        sibling1: { name: g('ref-sib1-name'), address: g('ref-sib1-address'), phone: g('ref-sib1-phone') },
+        sibling2: { name: g('ref-sib2-name'), address: g('ref-sib2-address'), phone: g('ref-sib2-phone') },
+        friend: { name: g('ref-friend-name'), address: g('ref-friend-address'), phone: g('ref-friend-phone') },
+        attorney: { name: g('ref-attorney-name'), address: g('ref-attorney-address'), phone: g('ref-attorney-phone') }
+      },
+      legal: {
+        arrestedBefore: this.toggles.arrested, convicted: g('def-convicted'), offense: g('def-offense'),
+        otherBond: this.toggles.otherbond, otherSurety: g('def-other-surety')
+      },
+      vehicle: {
+        year: g('def-veh-year'), make: g('def-veh-make'), model: g('def-veh-model'), color: g('def-veh-color'),
+        plate: g('def-veh-plate'), purchased: g('def-veh-purchased'), amountOwed: g('def-veh-owed'), lender: g('def-veh-lender')
+      },
+      identification: {
+        dl: g('def-dl'), dlState: g('def-dl-state'),
+        facebook: g('def-facebook'), instagram: g('def-instagram')
+      },
+      printName: g('def-print-name'),
+      submittedAt: new Date().toISOString(),
+      formType: 'defendant_appearance_bond'
+    };
+  },
+
+  buildReview() {
+    var d = this.collectData();
+    var ssn = d.defendant.ssn ? '***-**-' + d.defendant.ssn.slice(-4) : 'Not provided';
+    var html = '';
+    html += '<div class="review-section"><div class="review-header" onclick="W.goTo(0)"><h4>🛡️ Personal Info</h4><button>Edit</button></div><div class="review-body">';
+    html += '<strong>' + d.defendant.firstName + ' ' + d.defendant.lastName + '</strong>';
+    if (d.defendant.alias) html += ' ("' + d.defendant.alias + '")';
+    html += '<br>' + d.defendant.address + ', ' + d.defendant.city + ', ' + d.defendant.state + ' ' + d.defendant.zip;
+    html += '<br>Phone: ' + d.defendant.phone + ' | Email: ' + d.defendant.email;
+    html += '<br>DOB: ' + d.defendant.dob + ' | SSN: ' + ssn;
+    html += '</div></div>';
+
+    html += '<div class="review-section"><div class="review-header" onclick="W.goTo(1)"><h4>📋 Physical</h4><button>Edit</button></div><div class="review-body">';
+    html += d.physical.height + ' / ' + d.physical.weight + ' | Eyes: ' + d.physical.eyes + ' | Hair: ' + d.physical.hair;
+    html += '<br>' + (d.physical.hand === 'left' ? 'Left' : 'Right') + ' handed';
+    var feats = [];
+    if (d.physical.glasses) feats.push('Glasses');
+    if (d.physical.dentures) feats.push('Dentures');
+    if (d.physical.beard) feats.push('Beard/Mustache');
+    if (feats.length) html += ' | ' + feats.join(', ');
+    if (d.physical.marks) html += '<br>Marks: ' + d.physical.marks;
+    html += '</div></div>';
+
+    html += '<div class="review-section"><div class="review-header" onclick="W.goTo(2)"><h4>💼 Employment</h4><button>Edit</button></div><div class="review-body">';
+    html += d.employment.employer ? d.employment.employer + (d.employment.howLong ? ' (' + d.employment.howLong + ')' : '') : 'Not provided';
+    html += '</div></div>';
+
+    html += '<div class="review-section"><div class="review-header" onclick="W.goTo(3)"><h4>👨‍👩‍👧 Family</h4><button>Edit</button></div><div class="review-body">';
+    html += d.family.married ? 'Married' : 'Not married';
+    if (d.family.children) html += '<br>Children: ' + d.family.children;
+    html += '</div></div>';
+
+    html += '<div class="review-section"><div class="review-header" onclick="W.goTo(4)"><h4>📇 References</h4><button>Edit</button></div><div class="review-body">';
+    var refs = d.references;
+    if (refs.parent.name) html += 'Parent: ' + refs.parent.name + '<br>';
+    if (refs.sibling1.name) html += 'Sibling: ' + refs.sibling1.name + '<br>';
+    if (refs.friend.name) html += 'Friend: ' + refs.friend.name + '<br>';
+    if (refs.attorney.name) html += 'Attorney: ' + refs.attorney.name + '<br>';
+    if (!refs.parent.name && !refs.sibling1.name && !refs.friend.name) html += 'No references provided';
+    html += '</div></div>';
+
+    html += '<div class="review-section"><div class="review-header" onclick="W.goTo(5)"><h4>⚖️ Legal & Vehicle</h4><button>Edit</button></div><div class="review-body">';
+    html += 'DL: ' + d.identification.dl + ' (' + d.identification.dlState + ')';
+    if (d.vehicle.year) html += '<br>Vehicle: ' + d.vehicle.year + ' ' + d.vehicle.make + ' ' + d.vehicle.model;
+    if (d.legal.arrestedBefore) html += '<br>Prior arrest: Yes';
+    html += '</div></div>';
+
+    document.getElementById('review-content').innerHTML = html;
+  },
+
+  async submit() {
+    if (!this.validate()) return;
+    var btn = document.getElementById('btn-next');
+    btn.disabled = true;
+    btn.innerHTML = 'Submitting...';
+    try {
+      var data = this.collectData();
+      await fetch('https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'submitDefendantApplication', payload: data }),
+        mode: 'no-cors'
+      });
+      this.clearDraft();
+      document.getElementById('success').classList.add('show');
+      document.getElementById('nav-bar').style.display = 'none';
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'shamrock-defendant-submitted', data: data }, '*');
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = '☘️ Submit Application';
+      this.toast('Submission failed. Please try again or call 239-332-2245.');
+      console.error('Submit error:', err);
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'shamrock-defendant-error', error: err.message }, '*');
+      }
+    }
+  },
+
+  saveDraft() {
+    try {
+      var fields = {};
+      document.querySelectorAll('input:not([type=file]):not([type=checkbox]):not([type=radio]),select,textarea').forEach(function(el) { if (el.id) fields[el.id] = el.value; });
+      // Save checkboxes
+      ['def-glasses','def-dentures','def-beard','consent-truth','consent-tracking'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) fields['_cb_' + id] = el.checked;
+      });
+      var hand = document.querySelector('input[name="hand"]:checked');
+      fields._hand = hand ? hand.value : 'right';
+      fields._toggles = this.toggles;
+      fields._step = this.step;
+      localStorage.setItem('shamrock-defendant-draft', JSON.stringify(fields));
+      var badge = document.getElementById('autosave');
+      badge.classList.add('show');
+      setTimeout(function(){ badge.classList.remove('show'); }, 2000);
+    } catch(e) {}
+  },
+
+  loadDraft() {
+    try {
+      var raw = localStorage.getItem('shamrock-defendant-draft');
+      if (!raw) return;
+      var fields = JSON.parse(raw);
+      var keys = Object.keys(fields);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (k.startsWith('_')) continue;
+        var el = document.getElementById(k);
+        if (el) el.value = fields[k];
+      }
+      // Restore checkboxes
+      ['def-glasses','def-dentures','def-beard','consent-truth','consent-tracking'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && fields['_cb_' + id] !== undefined) el.checked = fields['_cb_' + id];
+      });
+      // Restore radio
+      if (fields._hand) {
+        var r = document.querySelector('input[name="hand"][value="' + fields._hand + '"]');
+        if (r) r.checked = true;
+      }
+      if (fields._toggles) {
+        var tkeys = Object.keys(fields._toggles);
+        for (var i = 0; i < tkeys.length; i++) { if (fields._toggles[tkeys[i]]) this.toggle(tkeys[i]); }
+      }
+      if (fields._step && fields._step > 0) { this.step = fields._step; }
+    } catch(e) {}
+  },
+
+  clearDraft() { try { localStorage.removeItem('shamrock-defendant-draft'); } catch(e) {} },
+
+  toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 3000);
+  }
+};
+
+document.addEventListener('input', function(e) { if (e.target.matches('input,select,textarea')) e.target.classList.remove('error'); });
+
+// Listen for prefill messages from parent Wix page
+window.addEventListener('message', function(event) {
+  try {
+    var msg = event.data;
+    if (!msg || msg.type !== 'prefill' || !msg.data) return;
+    console.log('[DefWizard] Received prefill data');
+    var d = msg.data;
+    if (d.firstName) { var el = document.getElementById('def-first'); if (el) el.value = d.firstName; }
+    if (d.lastName) { var el = document.getElementById('def-last'); if (el) el.value = d.lastName; }
+    if (d.email) { var el = document.getElementById('def-email'); if (el) el.value = d.email; }
+    if (d.phone) { var el = document.getElementById('def-phone'); if (el) el.value = d.phone; }
+  } catch(e) { console.warn('[DefWizard] Prefill error:', e); }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  W.init();
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'defendant-wizard-ready' }, '*');
+  }
+});
+</script>
+</body>
+</html>
