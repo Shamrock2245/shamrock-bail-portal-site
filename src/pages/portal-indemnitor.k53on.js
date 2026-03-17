@@ -2,25 +2,29 @@
  * Shamrock Bail Bonds - Indemnitor Portal Page
  * 
  * This is the main indemnitor portal where indemnitors:
- * 1. Fill out their information and defendant information
- * 2. Submit intake form to IntakeQueue
+ * 1. Fill out their information via the embedded Wizard Form (#indemnitorWizard)
+ * 2. Submit intake form to IntakeQueue (handled by wizard → GAS direct)
  * 3. View bond status, paperwork, and payment information
  * 4. Communicate with Shamrock staff
  * 
  * URL: /portal-indemnitor
  * File: portal-indemnitor.k53on.js
  * 
- * REFACTORED: Uses Custom Session Auth (NO Wix Members) to fix redirect loop
- * 
- * FIX: Moved attachSubmitHandler() to be called AFTER setupIntakeForm() to ensure
- * the button is in the DOM and visible before trying to attach the handler.
+ * REFACTORED: March 2026 — Replaced native Wix form with embedded HTML wizard.
+ * All form collection, validation, input masking, and submission now happen
+ * inside the wizard Custom Element. This page code handles:
+ *   - Session authentication (magic link flow)
+ *   - Wizard ↔ Page postMessage bridge
+ *   - Bond Dashboard for returning users
+ *   - Choice Screen (Resume vs New)
+ *   - Messaging, payments, paperwork buttons
+ *   - Defendant link feature
  */
 
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import wixData from 'wix-data';
-import { validateCustomSession, getIndemnitorDetails, linkDefendantToCase, onMagicLinkLoginV2 } from 'backend/portal-auth';
-import { submitIntakeForm } from 'backend/intakeQueue.jsw';
+import { validateCustomSession, getIndemnitorDetails, linkDefendantToCase } from 'backend/portal-auth';
 import { callGasAction } from 'backend/gasIntegration';
 import { sendInAppNotification } from 'backend/notificationService';
 import wixSeo from 'wix-seo';
@@ -31,13 +35,7 @@ import { getSessionToken, setSessionToken, clearSessionToken } from 'public/sess
 let currentSession = null;
 let indemnitorData = null;
 let currentIntake = null;
-let isSubmitting = false;
-let submitHandlerAttached = false;
 let eventListenersReady = false;
-let activeSubmitBtnId = '#btnSubmitForm';
-
-// In-memory county cache: populated once per session, avoids repeated CMS round-trips
-let _cachedCountyOptions = null;
 
 $w.onReady(async function () {
     // SEO: Prevent Indexing (Protected Page)
@@ -45,43 +43,36 @@ $w.onReady(async function () {
 
     console.log(" Indemnitor Portal: Page Code Loaded");
 
-    // 0.5 Populate counties on page load (safe to do early)
-    await loadCounties();
-
     // 1. Handle Magic Link Token from URL
-    // SAFETY NET: Magic links should land on /portal-landing first (see portal-url.jsw).
-    // If a raw ?token= somehow arrives here (e.g., old cached link), redirect to
-    // portal-landing so it can be validated on a public page before the Members Area
-    // gate can intercept it. This prevents the 404 on cold token arrivals.
+    // SAFETY NET: Magic links should land on /portal-landing first.
+    // If a raw ?token= somehow arrives here, redirect to portal-landing.
     const query = wixLocation.query;
     if (query.token && wixWindow.rendering.env === 'browser') {
-        console.log(" Indemnitor Portal: Raw magic link token detected -- bouncing to portal-landing for proper validation...");
+        console.log(" Indemnitor Portal: Raw magic link token detected -- bouncing to portal-landing...");
         wixLocation.to(`/portal-landing?token=${encodeURIComponent(query.token)}`);
-        return; // Stop -- portal-landing will validate and redirect back with ?st=
+        return;
     } else if (query.st && wixWindow.rendering.env === 'browser') {
         console.log(" Indemnitor Portal: Found session token in URL, storing...");
-        // Wait for storage to ensure it's set before initialization reads it
         await setSessionToken(query.st);
         wixLocation.queryParams.remove(['st']);
     }
 
     await initializePage();
 
-    // 2. Setup Listeners AFTER page initialization (when all containers are rendered)
+    // 2. Setup Listeners AFTER page initialization
     setupEventListeners();
 });
 
-/**
- * Initialize the page
- */
+// ============================================================================
+// PAGE INITIALIZATION
+// ============================================================================
+
 async function initializePage() {
     try {
-        // Show loading state
         showLoading(true);
-
         console.log(" Indemnitor Portal: Initializing...");
 
-        // 2. Custom Authentication Check (ROBUST)
+        // Custom Authentication Check
         const sessionToken = getSessionToken();
         console.log(" Session Token Present:", !!sessionToken);
 
@@ -99,13 +90,11 @@ async function initializePage() {
             if (validationResult && validationResult.valid) {
                 session = validationResult;
             } else if (validationResult && validationResult.reason === 'error') {
-                // DATABASE/NETWORK ERROR - DO NOT LOGOUT
                 console.error("[!] Session validation failed due to network/DB error:", validationResult.message);
                 showError("Connection Error. Please check your internet and refresh.");
                 showLoading(false);
-                return; // Stop loading but don't logout
+                return;
             } else {
-                // DEFINITELY INVALID or EXPIRED
                 console.warn(" Indemnitor session invalid/expired. Redirecting.", validationResult);
                 clearSessionToken();
                 wixLocation.to('/portal-landing?auth_error=1');
@@ -118,32 +107,25 @@ async function initializePage() {
             return;
         }
 
-        // Verify Role (Optional but good for security)
-        // Note: A user might be both, so we ideally just check if they are allowed here.
-        // For now, if they have a valid session, let them in, but we might check session.role === 'indemnitor' if we enforce separation.
         currentSession = session;
         console.log(`[OK] Indemnitor Portal: Authenticated as ${session.personId} (${session.role})`);
 
-        // 3. Load Data from Backend
+        // Load Data from Backend
         indemnitorData = await getIndemnitorDetails(sessionToken);
         if (!indemnitorData) {
             console.error("[X] Failed to load indemnitor details");
             showError("Error loading your profile. Please contact support.");
-            // fallback?
         }
 
-        // 4. Check for existing intake
+        // Check for existing intake
         await checkExistingIntake();
 
-        // 5. Setup UI
+        // Setup UI based on state
         if (!currentIntake) {
-            console.log(" No existing intake found. Starting fresh.");
-            setupIntakeForm();
-            // FIX: Attach submit handler AFTER setupIntakeForm() completes
-            setTimeout(() => attachSubmitHandler(), 100);
+            console.log(" No existing intake found. Showing wizard.");
+            showWizard();
         } else {
             console.log(" Existing intake found. Checking for Choice UI...");
-            // CHECK: Does the user have the "New vs Resume" UI built?
             try {
                 const boxChoice = $w('#boxChoice');
                 if (boxChoice && boxChoice.id) {
@@ -152,13 +134,11 @@ async function initializePage() {
                     throw new Error('not found');
                 }
             } catch (_) {
-                // Fallback for legacy UI
                 console.log("[!] #boxChoice not found. Defaulting to Dashboard.");
                 showBondDashboard();
             }
         }
 
-        // Hide loading
         showLoading(false);
 
     } catch (error) {
@@ -168,57 +148,121 @@ async function initializePage() {
     }
 }
 
+// ============================================================================
+// WIZARD IFRAME BRIDGE
+// ============================================================================
+
 /**
- * Load counties for dropdown
+ * Show the wizard Custom Element and send prefill data
  */
-async function loadCounties() {
-    // Return cached options if already loaded this session
-    if (_cachedCountyOptions) {
-        safeSetOptions('#county', _cachedCountyOptions);
-        safeSetPlaceholder('#county', 'Select County');
-        return;
-    }
+function showWizard() {
+    safeShow('#indemnitorWizard');
+    safeHide('#bondDashboardSection');
 
+    // Send session context to wizard for auto-prefill
+    sendContextToWizard();
+}
+
+/**
+ * Send indemnitor session data to the wizard iframe for prefill
+ */
+function sendContextToWizard() {
+    if (!indemnitorData) return;
+
+    // Small delay to let iframe load
+    setTimeout(() => {
+        try {
+            /** @type {any} */ ($w('#indemnitorWizard')).postMessage({
+                type: 'prefill',
+                data: {
+                    firstName: indemnitorData.firstName || '',
+                    lastName: indemnitorData.lastName || '',
+                    email: indemnitorData.email || '',
+                    phone: indemnitorData.phone || '',
+                    address: indemnitorData.address || '',
+                    city: indemnitorData.city || '',
+                    state: indemnitorData.state || '',
+                    zip: indemnitorData.zip || '',
+                    sessionToken: getSessionToken()
+                }
+            });
+            console.log("[OK] Sent prefill data to wizard");
+        } catch (e) {
+            console.warn("[!] Could not send prefill to wizard:", e.message);
+        }
+    }, 1500);
+}
+
+/**
+ * Setup listener for messages FROM the wizard iframe
+ */
+function setupWizardListener() {
     try {
-        const results = await wixData.query('FloridaCounties')
-            .eq('active', true)
-            .ascending('countyName')
-            .limit(100)
-            .find();
+        /** @type {any} */ ($w('#indemnitorWizard')).onMessage((event) => {
+            const msg = event.data;
+            if (!msg || !msg.type) return;
 
-        _cachedCountyOptions = results.items.map(item => ({
-            label: item.countyName,
-            value: item.countyName
-        }));
+            console.log(" Wizard message received:", msg.type);
 
-        safeSetOptions('#county', _cachedCountyOptions);
-        safeSetPlaceholder('#county', 'Select County');
-    } catch (error) {
-        console.error('Error loading counties:', error);
-        const fallbackCounties = [
-            { label: "Lee", value: "Lee" },
-            { label: "Collier", value: "Collier" },
-            { label: "Charlotte", value: "Charlotte" },
-            { label: "Hendry", value: "Hendry" },
-            { label: "Glades", value: "Glades" }
-        ];
-        _cachedCountyOptions = fallbackCounties;
-        safeSetOptions('#county', fallbackCounties);
-        safeSetPlaceholder('#county', 'Select County (Offline Mode)');
-        showError("Network warning: Using offline county list.");
+            switch (msg.type) {
+                case 'shamrock-form-submitted':
+                    console.log('[OK] Wizard form submitted successfully');
+                    handleWizardSubmission(msg.data);
+                    break;
+
+                case 'shamrock-form-error':
+                    console.error('[X] Wizard submission error:', msg.error);
+                    showError('Form submission error. Please try again or call (239) 332-2245.');
+                    break;
+
+                case 'wizard-ready':
+                    console.log('[OK] Wizard iframe ready, sending prefill...');
+                    sendContextToWizard();
+                    break;
+
+                default:
+                    break;
+            }
+        });
+        console.log("[OK] Wizard message listener attached");
+    } catch (e) {
+        console.warn("[!] Could not attach wizard listener:", e.message);
     }
 }
 
 /**
- * Check if indemnitor has existing intake submission
+ * Handle successful form submission from the wizard
  */
+function handleWizardSubmission(data) {
+    // Show success state
+    safeHide('#indemnitorWizard');
+    safeShow('#groupSuccess');
+
+    const caseId = data?.caseId || 'Pending';
+    const successMsg = ` Success! Your Case ID is: ${caseId}\n\n` +
+        `Stand by. Our AI agent is reviewing your file and will email you the completed SignNow documents to review and sign shortly.\n\n` +
+        ` Next Steps:\n` +
+        `If you know the premium due, please feel free to pay your defendant's bond securely using our payment page.\n\n` +
+        `Redirecting to our secure payment portal...`;
+
+    safeSetText('#textSuccessMessage', successMsg);
+    wixWindow.scrollTo(0, 0);
+
+    setTimeout(() => {
+        console.log(" Redirecting to payments page ->");
+        wixLocation.to('/payments');
+    }, 10000);
+}
+
+// ============================================================================
+// EXISTING INTAKE CHECK
+// ============================================================================
+
 async function checkExistingIntake() {
     try {
-        // Use email from currentSession or indemnitorData
         const email = currentSession.email || indemnitorData?.email;
         if (!email) return;
 
-        // Look for existing intake
         const results = await wixData.query('IntakeQueue')
             .eq('indemnitorEmail', email)
             .descending('_createdDate')
@@ -234,40 +278,18 @@ async function checkExistingIntake() {
     }
 }
 
-/**
- * Setup intake form with prefilled data
- */
-function setupIntakeForm() {
-    if (indemnitorData) {
-        // Map backend fields to UI
-        safeSetValue('#indemnitorFirstName', indemnitorData.firstName);
-        safeSetValue('#indemnitorLastName', indemnitorData.lastName);
-        safeSetValue('#indemnitorEmail', indemnitorData.email);
-        safeSetValue('#indemnitorPhone', indemnitorData.phone);
+// ============================================================================
+// BOND DASHBOARD (Returning Users)
+// ============================================================================
 
-        // If we have address info from backend (future proofing), set it too
-        if (indemnitorData.address) safeSetValue('#indemnitorAddress', indemnitorData.address);
-        if (indemnitorData.city) safeSetValue('#indemnitorCity', indemnitorData.city);
-        if (indemnitorData.state) safeSetValue('#indemnitorState', indemnitorData.state);
-        if (indemnitorData.zip) safeSetValue('#indemnitorZipCode', indemnitorData.zip);
-    }
-
-    safeShow('#mainContent');
-    safeHide('#bondDashboardSection');
-}
-
-/**
- * Show bond dashboard with existing intake data
- */
 function showBondDashboard() {
     if (!currentIntake) return;
 
-    safeHide('#mainContent');
-    safeHide('#groupDefendantLink'); // Also hide the defendant link prompt
-    safeShow('#bondDashboardSection');
+    safeHide('#indemnitorWizard');
+    safeHide('#groupDefendantLink');
     safeShow('#bondDashboardSection');
 
-    // Populate defendant status from Intake or Live Data
+    // Populate defendant status
     safeSetText('#defendantNameDisplay', currentIntake.defendantName || 'Unknown');
     safeSetText('#defendantStatusDisplay', formatStatus(currentIntake.status));
     safeSetText('#lastCheckInDisplay', formatDate(currentIntake._updatedDate));
@@ -276,8 +298,7 @@ function showBondDashboard() {
     const paperworkStatus = currentIntake.documentStatus || 'pending';
     safeSetText('#paperworkStatusDisplay', formatDocumentStatus(paperworkStatus));
 
-    // --- Financial Liability Section (Expanded) ---
-    // Populate with real data or defaults
+    // Financial Liability Section
     const liability = currentIntake.totalLiability || 0;
     const premium = currentIntake.totalPremium || 0;
     const downPayment = currentIntake.downPayment || 0;
@@ -288,8 +309,6 @@ function showBondDashboard() {
     safeSetText('#textDownPayment', formatCurrency(downPayment));
     safeSetText('#textChargesCount', chargesCount.toString());
 
-    // Check specific specific logic for Balance Due vs. Premium Amount
-    // If we have specific balance due, use it, otherwise fallback to premiumAmount (legacy field)
     const balanceDue = currentIntake.balanceDue !== undefined ? currentIntake.balanceDue : currentIntake.premiumAmount;
 
     if (balanceDue !== undefined) {
@@ -307,29 +326,24 @@ function showBondDashboard() {
     }
 }
 
-/**
- * Show the "Resume vs New" Choice Screen
- */
+// ============================================================================
+// CHOICE SCREEN (Resume vs New)
+// ============================================================================
+
 function setupChoiceScreen() {
-    safeHide('#mainContent');
+    safeHide('#indemnitorWizard');
     safeHide('#bondDashboardSection');
     safeShow('#boxChoice');
 
-    // Personalized Welcome
     const firstName = indemnitorData?.firstName || 'Back';
     safeSetText('#textWelcomeChoice', `Welcome ${firstName}`);
 
-    // Defendant Info
     const defName = currentIntake.defendantName || 'Unknown Defendant';
     safeSetText('#textExistingInfo', `You have an active bond started for ${defName}.`);
 
-    // Premium Animation
     animateChoiceScreen();
 }
 
-/**
- * Animate the Choice Screen Entrance
- */
 function animateChoiceScreen() {
     try {
         const box = $w('#boxChoice');
@@ -337,90 +351,54 @@ function animateChoiceScreen() {
 
         const timeline = wixAnimations.timeline();
 
-        // Preset
         timeline.add(box, { "scale": 0.95, "opacity": 0, "duration": 0 })
             .add(content, { "y": 10, "opacity": 0, "duration": 0 });
 
-        // Animate In
         timeline.add(box, {
-            "scale": 1,
-            "opacity": 1,
-            "duration": 500,
-            "easing": "easeOutBack"
+            "scale": 1, "opacity": 1, "duration": 500, "easing": "easeOutBack"
         }).add(content, {
-            "y": 0,
-            "opacity": 1,
-            "duration": 400,
-            "easing": "easeOutQuad"
+            "y": 0, "opacity": 1, "duration": 400, "easing": "easeOutQuad"
         }, 100);
 
         timeline.play();
     } catch (e) {
         console.warn("Animation error:", e);
-        // Fallback checks are handled by safeShow/safeHide in parent function
     }
 }
 
-/**
- * Handle "Start New Bond" Click
- */
 function handleStartNewBond() {
     console.log(" Starting New Bond...");
-    currentIntake = null; // Clear current intake from memory (does not delete from DB)
-
+    currentIntake = null;
     safeHide('#boxChoice');
-    setupIntakeForm();
-    setTimeout(() => attachSubmitHandler(), 100);
+    showWizard();
 }
 
-/**
- * Handle "Resume Bond" Click
- */
 function handleResumeBond() {
     console.log(" Resuming Existing Bond...");
     safeHide('#boxChoice');
     showBondDashboard();
 }
 
-/**
- * Format currency
- */
-function formatCurrency(amount) {
-    if (amount === undefined || amount === null) return '$0';
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-    }).format(amount);
-}
+// ============================================================================
+// EVENT LISTENERS
+// ============================================================================
 
-/**
- * Setup all event listeners
- */
 function setupEventListeners() {
     if (eventListenersReady) return;
     eventListenersReady = true;
 
-    // NOTE: attachSubmitHandler() is called from setupIntakeForm() with a delay
+    // Wizard iframe bridge
+    setupWizardListener();
+
+    // Dashboard buttons
     safeOnClick('#signPaperworkBtn', handleSignPaperwork);
     safeOnClick('#makePaymentBtn', handleMakePayment);
     safeOnClick('#sendMessageBtn', handleSendMessage);
 
-    setupPhoneFormatting('#defendantPhone');
-    setupPhoneFormatting('#indemnitorPhone');
-    setupPhoneFormatting('#reference1Phone');
-    setupPhoneFormatting('#reference2Phone');
-    setupPhoneFormatting('#indemnitorEmployerPhone');
-    setupPhoneFormatting('#indemnitorSupervisorPhone');
-
-    setupZipFormatting('#indemnitorZipCode');
-    setupZipFormatting('#reference1Zip');
-    setupZipFormatting('#reference2Zip');
-    setupZipFormatting('#indemnitorEmployerZip');
-
-    // Logout Button (New for Custom Auth)
+    // Logout
     safeOnClick('#logoutBtn', handleLogout);
 
-    // Communication Preferences (Audit M-04: Dashboard must link to Comm Prefs page)
+    // Communication Preferences
     safeOnClick('#btnCommPrefs', () => {
         wixLocation.to('/communication-preferences');
     });
@@ -429,402 +407,29 @@ function setupEventListeners() {
     safeOnClick('#btnResumeBond', handleResumeBond);
     safeOnClick('#btnStartNewBond', handleStartNewBond);
 
-    // Setup Defendant Link Feature (New)
+    // Defendant Link Feature
     setupDefendantLink();
 }
 
-function attachSubmitHandler(attempt = 0) {
-    if (submitHandlerAttached) return;
+// ============================================================================
+// ACTION HANDLERS
+// ============================================================================
 
-    const maxAttempts = 10;   // Reduced from 20 (5s max vs 10s)
-    const delayMs = 300;      // Reduced from 500ms
-
-    const candidateIds = ['#btnSubmitPortal', '#btnSubmitInfo', '#btnSubmitForm', '#button1', '#submitBtn'];
-
-    for (const id of candidateIds) {
-        try {
-            /** @type {any} */ ($w(id)).onClick(handleSubmitIntake);
-            if (/** @type {any} */ ($w(id)).id) {
-                activeSubmitBtnId = id;
-                break;
-            }
-        } catch (e) { /* try next */ }
-    }
-
-    if (!activeSubmitBtnId) {
-        if (attempt + 1 >= maxAttempts) {
-            console.error(`[X] No valid submit button found after ${maxAttempts} attempts. Checked: ${candidateIds.join(', ')}`);
-            return;
-        }
-        setTimeout(() => attachSubmitHandler(attempt + 1), delayMs);
-        return;
-    }
-
-    try {
-        const btn = /** @type {any} */ ($w(activeSubmitBtnId));
-        if (btn.collapsed) btn.expand();
-        if (btn.hidden) btn.show();
-        if (typeof btn.enable === 'function') {
-            if (!btn.enabled) btn.enable();
-        }
-    } catch (e) {
-        console.warn(`[!] Could not modify button visibility: ${e.message}`);
-    }
-
-    submitHandlerAttached = true;
-}
-
-/**
- * Handle Logout
- */
 function handleLogout() {
     clearSessionToken();
     wixLocation.to('/portal-landing');
 }
 
-/**
- * Handle intake form submission
- */
-async function handleSubmitIntake() {
-    console.log(" handleSubmitIntake: Button clicked!");
-    console.log("   isSubmitting:", isSubmitting);
-
-    if (isSubmitting) {
-        console.warn("[!] Already submitting, ignoring click");
-        return;
-    }
-
-    try {
-        console.log(" Starting submission process...");
-        isSubmitting = true;
-        safeDisable(activeSubmitBtnId);
-        safeSetText(activeSubmitBtnId, 'Submitting...');
-        showLoading(true);
-
-        const validation = validateIntakeForm();
-        if (!validation.valid) {
-            console.warn("[!] Validation failed:", validation.message);
-            showError(validation.message);
-            isSubmitting = false; // Re-enable immediately
-            safeEnable(activeSubmitBtnId);
-            safeSetText(activeSubmitBtnId, 'Submit Info');
-            showLoading(false);
-            return;
-        }
-
-        const formData = collectIntakeFormData();
-        console.log(" Payload prepared:", JSON.stringify(formData, null, 2));
-
-        const result = await submitIntakeForm(formData);
-        console.log(" Backend response:", result);
-
-        if (result.success) {
-            console.log('[OK] Submission successful:', result);
-            showLoading(false);
-
-            // Use safe wrappers to prevent "is not a function" errors
-            safeHide('#intakeFormGroup');
-            safeHide('#groupStep3');
-            safeShow('#groupSuccess');
-
-            const successMsg = ` Success! Your Case ID is: ${result.caseId}\n\n` +
-                `Stand by. Our AI agent is reviewing your file and will email you the completed SignNow documents to review and sign shortly.\n\n` +
-                ` Next Steps:\n` +
-                `If you know the premium due, please feel free to pay your defendant's bond securely using our payment page. Be sure to add any notes that you would like.\n\n` +
-                `If the premium isn't paid after this submission, then there will be a payment plan signed and sent to you. If you prefer other payment methods, please discuss that with your agent.\n\n` +
-                `Redirecting to our secure payment portal...`;
-
-            safeSetText('#textSuccessMessage', successMsg);
-
-            wixWindow.scrollTo(0, 0);
-
-            setTimeout(() => {
-                console.log(" Redirecting to payments page ->");
-                wixLocation.to('/payments');
-            }, 10000);
-        } else {
-            throw new Error(result.message || 'Submission failed');
-        }
-
-    } catch (error) {
-        console.error('[X] Submit error stack:', error.stack);
-        showError(error.message || 'Error submitting form.');
-    } finally {
-        isSubmitting = false;
-        if (activeSubmitBtnId && /** @type {any} */ ($w(activeSubmitBtnId)).id) {
-            safeEnable(activeSubmitBtnId);
-            safeSetText(activeSubmitBtnId, 'Submit Info');
-        }
-        showLoading(false);
-    }
-}
-
-/**
- * EXPORTED HANDLERS (Fallback for Editor Wiring)
- * If dynamic attachment fails, user can wire 'onClick' in editor.
- */
-export function btnSubmitPortal_click(event) {
-    if (!activeSubmitBtnId) activeSubmitBtnId = '#btnSubmitPortal';
-    handleSubmitIntake();
-}
-
-export function btnSubmitInfo_click(event) {
-    if (!activeSubmitBtnId) activeSubmitBtnId = '#btnSubmitInfo';
-    handleSubmitIntake();
-}
-
-/**
- * FIELD MAPPING CONFIGURATION
- * Maps logical data points to lists of potential UI Element IDs.
- * The system will check each ID in order until it finds a value.
- */
-const FIELD_MAP = {
-    // Defendant
-    // User Provided: inputDefendantName, inputDefendantPhone, inputDefendantEmail
-    defendantFirst: ['#inputDefendantFirstName', '#defendantFirstName', '#defFirstName', '#firstName', '#input1'],
-    defendantLast: ['#inputDefendantLastName', '#defendantLastName', '#defLastName', '#lastName', '#input2'],
-    defendantFull: ['#inputDefendantName', '#defendantName', '#defName', '#defendantFullName', '#inputName'],
-    defendantPhone: ['#inputDefendantPhone', '#defendantPhone', '#defPhone', '#inputPhoneIndemnitor', '#input3'],
-    defendantEmail: ['#inputDefendantEmail', '#defendantEmail', '#defEmail', '#inputEmailIndemnitor', '#input4'],
-
-    // Indemnitor
-    // User Provided: inputIndemnitorName, inputIndemnitorEmail
-    indemnitorFirst: ['#inputIndemnitorFirstName', '#indemnitorFirstName', '#indemFirstName', '#firstName1', '#input5'],
-    indemnitorLast: ['#inputIndemnitorLastName', '#indemnitorLastName', '#indemLastName', '#lastName1', '#input6'],
-    indemnitorFull: ['#inputIndemnitorName', '#indemnitorName', '#indemName', '#indemnitorFullName'],
-    indemnitorEmail: ['#inputIndemnitorEmail', '#indemnitorEmail', '#indemEmail', '#email1'],
-    indemnitorPhone: ['#inputIndemnitorPhone', '#indemnitorPhone', '#indemPhone', '#phone1'],
-
-    // Address (Special Handling for AddressInputs)
-    indemnitorAddress: ['#inputIndemnitorAddress', '#indemnitorAddress', '#indemnitorStreetAddress', '#addressInput1', '#address1'],
-    indemnitorCity: ['#inputIndemnitorCity', '#indemnitorCity', '#indemCity', '#city1', '#inputCity'],
-    indemnitorState: ['#inputIndemnitorState', '#indemnitorState', '#indemState', '#state1', '#inputState'],
-    indemnitorZip: ['#inputIndemnitorZip', '#inputIndemnitorZipCode', '#indemnitorZipCode', '#indemnitorZip', '#indemZip', '#zip1'],
-    residenceType: ['#inputIndemnitorResidenceType', '#residenceType'],
-
-    // County
-    county: ['#county', '#countyDropdown', '#dropdownCounty', '#dropdown1'],
-
-    // Emp / Refs (Adding generic fallbacks just in case)
-    employerName: ['#inputIndemnitorEmployerName', '#indemnitorEmployerName'],
-    employerAddress: ['#inputIndemnitorEmployerAddress', '#indemnitorEmployerAddress'],
-    employerCity: ['#inputIndemnitorEmployerCity', '#indemnitorEmployerCity'],
-    employerState: ['#inputIndemnitorEmployerState', '#indemnitorEmployerState'],
-    employerZip: ['#inputIndemnitorEmployerZip', '#indemnitorEmployerZip'],
-    employerPhone: ['#inputIndemnitorEmployerPhone', '#indemnitorEmployerPhone'],
-    supervisorName: ['#inputIndemnitorSupervisorName', '#indemnitorSupervisorName'],
-    supervisorPhone: ['#inputIndemnitorSupervisorPhone', '#indemnitorSupervisorPhone'],
-
-    ref1Name: ['#inputRef1Name', '#reference1Name', '#ref1Name'],
-    ref1Phone: ['#inputRef1Phone', '#reference1Phone', '#ref1Phone'],
-    ref1Address: ['#inputRef1Address', '#reference1Address', '#ref1Address'],
-    ref1City: ['#inputRef1City', '#reference1City'],
-    ref1State: ['#inputRef1State', '#reference1State'],
-    ref1Zip: ['#inputRef1Zip', '#reference1Zip', '#ref1Zip'],
-
-    ref2Name: ['#inputRef2Name', '#reference2Name', '#ref2Name'],
-    ref2Phone: ['#inputRef2Phone', '#reference2Phone', '#ref2Phone'],
-    ref2Address: ['#inputRef2Address', '#reference2Address', '#ref2Address'],
-    ref2City: ['#inputRef2City', '#reference2City'],
-    ref2State: ['#inputRef2State', '#reference2State'],
-    ref2Zip: ['#inputRef2Zip', '#reference2Zip', '#ref2Zip'],
-
-    consent: ['#checkboxConsent', '#consentCheckbox', '#checkbox1']
-};
-
-/**
- * Resolver Helper
- * Checks array of element IDs and returns the first non-empty value found.
- */
-function resolveFieldValue(fieldKey) {
-    const candidates = FIELD_MAP[fieldKey] || [];
-    for (const selector of candidates) {
-        const val = safeGetValue(selector);
-        if (val && typeof val === 'string' && val.trim().length > 0) {
-            return { value: val, source: selector }; // Return value and where we found it
-        }
-        if (val && typeof val !== 'string') { // Checkbox or object
-            return { value: val, source: selector };
-        }
-    }
-    return { value: null, source: null };
-}
-
-/**
- * Debugging Tool
- * Logs what the form "sees" to help identify ID mismatches.
- */
-function debugFormState() {
-    console.log(" STARTING FORM DIAGNOSTIC ");
-    const report = {};
-    Object.keys(FIELD_MAP).forEach(key => {
-        const res = resolveFieldValue(key);
-        report[key] = res.source ? `[OK] Found in ${res.source} ("${String(res.value).substring(0, 15)}...")` : `[X] NOT FOUND (Checked: ${FIELD_MAP[key].join(', ')})`;
-    });
-    console.log(JSON.stringify(report, null, 2));
-    console.log(" END DIAGNOSTIC ");
-}
-
-/**
- * Validation intake form
- * 2026 UPDATE: Uses FIELD_MAP Resolution
- */
-function validateIntakeForm() {
-    const errors = [];
-
-    // Defendant Name
-    const defFirst = resolveFieldValue('defendantFirst').value;
-    const defLast = resolveFieldValue('defendantLast').value;
-    const defFull = resolveFieldValue('defendantFull').value;
-
-    if ((!defFirst || !defLast) && !defFull) {
-        errors.push('Defendant Name is required');
-    }
-
-    // Indemnitor Name
-    const indemFirst = resolveFieldValue('indemnitorFirst').value;
-    const indemLast = resolveFieldValue('indemnitorLast').value;
-    const indemFull = resolveFieldValue('indemnitorFull').value;
-
-    if ((!indemFirst || !indemLast) && !indemFull) {
-        errors.push('Your Name is required');
-    }
-
-    if (!resolveFieldValue('indemnitorEmail').value) errors.push('Your email is required');
-    if (!resolveFieldValue('indemnitorPhone').value) errors.push('Your phone number is required');
-
-    if (!resolveFieldValue('indemnitorAddress').value) errors.push('Your address is required');
-    if (!resolveFieldValue('indemnitorCity').value) errors.push('Your city is required');
-    if (!resolveFieldValue('indemnitorState').value) errors.push('Your state is required');
-    if (!resolveFieldValue('indemnitorZip').value) errors.push('Your zip code is required');
-
-    if (!resolveFieldValue('county').value) errors.push('County is required');
-
-    // Consent
-    const consent = resolveFieldValue('consent');
-    if (consent.source && !consent.value) { // Use .value (checked state)
-        errors.push('You must agree to the Terms & Conditions.');
-    } else if (!consent.source && /** @type {any} */ ($w('#checkboxConsent')).id && !/** @type {any} */ ($w('#checkboxConsent')).checked) {
-        // Fallback explicit check
-        errors.push('You must agree to the Terms & Conditions.');
-    }
-
-    if (errors.length > 0) {
-        return {
-            valid: false,
-            message: `Please complete required fields:\n${errors.join('\n')}`
-        };
-    }
-
-    return { valid: true };
-}
-
-/**
- * Collect all intake form data
- * 2026 UPDATE: Uses FIELD_MAP Resolution
- */
-function collectIntakeFormData() {
-    // Parser
-    const parseName = (full, first, last) => {
-        if (first && last) return { first, last, full: `${first} ${last}`.trim() };
-        if (full) {
-            const parts = full.trim().split(' ');
-            const pFirst = parts[0];
-            const pLast = parts.slice(1).join(' ') || '';
-            return { first: pFirst, last: pLast, full: full.trim() };
-        }
-        return { first: '', last: '', full: '' };
-    };
-
-    // Resolve Values
-    const def = parseName(
-        resolveFieldValue('defendantFull').value,
-        resolveFieldValue('defendantFirst').value,
-        resolveFieldValue('defendantLast').value
-    );
-
-    const indem = parseName(
-        resolveFieldValue('indemnitorFull').value,
-        resolveFieldValue('indemnitorFirst').value,
-        resolveFieldValue('indemnitorLast').value
-    );
-
-    return {
-        // Defendant Information
-        defendantName: def.full,
-        defendantFirstName: def.first,
-        defendantLastName: def.last,
-        defendantEmail: resolveFieldValue('defendantEmail').value,
-        defendantPhone: resolveFieldValue('defendantPhone').value,
-        defendantBookingNumber: safeGetValue('#defendantBookingNumber'), // Optional
-
-        // Indemnitor Information
-        indemnitorName: indem.full,
-        indemnitorFirstName: indem.first,
-        indemnitorMiddleName: safeGetValue('#indemnitorMiddleName') || '',
-        indemnitorLastName: indem.last,
-        indemnitorEmail: resolveFieldValue('indemnitorEmail').value,
-        indemnitorPhone: resolveFieldValue('indemnitorPhone').value,
-
-        indemnitorStreetAddress: resolveFieldValue('indemnitorAddress').value,
-        indemnitorCity: resolveFieldValue('indemnitorCity').value,
-        indemnitorState: resolveFieldValue('indemnitorState').value,
-        indemnitorZipCode: resolveFieldValue('indemnitorZip').value,
-        residenceType: safeGetValue('#residenceType'),
-
-        // References
-        reference1Name: resolveFieldValue('ref1Name').value,
-        reference1Phone: resolveFieldValue('ref1Phone').value,
-        reference1Address: resolveFieldValue('ref1Address').value,
-        reference1City: resolveFieldValue('ref1City').value,
-        reference1State: resolveFieldValue('ref1State').value,
-        reference1Zip: resolveFieldValue('ref1Zip').value,
-
-        reference2Name: resolveFieldValue('ref2Name').value,
-        reference2Phone: resolveFieldValue('ref2Phone').value,
-        reference2Address: resolveFieldValue('ref2Address').value,
-        reference2City: resolveFieldValue('ref2City').value,
-        reference2State: resolveFieldValue('ref2State').value,
-        reference2Zip: resolveFieldValue('ref2Zip').value,
-
-        // Employment
-        indemnitorEmployerName: resolveFieldValue('employerName').value,
-        indemnitorEmployerAddress: resolveFieldValue('employerAddress').value,
-        indemnitorEmployerCity: resolveFieldValue('employerCity').value,
-        indemnitorEmployerState: resolveFieldValue('employerState').value,
-        indemnitorEmployerZip: resolveFieldValue('employerZip').value,
-        indemnitorEmployerPhone: resolveFieldValue('employerPhone').value,
-        indemnitorSupervisorName: resolveFieldValue('supervisorName').value,
-        indemnitorSupervisorPhone: resolveFieldValue('supervisorPhone').value,
-
-        // County
-        county: resolveFieldValue('county').value,
-
-        // Session
-        sessionToken: getSessionToken()
-    };
-}
-
-/**
- * Handle sign paperwork button
- */
 function handleSignPaperwork() {
     if (currentIntake?.signNowIndemnitorLink) {
-        // Paperwork is emailed directly via SignNow — open signing link in new tab (Audit M-01)
         wixLocation.to(currentIntake.signNowIndemnitorLink);
     }
 }
 
-/**
- * Handle make payment button
- */
 function handleMakePayment() {
     wixLocation.to('/payments');
 }
 
-/**
- * Handle send message button
- */
 async function handleSendMessage() {
     const message = safeGetValue('#messageInput');
     if (!message?.trim()) {
@@ -841,7 +446,7 @@ async function handleSendMessage() {
             (indemnitorData?.indemnitorLastName || indemnitorData?.lastName || '')
         ).trim() || currentSession?.name || 'Indemnitor';
 
-        // 1. Notify GAS -- logs to Sheets + triggers Slack alert to staff
+        // Notify GAS -- logs to Sheets + triggers Slack alert to staff
         await callGasAction('portalClientMessage', {
             caseId: caseId,
             senderName: senderName,
@@ -851,7 +456,7 @@ async function handleSendMessage() {
             timestamp: new Date().toISOString()
         });
 
-        // 2. Store in-app notification so staff dashboard can surface it
+        // Store in-app notification for staff dashboard
         if (caseId) {
             await sendInAppNotification(
                 'staff',
@@ -862,7 +467,7 @@ async function handleSendMessage() {
             );
         }
 
-        // 3. Clear input and confirm
+        // Clear input and confirm
         if (/** @type {any} */ ($w('#messageInput')).type === '$w.TextInput') {
             /** @type {any} */ ($w('#messageInput')).value = '';
         }
@@ -876,15 +481,50 @@ async function handleSendMessage() {
     }
 }
 
-/**
- * Setup Defendant Link Feature
- * - Shows "Link Defendant" button/section if status is 'Need Info' or similar
- */
-// [Deleted duplicate setupDefendantLink placeholder]
+// ============================================================================
+// DEFENDANT LINKING FEATURE
+// ============================================================================
 
-// --- UTILITIES ---
+function setupDefendantLink() {
+    // Auto-collapse if user interacts with wizard (they're an indemnitor, not defendant)
+    // The wizard handles form interaction, so we just collapse on page load if wizard is active
+    // Manual collapse handled by the "Find My Paperwork" button below
 
-// --- UTILITIES ---
+    safeOnClick('#btnSubmitLink', async () => {
+        const caseNum = safeGetValue('#inputLinkCaseNumber')?.trim();
+        const indemName = safeGetValue('#inputLinkIndemnitorName')?.trim();
+
+        if (!caseNum && !indemName) {
+            showError("Please enter either a Case Number OR Indemnitor's Last Name.");
+            return;
+        }
+
+        safeSetText('#btnSubmitLink', 'Searching...');
+        safeDisable('#btnSubmitLink');
+
+        try {
+            const result = await linkDefendantToCase(caseNum, indemName);
+
+            if (result.success && result.sessionToken) {
+                showSuccess(result.message);
+                await setSessionToken(result.sessionToken);
+                wixLocation.to(`/portal-defendant?st=${encodeURIComponent(result.sessionToken)}&autoPaperwork=1`);
+            } else {
+                showError(result.message || 'Could not find case. Check details.');
+                safeSetText('#btnSubmitLink', 'Find My Paperwork');
+                safeEnable('#btnSubmitLink');
+            }
+        } catch (e) {
+            console.error(e);
+            showError("System Error.");
+            safeEnable('#btnSubmitLink');
+        }
+    });
+}
+
+// ============================================================================
+// UTILITIES
+// ============================================================================
 
 function safeGetValue(selector) {
     try {
@@ -898,19 +538,6 @@ function safeGetValue(selector) {
     } catch (e) {
         return null;
     }
-}
-
-function safeSetValue(selector, value) {
-    try {
-        const el = $w(selector);
-        if (!el) return;
-        if (value === undefined || value === null) value = '';
-
-        if (el.type === '$w.TextInput' || el.type === '$w.TextBox') el.value = value;
-        else if (el.type === '$w.Dropdown') el.value = value;
-        else if (el.type === '$w.Text') el.text = value;
-        else if (el.value !== undefined) el.value = value;
-    } catch (e) { }
 }
 
 function safeSetText(selector, text) {
@@ -933,20 +560,8 @@ function safeDisable(selector) {
     try { $w(selector).disable(); } catch (e) { }
 }
 
-function safeSetPlaceholder(selector, text) {
-    try { $w(selector).placeholder = text; } catch (e) { }
-}
-
-function safeSetOptions(selector, options) {
-    try { $w(selector).options = options; } catch (e) { }
-}
-
 function safeOnClick(selector, handler) {
     try { $w(selector).onClick(handler); } catch (e) { }
-}
-
-function safeOnInput(selector, handler) {
-    try { $w(selector).onInput(handler); } catch (e) { }
 }
 
 function showLoading(show) {
@@ -961,8 +576,6 @@ function showError(msg) {
 }
 
 function showSuccess(msg) {
-    // Try both UI patterns (Group vs Message)
-    // Try both UI patterns (Group vs Message)
     try {
         if (/** @type {any} */ ($w('#textSuccessMessage')).id) /** @type {any} */ ($w('#textSuccessMessage')).text = msg;
         safeShow('#groupSuccess');
@@ -974,6 +587,14 @@ function showSuccess(msg) {
         safeHide('#errorMessage');
         setTimeout(() => safeHide('#successMessage'), 5000);
     }
+}
+
+function formatCurrency(amount) {
+    if (amount === undefined || amount === null) return '$0';
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+    }).format(amount);
 }
 
 function formatStatus(status) {
@@ -1005,114 +626,3 @@ function formatDate(dateStr) {
         });
     } catch (e) { return ''; }
 }
-
-/**
- * Setup phone number formatting
- */
-function setupPhoneFormatting(selector) {
-    safeOnInput(selector, () => {
-        const value = safeGetValue(selector);
-        if (!value) return;
-
-        const cleaned = value.replace(/\D/g, '');
-        if (cleaned.length <= 10) {
-            const formatted = cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
-            if (formatted !== value) {
-                safeSetValue(selector, formatted);
-            }
-        }
-    });
-}
-
-/**
- * Setup zip code formatting
- */
-function setupZipFormatting(selector) {
-    safeOnInput(selector, () => {
-        const value = safeGetValue(selector);
-        if (!value) return;
-
-        const cleaned = value.replace(/\D/g, '').substring(0, 5);
-        if (cleaned !== value) {
-            safeSetValue(selector, cleaned);
-        }
-    });
-}
-
-
-export {
-    initializePage,
-    handleSubmitIntake,
-    validateIntakeForm,
-    collectIntakeFormData
-};
-
-// ============================================================================
-// DEFENDANT LINKING FEATURE (New Request)
-// ============================================================================
-
-/**
- * Setup "Are you the Defendant?" Link Logic
- *
- * [!] UI CONFIGURATION REQUIRED [!]
- * You MUST rename your elements in the Wix Editor Layers Panel to match these IDs:
- *
- * 1. The Container Box   => #groupDefendantLink  (Was: group22)
- * 2. Case Number Input   => #inputLinkCaseNumber (Was: input1)
- * 3. Last Name Input     => #inputLinkIndemnitorName (Was: input2)
- * 4. Finding Button      => #btnSubmitLink       (Was: button14)
- *
- * SETTINGS:
- * - Ensure #groupDefendantLink is **NOT** "Collapsed on Load" (Visible by default).
- * - This box will automatically disappear when they start typing in the main form.
- */
-function setupDefendantLink() {
-    // 1. Auto-Collapse Logic (When user commits to being an Indemnitor)
-    // If they start typing in the main form, hide the "Defendant?" question.
-    const triggerFields = ['#indemnitorFirstName', '#indemnitorLastName', '#indemnitorPhone'];
-
-    triggerFields.forEach(selector => {
-        safeOnInput(selector, () => {
-            // Check availability to prevent errors
-            if (/** @type {any} */ ($w('#groupDefendantLink')).id && !$w('#groupDefendantLink').collapsed) {
-                console.log(" Hiding Defendant Link (User is Indemnitor)");
-                safeCollapse('#groupDefendantLink');
-            }
-        });
-    });
-
-    // 2. Submit Logic (If they ARE the Defendant)
-    safeOnClick('#btnSubmitLink', async () => {
-        const caseNum = safeGetValue('#inputLinkCaseNumber')?.trim();
-        const indemName = safeGetValue('#inputLinkIndemnitorName')?.trim();
-
-        if (!caseNum && !indemName) {
-            showError("Please enter either a Case Number OR Indemnitor's Last Name.");
-            return;
-        }
-
-        safeSetText('#btnSubmitLink', 'Searching...');
-        safeDisable('#btnSubmitLink');
-
-        try {
-            const result = await linkDefendantToCase(caseNum, indemName);
-
-            if (result.success && result.sessionToken) {
-                showSuccess(result.message);
-                await setSessionToken(result.sessionToken);
-                // Redirect to Defendant Portal with new token
-                wixLocation.to(`/portal-defendant?st=${encodeURIComponent(result.sessionToken)}&autoPaperwork=1`);
-            } else {
-                showError(result.message || 'Could not find case. Check details.');
-                safeSetText('#btnSubmitLink', 'Find My Paperwork');
-                safeEnable('#btnSubmitLink');
-            }
-        } catch (e) {
-            console.error(e);
-            showError("System Error.");
-            safeEnable('#btnSubmitLink');
-        }
-    });
-}
-
-function safeCollapse(selector) { try { if ($w(selector).valid) $w(selector).collapse(); } catch (e) { } }

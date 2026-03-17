@@ -633,6 +633,9 @@ const W = {
       btn.innerHTML = '&#9752;&#65039; Submit Application';
       this.toast('Submission failed. Please try again or call 239-332-2245.');
       console.error('Submit error:', err);
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'shamrock-form-error', error: err.message }, '*');
+      }
     }
   },
 
@@ -681,7 +684,33 @@ const W = {
 };
 
 document.addEventListener('input', function(e) { if (e.target.matches('input,select')) e.target.classList.remove('error'); });
-document.addEventListener('DOMContentLoaded', function() { W.init(); });
+
+// Listen for prefill messages from parent Wix page
+window.addEventListener('message', function(event) {
+  try {
+    var msg = event.data;
+    if (!msg || msg.type !== 'prefill' || !msg.data) return;
+    console.log('[Wizard] Received prefill data from portal');
+    var d = msg.data;
+    // Map parent data to wizard fields (Step 2 - Indemnitor Info)
+    if (d.firstName) { var el = document.getElementById('indem-first'); if (el) el.value = d.firstName; }
+    if (d.lastName) { var el = document.getElementById('indem-last'); if (el) el.value = d.lastName; }
+    if (d.email) { var el = document.getElementById('indem-email'); if (el) el.value = d.email; }
+    if (d.phone) { var el = document.getElementById('indem-phone'); if (el) el.value = d.phone; }
+    if (d.address) { var el = document.getElementById('indem-address'); if (el) el.value = d.address; }
+    if (d.city) { var el = document.getElementById('indem-city'); if (el) el.value = d.city; }
+    if (d.state) { var el = document.getElementById('indem-state'); if (el) el.value = d.state; }
+    if (d.zip) { var el = document.getElementById('indem-zip'); if (el) el.value = d.zip; }
+  } catch(e) { console.warn('[Wizard] Prefill error:', e); }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  W.init();
+  // Notify parent that wizard is ready for prefill data
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'wizard-ready' }, '*');
+  }
+});
 </script>
 </body>
 </html>
