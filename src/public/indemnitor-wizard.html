@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Shamrock Bail Bonds — Indemnitor Application</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e17;--surface:#111827;--surface-2:#1e293b;--surface-3:#334155;
+  --text:#f8fafc;--text-2:#cbd5e1;--muted:#94a3b8;
+  --border:rgba(255,255,255,.08);--border-strong:rgba(255,255,255,.15);
+  --accent:#d4af37;--accent-2:#f5d76e;--accent-rgb:212,175,55;
+  --success:#10b981;--error:#ef4444;--warning:#f59e0b;
+  --radius:16px;--radius-sm:12px;
+  --shadow:0 20px 60px rgba(0,0,0,.5);
+  --transition:all .3s cubic-bezier(.4,0,.2,1);
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* === PROGRESS BAR === */
+.progress-bar{position:fixed;top:0;left:0;width:100%;height:4px;background:var(--surface-2);z-index:100}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:0 4px 4px 0;transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+/* === HEADER === */
+.header{padding:20px 16px 0;text-align:center}
+.header h1{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}
+.header p{font-size:13px;color:var(--muted);max-width:320px;margin:0 auto}
+
+/* === STEP INDICATOR === */
+.steps-indicator{display:flex;align-items:center;justify-content:center;padding:20px 16px;gap:0;max-width:500px;margin:0 auto}
+.step-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:var(--surface-2);color:var(--muted);border:2px solid var(--border);transition:var(--transition);flex-shrink:0;cursor:pointer}
+.step-dot.active{background:var(--accent);color:#000;border-color:var(--accent);transform:scale(1.15);box-shadow:0 0 20px rgba(var(--accent-rgb),.4)}
+.step-dot.done{background:var(--success);color:#fff;border-color:var(--success)}
+.step-line{flex:1;height:2px;background:var(--border);margin:0 -2px;transition:var(--transition)}
+.step-line.done{background:var(--success)}
+
+/* === FORM CONTAINER === */
+.form-wrap{max-width:560px;margin:0 auto;padding:0 16px 120px}
+
+/* === STEP CARDS === */
+.step{display:none;animation:fadeSlideIn .4s ease}
+.step.active{display:block}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.step-title{font-size:22px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.step-title .icon{font-size:28px}
+.step-subtitle{font-size:14px;color:var(--muted);margin-bottom:24px}
+
+/* === FORM ELEMENTS === */
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.field label .req{color:var(--accent);margin-left:2px}
+.field input,.field select,.field textarea{
+  width:100%;padding:14px 16px;font-size:16px;font-family:var(--font);
+  background:var(--surface);color:var(--text);
+  border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+  outline:none;transition:var(--transition);-webkit-appearance:none;appearance:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(var(--accent-rgb),.15)}
+.field input.error,.field select.error{border-color:var(--error);animation:shake .4s}
+.field input.valid{border-color:var(--success)}
+.field .hint{font-size:12px;color:var(--muted);margin-top:4px}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;padding-right:40px}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+.row{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:480px){.row-2{grid-template-columns:1fr 1fr}.row-3{grid-template-columns:1fr 1fr 1fr}}
+
+/* === TOGGLE === */
+.toggle-wrap{display:flex;align-items:center;gap:12px;padding:16px;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);margin-bottom:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.toggle-wrap span{font-size:15px;font-weight:500;flex:1}
+.toggle{width:52px;height:28px;background:var(--surface-3);border-radius:14px;position:relative;transition:var(--transition);flex-shrink:0}
+.toggle::after{content:'';width:22px;height:22px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:var(--transition);box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.toggle.on{background:var(--success)}
+.toggle.on::after{transform:translateX(24px)}
+.conditional{overflow:hidden;max-height:0;opacity:0;transition:max-height .4s ease,opacity .3s ease,margin .3s ease;margin-top:0}
+.conditional.show{max-height:2000px;opacity:1;margin-top:16px}
+
+/* === FILE UPLOAD === */
+.upload-zone{border:2px dashed var(--border-strong);border-radius:var(--radius-sm);padding:24px 16px;text-align:center;cursor:pointer;transition:var(--transition);background:var(--surface);position:relative;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
+.upload-zone:active,.upload-zone.dragover{border-color:var(--accent);background:rgba(var(--accent-rgb),.05)}
+.upload-zone.has-file{border-color:var(--success);border-style:solid}
+.upload-zone .upload-icon{font-size:32px;opacity:.7}
+.upload-zone .upload-label{font-size:14px;font-weight:600;color:var(--text)}
+.upload-zone .upload-hint{font-size:12px;color:var(--muted)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-preview{max-width:100%;max-height:120px;border-radius:8px;margin-top:8px;object-fit:contain}
+.upload-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+@media(max-width:400px){.upload-row{grid-template-columns:1fr}}
+
+/* === NAV BUTTONS === */
+.nav-bar{position:fixed;bottom:0;left:0;right:0;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:rgba(10,14,23,.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;gap:12px;z-index:50;max-width:560px;margin:0 auto}
+.btn{flex:1;padding:16px;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:16px;font-weight:600;cursor:pointer;transition:var(--transition);min-height:52px;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
+.btn-back{background:var(--surface-2);color:var(--text)}
+.btn-next{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#000}
+.btn-next:active{transform:scale(.97)}
+.btn-submit{background:linear-gradient(135deg,var(--success),#34d399);color:#fff;font-size:17px}
+.btn-submit:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;pointer-events:none}
+
+/* === REVIEW STEP === */
+.review-section{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);margin-bottom:12px;overflow:hidden}
+.review-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.review-header h4{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.review-edit{font-size:13px;color:var(--accent);font-weight:600;padding:4px 12px;border:1px solid var(--accent);border-radius:20px;background:transparent;cursor:pointer}
+.review-body{padding:0 16px 14px}
+.review-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px}
+.review-row:last-child{border:none}
+.review-label{color:var(--muted);flex-shrink:0;margin-right:12px}
+.review-value{color:var(--text);text-align:right;word-break:break-word}
+
+.consent-box{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.consent-box input[type=checkbox]{width:22px;height:22px;flex-shrink:0;margin-top:2px;accent-color:var(--accent)}
+.consent-box label{font-size:14px;color:var(--text-2);cursor:pointer;line-height:1.4}
+
+/* === SUCCESS OVERLAY === */
+.success-overlay{position:fixed;inset:0;background:var(--bg);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column;padding:40px;text-align:center}
+.success-overlay.show{display:flex}
+.success-check{width:80px;height:80px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:24px;animation:popIn .5s ease}
+@keyframes popIn{0%{transform:scale(0)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+.success-overlay h2{font-size:24px;margin-bottom:8px}
+.success-overlay p{color:var(--muted);font-size:15px;max-width:320px}
+
+/* === TOAST === */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--surface-2);color:var(--text);padding:12px 20px;border-radius:var(--radius-sm);font-size:14px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;border:1px solid var(--border-strong)}
+.toast.show{opacity:1}
+
+/* === AUTOSAVE BADGE === */
+.autosave{position:fixed;top:12px;right:12px;font-size:11px;color:var(--muted);background:var(--surface);padding:4px 10px;border-radius:20px;border:1px solid var(--border);z-index:50;opacity:0;transition:opacity .3s}
+.autosave.show{opacity:1}
+
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div class="progress-bar"><div class="progress-fill" id="progress" style="width:14%"></div></div>
+<div class="autosave" id="autosave">&#x1f4be; Draft saved</div>
+<div class="toast" id="toast"></div>
+
+<!-- Header -->
+<div class="header">
+  <img src="https://static.wixstatic.com/media/4e4d4a_08b3d828248a43c4aa87a2a2bd891c0c~mv2.png/v1/fill/w_180,h_180,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Site-Logo%202_edited_edited_edited_edited.png" alt="Shamrock Bail Bonds" style="height:64px;width:64px;margin-bottom:8px;border-radius:50%">
+  <h1>Bail Bond Application</h1>
+  <p>Complete this form to begin the bonding process. Your information is secure and encrypted.</p>
+</div>
+
+<!-- Step Indicator -->
+<div class="steps-indicator" id="step-dots">
+  <div class="step-dot active" onclick="W.goTo(0)">1</div><div class="step-line"></div>
+  <div class="step-dot" onclick="W.goTo(1)">2</div><div class="step-line"></div>
+  <div class="step-dot" onclick="W.goTo(2)">3</div><div class="step-line"></div>
+  <div class="step-dot" onclick="W.goTo(3)">4</div><div class="step-line"></div>
+  <div class="step-dot" onclick="W.goTo(4)">5</div><div class="step-line"></div>
+  <div class="step-dot" onclick="W.goTo(5)">6</div><div class="step-line"></div>
+  <div class="step-dot" onclick="W.goTo(6)">7</div>
+</div>
+
+<div class="form-wrap">
+
+<!-- ==================== STEP 1: DEFENDANT ==================== -->
+<div class="step active" data-step="0">
+  <div class="step-title"><span class="icon">&#x1f512;</span> Who Needs Bail?</div>
+  <div class="step-subtitle">Tell us about the person in custody. Provide what you know — we'll verify the rest.</div>
+
+  <div class="row row-2">
+    <div class="field"><label>First Name <span class="req">*</span></label><input type="text" id="def-first" required autocomplete="given-name" placeholder="Defendant's first name"></div>
+    <div class="field"><label>Last Name <span class="req">*</span></label><input type="text" id="def-last" required autocomplete="family-name" placeholder="Defendant's last name"></div>
+  </div>
+  <div class="field"><label>County of Custody <span class="req">*</span></label>
+    <select id="def-county" required>
+      <option value="">Select county&#8230;</option>
+      <option>Lee</option><option>Charlotte</option><option>Collier</option><option>DeSoto</option>
+      <option>Hendry</option><option>Manatee</option><option>Sarasota</option><option>Hillsborough</option>
+      <option>Palm Beach</option><option>Broward</option><option>Miami-Dade</option><option>Other</option>
+    </select>
+  </div>
+  <div class="row row-2">
+    <div class="field"><label>Date of Birth</label><input type="date" id="def-dob"></div>
+    <div class="field"><label>Booking #</label><input type="text" id="def-booking" placeholder="If known"></div>
+  </div>
+  <div class="field"><label>Phone Number</label><input type="tel" id="def-phone" placeholder="(___) ___-____" inputmode="tel"></div>
+  <div class="field"><label>Address</label><input type="text" id="def-address" placeholder="If known"></div>
+</div>
+
+<!-- ==================== STEP 2: INDEMNITOR PERSONAL ==================== -->
+<div class="step" data-step="1">
+  <div class="step-title"><span class="icon">&#x1f464;</span> Your Information</div>
+  <div class="step-subtitle">As the indemnitor, you are financially responsible for the bond.</div>
+
+  <div class="row row-3">
+    <div class="field"><label>First Name <span class="req">*</span></label><input type="text" id="ind-first" required placeholder="Your first name"></div>
+    <div class="field"><label>Middle</label><input type="text" id="ind-middle" placeholder="Middle"></div>
+    <div class="field"><label>Last Name <span class="req">*</span></label><input type="text" id="ind-last" required placeholder="Your last name"></div>
+  </div>
+  <div class="row row-2">
+    <div class="field"><label>Relationship <span class="req">*</span></label>
+      <select id="ind-relationship" required>
+        <option value="">Select&#8230;</option><option>Self</option><option>Parent</option><option>Spouse</option>
+        <option>Child</option><option>Sibling</option><option>Friend</option><option>Attorney</option><option>Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Date of Birth <span class="req">*</span></label><input type="date" id="ind-dob" required></div>
+  </div>
+  <div class="row row-2">
+    <div class="field"><label>Cell Phone <span class="req">*</span></label><input type="tel" id="ind-phone" required inputmode="tel" placeholder="(___) ___-____"></div>
+    <div class="field"><label>Email <span class="req">*</span></label><input type="email" id="ind-email" required inputmode="email" placeholder="your@email.com"></div>
+  </div>
+  <div class="field"><label>Street Address <span class="req">*</span></label><input type="text" id="ind-street" required placeholder="123 Main St"></div>
+  <div class="row row-3">
+    <div class="field"><label>City <span class="req">*</span></label><input type="text" id="ind-city" required placeholder="City"></div>
+    <div class="field"><label>State <span class="req">*</span></label>
+      <select id="ind-state" required><option value="FL" selected>FL</option><option value="AL">AL</option><option value="GA">GA</option><option value="TX">TX</option><option value="NY">NY</option><option value="CA">CA</option><option value="Other">Other</option></select>
+    </div>
+    <div class="field"><label>Zip <span class="req">*</span></label><input type="text" id="ind-zip" required inputmode="numeric" placeholder="33901" maxlength="10"></div>
+  </div>
+</div>
+
+<!-- ==================== STEP 3: ID &amp; EMPLOYMENT ==================== -->
+<div class="step" data-step="2">
+  <div class="step-title"><span class="icon">&#x1faaa;</span> Identification &amp; Employment</div>
+  <div class="step-subtitle">Required for underwriting the bond.</div>
+
+  <div class="row row-2">
+    <div class="field"><label>Driver's License # <span class="req">*</span></label><input type="text" id="ind-dl" required placeholder="License number"></div>
+    <div class="field"><label>DL State <span class="req">*</span></label>
+      <select id="ind-dl-state" required><option value="FL" selected>FL</option><option value="AL">AL</option><option value="GA">GA</option><option value="TX">TX</option><option value="NY">NY</option><option value="CA">CA</option><option value="Other">Other</option></select>
+    </div>
+  </div>
+  <div class="field"><label>Social Security # <span class="req">*</span></label><input type="text" id="ind-ssn" required inputmode="numeric" placeholder="___-__-____" maxlength="11"></div>
+  <div style="height:8px"></div>
+  <div class="field"><label>Employer Name</label><input type="text" id="ind-employer" placeholder="Company name (if employed)"></div>
+  <div class="row row-2">
+    <div class="field"><label>Employer Phone</label><input type="tel" id="ind-emp-phone" inputmode="tel" placeholder="(___) ___-____"></div>
+    <div class="field"><label>Employer Address</label><input type="text" id="ind-emp-addr" placeholder="City, State"></div>
+  </div>
+</div>
+
+<!-- ==================== STEP 4: DOCUMENTS ==================== -->
+<div class="step" data-step="3">
+  <div class="step-title"><span class="icon">&#x1f4c4;</span> Document Uploads</div>
+  <div class="step-subtitle">Upload your ID and any supporting documents. Use your phone camera or choose a file.</div>
+
+  <label style="font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block">Driver's License / Government ID <span style="color:var(--accent)">*</span></label>
+  <div class="upload-row">
+    <div class="upload-zone" id="zone-dl-front" onclick="this.querySelector('input').click()">
+      <div class="upload-icon">&#x1f4f8;</div>
+      <div class="upload-label">Front of ID</div>
+      <div class="upload-hint">Tap to capture or upload</div>
+      <input type="file" accept="image/*" capture="environment" onchange="W.handleUpload(this,'dl-front')">
+    </div>
+    <div class="upload-zone" id="zone-dl-back" onclick="this.querySelector('input').click()">
+      <div class="upload-icon">&#x1f504;</div>
+      <div class="upload-label">Back of ID</div>
+      <div class="upload-hint">Tap to capture or upload</div>
+      <input type="file" accept="image/*" capture="environment" onchange="W.handleUpload(this,'dl-back')">
+    </div>
+  </div>
+
+  <label style="font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block">Supporting Documents <span style="color:var(--muted)">(Optional)</span></label>
+  <div class="upload-row">
+    <div class="upload-zone" id="zone-paystub" onclick="this.querySelector('input').click()">
+      <div class="upload-icon">&#x1f4b0;</div>
+      <div class="upload-label">Pay Stub</div>
+      <div class="upload-hint">Proof of income</div>
+      <input type="file" accept="image/*,.pdf" capture="environment" onchange="W.handleUpload(this,'paystub')">
+    </div>
+    <div class="upload-zone" id="zone-utility" onclick="this.querySelector('input').click()">
+      <div class="upload-icon">&#x1f3e0;</div>
+      <div class="upload-label">Utility Bill</div>
+      <div class="upload-hint">Proof of residence</div>
+      <input type="file" accept="image/*,.pdf" capture="environment" onchange="W.handleUpload(this,'utility')">
+    </div>
+  </div>
+</div>
+
+<!-- ==================== STEP 5: ASSETS &amp; HOUSEHOLD ==================== -->
+<div class="step" data-step="4">
+  <div class="step-title"><span class="icon">&#x1f3e1;</span> Assets &amp; Household</div>
+  <div class="step-subtitle">This helps us underwrite the bond faster.</div>
+
+  <label style="font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block">Vehicle Information</label>
+  <div class="row row-2" style="margin-bottom:16px">
+    <div class="field"><label>Make</label><input type="text" id="veh-make" placeholder="Toyota"></div>
+    <div class="field"><label>Model</label><input type="text" id="veh-model" placeholder="Camry"></div>
+  </div>
+  <div class="row row-2" style="margin-bottom:20px">
+    <div class="field"><label>Year</label><input type="text" id="veh-year" inputmode="numeric" placeholder="2022" maxlength="4"></div>
+    <div class="field"><label>Color</label><input type="text" id="veh-color" placeholder="Silver"></div>
+  </div>
+
+  <div class="toggle-wrap" onclick="W.toggle('homeowner')">
+    <span>&#x1f3e0; Are you a homeowner?</span>
+    <div class="toggle" id="tog-homeowner"></div>
+  </div>
+  <div class="conditional" id="cond-homeowner">
+    <div class="row row-2">
+      <div class="field"><label>Mortgage Company</label><input type="text" id="home-mortgage" placeholder="Lender name"></div>
+      <div class="field"><label>Amount Owed</label><input type="text" id="home-owed" inputmode="numeric" placeholder="$"></div>
+    </div>
+  </div>
+
+  <div class="toggle-wrap" onclick="W.toggle('married')">
+    <span>&#x1f48d; Are you married?</span>
+    <div class="toggle" id="tog-married"></div>
+  </div>
+  <div class="conditional" id="cond-married">
+    <div class="field"><label>Spouse Full Name</label><input type="text" id="sp-name" placeholder="Full name"></div>
+    <div class="row row-2">
+      <div class="field"><label>Spouse DL #</label><input type="text" id="sp-dl" placeholder="License #"></div>
+      <div class="field"><label>Spouse SSN</label><input type="text" id="sp-ssn" inputmode="numeric" placeholder="___-__-____" maxlength="11"></div>
+    </div>
+    <div class="field"><label>Spouse Employer</label><input type="text" id="sp-employer" placeholder="Company name"></div>
+    <div class="row row-2">
+      <div class="field"><label>Spouse Address</label><input type="text" id="sp-address" placeholder="If different"></div>
+      <div class="field"><label>Spouse Phone</label><input type="tel" id="sp-phone" inputmode="tel" placeholder="(___) ___-____"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== STEP 6: REFERENCES ==================== -->
+<div class="step" data-step="5">
+  <div class="step-title"><span class="icon">&#x1f4c7;</span> Personal References</div>
+  <div class="step-subtitle">Two people who can verify your identity (not living with you).</div>
+
+  <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px">
+    <div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:12px">Reference 1</div>
+    <div class="row row-2">
+      <div class="field"><label>Full Name <span class="req">*</span></label><input type="text" id="ref1-name" required placeholder="Name"></div>
+      <div class="field"><label>Relationship <span class="req">*</span></label><input type="text" id="ref1-relation" required placeholder="e.g. Friend"></div>
+    </div>
+    <div class="row row-2">
+      <div class="field"><label>Phone <span class="req">*</span></label><input type="tel" id="ref1-phone" required inputmode="tel" placeholder="(___) ___-____"></div>
+      <div class="field"><label>Address</label><input type="text" id="ref1-address" placeholder="City, State"></div>
+    </div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:16px">
+    <div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:12px">Reference 2</div>
+    <div class="row row-2">
+      <div class="field"><label>Full Name <span class="req">*</span></label><input type="text" id="ref2-name" required placeholder="Name"></div>
+      <div class="field"><label>Relationship <span class="req">*</span></label><input type="text" id="ref2-relation" required placeholder="e.g. Coworker"></div>
+    </div>
+    <div class="row row-2">
+      <div class="field"><label>Phone <span class="req">*</span></label><input type="tel" id="ref2-phone" required inputmode="tel" placeholder="(___) ___-____"></div>
+      <div class="field"><label>Address</label><input type="text" id="ref2-address" placeholder="City, State"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== STEP 7: REVIEW ==================== -->
+<div class="step" data-step="6">
+  <div class="step-title"><span class="icon">&#x2705;</span> Review &amp; Submit</div>
+  <div class="step-subtitle">Please review your information before submitting.</div>
+  <div id="review-container"></div>
+
+  <div style="margin-top:20px">
+    <div class="consent-box" onclick="this.querySelector('input').click()">
+      <input type="checkbox" id="consent-1">
+      <label for="consent-1">I certify that all information provided is true and accurate to the best of my knowledge. I understand that providing false information may result in denial of the bond application.</label>
+    </div>
+    <div class="consent-box" onclick="this.querySelector('input').click()">
+      <input type="checkbox" id="consent-2">
+      <label for="consent-2">I understand that as the indemnitor, I am financially responsible for ensuring the defendant appears at all scheduled court dates.</label>
+    </div>
+  </div>
+</div>
+
+</div><!-- /form-wrap -->
+
+<!-- Navigation -->
+<div class="nav-bar" id="nav-bar">
+  <button class="btn btn-back" id="btn-back" onclick="W.prev()" style="display:none">&larr; Back</button>
+  <button class="btn btn-next" id="btn-next" onclick="W.next()">Continue &rarr;</button>
+</div>
+
+<!-- Success -->
+<div class="success-overlay" id="success">
+  <div class="success-check">&#x2713;</div>
+  <h2>Application Submitted!</h2>
+  <p>A Shamrock agent will review your information and contact you shortly. Thank you for choosing Shamrock Bail Bonds.</p>
+  <p style="margin-top:16px;font-size:14px;color:var(--accent)">&#9752;&#65039; Fast. Frictionless. Everywhere.</p>
+</div>
+
+<script>
+const W = {
+  step: 0,
+  totalSteps: 7,
+  uploads: {},
+  toggles: { homeowner: false, married: false },
+
+  required: [
+    ['def-first','def-last','def-county'],
+    ['ind-first','ind-last','ind-relationship','ind-dob','ind-phone','ind-email','ind-street','ind-city','ind-state','ind-zip'],
+    ['ind-dl','ind-dl-state','ind-ssn'],
+    [],
+    [],
+    ['ref1-name','ref1-relation','ref1-phone','ref2-name','ref2-relation','ref2-phone'],
+    []
+  ],
+
+  init() {
+    this.loadDraft();
+    this.initPhoneMasks();
+    this.initSSNMask();
+    this.updateUI();
+    setInterval(function(){ W.saveDraft(); }, 30000);
+    document.querySelectorAll('input,select,textarea').forEach(function(el) {
+      el.addEventListener('change', function() {
+        clearTimeout(W._saveTimer);
+        W._saveTimer = setTimeout(function(){ W.saveDraft(); }, 2000);
+      });
+    });
+  },
+
+  updateUI() {
+    var dots = document.querySelectorAll('.step-dot');
+    var lines = document.querySelectorAll('.step-line');
+    var steps = document.querySelectorAll('.step');
+    var progress = document.getElementById('progress');
+    var btnBack = document.getElementById('btn-back');
+    var btnNext = document.getElementById('btn-next');
+
+    for (var i = 0; i < dots.length; i++) {
+      dots[i].classList.remove('active','done');
+      if (i < this.step) dots[i].classList.add('done');
+      if (i === this.step) dots[i].classList.add('active');
+    }
+    for (var i = 0; i < lines.length; i++) {
+      if (i < this.step) lines[i].classList.add('done');
+      else lines[i].classList.remove('done');
+    }
+    for (var i = 0; i < steps.length; i++) {
+      if (i === this.step) steps[i].classList.add('active');
+      else steps[i].classList.remove('active');
+    }
+
+    progress.style.width = ((this.step + 1) / this.totalSteps * 100) + '%';
+    btnBack.style.display = this.step === 0 ? 'none' : 'flex';
+
+    if (this.step === this.totalSteps - 1) {
+      btnNext.className = 'btn btn-submit';
+      btnNext.innerHTML = '&#9752;&#65039; Submit Application';
+      btnNext.onclick = function(){ W.submit(); };
+      this.buildReview();
+    } else {
+      btnNext.className = 'btn btn-next';
+      btnNext.innerHTML = 'Continue &rarr;';
+      btnNext.onclick = function(){ W.next(); };
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  validate(stepIdx) {
+    var ids = this.required[stepIdx];
+    var valid = true;
+    var firstError = null;
+    for (var i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      if (!el) continue;
+      var val = el.value.trim();
+      if (!val) {
+        el.classList.add('error');
+        el.classList.remove('valid');
+        if (!firstError) firstError = el;
+        valid = false;
+      } else {
+        el.classList.remove('error');
+        el.classList.add('valid');
+      }
+    }
+    if (stepIdx === 3 && !this.uploads['dl-front']) {
+      document.getElementById('zone-dl-front').style.borderColor = 'var(--error)';
+      this.toast('Please upload the front of your ID');
+      valid = false;
+    }
+    if (stepIdx === 6) {
+      if (!document.getElementById('consent-1').checked || !document.getElementById('consent-2').checked) {
+        this.toast('Please agree to both statements');
+        valid = false;
+      }
+    }
+    if (!valid && firstError) {
+      firstError.focus();
+      this.toast('Please fill in all required fields');
+    }
+    return valid;
+  },
+
+  next() { if (this.validate(this.step) && this.step < this.totalSteps - 1) { this.step++; this.updateUI(); this.saveDraft(); } },
+  prev() { if (this.step > 0) { this.step--; this.updateUI(); } },
+  goTo(idx) { if (idx <= this.step) { this.step = idx; this.updateUI(); } },
+
+  toggle(name) {
+    this.toggles[name] = !this.toggles[name];
+    var tog = document.getElementById('tog-' + name);
+    var cond = document.getElementById('cond-' + name);
+    if (this.toggles[name]) { tog.classList.add('on'); cond.classList.add('show'); }
+    else { tog.classList.remove('on'); cond.classList.remove('show'); }
+  },
+
+  handleUpload(input, key) {
+    var file = input.files[0];
+    if (!file) return;
+    var zone = input.closest('.upload-zone');
+    var self = this;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      self.uploads[key] = { name: file.name, type: file.type, data: e.target.result.split(',')[1] };
+      zone.classList.add('has-file');
+      if (file.type.startsWith('image/')) {
+        var preview = zone.querySelector('.upload-preview');
+        if (!preview) { preview = document.createElement('img'); preview.className = 'upload-preview'; zone.appendChild(preview); }
+        preview.src = e.target.result;
+      }
+      zone.querySelector('.upload-label').textContent = file.name.substring(0, 20);
+      zone.querySelector('.upload-hint').textContent = 'Uploaded';
+      zone.querySelector('.upload-hint').style.color = 'var(--success)';
+      zone.style.borderColor = '';
+    };
+    reader.readAsDataURL(file);
+  },
+
+  initPhoneMasks() {
+    document.querySelectorAll('input[type=tel]').forEach(function(el) {
+      el.addEventListener('input', function() {
+        var v = this.value.replace(/\D/g, '').substring(0, 10);
+        if (v.length >= 6) v = '(' + v.substring(0,3) + ') ' + v.substring(3,6) + '-' + v.substring(6);
+        else if (v.length >= 3) v = '(' + v.substring(0,3) + ') ' + v.substring(3);
+        this.value = v;
+      });
+    });
+  },
+
+  initSSNMask() {
+    ['ind-ssn','sp-ssn'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function() {
+        var v = this.value.replace(/\D/g, '').substring(0, 9);
+        if (v.length >= 5) v = v.substring(0,3) + '-' + v.substring(3,5) + '-' + v.substring(5);
+        else if (v.length >= 3) v = v.substring(0,3) + '-' + v.substring(3);
+        this.value = v;
+      });
+    });
+  },
+
+  val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; },
+
+  collectData() {
+    return {
+      defendant: {
+        firstName: this.val('def-first'), lastName: this.val('def-last'), county: this.val('def-county'),
+        dob: this.val('def-dob'), phone: this.val('def-phone'), address: this.val('def-address'), bookingNumber: this.val('def-booking')
+      },
+      indemnitor: {
+        firstName: this.val('ind-first'), middleName: this.val('ind-middle'), lastName: this.val('ind-last'),
+        relationship: this.val('ind-relationship'), dob: this.val('ind-dob'), phone: this.val('ind-phone'),
+        email: this.val('ind-email'), street: this.val('ind-street'), city: this.val('ind-city'),
+        state: this.val('ind-state'), zip: this.val('ind-zip'),
+        dl: this.val('ind-dl'), dlState: this.val('ind-dl-state'), ssn: this.val('ind-ssn'),
+        employer: this.val('ind-employer'), employerPhone: this.val('ind-emp-phone'), employerAddress: this.val('ind-emp-addr')
+      },
+      vehicle: { make: this.val('veh-make'), model: this.val('veh-model'), year: this.val('veh-year'), color: this.val('veh-color') },
+      homeowner: this.toggles.homeowner ? { isHomeowner: true, mortgageCo: this.val('home-mortgage'), amountOwed: this.val('home-owed') } : { isHomeowner: false },
+      spouse: this.toggles.married ? {
+        isMarried: true, name: this.val('sp-name'), dl: this.val('sp-dl'), ssn: this.val('sp-ssn'),
+        employer: this.val('sp-employer'), address: this.val('sp-address'), phone: this.val('sp-phone')
+      } : { isMarried: false },
+      references: [
+        { name: this.val('ref1-name'), relation: this.val('ref1-relation'), phone: this.val('ref1-phone'), address: this.val('ref1-address') },
+        { name: this.val('ref2-name'), relation: this.val('ref2-relation'), phone: this.val('ref2-phone'), address: this.val('ref2-address') }
+      ],
+      documents: {},
+      meta: { submittedAt: new Date().toISOString(), source: 'indemnitor-wizard', userAgent: navigator.userAgent }
+    };
+  },
+
+  buildReview() {
+    var d = this.collectData();
+    var html = '';
+    function sec(icon, title, stepIdx, rows) {
+      var body = '';
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i][1]) body += '<div class="review-row"><span class="review-label">' + rows[i][0] + '</span><span class="review-value">' + rows[i][1] + '</span></div>';
+      }
+      if (!body) return '';
+      return '<div class="review-section"><div class="review-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'"><h4>' + icon + ' ' + title + '</h4><button class="review-edit" onclick="event.stopPropagation();W.goTo(' + stepIdx + ')">Edit</button></div><div class="review-body">' + body + '</div></div>';
+    }
+    html += sec('&#x1f512;','Defendant',0,[['Name',d.defendant.firstName+' '+d.defendant.lastName],['County',d.defendant.county],['DOB',d.defendant.dob],['Phone',d.defendant.phone],['Address',d.defendant.address],['Booking #',d.defendant.bookingNumber]]);
+    html += sec('&#x1f464;','Indemnitor',1,[['Name',[d.indemnitor.firstName,d.indemnitor.middleName,d.indemnitor.lastName].filter(Boolean).join(' ')],['Relationship',d.indemnitor.relationship],['DOB',d.indemnitor.dob],['Phone',d.indemnitor.phone],['Email',d.indemnitor.email],['Address',[d.indemnitor.street,d.indemnitor.city,d.indemnitor.state,d.indemnitor.zip].filter(Boolean).join(', ')]]);
+    html += sec('&#x1faaa;','ID &amp; Employment',2,[['DL',d.indemnitor.dl ? d.indemnitor.dl+' ('+d.indemnitor.dlState+')' : ''],['SSN',d.indemnitor.ssn ? '***-**-'+d.indemnitor.ssn.slice(-4) : ''],['Employer',d.indemnitor.employer],['Emp. Phone',d.indemnitor.employerPhone]]);
+    var docNames = Object.keys(this.uploads).map(function(k){ return W.uploads[k].name; }).join(', ');
+    html += sec('&#x1f4c4;','Documents',3,[['Uploaded',docNames || 'None']]);
+    html += sec('&#x1f3e1;','Assets',4,[['Vehicle',[d.vehicle.year,d.vehicle.make,d.vehicle.model,d.vehicle.color].filter(Boolean).join(' ')],['Homeowner',d.homeowner.isHomeowner ? 'Yes'+( d.homeowner.mortgageCo? ' - '+d.homeowner.mortgageCo : '') : 'No'],['Married',d.spouse.isMarried ? 'Yes - '+d.spouse.name : 'No']]);
+    if (d.spouse.isMarried) html += sec('&#x1f48d;','Spouse',4,[['Name',d.spouse.name],['DL',d.spouse.dl],['Employer',d.spouse.employer],['Phone',d.spouse.phone]]);
+    html += sec('&#x1f4c7;','References',5,[['Ref 1',d.references[0].name+' ('+d.references[0].relation+') '+d.references[0].phone],['Ref 2',d.references[1].name+' ('+d.references[1].relation+') '+d.references[1].phone]]);
+    document.getElementById('review-container').innerHTML = html;
+  },
+
+  submit: async function() {
+    if (!this.validate(6)) return;
+    var btn = document.getElementById('btn-next');
+    btn.disabled = true;
+    btn.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block">&#x2699;&#65039;</span> Submitting...';
+
+    var data = this.collectData();
+    data.uploadData = {};
+    for (var key in this.uploads) { data.uploadData[key] = this.uploads[key]; }
+
+    try {
+      var GAS_URL = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
+      await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'submitIndemnitorForm', payload: data }),
+        mode: 'no-cors'
+      });
+      this.clearDraft();
+      document.getElementById('success').classList.add('show');
+      document.getElementById('nav-bar').style.display = 'none';
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'shamrock-form-submitted', data: data }, '*');
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = '&#9752;&#65039; Submit Application';
+      this.toast('Submission failed. Please try again or call 239-332-2245.');
+      console.error('Submit error:', err);
+    }
+  },
+
+  saveDraft() {
+    try {
+      var fields = {};
+      document.querySelectorAll('input:not([type=file]):not([type=checkbox]),select,textarea').forEach(function(el) { if (el.id) fields[el.id] = el.value; });
+      fields._toggles = this.toggles;
+      fields._step = this.step;
+      localStorage.setItem('shamrock-indemnitor-draft', JSON.stringify(fields));
+      var badge = document.getElementById('autosave');
+      badge.classList.add('show');
+      setTimeout(function(){ badge.classList.remove('show'); }, 2000);
+    } catch(e) {}
+  },
+
+  loadDraft() {
+    try {
+      var raw = localStorage.getItem('shamrock-indemnitor-draft');
+      if (!raw) return;
+      var fields = JSON.parse(raw);
+      var keys = Object.keys(fields);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (k.startsWith('_')) continue;
+        var el = document.getElementById(k);
+        if (el) el.value = fields[k];
+      }
+      if (fields._toggles) {
+        var tkeys = Object.keys(fields._toggles);
+        for (var i = 0; i < tkeys.length; i++) { if (fields._toggles[tkeys[i]]) this.toggle(tkeys[i]); }
+      }
+      if (fields._step && fields._step > 0) { this.step = fields._step; }
+    } catch(e) {}
+  },
+
+  clearDraft() { try { localStorage.removeItem('shamrock-indemnitor-draft'); } catch(e) {} },
+
+  toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 3000);
+  }
+};
+
+document.addEventListener('input', function(e) { if (e.target.matches('input,select')) e.target.classList.remove('error'); });
+document.addEventListener('DOMContentLoaded', function() { W.init(); });
+</script>
+</body>
+</html>
