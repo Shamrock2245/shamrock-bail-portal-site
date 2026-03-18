@@ -655,18 +655,28 @@ var W = {
     btn.innerHTML = 'Submitting...';
     try {
       var data = this.collectData();
-      await fetch('https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'submitDefendantApplication', payload: data }),
-        mode: 'no-cors'
-      });
+      if (window.parent !== window) {
+        // PRIMARY PATH: Use postMessage bridge — goes through Wix page with API key
+        // Parent (portal-defendant.skg9y.js) handles the GAS call via callGasAction
+        window.parent.postMessage({
+          type: 'shamrock-defendant-submitted',
+          action: 'submitDefendantApplication',
+          payload: data
+        }, '*');
+      } else {
+        // FALLBACK: Standalone mode (e.g. direct URL access) — use production GAS URL from context
+        // The context URL is injected by parent via postMessage on load (window.GAS_URL)
+        var gasUrl = window.GAS_URL || 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
+        await fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'submitDefendantApplication', payload: data }),
+          mode: 'no-cors'
+        });
+      }
       this.clearDraft();
       document.getElementById('success').classList.add('show');
       document.getElementById('nav-bar').style.display = 'none';
-      if (window.parent !== window) {
-        window.parent.postMessage({ type: 'shamrock-defendant-submitted', data: data }, '*');
-      }
     } catch (err) {
       btn.disabled = false;
       btn.innerHTML = '☘️ Submit Application';

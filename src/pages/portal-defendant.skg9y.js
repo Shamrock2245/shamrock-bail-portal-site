@@ -594,13 +594,13 @@ function sendContextToDefendantWizard() {
 /**
  * Handle successful form submission from the defendant wizard
  */
-function handleDefendantWizardSubmission(data) {
+async function handleDefendantWizardSubmission(data) {
     console.log('[OK] Defendant wizard submission received:', data?.personal?.firstName);
 
-    // Update paperwork status on dashboard
+    // Update UI immediately (optimistic)
     try {
         if ($w('#textPaperworkStatus').type) {
-            $w('#textPaperworkStatus').text = 'Submitted - Under Review';
+            $w('#textPaperworkStatus').text = 'Submitted - Processing...';
         }
         if ($w('#textUserWelcome').type) {
             $w('#textUserWelcome').text = `Thank you, ${data?.personal?.firstName || 'Client'}! Your application has been submitted.`;
@@ -611,7 +611,30 @@ function handleDefendantWizardSubmission(data) {
 
     // Store consent info locally
     if (data?.consents && currentSession?.personId) {
-        local.setItem(`consent_${currentSession.personId}`, 'true');
+        try { local.setItem(`consent_${currentSession.personId}`, 'true'); } catch(e) {}
+    }
+
+    // Forward to GAS backend for processing (SignNow packet generation)
+    try {
+        const { callGasAction } = await import('backend/gasIntegration');
+        const result = await callGasAction('submitDefendantApplication', {
+            payload: data,
+            sessionPersonId: currentSession?.personId || '',
+            sessionEmail: currentSession?.email || ''
+        });
+        if (result && result.success) {
+            console.log('[OK] GAS submitDefendantApplication success:', result.message || '');
+            try {
+                if ($w('#textPaperworkStatus').type) {
+                    $w('#textPaperworkStatus').text = 'Submitted - Check your email for signing link';
+                }
+            } catch (e) {}
+        } else {
+            console.warn('[!] GAS submitDefendantApplication non-success:', result?.error || 'unknown');
+        }
+    } catch (gasErr) {
+        // Non-fatal — wizard already showed success screen
+        console.error('[X] GAS call failed in handleDefendantWizardSubmission (non-fatal):', gasErr.message);
     }
 }
 
