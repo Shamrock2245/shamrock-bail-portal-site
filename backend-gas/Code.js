@@ -1302,6 +1302,75 @@ function handleAction(data) {
       return { success: false, error: lookupErr.message };
     }
   }
+
+  // ─── TWO-PHASE SIGNING WORKFLOW ───
+
+  // 1e. PHASE 1 — Indemnitor wizard submits → save intake + send 6 indemnitor-facing docs
+  if (action === 'submitIndemnitorPhase1') {
+    try {
+      Logger.log('📋 Phase 1: Indemnitor submission from ' + (data.signerEmail || 'unknown'));
+      MongoLogger.logIntake(data.formData || data, 'indemnitor_phase1');
+
+      // Save the intake record first (reuse existing wizard handler)
+      var intakeResult = handleWizardFormSubmission(data.formData || data, 'indemnitor');
+
+      // Build Dashboard-format formData for SignNow prefill
+      var fd = data.formData || {};
+      var signerEmail = data.signerEmail || fd['indemnitor-1-email'] || '';
+      var signerName = data.signerName || fd['indemnitorFullName'] || '';
+
+      if (!signerEmail) {
+        return { success: false, error: 'Indemnitor email is required for Phase 1 signing.', intakeResult: intakeResult };
+      }
+
+      // Send Phase 1 packet (6 docs)
+      var phase1Result = handleSendPhase1Packet(fd, signerEmail, signerName);
+      
+      return {
+        success: phase1Result.success,
+        phase: 1,
+        intake: intakeResult,
+        signing: phase1Result,
+        message: phase1Result.success 
+          ? 'Phase 1 submitted! ' + phase1Result.message 
+          : 'Intake saved but Phase 1 signing failed: ' + (phase1Result.error || 'Unknown error')
+      };
+    } catch (p1Err) {
+      Logger.log('❌ Phase 1 error: ' + p1Err.message);
+      return { success: false, error: p1Err.message };
+    }
+  }
+
+  // 1f. PHASE 2 — Staff approves bond → POA entered → send 6 court/agent docs
+  if (action === 'staffApproveAndSendPhase2') {
+    try {
+      Logger.log('✅ Phase 2: Bond approval by ' + (data.agentName || 'unknown') + ' | POA: ' + (data.poaNumber || 'missing'));
+      MongoLogger.logActivity('staffApproveAndSendPhase2', 'staff_portal');
+
+      if (!data.poaNumber) {
+        return { success: false, error: 'POA number is required to approve and send Phase 2 documents.' };
+      }
+
+      var fd2 = data.formData || {};
+      var signerEmail2 = data.signerEmail || fd2['indemnitor-1-email'] || '';
+      var signerName2 = data.signerName || fd2['indemnitorFullName'] || '';
+
+      // Send Phase 2 packet (6 docs)
+      var phase2Result = handleSendPhase2Packet(fd2, signerEmail2, signerName2, data.poaNumber, data.agentName, data.agentLicense);
+
+      return {
+        success: phase2Result.success,
+        phase: 2,
+        signing: phase2Result,
+        message: phase2Result.success
+          ? 'Bond approved! ' + phase2Result.message
+          : 'Phase 2 failed: ' + (phase2Result.error || 'Unknown error')
+      };
+    } catch (p2Err) {
+      Logger.log('❌ Phase 2 error: ' + p2Err.message);
+      return { success: false, error: p2Err.message };
+    }
+  }
   if (action === 'fetchPendingIntakes') {
     // Wix CMS path — wrapped in try/catch so a Wix API failure never blocks
     // the Google Sheets path (which has the confirmed Telegram intake data).

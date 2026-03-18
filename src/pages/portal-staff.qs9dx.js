@@ -207,7 +207,10 @@ function updatePageSEO() {
 function setupRepeater() {
     try {
         const repeater = $w('#caseListRepeater');
-        if (!repeater) return;
+        if (!repeater || typeof repeater.onItemReady !== 'function') {
+            console.log('[Staff Portal] No repeater on page — using iframe Command Center instead');
+            return;
+        }
 
         repeater.onItemReady(($item, itemData) => {
 
@@ -355,16 +358,14 @@ function setupLogoutButton() {
     try {
         const logoutBtn = $w('#logoutBtn');
         if (logoutBtn && typeof logoutBtn.onClick === 'function') {
-            console.log('Staff Portal: Logout button found');
             logoutBtn.onClick(() => {
                 console.log('Staff Portal: Logout clicked');
                 handleLogout();
             });
-        } else {
-            console.warn('Staff Portal: Logout button (#logoutBtn) not found');
         }
+        // Logout is handled via the iframe Command Center — no Wix button needed
     } catch (e) {
-        console.warn('Staff Portal: No logout button configured');
+        // Element doesn't exist on page — expected when using iframe portal
     }
 }
 
@@ -455,7 +456,6 @@ function setupBondTrackerButton() {
                 const el = $w(id);
                 if (el && typeof el.onClick === 'function') {
                     bondBtn = el;
-                    console.log(`Staff Portal: Bond Tracker button found as ${id}`);
                     break;
                 }
             } catch (e) { /* skip */ }
@@ -464,14 +464,12 @@ function setupBondTrackerButton() {
         if (bondBtn) {
             bondBtn.label = "Open Bond Tracker";
             bondBtn.onClick(() => {
-                console.log('Opening Telegram Intake Sheet...');
                 wixLocation.to(TELEGRAM_INTAKE_URL);
             });
-        } else {
-            console.warn('Staff Portal: Bond Tracker button not found (#button13 / #btnOpenBondTracker)');
         }
+        // Bond Tracker is accessible via iframe Command Center — no Wix button needed
     } catch (e) {
-        console.warn('Staff Portal: Error setting up Bond Tracker button:', e);
+        // Element doesn't exist on page — expected
     }
 }
 
@@ -700,12 +698,18 @@ function runPremiumAnimations() {
 function updateActionableInsights(stats) {
     if (!stats) return;
 
-    // Elements
-    const msgEl = $w('#staffMessage');
-    const codeEl = $w('#accessCodeDisplay'); // Repurposing as "Alert Detail"
-    const urlEl = $w('#accessCodeUrl');      // Repurposing as "Timestamp/Sync"
+    // Elements — these may not exist on the iframe-based Command Center page
+    let msgEl, codeEl, urlEl;
+    try {
+        msgEl = $w('#staffMessage');
+        codeEl = $w('#accessCodeDisplay'); // Repurposing as "Alert Detail"
+        urlEl = $w('#accessCodeUrl');      // Repurposing as "Timestamp/Sync"
+    } catch (e) {
+        return; // Elements don't exist on this page layout
+    }
 
     if (!msgEl || !codeEl || !urlEl) return;
+    if (typeof msgEl.show !== 'function') return; // Not a showable element
 
     // Default Good State
     let statusTitle = " System Active";
@@ -797,7 +801,7 @@ function setupStartPaperworkButton() {
     try {
         const startBtn = $w('#startPaperworkBtn');
         if (!startBtn || typeof startBtn.onClick !== 'function') {
-            console.warn('Staff Portal: #startPaperworkBtn not found or not clickable');
+            // Start paperwork is handled via iframe Command Center
             return;
         }
 
@@ -1047,6 +1051,11 @@ function setupStaffPortalIframe() {
                     await handleStaffGetArrestsFeed(portal, msg.county);
                     break;
 
+                // ── Phase 2: Approve Bond & Send Court Docs ─────────────
+                case 'staff-approve-phase2':
+                    await handleStaffApprovePhase2(portal, msg);
+                    break;
+
                 // ── Save Draft to Wix ────────────────────────────────────
                 case 'staff-save-draft':
                     console.log('📋 Staff portal draft saved (local only for now)');
@@ -1157,6 +1166,50 @@ async function handleStaffGeneratePacket(portal, data) {
         console.error('Packet generation error:', e);
         portal.postMessage({ type: 'staff-packet-result', success: false, error: e.message });
         showStaffMessage('Error generating packet: ' + e.message, 'error');
+    }
+}
+
+/**
+ * Handle Phase 2 bond approval from staff portal.
+ * Calls GAS staffApproveAndSendPhase2 action (sends court/agent docs after POA entry).
+ */
+async function handleStaffApprovePhase2(portal, msg) {
+    if (!msg || !msg.poaNumber) {
+        portal.postMessage({ type: 'staff-phase2-result', success: false, error: 'POA number is required.' });
+        return;
+    }
+
+    try {
+        showStaffMessage(`Approving bond (POA: ${msg.poaNumber}) & sending Phase 2 docs...`, 'info');
+
+        const { callGasAction } = await import('backend/gasIntegration');
+        const result = await callGasAction('staffApproveAndSendPhase2', {
+            formData: msg.formData || {},
+            signerEmail: msg.signerEmail || '',
+            signerName: msg.signerName || '',
+            poaNumber: msg.poaNumber,
+            agentName: msg.agentName || '',
+            agentLicense: msg.agentLicense || ''
+        });
+
+        portal.postMessage({
+            type: 'staff-phase2-result',
+            success: result.success || false,
+            message: result.message || '',
+            signingLink: result.signing?.signingLink || '',
+            documentCount: result.signing?.documentsCount || 0,
+            poaNumber: msg.poaNumber
+        });
+
+        if (result.success) {
+            showStaffMessage(`✅ Bond approved! POA: ${msg.poaNumber} — Phase 2 docs sent`, 'success');
+        } else {
+            showStaffMessage('Phase 2 failed: ' + (result.error || result.message), 'error');
+        }
+    } catch (e) {
+        console.error('Phase 2 approval error:', e);
+        portal.postMessage({ type: 'staff-phase2-result', success: false, error: e.message });
+        showStaffMessage('Error approving bond: ' + e.message, 'error');
     }
 }
 

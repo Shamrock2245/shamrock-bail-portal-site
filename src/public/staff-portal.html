@@ -300,11 +300,30 @@ input,select,textarea,button { font-family:var(--font); }
     </div>
   </div>
 
+  <!-- BOND APPROVAL (Phase 2) -->
+  <div class="card" id="phase2-approval" style="border:2px solid var(--accent);background:rgba(212,175,55,0.05);">
+    <div class="section-label" style="color:var(--accent);">⚡ Bond Approval — Phase 2</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+      Once Phase 1 indemnitor docs are signed, enter the POA # and approve the bond to send court documents.
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>POA Number <span style="color:var(--accent)">*</span></label><input id="poa-number" placeholder="e.g. OSI3, OSI6" style="font-weight:700;font-size:16px;letter-spacing:1px;text-transform:uppercase;"></div>
+      <div class="form-group"><label>Phase 1 Status</label>
+        <div id="phase1-status" style="padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;background:var(--bg);border:1px solid var(--border);color:var(--text-muted);">
+          ⏳ Awaiting indemnitor submission
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ACTION BAR -->
   <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;">
     <button class="btn btn-secondary" onclick="SP.saveDraft()">💾 Save Draft</button>
-    <button class="btn btn-primary btn-lg" onclick="SP.generateAndSendPacket()" id="sendPacketBtn">
-      📨 Generate & Send Full Packet (12 Docs)
+    <button class="btn btn-primary btn-lg" onclick="SP.approveAndSendPhase2()" id="approvePhase2Btn" style="background:linear-gradient(135deg,var(--accent),#f5d76e);color:#000;">
+      ✅ Approve Bond & Send Phase 2 (Court Docs)
+    </button>
+    <button class="btn btn-secondary" onclick="SP.generateAndSendPacket()" id="sendPacketBtn" style="font-size:12px;">
+      📨 Send Full Packet (12 Docs) — Override
     </button>
   </div>
 </div>
@@ -576,6 +595,50 @@ var SP = {
     // Response handled in window message listener → 'staff-packet-result'
   },
 
+  // ─── PHASE 2: APPROVE BOND & SEND COURT DOCS via postMessage ───
+  approveAndSendPhase2: function() {
+    var data = SP.collectFormData();
+    var poaNumber = (document.getElementById('poa-number').value || '').trim().toUpperCase();
+
+    if (!poaNumber) {
+      SP.toast('⚠️ POA Number is required to approve the bond.');
+      document.getElementById('poa-number').focus();
+      return;
+    }
+    if (!data['defendant-first-name'] || !data['defendant-last-name']) {
+      SP.toast('⚠️ Defendant name is required.');
+      return;
+    }
+    if (!data['indemnitor-1-email']) {
+      SP.toast('⚠️ Indemnitor email is required for signing link.');
+      return;
+    }
+
+    var agentSelect = document.getElementById('agent-name');
+    var agentName = agentSelect.value || '';
+    var agentLicense = document.getElementById('agent-license').value || '';
+
+    if (!agentName) {
+      SP.toast('⚠️ Please select an agent.');
+      return;
+    }
+
+    var btn = document.getElementById('approvePhase2Btn');
+    btn.innerHTML = '<span class="spinner"></span> Approving & Sending Phase 2...';
+    btn.disabled = true;
+
+    SP.sendToParent({
+      type: 'staff-approve-phase2',
+      formData: data,
+      poaNumber: poaNumber,
+      agentName: agentName,
+      agentLicense: agentLicense,
+      signerEmail: data['indemnitor-1-email'],
+      signerName: (data['indemnitor-1-first'] + ' ' + data['indemnitor-1-last']).trim()
+    });
+    // Response handled in window message listener → 'staff-phase2-result'
+  },
+
   // ─── LOAD CASES via postMessage ───
   loadCases: function() {
     var tbody = document.getElementById('casesTableBody');
@@ -584,6 +647,15 @@ var SP = {
       type: 'staff-get-active-cases',
       county: document.getElementById('caseCountyFilter').value || ''
     });
+    // Timeout: if no response in 15s, show retry
+    if (SP._casesTimeout) clearTimeout(SP._casesTimeout);
+    SP._casesTimeout = setTimeout(function() {
+      var current = tbody.innerHTML;
+      if (current.indexOf('Loading') > -1 || current.indexOf('spinner') > -1) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">' +
+          'Failed to load. Check GAS connection.<br><button class="btn btn-sm btn-secondary" style="margin-top:10px" onclick="SP.loadCases()">🔄 Retry</button></td></tr>';
+      }
+    }, 15000);
     // Response handled in window message listener → 'staff-active-cases-result'
   },
 
@@ -796,12 +868,29 @@ window.addEventListener('message', function(event) {
 
     // ── Active cases result ──
     case 'staff-active-cases-result':
+      if (SP._casesTimeout) clearTimeout(SP._casesTimeout);
       SP.renderActiveCases(msg.cases || []);
       break;
 
     // ── Arrests feed result ──
     case 'staff-arrests-feed-result':
       SP.renderArrestsFeed(msg.arrests || []);
+      break;
+
+    // ── Phase 2 approval result ──
+    case 'staff-phase2-result':
+      var p2Btn = document.getElementById('approvePhase2Btn');
+      p2Btn.disabled = false;
+      if (msg.success) {
+        p2Btn.innerHTML = '✅ Phase 2 Sent!';
+        p2Btn.style.background = 'var(--success)';
+        document.getElementById('phase1-status').innerHTML = '✅ Phase 2 approved & sent — ' + (msg.message || '');
+        document.getElementById('phase1-status').style.color = 'var(--success)';
+        SP.toast('✅ Bond approved! Phase 2 documents sent for signing.');
+      } else {
+        p2Btn.innerHTML = '✅ Approve Bond & Send Phase 2 (Court Docs)';
+        SP.toast('❌ Phase 2 failed: ' + (msg.error || 'Unknown error'));
+      }
       break;
 
     default:

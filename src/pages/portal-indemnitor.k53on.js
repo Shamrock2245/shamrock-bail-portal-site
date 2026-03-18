@@ -220,6 +220,11 @@ function setupWizardListener() {
                     sendContextToWizard();
                     break;
 
+                case 'indemnitor-submit-phase1':
+                    console.log('[OK] Phase 1 submission received from wizard');
+                    handlePhase1Submission(msg);
+                    break;
+
                 default:
                     break;
             }
@@ -252,6 +257,51 @@ function handleWizardSubmission(data) {
         console.log(" Redirecting to payments page ->");
         wixLocation.to('/payments');
     }, 10000);
+}
+
+/**
+ * Handle Phase 1 indemnitor submission — send formData to GAS for intake + Phase 1 signing
+ */
+async function handlePhase1Submission(msg) {
+    try {
+        console.log('[Phase1] Sending to GAS: submitIndemnitorPhase1');
+        const result = await callGasAction('submitIndemnitorPhase1', {
+            formData: msg.formData,
+            signerEmail: msg.signerEmail,
+            signerName: msg.signerName
+        });
+
+        console.log('[Phase1] GAS response:', JSON.stringify(result));
+
+        if (result && result.success) {
+            // Show success state
+            safeHide('#indemnitorWizard');
+            safeShow('#groupSuccess');
+
+            const successMsg = `☘️ Phase 1 Complete!\n\n` +
+                `We've sent ${result.signing?.documentsCount || 6} documents to ${msg.signerEmail} for signing.\n\n` +
+                `📋 Next Steps:\n` +
+                `1. Check your email for the SignNow signing link\n` +
+                `2. Review and sign the initial paperwork\n` +
+                `3. Our bondsman will review your application\n` +
+                `4. Once approved, you'll receive the remaining documents\n\n` +
+                `Redirecting to our secure payment portal...`;
+
+            safeSetText('#textSuccessMessage', successMsg);
+            wixWindow.scrollTo(0, 0);
+
+            setTimeout(() => {
+                console.log(" Redirecting to payments page ->");
+                wixLocation.to('/payments');
+            }, 10000);
+        } else {
+            console.error('[Phase1] GAS returned error:', result?.error || result?.message);
+            showError('There was an issue submitting your application. Our team has been notified. Please call (239) 332-2245.');
+        }
+    } catch (error) {
+        console.error('[Phase1] Error:', error);
+        showError('Submission failed. Please try again or call (239) 332-2245.');
+    }
 }
 
 // ============================================================================

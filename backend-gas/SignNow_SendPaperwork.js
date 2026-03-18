@@ -47,6 +47,30 @@ const SHANNON_TEMPLATE_ORDER = [
     'payment-plan'           // 12. Only if payment plan is used
 ];
 
+// ============================================================================
+// TWO-PHASE SIGNING — Document Split
+// ============================================================================
+// Phase 1: Indemnitor signs immediately (no POA needed)
+// Phase 2: After bondsman approval + POA entry (court-filed docs)
+// ============================================================================
+const PHASE_1_DOCS = [
+    'paperwork-header',      // Header with names, case number, date
+    'faq-cosigners',         // FAQ for co-signers (initials)
+    'indemnity-agreement',   // Indemnitor fills out and signs
+    'promissory-note',       // Signatures by all parties
+    'disclosure-form',       // Signatures by all parties
+    'ssa-release'            // SSA release per person
+];
+
+const PHASE_2_DOCS = [
+    'faq-defendants',        // FAQ for defendants (initials)
+    'defendant-application', // App for Appearance Bond (needs POA)
+    'surety-terms',          // Surety Terms & Conditions
+    'master-waiver',         // Master waiver
+    'collateral-receipt',    // Premium/collateral receipt (final amounts)
+    'payment-plan'           // Payment plan (if applicable)
+];
+
 // NOTE: SHANNON_SIG_FIELDS removed (2026-03-13).
 // Signature/initials fields are pre-tagged on templates in SignNow.
 // Field definitions live in getSignatureFieldDefs() in Telegram_Documents.js.
@@ -213,6 +237,219 @@ function handleShannonSendPaperwork(data) {
     }
 }
 
+
+// ============================================================================
+// PHASE 1 HANDLER — Indemnitor Wizard Submission
+// ============================================================================
+/**
+ * Sends Phase 1 documents (indemnitor-facing) for immediate signing.
+ * Called when indemnitor submits the wizard.
+ *
+ * @param {object} formData - Dashboard-format form data
+ * @param {string} signerEmail - Email to send signing invite to
+ * @param {string} signerName - Full name of the signer
+ * @returns {object} { success, signingLink, entityId, documentsCount }
+ */
+function handleSendPhase1Packet(formData, signerEmail, signerName) {
+    try {
+        SN_log('Phase1_Start', { signerEmail, signerName, docCount: PHASE_1_DOCS.length });
+        
+        if (!signerEmail || !signerName) {
+            return { success: false, error: 'Signer email and name are required for Phase 1.' };
+        }
+        
+        const config = SN_getConfig();
+        const caseLabel = (formData['defendant-last-name'] || formData['case-number'] || 'Unknown').replace(/[^a-zA-Z0-9]/g, '_');
+        const uploadedDocs = [];
+        
+        for (const templateKey of PHASE_1_DOCS) {
+            const templateId = SIGNNOW_TEMPLATE_MAP[templateKey];
+            if (!templateId) { SN_log('Phase1_NoTemplate', templateKey); continue; }
+            
+            try {
+                const copyUrl = `${config.API_BASE}/template/${templateId}/copy`;
+                const copyRes = fetchWithRetry(copyUrl, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + config.ACCESS_TOKEN, 'Content-Type': 'application/json' },
+                    payload: JSON.stringify({ document_name: `Shamrock_${caseLabel}_Phase1_${templateKey}` }),
+                    muteHttpExceptions: true
+                });
+                const copyJson = JSON.parse(copyRes.getContentText());
+                if (!copyJson.id) { SN_log('Phase1_CopyFail', { templateKey, res: JSON.stringify(copyJson).substring(0, 200) }); continue; }
+                
+                var prefillResult = prefillDocument_(copyJson.id, formData, templateKey, -1);
+                SN_log('Phase1_Prefilled', { templateKey, documentId: copyJson.id, ok: prefillResult.success });
+                
+                uploadedDocs.push({ key: templateKey, documentId: copyJson.id, fileName: `Shamrock_${caseLabel}_Phase1_${templateKey}` });
+            } catch (e) {
+                SN_log('Phase1_CopyErr', { templateKey, err: e.toString() });
+            }
+            Utilities.sleep(300);
+        }
+        
+        if (uploadedDocs.length === 0) {
+            return { success: false, error: 'Failed to copy any Phase 1 templates.' };
+        }
+        SN_log('Phase1_CopiedAll', { count: uploadedDocs.length });
+        
+        // Group + Invite
+        let groupId = null;
+        if (uploadedDocs.length > 1) {
+            groupId = _shannon_createDocGroup(config, uploadedDocs, formData['defendantFullName'] || 'Defendant');
+        }
+        const entityId = groupId || uploadedDocs[0].documentId;
+        const entityType = groupId ? 'group' : 'document';
+        
+        const inviteData = {
+            caller_name: signerName,
+            caller_email: signerEmail,
+            defendant_name: formData['defendantFullName'] || '',
+            county: formData['defendant-county'] || formData['county'] || ''
+        };
+        const inviteResult = _shannon_sendInvite(config, entityId, entityType, inviteData, uploadedDocs);
+        
+        // Signing link
+        let signingLink = null;
+        try { signingLink = _shannon_createSigningLink(config, entityId, entityType); } catch (e) { SN_log('Phase1_LinkErr', e.toString()); }
+        
+        // Slack notification
+        _shannon_notifySlack(
+            `📋 *Phase 1 Signing Sent* (${uploadedDocs.length} docs) to *${signerName}* (${signerEmail})\n` +
+            `👤 Defendant: *${formData['defendantFullName'] || 'Unknown'}* | 📍 County: *${inviteData.county || 'Unknown'}*\n` +
+            `⏳ Awaiting bondsman review for Phase 2.`
+        );
+        
+        SN_log('Phase1_Complete', { entityId, docCount: uploadedDocs.length, inviteOk: inviteResult.success });
+        
+        return {
+            success: true,
+            entityId: entityId,
+            documentsCount: uploadedDocs.length,
+            signingLink: signingLink,
+            message: `Phase 1 paperwork (${uploadedDocs.length} documents) sent to ${signerEmail} for signing.`
+        };
+        
+    } catch (error) {
+        SN_log('Phase1_Error', error.toString());
+        return { success: false, error: 'Phase 1 packet generation failed: ' + error.toString() };
+    }
+}
+
+
+// ============================================================================
+// PHASE 2 HANDLER — Staff Portal Approval
+// ============================================================================
+/**
+ * Sends Phase 2 documents (court-filed, agent docs) after bondsman approval.
+ * Requires POA number and agent info.
+ *
+ * @param {object} formData - Dashboard-format form data (must include POA, agent info)
+ * @param {string} signerEmail - Email to send signing invite to
+ * @param {string} signerName - Full name of the signer
+ * @param {string} poaNumber - Power of Attorney number (e.g. 'OSI3', 'OSI6')
+ * @param {string} agentName - Approving agent's name
+ * @param {string} agentLicense - Agent's license number
+ * @returns {object} { success, signingLink, entityId, documentsCount }
+ */
+function handleSendPhase2Packet(formData, signerEmail, signerName, poaNumber, agentName, agentLicense) {
+    try {
+        SN_log('Phase2_Start', { signerEmail, poaNumber, agentName, docCount: PHASE_2_DOCS.length });
+        
+        if (!poaNumber) {
+            return { success: false, error: 'POA number is required for Phase 2 approval.' };
+        }
+        if (!signerEmail || !signerName) {
+            return { success: false, error: 'Signer email and name are required for Phase 2.' };
+        }
+        
+        // Inject agent/POA fields into formData for prefill
+        formData['poa-number'] = poaNumber;
+        formData['agent-name'] = agentName || '';
+        formData['agent-license'] = agentLicense || '';
+        
+        const config = SN_getConfig();
+        const caseLabel = (formData['defendant-last-name'] || formData['case-number'] || 'Unknown').replace(/[^a-zA-Z0-9]/g, '_');
+        const uploadedDocs = [];
+        
+        for (const templateKey of PHASE_2_DOCS) {
+            const templateId = SIGNNOW_TEMPLATE_MAP[templateKey];
+            if (!templateId) { SN_log('Phase2_NoTemplate', templateKey); continue; }
+            
+            // Skip payment-plan if no payment plan indicated
+            if (templateKey === 'payment-plan' && !formData['hasPaymentPlan'] && !formData['payment-plan-amount']) {
+                SN_log('Phase2_SkipPaymentPlan', 'No payment plan data');
+                continue;
+            }
+            
+            try {
+                const copyUrl = `${config.API_BASE}/template/${templateId}/copy`;
+                const copyRes = fetchWithRetry(copyUrl, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + config.ACCESS_TOKEN, 'Content-Type': 'application/json' },
+                    payload: JSON.stringify({ document_name: `Shamrock_${caseLabel}_Phase2_${templateKey}` }),
+                    muteHttpExceptions: true
+                });
+                const copyJson = JSON.parse(copyRes.getContentText());
+                if (!copyJson.id) { SN_log('Phase2_CopyFail', { templateKey, res: JSON.stringify(copyJson).substring(0, 200) }); continue; }
+                
+                var prefillResult = prefillDocument_(copyJson.id, formData, templateKey, -1);
+                SN_log('Phase2_Prefilled', { templateKey, documentId: copyJson.id, ok: prefillResult.success });
+                
+                uploadedDocs.push({ key: templateKey, documentId: copyJson.id, fileName: `Shamrock_${caseLabel}_Phase2_${templateKey}` });
+            } catch (e) {
+                SN_log('Phase2_CopyErr', { templateKey, err: e.toString() });
+            }
+            Utilities.sleep(300);
+        }
+        
+        if (uploadedDocs.length === 0) {
+            return { success: false, error: 'Failed to copy any Phase 2 templates.' };
+        }
+        SN_log('Phase2_CopiedAll', { count: uploadedDocs.length });
+        
+        // Group + Invite
+        let groupId = null;
+        if (uploadedDocs.length > 1) {
+            groupId = _shannon_createDocGroup(config, uploadedDocs, formData['defendantFullName'] || 'Defendant');
+        }
+        const entityId = groupId || uploadedDocs[0].documentId;
+        const entityType = groupId ? 'group' : 'document';
+        
+        const inviteData = {
+            caller_name: signerName,
+            caller_email: signerEmail,
+            defendant_name: formData['defendantFullName'] || '',
+            county: formData['defendant-county'] || formData['county'] || ''
+        };
+        const inviteResult = _shannon_sendInvite(config, entityId, entityType, inviteData, uploadedDocs);
+        
+        // Signing link
+        let signingLink = null;
+        try { signingLink = _shannon_createSigningLink(config, entityId, entityType); } catch (e) { SN_log('Phase2_LinkErr', e.toString()); }
+        
+        // Slack notification
+        _shannon_notifySlack(
+            `✅ *Bond Approved — Phase 2 Sent* (${uploadedDocs.length} docs) to *${signerName}* (${signerEmail})\n` +
+            `👤 Defendant: *${formData['defendantFullName'] || 'Unknown'}* | 📍 County: *${inviteData.county || 'Unknown'}*\n` +
+            `🔑 POA: *${poaNumber}* | 👨‍💼 Agent: *${agentName}* (${agentLicense})`
+        );
+        
+        SN_log('Phase2_Complete', { entityId, poaNumber, docCount: uploadedDocs.length, inviteOk: inviteResult.success });
+        
+        return {
+            success: true,
+            entityId: entityId,
+            documentsCount: uploadedDocs.length,
+            signingLink: signingLink,
+            poaNumber: poaNumber,
+            message: `Phase 2 approved! ${uploadedDocs.length} court documents sent to ${signerEmail} for signing. POA: ${poaNumber}.`
+        };
+        
+    } catch (error) {
+        SN_log('Phase2_Error', error.toString());
+        return { success: false, error: 'Phase 2 packet generation failed: ' + error.toString() };
+    }
+}
 
 // ============================================================================
 // HELPER FUNCTIONS

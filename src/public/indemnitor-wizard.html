@@ -614,20 +614,60 @@ const W = {
     data.uploadData = {};
     for (var key in this.uploads) { data.uploadData[key] = this.uploads[key]; }
 
+    // Build Dashboard-format formData for SignNow prefill compatibility
+    var formData = {
+      'defendant-first-name': data.defendant.firstName,
+      'defendant-middle-name': '',
+      'defendant-last-name': data.defendant.lastName,
+      'defendantFullName': (data.defendant.firstName + ' ' + data.defendant.lastName).trim(),
+      'defendant-dob': data.defendant.dob || '',
+      'defendant-phone': data.defendant.phone || '',
+      'defendant-street-address': data.defendant.address || '',
+      'defendant-county': data.defendant.county || '',
+      'defendant-booking-number': data.defendant.bookingNumber || '',
+      'indemnitor-1-first': data.indemnitor.firstName,
+      'indemnitor-1-last': data.indemnitor.lastName,
+      'indemnitorFullName': [data.indemnitor.firstName, data.indemnitor.middleName, data.indemnitor.lastName].filter(Boolean).join(' '),
+      'indemnitorName': [data.indemnitor.firstName, data.indemnitor.lastName].filter(Boolean).join(' '),
+      'indemnitor-1-email': data.indemnitor.email,
+      'indemnitor-1-phone': data.indemnitor.phone,
+      'indemnitor-1-address': data.indemnitor.street,
+      'indemnitor-1-city': data.indemnitor.city,
+      'indemnitor-1-state': data.indemnitor.state,
+      'indemnitor-1-zip': data.indemnitor.zip,
+      'indemnitor-1-dob': data.indemnitor.dob,
+      'indemnitor-1-ssn': data.indemnitor.ssn,
+      'indemnitor-1-dl': data.indemnitor.dl,
+      'indemnitor-1-relation': data.indemnitor.relationship,
+      'indemnitor-1-employer': data.indemnitor.employer,
+      'indemnitor-1-employer-phone': data.indemnitor.employerPhone,
+      'date': new Date().toLocaleDateString('en-US')
+    };
+
     try {
-      var GAS_URL = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
-      await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'submitIndemnitorForm', payload: data }),
-        mode: 'no-cors'
-      });
+      if (window.parent !== window) {
+        // Use postMessage bridge (goes through Wix page with API key)
+        window.parent.postMessage({
+          type: 'indemnitor-submit-phase1',
+          formData: formData,
+          wizardData: data,
+          signerEmail: data.indemnitor.email,
+          signerName: [data.indemnitor.firstName, data.indemnitor.lastName].filter(Boolean).join(' ')
+        }, '*');
+      } else {
+        // Fallback: direct GAS call (standalone mode)
+        var GAS_URL = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'submitIndemnitorPhase1', formData: formData, signerEmail: data.indemnitor.email, signerName: [data.indemnitor.firstName, data.indemnitor.lastName].filter(Boolean).join(' ') }),
+          mode: 'no-cors'
+        });
+      }
+      // Show success — signing link arrives via email
       this.clearDraft();
       document.getElementById('success').classList.add('show');
       document.getElementById('nav-bar').style.display = 'none';
-      if (window.parent !== window) {
-        window.parent.postMessage({ type: 'shamrock-form-submitted', data: data }, '*');
-      }
     } catch (err) {
       btn.disabled = false;
       btn.innerHTML = '&#9752;&#65039; Submit Application';
