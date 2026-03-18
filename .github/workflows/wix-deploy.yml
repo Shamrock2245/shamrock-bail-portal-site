@@ -1,0 +1,74 @@
+name: Deploy to Wix
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # allow manual trigger from GitHub UI
+
+concurrency:
+  group: wix-deploy
+  cancel-in-progress: false   # never cancel a deploy mid-flight
+
+jobs:
+  deploy:
+    name: Wix Publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js ───────────────────────────────────────────────────────────
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── 3. Install Wix CLI ───────────────────────────────────────────────────
+      - name: Install Wix CLI
+        run: npm install -g @wix/cli@latest
+
+      # ── 4. Authenticate with Wix ─────────────────────────────────────────────
+      - name: Authenticate Wix CLI
+        run: wix login --api-key "${{ secrets.WIX_CLI_API_KEY }}"
+
+      # ── 5. Install project dependencies ─────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci --ignore-scripts 2>/dev/null || npm install --ignore-scripts 2>/dev/null || true
+
+      # ── 6. Publish to Wix (live site) ────────────────────────────────────────
+      - name: Publish site to production
+        run: wix publish --source local --approve-preview --force
+        env:
+          WIX_CLI_API_KEY: ${{ secrets.WIX_CLI_API_KEY }}
+
+      # ── 7. Notify Slack on success ────────────────────────────────────────────
+      - name: Notify Slack — Deploy Success
+        if: success()
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            {
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "text": "✅ *Wix Deploy Succeeded*\n*Commit:* ${{ github.event.head_commit.message }}\n*By:* ${{ github.actor }}\n*Site:* https://www.shamrockbailbonds.biz\n*Run:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        continue-on-error: true
+
+      # ── 8. Notify Slack on failure ────────────────────────────────────────────
+      - name: Notify Slack — Deploy Failed
+        if: failure()
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            {
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "text": "❌ *Wix Deploy FAILED*\n*Commit:* ${{ github.event.head_commit.message }}\n*By:* ${{ github.actor }}\n*Run:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        continue-on-error: true
