@@ -1276,6 +1276,32 @@ function handleAction(data) {
     MongoLogger.logIntake(data.payload || data, 'indemnitor_wizard');
     return handleWizardFormSubmission(data.payload || data, 'indemnitor');
   }
+
+  // 1c. STAFF PORTAL — Generate full SignNow packet from staff-portal.html
+  if (action === 'staffGeneratePacket') {
+    try {
+      Logger.log('🏢 Staff Portal: Generate packet for ' + (data.defendant_name || 'unknown'));
+      MongoLogger.logActivity('staffGeneratePacket', 'staff_portal');
+      if (typeof handleShannonSendPaperwork === 'function') {
+        const result = handleShannonSendPaperwork(data);
+        return result;
+      }
+      return { success: false, error: 'handleShannonSendPaperwork not loaded' };
+    } catch (spErr) {
+      Logger.log('❌ Staff Portal packet error: ' + spErr.message);
+      return { success: false, error: spErr.message };
+    }
+  }
+
+  // 1d. STAFF PORTAL — Booking lookup from scraper sheets
+  if (action === 'staffLookupBooking') {
+    try {
+      Logger.log('🔍 Staff Portal: Booking lookup for ' + (data.query || 'unknown'));
+      return staffLookupBooking_(data.query);
+    } catch (lookupErr) {
+      return { success: false, error: lookupErr.message };
+    }
+  }
   if (action === 'fetchPendingIntakes') {
     // Wix CMS path — wrapped in try/catch so a Wix API failure never blocks
     // the Google Sheets path (which has the confirmed Telegram intake data).
@@ -2146,6 +2172,35 @@ function handleGetAction(e) {
     } catch (err) {
       return createResponse({ success: false, action: action, error: err.message }, callback);
     }
+  }
+
+  // ── STAFF PORTAL GET ACTIONS ──────────────────────────────────────────────
+  if (action === 'staffGetActiveCases') {
+    try {
+      const county = e.parameter.county || '';
+      const result = staffGetActiveCases_(county);
+      return createResponse(result, callback);
+    } catch (err) {
+      return createResponse({ success: false, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'staffGetArrestsFeed') {
+    try {
+      const county = e.parameter.county || '';
+      const result = staffGetArrestsFeed_(county);
+      return createResponse(result, callback);
+    } catch (err) {
+      return createResponse({ success: false, error: err.message }, callback);
+    }
+  }
+
+  if (action === 'healthCheck') {
+    return createResponse({
+      success: true, status: 'operational',
+      timestamp: new Date().toISOString(),
+      version: 'v4.2.1-staff-portal'
+    }, callback);
   }
 
   return createErrorResponse('Unknown action: ' + action, ERROR_CODES.UNKNOWN_ACTION);
@@ -4175,4 +4230,149 @@ function notifyPaymentLink(payload) {
     console.error('notifyPaymentLink error:', e);
     return { success: false, error: e.message };
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STAFF PORTAL HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Look up a booking by booking number or defendant name across all county sheets.
+ * Returns the first matching row with all available fields.
+ */
+function staffLookupBooking_(query) {
+  if (!query) return { success: false, error: 'No query provided' };
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const counties = ['Lee', 'Charlotte', 'Collier', 'DeSoto', 'Hendry', 'Manatee', 'Sarasota', 'Hillsborough', 'Palm Beach'];
+  const q = query.toLowerCase().trim();
+  const results = [];
+
+  for (const county of counties) {
+    try {
+      const sheet = ss.getSheetByName(county);
+      if (!sheet) continue;
+      const data = sheet.getDataRange().getValues();
+      if (data.length < 2) continue;
+      const headers = data[0].map(h => String(h).trim());
+
+      for (var r = data.length - 1; r >= 1 && results.length < 10; r--) {
+        const row = data[r];
+        const rowStr = row.map(c => String(c).toLowerCase()).join(' ');
+        if (rowStr.includes(q)) {
+          var record = { county: county };
+          for (var c = 0; c < headers.length; c++) {
+            if (headers[c]) record[headers[c]] = row[c];
+          }
+          results.push(record);
+        }
+      }
+    } catch (e) {
+      Logger.log('staffLookupBooking_ skip ' + county + ': ' + e.message);
+    }
+  }
+
+  return { success: true, results: results, count: results.length };
+}
+
+/**
+ * Get active cases from IntakeQueue sheet for the staff portal.
+ */
+function staffGetActiveCases_(countyFilter) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('IntakeQueue');
+  if (!sheet) return { success: false, cases: [], error: 'IntakeQueue sheet not found' };
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return { success: true, cases: [] };
+  const headers = data[0].map(h => String(h).trim());
+
+  const cases = [];
+  for (var r = data.length - 1; r >= 1 && cases.length < 50; r--) {
+    const row = data[r];
+    var record = {};
+    for (var c = 0; c < headers.length; c++) {
+      if (headers[c]) record[headers[c]] = row[c];
+    }
+
+    // Normalize field names for frontend
+    var caseObj = {
+      caseNumber: record.CaseNumber || record.IntakeID || record['Case Number'] || '',
+      defendantName: record.DefendantName || record.Defendant_Name || record['Defendant Name'] || '',
+      county: record.County || record.county || '',
+      bondAmount: record.BondAmount || record.Bond_Amount || record['Bond Amount'] || 0,
+      status: record.Status || record.status || 'pending',
+      docsSigned: record.DocsSigned || 0,
+      docsTotal: 12,
+      timestamp: record.Timestamp || record.timestamp || ''
+    };
+
+    if (countyFilter && caseObj.county !== countyFilter) continue;
+    cases.push(caseObj);
+  }
+
+  return { success: true, cases: cases };
+}
+
+/**
+ * Get recent arrests from county scraper sheets for the live arrests feed.
+ */
+function staffGetArrestsFeed_(countyFilter) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const counties = countyFilter ? [countyFilter] : ['Lee', 'Charlotte', 'Collier', 'DeSoto', 'Hendry', 'Manatee'];
+  const arrests = [];
+
+  for (const county of counties) {
+    try {
+      const sheet = ss.getSheetByName(county);
+      if (!sheet) continue;
+      const data = sheet.getDataRange().getValues();
+      if (data.length < 2) continue;
+      const headers = data[0].map(h => String(h).trim());
+
+      // Get last 20 rows per county
+      for (var r = data.length - 1; r >= 1 && r >= data.length - 20; r--) {
+        const row = data[r];
+        var record = {};
+        for (var c = 0; c < headers.length; c++) {
+          if (headers[c]) record[headers[c]] = row[c];
+        }
+
+        var name = record['First_Name'] || record['First Name'] || '';
+        var lastName = record['Last_Name'] || record['Last Name'] || '';
+        if (lastName) name = lastName + ', ' + name;
+
+        var bond = parseFloat(String(record['Total_Bond_Amount'] || record['Bond_Amount'] || record['Bond Amount'] || 0).replace(/[^0-9.]/g, '')) || 0;
+        var charges = record['Charges'] || record['charges'] || '';
+        var bookingDate = record['Booking_Date_Time'] || record['Booking_Date'] || record['Date'] || '';
+
+        // Simple lead scoring
+        var score = 50;
+        if (bond >= 5000) score += 20;
+        if (bond >= 1500) score += 10;
+        if (/battery|dui|theft|domestic|aggravated|trafficking/i.test(charges)) score += 15;
+        if (record['Status'] === 'Released' || bond === 0) score = 0;
+
+        arrests.push({
+          name: name,
+          firstName: record['First_Name'] || record['First Name'] || '',
+          lastName: lastName,
+          county: county,
+          charges: charges,
+          bondAmount: bond,
+          bookingNumber: record['Booking_Number'] || record['Booking Number'] || '',
+          bookingDate: bookingDate ? new Date(bookingDate).toLocaleDateString() : '',
+          facility: record['Facility'] || county + ' County Jail',
+          leadScore: Math.min(score, 100)
+        });
+      }
+    } catch (e) {
+      Logger.log('staffGetArrestsFeed_ skip ' + county + ': ' + e.message);
+    }
+  }
+
+  // Sort by lead score descending
+  arrests.sort(function(a, b) { return b.leadScore - a.leadScore; });
+
+  return { success: true, arrests: arrests.slice(0, 50) };
 }

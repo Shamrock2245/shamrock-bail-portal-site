@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shamrock Staff Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e1a; --bg-card: #111827; --bg-card-hover: #1a2236;
+  --border: #1e293b; --border-focus: #10b981;
+  --text: #e2e8f0; --text-dim: #94a3b8; --text-muted: #64748b;
+  --emerald: #10b981; --emerald-dim: #065f46; --emerald-glow: rgba(16,185,129,.15);
+  --amber: #f59e0b; --red: #ef4444; --blue: #3b82f6; --purple: #8b5cf6;
+  --radius: 12px; --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,.4);
+  --font: 'Inter', -apple-system, sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:var(--font); background:var(--bg); color:var(--text); min-height:100vh; }
+input,select,textarea,button { font-family:var(--font); }
+
+/* ─── HEADER ─── */
+.header { display:flex; align-items:center; justify-content:space-between; padding:16px 24px; background:var(--bg-card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; }
+.header-left { display:flex; align-items:center; gap:12px; }
+.header-logo { width:36px; height:36px; background:linear-gradient(135deg,var(--emerald),#059669); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+.header-title { font-size:18px; font-weight:700; }
+.header-title span { color:var(--emerald); }
+.header-badge { font-size:11px; background:var(--emerald-dim); color:var(--emerald); padding:2px 8px; border-radius:20px; margin-left:8px; font-weight:600; }
+.header-right { display:flex; align-items:center; gap:12px; }
+.status-dot { width:8px; height:8px; border-radius:50%; background:var(--emerald); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ─── TABS ─── */
+.tab-bar { display:flex; gap:4px; padding:8px 24px; background:var(--bg-card); border-bottom:1px solid var(--border); overflow-x:auto; }
+.tab-btn { padding:10px 20px; border:none; background:transparent; color:var(--text-dim); font-size:13px; font-weight:600; cursor:pointer; border-radius:var(--radius-sm); transition:all .2s; white-space:nowrap; display:flex; align-items:center; gap:6px; }
+.tab-btn:hover { background:var(--bg-card-hover); color:var(--text); }
+.tab-btn.active { background:var(--emerald-glow); color:var(--emerald); }
+.tab-content { display:none; padding:24px; max-width:1400px; margin:0 auto; }
+.tab-content.active { display:block; }
+
+/* ─── CARDS & SECTIONS ─── */
+.card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:16px; }
+.card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.card-title { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+.section-label { font-size:12px; font-weight:600; color:var(--emerald); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+
+/* ─── FORM ELEMENTS ─── */
+.form-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+.form-group { display:flex; flex-direction:column; gap:4px; }
+.form-group label { font-size:11px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px; }
+.form-group input, .form-group select, .form-group textarea {
+  background:var(--bg); border:1px solid var(--border); color:var(--text); padding:10px 12px;
+  border-radius:var(--radius-sm); font-size:14px; transition:border-color .2s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline:none; border-color:var(--emerald); box-shadow:0 0 0 3px var(--emerald-glow);
+}
+.form-group input::placeholder { color:var(--text-muted); }
+.form-group.span-2 { grid-column:span 2; }
+.form-group.span-3 { grid-column:span 3; }
+
+/* ─── BUTTONS ─── */
+.btn { padding:10px 20px; border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; display:inline-flex; align-items:center; gap:6px; }
+.btn-primary { background:linear-gradient(135deg,var(--emerald),#059669); color:#fff; }
+.btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(16,185,129,.3); }
+.btn-secondary { background:var(--bg); border:1px solid var(--border); color:var(--text); }
+.btn-secondary:hover { border-color:var(--emerald); }
+.btn-danger { background:rgba(239,68,68,.15); color:var(--red); border:1px solid rgba(239,68,68,.3); }
+.btn-sm { padding:6px 12px; font-size:12px; }
+.btn-lg { padding:14px 28px; font-size:15px; }
+.btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+/* ─── LOOKUP BAR ─── */
+.lookup-bar { display:flex; gap:8px; margin-bottom:20px; }
+.lookup-bar input { flex:1; padding:14px 16px; background:var(--bg); border:2px solid var(--border); border-radius:var(--radius); color:var(--text); font-size:15px; }
+.lookup-bar input:focus { border-color:var(--emerald); outline:none; box-shadow:0 0 0 4px var(--emerald-glow); }
+
+/* ─── CHARGE ROW ─── */
+.charge-row { display:grid; grid-template-columns:2fr 1fr 1fr 1.2fr 40px; gap:8px; align-items:end; padding:12px; background:var(--bg); border-radius:var(--radius-sm); margin-bottom:8px; border:1px solid var(--border); }
+.charge-row input, .charge-row select { background:var(--bg-card); border:1px solid var(--border); color:var(--text); padding:8px 10px; border-radius:6px; font-size:13px; }
+.charge-row input:focus, .charge-row select:focus { border-color:var(--emerald); outline:none; }
+.charge-remove { width:32px; height:32px; border:none; background:rgba(239,68,68,.1); color:var(--red); border-radius:6px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
+.charge-remove:hover { background:rgba(239,68,68,.25); }
+
+/* ─── FINANCIAL SUMMARY ─── */
+.financial-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.fin-card { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; text-align:center; }
+.fin-card .fin-label { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+.fin-card .fin-value { font-size:24px; font-weight:800; color:var(--emerald); }
+
+/* ─── TABLE ─── */
+.data-table { width:100%; border-collapse:collapse; }
+.data-table th { text-align:left; padding:10px 12px; font-size:11px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--border); }
+.data-table td { padding:10px 12px; font-size:13px; border-bottom:1px solid var(--border); }
+.data-table tr:hover td { background:var(--bg-card-hover); }
+.badge { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+.badge-hot { background:rgba(239,68,68,.15); color:var(--red); }
+.badge-warm { background:rgba(245,158,11,.15); color:var(--amber); }
+.badge-cold { background:rgba(100,116,139,.15); color:var(--text-muted); }
+.badge-pending { background:rgba(245,158,11,.15); color:var(--amber); }
+.badge-sent { background:rgba(59,130,246,.15); color:var(--blue); }
+.badge-signed { background:rgba(16,185,129,.15); color:var(--emerald); }
+.badge-posted { background:rgba(139,92,246,.15); color:var(--purple); }
+
+/* ─── HEALTH GRID ─── */
+.health-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+.health-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+.health-card .hc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.health-card .hc-name { font-size:13px; font-weight:600; }
+.health-card .hc-status { width:10px; height:10px; border-radius:50%; }
+.hc-status.ok { background:var(--emerald); }
+.hc-status.warn { background:var(--amber); }
+.hc-status.err { background:var(--red); }
+.health-card .hc-detail { font-size:12px; color:var(--text-dim); }
+
+/* ─── TOAST ─── */
+.toast { position:fixed; bottom:24px; right:24px; background:var(--bg-card); border:1px solid var(--emerald); border-radius:var(--radius); padding:14px 20px; box-shadow:var(--shadow); z-index:9999; transform:translateY(120%); transition:transform .3s ease; font-size:14px; max-width:400px; }
+.toast.show { transform:translateY(0); }
+
+/* ─── SPINNER ─── */
+.spinner { width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--emerald); border-radius:50%; animation:spin .6s linear infinite; display:inline-block; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:768px) {
+  .form-grid { grid-template-columns:1fr; }
+  .charge-row { grid-template-columns:1fr; }
+  .financial-grid { grid-template-columns:repeat(2,1fr); }
+  .tab-bar { padding:8px 12px; }
+  .tab-content { padding:16px; }
+  .form-group.span-2, .form-group.span-3 { grid-column:span 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">☘️</div>
+    <div class="header-title">Staff <span>Portal</span> <span class="header-badge">COMMAND CENTER</span></div>
+  </div>
+  <div class="header-right">
+    <div class="status-dot"></div>
+    <span style="font-size:12px;color:var(--text-dim)">System Online</span>
+    <span style="font-size:12px;color:var(--text-muted)" id="clockDisplay"></span>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="SP.switchTab('intake')">📋 Case Intake</button>
+  <button class="tab-btn" onclick="SP.switchTab('cases')">📊 Active Cases</button>
+  <button class="tab-btn" onclick="SP.switchTab('arrests')">🚨 Live Arrests</button>
+  <button class="tab-btn" onclick="SP.switchTab('health')">⚙️ System Health</button>
+  <button class="tab-btn" onclick="SP.switchTab('reports')">📈 Reports</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB 1: CASE INTAKE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="tab-intake" class="tab-content active">
+
+  <!-- BOOKING LOOKUP -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🔍 Booking Lookup</div>
+      <button class="btn btn-secondary btn-sm" onclick="SP.clearForm()">Clear All</button>
+    </div>
+    <div class="lookup-bar">
+      <input type="text" id="lookupInput" placeholder="Paste Booking Number or Defendant Name..." onkeydown="if(event.key==='Enter')SP.lookupBooking()">
+      <button class="btn btn-primary" onclick="SP.lookupBooking()" id="lookupBtn">🔎 Search</button>
+    </div>
+    <div id="lookupResult" style="display:none;padding:8px 12px;background:var(--emerald-glow);border-radius:var(--radius-sm);font-size:13px;color:var(--emerald)"></div>
+  </div>
+
+  <!-- DEFENDANT INFO -->
+  <div class="card">
+    <div class="section-label">Defendant Information</div>
+    <div class="form-grid">
+      <div class="form-group"><label>First Name</label><input id="def-first" placeholder="John"></div>
+      <div class="form-group"><label>Last Name</label><input id="def-last" placeholder="Smith"></div>
+      <div class="form-group"><label>Middle Name</label><input id="def-middle" placeholder=""></div>
+      <div class="form-group"><label>Alias / Nickname</label><input id="def-alias" placeholder=""></div>
+      <div class="form-group"><label>Date of Birth</label><input type="date" id="def-dob"></div>
+      <div class="form-group"><label>SSN</label><input id="def-ssn" placeholder="XXX-XX-XXXX"></div>
+      <div class="form-group"><label>Phone</label><input id="def-phone" placeholder="(239) 555-0123"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="def-email" placeholder=""></div>
+      <div class="form-group span-2"><label>Street Address</label><input id="def-address" placeholder="1234 Main St"></div>
+      <div class="form-group"><label>City</label><input id="def-city" placeholder="Fort Myers"></div>
+      <div class="form-group"><label>State</label><input id="def-state" value="FL"></div>
+      <div class="form-group"><label>Zip</label><input id="def-zip" placeholder="33901"></div>
+      <div class="form-group"><label>Driver's License #</label><input id="def-dl" placeholder=""></div>
+      <div class="form-group"><label>County</label>
+        <select id="def-county">
+          <option value="">Select County</option>
+          <option value="Lee">Lee</option><option value="Charlotte">Charlotte</option>
+          <option value="Collier">Collier</option><option value="DeSoto">DeSoto</option>
+          <option value="Hendry">Hendry</option><option value="Manatee">Manatee</option>
+          <option value="Sarasota">Sarasota</option><option value="Hillsborough">Hillsborough</option>
+          <option value="Palm Beach">Palm Beach</option><option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Booking #</label><input id="def-booking" placeholder="2025-00012345"></div>
+      <div class="form-group"><label>Jail Facility</label><input id="def-facility" placeholder="Lee County Jail"></div>
+      <div class="form-group"><label>Arrest Date</label><input type="date" id="def-arrest-date"></div>
+      <div class="form-group"><label>Court Date</label><input type="date" id="def-court-date"></div>
+      <div class="form-group"><label>Court Time</label><input type="time" id="def-court-time"></div>
+      <div class="form-group"><label>Court Type</label>
+        <select id="def-court-type"><option value="Circuit">Circuit</option><option value="County">County</option><option value="Federal">Federal</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARGES & POA -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">⚖️ Charges & Power of Attorney</div>
+      <button class="btn btn-secondary btn-sm" onclick="SP.addCharge()">+ Add Charge</button>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr 40px;gap:8px;padding:0 12px;">
+        <span style="font-size:11px;font-weight:600;color:var(--text-dim)">CHARGE DESCRIPTION</span>
+        <span style="font-size:11px;font-weight:600;color:var(--text-dim)">BOND AMOUNT</span>
+        <span style="font-size:11px;font-weight:600;color:var(--text-dim)">CASE NUMBER</span>
+        <span style="font-size:11px;font-weight:600;color:var(--text-dim)">POA NUMBER</span>
+        <span></span>
+      </div>
+    </div>
+    <div id="chargesContainer">
+      <div class="charge-row" data-idx="0">
+        <input placeholder="e.g. Battery (Domestic Violence)" class="charge-desc">
+        <input type="text" placeholder="$5,000" class="charge-bond" oninput="SP.recalcFinancials()">
+        <input placeholder="25-CF-001234" class="charge-case">
+        <div style="display:flex;gap:4px">
+          <select class="charge-poa-prefix" style="width:70px"><option>OSI3</option><option>OSI6</option></select>
+          <input placeholder="-4591234" class="charge-poa-num" style="flex:1">
+        </div>
+        <button class="charge-remove" onclick="SP.removeCharge(this)" title="Remove">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINANCIAL SUMMARY -->
+  <div class="card">
+    <div class="section-label">Financial Summary</div>
+    <div class="financial-grid">
+      <div class="fin-card"><div class="fin-label">Total Bail</div><div class="fin-value" id="finTotalBail">$0</div></div>
+      <div class="fin-card"><div class="fin-label">Premium (10%)</div><div class="fin-value" id="finPremium">$0</div></div>
+      <div class="fin-card"><div class="fin-label">Transfer Fee</div><div class="fin-value" id="finTransfer">$0</div></div>
+      <div class="fin-card"><div class="fin-label">Total Due</div><div class="fin-value" id="finTotal" style="color:var(--amber)">$0</div></div>
+    </div>
+    <div class="form-grid" style="margin-top:16px;">
+      <div class="form-group"><label>Amount Paid</label><input type="text" id="fin-paid" placeholder="$0" oninput="SP.recalcFinancials()"></div>
+      <div class="form-group"><label>Payment Method</label>
+        <select id="fin-method"><option value="cash">Cash</option><option value="credit">Credit Card</option><option value="check">Check</option><option value="money-order">Money Order</option></select>
+      </div>
+      <div class="form-group"><label>Payment Plan?</label>
+        <select id="fin-plan"><option value="no">No — Paid in Full</option><option value="yes">Yes — Finance</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- INDEMNITOR -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🤝 Indemnitor (Co-Signer)</div>
+      <button class="btn btn-secondary btn-sm" onclick="SP.addIndemnitor()">+ Add Indemnitor</button>
+    </div>
+    <div id="indemnitorContainer">
+      <div class="form-grid" data-ind="1">
+        <div class="form-group"><label>First Name</label><input id="ind1-first" placeholder=""></div>
+        <div class="form-group"><label>Last Name</label><input id="ind1-last" placeholder=""></div>
+        <div class="form-group"><label>Relationship</label><input id="ind1-relation" placeholder="Mother, Spouse, etc."></div>
+        <div class="form-group"><label>Phone</label><input id="ind1-phone" placeholder=""></div>
+        <div class="form-group"><label>Email</label><input type="email" id="ind1-email" placeholder=""></div>
+        <div class="form-group"><label>Address</label><input id="ind1-address" placeholder=""></div>
+        <div class="form-group"><label>City, State, Zip</label><input id="ind1-csz" placeholder="Fort Myers, FL 33901"></div>
+        <div class="form-group"><label>Driver's License</label><input id="ind1-dl" placeholder=""></div>
+        <div class="form-group"><label>SSN</label><input id="ind1-ssn" placeholder=""></div>
+        <div class="form-group"><label>DOB</label><input type="date" id="ind1-dob"></div>
+        <div class="form-group"><label>Employer</label><input id="ind1-employer" placeholder=""></div>
+        <div class="form-group"><label>Employer Phone</label><input id="ind1-emp-phone" placeholder=""></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENT INFO -->
+  <div class="card">
+    <div class="section-label">Agent Information</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Agent Name</label><input id="agent-name" value="Brendan O'Shaughnessy"></div>
+      <div class="form-group"><label>License #</label><input id="agent-license" value="P171498"></div>
+    </div>
+  </div>
+
+  <!-- ACTION BAR -->
+  <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;">
+    <button class="btn btn-secondary" onclick="SP.saveDraft()">💾 Save Draft</button>
+    <button class="btn btn-primary btn-lg" onclick="SP.generateAndSendPacket()" id="sendPacketBtn">
+      📨 Generate & Send Full Packet (12 Docs)
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB 2: ACTIVE CASES -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="tab-cases" class="tab-content">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📊 Active Cases</div>
+      <div style="display:flex;gap:8px">
+        <select id="caseCountyFilter" onchange="SP.loadCases()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+          <option value="">All Counties</option><option>Lee</option><option>Charlotte</option><option>Collier</option><option>DeSoto</option><option>Hendry</option><option>Manatee</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="SP.loadCases()">🔄 Refresh</button>
+      </div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Case #</th><th>Defendant</th><th>County</th><th>Bond</th><th>Status</th><th>Docs</th><th>Actions</th></tr></thead>
+      <tbody id="casesTableBody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">Click "Refresh" to load active cases</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB 3: LIVE ARRESTS -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="tab-arrests" class="tab-content">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🚨 Live Arrests Feed</div>
+      <div style="display:flex;gap:8px">
+        <select id="arrestCountyFilter" onchange="SP.loadArrests()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+          <option value="">All Counties</option><option>Lee</option><option>Charlotte</option><option>Collier</option><option>DeSoto</option><option>Hendry</option><option>Manatee</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="SP.loadArrests()">🔄 Refresh</button>
+      </div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>County</th><th>Charges</th><th>Bond</th><th>Score</th><th>Booked</th><th>Action</th></tr></thead>
+      <tbody id="arrestsTableBody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">Click "Refresh" to load arrests feed</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB 4: SYSTEM HEALTH -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="tab-health" class="tab-content">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">⚙️ System Health</div>
+      <button class="btn btn-secondary btn-sm" onclick="SP.loadHealth()">🔄 Refresh</button>
+    </div>
+    <div class="health-grid" id="healthGrid">
+      <div class="health-card"><div class="hc-header"><span class="hc-name">GAS Backend</span><span class="hc-status ok"></span></div><div class="hc-detail">Checking...</div></div>
+      <div class="health-card"><div class="hc-header"><span class="hc-name">Node-RED</span><span class="hc-status ok"></span></div><div class="hc-detail">Checking...</div></div>
+      <div class="health-card"><div class="hc-header"><span class="hc-name">SignNow API</span><span class="hc-status ok"></span></div><div class="hc-detail">Checking...</div></div>
+      <div class="health-card"><div class="hc-header"><span class="hc-name">Twilio SMS</span><span class="hc-status ok"></span></div><div class="hc-detail">Checking...</div></div>
+      <div class="health-card"><div class="hc-header"><span class="hc-name">Lee County Scraper</span><span class="hc-status ok"></span></div><div class="hc-detail">Checking...</div></div>
+      <div class="health-card"><div class="hc-header"><span class="hc-name">Charlotte Scraper</span><span class="hc-status ok"></span></div><div class="hc-detail">Checking...</div></div>
+      <div class="health-card"><div class="hc-header"><span class="hc-name">Collier Scraper</span><span class="hc-status ok"></span></div><div class="hc-detail">Checking...</div></div>
+      <div class="health-card"><div class="hc-header"><span class="hc-name">MongoDB Atlas</span><span class="hc-status ok"></span></div><div class="hc-detail">Checking...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB 5: REPORTS -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="tab-reports" class="tab-content">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📈 Reports & Analytics</div>
+    </div>
+    <div class="financial-grid">
+      <div class="fin-card"><div class="fin-label">Today's Bonds</div><div class="fin-value" id="rptToday">—</div></div>
+      <div class="fin-card"><div class="fin-label">This Week</div><div class="fin-value" id="rptWeek">—</div></div>
+      <div class="fin-card"><div class="fin-label">This Month</div><div class="fin-value" id="rptMonth">—</div></div>
+      <div class="fin-card"><div class="fin-label">Active Liability</div><div class="fin-value" id="rptLiability" style="color:var(--red)">—</div></div>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+      <button class="btn btn-secondary" onclick="SP.runReport('liability')">📊 Liability Report</button>
+      <button class="btn btn-secondary" onclick="SP.runReport('commissions')">💰 Commission Report</button>
+      <button class="btn btn-secondary" onclick="SP.runReport('reconciliation')">🔍 Void/Discharge Recon</button>
+      <button class="btn btn-secondary" onclick="SP.runReport('daily')">📋 Daily Ops Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<script>
+var GAS_URL = 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
+
+var SP = {
+  chargeCount: 1,
+  indemnitorCount: 1,
+
+  // ─── TAB SWITCHING ───
+  switchTab: function(id) {
+    document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.getElementById('tab-' + id).classList.add('active');
+    var tabs = ['intake','cases','arrests','health','reports'];
+    var btns = document.querySelectorAll('.tab-btn');
+    btns[tabs.indexOf(id)].classList.add('active');
+
+    if (id === 'cases') SP.loadCases();
+    if (id === 'arrests') SP.loadArrests();
+    if (id === 'health') SP.loadHealth();
+  },
+
+  // ─── BOOKING LOOKUP ───
+  lookupBooking: function() {
+    var q = document.getElementById('lookupInput').value.trim();
+    if (!q) return;
+    var btn = document.getElementById('lookupBtn');
+    btn.innerHTML = '<span class="spinner"></span> Searching...';
+    btn.disabled = true;
+
+    fetch(GAS_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'staffLookupBooking', query: q })
+    }).then(function() {
+      // no-cors means we can't read response — show optimistic result
+      document.getElementById('lookupResult').style.display = 'block';
+      document.getElementById('lookupResult').textContent = '✅ Search sent. If found, fields will auto-populate via webhook. Otherwise, enter data manually.';
+      btn.innerHTML = '🔎 Search';
+      btn.disabled = false;
+    }).catch(function(err) {
+      SP.toast('Search failed: ' + err.message);
+      btn.innerHTML = '🔎 Search';
+      btn.disabled = false;
+    });
+  },
+
+  // ─── CHARGES ───
+  addCharge: function() {
+    SP.chargeCount++;
+    var c = document.getElementById('chargesContainer');
+    var row = document.createElement('div');
+    row.className = 'charge-row';
+    row.dataset.idx = SP.chargeCount;
+    row.innerHTML =
+      '<input placeholder="e.g. Aggravated Battery" class="charge-desc">' +
+      '<input type="text" placeholder="$10,000" class="charge-bond" oninput="SP.recalcFinancials()">' +
+      '<input placeholder="25-CF-001234" class="charge-case">' +
+      '<div style="display:flex;gap:4px"><select class="charge-poa-prefix" style="width:70px"><option>OSI3</option><option>OSI6</option></select><input placeholder="-4591234" class="charge-poa-num" style="flex:1"></div>' +
+      '<button class="charge-remove" onclick="SP.removeCharge(this)" title="Remove">✕</button>';
+    c.appendChild(row);
+  },
+
+  removeCharge: function(btn) {
+    var rows = document.querySelectorAll('.charge-row');
+    if (rows.length <= 1) return;
+    btn.closest('.charge-row').remove();
+    SP.recalcFinancials();
+  },
+
+  // ─── FINANCIAL CALC ───
+  recalcFinancials: function() {
+    var total = 0;
+    document.querySelectorAll('.charge-bond').forEach(function(el) {
+      var v = el.value.replace(/[^0-9.]/g, '');
+      total += parseFloat(v) || 0;
+    });
+    var county = document.getElementById('def-county').value;
+    var premium = Math.max(total * 0.10, SP.chargeCount * 100);
+    var transfer = 0;
+    if (total < 25000 && county && county !== 'Lee' && county !== 'Charlotte') {
+      transfer = 125;
+    }
+    var paid = parseFloat((document.getElementById('fin-paid').value || '0').replace(/[^0-9.]/g, '')) || 0;
+    var totalDue = premium + transfer - paid;
+
+    document.getElementById('finTotalBail').textContent = '$' + total.toLocaleString();
+    document.getElementById('finPremium').textContent = '$' + premium.toLocaleString();
+    document.getElementById('finTransfer').textContent = transfer > 0 ? '$' + transfer : '$0';
+    document.getElementById('finTotal').textContent = '$' + Math.max(0, totalDue).toLocaleString();
+  },
+
+  // ─── COLLECT ALL DATA ───
+  collectFormData: function() {
+    var charges = [];
+    document.querySelectorAll('.charge-row').forEach(function(row) {
+      charges.push({
+        description: row.querySelector('.charge-desc').value,
+        bondAmount: row.querySelector('.charge-bond').value.replace(/[^0-9.]/g, ''),
+        caseNumber: row.querySelector('.charge-case').value,
+        poaNumber: row.querySelector('.charge-poa-prefix').value + row.querySelector('.charge-poa-num').value
+      });
+    });
+
+    return {
+      'defendant-first-name': document.getElementById('def-first').value,
+      'defendant-last-name': document.getElementById('def-last').value,
+      'defendant-middle-name': document.getElementById('def-middle').value,
+      'defendant-alias': document.getElementById('def-alias').value,
+      'defendant-dob': document.getElementById('def-dob').value,
+      'defendant-ssn': document.getElementById('def-ssn').value,
+      'defendant-phone': document.getElementById('def-phone').value,
+      'defendant-email': document.getElementById('def-email').value,
+      'defendant-street-address': document.getElementById('def-address').value,
+      'defendant-city': document.getElementById('def-city').value,
+      'defendant-state': document.getElementById('def-state').value,
+      'defendant-zipcode': document.getElementById('def-zip').value,
+      'defendant-dl-number': document.getElementById('def-dl').value,
+      'defendant-county': document.getElementById('def-county').value,
+      'defendant-booking-number': document.getElementById('def-booking').value,
+      'defendant-jail-facility': document.getElementById('def-facility').value,
+      'defendant-arrest-date': document.getElementById('def-arrest-date').value,
+      'defendant-court-date': document.getElementById('def-court-date').value,
+      'defendant-court-time': document.getElementById('def-court-time').value,
+      'court-type': document.getElementById('def-court-type').value,
+      'defendant-charges': charges.map(function(c){ return c.description; }).join('; '),
+      'charges': charges,
+      'power-number': charges[0] ? charges[0].poaNumber : '',
+      'indemnitor-1-first': document.getElementById('ind1-first').value,
+      'indemnitor-1-last': document.getElementById('ind1-last').value,
+      'indemnitor-1-relation': document.getElementById('ind1-relation').value,
+      'indemnitor-1-phone': document.getElementById('ind1-phone').value,
+      'indemnitor-1-email': document.getElementById('ind1-email').value,
+      'indemnitor-1-address': document.getElementById('ind1-address').value,
+      'indemnitor-1-dl': document.getElementById('ind1-dl').value,
+      'indemnitor-1-ssn': document.getElementById('ind1-ssn').value,
+      'indemnitor-1-dob': document.getElementById('ind1-dob').value,
+      'indemnitor-1-employer': document.getElementById('ind1-employer').value,
+      'indemnitor-1-employer-phone': document.getElementById('ind1-emp-phone').value,
+      agentName: document.getElementById('agent-name').value,
+      agentLicense: document.getElementById('agent-license').value,
+      source: 'staff-portal',
+      timestamp: new Date().toISOString()
+    };
+  },
+
+  // ─── GENERATE & SEND PACKET ───
+  generateAndSendPacket: function() {
+    var data = SP.collectFormData();
+    if (!data['defendant-first-name'] || !data['defendant-last-name']) {
+      SP.toast('⚠️ Defendant name is required.');
+      return;
+    }
+    if (!data['indemnitor-1-email']) {
+      SP.toast('⚠️ Indemnitor email is required for signing link.');
+      return;
+    }
+
+    var btn = document.getElementById('sendPacketBtn');
+    btn.innerHTML = '<span class="spinner"></span> Generating 12-Doc Packet...';
+    btn.disabled = true;
+
+    var payload = {
+      action: 'staffGeneratePacket',
+      caller_name: data['indemnitor-1-first'] + ' ' + data['indemnitor-1-last'],
+      caller_email: data['indemnitor-1-email'],
+      caller_phone: data['indemnitor-1-phone'],
+      defendant_name: data['defendant-first-name'] + ' ' + data['defendant-last-name'],
+      county: data['defendant-county'],
+      formData: data
+    };
+
+    fetch(GAS_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    }).then(function() {
+      SP.toast('✅ Packet generation initiated! Check Slack #intake for confirmation.');
+      btn.innerHTML = '📨 Generate & Send Full Packet (12 Docs)';
+      btn.disabled = false;
+    }).catch(function(err) {
+      SP.toast('❌ Error: ' + err.message);
+      btn.innerHTML = '📨 Generate & Send Full Packet (12 Docs)';
+      btn.disabled = false;
+    });
+  },
+
+  // ─── LOAD CASES ───
+  loadCases: function() {
+    var tbody = document.getElementById('casesTableBody');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px"><span class="spinner"></span> Loading...</td></tr>';
+    fetch(GAS_URL + '?action=staffGetActiveCases&format=json&county=' + (document.getElementById('caseCountyFilter').value || ''))
+      .then(function(r){ return r.json(); })
+      .then(function(res) {
+        if (!res.cases || res.cases.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No active cases found</td></tr>';
+          return;
+        }
+        tbody.innerHTML = res.cases.map(function(c) {
+          var badge = c.status === 'posted' ? 'badge-posted' : c.status === 'signed' ? 'badge-signed' : c.status === 'sent' ? 'badge-sent' : 'badge-pending';
+          return '<tr><td>' + (c.caseNumber||'—') + '</td><td><strong>' + (c.defendantName||'—') + '</strong></td><td>' +
+            (c.county||'—') + '</td><td>$' + (Number(c.bondAmount)||0).toLocaleString() + '</td><td><span class="badge ' + badge + '">' +
+            (c.status||'pending') + '</span></td><td>' + (c.docsSigned||0) + '/' + (c.docsTotal||12) + '</td>' +
+            '<td><button class="btn btn-sm btn-secondary" onclick="SP.startCaseFromRow(\'' + (c.defendantName||'') + '\',\'' + (c.county||'') + '\')">📋</button></td></tr>';
+        }).join('');
+      }).catch(function() {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--red);padding:20px">Failed to load. Check GAS connection.</td></tr>';
+      });
+  },
+
+  // ─── LOAD ARRESTS ───
+  loadArrests: function() {
+    var tbody = document.getElementById('arrestsTableBody');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px"><span class="spinner"></span> Loading...</td></tr>';
+    fetch(GAS_URL + '?action=staffGetArrestsFeed&format=json&county=' + (document.getElementById('arrestCountyFilter').value || ''))
+      .then(function(r){ return r.json(); })
+      .then(function(res) {
+        if (!res.arrests || res.arrests.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No recent arrests</td></tr>';
+          return;
+        }
+        tbody.innerHTML = res.arrests.map(function(a) {
+          var score = a.leadScore || 0;
+          var scoreBadge = score >= 70 ? 'badge-hot' : score >= 40 ? 'badge-warm' : 'badge-cold';
+          var scoreLabel = score >= 70 ? '🔥 ' + score : score >= 40 ? '🟡 ' + score : score;
+          return '<tr><td><strong>' + (a.name||'—') + '</strong></td><td>' + (a.county||'—') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+            (a.charges||'—') + '</td><td>$' + (Number(a.bondAmount)||0).toLocaleString() + '</td><td><span class="badge ' + scoreBadge + '">' +
+            scoreLabel + '</span></td><td>' + (a.bookingDate||'—') + '</td>' +
+            '<td><button class="btn btn-sm btn-primary" onclick="SP.startCaseFromArrest(\'' + encodeURIComponent(JSON.stringify(a)) + '\')">Start Case →</button></td></tr>';
+        }).join('');
+      }).catch(function() {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--red);padding:20px">Failed to load arrests</td></tr>';
+      });
+  },
+
+  startCaseFromArrest: function(encoded) {
+    try {
+      var a = JSON.parse(decodeURIComponent(encoded));
+      SP.switchTab('intake');
+      if (a.firstName) document.getElementById('def-first').value = a.firstName;
+      if (a.lastName) document.getElementById('def-last').value = a.lastName;
+      if (a.name && !a.firstName) {
+        var parts = a.name.split(/[, ]+/);
+        document.getElementById('def-last').value = parts[0] || '';
+        document.getElementById('def-first').value = parts[1] || '';
+      }
+      if (a.county) document.getElementById('def-county').value = a.county;
+      if (a.bookingNumber) document.getElementById('def-booking').value = a.bookingNumber;
+      if (a.facility) document.getElementById('def-facility').value = a.facility;
+      if (a.charges) document.querySelector('.charge-desc').value = a.charges;
+      if (a.bondAmount) { document.querySelector('.charge-bond').value = '$' + Number(a.bondAmount).toLocaleString(); SP.recalcFinancials(); }
+      SP.toast('✅ Arrest data loaded into Case Intake');
+    } catch(e) { SP.toast('Error loading arrest data'); }
+  },
+
+  startCaseFromRow: function(name, county) {
+    SP.switchTab('intake');
+    if (name) { var p = name.split(' '); document.getElementById('def-first').value = p[0]||''; document.getElementById('def-last').value = p.slice(1).join(' ')||''; }
+    if (county) document.getElementById('def-county').value = county;
+  },
+
+  // ─── HEALTH CHECK ───
+  loadHealth: function() {
+    SP.toast('Running health checks...');
+    fetch(GAS_URL + '?action=healthCheck&format=json')
+      .then(function(r){ return r.json(); })
+      .then(function(res) { SP.toast('✅ GAS responded: ' + (res.status || 'OK')); })
+      .catch(function() { SP.toast('⚠️ GAS health check failed'); });
+  },
+
+  // ─── REPORTS ───
+  runReport: function(type) {
+    SP.toast('Generating ' + type + ' report...');
+    fetch(GAS_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'run' + type.charAt(0).toUpperCase() + type.slice(1) + 'Report' })
+    }).then(function() { SP.toast('✅ Report sent. Check Slack for results.'); })
+      .catch(function() { SP.toast('❌ Report generation failed.'); });
+  },
+
+  // ─── UTILITIES ───
+  clearForm: function() {
+    document.querySelectorAll('#tab-intake input').forEach(function(el) {
+      if (el.id !== 'agent-name' && el.id !== 'agent-license') el.value = '';
+    });
+    document.querySelectorAll('#tab-intake select').forEach(function(el) { el.selectedIndex = 0; });
+    var cc = document.getElementById('chargesContainer');
+    cc.innerHTML = '<div class="charge-row" data-idx="0"><input placeholder="e.g. Battery (Domestic Violence)" class="charge-desc"><input type="text" placeholder="$5,000" class="charge-bond" oninput="SP.recalcFinancials()"><input placeholder="25-CF-001234" class="charge-case"><div style="display:flex;gap:4px"><select class="charge-poa-prefix" style="width:70px"><option>OSI3</option><option>OSI6</option></select><input placeholder="-4591234" class="charge-poa-num" style="flex:1"></div><button class="charge-remove" onclick="SP.removeCharge(this)" title="Remove">✕</button></div>';
+    SP.chargeCount = 1;
+    SP.recalcFinancials();
+    document.getElementById('lookupResult').style.display = 'none';
+  },
+
+  saveDraft: function() {
+    try {
+      localStorage.setItem('shamrock_staff_draft', JSON.stringify(SP.collectFormData()));
+      SP.toast('✅ Draft saved locally');
+    } catch(e) { SP.toast('Failed to save draft'); }
+  },
+
+  addIndemnitor: function() { SP.toast('Multi-indemnitor support coming soon'); },
+
+  toast: function(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(SP._tt);
+    SP._tt = setTimeout(function(){ t.classList.remove('show'); }, 4000);
+  }
+};
+
+// Clock
+setInterval(function() {
+  document.getElementById('clockDisplay').textContent = new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+}, 1000);
+
+// County change recalc
+document.getElementById('def-county').addEventListener('change', function() { SP.recalcFinancials(); });
+
+// Load draft on startup
+try {
+  var draft = localStorage.getItem('shamrock_staff_draft');
+  if (draft) console.log('[StaffPortal] Draft available in localStorage');
+} catch(e) {}
+</script>
+</body>
+</html>
