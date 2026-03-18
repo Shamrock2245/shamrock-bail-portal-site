@@ -3,11 +3,12 @@
  * Shamrock Bail Bonds — "The Closer" Bot
  *
  * Automated follow-up for abandoned intakes.
- * Scans IntakeQueue for stale entries and sends drip SMS/WhatsApp reminders.
+ * Scans IntakeQueue for stale entries and sends drip SMS/Telegram reminders.
+ * NOTE: WhatsApp removed — against Twilio/Meta ToS for bail bond services.
  *
  * Drip Schedule:
  *   ── 1 hour after last activity  → Gentle reminder (SMS)
- *   ── 24 hours after last activity → Urgency follow-up (SMS + WhatsApp)
+ *   ── 24 hours after last activity → Urgency follow-up (SMS + Telegram)
  *   ── 72 hours after last activity → Final "we're here for you" (SMS + Slack)
  *
  * Trigger: setupCloserTrigger() → runs every 30 minutes via time-driven trigger
@@ -55,7 +56,6 @@ var CLOSER_MESSAGES = {
     },
     '24h': {
         sms: '🍀 {name}, Shamrock Bail Bonds here. Your bail application is still waiting. Time matters — the sooner we start, the sooner they\'re home. Questions? Text back or call: (239) 955-0178',
-        whatsapp: '🍀 Hi {name}! This is Shamrock Bail Bonds reaching out because you started a bail application yesterday. We know this is stressful — we\'re here to help, no judgment. Just reply here or call (239) 955-0178 to pick up where you left off.',
         telegram: '🍀 {name}, your bail application is still waiting.\n\nEvery hour matters when someone you love is in custody. We\'re ready to move the moment you are.\n\nTap below to continue — or call us anytime:\n📞 (239) 955-0178',
         subject: '24-Hour Follow-Up'
     },
@@ -289,41 +289,6 @@ function _sendFollowUp(dripLevel, name, phone, intakeId) {
             }
         } catch (smsErr) {
             Logger.log('  ❌ SMS failed: ' + smsErr.message);
-        }}
-    }
-
-    // WhatsApp (24h drip only)
-    if (template.whatsapp) {
-        // ── Respect Communication Preferences opt-out ──
-        if (typeof checkCommPrefsAllowed === 'function' && !checkCommPrefsAllowed(phone, 'whatsapp')) {
-            Logger.log('  🚫 WhatsApp skipped — client opted out via Communication Preferences');
-        } else { try {
-            var waBody = template.whatsapp.replace(/\{name\}/g, firstName);
-            var waPhone = phone.replace(/\D/g, '');
-            if (waPhone.length === 10) waPhone = '+1' + waPhone;
-            else if (waPhone.length === 11 && waPhone[0] === '1') waPhone = '+' + waPhone;
-            else waPhone = '+' + waPhone;
-
-            if (typeof NotificationService !== 'undefined' && typeof NotificationService.sendWhatsApp === 'function') {
-                var waResult = NotificationService.sendWhatsApp(cleanPhone, waBody); // NotificationService prefixes 'whatsapp:'
-                if (waResult && waResult.success) {
-                    channels.push('whatsapp');
-                    Logger.log('  💬 WhatsApp sent via NotificationService to ' + cleanPhone.slice(-4));
-                } else {
-                    Logger.log('  ❌ WhatsApp failed: ' + (waResult ? waResult.error : 'Unknown error'));
-                }
-            } else if (typeof sendTwilioWhatsApp === 'function') {
-                sendTwilioWhatsApp(waPhone, waBody);
-                channels.push('whatsapp');
-                Logger.log('  💬 WhatsApp sent to ' + waPhone.slice(-4));
-            } else if (typeof sendWhatsAppMessage === 'function') {
-                sendWhatsAppMessage(waPhone, waBody);
-                channels.push('whatsapp');
-            } else {
-                Logger.log('  ⚠️ WhatsApp sender not available');
-            }
-        } catch (waErr) {
-            Logger.log('  ❌ WhatsApp failed: ' + waErr.message);
         }}
     }
 

@@ -229,6 +229,23 @@ function doGet(e) {
     }
   }
 
+  // Shannon Mid-Call Tool Requests — ElevenLabs POSTs to ?source=elevenlabs_tool&tool=<name>
+  // The agent reads the JSON response to continue the conversation in real-time.
+  // Tools: lookup_defendant, create_intake, calculate_premium, send_payment_link,
+  //        schedule_callback, transfer_to_bondsman, check_inmate_status,
+  //        send_directions, send_sms, check_caller_history
+  if (e.parameter && e.parameter.source === 'elevenlabs_tool') {
+    if (!verifyElevenLabsToolSecret_(e)) {
+      return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unauthorized' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    if (typeof handleElevenLabsToolCall === 'function') {
+      return handleElevenLabsToolCall(e);
+    }
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Tool handler not loaded' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   // 1. Check for JSON mode explicitly OR direct action= param (Node-RED scheduler calls use ?action=xxx without format=json)
   // Route action= params FIRST so Node-RED GET calls never fall through to the HTML renderer
   if (e.parameter.action) return handleGetAction(e);
