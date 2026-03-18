@@ -1058,7 +1058,27 @@ function setupStaffPortalIframe() {
 
                 // ── Save Draft to Wix ────────────────────────────────────
                 case 'staff-save-draft':
-                    console.log('📋 Staff portal draft saved (local only for now)');
+                    await handleStaffSaveDraft(portal, msg);
+                    break;
+                // ── System Health Check ──────────────────────────────────
+                case 'staff-get-health':
+                    await handleStaffGetHealth(portal);
+                    break;
+                // ── Intake Queue: Fetch Pending ──────────────────────────
+                case 'staff-fetch-queue':
+                    await handleStaffFetchQueue(portal);
+                    break;
+                // ── Intake Queue: Mark Processed ─────────────────────────
+                case 'staff-mark-processed':
+                    await handleStaffMarkProcessed(portal, msg.intakeId);
+                    break;
+                // ── Intake Queue: Load intake data into form ─────────────
+                case 'staff-load-intake':
+                    await handleStaffLoadIntake(portal, msg.intakeId);
+                    break;
+                // ── Run Report ───────────────────────────────────────────
+                case 'staff-run-report':
+                    await handleStaffRunReport(portal, msg.reportType);
                     break;
 
                 // ── Toast / Error Acknowledgment ─────────────────────────
@@ -1082,10 +1102,12 @@ function setupStaffPortalIframe() {
  * Send initial context to the staff portal iframe.
  * Includes session info, staff name, and the GAS web app URL.
  */
-function sendStaffPortalContext(portal) {
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
-
+async function sendStaffPortalContext(portal) {
     try {
+        // Use Secrets Manager — single source of truth, no hardcoded URLs
+        const { getGasWebAppUrl } = await import('backend/secretsManager');
+        let gasUrl = '';
+        try { gasUrl = await getGasWebAppUrl(); } catch(urlErr) { console.warn('GAS URL fetch failed (non-fatal):', urlErr); }
         portal.postMessage({
             type: 'staff-context',
             session: {
@@ -1094,7 +1116,7 @@ function sendStaffPortalContext(portal) {
                 role: currentSession ? currentSession.role : 'staff',
                 name: currentSession ? (currentSession.personName || currentSession.email) : 'Staff'
             },
-            gasUrl: GAS_URL,
+            gasUrl: gasUrl,
             timestamp: new Date().toISOString()
         });
         console.log('[OK] Staff portal context sent');
@@ -1250,5 +1272,208 @@ async function handleStaffGetArrestsFeed(portal, county) {
     } catch (e) {
         console.error('Arrests feed fetch error:', e);
         portal.postMessage({ type: 'staff-arrests-feed-result', arrests: [], success: false, error: e.message });
+    }
+}
+
+
+// ============================================================================
+// NEW HANDLERS — wired in commit following 174907e
+// ============================================================================
+
+/**
+ * Handle system health check request from staff portal.
+ * Calls GAS staffGetHealth action (POST bridge).
+ */
+async function handleStaffGetHealth(portal) {
+    try {
+        const { callGasAction } = await import('backend/gasIntegration');
+        const result = await callGasAction('staffGetHealth', {});
+        portal.postMessage({
+            type: 'staff-health-result',
+            success: result.success || false,
+            health: result
+        });
+    } catch (e) {
+        console.error('Health check error:', e);
+        portal.postMessage({ type: 'staff-health-result', success: false, error: e.message });
+    }
+}
+
+/**
+ * Handle intake queue fetch from staff portal.
+ * Merges Wix CMS + Telegram_IntakeQueue + IntakeQueue sheets via GAS staffFetchQueue.
+ */
+async function handleStaffFetchQueue(portal) {
+    try {
+        showStaffMessage('Loading intake queue...', 'info');
+        const { callGasAction } = await import('backend/gasIntegration');
+        const result = await callGasAction('staffFetchQueue', {});
+        portal.postMessage({
+            type: 'staff-queue-result',
+            success: result.success || false,
+            intakes: result.intakes || [],
+            count: result.count || 0
+        });
+    } catch (e) {
+        console.error('Fetch queue error:', e);
+        portal.postMessage({ type: 'staff-queue-result', success: false, intakes: [], count: 0, error: e.message });
+        showStaffMessage('Error loading queue: ' + e.message, 'error');
+    }
+}
+
+/**
+ * Handle marking an intake as processed from the staff portal.
+ * Routes to markTelegramIntakeProcessed (TG-*) or markWixIntakeAsSynced.
+ */
+async function handleStaffMarkProcessed(portal, intakeId) {
+    if (!intakeId) {
+        portal.postMessage({ type: 'staff-mark-processed-result', success: false, error: 'intakeId required' });
+        return;
+    }
+    try {
+        const { callGasAction } = await import('backend/gasIntegration');
+        const result = await callGasAction('staffMarkProcessed', { intakeId: intakeId });
+        portal.postMessage({
+            type: 'staff-mark-processed-result',
+            success: result.success || false,
+            intakeId: intakeId,
+            message: result.message || ''
+        });
+        if (result.success) {
+            showStaffMessage('Intake ' + intakeId + ' marked as processed', 'success');
+            await handleStaffFetchQueue(portal);
+        } else {
+            showStaffMessage('Mark processed failed: ' + (result.error || 'Unknown error'), 'error');
+        }
+    } catch (e) {
+        console.error('Mark processed error:', e);
+        portal.postMessage({ type: 'staff-mark-processed-result', success: false, intakeId: intakeId, error: e.message });
+        showStaffMessage('Error: ' + e.message, 'error');
+    }
+}
+
+/**
+ * Handle report generation from staff portal.
+ * Routes to GAS staffRunReport with reportType.
+ */
+async function handleStaffRunReport(portal, reportType) {
+    if (!reportType) {
+        portal.postMessage({ type: 'staff-report-result', success: false, error: 'reportType required' });
+        return;
+    }
+    try {
+        showStaffMessage('Running ' + reportType + ' report...', 'info');
+        const { callGasAction } = await import('backend/gasIntegration');
+        const result = await callGasAction('staffRunReport', { reportType: reportType });
+        portal.postMessage({
+            type: 'staff-report-result',
+            success: result.success || false,
+            reportType: reportType,
+            data: result.data || {},
+            message: result.message || ''
+        });
+        if (result.success) {
+            showStaffMessage(reportType + ' report generated', 'success');
+        } else {
+            showStaffMessage('Report failed: ' + (result.error || 'Unknown error'), 'error');
+        }
+    } catch (e) {
+        console.error('Report error:', e);
+        portal.postMessage({ type: 'staff-report-result', success: false, reportType: reportType, error: e.message });
+        showStaffMessage('Report error: ' + e.message, 'error');
+    }
+}
+
+/**
+ * Handle save draft from staff portal.
+ * Saves to Wix CMS StaffDrafts collection (non-fatal if collection missing).
+ */
+async function handleStaffSaveDraft(portal, msg) {
+    try {
+        const draft = {
+            staffEmail: currentSession ? currentSession.email : 'unknown',
+            formData: JSON.stringify(msg.formData || {}),
+            timestamp: new Date().toISOString(),
+            label: msg.label || 'Draft ' + new Date().toLocaleString()
+        };
+        try {
+            await wixData.save('StaffDrafts', draft);
+            portal.postMessage({ type: 'staff-draft-saved', success: true, label: draft.label });
+            showStaffMessage('Draft saved', 'success');
+        } catch (wixErr) {
+            console.warn('StaffDrafts collection save failed (non-fatal):', wixErr);
+            portal.postMessage({ type: 'staff-draft-saved', success: false, error: wixErr.message });
+        }
+    } catch (e) {
+        console.error('Save draft error:', e);
+        portal.postMessage({ type: 'staff-draft-saved', success: false, error: e.message });
+    }
+}
+
+/**
+ * Handle loading a specific intake record from the queue into the staff intake form.
+ * Fetches full intake data from GAS (getTelegramIntakeData for TG-* records)
+ * and posts it to the iframe for form population.
+ */
+async function handleStaffLoadIntake(portal, intakeId) {
+    if (!intakeId) return;
+    try {
+        showStaffMessage('Loading intake data...', 'info');
+        const { callGasAction } = await import('backend/gasIntegration');
+        // For TG- records use getTelegramIntakeData; for Wix records use staffFetchQueue
+        const action = String(intakeId).startsWith('TG-') ? 'getTelegramIntakeData' : 'staffFetchQueue';
+        const result = await callGasAction(action, { intakeId });
+        // Normalize the intake record regardless of source
+        let intake = null;
+        if (action === 'getTelegramIntakeData') {
+            intake = result; // Full TG intake record
+        } else {
+            // For Wix intakes, find the matching record from the queue
+            const queueResult = await callGasAction('staffFetchQueue', {});
+            intake = (queueResult.intakes || []).find(i => (i.IntakeID || i._id) === intakeId) || null;
+        }
+        if (!intake) {
+            portal.postMessage({ type: 'staff-intake-loaded', success: false, error: 'Intake record not found: ' + intakeId });
+            showStaffMessage('Intake not found: ' + intakeId, 'error');
+            return;
+        }
+        // Map intake fields to the staff portal form field names
+        // Supports both PascalCase (Wix) and camelCase (Telegram) field names
+        const formData = {
+            // Indemnitor fields
+            'caller_name': intake.IndemnitorName || intake.indemnitorFullName || intake.caller_name || '',
+            'caller_email': intake.IndemnitorEmail || intake.indemnitorEmail || intake.caller_email || '',
+            'caller_phone': intake.IndemnitorPhone || intake.indemnitorPhone || intake.caller_phone || '',
+            'indemnitor-street-address': intake.IndemnitorAddress || intake.indemnitorAddress || '',
+            'indemnitor-city': intake.IndemnitorCity || intake.indemnitorCity || '',
+            'indemnitor-state': intake.IndemnitorState || intake.indemnitorState || 'FL',
+            'indemnitor-zipcode': intake.IndemnitorZip || intake.indemnitorZip || '',
+            'indemnitor-dob': intake.IndemnitorDOB || intake.indemnitorDOB || '',
+            'indemnitor-ssn': intake.IndemnitorSSN || intake.indemnitorSSN || '',
+            'indemnitor-dl-number': intake.IndemnitorDL || intake.indemnitorDL || '',
+            'indemnitor-employer': intake.IndemnitorEmployer || intake.indemnitorEmployer || '',
+            // Defendant fields
+            'defendant_name': intake.DefendantName || intake.defendantFullName || intake.defendant_name || '',
+            'defendant-dob': intake.DefendantDOB || intake.defendantDOB || intake.defendant_dob || '',
+            'defendant-county': intake.County || intake.county || '',
+            'def-county': intake.County || intake.county || '',
+            'defendant-charges': intake.Charges || intake.charges || '',
+            'defendant-bond-amount': intake.BondAmount || intake.bondAmount || intake.bond_amount || '',
+            'defendant-case-number': intake.CaseNumber || intake.caseNumber || '',
+            // Meta
+            '_intakeId': intakeId,
+            '_source': intake.Source || intake.source || (String(intakeId).startsWith('TG-') ? 'Telegram' : 'Wix')
+        };
+        portal.postMessage({
+            type: 'staff-intake-loaded',
+            success: true,
+            intakeId,
+            formData
+        });
+        showStaffMessage('Intake loaded — review and generate packet', 'success');
+    } catch (e) {
+        console.error('Load intake error:', e);
+        portal.postMessage({ type: 'staff-intake-loaded', success: false, intakeId, error: e.message });
+        showStaffMessage('Error loading intake: ' + e.message, 'error');
     }
 }

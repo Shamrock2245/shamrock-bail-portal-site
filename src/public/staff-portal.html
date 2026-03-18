@@ -151,6 +151,7 @@ input,select,textarea,button { font-family:var(--font); }
 <!-- TAB BAR -->
 <div class="tab-bar">
   <button class="tab-btn active" onclick="SP.switchTab('intake')">📋 Case Intake</button>
+  <button class="tab-btn" onclick="SP.switchTab('queue')">📥 Intake Queue</button>
   <button class="tab-btn" onclick="SP.switchTab('cases')">📊 Active Cases</button>
   <button class="tab-btn" onclick="SP.switchTab('arrests')">🚨 Live Arrests</button>
   <button class="tab-btn" onclick="SP.switchTab('health')">⚙️ System Health</button>
@@ -329,6 +330,24 @@ input,select,textarea,button { font-family:var(--font); }
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB: INTAKE QUEUE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="tab-queue" class="tab-content">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📥 Intake Queue <span id="queueBadge" class="badge badge-pending" style="display:none"></span></div>
+      <button class="btn btn-secondary btn-sm" onclick="SP.loadQueue()">🔄 Refresh</button>
+    </div>
+    <div id="queueLoading" style="text-align:center;padding:40px;color:var(--text-dim);display:none">
+      <span class="spinner"></span> Loading intake queue...
+    </div>
+    <div id="queueEmpty" style="text-align:center;padding:40px;color:var(--text-dim);display:none">
+      ✅ No pending intakes
+    </div>
+    <div id="queueList"></div>
+  </div>
+</div>
+<!-- ═══════════════════════════════════════════════════════ -->
 <!-- TAB 2: ACTIVE CASES -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div id="tab-cases" class="tab-content">
@@ -442,10 +461,11 @@ var SP = {
     document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('active'); });
     document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
     document.getElementById('tab-' + id).classList.add('active');
-    var tabs = ['intake','cases','arrests','health','reports'];
+    var tabs = ['intake','queue','cases','arrests','health','reports'];
     var btns = document.querySelectorAll('.tab-btn');
     btns[tabs.indexOf(id)].classList.add('active');
 
+    if (id === 'queue') SP.loadQueue();
     if (id === 'cases') SP.loadCases();
     if (id === 'arrests') SP.loadArrests();
     if (id === 'health') SP.loadHealth();
@@ -779,24 +799,152 @@ var SP = {
 
   // ─── HEALTH CHECK via postMessage ───
   loadHealth: function() {
-    SP.toast('Running health checks...');
-    // For now, health checks still use a direct lightweight GET since they're read-only public endpoints
-    // The bridge will evolve once health endpoints are ready
     SP.sendToParent({ type: 'staff-get-health' });
-    SP.toast('✅ Health check request sent');
+    document.getElementById('healthGrid').innerHTML = '<div style="text-align:center;padding:20px"><span class="spinner"></span></div>';
+  },
+  // ─── INTAKE QUEUE via postMessage ───
+  loadQueue: function() {
+    var list = document.getElementById('queueList');
+    var loading = document.getElementById('queueLoading');
+    var empty = document.getElementById('queueEmpty');
+    if (list) list.innerHTML = '';
+    if (loading) loading.style.display = 'block';
+    if (empty) empty.style.display = 'none';
+    SP.sendToParent({ type: 'staff-fetch-queue' });
+  },
+  renderQueue: function(intakes) {
+    var list = document.getElementById('queueList');
+    var loading = document.getElementById('queueLoading');
+    var empty = document.getElementById('queueEmpty');
+    var badge = document.getElementById('queueBadge');
+    if (loading) loading.style.display = 'none';
+    if (!intakes || intakes.length === 0) {
+      if (empty) empty.style.display = 'block';
+      if (badge) badge.style.display = 'none';
+      return;
+    }
+    if (badge) { badge.textContent = intakes.length + ' pending'; badge.style.display = 'inline-block'; }
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+    html += '<thead><tr style="border-bottom:1px solid var(--border)">';
+    html += '<th style="text-align:left;padding:8px 12px;color:var(--text-dim)">Time</th>';
+    html += '<th style="text-align:left;padding:8px 12px;color:var(--text-dim)">Indemnitor</th>';
+    html += '<th style="text-align:left;padding:8px 12px;color:var(--text-dim)">Defendant</th>';
+    html += '<th style="text-align:left;padding:8px 12px;color:var(--text-dim)">County</th>';
+    html += '<th style="text-align:left;padding:8px 12px;color:var(--text-dim)">Source</th>';
+    html += '<th style="text-align:left;padding:8px 12px;color:var(--text-dim)">Actions</th>';
+    html += '</tr></thead><tbody>';
+    intakes.forEach(function(item) {
+      var ts = item.Timestamp || item.timestamp || '';
+      var timeStr = ts ? new Date(ts).toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+      var indemnitor = item.IndemnitorName || item.indemnitorFullName || item.caller_name || '—';
+      var defendant = item.DefendantName || item.defendantFullName || item.defendant_name || '—';
+      var county = item.County || item.county || '—';
+      var source = item.Source || item.source || (String(item.IntakeID || '').startsWith('TG-') ? 'Telegram' : 'Wix');
+      var intakeId = item.IntakeID || item._id || '';
+      var sourceBadge = source === 'Telegram' ? 'badge-sent' : source === 'Shannon' ? 'badge-hot' : 'badge-pending';
+      html += '<tr style="border-bottom:1px solid var(--border)">';
+      html += '<td style="padding:8px 12px">' + timeStr + '</td>';
+      html += '<td style="padding:8px 12px;font-weight:600">' + indemnitor + '</td>';
+      html += '<td style="padding:8px 12px">' + defendant + '</td>';
+      html += '<td style="padding:8px 12px">' + county + '</td>';
+      html += '<td style="padding:8px 12px"><span class="badge ' + sourceBadge + '">' + source + '</span></td>';
+      html += '<td style="padding:8px 12px">';
+      html += '<button class="btn btn-primary btn-sm" onclick="SP.loadIntakeIntoForm(' + JSON.stringify(intakeId) + ')" style="margin-right:4px">Load</button>';
+      html += '<button class="btn btn-danger btn-sm" onclick="SP.markProcessed(' + JSON.stringify(intakeId) + ')">Done</button>';
+      html += '</td></tr>';
+    });
+    html += '</tbody></table>';
+    if (list) list.innerHTML = html;
+  },
+  loadIntakeIntoForm: function(intakeId) {
+    SP.switchTab('intake');
+    SP.toast('Loading intake ' + intakeId + ' into form...');
+    SP.sendToParent({ type: 'staff-load-intake', intakeId: intakeId });
+  },
+  markProcessed: function(intakeId) {
+    if (!confirm('Mark intake ' + intakeId + ' as processed?')) return;
+    SP.sendToParent({ type: 'staff-mark-processed', intakeId: intakeId });
   },
 
   // ─── REPORTS via postMessage ───
   runReport: function(type) {
     SP.toast('Generating ' + type + ' report...');
-    SP.sendToParent({
-      type: 'staff-generate-packet',
-      data: { action: 'run' + type.charAt(0).toUpperCase() + type.slice(1) + 'Report', reportType: type }
-    });
-    SP.toast('Report request sent. Check Slack for results.');
+    SP.sendToParent({ type: 'staff-run-report', reportType: type });
   },
 
   // ─── UTILITIES ───
+  renderHealth: function(health) {
+    var grid = document.getElementById('healthGrid');
+    if (!grid) return;
+    if (!health || !health.success) {
+      grid.innerHTML = '<div style="color:var(--red);padding:20px">Health check failed: ' + (health && health.error ? health.error : 'No response') + '</div>';
+      return;
+    }
+    var html = '';
+    // Services
+    var services = health.services || {};
+    var svcMap = { gasBackend: 'GAS Backend', signNow: 'SignNow', twilio: 'Twilio', mongoProxy: 'Mongo Proxy' };
+    Object.keys(svcMap).forEach(function(k) {
+      var val = services[k] || 'unknown';
+      var ok = val === 'operational' || val === 'configured';
+      html += '<div class="health-card"><div class="hc-header"><span class="hc-name">' + svcMap[k] + '</span>';
+      html += '<span class="hc-status" style="background:' + (ok ? 'var(--emerald)' : 'var(--red)') + '"></span></div>';
+      html += '<div class="hc-detail">' + val + '</div></div>';
+    });
+    // Scrapers
+    var scrapers = health.scrapers || {};
+    Object.keys(scrapers).forEach(function(county) {
+      var s = scrapers[county];
+      html += '<div class="health-card"><div class="hc-header"><span class="hc-name">' + county + ' Scraper</span>';
+      html += '<span class="hc-status" style="background:' + (s.ok ? 'var(--emerald)' : 'var(--amber)') + '"></span></div>';
+      html += '<div class="hc-detail">' + s.lastRun + ' (' + (s.rows || 0) + ' rows)</div></div>';
+    });
+    // Intake Queue
+    if (health.intakeQueue) {
+      html += '<div class="health-card"><div class="hc-header"><span class="hc-name">Intake Queue</span>';
+      html += '<span class="hc-status" style="background:var(--emerald)"></span></div>';
+      html += '<div class="hc-detail">Wix: ' + (health.intakeQueue.wix || 0) + ' | Telegram: ' + (health.intakeQueue.telegram || 0) + '</div></div>';
+    }
+    grid.innerHTML = html || '<div style="color:var(--text-dim);padding:20px">No health data</div>';
+    if (health.version) {
+      var vEl = document.getElementById('healthVersion');
+      if (vEl) vEl.textContent = health.version;
+    }
+  },
+  populateFormFromIntake: function(fd) {
+    // Map formData keys to DOM input IDs in the staff intake form
+    var fieldMap = {
+      'caller_name': 'indemnitor-name',
+      'caller_email': 'indemnitor-email',
+      'caller_phone': 'indemnitor-phone',
+      'indemnitor-street-address': 'indemnitor-address',
+      'indemnitor-city': 'indemnitor-city',
+      'indemnitor-state': 'indemnitor-state',
+      'indemnitor-zipcode': 'indemnitor-zip',
+      'indemnitor-dob': 'indemnitor-dob',
+      'indemnitor-ssn': 'indemnitor-ssn',
+      'indemnitor-dl-number': 'indemnitor-dl',
+      'indemnitor-employer': 'indemnitor-employer',
+      'defendant_name': 'defendant-name',
+      'defendant-dob': 'defendant-dob',
+      'defendant-county': 'def-county',
+      'def-county': 'def-county',
+      'defendant-charges': 'charges-0-desc',
+      'defendant-bond-amount': 'charges-0-bond',
+      'defendant-case-number': 'charges-0-case'
+    };
+    Object.keys(fd).forEach(function(key) {
+      var elId = fieldMap[key] || key;
+      var el = document.getElementById(elId);
+      if (el && fd[key]) {
+        el.value = fd[key];
+        // Trigger change event for any listeners (e.g. recalcFinancials)
+        el.dispatchEvent(new Event('change'));
+      }
+    });
+    // Recalc financials after population
+    if (typeof SP.recalcFinancials === 'function') SP.recalcFinancials();
+  },
   clearForm: function() {
     document.querySelectorAll('#tab-intake input').forEach(function(el) {
       if (el.id !== 'agent-name' && el.id !== 'agent-license') el.value = '';
@@ -893,6 +1041,46 @@ window.addEventListener('message', function(event) {
       }
       break;
 
+    // ── Health result ──
+    case 'staff-health-result':
+      SP.renderHealth(msg.health || {});
+      break;
+    // ── Queue result ──
+    case 'staff-queue-result':
+      SP.renderQueue(msg.intakes || []);
+      break;
+    // ── Mark processed result ──
+    case 'staff-mark-processed-result':
+      if (msg.success) { SP.toast('Intake marked as processed'); SP.loadQueue(); }
+      else { SP.toast('Error: ' + (msg.error || 'Unknown')); }
+      break;
+    // ── Report result ──
+    case 'staff-report-result':
+      if (msg.success) {
+        SP.toast(msg.reportType + ' report generated. Check Slack/Drive.');
+        // Update report stats if available
+        if (msg.data && msg.data.stats) {
+          var s = msg.data.stats;
+          if (document.getElementById('rptToday')) document.getElementById('rptToday').textContent = s.today || '—';
+          if (document.getElementById('rptWeek')) document.getElementById('rptWeek').textContent = s.week || '—';
+          if (document.getElementById('rptMonth')) document.getElementById('rptMonth').textContent = s.month || '—';
+          if (document.getElementById('rptLiability')) document.getElementById('rptLiability').textContent = s.liability || '—';
+        }
+      } else { SP.toast('Report failed: ' + (msg.error || 'Unknown')); }
+      break;
+    // ── Draft saved ──
+    case 'staff-draft-saved':
+      if (msg.success) SP.toast('Draft saved: ' + (msg.label || ''));
+      break;
+    // ── Intake loaded into form ──
+    case 'staff-intake-loaded':
+      if (msg.success && msg.formData) {
+        SP.populateFormFromIntake(msg.formData);
+        SP.toast('Intake loaded — review fields and generate packet');
+      } else {
+        SP.toast('Could not load intake: ' + (msg.error || 'Unknown error'));
+      }
+      break;
     default:
       break;
   }

@@ -1282,8 +1282,12 @@ function handleAction(data) {
     try {
       Logger.log('🏢 Staff Portal: Generate packet for ' + (data.defendant_name || 'unknown'));
       MongoLogger.logActivity('staffGeneratePacket', 'staff_portal');
+      // Merge nested formData into top-level so _shannon_buildFormData hydrates all fields
+      // Staff portal sends: { caller_name, caller_email, defendant_name, county, formData: {...all fields} }
+      var packetData = Object.assign({}, data.formData || {}, data);
+      delete packetData.formData; // prevent circular nesting
       if (typeof handleShannonSendPaperwork === 'function') {
-        const result = handleShannonSendPaperwork(data);
+        const result = handleShannonSendPaperwork(packetData);
         return result;
       }
       return { success: false, error: 'handleShannonSendPaperwork not loaded' };
@@ -2009,6 +2013,107 @@ function handleAction(data) {
     } catch (e) { return { success: false, error: e.message }; }
   }
 
+  // ── STAFF PORTAL POST ACTIONS (POST-accessible mirrors of GET actions) ──────
+  if (action === 'staffGetActiveCases') {
+    try {
+      const result = staffGetActiveCases_(data.county || '');
+      return result;
+    } catch (err) { return { success: false, error: err.message }; }
+  }
+  if (action === 'staffGetArrestsFeed') {
+    try {
+      const result = staffGetArrestsFeed_(data.county || '');
+      return result;
+    } catch (err) { return { success: false, error: err.message }; }
+  }
+  if (action === 'staffGetHealth') {
+    try {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const countySheets = ['Lee', 'Charlotte', 'Collier', 'DeSoto', 'Hendry', 'Manatee', 'Sarasota'];
+      const scrapers = {};
+      countySheets.forEach(function(c) {
+        try {
+          const sh = ss.getSheetByName(c);
+          if (sh && sh.getLastRow() > 1) {
+            const lastDate = sh.getRange(sh.getLastRow(), 1).getValue();
+            scrapers[c] = {
+              ok: true,
+              lastRun: lastDate instanceof Date ? Utilities.formatDate(lastDate, 'America/New_York', 'MMM d h:mm a') : 'Unknown',
+              rows: sh.getLastRow() - 1
+            };
+          } else {
+            scrapers[c] = { ok: false, lastRun: 'No data', rows: 0 };
+          }
+        } catch(e) { scrapers[c] = { ok: false, lastRun: 'Error', rows: 0 }; }
+      });
+      const iqSheet = ss.getSheetByName('IntakeQueue');
+      const tgSheet = ss.getSheetByName('Telegram_IntakeQueue');
+      const props = PropertiesService.getScriptProperties();
+      return {
+        success: true,
+        timestamp: new Date().toISOString(),
+        version: 'v4.2.1-staff-portal',
+        scrapers: scrapers,
+        intakeQueue: {
+          wix: iqSheet ? Math.max(0, iqSheet.getLastRow() - 1) : 0,
+          telegram: tgSheet ? Math.max(0, tgSheet.getLastRow() - 1) : 0
+        },
+        services: {
+          gasBackend: 'operational',
+          signNow: props.getProperty('SIGNNOW_API_TOKEN') ? 'configured' : 'missing',
+          twilio: props.getProperty('TWILIO_ACCOUNT_SID') ? 'configured' : 'missing',
+          mongoProxy: props.getProperty('MONGO_PROXY_URL') ? 'configured' : 'missing'
+        }
+      };
+    } catch (hErr) { return { success: false, error: hErr.message }; }
+  }
+  if (action === 'staffFetchQueue') {
+    var wixQ = []; try { wixQ = getWixIntakeQueue() || []; } catch(e) {}
+    var tgQ = []; try { tgQ = getPendingIntakes() || []; } catch(e) {}
+    const seenQ = new Set();
+    const dedupedQ = [];
+    [...wixQ, ...tgQ].forEach(function(item) {
+      const id = item.IntakeID || item._id || '';
+      if (!id || !seenQ.has(id)) { if (id) seenQ.add(id); dedupedQ.push(item); }
+    });
+    dedupedQ.sort(function(a, b) {
+      return new Date(b.Timestamp || 0).getTime() - new Date(a.Timestamp || 0).getTime();
+    });
+    return { success: true, intakes: dedupedQ, count: dedupedQ.length };
+  }
+  if (action === 'staffRunReport') {
+    const reportType = data.reportType || '';
+    try {
+      if (reportType === 'liability') {
+        const r = typeof generateWeeklyLiabilityReport === 'function' ? generateWeeklyLiabilityReport() : { error: 'Not loaded' };
+        return { success: true, reportType: 'liability', data: r };
+      }
+      if (reportType === 'commissions') {
+        const r = typeof generateAgentCommissionReport === 'function' ? generateAgentCommissionReport(new Date().getMonth() + 1, new Date().getFullYear()) : { error: 'Not loaded' };
+        return { success: true, reportType: 'commissions', data: r };
+      }
+      if (reportType === 'reconciliation') {
+        const r = typeof generateVoidDischargeReconciliation === 'function' ? generateVoidDischargeReconciliation(30) : { error: 'Not loaded' };
+        return { success: true, reportType: 'reconciliation', data: r };
+      }
+      if (reportType === 'daily') {
+        const r = typeof generateDailyOpsReport === 'function' ? generateDailyOpsReport() : { error: 'Not loaded' };
+        return { success: true, reportType: 'daily', data: r };
+      }
+      return { success: false, error: 'Unknown report type: ' + reportType };
+    } catch(rErr) { return { success: false, error: rErr.message }; }
+  }
+  if (action === 'staffMarkProcessed') {
+    try {
+      const intakeId = data.intakeId || '';
+      if (!intakeId) return { success: false, error: 'intakeId required' };
+      if (String(intakeId).startsWith('TG-')) {
+        return markTelegramIntakeProcessed(intakeId);
+      } else {
+        return markWixIntakeAsSynced(intakeId);
+      }
+    } catch(mErr) { return { success: false, error: mErr.message }; }
+  }
   return { success: false, error: 'Unknown Action: ' + action };
 }
 
