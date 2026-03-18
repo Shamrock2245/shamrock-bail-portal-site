@@ -1266,6 +1266,16 @@ function handleAction(data) {
   // 1. INTAKE & QUEUE
   if (action === 'intakeSubmission') { MongoLogger.logIntake(data, 'web'); return handleIntakeSubmission(data); }
   if (action === 'newIntake') { MongoLogger.logIntake(data, 'web'); return handleNewIntake(data.caseId, data.data); }
+
+  // 1b. WIZARD FORM SUBMISSIONS (defendant-wizard.html & indemnitor-wizard.html)
+  if (action === 'submitDefendantApplication') {
+    MongoLogger.logIntake(data.payload || data, 'defendant_wizard');
+    return handleWizardFormSubmission(data.payload || data, 'defendant');
+  }
+  if (action === 'submitIndemnitorForm') {
+    MongoLogger.logIntake(data.payload || data, 'indemnitor_wizard');
+    return handleWizardFormSubmission(data.payload || data, 'indemnitor');
+  }
   if (action === 'fetchPendingIntakes') {
     // Wix CMS path — wrapped in try/catch so a Wix API failure never blocks
     // the Google Sheets path (which has the confirmed Telegram intake data).
@@ -3223,7 +3233,185 @@ function handleIntakeSubmission(data) {
 }
 
 /**
- * Handles the "Start Paperwork" action from Wix Portal
+ * Handles wizard form submissions from defendant-wizard.html and indemnitor-wizard.html.
+ * Both wizards POST a structured 'payload' object. This handler normalizes
+ * the data into the IntakeQueue sheet format and triggers Slack alerts.
+ *
+ * @param {Object} payload - The structured form data from collectData()
+ * @param {string} role - 'defendant' or 'indemnitor'
+ * @returns {Object} { success, intakeId }
+ */
+function handleWizardFormSubmission(payload, role) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheetName = (role === 'defendant') ? 'DefendantApplications' : 'IndemnitorApplications';
+    var sheet = ss.getSheetByName(sheetName);
+
+    // Auto-create the sheet if it doesn't exist
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+      if (role === 'defendant') {
+        sheet.appendRow([
+          'Timestamp', 'IntakeID', 'Role',
+          'FirstName', 'MiddleName', 'LastName', 'DOB', 'SSN_Last4',
+          'Phone', 'Email',
+          'Address', 'City', 'State', 'Zip',
+          'Employer', 'EmployerPhone', 'Occupation', 'Income',
+          'DL_Number', 'DL_State',
+          'Vehicle', 'ArrestedBefore', 'PriorDetails',
+          'Consents_JSON', 'Location_JSON',
+          'Status', 'ProcessedAt', 'RawPayload'
+        ]);
+      } else {
+        sheet.appendRow([
+          'Timestamp', 'IntakeID', 'Role',
+          'FirstName', 'MiddleName', 'LastName', 'DOB', 'SSN_Last4',
+          'Phone', 'Email',
+          'Address', 'City', 'State', 'Zip',
+          'Employer', 'EmployerPhone', 'Supervisor', 'Occupation', 'Income',
+          'DefendantName', 'DefendantDOB', 'DefendantRelation',
+          'DefendantCharges', 'DefendantBookingNumber', 'DefendantCounty',
+          'Ref1_Name', 'Ref1_Phone', 'Ref1_Relation',
+          'Ref2_Name', 'Ref2_Phone', 'Ref2_Relation',
+          'IsHomeowner', 'MortgageCo', 'IsMarried', 'SpouseName',
+          'Vehicle_JSON', 'Uploads_JSON',
+          'Status', 'ProcessedAt', 'RawPayload'
+        ]);
+      }
+      sheet.setFrozenRows(1);
+    }
+
+    var ts = new Date();
+    var intakeId = (role === 'defendant' ? 'DEF-' : 'IND-') + ts.getTime();
+
+    // ── Build the row based on role ──
+    var row;
+
+    if (role === 'defendant') {
+      var p = payload.personal || {};
+      var c = payload.contact || {};
+      var emp = payload.employment || {};
+      var id = payload.identification || {};
+      var veh = payload.vehicle || {};
+      var leg = payload.legal || {};
+      var consents = payload.consents || {};
+
+      row = [
+        ts, intakeId, 'defendant',
+        p.firstName || '', p.middleName || '', p.lastName || '', p.dob || '', p.ssn || '',
+        c.phone || '', c.email || '',
+        c.address || '', c.city || '', c.state || '', c.zip || '',
+        emp.employer || '', emp.employerPhone || '', emp.occupation || '', emp.income || '',
+        id.dl || '', id.dlState || '',
+        [veh.year, veh.make, veh.model, veh.color].filter(Boolean).join(' '),
+        leg.arrestedBefore ? 'Yes' : 'No', leg.priorDetails || '',
+        JSON.stringify(consents),
+        JSON.stringify(payload.consents?.location || {}),
+        'pending', '', JSON.stringify(payload)
+      ];
+    } else {
+      // Indemnitor
+      var pi = payload.personal || {};
+      var ci = payload.contact || {};
+      var empi = payload.employment || {};
+      var def = payload.defendant || {};
+      var refs = payload.references || [];
+      var hw = payload.homeowner || {};
+      var sp = payload.spouse || {};
+      var vehi = payload.vehicle || {};
+
+      row = [
+        ts, intakeId, 'indemnitor',
+        pi.firstName || '', pi.middleName || '', pi.lastName || '', pi.dob || '', pi.ssn || '',
+        ci.phone || '', ci.email || '',
+        ci.address || '', ci.city || '', ci.state || '', ci.zip || '',
+        empi.employer || '', empi.employerPhone || '', empi.supervisor || '', empi.occupation || '', empi.income || '',
+        def.fullName || '', def.dob || '', def.relationship || '',
+        def.charges || '', def.bookingNumber || '', def.county || '',
+        (refs[0] || {}).name || '', (refs[0] || {}).phone || '', (refs[0] || {}).relation || '',
+        (refs[1] || {}).name || '', (refs[1] || {}).phone || '', (refs[1] || {}).relation || '',
+        hw.isHomeowner ? 'Yes' : 'No', hw.mortgageCo || '',
+        sp.isMarried ? 'Yes' : 'No', sp.name || '',
+        JSON.stringify(vehi),
+        JSON.stringify(payload.uploadData || {}),
+        'pending', '', JSON.stringify(payload)
+      ];
+    }
+
+    sheet.appendRow(row);
+    Logger.log('✅ Wizard ' + role + ' submission saved: ' + intakeId);
+
+    // ── Also write to IntakeQueue for unified pipeline ──
+    try {
+      var iq = ss.getSheetByName('IntakeQueue');
+      if (iq) {
+        var name = (role === 'defendant')
+          ? ((payload.personal || {}).firstName || '') + ' ' + ((payload.personal || {}).lastName || '')
+          : ((payload.personal || {}).firstName || '') + ' ' + ((payload.personal || {}).lastName || '');
+        var defName = (role === 'defendant')
+          ? name
+          : ((payload.defendant || {}).fullName || '');
+
+        iq.appendRow([
+          ts, intakeId, role,
+          (payload.contact || {}).email || '',
+          (payload.contact || {}).phone || '',
+          name.trim(),
+          defName.trim(),
+          (role === 'defendant') ? (payload.contact || {}).phone || '' : '',
+          '', // CaseNumber — assigned later
+          'pending',
+          JSON.stringify(payload.references || []),
+          JSON.stringify(payload.employment || {}),
+          (payload.homeowner || {}).isHomeowner ? 'Homeowner' : 'Renter',
+          '' // ProcessedAt
+        ]);
+      }
+    } catch (iqErr) {
+      Logger.log('⚠️ IntakeQueue cross-post failed (non-fatal): ' + iqErr.message);
+    }
+
+    // ── Slack Alert ──
+    try {
+      var fullName = (role === 'defendant')
+        ? ((payload.personal || {}).firstName + ' ' + (payload.personal || {}).lastName)
+        : ((payload.personal || {}).firstName + ' ' + (payload.personal || {}).lastName);
+      var emoji = (role === 'defendant') ? '⚖️' : '📋';
+      var slackMsg = emoji + ' *New ' + role.charAt(0).toUpperCase() + role.slice(1) + ' Wizard Submission*\n' +
+        '• Name: ' + fullName + '\n' +
+        '• Phone: ' + ((payload.contact || {}).phone || 'N/A') + '\n' +
+        '• Email: ' + ((payload.contact || {}).email || 'N/A') + '\n' +
+        '• Intake ID: `' + intakeId + '`\n' +
+        '• Source: Portal Wizard';
+
+      if (role === 'indemnitor' && payload.defendant) {
+        slackMsg += '\n• Defendant: ' + ((payload.defendant || {}).fullName || 'N/A');
+      }
+
+      NotificationService.sendSlack('#intake', slackMsg);
+    } catch (slackErr) {
+      Logger.log('⚠️ Slack notification failed (non-fatal): ' + slackErr.message);
+    }
+
+    return {
+      success: true,
+      intakeId: intakeId,
+      message: 'Application received. Our team will review shortly.'
+    };
+
+  } catch (e) {
+    Logger.log('❌ Wizard form submission failed: ' + e.message);
+    return { success: false, error: e.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+
+/**
  * This triggers document generation and returns a signing link
  */
 function handleStartPaperwork(data) {

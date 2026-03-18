@@ -1,7 +1,8 @@
 /// <reference path="../types/wix-overrides.d.ts" />
 // Page: portal-defendant.skg9y.js (CUSTOM AUTH VERSION)
 // Function: Client Dashboard for Check-Ins with Selfie Requirement and Case Status
-// Last Updated: 2026-01-08
+// Includes: Wizard postMessage bridge for defendant-wizard.html
+// Last Updated: 2026-03-17
 //
 // AUTHENTICATION: Custom session-based (NO Wix Members)
 // Uses browser storage (wix-storage-frontend) session tokens validated against PortalSessions collection
@@ -36,6 +37,7 @@ $w.onReady(async function () {
     setupCheckInHandlers();
     setupPaperworkButtons();
     setupLogoutButton();
+    setupDefendantWizardListener();
 
     try {
         // Check for session token in URL (passed from magic link redirect)
@@ -498,6 +500,118 @@ async function proceedToSignNow() {
                 $w('#textSigningStatus').text = "Error preparing documents.";
             }
         } catch (err) { }
+    }
+}
+
+// ============================================================================
+// WIZARD IFRAME BRIDGE
+// ============================================================================
+
+/**
+ * Listen for postMessage events from the embedded defendant-wizard.html.
+ * The wizard sends:
+ *   - 'shamrock-defendant-submitted' on success
+ *   - 'shamrock-defendant-error' on failure
+ *   - 'wizard-ready' when loaded
+ *   - 'consent-update' / 'location-captured' for real-time consent events
+ */
+function setupDefendantWizardListener() {
+    try {
+        /** @type {any} */ ($w('#defendantWizard')).onMessage((event) => {
+            const msg = event.data;
+            if (!msg || !msg.type) return;
+
+            console.log(' Defendant Wizard message received:', msg.type);
+
+            switch (msg.type) {
+                case 'shamrock-defendant-submitted':
+                    console.log('[OK] Defendant wizard form submitted');
+                    handleDefendantWizardSubmission(msg.data);
+                    break;
+
+                case 'shamrock-defendant-error':
+                    console.error('[X] Defendant wizard error:', msg.error);
+                    try {
+                        if ($w('#textUserWelcome').type) {
+                            $w('#textUserWelcome').text = 'Form error. Please try again or call (239) 332-2245.';
+                        }
+                    } catch (e) { }
+                    break;
+
+                case 'wizard-ready':
+                case 'defendant-wizard-ready':
+                    console.log('[OK] Defendant wizard iframe ready, sending context...');
+                    sendContextToDefendantWizard();
+                    break;
+
+                case 'consent-update':
+                case 'shamrock-consent-update':
+                    console.log(' Consent updated:', msg.key, msg.granted);
+                    break;
+
+                case 'location-captured':
+                case 'shamrock-location-captured':
+                    console.log(' Location captured:', msg.location || msg);
+                    break;
+
+                default:
+                    break;
+            }
+        });
+        console.log('[OK] Defendant wizard message listener attached');
+    } catch (e) {
+        console.warn('[!] Could not attach defendant wizard listener:', e.message);
+        // This is expected if #defendantWizard element doesn't exist on this page version
+    }
+}
+
+/**
+ * Send session context to the defendant wizard iframe for auto-prefill
+ */
+function sendContextToDefendantWizard() {
+    if (!currentSession) return;
+
+    setTimeout(() => {
+        try {
+            /** @type {any} */ ($w('#defendantWizard')).postMessage({
+                type: 'prefill',
+                data: {
+                    firstName: currentSession.firstName || '',
+                    lastName: currentSession.lastName || '',
+                    email: currentSession.email || '',
+                    phone: currentSession.phone || '',
+                    caseId: currentSession.caseId || '',
+                    sessionToken: getSessionToken()
+                }
+            });
+            console.log('[OK] Sent prefill data to defendant wizard');
+        } catch (e) {
+            console.warn('[!] Could not send prefill to defendant wizard:', e.message);
+        }
+    }, 1500);
+}
+
+/**
+ * Handle successful form submission from the defendant wizard
+ */
+function handleDefendantWizardSubmission(data) {
+    console.log('[OK] Defendant wizard submission received:', data?.personal?.firstName);
+
+    // Update paperwork status on dashboard
+    try {
+        if ($w('#textPaperworkStatus').type) {
+            $w('#textPaperworkStatus').text = 'Submitted - Under Review';
+        }
+        if ($w('#textUserWelcome').type) {
+            $w('#textUserWelcome').text = `Thank you, ${data?.personal?.firstName || 'Client'}! Your application has been submitted.`;
+        }
+    } catch (e) {
+        console.warn('Error updating UI after wizard submission:', e);
+    }
+
+    // Store consent info locally
+    if (data?.consents && currentSession?.personId) {
+        local.setItem(`consent_${currentSession.personId}`, 'true');
     }
 }
 
