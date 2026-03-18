@@ -148,6 +148,7 @@ $w.onReady(async function () {
     setupMagicLinkGenerator(); // Setup "Open Dashboard" button
     setupBondTrackerButton();   // Setup "Open Bond Tracker" -> Telegram Intake Sheet
     setupStartPaperworkButton(); // Setup "Start Paperwork" button (CRITICAL)
+    setupStaffPortalIframe();   // Setup Command Center iframe bridge
 
     try {
         if ($w('#searchBar').type) {
@@ -991,3 +992,210 @@ async function promptForSelect(title, options) {
 
 // Export for use in other parts of the staff portal
 export { generateMagicLinkForUser, generateAccessCodeOnly, setupMagicLinkGenerator, setupStartPaperworkButton, handleFinalizePaperwork };
+
+// ============================================================================
+// STAFF PORTAL COMMAND CENTER — IFRAME BRIDGE
+// ============================================================================
+
+/**
+ * Wire up the embedded staff-portal.html HtmlComponent.
+ * Rename #html1 to #staffPortal in the Wix Editor.
+ *
+ * Communication flow:
+ *   staff-portal.html → postMessage → this handler → backend call → postMessage → staff-portal.html
+ */
+function setupStaffPortalIframe() {
+    try {
+        const portal = /** @type {any} */ ($w('#staffPortal'));
+        if (!portal || typeof portal.onMessage !== 'function') {
+            console.warn('Staff Portal: #staffPortal HtmlComponent not found');
+            return;
+        }
+
+        console.log('[OK] Staff Portal: Command Center iframe found, setting up bridge...');
+
+        portal.onMessage(async (event) => {
+            const msg = event.data;
+            if (!msg || !msg.type) return;
+
+            console.log('📨 Staff Portal message:', msg.type);
+
+            switch (msg.type) {
+                // ── Iframe Ready ─────────────────────────────────────────
+                case 'staff-portal-ready':
+                    console.log('[OK] Staff portal iframe ready, sending context...');
+                    sendStaffPortalContext(portal);
+                    break;
+
+                // ── Booking Lookup ───────────────────────────────────────
+                case 'staff-booking-lookup':
+                    await handleStaffBookingLookup(portal, msg.query);
+                    break;
+
+                // ── Generate SignNow Packet ──────────────────────────────
+                case 'staff-generate-packet':
+                    await handleStaffGeneratePacket(portal, msg.data);
+                    break;
+
+                // ── Fetch Active Cases ───────────────────────────────────
+                case 'staff-get-active-cases':
+                    await handleStaffGetActiveCases(portal, msg.county);
+                    break;
+
+                // ── Fetch Arrests Feed ───────────────────────────────────
+                case 'staff-get-arrests-feed':
+                    await handleStaffGetArrestsFeed(portal, msg.county);
+                    break;
+
+                // ── Save Draft to Wix ────────────────────────────────────
+                case 'staff-save-draft':
+                    console.log('📋 Staff portal draft saved (local only for now)');
+                    break;
+
+                // ── Toast / Error Acknowledgment ─────────────────────────
+                case 'staff-error':
+                    console.error('❌ Staff portal error:', msg.error);
+                    showStaffMessage(msg.error || 'Portal error', 'error');
+                    break;
+
+                default:
+                    console.log('Staff portal unknown message:', msg.type);
+                    break;
+            }
+        });
+
+    } catch (e) {
+        console.error('Error setting up Staff Portal iframe:', e);
+    }
+}
+
+/**
+ * Send initial context to the staff portal iframe.
+ * Includes session info, staff name, and the GAS web app URL.
+ */
+function sendStaffPortalContext(portal) {
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
+
+    try {
+        portal.postMessage({
+            type: 'staff-context',
+            session: {
+                personId: currentSession ? currentSession.personId : '',
+                email: currentSession ? currentSession.email : '',
+                role: currentSession ? currentSession.role : 'staff',
+                name: currentSession ? (currentSession.personName || currentSession.email) : 'Staff'
+            },
+            gasUrl: GAS_URL,
+            timestamp: new Date().toISOString()
+        });
+        console.log('[OK] Staff portal context sent');
+    } catch (e) {
+        console.error('Error sending staff portal context:', e);
+    }
+}
+
+/**
+ * Handle booking lookup request from staff portal.
+ * Calls GAS staffLookupBooking action and returns results to iframe.
+ */
+async function handleStaffBookingLookup(portal, query) {
+    if (!query) return;
+
+    try {
+        showStaffMessage('Searching bookings...', 'info');
+
+        // Call GAS via Wix backend proxy
+        const { callGasAction } = await import('backend/gasIntegration');
+        const result = await callGasAction('staffLookupBooking', { query: query });
+
+        portal.postMessage({
+            type: 'staff-booking-results',
+            results: result.results || [],
+            count: result.count || 0
+        });
+
+        if (result.count > 0) {
+            showStaffMessage(`Found ${result.count} record(s)`, 'success');
+        } else {
+            showStaffMessage('No records found', 'info');
+        }
+    } catch (e) {
+        console.error('Booking lookup error:', e);
+        portal.postMessage({ type: 'staff-booking-results', results: [], count: 0, error: e.message });
+        showStaffMessage('Search error: ' + e.message, 'error');
+    }
+}
+
+/**
+ * Handle SignNow packet generation from staff portal.
+ * Calls GAS staffGeneratePacket action (routes to handleShannonSendPaperwork).
+ */
+async function handleStaffGeneratePacket(portal, data) {
+    if (!data) return;
+
+    try {
+        showStaffMessage('Generating 12-document SignNow packet...', 'info');
+
+        const { callGasAction } = await import('backend/gasIntegration');
+        const result = await callGasAction('staffGeneratePacket', data);
+
+        portal.postMessage({
+            type: 'staff-packet-result',
+            success: result.success || false,
+            message: result.message || '',
+            signingLink: result.signingLink || '',
+            documentCount: result.documentCount || 0,
+            entityId: result.entityId || ''
+        });
+
+        if (result.success) {
+            showStaffMessage('✅ Packet sent! ' + (result.documentCount || 12) + ' documents generated', 'success');
+        } else {
+            showStaffMessage('Packet generation failed: ' + (result.error || result.message), 'error');
+        }
+    } catch (e) {
+        console.error('Packet generation error:', e);
+        portal.postMessage({ type: 'staff-packet-result', success: false, error: e.message });
+        showStaffMessage('Error generating packet: ' + e.message, 'error');
+    }
+}
+
+/**
+ * Handle active cases request from staff portal.
+ * Calls GAS staffGetActiveCases action.
+ */
+async function handleStaffGetActiveCases(portal, county) {
+    try {
+        const { callGasAction } = await import('backend/gasIntegration');
+        const result = await callGasAction('staffGetActiveCases', { county: county || '' });
+
+        portal.postMessage({
+            type: 'staff-active-cases-result',
+            cases: result.cases || [],
+            success: result.success || false
+        });
+    } catch (e) {
+        console.error('Active cases fetch error:', e);
+        portal.postMessage({ type: 'staff-active-cases-result', cases: [], success: false, error: e.message });
+    }
+}
+
+/**
+ * Handle arrests feed request from staff portal.
+ * Calls GAS staffGetArrestsFeed action.
+ */
+async function handleStaffGetArrestsFeed(portal, county) {
+    try {
+        const { callGasAction } = await import('backend/gasIntegration');
+        const result = await callGasAction('staffGetArrestsFeed', { county: county || '' });
+
+        portal.postMessage({
+            type: 'staff-arrests-feed-result',
+            arrests: result.arrests || [],
+            success: result.success || false
+        });
+    } catch (e) {
+        console.error('Arrests feed fetch error:', e);
+        portal.postMessage({ type: 'staff-arrests-feed-result', arrests: [], success: false, error: e.message });
+    }
+}

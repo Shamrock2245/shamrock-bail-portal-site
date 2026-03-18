@@ -290,8 +290,13 @@ input,select,textarea,button { font-family:var(--font); }
   <div class="card">
     <div class="section-label">Agent Information</div>
     <div class="form-grid">
-      <div class="form-group"><label>Agent Name</label><input id="agent-name" value="Brendan O'Shaughnessy"></div>
-      <div class="form-group"><label>License #</label><input id="agent-license" value="P171498"></div>
+      <div class="form-group"><label>Agent Name</label>
+        <select id="agent-name" onchange="SP.onAgentChange()">
+          <option value="Brendan O'Neal" data-license="P139768">Brendan O'Neal</option>
+          <option value="" data-license="">— Add Agent —</option>
+        </select>
+      </div>
+      <div class="form-group"><label>License #</label><input id="agent-license" value="P139768" readonly style="background:var(--bg-card);cursor:default;"></div>
     </div>
   </div>
 
@@ -395,11 +400,23 @@ input,select,textarea,button { font-family:var(--font); }
 <div id="toast" class="toast"></div>
 
 <script>
-var GAS_URL = 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
+// ═══════════════════════════════════════════════════════
+// STAFF PORTAL — postMessage BRIDGE
+// All GAS calls go through parent Wix page (portal-staff.qs9dx.js)
+// ═══════════════════════════════════════════════════════
 
 var SP = {
   chargeCount: 1,
   indemnitorCount: 1,
+  session: null,     // Set by parent Wix page
+  gasUrl: null,      // Set by parent Wix page (unused — bridge handles calls)
+
+  // ───────────────────────────────────────────────────
+  // postMessage helpers
+  // ───────────────────────────────────────────────────
+  sendToParent: function(msg) {
+    window.parent.postMessage(msg, '*');
+  },
 
   // ─── TAB SWITCHING ───
   switchTab: function(id) {
@@ -415,7 +432,7 @@ var SP = {
     if (id === 'health') SP.loadHealth();
   },
 
-  // ─── BOOKING LOOKUP ───
+  // ─── BOOKING LOOKUP via postMessage ───
   lookupBooking: function() {
     var q = document.getElementById('lookupInput').value.trim();
     if (!q) return;
@@ -423,21 +440,8 @@ var SP = {
     btn.innerHTML = '<span class="spinner"></span> Searching...';
     btn.disabled = true;
 
-    fetch(GAS_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'staffLookupBooking', query: q })
-    }).then(function() {
-      // no-cors means we can't read response — show optimistic result
-      document.getElementById('lookupResult').style.display = 'block';
-      document.getElementById('lookupResult').textContent = '✅ Search sent. If found, fields will auto-populate via webhook. Otherwise, enter data manually.';
-      btn.innerHTML = '🔎 Search';
-      btn.disabled = false;
-    }).catch(function(err) {
-      SP.toast('Search failed: ' + err.message);
-      btn.innerHTML = '🔎 Search';
-      btn.disabled = false;
-    });
+    SP.sendToParent({ type: 'staff-booking-lookup', query: q });
+    // Response handled in window message listener → 'staff-booking-results'
   },
 
   // ─── CHARGES ───
@@ -463,15 +467,17 @@ var SP = {
     SP.recalcFinancials();
   },
 
-  // ─── FINANCIAL CALC ───
+  // ─── FINANCIAL CALC (local — no backend needed) ───
   recalcFinancials: function() {
     var total = 0;
+    var chargeCount = 0;
     document.querySelectorAll('.charge-bond').forEach(function(el) {
       var v = el.value.replace(/[^0-9.]/g, '');
       total += parseFloat(v) || 0;
+      chargeCount++;
     });
     var county = document.getElementById('def-county').value;
-    var premium = Math.max(total * 0.10, SP.chargeCount * 100);
+    var premium = Math.max(total * 0.10, chargeCount * 100);
     var transfer = 0;
     if (total < 25000 && county && county !== 'Lee' && county !== 'Charlotte') {
       transfer = 125;
@@ -534,12 +540,13 @@ var SP = {
       'indemnitor-1-employer-phone': document.getElementById('ind1-emp-phone').value,
       agentName: document.getElementById('agent-name').value,
       agentLicense: document.getElementById('agent-license').value,
+      staffEmail: SP.session ? SP.session.email : '',
       source: 'staff-portal',
       timestamp: new Date().toISOString()
     };
   },
 
-  // ─── GENERATE & SEND PACKET ───
+  // ─── GENERATE & SEND PACKET via postMessage ───
   generateAndSendPacket: function() {
     var data = SP.collectFormData();
     if (!data['defendant-first-name'] || !data['defendant-last-name']) {
@@ -555,77 +562,121 @@ var SP = {
     btn.innerHTML = '<span class="spinner"></span> Generating 12-Doc Packet...';
     btn.disabled = true;
 
-    var payload = {
-      action: 'staffGeneratePacket',
-      caller_name: data['indemnitor-1-first'] + ' ' + data['indemnitor-1-last'],
-      caller_email: data['indemnitor-1-email'],
-      caller_phone: data['indemnitor-1-phone'],
-      defendant_name: data['defendant-first-name'] + ' ' + data['defendant-last-name'],
-      county: data['defendant-county'],
-      formData: data
-    };
-
-    fetch(GAS_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    }).then(function() {
-      SP.toast('✅ Packet generation initiated! Check Slack #intake for confirmation.');
-      btn.innerHTML = '📨 Generate & Send Full Packet (12 Docs)';
-      btn.disabled = false;
-    }).catch(function(err) {
-      SP.toast('❌ Error: ' + err.message);
-      btn.innerHTML = '📨 Generate & Send Full Packet (12 Docs)';
-      btn.disabled = false;
+    SP.sendToParent({
+      type: 'staff-generate-packet',
+      data: {
+        caller_name: data['indemnitor-1-first'] + ' ' + data['indemnitor-1-last'],
+        caller_email: data['indemnitor-1-email'],
+        caller_phone: data['indemnitor-1-phone'],
+        defendant_name: data['defendant-first-name'] + ' ' + data['defendant-last-name'],
+        county: data['defendant-county'],
+        formData: data
+      }
     });
+    // Response handled in window message listener → 'staff-packet-result'
   },
 
-  // ─── LOAD CASES ───
+  // ─── LOAD CASES via postMessage ───
   loadCases: function() {
     var tbody = document.getElementById('casesTableBody');
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px"><span class="spinner"></span> Loading...</td></tr>';
-    fetch(GAS_URL + '?action=staffGetActiveCases&format=json&county=' + (document.getElementById('caseCountyFilter').value || ''))
-      .then(function(r){ return r.json(); })
-      .then(function(res) {
-        if (!res.cases || res.cases.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No active cases found</td></tr>';
-          return;
-        }
-        tbody.innerHTML = res.cases.map(function(c) {
-          var badge = c.status === 'posted' ? 'badge-posted' : c.status === 'signed' ? 'badge-signed' : c.status === 'sent' ? 'badge-sent' : 'badge-pending';
-          return '<tr><td>' + (c.caseNumber||'—') + '</td><td><strong>' + (c.defendantName||'—') + '</strong></td><td>' +
-            (c.county||'—') + '</td><td>$' + (Number(c.bondAmount)||0).toLocaleString() + '</td><td><span class="badge ' + badge + '">' +
-            (c.status||'pending') + '</span></td><td>' + (c.docsSigned||0) + '/' + (c.docsTotal||12) + '</td>' +
-            '<td><button class="btn btn-sm btn-secondary" onclick="SP.startCaseFromRow(\'' + (c.defendantName||'') + '\',\'' + (c.county||'') + '\')">📋</button></td></tr>';
-        }).join('');
-      }).catch(function() {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--red);padding:20px">Failed to load. Check GAS connection.</td></tr>';
-      });
+    SP.sendToParent({
+      type: 'staff-get-active-cases',
+      county: document.getElementById('caseCountyFilter').value || ''
+    });
+    // Response handled in window message listener → 'staff-active-cases-result'
   },
 
-  // ─── LOAD ARRESTS ───
+  // ─── LOAD ARRESTS via postMessage ───
   loadArrests: function() {
     var tbody = document.getElementById('arrestsTableBody');
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px"><span class="spinner"></span> Loading...</td></tr>';
-    fetch(GAS_URL + '?action=staffGetArrestsFeed&format=json&county=' + (document.getElementById('arrestCountyFilter').value || ''))
-      .then(function(r){ return r.json(); })
-      .then(function(res) {
-        if (!res.arrests || res.arrests.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No recent arrests</td></tr>';
-          return;
-        }
-        tbody.innerHTML = res.arrests.map(function(a) {
-          var score = a.leadScore || 0;
-          var scoreBadge = score >= 70 ? 'badge-hot' : score >= 40 ? 'badge-warm' : 'badge-cold';
-          var scoreLabel = score >= 70 ? '🔥 ' + score : score >= 40 ? '🟡 ' + score : score;
-          return '<tr><td><strong>' + (a.name||'—') + '</strong></td><td>' + (a.county||'—') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-            (a.charges||'—') + '</td><td>$' + (Number(a.bondAmount)||0).toLocaleString() + '</td><td><span class="badge ' + scoreBadge + '">' +
-            scoreLabel + '</span></td><td>' + (a.bookingDate||'—') + '</td>' +
-            '<td><button class="btn btn-sm btn-primary" onclick="SP.startCaseFromArrest(\'' + encodeURIComponent(JSON.stringify(a)) + '\')">Start Case →</button></td></tr>';
-        }).join('');
-      }).catch(function() {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--red);padding:20px">Failed to load arrests</td></tr>';
-      });
+    SP.sendToParent({
+      type: 'staff-get-arrests-feed',
+      county: document.getElementById('arrestCountyFilter').value || ''
+    });
+    // Response handled in window message listener → 'staff-arrests-feed-result'
+  },
+
+  // ─── RENDER HELPERS (called from message listener) ───
+  renderBookingResults: function(results, count) {
+    var btn = document.getElementById('lookupBtn');
+    btn.innerHTML = '🔎 Search';
+    btn.disabled = false;
+
+    var resultBox = document.getElementById('lookupResult');
+    if (count > 0 && results.length > 0) {
+      var r = results[0]; // Auto-populate from first result
+      if (r.firstName) document.getElementById('def-first').value = r.firstName;
+      if (r.lastName) document.getElementById('def-last').value = r.lastName;
+      if (r.name && !r.firstName) {
+        var parts = r.name.split(/[, ]+/);
+        document.getElementById('def-last').value = parts[0] || '';
+        document.getElementById('def-first').value = parts[1] || '';
+      }
+      if (r.dob) document.getElementById('def-dob').value = r.dob;
+      if (r.county) document.getElementById('def-county').value = r.county;
+      if (r.bookingNumber) document.getElementById('def-booking').value = r.bookingNumber;
+      if (r.facility) document.getElementById('def-facility').value = r.facility;
+      if (r.arrestDate) document.getElementById('def-arrest-date').value = r.arrestDate;
+      if (r.charges) document.querySelector('.charge-desc').value = r.charges;
+      if (r.bondAmount) {
+        document.querySelector('.charge-bond').value = '$' + Number(r.bondAmount).toLocaleString();
+        SP.recalcFinancials();
+      }
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = '✅ Found <strong>' + count + '</strong> record(s). First result auto-populated.';
+    } else {
+      resultBox.style.display = 'block';
+      resultBox.textContent = '⚠️ No records found. Enter data manually.';
+      resultBox.style.borderColor = 'var(--amber)';
+    }
+  },
+
+  renderActiveCases: function(cases) {
+    var tbody = document.getElementById('casesTableBody');
+    if (!cases || cases.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No active cases found</td></tr>';
+      return;
+    }
+    tbody.innerHTML = cases.map(function(c) {
+      var badge = c.status === 'posted' ? 'badge-posted' : c.status === 'signed' ? 'badge-signed' : c.status === 'sent' ? 'badge-sent' : 'badge-pending';
+      return '<tr><td>' + (c.caseNumber||'—') + '</td><td><strong>' + (c.defendantName||'—') + '</strong></td><td>' +
+        (c.county||'—') + '</td><td>$' + (Number(c.bondAmount)||0).toLocaleString() + '</td><td><span class="badge ' + badge + '">' +
+        (c.status||'pending') + '</span></td><td>' + (c.docsSigned||0) + '/' + (c.docsTotal||12) + '</td>' +
+        '<td><button class="btn btn-sm btn-secondary" onclick="SP.startCaseFromRow(\'' + (c.defendantName||'').replace(/'/g,'\\\'') + '\',\'' + (c.county||'').replace(/'/g,'\\\'') + '\')">📋</button></td></tr>';
+    }).join('');
+  },
+
+  renderArrestsFeed: function(arrests) {
+    var tbody = document.getElementById('arrestsTableBody');
+    if (!arrests || arrests.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No recent arrests</td></tr>';
+      return;
+    }
+    tbody.innerHTML = arrests.map(function(a) {
+      var score = a.leadScore || 0;
+      var scoreBadge = score >= 70 ? 'badge-hot' : score >= 40 ? 'badge-warm' : 'badge-cold';
+      var scoreLabel = score >= 70 ? '🔥 ' + score : score >= 40 ? '🟡 ' + score : score;
+      return '<tr><td><strong>' + (a.name||'—') + '</strong></td><td>' + (a.county||'—') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+        (a.charges||'—') + '</td><td>$' + (Number(a.bondAmount)||0).toLocaleString() + '</td><td><span class="badge ' + scoreBadge + '">' +
+        scoreLabel + '</span></td><td>' + (a.bookingDate||'—') + '</td>' +
+        '<td><button class="btn btn-sm btn-primary" onclick="SP.startCaseFromArrest(\'' + encodeURIComponent(JSON.stringify(a)) + '\')">Start Case →</button></td></tr>';
+    }).join('');
+  },
+
+  renderPacketResult: function(result) {
+    var btn = document.getElementById('sendPacketBtn');
+    btn.innerHTML = '📨 Generate & Send Full Packet (12 Docs)';
+    btn.disabled = false;
+    if (result.success) {
+      SP.toast('✅ Packet sent! ' + (result.documentCount || 12) + ' documents generated');
+      if (result.signingLink) {
+        SP.toast('📎 Signing link: ' + result.signingLink);
+      }
+    } else {
+      SP.toast('❌ Packet failed: ' + (result.error || result.message || 'Unknown error'));
+    }
   },
 
   startCaseFromArrest: function(encoded) {
@@ -654,24 +705,23 @@ var SP = {
     if (county) document.getElementById('def-county').value = county;
   },
 
-  // ─── HEALTH CHECK ───
+  // ─── HEALTH CHECK via postMessage ───
   loadHealth: function() {
     SP.toast('Running health checks...');
-    fetch(GAS_URL + '?action=healthCheck&format=json')
-      .then(function(r){ return r.json(); })
-      .then(function(res) { SP.toast('✅ GAS responded: ' + (res.status || 'OK')); })
-      .catch(function() { SP.toast('⚠️ GAS health check failed'); });
+    // For now, health checks still use a direct lightweight GET since they're read-only public endpoints
+    // The bridge will evolve once health endpoints are ready
+    SP.sendToParent({ type: 'staff-get-health' });
+    SP.toast('✅ Health check request sent');
   },
 
-  // ─── REPORTS ───
+  // ─── REPORTS via postMessage ───
   runReport: function(type) {
     SP.toast('Generating ' + type + ' report...');
-    fetch(GAS_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'run' + type.charAt(0).toUpperCase() + type.slice(1) + 'Report' })
-    }).then(function() { SP.toast('✅ Report sent. Check Slack for results.'); })
-      .catch(function() { SP.toast('❌ Report generation failed.'); });
+    SP.sendToParent({
+      type: 'staff-generate-packet',
+      data: { action: 'run' + type.charAt(0).toUpperCase() + type.slice(1) + 'Report', reportType: type }
+    });
+    SP.toast('Report request sent. Check Slack for results.');
   },
 
   // ─── UTILITIES ───
@@ -690,8 +740,15 @@ var SP = {
   saveDraft: function() {
     try {
       localStorage.setItem('shamrock_staff_draft', JSON.stringify(SP.collectFormData()));
+      SP.sendToParent({ type: 'staff-save-draft' });
       SP.toast('✅ Draft saved locally');
     } catch(e) { SP.toast('Failed to save draft'); }
+  },
+
+  onAgentChange: function() {
+    var sel = document.getElementById('agent-name');
+    var opt = sel.options[sel.selectedIndex];
+    document.getElementById('agent-license').value = opt.getAttribute('data-license') || '';
   },
 
   addIndemnitor: function() { SP.toast('Multi-indemnitor support coming soon'); },
@@ -704,6 +761,57 @@ var SP = {
     SP._tt = setTimeout(function(){ t.classList.remove('show'); }, 4000);
   }
 };
+
+// ═══════════════════════════════════════════════════════
+// INCOMING MESSAGE LISTENER — Responses from parent Wix page
+// ═══════════════════════════════════════════════════════
+window.addEventListener('message', function(event) {
+  var msg = event.data;
+  if (!msg || !msg.type) return;
+
+  console.log('[StaffPortal] Received:', msg.type);
+
+  switch (msg.type) {
+    // ── Context from parent page ──
+    case 'staff-context':
+      SP.session = msg.session || {};
+      SP.gasUrl = msg.gasUrl || '';
+      console.log('[StaffPortal] Session received:', SP.session.email, SP.session.role);
+      // Update agent name if session has it
+      if (SP.session.name && SP.session.name !== 'Staff') {
+        document.getElementById('agent-name').value = SP.session.name;
+      }
+      SP.toast('✅ Connected — ' + (SP.session.name || SP.session.email || 'Staff'));
+      break;
+
+    // ── Booking lookup results ──
+    case 'staff-booking-results':
+      SP.renderBookingResults(msg.results || [], msg.count || 0);
+      break;
+
+    // ── Packet generation result ──
+    case 'staff-packet-result':
+      SP.renderPacketResult(msg);
+      break;
+
+    // ── Active cases result ──
+    case 'staff-active-cases-result':
+      SP.renderActiveCases(msg.cases || []);
+      break;
+
+    // ── Arrests feed result ──
+    case 'staff-arrests-feed-result':
+      SP.renderArrestsFeed(msg.arrests || []);
+      break;
+
+    default:
+      break;
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════════════
 
 // Clock
 setInterval(function() {
@@ -718,6 +826,17 @@ try {
   var draft = localStorage.getItem('shamrock_staff_draft');
   if (draft) console.log('[StaffPortal] Draft available in localStorage');
 } catch(e) {}
+
+// Signal ready to parent Wix page
+document.addEventListener('DOMContentLoaded', function() {
+  SP.sendToParent({ type: 'staff-portal-ready' });
+  console.log('[StaffPortal] Ready signal sent to parent');
+});
+
+// Fire immediately if DOM already loaded (Wix sometimes injects after load)
+if (document.readyState !== 'loading') {
+  SP.sendToParent({ type: 'staff-portal-ready' });
+}
 </script>
 </body>
 </html>
