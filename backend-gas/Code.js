@@ -3342,32 +3342,10 @@ function handleNewIntake(caseId, data) {
         selectedDocs: data.selectedDocs || ['bail_application', 'indemnity_agreement'] // Default package
       };
 
-      // [NEW] Generate PDF from Google Doc Template (Auto-Intake Flow)
-      try {
-        if (typeof PDFService !== 'undefined' && typeof PDFService.generatePdfFromTemplate === 'function') {
-
-          // 1. Normalize Data for Hydration (Code.js Fix)
-          // We need standard keys like {{DefName}} to populate the doc.
-          // buildMasterDataObject is global in PDF_Mappings.js
-          let pdfData = docData;
-          if (typeof buildMasterDataObject === 'function') {
-            const masterData = buildMasterDataObject(docData);
-            pdfData = { ...docData, ...masterData };
-            console.log('✅ Auto-Intake: Hydrated Master Data for PDF');
-          } else {
-            console.warn('⚠️ Auto-Intake: buildMasterDataObject not found. Hydration may be incomplete.');
-          }
-
-          const pdfBlob = PDFService.generatePdfFromTemplate(pdfData);
-          docData.pdfBase64 = Utilities.base64Encode(pdfBlob.getBytes());
-          docData.fileName = pdfBlob.getName();
-          console.log('✅ Auto-Intake: Generated PDF Blob (' + docData.fileName + ')');
-        } else {
-          console.warn('⚠️ Auto-Intake: PDFService not available. Skipping PDF generation.');
-        }
-      } catch (pdfErr) {
-        console.error('❌ Auto-Intake: PDF Generation Failed: ' + pdfErr.message);
-      }
+      // @deprecated (2026-03-20): PDFService.generatePdfFromTemplate() removed.
+      // PDF generation from Google Docs templates is no longer used.
+      // All signing flows now use SignNow template copies via SIGNNOW_TEMPLATE_MAP.
+      // The downstream generateAndSendWithWixPortal_Safe() handles template copying server-side.
 
       console.log(`🚀 Triggering Auto-Docs for ${intakeId}`);
       docResult = generateAndSendWithWixPortal_Safe(docData);
@@ -3714,33 +3692,10 @@ function handleStartPaperwork(data) {
         bondAmount: data.bondAmount || ''
       };
 
-      // [NEW] Generate PDF from Google Doc Template
-      try {
-        if (typeof PDFService !== 'undefined' && typeof PDFService.generatePdfFromTemplate === 'function') {
-
-          // 1. Normalize Data for Hydration (Code.js Fix)
-          let pdfData = formData;
-          if (typeof buildMasterDataObject === 'function') {
-            const masterData = buildMasterDataObject(formData);
-            pdfData = { ...formData, ...masterData };
-            console.log('✅ Hydrated Master Data for PDF');
-          } else {
-            Logger.log('⚠️ buildMasterDataObject not found.');
-          }
-
-          const pdfBlob = PDFService.generatePdfFromTemplate(pdfData);
-          formData.pdfBase64 = Utilities.base64Encode(pdfBlob.getBytes());
-          formData.fileName = pdfBlob.getName();
-          Logger.log('✅ Generated PDF Blob for case: ' + formData.caseNumber);
-        } else {
-          Logger.log('⚠️ PDFService not available. Skipping PDF generation.');
-        }
-      } catch (pdfErr) {
-        Logger.log('❌ PDF Generation Failed: ' + pdfErr.message);
-        // We might want to abort or proceed? Let's proceed but warn.
-        // Actually, without PDF, SignNow upload will fail if it expects base64.
-        // We will log and let it try the downstream fail.
-      }
+      // @deprecated (2026-03-20): PDFService.generatePdfFromTemplate() removed.
+      // PDF generation from Google Docs templates is no longer used.
+      // All signing flows now use SignNow template copies via SIGNNOW_TEMPLATE_MAP.
+      // The downstream generateAndSendWithWixPortal() handles template copying server-side.
 
       return generateAndSendWithWixPortal(formData);
     }

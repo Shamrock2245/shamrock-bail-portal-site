@@ -733,14 +733,14 @@ window.addEventListener('message', function(event) {
     console.log('[Wizard] Received prefill data from portal');
     var d = msg.data;
     // Map parent data to wizard fields (Step 2 - Indemnitor Info)
-    if (d.firstName) { var el = document.getElementById('indem-first'); if (el) el.value = d.firstName; }
-    if (d.lastName) { var el = document.getElementById('indem-last'); if (el) el.value = d.lastName; }
-    if (d.email) { var el = document.getElementById('indem-email'); if (el) el.value = d.email; }
-    if (d.phone) { var el = document.getElementById('indem-phone'); if (el) el.value = d.phone; }
-    if (d.address) { var el = document.getElementById('indem-address'); if (el) el.value = d.address; }
-    if (d.city) { var el = document.getElementById('indem-city'); if (el) el.value = d.city; }
-    if (d.state) { var el = document.getElementById('indem-state'); if (el) el.value = d.state; }
-    if (d.zip) { var el = document.getElementById('indem-zip'); if (el) el.value = d.zip; }
+    if (d.firstName) { var el = document.getElementById('ind-first'); if (el) el.value = d.firstName; }
+    if (d.lastName) { var el = document.getElementById('ind-last'); if (el) el.value = d.lastName; }
+    if (d.email) { var el = document.getElementById('ind-email'); if (el) el.value = d.email; }
+    if (d.phone) { var el = document.getElementById('ind-phone'); if (el) el.value = d.phone; }
+    if (d.address) { var el = document.getElementById('ind-street'); if (el) el.value = d.address; }
+    if (d.city) { var el = document.getElementById('ind-city'); if (el) el.value = d.city; }
+    if (d.state) { var el = document.getElementById('ind-state'); if (el) el.value = d.state; }
+    if (d.zip) { var el = document.getElementById('ind-zip'); if (el) el.value = d.zip; }
   } catch(e) { console.warn('[Wizard] Prefill error:', e); }
 });
 

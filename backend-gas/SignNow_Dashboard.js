@@ -1,10 +1,18 @@
 /**
- * Dashboard.html SignNow Integration Functions
+ * @deprecated — 2026-03-20 — DO NOT USE FOR NEW DEVELOPMENT
+ * ============================================================================
+ * Dashboard.html SignNow Integration Functions (LEGACY)
  * 
- * ADD THESE FUNCTIONS TO Dashboard_FIXED.html
+ * DEPRECATED: This file contains client-side functions that fetch PDFs from
+ * Google Drive, fill forms client-side, and upload to SignNow. This approach
+ * has been replaced by the server-side flow in Server_DocumentLogic.js which
+ * uses SignNow template copies directly via SIGNNOW_TEMPLATE_MAP.
  * 
- * These functions integrate with the Wix backend SignNow API
- * and handle the complete document generation → signing workflow
+ * Active replacement: server_generateSigningPacket() in Server_DocumentLogic.js
+ * Called from Dashboard.html via google.script.run.server_generateSigningPacket()
+ * 
+ * Kept for backward compatibility. Will be removed in a future cleanup.
+ * ============================================================================
  */
 
 /**

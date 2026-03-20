@@ -1,9 +1,23 @@
 /**
+ * @deprecated — 2026-03-20 — DO NOT USE FOR NEW DEVELOPMENT
+ * ============================================================================
  * PDFService.gs
  * Version: 2.0.0 - Multi-Template Support
  * 
- * Handles the generation of PDF documents from Google Doc templates.
- * Supports merging multiple templates into a single PDF via "Append Mode".
+ * DEPRECATED: This file generates PDFs from Google Doc templates stored in Drive.
+ * All signing flows now use SignNow templates directly via SIGNNOW_TEMPLATE_MAP
+ * in Telegram_Documents.js. The Google Docs template IDs below are no longer
+ * the source of truth.
+ * 
+ * Active replacement flows:
+ *   - Dashboard.html → server_generateSigningPacket() in Server_DocumentLogic.js
+ *   - Shannon → handleShannonSendPaperwork() in SignNow_SendPaperwork.js
+ *   - Indemnitor Portal → handleSendPhase1Packet() in SignNow_SendPaperwork.js
+ *   - Staff Portal → handleSendPhase2Packet() in SignNow_SendPaperwork.js
+ *   - Telegram → handleTelegramGetSigningUrl() in Telegram_Documents.js
+ * 
+ * Kept for backward compatibility. Will be removed in a future cleanup.
+ * ============================================================================
  */
 
 // ============================================================================
