@@ -238,7 +238,8 @@ function _getDripLevel(ageMs, intakeId, sentFollowUps) {
     if (ageMs >= CLOSER_CONFIG.DRIP_24H && !sent['24h']) {
         return '24h';
     }
-    if (ageMs >= CLOSER_CONFIG.DRIP_1H && !sent['1h']) {
+    // 'shannon' drip is the 1h equivalent for Shannon AI intakes — treat either as sent
+    if (ageMs >= CLOSER_CONFIG.DRIP_1H && !sent['1h'] && !sent['shannon']) {
         return '1h';
     }
 
@@ -428,11 +429,18 @@ function _getVal(row, colIdx, keys) {
 }
 
 function _getETHour(date) {
-    // Simple ET approximation (UTC - 5, ignoring DST for safety)
-    var utcHour = date.getUTCHours();
-    var etHour = utcHour - 5;
-    if (etHour < 0) etHour += 24;
-    return etHour;
+    // DST-aware ET hour using V8 Intl (GAS runs in V8 runtime)
+    // Florida observes EDT (UTC-4) Mar–Nov, EST (UTC-5) Nov–Mar
+    try {
+        var etStr = date.toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false });
+        return parseInt(etStr, 10);
+    } catch (e) {
+        // Fallback: approximate with UTC-5 if Intl not available
+        var utcHour = date.getUTCHours();
+        var etHour = utcHour - 5;
+        if (etHour < 0) etHour += 24;
+        return etHour;
+    }
 }
 
 function _getConfigSafe(key) {
