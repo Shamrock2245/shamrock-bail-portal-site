@@ -2350,6 +2350,18 @@ function handleGetAction(e) {
     }
   }
 
+  // ── TWILIO CAMPAIGN STATUS MONITOR ─────────────────────────────────────────
+  if (action === 'checkTwilioCampaignStatus') {
+    try {
+      const result = typeof checkTwilioCampaignStatus === 'function'
+        ? checkTwilioCampaignStatus()
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
   // ── LEGACY / MISC ─────────────────────────────────────────────────────────
   if (action === 'sendSlackAlert') {
     const result = NotificationService.sendSlack(e.parameter.channel || '#alerts', e.parameter.text, e.parameter.blocks);
