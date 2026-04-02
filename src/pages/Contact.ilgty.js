@@ -83,7 +83,8 @@ function updatePageSEO() {
                 },
                 "sameAs": [
                     "https://www.facebook.com/ShamrockBail",
-                    "https://www.instagram.com/shamrock_bail_bonds"
+                    "https://www.instagram.com/shamrock_bail_bonds",
+                    "https://t.me/ShamrockBail_bot"
                 ],
                 "contactPoint": [
                     {
@@ -121,6 +122,45 @@ function updatePageSEO() {
                     "longitude": -81.8723
                 }
             }
+        },
+        // FAQPage — AI citation targets for contact queries
+        {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+                {
+                    "@type": "Question",
+                    "name": "Where is Shamrock Bail Bonds located?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Shamrock Bail Bonds is located at 1528 Broadway, Fort Myers, FL 33901 — directly across the street from the Lee County Justice Center and steps from the Lee County Jail. Walk-ins are welcome 24/7."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "What are Shamrock Bail Bonds hours?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Shamrock Bail Bonds is open 24 hours a day, 7 days a week, including all holidays. Call (239) 332-2245 any time — we answer immediately, day or night. Our Fort Myers office at 1528 Broadway is staffed for walk-ins during business hours, with after-hours service available by phone and online."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "How do I contact Shamrock Bail Bonds?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "You can reach Shamrock Bail Bonds 24/7 by phone at (239) 332-2245, via our website at shamrockbailbonds.biz, through our Telegram bot @ShamrockBail_bot, or by visiting our office at 1528 Broadway, Fort Myers, FL 33901. For Spanish, call (239) 955-0301."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "Can I start the bail bond process without visiting the office?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Yes. Shamrock Bail Bonds handles the entire process remotely. Call us, use our online portal, or message our Telegram bot. All paperwork is sent to your phone for digital signature via SignNow. No office visit is required — we serve all 67 Florida counties remotely."
+                    }
+                }
+            ]
         }
     ])
         .then(() => console.log("[OK] Contact Page SEO Set"))

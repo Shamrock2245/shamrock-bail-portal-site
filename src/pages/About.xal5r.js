@@ -102,7 +102,8 @@ function updatePageSEO() {
                 ],
                 "sameAs": [
                     "https://www.facebook.com/ShamrockBail",
-                    "https://www.instagram.com/shamrock_bail_bonds"
+                    "https://www.instagram.com/shamrock_bail_bonds",
+                    "https://t.me/ShamrockBail_bot"
                 ],
                 "aggregateRating": {
                     "@type": "AggregateRating",
@@ -141,6 +142,45 @@ function updatePageSEO() {
                     ]
                 }
             }
+        },
+        // FAQPage — AI citation targets for company queries
+        {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+                {
+                    "@type": "Question",
+                    "name": "Is Shamrock Bail Bonds a licensed agency?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Yes. Shamrock Bail Bonds LLC is a fully licensed bail bond agency regulated by the Florida Department of Financial Services under FL Statute 648. We have been continuously licensed and operating from Fort Myers, Florida since 2012."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "What counties does Shamrock Bail Bonds serve?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Shamrock Bail Bonds serves all 67 Florida counties. Our office is located in Fort Myers (Lee County), and we specialize in Southwest Florida counties including Lee, Collier, Charlotte, Hendry, DeSoto, Manatee, and Sarasota. We handle bonds statewide with a $125 transfer fee for counties outside Lee and Charlotte, waived for bonds over $25,000."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "Is Shamrock Bail Bonds available 24/7?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Yes. Shamrock Bail Bonds operates 24 hours a day, 7 days a week, 365 days a year — including holidays. Call (239) 332-2245 any time. After hours, our AI assistant Shannon can start your paperwork immediately, or you can use our online portal or Telegram bot for instant service."
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "Does Shamrock Bail Bonds offer bilingual service?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Yes. Shamrock Bail Bonds provides full bilingual service in English and Spanish. Our Spanish-language line is (239) 955-0301. Our website, digital paperwork, and AI assistant all support Spanish-speaking clients."
+                    }
+                }
+            ]
         }
     ])
         .then(() => console.log("[OK] About Page SEO Set"))

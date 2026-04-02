@@ -385,7 +385,12 @@ function setupOrganizationSchema() {
                 "opens": "00:00", "closes": "23:59"
             },
             "priceRange": "$$",
-            "paymentAccepted": "Cash, Credit Card, Debit Card"
+            "paymentAccepted": "Cash, Credit Card, Debit Card",
+            "sameAs": [
+                "https://www.facebook.com/ShamrockBail",
+                "https://www.instagram.com/shamrock_bail_bonds",
+                "https://t.me/ShamrockBail_bot"
+            ]
         },
         {
             "@context": "https://schema.org",
@@ -412,6 +417,11 @@ function setupOrganizationSchema() {
                     "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
                     "opens": "00:00", "closes": "23:59"
                 }
+            ],
+            "sameAs": [
+                "https://www.facebook.com/ShamrockBail",
+                "https://www.instagram.com/shamrock_bail_bonds",
+                "https://t.me/ShamrockBail_bot"
             ]
         },
         {
@@ -433,7 +443,55 @@ function setupOrganizationSchema() {
         }
     ];
 
-    // E. WebSite Schema with SearchAction (enables Google Sitelinks Search Box)
+    // E. FAQPage Schema — AI citation magnet for bail bond queries
+    schemas.push({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "How much does a bail bond cost in Florida?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Florida bail bonds cost 10% of the total bail amount, with a minimum of $100 per charge. For example, if bail is set at $5,000, the bond premium is $500. Shamrock Bail Bonds accepts cash, credit cards, and offers flexible payment plans. A $125 transfer fee applies for counties outside Lee and Charlotte County, waived for bonds over $25,000."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How long does it take to get out of jail after posting bail in Florida?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "After a bail bond is posted, release typically takes 4 to 12 hours depending on the county jail's processing time. Lee County Jail in Fort Myers averages 4–8 hours. Larger facilities like Hillsborough or Miami-Dade may take up to 12 hours. Shamrock Bail Bonds begins the process immediately upon contact — call (239) 332-2245 any time, 24/7."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Do bail bond companies offer payment plans?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes. Shamrock Bail Bonds offers flexible payment plans for qualifying clients. You can put a portion down and pay the remainder over time. Payment plans are available for bonds of all sizes. Contact us at (239) 332-2245 to discuss options — we work with your budget."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Can I bail someone out of jail online in Florida?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes. Shamrock Bail Bonds offers a fully digital bail bond process. You can start online at shamrockbailbonds.biz, through our Telegram bot (@ShamrockBail_bot), or by calling (239) 332-2245. All paperwork is sent to your phone via text message for digital signature — no office visit required. We serve all 67 Florida counties remotely."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What information do I need to bail someone out of jail?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "To start the bail bond process, you need the defendant's full legal name, date of birth, and the county where they were arrested. Shamrock Bail Bonds will look up their booking details, charges, and bail amount instantly. You'll also need a valid ID and a method of payment (cash, credit card, or payment plan arrangement)."
+                }
+            }
+        ]
+    });
+
+    // F. WebSite Schema with SearchAction (enables Google Sitelinks Search Box)
     schemas.push({
         "@context": "https://schema.org",
         "@type": "WebSite",
