@@ -111,7 +111,9 @@ async function getCountyFromDatabase(countySlug) {
  * @returns {Object} - Transformed data for page display
  */
 function transformCountyData(county) {
-  const countyName = county.countyName || 'Unknown';
+  // FIX: Strip trailing " County" from CMS value to prevent "County County" redundancy
+  // CMS stores "Lee County" but templates append "County" (e.g., "${countyName} County Jail")
+  const countyName = (county.countyName || 'Unknown').replace(/ County$/i, '').trim();
   const phone = county.primaryPhone || '(239) 332-2245';
   const phoneDisplay = formatPhoneForDisplay(phone);
 
@@ -174,11 +176,27 @@ function transformCountyData(county) {
         },
         {
           question: 'Do you offer payment plans?',
-          answer: 'Yes, we offer flexible payment plans for qualified clients. Call us to discuss your options.'
+          answer: 'Yes, we offer flexible payment plans for qualified clients. We accept cash, credit cards, debit cards, and can set up installment plans to make bail more affordable. Call us to discuss your options.'
         },
         {
           question: `What areas of ${countyName} County do you serve?`,
-          answer: `We serve all areas of ${countyName} County. No matter where your loved one is being held, we can help.`
+          answer: `We serve all areas of ${countyName} County and surrounding communities. No matter where your loved one is being held, we can help. Our licensed bail agents are available 24 hours a day, 7 days a week.`
+        },
+        {
+          question: `How much does a bail bond cost in ${countyName} County?`,
+          answer: `In Florida, the standard bail bond premium is 10% of the total bail amount (minimum $100 per charge). For example, if bail is set at $5,000, the bond premium would be $500. This fee is set by Florida statute and is non-refundable.`
+        },
+        {
+          question: `What happens after someone is arrested in ${countyName} County?`,
+          answer: `After arrest in ${countyName} County, the defendant is transported to the county jail for booking and processing. This includes fingerprinting, photographing, and a background check. Once booking is complete and bail is set by a judge, a bail bondsman can begin the release process.`
+        },
+        {
+          question: 'Do I need collateral for a bail bond?',
+          answer: 'Collateral requirements depend on the bail amount and the specific circumstances of the case. For smaller bonds, a signature and valid ID may be sufficient. For larger bonds, collateral such as property or vehicles may be required. Contact us and we will explain your specific options.'
+        },
+        {
+          question: `Can you help if there is an active warrant in ${countyName} County?`,
+          answer: `Yes, we can assist with active warrants in ${countyName} County. We can help arrange a self-surrender with the court, which often results in a smoother process and faster release. Call us confidentially to discuss your situation.`
         }
       ]
     },

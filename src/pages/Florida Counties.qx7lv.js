@@ -336,52 +336,92 @@ async function populateMainUI(county, currentSlug) {
     try { $w('#jailAddress').collapse(); } catch (e) { }
 
     // POPULATE FAQs (Repeater) - Now pulls from CMS Faqs collection
-    const faqRep = $w('#repeaterFAQ').uniqueId ? $w('#repeaterFAQ') : ($w('#listRepeater').uniqueId ? $w('#listRepeater') : $w('#faqRepeater'));
+    // Safe element getter — prevents crashes from accessing non-existent Wix elements
+    const safeGet = (scopedSelector, id) => {
+        try {
+            const el = scopedSelector(id);
+            return (el && el.uniqueId) ? el : null;
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const faqRep = safeGet($w, '#repeaterFAQ') || safeGet($w, '#listRepeater') || safeGet($w, '#faqRepeater');
 
     let faqs = [];
+    const countyName = county.name || county.countyName || county.county_name || "Unknown County";
+    const countyShort = countyName.replace(/ County$/i, '').trim();
+    const countyFull = countyShort + ' County';
+
     try {
-        const countyName = county.name || county.countyName || county.county_name || "Unknown County";
-        const countyShort = countyName.replace(' County', '').trim();
+        let cmsItems = [];
 
-        let faqResult;
-
-        // Optimized: Single query using hasSome to check both "Lee County" and "Lee" forms
-        // Falls back to generic county-agnostic FAQs in one step
+        // 1. Try Import22 collection — county-specific FAQs
         try {
-            faqResult = await wixData.query('Import22')
+            const result = await wixData.query('Import22')
                 .eq('isActive', true)
-                .hasSome('relatedCounty', [countyName, countyShort])
+                .hasSome('relatedCounty', [countyFull, countyShort, countyName])
                 .ascending('sortOrder')
                 .limit(15)
                 .find();
-
-            // One fallback: generic FAQs if no county match
-            if (!faqResult || faqResult.items.length === 0) {
-                faqResult = await wixData.query('Import22')
-                    .limit(10)
-                    .find();
+            if (result && result.items.length > 0) {
+                cmsItems = result.items;
             }
         } catch (e) {
-            // Fallback to Faqs collection
-            try {
-                faqResult = await wixData.query('Faqs')
-                    .hasSome('relatedCounty', [countyName, countyShort])
-                    .limit(15)
-                    .find();
-            } catch (e2) { /* no-op, will use embedded fallback */ }
+            console.warn('[FAQ] Import22 query failed:', e.message);
         }
 
-        if (faqResult && faqResult.items.length > 0) {
-            faqs = faqResult.items.map(item => {
+        // 2. Fallback: Try Faqs collection
+        if (cmsItems.length === 0) {
+            try {
+                const result = await wixData.query('Faqs')
+                    .hasSome('relatedCounty', [countyFull, countyShort, countyName])
+                    .limit(15)
+                    .find();
+                if (result && result.items.length > 0) {
+                    cmsItems = result.items;
+                }
+            } catch (e2) { /* no-op */ }
+        }
+
+        // 3. Fallback: Generic (non-county-specific) FAQs from Import22
+        if (cmsItems.length === 0) {
+            try {
+                const result = await wixData.query('Import22')
+                    .eq('isActive', true)
+                    .ascending('sortOrder')
+                    .limit(10)
+                    .find();
+                if (result && result.items.length > 0) {
+                    cmsItems = result.items;
+                }
+            } catch (e3) { /* no-op */ }
+        }
+
+        // Transform CMS items → FAQ format, replacing "Lee County" with current county
+        if (cmsItems.length > 0) {
+            faqs = cmsItems.map(item => {
                 let question = item.title || item.question || '';
                 let answer = item.answer || '';
-                question = question.replace(/Lee County/gi, countyName);
-                answer = answer.replace(/Lee County/gi, countyName);
+                question = question.replace(/Lee County/gi, countyFull);
+                answer = answer.replace(/Lee County/gi, countyFull);
                 return { _id: item._id, question, answer };
             });
-        } else {
-            faqs = (county.content && county.content.faq) || [];
         }
+
+        // 4. MERGE with embedded FAQs from county-generator to guarantee content
+        const embeddedFaqs = (county.content && county.content.faq) || [];
+        if (embeddedFaqs.length > 0) {
+            // Only add embedded FAQs that don't duplicate existing CMS questions
+            const existingQuestions = new Set(faqs.map(f => f.question.toLowerCase().trim()));
+            for (const ef of embeddedFaqs) {
+                if (!existingQuestions.has(ef.question.toLowerCase().trim())) {
+                    faqs.push({ _id: `embed-${faqs.length}-${Date.now()}`, question: ef.question, answer: ef.answer });
+                }
+            }
+        }
+
+        console.log(`[FAQ] Loaded ${faqs.length} FAQs for ${countyFull} (${cmsItems.length} CMS + merged embedded)`);
     } catch (err) {
         console.error('[X] Error loading FAQs:', err);
         faqs = (county.content && county.content.faq) || [];
@@ -412,88 +452,64 @@ async function populateMainUI(county, currentSlug) {
     }
 
     try {
-        if (faqs.length > 0 && faqRep.uniqueId) {
+        if (faqs.length > 0 && faqRep) {
             faqRep.data = []; // Clear first to force redraw
 
             faqRep.onItemReady(($item, itemData) => {
                 const question = itemData.question || itemData.title || 'Question';
                 const answer = itemData.answer || itemData.a || 'Answer';
 
-                // Robust ID Selection (Try multiple common patterns)
-                const qText = $item('#textQuestion').uniqueId ? $item('#textQuestion') : ($item('#faqQuestion').uniqueId ? $item('#faqQuestion') : $item('#question'));
-                const aText = $item('#textAnswer').uniqueId ? $item('#textAnswer') : ($item('#faqAnswer').uniqueId ? $item('#faqAnswer') : $item('#answer'));
+                // ========================================
+                // EXACT Wix Editor IDs (from Layers panel)
+                // ========================================
+                const qText = safeGet($item, '#textQuestion');
+                const aText = safeGet($item, '#textAnswer');
+                const answerGroup = safeGet($item, '#groupAnswer');
+                const toggleTrigger = safeGet($item, '#containerQuestion');
+                const arrow = safeGet($item, '#iconArrow');
 
-                if (qText.uniqueId) {
+                // Set question text
+                if (qText) {
                     qText.text = question;
-                    console.log(`[OK] Set question: ${question.substring(0, 50)}...`);
                 }
 
-                // --- Unified FAQ Handling Logic ---
-                // 1. Identify Answer Group (The container/element to hide/show)
-                const answerGroup = $item('#groupAnswer').uniqueId ? $item('#groupAnswer') : ($item('#boxAnswer').uniqueId ? $item('#boxAnswer') : aText);
-
-                // 2. Identify Toggle Trigger (The element to click)
-                // Priority: Box > Container > Header > Question Text
-                const toggleTrigger = $item('#boxQuestion').uniqueId ? $item('#boxQuestion') :
-                    ($item('#containerQuestion').uniqueId ? $item('#containerQuestion') :
-                        ($item('#faqContainer').uniqueId ? $item('#faqContainer') :
-                            ($item('#groupHeader').uniqueId ? $item('#groupHeader') : qText)));
-
-                // 3. Identify Icons
-                const arrowDown = $item('#iconArrowDown');
-                const arrowUp = $item('#iconArrowUp');
-
-                // 4. Set Answer Text & Handle CollapsibleText specifics
-                if (aText.uniqueId) {
-                    const isCollapsibleText = typeof aText.collapseText === 'function';
-
-                    if (isCollapsibleText) {
-                        // For CollapsibleText: Expand text fully so it acts like a normal text element inside our accordion
-                        try {
+                // Set answer text (handle CollapsibleText if present)
+                if (aText) {
+                    try {
+                        if (typeof aText.collapseText === 'function') {
                             aText.expandText();
-                            aText.text = answer;
-                            // Do NOT call collapseText() here, because we want the full text to be visible when the accordion opens.
-                            // We rely on answerGroup.collapse() below to hide it initially.
-                        } catch (e) {
-                            console.error(`[X] Error setting CollapsibleText:`, e);
-                            aText.text = answer; // Fallback
                         }
-                    } else {
-                        aText.text = answer;
-                    }
+                    } catch (e) { /* not a collapsible text */ }
+                    aText.text = answer;
                 }
 
-                // 5. Initialize State (Collapsed)
-                if (answerGroup.uniqueId) {
-                    answerGroup.collapse(); // Initially hidden
+                // Initialize state: answer collapsed, arrow pointing down
+                if (answerGroup) {
+                    answerGroup.collapse();
                 }
-                if (arrowDown.uniqueId) arrowDown.show();
-                if (arrowUp.uniqueId) arrowUp.hide();
 
-                // 6. Interaction Logic (Click to Toggle)
-                if (toggleTrigger.uniqueId) {
+                // Click handler — toggle FAQ answer visibility
+                if (toggleTrigger && answerGroup) {
                     toggleTrigger.onClick(() => {
                         if (answerGroup.collapsed) {
                             answerGroup.expand();
-                            if (arrowDown.uniqueId) arrowDown.hide();
-                            if (arrowUp.uniqueId) arrowUp.show();
                         } else {
                             answerGroup.collapse();
-                            if (arrowDown.uniqueId) arrowDown.show();
-                            if (arrowUp.uniqueId) arrowUp.hide();
                         }
                     });
                 }
             });
 
-            // Ensure unique IDs
+            // Set data with guaranteed unique IDs
             faqRep.data = faqs.map((f, i) => ({ ...f, _id: f._id || `faq-${i}-${Date.now()}` }));
 
             faqRep.expand();
+            // Expand FAQ section container (try known IDs from Editor)
+            try { $w('#section2').expand(); } catch (e) { }
             try { $w('#sectionFAQ').expand(); } catch (e) { }
             try { $w('#faqSection').expand(); } catch (e) { }
         } else {
-            if (faqRep.uniqueId) faqRep.collapse();
+            if (faqRep) faqRep.collapse();
             try { $w('#sectionFAQ').collapse(); } catch (e) { }
         }
     } catch (e) {
