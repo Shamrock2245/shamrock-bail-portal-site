@@ -318,8 +318,10 @@ function setupHomepageMeta() {
     const url = 'https://www.shamrockbailbonds.biz';
 
     wixSeo.setTitle(title);
+    wixSeo.setLinks([{ rel: 'canonical', href: url }]);
     wixSeo.setMetaTags([
         { name: 'description', content: description },
+        { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' },
         { property: 'og:title', content: title },
         { property: 'og:description', content: description },
         { property: 'og:url', content: url },
