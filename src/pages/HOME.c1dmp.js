@@ -431,6 +431,83 @@ function setupOrganizationSchema() {
         }
     ];
 
+    // E. WebSite Schema with SearchAction (enables Google Sitelinks Search Box)
+    schemas.push({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": "https://www.shamrockbailbonds.biz/#website",
+        "name": "Shamrock Bail Bonds",
+        "url": "https://www.shamrockbailbonds.biz",
+        "description": "24/7 bail bond services throughout Florida since 2012. Fast, professional, and confidential.",
+        "publisher": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://www.shamrockbailbonds.biz/florida-bail-bonds/{search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+        },
+        "inLanguage": ["en-US", "es"]
+    });
+
+    // F. HowTo Schema (rich snippet for "how to get bail bonds in Florida")
+    schemas.push({
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to Get a Bail Bond in Florida",
+        "description": "Step-by-step guide to securing a bail bond in Florida with Shamrock Bail Bonds. Available 24/7 with bilingual support.",
+        "totalTime": "PT30M",
+        "estimatedCost": {
+            "@type": "MonetaryAmount",
+            "currency": "USD",
+            "value": "100"
+        },
+        "step": [
+            {
+                "@type": "HowToStep",
+                "position": 1,
+                "name": "Contact Shamrock Bail Bonds",
+                "text": "Call (239) 332-2245 any time, 24/7. You can also start online via our portal, Telegram bot, or text us. We answer immediately — you'll never get a voicemail.",
+                "url": "https://www.shamrockbailbonds.biz"
+            },
+            {
+                "@type": "HowToStep",
+                "position": 2,
+                "name": "Provide Defendant Information",
+                "text": "Tell us the defendant's full name, date of birth, and the county where they were arrested. We'll look up their booking details and charges instantly.",
+                "url": "https://www.shamrockbailbonds.biz"
+            },
+            {
+                "@type": "HowToStep",
+                "position": 3,
+                "name": "Review & Sign Paperwork",
+                "text": "We'll prepare the bond paperwork and send it to your phone via text message. Sign everything digitally from your phone — no office visit required.",
+                "url": "https://www.shamrockbailbonds.biz"
+            },
+            {
+                "@type": "HowToStep",
+                "position": 4,
+                "name": "Make Payment",
+                "text": "Pay the premium (typically 10% of the bail amount, minimum $100 per charge). We accept cash, credit cards, debit cards, and offer flexible payment plans.",
+                "url": "https://www.shamrockbailbonds.biz"
+            },
+            {
+                "@type": "HowToStep",
+                "position": 5,
+                "name": "Defendant Released",
+                "text": "Once the bond is posted at the jail, the defendant is released. Release times vary by county but are typically 4-12 hours.",
+                "url": "https://www.shamrockbailbonds.biz"
+            }
+        ]
+    });
+
+    // G. SpeakableSpecification on Organization (AI voice search targeting)
+    schemas[0]["speakable"] = {
+        "@type": "SpeakableSpecification",
+        "cssSelector": ["h1", "h2", ".hero-title", ".hero-subtitle", ".about-text"]
+    };
+
     wixSeo.setStructuredData(schemas).catch(function(e) { console.error('Schema error:', e); });
 }
 
