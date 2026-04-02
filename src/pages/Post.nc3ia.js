@@ -100,7 +100,8 @@ async function updatePostSEO() {
                     "telephone": "+1-239-332-2245",
                     "sameAs": [
                         "https://www.facebook.com/ShamrockBail",
-                        "https://www.instagram.com/shamrock_bail_bonds"
+                        "https://www.instagram.com/shamrock_bail_bonds",
+                        "https://t.me/ShamrockBail_bot"
                     ]
                 },
                 "mainEntityOfPage": {

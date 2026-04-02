@@ -249,7 +249,7 @@ async function handleSubmit() {
 
     } catch (error) {
         console.error("Submission Error:", error);
-        showError("Network error. Please try again or call (239) 555-BAIL.");
+        showError("Network error. Please try again or call (239) 332-2245.");
         resetButton();
     }
 }
