@@ -97,7 +97,7 @@ async function updatePostSEO() {
                         "postalCode": "33901",
                         "addressCountry": "US"
                     },
-                    "telephone": "239-332-2245",
+                    "telephone": "+1-239-332-2245",
                     "sameAs": [
                         "https://www.facebook.com/ShamrockBail",
                         "https://www.instagram.com/shamrock_bail_bonds"

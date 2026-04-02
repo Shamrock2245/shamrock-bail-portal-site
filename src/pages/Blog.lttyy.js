@@ -58,7 +58,7 @@ async function updateBlogSEO() {
                     "postalCode": "33901",
                     "addressCountry": "US"
                 },
-                "telephone": "239-332-2245",
+                "telephone": "+1-239-332-2245",
                 "areaServed": [
                     "Fort Myers", "Naples", "Cape Coral", "Sarasota",
                     "Bradenton", "Port Charlotte", "Punta Gorda"

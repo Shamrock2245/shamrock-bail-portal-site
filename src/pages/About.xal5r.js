@@ -68,7 +68,7 @@ function updatePageSEO() {
                     "@type": "ImageObject",
                     "url": logoUrl
                 },
-                "telephone": "+12393322245",
+                "telephone": "+1-239-332-2245",
                 "url": "https://www.shamrockbailbonds.biz/",
                 "priceRange": "$$",
                 "openingHoursSpecification": {

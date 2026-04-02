@@ -72,7 +72,7 @@ function updatePageSEO() {
                 "@id": "https://www.shamrockbailbonds.biz/#organization",
                 "image": logoUrl,
                 "logo": { "@type": "ImageObject", "url": logoUrl },
-                "telephone": "+12393322245",
+                "telephone": "+1-239-332-2245",
                 "url": "https://www.shamrockbailbonds.biz/",
                 "priceRange": "$$",
                 "openingHoursSpecification": {
@@ -88,7 +88,7 @@ function updatePageSEO() {
                 "contactPoint": [
                     {
                         "@type": "ContactPoint",
-                        "telephone": "+12393322245",
+                        "telephone": "+1-239-332-2245",
                         "contactType": "customer service",
                         "areaServed": { "@type": "State", "name": "Florida" },
                         "availableLanguage": ["English", "Spanish"],
@@ -101,7 +101,7 @@ function updatePageSEO() {
                     },
                     {
                         "@type": "ContactPoint",
-                        "telephone": "+12393322245",
+                        "telephone": "+1-239-332-2245",
                         "contactType": "emergency",
                         "areaServed": { "@type": "State", "name": "Florida" },
                         "availableLanguage": "English"
