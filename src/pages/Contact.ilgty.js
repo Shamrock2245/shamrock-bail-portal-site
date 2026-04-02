@@ -19,11 +19,12 @@ $w.onReady(async function () {
 });
 
 function updatePageSEO() {
-    const pageTitle = "Contact Shamrock Bail Bonds | 24/7 Bail Bonds & Jail Release";
-    const pageDesc = "Contact Shamrock Bail Bonds for immediate assistance. Open 24/7 in Fort Myers, Naples, and Punta Gorda. Call (239) 332-2245.";
+    const pageTitle = "Contact Shamrock Bail Bonds | 24/7 Emergency Bail Bonds Fort Myers FL";
+    const pageDesc = "Need immediate bail bond help? Contact Shamrock Bail Bonds 24/7 at (239) 332-2245. Serving Fort Myers, Naples, Cape Coral, and all 67 Florida counties. Walk-ins welcome at 1528 Broadway.";
     const pageUrl = "https://www.shamrockbailbonds.biz/contact";
+    const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
-    // 1. Meta Tags
+    // 1. Meta Tags (Action-oriented)
     wixSeo.setTitle(pageTitle);
     wixSeo.setMetaTags([
         { "name": "description", "content": pageDesc },
@@ -31,54 +32,81 @@ function updatePageSEO() {
         { "property": "og:description", "content": pageDesc },
         { "property": "og:url", "content": pageUrl },
         { "property": "og:type", "content": "website" },
-        { "property": "og:image", "content": "https://www.shamrockbailbonds.biz/logo.png" },
+        { "property": "og:image", "content": logoUrl },
+        { "property": "og:site_name", "content": "Shamrock Bail Bonds" },
         { "property": "og:locale", "content": "en_US" },
         { "name": "twitter:card", "content": "summary_large_image" },
         { "name": "twitter:title", "content": pageTitle },
         { "name": "twitter:description", "content": pageDesc },
-        { "name": "twitter:image", "content": "https://www.shamrockbailbonds.biz/logo.png" }
+        { "name": "robots", "content": "index, follow, max-snippet:-1" },
+        { "name": "keywords", "content": "contact bail bondsman Fort Myers, 24/7 bail bonds Florida, emergency bail bond number, Shamrock Bail Bonds phone" }
     ]);
 
-    // 2. Structured Data
+    wixSeo.setLinks([
+        { "rel": "canonical", "href": pageUrl }
+    ]);
+
+    // 2. Structured Data (ContactPage + LocalBusiness w/ 24/7 ContactPoint)
     wixSeo.setStructuredData([
         {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             "itemListElement": [
-                {
-                    "@type": "ListItem",
-                    "position": 1,
-                    "name": "Home",
-                    "item": "https://www.shamrockbailbonds.biz/"
-                },
-                {
-                    "@type": "ListItem",
-                    "position": 2,
-                    "name": "Contact",
-                    "item": pageUrl
-                }
+                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
+                { "@type": "ListItem", "position": 2, "name": "Contact", "item": pageUrl }
             ]
         },
         {
             "@context": "https://schema.org",
             "@type": "ContactPage",
+            "name": pageTitle,
+            "url": pageUrl,
+            "description": pageDesc,
+            "speakable": {
+                "@type": "SpeakableSpecification",
+                "cssSelector": ["h1", "h2", ".contact-info", "address"]
+            },
             "mainEntity": {
                 "@type": "LocalBusiness",
                 "name": "Shamrock Bail Bonds, LLC",
-                "image": "https://www.shamrockbailbonds.biz/logo.png",
+                "@id": "https://www.shamrockbailbonds.biz/#organization",
+                "image": logoUrl,
+                "logo": { "@type": "ImageObject", "url": logoUrl },
                 "telephone": "+12393322245",
                 "url": "https://www.shamrockbailbonds.biz/",
+                "priceRange": "$$",
+                "openingHoursSpecification": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                },
                 "sameAs": [
                     "https://www.facebook.com/ShamrockBail",
                     "https://www.instagram.com/shamrock_bail_bonds"
                 ],
-                "contactPoint": {
-                    "@type": "ContactPoint",
-                    "telephone": "+12393322245",
-                    "contactType": "customer service",
-                    "areaServed": ["FL"],
-                    "availableLanguage": "English"
-                },
+                "contactPoint": [
+                    {
+                        "@type": "ContactPoint",
+                        "telephone": "+12393322245",
+                        "contactType": "customer service",
+                        "areaServed": { "@type": "State", "name": "Florida" },
+                        "availableLanguage": ["English", "Spanish"],
+                        "hoursAvailable": {
+                            "@type": "OpeningHoursSpecification",
+                            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                            "opens": "00:00",
+                            "closes": "23:59"
+                        }
+                    },
+                    {
+                        "@type": "ContactPoint",
+                        "telephone": "+12393322245",
+                        "contactType": "emergency",
+                        "areaServed": { "@type": "State", "name": "Florida" },
+                        "availableLanguage": "English"
+                    }
+                ],
                 "address": {
                     "@type": "PostalAddress",
                     "streetAddress": "1528 Broadway",
@@ -86,6 +114,11 @@ function updatePageSEO() {
                     "addressRegion": "FL",
                     "postalCode": "33901",
                     "addressCountry": "US"
+                },
+                "geo": {
+                    "@type": "GeoCoordinates",
+                    "latitude": 26.6406,
+                    "longitude": -81.8723
                 }
             }
         }
