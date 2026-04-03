@@ -1,27 +1,36 @@
-# dependencies
+# Dependencies & IDE
 node_modules/
 .vscode/
 .idea/
 .wix/
 jsconfig.json
-.env.signnow
-backend-gas/setup_webhooks.js
-slack_setup.md
-
-backend-gas/*_output_*.json
-backend-gas/test_pdf_output.json
-
-backend-gas/*output*.json
-scripts/seo/service_account.json
-scripts/seo/service_account.json.json
-scripts/seo/indexing_report_*.json
-docs/twilio-docs.md
-.env
 venv/
+
+# Environment & secrets
+.env
 .env*
+.env.signnow
 *.real
 
 # Secrets - never commit
+**/service_account*.json
 backend-gas/ScriptProperties_Temp.js
 backend-gas/Get_Token_Temp.js
 backend-gas/Setup_OAuth_Props.js
+backend-gas/setup_webhooks.js
+
+# GAS test output
+backend-gas/*_output_*.json
+backend-gas/test_pdf_output.json
+backend-gas/*output*.json
+
+# Data files - too large for version control
+*.csv
+*_analysis.json
+
+# Fetched external docs (re-fetch as needed)
+docs/twilio-docs.md
+scripts/seo/indexing_report_*.json
+
+# One-time setup docs
+slack_setup.md

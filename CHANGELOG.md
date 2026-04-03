@@ -37,6 +37,30 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-04-02 — Site-Wide SEO Hardening & Documentation Cleanup
+
+**Added:**
+- Unified `Organization`, `LocalBusiness`, `BreadcrumbList`, and `SpeakableSpecification` schema markup on all 9 public pages.
+- `FAQPage` schema on Homepage (5 Q&As), About (4 Q&As), and Contact (4 Q&As) pages — 13 total FAQ pairs targeting AI search queries.
+- Canonical URLs, Open Graph, and Twitter Card meta tags standardized across all pages.
+
+**Fixed:**
+- Standardized phone number format (`+1-239-332-2245`) across all schema markup.
+- Added missing Telegram `sameAs` links to Blog, Post, and Testimonials page schemas.
+- Corrected placeholder phone number `(239) 555-BAIL` → `(239) 332-2245` in Contact page error handler.
+
+**Changed:**
+- Reorganized `.gitignore` — added `*.csv` and `**/service_account*.json` patterns, grouped by category.
+- Moved 6 stale root docs to `docs/archive/2026-04/` (LOGBOOK, SOP, mem0 docs, integration report, progress report, prompts).
+- Moved 11 root Python scripts to `scripts/data-tools/`.
+- Moved 12 root JS/MJS test scripts to `scripts/testing/` and `scripts/utilities/`.
+- Moved 6 root shell scripts to `scripts/utilities/`.
+- Moved 15 root CSV/JSON data files to `data_imports/`.
+- Moved `BAIL_SCHOOL_CURRICULUM.md` to `docs/bail_school_materials/`.
+- Updated `TASKS.md` and `ROADMAP.md` timestamps to April 2, 2026.
+
+---
+
 ### Template for Future Entries
 `YYYY-MM-DD — vX.Y.Z`
 - **Added**: new feature
