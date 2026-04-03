@@ -519,7 +519,7 @@ async function populateMainUI(county, currentSlug) {
         faqs = (county.content && county.content.faq) || [];
     }
 
-    // Inject final structured data (base schemas + FAQPage) in a single call
+    // Inject final structured data (base schemas + FAQPage + ItemList for internal links) in a single call
     if (faqs.length > 0) {
         try {
             const baseSchemas = county._seoSchemas || [];
@@ -542,6 +542,10 @@ async function populateMainUI(county, currentSlug) {
             console.warn('FAQPage schema injection failed:', seoErr);
         }
     }
+
+    // --- INTERNAL LINKING STRATEGY ---
+    // Populate cross-links to core site pages + Florida Directory hub
+    populateInternalLinks(county, currentSlug);
 
     try {
         if (faqs.length > 0 && faqRep) {
@@ -606,6 +610,75 @@ async function populateMainUI(county, currentSlug) {
         }
     } catch (e) {
         console.warn("FAQ Repeater Error:", e);
+    }
+}
+
+/**
+ * ─── INTERNAL LINKING STRATEGY ─────────────────────────────────────────
+ * Creates cross-links to core site pages from every county page.
+ * This hub-and-spoke architecture helps Google discover all 67 county
+ * pages through the /florida-bail-bonds/ directory hub.
+ *
+ * Link targets (resilient — silently skip if element IDs don't exist):
+ *   - Florida Directory hub (/florida-bail-bonds/)
+ *   - How Bail Works (/how-bail-works)
+ *   - About Us (/about)
+ *   - Contact (/contact)
+ *   - Testimonials (/testimonials)
+ *   - Blog (/blog)
+ * ───────────────────────────────────────────────────────────────────────
+ */
+function populateInternalLinks(county, currentSlug) {
+    const countyName = county.county_name || 'Florida';
+
+    // Cross-link to Florida Directory hub page (critical for crawlability)
+    setLinkElement(['#directoryLinkBtn', '#floridaDirectoryBtn', '#btnAllCounties'], '/florida-bail-bonds');
+    setTextElement(['#directoryLink', '#floridaDirectoryLink'], 'View All 67 Florida Counties');
+
+    // Cross-link to How Bail Works
+    setLinkElement(['#howBailWorksLink', '#btnHowBailWorks'], '/how-bail-works');
+
+    // Cross-link to About page
+    setLinkElement(['#aboutUsLink', '#btnAboutUs'], '/about');
+
+    // Cross-link to Contact page
+    setLinkElement(['#contactLink', '#btnContact'], '/contact');
+
+    // Cross-link to Testimonials
+    setLinkElement(['#testimonialsLink', '#btnTestimonials'], '/testimonials');
+
+    // Cross-link to Blog
+    setLinkElement(['#blogLink', '#btnBlog'], '/blog');
+
+    console.log(`[Internal Links] Cross-links populated for ${countyName} County`);
+}
+
+/**
+ * Resilient link setter — tries multiple element IDs, silently skips if none exist.
+ * This is safe because not all county page variants have all link elements.
+ */
+function setLinkElement(ids, href) {
+    for (const id of ids) {
+        try {
+            const el = $w(id);
+            if (el && el.id) {
+                el.link = href;
+            }
+        } catch (e) { /* element doesn't exist in this page variant — skip */ }
+    }
+}
+
+/**
+ * Resilient text setter — tries multiple element IDs, silently skips if none exist.
+ */
+function setTextElement(ids, text) {
+    for (const id of ids) {
+        try {
+            const el = $w(id);
+            if (el && el.id) {
+                el.text = text;
+            }
+        } catch (e) { /* element doesn't exist — skip */ }
     }
 }
 
