@@ -1,0 +1,201 @@
+/**
+ * Florida County Directory Backend
+ * 
+ * Powers the /florida-bail-bonds hub page with a full directory of all 67 Florida
+ * counties, grouped by region with rich metadata for SEO and internal linking.
+ * 
+ * This module creates the "pillar content" that connects all 67 county landing pages
+ * into a cohesive internal link mesh, boosting topical authority statewide.
+ * 
+ * @module county-directory
+ * @created 2026-04-03
+ */
+
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'public/collectionIds';
+
+// In-memory cache
+const _dirCache = {};
+const DIR_CACHE_TTL = 1800000; // 30 minutes
+
+/**
+ * Florida regions and their descriptions for the directory hub
+ */
+const REGION_META = {
+  'Southwest': {
+    description: 'Southwest Florida encompasses the Gulf Coast from Sarasota to Naples. Home to some of the fastest-growing communities in Florida.',
+    majorCities: ['Fort Myers', 'Naples', 'Cape Coral', 'Sarasota', 'Punta Gorda'],
+    counties: ['lee', 'collier', 'charlotte', 'desoto', 'glades', 'hendry', 'sarasota', 'manatee', 'hardee', 'highlands']
+  },
+  'Southeast': {
+    description: 'Southeast Florida is the most populous region in the state, including the Miami metropolitan area and the Gold Coast.',
+    majorCities: ['Miami', 'Fort Lauderdale', 'West Palm Beach', 'Boca Raton'],
+    counties: ['miami-dade', 'broward', 'palm-beach', 'martin', 'st-lucie', 'indian-river', 'okeechobee', 'monroe']
+  },
+  'Central': {
+    description: 'Central Florida is home to Orlando, Tampa, and the I-4 corridor — the economic heart of the state.',
+    majorCities: ['Orlando', 'Tampa', 'Lakeland', 'Kissimmee', 'Daytona Beach'],
+    counties: ['orange', 'osceola', 'seminole', 'lake', 'volusia', 'polk', 'brevard', 'sumter']
+  },
+  'West Central': {
+    description: 'The Tampa Bay area and surrounding communities on Florida\'s central Gulf Coast.',
+    majorCities: ['Tampa', 'St. Petersburg', 'Clearwater', 'Brandon', 'Spring Hill'],
+    counties: ['hillsborough', 'pinellas', 'pasco', 'hernando', 'citrus']
+  },
+  'North Central': {
+    description: 'Home to Gainesville and the University of Florida. A mix of college towns and rural communities.',
+    majorCities: ['Gainesville', 'Ocala'],
+    counties: ['alachua', 'marion', 'levy', 'gilchrist', 'dixie', 'columbia', 'bradford', 'union', 'putnam']
+  },
+  'Northeast': {
+    description: 'Northeast Florida includes the Jacksonville metropolitan area, the largest city by area in the contiguous US.',
+    majorCities: ['Jacksonville', 'St. Augustine', 'Fernandina Beach'],
+    counties: ['duval', 'st-johns', 'nassau', 'clay', 'baker', 'flagler']
+  },
+  'Northwest': {
+    description: 'The Florida Panhandle stretches along the Gulf from Pensacola to Tallahassee. Known for emerald coast beaches and the state capital.',
+    majorCities: ['Pensacola', 'Tallahassee', 'Panama City', 'Fort Walton Beach'],
+    counties: ['escambia', 'santa-rosa', 'okaloosa', 'walton', 'bay', 'holmes', 'washington', 'jackson', 'calhoun', 'gulf', 'liberty', 'franklin', 'gadsden', 'leon', 'wakulla', 'jefferson', 'madison', 'taylor', 'hamilton', 'suwannee', 'lafayette']
+  }
+};
+
+/**
+ * Get the complete Florida county directory, grouped by region.
+ * Returns data structured for the /florida-bail-bonds hub page.
+ * 
+ * @returns {Promise<Object>} Directory data with regions, counties, and stats
+ */
+export async function getCountyDirectory() {
+  const cacheKey = 'directory_v1';
+  const cached = _dirCache[cacheKey];
+  if (cached && (Date.now() - cached.timestamp < DIR_CACHE_TTL)) {
+    return cached.data;
+  }
+
+  try {
+    // Query all counties from CMS
+    const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
+      .ascending('countyName')
+      .fields('countySlug', 'countyName', 'isPrimaryCounty', 'region', 'primaryPhone', 'jailName')
+      .limit(100)
+      .find({ suppressAuth: true });
+
+    const cmsCounties = results.items || [];
+
+    // Build directory grouped by region
+    const regions = {};
+    let totalCounties = 0;
+
+    for (const [regionName, meta] of Object.entries(REGION_META)) {
+      const regionCounties = cmsCounties
+        .filter(c => {
+          const slug = (c.countySlug || '').replace(/-county$/i, '');
+          return meta.counties.includes(slug) || (c.region || '').toLowerCase() === regionName.toLowerCase();
+        })
+        .map(c => {
+          const slug = (c.countySlug || '').replace(/-county$/i, '');
+          const name = (c.countyName || '').replace(/ County$/i, '').trim();
+          return {
+            name,
+            slug,
+            url: `/florida-bail-bonds/${slug}`,
+            isPrimary: c.isPrimaryCounty || false,
+            phone: c.primaryPhone || '(239) 332-2245',
+            jailName: c.jailName || `${name} County Jail`
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      // If CMS didn't have some counties in this region, add them from the static list
+      const existingSlugs = new Set(regionCounties.map(c => c.slug));
+      for (const staticSlug of meta.counties) {
+        if (!existingSlugs.has(staticSlug)) {
+          const name = staticSlug
+            .split('-')
+            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ');
+          regionCounties.push({
+            name,
+            slug: staticSlug,
+            url: `/florida-bail-bonds/${staticSlug}`,
+            isPrimary: false,
+            phone: '(239) 332-2245',
+            jailName: `${name} County Jail`
+          });
+        }
+      }
+
+      regionCounties.sort((a, b) => a.name.localeCompare(b.name));
+      totalCounties += regionCounties.length;
+
+      regions[regionName] = {
+        name: regionName,
+        description: meta.description,
+        majorCities: meta.majorCities,
+        counties: regionCounties,
+        countyCount: regionCounties.length
+      };
+    }
+
+    const directory = {
+      success: true,
+      totalCounties,
+      lastUpdated: new Date().toISOString(),
+      regions,
+      // Flat list of all counties for sitemap/schema generation
+      allCounties: Object.values(regions)
+        .flatMap(r => r.counties)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+      // SEO data for the hub page
+      hubSeo: {
+        title: 'Florida Bail Bonds - All 67 Counties | Shamrock Bail Bonds',
+        description: 'Shamrock Bail Bonds serves all 67 Florida counties. Find bail bond services in your county — 24/7 fast release, bilingual support, payment plans available. Call (239) 332-2245.',
+        keywords: [
+          'florida bail bonds', 'bail bonds florida', 'bail bondsman near me florida',
+          '24/7 bail bonds florida', 'florida bail bond company', 'bail bonds all counties florida',
+          'florida jail release', 'florida mobile bail bondsman', 'florida bail bond payment plan',
+          'bail bonds southwest florida', 'bail bonds southeast florida', 'bail bonds central florida',
+          'florida bail bond directory', 'statewide bail bonds florida'
+        ]
+      }
+    };
+
+    // Cache result
+    _dirCache[cacheKey] = { timestamp: Date.now(), data: directory };
+
+    return directory;
+
+  } catch (error) {
+    console.error('Error building county directory:', error);
+    return {
+      success: false,
+      error: error.message,
+      totalCounties: 67,
+      regions: {},
+      allCounties: []
+    };
+  }
+}
+
+/**
+ * Generate ItemList schema for the directory (statewide SEO signal)
+ * @returns {Promise<Object>} JSON-LD ItemList schema
+ */
+export async function getDirectorySchema() {
+  const directory = await getCountyDirectory();
+  if (!directory.success) return null;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Florida Bail Bonds - County Directory",
+    "description": "Complete directory of bail bond services across all 67 Florida counties by Shamrock Bail Bonds.",
+    "numberOfItems": directory.totalCounties,
+    "itemListElement": directory.allCounties.map((county, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "name": `${county.name} County Bail Bonds`,
+      "url": `https://www.shamrockbailbonds.biz${county.url}`
+    }))
+  };
+}

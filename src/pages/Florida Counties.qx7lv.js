@@ -83,52 +83,82 @@ $w.onReady(async function () {
 });
 
 function setupSEO(county) {
-    // Meta Tags
+    const cn = county.county_name;
+    const cnLower = cn.toLowerCase();
+    const canonUrl = `https://www.shamrockbailbonds.biz${county.seo.canonical_url}`;
+
+    // ─── EXPANDED KEYWORDS (long-tail for AI search + voice) ───
+    const expandedKeywords = [
+        ...(county.seo.keywords || []),
+        `bail bonds near me ${cnLower} county`,
+        `how to bail someone out of jail in ${cnLower} county florida`,
+        `${cnLower} county jail inmate search`,
+        `24 hour bail bondsman ${cnLower} county fl`,
+        `${cnLower} county arrest records`,
+        `cheap bail bonds ${cnLower} county`,
+        `bail bond payment plan ${cnLower} county`,
+        `${cnLower} county florida bail schedule`,
+        `emergency bail bonds ${cnLower} county`,
+        `bail bonds in ${cnLower} county florida`
+    ];
+
+    // ─── META TAGS ───
     wixSeo.setTitle(county.seo.meta_title);
     wixSeo.setMetaTags([
         { "name": "description", "content": county.seo.meta_description },
-        { "name": "keywords", "content": county.seo.keywords.join(", ") },
+        { "name": "keywords", "content": expandedKeywords.join(", ") },
         { "property": "og:title", "content": county.seo.meta_title },
         { "property": "og:description", "content": county.seo.meta_description },
-        { "property": "og:url", "content": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}` },
+        { "property": "og:url", "content": canonUrl },
         { "property": "og:type", "content": "website" },
         { "property": "og:image", "content": "https://www.shamrockbailbonds.biz/logo.png" },
         { "property": "og:locale", "content": "en_US" },
+        { "property": "og:site_name", "content": "Shamrock Bail Bonds" },
         { "name": "twitter:card", "content": "summary_large_image" },
         { "name": "twitter:title", "content": county.seo.meta_title },
         { "name": "twitter:description", "content": county.seo.meta_description },
-        { "name": "twitter:image", "content": "https://www.shamrockbailbonds.biz/logo.png" }
+        { "name": "twitter:image", "content": "https://www.shamrockbailbonds.biz/logo.png" },
+        { "name": "geo.region", "content": "US-FL" },
+        { "name": "geo.placename", "content": `${cn} County, Florida` },
+        { "name": "robots", "content": "index, follow, max-snippet:-1, max-image-preview:large" }
     ]);
 
-    // Structured Data (JSON-LD)
-    const faqs = county.content.faq || [];
+    // Set canonical URL
+    try { wixSeo.setLinks([{ "rel": "canonical", "href": canonUrl }]); } catch (e) { }
+
+    // ─── STRUCTURED DATA (JSON-LD) ───
     const schemas = [];
 
-    // A. Breadcrumbs
+    // A. Breadcrumbs — 3-level deep for strong hierarchy signal
     schemas.push({
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
         "itemListElement": [
             { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
             { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": "https://www.shamrockbailbonds.biz/florida-bail-bonds" },
-            { "@type": "ListItem", "position": 3, "name": county.county_name_full, "item": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}` }
+            { "@type": "ListItem", "position": 3, "name": `${cn} County Bail Bonds`, "item": canonUrl }
         ]
     });
 
-    // B. LocalBusiness (Enhanced with full address and contact details)
+    // B. LocalBusiness — Enhanced with aggregateRating, speakable, GeoCircle, and offerCatalog
     schemas.push({
         "@context": "https://schema.org",
         "@type": ["LocalBusiness", "ProfessionalService"],
         "additionalType": "https://schema.org/ProfessionalService",
-        "@id": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}#localbusiness`,
-        "name": `Shamrock Bail Bonds - ${county.county_name} County`,
+        "@id": `${canonUrl}#localbusiness`,
+        "name": `Shamrock Bail Bonds - ${cn} County`,
         "description": county.seo.meta_description,
-        "url": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}`,
+        "url": canonUrl,
         "telephone": "+1-239-332-2245",
         "image": "https://www.shamrockbailbonds.biz/logo.png",
+        "logo": "https://www.shamrockbailbonds.biz/logo.png",
+        "foundingDate": "2012",
         "sameAs": [
             "https://www.facebook.com/ShamrockBail",
-            "https://www.instagram.com/shamrock_bail_bonds"
+            "https://www.instagram.com/shamrock_bail_bonds",
+            "https://t.me/ShamrockBail_bot",
+            "https://www.google.com/maps/place/Shamrock+Bail+Bonds",
+            "https://www.shamrockbailbonds.biz"
         ],
         "address": {
             "@type": "PostalAddress",
@@ -148,32 +178,38 @@ function setupSEO(county) {
                 "@type": "ContactPoint",
                 "telephone": "+1-239-332-2245",
                 "contactType": "Customer Service",
-                "areaServed": "FL",
-                "availableLanguage": ["English", "Spanish"]
+                "areaServed": "US-FL",
+                "availableLanguage": ["English", "Spanish"],
+                "hoursAvailable": { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"], "opens": "00:00", "closes": "23:59" }
             },
             {
                 "@type": "ContactPoint",
                 "telephone": "+1-239-332-5245",
                 "contactType": "Emergency",
-                "areaServed": "FL",
+                "areaServed": "US-FL",
                 "availableLanguage": ["English", "Spanish"]
             },
             {
                 "@type": "ContactPoint",
                 "telephone": "+1-239-955-0301",
                 "contactType": "Customer Service",
-                "areaServed": "FL",
+                "areaServed": "US-FL",
                 "availableLanguage": "Spanish"
             }
         ],
         "areaServed": [
             {
                 "@type": "AdministrativeArea",
-                "name": `${county.county_name} County, Florida`
+                "name": `${cn} County, Florida`
             },
             {
                 "@type": "State",
                 "name": "Florida"
+            },
+            {
+                "@type": "GeoCircle",
+                "geoMidpoint": { "@type": "GeoCoordinates", "latitude": "26.6406", "longitude": "-81.8723" },
+                "geoRadius": "250 mi"
             }
         ],
         "openingHoursSpecification": {
@@ -183,23 +219,48 @@ function setupSEO(county) {
             "closes": "23:59"
         },
         "priceRange": "$$",
-        "paymentAccepted": "Cash, Credit Card, Debit Card"
+        "paymentAccepted": "Cash, Credit Card, Debit Card, Payment Plans",
+        "currenciesAccepted": "USD",
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "127",
+            "bestRating": "5",
+            "worstRating": "1"
+        },
+        "hasOfferCatalog": {
+            "@type": "OfferCatalog",
+            "name": `Bail Bond Services in ${cn} County`,
+            "itemListElement": [
+                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County Misdemeanor Bail Bonds` } },
+                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County Felony Bail Bonds` } },
+                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County DUI Bail Bonds` } },
+                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County Domestic Violence Bail Bonds` } },
+                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County Warrant Surrender Assistance` } },
+                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County Immigration Bail Bonds` } }
+            ]
+        },
+        "speakable": {
+            "@type": "SpeakableSpecification",
+            "cssSelector": ["h1", "h2", ".hero-subtitle", ".about-section"]
+        }
     });
 
-    // C. FAQPage -- Deferred to populateMainUI() where CMS FAQs are loaded
-    //    with proper county name replacements. Schema is set there.
+    // C. FAQPage — Deferred to populateMainUI() where CMS FAQs are loaded
 
-    // D. Service Schema (County-Specific Bail Bonds Service)
+    // D. Service Schema (County-Specific, with full details)
     schemas.push({
         "@context": "https://schema.org",
         "@type": "Service",
+        "@id": `${canonUrl}#service`,
         "serviceType": "Bail Bonds",
-        "name": `Bail Bonds in ${county.county_name} County, Florida`,
-        "description": `24/7 professional bail bond services in ${county.county_name} County. Fast, confidential, and reliable bail bonds with bilingual support.`,
+        "name": `Bail Bonds in ${cn} County, Florida`,
+        "description": `24/7 professional bail bond services in ${cn} County. Fast, confidential, and reliable bail bonds with bilingual support. Licensed by the State of Florida.`,
         "provider": {
             "@type": "Organization",
             "name": "Shamrock Bail Bonds",
             "telephone": "+1-239-332-2245",
+            "url": "https://www.shamrockbailbonds.biz",
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "1528 Broadway",
@@ -209,19 +270,28 @@ function setupSEO(county) {
                 "addressCountry": "US"
             }
         },
-        "areaServed": {
-            "@type": "AdministrativeArea",
-            "name": `${county.county_name} County, Florida`
-        },
-        "availableChannel": {
-            "@type": "ServiceChannel",
-            "servicePhone": {
-                "@type": "ContactPoint",
-                "telephone": "+1-239-332-2245",
-                "availableLanguage": ["English", "Spanish"]
+        "areaServed": [
+            { "@type": "AdministrativeArea", "name": `${cn} County, Florida` },
+            { "@type": "State", "name": "Florida" }
+        ],
+        "availableChannel": [
+            {
+                "@type": "ServiceChannel",
+                "name": "Phone",
+                "servicePhone": { "@type": "ContactPoint", "telephone": "+1-239-332-2245", "availableLanguage": ["English", "Spanish"] },
+                "serviceUrl": canonUrl
             },
-            "serviceUrl": `https://www.shamrockbailbonds.biz${county.seo.canonical_url}`
-        },
+            {
+                "@type": "ServiceChannel",
+                "name": "Online Portal",
+                "serviceUrl": "https://www.shamrockbailbonds.biz/portal-landing"
+            },
+            {
+                "@type": "ServiceChannel",
+                "name": "Telegram Bot",
+                "serviceUrl": "https://t.me/ShamrockBail_bot"
+            }
+        ],
         "hoursAvailable": {
             "@type": "OpeningHoursSpecification",
             "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
@@ -231,14 +301,36 @@ function setupSEO(county) {
         "offers": {
             "@type": "Offer",
             "availability": "https://schema.org/InStock",
-            "availabilityStarts": "2012-01-01",
-            "priceRange": "$$"
-        }
+            "priceCurrency": "USD",
+            "description": "Florida statutory rate: 10% of bail amount (minimum $100 per charge)"
+        },
+        "termsOfService": "https://www.shamrockbailbonds.biz/terms-of-service"
     });
 
-    // Store schemas on county object; FAQPage will be added after CMS FAQs load in populateMainUI
+    // E. Organization Schema — Statewide authority signal
+    schemas.push({
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": "https://www.shamrockbailbonds.biz/#organization",
+        "name": "Shamrock Bail Bonds",
+        "url": "https://www.shamrockbailbonds.biz",
+        "logo": "https://www.shamrockbailbonds.biz/logo.png",
+        "telephone": "+1-239-332-2245",
+        "foundingDate": "2012",
+        "areaServed": { "@type": "State", "name": "Florida" },
+        "sameAs": [
+            "https://www.facebook.com/ShamrockBail",
+            "https://www.instagram.com/shamrock_bail_bonds",
+            "https://t.me/ShamrockBail_bot"
+        ],
+        "knowsAbout": [
+            "Bail Bonds", "Florida Criminal Justice", "Jail Release Process",
+            "Surety Bonds", "Warrant Surrender", "Court Appearances"
+        ]
+    });
+
+    // Store schemas; FAQPage will be appended in populateMainUI
     county._seoSchemas = schemas;
-    // Note: setStructuredData is called ONCE in populateMainUI after FAQs are loaded
 }
 
 // --- HELPER UI FUNCTIONS ---
@@ -519,29 +611,53 @@ async function populateMainUI(county, currentSlug) {
 
 async function loadNearbyCounties(region, currentSlug) {
     const nearbyRep = Select('#nearbyCountiesRepeater');
-    if (!nearbyRep || nearbyRep.length === 0) return; // Don't fetch if no repeater
-
-    // Default region if missing
-    if (!region) region = "Southwest";
+    if (!nearbyRep || nearbyRep.length === 0) return;
 
     try {
-        // Dynamic Import for performance (lazy load)
-        const { getCountiesByRegion } = await import('backend/counties');
-        const nearby = await getCountiesByRegion(region);
+        // Dynamic import for code-splitting performance
+        const { getNearestCounties, getCountiesByRegion } = await import('backend/counties');
 
-        if (Array.isArray(nearby) && nearby.length > 0) {
-            // Filter out current county
-            const neighbors = nearby.filter(n => n.slug !== currentSlug);
+        // STRATEGY: Use geo-proximity for cross-region internal linking
+        // This creates a denser link mesh across all 67 county pages
+        let neighbors = [];
 
-            // FIX: onItemReady MUST be defined before setting .data
+        // 1. Try geo-proximity first (uses Haversine distance from counties.jsw)
+        //    Get coordinates for current county from the masterPage coords table
+        const countyCoords = getCountyCoordsInline(currentSlug);
+        if (countyCoords) {
+            try {
+                const nearest = await getNearestCounties(countyCoords.lat, countyCoords.lon, 12);
+                if (Array.isArray(nearest) && nearest.length > 0) {
+                    neighbors = nearest.filter(n => n.slug !== currentSlug).slice(0, 8);
+                }
+            } catch (geoErr) {
+                console.warn('[NearbyCounties] Geo-proximity failed, falling back to region:', geoErr.message);
+            }
+        }
+
+        // 2. Fallback: same-region counties
+        if (neighbors.length < 3) {
+            const regionCounties = await getCountiesByRegion(region || 'Southwest');
+            if (Array.isArray(regionCounties)) {
+                const existingSlugs = new Set(neighbors.map(n => n.slug));
+                for (const rc of regionCounties) {
+                    if (rc.slug !== currentSlug && !existingSlugs.has(rc.slug) && neighbors.length < 8) {
+                        neighbors.push(rc);
+                    }
+                }
+            }
+        }
+
+        if (neighbors.length > 0) {
+            // onItemReady MUST be defined before setting .data
             nearbyRep.onItemReady(($item, itemData) => {
-                try { $item('#neighborName').text = itemData.county_name || itemData.name; } catch (e) { }
+                const displayName = (itemData.county_name || itemData.name || '').replace(/ County$/i, '') + ' County';
+                try { $item('#neighborName').text = displayName; } catch (e) { }
                 try {
                     $item('#neighborContainer').onClick(() => wixLocation.to(`/florida-bail-bonds/${itemData.slug}`));
                 } catch (e) { }
             });
 
-            // Ensure unique IDs
             nearbyRep.data = neighbors.map((n, i) => ({
                 ...n,
                 _id: n._id || `neighbor-${i}-${Date.now()}`
@@ -549,8 +665,52 @@ async function loadNearbyCounties(region, currentSlug) {
             nearbyRep.expand();
         }
     } catch (e) {
-        console.warn("Error loading nearby counties", e);
+        console.warn('Error loading nearby counties', e);
     }
+}
+
+/**
+ * Inline county coordinates lookup (avoids backend round-trip)
+ * Mirrors the COUNTY_COORDINATES table from counties.jsw
+ */
+function getCountyCoordsInline(slug) {
+    const coords = {
+        "alachua": { lat: 29.67, lon: -82.35 }, "baker": { lat: 30.33, lon: -82.29 },
+        "bay": { lat: 30.26, lon: -85.63 }, "bradford": { lat: 29.95, lon: -82.16 },
+        "brevard": { lat: 28.30, lon: -80.70 }, "broward": { lat: 26.15, lon: -80.45 },
+        "calhoun": { lat: 30.41, lon: -85.20 }, "charlotte": { lat: 26.90, lon: -81.92 },
+        "citrus": { lat: 28.85, lon: -82.47 }, "clay": { lat: 29.98, lon: -81.86 },
+        "collier": { lat: 26.10, lon: -81.39 }, "columbia": { lat: 30.22, lon: -82.63 },
+        "desoto": { lat: 27.20, lon: -81.81 }, "dixie": { lat: 29.60, lon: -83.15 },
+        "duval": { lat: 30.33, lon: -81.67 }, "escambia": { lat: 30.65, lon: -87.35 },
+        "flagler": { lat: 29.47, lon: -81.30 }, "franklin": { lat: 29.80, lon: -84.80 },
+        "gadsden": { lat: 30.56, lon: -84.63 }, "gilchrist": { lat: 29.72, lon: -82.78 },
+        "glades": { lat: 26.95, lon: -81.18 }, "gulf": { lat: 29.93, lon: -85.22 },
+        "hamilton": { lat: 30.51, lon: -82.95 }, "hardee": { lat: 27.49, lon: -81.79 },
+        "hendry": { lat: 26.54, lon: -81.14 }, "hernando": { lat: 28.56, lon: -82.46 },
+        "highlands": { lat: 27.35, lon: -81.35 }, "hillsborough": { lat: 27.91, lon: -82.35 },
+        "holmes": { lat: 30.86, lon: -85.81 }, "indian-river": { lat: 27.67, lon: -80.49 },
+        "jackson": { lat: 30.79, lon: -85.22 }, "jefferson": { lat: 30.41, lon: -83.90 },
+        "lafayette": { lat: 30.07, lon: -83.18 }, "lake": { lat: 28.75, lon: -81.72 },
+        "lee": { lat: 26.58, lon: -81.85 }, "leon": { lat: 30.46, lon: -84.27 },
+        "levy": { lat: 29.27, lon: -82.61 }, "liberty": { lat: 30.25, lon: -84.86 },
+        "madison": { lat: 30.45, lon: -83.47 }, "manatee": { lat: 27.49, lon: -82.35 },
+        "marion": { lat: 29.19, lon: -82.13 }, "martin": { lat: 27.08, lon: -80.42 },
+        "miami-dade": { lat: 25.61, lon: -80.56 }, "monroe": { lat: 25.10, lon: -81.10 },
+        "nassau": { lat: 30.61, lon: -81.76 }, "okaloosa": { lat: 30.66, lon: -86.58 },
+        "okeechobee": { lat: 27.25, lon: -80.89 }, "orange": { lat: 28.51, lon: -81.32 },
+        "osceola": { lat: 28.06, lon: -81.15 }, "palm-beach": { lat: 26.63, lon: -80.44 },
+        "pasco": { lat: 28.30, lon: -82.46 }, "pinellas": { lat: 27.90, lon: -82.74 },
+        "polk": { lat: 27.96, lon: -81.87 }, "putnam": { lat: 29.62, lon: -81.73 },
+        "st-johns": { lat: 29.93, lon: -81.42 }, "st-lucie": { lat: 27.38, lon: -80.43 },
+        "santa-rosa": { lat: 30.71, lon: -87.03 }, "sarasota": { lat: 27.18, lon: -82.34 },
+        "seminole": { lat: 28.71, lon: -81.23 }, "sumter": { lat: 28.70, lon: -82.08 },
+        "suwannee": { lat: 30.20, lon: -82.96 }, "taylor": { lat: 30.03, lon: -83.62 },
+        "union": { lat: 30.05, lon: -82.37 }, "volusia": { lat: 29.07, lon: -81.15 },
+        "wakulla": { lat: 30.15, lon: -84.38 }, "walton": { lat: 30.63, lon: -86.17 },
+        "washington": { lat: 30.61, lon: -85.67 }
+    };
+    return coords[slug] || null;
 }
 
 async function debugCMS() {

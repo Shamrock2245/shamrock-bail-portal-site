@@ -201,6 +201,9 @@ function transformCountyData(county) {
       ]
     },
 
+    // Include region for internal linking
+    region: county.region || 'Unknown',
+
     // SEO
     seo: {
       meta_title: county.seoTitle || `${countyName} County Bail Bonds - 24/7 Fast Release | Shamrock Bail Bonds`,
@@ -209,7 +212,17 @@ function transformCountyData(county) {
         `${countyName.toLowerCase()} county bail bonds`,
         `${countyName.toLowerCase()} county bail bondsman`,
         `${countyName.toLowerCase()} county jail release`,
-        `24/7 bail bonds ${countyName.toLowerCase()} county`
+        `24/7 bail bonds ${countyName.toLowerCase()} county`,
+        `bail bonds near me ${countyName.toLowerCase()} county`,
+        `${countyName.toLowerCase()} county jail inmate search`,
+        `how to bail someone out of ${countyName.toLowerCase()} county jail`,
+        `${countyName.toLowerCase()} county arrest records florida`,
+        `cheap bail bonds ${countyName.toLowerCase()} county fl`,
+        `${countyName.toLowerCase()} county bail bond payment plan`,
+        `emergency bail bonds ${countyName.toLowerCase()} county florida`,
+        `${countyName.toLowerCase()} county warrant attorney bail`,
+        `bail bonds in ${countyName.toLowerCase()} county florida`,
+        `florida bail bonds ${countyName.toLowerCase()}`
       ],
       canonical_url: `/florida-bail-bonds/${county.countySlug}`
     }
