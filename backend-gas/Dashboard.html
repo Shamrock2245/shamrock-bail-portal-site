@@ -2502,27 +2502,9 @@
                                     style="display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
                                     <span style="color: var(--text-secondary);">Pass:</span>
                                     <code
-                                        style="background: var(--bg); padding: 2px 6px; border-radius: 4px; user-select: none;"
-                                        title="Password redacted. Payment links are sent with paperwork email.">[REDACTED]</code>
+                                        style="background: var(--bg); padding: 2px 6px; border-radius: 4px; user-select: all;"
+                                        onclick="navigator.clipboard.writeText(this.innerText); showToast('Password copied', 'info')">WelcomeTFlorida1520!</code>
                                 </div>
-                            </div>
-
-                            <hr style="border: 0; border-top: 1px solid var(--border); margin: 16px 0;">
-
-                            <div
-                                style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">
-                                Send Alternate Payment Link
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 8px;">
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <input type="text" id="alternate-payment-contact"
-                                        placeholder="Email or Phone Number"
-                                        style="font-size: 13px; padding: 6px 8px; width: 100%;">
-                                </div>
-                                <button onclick="sendAlternatePaymentLink()" class="btn btn-sm btn-primary"
-                                    style="width: 100%;">
-                                    <i class="fas fa-paper-plane"></i> Send Link
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -2827,10 +2809,6 @@
                     <button class="btn btn-success btn-lg" onclick="generateAndSend()" id="generate-btn">
                         &#9654; Generate & Send to SignNow
                     </button>
-                    <button class="btn btn-lg" onclick="sendSigningPacketViaEmail()" id="send-packet-btn"
-                        style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #fff; box-shadow: 0 4px 15px rgba(99, 102, 241, .3);">
-                        📋 Send Signing Packet
-                    </button>
                 </div>
 
                 <!-- Result Area -->
@@ -3089,8 +3067,8 @@
                 'paperwork-header': '15sTaIIwhzHk96I8X3rxz7GtLMU-F5zo1',
                 'faq-cosigners': '1bjmH2w-XS5Hhe828y_Jmv9DqaS_gSZM7',
                 'faq-defendants': '16j9Z8eTii-J_p4o6A2LrzgzptGB8aOhR',
-                'indemnity-agreement': '1Raa2gzHOlO5kSJOeDE25eBh2H8LcjN5L',
-                'defendant-application': '1JxBubXg0up1NeFBaWgi6qGNA133tSCxG',
+                'indemnity-agreement': '1p4bYIiZ__JnJHhlmVwLyPJZpsmSdGq12',
+                'defendant-application': '1cokWm8qCDpiGxYD6suZEjm9i8MoABeVe',
                 'promissory-note': '104-ArZiCm3cgfQcT5rIO0x_OWiaw6Ddt',
                 'disclosure-form': '1qIIDudp7r3J7-6MHlL2US34RcrU9KZKY',
                 'surety-terms': '1VfmyUTpchfwJTlENlR72JxmoE_NCF-uf',
@@ -4304,40 +4282,6 @@
             }).catch(err => showToast('Failed to copy script', 'error'));
         }
 
-        function sendAlternatePaymentLink() {
-            const contactInfo = document.getElementById('alternate-payment-contact')?.value || '';
-            if (!contactInfo.trim()) {
-                showToast('Please enter an email or phone number', 'warning');
-                return;
-            }
-
-            const firstName = document.getElementById('defendant-first-name')?.value || '';
-            const lastName = document.getElementById('defendant-last-name')?.value || '';
-            const fullName = `${firstName} ${lastName}`.trim();
-            const amountStr = document.getElementById('payment-premium-due')?.textContent || '';
-
-            const btn = event.currentTarget || document.querySelector('button[onclick="sendAlternatePaymentLink()"]');
-            if (btn) btn.disabled = true;
-
-            showToast('Sending payment link...', 'info');
-
-            google.script.run
-                .withSuccessHandler(function (response) {
-                    if (btn) btn.disabled = false;
-                    if (response.success) {
-                        showToast('Payment link sent successfully!', 'success');
-                        document.getElementById('alternate-payment-contact').value = '';
-                    } else {
-                        showToast('Error: ' + response.error, 'error');
-                    }
-                })
-                .withFailureHandler(function (error) {
-                    if (btn) btn.disabled = false;
-                    showToast('Failed to send link: ' + error.message, 'error');
-                })
-                .sendGenericPaymentLink(contactInfo, fullName, amountStr);
-        }
-
         /* =========================================================
            PASTE HANDLING
            ========================================================= */
@@ -5112,68 +5056,6 @@
         }
 
         /**
-         * Send Signing Packet via Document Group (Server-Side)
-         * Uses buildPacketManifest → template copy → prefill → Document Group → email invite
-         */
-        async function sendSigningPacketViaEmail() {
-            const formData = collectFormData();
-
-            if (!formData['defendant-first-name'] || !formData['defendant-last-name']) {
-                showToast('Please enter defendant name', 'error');
-                return;
-            }
-
-            // Need at least one indemnitor email
-            const indEmail = formData['indemnitor-1-email'] || '';
-            if (!indEmail) {
-                showToast('Please enter an indemnitor email address', 'error');
-                return;
-            }
-
-            UI.showLoading('Sending Signing Packet', 'Copying templates and pre-filling...');
-
-            try {
-                const packetData = {
-                    formData: formData,
-                    signingMethod: 'email'
-                };
-
-                google.script.run
-                    .withSuccessHandler(function(result) {
-                        UI.hideLoading();
-                        if (result && result.success) {
-                            showToast('✅ Signing packet sent to ' + (result.indemnitorEmail || indEmail), 'success');
-                            const resultDiv = document.getElementById('result-area');
-                            if (resultDiv) {
-                                resultDiv.innerHTML = `
-                                    <div style="background: var(--success-bg); border: 2px solid var(--success); border-radius: var(--radius); padding: 24px; margin-top: 20px;">
-                                        <h3 style="color: var(--success); margin-bottom: 12px;">📋 Signing Packet Sent!</h3>
-                                        <p><strong>Group ID:</strong> <code>${result.groupId || 'N/A'}</code></p>
-                                        <p><strong>Documents:</strong> ${(result.documentIds || []).length}</p>
-                                        <p><strong>Sent to:</strong> ${result.indemnitorEmail || indEmail}</p>
-                                        <p style="margin-top: 12px; color: var(--muted);">The indemnitor will receive an email with all documents to sign.</p>
-                                    </div>
-                                `;
-                            }
-                        } else {
-                            showToast('Packet send failed: ' + (result ? result.error : 'Unknown error'), 'error');
-                        }
-                    })
-                    .withFailureHandler(function(err) {
-                        UI.hideLoading();
-                        showToast('Server error: ' + err.message, 'error');
-                        console.error('sendSigningPacket error:', err);
-                    })
-                    .server_sendSigningPacket(packetData);
-
-            } catch (err) {
-                UI.hideLoading();
-                showToast('Error: ' + err.message, 'error');
-                console.error('sendSigningPacketViaEmail error:', err);
-            }
-        }
-
-        /**
          * Generate bail packet and send to SignNow
          */
         async function generateAndSend() {
@@ -5519,12 +5401,6 @@
             // Override signing method for the logic
             formData.signingMethod = document.getElementById('signing-method').value;
 
-            // Inject signer contact info into formData for backend processing
-            formData.defendantEmail = defendantEmail;
-            formData.indemnitorEmail = indemnitorEmail;
-            formData.defendantPhone = defendantPhone;
-            formData.indemnitorPhone = indemnitorPhone;
-
             showProgress('Sending to Client Portal', [
                 'Collecting form data',
                 'Fetching PDF templates',
@@ -5616,9 +5492,111 @@
             }
         }
 
-        // NOTE: fetchPDFsFromDrive is defined in the SERVER PROXY section below (line ~6323)
-        // It uses google.script.run.server_getPDFTemplatesBatch() to fetch templates
-        // Template key → Drive ID mapping lives in Server_DocumentLogic.js (PDF_DRIVE_FILE_IDS)
+        /**
+         * Fetch PDFs from Google Drive with Batching & Caching
+         * Optimized to prevent "Exceeded Maximum Execution Time" and "Java Runtime" errors
+         */
+        async function fetchPDFsFromDrive(documents) {
+            console.log('Fetching PDFs for:', documents);
+            const results = [];
+            const CACHE_PREFIX = 'PDF_CACHE_v1_';
+
+            // 1. Check IndexedDB Cache (with sessionStorage fallback)
+            console.log('🔍 Checking PDF Cache...');
+            const missingDocs = [];
+            for (const doc of documents) {
+                try {
+                    const templateKey = doc.templateKey || doc.key; // Use templateKey for caching
+                    const cached = await pdfCache.get(templateKey);
+                    if (cached) {
+                        const binaryString = atob(cached);
+                        const bytes = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) {
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }
+                        results.push({ key: doc.key, name: doc.name, bytes: bytes, templateKey: templateKey, indices: doc.indices });
+                        console.log(`✅ Loaded ${templateKey} from cache`);
+                    } else {
+                        missingDocs.push(doc);
+                    }
+                } catch (e) {
+                    console.warn('Cache access error:', e);
+                    missingDocs.push(doc);
+                }
+            }
+
+            // 2. Batch Fetch Missing Documents
+            if (missingDocs.length > 0) {
+                console.log(`📥 Fetching ${missingDocs.length} documents from server (Batch Mode)...`);
+
+                // Identify unique template keys needed from missingDocs
+                const uniqueMissingKeys = [...new Set(missingDocs.map(d => d.templateKey || d.key))];
+
+                // BATCH REQUEST TO GAS
+                // We fetch all needed templates in one go to minimize execution time
+                const BATCH_SIZE = 1; // Fetch 1 at a time to prevent payload limits with large PDFs
+                for (let i = 0; i < uniqueMissingKeys.length; i += BATCH_SIZE) {
+                    const batch = uniqueMissingKeys.slice(i, i + BATCH_SIZE);
+                    try {
+                        const response = await callGAS('getPDFTemplates', { templateIds: batch });
+
+                        if (!response || !response.success || !response.templates) {
+                            throw new Error(response?.error || 'Failed to fetch templates');
+                        }
+
+                        // Process batch results
+                        for (const key of batch) {
+                            const templateData = response.templates[key];
+                            if (templateData && templateData.success && templateData.pdfBase64) {
+                                // Decode
+                                const binaryString = atob(templateData.pdfBase64);
+                                const bytes = new Uint8Array(binaryString.length);
+                                for (let j = 0; j < binaryString.length; j++) {
+                                    bytes[j] = binaryString.charCodeAt(j);
+                                }
+
+                                // Save to IndexedDB for caching
+                                try {
+                                    await pdfCache.set(key, templateData.pdfBase64);
+                                } catch (cacheErr) {
+                                    console.warn(`⚠️ Failed to cache ${key}, will re-fetch if needed:`, cacheErr.message);
+                                    // Continue processing - caching is optional
+                                }
+
+                            } else {
+                                console.error(`❌ Failed to fetch ${key}:`, templateData?.error);
+                            }
+                        }
+
+
+                    } catch (err) {
+                        console.error('Batch Fetch Error:', err);
+                        throw err;
+                    }
+                }
+
+                // Now that all unique missing templates are fetched and cached,
+                // add the actual requested documents (which might be duplicates of templates) to results
+                for (const doc of missingDocs) {
+                    const templateKey = doc.templateKey || doc.key;
+                    const cachedBase64 = await pdfCache.get(templateKey);
+
+                    if (cachedBase64) {
+                        const binaryString = atob(cachedBase64);
+                        const bytes = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) {
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }
+                        results.push({ key: doc.key, name: doc.name, bytes: bytes, templateKey: templateKey, indices: doc.indices });
+                    } else {
+                        console.error(`Missing template data for ${doc.key} (template: ${templateKey})`);
+                        throw new Error(`Failed to load template: ${doc.name}`);
+                    }
+                }
+            }
+
+            return results;
+        }
 
         function calculateTotalBondAmount(formData) {
             if (!formData.charges || formData.charges.length === 0) return '0.00';
@@ -5987,28 +5965,13 @@
         }
 
         /**
-         * Fetch field mappings from server for all templates in one batch call.
-         * Returns a map: { templateKey: [{name, value}] }
-         */
-        function fetchFieldMappingsBatch(formData, templateKeys) {
-            return new Promise((resolve, reject) => {
-                google.script.run
-                    .withSuccessHandler(resolve)
-                    .withFailureHandler(err => {
-                        console.error('Failed to fetch field mappings:', err);
-                        resolve({}); // Degrade gracefully — return empty mappings
-                    })
-                    .server_mapDataToTagsBatch(formData, templateKeys);
-            });
-        }
-
-        /**
-         * Fill PDFs with form data using pdf-lib.
-         * Field mappings are fetched server-side via server_mapDataToTagsBatch.
+         * Fill PDFs with form data using pdf-lib - IMPROVED VERSION
          */
         async function fillPDFsWithData(pdfDocs, formData) {
             const { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, rgb } = PDFLib;
             const filledPdfs = [];
+            let fieldCount = 0;
+            let skippedFields = [];
 
             console.log(`Starting to fill ${pdfDocs.length} documents...`);
             console.log('Form data structure:', {
@@ -6017,46 +5980,58 @@
                 chargesCount: formData.charges ? formData.charges.length : 0
             });
 
-            // ── Step 1: Fetch ALL field mappings from server in one batch ──
-            const uniqueKeys = [...new Set(pdfDocs.map(d => d.key))];
-            console.log('Fetching field mappings for:', uniqueKeys);
-            const allMappings = await fetchFieldMappingsBatch(formData, uniqueKeys);
-            console.log('Received mappings for', Object.keys(allMappings).length, 'templates');
-
-            // ── Step 2: Fill each PDF using the cached mappings ──
             for (const doc of pdfDocs) {
-                let fieldCount = 0;
+                // Reset counters
+                fieldCount = 0;
 
                 try {
                     console.log(`Filling ${doc.key}...`);
                     const pdfDoc = await PDFDocument.load(doc.bytes);
                     const form = pdfDoc.getForm();
 
-                    // Debug: log all PDF fields
+                    // --- DEBUG: LOG ALL FIELDS ---
                     const fields = form.getFields();
                     const page1 = pdfDoc.getPages()[0];
                     const { width, height } = page1.getSize();
-                    console.log(`[DEBUG] ${doc.key}: ${fields.length} fields. Page 1 Size: ${width}x${height} (pts)`, fields.map(f => f.getName()));
+                    console.log(`[DEBUG] ${doc.key}: ${fields.length} fields. Page 1 Size: ${width}x${height} (pts) [${width / 72}x${height / 72} in]`, fields.map(f => f.getName()));
 
-                    // Get the pre-fetched mappings for this template
-                    const mappedFields = allMappings[doc.key] || [];
-                    console.log(`  Using ${mappedFields.length} mapped fields for ${doc.key}`);
+                    // --- NEW FAQ INITIAL LOGIC ---
+                    if (doc.key === 'faq-defendants' || doc.key === 'faq-cosigners') {
+                        const pages = pdfDoc.getPages();
+                        const role = doc.key === 'faq-defendants' ? 'Defendant' : 'Indemnitor';
+                        const tag = `{{t:i;r:y;o:"${role}"}}`;
+                        console.log(`Injecting initial tags for ${role} on ${pages.length} pages...`);
 
-                    // Fill each mapped field
+                        pages.forEach(page => {
+                            const { width, height } = page.getSize();
+                            // Bottom right corner, small white text (invisible to user, visible to SignNow parser)
+                            page.drawText(tag, {
+                                x: width - 150,
+                                y: 30,
+                                size: 8,
+                                color: rgb(1, 1, 1)
+                            });
+                        });
+                    }
+
+                    // --- NEW MANUS MAPPING LOGIC ---
+                    // 1. Get the list of fields to fill for this specific template
+                    const mappedFields = PDF_mapDataToTags(formData, doc.key);
+                    console.log(`  Retrieving ${mappedFields.length} mapped fields for ${doc.key}`);
+
+                    // 2. Iterate and Fill
                     for (const item of mappedFields) {
                         try {
                             const field = form.getField(item.name);
                             if (!field) {
-                                // Only warn for non-empty values to reduce console noise
-                                if (item.value && String(item.value).trim()) {
-                                    console.warn(`  [MISSING] '${item.name}' not in PDF (value: ${String(item.value).substring(0, 30)})`);
-                                }
+                                console.warn(`  [MISSING] Mapping expects '${item.name}' but PDF does not have it.`);
                                 continue;
                             }
 
                             if (field instanceof PDFTextField) {
-                                field.setText(String(item.value || ''));
+                                field.setText(String(item.value));
                                 fieldCount++;
+                                console.log(`  ✓ Filled: ${item.name}`);
                             } else if (field instanceof PDFCheckBox) {
                                 if (item.value === true || item.value === 'true' || item.value === 'yes' || item.value === '1') {
                                     field.check();
@@ -6068,24 +6043,30 @@
                         }
                     }
 
-                    // Flatten form to lock in data
+                    // Flatten form to save data
                     form.flatten();
 
                     const pdfBytes = await pdfDoc.save();
+                    const pdfBase64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                        reader.readAsDataURL(new Blob([pdfBytes]));
+                    });
 
                     filledPdfs.push({
                         key: doc.key,
                         name: doc.name,
-                        bytes: pdfBytes,
-                        pageCount: pdfDoc.getPageCount(),
+                        data: pdfBase64,
+                        pageCount: pdfDoc.getPageCount(), // Added for signature offset calculation
+                        // Preserve copy metadata
                         isCopy: doc.isCopy,
                         indemnitorIndex: doc.indemnitorIndex
                     });
-                    console.log(`  ✅ ${doc.key}: ${fieldCount} fields filled, ${pdfDoc.getPageCount()} pages`);
+                    console.log(`  Completed ${doc.key} with ${fieldCount} fields filled. Pages: ${pdfDoc.getPageCount()}`);
 
                 } catch (err) {
                     console.error(`Error filling PDF ${doc.name}:`, err);
-                    filledPdfs.push(doc); // Return original on failure
+                    filledPdfs.push(doc); // Return original if failure
                 }
             }
             return filledPdfs;
@@ -6102,12 +6083,7 @@
             for (const doc of pdfDocs) {
                 try {
                     console.log(`Merging ${doc.key}...`);
-                    // Accept both Uint8Array (from fillPDFsWithData) and base64 strings
-                    let pdfData = doc.bytes;
-                    if (typeof pdfData === 'string') {
-                        pdfData = Uint8Array.from(atob(pdfData), c => c.charCodeAt(0));
-                    }
-                    const pdf = await PDFDocument.load(pdfData);
+                    const pdf = await PDFDocument.load(doc.bytes);
                     const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
                     pages.forEach(page => mergedPdf.addPage(page));
                     console.log(`✓ Merged ${doc.key}`);
@@ -6292,48 +6268,21 @@
          */
         function fetchPDFsFromDrive(selectedDocs) {
             return new Promise((resolve, reject) => {
-                const templateKeys = selectedDocs.map(doc => doc.key);
-                console.log('Fetching PDFs for template keys:', templateKeys);
-
+                const fileIds = selectedDocs.map(doc => doc.key);
                 google.script.run
                     .withSuccessHandler(response => {
-                        if (!response || !Array.isArray(response)) {
-                            reject(new Error('Server returned invalid response for PDF templates'));
-                            return;
-                        }
-
-                        const results = [];
-                        response.forEach((base64Data, index) => {
-                            if (!base64Data) {
-                                console.warn(`⚠️ No PDF data for template: ${selectedDocs[index].key} (skipping)`);
-                                return; // Skip null entries
-                            }
-                            try {
-                                results.push({
-                                    key: selectedDocs[index].key,
-                                    name: selectedDocs[index].name,
-                                    bytes: Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)),
-                                    isCopy: selectedDocs[index].isCopy || false,
-                                    indemnitorIndex: selectedDocs[index].indemnitorIndex
-                                });
-                            } catch (e) {
-                                console.error(`Failed to decode PDF for ${selectedDocs[index].key}:`, e);
-                            }
-                        });
-
-                        if (results.length === 0) {
-                            reject(new Error('No valid PDF templates could be fetched. Check template key mappings.'));
-                            return;
-                        }
-
-                        console.log(`✅ Fetched ${results.length}/${selectedDocs.length} PDFs`);
+                        // Map back to expected format for fillPDFsWithData
+                        const results = response.map((data, index) => ({
+                            key: selectedDocs[index].key,
+                            name: selectedDocs[index].name,
+                            bytes: Uint8Array.from(atob(data), c => c.charCodeAt(0)),
+                            isCopy: selectedDocs[index].isCopy || false,
+                            indemnitorIndex: selectedDocs[index].indemnitorIndex
+                        }));
                         resolve(results);
                     })
-                    .withFailureHandler(err => {
-                        console.error('server_getPDFTemplatesBatch failed:', err);
-                        reject(new Error('Failed to fetch PDF templates from server: ' + (err.message || err)));
-                    })
-                    .server_getPDFTemplatesBatch(templateKeys);
+                    .withFailureHandler(reject)
+                    .server_getPDFTemplatesBatch(fileIds);
             });
         }
 
@@ -6452,13 +6401,16 @@
         }
 
         /**
-         * Main Orchestrator — Generate & Send signing packet
-         * Uses server-side SignNow template flow (same as Telegram)
+         * Main Orchestrator
          */
         async function generateAndSendWithWixPortal() {
             const method = document.getElementById('signing-method').value;
             if (method === 'download') {
                 previewPacket(); // Reuse preview for download
+                return;
+            }
+            if (method === 'kiosk') {
+                showToast('Kiosk mode not yet implemented on V2 Dashboard', 'warning');
                 return;
             }
 
@@ -6468,132 +6420,73 @@
                 return;
             }
 
-            const selectedDocs = getSelectedDocuments();
-            if (selectedDocs.length === 0) {
-                showToast('No documents selected', 'error');
-                return;
-            }
-
-            const caseNumber = formData['case-number'] || formData['booking-number'] || '';
-            const methodLabel = method === 'kiosk' ? 'Kiosk Signing' : method === 'sms' ? 'SMS' : 'Email';
-
-            UI.showLoading(`Generating ${methodLabel} Packet`, 'Creating documents in SignNow...');
+            UI.showLoading('Starting Workflow', 'Validating data...');
 
             try {
-                UI.updateLoading(20, `Processing ${selectedDocs.length} documents...`);
+                // 1. Fetch
+                UI.updateLoading(10, 'Fetching templates...');
+                const selectedDocs = getSelectedDocuments();
+                if (selectedDocs.length === 0) throw new Error('No documents selected');
+                const pdfs = await fetchPDFsFromDrive(selectedDocs);
 
-                // Call server-side orchestrator (reuses Telegram SignNow flow)
-                const result = await new Promise((resolve, reject) => {
-                    google.script.run
-                        .withSuccessHandler(resolve)
-                        .withFailureHandler(reject)
-                        .server_generateSigningPacket({
-                            formData: formData,
-                            selectedDocs: selectedDocs,
-                            signingMethod: method,
-                            caseNumber: caseNumber
+                // 2. Fill
+                UI.updateLoading(30, 'Filling forms...');
+                const filledPdfs = await fillPDFsWithData(pdfs, formData);
+
+                // 3. Merge
+                UI.updateLoading(50, 'Merging packet...');
+                const mergedPdf = await mergePDFs(filledPdfs);
+
+                // 4. Upload
+                UI.updateLoading(70, 'Uploading to secure storage...');
+                const fileUrl = await uploadPDFToTempStorage(mergedPdf, formData);
+
+                // 5. Send to SignNow
+                UI.updateLoading(85, 'Sending to SignNow...');
+
+                // Prepare Signers
+                const signers = [];
+
+                // Indemnitors
+                if (formData.indemnitors && formData.indemnitors.length > 0) {
+                    formData.indemnitors.forEach((ind, index) => {
+                        signers.push({
+                            email: ind.email,
+                            role: `Indemnitor ${index + 1}`
                         });
-                });
-
-                UI.updateLoading(90, 'Finalizing...');
-
-                if (!result.success) {
-                    throw new Error(result.error || 'No documents were processed successfully');
+                    });
+                } else {
+                    // Fallback for single indemnitor form data
+                    signers.push({
+                        email: formData['indemnitor-email'],
+                        role: 'Indemnitor 1'
+                    });
                 }
+
+                // Bail Agent (Always included)
+                signers.push({ email: 'admin@shamrockbailbonds.biz', role: 'Bail Agent' });
+                // Defendant (if email exists)
+                if (formData['defendant-email']) {
+                    signers.push({ email: formData['defendant-email'], role: 'Defendant' });
+                }
+
+                // Prepare Fields
+                const signatureFields = prepareSignatureFields(filledPdfs, formData);
+
+                const result = await sendToSignNow(fileUrl, signatureFields, signers, formData);
+
+                // 6. Finalize
+                UI.updateLoading(95, 'Finalizing...');
+                await storePendingDocument(result, formData);
+                await sendSigningNotifications(result, formData);
 
                 UI.hideLoading();
-
-                // Handle result based on signing method
-                if (method === 'kiosk') {
-                    // Show kiosk signing links
-                    const successDocs = result.documents.filter(d => d.success && d.signingUrl);
-                    if (successDocs.length === 0) {
-                        showToast('No signing links were generated', 'error');
-                        return;
-                    }
-
-                    // Show kiosk modal with signing links
-                    showKioskModal(successDocs, formData);
-
-                } else {
-                    // Email/SMS — show success summary
-                    const successCount = result.documents.filter(d => d.success).length;
-                    const failCount = result.documents.filter(d => !d.success).length;
-
-                    let message = `✅ ${successCount} document${successCount !== 1 ? 's' : ''} created in SignNow`;
-                    if (failCount > 0) {
-                        message += ` (${failCount} failed)`;
-                    }
-                    message += `. Signing links are ready.`;
-
-                    showToast(message, failCount > 0 ? 'warning' : 'success');
-
-                    // Log results to console for debugging
-                    console.log('📦 Packet results:', result.documents);
-                }
+                showSuccess('Packet sent successfully! Check Slack for status.');
 
             } catch (err) {
                 UI.hideLoading();
-                console.error('Packet generation error:', err);
-                showToast('Error: ' + (err.message || err), 'error');
-            }
-        }
-
-        /**
-         * Show Kiosk Signing Modal
-         * Displays signing links for in-person signing on the device
-         */
-        function showKioskModal(documents, formData) {
-            const existingModal = document.getElementById('kiosk-modal');
-            if (existingModal) existingModal.remove();
-
-            const defendantName = `${formData['defendant-first-name'] || ''} ${formData['defendant-last-name'] || ''}`.trim();
-
-            const docLinks = documents.map((doc, i) => `
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--surface-alt, #1a1d23);border-radius:8px;margin-bottom:8px;">
-                    <div>
-                        <strong>${doc.label || doc.docId}</strong>
-                        <span style="opacity:0.6;margin-left:8px;font-size:12px;">${doc.role || ''}</span>
-                    </div>
-                    <button class="btn btn-primary btn-sm" onclick="window.open('${doc.signingUrl}', '_blank')" style="white-space:nowrap;">
-                        ✍️ Sign Now
-                    </button>
-                </div>
-            `).join('');
-
-            const modal = document.createElement('div');
-            modal.id = 'kiosk-modal';
-            modal.innerHTML = `
-                <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;">
-                    <div style="background:var(--surface);border-radius:var(--radius-lg);width:100%;max-width:600px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow);">
-                        <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
-                            <h3 style="margin:0;font-size:18px;">✍️ Kiosk Signing — ${defendantName}</h3>
-                            <p style="margin:8px 0 0;opacity:0.7;font-size:14px;">Tap each document to open for signing. Links expire in 45 minutes.</p>
-                        </div>
-                        <div style="padding:16px 24px;overflow-y:auto;flex:1;">
-                            ${docLinks}
-                        </div>
-                        <div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:12px;">
-                            <button class="btn btn-success" onclick="openAllKioskDocs()" style="min-width:150px;">📋 Open All</button>
-                            <button class="btn btn-danger" onclick="document.getElementById('kiosk-modal').remove()">Close</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-
-            // Store for "Open All" button
-            window._kioskDocs = documents;
-        }
-
-        /**
-         * Open all kiosk signing docs in sequence
-         */
-        function openAllKioskDocs() {
-            if (window._kioskDocs) {
-                window._kioskDocs.forEach((doc, i) => {
-                    setTimeout(() => window.open(doc.signingUrl, '_blank'), i * 500);
-                });
+                console.error(err);
+                showToast(err.message, 'error');
             }
         }
 
@@ -7077,22 +6970,10 @@
                         style="background-color: var(--surface-2);" readonly></textarea>
                 </div>
 
-                <!-- AI Variant Selector (Hidden by default) -->
-                <div id="outreach-ai-variants" class="form-group" style="grid-column: span 2; display:none;">
-                    <label style="display:flex; align-items:center; gap:8px;">
-                        <span style="background:linear-gradient(135deg, #8b5cf6, #6366f1); color:#fff; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">AI</span>
-                        Pick a Variant
-                    </label>
-                    <div id="outreach-variant-cards" style="display:flex; flex-direction:column; gap:10px; margin-top:8px;"></div>
-                </div>
-
                 <div class="form-group"
                     style="grid-column: span 2; display: flex; justify-content: flex-end; gap: 10px;">
                     <button class="btn btn-secondary" onclick="OutreachMode.generatePreview()">🔄 Refresh
                         Preview</button>
-                    <button class="btn btn-secondary" onclick="OutreachMode.aiRewrite()" style="background:linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); color:#fff; border:none;">
-                        ✨ AI Rewrite with Grok
-                    </button>
                     <button class="btn btn-primary" onclick="OutreachMode.sendMessage()">🚀 Send Message</button>
                 </div>
             </div>
@@ -7188,10 +7069,6 @@
                 <button type="button" class="tab" onclick="toggleAgentTab(this, 'agent-investigator')"
                     style="flex:1; justify-content:center;">
                     <span class="tab-icon">🕵️</span> The Investigator
-                </button>
-                <button type="button" class="tab" onclick="toggleAgentTab(this, 'agent-grok')"
-                    style="flex:1; justify-content:center;">
-                    <span class="tab-icon">🧠</span> Grok Chat
                 </button>
             </div>
 
@@ -7432,54 +7309,6 @@
                 </div>
             </div>
 
-            <!-- AGENT 5: GROK CHAT -->
-            <div id="agent-grok" class="agent-view" style="display:none; animation: fadeIn 0.3s ease;">
-                <div style="max-width: 900px; margin: 0 auto;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <div>
-                            <h4 style="margin-bottom:4px;">Ask Shamrock Anything</h4>
-                            <p class="text-secondary" style="font-size:13px;">Powered by xAI Grok · Full Shamrock Knowledge Base (67 Counties)</p>
-                        </div>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.testConnection()" title="Test API">
-                                🔌 Test
-                            </button>
-                            <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.clearChat()" title="Clear Chat">
-                                🗑️ Clear
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Suggested Questions -->
-                    <div id="grok-suggestions" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;">
-                        <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.askSuggestion(this)" style="font-size:12px;">📍 Lee County release process?</button>
-                        <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.askSuggestion(this)" style="font-size:12px;">💬 Draft a follow-up text for a Charlotte lead</button>
-                        <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.askSuggestion(this)" style="font-size:12px;">📊 Compare Collier vs Hillsborough bonding</button>
-                        <button class="btn btn-secondary btn-sm" onclick="GrokChatUI.askSuggestion(this)" style="font-size:12px;">📱 Social post idea: 24/7 availability</button>
-                    </div>
-
-                    <!-- Chat Messages Area -->
-                    <div id="grok-chat-messages"
-                        style="background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; min-height:400px; max-height:500px; overflow-y:auto; margin-bottom:16px; display:flex; flex-direction:column; gap:16px;">
-                        <div style="text-align:center; padding:60px 20px; color:var(--muted);">
-                            <div style="font-size:48px; margin-bottom:12px;">🧠</div>
-                            <p>Ask me anything about Shamrock operations, county procedures, or draft client messages.</p>
-                        </div>
-                    </div>
-
-                    <!-- Chat Input -->
-                    <div style="display:flex; gap:10px;">
-                        <input type="text" id="grok-chat-input"
-                            placeholder="Ask Grok anything about Shamrock..."
-                            style="flex:1; padding:14px 18px; border:2px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); font-size:15px; transition:var(--transition);"
-                            onkeydown="if(event.key==='Enter') GrokChatUI.send()">
-                        <button class="btn btn-primary" onclick="GrokChatUI.send()" style="min-width:120px;">
-                            🚀 Send
-                        </button>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 
@@ -7539,7 +7368,7 @@
 
                     run: function () {
                         const inputEl = document.getElementById('clerk-input');
-                        const textInput = inputEl ? inputEl.value.trim() : '';
+                        const textInput = inputEl ? inputEl.value : '';
                         const payload = state.filePayload || textInput;
 
                         if (!payload) return UI.showToast('⚠️ Provide file or text.', 'warning');
@@ -7549,12 +7378,9 @@
                         // Hide output initially
                         output.style.display = 'none';
 
-                        // Detect if input is a URL — route to URL extractor instead of image parser
-                        const isUrl = typeof payload === 'string' && /^https?:\/\//i.test(payload);
+                        UI.showLoading('The Clerk', 'Extracting data from booking sheet...');
 
-                        UI.showLoading('The Clerk', isUrl ? 'Fetching booking data from URL...' : 'Extracting data from booking sheet...');
-
-                        const runner = google.script.run
+                        google.script.run
                             .withSuccessHandler(res => {
                                 UI.hideLoading();
                                 output.style.display = 'block';
@@ -7570,14 +7396,8 @@
                                 UI.hideLoading();
                                 output.style.display = 'block';
                                 output.innerHTML = `<div class="error-box">❌ Error: ${err.message}</div>`;
-                            });
-
-                        // Route: URL → client_extractFromUrl, File/Text → client_parseBooking
-                        if (isUrl) {
-                            runner.client_extractFromUrl(payload);
-                        } else {
-                            runner.client_parseBooking(payload);
-                        }
+                            })
+                            .client_parseBooking(payload);
                     },
 
                     populate: function (res) {
@@ -8548,9 +8368,88 @@
                     // Maps is now handled by callback or lazy-load on tab switch
 
                     // --- Module: Social Hub ---
-                    // NOTE: generateSocialPosts, broadcastSocialPosts, and rendering
-                    // are handled by the GrokIntegration module (see separate <script> block).
-                    // Global exports set below in the GROK INTEGRATION section.
+                    window.generateSocialPosts = function () {
+                        const basePost = document.getElementById('social-base-post').value;
+                        if (!basePost) {
+                            UI.showToast('Please enter a base post/idea', 'error');
+                            return;
+                        }
+
+                        const checkboxes = document.querySelectorAll('.social-platform:checked');
+                        const platforms = Array.from(checkboxes).map(cb => cb.value);
+
+                        if (platforms.length === 0) {
+                            UI.showToast('Please select at least one target platform', 'error');
+                            return;
+                        }
+
+                        const btn = document.getElementById('btn-generate-social');
+                        const originalText = btn.innerHTML;
+                        btn.innerHTML = '⏳ Generating with Grok...';
+                        btn.disabled = true;
+
+                        const container = document.getElementById('social-variants-container');
+                        container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--text-secondary);"><div style="font-size:32px; animation:spin 1s linear infinite; display:inline-block;">⚙️</div><p style="margin-top:16px;">Grok is crafting optimal posts for ' + platforms.length + ' platforms...</p></div>';
+
+                        google.script.run
+                            .withSuccessHandler(res => {
+                                btn.innerHTML = originalText;
+                                btn.disabled = false;
+
+                                if (res.success) {
+                                    UI.showToast('Variants Generated Successfully!', 'success');
+                                    renderSocialVariants(res.variants);
+                                    document.getElementById('btn-broadcast-social').disabled = false;
+                                } else {
+                                    UI.showToast('Generation Failed: ' + res.error, 'error');
+                                    container.innerHTML = '<div style="color:var(--error); padding:20px;">Error: ' + res.error + '</div>';
+                                }
+                            })
+                            .withFailureHandler(err => {
+                                btn.innerHTML = originalText;
+                                btn.disabled = false;
+                                console.error(err);
+                                UI.showToast('System Error: ' + err.message, 'error');
+                                container.innerHTML = '<div style="color:var(--error); padding:20px;">System Error: ' + err.message + '</div>';
+                            })
+                            .client_generateSocialPosts(basePost, platforms);
+                    };
+
+                    window.renderSocialVariants = function (variants) {
+                        const container = document.getElementById('social-variants-container');
+                        container.innerHTML = '';
+
+                        Object.keys(variants).forEach(platform => {
+                            const text = variants[platform];
+
+                            const div = document.createElement('div');
+                            div.style.cssText = 'background: var(--surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 12px;';
+
+                            const header = document.createElement('div');
+                            header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;';
+                            header.innerHTML = '<strong style="text-transform: capitalize; color: var(--accent); font-size: 15px;">' + platform + '</strong><span style="font-size: 11px; color: var(--muted); font-weight: bold;">' + text.length + ' chars</span>';
+
+                            const textarea = document.createElement('textarea');
+                            textarea.className = 'social-variant-edit';
+                            textarea.dataset.platform = platform;
+                            textarea.rows = 4;
+                            textarea.style.cssText = 'width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 8px; font-size: 14px;';
+                            textarea.value = text;
+
+                            const utils = document.createElement('div');
+                            utils.style.cssText = 'display: flex; justify-content: flex-end; gap: 8px;';
+                            utils.innerHTML = '<button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(this.parentElement.previousElementSibling.value); UI.showToast(\'Copied!\',\'success\')">Copy</button>';
+
+                            div.appendChild(header);
+                            div.appendChild(textarea);
+                            div.appendChild(utils);
+                            container.appendChild(div);
+                        });
+                    };
+
+                    window.broadcastSocialPosts = function () {
+                        UI.showToast('API Broadcasting is scheduled for Phase 8.', 'info');
+                    };
 
                     // --- Module: Blog Audio ---
                     window.generateBlogAudio = function (btn) {
@@ -8609,11 +8508,6 @@
                     window.refreshAllCountyStatus = Stats.refreshAll;
                     window.toggleAgentTab = UI.toggleAgentTab;
                     window.switchTab = UI.switchTab; // CRITICAL FIX: Expose switchTab globally
-
-                    // --- GROK INTEGRATION: Global Exports ---
-                    window.generateSocialPosts = GrokIntegration.generateSocialPosts;
-                    window.broadcastSocialPosts = GrokIntegration.broadcastSocialPosts;
-                    window.GrokChatUI = GrokIntegration.Chat;
 
                     window.forceQualifiedCleanup = function () {
                         if (!confirm('⚠️ ARE YOU SURE?\n\nThis will CLEAR ALL DATA in the "Shamrock_Arrests_Master" and "Qualified_exceptions" tabs and re-sync from source counties.\n\nThis process cannot be undone.')) return;
@@ -8842,423 +8736,6 @@
                 console.log(toastMsg);
                 alert(toastMsg);
             }
-        }
-    </script>
-
-    <!-- ============================================================
-         GROK INTEGRATION MODULE
-         ============================================================ -->
-    <script>
-        /**
-         * GrokIntegration — Social Hub, Outreach AI Rewrite, and Grok Chat.
-         * All functions call GAS backend via google.script.run.
-         */
-        const GrokIntegration = (function () {
-
-            // ─── Social Hub ───
-            function generateSocialPosts() {
-                const basePost = document.getElementById('social-base-post').value.trim();
-                if (!basePost) {
-                    UI.showToast('Please enter a base post or idea first.', 'warning');
-                    document.getElementById('social-base-post').focus();
-                    return;
-                }
-
-                const platforms = [];
-                document.querySelectorAll('.social-platform:checked').forEach(cb => platforms.push(cb.value));
-                if (platforms.length === 0) {
-                    UI.showToast('Select at least one platform.', 'warning');
-                    return;
-                }
-
-                const container = document.getElementById('social-variants-container');
-                container.innerHTML = `
-                    <div style="text-align:center; padding:60px 20px;">
-                        <div style="font-size:32px; animation:spin 1s linear infinite; display:inline-block;">⚙️</div>
-                        <p style="margin-top:16px; color:var(--text-secondary);">Grok is crafting ${platforms.length} platform variants...</p>
-                    </div>`;
-
-                const btn = document.getElementById('btn-generate-social');
-                btn.disabled = true;
-                btn.innerHTML = '⏳ Generating...';
-
-                google.script.run
-                    .withSuccessHandler(function (res) {
-                        btn.disabled = false;
-                        btn.innerHTML = '🤖 Generate with Grok';
-
-                        if (!res.success) {
-                            container.innerHTML = `<div style="color:var(--error); padding:20px;">❌ ${res.error}</div>`;
-                            UI.showToast('Generation failed: ' + res.error, 'error');
-                            return;
-                        }
-
-                        let html = '';
-                        for (const [platform, variant] of Object.entries(res.variants)) {
-                            const overClass = variant.isOverLimit ? 'color:var(--error); font-weight:700;' : 'color:var(--muted);';
-                            const hashtagsHtml = variant.hashtags.length > 0
-                                ? `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">${variant.hashtags.map(h => `<span style="background:var(--surface-3); padding:2px 8px; border-radius:10px; font-size:11px;">#${h.replace(/^#/, '')}</span>`).join('')}</div>`
-                                : '';
-
-                            html += `
-                            <div class="social-variant-card" data-platform="${platform}"
-                                style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; transition:var(--transition);">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                                    <div style="display:flex; align-items:center; gap:8px;">
-                                        <span style="font-size:20px;">${variant.icon}</span>
-                                        <strong style="font-size:14px;">${variant.platformName}</strong>
-                                        <span style="${overClass} font-size:12px;">${variant.charCount}/${variant.maxChars}</span>
-                                    </div>
-                                    <div style="display:flex; gap:6px;">
-                                        <button class="btn btn-secondary btn-sm" onclick="GrokIntegration.copySocialVariant(this, '${platform}')" style="font-size:12px;">📋 Copy</button>
-                                        <label style="display:flex; align-items:center; gap:4px; font-size:12px; cursor:pointer;">
-                                            <input type="checkbox" class="social-approve" data-platform="${platform}" checked> Approve
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="social-variant-text" data-platform="${platform}"
-                                    style="font-size:14px; line-height:1.6; white-space:pre-wrap; color:var(--text);">${variant.text}</div>
-                                ${hashtagsHtml}
-                            </div>`;
-                        }
-
-                        container.innerHTML = html;
-                        document.getElementById('btn-broadcast-social').disabled = false;
-                        UI.showToast(`✅ ${Object.keys(res.variants).length} variants generated!`, 'success');
-                    })
-                    .withFailureHandler(function (err) {
-                        btn.disabled = false;
-                        btn.innerHTML = '🤖 Generate with Grok';
-                        container.innerHTML = `<div style="color:var(--error); padding:20px;">❌ Error: ${err.message}</div>`;
-                        UI.showToast('Grok error: ' + err.message, 'error');
-                    })
-                    .grokGenerateSocialPosts({ basePost, platforms });
-            }
-
-            function copySocialVariant(btn, platform) {
-                const textEl = document.querySelector(`.social-variant-text[data-platform="${platform}"]`);
-                if (textEl) {
-                    navigator.clipboard.writeText(textEl.textContent).then(() => {
-                        btn.innerHTML = '✅ Copied!';
-                        setTimeout(() => btn.innerHTML = '📋 Copy', 2000);
-                    });
-                }
-            }
-
-            function broadcastSocialPosts() {
-                const approved = [];
-                document.querySelectorAll('.social-approve:checked').forEach(cb => {
-                    const platform = cb.dataset.platform;
-                    const textEl = document.querySelector(`.social-variant-text[data-platform="${platform}"]`);
-                    if (textEl) {
-                        approved.push({ platform, text: textEl.textContent });
-                    }
-                });
-
-                if (approved.length === 0) {
-                    UI.showToast('No posts approved for broadcast.', 'warning');
-                    return;
-                }
-
-                // Copy all approved posts to clipboard as formatted text
-                const formatted = approved.map(p => `--- ${p.platform.toUpperCase()} ---\n${p.text}`).join('\n\n');
-                navigator.clipboard.writeText(formatted).then(() => {
-                    UI.showToast(`📋 ${approved.length} approved posts copied to clipboard!`, 'success');
-                });
-            }
-
-
-            // ─── Outreach AI Rewrite ───
-            function aiRewriteOutreach() {
-                const defendantName = document.getElementById('outreach-defendant-name').value.trim();
-                const county = document.getElementById('outreach-county').value.trim();
-                const agentName = document.getElementById('outreach-agent-name').value.trim();
-                const template = document.getElementById('outreach-template').value;
-
-                if (!defendantName) {
-                    UI.showToast('Enter a defendant name first.', 'warning');
-                    return;
-                }
-
-                UI.showLoading('Grok AI', 'Generating personalized message variants...');
-
-                google.script.run
-                    .withSuccessHandler(function (res) {
-                        UI.hideLoading();
-                        if (!res.success) {
-                            UI.showToast('AI Rewrite failed: ' + res.error, 'error');
-                            return;
-                        }
-
-                        const variants = res.variants || [];
-                        if (variants.length === 0) {
-                            UI.showToast('No variants returned.', 'warning');
-                            return;
-                        }
-
-                        // Set first variant as the preview
-                        document.getElementById('outreach-message-preview').value = variants[0];
-
-                        // Show variant cards
-                        const container = document.getElementById('outreach-variant-cards');
-                        const wrapper = document.getElementById('outreach-ai-variants');
-                        wrapper.style.display = 'block';
-
-                        container.innerHTML = variants.map((v, i) => `
-                            <div onclick="OutreachMode.selectVariant(this, ${i})"
-                                style="padding:14px 16px; border:2px solid ${i === 0 ? 'var(--accent)' : 'var(--border)'}; border-radius:var(--radius-sm); cursor:pointer; background:${i === 0 ? 'rgba(var(--accent-rgb), 0.05)' : 'var(--surface)'}; transition:var(--transition); font-size:14px; line-height:1.5;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                                    <span style="font-weight:600; font-size:12px; color:var(--text-secondary);">Variant ${i + 1}</span>
-                                    <span style="font-size:11px; color:var(--muted);">${v.length} chars</span>
-                                </div>
-                                ${v}
-                            </div>
-                        `).join('');
-
-                        // Store variants for selection
-                        window._outreachVariants = variants;
-                        UI.showToast(`✨ ${variants.length} AI variants generated!`, 'success');
-                    })
-                    .withFailureHandler(function (err) {
-                        UI.hideLoading();
-                        UI.showToast('Grok error: ' + err.message, 'error');
-                    })
-                    .grokGenerateOutreachMessage({
-                        defendantName,
-                        county,
-                        agentName,
-                        template
-                    });
-            }
-
-
-            // ─── Grok Chat ───
-            const Chat = {
-                history: [],
-
-                send: function () {
-                    const input = document.getElementById('grok-chat-input');
-                    const message = input.value.trim();
-                    if (!message) return;
-
-                    input.value = '';
-                    const container = document.getElementById('grok-chat-messages');
-
-                    // Hide suggestions after first message
-                    const suggestions = document.getElementById('grok-suggestions');
-                    if (suggestions) suggestions.style.display = 'none';
-
-                    // Clear placeholder if first message
-                    if (Chat.history.length === 0) {
-                        container.innerHTML = '';
-                    }
-
-                    // Add user message bubble
-                    container.innerHTML += `
-                        <div style="display:flex; justify-content:flex-end;">
-                            <div style="background:var(--accent); color:#000; padding:12px 16px; border-radius:var(--radius-sm) var(--radius-sm) 4px var(--radius-sm); max-width:75%; font-size:14px; line-height:1.5;">
-                                ${escapeHtml(message)}
-                            </div>
-                        </div>`;
-
-                    // Add loading bubble
-                    const loadingId = 'grok-loading-' + Date.now();
-                    container.innerHTML += `
-                        <div id="${loadingId}" style="display:flex; justify-content:flex-start;">
-                            <div style="background:var(--surface); border:1px solid var(--border); padding:12px 16px; border-radius:var(--radius-sm) var(--radius-sm) var(--radius-sm) 4px; max-width:75%;">
-                                <div style="display:flex; gap:4px; align-items:center;">
-                                    <span style="animation:pulse 1s infinite;">🧠</span>
-                                    <span style="color:var(--muted); font-size:13px;">Grok is thinking...</span>
-                                </div>
-                            </div>
-                        </div>`;
-
-                    container.scrollTop = container.scrollHeight;
-
-                    // Track history
-                    Chat.history.push({ role: 'user', content: message });
-
-                    google.script.run
-                        .withSuccessHandler(function (res) {
-                            const loadEl = document.getElementById(loadingId);
-                            if (loadEl) loadEl.remove();
-
-                            if (!res.success) {
-                                container.innerHTML += `
-                                    <div style="display:flex; justify-content:flex-start;">
-                                        <div style="background:var(--error-bg); color:var(--error); padding:12px 16px; border-radius:var(--radius-sm); max-width:75%; font-size:14px;">
-                                            ❌ ${res.error}
-                                        </div>
-                                    </div>`;
-                                return;
-                            }
-
-                            const reply = res.reply;
-                            Chat.history.push({ role: 'assistant', content: reply });
-
-                            // Simple markdown-to-HTML conversion
-                            const formattedReply = reply
-                                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                                .replace(/\n- /g, '<br>• ')
-                                .replace(/\n\d+\. /g, function(m) { return '<br>' + m.trim() + ' '; })
-                                .replace(/\n/g, '<br>')
-                                .replace(/`([^`]+)`/g, '<code style="background:var(--surface-3); padding:2px 6px; border-radius:4px; font-size:12px;">$1</code>');
-
-                            container.innerHTML += `
-                                <div style="display:flex; justify-content:flex-start;">
-                                    <div style="background:var(--surface); border:1px solid var(--border); padding:14px 18px; border-radius:var(--radius-sm) var(--radius-sm) var(--radius-sm) 4px; max-width:80%; font-size:14px; line-height:1.7; color:var(--text);">
-                                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px; font-size:12px; color:var(--muted);">
-                                            <span>🧠</span> Grok
-                                        </div>
-                                        ${formattedReply}
-                                    </div>
-                                </div>`;
-
-                            container.scrollTop = container.scrollHeight;
-                        })
-                        .withFailureHandler(function (err) {
-                            const loadEl = document.getElementById(loadingId);
-                            if (loadEl) loadEl.remove();
-                            container.innerHTML += `
-                                <div style="display:flex; justify-content:flex-start;">
-                                    <div style="background:var(--error-bg); color:var(--error); padding:12px 16px; border-radius:var(--radius-sm); max-width:75%; font-size:14px;">
-                                        ❌ Error: ${err.message}
-                                    </div>
-                                </div>`;
-                        })
-                        .grokChat({
-                            message: message,
-                            conversationHistory: Chat.history.slice(0, -1)
-                        });
-                },
-
-                askSuggestion: function (btn) {
-                    const text = btn.textContent.trim().replace(/^[^\s]+\s/, ''); // Remove emoji prefix
-                    document.getElementById('grok-chat-input').value = text;
-                    Chat.send();
-                },
-
-                clearChat: function () {
-                    Chat.history = [];
-                    const container = document.getElementById('grok-chat-messages');
-                    container.innerHTML = `
-                        <div style="text-align:center; padding:60px 20px; color:var(--muted);">
-                            <div style="font-size:48px; margin-bottom:12px;">🧠</div>
-                            <p>Ask me anything about Shamrock operations, county procedures, or draft client messages.</p>
-                        </div>`;
-                    const suggestions = document.getElementById('grok-suggestions');
-                    if (suggestions) suggestions.style.display = 'flex';
-                    UI.showToast('Chat cleared.', 'info');
-                },
-
-                testConnection: function () {
-                    UI.showLoading('Grok', 'Testing API connection...');
-                    google.script.run
-                        .withSuccessHandler(function (res) {
-                            UI.hideLoading();
-                            if (res.success) {
-                                UI.showToast(`✅ Grok connected! Model: ${res.model} — Response: "${res.message}"`, 'success');
-                            } else {
-                                UI.showToast('❌ Grok connection failed: ' + res.error, 'error');
-                            }
-                        })
-                        .withFailureHandler(function (err) {
-                            UI.hideLoading();
-                            UI.showToast('❌ Connection test error: ' + err.message, 'error');
-                        })
-                        .testGrokConnection();
-                }
-            };
-
-            // ─── Utility ───
-            function escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
-
-            return {
-                generateSocialPosts,
-                broadcastSocialPosts,
-                copySocialVariant,
-                Chat
-            };
-        })();
-
-        // Outreach AI Rewrite (extend existing OutreachMode)
-        if (window.OutreachMode) {
-            OutreachMode.aiRewrite = function () {
-                const defendantName = document.getElementById('outreach-defendant-name').value.trim();
-                const county = document.getElementById('outreach-county').value.trim();
-                const agentName = document.getElementById('outreach-agent-name').value.trim();
-                const template = document.getElementById('outreach-template').value;
-
-                if (!defendantName) {
-                    UI.showToast('Enter a defendant name first.', 'warning');
-                    return;
-                }
-
-                UI.showLoading('Grok AI', 'Generating personalized message variants...');
-
-                google.script.run
-                    .withSuccessHandler(function (res) {
-                        UI.hideLoading();
-                        if (!res.success) {
-                            UI.showToast('AI Rewrite failed: ' + res.error, 'error');
-                            return;
-                        }
-
-                        const variants = res.variants || [];
-                        if (variants.length === 0) {
-                            UI.showToast('No variants returned.', 'warning');
-                            return;
-                        }
-
-                        document.getElementById('outreach-message-preview').value = variants[0];
-                        document.getElementById('outreach-message-preview').readOnly = false;
-
-                        const container = document.getElementById('outreach-variant-cards');
-                        const wrapper = document.getElementById('outreach-ai-variants');
-                        wrapper.style.display = 'block';
-
-                        window._outreachVariants = variants;
-
-                        container.innerHTML = variants.map(function (v, i) {
-                            return '<div onclick="OutreachMode.selectVariant(' + i + ')"' +
-                                ' style="padding:14px 16px; border:2px solid ' + (i === 0 ? 'var(--accent)' : 'var(--border)') +
-                                '; border-radius:var(--radius-sm); cursor:pointer; background:' + (i === 0 ? 'rgba(var(--accent-rgb), 0.05)' : 'var(--surface)') +
-                                '; transition:var(--transition); font-size:14px; line-height:1.5;">' +
-                                '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">' +
-                                '<span style="font-weight:600; font-size:12px; color:var(--text-secondary);">Variant ' + (i + 1) + '</span>' +
-                                '<span style="font-size:11px; color:var(--muted);">' + v.length + ' chars</span>' +
-                                '</div>' + v + '</div>';
-                        }).join('');
-
-                        UI.showToast('✨ ' + variants.length + ' AI variants generated!', 'success');
-                    })
-                    .withFailureHandler(function (err) {
-                        UI.hideLoading();
-                        UI.showToast('Grok error: ' + err.message, 'error');
-                    })
-                    .grokGenerateOutreachMessage({
-                        defendantName: defendantName,
-                        county: county,
-                        agentName: agentName,
-                        template: template
-                    });
-            };
-
-            OutreachMode.selectVariant = function (index) {
-                if (window._outreachVariants && window._outreachVariants[index]) {
-                    document.getElementById('outreach-message-preview').value = window._outreachVariants[index];
-                    // Update card borders
-                    var cards = document.getElementById('outreach-variant-cards').children;
-                    for (var i = 0; i < cards.length; i++) {
-                        cards[i].style.borderColor = (i === index) ? 'var(--accent)' : 'var(--border)';
-                        cards[i].style.background = (i === index) ? 'rgba(var(--accent-rgb), 0.05)' : 'var(--surface)';
-                    }
-                }
-            };
         }
     </script>
 </body>
