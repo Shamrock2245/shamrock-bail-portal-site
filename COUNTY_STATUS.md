@@ -1,6 +1,6 @@
 # 🗺 Florida Counties Roadmap & Scraper Status
 
-> **Last Updated:** March 17, 2026
+> **Last Updated:** April 4, 2026
 > **Active Counties:** 19 | **Backlog:** 48
 
 This document is the master ledger for "The Scout" and "The Clerk" agents. It tracks the development, health, and extraction idiosyncrasies of all 67 Florida county jail rosters.

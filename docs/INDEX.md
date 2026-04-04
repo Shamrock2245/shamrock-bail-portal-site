@@ -1,6 +1,6 @@
 # 📚 Documentation Index
 
-> **Last Updated:** March 17, 2026
+> **Last Updated:** April 4, 2026
 
 ## Core Documentation (Root — 6 Files)
 
@@ -21,8 +21,7 @@
 | [COUNTY_STATUS.md](../COUNTY_STATUS.md) | 19-county scraper status ledger |
 | [TASKS.md](../TASKS.md) | Active task tracker and phase completion log |
 | [ROADMAP.md](../ROADMAP.md) | Long-term strategic roadmap |
-| [LOGBOOK.md](../LOGBOOK.md) | Audit log (append-only) |
-| [STANDARD_OPERATING_PROCEDURES.md](../STANDARD_OPERATING_PROCEDURES.md) | Safe deployment and sync procedures |
+
 | [SECRETS_ROTATION_GUIDE.md](../SECRETS_ROTATION_GUIDE.md) | Emergency key rotation procedures |
 | [TESTING_GUIDE.md](../TESTING_GUIDE.md) | Test procedures and verification |
 | [CHANGELOG.md](../CHANGELOG.md) | Change log |

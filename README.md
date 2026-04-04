@@ -5,7 +5,7 @@
 This is the core platform for **Shamrock Bail Bonds**. It runs on **Wix Velo** (Frontend) and connects to a **Google Apps Script (GAS)** backend for AI-powered workflows — PDF generation, electronic signing, arrest monitoring, and omni-channel client communication.
 
 **Current Status:** Production (Active) 🟢  
-**GAS Deployment:** v415+ | **Last Updated:** March 16, 2026
+**GAS Deployment:** v415+ | **Last Updated:** April 4, 2026
 
 ---
 
@@ -148,7 +148,7 @@ Magic link auth → Form → Staff dashboard → SignNow signing → Slack notif
 4.  **Deploy Wix:** Use Wix CLI or editor. Ensure `http-functions.js` has correct GAS URL.
 5.  **Webhooks:** Register Telegram + SignNow webhooks via `SetupUtilities.js`
 
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for the full checklist.
+See [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) for the full checklist.
 
 ---
 
@@ -185,4 +185,4 @@ See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for the full checklist.
 
 ---
 
-*Maintained by Shamrock Engineering & AI Agents · March 2026*
+*Maintained by Shamrock Engineering & AI Agents · April 2026*
