@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "skills": {
+    "agents": {
+      "source": "elevenlabs/skills",
+      "sourceType": "github",
+      "computedHash": "18ddb1893c48233e73674aa00a28c62f75b55901ac7d24190575e72397a2b27a"
+    },
+    "music": {
+      "source": "elevenlabs/skills",
+      "sourceType": "github",
+      "computedHash": "8de187c5fe68aba221193d827406c832fa5ed0cc1d7a82fc3b91d8a5fafeaefc"
+    },
+    "setup-api-key": {
+      "source": "elevenlabs/skills",
+      "sourceType": "github",
+      "computedHash": "45e680b4a199bb031472fc28e752abc29bc2a38334cf5c80e1428c3f9fa33083"
+    },
+    "sound-effects": {
+      "source": "elevenlabs/skills",
+      "sourceType": "github",
+      "computedHash": "54ec05122413cbc956b28fbd81c676e44eb0fdbbf6459ee3b367b2c7a1350b02"
+    },
+    "speech-to-text": {
+      "source": "elevenlabs/skills",
+      "sourceType": "github",
+      "computedHash": "bcb005567f41385e5dcba25d84de8d8ae10b65930a154146750c7004d103762b"
+    }
+  }
+}
