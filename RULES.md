@@ -63,11 +63,13 @@ After SignNow handoff, **Wix is no longer authoritative**. No additional data ca
 ## Frontend / Backend Separation
 
 ### Backend (.jsw) Responsibilities
+
 - Geolocation resolution, county detection, phone routing
 - Call logging, analytics logging, county page generation
 - Business rules, API calls, PDF generation
 
 ### Frontend Responsibilities
+
 - UI rendering, event triggering, form validation
 - Invoking backend methods
 

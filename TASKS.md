@@ -6,18 +6,21 @@
 ---
 
 ## ✅ Phase 1: Foundation & Security (Complete)
+
 - [x] Monorepo migration — unified Wix Velo + GAS backend
 - [x] Security audit — PII redaction, Secret Manager integration
 - [x] SOC II logging patterns implemented
 - [x] Core 34-column intake schema defined (`IntakeQueue`)
 
 ## ✅ Phase 2: Core Portals (Complete)
+
 - [x] Indemnitor Portal — Financial Indemnity Form + SignNow Lightbox
 - [x] Defendant Portal — Appearance Application + GPS Check-in
 - [x] Magic Links — secure session-based auth (no passwords)
 - [x] PDF Engine — automated layout mapping for court forms
 
 ## ✅ Phase 3: AI Concierge & Telegram Integration (Complete)
+
 - [x] OpenAI GPT-4o integration — 6 specialized AI agents built
 - [x] Telegram Bot (`@ShamrockBail_bot`) — full conversational intake
 - [x] Inline Quote Bot — `@ShamrockBail_bot 5000 2 lee` → instant premium
@@ -28,6 +31,7 @@
 - [x] Telegram Mini-Apps (7) — Portal, Intake, Documents, Payments, Check-in, Status, Signing
 
 ## ✅ Phase 4: Core Automation (Complete)
+
 - [x] "The Clerk" — booking data scraping and OCR
 - [x] "The Analyst" — risk assessment with 0-100 flight risk scoring
 - [x] "The Investigator" — deep background check analysis
@@ -39,6 +43,7 @@
 - [x] Universal Payment Link — SwipeSimple in portals, SMS, email
 
 ## ✅ Phase 5: Shannon Voice AI (Complete)
+
 - [x] ElevenLabs Conversational AI — "Shannon" 24/7 after-hours intake
 - [x] Inbound Twilio → ElevenLabs routing
 - [x] Init webhook as Netlify Edge Function (near-zero cold start)
@@ -50,6 +55,7 @@
 - [x] Live call transfer — 3 phone numbers (primary, secondary, Spanish line)
 
 ## ✅ Phase 6: Infrastructure & Operations (Complete)
+
 - [x] Node-RED Ops Dashboard — 19 flow tabs, 643+ nodes, 51 crons, 14 webhooks
 - [x] 8-page dashboard with premium glassmorphism UI
 - [x] Global error handler → Slack alerts
@@ -62,6 +68,7 @@
 - [x] SLACK_TOKEN fix — `env.get('SLACK_BOT_TOKEN')` in Configure Global Vars
 
 ## ✅ Phase 7: Geographic Expansion — 19 Counties (Complete)
+
 - [x] 19 active county scrapers — Brevard, Charlotte, Collier, DeSoto, Hendry, Highlands, Hillsborough, Indian River, Lake, Lee, Manatee, Martin, Orange, Osceola, Palm Beach, Pinellas, Polk, Sarasota, Seminole
 - [x] 15 GitHub Actions workflows for scheduled runs
 - [x] Python/DrissionPage as primary engine
@@ -73,6 +80,7 @@
 - [x] SEO — all county pages indexed, JSON-LD, OG/Twitter meta, geo tags
 
 ## ✅ Phase 7.5: MongoDB & Communication Preferences (Complete)
+
 - [x] MongoDB Atlas event logging via `MongoLogger.gs`
 - [x] All critical business events logged — intakes, signing, payments, court dates, check-ins, comms, leads
 - [x] Communication Preferences — `CommPrefsManager.js` in GAS
@@ -81,6 +89,7 @@
 - [x] Scraper pipeline Step 5b — non-fatal MongoDB write after Sheets
 
 ## ✅ Phase 7.6: DevOps & Deploy Pipeline Hardening (Complete — Apr 7)
+
 - [x] **ESM Crypto Imports** — Replaced all `import crypto from 'crypto'` (CommonJS default) with named imports across 5 backend files (`http-functions.js`, `auth-utils.jsw`, `auth-utils.js`, `portal-auth.jsw`, `signnow-webhooks.jsw`)
 - [x] **Multiline Call Collapse** — Resolved multiline `crypto.createHmac` chained patterns that evaded simple grep-and-replace
 - [x] **Naming Conflict** — Aliased imported `createHash` as `_cryptoCreateHash` in `auth-utils.jsw` to avoid collision with exported function
@@ -92,12 +101,14 @@
 ## 🔄 Phase 8: Growth & Scale (In Progress)
 
 ### 🔴 Immediate Priority
+
 - [ ] **WhatsApp Business Integration**
   - [ ] Enable Twilio WhatsApp Sandbox
   - [ ] Wire to Node-RED relay
   - [ ] Test WhatsApp campaigns tab (currently disabled pending 10DLC)
 
 ### 🟡 This Quarter
+
 - [ ] **"The Closer" Drip Campaigns**
   - [ ] Automated SMS/WhatsApp follow-up sequences for abandoned intakes
   - [ ] Wire Node-RED → GAS `TheCloser.js` endpoints
@@ -111,6 +122,7 @@
   - [ ] Telegram signing link delivery during calls
 
 ### 🟢 Backlog
+
 - [ ] **Bail School Landing Page**
   - [ ] High-converting `/bail-school` registration page
   - [ ] Video integration + auto-issue PDF certificate
@@ -129,4 +141,4 @@
 
 ---
 
-*Maintained by Shamrock Engineering & AI Agents*
+Maintained by Shamrock Engineering & AI Agents
