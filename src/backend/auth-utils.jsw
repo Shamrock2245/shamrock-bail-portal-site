@@ -6,7 +6,7 @@
  * for the custom authentication system.
  */
 
-import crypto from 'crypto';
+import { randomBytes, pbkdf2, timingSafeEqual, randomUUID, createHash as _cryptoCreateHash, createHmac } from 'crypto';
 
 /**
  * Generate a cryptographically secure random token
@@ -20,9 +20,9 @@ export function generateToken(length = 64) {
     let token = '';
     
     // Use crypto for better randomness
-    const randomBytes = crypto.randomBytes(length);
+    const randomBuf = randomBytes(length);
     for (let i = 0; i < length; i++) {
-        token += chars.charAt(randomBytes[i] % chars.length);
+        token += chars.charAt(randomBuf[i] % chars.length);
     }
     
     return token;
@@ -35,11 +35,11 @@ export function generateToken(length = 64) {
  * @returns {string} A numeric verification code
  */
 export function generateVerificationCode(length = 6) {
-    const randomBytes = crypto.randomBytes(length);
+    const randomBuf = randomBytes(length);
     let code = '';
     
     for (let i = 0; i < length; i++) {
-        code += (randomBytes[i] % 10).toString();
+        code += (randomBuf[i] % 10).toString();
     }
     
     return code;
@@ -54,10 +54,10 @@ export function generateVerificationCode(length = 6) {
 export async function hashPassword(password) {
     return new Promise((resolve, reject) => {
         // Generate a random salt
-        const salt = crypto.randomBytes(32).toString('hex');
+        const salt = randomBytes(32).toString('hex');
         
         // Hash the password with PBKDF2
-        crypto.pbkdf2(password, salt, 100000, 64, 'sha512', (err, derivedKey) => {
+        pbkdf2(password, salt, 100000, 64, 'sha512', (err, derivedKey) => {
             if (err) {
                 reject(err);
             } else {
@@ -87,7 +87,7 @@ export async function verifyPassword(password, storedHash) {
             }
             
             // Hash the provided password with the same salt
-            crypto.pbkdf2(password, salt, 100000, 64, 'sha512', (err, derivedKey) => {
+            pbkdf2(password, salt, 100000, 64, 'sha512', (err, derivedKey) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -102,7 +102,7 @@ export async function verifyPassword(password, storedHash) {
                         if (hashBuffer.length !== derivedBuffer.length) {
                             resolve(false);
                         } else {
-                            resolve(crypto.timingSafeEqual(hashBuffer, derivedBuffer));
+                            resolve(timingSafeEqual(hashBuffer, derivedBuffer));
                         }
                     } catch (e) {
                         // If buffers can't be compared, do string comparison
@@ -165,7 +165,7 @@ export function verifySignedToken(token, secret) {
             return null;
         }
         
-        if (!crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
+        if (!timingSafeEqual(sigBuffer, expectedBuffer)) {
             return null;
         }
         
@@ -184,7 +184,7 @@ export function verifySignedToken(token, secret) {
  * @returns {string} A UUID v4 string
  */
 export function generateUUID() {
-    return crypto.randomUUID();
+    return randomUUID();
 }
 
 /**
@@ -194,5 +194,5 @@ export function generateUUID() {
  * @returns {string} SHA-256 hash of the data
  */
 export function createHash(data) {
-    return crypto.createHash('sha256').update(data).digest('hex');
+    return _cryptoCreateHash('sha256').update(data).digest('hex');
 }

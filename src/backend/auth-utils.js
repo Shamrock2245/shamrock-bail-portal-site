@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import { createHash } from 'crypto';
 
 /**
  * Generate a secure random token
@@ -20,7 +20,7 @@ export function generateToken(length = 32) {
  * @returns {string} - Hashed password
  */
 export function hashPassword(password) {
-    return crypto.createHash('sha256').update(password).digest('hex');
+    return createHash('sha256').update(password).digest('hex');
 }
 
 /**

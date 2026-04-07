@@ -4,7 +4,7 @@
 
 import { ok, badRequest, serverError, forbidden } from 'wix-http-functions';
 import { buildPortalUrl } from 'backend/portal-url';
-import crypto from 'crypto';
+import { createHmac } from 'crypto';
 import {
     addPendingDocument,
     addPendingDocumentsBatch,
@@ -343,7 +343,7 @@ export async function post_webhookSignnow(request) {
         if (signature) {
             const secret = await getSecret('SIGNNOW_WEBHOOK_SECRET').catch(() => '');
             if (secret) {
-                const generatedSignature = crypto.createHmac('sha256', secret)
+                const generatedSignature = createHmac('sha256', secret)
                     .update(bodyText)
                     .digest('hex');
 
@@ -506,7 +506,7 @@ export async function post_metaDataDeletion(request) {
         const data = JSON.parse(dataStr);
 
         // Verify HMAC SHA-256 signature
-        const expectedSig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+        const expectedSig = createHmac('sha256', secret).update(payload).digest('hex');
 
         if (sigHex !== expectedSig) {
             logSafe('Invalid Meta Data Deletion Signature', { received: sigHex, expected: expectedSig }, 'warn');
@@ -764,7 +764,7 @@ export async function post_twilioStatus(request) {
                 data += `${key}${paramObj[key]}`;
             }
 
-            const generatedSignature = crypto.createHmac('sha1', authToken)
+            const generatedSignature = createHmac('sha1', authToken)
                 .update(Buffer.from(data, 'utf-8'))
                 .digest('base64');
 
@@ -849,7 +849,7 @@ export async function post_twilioInbound(request) {
                 data += `${key}${paramObj[key]}`;
             }
 
-            const generatedSignature = crypto.createHmac('sha1', authToken)
+            const generatedSignature = createHmac('sha1', authToken)
                 .update(Buffer.from(data, 'utf-8'))
                 .digest('base64');
 
@@ -1641,7 +1641,7 @@ export async function post_openAIWebhook(request) {
         const webhookSecret = await getSecret('OPENAI_WEBHOOK_SECRET').catch(() => '');
 
         if (webhookSecret && signature) {
-            const generatedSignature = crypto.createHmac('sha256', webhookSecret)
+            const generatedSignature = createHmac('sha256', webhookSecret)
                 .update(bodyText)
                 .digest('hex');
 

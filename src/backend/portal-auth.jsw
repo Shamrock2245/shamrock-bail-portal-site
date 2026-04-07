@@ -22,7 +22,7 @@ import { getGasWebAppUrl, getGasApiKey, getSecureSecret } from 'backend/secretsM
 import { sendSms } from 'backend/twilio-client';
 import { fetch } from 'wix-fetch';
 import { fetchWithRetry } from 'backend/utils';
-import crypto from 'crypto';
+import { createHash, createHmac } from 'crypto';
 
 // ============================================================================
 // CONFIGURATION
@@ -1525,10 +1525,10 @@ export async function onTelegramLogin(telegramData) {
         const dataCheckString = dataCheckArr.join('\n');
 
         // Create SHA256 of bot token
-        const secretKey = crypto.createHash('sha256').update(botToken).digest();
+        const secretKey = createHash('sha256').update(botToken).digest();
 
         // Calculate HMAC-SHA-256
-        const calculatedHash = crypto.createHmac('sha256', secretKey)
+        const calculatedHash = createHmac('sha256', secretKey)
             .update(dataCheckString)
             .digest('hex');
 
