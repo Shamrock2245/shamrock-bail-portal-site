@@ -1,0 +1,16 @@
+{
+  "title": "Wix Deploy Pipeline Hardening — ESM Crypto + CLI Auth",
+  "summary": "Two-layer Wix deploy failure: (1) ESM incompatible default crypto imports across 5 backend files, (2) expired WIX_CLI_API_KEY in GitHub Secrets. Both must be addressed for the GitHub Actions → Wix publish pipeline to succeed. Documented root causes, exact fixes, and prevention rules.",
+  "created": "2026-04-07T19:00:00Z",
+  "lastAccessed": "2026-04-07T19:00:00Z",
+  "references": [
+    "src/backend/http-functions.js",
+    "src/backend/auth-utils.jsw",
+    "src/backend/auth-utils.js",
+    "src/backend/portal-auth.jsw",
+    "src/backend/signnow-webhooks.jsw",
+    ".github/workflows/wix-deploy.yml",
+    "RULES.md",
+    "SECRETS_ROTATION_GUIDE.md"
+  ]
+}
