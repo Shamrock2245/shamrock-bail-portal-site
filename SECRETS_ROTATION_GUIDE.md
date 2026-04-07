@@ -70,7 +70,33 @@ Because some API keys were previously committed to the git repository, they are 
 
 ---
 
+## 5. Wix CLI API Key (`WIX_CLI_API_KEY` in GitHub Secrets)
+**Impact:** GitHub Actions Wix deploy pipeline fails completely — site is not published.
+
+**Symptom:** GitHub Actions log shows:
+```
+✖ Failed to get account information.
+FailedToGetMyAccount: 404 - Entity not found
+```
+
+**Rotation Steps:**
+1. Log in to [manage.wix.com/account/api-keys](https://manage.wix.com/account/api-keys) with `admin@shamrockbailbonds.biz`.
+2. Find the existing "GitHub Actions Deploy" key (or any CLI key).
+3. Note: Wix will send a 6-digit verification code to `admin@shamrockbailbonds.biz` — enter it to proceed.
+4. Generate a new key with **All Permissions** selected.
+5. **Copy the key immediately** — it is only shown once.
+6. Go to [GitHub → shamrock-bail-portal-site → Settings → Secrets → Actions](https://github.com/Shamrock2245/shamrock-bail-portal-site/settings/secrets/actions).
+7. Find `WIX_CLI_API_KEY` and click **Update**.
+8. Paste the new key and save.
+9. Trigger a manual workflow run at [Actions → Deploy to Wix → Run workflow](https://github.com/Shamrock2245/shamrock-bail-portal-site/actions/workflows/wix-deploy.yml).
+10. Confirm Run passes authentication step and publishes the site.
+
+**Note:** There is no automated expiry warning — watch for the `FailedToGetMyAccount` symptom in the #bonds-live Slack channel.
+
+---
+
 ## ✅ Final Verification
 After rotating all keys:
-1.  Run a test flow (e.g., "Start Bail Paperwork") to ensure SignNow and Twilio still work.
-2.  Check the Dashboard map to ensure it loads without errors.
+1. Run a test flow (e.g., "Start Bail Paperwork") to ensure SignNow and Twilio still work.
+2. Check the Dashboard map to ensure it loads without errors.
+3. Trigger a manual Wix deploy to confirm `WIX_CLI_API_KEY` is valid and auto-deploy works.

@@ -1,6 +1,6 @@
 # ⚖️ Rules & Prime Directives
 
-> **Last Updated:** March 17, 2026
+> **Last Updated:** April 7, 2026
 
 These are the unalterable laws governing the digital operations of Shamrock Bail Bonds. Any code changes, system designs, or automation deployments MUST adhere to these directives.
 
@@ -26,6 +26,8 @@ These are the unalterable laws governing the digital operations of Shamrock Bail
 4. **Redact PII in Logs**: Emails and phone numbers must be redacted in operational logs.
 5. **Never Hardcode API Keys**: Use `env.get()`, Wix Secrets Manager, or GAS Script Properties.
 6. **Webhook Auth**: Verify the origin of Webhook calls matching expected headers or IPs. For Twilio or Telegram, validate signatures. HMAC verification on all Node-RED inbound endpoints.
+7. **ESM Named Imports Only (Wix Backend)**: Wix Velo enforces strict ESM. **Never** use default imports from Node.js built-ins (`import crypto from 'crypto'` → ❌ ReferenceError at runtime). Always use named imports: `import { createHmac, createHash, randomBytes } from 'crypto'`. This applies to ALL backend `.js`/`.jsw` files. Violation causes a build-blocking `ReferenceError` even if the IDE shows no error.
+8. **Rotate `WIX_CLI_API_KEY` When Expired**: The Wix CLI API key stored in GitHub Secrets (`WIX_CLI_API_KEY`) can expire silently. Symptom: `FailedToGetMyAccount: 404 entity not found` in GitHub Actions. Fix: regenerate at `manage.wix.com/account/api-keys` and update the secret. See `SECRETS_ROTATION_GUIDE.md`.
 
 ---
 

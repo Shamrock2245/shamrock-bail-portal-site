@@ -1,7 +1,7 @@
 # 📋 Project Tasks
 
 > **Mission:** Build the "Uber of Bail Bonds" for Florida — Fast. Frictionless. Everywhere.  
-> **Last Updated:** April 2, 2026
+> **Last Updated:** April 7, 2026
 
 ---
 
@@ -79,6 +79,13 @@
 - [x] Wix portal comm prefs page — `Communication Preferences.f870g.js` → `comm-prefs-sync.jsw` → GAS
 - [x] `pymongo[srv]` dependency added to scrapers
 - [x] Scraper pipeline Step 5b — non-fatal MongoDB write after Sheets
+
+## ✅ Phase 7.6: DevOps & Deploy Pipeline Hardening (Complete — Apr 7)
+- [x] **ESM Crypto Imports** — Replaced all `import crypto from 'crypto'` (CommonJS default) with named imports across 5 backend files (`http-functions.js`, `auth-utils.jsw`, `auth-utils.js`, `portal-auth.jsw`, `signnow-webhooks.jsw`)
+- [x] **Multiline Call Collapse** — Resolved multiline `crypto.createHmac` chained patterns that evaded simple grep-and-replace
+- [x] **Naming Conflict** — Aliased imported `createHash` as `_cryptoCreateHash` in `auth-utils.jsw` to avoid collision with exported function
+- [x] **WIX_CLI_API_KEY Renewal** — Expired GitHub Secret caused `FailedToGetMyAccount: 404` at auth step; regenerated from `manage.wix.com/account/api-keys`
+- [x] **Auto-Deploy Verified** — GitHub Actions Run #25 ✅ (32s). Auto-deploy on push to `main` is fully operational
 
 ---
 

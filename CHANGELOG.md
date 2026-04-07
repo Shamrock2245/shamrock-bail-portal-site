@@ -61,6 +61,21 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-04-07 — Wix Deploy Pipeline Repair (Crypto ESM + Auth)
+
+**Fixed:**
+- `src/backend/http-functions.js`, `auth-utils.jsw`, `auth-utils.js`, `portal-auth.jsw`, `signnow-webhooks.jsw` — Replaced all default `import crypto from 'crypto'` with named imports (`import { createHmac, createHash } from 'crypto'`). Wix Velo's ESM environment forbids CommonJS default imports of Node.js built-ins.
+- Stripped all `crypto.` prefixes from call sites (e.g., `crypto.createHmac(...)` → `createHmac(...)`), including multiline chained patterns (e.g., `const sig = crypto\n  .createHmac(...)`) that simple string searches miss.
+- Resolved naming conflict in `auth-utils.jsw` where local exported `createHash` collided with the import — aliased as `_cryptoCreateHash`.
+- `GitHub Secrets / WIX_CLI_API_KEY` — The Wix CLI API key stored in GitHub Actions secrets had expired, causing `FailedToGetMyAccount: 404 entity not found` at the authentication step. Regenerated key from `manage.wix.com/account/api-keys` and updated the secret.
+
+**Result:**
+- GitHub Actions Run #25 — ✅ Succeeded (32 seconds)
+- Site published to `shamrockbailbonds.biz`
+- Auto-deploy on every push to `main` is now fully operational
+
+---
+
 ### Template for Future Entries
 `YYYY-MM-DD — vX.Y.Z`
 - **Added**: new feature
