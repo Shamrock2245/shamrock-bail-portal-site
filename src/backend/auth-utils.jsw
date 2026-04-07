@@ -128,8 +128,7 @@ export function generateSignedToken(data, secret) {
     const payloadBase64 = Buffer.from(payload).toString('base64url');
     
     // Create HMAC signature
-    const signature = crypto
-        .createHmac('sha256', secret)
+    const signature = createHmac('sha256', secret)
         .update(payloadBase64)
         .digest('base64url');
     
@@ -152,8 +151,7 @@ export function verifySignedToken(token, secret) {
         }
         
         // Verify signature
-        const expectedSignature = crypto
-            .createHmac('sha256', secret)
+        const expectedSignature = createHmac('sha256', secret)
             .update(payloadBase64)
             .digest('base64url');
         
