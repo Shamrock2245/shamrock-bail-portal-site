@@ -1,6 +1,8 @@
 {
     "_comment": "Single source of truth for GAS deployment URL. Run: ./scripts/update-gas-url.sh",
-    "deploymentId": "AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ",
-    "gasWebAppUrl": "https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec",
-    "lastUpdated": "2026-03-02T08:22:00-05:00"
+    "deploymentId": "AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z",
+    "gasWebAppUrl": "https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec",
+    "lastUpdated": "2026-04-07T12:32:00-04:00",
+    "version": "V368 @426",
+    "note": "Update Wix Secrets Manager: GAS_WEBHOOK_URL must match this URL exactly"
 }
