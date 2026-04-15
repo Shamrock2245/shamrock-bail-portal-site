@@ -10,7 +10,16 @@
       "fallbackInmateSearchUrl": "https://acso.us/inmate-search/",
       "clerkPhone": "(352) 374-3636",
       "clerkWebsite": "https://www.alachuacounty.us/Depts/Clerk/Pages/Clerk.aspx",
-      "recordsUrl": "https://www.alachuaclerk.org/court_records/index.cfm?section=login&r=331568"
+      "recordsUrl": "https://www.alachuaclerk.org/court_records/index.cfm?section=login&r=331568",
+      "cities": [
+        "Gainesville",
+        "Newberry",
+        "Archer",
+        "High Springs",
+        "Alachua"
+      ],
+      "judicialCircuit": "8th (Eighth Judicial Circuit)",
+      "population": 285000
     },
     {
       "name": "Baker",
@@ -22,7 +31,14 @@
       "fallbackInmateSearchUrl": "https://www.bakercountysheriffsoffice.com/",
       "clerkPhone": "(904) 259-8113",
       "clerkWebsite": "http://www.bakerclerk.com/",
-      "recordsUrl": "https://www.civitekflorida.com/ocrs/app/search.xhtml"
+      "recordsUrl": "https://www.civitekflorida.com/ocrs/app/search.xhtml",
+      "cities": [
+        "Macclenny",
+        "Glen St. Mary",
+        "Sanderson"
+      ],
+      "judicialCircuit": "8th (Eighth Judicial Circuit)",
+      "population": 30000
     },
     {
       "name": "Bay",
@@ -34,7 +50,16 @@
       "fallbackInmateSearchUrl": "https://www.baysomobile.org/is/",
       "clerkPhone": "(850) 763-9061",
       "clerkWebsite": "https://www.baycoclerk.com/",
-      "recordsUrl": "https://records2.baycoclerk.com/"
+      "recordsUrl": "https://records2.baycoclerk.com/",
+      "cities": [
+        "Panama City",
+        "Panama City Beach",
+        "Lynn Haven",
+        "Springfield",
+        "Callaway"
+      ],
+      "judicialCircuit": "14th (Fourteenth Judicial Circuit)",
+      "population": 185000
     },
     {
       "name": "Bradford",
@@ -46,7 +71,15 @@
       "fallbackInmateSearchUrl": "http://smartweb.bradfordsheriff.org/smartwebclient/Jail.aspx",
       "clerkPhone": "(904) 966-6280",
       "clerkWebsite": "https://www.bradfordcountyclerk.com/",
-      "recordsUrl": "https://www.bradfordcountyclerk.com/search.aspx"
+      "recordsUrl": "https://www.bradfordcountyclerk.com/search.aspx",
+      "cities": [
+        "Starke",
+        "Lawtey",
+        "Hampton",
+        "Brooker"
+      ],
+      "judicialCircuit": "8th (Eighth Judicial Circuit)",
+      "population": 28000
     },
     {
       "name": "Brevard",
@@ -58,7 +91,17 @@
       "fallbackInmateSearchUrl": "https://www.brevardsheriff.com/bookings/",
       "clerkPhone": "(321) 637-5413",
       "clerkWebsite": "https://www.brevardclerk.us/",
-      "recordsUrl": "https://vweb1.brevardclerk.us/"
+      "recordsUrl": "https://vweb1.brevardclerk.us/",
+      "cities": [
+        "Melbourne",
+        "Palm Bay",
+        "Titusville",
+        "Cocoa",
+        "Rockledge",
+        "Merritt Island"
+      ],
+      "judicialCircuit": "18th (Eighteenth Judicial Circuit)",
+      "population": 620000
     },
     {
       "name": "Broward",
@@ -70,7 +113,17 @@
       "fallbackInmateSearchUrl": "https://www.sheriff.org/DOD/Pages/ArrestSearch.aspx",
       "clerkPhone": "(954) 831-6565",
       "clerkWebsite": "https://www.browardclerk.org/",
-      "recordsUrl": "https://www.browardclerk.org/Web2"
+      "recordsUrl": "https://www.browardclerk.org/Web2",
+      "cities": [
+        "Fort Lauderdale",
+        "Hollywood",
+        "Pembroke Pines",
+        "Coral Springs",
+        "Miramar",
+        "Davie"
+      ],
+      "judicialCircuit": "17th (Seventeenth Judicial Circuit)",
+      "population": 1950000
     },
     {
       "name": "Calhoun",
@@ -82,7 +135,13 @@
       "fallbackInmateSearchUrl": "https://www.calhounsheriff.com/jail-information/",
       "clerkPhone": "(850) 674-4545",
       "clerkWebsite": "https://www.calhounclerk.com/",
-      "recordsUrl": "https://calhounclerk.com/official-records/"
+      "recordsUrl": "https://calhounclerk.com/official-records/",
+      "cities": [
+        "Blountstown",
+        "Altha"
+      ],
+      "judicialCircuit": "14th (Fourteenth Judicial Circuit)",
+      "population": 14000
     },
     {
       "name": "Charlotte",
@@ -94,7 +153,15 @@
       "fallbackInmateSearchUrl": "https://www.ccso.org/forms/arrestdb.cfm",
       "clerkPhone": "(941) 637-2199",
       "clerkWebsite": "https://www.charlotteclerk.com/",
-      "recordsUrl": "https://records.charlotteclerk.com/records/"
+      "recordsUrl": "https://records.charlotteclerk.com/records/",
+      "cities": [
+        "Punta Gorda",
+        "Port Charlotte",
+        "Englewood",
+        "North Port"
+      ],
+      "judicialCircuit": "20th (Twentieth Judicial Circuit)",
+      "population": 195000
     },
     {
       "name": "Citrus",
@@ -106,7 +173,15 @@
       "fallbackInmateSearchUrl": "https://www.sheriffcitrus.org/arrest-records-citrus-county.php",
       "clerkPhone": "(352) 341-6424",
       "clerkWebsite": "https://www.citrusclerk.org/",
-      "recordsUrl": "https://officialrecords.citrusclerk.org/recordsearch/"
+      "recordsUrl": "https://officialrecords.citrusclerk.org/recordsearch/",
+      "cities": [
+        "Inverness",
+        "Crystal River",
+        "Homosassa",
+        "Lecanto"
+      ],
+      "judicialCircuit": "5th (Fifth Judicial Circuit)",
+      "population": 155000
     },
     {
       "name": "Clay",
@@ -118,7 +193,16 @@
       "fallbackInmateSearchUrl": "https://claysheriff.policetocitizen.com/Home",
       "clerkPhone": "(904) 269-6302",
       "clerkWebsite": "https://www.clayclerk.com/",
-      "recordsUrl": "https://records.clayclerk.com/"
+      "recordsUrl": "https://records.clayclerk.com/",
+      "cities": [
+        "Green Cove Springs",
+        "Orange Park",
+        "Middleburg",
+        "Fleming Island",
+        "Keystone Heights"
+      ],
+      "judicialCircuit": "4th (Fourth Judicial Circuit)",
+      "population": 225000
     },
     {
       "name": "Collier",
@@ -130,7 +214,16 @@
       "fallbackInmateSearchUrl": "https://www2.colliersheriff.org/arrestsearch/",
       "clerkPhone": "(239) 252-2646",
       "clerkWebsite": "https://www.collierclerk.com/",
-      "recordsUrl": "https://collierclerk.com/records-search/"
+      "recordsUrl": "https://collierclerk.com/records-search/",
+      "cities": [
+        "Naples",
+        "Marco Island",
+        "Immokalee",
+        "Golden Gate",
+        "Everglades City"
+      ],
+      "judicialCircuit": "20th (Twentieth Judicial Circuit)",
+      "population": 395000
     },
     {
       "name": "Columbia",
@@ -142,7 +235,13 @@
       "fallbackInmateSearchUrl": "https://columbiasheriff.org/about-ccso/detention-facility/",
       "clerkPhone": "(386) 758-1342",
       "clerkWebsite": "https://www.columbiaclerk.com/",
-      "recordsUrl": "https://columbiaclerk.com/official-records/"
+      "recordsUrl": "https://columbiaclerk.com/official-records/",
+      "cities": [
+        "Lake City",
+        "Fort White"
+      ],
+      "judicialCircuit": "3rd (Third Judicial Circuit)",
+      "population": 72000
     },
     {
       "name": "DeSoto",
@@ -154,7 +253,13 @@
       "fallbackInmateSearchUrl": "https://jail.desotosheriff.org/DCN/",
       "clerkPhone": "(863) 993-4876",
       "clerkWebsite": "https://www.desotoclerk.com/",
-      "recordsUrl": "https://desotoclerk.com/official-records/"
+      "recordsUrl": "https://desotoclerk.com/official-records/",
+      "cities": [
+        "Arcadia",
+        "Nocatee"
+      ],
+      "judicialCircuit": "12th (Twelfth Judicial Circuit)",
+      "population": 38000
     },
     {
       "name": "Dixie",
@@ -166,7 +271,14 @@
       "fallbackInmateSearchUrl": "http://www.dixiecountysheriff.com/Detention.html",
       "clerkPhone": "(352) 498-1200",
       "clerkWebsite": "https://www.dixieclerk.com/",
-      "recordsUrl": "https://officialrecords.dixieclerk.com/"
+      "recordsUrl": "https://officialrecords.dixieclerk.com/",
+      "cities": [
+        "Cross City",
+        "Old Town",
+        "Horseshoe Beach"
+      ],
+      "judicialCircuit": "3rd (Third Judicial Circuit)",
+      "population": 17000
     },
     {
       "name": "Duval",
@@ -178,7 +290,16 @@
       "fallbackInmateSearchUrl": "https://inmatesearch.jaxsheriff.org/login",
       "clerkPhone": "(904) 255-2000",
       "clerkWebsite": "https://www.duvalclerk.com/",
-      "recordsUrl": "https://core.duvalclerk.com/"
+      "recordsUrl": "https://core.duvalclerk.com/",
+      "cities": [
+        "Jacksonville",
+        "Jacksonville Beach",
+        "Atlantic Beach",
+        "Neptune Beach",
+        "Baldwin"
+      ],
+      "judicialCircuit": "4th (Fourth Judicial Circuit)",
+      "population": 1020000
     },
     {
       "name": "Escambia",
@@ -190,7 +311,16 @@
       "fallbackInmateSearchUrl": "http://inmatelookup.myescambia.com/smartwebclient/jail.aspx",
       "clerkPhone": "(850) 595-4310",
       "clerkWebsite": "https://www.escambiaclerk.com/",
-      "recordsUrl": "https://officialrecords.escambiaclerk.com/"
+      "recordsUrl": "https://officialrecords.escambiaclerk.com/",
+      "cities": [
+        "Pensacola",
+        "Perdido Key",
+        "Cantonment",
+        "Molino",
+        "Century"
+      ],
+      "judicialCircuit": "1st (First Judicial Circuit)",
+      "population": 325000
     },
     {
       "name": "Flagler",
@@ -202,7 +332,14 @@
       "fallbackInmateSearchUrl": "http://www.flaglersheriff.com/",
       "clerkPhone": "(386) 313-4360",
       "clerkWebsite": "https://www.flaglerclerk.com/",
-      "recordsUrl": "https://officialrecords.flaglerclerk.com/"
+      "recordsUrl": "https://officialrecords.flaglerclerk.com/",
+      "cities": [
+        "Palm Coast",
+        "Bunnell",
+        "Flagler Beach"
+      ],
+      "judicialCircuit": "7th (Seventh Judicial Circuit)",
+      "population": 125000
     },
     {
       "name": "Franklin",
@@ -214,7 +351,14 @@
       "fallbackInmateSearchUrl": "http://www.franklinsheriff.com/arrests.aspx",
       "clerkPhone": "(850) 653-8861",
       "clerkWebsite": "https://www.franklinclerk.com/",
-      "recordsUrl": "https://officialrecords.franklinclerk.com/"
+      "recordsUrl": "https://officialrecords.franklinclerk.com/",
+      "cities": [
+        "Apalachicola",
+        "Carrabelle",
+        "Eastpoint"
+      ],
+      "judicialCircuit": "2nd (Second Judicial Circuit)",
+      "population": 12500
     },
     {
       "name": "Gadsden",
@@ -226,7 +370,15 @@
       "fallbackInmateSearchUrl": "http://69.21.72.195/smartwebclient/",
       "clerkPhone": "(850) 875-8601",
       "clerkWebsite": "https://www.gadsdenclerk.com/",
-      "recordsUrl": "https://officialrecords.gadsdenclerk.com/"
+      "recordsUrl": "https://officialrecords.gadsdenclerk.com/",
+      "cities": [
+        "Quincy",
+        "Havana",
+        "Chattahoochee",
+        "Midway"
+      ],
+      "judicialCircuit": "2nd (Second Judicial Circuit)",
+      "population": 45000
     },
     {
       "name": "Gilchrist",
@@ -238,7 +390,14 @@
       "fallbackInmateSearchUrl": "https://www.gcso.us/",
       "clerkPhone": "(352) 463-3170",
       "clerkWebsite": "https://www.gilchristclerk.com/",
-      "recordsUrl": "https://gilchristclerk.com/official-records/"
+      "recordsUrl": "https://gilchristclerk.com/official-records/",
+      "cities": [
+        "Trenton",
+        "Bell",
+        "Fanning Springs"
+      ],
+      "judicialCircuit": "8th (Eighth Judicial Circuit)",
+      "population": 18500
     },
     {
       "name": "Glades",
@@ -250,7 +409,13 @@
       "fallbackInmateSearchUrl": "https://smartweb.gladessheriff.org/smartwebclient/Jail.aspx",
       "clerkPhone": "(863) 946-6010",
       "clerkWebsite": "https://www.gladesclerk.com/",
-      "recordsUrl": "https://officialrecords.gladesclerk.com/"
+      "recordsUrl": "https://officialrecords.gladesclerk.com/",
+      "cities": [
+        "Moore Haven",
+        "Palmdale"
+      ],
+      "judicialCircuit": "20th (Twentieth Judicial Circuit)",
+      "population": 14500
     },
     {
       "name": "Gulf",
@@ -262,7 +427,13 @@
       "fallbackInmateSearchUrl": "https://www.gulfcounty-fl.gov/county_government/detention_facility",
       "clerkPhone": "(850) 229-6112",
       "clerkWebsite": "https://www.gulfclerk.com/",
-      "recordsUrl": "https://officialrecords.gulfclerk.com/"
+      "recordsUrl": "https://officialrecords.gulfclerk.com/",
+      "cities": [
+        "Port St. Joe",
+        "Wewahitchka"
+      ],
+      "judicialCircuit": "14th (Fourteenth Judicial Circuit)",
+      "population": 16000
     },
     {
       "name": "Hamilton",
@@ -274,7 +445,14 @@
       "fallbackInmateSearchUrl": "http://inmate.hamiltonsheriff.com/smartwebclient/jail.aspx",
       "clerkPhone": "(386) 792-1288",
       "clerkWebsite": "https://www.hamiltonclerk.com/",
-      "recordsUrl": "https://officialrecords.hamiltonclerk.com/"
+      "recordsUrl": "https://officialrecords.hamiltonclerk.com/",
+      "cities": [
+        "Jasper",
+        "White Springs",
+        "Jennings"
+      ],
+      "judicialCircuit": "3rd (Third Judicial Circuit)",
+      "population": 14500
     },
     {
       "name": "Hardee",
@@ -286,7 +464,14 @@
       "fallbackInmateSearchUrl": "https://www.hardeeso.com/detention/inmate_search.php",
       "clerkPhone": "(863) 773-4174",
       "clerkWebsite": "https://www.hardeecountyclerk.com/",
-      "recordsUrl": "https://officialrecords.hardeecountyclerk.com/"
+      "recordsUrl": "https://officialrecords.hardeecountyclerk.com/",
+      "cities": [
+        "Wauchula",
+        "Bowling Green",
+        "Zolfo Springs"
+      ],
+      "judicialCircuit": "10th (Tenth Judicial Circuit)",
+      "population": 27000
     },
     {
       "name": "Hendry",
@@ -298,7 +483,13 @@
       "fallbackInmateSearchUrl": "http://www.hendrysheriff.org/arrests_and_jail_info/arrest_and_inmate_search.php",
       "clerkPhone": "(863) 675-5217",
       "clerkWebsite": "https://www.hendryclerk.org/",
-      "recordsUrl": "https://officialrecords.hendryclerk.org/"
+      "recordsUrl": "https://officialrecords.hendryclerk.org/",
+      "cities": [
+        "LaBelle",
+        "Clewiston"
+      ],
+      "judicialCircuit": "20th (Twentieth Judicial Circuit)",
+      "population": 42000
     },
     {
       "name": "Hernando",
@@ -310,7 +501,14 @@
       "fallbackInmateSearchUrl": "https://www.hernandosheriff.org/jail/Applications/JailSearch/",
       "clerkPhone": "(352) 754-4201",
       "clerkWebsite": "https://www.hernandoclerk.com/",
-      "recordsUrl": "https://officialrecords.hernandoclerk.com/"
+      "recordsUrl": "https://officialrecords.hernandoclerk.com/",
+      "cities": [
+        "Brooksville",
+        "Spring Hill",
+        "Weeki Wachee"
+      ],
+      "judicialCircuit": "5th (Fifth Judicial Circuit)",
+      "population": 200000
     },
     {
       "name": "Highlands",
@@ -322,7 +520,14 @@
       "fallbackInmateSearchUrl": "https://www.flsheriffs.org/sheriffs/bio/highlands-county",
       "clerkPhone": "(863) 402-6565",
       "clerkWebsite": "https://www.highlandsclerk.org/",
-      "recordsUrl": "https://officialrecords.highlandsclerk.org/"
+      "recordsUrl": "https://officialrecords.highlandsclerk.org/",
+      "cities": [
+        "Sebring",
+        "Avon Park",
+        "Lake Placid"
+      ],
+      "judicialCircuit": "10th (Tenth Judicial Circuit)",
+      "population": 108000
     },
     {
       "name": "Hillsborough",
@@ -334,7 +539,17 @@
       "fallbackInmateSearchUrl": "http://webapps.hcso.tampa.fl.us/ArrestInquiry",
       "clerkPhone": "(813) 276-8100",
       "clerkWebsite": "https://www.hillsclerk.com/",
-      "recordsUrl": "https://hover.hillsclerk.com/"
+      "recordsUrl": "https://hover.hillsclerk.com/",
+      "cities": [
+        "Tampa",
+        "Brandon",
+        "Plant City",
+        "Temple Terrace",
+        "Riverview",
+        "Valrico"
+      ],
+      "judicialCircuit": "13th (Thirteenth Judicial Circuit)",
+      "population": 1510000
     },
     {
       "name": "Holmes",
@@ -346,7 +561,15 @@
       "fallbackInmateSearchUrl": "http://holmescosheriff.org/jail-division.html",
       "clerkPhone": "(850) 547-1100",
       "clerkWebsite": "https://www.holmesclerk.com/",
-      "recordsUrl": "https://officialrecords.holmesclerk.com/"
+      "recordsUrl": "https://officialrecords.holmesclerk.com/",
+      "cities": [
+        "Bonifay",
+        "Westville",
+        "Ponce de Leon",
+        "Esto"
+      ],
+      "judicialCircuit": "14th (Fourteenth Judicial Circuit)",
+      "population": 20000
     },
     {
       "name": "Indian River",
@@ -358,7 +581,14 @@
       "fallbackInmateSearchUrl": "https://ircsheriff.org/inmate-search",
       "clerkPhone": "(772) 770-5185",
       "clerkWebsite": "https://www.clerk.indian-river.org/",
-      "recordsUrl": "https://ori.indian-river.org/"
+      "recordsUrl": "https://ori.indian-river.org/",
+      "cities": [
+        "Vero Beach",
+        "Sebastian",
+        "Fellsmere"
+      ],
+      "judicialCircuit": "19th (Nineteenth Judicial Circuit)",
+      "population": 165000
     },
     {
       "name": "Jackson",
@@ -370,7 +600,15 @@
       "fallbackInmateSearchUrl": "https://jacksoncountyfl.gov/services/correctional-facility/",
       "clerkPhone": "(850) 482-9552",
       "clerkWebsite": "https://www.jacksonclerk.com/",
-      "recordsUrl": "https://www.jacksonclerk.com/officialrecords/"
+      "recordsUrl": "https://www.jacksonclerk.com/officialrecords/",
+      "cities": [
+        "Marianna",
+        "Graceville",
+        "Sneads",
+        "Cottondale"
+      ],
+      "judicialCircuit": "14th (Fourteenth Judicial Circuit)",
+      "population": 48000
     },
     {
       "name": "Jefferson",
@@ -382,7 +620,13 @@
       "fallbackInmateSearchUrl": "https://www.jcso-fl.org/",
       "clerkPhone": "(850) 342-0218",
       "clerkWebsite": "https://www.jeffersonclerk.com/",
-      "recordsUrl": "https://officialrecords.jeffersonclerk.com/"
+      "recordsUrl": "https://officialrecords.jeffersonclerk.com/",
+      "cities": [
+        "Monticello",
+        "Lamont"
+      ],
+      "judicialCircuit": "2nd (Second Judicial Circuit)",
+      "population": 14500
     },
     {
       "name": "Lafayette",
@@ -394,7 +638,12 @@
       "fallbackInmateSearchUrl": "http://www.lafayetteso.org/index.html",
       "clerkPhone": "(386) 294-1600",
       "clerkWebsite": "https://www.lafayetteclerk.com/",
-      "recordsUrl": "https://officialrecords.lafayetteclerk.com/"
+      "recordsUrl": "https://officialrecords.lafayetteclerk.com/",
+      "cities": [
+        "Mayo"
+      ],
+      "judicialCircuit": "3rd (Third Judicial Circuit)",
+      "population": 8800
     },
     {
       "name": "Lake",
@@ -406,7 +655,17 @@
       "fallbackInmateSearchUrl": "https://www.lcso.org/inmates/",
       "clerkPhone": "(352) 742-4100",
       "clerkWebsite": "https://www.lakecountyclerk.org/",
-      "recordsUrl": "https://officialrecords.lakecountyclerk.org/"
+      "recordsUrl": "https://officialrecords.lakecountyclerk.org/",
+      "cities": [
+        "Tavares",
+        "Leesburg",
+        "Clermont",
+        "Eustis",
+        "Mount Dora",
+        "Lady Lake"
+      ],
+      "judicialCircuit": "5th (Fifth Judicial Circuit)",
+      "population": 400000
     },
     {
       "name": "Lee",
@@ -418,7 +677,17 @@
       "fallbackInmateSearchUrl": "https://www.sheriffleefl.org/booking-search/",
       "clerkPhone": "(239) 533-5000",
       "clerkWebsite": "https://www.leeclerk.org/",
-      "recordsUrl": "https://matrix.leeclerk.org/"
+      "recordsUrl": "https://matrix.leeclerk.org/",
+      "cities": [
+        "Fort Myers",
+        "Cape Coral",
+        "Bonita Springs",
+        "Estero",
+        "Lehigh Acres",
+        "Fort Myers Beach"
+      ],
+      "judicialCircuit": "20th (Twentieth Judicial Circuit)",
+      "population": 815000
     },
     {
       "name": "Leon",
@@ -430,7 +699,13 @@
       "fallbackInmateSearchUrl": "https://www.leoncountyso.com/departments/detention-facility/inmate-search",
       "clerkPhone": "(850) 606-4000",
       "clerkWebsite": "https://www.clerk.leon.fl.us/",
-      "recordsUrl": "https://oncore.leonclerk.com/"
+      "recordsUrl": "https://oncore.leonclerk.com/",
+      "cities": [
+        "Tallahassee",
+        "Woodville"
+      ],
+      "judicialCircuit": "2nd (Second Judicial Circuit)",
+      "population": 295000
     },
     {
       "name": "Levy",
@@ -442,7 +717,15 @@
       "fallbackInmateSearchUrl": "https://levyso.com/detention-bureau/",
       "clerkPhone": "(352) 486-5266",
       "clerkWebsite": "https://www.levyclerk.com/",
-      "recordsUrl": "https://officialrecords.levyclerk.com/"
+      "recordsUrl": "https://officialrecords.levyclerk.com/",
+      "cities": [
+        "Bronson",
+        "Williston",
+        "Chiefland",
+        "Cedar Key"
+      ],
+      "judicialCircuit": "8th (Eighth Judicial Circuit)",
+      "population": 42000
     },
     {
       "name": "Liberty",
@@ -454,7 +737,13 @@
       "fallbackInmateSearchUrl": "https://libertycountyfl.org/sheriff/",
       "clerkPhone": "(850) 643-2215",
       "clerkWebsite": "https://www.libertyclerk.com/",
-      "recordsUrl": "https://officialrecords.libertyclerk.com/"
+      "recordsUrl": "https://officialrecords.libertyclerk.com/",
+      "cities": [
+        "Bristol",
+        "Hosford"
+      ],
+      "judicialCircuit": "2nd (Second Judicial Circuit)",
+      "population": 8800
     },
     {
       "name": "Madison",
@@ -466,7 +755,14 @@
       "fallbackInmateSearchUrl": "http://madisonjail.org/",
       "clerkPhone": "(850) 973-1500",
       "clerkWebsite": "https://www.madisonclerk.com/",
-      "recordsUrl": "https://officialrecords.madisonclerk.com/"
+      "recordsUrl": "https://officialrecords.madisonclerk.com/",
+      "cities": [
+        "Madison",
+        "Lee",
+        "Greenville"
+      ],
+      "judicialCircuit": "3rd (Third Judicial Circuit)",
+      "population": 19000
     },
     {
       "name": "Manatee",
@@ -478,7 +774,16 @@
       "fallbackInmateSearchUrl": "https://www.manateesheriff.com/arrest_inquiries/index.php?page=ArrestInquires.aspx",
       "clerkPhone": "(941) 749-1800",
       "clerkWebsite": "https://www.manateeclerk.com/",
-      "recordsUrl": "https://records.manateeclerk.com/"
+      "recordsUrl": "https://records.manateeclerk.com/",
+      "cities": [
+        "Bradenton",
+        "Palmetto",
+        "Lakewood Ranch",
+        "Ellenton",
+        "Anna Maria"
+      ],
+      "judicialCircuit": "12th (Twelfth Judicial Circuit)",
+      "population": 420000
     },
     {
       "name": "Marion",
@@ -490,7 +795,15 @@
       "fallbackInmateSearchUrl": "http://jail.marionso.com/",
       "clerkPhone": "(352) 671-5604",
       "clerkWebsite": "https://www.marioncountyclerk.org/",
-      "recordsUrl": "https://officialrecords.marioncountyclerk.org/"
+      "recordsUrl": "https://officialrecords.marioncountyclerk.org/",
+      "cities": [
+        "Ocala",
+        "Belleview",
+        "Dunnellon",
+        "Silver Springs"
+      ],
+      "judicialCircuit": "5th (Fifth Judicial Circuit)",
+      "population": 385000
     },
     {
       "name": "Martin",
@@ -502,7 +815,16 @@
       "fallbackInmateSearchUrl": "https://www.mcsofl.org/223/Jail-Inmate-Search",
       "clerkPhone": "(772) 288-5576",
       "clerkWebsite": "https://www.martinclerk.com/",
-      "recordsUrl": "https://ori.martinclerk.com/"
+      "recordsUrl": "https://ori.martinclerk.com/",
+      "cities": [
+        "Stuart",
+        "Jensen Beach",
+        "Palm City",
+        "Indiantown",
+        "Hobe Sound"
+      ],
+      "judicialCircuit": "19th (Nineteenth Judicial Circuit)",
+      "population": 165000
     },
     {
       "name": "Miami-Dade",
@@ -514,7 +836,17 @@
       "fallbackInmateSearchUrl": "https://www.miamidade.gov/global/service.page?Mduid_service=ser1491494549439906",
       "clerkPhone": "(305) 275-1155",
       "clerkWebsite": "https://www.miami-dadeclerk.com/",
-      "recordsUrl": "https://www2.miami-dadeclerk.com/public-records/"
+      "recordsUrl": "https://www2.miami-dadeclerk.com/public-records/",
+      "cities": [
+        "Miami",
+        "Hialeah",
+        "Miami Beach",
+        "Homestead",
+        "Coral Gables",
+        "Doral"
+      ],
+      "judicialCircuit": "11th (Eleventh Judicial Circuit)",
+      "population": 2750000
     },
     {
       "name": "Monroe",
@@ -526,7 +858,16 @@
       "fallbackInmateSearchUrl": "https://www.keysso.net/arrests",
       "clerkPhone": "(305) 292-3550",
       "clerkWebsite": "https://www.monroe-clerk.com/",
-      "recordsUrl": "https://gov.kofiletech.us/FL-Monroe/"
+      "recordsUrl": "https://gov.kofiletech.us/FL-Monroe/",
+      "cities": [
+        "Key West",
+        "Marathon",
+        "Key Largo",
+        "Islamorada",
+        "Tavernier"
+      ],
+      "judicialCircuit": "16th (Sixteenth Judicial Circuit)",
+      "population": 82000
     },
     {
       "name": "Nassau",
@@ -538,7 +879,15 @@
       "fallbackInmateSearchUrl": "https://nassauso.com/corrections/jail-visitation/",
       "clerkPhone": "(904) 548-4600",
       "clerkWebsite": "https://www.nassauclerk.com/",
-      "recordsUrl": "https://officialrecords.nassauclerk.com/"
+      "recordsUrl": "https://officialrecords.nassauclerk.com/",
+      "cities": [
+        "Fernandina Beach",
+        "Yulee",
+        "Callahan",
+        "Hilliard"
+      ],
+      "judicialCircuit": "4th (Fourth Judicial Circuit)",
+      "population": 95000
     },
     {
       "name": "Okaloosa",
@@ -550,7 +899,16 @@
       "fallbackInmateSearchUrl": "https://www.okaloosaclerk.com/contact-us/",
       "clerkPhone": "(850) 651-7200",
       "clerkWebsite": "https://www.okaloosaclerk.com/",
-      "recordsUrl": "https://officialrecords.okaloosaclerk.com/"
+      "recordsUrl": "https://officialrecords.okaloosaclerk.com/",
+      "cities": [
+        "Crestview",
+        "Fort Walton Beach",
+        "Niceville",
+        "Destin",
+        "Valparaiso"
+      ],
+      "judicialCircuit": "1st (First Judicial Circuit)",
+      "population": 215000
     },
     {
       "name": "Okeechobee",
@@ -562,7 +920,12 @@
       "fallbackInmateSearchUrl": "https://www.okeesheriff.org/inmate-search",
       "clerkPhone": "(863) 763-2131",
       "clerkWebsite": "https://www.clerk.co.okeechobee.fl.us/",
-      "recordsUrl": "https://ori.clerk.co.okeechobee.fl.us/"
+      "recordsUrl": "https://ori.clerk.co.okeechobee.fl.us/",
+      "cities": [
+        "Okeechobee"
+      ],
+      "judicialCircuit": "19th (Nineteenth Judicial Circuit)",
+      "population": 42000
     },
     {
       "name": "Orange",
@@ -574,7 +937,17 @@
       "fallbackInmateSearchUrl": "https://netapps.ocfl.net/BestJail/Home/Inmates",
       "clerkPhone": "(407) 836-2000",
       "clerkWebsite": "https://www.myorangeclerk.com/",
-      "recordsUrl": "https://myeclerk.myorangeclerk.com/"
+      "recordsUrl": "https://myeclerk.myorangeclerk.com/",
+      "cities": [
+        "Orlando",
+        "Winter Park",
+        "Apopka",
+        "Ocoee",
+        "Winter Garden",
+        "Maitland"
+      ],
+      "judicialCircuit": "9th (Ninth Judicial Circuit)",
+      "population": 1450000
     },
     {
       "name": "Osceola",
@@ -586,7 +959,15 @@
       "fallbackInmateSearchUrl": "http://www.osceola.org/agencies-departments/corrections/corrections-reports.stml",
       "clerkPhone": "(407) 742-3500",
       "clerkWebsite": "https://www.osceolaclerk.com/",
-      "recordsUrl": "https://ori.osceolaclerk.com/"
+      "recordsUrl": "https://ori.osceolaclerk.com/",
+      "cities": [
+        "Kissimmee",
+        "St. Cloud",
+        "Celebration",
+        "Poinciana"
+      ],
+      "judicialCircuit": "9th (Ninth Judicial Circuit)",
+      "population": 415000
     },
     {
       "name": "Palm Beach",
@@ -598,7 +979,17 @@
       "fallbackInmateSearchUrl": "https://www3.pbso.org/blotter/",
       "clerkPhone": "(561) 355-2996",
       "clerkWebsite": "https://www.mypalmbeachclerk.com/",
-      "recordsUrl": "https://appsgp.mypalmbeachclerk.com/eCaseView/"
+      "recordsUrl": "https://appsgp.mypalmbeachclerk.com/eCaseView/",
+      "cities": [
+        "West Palm Beach",
+        "Boca Raton",
+        "Boynton Beach",
+        "Delray Beach",
+        "Jupiter",
+        "Palm Beach Gardens"
+      ],
+      "judicialCircuit": "15th (Fifteenth Judicial Circuit)",
+      "population": 1520000
     },
     {
       "name": "Pasco",
@@ -610,7 +1001,16 @@
       "fallbackInmateSearchUrl": "https://pascosheriff.com/",
       "clerkPhone": "(727) 847-8962",
       "clerkWebsite": "https://www.pascoclerk.com/",
-      "recordsUrl": "https://www.pascoclerk.com/172/Search-Court-Records"
+      "recordsUrl": "https://www.pascoclerk.com/172/Search-Court-Records",
+      "cities": [
+        "Dade City",
+        "New Port Richey",
+        "Zephyrhills",
+        "Wesley Chapel",
+        "Land O' Lakes"
+      ],
+      "judicialCircuit": "6th (Sixth Judicial Circuit)",
+      "population": 570000
     },
     {
       "name": "Pinellas",
@@ -622,7 +1022,17 @@
       "fallbackInmateSearchUrl": "https://www.pcsoweb.com/whos-in-jail/",
       "clerkPhone": "(727) 464-7000",
       "clerkWebsite": "https://www.mypinellasclerk.gov/",
-      "recordsUrl": "https://ccmspa.pinellascounty.org/PublicAccess/default.aspx"
+      "recordsUrl": "https://ccmspa.pinellascounty.org/PublicAccess/default.aspx",
+      "cities": [
+        "Clearwater",
+        "St. Petersburg",
+        "Largo",
+        "Dunedin",
+        "Pinellas Park",
+        "Tarpon Springs"
+      ],
+      "judicialCircuit": "6th (Sixth Judicial Circuit)",
+      "population": 985000
     },
     {
       "name": "Polk",
@@ -634,7 +1044,17 @@
       "fallbackInmateSearchUrl": "https://www.polksheriff.org/detention/jail-inquiry",
       "clerkPhone": "(863) 534-4000",
       "clerkWebsite": "https://www.polkcountyclerk.net/",
-      "recordsUrl": "https://pro.polkcountyclerk.net/PRO"
+      "recordsUrl": "https://pro.polkcountyclerk.net/PRO",
+      "cities": [
+        "Bartow",
+        "Lakeland",
+        "Winter Haven",
+        "Haines City",
+        "Lake Wales",
+        "Auburndale"
+      ],
+      "judicialCircuit": "10th (Tenth Judicial Circuit)",
+      "population": 760000
     },
     {
       "name": "Putnam",
@@ -646,7 +1066,15 @@
       "fallbackInmateSearchUrl": "http://smartweb.pcso.us/smartwebclient/jail.aspx",
       "clerkPhone": "(386) 326-7630",
       "clerkWebsite": "https://putnamclerk.com/",
-      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/54/"
+      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/54/",
+      "cities": [
+        "Palatka",
+        "Crescent City",
+        "Interlachen",
+        "East Palatka"
+      ],
+      "judicialCircuit": "7th (Seventh Judicial Circuit)",
+      "population": 74000
     },
     {
       "name": "Santa Rosa",
@@ -658,7 +1086,16 @@
       "fallbackInmateSearchUrl": "https://santarosasheriff.org/jail-view/",
       "clerkPhone": "(850) 981-5554",
       "clerkWebsite": "http://oncoreweb.srccol.com/srccol/formspage1.html",
-      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/57/"
+      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/57/",
+      "cities": [
+        "Milton",
+        "Pace",
+        "Gulf Breeze",
+        "Navarre",
+        "Jay"
+      ],
+      "judicialCircuit": "1st (First Judicial Circuit)",
+      "population": 195000
     },
     {
       "name": "Sarasota",
@@ -670,7 +1107,17 @@
       "fallbackInmateSearchUrl": "https://www.sarasotasheriff.org/corrections/whos_in_jail/arrest-reports/index.php",
       "clerkPhone": "(941) 861-7400",
       "clerkWebsite": "https://www.sarasotaclerk.com/",
-      "recordsUrl": "https://secure.sarasotaclerk.com/Login.aspx?session=0"
+      "recordsUrl": "https://secure.sarasotaclerk.com/Login.aspx?session=0",
+      "cities": [
+        "Sarasota",
+        "Venice",
+        "North Port",
+        "Osprey",
+        "Nokomis",
+        "Englewood"
+      ],
+      "judicialCircuit": "12th (Twelfth Judicial Circuit)",
+      "population": 450000
     },
     {
       "name": "Seminole",
@@ -682,7 +1129,17 @@
       "fallbackInmateSearchUrl": "https://www.seminolesheriff.org/WebBond/Inmates.aspx",
       "clerkPhone": "(407) 665-4300",
       "clerkWebsite": "https://www.seminoleclerk.org/",
-      "recordsUrl": "https://courtrecords.seminoleclerk.org/criminal/default.aspx"
+      "recordsUrl": "https://courtrecords.seminoleclerk.org/criminal/default.aspx",
+      "cities": [
+        "Sanford",
+        "Altamonte Springs",
+        "Casselberry",
+        "Oviedo",
+        "Lake Mary",
+        "Longwood"
+      ],
+      "judicialCircuit": "18th (Eighteenth Judicial Circuit)",
+      "population": 485000
     },
     {
       "name": "St. Johns",
@@ -694,7 +1151,15 @@
       "fallbackInmateSearchUrl": "https://www.sjso.org/detention-center/sj-inmate-search/",
       "clerkPhone": "(904) 819-3600",
       "clerkWebsite": "https://stjohnsclerk.com/",
-      "recordsUrl": "https://apps.stjohnsclerk.com/Benchmark/Home.aspx/Search"
+      "recordsUrl": "https://apps.stjohnsclerk.com/Benchmark/Home.aspx/Search",
+      "cities": [
+        "St. Augustine",
+        "Ponte Vedra Beach",
+        "St. Augustine Beach",
+        "Hastings"
+      ],
+      "judicialCircuit": "7th (Seventh Judicial Circuit)",
+      "population": 290000
     },
     {
       "name": "St. Lucie",
@@ -706,7 +1171,14 @@
       "fallbackInmateSearchUrl": "https://www.stluciesheriff.com/215/Inmate-Lookup",
       "clerkPhone": "(772) 462-6900",
       "clerkWebsite": "https://stlucieclerk.gov/",
-      "recordsUrl": "https://stlucieclerk.gov/public-search-gen/search-court-cases"
+      "recordsUrl": "https://stlucieclerk.gov/public-search-gen/search-court-cases",
+      "cities": [
+        "Fort Pierce",
+        "Port St. Lucie",
+        "Tradition"
+      ],
+      "judicialCircuit": "19th (Nineteenth Judicial Circuit)",
+      "population": 360000
     },
     {
       "name": "Sumter",
@@ -718,7 +1190,16 @@
       "fallbackInmateSearchUrl": "http://portal.sumtercountysheriff.org/smartwebclient/jail.aspx",
       "clerkPhone": "(352) 569-6600",
       "clerkWebsite": "https://www.sumterclerk.com/",
-      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/60/"
+      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/60/",
+      "cities": [
+        "Bushnell",
+        "Wildwood",
+        "The Villages",
+        "Center Hill",
+        "Coleman"
+      ],
+      "judicialCircuit": "5th (Fifth Judicial Circuit)",
+      "population": 140000
     },
     {
       "name": "Suwannee",
@@ -730,7 +1211,14 @@
       "fallbackInmateSearchUrl": "https://smartcop.suwanneesheriff.com/smartwebclient/jail.aspx",
       "clerkPhone": "(386) 362-0520",
       "clerkWebsite": "https://www.suwgov.org/",
-      "recordsUrl": "https://www.suwgov.org/county-recorder/"
+      "recordsUrl": "https://www.suwgov.org/county-recorder/",
+      "cities": [
+        "Live Oak",
+        "Branford",
+        "Wellborn"
+      ],
+      "judicialCircuit": "3rd (Third Judicial Circuit)",
+      "population": 46000
     },
     {
       "name": "Taylor",
@@ -742,7 +1230,13 @@
       "fallbackInmateSearchUrl": "http://taylorsheriff.org/index.php/booking/",
       "clerkPhone": "(850) 838-3506",
       "clerkWebsite": "https://taylorclerk.com/",
-      "recordsUrl": "http://pubrecs.taylorclerk.com/PublicInquiry/Search.aspx?Type=Name"
+      "recordsUrl": "http://pubrecs.taylorclerk.com/PublicInquiry/Search.aspx?Type=Name",
+      "cities": [
+        "Perry",
+        "Steinhatchee"
+      ],
+      "judicialCircuit": "3rd (Third Judicial Circuit)",
+      "population": 22000
     },
     {
       "name": "Union",
@@ -754,7 +1248,14 @@
       "fallbackInmateSearchUrl": "http://www.unionsheriff.us/",
       "clerkPhone": "(386) 496-3711",
       "clerkWebsite": "https://unionclerk.com/",
-      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/63/"
+      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/63/",
+      "cities": [
+        "Lake Butler",
+        "Raiford",
+        "Worthington Springs"
+      ],
+      "judicialCircuit": "8th (Eighth Judicial Circuit)",
+      "population": 16000
     },
     {
       "name": "Volusia",
@@ -766,7 +1267,17 @@
       "fallbackInmateSearchUrl": "http://www.volusiamug.vcgov.org/",
       "clerkPhone": "(386) 736-5915",
       "clerkWebsite": "https://www.clerk.org/",
-      "recordsUrl": "https://ccms.clerk.org/"
+      "recordsUrl": "https://ccms.clerk.org/",
+      "cities": [
+        "DeLand",
+        "Daytona Beach",
+        "Ormond Beach",
+        "Port Orange",
+        "New Smyrna Beach",
+        "Deltona"
+      ],
+      "judicialCircuit": "7th (Seventh Judicial Circuit)",
+      "population": 570000
     },
     {
       "name": "Wakulla",
@@ -778,7 +1289,15 @@
       "fallbackInmateSearchUrl": "https://www.wcso.org/corrections",
       "clerkPhone": "(850) 926-0905",
       "clerkWebsite": "https://www.wakullaclerk.com/",
-      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/65/"
+      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/65/",
+      "cities": [
+        "Crawfordville",
+        "St. Marks",
+        "Sopchoppy",
+        "Panacea"
+      ],
+      "judicialCircuit": "2nd (Second Judicial Circuit)",
+      "population": 35000
     },
     {
       "name": "Walton",
@@ -790,7 +1309,16 @@
       "fallbackInmateSearchUrl": "http://nwscorrections.waltonso.org/WaltonCounty",
       "clerkPhone": "(850) 892-8115",
       "clerkWebsite": "https://waltonclerk.com/",
-      "recordsUrl": "https://waltonclerk.com/courtrecords"
+      "recordsUrl": "https://waltonclerk.com/courtrecords",
+      "cities": [
+        "DeFuniak Springs",
+        "Freeport",
+        "Miramar Beach",
+        "Santa Rosa Beach",
+        "Inlet Beach"
+      ],
+      "judicialCircuit": "1st (First Judicial Circuit)",
+      "population": 82000
     },
     {
       "name": "Washington",
@@ -802,7 +1330,15 @@
       "fallbackInmateSearchUrl": "https://www.wcso.us/inmateRoster",
       "clerkPhone": "(850) 638-6285",
       "clerkWebsite": "https://www.washingtonclerk.com/",
-      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/67/"
+      "recordsUrl": "https://www.civitekflorida.com/ocrs/county/67/",
+      "cities": [
+        "Chipley",
+        "Vernon",
+        "Caryville",
+        "Ebro"
+      ],
+      "judicialCircuit": "14th (Fourteenth Judicial Circuit)",
+      "population": 25000
     }
   ],
   "regions": {

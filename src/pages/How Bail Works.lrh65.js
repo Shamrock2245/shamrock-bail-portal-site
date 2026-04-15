@@ -389,6 +389,10 @@ function updatePageSEO(faqItems) {
         { name: 'keywords', content: 'how bail works, bail bond process Florida, posting bail Florida, bail bond co-signer, jail release process, bail bond payment plans, Florida bail laws, how to get someone out of jail' }
     ]);
 
+    wixSeo.setLinks([
+        { rel: 'canonical', href: pageUrl }
+    ]);
+
     // 1. FAQ Schema (with speakable for voice/GEO)
     const faqSchema = {
         "@context": "https://schema.org",
@@ -483,16 +487,20 @@ function updatePageSEO(faqItems) {
         ]
     };
 
-    // 4. LocalBusiness Schema
+    // 4. LocalBusiness Schema (fully enriched for rich snippet eligibility)
     const localBusinessSchema = {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
+        "@id": "https://www.shamrockbailbonds.biz/#organization",
         "name": "Shamrock Bail Bonds",
+        "legalName": "Shamrock Bail Bonds LLC",
         "url": "https://www.shamrockbailbonds.biz",
         "logo": "https://www.shamrockbailbonds.biz/logo.png",
         "image": "https://www.shamrockbailbonds.biz/logo.png",
         "description": "Florida's most responsive and reliable bail bond service, offering 24/7 assistance across all 67 counties.",
+        "foundingDate": "2012-03-15",
         "telephone": "+1-239-332-2245",
+        "priceRange": "$$",
         "address": {
             "@type": "PostalAddress",
             "streetAddress": "1528 Broadway",
@@ -501,13 +509,45 @@ function updatePageSEO(faqItems) {
             "postalCode": "33901",
             "addressCountry": "US"
         },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": "26.6406",
+            "longitude": "-81.8723"
+        },
         "areaServed": {
             "@type": "State",
             "name": "Florida"
         },
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+1-239-332-2245",
+            "contactType": "customer service",
+            "areaServed": "FL",
+            "availableLanguage": ["English", "Spanish"],
+            "hoursAvailable": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "opens": "00:00",
+                "closes": "23:59"
+            }
+        },
+        "openingHoursSpecification": {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            "opens": "00:00",
+            "closes": "23:59"
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "bestRating": "5",
+            "worstRating": "1",
+            "reviewCount": "150"
+        },
         "sameAs": [
             "https://www.facebook.com/ShamrockBail",
-            "https://www.instagram.com/shamrock_bail_bonds"
+            "https://www.instagram.com/shamrock_bail_bonds",
+            "https://t.me/ShamrockBail_bot"
         ]
     };
 

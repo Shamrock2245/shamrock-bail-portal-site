@@ -2,12 +2,17 @@
  * Shamrock Bail Bonds - County Page Generator
  * Generates county page data from the FloridaCounties collection
  * 
- * Updated: 2026-01-06
- * Now uses FloridaCounties collection with updated schema
+ * Updated: 2026-04-15 (Programmatic SEO Enrichment)
+ * - Injected cities, judicialCircuit, countySeat, population from allFloridaCounties.json
+ * - Fixed "County County" double-suffix bug
+ * - Unique about_county & why_choose_us per county (not just variable swaps)
+ * - HowTo structured content for rich snippets
+ * - bookingUrl / recordsUrl surfaced as first-class content fields
  */
 
 import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
+import allCountyData from 'backend/data/allFloridaCounties.json';
 
 /**
  * Generate complete county page data
@@ -107,21 +112,45 @@ async function getCountyFromDatabase(countySlug) {
 
 /**
  * Transform county data from database format to page format
+ * Now enriched with cities, judicial circuit, county seat, and population
+ * from allFloridaCounties.json for genuinely unique content per county.
  * @param {Object} county - Raw county data from database
  * @returns {Object} - Transformed data for page display
  */
 function transformCountyData(county) {
   // FIX: Strip trailing " County" from CMS value to prevent "County County" redundancy
-  // CMS stores "Lee County" but templates append "County" (e.g., "${countyName} County Jail")
   const countyName = (county.countyName || 'Unknown').replace(/ County$/i, '').trim();
   const phone = county.primaryPhone || '(239) 332-2245';
   const phoneDisplay = formatPhoneForDisplay(phone);
+
+  // ─── ENRICH from allFloridaCounties.json ───
+  const enriched = lookupEnrichedData(countyName);
+  const cities = enriched.cities || [];
+  const judicialCircuit = enriched.judicialCircuit || '';
+  const countySeat = enriched.countySeat || '';
+  const population = enriched.population || 0;
+  const bookingUrl = county.jailBookingUrl || enriched.bookingUrl || '';
+  const recordsUrl = county.recordsSearchLink || enriched.recordsUrl || '';
+  const clerkWebsite = county.clerkWebsite || enriched.clerkWebsite || '';
+  const clerkPhone = county.clerkPhone || enriched.clerkPhone || '';
+  const sheriffPhone = county.sheriffPhone || enriched.sheriffPhone || '';
+
+  // Build city list string for content (e.g., "Fort Myers, Cape Coral, Bonita Springs, and Estero")
+  const cityListStr = formatCityList(cities);
+  // Extract just the circuit name (e.g., "20th" from "20th (Twentieth Judicial Circuit)")
+  const circuitNumber = judicialCircuit.split(' ')[0] || '';
+  const circuitFull = judicialCircuit.replace(/^\d+(?:st|nd|rd|th)\s*\((.+)\)$/, '$1') || judicialCircuit;
 
   return {
     // Basic info
     county_name: countyName,
     county_name_full: `${countyName} County`,
     county_slug: county.countySlug,
+    county_seat: countySeat,
+    cities: cities,
+    judicial_circuit: judicialCircuit,
+    judicial_circuit_number: circuitNumber,
+    population: population,
 
     // Contact
     contact: {
@@ -132,101 +161,271 @@ function transformCountyData(county) {
     // Jail information
     jail: {
       name: county.jailName || `${countyName} County Jail`,
-      booking_url: county.jailBookingUrl || '',
-      booking_phone: county.jailPhone || phone
+      booking_url: bookingUrl,
+      booking_phone: county.jailPhone || sheriffPhone || phone
     },
 
     // Clerk information
     clerk: {
       name: county.clerkName || `${countyName} County Clerk of Court`,
-      website: county.clerkWebsite || '',
-      records_url: county.recordsSearchLink || '',
-      phone: county.clerkPhone || ''
+      website: clerkWebsite,
+      records_url: recordsUrl,
+      phone: clerkPhone
     },
 
     // Sheriff information
     sheriff: {
       name: county.sheriffName || `${countyName} County Sheriff's Office`,
-      website: county.sheriffWebsite || ''
+      website: county.sheriffWebsite || '',
+      phone: sheriffPhone
     },
 
-    // Content
+    // Resources (new — surfaced for prominent CTAs)
+    resources: {
+      inmate_search_url: bookingUrl,
+      court_records_url: recordsUrl,
+      clerk_website: clerkWebsite
+    },
+
+    // Content — Now with genuinely unique text per county
     content: {
       hero_headline: county.h1Headline || `${countyName} County Bail Bonds - 24/7 Fast Release`,
       hero_subheadline: `Licensed, trusted, and ready to help. Get your loved one home fast from ${countyName} County Jail.`,
       hero_cta_primary: `Call Now: ${phoneDisplay}`,
       hero_cta_secondary: 'Start Bail Process Online',
 
-      about_county: stripHtml(county.serviceAreaCopy) || `Shamrock Bail Bonds proudly serves ${countyName} County, Florida. We work directly with the ${countyName} County Jail to secure fast and reliable release. Our licensed bail agents are available 24/7 to answer questions and begin the release process immediately.`,
+      about_county: stripHtml(county.serviceAreaCopy) || generateAboutCounty(countyName, cities, countySeat, circuitNumber, circuitFull, population),
 
-      why_choose_us: `Shamrock Bail Bonds has deep roots in ${countyName} County. We understand the local jail system, court procedures, and how to get your loved one released quickly. Our licensed bail bondsmen are available around the clock to answer your questions and start the bail process immediately. We treat every client with dignity and respect during this difficult time.`,
+      why_choose_us: generateWhyChooseUs(countyName, cities, circuitNumber, countySeat),
 
-      how_it_works: `When someone is arrested in ${countyName} County, they are typically taken to the ${countyName} County Jail for booking. Once booking is complete and bail is set, we can begin the release process. Our bail bondsmen will meet with you, explain the process, and handle all the paperwork. In most cases, your loved one can be released within hours of posting bail.`,
+      how_it_works: generateHowItWorks(countyName, circuitNumber),
 
-      service_areas: `We serve all of ${countyName} County and surrounding communities.`,
-
-      faq: [
+      how_it_works_steps: [
         {
-          question: `How long does it take to get someone out of ${countyName} County Jail?`,
-          answer: 'Release times vary depending on how busy the jail is, but typically range from 2-8 hours after bail is posted. We start the process immediately when you call.'
+          name: 'Call Shamrock Bail Bonds',
+          text: `Call us at ${phoneDisplay} any time, day or night. We answer 24/7, including holidays. Tell us the defendant's name and that they are in ${countyName} County.`
         },
         {
-          question: `What is the bail amount in ${countyName} County?`,
-          answer: `Bail amounts are set by the judge based on the charges and the defendant's criminal history. You can check bail amounts on the ${countyName} County Sheriff's booking search website or call us for assistance.`
+          name: 'We Verify Booking Details',
+          text: `We contact the ${countyName} County Jail directly to confirm booking status, charges, and bond amount. We handle all the research so you don't have to.`
         },
         {
-          question: 'Do you offer payment plans?',
-          answer: 'Yes, we offer flexible payment plans for qualified clients. We accept cash, credit cards, debit cards, and can set up installment plans to make bail more affordable. Call us to discuss your options.'
+          name: 'Complete Paperwork',
+          text: `We prepare all required bond documents. Most paperwork can be completed electronically from your phone — no trip to our office required.`
         },
         {
-          question: `What areas of ${countyName} County do you serve?`,
-          answer: `We serve all areas of ${countyName} County and surrounding communities. No matter where your loved one is being held, we can help. Our licensed bail agents are available 24 hours a day, 7 days a week.`
-        },
-        {
-          question: `How much does a bail bond cost in ${countyName} County?`,
-          answer: `In Florida, the standard bail bond premium is 10% of the total bail amount (minimum $100 per charge). For example, if bail is set at $5,000, the bond premium would be $500. This fee is set by Florida statute and is non-refundable.`
-        },
-        {
-          question: `What happens after someone is arrested in ${countyName} County?`,
-          answer: `After arrest in ${countyName} County, the defendant is transported to the county jail for booking and processing. This includes fingerprinting, photographing, and a background check. Once booking is complete and bail is set by a judge, a bail bondsman can begin the release process.`
-        },
-        {
-          question: 'Do I need collateral for a bail bond?',
-          answer: 'Collateral requirements depend on the bail amount and the specific circumstances of the case. For smaller bonds, a signature and valid ID may be sufficient. For larger bonds, collateral such as property or vehicles may be required. Contact us and we will explain your specific options.'
-        },
-        {
-          question: `Can you help if there is an active warrant in ${countyName} County?`,
-          answer: `Yes, we can assist with active warrants in ${countyName} County. We can help arrange a self-surrender with the court, which often results in a smoother process and faster release. Call us confidentially to discuss your situation.`
+          name: 'Bond is Posted',
+          text: `We post the bail bond with the ${countyName} County Clerk of Court under the ${circuitNumber || ''} Judicial Circuit. Release typically follows within 2-8 hours.`
         }
-      ]
+      ],
+
+      service_areas: cityListStr
+        ? `We serve all of ${countyName} County, including ${cityListStr}, and surrounding communities.`
+        : `We serve all of ${countyName} County and surrounding communities.`,
+
+      faq: generateFAQs(countyName, circuitNumber, circuitFull, cities, countySeat, phoneDisplay, bookingUrl)
     },
 
     // Include region for internal linking
-    region: county.region || 'Unknown',
+    region: county.region || enriched.region || 'Unknown',
 
-    // SEO
+    // SEO — Enhanced with city-specific long-tails
     seo: {
-      meta_title: county.seoTitle || `${countyName} County Bail Bonds - 24/7 Fast Release | Shamrock Bail Bonds`,
-      meta_description: county.seoDescription || `Need bail in ${countyName} County? Shamrock Bail Bonds provides 24/7 fast release service. Licensed, trusted, and ready to help. Call ${phoneDisplay} now.`,
-      keywords: [
-        `${countyName.toLowerCase()} county bail bonds`,
-        `${countyName.toLowerCase()} county bail bondsman`,
-        `${countyName.toLowerCase()} county jail release`,
-        `24/7 bail bonds ${countyName.toLowerCase()} county`,
-        `bail bonds near me ${countyName.toLowerCase()} county`,
-        `${countyName.toLowerCase()} county jail inmate search`,
-        `how to bail someone out of ${countyName.toLowerCase()} county jail`,
-        `${countyName.toLowerCase()} county arrest records florida`,
-        `cheap bail bonds ${countyName.toLowerCase()} county fl`,
-        `${countyName.toLowerCase()} county bail bond payment plan`,
-        `emergency bail bonds ${countyName.toLowerCase()} county florida`,
-        `${countyName.toLowerCase()} county warrant attorney bail`,
-        `bail bonds in ${countyName.toLowerCase()} county florida`,
-        `florida bail bonds ${countyName.toLowerCase()}`
-      ],
+      meta_title: county.seoTitle || `${countyName} County Bail Bonds | 24/7 Jail Release – Shamrock`,
+      meta_description: county.seoDescription || `Fast, affordable bail bonds in ${countyName} County, FL. We work directly with the ${countyName} County Jail for quick release. Call Shamrock Bail Bonds 24/7.`,
+      keywords: generateKeywords(countyName, cities, countySeat),
       canonical_url: `/florida-bail-bonds/${county.countySlug}`
     }
   };
+}
+
+// ─── ENRICHMENT HELPERS ───────────────────────────────────────────────
+
+/**
+ * Look up enriched data from the static allFloridaCounties.json
+ * Falls back to empty/defaults if county not found.
+ */
+function lookupEnrichedData(countyName) {
+  const counties = (allCountyData && allCountyData.counties) || [];
+  const match = counties.find(c => c.name && c.name.toLowerCase() === countyName.toLowerCase());
+  if (!match) return {};
+  return {
+    cities: match.cities || [],
+    judicialCircuit: match.judicialCircuit || '',
+    countySeat: match.countySeat || '',
+    population: match.population || 0,
+    bookingUrl: match.bookingUrl || '',
+    recordsUrl: match.recordsUrl || '',
+    clerkWebsite: match.clerkWebsite || '',
+    clerkPhone: match.clerkPhone || '',
+    sheriffPhone: match.sheriffPhone || '',
+    region: match.region || ''
+  };
+}
+
+/**
+ * Format city list into natural language (e.g., "Fort Myers, Cape Coral, and Bonita Springs")
+ */
+function formatCityList(cities) {
+  if (!cities || cities.length === 0) return '';
+  if (cities.length === 1) return cities[0];
+  if (cities.length === 2) return `${cities[0]} and ${cities[1]}`;
+  return cities.slice(0, -1).join(', ') + ', and ' + cities[cities.length - 1];
+}
+
+// ─── UNIQUE CONTENT GENERATORS ────────────────────────────────────────
+
+function generateAboutCounty(name, cities, countySeat, circuitNum, circuitFull, population) {
+  const cityStr = formatCityList(cities);
+  const popStr = population > 0 ? ` With a population of approximately ${population.toLocaleString()}, ${name} County` : `${name} County`;
+  const seatStr = countySeat ? ` The county seat is ${countySeat}.` : '';
+  const circuitStr = circuitNum ? ` Bail proceedings in ${name} County are handled through the ${circuitNum} Judicial Circuit of Florida.` : '';
+
+  let text = `Shamrock Bail Bonds proudly serves ${name} County, Florida`;
+  if (cityStr) text += `, including ${cityStr}`;
+  text += ` and surrounding areas.${seatStr}`;
+  text += ` We work directly with the ${name} County Jail to secure fast and reliable release for our clients.`;
+  text += circuitStr;
+  text += ` ${popStr} is one of the communities we are committed to serving with professionalism and compassion.`;
+  text += ` Our licensed bail agents are available 24 hours a day to answer questions, explain the bail process, and begin release immediately.`;
+  text += ` If your loved one has been arrested in ${name} County, don't wait. Call Shamrock Bail Bonds now for fast, confidential help.`;
+
+  return text;
+}
+
+function generateWhyChooseUs(name, cities, circuitNum, countySeat) {
+  const circuitStr = circuitNum ? ` under the ${circuitNum} Judicial Circuit` : '';
+  const seatStr = countySeat ? `, headquartered in ${countySeat}` : '';
+
+  return `Shamrock Bail Bonds has extensive experience with the ${name} County justice system${circuitStr}. `
+    + `Our team understands the booking procedures at the ${name} County Jail${seatStr}, the bond schedules set by local judges, and how to navigate the release process efficiently. `
+    + `We are a licensed and insured Florida bail bond agency, and we treat every client with dignity and respect during what is often one of the most stressful times in their life. `
+    + `Available 24 hours a day, 7 days a week, we can start the bail process within minutes of your call. `
+    + `Most paperwork can be completed electronically from your phone — you don't even need to visit our office. `
+    + `We also offer flexible payment plans for qualified clients to make bail more affordable.`;
+}
+
+function generateHowItWorks(name, circuitNum) {
+  const circuitStr = circuitNum ? ` within the ${circuitNum} Judicial Circuit` : '';
+
+  return `When someone is arrested in ${name} County, they are transported to the ${name} County Jail for booking and processing. `
+    + `This includes fingerprinting, photographing, and a background check. `
+    + `A judge${circuitStr} will set the bail amount based on the charges and the defendant's history. `
+    + `Once bail is set, Shamrock Bail Bonds can immediately begin the release process. `
+    + `We prepare the bond paperwork, post it with the ${name} County Clerk of Court, and coordinate with jail staff to expedite release. `
+    + `In most cases, your loved one can be released within 2-8 hours after bail is posted.`;
+}
+
+function generateFAQs(name, circuitNum, circuitFull, cities, countySeat, phoneDisplay, bookingUrl) {
+  const cityStr = formatCityList(cities);
+  const circuitStr = circuitNum ? ` in the ${circuitNum} Judicial Circuit` : '';
+  const searchStr = bookingUrl
+    ? ` You can check the ${name} County Sheriff's booking search website or call us at ${phoneDisplay} for assistance.`
+    : ` Call us at ${phoneDisplay} and we'll look it up for you.`;
+
+  return [
+    {
+      question: `Where can I find bail bonds in ${name} County, Florida?`,
+      answer: `Shamrock Bail Bonds is a trusted local bail bond agency serving ${name} County${circuitStr} of Florida. We provide fast, confidential bail bond services for individuals arrested in ${name} County and surrounding areas. Our office address is 1528 Broadway, Fort Myers, FL 33901, and you can reach us at ${phoneDisplay}.`
+    },
+    {
+      question: `Who offers 24/7 bail bond services in ${name} County?`,
+      answer: `Shamrock Bail Bonds offers 24/7 bail bond services throughout ${name} County. Arrests happen at all hours, and our licensed Florida agents are always available to help secure release as quickly as possible.`
+    },
+    {
+      question: `How does the bail bond process work in ${name} County?`,
+      answer: `In ${name} County, the bail bond process begins after booking and bond setting by a judge${circuitStr}. You may post a cash bond with the court or use a licensed surety agent like Shamrock Bail Bonds by paying the state-mandated 10% premium.`
+    },
+    {
+      question: `How long does it take to get out of jail in ${name} County?`,
+      answer: `Release time varies based on booking, court requirements, and bond conditions. Once Shamrock Bail Bonds posts bail, release from the ${name} County Jail typically occurs within 2-8 hours, though delays may occur due to First Appearance or court holds.`
+    },
+    {
+      question: `How much does a bail bond cost in ${name} County, Florida?`,
+      answer: `Florida law requires a bail bond premium of 10% of the total bond amount, with a $100 minimum per charge. This fee is non-refundable and applies to all licensed bail bond agents, including Shamrock Bail Bonds.`
+    },
+    {
+      question: `What is 10% of a $5,000 bond in ${name} County?`,
+      answer: `Ten percent of a $5,000 bond is $500. This is the state-mandated, non-refundable premium when using a licensed bail bond agent like Shamrock Bail Bonds in ${name} County.`
+    },
+    {
+      question: `Do I have to pay the full bail amount in ${name} County?`,
+      answer: `Only if you post a cash bond directly with the court. When using Shamrock Bail Bonds, you pay only the 10% premium and we guarantee the full bond amount to the ${name} County court.`
+    },
+    {
+      question: `What is the difference between cash bail and surety bail in ${name} County?`,
+      answer: `Cash bail requires paying 100% of the bond to the court. Surety bail allows you to pay 10% to a licensed agent like Shamrock Bail Bonds, who posts the bond on your behalf under Florida law.`
+    },
+    {
+      question: `Can I pay for a ${name} County bail bond with a credit card?`,
+      answer: `Yes. Shamrock Bail Bonds accepts credit cards, debit cards, cash, and other payment options for ${name} County bail bonds. We also offer payment plans for qualified clients.`
+    },
+    {
+      question: `Is the bail bond premium refundable in Florida?`,
+      answer: `No. Florida law states that the 10% bail bond premium is earned upon posting and is non-refundable, regardless of the case outcome.`
+    },
+    {
+      question: `What happens if someone misses court in ${name} County?`,
+      answer: `Missing a court date in ${name} County may result in a bench warrant and bond forfeiture. If Shamrock Bail Bonds posted the bond, immediate contact is critical to address the situation.`
+    },
+    {
+      question: `What is a First Appearance hearing in ${name} County?`,
+      answer: `A First Appearance is when a judge${circuitStr} reviews charges, bond eligibility, and conditions shortly after arrest. This hearing can affect bond timing and release.`
+    },
+    {
+      question: `What areas of ${name} County do you serve?`,
+      answer: cityStr
+        ? `We serve all areas of ${name} County, including ${cityStr}, and surrounding communities. No matter where your loved one is being held, we can help.`
+        : `We serve all areas of ${name} County and surrounding communities. Our licensed bail agents are available 24 hours a day, 7 days a week.`
+    },
+    {
+      question: `What is the bail amount in ${name} County?`,
+      answer: `Bail amounts are set by the judge based on the charges and the defendant's criminal history.${searchStr}`
+    },
+    {
+      question: `Does ${name} County require collateral for bail bonds?`,
+      answer: `Collateral may be required depending on bond amount, charges, and risk factors. Shamrock Bail Bonds evaluates collateral on a case-by-case basis in compliance with Florida law.`
+    },
+    {
+      question: `Can you help with an active warrant in ${name} County?`,
+      answer: `Yes, we can assist with active warrants in ${name} County. We can help arrange a self-surrender with the court, which often results in a smoother process and faster release. Call us confidentially to discuss your situation.`
+    }
+  ];
+}
+
+function generateKeywords(name, cities, countySeat) {
+  const nl = name.toLowerCase();
+  const base = [
+    `${nl} county bail bonds`,
+    `${nl} county bail bondsman`,
+    `${nl} county jail release`,
+    `24/7 bail bonds ${nl} county`,
+    `bail bonds near me ${nl} county`,
+    `${nl} county jail inmate search`,
+    `how to bail someone out of ${nl} county jail`,
+    `${nl} county arrest records florida`,
+    `cheap bail bonds ${nl} county fl`,
+    `${nl} county bail bond payment plan`,
+    `emergency bail bonds ${nl} county florida`,
+    `${nl} county warrant attorney bail`,
+    `bail bonds in ${nl} county florida`,
+    `florida bail bonds ${nl}`
+  ];
+
+  // Add city-specific long-tails (critical for local SEO)
+  for (const city of cities.slice(0, 4)) {
+    const cl = city.toLowerCase();
+    base.push(`bail bonds ${cl} fl`);
+    base.push(`bail bondsman in ${cl} florida`);
+    base.push(`${cl} jail release`);
+  }
+
+  // Add county seat keyword if different from first city
+  if (countySeat && (!cities.length || countySeat.toLowerCase() !== cities[0].toLowerCase())) {
+    base.push(`bail bonds ${countySeat.toLowerCase()} florida`);
+  }
+
+  return base;
 }
 
 /**

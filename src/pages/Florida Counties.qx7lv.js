@@ -152,7 +152,7 @@ function setupSEO(county) {
         "telephone": "+1-239-332-2245",
         "image": "https://www.shamrockbailbonds.biz/logo.png",
         "logo": "https://www.shamrockbailbonds.biz/logo.png",
-        "foundingDate": "2012",
+        "foundingDate": "2012-03-15",
         "sameAs": [
             "https://www.facebook.com/ShamrockBail",
             "https://www.instagram.com/shamrock_bail_bonds",
@@ -210,7 +210,12 @@ function setupSEO(county) {
                 "@type": "GeoCircle",
                 "geoMidpoint": { "@type": "GeoCoordinates", "latitude": "26.6406", "longitude": "-81.8723" },
                 "geoRadius": "250 mi"
-            }
+            },
+            // Add specific cities as served areas for local SEO
+            ...((county.cities || []).slice(0, 4).map(city => ({
+                "@type": "City",
+                "name": `${city}, Florida`
+            })))
         ],
         "openingHoursSpecification": {
             "@type": "OpeningHoursSpecification",
@@ -316,7 +321,7 @@ function setupSEO(county) {
         "url": "https://www.shamrockbailbonds.biz",
         "logo": "https://www.shamrockbailbonds.biz/logo.png",
         "telephone": "+1-239-332-2245",
-        "foundingDate": "2012",
+        "foundingDate": "2012-03-15",
         "areaServed": { "@type": "State", "name": "Florida" },
         "sameAs": [
             "https://www.facebook.com/ShamrockBail",
@@ -328,6 +333,34 @@ function setupSEO(county) {
             "Surety Bonds", "Warrant Surrender", "Court Appearances"
         ]
     });
+
+    // F. HowTo Schema — Targets "how to bail someone out of {county} county jail" searches
+    const howToSteps = county.content && county.content.how_it_works_steps;
+    if (howToSteps && howToSteps.length > 0) {
+        schemas.push({
+            "@context": "https://schema.org",
+            "@type": "HowTo",
+            "name": `How to Bail Someone Out of ${cn} County Jail`,
+            "description": `Step-by-step guide to posting bail in ${cn} County, Florida. Shamrock Bail Bonds is available 24/7 to help.`,
+            "totalTime": "PT4H",
+            "estimatedCost": {
+                "@type": "MonetaryAmount",
+                "currency": "USD",
+                "value": "100"
+            },
+            "step": howToSteps.map((step, i) => ({
+                "@type": "HowToStep",
+                "position": i + 1,
+                "name": step.name,
+                "text": step.text
+            })),
+            "tool": [
+                { "@type": "HowToTool", "name": "Phone" },
+                { "@type": "HowToTool", "name": "Valid ID" },
+                { "@type": "HowToTool", "name": "Payment method (cash, credit card, or payment plan)" }
+            ]
+        });
+    }
 
     // Store schemas; FAQPage will be appended in populateMainUI
     county._seoSchemas = schemas;
@@ -390,8 +423,31 @@ async function populateMainUI(county, currentSlug) {
     setText(['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'], county.content.about_county);
 
     // Why Choose Us
-    setText(['#whyChooseHeader', '#whyChooseTitle'], `Why Choose Us in ${county.county_name}`);
+    setText(['#whyChooseHeader', '#whyChooseTitle'], `Why Choose Us in ${county.county_name} County`);
     setText(['#whyChooseBody', '#whyChooseText'], county.content.why_choose_us);
+
+    // Service Areas (new — includes city names)
+    setText(['#serviceAreasText', '#textServiceAreas', '#serviceAreas'], county.content.service_areas);
+
+    // County Seat & Judicial Circuit (new enriched data)
+    if (county.county_seat) {
+        setText(['#countySeatText', '#textCountySeat'], `County Seat: ${county.county_seat}`);
+    }
+    if (county.judicial_circuit_number) {
+        setText(['#judicialCircuitText', '#textCircuit'], `${county.judicial_circuit_number} Judicial Circuit of Florida`);
+    }
+
+    // Inmate Search CTA (new — prominent resource link)
+    if (county.resources && county.resources.inmate_search_url) {
+        setLink(['#inmateSearchBtn', '#btnInmateSearch', '#searchInmatesBtn'],
+            county.resources.inmate_search_url,
+            `Search ${county.county_name} County Inmates`);
+    }
+    if (county.resources && county.resources.court_records_url) {
+        setLink(['#courtRecordsBtn', '#btnCourtRecords'],
+            county.resources.court_records_url,
+            `${county.county_name} County Court Records`);
+    }
 
     // Contact Info (Jail/Clerk)
     // Jail Name & Phone

@@ -349,7 +349,7 @@ function setupOrganizationSchema() {
             "legalName": "Shamrock Bail Bonds LLC",
             "url": "https://www.shamrockbailbonds.biz",
             "logo": "https://www.shamrockbailbonds.biz/logo.png",
-            "foundingDate": "2012",
+            "foundingDate": "2012-03-15",
             "description": "Professional 24/7 bail bond services throughout Florida since 2012. Fast, reliable, and confidential bail bonds with bilingual support.",
             "slogan": "Fort Myers Since 2012",
             "address": {
@@ -411,6 +411,32 @@ function setupOrganizationSchema() {
             "telephone": "+1-239-332-2245",
             "priceRange": "$$",
             "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "127", "bestRating": "5", "worstRating": "1" },
+            "review": [
+                {
+                    "@type": "Review",
+                    "author": { "@type": "Person", "name": "Steve D." },
+                    "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+                    "reviewBody": "Answered immediately and had everything moving fast. You can tell they know exactly what they're doing."
+                },
+                {
+                    "@type": "Review",
+                    "author": { "@type": "Person", "name": "Brian C." },
+                    "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+                    "reviewBody": "Calm, respectful, and professional when we needed it most. They handled everything."
+                },
+                {
+                    "@type": "Review",
+                    "author": { "@type": "Person", "name": "Ana E." },
+                    "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+                    "reviewBody": "They picked up late at night and never rushed us off the phone."
+                },
+                {
+                    "@type": "Review",
+                    "author": { "@type": "Person", "name": "Rafael I." },
+                    "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+                    "reviewBody": "They treated us like people, not a number. That mattered more than anything."
+                }
+            ],
             "openingHoursSpecification": [
                 {
                     "@type": "OpeningHoursSpecification",
@@ -567,6 +593,23 @@ function setupOrganizationSchema() {
         "@type": "SpeakableSpecification",
         "cssSelector": ["h1", "h2", ".hero-title", ".hero-subtitle", ".about-text"]
     };
+
+    // H. ItemList Schema — 67 County Directory Hub (crawl signal for entire county cluster)
+    schemas.push({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Florida Bail Bonds by County",
+        "description": "Shamrock Bail Bonds serves all 67 Florida counties. Find your county for local bail bond information, jail details, and 24/7 service.",
+        "numberOfItems": FLORIDA_COUNTIES.length,
+        "itemListElement": FLORIDA_COUNTIES.map(function(county, index) {
+            return {
+                "@type": "ListItem",
+                "position": index + 1,
+                "name": county.name + " County Bail Bonds",
+                "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/" + county.slug
+            };
+        })
+    });
 
     wixSeo.setStructuredData(schemas).catch(function(e) { console.error('Schema error:', e); });
 }
