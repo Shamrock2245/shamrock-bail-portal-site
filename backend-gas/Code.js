@@ -1937,50 +1937,28 @@ function handleAction(data) {
   }
   // ------------------------------
 
-  // --- EMERGENCY ADMIN ACTION ---
-  if (action === 'RESET_KEYS_ADMIN_OVERRIDE') {
-    const secret = 'shamrock_gas_2026_secure_key_aqhrvpytqw';
-    PropertiesService.getScriptProperties().setProperty('GAS_API_KEY', secret);
-    PropertiesService.getScriptProperties().setProperty('WIX_API_KEY', secret);
-    return { success: true, message: 'API Keys reset to: ' + secret };
-  }
-  // ------------------------------
+  // ── NODE-RED REVIEW HARVESTER ──────────────────────────────────────────────
+  // Routes to NodeRedHandlers.js — Google review request automation
 
-  // --- EMERGENCY ADMIN ACTION ---
-  if (action === 'RESET_KEYS_ADMIN_OVERRIDE') {
-    const secret = 'shamrock_gas_2026_secure_key_aqhrvpytqw';
-    PropertiesService.getScriptProperties().setProperty('GAS_API_KEY', secret);
-    PropertiesService.getScriptProperties().setProperty('WIX_API_KEY', secret);
-    return { success: true, message: 'API Keys reset to: ' + secret };
+  if (action === 'getReviewCandidates') {
+    try {
+      const result = typeof handleGetReviewCandidates === 'function'
+        ? handleGetReviewCandidates(data)
+        : { success: false, error: 'handleGetReviewCandidates not loaded' };
+      return result;
+    } catch (e) { return { success: false, error: e.message }; }
   }
-  // ------------------------------
 
-  // --- EMERGENCY ADMIN ACTION ---
-  if (action === 'RESET_KEYS_ADMIN_OVERRIDE') {
-    const secret = 'shamrock_gas_2026_secure_key_aqhrvpytqw';
-    PropertiesService.getScriptProperties().setProperty('GAS_API_KEY', secret);
-    PropertiesService.getScriptProperties().setProperty('WIX_API_KEY', secret);
-    return { success: true, message: 'API Keys reset to: ' + secret };
+  if (action === 'logReviewSent') {
+    try {
+      const result = typeof handleLogReviewSent === 'function'
+        ? handleLogReviewSent(data)
+        : { success: false, error: 'handleLogReviewSent not loaded' };
+      return result;
+    } catch (e) { return { success: false, error: e.message }; }
   }
-  // ------------------------------
 
-  // --- EMERGENCY ADMIN ACTION ---
-  if (action === 'RESET_KEYS_ADMIN_OVERRIDE') {
-    const secret = 'shamrock_gas_2026_secure_key_aqhrvpytqw';
-    PropertiesService.getScriptProperties().setProperty('GAS_API_KEY', secret);
-    PropertiesService.getScriptProperties().setProperty('WIX_API_KEY', secret);
-    return { success: true, message: 'API Keys reset to: ' + secret };
-  }
-  // ------------------------------
 
-  // --- EMERGENCY ADMIN ACTION ---
-  if (action === 'RESET_KEYS_ADMIN_OVERRIDE') {
-    const secret = 'shamrock_gas_2026_secure_key_aqhrvpytqw';
-    PropertiesService.getScriptProperties().setProperty('GAS_API_KEY', secret);
-    PropertiesService.getScriptProperties().setProperty('WIX_API_KEY', secret);
-    return { success: true, message: 'API Keys reset to: ' + secret };
-  }
-  // ------------------------------
 
   // ── NODE-RED REPEAT OFFENDER HANDLERS ────────────────────────────────────
   // Routes to NodeRedHandlers_RepeatOffender.js
@@ -2357,6 +2335,18 @@ function handleGetAction(e) {
         ? checkTwilioCampaignStatus()
         : { success: false, message: 'Handler not yet implemented' };
       return createResponse({ success: true, action: action, result: result }, callback);
+    } catch (err) {
+      return createResponse({ success: false, action: action, error: err.message }, callback);
+    }
+  }
+
+  // ── REVIEW HARVESTER (Google review request automation) ────────────────────
+  if (action === 'getReviewCandidates') {
+    try {
+      const result = typeof handleGetReviewCandidates === 'function'
+        ? handleGetReviewCandidates({})
+        : { success: false, message: 'Handler not yet implemented' };
+      return createResponse(result, callback);
     } catch (err) {
       return createResponse({ success: false, action: action, error: err.message }, callback);
     }

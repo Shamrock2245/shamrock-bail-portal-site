@@ -659,3 +659,150 @@ function handleGetStaffPerformance(data) {
     return { success: false, error: 'staffPerformance: ' + e.message };
   }
 }
+
+// ============================================================================
+// GET REVIEW CANDIDATES → review_harvest
+// ============================================================================
+
+/**
+ * Returns clients eligible for Google review requests.
+ * 
+ * Criteria:
+ *   - Bond status = "posted" (or "active", "completed")
+ *   - Bond posted ≥7 days ago (enough time for positive experience)
+ *   - Client has a phone number on file
+ *   - Not already sent a review request (checked via ReviewRequestLog sheet)
+ *
+ * Node-RED uses these results to send SMS with a Google review link.
+ */
+function handleGetReviewCandidates(data) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // --- 1. Read Cases sheet for posted bonds ---
+    var casesSheet = ss.getSheetByName('Cases');
+    if (!casesSheet || casesSheet.getLastRow() <= 1) {
+      return { success: true, status: 'ok', data: [], count: 0, message: 'No cases found' };
+    }
+    
+    var allData = casesSheet.getDataRange().getValues();
+    var headers = allData[0];
+    
+    // Build column index map (case-insensitive)
+    var colIdx = {};
+    headers.forEach(function(h, i) { colIdx[String(h).toLowerCase().trim()] = i; });
+    
+    // Column lookups (flexible naming)
+    function _col(keys) {
+      for (var k = 0; k < keys.length; k++) {
+        var idx = colIdx[keys[k].toLowerCase()];
+        if (idx !== undefined) return idx;
+      }
+      return -1;
+    }
+    
+    var statusCol = _col(['status', 'bond_status', 'case_status']);
+    var nameCol = _col(['defendant_name', 'name', 'full_name']);
+    var indNameCol = _col(['indemnitor_name', 'ind_name', 'cosigner_name']);
+    var phoneCol = _col(['indemnitor_phone', 'ind_phone', 'phone', 'indphone']);
+    var dateCol = _col(['bond_date', 'date_posted', 'timestamp', 'created']);
+    var caseIdCol = _col(['case_id', 'caseid', 'id']);
+    
+    if (statusCol < 0 || phoneCol < 0) {
+      return { success: false, error: 'Required columns not found (status, phone)' };
+    }
+    
+    // --- 2. Get already-requested IDs from ReviewRequestLog ---
+    var alreadySent = {};
+    var logSheet = ss.getSheetByName('ReviewRequestLog');
+    if (logSheet && logSheet.getLastRow() > 1) {
+      var logData = logSheet.getDataRange().getValues();
+      for (var l = 1; l < logData.length; l++) {
+        var logPhone = String(logData[l][1] || '').replace(/\D/g, '').slice(-10);
+        if (logPhone) alreadySent[logPhone] = true;
+      }
+    }
+    
+    // --- 3. Filter eligible candidates ---
+    var now = new Date();
+    var SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+    var eligibleStatuses = ['posted', 'active', 'completed', 'signed'];
+    var candidates = [];
+    var limit = (data && data.limit) || 20;
+    
+    for (var r = 1; r < allData.length && candidates.length < limit; r++) {
+      var row = allData[r];
+      
+      var status = String(row[statusCol] || '').toLowerCase().trim();
+      if (eligibleStatuses.indexOf(status) === -1) continue;
+      
+      var phone = String(row[phoneCol] || '').replace(/\D/g, '');
+      if (phone.length < 10) continue;
+      var phoneKey = phone.slice(-10);
+      
+      // Skip if already sent
+      if (alreadySent[phoneKey]) continue;
+      
+      // Check age (≥7 days since bond date)
+      if (dateCol >= 0) {
+        var bondDate = new Date(row[dateCol]);
+        if (!isNaN(bondDate.getTime())) {
+          var ageMs = now.getTime() - bondDate.getTime();
+          if (ageMs < SEVEN_DAYS) continue; // Too recent
+        }
+      }
+      
+      // Format phone
+      if (phone.length === 10) phone = '+1' + phone;
+      else if (phone.length === 11 && phone[0] === '1') phone = '+' + phone;
+      
+      candidates.push({
+        name: indNameCol >= 0 ? (row[indNameCol] || row[nameCol] || 'Valued Client') : (row[nameCol] || 'Valued Client'),
+        phone: phone,
+        defendantName: nameCol >= 0 ? (row[nameCol] || '') : '',
+        caseId: caseIdCol >= 0 ? (row[caseIdCol] || '') : '',
+        bondDate: dateCol >= 0 ? (row[dateCol] instanceof Date ? row[dateCol].toISOString().split('T')[0] : String(row[dateCol])) : ''
+      });
+    }
+    
+    return { 
+      success: true, status: 'ok', 
+      data: candidates, 
+      count: candidates.length,
+      message: candidates.length + ' clients eligible for review requests'
+    };
+  } catch (e) {
+    return { success: false, error: 'reviewCandidates: ' + e.message };
+  }
+}
+
+/**
+ * Log that a review request was sent (prevents duplicate requests).
+ * Called by Node-RED after successfully sending the SMS.
+ */
+function handleLogReviewSent(data) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var logSheet = ss.getSheetByName('ReviewRequestLog');
+    
+    // Create sheet if it doesn't exist
+    if (!logSheet) {
+      logSheet = ss.insertSheet('ReviewRequestLog');
+      logSheet.appendRow(['Timestamp', 'Phone', 'Name', 'CaseId', 'Channel', 'Status']);
+      logSheet.getRange(1, 1, 1, 6).setFontWeight('bold');
+    }
+    
+    logSheet.appendRow([
+      new Date(),
+      data.phone || '',
+      data.name || '',
+      data.caseId || '',
+      data.channel || 'sms',
+      'sent'
+    ]);
+    
+    return { success: true, status: 'ok', message: 'Review request logged for ' + (data.phone || 'unknown') };
+  } catch (e) {
+    return { success: false, error: 'logReviewSent: ' + e.message };
+  }
+}
