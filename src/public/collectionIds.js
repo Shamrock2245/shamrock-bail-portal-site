@@ -58,6 +58,8 @@ export const COLLECTIONS = {
   TESTIMONIALS: 'Testimonials',                // Client testimonials
   CONTACT_SUBMISSIONS: 'Contactsubmissions',   // Contact form submissions
   BAIL_SCHOOL_SIGNUPS: 'Bailschoolsignups',    // Bail school interest signups
+  BAIL_CLASSES: 'BailClasses',                   // Bail school course catalog
+  BAIL_INSTRUCTORS: 'BailInstructors',           // Bail school instructor profiles
 
   // System Collections (Wix-managed) - REMOVED NATIVE WIX MEMBERS
   // We use custom Portal Users, Portal Sessions, and Magiclinks instead
@@ -114,7 +116,9 @@ export const COLLECTION_DISPLAY_NAMES = {
   [COLLECTIONS.FAQS]: 'FAQs',
   [COLLECTIONS.TESTIMONIALS]: 'Testimonials',
   [COLLECTIONS.CONTACT_SUBMISSIONS]: 'Contact Submissions',
-  [COLLECTIONS.BAIL_SCHOOL_SIGNUPS]: 'Bail School Signups'
+  [COLLECTIONS.BAIL_SCHOOL_SIGNUPS]: 'Bail School Signups',
+  [COLLECTIONS.BAIL_CLASSES]: 'Bail Classes',
+  [COLLECTIONS.BAIL_INSTRUCTORS]: 'Bail Instructors'
 };
 
 /**

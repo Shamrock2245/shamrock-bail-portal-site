@@ -51,7 +51,8 @@ function setupStructuredData() {
             "@type": "BreadcrumbList",
             "itemListElement": [
                 { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
-                { "@type": "ListItem", "position": 2, "name": "How to Become a Bondsman", "item": pageUrl }
+                { "@type": "ListItem", "position": 2, "name": "Bail School", "item": "https://www.shamrockbailbonds.biz/bail-school" },
+                { "@type": "ListItem", "position": 3, "name": "How to Become a Bondsman", "item": pageUrl }
             ]
         },
         // HowTo Schema — rich snippet eligible
@@ -60,6 +61,11 @@ function setupStructuredData() {
             "@type": "HowTo",
             "name": "How to Become a Licensed Bail Bondsman in Florida",
             "description": "A complete guide to the requirements and steps for obtaining a Limited Surety Agent (bail bond agent) license in the state of Florida, per FL Statute 648.",
+            "isPartOf": {
+                "@type": "EducationalOrganization",
+                "@id": "https://www.shamrockbailbonds.biz/bail-school#school",
+                "name": "Shamrock Bail School"
+            },
             "totalTime": "P6M",
             "estimatedCost": {
                 "@type": "MonetaryAmount",
