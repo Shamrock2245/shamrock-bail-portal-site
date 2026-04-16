@@ -12,6 +12,7 @@
 | [README.md](../README.md) | Project overview, quick start, architecture summary |
 | [SYSTEM.md](../SYSTEM.md) | Full system architecture, inter-repo data flows |
 | [RULES.md](../RULES.md) | 14 non-negotiable agent rules |
+| [ERROR_CATALOG.md](../ERROR_CATALOG.md) | Known errors + fixes across all 7 systems |
 | [ROADMAP.md](../ROADMAP.md) | Phase-based development roadmap |
 | [TASKS.md](../TASKS.md) | Active task tracking |
 | [OPERATIONS.md](../OPERATIONS.md) | Node-RED, scrapers, cron schedules |

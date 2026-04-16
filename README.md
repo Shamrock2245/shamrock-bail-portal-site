@@ -1,11 +1,14 @@
-# 🍀 Shamrock Bail Bonds Portal
+# 🍀 Shamrock Bail Bonds — The Digital Bail Agency
 
 > **"The Uber of Bail Bonds" — Fast. Frictionless. Everywhere.**
 
-This is the core platform for **Shamrock Bail Bonds**. It runs on **Wix Velo** (Frontend) and connects to a **Google Apps Script (GAS)** backend for AI-powered workflows — PDF generation, electronic signing, arrest monitoring, and omni-channel client communication.
+The **statewide Florida billboard** for Shamrock Bail Bonds. This isn't a website — it's a living, breathing, dynamic platform designed to dominate the bail bond market through superior speed, premium aesthetics, and AI-driven reach across all 67 Florida counties.
 
-**Current Status:** Production (Active) 🟢  
-**GAS Deployment:** v415+ | **Last Updated:** April 16, 2026
+**The Website is a Clipboard; The Backend is the Brain.**
+
+Built on **Wix Velo** (frontend) + **Google Apps Script** (190+ file backend), powered by **9 AI agents**, serving clients through **5 omni-channel touchpoints** — web, Telegram, phone, mini-apps, and walk-in.
+
+**Current Status:** 🟢 Production | **GAS:** v415+ | **Counties:** 19 active, 67 planned | **April 2026**
 
 ---
 
@@ -157,7 +160,8 @@ See [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) for the full check
 | Document | Purpose |
 |----------|---------|
 | [SYSTEM.md](./SYSTEM.md) | Architecture, tech stack, inter-repo data flows |
-| [RULES.md](./RULES.md) | Prime Directives, security, build discipline |
+| [RULES.md](./RULES.md) | 14 non-negotiable agent rules |
+| [ERROR_CATALOG.md](./ERROR_CATALOG.md) | Known error patterns + fixes across all systems |
 | [AGENTS.md](./AGENTS.md) | All 9 AI agent personas, prompts, handoff patterns |
 | [OPERATIONS.md](./OPERATIONS.md) | Voice AI, compliance, health, integrations, scraping |
 | [TOOLS.md](./TOOLS.md) | MCP servers, skills, workflows, external services |
