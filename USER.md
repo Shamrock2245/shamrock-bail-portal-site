@@ -1,6 +1,6 @@
 # 👤 User Context & Preferences
 
-> **Last Updated:** March 16, 2026
+> **Last Updated:** April 16, 2026
 
 ---
 
@@ -20,21 +20,24 @@ You are pair-programming with **Brendan**, the architect and sole operator behin
 
 ---
 
-## Current Priorities (March 2026)
+## Current Priorities (April 2026)
 
 ### 🔴 Immediate
-1. **MongoDB Atlas Integration**: All business events logging via `MongoLogger.gs`. Arrest data mirrored from Sheets to MongoDB via `mongo_writer.py`.
-2. **Communication Preferences**: Client opt-in/out respected across all channels — `CommPrefsManager.js` checks before SMS, WhatsApp, and Telegram outreach.
-3. **Hetzner Self-Hosted Runners**: GitHub Actions runners on Hetzner VPS for reliable scraper CI/CD.
+1. **WhatsApp Business Integration**: 98% open rates. Wire Twilio WhatsApp Sandbox → Node-RED relay. Blocked on 10DLC approval.
+2. **"The Closer" Drip Campaigns**: Wire Node-RED "The Closer" tab → GAS `runTheCloser()` endpoint. Convert abandoned intakes via automated SMS/WhatsApp sequences.
+3. **Review Harvester**: Automate Google review requests post-bond via GAS `ReviewHarvester.js`.
 
 ### 🟡 Growth Engines
-4. **WhatsApp Business Integration**: 98% open rates. Wire Twilio WhatsApp Sandbox → Node-RED relay.
-5. **"The Closer" Drip Campaigns**: Automated SMS/WhatsApp follow-up sequences from `TheCloser.js` to convert abandoned intakes.
-6. **Wave 1 SmartCOP Blitz**: Clone DeSoto scraper to 13 new counties (~30 min each) for 40% FL coverage.
+4. **Wave 1 SmartCOP Blitz**: Clone DeSoto scraper to 13 new counties (~30 min each) for 48% FL coverage.
+5. **Shannon Enhancements**: Multi-language (Spanish), Telegram signing link delivery, call analytics dashboard.
+6. **Bail School Landing Page**: High-converting `/bail-school` with video + auto-certificate generation.
 
-### 🟢 Enhancements
-7. **Shannon Enhancements**: Multi-language (Spanish), Telegram signing link delivery, call analytics dashboard.
-8. **Bail School Landing Page**: High-converting `/bail-school` with video + auto-certificate generation.
+### 🟢 Completed (Q1 2026)
+- ~~MongoDB Atlas Integration~~ ✅ `MongoLogger.gs` + `mongo_writer.py` operational
+- ~~Communication Preferences~~ ✅ `CommPrefsManager.js` enforced across all channels
+- ~~Hetzner Self-Hosted Runners~~ ✅ GitHub Actions on Hetzner VPS
+- ~~ESM Crypto Fix + Auto-Deploy~~ ✅ GitHub Actions Run #25+, auto-deploy on push to `main`
+- ~~Site Health Audit~~ ✅ Dynamic copyright, footer link fixes, SEO schema dates
 
 ---
 
@@ -65,6 +68,7 @@ You are pair-programming with **Brendan**, the architect and sole operator behin
 - **Wix sync**: `/wix_safe_sync` workflow. Handle rebase errors and file naming issues.
 - **Design system**: `/ui-ux-pro-max` skill. 50+ styles, 95+ color palettes, automated design generation.
 - **Security audit**: Run `audit_security` skill before any production push.
+- **Self-improvement**: Run `/self-improving-agent` workflow at end of significant sessions.
 
 ---
 

@@ -1,7 +1,7 @@
-# 🧪 TESTING GUIDE — Phase 4 Verification
+# 🧪 Testing Guide
 
-> **Purpose:** Validate the AI Concierge integration is working end-to-end.
-> **Last Updated:** January 2026
+> **Purpose:** Validate core integrations and workflows end-to-end.
+> **Last Updated:** April 16, 2026
 
 ---
 
@@ -11,15 +11,17 @@ Before running tests, ensure the following are configured in GAS Script Properti
 
 | Property | Description | Status |
 |----------|-------------|--------|
-| `GEMINI_API_KEY` | Google AI API Key | ✅ Required |
+| `OPENAI_API_KEY` | OpenAI API Key (GPT-4o-mini) | ✅ Required |
 | `TWILIO_ACCOUNT_SID` | Twilio Account SID | ✅ Required |
 | `TWILIO_AUTH_TOKEN` | Twilio Auth Token | ✅ Required |
 | `TWILIO_PHONE_NUMBER` | Twilio From Number | ✅ Required |
-| `SLACK_WEBHOOK_LEADS` | Slack Webhook URL | Optional |
+| `SIGNNOW_AUTH_TOKEN` | SignNow Basic Auth | ✅ Required |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot API Token | ✅ Required |
+| `SLACK_WEBHOOK_OPS` | Slack Ops Channel Webhook | Optional |
 
 ---
 
-## Test 1: Happy Path (Lee County)
+## Test 1: AI Concierge — Happy Path (Lee County)
 
 **Goal:** Verify a high-urgency Lee County lead triggers AI-generated SMS.
 
@@ -27,120 +29,122 @@ Before running tests, ensure the following are configured in GAS Script Properti
 
 1. **Open the GAS Dashboard**
    - Navigate to: `https://script.google.com/u/0/home/projects/12BRRdYuyVJpQODJq2-OpUhQdZ9YLt4bbAFWmOUyJPWM_EcazKTiu3dYo/edit`
-   - Open `Dashboard.html` via the "Deploy" > "Test deployments" menu.
+   - Open `Dashboard.html` via "Deploy" > "Test deployments" menu.
 
 2. **Create a Test Lead**
-   - Use the bookmarklet or manually add a row to the **Qualified** tab in the Master Sheet:
+   - Add a row to the **Qualified** tab in the Master Sheet:
      ```
      | Full_Name    | County | Lead_Score | Lead_Status | Phone_Number   |
      |--------------|--------|------------|-------------|----------------|
      | Test User    | Lee    | 85         | Hot         | +1239XXXXXXX   |
      ```
-   - Replace `+1239XXXXXXX` with a real test phone number.
 
 3. **Trigger the Concierge**
-   - In the GAS Script Editor, run: `processConciergeQueue()`
-   - Or wait for the 10-minute trigger to fire.
+   - In GAS Script Editor, run: `processConciergeQueue()`
+   - Or wait for the 10-minute trigger.
 
-4. **Check Logs**
-   - Open: **View > Executions** in the GAS Editor.
-   - Look for:
-     - `🤖 AI Concierge: Starting run...`
-     - `✅ SMS Sent to Test User (Lee) via Twilio`
-   - If you see `Falling back to legacy RAG template`, the Gemini API call failed.
-
-5. **Verify SMS Received**
+4. **Verify SMS Received**
    - Check the test phone for an SMS from Shamrock.
    - The message should be personalized and mention Lee County specifics.
 
 ### Expected Outcome
-
 | Check | Expected |
 |-------|----------|
 | GAS Log | `✅ SMS Sent to Test User (Lee) via Twilio` |
 | SMS Content | Personalized, mentions Lee County, ~160 chars |
-| Gemini Used | No "Falling back" warning in logs |
+| AI Used | No "Falling back" warning in logs |
 
 ---
 
-## Test 2: Northern Expansion (Manatee/Pinellas)
+## Test 2: SignNow Packet Generation
 
-**Goal:** Verify AI knows the specific jail locations and rules for expanded counties.
+**Goal:** Verify 14-document packet generation and signing flow.
 
 ### Steps
-
-1. Add a test lead with `County = Manatee` and `Lead_Score = 75`.
-2. Run `processConciergeQueue()`.
-3. Verify the SMS mentions Bradenton or Manatee-specific details.
-
-### Expected Outcome
-
-- SMS should reference "Bradenton" or "Port Manatee facility".
-- No generic fallback text.
+1. Create a test case in the Dashboard with valid defendant/indemnitor data.
+2. Click "Send Paperwork" → verify SignNow packet is created.
+3. Open the signing link → verify embedded signing works on mobile.
+4. Sign a document → verify `document.complete` webhook fires.
+5. Check Google Drive for signed PDF filing.
 
 ---
 
-## Test 3: Fallback Behavior
+## Test 3: Telegram Bot
 
-**Goal:** Verify the system gracefully falls back if Gemini fails.
+**Goal:** Verify conversational intake and inline quote.
 
 ### Steps
-
-1. Temporarily remove or invalidate the `GEMINI_API_KEY` in Script Properties.
-2. Add a test lead and run `processConciergeQueue()`.
-3. Check logs for: `Falling back to legacy RAG template (No API Key or Error)`.
-4. Verify SMS is still sent (using template).
-5. **Restore the API key after testing.**
-
-### Expected Outcome
-
-- SMS is sent using the rule-based template.
-- No crash or unhandled error.
+1. Open `@ShamrockBail_bot` in Telegram.
+2. Type `@ShamrockBail_bot 5000 2 lee` in any chat (inline mode).
+3. Verify premium quote card appears (~$500, 2 charges, Lee County).
+4. Start a conversation → test the intake flow.
 
 ---
 
-## Test 4: Education Flow (Bail School)
+## Test 4: Shannon Voice AI
 
-**Goal:** Verify Bail School interest capture works.
+**Goal:** Verify after-hours voice intake.
 
 ### Steps
+1. Call the Shamrock office number after hours.
+2. Shannon should answer and guide through intake.
+3. Test `calculate_premium` tool: "How much is a $5,000 bond?"
+4. Test `lookup_defendant`: "Can you look up John Smith in Lee County?"
+5. Test fallback: "I want to speak to a person" → should trigger `transfer_to_bondsman`.
 
+---
+
+## Test 5: Wix ↔ GAS Bridge
+
+**Goal:** Verify the core data bridge is functional.
+
+### Steps
+1. Navigate to `shamrockbailbonds.biz`.
+2. Trigger a magic link auth flow.
+3. Verify the link arrives via SMS.
+4. Open the link → verify portal loads with correct member data.
+
+---
+
+## Test 6: Bail School
+
+**Goal:** Verify Bail School interest capture.
+
+### Steps
 1. Navigate to: `https://www.shamrockbailbonds.biz/bail-school`
 2. Fill out the interest form.
 3. Check the `BailSchoolInterest` CMS collection for the new entry.
-
-### Expected Outcome
-
-- Form submits successfully.
-- Entry appears in CMS with correct data.
 
 ---
 
 ## Troubleshooting
 
-### "Gemini Fetch Failed" Error
-
+### "AI Fetch Failed" Error
 - **Cause:** Invalid API key or quota exceeded.
-- **Fix:** Verify `GEMINI_API_KEY` is set correctly. Check Google AI Studio for quota.
+- **Fix:** Verify `OPENAI_API_KEY` is set correctly. Check OpenAI dashboard for quota.
 
 ### "Missing Twilio Credentials" Error
-
 - **Cause:** Script Properties not set.
 - **Fix:** Run `forceUpdateConfig()` or manually set in Script Properties.
 
 ### SMS Not Received
-
 - **Cause:** Invalid phone number format or Twilio issue.
 - **Fix:** Ensure phone is in E.164 format (`+1XXXXXXXXXX`). Check Twilio logs.
+
+### "FailedToGetMyAccount: 404" in GitHub Actions
+- **Cause:** Expired `WIX_CLI_API_KEY`.
+- **Fix:** See [SECRETS_ROTATION_GUIDE.md](./SECRETS_ROTATION_GUIDE.md) section 5.
 
 ---
 
 ## Sign-Off Checklist
 
-- [ ] Test 1 (Lee County Happy Path) — PASS
-- [ ] Test 2 (Northern Expansion) — PASS
-- [ ] Test 3 (Fallback Behavior) — PASS
-- [ ] Test 4 (Bail School) — PASS
+- [ ] Test 1 (AI Concierge Happy Path) — PASS
+- [ ] Test 2 (SignNow Packet Generation) — PASS
+- [ ] Test 3 (Telegram Bot) — PASS
+- [ ] Test 4 (Shannon Voice AI) — PASS
+- [ ] Test 5 (Wix ↔ GAS Bridge) — PASS
+- [ ] Test 6 (Bail School) — PASS
 
 **Verified By:** _______________  
 **Date:** _______________

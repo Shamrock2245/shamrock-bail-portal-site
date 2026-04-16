@@ -1,7 +1,7 @@
 # 🗺 Technical Roadmap & Milestones
 
 > **"The Uber of Bail Bonds" — Fast. Frictionless. Everywhere.**  
-> **Last Updated:** April 2, 2026
+> **Last Updated:** April 16, 2026
 
 ---
 
@@ -52,13 +52,19 @@ We have engineered **FIVE distinct ways** to secure a bond — zero friction, 24
 - Lead scoring with automated prioritization (0-100)
 
 ### ✅ Infrastructure & Operations (Q1 2026)
-- **Node-RED**: 19 flow tabs, 643+ nodes, 51 scheduled crons, 14 webhook endpoints
-- **Dashboard**: 8-page premium glassmorphism UI with 20 widget groups
+- **Node-RED**: 21 flow tabs, 836 nodes, 64 crons, 10 dashboard pages, 5 reusable subflows
+- **Dashboard**: 10-page premium glassmorphism UI with 26 widget groups
 - **Hetzner Cloud**: VPS for Dockerized scraper fleet, self-hosted GitHub Actions runners
 - **MongoDB Atlas**: Arrest data storage + business event logging (`MongoLogger.gs`)
 - **Netlify Edge Functions**: Shannon voice init proxy, county geolocation, Twilio routing
 - **Google Cloud Functions**: MongoDB proxy bridging GAS and Atlas
 - **SEO**: All county pages indexed, JSON-LD schema, OG/Twitter/geo meta tags
+
+### ✅ DevOps & Deploy Pipeline (April 2026)
+- **ESM Crypto Imports**: Fixed all Wix Backend files for strict ESM compliance
+- **Auto-Deploy**: GitHub Actions → Wix CLI auto-publish on push to `main`
+- **WIX_CLI_API_KEY**: Rotation procedure documented in `SECRETS_ROTATION_GUIDE.md`
+- **Site Health**: Dynamic copyright year, broken footer link fixes, SEO schema date fixes
 
 ---
 
@@ -67,8 +73,9 @@ We have engineered **FIVE distinct ways** to secure a bond — zero friction, 24
 ### 🔴 Phase 8: WhatsApp & Revenue Growth (Q2 2026)
 | Item | Status | Key Files |
 |------|--------|-----------|
-| WhatsApp Business via Twilio | 📋 Queued | `twilio-client.jsw`, Node-RED WhatsApp tab |
-| "The Closer" drip campaigns | 📋 Queued | `TheCloser.js`, Node-RED tab |
+| WhatsApp Business via Twilio | ⏳ Blocked (10DLC) | `twilio-client.jsw`, Node-RED WhatsApp tab |
+| "The Closer" drip campaigns | 🔧 Wiring | `TheCloser.js`, Node-RED "The Closer" tab |
+| Review Harvester (post-bond Google reviews) | 📋 Queued | `ReviewHarvester.js` (GAS) |
 | Wave 1 SmartCOP Blitz (13 counties) | 📋 Planned | Clone DeSoto → ~30 min/county |
 | Shannon Spanish support | 📋 Planned | ElevenLabs agent config |
 | Shannon call analytics dashboard | 📋 Planned | GAS + Node-RED |
@@ -129,12 +136,14 @@ Every surface of this system follows the Premium Design Standard:
 | GAS Deployment Version | v415+ |
 | Active Repos | 5 |
 | Active Counties | 19 / 67 |
-| Node-RED Cron Jobs | 51 |
+| Node-RED Flow Tabs | 21 |
+| Node-RED Cron Jobs | 64 |
+| Node-RED Nodes | 836 |
+| Dashboard Pages | 10 |
 | Slack Alert Channels | 12+ |
 | AI Digital Employees | 9 |
 | Telegram Mini-Apps | 7 |
 | GitHub Actions Workflows | 15 |
-| Dashboard Pages | 8 |
 
 ---
 

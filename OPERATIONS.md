@@ -1,6 +1,6 @@
 # 📖 Operations Handbook
 
-> **Last Updated:** April 4, 2026
+> **Last Updated:** April 16, 2026
 > **Status:** 🟢 All Systems Operational
 
 This document consolidates all operational runbooks: voice AI tuning, compliance, health monitoring, integrations, analytics, and scraping protocols.
@@ -81,6 +81,13 @@ When AI instances hit their knowledge threshold:
 - **ElevenLabs (Shannon)**: Monitor voice AI latency (time-to-first-byte). Verify correct `agent_id` bindings.
 - **Telegram Bot**: Ensure `@ShamrockBail_bot` webhook remains active. Monitor for rate-limiting or dropped messages.
 
+### Node-RED Health
+- **21 flow tabs** active (1 disabled: WhatsApp Campaigns, pending 10DLC)
+- **64 cron inject timers** — all on schedule
+- **836 nodes** — 0 stubs, 5 reusable subflows
+- **10 dashboard pages**, 26 widget groups
+- **.env gaps**: `SLACK_WEBHOOK_ALERTS` and `SLACK_WEBHOOK_LEADS` empty (use Bot Token path instead)
+
 ### Scraper Health
 - **Bot Detection**: Monitor for IP blocks (403, 503), Cloudflare/hCaptcha failures, unexpected DOM changes.
 - **Rate Limiting**: Enforce minimum 15-minute intervals between county polls. Sequential detail-page requests with `sleep(2000)` between.
@@ -94,6 +101,7 @@ When AI instances hit their knowledge threshold:
 ### UI Reliability
 - **Mobile Sticky CTA**: Use `ui-visual-validator` skill to ensure primary CTA is permanently affixed on mobile.
 - **Performance**: Routine checks on animations, loading states (spinners only — never "Loading..." text), glassmorphism elements.
+- **Footer**: Dynamic copyright year via `setupFooterDynamic()` in `masterPage.js`. All footer links verified.
 
 ---
 
@@ -105,7 +113,7 @@ When AI instances hit their knowledge threshold:
 | **SignNow** | 14-doc bail bond packet, embedded signing | `SignNow_SendPaperwork.js`, `Server_DocumentLogic.js` | GAS Script Properties (`SIGNNOW_*`) |
 | **Twilio** | SMS & WhatsApp (10DLC compliant) | `Twilio_*.js` | GAS Script Properties + Wix Secrets |
 | **ElevenLabs** | Shannon voice agent, call transcripts | `ElevenLabs_WebhookHandler.js` | GAS Script Properties + Netlify env |
-| **OpenAI** | GPT-4o-mini for 6 AI agents | `OpenAIClient.js` | GAS Script Properties (`OPENAI_API_KEY`) |
+| **OpenAI** | GPT-4o-mini for AI agents | `OpenAIClient.js` | GAS Script Properties (`OPENAI_API_KEY`) |
 | **SwipeSimple** | Payment links, virtual terminal | `Dashboard.html`, Telegram bot | Dashboard UI |
 | **Telegram** | Client messaging, mini-apps, intake | `Telegram_*.js` | GAS Script Properties (`TELEGRAM_BOT_TOKEN`) |
 | **Slack** | Internal ops (12+ channels) | `SlackIntegration.js` | Bot Token in Node-RED `.env` |
@@ -189,3 +197,4 @@ Scrape → Normalize (39-column schema) → Deduplicate (County + Booking_Number
 ---
 
 *Consolidated from: VOICE_AI_TUNING.md, HEARTBEAT.md, COMPLIANCE.md, INTEGRATIONS_AND_AUTOMATIONS.md, ANALYTICS_AND_EVENTS.md, SCRAPING_PLAYBOOK.md — March 17, 2026*
+*Updated: April 16, 2026 — Node-RED stats, UI reliability section, scraper fleet numbers*

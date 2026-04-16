@@ -5,7 +5,7 @@
 This is the core platform for **Shamrock Bail Bonds**. It runs on **Wix Velo** (Frontend) and connects to a **Google Apps Script (GAS)** backend for AI-powered workflows — PDF generation, electronic signing, arrest monitoring, and omni-channel client communication.
 
 **Current Status:** Production (Active) 🟢  
-**GAS Deployment:** v415+ | **Last Updated:** April 4, 2026
+**GAS Deployment:** v415+ | **Last Updated:** April 16, 2026
 
 ---
 
@@ -26,7 +26,7 @@ This is the core platform for **Shamrock Bail Bonds**. It runs on **Wix Velo** (
 ## 🛠 Tech Stack
 
 | Layer | Technology | Purpose |
-|-------|-----------|---------|
+|-------|-----------|---------| 
 | **Frontend** | Wix Velo (JavaScript) | Premium UI/UX, magic link auth, member dashboards |
 | **Backend** | Google Apps Script (GAS) | 190+ files — all business logic, single entry point (`Code.js`) |
 | **AI/LLM** | OpenAI GPT-4o-mini | 6 specialized agents via GAS `UrlFetchApp` |
@@ -36,11 +36,11 @@ This is the core platform for **Shamrock Bail Bonds**. It runs on **Wix Velo** (
 | **Payments** | SwipeSimple | One-click links, virtual terminal, payment plans |
 | **SMS/Voice** | Twilio | External comms — SMS & WhatsApp (10DLC compliant) |
 | **Internal Ops** | Slack (12+ channels) | Staff alerts, intake notifications, arrest feeds |
-| **Messaging** | Telegram Bot API | Conversational intake, inline quotes, ID OCR, mini-apps |
+| **Messaging** | Telegram Bot API | Conversational intake, inline quotes, mini-apps, OCR |
 | **Mini Apps** | Netlify | 7 Telegram WebApps (Portal, Intake, Documents, Payments, etc.) |
 | **Edge Functions** | Netlify Edge | Shannon webhook proxy, county geolocation |
 | **OCR** | Google Cloud Vision | FL Driver License extraction |
-| **Automation** | Node-RED | 19 flow tabs, 51 crons, 14 webhooks, ops dashboard |
+| **Automation** | Node-RED | 21 flow tabs, 64 crons, 836 nodes, ops dashboard |
 | **Scrapers** | Python (DrissionPage) + Node.js | 19 active Florida county jail scrapers |
 | **Infrastructure** | Hetzner Cloud + Docker | VPS for scraper fleet + self-hosted GitHub Actions runners |
 | **Deployment** | `clasp` + Wix CLI + GitHub | Versioned GAS deployments, 5 repos under `Shamrock2245` |
@@ -81,7 +81,7 @@ The bot (`@ShamrockBail_bot`) is the primary client touchpoint, supporting full 
 
 ### Telegram Mini Apps (Netlify)
 | App | URL | Purpose |
-|-----|-----|---------| 
+|-----|-----|---------|
 | Portal | `shamrock-telegram.netlify.app/` | Main menu |
 | Intake | `shamrock-telegram.netlify.app/intake` | New bond intake |
 | Documents | `shamrock-telegram.netlify.app/documents` | View + sign docs |
@@ -109,8 +109,8 @@ The bot (`@ShamrockBail_bot`) is the primary client touchpoint, supporting full 
                            │        │        │
                     ┌──────▼──┐ ┌───▼────┐ ┌─▼──────────┐
                     │ Node-RED│ │ Slack  │ │ MongoDB    │
-                    │ 19 tabs │ │ 12+ch  │ │ Atlas      │
-                    │ 51 crons│ │        │ │ Event Logs │
+                    │ 21 tabs │ │ 12+ch  │ │ Atlas      │
+                    │ 64 crons│ │        │ │ Event Logs │
                     └─────────┘ └────────┘ └────────────┘
 ```
 
@@ -157,11 +157,17 @@ See [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) for the full check
 | Document | Purpose |
 |----------|---------|
 | [SYSTEM.md](./SYSTEM.md) | Architecture, tech stack, inter-repo data flows |
+| [RULES.md](./RULES.md) | Prime Directives, security, build discipline |
+| [AGENTS.md](./AGENTS.md) | All 9 AI agent personas, prompts, handoff patterns |
+| [OPERATIONS.md](./OPERATIONS.md) | Voice AI, compliance, health, integrations, scraping |
+| [TOOLS.md](./TOOLS.md) | MCP servers, skills, workflows, external services |
+| [USER.md](./USER.md) | User context, priorities & preferences |
 | [TASKS.md](./TASKS.md) | Current project tasks & phase tracking |
 | [ROADMAP.md](./ROADMAP.md) | Strategic milestones & expansion plan |
-| [USER.md](./USER.md) | User context, priorities & preferences |
-| [TOOLS.md](./TOOLS.md) | MCP servers, skills, workflows & external services |
-| [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) | Step-by-step deployment checklist |
+| [COUNTY_STATUS.md](./COUNTY_STATUS.md) | 19-county scraper status ledger |
+| [CHANGELOG.md](./CHANGELOG.md) | Change log |
+| [ONBOARDING.md](./ONBOARDING.md) | Start-here guide for new agents/developers |
+| [SECRETS_ROTATION_GUIDE.md](./SECRETS_ROTATION_GUIDE.md) | Emergency key rotation procedures |
 
 ---
 

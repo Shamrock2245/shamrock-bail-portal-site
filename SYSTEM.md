@@ -1,6 +1,6 @@
 # 🏗 Architecture & System
 
-> **Last Updated:** April 4, 2026  
+> **Last Updated:** April 16, 2026  
 > **Status:** 🟢 Production — All Systems Operational
 
 ---
@@ -30,7 +30,7 @@ We enforce a distributed, service-oriented architecture. The frontend (Wix) exis
 | **Mini Apps** | Netlify | 7 Telegram WebApps (Portal, Intake, Documents, Payments, Check-in, Status). |
 | **Edge Functions** | Netlify Edge | Shannon init webhook proxy, county geolocation, Twilio voice routing. |
 | **OCR** | Google Cloud Vision API | FL Driver License extraction (name, DOB, DL#, address). |
-| **Automation** | Node-RED | 19 flow tabs, 643+ nodes, 51 scheduled tasks, 14 webhooks. Ops dashboard. |
+| **Automation** | Node-RED | 21 flow tabs, 836 nodes, 64 crons, 10 dashboard pages. Ops command center. |
 | **Scrapers** | Python (DrissionPage) + Node.js (Puppeteer) | 19 active county jail scrapers across Florida. Dockerized. |
 | **Infrastructure** | Hetzner Cloud + Docker | VPS hosting for scraper fleet. GitHub Actions self-hosted runners. |
 | **Deployment** | `clasp` (GAS) + Wix CLI + GitHub | Versioned GAS deployments. 5 repos under `Shamrock2245`. |
@@ -72,7 +72,7 @@ Client starts via ──→ Magic Link (Web) / Telegram Bot / Shannon (Phone)
 ## Cloud & Hosting
 
 | Service | Hosts | Purpose |
-|---------|-------|---------|
+|---------|-------|---------| 
 | **Wix** | Portal frontend, CMS | Client-facing UI, member dashboards, magic link auth |
 | **Google Cloud** | GAS, Sheets, Drive, Vision API, Cloud Functions | Backend logic, data, storage, OCR, MongoDB proxy |
 | **Netlify** | Edge Functions, Mini Apps | ElevenLabs webhook proxy, Telegram WebApps |
@@ -103,7 +103,7 @@ shamrock-bail-portal-site    ←→    GAS Backend (Factory)
 |------|---------|--------|
 | `shamrock-bail-portal-site` | Wix Velo frontend + GAS backend (190+ files) | 🟢 Production |
 | `swfl-arrest-scrapers` | 19-county Dockerized scraper fleet (Python + Node.js) | 🟢 Production |
-| `shamrock-node-red` | Ops Dashboard — 19 flow tabs, 51 crons, 14 webhooks | 🟢 Production |
+| `shamrock-node-red` | Ops Dashboard — 21 flow tabs, 64 crons, 836 nodes | 🟢 Production |
 | `shamrock-telegram-app` | Telegram Mini-Apps (Netlify PWA) | 🟢 Production |
 | `telegram-mini-app-demos` | Experimental Telegram WebApp prototypes | 🔵 Dev |
 

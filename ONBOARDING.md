@@ -1,6 +1,6 @@
 # 🚀 The "Start Here" Guide (Onboarding)
 
-> **Last Updated:** March 17, 2026
+> **Last Updated:** April 16, 2026
 
 Welcome to Shamrock Bail Bonds digital headquarters. If you are a new AI Sub-Agent or human developer entering this ecosystem for the first time, read the documentation in this specific order.
 
@@ -26,6 +26,7 @@ Welcome to Shamrock Bail Bonds digital headquarters. If you are a new AI Sub-Age
 ## Submitting Work
 
 Before you finish your task, ALWAYS:
-1. Record your work in [LOGBOOK.md](LOGBOOK.md).
-2. Read [STANDARD_OPERATING_PROCEDURES.md](STANDARD_OPERATING_PROCEDURES.md) for safe deployment procedures.
-3. Audit your design against `ui-ux-pro-max` skill (No MVP UI allowed).
+1. Run the `/self-improving-agent` workflow to log session retrospectives and update the knowledge base.
+2. Audit your design against `ui-ux-pro-max` skill (No MVP UI allowed).
+3. Push code to GitHub via `/git_smart_sync` workflow.
+4. Update any docs affected by your code changes (docs should be living, not stale).

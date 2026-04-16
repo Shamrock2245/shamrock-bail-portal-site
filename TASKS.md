@@ -1,7 +1,7 @@
 # 📋 Project Tasks
 
 > **Mission:** Build the "Uber of Bail Bonds" for Florida — Fast. Frictionless. Everywhere.  
-> **Last Updated:** April 7, 2026
+> **Last Updated:** April 16, 2026
 
 ---
 
@@ -56,10 +56,10 @@
 
 ## ✅ Phase 6: Infrastructure & Operations (Complete)
 
-- [x] Node-RED Ops Dashboard — 19 flow tabs, 643+ nodes, 51 crons, 14 webhooks
-- [x] 8-page dashboard with premium glassmorphism UI
+- [x] Node-RED Ops Dashboard — 21 flow tabs, 836 nodes, 64 crons
+- [x] 10-page dashboard with premium glassmorphism UI, 26 widget groups
 - [x] Global error handler → Slack alerts
-- [x] Webhook authentication (HMAC) on all 14 endpoints
+- [x] Webhook authentication (HMAC) on all inbound endpoints
 - [x] Bond Renewal Reminder Pipeline
 - [x] Quick-Bond Calculator Widget
 - [x] Error Aggregation Dashboard
@@ -90,11 +90,19 @@
 
 ## ✅ Phase 7.6: DevOps & Deploy Pipeline Hardening (Complete — Apr 7)
 
-- [x] **ESM Crypto Imports** — Replaced all `import crypto from 'crypto'` (CommonJS default) with named imports across 5 backend files (`http-functions.js`, `auth-utils.jsw`, `auth-utils.js`, `portal-auth.jsw`, `signnow-webhooks.jsw`)
-- [x] **Multiline Call Collapse** — Resolved multiline `crypto.createHmac` chained patterns that evaded simple grep-and-replace
-- [x] **Naming Conflict** — Aliased imported `createHash` as `_cryptoCreateHash` in `auth-utils.jsw` to avoid collision with exported function
-- [x] **WIX_CLI_API_KEY Renewal** — Expired GitHub Secret caused `FailedToGetMyAccount: 404` at auth step; regenerated from `manage.wix.com/account/api-keys`
-- [x] **Auto-Deploy Verified** — GitHub Actions Run #25 ✅ (32s). Auto-deploy on push to `main` is fully operational
+- [x] **ESM Crypto Imports** — Replaced all `import crypto from 'crypto'` (CommonJS default) with named imports across 5 backend files
+- [x] **Multiline Call Collapse** — Resolved multiline `crypto.createHmac` chained patterns
+- [x] **Naming Conflict** — Aliased imported `createHash` as `_cryptoCreateHash` in `auth-utils.jsw`
+- [x] **WIX_CLI_API_KEY Renewal** — Expired GitHub Secret regenerated from `manage.wix.com/account/api-keys`
+- [x] **Auto-Deploy Verified** — GitHub Actions Run #25 ✅ (32s). Auto-deploy on push to `main`
+
+## ✅ Phase 7.7: Site Health & SEO Maintenance (Complete — Apr 16)
+
+- [x] **Dynamic Copyright Year** — `setupFooterDynamic()` in `masterPage.js` uses `new Date().getFullYear()`
+- [x] **Broken Footer Links** — All footer links fixed: Counties → `/#counties`, Directory → `/#counties`, Become a Bondsman → `/how-to-become-a-bondsman`
+- [x] **SEO Schema Date** — Testimonials page schema fallback date now dynamic
+- [x] **Wix Sync** — Removed deleted `Bail School.js`, synced `uiVersion` bump
+- [x] **Site-wide Documentation Refresh** — All 14 root docs updated to current state
 
 ---
 
@@ -110,8 +118,11 @@
 ### 🟡 This Quarter
 
 - [ ] **"The Closer" Drip Campaigns**
+  - [ ] Wire Node-RED "The Closer" tab → GAS `runTheCloser()` endpoint
   - [ ] Automated SMS/WhatsApp follow-up sequences for abandoned intakes
-  - [ ] Wire Node-RED → GAS `TheCloser.js` endpoints
+- [ ] **Review Harvester**
+  - [ ] GAS endpoint to send Google review requests post-bond
+  - [ ] Wire to Node-RED scheduling
 - [ ] **Wave 1 SmartCOP Blitz** (13 counties)
   - [ ] Clone DeSoto scraper → Bradford, Dixie, Escambia, Gadsden, Gilchrist, Glades, Hamilton, Levy, Putnam, Santa Rosa, Sumter, Suwannee, Taylor
   - [ ] ~30 min per county. Post-wave target: 32 counties (48% FL coverage)
