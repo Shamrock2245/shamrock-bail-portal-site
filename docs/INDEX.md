@@ -1,64 +1,77 @@
 # 📚 Documentation Index
 
 > **Last Updated:** April 16, 2026
+> **Philosophy:** Fewer docs, sharper content. Every file earns its place.
 
-## Core Documentation (Root — 14 Files)
+---
 
-### Architecture & System
-| File | Purpose |
-|------|---------|
-| [README.md](../README.md) | Project overview, tech stack, quick-start |
-| [SYSTEM.md](../SYSTEM.md) | Architecture, tech stack, inter-repo data flows, hosting |
-| [RULES.md](../RULES.md) | Prime Directives, security, build discipline, schema governance |
-| [AGENTS.md](../AGENTS.md) | All 9 AI agent personas, prompts, handoff patterns, MCP tools |
-| [OPERATIONS.md](../OPERATIONS.md) | Voice AI, compliance, health, integrations, scraping, analytics |
-| [TOOLS.md](../TOOLS.md) | MCP servers, skills, workflows, external services |
-| [USER.md](../USER.md) | Brendan's preferences, priorities, working style |
+## Root Documents (Project-Level)
 
-### Project Management
-| File | Purpose |
-|------|---------|
-| [TASKS.md](../TASKS.md) | Active task tracker and phase completion log |
-| [ROADMAP.md](../ROADMAP.md) | Long-term strategic roadmap & milestones |
-| [COUNTY_STATUS.md](../COUNTY_STATUS.md) | 19-county scraper status ledger & expansion plan |
-| [CHANGELOG.md](../CHANGELOG.md) | Versioned change log |
+| Doc | Purpose |
+|-----|---------|
+| [README.md](../README.md) | Project overview, quick start, architecture summary |
+| [SYSTEM.md](../SYSTEM.md) | Full system architecture, inter-repo data flows |
+| [RULES.md](../RULES.md) | 14 non-negotiable agent rules |
+| [ROADMAP.md](../ROADMAP.md) | Phase-based development roadmap |
+| [TASKS.md](../TASKS.md) | Active task tracking |
+| [OPERATIONS.md](../OPERATIONS.md) | Node-RED, scrapers, cron schedules |
+| [COUNTY_STATUS.md](../COUNTY_STATUS.md) | Per-county scraper status and expansion plan |
+| [CHANGELOG.md](../CHANGELOG.md) | Release history |
+| [TESTING_GUIDE.md](../TESTING_GUIDE.md) | How to test every integration |
+| [ONBOARDING.md](../ONBOARDING.md) | New developer / AI agent onboarding |
+| [USER.md](../USER.md) | User priorities and preferences |
+| [TOOLS.md](../TOOLS.md) | MCP servers, skills, workflows |
+| [SECRETS_ROTATION_GUIDE.md](../SECRETS_ROTATION_GUIDE.md) | Credential rotation procedures |
 
-### Operations & Configuration
-| File | Purpose |
-|------|---------|
-| [ONBOARDING.md](../ONBOARDING.md) | Start-here guide for new agents/developers |
-| [SECRETS_ROTATION_GUIDE.md](../SECRETS_ROTATION_GUIDE.md) | Emergency key rotation procedures |
-| [TESTING_GUIDE.md](../TESTING_GUIDE.md) | End-to-end test procedures (6 tests) |
+---
 
-## Deep-Dive References (docs/)
+## Deep-Dive Reference (`docs/`)
 
-| File | Purpose |
-|------|---------|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Detailed system architecture with Mermaid diagrams |
-| [ANTIGRAVITY-FOUNDATION-SPEC.md](ANTIGRAVITY-FOUNDATION-SPEC.md) | Canonical Wix contract — element IDs, CMS rules, analytics |
-| [SCHEMAS.md](SCHEMAS.md) | Data schemas, CMS collections, payload formats |
-| [ELEMENT-ID-CHEATSHEET.md](ELEMENT-ID-CHEATSHEET.md) | All Wix element IDs for Ghost ID checks |
-| [API_SPEC.md](API_SPEC.md) | GAS API endpoint specifications |
-| [GLOSSARY.md](GLOSSARY.md) | Bail bond industry terminology |
+### Architecture & Schemas
+| Doc | Purpose |
+|-----|---------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Detailed system architecture with diagrams |
+| [SCHEMAS.md](SCHEMAS.md) | Canonical data schemas (Master 34, IntakeQueue, CMS, Sheets) |
+| [API_SPEC.md](API_SPEC.md) | All GAS POST/GET endpoints, Wix modules, Netlify functions |
+| [ELEMENT-ID-CHEATSHEET.md](ELEMENT-ID-CHEATSHEET.md) | Wix Editor element IDs → Velo code mapping |
 
-## Specialized Documentation
+### Operations & Deployment
+| Doc | Purpose |
+|-----|---------|
+| [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) | Pre-deploy verification checklist |
+| [GLOSSARY.md](GLOSSARY.md) | 30 key terms across the ecosystem |
 
-| File | Purpose |
-|------|---------|
-| [docs/compliance/](compliance/) | Privacy policy, terms & conditions, SEO optimizations, audit logs |
-| [docs/bail_school_materials/](bail_school_materials/) | Bail school curriculum and course inventory |
-| [docs/elevenlabs-docs.md](elevenlabs-docs.md) | ElevenLabs integration reference |
-| [docs/twilio-docs.md](twilio-docs.md) | Twilio integration reference |
-| [docs/hetzner.md](hetzner.md) | Hetzner VPS setup and management |
-| [docs/shannon-knowledge-base.txt](shannon-knowledge-base.txt) | Shannon's RAG knowledge base (67 FL counties, statutes, FAQs) |
+### AI & Voice
+| Doc | Purpose |
+|-----|---------|
+| [shannon-knowledge-base.txt](shannon-knowledge-base.txt) | Shannon voice AI RAG knowledge base |
+| [ANTIGRAVITY-FOUNDATION-SPEC.md](ANTIGRAVITY-FOUNDATION-SPEC.md) | Wix Velo platform contract |
 
-## Agent Skills & Workflows
+### Infrastructure Reference
+| Doc | Purpose |
+|-----|---------|
+| [hetzner.md](hetzner.md) | Hetzner VPS infrastructure reference |
+| [elevenlabs-docs.md](elevenlabs-docs.md) | ElevenLabs API reference (1.6MB) |
+| [twilio-docs.md](twilio-docs.md) | Twilio API reference (2.4MB) |
 
-Located in `.agent/skills/` and `.agent/workflows/` — these are tool/workflow instructions, not behavioral guidance. See [TOOLS.md](../TOOLS.md) for the full inventory.
+### Directories
+| Directory | Contents |
+|-----------|----------|
+| `bail_school_materials/` | Bail School educational content |
+| `compliance/` | Legal compliance documents |
+| `data/` | Static data files (county boundaries, etc.) |
+| `reference_code/` | Code examples and patterns |
 
-## Archive
+---
 
-Historical documentation (pre-consolidation) preserved in `docs/archive/`, organized by month:
-- `docs/archive/2026-02/` — Telegram, SignNow, deployment guides
-- `docs/archive/2026-03/` — Agent patterns, analytics, voice AI tuning
-- `docs/archive/2026-04/` — Stale root docs, integration reports
+## Archived (`docs/archive/`)
+
+Historical implementation notes, handoff documents, and superseded guides organized by date. These are preserved for audit trail but **should never be referenced from active docs**.
+
+| Archive Folder | Contents |
+|---|---|
+| `2026-01/` | January implementation notes |
+| `2026-02/` | February redesign and portal work |
+| `2026-03/` | March SignNow and Telegram integration |
+| `2026-04/` | April cleanup notes |
+| `2026-04-docs-consolidation/` | Files archived during April 16 consolidation (SECURITY, STYLEGUIDE, CONTRIBUTING, etc.) |
