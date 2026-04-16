@@ -724,10 +724,47 @@
       .programs, .faq-section, .newsletter { padding: 88px 20px; }
       .section-title { font-size: 36px; }
     }
+
+    /* ═══════════════════════════════════════════════════════════════
+       TOAST NOTIFICATION
+    ═══════════════════════════════════════════════════════════════ */
+    .toast {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-120px);
+      background: linear-gradient(135deg, #0f1a12 0%, #1a2e1f 100%);
+      border: 1px solid rgba(34,197,94,0.3);
+      color: var(--white);
+      padding: 16px 28px;
+      border-radius: 14px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(34,197,94,0.15);
+      z-index: 10000;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.16,1,0.3,1);
+      pointer-events: none;
+      text-align: center;
+      max-width: 90vw;
+      backdrop-filter: blur(12px);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast i {
+      color: var(--green);
+      margin-right: 8px;
+    }
   </style>
 </head>
 
 <body>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast"></div>
 
   <!-- ═══════════════════════════════════════════════════════════════
        SECTION 1: HERO
@@ -765,7 +802,7 @@
       </div>
 
       <div class="hero-cta">
-        <a href="#programs" class="btn btn--green" id="exploreBtn">
+        <a href="javascript:void(0)" class="btn btn--green" id="exploreBtn" onclick="showComingSoon(event, 'Programs launching soon — sign up below to be notified!')">
           Explore Programs
         </a>
       </div>
@@ -946,7 +983,7 @@
 
       grid.innerHTML = PROGRAMS_CONFIG.map((p, i) => {
         const colorClass = p.color !== 'green' ? `${p.color}-card` : '';
-        const priceClass = p.price.type === 'free' ? 'free' : 'contact';
+        const priceClass = p.price.type === 'free' ? 'free' : (p.price.type === 'amount' ? 'amount' : 'contact');
         const tags = p.tags.map(t =>
           `<span class="tag ${t.colored ? `tag--${p.color}` : 'tag--dark'}">${t.label}</span>`
         ).join('');
@@ -962,7 +999,7 @@
             <div class="program-tags">${tags}</div>
             <p class="program-desc">${p.description}</p>
             <div class="program-price ${priceClass}">${p.price.text}</div>
-            <a href="${p.cta.href}" class="btn btn--${p.color}" id="${p.cta.id}">${p.cta.text}</a>
+            <a href="javascript:void(0)" class="btn btn--${p.color}" id="${p.cta.id}" onclick="showComingSoon(event, '${p.title} — enrollment opening soon!')">${p.cta.text}</a>
             ${curriculum}
           </div>`;
       }).join('');
@@ -981,6 +1018,15 @@
             <div class="faq-answer-inner">${f.a}</div>
           </div>
         </div>`).join('');
+    }
+
+    // ─── TOAST "COMING SOON" ──────────────────────────────────
+    function showComingSoon(e, message) {
+      if (e) e.preventDefault();
+      const toast = document.getElementById('toast');
+      toast.innerHTML = `<i class="ph ph-clock-countdown"></i> ${message || 'Coming Soon!'}`;
+      toast.classList.add('show');
+      setTimeout(() => { toast.classList.remove('show'); }, 3000);
     }
 
     // ─── INIT ───────────────────────────────────────────────────

@@ -17,6 +17,7 @@
  */
 
 import wixSeo from 'wix-seo';
+import { submitBailSchoolInterest } from 'backend/bailSchoolInterest';
 
 // ─── EMBED CONFIG ─────────────────────────────────────────────────────────────
 
@@ -95,7 +96,9 @@ function setupEmbed() {
             // Newsletter email captured in embed
             if (msg && msg.type === 'bailSchoolNotify' && msg.email) {
                 console.log('📧 Bail School Notify:', msg.email);
-                // Future: send to GAS, CRM, or email provider
+                submitBailSchoolInterest(msg.email)
+                    .then(result => console.log('✅ Bail School signup saved:', result))
+                    .catch(err => console.error('❌ Bail School signup error:', err));
             }
         });
     } catch (e) {
