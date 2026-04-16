@@ -284,10 +284,21 @@
 
     .btn--purple {
       background: var(--purple);
-      color: var(--white);
+      color: white;
     }
     .btn--purple:hover {
       background: #9333ea;
+      box-shadow: 0 0 24px rgba(168,85,247,0.5);
+      transform: translateY(-2px);
+    }
+
+    .btn--blue {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn--blue:hover {
+      background: #2563eb;
+      box-shadow: 0 0 24px rgba(59,130,246,0.5);
       transform: translateY(-2px);
     }
 
@@ -355,6 +366,7 @@
     .program-icon.green  { background: rgba(34,197,94,0.12); color: var(--green); }
     .program-icon.orange { background: rgba(249,115,22,0.12); color: var(--orange); }
     .program-icon.purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+    .program-icon.blue   { background: rgba(59,130,246,0.12); color: #3b82f6; }
 
     .program-card h3 {
       font-family: var(--font-display);
@@ -365,6 +377,7 @@
     }
     .program-card.orange-card h3 { color: var(--orange); }
     .program-card.purple-card h3 { color: var(--purple); }
+    .program-card.blue-card h3   { color: #3b82f6; }
 
     .program-card .program-sub {
       font-size: 14px;
@@ -392,6 +405,7 @@
     .tag--green    { background: rgba(34,197,94,0.15); color: var(--green); }
     .tag--orange   { background: rgba(249,115,22,0.15); color: var(--orange); }
     .tag--purple   { background: rgba(168,85,247,0.15); color: var(--purple); }
+    .tag--blue     { background: rgba(59,130,246,0.15); color: #3b82f6; }
 
     .program-card .program-desc {
       font-size: 14px;
@@ -408,6 +422,7 @@
       margin-bottom: 16px;
     }
     .program-price.free { color: var(--green); }
+    .program-price.amount { color: var(--white); }
     .program-price.contact { color: var(--text-muted); font-size: 18px; }
 
     .program-card .btn {
@@ -695,7 +710,7 @@
       .hero { padding: 80px 20px 72px; }
       .hero h1 { font-size: 48px; }
       .hero-logo { width: 84px; }
-      .programs-grid { grid-template-columns: repeat(3, 1fr); }
+      .programs-grid { grid-template-columns: repeat(2, 1fr); max-width: 1100px; }
       .section-title { font-size: 32px; }
       .faq-question { font-size: 15px; padding: 18px 24px; }
       .newsletter h2 { font-size: 30px; }
@@ -857,7 +872,7 @@
           { label: "Online", colored: false },
           { label: "Beginner", colored: true }
         ],
-        description: "Understand your legal obligations, financial risks, and rights as a bail bond indemnitor. Required viewing before signing any bond contract.",
+        description: "Get an introduction to your rights and obligations as a bail bond co-signer. This free course walks you through how bail works, what you're signing, and how to protect yourself — all in plain English. It's also a great way to experience our teaching style before diving deeper.",
         price: { text: "FREE", type: "free" },
         cta: { text: "Start Free Course", href: "https://www.shamrockbailbonds.biz/bail-school/indemnitor-basics", id: "startFreeBtn" },
         curriculum: true
@@ -870,10 +885,10 @@
         tags: [
           { label: "120 Hours", colored: false },
           { label: "Hybrid: Online + In Person", colored: false },
-          { label: "Professional", colored: true }
+          { label: "First Class: June 2026", colored: true }
         ],
-        description: "Complete 120-hour state-approved program to become a licensed Florida bail bond agent. Covers law, procedures, ethics, and real-world practice.",
-        price: { text: "Contact for Pricing", type: "contact" },
+        description: "Complete 120-hour state-approved program to become a licensed Florida bail bond agent. Covers law, procedures, ethics, and real-world practice. Graduate ready to sit for the state exam and start your career.",
+        price: { text: "$699", type: "amount" },
         cta: { text: "Apply Now", href: "https://www.shamrockbailbonds.biz/contact", id: "applyBtn" },
         curriculum: true
       },
@@ -883,14 +898,29 @@
         icon: "ph ph-magnifying-glass",
         color: "purple",
         tags: [
-          { label: "16 Hours", colored: false },
+          { label: "5 Hours", colored: false },
           { label: "In Person (Fort Myers)", colored: false },
           { label: "Advanced", colored: true }
         ],
-        description: "Master the art of locating fugitives, assessing flight risk, and managing high-stakes bonds. Taught by veteran agents with 20+ years experience.",
-        price: { text: "Contact for Pricing", type: "contact" },
+        description: "Master the art of locating fugitives, assessing flight risk, and managing high-stakes bonds. Taught by veteran agents with 20+ years experience in the field.",
+        price: { text: "$249", type: "amount" },
         cta: { text: "Reserve Your Seat", href: "https://www.shamrockbailbonds.biz/contact", id: "reserveBtn" },
         curriculum: true
+      },
+      {
+        title: "Bail Bond Masterclass",
+        subtitle: "Level Up Your Bail Game",
+        icon: "ph ph-trophy",
+        color: "blue",
+        tags: [
+          { label: "Self-Paced", colored: false },
+          { label: "Online (Skool)", colored: false },
+          { label: "All Levels", colored: true }
+        ],
+        description: "Whether you're a new agent, a seasoned bondsman, or running your own agency — this masterclass is for you. Level up every facet of the game: sales, compliance, fugitive recovery, marketing, and agency operations. Available on the Skool platform.",
+        price: { text: "Coming Soon", type: "contact" },
+        cta: { text: "Join the Waitlist", href: "https://www.shamrockbailbonds.biz/contact", id: "masterclassBtn" },
+        curriculum: false
       }
     ];
 
@@ -900,12 +930,13 @@
     const FAQ_DATA = [
       { q: "What is Shamrock Bail School?", a: "Shamrock Bail School is an education program by Shamrock Bail Bonds offering courses from basic co-signer education to full 120-hour Florida bail bond agent certification. Whether you're a family member learning to navigate the bail process or an aspiring agent looking to start a career, we have a path for you." },
       { q: "Do I need any prior experience?", a: "No. The Indemnitor Basics course requires zero prior knowledge — it's designed for families and co-signers. The Agent Path requires a high school diploma or GED and a clean criminal background, per Florida Department of Financial Services requirements." },
-      { q: "How much does the 120-hour course cost?", a: "Contact us for current pricing and available payment plans. We offer competitive rates for the Fort Myers and Southwest Florida area, and scholarships may be available for qualified applicants." },
+      { q: "How much does the 120-hour course cost?", a: "The Agent Path is $699. We offer competitive rates for the Fort Myers and Southwest Florida area, and payment plans may be available for qualified applicants. Contact us for details." },
       { q: "Is the Indemnitor Basics course really free?", a: "Yes, 100% free with no strings attached. We believe every co-signer should understand their legal obligations, financial risks, and rights before signing a bail bond. An informed co-signer is a better client and a safer partner." },
       { q: "Do I get a certificate?", a: "Yes. Each completed course provides a certificate of completion. The Agent Path certificate qualifies you to sit for the Florida bail bond licensing exam administered by the Department of Financial Services." },
       { q: "Can I take courses from anywhere in Florida?", a: "The Indemnitor Basics course is fully online — take it from anywhere. The Agent Path is a hybrid program with online modules and required in-person sessions at our Fort Myers campus. Risk Management & Skip Tracing is in-person only in Fort Myers." },
       { q: "Will completing the Agent Path guarantee me a job?", a: "While we cannot guarantee employment, Shamrock Bail Bonds actively recruits from our Agent Path graduates. Top-performing students are offered mentorship and apprenticeship opportunities within our agency network across Southwest Florida." },
-      { q: "How do I become a licensed bail bondsman in Florida?", a: "Florida requires completing a 120-hour pre-licensing course (like our Agent Path), passing the state licensing exam, obtaining a surety bond from an approved insurer, and submitting a Florida DBPR application. Our Agent Path walks you through every step of this process." }
+      { q: "How do I become a licensed bail bondsman in Florida?", a: "Florida requires completing a 120-hour pre-licensing course (like our Agent Path), passing the state licensing exam, obtaining a surety bond from an approved insurer, and submitting a Florida DBPR application. Our Agent Path walks you through every step of this process." },
+      { q: "What is the Bail Bond Masterclass?", a: "The Bail Bond Masterclass is a comprehensive, self-paced online course available on the Skool platform. It's designed for anyone in the bail bond industry — whether you're a new agent, experienced bondsman, or agency owner — who wants to level up their skills in sales, compliance, fugitive recovery, marketing, and agency operations." }
     ];
 
     // ─── RENDER PROGRAM CARDS ───────────────────────────────────

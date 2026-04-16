@@ -35,7 +35,7 @@ const FAQ_DATA = [
     },
     {
         question: "How much does the 120-hour course cost?",
-        answer: "Contact us for current pricing and available payment plans. We offer competitive rates for the Fort Myers area."
+        answer: "The Agent Path is $699. We offer competitive rates for the Fort Myers and Southwest Florida area, and payment plans may be available for qualified applicants. Contact us for details."
     },
     {
         question: "Is the Indemnitor Basics course really free?",
@@ -56,6 +56,10 @@ const FAQ_DATA = [
     {
         question: "How do I become a licensed bail bondsman in Florida?",
         answer: "Florida requires a 120-hour pre-licensing course (like our Agent Path), passing the state licensing exam, obtaining a surety bond, and submitting a Florida DBPR application."
+    },
+    {
+        question: "What is the Bail Bond Masterclass?",
+        answer: "The Bail Bond Masterclass is a comprehensive, self-paced online course available on the Skool platform. It's designed for anyone in the bail bond industry who wants to level up their skills in sales, compliance, fugitive recovery, marketing, and agency operations."
     }
 ];
 
@@ -160,16 +164,25 @@ function setupSEO() {
                 {
                     "@type": "Course",
                     "name": "The Agent Path",
-                    "description": "120-hour state-approved Florida bail bond agent certification program.",
+                    "description": "120-hour state-approved Florida bail bond agent certification program. First class starts June 2026.",
                     "timeRequired": "PT120H",
-                    "educationalLevel": "Professional"
+                    "educationalLevel": "Professional",
+                    "offers": { "@type": "Offer", "price": "699", "priceCurrency": "USD" }
                 },
                 {
                     "@type": "Course",
                     "name": "Risk Management & Skip Tracing",
                     "description": "Advanced fugitive recovery and high-stakes bond management.",
-                    "timeRequired": "PT16H",
-                    "educationalLevel": "Advanced"
+                    "timeRequired": "PT5H",
+                    "educationalLevel": "Advanced",
+                    "offers": { "@type": "Offer", "price": "249", "priceCurrency": "USD" }
+                },
+                {
+                    "@type": "Course",
+                    "name": "Bail Bond Masterclass",
+                    "description": "Level up every facet of the bail bond game — sales, compliance, fugitive recovery, marketing, and agency operations. Available on the Skool platform.",
+                    "educationalLevel": "All Levels",
+                    "courseMode": "online"
                 }
             ]
         }
