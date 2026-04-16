@@ -39,7 +39,7 @@ async function updatePageSEO() {
         reviews = result.items.map(item => ({
             "@type": "Review",
             "author": { "@type": "Person", "name": item.name || "Verified Client" },
-            "datePublished": item._createdDate ? item._createdDate.toISOString().split('T')[0] : "2025-01-01",
+            "datePublished": item._createdDate ? item._createdDate.toISOString().split('T')[0] : `${new Date().getFullYear()}-01-01`,
             "reviewBody": item.quote || item.text || "Great service!",
             "reviewRating": {
                 "@type": "Rating",

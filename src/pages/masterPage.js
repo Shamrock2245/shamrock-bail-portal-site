@@ -135,6 +135,7 @@ function initCriticalUI() {
     checkAuthStatus();
     setupFooterPaymentLink();
     setupMobilePaymentBtn();
+    setupFooterDynamic();
 }
 
 function setupFooterPaymentLink() {
@@ -155,6 +156,39 @@ function setupMobilePaymentBtn() {
             link.onClick(function() {
                 trackEvent('payment_link_clicked', { location: 'mobile_menu' });
             });
+        }
+    } catch (e) { /* non-fatal */ }
+}
+
+/**
+ * Dynamic footer updates — copyright year + link corrections.
+ * NOTE: siteFooter.js exists in public/ but CANNOT be imported into masterPage.js
+ * (public/* imports crash Wix Velo — see header comment). These updates are
+ * inlined here instead.
+ */
+function setupFooterDynamic() {
+    // 1. Dynamic copyright year (never stale)
+    try {
+        const copyrightEl = $w('#copyrightText');
+        if (copyrightEl && copyrightEl.id) {
+            const year = new Date().getFullYear();
+            copyrightEl.text = `© ${year} Shamrock Bail Bonds, LLC. All rights reserved.`;
+        }
+    } catch (e) { /* non-fatal */ }
+
+    // 2. Fix footer county directory link (should be /florida-bail-bonds, not /florida-counties)
+    try {
+        const countyDirLink = $w('#footerLinkCounties');
+        if (countyDirLink && countyDirLink.id) {
+            countyDirLink.link = '/florida-bail-bonds';
+        }
+    } catch (e) { /* non-fatal */ }
+
+    // 3. Fix any "Florida County Directory" text links
+    try {
+        const dirLink = $w('#footerLinkDirectory');
+        if (dirLink && dirLink.id) {
+            dirLink.link = '/florida-bail-bonds';
         }
     } catch (e) { /* non-fatal */ }
 }

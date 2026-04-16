@@ -103,7 +103,7 @@ function setupFooterNav() {
     const quickLinks = [
         { selector: '#footerLinkHome', path: '/', label: 'Home' },
         { selector: '#footerLinkHowBailWorks', path: '/how-bail-works', label: 'How Bail Works' },
-        { selector: '#footerLinkCounties', path: '/bail-bonds', label: 'Counties We Serve' },
+        { selector: '#footerLinkCounties', path: '/florida-bail-bonds', label: 'Counties We Serve' },
         { selector: '#footerLinkContact', path: '/contact', label: 'Contact Us' }
     ];
 
@@ -120,8 +120,8 @@ function setupFooterNav() {
 
     // Resources
     const resourceLinks = [
-        { selector: '#footerLinkDirectory', path: '/florida-sheriffs-clerks-directory', label: 'Sheriffs & Clerks Directory' },
-        { selector: '#footerLinkBecomeBondsman', path: '/become-a-bondsman', label: 'Become a Bondsman' },
+        { selector: '#footerLinkDirectory', path: '/florida-bail-bonds', label: 'Florida County Directory' },
+        { selector: '#footerLinkBecomeBondsman', path: '/how-to-become-a-bondsman', label: 'Become a Bondsman' },
         { selector: '#footerLinkBlog', path: '/blog', label: 'Blog' },
         { selector: '#footerLinkFAQ', path: '/how-bail-works#faq', label: 'FAQ' }
     ];
@@ -157,11 +157,11 @@ function setupFooterNav() {
 
     // Popular Counties
     const popularCounties = [
-        { selector: '#footerLinkLee', path: '/florida-bail-bonds/lee-county', label: 'Lee County' },
-        { selector: '#footerLinkCollier', path: '/florida-bail-bonds/collier-county', label: 'Collier County' },
-        { selector: '#footerLinkCharlotte', path: '/florida-bail-bonds/charlotte-county', label: 'Charlotte County' },
-        { selector: '#footerLinkHillsborough', path: '/florida-bail-bonds/hillsborough-county', label: 'Hillsborough County' },
-        { selector: '#footerLinkMiamiDade', path: '/florida-bail-bonds/miami-dade-county', label: 'Miami-Dade County' }
+        { selector: '#footerLinkLee', path: '/florida-bail-bonds/lee', label: 'Lee County' },
+        { selector: '#footerLinkCollier', path: '/florida-bail-bonds/collier', label: 'Collier County' },
+        { selector: '#footerLinkCharlotte', path: '/florida-bail-bonds/charlotte', label: 'Charlotte County' },
+        { selector: '#footerLinkHillsborough', path: '/florida-bail-bonds/hillsborough', label: 'Hillsborough County' },
+        { selector: '#footerLinkMiamiDade', path: '/florida-bail-bonds/miami-dade', label: 'Miami-Dade County' }
     ];
 
     popularCounties.forEach(link => {
