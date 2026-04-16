@@ -176,11 +176,11 @@ function setupFooterDynamic() {
         }
     } catch (e) { /* non-fatal */ }
 
-    // 2. Fix footer county directory link (should be /florida-bail-bonds, not /florida-counties)
+    // 2. Fix footer county directory link → homepage county selector
     try {
         const countyDirLink = $w('#footerLinkCounties');
         if (countyDirLink && countyDirLink.id) {
-            countyDirLink.link = '/florida-bail-bonds';
+            countyDirLink.link = '/#counties';
         }
     } catch (e) { /* non-fatal */ }
 
@@ -188,7 +188,7 @@ function setupFooterDynamic() {
     try {
         const dirLink = $w('#footerLinkDirectory');
         if (dirLink && dirLink.id) {
-            dirLink.link = '/florida-bail-bonds';
+            dirLink.link = '/#counties';
         }
     } catch (e) { /* non-fatal */ }
 }

@@ -103,7 +103,7 @@ function setupFooterNav() {
     const quickLinks = [
         { selector: '#footerLinkHome', path: '/', label: 'Home' },
         { selector: '#footerLinkHowBailWorks', path: '/how-bail-works', label: 'How Bail Works' },
-        { selector: '#footerLinkCounties', path: '/florida-bail-bonds', label: 'Counties We Serve' },
+        { selector: '#footerLinkCounties', path: '/#counties', label: 'Counties We Serve' },
         { selector: '#footerLinkContact', path: '/contact', label: 'Contact Us' }
     ];
 
@@ -120,7 +120,7 @@ function setupFooterNav() {
 
     // Resources
     const resourceLinks = [
-        { selector: '#footerLinkDirectory', path: '/florida-bail-bonds', label: 'Florida County Directory' },
+        { selector: '#footerLinkDirectory', path: '/#counties', label: 'Florida County Directory' },
         { selector: '#footerLinkBecomeBondsman', path: '/how-to-become-a-bondsman', label: 'Become a Bondsman' },
         { selector: '#footerLinkBlog', path: '/blog', label: 'Blog' },
         { selector: '#footerLinkFAQ', path: '/how-bail-works#faq', label: 'FAQ' }
