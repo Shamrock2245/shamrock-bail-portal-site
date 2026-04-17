@@ -4296,10 +4296,17 @@
         async function pasteBookingInfo() {
             try {
                 const text = await navigator.clipboard.readText();
-                if (text) {
+                if (!text) {
+                    showToast('No data found in clipboard', 'warning');
+                    return;
+                }
+                // Validate: only attempt import if clipboard looks like JSON or booking data
+                const trimmed = text.trim();
+                if (trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.includes('bookingData') || trimmed.includes('defendant-')) {
                     importBookingData(text);
                 } else {
-                    showToast('No data found in clipboard', 'warning');
+                    showToast('Clipboard does not contain valid booking data (expected JSON)', 'warning');
+                    console.warn('pasteBookingInfo: Clipboard content is not JSON:', trimmed.substring(0, 80) + '...');
                 }
             } catch (err) {
                 showToast('Please paste (Ctrl+V) the booking data anywhere on the form', 'info');
@@ -4313,6 +4320,13 @@
                     const match = dataString.match(/bookingData\s*=\s*({[\s\S]*?});/);
                     if (match) data = JSON.parse(match[1]);
                 } else {
+                    // Guard: only attempt JSON.parse if string looks like JSON
+                    const trimmed = (dataString || '').trim();
+                    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+                        showToast('Clipboard data is not valid booking JSON', 'warning');
+                        console.warn('importBookingData: Rejected non-JSON input:', trimmed.substring(0, 100));
+                        return;
+                    }
                     data = JSON.parse(dataString);
                 }
 

@@ -2293,3 +2293,105 @@ export async function post_telegramIntake(request) {
         });
     }
 }
+
+/**
+ * GET /_functions/testGasConnection
+ * Diagnostic endpoint to test Wix→GAS POST from within Wix infrastructure.
+ * Returns detailed debugging info about the fetch result.
+ * TEMPORARY — remove after debugging portal auth.
+ */
+export async function get_testGasConnection(request) {
+    try {
+        const { fetch } = await import('wix-fetch');
+
+        const [gasUrl, apiKey] = await Promise.all([
+            getSecret('GAS_WEB_APP_URL'),
+            getSecret('GAS_API_KEY')
+        ]);
+
+        const diagnostics = {
+            gasUrlSet: !!gasUrl,
+            gasUrlLength: gasUrl ? gasUrl.length : 0,
+            gasUrlPrefix: gasUrl ? gasUrl.substring(0, 50) + '...' : 'MISSING',
+            gasUrlSuffix: gasUrl ? '...' + gasUrl.slice(-30) : 'MISSING',
+            gasUrlHasWhitespace: gasUrl ? gasUrl !== gasUrl.trim() : false,
+            gasUrlHasNewline: gasUrl ? /[\r\n]/.test(gasUrl) : false,
+            apiKeySet: !!apiKey,
+            apiKeyLength: apiKey ? apiKey.length : 0,
+            apiKeyMasked: apiKey ? `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}` : 'MISSING'
+        };
+
+        // Test 1: Simple POST with wrong API key (shouldn't crash)
+        const testPayload = {
+            action: 'sendEmail',
+            apiKey: 'diagnostic-test-key',
+            to: 'test@test.com',
+            subject: 'Diagnostic Test',
+            htmlBody: '<p>Diagnostic test from Wix</p>'
+        };
+
+        let test1Result;
+        try {
+            const cleanUrl = gasUrl ? gasUrl.trim() : '';
+            const resp = await fetch(cleanUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(testPayload)
+            });
+            const body = await resp.text();
+            test1Result = {
+                status: resp.status,
+                statusText: resp.statusText,
+                bodyPreview: body.substring(0, 500),
+                bodyIsJson: body.trim().startsWith('{') || body.trim().startsWith('['),
+                bodyIsHtml: body.trim().startsWith('<')
+            };
+        } catch (fetchErr) {
+            test1Result = { error: fetchErr.message, stack: fetchErr.stack };
+        }
+
+        // Test 2: POST with real API key (should succeed with UNAUTHORIZED or success)
+        let test2Result;
+        try {
+            const cleanUrl = gasUrl ? gasUrl.trim() : '';
+            const realPayload = {
+                action: 'sendEmail',
+                apiKey: apiKey ? apiKey.trim() : '',
+                to: 'diagnostic-noreply@shamrockbailbonds.biz',
+                subject: '[DIAG] Connection Test',
+                htmlBody: '<p>Wix→GAS diagnostic test</p>'
+            };
+            const resp2 = await fetch(cleanUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(realPayload)
+            });
+            const body2 = await resp2.text();
+            test2Result = {
+                status: resp2.status,
+                statusText: resp2.statusText,
+                bodyPreview: body2.substring(0, 500),
+                bodyIsJson: body2.trim().startsWith('{') || body2.trim().startsWith('['),
+                bodyIsHtml: body2.trim().startsWith('<')
+            };
+        } catch (fetchErr) {
+            test2Result = { error: fetchErr.message, stack: fetchErr.stack };
+        }
+
+        return ok({
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+                success: true,
+                timestamp: new Date().toISOString(),
+                diagnostics,
+                test1_wrongKey: test1Result,
+                test2_realKey: test2Result
+            }
+        });
+
+    } catch (error) {
+        return serverError({
+            body: { success: false, error: error.message, stack: error.stack }
+        });
+    }
+}

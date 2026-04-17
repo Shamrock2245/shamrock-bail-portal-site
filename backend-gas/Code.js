@@ -137,6 +137,26 @@ const ERROR_CODES = {
 function doGet(e) {
   if (!e) e = { parameter: {} };
 
+  // --- DIAGNOSTIC ENDPOINT (KI: wix_gas_integration_troubleshooting) ---
+  // Usage: curl -L "https://script.google.com/macros/s/.../exec?test=connection"
+  if (e.parameter && e.parameter.test === 'connection') {
+    const props = PropertiesService.getScriptProperties();
+    const gasKey = props.getProperty('GAS_API_KEY');
+    const wixUrl = props.getProperty('WIX_SITE_URL');
+    const maskedKey = gasKey ? `${gasKey.slice(0, 4)}...${gasKey.slice(-4)} (${gasKey.length} chars)` : '(MISSING)';
+    const diagnostics = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      gasApiKey: maskedKey,
+      wixSiteUrl: wixUrl || '(MISSING)',
+      mailQuota: MailApp.getRemainingDailyQuota(),
+      scriptUrl: ScriptApp.getService().getUrl(),
+      deploymentId: e.parameter.deploymentId || 'unknown'
+    };
+    return ContentService.createTextOutput(JSON.stringify(diagnostics, null, 2))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   if (e.parameter && e.parameter.testDoc) {
     if (typeof generateMotionForRemission === 'function') {
       try {
@@ -1069,7 +1089,11 @@ function doPost(e) {
     // Allow if it matches the configured Wix API Key
     // OR if we are in a dev/test mode (verify via Property)? No, enforcing strict now.
     if (data.apiKey !== config.WIX_API_KEY) {
-      if (typeof logSecurityEvent === 'function') logSecurityEvent('UNAUTHORIZED_API_ACCESS', { error: 'Invalid API Key' });
+      // Diagnostic logging (masked keys for debugging without exposure)
+      const incomingMasked = data.apiKey ? `${String(data.apiKey).slice(0, 4)}...${String(data.apiKey).slice(-4)}` : '(empty)';
+      const expectedMasked = config.WIX_API_KEY ? `${config.WIX_API_KEY.slice(0, 4)}...${config.WIX_API_KEY.slice(-4)}` : '(empty)';
+      console.warn(`API Key Mismatch — Incoming: ${incomingMasked}, Expected: ${expectedMasked}, Action: ${data.action || 'unknown'}`);
+      if (typeof logSecurityEvent === 'function') logSecurityEvent('UNAUTHORIZED_API_ACCESS', { error: 'Invalid API Key', action: data.action });
       return createErrorResponse('Unauthorized: Invalid API Key', ERROR_CODES.UNAUTHORIZED);
     }
     // -------------------------------------------------

@@ -424,7 +424,16 @@ function getWixIntakeQueue() {
     const responseText = response.getContentText();
 
     if (responseCode !== 200) {
-      throw new Error(`Wix API error: ${responseCode} - ${responseText}`);
+      throw new Error(`Wix API error: ${responseCode} - ${responseText.substring(0, 200)}`);
+    }
+
+    // Guard: Detect HTML redirect responses masquerading as 200 OK
+    const contentType = response.getHeaders()['Content-Type'] || '';
+    const textTrimmed = responseText.trim();
+    if (contentType.includes('text/html') || textTrimmed.startsWith('<!') || textTrimmed.startsWith('<html')) {
+      Logger.log('⚠️ getWixIntakeQueue: Received HTML instead of JSON (likely auth redirect). Content-Type: ' + contentType);
+      Logger.log('⚠️ Response preview: ' + textTrimmed.substring(0, 300));
+      throw new Error('Wix endpoint returned HTML instead of JSON — API key may be invalid or endpoint is redirecting');
     }
 
     const result = JSON.parse(responseText);
