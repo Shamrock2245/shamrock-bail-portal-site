@@ -662,11 +662,19 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
             htmlBody: emailBody
         };
 
-        console.log(' Sending email request to GAS...');
+        console.log(' Sending email request via Netlify proxy (bypasses Google Workspace IP block)...');
 
-        const response = await fetchWithRetry(gasUrl, {
+        // Route through Netlify Edge Function proxy.
+        // Google Workspace blocks POST requests from Wix's cloud IPs but allows Netlify's.
+        // The proxy transparently forwards the POST to GAS and returns the JSON response.
+        const proxyUrl = 'https://shamrock-telegram.netlify.app/api/gas-proxy';
+
+        const response = await fetchWithRetry(proxyUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-GAS-API-Key': apiKey
+            },
             body: JSON.stringify(payload)
         });
 
