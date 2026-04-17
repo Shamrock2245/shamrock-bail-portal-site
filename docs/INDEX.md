@@ -1,6 +1,6 @@
 # 📚 Documentation Index
 
-> **Last Updated:** April 16, 2026
+> **Last Updated:** April 17, 2026
 > **Philosophy:** Fewer docs, sharper content. Every file earns its place.
 
 ---
@@ -54,6 +54,16 @@
 | [hetzner.md](hetzner.md) | Hetzner VPS infrastructure reference |
 | [elevenlabs-docs.md](elevenlabs-docs.md) | ElevenLabs API reference (1.6MB) |
 | [twilio-docs.md](twilio-docs.md) | Twilio API reference (2.4MB) |
+
+### GAS Backend (`backend-gas/`)
+| Doc | Purpose |
+|-----|---------|
+| [GAS_FILE_MAP.md](../backend-gas/GAS_FILE_MAP.md) | Complete inventory of all 152+ GAS files by domain |
+| [GAS_AUTOMATION_GUIDE.md](../backend-gas/GAS_AUTOMATION_GUIDE.md) | Code.js routing, trigger registry, Node-RED handlers, script properties |
+| [GAS_DEVELOPMENT_RULES.md](../backend-gas/GAS_DEVELOPMENT_RULES.md) | Agent instructions: how to add scrapers, endpoints, commands, deploy |
+| [GAS_Project_Guide.md](../backend-gas/GAS_Project_Guide.md) | Google Sheets tab map and deep-dive reference |
+| [SCRAPER_NOTES.md](../backend-gas/SCRAPER_NOTES.md) | Scraper architecture (Lee, Collier, Bookmarklet) |
+| [CONFIGURATION_GUIDE.md](../backend-gas/CONFIGURATION_GUIDE.md) | SignNow + Wix configuration steps |
 
 ### Directories
 | Directory | Contents |

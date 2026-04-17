@@ -56,6 +56,7 @@
     "https://mail.google.com/",
     "https://www.googleapis.com/auth/calendar",
     "https://www.googleapis.com/auth/script.scriptapp",
+    "https://www.googleapis.com/auth/script.container.ui",
     "https://www.googleapis.com/auth/business.manage"
   ],
   "exceptionLogging": "STACKDRIVER",

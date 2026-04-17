@@ -315,7 +315,7 @@ var ROUTER = (function () {
 function routeLeeArrestLeadsNow() { return ROUTER.routeLeeArrestLeadsNow(); }
 function installLeadRouterHourly() { return ROUTER.installLeadRouterHourly(); }
 function disableLeadRouterTriggers() { return ROUTER.disableLeadRouterTriggers(); }
-function onOpen() { return ROUTER.onOpen(); }
+// NOTE: onOpen() removed — now owned by UnifiedMenuSystem.js (☘️ Shamrock Automation)
 
 /**
  * ==========================================================
