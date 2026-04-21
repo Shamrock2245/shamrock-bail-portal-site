@@ -70,128 +70,162 @@ $w.onReady(function () {
     console.log("🟢 Bail School Page Loading...");
 
     setupEmbed();
-    setupSEO();
-
-    console.log("✅ Bail School Page Ready.");
+    setupMessageListener();
+    injectSeoSchema();
 });
 
-// ─── HTML EMBED SETUP ─────────────────────────────────────────────────────────
+// ─── EMBED SETUP ─────────────────────────────────────────────────────────────
 
 function setupEmbed() {
     try {
         const embed = $w('#bailSchoolEmbed');
-
-        // Set the source URL
+        if (!embed) {
+            console.warn("⚠️ #bailSchoolEmbed not found on page");
+            return;
+        }
         embed.src = EMBED_URL;
-
-        // Listen for postMessage events from the embed
-        embed.onMessage((event) => {
-            const msg = event.data;
-
-            // Auto-resize iframe height
-            if (msg && msg.type === 'setHeight' && typeof msg.height === 'number') {
-                embed.style.height = msg.height;
-            }
-
-            // Newsletter email captured in embed
-            if (msg && msg.type === 'bailSchoolNotify' && msg.email) {
-                console.log('📧 Bail School Notify:', msg.email);
-                submitBailSchoolInterest(msg.email)
-                    .then(result => console.log('✅ Bail School signup saved:', result))
-                    .catch(err => console.error('❌ Bail School signup error:', err));
-            }
-        });
-    } catch (e) {
-        console.warn('[bailSchoolEmbed] Not found — ensure HtmlComponent exists on page:', e.message);
+        console.log("✅ Bail School embed URL set:", EMBED_URL);
+    } catch (err) {
+        console.error("❌ Error setting up embed:", err);
     }
 }
 
-// ─── SEO ──────────────────────────────────────────────────────────────────────
+// ─── MESSAGE LISTENER (postMessage bridge from iframe) ───────────────────────
 
-function setupSEO() {
-    const faqSchema = {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": FAQ_DATA.map(f => ({
-            "@type": "Question",
-            "name": f.question,
-            "acceptedAnswer": {
-                "@type": "Answer",
-                "text": f.answer
-            }
-        }))
-    };
+function setupMessageListener() {
+    $w('#bailSchoolEmbed').onMessage((event) => {
+        const data = event.data;
+        if (!data || !data.type) return;
 
-    const breadcrumbSchema = {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
-            { "@type": "ListItem", "position": 2, "name": "Bail School", "item": "https://www.shamrockbailbonds.biz/bail-school" }
-        ]
-    };
+        console.log("📨 postMessage received:", data.type, data);
 
-    const courseSchema = {
-        "@context": "https://schema.org",
-        "@type": "EducationalOrganization",
-        "name": "Shamrock Bail School",
-        "description": "Florida bail bond education — from informed co-signer to licensed bail bond agent.",
-        "url": "https://www.shamrockbailbonds.biz/bail-school",
-        "parentOrganization": {
-            "@type": "Organization",
-            "name": "Shamrock Bail Bonds",
-            "url": "https://www.shamrockbailbonds.biz"
-        },
-        "address": {
-            "@type": "PostalAddress",
-            "streetAddress": "1528 Broadway",
-            "addressLocality": "Fort Myers",
-            "addressRegion": "FL",
-            "postalCode": "33901",
-            "addressCountry": "US"
-        },
-        "telephone": "+1-239-332-2245",
-        "hasOfferCatalog": {
-            "@type": "OfferCatalog",
-            "name": "Bail School Programs",
-            "itemListElement": [
+        switch (data.type) {
+            case 'RESIZE':
+                handleResize(data.height);
+                break;
+            case 'SUBSCRIBE_EMAIL':
+                handleEmailSubscription(data.email, data.name);
+                break;
+            case 'EXPLORE_PROGRAMS':
+                handleExplorePrograms();
+                break;
+            default:
+                console.log("ℹ️ Unhandled message type:", data.type);
+        }
+    });
+}
+
+// ─── RESIZE HANDLER ──────────────────────────────────────────────────────────
+
+function handleResize(height) {
+    if (!height || typeof height !== 'number') return;
+    try {
+        $w('#bailSchoolEmbed').style.height = `${Math.ceil(height)}px`;
+        console.log("📐 Embed resized to:", height + "px");
+    } catch (err) {
+        console.error("❌ Resize error:", err);
+    }
+}
+
+// ─── EMAIL SUBSCRIPTION HANDLER ──────────────────────────────────────────────
+
+async function handleEmailSubscription(email, name) {
+    if (!email) {
+        console.warn("⚠️ No email provided for subscription");
+        return;
+    }
+
+    console.log("📧 Processing subscription for:", email);
+
+    try {
+        const result = await submitBailSchoolInterest({ email, name: name || '' });
+        const payload = result || {};
+
+        if (payload.success) {
+            console.log("✅ Subscription saved:", email);
+            $w('#bailSchoolEmbed').postMessage({ type: 'SUBSCRIBE_SUCCESS', email });
+        } else {
+            console.warn("⚠️ Subscription returned non-success:", payload);
+            $w('#bailSchoolEmbed').postMessage({ type: 'SUBSCRIBE_ERROR', message: payload.message || 'Unknown error' });
+        }
+    } catch (err) {
+        console.error("❌ Subscription error:", err);
+        $w('#bailSchoolEmbed').postMessage({ type: 'SUBSCRIBE_ERROR', message: 'Server error. Please try again.' });
+    }
+}
+
+// ─── EXPLORE PROGRAMS HANDLER ─────────────────────────────────────────────────
+
+function handleExplorePrograms() {
+    // Notify the embed to show "Coming Soon" modal instead of scrolling
+    $w('#bailSchoolEmbed').postMessage({ type: 'SHOW_COMING_SOON' });
+    console.log("ℹ️ Explore Programs → Coming Soon triggered");
+}
+
+// ─── SEO STRUCTURED DATA ──────────────────────────────────────────────────────
+
+function injectSeoSchema() {
+    try {
+        const faqSchema = {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": FAQ_DATA.map(item => ({
+                "@type": "Question",
+                "name": item.question,
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": item.answer
+                }
+            }))
+        };
+
+        const courseSchema = {
+            "@context": "https://schema.org",
+            "@type": "Course",
+            "name": "Florida Bail Bond Agent Certification — 120-Hour Pre-Licensing Course",
+            "description": "Complete the Florida DBPR-required 120-hour bail bond pre-licensing course at Shamrock Bail School in Fort Myers.",
+            "provider": {
+                "@type": "Organization",
+                "name": "Shamrock Bail Bonds",
+                "sameAs": "https://www.shamrockbailbonds.biz"
+            },
+            "offers": {
+                "@type": "Offer",
+                "price": "699",
+                "priceCurrency": "USD",
+                "availability": "https://schema.org/InStock"
+            },
+            "hasCourseInstance": [
                 {
-                    "@type": "Course",
-                    "name": "Indemnitor Basics",
-                    "description": "What Every Co-Signer Must Know. Understand your legal obligations, financial risks, and rights.",
-                    "timeRequired": "PT2H",
-                    "educationalLevel": "Beginner",
-                    "isAccessibleForFree": true,
-                    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
-                },
-                {
-                    "@type": "Course",
-                    "name": "The Agent Path",
-                    "description": "120-hour state-approved Florida bail bond agent certification program. First class starts June 2026.",
-                    "timeRequired": "PT120H",
-                    "educationalLevel": "Professional",
-                    "offers": { "@type": "Offer", "price": "699", "priceCurrency": "USD" }
-                },
-                {
-                    "@type": "Course",
-                    "name": "Risk Management & Skip Tracing",
-                    "description": "Advanced fugitive recovery and high-stakes bond management.",
-                    "timeRequired": "PT5H",
-                    "educationalLevel": "Advanced",
-                    "offers": { "@type": "Offer", "price": "249", "priceCurrency": "USD" }
-                },
-                {
-                    "@type": "Course",
-                    "name": "Bail Bond Masterclass",
-                    "description": "Level up every facet of the bail bond game — sales, compliance, fugitive recovery, marketing, and agency operations. Available on the Skool platform.",
-                    "educationalLevel": "All Levels",
-                    "courseMode": "online"
+                    "@type": "CourseInstance",
+                    "courseMode": "onsite",
+                    "location": {
+                        "@type": "Place",
+                        "name": "Shamrock Bail Bonds — Fort Myers",
+                        "address": {
+                            "@type": "PostalAddress",
+                            "streetAddress": "1528 Broadway",
+                            "addressLocality": "Fort Myers",
+                            "addressRegion": "FL",
+                            "postalCode": "33901"
+                        }
+                    }
                 }
             ]
-        }
-    };
+        };
 
-    wixSeo.setStructuredData([faqSchema, breadcrumbSchema, courseSchema])
-        .then(() => console.log("✅ SEO: Bail School Structured Data Set"))
-        .catch(err => console.error("❌ SEO Error:", err));
+        const breadcrumbSchema = {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz" },
+                { "@type": "ListItem", "position": 2, "name": "Bail School", "item": "https://www.shamrockbailbonds.biz/bail-school" }
+            ]
+        };
+
+        wixSeo.setStructuredData([faqSchema, courseSchema, breadcrumbSchema]);
+        console.log("✅ SEO schemas injected (FAQ, Course, Breadcrumb)");
+    } catch (err) {
+        console.error("❌ SEO schema injection error:", err);
+    }
 }

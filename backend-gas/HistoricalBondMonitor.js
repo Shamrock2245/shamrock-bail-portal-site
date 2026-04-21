@@ -432,6 +432,26 @@ function appendToAlertSheet_(match) {
         tab.getRange(1, 1, 1, 10).setFontWeight('bold').setBackground('#FF6B6B').setFontColor('#FFFFFF');
     }
 
+    // ── DEDUP CHECK: Name + Booking/Case ──
+    var name = String(match.fullName || '').toUpperCase().trim();
+    var booking = match.type === 'forfeiture'
+        ? String(match.caseNumber || '').trim()
+        : String(match.bookingNumber || '').trim();
+    var dedupKey = name + '|' + booking;
+
+    if (tab.getLastRow() > 1) {
+        // Col C = Name (col 3), Col E = Booking/Case (col 5)
+        var existing = tab.getRange(2, 3, tab.getLastRow() - 1, 3).getValues();
+        for (var e = 0; e < existing.length; e++) {
+            var existingName = String(existing[e][0] || '').toUpperCase().trim();
+            var existingBooking = String(existing[e][2] || '').trim();
+            if ((existingName + '|' + existingBooking) === dedupKey) {
+                Logger.log('⏭️ Skipping duplicate alert: ' + name + ' / ' + booking);
+                return; // Already logged — skip
+            }
+        }
+    }
+
     var bonds = match.historicalBonds || [];
     var totalLiability = 0;
     var details = [];
@@ -443,15 +463,60 @@ function appendToAlertSheet_(match) {
     tab.appendRow([
         new Date(),
         match.type === 'forfeiture' ? 'FORFEITURE' : 'ARREST',
-        match.fullName || '',
+        name,
         match.county || '',
-        match.type === 'forfeiture' ? (match.caseNumber || '') : (match.bookingNumber || ''),
+        booking,
         match.charges ? String(match.charges).substring(0, 500) : '',
         match.type === 'forfeiture' ? (match.forfeitureAmount || '') : (match.bondAmount || ''),
         bonds.length,
         totalLiability,
         details.join(' | ')
     ]);
+
+    Logger.log('📊 New alert logged: ' + name + ' / ' + booking);
+}
+
+// ============================================================================
+// ONE-TIME CLEANUP: Remove duplicate rows from RepeatOffenderAlerts
+// ============================================================================
+
+/**
+ * Run once to purge duplicate rows from the RepeatOffenderAlerts sheet.
+ * Keeps the FIRST occurrence of each Name + Booking/Case combo, deletes the rest.
+ * Safe to re-run (idempotent).
+ */
+function deduplicateRepeatOffenderAlerts() {
+    var ss = SpreadsheetApp.openById(HBM_CONFIG.SHEET_ID);
+    var tab = ss.getSheetByName(HBM_CONFIG.ALERTS_TAB);
+    if (!tab || tab.getLastRow() < 2) {
+        Logger.log('ℹ️ Nothing to deduplicate');
+        return;
+    }
+
+    var lastRow = tab.getLastRow();
+    var allData = tab.getRange(2, 1, lastRow - 1, 10).getValues();
+    var seen = new Set();
+    var rowsToDelete = []; // 1-indexed row numbers to delete
+
+    for (var i = 0; i < allData.length; i++) {
+        var name = String(allData[i][2] || '').toUpperCase().trim();   // Col C (index 2)
+        var booking = String(allData[i][4] || '').trim();              // Col E (index 4)
+        var key = name + '|' + booking;
+
+        if (seen.has(key)) {
+            rowsToDelete.push(i + 2); // +2 because data starts at row 2, 0-indexed
+        } else {
+            seen.add(key);
+        }
+    }
+
+    // Delete from bottom-up to preserve row indices
+    for (var d = rowsToDelete.length - 1; d >= 0; d--) {
+        tab.deleteRow(rowsToDelete[d]);
+    }
+
+    Logger.log('🧹 Deduplication complete: removed ' + rowsToDelete.length + ' duplicate rows, ' +
+        seen.size + ' unique alerts remain');
 }
 
 // ============================================================================

@@ -287,16 +287,25 @@ var ROUTER = (function () {
   }
 
   function getHeaderRow_() {
-    // Keep in sync with scraper headers
+    // ⚠️ KEEP IN SYNC with sheets_writer.py HEADER_ROW (39 columns as of 2026-04-21)
+    // Scraper writes: Scrape_Timestamp, County, Booking_Number, Person_ID, Full_Name,
+    //   First_Name, Middle_Name, Last_Name, DOB, Arrest_Date, Arrest_Time,
+    //   Booking_Date, Booking_Time, Status, Facility, Agency,
+    //   Race, Sex, Height, Weight, Address, City, State, ZIP,
+    //   Mugshot_URL, Charges, Bond_Amount, Bond_Paid, Bond_Type,
+    //   Court_Type, Case_Number, Court_Date, Court_Time, Court_Location,
+    //   Detail_URL, Lead_Score, Lead_Status, LastChecked, LastCheckedMode
     return [
-      'Scrape_Timestamp','Booking_Number','Person_ID','Full_Name','First_Name','Middle_Name','Last_Name','DOB',
-      'Booking_Date','Booking_Time','Status','Facility','Race','Sex','Height','Weight','Address','City','State','ZIP',
+      'Scrape_Timestamp','County','Booking_Number','Person_ID','Full_Name',
+      'First_Name','Middle_Name','Last_Name','DOB','Arrest_Date','Arrest_Time',
+      'Booking_Date','Booking_Time','Status','Facility','Agency',
+      'Race','Sex','Height','Weight','Address','City','State','ZIP',
       'Mugshot_URL','Charges',
       'Bond_Amount','Bond_Paid','Bond_Type',
       'Court_Type','Case_Number','Court_Date','Court_Time','Court_Location',
-      'Detail_URL',
-      // Router-managed columns (appended by ensureRoutingColumns_)
-      // 'Routed_Timestamp','Routed_Status','Routed_Message'  // not in scraper header
+      'Detail_URL','Lead_Score','Lead_Status','LastChecked','LastCheckedMode'
+      // Router-managed columns appended by ensureRoutingColumns_ after scraper cols:
+      // 'Routed_Timestamp','Routed_Status','Routed_Message'
     ];
   }
 
