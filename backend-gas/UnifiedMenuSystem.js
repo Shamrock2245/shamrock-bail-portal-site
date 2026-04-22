@@ -88,6 +88,7 @@ function onOpen() {
       .addItem('🔍 Check Configuration', 'menu_checkConfig')
       .addSeparator()
       .addItem('🔐 Fix Permissions (Re-Authorize)', 'menu_forceReauthorize')
+      .addItem('🔗 Get Auth URL (copy & open in browser)', 'getAuthorizationUrl')
       .addItem('🔍 Check Auth Status', 'menu_checkAuthStatus')
       .addSeparator()
       .addItem('🎨 Style All County Sheets', 'styleAllCountySheets')
