@@ -105,6 +105,11 @@ const COUNTY_COORDS = {
 // ---------------------------------------------------------------------------
 const FIND_JAIL_IDS = ['#comp-ml15h39u', '#navFindJail', '#findMyJailBtn'];
 
+// Header "Bail School" nav button — override link to new /bail-school page
+// (old page was /how-to-become-a-bondsman)
+// Add Velo nickname #navBailSchool to the header button in Wix Editor.
+const BAIL_SCHOOL_NAV_IDS = ['#navBailSchool', '#headerBailSchoolBtn', '#bailSchoolNavLink'];
+
 // ---------------------------------------------------------------------------
 // onReady
 // ---------------------------------------------------------------------------
@@ -132,6 +137,7 @@ function initCriticalUI() {
     try { setupStickyHeader(); } catch (e) { /* non-fatal */ }
     setupEmergencyCallButton();
     setupFindJailButton();
+    setupBailSchoolNavLink();
     checkAuthStatus();
     setupFooterPaymentLink();
     setupMobilePaymentBtn();
@@ -200,6 +206,30 @@ function setupMobileMenu() {
         if (mobileMenuBtn && mobileMenuBtn.id && mobileMenu && mobileMenu.id) {
             mobileMenuBtn.onClick(function() { mobileMenu.expand(); });
         }
+    } catch (e) { /* non-fatal */ }
+}
+
+/**
+ * Redirect the header "Bail School" nav button to the new /bail-school page.
+ *
+ * HOW TO WIRE IN WIX EDITOR (one-time):
+ *   1. Open the Header in the Wix Editor.
+ *   2. Click the "Bail School" menu item / button.
+ *   3. In the Properties panel, set the Velo Nickname to: navBailSchool
+ *   4. Publish the site.
+ *
+ * This code handles the redirect once the Velo ID is set.
+ * Fallback: the Editor menu link should also be set to /bail-school directly.
+ */
+function setupBailSchoolNavLink() {
+    const btn = resolveElement(BAIL_SCHOOL_NAV_IDS);
+    if (!btn) {
+        // Element not found — Velo ID not yet set in Editor. Skipping silently.
+        return;
+    }
+    try {
+        btn.link = '/bail-school';
+        console.log('[BailSchoolNav] Link overridden → /bail-school');
     } catch (e) { /* non-fatal */ }
 }
 
