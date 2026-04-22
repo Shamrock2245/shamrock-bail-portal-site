@@ -105,13 +105,12 @@ const COUNTY_COORDS = {
 // ---------------------------------------------------------------------------
 const FIND_JAIL_IDS = ['#comp-ml15h39u', '#navFindJail', '#findMyJailBtn'];
 
-// Header "Bail School" nav button — override link to new /bail-school page
-// (old page was /how-to-become-a-bondsman)
-// Add Velo nickname #navBailSchool to the header button in Wix Editor.
+// Header "Bail School" nav button — RETIRED 2026-04-22
+// Link now set directly in the Wix Editor nav menu. JS override no longer needed.
 const BAIL_SCHOOL_NAV_IDS = ['#navBailSchool', '#headerBailSchoolBtn', '#bailSchoolNavLink'];
 
-// Header "First Appearance" nav button — currently #button19 in Wix Editor.
-// Add Velo nickname #navFirstAppearance to the header button in Wix Editor.
+// Header "First Appearance" nav button — RETIRED 2026-04-22
+// Link now set directly in the Wix Editor nav menu. JS override no longer needed.
 const FIRST_APPEARANCE_NAV_IDS = ['#navFirstAppearance', '#headerFirstAppearanceBtn', '#button19'];
 
 // ---------------------------------------------------------------------------
@@ -226,35 +225,20 @@ function setupMobileMenu() {
  * This code handles the redirect once the Velo ID is set.
  * Fallback: the Editor menu link should also be set to /bail-school directly.
  */
+/**
+ * RETIRED 2026-04-22 — Bail School link is now set directly in the Wix nav menu.
+ * Function is kept as a no-op to avoid removing the call from initCriticalUI().
+ */
 function setupBailSchoolNavLink() {
-    const btn = resolveElement(BAIL_SCHOOL_NAV_IDS);
-    if (!btn) {
-        // Element not found — Velo ID not yet set in Editor. Skipping silently.
-        return;
-    }
-    try {
-        btn.link = '/bail-school';
-        console.log('[BailSchoolNav] Link overridden → /bail-school');
-    } catch (e) { /* non-fatal */ }
+    // No-op: nav menu handles /bail-school routing directly.
 }
 
 /**
- * Redirect the header "First Appearance" nav button to /first-appearance.
- *
- * HOW TO WIRE IN WIX EDITOR (one-time):
- *   1. Open the Header in the Wix Editor.
- *   2. Click the "First Appearance" button (currently ID #button19).
- *   3. In the Properties panel, set the Velo Nickname to: navFirstAppearance
- *   4. Also set its link to /first-appearance directly in the Editor.
- *   5. Publish the site.
+ * RETIRED 2026-04-22 — First Appearance link is now set directly in the Wix nav menu.
+ * Function is kept as a no-op to avoid removing the call from initCriticalUI().
  */
 function setupFirstAppearanceNavLink() {
-    const btn = resolveElement(FIRST_APPEARANCE_NAV_IDS);
-    if (!btn) return; // Velo ID not yet set in Editor — silent skip
-    try {
-        btn.link = '/first-appearance';
-        console.log('[FirstAppearanceNav] Link overridden → /first-appearance');
-    } catch (e) { /* non-fatal */ }
+    // No-op: nav menu handles /first-appearance routing directly.
 }
 
 function deferNonCriticalOperations(isMobile) {
@@ -324,14 +308,39 @@ function setupFindJailButton() {
 function handleFindJailClick(btn) {
     const originalLabel = (btn && btn.label) || 'Find My Jail';
 
+    // --- Try the pre-warmed session cache first (set by initGeolocation) ---
+    try {
+        const cachedLat = session.getItem('geo_lat');
+        const cachedLon = session.getItem('geo_lon');
+        const cachedTs  = session.getItem('geo_ts');
+        const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+        if (cachedLat && cachedLon && cachedTs && (Date.now() - Number(cachedTs)) < CACHE_TTL_MS) {
+            const lat = parseFloat(cachedLat);
+            const lon = parseFloat(cachedLon);
+            const nearestSlug = findNearestCounty(lat, lon);
+            console.log('[FindMyJail] Using cached geo coords → instant response');
+            wixLocation.to(nearestSlug ? '/florida-bail-bonds/' + nearestSlug : '/florida-bail-bonds');
+            return; // Done — no GPS wait
+        }
+    } catch (e) { /* cache read non-fatal, fall through to live call */ }
+
+    // --- Cache miss or stale: live geolocation request ---
     try { if (btn) btn.label = 'Locating...'; } catch (e) { /* non-fatal */ }
 
     wixWindow.getCurrentGeolocation()
         .then(function(location) {
             const lat = location.coords.latitude;
             const lon = location.coords.longitude;
-            const nearestSlug = findNearestCounty(lat, lon);
 
+            // Refresh the cache for next time
+            try {
+                session.setItem('geo_lat', String(lat));
+                session.setItem('geo_lon', String(lon));
+                session.setItem('geo_ts', String(Date.now()));
+            } catch (e) { /* non-fatal */ }
+
+            const nearestSlug = findNearestCounty(lat, lon);
             try { if (btn) btn.label = originalLabel; } catch (e) { /* non-fatal */ }
 
             if (nearestSlug) {
@@ -406,12 +415,82 @@ function checkAuthStatus() {
 // Deferred operations
 // ---------------------------------------------------------------------------
 
+/**
+ * initAnalytics — fires a page_view event with UTM attribution data.
+ *
+ * wixWindow.trackEvent() feeds into any analytics provider connected
+ * in the Wix Marketing Integrations dashboard (GA4, Meta Pixel, etc.).
+ * UTM params are parsed from the live URL so attribution is never lost
+ * on a hard reload or referral click.
+ */
 function initAnalytics() {
-    // Placeholder: analytics providers wired here when needed
+    try {
+        const url = wixLocation.url || '';
+        const path = wixLocation.path ? '/' + wixLocation.path.join('/') : '/';
+        const query = wixLocation.query || {};
+
+        // Build attribution payload from UTM params when present
+        const analyticsPayload = {
+            page: path,
+            referrer: (typeof document !== 'undefined' && document.referrer) || '',
+        };
+
+        if (query.utm_source)   analyticsPayload.utm_source   = query.utm_source;
+        if (query.utm_medium)   analyticsPayload.utm_medium   = query.utm_medium;
+        if (query.utm_campaign) analyticsPayload.utm_campaign = query.utm_campaign;
+        if (query.utm_term)     analyticsPayload.utm_term     = query.utm_term;
+        if (query.utm_content)  analyticsPayload.utm_content  = query.utm_content;
+
+        // Persist UTM source to session so subsequent pages can read it
+        if (query.utm_source) {
+            try { session.setItem('utm_source', query.utm_source); } catch (e) { /* non-fatal */ }
+        }
+
+        trackEvent('page_view', analyticsPayload);
+        console.log('[Analytics] page_view tracked →', path, query.utm_source ? '(utm: ' + query.utm_source + ')' : '');
+    } catch (e) {
+        // Never let analytics failures surface to the user
+    }
 }
 
+/**
+ * initGeolocation — silently pre-warms the browser's geolocation permission
+ * and caches the result in wix-storage session.
+ *
+ * WHY: wixWindow.getCurrentGeolocation() on "Find My Jail" click is cold
+ * (user waits ~1-2s for the permission prompt + GPS acquisition). If we
+ * pre-warm here on page load and the user has already granted permission,
+ * the cached coords make the button feel instant.
+ *
+ * SAFE: We only call this if permission was already granted — browsers
+ * will NOT show a permission prompt for a non-user-gesture geolocation
+ * call, they just silently fail. No UX harm either way.
+ */
 function initGeolocation() {
-    // Placeholder: geolocation pre-warm wired here when needed
+    try {
+        // Only proceed if the Permissions API is available
+        if (typeof navigator === 'undefined' || !navigator.permissions) return;
+
+        navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
+            if (result.state !== 'granted') return; // Not granted — don't prompt
+
+            // Permission already granted: silently cache coordinates
+            wixWindow.getCurrentGeolocation()
+                .then(function(location) {
+                    const lat = location.coords.latitude;
+                    const lon = location.coords.longitude;
+                    try {
+                        session.setItem('geo_lat', String(lat));
+                        session.setItem('geo_lon', String(lon));
+                        session.setItem('geo_ts', String(Date.now()));
+                        console.log('[Geolocation] Pre-warmed → ' + lat.toFixed(4) + ', ' + lon.toFixed(4));
+                    } catch (e) { /* session write non-fatal */ }
+                })
+                .catch(function() { /* silent — user may have moved or GPS unavailable */ });
+        }).catch(function() { /* Permissions API may be restricted in some contexts */ });
+    } catch (e) {
+        // Never block page load for geolocation pre-warming
+    }
 }
 
 // ---------------------------------------------------------------------------
