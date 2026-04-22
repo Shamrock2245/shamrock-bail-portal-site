@@ -110,6 +110,10 @@ const FIND_JAIL_IDS = ['#comp-ml15h39u', '#navFindJail', '#findMyJailBtn'];
 // Add Velo nickname #navBailSchool to the header button in Wix Editor.
 const BAIL_SCHOOL_NAV_IDS = ['#navBailSchool', '#headerBailSchoolBtn', '#bailSchoolNavLink'];
 
+// Header "First Appearance" nav button — currently #button19 in Wix Editor.
+// Add Velo nickname #navFirstAppearance to the header button in Wix Editor.
+const FIRST_APPEARANCE_NAV_IDS = ['#navFirstAppearance', '#headerFirstAppearanceBtn', '#button19'];
+
 // ---------------------------------------------------------------------------
 // onReady
 // ---------------------------------------------------------------------------
@@ -138,6 +142,7 @@ function initCriticalUI() {
     setupEmergencyCallButton();
     setupFindJailButton();
     setupBailSchoolNavLink();
+    setupFirstAppearanceNavLink();
     checkAuthStatus();
     setupFooterPaymentLink();
     setupMobilePaymentBtn();
@@ -230,6 +235,25 @@ function setupBailSchoolNavLink() {
     try {
         btn.link = '/bail-school';
         console.log('[BailSchoolNav] Link overridden → /bail-school');
+    } catch (e) { /* non-fatal */ }
+}
+
+/**
+ * Redirect the header "First Appearance" nav button to /first-appearance.
+ *
+ * HOW TO WIRE IN WIX EDITOR (one-time):
+ *   1. Open the Header in the Wix Editor.
+ *   2. Click the "First Appearance" button (currently ID #button19).
+ *   3. In the Properties panel, set the Velo Nickname to: navFirstAppearance
+ *   4. Also set its link to /first-appearance directly in the Editor.
+ *   5. Publish the site.
+ */
+function setupFirstAppearanceNavLink() {
+    const btn = resolveElement(FIRST_APPEARANCE_NAV_IDS);
+    if (!btn) return; // Velo ID not yet set in Editor — silent skip
+    try {
+        btn.link = '/first-appearance';
+        console.log('[FirstAppearanceNav] Link overridden → /first-appearance');
     } catch (e) { /* non-fatal */ }
 }
 
