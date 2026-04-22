@@ -262,12 +262,66 @@ async function setupCommonBailAmounts() {
 // CMS Fields: title (question), answer, category, sortOrder, isActive, relatedPage
 async function setupFAQ() {
     const fallbackData = [
-        { _id: "1", title: "Can bail be reduced?", answer: "Yes. An attorney can file a motion to reduce bail if it is excessive or circumstances change." },
-        { _id: "2", title: "Can I get my premium back?", answer: "No. The 10% premium is a non-refundable service fee earned by the bondsman." },
-        { _id: "3", title: "What if I can't afford 10%?", answer: "We offer flexible payment plans. Call us to discuss options." },
-        { _id: "4", title: "How long does release take?", answer: "Typical release times are 2-8 hours after we post the bond, depending on the jail." },
-        { _id: "5", title: "Difference between Bail and Bond?", answer: "Bail is the full amount set by court. Bond is the 10% service we provide." },
-        { _id: "6", title: "Can anyone be denied bail?", answer: "Yes. Bail can be denied for capital offenses, flight risks, or danger to the community." }
+        {
+            _id: "1",
+            title: "How fast can you get someone out of jail?",
+            answer: "Shamrock Bail Bonds can begin the release process within minutes of your call — 24 hours a day, 7 days a week. Once the bond is posted, Lee County Jail typically releases defendants within 4 to 8 hours. Larger facilities like Hillsborough or Miami-Dade may take 6 to 12 hours. Call (239) 332-2245 any time to start the clock."
+        },
+        {
+            _id: "2",
+            title: "How much does a bail bond cost in Florida?",
+            answer: "A Florida bail bond costs 10% of the total bail amount, with a $100 minimum per charge. This premium is regulated by the Florida Department of Financial Services and is non-negotiable. For example, a $10,000 bail requires a $1,000 premium. A $125 transfer fee applies for counties outside Lee and Charlotte County."
+        },
+        {
+            _id: "3",
+            title: "Can bail be reduced after it is set?",
+            answer: "Yes. A defense attorney can file a Motion for Bond Reduction at any time. Courts consider the nature of the charges, criminal history, community ties, and flight risk. While the motion is pending, Shamrock Bail Bonds can post the bond at the current amount so your loved one is not waiting in jail."
+        },
+        {
+            _id: "4",
+            title: "Is the bail bond premium refundable?",
+            answer: "No. The 10% bail bond premium is a non-refundable service fee, even if charges are dropped or the defendant is found not guilty. It compensates the bondsman for assuming financial risk. However, if the case is resolved quickly, Shamrock may offer partial credit toward future services."
+        },
+        {
+            _id: "5",
+            title: "What is an indemnitor and what are they responsible for?",
+            answer: "An indemnitor (co-signer) is the person who guarantees the defendant will appear at all court dates by signing the bail bond agreement. If the defendant fails to appear, the indemnitor becomes financially responsible for the full bail amount. Indemnitors should have stable local roots and be confident in the defendant's reliability."
+        },
+        {
+            _id: "6",
+            title: "What happens if I can't afford the 10% premium?",
+            answer: "Shamrock Bail Bonds offers flexible payment plans when you cannot pay the full premium upfront. You can make a down payment and pay the balance over time. We evaluate each situation individually — income, family circumstances, and case details all factor in. Call (239) 332-2245 to discuss a plan that works for you."
+        },
+        {
+            _id: "7",
+            title: "What is the difference between bail and a bail bond?",
+            answer: "Bail is the full cash amount the court requires to release a defendant — set by a judge. A bail bond is a surety agreement where a licensed bondsman pledges to pay that full amount if the defendant fails to appear, in exchange for a 10% premium. Most families use a bail bond because they cannot afford cash bail."
+        },
+        {
+            _id: "8",
+            title: "Can anyone be denied bail in Florida?",
+            answer: "Yes. Florida judges can deny bail for capital offenses (murder, rape), defendants deemed a danger to the community, or those with a demonstrated history of failing to appear. Under the Florida Constitution, pre-trial detention without bail is possible but requires a hearing and specific findings by the judge."
+        },
+        {
+            _id: "9",
+            title: "Does Shamrock Bail Bonds handle felony bail bonds?",
+            answer: "Yes. Shamrock Bail Bonds posts bonds for both misdemeanor and felony charges throughout Florida. Felony bonds typically carry higher bail amounts set at a First Appearance hearing or later bail hearing. Our bondsmen are experienced with serious charges including drug offenses, assault, DUI manslaughter, and weapons charges."
+        },
+        {
+            _id: "10",
+            title: "Can a bail bond be revoked after release?",
+            answer: "Yes. A bail bond can be revoked if the defendant violates release conditions — such as failing to appear in court, getting arrested again, violating a no-contact order, or leaving the state without permission. The indemnitor should immediately notify Shamrock Bail Bonds of any potential violations to avoid bond forfeiture."
+        },
+        {
+            _id: "11",
+            title: "Does Shamrock Bail Bonds require collateral?",
+            answer: "Collateral is required for large bonds or high-risk situations. Acceptable collateral includes real estate equity, vehicles, jewelry, or cash deposits. For most standard bonds in Florida, a creditworthy co-signer and the 10% premium are sufficient. All collateral is returned once the case concludes and bond obligations are fulfilled."
+        },
+        {
+            _id: "12",
+            title: "How does the bail process work for immigration bonds?",
+            answer: "Immigration bonds are federal bonds set by ICE or an immigration judge that allow a detained non-citizen to be released pending immigration proceedings. They function similarly to criminal bail bonds but involve federal courts and higher amounts. Call Shamrock Bail Bonds at (239) 332-2245 — we provide bilingual immigration bond assistance."
+        }
     ];
 
     let data = fallbackData;
