@@ -87,6 +87,9 @@ function onOpen() {
       .addItem('🩺 Run System Health Check', 'menu_runHealthCheck')
       .addItem('🔍 Check Configuration', 'menu_checkConfig')
       .addSeparator()
+      .addItem('🔐 Fix Permissions (Re-Authorize)', 'menu_forceReauthorize')
+      .addItem('🔍 Check Auth Status', 'menu_checkAuthStatus')
+      .addSeparator()
       .addItem('🎨 Style All County Sheets', 'styleAllCountySheets')
       .addSeparator()
       .addItem('🔧 Configure SignNow', 'configureSignNow')
@@ -314,6 +317,20 @@ function menu_runHealthCheck() {
 
 function menu_checkConfig() {
   showConfigurationReport();
+}
+
+function menu_forceReauthorize() {
+  showToast_('🔐 Requesting permissions...', 'System');
+  forceReauthorize();
+}
+
+function menu_checkAuthStatus() {
+  var ok = checkAuthorizationStatus();
+  if (ok) {
+    SpreadsheetApp.getUi().alert('✅ Auth Status', 'All permissions are granted. The Lee County scraper should work normally.', SpreadsheetApp.getUi().ButtonSet.OK);
+  } else {
+    SpreadsheetApp.getUi().alert('🔴 Auth Status', 'Authorization is REQUIRED.\n\nRun: ⚙️ System > Fix Permissions (Re-Authorize)\nto open the consent dialog and grant access.', SpreadsheetApp.getUi().ButtonSet.OK);
+  }
 }
 
 // ── Help ──
