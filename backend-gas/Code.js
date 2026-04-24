@@ -773,6 +773,25 @@ function doPost(e) {
       try {
         Logger.log('📞 Incoming Twilio Message: ' + data.fromNumber);
         MongoLogger.logCheckIn(data, 'twilio');
+
+        // ── Forward to Bond Tracker for IP geolocation (fire-and-forget) ──
+        try {
+          UrlFetchApp.fetch('http://178.156.179.237:8001/webhook/sms', {
+            method: 'post',
+            contentType: 'application/x-www-form-urlencoded',
+            payload: {
+              From: data.fromNumber || '',
+              Body: data.body || '',
+              To: data.toNumber || '',
+              MessageSid: data.messageSid || '',
+              AccountSid: data.accountSid || ''
+            },
+            muteHttpExceptions: true
+          });
+        } catch (trackerErr) {
+          // Silent — don't break the main check-in flow
+          Logger.log('Bond tracker forward failed (non-fatal): ' + trackerErr.message);
+        }
         if (typeof handleClientCheckInReply === 'function') {
           handleClientCheckInReply(data.fromNumber, data.body);
           return createResponse({ success: true, message: 'Check-in processed' });
