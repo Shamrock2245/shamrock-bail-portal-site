@@ -43,7 +43,7 @@ src/
 │   └── http-functions.js     # HTTP endpoints for GAS integration
 ```
 
-### 4. GAS Integration Code (swfl-arrest-scrapers repo)
+### 4. GAS Integration Code (shamrock-leads repo)
 
 **Files Created:**
 

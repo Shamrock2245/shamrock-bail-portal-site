@@ -8,7 +8,7 @@ The **statewide Florida billboard** for Shamrock Bail Bonds. This isn't a websit
 
 Built on **Wix Velo** (frontend) + **Google Apps Script** (190+ file backend), powered by **9 AI agents**, serving clients through **5 omni-channel touchpoints** — web, Telegram, phone, mini-apps, and walk-in.
 
-**Current Status:** 🟢 Production | **GAS:** v415+ | **Counties:** 19 active, 67 planned | **April 2026**
+**Current Status:** 🟢 Production | **GAS:** V368 @432 | **Counties:** 20 active, 67 planned | **April 2026**
 
 ---
 
@@ -22,7 +22,7 @@ Built on **Wix Velo** (frontend) + **Google Apps Script** (190+ file backend), p
 *   **Closed-Loop Document Delivery:** Signed docs auto-processed (merged, watermarked) and delivered via Telegram.
 *   **Communication Preferences:** Client opt-in/out respected across all outbound channels (`CommPrefsManager.js`).
 *   **MongoDB Event Logging:** All business events logged to MongoDB Atlas via `MongoLogger.gs`.
-*   **19-County Arrest Monitoring:** Real-time scraping pipeline with lead scoring and Slack alerts.
+*   **20-County Arrest Monitoring:** Real-time scraping pipeline with lead scoring and Slack alerts.
 
 ---
 
@@ -44,7 +44,7 @@ Built on **Wix Velo** (frontend) + **Google Apps Script** (190+ file backend), p
 | **Edge Functions** | Netlify Edge | Shannon webhook proxy, county geolocation |
 | **OCR** | Google Cloud Vision | FL Driver License extraction |
 | **Automation** | Node-RED | 21 flow tabs, 64 crons, 836 nodes, ops dashboard |
-| **Scrapers** | Python (DrissionPage) + Node.js | 19 active Florida county jail scrapers |
+| **Scrapers** | Python (DrissionPage) + Node.js | 20 active Florida county jail scrapers |
 | **Infrastructure** | Hetzner Cloud + Docker | VPS for scraper fleet + self-hosted GitHub Actions runners |
 | **Deployment** | `clasp` + Wix CLI + GitHub | Versioned GAS deployments, 5 repos under `Shamrock2245` |
 
@@ -107,7 +107,7 @@ The bot (`@ShamrockBail_bot`) is the primary client touchpoint, supporting full 
                         ┌────────────▼────────────┐
                         │   Google Apps Script     │
                         │   "The Factory"          │
-                        │   190+ files, v415+      │
+                        │   190+ files, V368+      │
                         └──┬────────┬────────┬─────┘
                            │        │        │
                     ┌──────▼──┐ ┌───▼────┐ ┌─▼──────────┐
@@ -127,7 +127,7 @@ For detailed architecture, see [SYSTEM.md](./SYSTEM.md).
 Client → `@ShamrockBail_bot` → Guided intake → SignNow packet → Sign on mobile → ID upload → Documents delivered
 
 ### 2. Lead Scoring & Arrest Monitoring
-19 county scrapers → Google Sheets + MongoDB → Lead scored (0-100) → Slack alerts → Staff action
+20 county scrapers → Google Sheets + MongoDB → Lead scored (0-100) → Slack alerts → Staff action
 
 ### 3. Voice Intake (Shannon)
 Client calls → Twilio → ElevenLabs → Shannon AI → Paperwork sent via SMS during call → Live transfer if needed
@@ -168,7 +168,7 @@ See [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) for the full check
 | [USER.md](./USER.md) | User context, priorities & preferences |
 | [TASKS.md](./TASKS.md) | Current project tasks & phase tracking |
 | [ROADMAP.md](./ROADMAP.md) | Strategic milestones & expansion plan |
-| [COUNTY_STATUS.md](./COUNTY_STATUS.md) | 19-county scraper status ledger |
+| [COUNTY_STATUS.md](./COUNTY_STATUS.md) | 20-county scraper status ledger |
 | [CHANGELOG.md](./CHANGELOG.md) | Change log |
 | [ONBOARDING.md](./ONBOARDING.md) | Start-here guide for new agents/developers |
 | [SECRETS_ROTATION_GUIDE.md](./SECRETS_ROTATION_GUIDE.md) | Emergency key rotation procedures |
@@ -189,10 +189,11 @@ See [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) for the full check
 | Repo | Purpose |
 |------|---------|
 | [shamrock-bail-portal-site](https://github.com/Shamrock2245/shamrock-bail-portal-site) | **This repo** — Wix + GAS core platform |
-| [swfl-arrest-scrapers](https://github.com/Shamrock2245/swfl-arrest-scrapers) | 19-county scraper fleet (Python + Node.js) |
+| [shamrock-leads](https://github.com/Shamrock2245/shamrock-leads) | 20-county arrest intelligence platform (Python, Docker, Hetzner VPS) |
+| [shamrock-bond-tracker](https://github.com/Shamrock2245/shamrock-bond-tracker) | Active bond GPS/geolocation tracker microservice (Hetzner VPS) |
 | [shamrock-node-red](https://github.com/Shamrock2245/shamrock-node-red) | Ops dashboard & automation engine |
 | [shamrock-telegram-app](https://github.com/Shamrock2245/shamrock-telegram-app) | Telegram Mini-Apps (Netlify PWA) |
 
 ---
 
-*Maintained by Shamrock Engineering & AI Agents · April 2026*
+*Maintained by Shamrock Engineering & AI Agents · Updated April 24, 2026*

@@ -1,7 +1,7 @@
 # Hetzner Cloud — Shamrock Scraper Infrastructure
 
-> **Project**: Shamrock Scrapers (`swfl-arrest-scrapers`)
-> **Purpose**: VPS hosting for Dockerized arrest scrapers across 67 FL counties
+> **Project**: Shamrock Leads (`shamrock-leads`)
+> **Purpose**: VPS hosting for Dockerized arrest intelligence platform across 67 FL counties
 > **CLI Context**: `shamrock` (authenticated via `hcloud context create shamrock`)
 
 ---
@@ -65,8 +65,8 @@ sudo usermod -aG docker $USER
 sudo apt install docker-compose-plugin -y
 
 # 4. Clone the repo
-git clone https://github.com/Shamrock2245/swfl-arrest-scrapers.git
-cd swfl-arrest-scrapers
+git clone https://github.com/Shamrock2245/shamrock-leads.git
+cd shamrock-leads
 
 # 5. Configure env
 cp .env.example .env
@@ -157,7 +157,7 @@ response = client.servers.create(
     user_data="""#!/bin/bash
         curl -fsSL https://get.docker.com | sh
         usermod -aG docker root
-        git clone https://github.com/Shamrock2245/swfl-arrest-scrapers.git /opt/scrapers
+        git clone https://github.com/Shamrock2245/shamrock-leads.git /opt/scrapers
         cd /opt/scrapers && docker compose up python-scrapers -d
     """,
 )
@@ -192,7 +192,7 @@ for county in COUNTIES_TO_SCRAPE:
         ssh_keys=[SSHKey(name="brendan-mac")],
         user_data=f"""#!/bin/bash
             curl -fsSL https://get.docker.com | sh
-            git clone https://github.com/Shamrock2245/swfl-arrest-scrapers.git /opt/scrapers
+            git clone https://github.com/Shamrock2245/shamrock-leads.git /opt/scrapers
             cd /opt/scrapers
             docker compose run python-scrapers python counties/{county}/runner.py
             # Self-destruct after scrape completes (via API callback)
@@ -272,13 +272,13 @@ docker compose logs --tail 100 python-scrapers
 
 ```bash
 # Check runner status
-ssh root@178.156.179.237 'systemctl status actions.runner.Shamrock2245-swfl-arrest-scrapers.shamrock-hetzner'
+ssh root@178.156.179.237 'systemctl status actions.runner.Shamrock2245-shamrock-leads.shamrock-hetzner'
 
 # Restart runner
 ssh root@178.156.179.237 'cd /opt/actions-runner && ./svc.sh stop && ./svc.sh start'
 
 # View runner logs
-ssh root@178.156.179.237 'journalctl -u actions.runner.Shamrock2245-swfl-arrest-scrapers.shamrock-hetzner -f'
+ssh root@178.156.179.237 'journalctl -u actions.runner.Shamrock2245-shamrock-leads.shamrock-hetzner -f'
 ```
 
 ### Installed Software (Pre-baked)
@@ -302,9 +302,9 @@ ssh root@178.156.179.237 'cd /opt/actions-runner && su - runner -c "./config.sh 
 ssh root@178.156.179.237 'cd /opt/actions-runner && ./svc.sh start'
 
 # Re-register after server rebuild (need new token from GitHub)
-# 1. Generate token: gh api --method POST repos/Shamrock2245/swfl-arrest-scrapers/actions/runners/registration-token --jq '.token'
+# 1. Generate token: gh api --method POST repos/Shamrock2245/shamrock-leads/actions/runners/registration-token --jq '.token'
 # 2. SSH in and run:
-#    su - runner -c 'cd /opt/actions-runner && ./config.sh --url https://github.com/Shamrock2245/swfl-arrest-scrapers --token <TOKEN> --name shamrock-hetzner --labels self-hosted,linux,x64,hetzner --work _work --unattended --replace'
+#    su - runner -c 'cd /opt/actions-runner && ./config.sh --url https://github.com/Shamrock2245/shamrock-leads --token <TOKEN> --name shamrock-hetzner --labels self-hosted,linux,x64,hetzner --work _work --unattended --replace'
 # 3. sudo ./svc.sh install runner && sudo ./svc.sh start
 
 # Snapshot before major updates

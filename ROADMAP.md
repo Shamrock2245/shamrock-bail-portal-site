@@ -1,7 +1,7 @@
 # 🗺 Technical Roadmap & Milestones
 
 > **"The Uber of Bail Bonds" — Fast. Frictionless. Everywhere.**  
-> **Last Updated:** April 16, 2026
+> **Last Updated:** April 24, 2026
 
 ---
 
@@ -45,8 +45,8 @@ We have engineered **FIVE distinct ways** to secure a bond — zero friction, 24
 - Closed-loop signing: intake → sign → ID upload → document delivery
 
 ### ✅ Geographic Expansion — The Scout (Q1 2026)
-- **19 active county scrapers** across Florida
-- Counties: Brevard, Charlotte, Collier, DeSoto, Hendry, Highlands, Hillsborough, Indian River, Lake, Lee, Manatee, Martin, Orange, Osceola, Palm Beach, Pinellas, Polk, Sarasota, Seminole
+- **20 active county scrapers** across Florida
+- Counties: Brevard, Broward, Charlotte, Collier, DeSoto, Duval, Escambia, Hendry, Hillsborough, Lee, Manatee, Orange, Osceola, Palm Beach, Pasco, Pinellas, Polk, Sarasota, Seminole, Volusia
 - 15 GitHub Actions workflows with staggered cron schedules
 - Data pipeline: Google Sheets + MongoDB Atlas + Slack alerts per county
 - Lead scoring with automated prioritization (0-100)
@@ -54,7 +54,7 @@ We have engineered **FIVE distinct ways** to secure a bond — zero friction, 24
 ### ✅ Infrastructure & Operations (Q1 2026)
 - **Node-RED**: 21 flow tabs, 836 nodes, 64 crons, 10 dashboard pages, 5 reusable subflows
 - **Dashboard**: 10-page premium glassmorphism UI with 26 widget groups
-- **Hetzner Cloud**: VPS for Dockerized scraper fleet, self-hosted GitHub Actions runners
+- **Hetzner Cloud**: VPS for Dockerized `shamrock-leads` fleet + `shamrock-bond-tracker` microservice
 - **MongoDB Atlas**: Arrest data storage + business event logging (`MongoLogger.gs`)
 - **Netlify Edge Functions**: Shannon voice init proxy, county geolocation, Twilio routing
 - **Google Cloud Functions**: MongoDB proxy bridging GAS and Atlas
@@ -133,9 +133,9 @@ Every surface of this system follows the Premium Design Standard:
 
 | Metric | Value |
 |--------|-------|
-| GAS Deployment Version | v415+ |
-| Active Repos | 5 |
-| Active Counties | 19 / 67 |
+| GAS Deployment Version | V368 @432 |
+| Active Repos | 7 |
+| Active Counties | 20 / 67 |
 | Node-RED Flow Tabs | 21 |
 | Node-RED Cron Jobs | 64 |
 | Node-RED Nodes | 836 |

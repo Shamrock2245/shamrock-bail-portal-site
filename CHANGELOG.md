@@ -6,6 +6,24 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-04-24 — v2.6.0 — Infrastructure Sync & Documentation Overhaul
+
+**Added:**
+- `backend-gas/Code.js` — Twilio webhook forward in `twilio_check_in` action: fire-and-forget relay of SMS check-in data to Bond Tracker VPS (`178.156.179.237:8001/webhook/sms`) for IP geolocation tagging.
+
+**Changed:**
+- **GAS V368 @432 deployed** — Includes Twilio webhook forward integration.
+- All active documentation migrated from `swfl-arrest-scrapers` to `shamrock-leads` repo references.
+- Added `shamrock-bond-tracker` to repo listings (GPS/geolocation tracker microservice).
+- County count updated from 19 → 20 across all docs (added Broward, Duval, Escambia, Pasco, Volusia).
+- GAS version corrected from "v415+" → "V368 @432" across all docs.
+- Repo count updated from 5 → 7 (added `shamrock-leads`, `shamrock-bond-tracker`).
+- `COUNTY_STATUS.md` — Full rewrite: intervals now match `main.py` APScheduler config, counties alphabetized, expansion targets updated.
+- `docs/hetzner.md` — All clone URLs, systemctl commands, and runner registration updated to `shamrock-leads`.
+- `docs/ARCHITECTURE.md` — Mermaid diagram and scraper section updated.
+
+---
+
 ### 2026-04-16 — v2.5.0 — Site Health & Documentation Refresh
 
 **Fixed:**

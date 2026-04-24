@@ -1,6 +1,6 @@
 # 📖 Operations Handbook
 
-> **Last Updated:** April 16, 2026
+> **Last Updated:** April 24, 2026
 > **Status:** 🟢 All Systems Operational
 
 This document consolidates all operational runbooks: voice AI tuning, compliance, health monitoring, integrations, analytics, and scraping protocols.
@@ -166,7 +166,7 @@ When AI instances hit their knowledge threshold:
 Do not hammer a site with `axios` or `fetch` if it fails. Escalate gracefully:
 1. **Tier 1 (Direct API)**: Check Network tab for hidden JSON/DataTables endpoints. Avoids HTML entirely.
 2. **Tier 2 (Headless Browsers)**: `Puppeteer` or `Playwright` for simple cookies and rendering.
-3. **Tier 3 (Stealth & Bypasses)**: `DrissionPage`, `Scrapling`, `curl_cffi` in `swfl-arrest-scrapers/python_scrapers/`. Premium proxies (ZenRows, ScraperAPI) for hostile targets.
+3. **Tier 3 (Stealth & Bypasses)**: `DrissionPage`, `Scrapling`, `curl_cffi` in `shamrock-leads/scrapers/`. Premium proxies (ZenRows, ScraperAPI) for hostile targets.
 
 ### Rate Limiting & Discipline
 - **Never poll faster than every 15 minutes** for a single county. Hourly is preferred.
@@ -189,12 +189,12 @@ Scrape → Normalize (39-column schema) → Deduplicate (County + Booking_Number
 ```
 
 ### Infrastructure
-- **Docker Compose**: Containerized dual-stack (Python + Node.js)
-- **Hetzner Cloud**: VPS (`cpx21`, Ubuntu 24.04) for self-hosted GitHub Actions runners
+- **Docker Compose**: Containerized Python scraper fleet (`shamrock-leads`)
+- **Hetzner Cloud**: VPS (`178.156.179.237`) hosting `shamrock-leads` + `shamrock-bond-tracker`
 - **GitHub Actions**: 15 workflows with staggered cron schedules
 - **MongoDB Atlas**: Centralized arrest data storage via `mongo_writer.py` bulk upsert
 
 ---
 
 *Consolidated from: VOICE_AI_TUNING.md, HEARTBEAT.md, COMPLIANCE.md, INTEGRATIONS_AND_AUTOMATIONS.md, ANALYTICS_AND_EVENTS.md, SCRAPING_PLAYBOOK.md — March 17, 2026*
-*Updated: April 16, 2026 — Node-RED stats, UI reliability section, scraper fleet numbers*
+*Updated: April 24, 2026 — Repo references updated to shamrock-leads, county count to 20*

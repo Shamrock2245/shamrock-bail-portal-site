@@ -91,21 +91,23 @@ shamrock-bail-portal-site    ←→    GAS Backend (Factory)
         │                               │
         │                    ┌───────────┼───────────┐
         │                    │           │           │
-   shamrock-node-red    swfl-arrest-scrapers    shamrock-telegram-app
-   (Ops Dashboard)      (County Scrapers)       (Telegram Mini Apps)
-        │                    │
+   shamrock-node-red    shamrock-leads    shamrock-telegram-app
+   (Ops Dashboard)      (Arrest Intel)    (Telegram Mini Apps)
+        │                    │                │
+   shamrock-bond-tracker     │                │
+   (GPS/Geo Tracking)       │                │
         └──────── All flow through GAS doPost()/doGet() ────────┘
 ```
 
-### The 5 Repos
+### The Shamrock Repos
 
 | Repo | Purpose | Status |
 |------|---------|--------|
 | `shamrock-bail-portal-site` | Wix Velo frontend + GAS backend (190+ files) | 🟢 Production |
-| `swfl-arrest-scrapers` | 19-county Dockerized scraper fleet (Python + Node.js) | 🟢 Production |
+| `shamrock-leads` | 20-county arrest intelligence platform (Python, Docker, Hetzner VPS) | 🟢 Production |
+| `shamrock-bond-tracker` | Active bond GPS/geolocation tracker microservice (Hetzner VPS) | 🟢 Production |
 | `shamrock-node-red` | Ops Dashboard — 21 flow tabs, 64 crons, 836 nodes | 🟢 Production |
 | `shamrock-telegram-app` | Telegram Mini-Apps (Netlify PWA) | 🟢 Production |
-| `telegram-mini-app-demos` | Experimental Telegram WebApp prototypes | 🔵 Dev |
 
 ---
 

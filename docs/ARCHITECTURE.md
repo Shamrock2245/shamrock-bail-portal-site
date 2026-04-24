@@ -47,7 +47,7 @@ graph TD
     end
 
     subgraph "Data Pipeline (Scrapers)"
-        SCRAPERS["19 County Scrapers<br/>Python + Node.js + GAS"]
+        SCRAPERS["20 County Scrapers<br/>Python (APScheduler)"]
         HETZNER["Hetzner Cloud<br/>Dockerized fleet"]
         GH_ACTIONS["GitHub Actions<br/>15 workflows"]
     end
@@ -163,13 +163,13 @@ Dockerized at `localhost:1880`. Premium glassmorphism UI. Static ngrok domain fo
 
 **Backend:** 17 Netlify serverless functions (AI concierge, charge analysis, compliance digest, court reminders, risk scoring, etc.) + 3 edge functions (ElevenLabs init, county detect, Twilio voice).
 
-### 3.5 Arrest Scrapers (`swfl-arrest-scrapers/`) — "The Scout"
+### 3.5 Arrest Scrapers (`shamrock-leads/`) — "The Scout"
 
-19 active county scrapers. Dual-stack: Python (DrissionPage) + Node.js (Puppeteer) + GAS (internal).
+20 active county scrapers. Python-based with APScheduler on Hetzner VPS.
 
 | Component | Details |
 |-----------|---------|
-| **Counties** | Brevard, Charlotte, Collier, DeSoto, Hendry, Highlands, Hillsborough, Indian River, Lake, Lee, Manatee, Martin, Orange, Osceola, Palm Beach, Pinellas, Polk, Sarasota, Seminole |
+| **Counties** | Brevard, Broward, Charlotte, Collier, DeSoto, Duval, Escambia, Hendry, Hillsborough, Lee, Manatee, Orange, Osceola, Palm Beach, Pasco, Pinellas, Polk, Sarasota, Seminole, Volusia |
 | **Pipeline** | Scrape → Normalize (39-column schema) → Deduplicate (County + Booking_Number) → Score (0-100) → Sheets (row 2 insert) → MongoDB Atlas → Slack alert |
 | **CI/CD** | 15 GitHub Actions workflows with staggered cron schedules |
 | **Infrastructure** | Hetzner Cloud VPS (`cpx21`, Ubuntu 24.04) hosting Dockerized scraper fleet |
@@ -267,4 +267,4 @@ graph LR
 
 ---
 
-*Last Updated: March 15, 2026*
+*Last Updated: April 24, 2026*
