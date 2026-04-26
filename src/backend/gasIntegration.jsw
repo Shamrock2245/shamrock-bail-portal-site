@@ -344,14 +344,17 @@ export async function getIntakeByCaseId(caseId) {
 /**
  * Send notification to GAS that new intake is available
  * Generic Helper to call any GAS Action
+ *
+ * ROUTING: All GAS POST calls are routed through the Netlify edge proxy
+ * (shamrock-telegram.netlify.app/api/gas-proxy) because Google Workspace
+ * blocks direct POST requests from Wix server IPs (returns 500 HTML).
+ * The proxy transparently forwards to GAS and handles the 302 redirect.
+ *
  * @param {string} action - The action name (e.g., 'generateCertificate')
  * @param {Object} payload - The data to send
  */
 export async function callGasAction(action, payload) {
-    const [apiKey, gasUrl] = await Promise.all([
-        getGasApiKey(),
-        getGasWebAppUrl()
-    ]);
+    const apiKey = await getGasApiKey();
 
     const body = {
         action: action,
@@ -359,17 +362,29 @@ export async function callGasAction(action, payload) {
         ...payload
     };
 
-    const response = await fetchWithRetry(gasUrl, {
+    // Route through Netlify proxy — avoids Google IP block on Wix server IPs
+    const proxyUrl = 'https://shamrock-telegram.netlify.app/api/gas-proxy';
+
+    const response = await fetchWithRetry(proxyUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-GAS-API-Key': apiKey
+        },
         body: JSON.stringify(body)
     });
 
     if (!response.ok) {
-        throw new Error(`GAS HTTP Error: ${response.status}`);
+        throw new Error(`GAS Proxy HTTP Error: ${response.status}`);
     }
 
-    const result = await response.json();
+    let result;
+    try {
+        result = await response.json();
+    } catch (e) {
+        // GAS sometimes returns non-JSON on success — treat as success
+        result = { success: true };
+    }
     return result;
 }
 

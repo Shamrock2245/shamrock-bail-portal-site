@@ -657,6 +657,55 @@ function toolCreateIntake(params) {
         (params.notes || '') + ' | Ref: ' + caseRef
     ]);
 
+    // ── SYNC TO WIX CMS INTAKEQUEUE ───────────────────────────────────────
+    // Voice intakes from Shannon must appear in the Wix portal for staff.
+    // Uses the same sendToWixWithRetry path as Telegram mini-app intakes.
+    try {
+        if (typeof getWixPortalConfig === 'function' && typeof sendToWixWithRetry === 'function') {
+            var wixConfig = getWixPortalConfig();
+            var wixMappedData = {
+                source: 'elevenlabs_voice',
+                caseId: caseRef,
+                consentGiven: true,
+                consentTimestamp: new Date().toISOString(),
+                notes: 'Submitted via ElevenLabs AI After-Hours Call. ' + (params.notes || ''),
+                // Defendant
+                defendantName: defName,
+                defendantPhone: '',
+                defendantEmail: '',
+                charges: params.charges || '',
+                bondAmount: params.bond_amount || '',
+                county: params.county || '',
+                // Indemnitor (caller)
+                indemnitorName: callerName,
+                indemnitorPhone: callerPhone,
+                indemnitorEmail: params.caller_email || '',
+                indemnitorRelation: params.relation || '',
+                indemnitorStreetAddress: '',
+                indemnitorCity: '',
+                indemnitorState: 'FL',
+                indemnitorZipCode: '',
+                // References
+                reference1Name: '',
+                reference1Phone: '',
+                reference1Relation: '',
+                reference2Name: '',
+                reference2Phone: '',
+                reference2Relation: '',
+                docIdFront: null
+            };
+            var wixPayload = { apiKey: wixConfig.apiKey, intakeData: wixMappedData };
+            var wixResult = sendToWixWithRetry('/telegramIntake', wixPayload);
+            if (wixResult && wixResult.success) {
+                Logger.log('✅ Voice intake synced to Wix CMS: ' + caseRef);
+            } else {
+                Logger.log('⚠️ Voice intake saved to Sheets, Wix CMS sync failed: ' + JSON.stringify(wixResult));
+            }
+        }
+    } catch (wixSyncErr) {
+        Logger.log('⚠️ Wix CMS sync error (non-fatal): ' + wixSyncErr.message);
+    }
+
     // Slack alert
     try {
         var config = getConfig();

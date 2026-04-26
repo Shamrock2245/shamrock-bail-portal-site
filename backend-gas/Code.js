@@ -4567,3 +4567,72 @@ function staffGetArrestsFeed_(countyFilter) {
 
   return { success: true, arrests: arrests.slice(0, 50) };
 }
+
+// ============================================================================
+// DIAGNOSTIC FUNCTIONS — Run from GAS Script Editor to verify system health
+// ============================================================================
+
+/**
+ * Verify that GAS_API_KEY is set and matches what Wix expects.
+ * Run this from the GAS Script Editor (not via doPost) to confirm key sync.
+ * Logs the first 4 and last 4 chars of the key for safe verification.
+ */
+function diagVerifyApiKey() {
+  var key = PropertiesService.getScriptProperties().getProperty('GAS_API_KEY') || '';
+  if (!key) {
+    Logger.log('[DIAG] GAS_API_KEY is NOT SET. Set it in Script Properties.');
+    return;
+  }
+  var masked = key.slice(0, 4) + '...' + key.slice(-4);
+  Logger.log('[DIAG] GAS_API_KEY is SET. Masked value: ' + masked);
+  Logger.log('[DIAG] Full length: ' + key.length + ' chars');
+  Logger.log('[DIAG] ACTION REQUIRED: Verify this matches the GAS_API_KEY secret in Wix Secrets Manager.');
+}
+
+/**
+ * Send a test magic link email to verify the full email pipeline.
+ * Run from GAS Script Editor. Replace TEST_EMAIL with your address.
+ */
+function diagTestMagicLinkEmail() {
+  var TEST_EMAIL = 'admin@shamrockbailbonds.biz';
+  var TEST_LINK = 'https://www.shamrockbailbonds.biz/portal-landing?token=DIAG_TEST_TOKEN_' + Date.now();
+  try {
+    MailApp.sendEmail({
+      to: TEST_EMAIL,
+      subject: '[DIAG] Magic Link Test — Shamrock Portal',
+      htmlBody: '<p>This is a diagnostic test email from GAS.</p><p><a href="' + TEST_LINK + '">Click to test magic link</a></p><p>If you received this, MailApp is working correctly.</p>',
+      name: 'Shamrock Portal Diagnostics'
+    });
+    Logger.log('[DIAG] Test email sent to ' + TEST_EMAIL + '. Check inbox.');
+  } catch (e) {
+    Logger.log('[DIAG] FAILED to send test email: ' + e.message);
+  }
+}
+
+/**
+ * Full system health check — verifies all critical Script Properties are set.
+ * Run from GAS Script Editor.
+ */
+function diagSystemHealthCheck() {
+  var props = PropertiesService.getScriptProperties();
+  var required = [
+    'GAS_API_KEY',
+    'TWILIO_ACCOUNT_SID',
+    'TWILIO_AUTH_TOKEN',
+    'TWILIO_PHONE_NUMBER',
+    'SIGNNOW_API_TOKEN',
+    'GOOGLE_DRIVE_FOLDER_ID'
+  ];
+  Logger.log('[DIAG] === GAS System Health Check ===');
+  required.forEach(function(key) {
+    var val = props.getProperty(key);
+    if (!val) {
+      Logger.log('[DIAG] MISSING: ' + key);
+    } else {
+      Logger.log('[DIAG] OK: ' + key + ' (' + val.length + ' chars)');
+    }
+  });
+  Logger.log('[DIAG] Mail quota remaining: ' + MailApp.getRemainingDailyQuota());
+  Logger.log('[DIAG] Script URL: ' + ScriptApp.getService().getUrl());
+  Logger.log('[DIAG] === End Health Check ===');
+}

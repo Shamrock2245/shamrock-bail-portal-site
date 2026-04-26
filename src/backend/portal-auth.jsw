@@ -18,7 +18,10 @@ import wixData from 'wix-data';
 import { generateToken, hashPassword, verifyPassword } from 'backend/auth-utils';
 import { getConfig } from 'backend/config-loader';
 import { buildMagicLinkUrl } from 'backend/portal-url';
-import { getGasWebAppUrl, getGasApiKey, getSecureSecret } from 'backend/secretsManager';
+import { getGasApiKey, getSecureSecret } from 'backend/secretsManager';
+// NOTE: getGasWebAppUrl is intentionally NOT imported here.
+// All GAS calls route through the Netlify proxy (hardcoded URL), so the
+// GAS_WEB_APP_URL secret is not needed in portal-auth.jsw.
 import { sendSms } from 'backend/twilio-client';
 import { fetch } from 'wix-fetch';
 import { fetchWithRetry } from 'backend/utils';
@@ -136,8 +139,12 @@ function buildPhoneQuery(collection, field, phoneInput) {
 }
 
 /**
- * Look up user by email or phone in Cases collection
- * Returns role and person info if found
+ * Look up user by email or phone across Cases AND IntakeQueue collections.
+ * Returns role and person info if found.
+ *
+ * IMPORTANT: Cases collection is the canonical store, but IntakeQueue holds
+ * all active leads from Telegram/mini-apps before GAS syncs them to Cases.
+ * We must search both to correctly identify returning leads.
  */
 export async function lookupUserByContact(contact) {
     try {
@@ -162,30 +169,24 @@ export async function lookupUserByContact(contact) {
             };
         }
 
-        // 2 & 3. Search in Cases collection (Defendant & Indemnitor parallel lookups)
+        // 2. Search in Cases collection first (canonical, post-GAS-sync records)
         const casesLookups = [];
-
         if (isEmail(contact)) {
-            // Check defendant email
             casesLookups.push(wixData.query(CONFIG.CASES_COLLECTION)
                 .eq('defendantEmail', normalized)
                 .find({ suppressAuth: true }));
-            // Check indemnitor email
             casesLookups.push(wixData.query(CONFIG.CASES_COLLECTION)
                 .eq('indemnitorEmail', normalized)
                 .find({ suppressAuth: true }));
         } else {
-            // Check defendant phone
             casesLookups.push(buildPhoneQuery(CONFIG.CASES_COLLECTION, 'defendantPhone', contact).find({ suppressAuth: true }));
-            // Check indemnitor phone
             casesLookups.push(buildPhoneQuery(CONFIG.CASES_COLLECTION, 'indemnitorPhone', contact).find({ suppressAuth: true }));
         }
+        const [caseDefResults, caseIndResults] = await Promise.all(casesLookups);
 
-        const [defResults, indResults] = await Promise.all(casesLookups);
-
-        // Check defendant results first
-        if (defResults.items.length > 0) {
-            const caseData = defResults.items[0];
+        if (caseDefResults.items.length > 0) {
+            const caseData = caseDefResults.items[0];
+            console.log(`[OK] Found defendant in Cases: ${caseData._id}`);
             return {
                 found: true,
                 personId: caseData._id,
@@ -196,10 +197,9 @@ export async function lookupUserByContact(contact) {
                 name: caseData.defendantName
             };
         }
-
-        // Check indemnitor results second
-        if (indResults.items.length > 0) {
-            const caseData = indResults.items[0];
+        if (caseIndResults.items.length > 0) {
+            const caseData = caseIndResults.items[0];
+            console.log(`[OK] Found indemnitor in Cases: ${caseData._id}`);
             return {
                 found: true,
                 personId: 'indemnitor_' + caseData._id,
@@ -211,7 +211,60 @@ export async function lookupUserByContact(contact) {
             };
         }
 
-        // 4. Not found - will be treated as new user
+        // 3. Fall back to IntakeQueue (Telegram/mini-app leads not yet synced to Cases)
+        // IntakeQueue uses the same field names: indemnitorEmail, indemnitorPhone,
+        // defendantEmail, defendantPhone, indemnitorName, defendantName, caseId
+        const intakeLookups = [];
+        if (isEmail(contact)) {
+            intakeLookups.push(wixData.query('IntakeQueue')
+                .eq('defendantEmail', normalized)
+                .descending('_createdDate')
+                .find({ suppressAuth: true }));
+            intakeLookups.push(wixData.query('IntakeQueue')
+                .eq('indemnitorEmail', normalized)
+                .descending('_createdDate')
+                .find({ suppressAuth: true }));
+        } else {
+            intakeLookups.push(buildPhoneQuery('IntakeQueue', 'defendantPhone', contact)
+                .descending('_createdDate')
+                .find({ suppressAuth: true }));
+            intakeLookups.push(buildPhoneQuery('IntakeQueue', 'indemnitorPhone', contact)
+                .descending('_createdDate')
+                .find({ suppressAuth: true }));
+        }
+        const [intakeDefResults, intakeIndResults] = await Promise.all(intakeLookups);
+
+        if (intakeDefResults.items.length > 0) {
+            const intake = intakeDefResults.items[0];
+            console.log(`[OK] Found defendant in IntakeQueue: ${intake.caseId || intake._id}`);
+            return {
+                found: true,
+                personId: intake._id,
+                role: 'defendant',
+                caseId: intake.caseId || intake._id,
+                email: intake.defendantEmail,
+                phone: intake.defendantPhone,
+                name: intake.defendantName,
+                source: 'intake'
+            };
+        }
+        if (intakeIndResults.items.length > 0) {
+            const intake = intakeIndResults.items[0];
+            console.log(`[OK] Found indemnitor in IntakeQueue: ${intake.caseId || intake._id}`);
+            return {
+                found: true,
+                personId: 'indemnitor_' + intake._id,
+                role: 'indemnitor',
+                caseId: intake.caseId || intake._id,
+                email: intake.indemnitorEmail,
+                phone: intake.indemnitorPhone,
+                name: intake.indemnitorName,
+                source: 'intake'
+            };
+        }
+
+        // 4. Not found anywhere — new user, default to indemnitor
+        console.log(`[!] Contact not found in Cases or IntakeQueue: ${normalized.substring(0, 6)}...`);
         return {
             found: false,
             contact: normalized
@@ -611,15 +664,16 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
  */
 async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
     try {
-        // Use GAS backend to send email
-        const [gasUrl, apiKey] = await Promise.all([
-            getGasWebAppUrl(),
-            getGasApiKey()
-        ]);
+        // Use GAS backend to send email via Netlify proxy.
+        // IMPORTANT: getGasWebAppUrl() is intentionally NOT called here.
+        // The proxy URL is hardcoded below. Calling getGasWebAppUrl() would throw
+        // if GAS_WEB_APP_URL is not set in Wix Secrets Manager, crashing the
+        // entire function before the email is sent. Only the API key is needed.
+        const apiKey = await getGasApiKey();
 
         console.log(' sendMagicLinkEmail DEBUG:');
-        console.log('  - GAS URL:', gasUrl ? 'SET' : 'MISSING');
-        console.log('  - API Key:', apiKey ? 'SET' : 'MISSING');
+        console.log('  - Proxy: shamrock-telegram.netlify.app/api/gas-proxy');
+        console.log('  - API Key:', apiKey ? 'SET (' + apiKey.length + ' chars)' : 'MISSING — CHECK Wix Secrets Manager');
         console.log('  - Recipient:', email.replace(/(.{2})(.*)(@.*)/, '$1***$3'));
         console.log('  - Role:', role);
 
@@ -684,8 +738,7 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
         console.log(' GAS Response Body:', responseText);
 
         if (!response.ok) {
-            const maskedUrl = gasUrl.length > 20 ? '...' + gasUrl.slice(-20) : gasUrl;
-            throw new Error(`GAS Network Error (${response.status} ${response.statusText}) at [${maskedUrl}]`);
+            throw new Error(`GAS Network Error (${response.status} ${response.statusText}) via Netlify proxy`);
         }
 
         // Try to parse response as JSON
@@ -765,28 +818,26 @@ export async function getStaffDashboardData() {
             driveFolderUrl: c.googleDriveFolderUrl || c.driveFolderUrl || '' // Try standard fields
         }));
 
-        // Fetch System Status from GAS
+        // Fetch System Status from GAS via Netlify proxy
+        // NOTE: Direct GAS calls from Wix IPs are blocked by Google. Use proxy.
         let systemLogs = [];
         try {
-            const gasUrl = await getGasWebAppUrl();
             const apiKey = await getGasApiKey();
-            // 3-second timeout for status check
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-            const statusResp = await fetch(gasUrl, {
+            const proxyUrl = 'https://shamrock-telegram.netlify.app/api/gas-proxy';
+            const statusResp = await fetchWithRetry(proxyUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'getSystemStatus', apiKey: apiKey }),
-                signal: controller.signal
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-GAS-API-Key': apiKey
+                },
+                body: JSON.stringify({ action: 'getSystemStatus', apiKey: apiKey })
             });
-            clearTimeout(timeoutId);
             if (statusResp.ok) {
                 const statusJson = await statusResp.json();
                 if (statusJson.logs) systemLogs = statusJson.logs;
             }
         } catch (e) {
-            console.warn("Failed to fetch GAS status:", e);
+            console.warn("Failed to fetch GAS status (non-fatal):", e);
         }
 
         return {
