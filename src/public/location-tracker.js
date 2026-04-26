@@ -1,7 +1,7 @@
 import wixWindow from 'wix-window';
 import { saveUserLocation } from 'backend/location.jsw';
 // REMOVED: import { authentication } from 'wix-members';
-import { local } from 'wix-storage-frontend';
+// wix-storage-frontend does not exist — local storage not used in this module (removed 2026-04-26)
 import { getSessionToken, hasSessionToken, clearSessionToken } from 'public/session-manager';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
 

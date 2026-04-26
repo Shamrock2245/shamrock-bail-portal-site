@@ -20,7 +20,7 @@
 
 import { chatWithAgent } from 'backend/ai-service.jsw';
 import wixWindow from 'wix-window';
-import { getSessionId, getSessionToken } from 'public/session-manager';
+import { getOrSetSessionId, getSessionToken } from 'public/session-manager';
 
 let chatHistory = [];
 let isProcessing = false;
@@ -107,7 +107,7 @@ async function sendMessage(inputElement, repeater) {
 
     // Context (Auth)
     // We try to get auth token if available (e.g. from local storage or session)
-    const sessionId = getSessionId(); // From existing import
+    const sessionId = getOrSetSessionId(); // getOrSetSessionId is the correct export from session-manager.js
     const authToken = getSessionToken(); // New import needed
 
     const context = {
