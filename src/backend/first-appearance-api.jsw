@@ -1,0 +1,326 @@
+/**
+ * Shamrock Bail Bonds — First Appearance API
+ * Backend: /backend/first-appearance-api.jsw
+ *
+ * Provides:
+ *  1. County First Appearance schedule data (enriched, cacheable)
+ *  2. CTA engagement tracking (phone clicks, online starts, Zoom joins)
+ *  3. Page view analytics with county context
+ *
+ * Called by: First Appearance.h4fpl.js (via postMessage bridge from embed)
+ */
+
+import { trackEvent, trackConversion } from 'backend/analytics';
+
+// ─── COUNTY SCHEDULE DATA ────────────────────────────────────────────────────
+// Canonical source-of-truth for First Appearance schedules across Florida.
+// This data is served to the embed via Velo postMessage, so the embed
+// HTML can remain static (CDN-cached on Netlify) while data stays fresh.
+
+const COUNTY_SCHEDULES = Object.freeze([
+    {
+        name: "Lee County",
+        circuit: "20th Judicial Circuit",
+        schedule: "10:00 AM — Daily (M–F)",
+        location: "Lee County Justice Center, Fort Myers",
+        accessType: "livestream",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Livestream available via FL Courts",
+        phone: "239-533-2900",
+        tier: 1
+    },
+    {
+        name: "Hendry County",
+        circuit: "20th Judicial Circuit",
+        schedule: "Varies (Check Zoom)",
+        location: "Hendry County Courthouse, LaBelle",
+        accessType: "zoom",
+        liveUrl: "https://zoom.us/j/94329649927?pwd=l5J4yPuaqHacJ1lQoe3GaJK9TTpA7a.1",
+        notes: "Zoom ID: 943 2964 9927 / Passcode: 550315",
+        phone: "863-675-5229",
+        tier: 1
+    },
+    {
+        name: "Charlotte County",
+        circuit: "20th Judicial Circuit",
+        schedule: "Daily (M–F)",
+        location: "Charlotte County Justice Center, Punta Gorda",
+        accessType: "livestream",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Livestream available via FL Courts",
+        phone: "941-637-2110",
+        tier: 1
+    },
+    {
+        name: "Collier County",
+        circuit: "20th Judicial Circuit",
+        schedule: "Daily (M–F)",
+        location: "Collier County Courthouse, Naples",
+        accessType: "livestream",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Livestream available via FL Courts",
+        phone: "239-252-8800",
+        tier: 1
+    },
+    {
+        name: "DeSoto County",
+        circuit: "12th Judicial Circuit",
+        schedule: "Varies",
+        location: "DeSoto County Courthouse, Arcadia",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "863-993-4876",
+        tier: 1
+    },
+    {
+        name: "Glades County",
+        circuit: "20th Judicial Circuit",
+        schedule: "Varies",
+        location: "Glades County Courthouse, Moore Haven",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "863-946-6010",
+        tier: 2
+    },
+    {
+        name: "Hillsborough County",
+        circuit: "13th Judicial Circuit",
+        schedule: "1:30 PM — Daily (M–F)",
+        location: "Hillsborough County Courthouse, Tampa",
+        accessType: "inperson",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Primarily in-person; limited Zoom availability",
+        phone: "813-276-8100",
+        tier: 2
+    },
+    {
+        name: "Orange County",
+        circuit: "9th Judicial Circuit",
+        schedule: "Varies",
+        location: "Orange County Courthouse, Orlando",
+        accessType: "livestream",
+        liveUrl: "https://ninthcircuit.org/communication-outreach/initial-appearances-live",
+        notes: "Livestream via 9th Circuit website",
+        phone: "407-836-2000",
+        tier: 2
+    },
+    {
+        name: "Sarasota County",
+        circuit: "12th Judicial Circuit",
+        schedule: "Varies",
+        location: "Sarasota County Courthouse, Sarasota",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "941-861-7400",
+        tier: 1
+    },
+    {
+        name: "Manatee County",
+        circuit: "12th Judicial Circuit",
+        schedule: "Varies",
+        location: "Manatee County Courthouse, Bradenton",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "941-749-3600",
+        tier: 1
+    },
+    {
+        name: "Palm Beach County",
+        circuit: "15th Judicial Circuit",
+        schedule: "Varies",
+        location: "Palm Beach County Courthouse, West Palm Beach",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "561-355-2431",
+        tier: 2
+    },
+    {
+        name: "Seminole County",
+        circuit: "18th Judicial Circuit",
+        schedule: "Varies",
+        location: "Seminole County Courthouse, Sanford",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "407-665-4200",
+        tier: 2
+    },
+    {
+        name: "Polk County",
+        circuit: "10th Judicial Circuit",
+        schedule: "Varies",
+        location: "Polk County Courthouse, Bartow",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "863-534-4000",
+        tier: 2
+    },
+    {
+        name: "Pinellas County",
+        circuit: "6th Judicial Circuit",
+        schedule: "Varies",
+        location: "Pinellas County Justice Center, Clearwater",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "727-464-3267",
+        tier: 2
+    },
+    {
+        name: "Brevard County",
+        circuit: "18th Judicial Circuit",
+        schedule: "Varies",
+        location: "Brevard County Courthouse, Titusville / Viera",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "321-637-5413",
+        tier: 2
+    },
+    {
+        name: "Duval County",
+        circuit: "4th Judicial Circuit",
+        schedule: "Varies",
+        location: "Duval County Courthouse, Jacksonville",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "904-255-1100",
+        tier: 2
+    },
+    {
+        name: "Miami-Dade County",
+        circuit: "11th Judicial Circuit",
+        schedule: "Daily",
+        location: "Richard E. Gerstein Justice Building, Miami",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "305-275-1155",
+        tier: 2
+    },
+    {
+        name: "Broward County",
+        circuit: "17th Judicial Circuit",
+        schedule: "Varies",
+        location: "Broward County Courthouse, Fort Lauderdale",
+        accessType: "directory",
+        liveUrl: "https://courtrooms.flcourts.gov/",
+        notes: "Check FL Courts Directory for schedule",
+        phone: "954-831-7700",
+        tier: 2
+    }
+].sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    return a.name.localeCompare(b.name);
+}));
+
+// ─── PUBLIC API ──────────────────────────────────────────────────────────────
+
+/**
+ * Returns the full county First Appearance schedule list.
+ * Tier 1 counties (SWFL home territory) are returned first.
+ *
+ * @returns {Promise<Object>} - { success, counties, lastUpdated }
+ */
+export async function getFirstAppearanceSchedules() {
+    return {
+        success: true,
+        counties: COUNTY_SCHEDULES,
+        totalCounties: COUNTY_SCHEDULES.length,
+        lastUpdated: '2026-04-27'
+    };
+}
+
+/**
+ * Looks up a single county's First Appearance schedule by name.
+ *
+ * @param {string} countyName - e.g. "Lee County" or "lee"
+ * @returns {Promise<Object>} - { success, county } or { success: false }
+ */
+export async function getCountySchedule(countyName) {
+    const normalized = (countyName || '').trim().toLowerCase().replace(' county', '');
+    const county = COUNTY_SCHEDULES.find(c => {
+        const slug = c.name.toLowerCase().replace(' county', '');
+        return slug === normalized || slug.startsWith(normalized);
+    });
+
+    if (!county) {
+        return { success: false, error: `County not found: ${countyName}` };
+    }
+    return { success: true, county };
+}
+
+/**
+ * Tracks a CTA engagement event from the First Appearance page.
+ * Called via the embed postMessage bridge → Velo → this backend.
+ *
+ * @param {string} actionType - 'phone_click', 'start_online', 'zoom_join', 'livestream_watch', 'faq_expand', 'county_search'
+ * @param {Object} context - { county, device, sessionId, ... }
+ * @returns {Promise<Object>} - tracking result
+ */
+export async function trackFirstAppearanceAction(actionType, context = {}) {
+    try {
+        const validActions = [
+            'phone_click',
+            'start_online',
+            'zoom_join',
+            'livestream_watch',
+            'courthouse_info',
+            'faq_expand',
+            'county_search',
+            'directory_click',
+            'page_scroll_depth'
+        ];
+
+        if (!validActions.includes(actionType)) {
+            console.warn(`⚠️ Unknown action type: ${actionType}`);
+        }
+
+        // Determine if this is a conversion-level event
+        const conversionActions = ['phone_click', 'start_online'];
+        const isConversion = conversionActions.includes(actionType);
+
+        const eventProps = {
+            ...context,
+            page: 'first-appearance',
+            actionType,
+            source: context.source || 'first-appearance-embed'
+        };
+
+        if (isConversion) {
+            await trackConversion('first_appearance_cta', eventProps);
+        } else {
+            await trackEvent(`fa_${actionType}`, eventProps);
+        }
+
+        return { success: true, tracked: actionType };
+    } catch (error) {
+        console.error('❌ trackFirstAppearanceAction error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Tracks a page view for the First Appearance page with enriched context.
+ *
+ * @param {Object} viewData - { device, referrer, sessionId }
+ * @returns {Promise<Object>} - tracking result
+ */
+export async function trackFirstAppearancePageView(viewData = {}) {
+    try {
+        return await trackEvent('page_view', {
+            page: 'first-appearance',
+            ...viewData
+        });
+    } catch (error) {
+        console.error('❌ trackFirstAppearancePageView error:', error);
+        return { success: false, error: error.message };
+    }
+}

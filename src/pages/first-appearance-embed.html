@@ -1227,17 +1227,98 @@
       if (!isOpen) {
         item.classList.add('open');
         btn.setAttribute('aria-expanded', 'true');
+
+        // Track FAQ expand event
+        const question = FAQ_DATA[idx] ? FAQ_DATA[idx].q : null;
+        sendToParent({ type: 'FAQ_EXPAND', question: question, index: idx });
       }
     }
 
-    // ─── SEARCH / FILTER ──────────────────────────────────────────
+    // ─── SEARCH / FILTER (with debounced tracking) ──────────────────
+    let searchDebounce = null;
     document.getElementById('countySearch').addEventListener('input', function(e) {
       const term = e.target.value.toLowerCase().trim();
       const filtered = term
         ? COUNTY_DATA.filter(c => c.name.toLowerCase().includes(term) || c.circuit.toLowerCase().includes(term))
         : COUNTY_DATA;
       renderCounties(filtered);
+
+      // Debounced tracking — only fire after user stops typing for 800ms
+      clearTimeout(searchDebounce);
+      if (term.length >= 2) {
+        searchDebounce = setTimeout(() => {
+          sendToParent({ type: 'COUNTY_SEARCH', term: term, resultsCount: filtered.length });
+        }, 800);
+      }
     });
+
+    // ─── CTA CLICK TRACKING ────────────────────────────────────────
+    // Attach tracking to all CTA buttons via event delegation
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('a.btn, button.btn');
+      if (!btn) return;
+
+      const id = btn.id || '';
+      const href = btn.getAttribute('href') || '';
+
+      // Determine action type
+      let action = null;
+      let county = null;
+
+      if (href.startsWith('tel:') || id.includes('Call')) {
+        action = 'phone';
+      } else if (href.includes('portal-landing') || id.includes('Online')) {
+        action = 'online';
+      } else if (href.includes('zoom.us')) {
+        action = 'zoom';
+        county = btn.closest('.county-card')?.querySelector('h3')?.textContent || null;
+      } else if (href.includes('courtrooms.flcourts.gov') || href.includes('ninthcircuit.org')) {
+        const card = btn.closest('.county-card');
+        if (card) {
+          county = card.querySelector('h3')?.textContent || null;
+          const text = btn.textContent || '';
+          if (text.includes('Watch Live')) action = 'livestream';
+          else if (text.includes('Find Stream')) action = 'directory';
+          else if (text.includes('Courthouse')) action = 'courthouse';
+          else action = 'directory';
+        } else {
+          action = 'directory';
+        }
+      }
+
+      if (action) {
+        sendToParent({ type: 'CTA_CLICK', action: action, county: county, buttonId: id });
+      }
+    });
+
+    // ─── SCROLL DEPTH TRACKING ────────────────────────────────────
+    const scrollMilestones = [25, 50, 75, 100];
+    const reachedMilestones = new Set();
+
+    function checkScrollDepth() {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight <= 0) return;
+
+      const pct = Math.round((scrollTop / docHeight) * 100);
+
+      scrollMilestones.forEach(milestone => {
+        if (pct >= milestone && !reachedMilestones.has(milestone)) {
+          reachedMilestones.add(milestone);
+          sendToParent({ type: 'SCROLL_DEPTH', depth: milestone });
+        }
+      });
+    }
+
+    // Throttled scroll listener
+    let scrollThrottle = null;
+    window.addEventListener('scroll', function() {
+      if (scrollThrottle) return;
+      scrollThrottle = setTimeout(() => {
+        checkScrollDepth();
+        scrollThrottle = null;
+      }, 250);
+    }, { passive: true });
 
     // ─── SCROLL REVEAL ────────────────────────────────────────────
     function initReveal() {
@@ -1254,6 +1335,13 @@
     }
 
     // ─── POST MESSAGE BRIDGE — Wix Velo Communication ─────────────
+    // Sends events to the parent Wix page
+    function sendToParent(data) {
+      try {
+        window.parent.postMessage(data, '*');
+      } catch (e) { /* silently fail if not in iframe */ }
+    }
+
     // The parent Wix page can send messages to update data or trigger actions
     window.addEventListener('message', function(event) {
       try {
@@ -1275,7 +1363,7 @@
     // Notify parent of height changes for iframe auto-resize
     function reportHeight() {
       const height = document.documentElement.scrollHeight;
-      window.parent.postMessage({ type: 'setHeight', height: height }, '*');
+      sendToParent({ type: 'setHeight', height: height });
     }
 
     // ─── INIT ─────────────────────────────────────────────────────
