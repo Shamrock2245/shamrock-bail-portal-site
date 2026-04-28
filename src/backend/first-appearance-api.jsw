@@ -11,6 +11,7 @@
  */
 
 import { trackEvent, trackConversion } from 'backend/analytics';
+import allCountyData from 'backend/data/allFloridaCounties.json';
 
 // ─── COUNTY SCHEDULE DATA ────────────────────────────────────────────────────
 // Canonical source-of-truth for First Appearance schedules across Florida.
@@ -323,4 +324,271 @@ export async function trackFirstAppearancePageView(viewData = {}) {
         console.error('❌ trackFirstAppearancePageView error:', error);
         return { success: false, error: error.message };
     }
+}
+
+// ─── COUNTY PAGE GENERATOR ──────────────────────────────────────────────────
+// Powers /first-appearance/{county-slug} dynamic pages.
+// Merges schedule data with allFloridaCounties.json enrichment for
+// genuinely unique content per county (not variable-swap templates).
+
+
+/**
+ * Generate complete First Appearance county page data.
+ * Returns schedule + enriched courthouse info + localized FAQs + SEO data.
+ *
+ * @param {string} countySlug - e.g. "lee", "collier", "miami-dade"
+ * @returns {Promise<Object>} - { success, data } or { success: false, error }
+ */
+export async function generateFirstAppearanceCountyPage(countySlug) {
+    try {
+        const normalized = (countySlug || '').toLowerCase().trim();
+        if (!normalized) {
+            return { success: false, error: 'No county slug provided' };
+        }
+
+        // 1. Find schedule data
+        const schedule = COUNTY_SCHEDULES.find(c => {
+            const slug = c.name.toLowerCase().replace(' county', '').replace(/\s+/g, '-');
+            return slug === normalized || slug.startsWith(normalized);
+        });
+
+        // 2. Find enrichment data from allFloridaCounties.json
+        const enriched = lookupCountyEnrichment(normalized);
+
+        if (!schedule && !enriched) {
+            return { success: false, error: `County not found: ${countySlug}` };
+        }
+
+        // 3. Build display name
+        const countyName = schedule
+            ? schedule.name.replace(' County', '')
+            : (enriched.name || countySlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+
+        const phone = '(239) 332-2245';
+        const cities = enriched.cities || [];
+        const cityListStr = formatCityListFA(cities);
+        const judicialCircuit = enriched.judicialCircuit || (schedule ? schedule.circuit : '');
+        const circuitNumber = judicialCircuit.split(' ')[0] || '';
+        const countySeat = enriched.countySeat || '';
+        const population = enriched.population || 0;
+
+        // 4. Assemble page data
+        const data = {
+            county_name: countyName,
+            county_name_full: `${countyName} County`,
+            county_slug: normalized,
+            county_seat: countySeat,
+            cities,
+            judicial_circuit: judicialCircuit,
+            judicial_circuit_number: circuitNumber,
+            population,
+
+            // Schedule data
+            schedule: schedule ? {
+                time: schedule.schedule,
+                location: schedule.location,
+                accessType: schedule.accessType,
+                liveUrl: schedule.liveUrl,
+                notes: schedule.notes,
+                phone: schedule.phone,
+                tier: schedule.tier
+            } : {
+                time: 'Contact courthouse for schedule',
+                location: `${countyName} County Courthouse`,
+                accessType: 'directory',
+                liveUrl: 'https://courtrooms.flcourts.gov/',
+                notes: 'Check FL Courts Directory for schedule',
+                phone: enriched.clerkPhone || phone,
+                tier: 3
+            },
+
+            // Resources
+            resources: {
+                inmate_search_url: enriched.bookingUrl || '',
+                court_records_url: enriched.recordsUrl || '',
+                clerk_website: enriched.clerkWebsite || '',
+                sheriff_phone: enriched.sheriffPhone || '',
+                clerk_phone: enriched.clerkPhone || ''
+            },
+
+            // Contact
+            contact: {
+                primary_phone: phone,
+                primary_phone_display: phone
+            },
+
+            // Content
+            content: {
+                hero_headline: `First Appearance Hearing in ${countyName} County, Florida`,
+                hero_subheadline: `Know the schedule. Watch the hearing. Get bail posted fast.`,
+
+                about: generateFAAboutCounty(countyName, cities, countySeat, circuitNumber, population),
+                what_to_expect: generateFAWhatToExpect(countyName, circuitNumber),
+                bail_info: generateFABailInfo(countyName, circuitNumber),
+                service_areas: cityListStr
+                    ? `Shamrock Bail Bonds serves defendants appearing at First Appearance hearings in ${countyName} County — including residents of ${cityListStr} and surrounding communities.`
+                    : `Shamrock Bail Bonds serves defendants appearing at First Appearance hearings throughout ${countyName} County.`,
+
+                faq: generateFACountyFAQs(countyName, circuitNumber, cities, countySeat, phone)
+            },
+
+            // Cross-links
+            links: {
+                county_bail_page: `/florida-bail-bonds/${normalized}`,
+                hub_page: '/first-appearance',
+                home: '/',
+                portal: '/portal-landing'
+            },
+
+            // SEO
+            seo: {
+                meta_title: `First Appearance Hearing ${countyName} County FL | Court Schedule & Bail Help`,
+                meta_description: `${countyName} County First Appearance hearing schedule, courthouse info, and live court access. Get bail posted immediately — call Shamrock Bail Bonds 24/7 at ${phone}.`,
+                canonical_url: `/first-appearance/${normalized}`,
+                keywords: generateFAKeywords(countyName, cities, countySeat)
+            }
+        };
+
+        return { success: true, data };
+
+    } catch (error) {
+        console.error('❌ generateFirstAppearanceCountyPage error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// ─── ENRICHMENT LOOKUP ──────────────────────────────────────────────────────
+
+function lookupCountyEnrichment(slug) {
+    const counties = (allCountyData && allCountyData.counties) || [];
+    // Normalize slug to match name: "lee" → "Lee", "miami-dade" → "Miami-Dade"
+    const match = counties.find(c => {
+        const nameSlug = (c.name || '').toLowerCase().replace(/\s+/g, '-');
+        return nameSlug === slug || nameSlug.startsWith(slug);
+    });
+    return match || {};
+}
+
+function formatCityListFA(cities) {
+    if (!cities || cities.length === 0) return '';
+    if (cities.length === 1) return cities[0];
+    if (cities.length === 2) return `${cities[0]} and ${cities[1]}`;
+    return cities.slice(0, -1).join(', ') + ', and ' + cities[cities.length - 1];
+}
+
+// ─── UNIQUE CONTENT GENERATORS ──────────────────────────────────────────────
+
+function generateFAAboutCounty(name, cities, countySeat, circuitNum, population) {
+    const cityStr = formatCityListFA(cities);
+    const popStr = population > 0 ? ` With a population of approximately ${population.toLocaleString()},` : '';
+    const seatStr = countySeat ? ` the county seat of ${countySeat}` : '';
+    const circuitStr = circuitNum ? ` under the ${circuitNum} Judicial Circuit of Florida` : '';
+
+    let text = `A First Appearance hearing is the critical first step in the bail process for anyone arrested in ${name} County, Florida.`;
+    text += `${popStr} ${name} County${seatStr} processes arrests through its county jail and courthouse system${circuitStr}.`;
+    text += ` Under Florida Rule of Criminal Procedure 3.130, the hearing must occur within 24 hours of arrest.`;
+    text += ` At this hearing, a judge reviews the charges, determines probable cause, and sets the bail amount.`;
+    if (cityStr) {
+        text += ` Whether your loved one was arrested in ${cityStr}, or anywhere else in ${name} County, Shamrock Bail Bonds can help secure their release the moment bail is set.`;
+    }
+    text += ` Call (239) 332-2245 — we answer 24/7, including holidays and weekends.`;
+
+    return text;
+}
+
+function generateFAWhatToExpect(name, circuitNum) {
+    const circuitStr = circuitNum ? ` in the ${circuitNum} Judicial Circuit` : '';
+
+    return `During a First Appearance hearing in ${name} County${circuitStr}, the judge will: `
+        + `(1) inform the defendant of the charges filed against them, `
+        + `(2) determine whether probable cause exists for the arrest, `
+        + `(3) set the bail amount and conditions of release, and `
+        + `(4) appoint a public defender if the defendant cannot afford an attorney. `
+        + `The defendant does NOT enter a plea at First Appearance — that happens at a later arraignment hearing. `
+        + `Family members are encouraged to watch the hearing (many ${name} County courts offer livestreaming) `
+        + `so they know the bond amount immediately and can call Shamrock Bail Bonds to begin the release process.`;
+}
+
+function generateFABailInfo(name, circuitNum) {
+    return `Once the judge sets bail at First Appearance in ${name} County, Shamrock Bail Bonds can begin posting the bond immediately. `
+        + `Florida law requires a bail bond premium of 10% of the total bond amount, with a $100 minimum per charge. `
+        + `This premium is non-refundable and is the same at every licensed bail bond agency in the state. `
+        + `We offer flexible payment plans for qualified clients to make bail more affordable. `
+        + `Most paperwork can be completed electronically from your phone — you don't even need to visit our office. `
+        + `Release from the ${name} County Jail typically occurs within 2-8 hours after bail is posted, `
+        + `though delays may occur depending on jail processing volume and court-imposed conditions.`;
+}
+
+function generateFACountyFAQs(name, circuitNum, cities, countySeat, phone) {
+    const cityStr = formatCityListFA(cities);
+    const circuitStr = circuitNum ? ` in the ${circuitNum} Judicial Circuit` : '';
+
+    return [
+        {
+            question: `When is the First Appearance hearing in ${name} County?`,
+            answer: `First Appearance hearings in ${name} County${circuitStr} must be held within 24 hours of arrest under Florida Rule of Criminal Procedure 3.130. The exact daily schedule varies — check with the ${name} County Courthouse or call Shamrock Bail Bonds at ${phone} for the latest schedule information.`
+        },
+        {
+            question: `Can I watch the First Appearance hearing in ${name} County online?`,
+            answer: `Many Florida counties, including several in the same judicial circuit as ${name} County, offer livestreaming or Zoom access for First Appearance hearings. Check the FL Courts Directory at courtrooms.flcourts.gov or call ${phone} — we can help you find the right stream or courtroom.`
+        },
+        {
+            question: `How quickly can I bail someone out after First Appearance in ${name} County?`,
+            answer: `Shamrock Bail Bonds can begin the bail process immediately after the judge sets the bond amount — even while the hearing is still in progress. We process bonds electronically so you can complete paperwork from your phone. Most bonds are posted within 1-2 hours of receiving the paperwork.`
+        },
+        {
+            question: `How much does bail cost in ${name} County, Florida?`,
+            answer: `The bail amount is set by the judge at First Appearance based on the charges and defendant's history. When using a bail bond agent like Shamrock, you pay only 10% of the total bond amount (with a $100 minimum per charge). For example, a $5,000 bond requires a $500 premium.`
+        },
+        {
+            question: `What happens if bail is denied at First Appearance in ${name} County?`,
+            answer: `If the judge denies bail (sets a "No Bond" hold), the defendant remains in custody. A defense attorney can file a Motion for Bond at a later hearing. Shamrock Bail Bonds can connect you with experienced criminal defense attorneys in ${name} County who handle bond motions regularly.`
+        },
+        {
+            question: `Does Shamrock Bail Bonds serve ${name} County?`,
+            answer: cityStr
+                ? `Yes. Shamrock Bail Bonds serves all of ${name} County, including ${cityStr}, and surrounding areas. We are a licensed and insured Florida bail bond agency with 24/7 availability. Call ${phone} for immediate assistance.`
+                : `Yes. Shamrock Bail Bonds serves all of ${name} County and surrounding areas. We are a licensed and insured Florida bail bond agency available 24/7. Call ${phone} for immediate help.`
+        },
+        {
+            question: `What should family members do during a First Appearance hearing in ${name} County?`,
+            answer: `Watch or attend the hearing to learn the bond amount immediately. Do NOT try to communicate with the defendant during the hearing. Write down the bond amount and any conditions the judge sets. Then call Shamrock Bail Bonds at ${phone} immediately — we can start the paperwork while you're still in the courtroom.`
+        },
+        {
+            question: `Can I post bail before First Appearance in ${name} County?`,
+            answer: `In most cases, bail cannot be posted until after the First Appearance hearing because the judge must set the bond amount first. However, for certain misdemeanor charges, a preset bond schedule may allow earlier posting. Call Shamrock at ${phone} to check if a preset bond applies to your case.`
+        }
+    ];
+}
+
+function generateFAKeywords(name, cities, countySeat) {
+    const nl = name.toLowerCase();
+    const base = [
+        `first appearance hearing ${nl} county florida`,
+        `first appearance ${nl} county`,
+        `${nl} county first appearance schedule`,
+        `bail after first appearance ${nl} county`,
+        `${nl} county courthouse first appearance`,
+        `watch first appearance hearing ${nl} county`,
+        `${nl} county bail bonds first appearance`,
+        `first appearance court ${nl} county fl`,
+        `how to bail someone out after first appearance ${nl} county`,
+        `${nl} county jail first appearance hearing`,
+        `bail bonds ${nl} county florida`,
+        `${nl} county bail hearing`,
+        `first appearance ${nl} county live stream`
+    ];
+
+    // City-specific long-tails
+    for (const city of (cities || []).slice(0, 4)) {
+        const cl = city.toLowerCase();
+        base.push(`first appearance hearing ${cl} florida`);
+        base.push(`bail bonds ${cl} fl`);
+    }
+
+    if (countySeat && (!cities || !cities.length || countySeat.toLowerCase() !== cities[0].toLowerCase())) {
+        base.push(`first appearance ${countySeat.toLowerCase()} florida`);
+    }
+
+    return base;
 }

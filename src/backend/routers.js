@@ -16,6 +16,7 @@
 import { redirect } from 'wix-router';
 import { validateCustomSession } from 'backend/portal-auth';
 import { routeCountyPage } from 'backend/bail-bonds-router';
+import { first_appearance_Router as faRouter } from 'backend/first-appearance-router';
 
 const ROLES = {
   DEFENDANT: 'defendant',
@@ -131,3 +132,6 @@ export async function bail_bonds_Router(request) {
 export async function florida_bail_bonds_Router(request) {
   return routeCountyPage(request);
 }
+
+// First Appearance county sub-pages: /first-appearance/{county-slug}
+export { faRouter as first_appearance_Router };
