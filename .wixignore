@@ -24,3 +24,12 @@ build/
 .DS_Store
 .env.local
 .env.development
+
+# Custom HTML embeds (not Wix Editor pages — used in HtmlComponent iframes)
+src/pages/bail-school-embed.html
+src/pages/communication-preferences-embed.html
+src/pages/first-appearance-embed.html
+src/pages/telegram-hub-section.html
+
+# Member dashboard scripts (custom, not mapped to Wix Editor pages)
+src/pages/members/
