@@ -229,3 +229,5 @@ function injectSeoSchema() {
         console.error("❌ SEO schema injection error:", err);
     }
 }
+
+// Trigger Wix CLI Sync: 1
