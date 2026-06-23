@@ -439,10 +439,46 @@
       text-decoration: none;
       cursor: pointer;
       transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
     }
     .program-curriculum:hover { color: var(--text-muted); }
-    .program-curriculum i { margin-left: 4px; font-size: 12px; }
+    .program-curriculum i { margin-left: 4px; font-size: 14px; transition: transform 0.3s; }
+    .program-curriculum.open i { transform: rotate(180deg); }
 
+    .curriculum-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s;
+      opacity: 0;
+      margin-top: 0;
+      text-align: left;
+    }
+    .curriculum-content.open {
+      max-height: 500px;
+      opacity: 1;
+      margin-top: 16px;
+    }
+    .curriculum-list {
+      list-style: none;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+    .curriculum-list li {
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 6px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .curriculum-list li i {
+      color: var(--green);
+      font-size: 16px;
+      margin-top: 2px;
+    }
     /* ═══════════════════════════════════════════════════════════════
        SECTION 3: FAQ
     ═══════════════════════════════════════════════════════════════ */
@@ -895,8 +931,8 @@
          tags        — Array of { label, colored } — colored=true uses the card color
          description — Paragraph body text
          price       — { text, type } — type: "free" | "contact" | "amount"
-         cta         — { text, href, id } — primary button
-         curriculum  — true to show "View Full Curriculum" link
+         cta         — { text, href, id, target, onClick } — primary button
+         curriculumItems — Array of strings (module names)
     ═══════════════════════════════════════════════════════════════ */
     const PROGRAMS_CONFIG = [
       {
@@ -911,8 +947,12 @@
         ],
         description: "Get an introduction to your rights and obligations as a bail bond co-signer. This free course walks you through how bail works, what you're signing, and how to protect yourself — all in plain English. It's also a great way to experience our teaching style before diving deeper.",
         price: { text: "FREE", type: "free" },
-        cta: { text: "Start Free Course", href: "https://www.shamrockbailbonds.biz/bail-school/indemnitor-basics", id: "startFreeBtn" },
-        curriculum: true
+        cta: { text: "Start Free Course", href: "https://www.shamrockbailbonds.biz/bail-school/indemnitor-basics", id: "startFreeBtn", target: "_top" },
+        curriculumItems: [
+          "Module 1: Bail Bond Fundamentals (What is Bail, Indemnitor Responsibilities)",
+          "Module 2: Financial Risks & Collateral",
+          "Module 3: Court Dates & Check-ins"
+        ]
       },
       {
         title: "The Agent Path",
@@ -926,8 +966,14 @@
         ],
         description: "Complete 120-hour state-approved program to become a licensed Florida bail bond agent. Covers law, procedures, ethics, and real-world practice. Graduate ready to sit for the state exam and start your career.",
         price: { text: "$699", type: "amount" },
-        cta: { text: "Apply Now", href: "https://www.shamrockbailbonds.biz/contact", id: "applyBtn" },
-        curriculum: true
+        cta: { text: "Apply Now", href: "https://www.shamrockbailbonds.biz/contact", id: "applyBtn", target: "_top" },
+        curriculumItems: [
+          "Module 1: Florida Statutes Chapter 648 & 903",
+          "Module 2: Criminal Justice System Overview",
+          "Module 3: Surety Bonds & Underwriting",
+          "Module 4: Agency Operations & Compliance",
+          "Module 5: Field Apprehension Basics"
+        ]
       },
       {
         title: "Risk Management & Skip Tracing",
@@ -941,8 +987,13 @@
         ],
         description: "Master the art of locating fugitives, assessing flight risk, and managing high-stakes bonds. Taught by veteran agents with 20+ years experience in the field.",
         price: { text: "$249", type: "amount" },
-        cta: { text: "Reserve Your Seat", href: "https://www.shamrockbailbonds.biz/contact", id: "reserveBtn" },
-        curriculum: true
+        cta: { text: "Reserve Your Seat", href: "https://swipesimple.com/links/lnk_d26efb5d83e121cdf8354402893b9c96", id: "reserveBtn", target: "_blank" },
+        curriculumItems: [
+          "Module 1: Pre-Bail Underwriting & Red Flags",
+          "Module 2: OSINT (Open Source Intelligence) & Database Searches",
+          "Module 3: Surveillance & Field Tactics",
+          "Module 4: Legal Boundaries of Apprehension in FL"
+        ]
       },
       {
         title: "Bail Bond Masterclass",
@@ -956,8 +1007,8 @@
         ],
         description: "Whether you're a new agent, a seasoned bondsman, or running your own agency — this masterclass is for you. Level up every facet of the game: sales, compliance, fugitive recovery, marketing, and agency operations. Available on the Skool platform.",
         price: { text: "Coming Soon", type: "contact" },
-        cta: { text: "Join the Waitlist", href: "https://www.shamrockbailbonds.biz/contact", id: "masterclassBtn" },
-        curriculum: false
+        cta: { text: "Join the Waitlist", href: "javascript:void(0)", id: "masterclassBtn", onClick: "showComingSoon(event, 'Bail Bond Masterclass — enrollment opening soon!')" },
+        curriculumItems: null
       }
     ];
 
@@ -987,22 +1038,48 @@
         const tags = p.tags.map(t =>
           `<span class="tag ${t.colored ? `tag--${p.color}` : 'tag--dark'}">${t.label}</span>`
         ).join('');
-        const curriculum = p.curriculum
-          ? `<span class="program-curriculum">View Full Curriculum <i class="ph ph-caret-down"></i></span>`
-          : '';
+        
+        let curriculum = '';
+        if (p.curriculumItems && p.curriculumItems.length > 0) {
+          const listItems = p.curriculumItems.map(item => \`<li><i class="ph-fill ph-check-circle"></i> \${item}</li>\`).join('');
+          curriculum = \`
+            <span class="program-curriculum" onclick="toggleCurriculum(this, 'curr-\${i}')">View Full Curriculum <i class="ph ph-caret-down"></i></span>
+            <div class="curriculum-content" id="curr-\${i}">
+              <ul class="curriculum-list">
+                \${listItems}
+              </ul>
+            </div>
+          \`;
+        }
 
-        return `
-          <div class="program-card ${colorClass} reveal ${delays[i] || ''}">
-            <div class="program-icon ${p.color}"><i class="${p.icon}"></i></div>
-            <h3>${p.title}</h3>
-            <p class="program-sub">${p.subtitle}</p>
-            <div class="program-tags">${tags}</div>
-            <p class="program-desc">${p.description}</p>
-            <div class="program-price ${priceClass}">${p.price.text}</div>
-            <a href="javascript:void(0)" class="btn btn--${p.color}" id="${p.cta.id}" onclick="showComingSoon(event, '${p.title} — enrollment opening soon!')">${p.cta.text}</a>
-            ${curriculum}
-          </div>`;
+        const btnProps = p.cta.onClick 
+          ? \`href="\${p.cta.href}" onclick="\${p.cta.onClick}"\` 
+          : \`href="\${p.cta.href}" target="\${p.cta.target || '_top'}"\`;
+
+        return \`
+          <div class="program-card \${colorClass} reveal \${delays[i] || ''}">
+            <div class="program-icon \${p.color}"><i class="\${p.icon}"></i></div>
+            <h3>\${p.title}</h3>
+            <p class="program-sub">\${p.subtitle}</p>
+            <div class="program-tags">\${tags}</div>
+            <p class="program-desc">\${p.description}</p>
+            <div class="program-price \${priceClass}">\${p.price.text}</div>
+            <a \${btnProps} class="btn btn--\${p.color}" id="\${p.cta.id}">\${p.cta.text}</a>
+            \${curriculum}
+          </div>\`;
       }).join('');
+    }
+
+    function toggleCurriculum(btn, id) {
+      const content = document.getElementById(id);
+      if (content.classList.contains('open')) {
+        content.classList.remove('open');
+        btn.classList.remove('open');
+      } else {
+        content.classList.add('open');
+        btn.classList.add('open');
+      }
+      setTimeout(reportHeight, 400);
     }
 
     // ─── RENDER FAQ ─────────────────────────────────────────────
