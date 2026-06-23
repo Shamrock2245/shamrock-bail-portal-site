@@ -926,7 +926,7 @@
         ],
         description: "Complete 120-hour state-approved program to become a licensed Florida bail bond agent. Covers law, procedures, ethics, and real-world practice. Graduate ready to sit for the state exam and start your career.",
         price: { text: "$699", type: "amount" },
-        cta: { text: "Apply Now", href: "https://www.shamrockbailbonds.biz/contact", id: "applyBtn" },
+        cta: { text: "Apply & Pay", href: "https://swipesimple.com/links/lnk_d26efb5d83e121cdf8354402893b9c96", id: "applyBtn" },
         curriculum: true
       },
       {
@@ -941,7 +941,7 @@
         ],
         description: "Master the art of locating fugitives, assessing flight risk, and managing high-stakes bonds. Taught by veteran agents with 20+ years experience in the field.",
         price: { text: "$249", type: "amount" },
-        cta: { text: "Reserve Your Seat", href: "https://www.shamrockbailbonds.biz/contact", id: "reserveBtn" },
+        cta: { text: "Reserve & Pay", href: "https://swipesimple.com/links/lnk_d26efb5d83e121cdf8354402893b9c96", id: "reserveBtn" },
         curriculum: true
       },
       {
@@ -956,7 +956,7 @@
         ],
         description: "Whether you're a new agent, a seasoned bondsman, or running your own agency — this masterclass is for you. Level up every facet of the game: sales, compliance, fugitive recovery, marketing, and agency operations. Available on the Skool platform.",
         price: { text: "Coming Soon", type: "contact" },
-        cta: { text: "Join the Waitlist", href: "https://www.shamrockbailbonds.biz/contact", id: "masterclassBtn" },
+        cta: { text: "Join the Waitlist", href: "#", id: "masterclassBtn" },
         curriculum: false
       },
       {
@@ -971,7 +971,7 @@
         ],
         description: "Learn the operational and compliance side of running a bail bond agency. Topics include record keeping, DBPR audits, trust accounting, and staff management.",
         price: { text: "Coming Soon", type: "contact" },
-        cta: { text: "Join the Waitlist", href: "https://www.shamrockbailbonds.biz/contact", id: "agencyOpsBtn" },
+        cta: { text: "Join the Waitlist", href: "#", id: "agencyOpsBtn" },
         curriculum: false
       },
       {
@@ -986,7 +986,7 @@
         ],
         description: "Discover proven strategies to generate more leads and build strong relationships with defense attorneys. Master local SEO, digital marketing, and community networking.",
         price: { text: "Coming Soon", type: "contact" },
-        cta: { text: "Join the Waitlist", href: "https://www.shamrockbailbonds.biz/contact", id: "marketingBtn" },
+        cta: { text: "Join the Waitlist", href: "#", id: "marketingBtn" },
         curriculum: false
       }
     ];
@@ -1021,6 +1021,11 @@
           ? `<span class="program-curriculum">View Full Curriculum <i class="ph ph-caret-down"></i></span>`
           : '';
 
+        const isComingSoon = !p.cta.href || p.cta.href === '#';
+        const clickAttr = isComingSoon
+            ? `onclick="showComingSoon(event, '${p.title} — enrollment opening soon!')"`
+            : `onclick="window.open('${p.cta.href}', '_blank', 'width=600,height=800,scrollbars=yes'); return false;"`;
+
         return `
           <div class="program-card ${colorClass} reveal ${delays[i] || ''}">
             <div class="program-icon ${p.color}"><i class="${p.icon}"></i></div>
@@ -1029,7 +1034,7 @@
             <div class="program-tags">${tags}</div>
             <p class="program-desc">${p.description}</p>
             <div class="program-price ${priceClass}">${p.price.text}</div>
-            <a href="javascript:void(0)" class="btn btn--${p.color}" id="${p.cta.id}" onclick="showComingSoon(event, '${p.title} — enrollment opening soon!')">${p.cta.text}</a>
+            <a href="${isComingSoon ? 'javascript:void(0)' : p.cta.href}" target="_blank" class="btn btn--${p.color}" id="${p.cta.id}" ${clickAttr}>${p.cta.text}</a>
             ${curriculum}
           </div>`;
       }).join('');
