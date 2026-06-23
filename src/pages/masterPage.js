@@ -226,11 +226,18 @@ function setupMobileMenu() {
  * Fallback: the Editor menu link should also be set to /bail-school directly.
  */
 /**
- * RETIRED 2026-04-22 — Bail School link is now set directly in the Wix nav menu.
- * Function is kept as a no-op to avoid removing the call from initCriticalUI().
+ * Override the Wix Editor nav menu link for Bail School.
+ * The editor currently maps this to the old page (y8dfc.js), so we force
+ * the routing to the new /bail-school page via JS.
  */
 function setupBailSchoolNavLink() {
-    // No-op: nav menu handles /bail-school routing directly.
+    const btn = resolveElement(BAIL_SCHOOL_NAV_IDS);
+    if (btn) {
+        try { btn.link = ''; } catch (e) { /* read-only in some contexts */ }
+        btn.onClick(() => {
+            wixLocation.to('/bail-school');
+        });
+    }
 }
 
 /**
