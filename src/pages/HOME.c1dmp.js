@@ -335,7 +335,7 @@ function setupHomepageMeta() {
         { name: 'twitter:title', content: title },
         { name: 'twitter:description', content: description },
         { name: 'twitter:image', content: url + '/logo.png' },
-        { name: 'keywords', content: 'bail bonds Florida, Fort Myers bail bonds, 24/7 bail bondsman, Florida jail release, Lee County bail bonds, Collier County bail bonds, Charlotte County bail bonds, bail bond payment plans, immigration bail bonds Florida, bilingual bail bonds' }
+        { name: 'keywords', content: 'bail bonds Florida, Fort Myers bail bonds, 24/7 bail bondsman, Florida jail release, Lee County bail bonds, Collier County bail bonds, Charlotte County bail bonds, Sarasota County bail bonds, Manatee County bail bonds, DeSoto County bail bonds, Hendry County bail bonds, bail bond payment plans, bail near me, #bailnearme, #bailbondsleecounty, #bailbondsmannearme, #FloridaBailBonds, #LeeCountyBailBonds, #CharlotteCountyBailBonds, #ManateeCountyBailBonds, #DeSotoCountyBailBonds, #HendryCountyBailBonds, #SarasotaCountyBailBonds' }
     ]);
 }
 
@@ -376,7 +376,8 @@ function setupOrganizationSchema() {
                     }
                 },
                 { "@type": "ContactPoint", "telephone": "+1-239-332-5245", "contactType": "Emergency", "areaServed": "FL", "availableLanguage": ["English", "Spanish"] },
-                { "@type": "ContactPoint", "telephone": "+1-239-955-0301", "contactType": "Customer Service", "areaServed": "FL", "availableLanguage": "Spanish" }
+                { "@type": "ContactPoint", "telephone": "+1-239-955-0301", "contactType": "Customer Service", "areaServed": "FL", "availableLanguage": "Spanish" },
+                { "@type": "ContactPoint", "telephone": "+1-727-295-2245", "contactType": "Customer Service", "areaServed": ["Tampa Bay Area", "St. Petersburg", "FL"], "availableLanguage": ["English", "Spanish"], "description": "After-Hours & AI Agent Line" }
             ],
             "areaServed": { "@type": "State", "name": "Florida", "@id": "https://en.wikipedia.org/wiki/Florida" },
             "openingHoursSpecification": {

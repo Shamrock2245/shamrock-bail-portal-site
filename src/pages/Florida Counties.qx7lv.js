@@ -91,6 +91,7 @@ function setupSEO(county) {
     const expandedKeywords = [
         ...(county.seo.keywords || []),
         `bail bonds near me ${cnLower} county`,
+        `bail bondsman near me ${cnLower} county`,
         `how to bail someone out of jail in ${cnLower} county florida`,
         `${cnLower} county jail inmate search`,
         `24 hour bail bondsman ${cnLower} county fl`,
@@ -99,7 +100,12 @@ function setupSEO(county) {
         `bail bond payment plan ${cnLower} county`,
         `${cnLower} county florida bail schedule`,
         `emergency bail bonds ${cnLower} county`,
-        `bail bonds in ${cnLower} county florida`
+        `bail bonds in ${cnLower} county florida`,
+        `fast jail release ${cnLower} county`,
+        `#${cnLower.replace(/\s+/g, '')}countybailbonds`,
+        `#bailnearme`,
+        `#floridabailbonds`,
+        `#bailbondsman`
     ];
 
     // ─── META TAGS ───
@@ -147,7 +153,7 @@ function setupSEO(county) {
         "additionalType": "https://schema.org/ProfessionalService",
         "@id": `${canonUrl}#localbusiness`,
         "name": `Shamrock Bail Bonds - ${cn} County`,
-        "description": county.seo.meta_description,
+        "description": `${county.seo.meta_description} Are you searching for bail near me? We provide fast 24/7 jail release.`,
         "url": canonUrl,
         "telephone": "+1-239-332-2245",
         "image": "https://www.shamrockbailbonds.biz/logo.png",
@@ -260,7 +266,7 @@ function setupSEO(county) {
         "@id": `${canonUrl}#service`,
         "serviceType": "Bail Bonds",
         "name": `Bail Bonds in ${cn} County, Florida`,
-        "description": `24/7 professional bail bond services in ${cn} County. Fast, confidential, and reliable bail bonds with bilingual support. Licensed by the State of Florida.`,
+        "description": `24/7 professional bail bond services in ${cn} County. Are you searching for bail near me? Fast, confidential, and reliable bail bonds with bilingual support. Licensed by the State of Florida. #shamrockbailbonds`,
         "provider": {
             "@type": "Organization",
             "name": "Shamrock Bail Bonds",

@@ -322,7 +322,9 @@ export function initGlobalSEO() {
         // Dublin Core geographic metadata
         { name: 'DC.title', content: pageTitle },
         { name: 'DC.coverage', content: 'Florida, United States' },
-        { name: 'DC.language', content: 'en-US' }
+        { name: 'DC.language', content: 'en-US' },
+        // High-traffic AI & Local Tags
+        { name: 'keywords', content: 'bail near me, #bailnearme, #bailbondsleecounty, #bailbondsmannearme, #FloridaBailBonds, #FLBailBonds, #FloridaBondsman, #LeeCountyBailBonds, #CharlotteCountyBailBonds, #ManateeCountyBailBonds, #DeSotoCountyBailBonds, #HendryCountyBailBonds, #SarasotaCountyBailBonds' }
     ]);
 
     // 4. SITE-WIDE STRUCTURED DATA
@@ -389,10 +391,24 @@ export function initGlobalSEO() {
                     "contactType": "Customer Service",
                     "areaServed": "US-FL",
                     "availableLanguage": "Spanish"
+                },
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-727-295-2245",
+                    "contactType": "Customer Service",
+                    "areaServed": ["Tampa Bay Area", "St. Petersburg", "US-FL"],
+                    "availableLanguage": ["English", "Spanish"],
+                    "description": "After-Hours & AI Agent Line"
                 }
             ],
             // Semantic relevance signals for AI/GEO
             "knowsAbout": [
+                "Bail Near Me",
+                "Local Bondsman",
+                "Lee County Bail Bonds",
+                "Charlotte County Bail Bonds",
+                "Manatee County Bail Bonds",
+                "Sarasota County Bail Bonds",
                 "Bail Bonds",
                 "Surety Bonds",
                 "Florida Criminal Justice System",
@@ -417,7 +433,7 @@ export function initGlobalSEO() {
             "telephone": PHONE_FORMATTED,
             "image": `${SITE_URL}/logo.png`,
             "priceRange": "$$",
-            "description": "Licensed bail bond agency serving all 67 Florida counties. Available 24 hours a day, 7 days a week with bilingual English and Spanish support. Fast jail release, payment plans available.",
+            "description": "Are you searching for bail near me? We are a licensed bail bond agency serving all 67 Florida counties. Available 24 hours a day, 7 days a week with bilingual English and Spanish support. Fast jail release, payment plans available.",
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "1528 Broadway",
