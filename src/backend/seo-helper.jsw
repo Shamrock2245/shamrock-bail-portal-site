@@ -1,66 +1,118 @@
 /**
- * SEO Helper Module
- * Generates dynamic SEO tags and structured data for Shamrock Bail Bonds
+ * seo-helper.jsw — Shamrock Bail Bonds
+ * Generates dynamic SEO tags and structured data for county pages.
+ *
+ * All NAP constants are imported from seoConfig.js — do NOT hardcode here.
  */
+
+import {
+    BUSINESS_SHORT_NAME,
+    ADDRESS,
+    GEO,
+    PHONE_PRIMARY,
+    PHONE_SECONDARY,
+    HOURS,
+    SITE_URL,
+    countyPageUrl,
+    countyBusinessName,
+} from 'backend/seoConfig';
 
 /**
- * Generate SEO tags for a county page
- * @param {Object} county - County data object
- * @returns {Array} Array of meta tags
+ * Generate meta tag array for a county page.
+ * @param {Object} county - { name: string, slug: string }
+ * @returns {Array}
  */
 export function generateCountySEOTags(county) {
-    const title = `Bail Bonds in ${county.name} | Shamrock Bail Bonds`;
-    const description = `Fast, reliable bail bonds in ${county.name}, Florida. 24/7 service, no collateral needed for most cases. Call Shamrock Bail Bonds today!`;
-    const canonicalUrl = `https://www.shamrockbailbonds.com/florida-bail-bonds/${county.slug}`;
+    const title       = `Bail Bonds in ${county.name} | ${BUSINESS_SHORT_NAME}`;
+    const description = `Fast, reliable bail bonds in ${county.name}, Florida. 24/7 service, no collateral needed for most cases. Call ${PHONE_PRIMARY.display} now.`;
+    const canonicalUrl = countyPageUrl(county.slug);
 
     return [
-        { property: 'og:title', content: title },
+        { property: 'og:title',       content: title },
         { property: 'og:description', content: description },
-        { property: 'og:url', content: canonicalUrl },
-        { property: 'og:type', content: 'website' },
-        { name: 'description', content: description },
-        { name: 'keywords', content: `bail bonds ${county.name}, ${county.name} bail bonds, bail bondsman ${county.name}, jail ${county.name}` }
+        { property: 'og:url',         content: canonicalUrl },
+        { property: 'og:type',        content: 'website' },
+        { name:     'description',    content: description },
+        { name:     'keywords',       content: `bail bonds ${county.name}, ${county.name} bail bonds, bail bondsman ${county.name}, jail ${county.name}, ${PHONE_PRIMARY.display}` },
     ];
 }
 
 /**
- * Generate LocalBusiness Schema utilizing Google Maps data
- * @param {Object} county - County data object
- * @returns {Object} JSON-LD object or string
+ * Generate LocalBusiness + BreadcrumbList + optional FAQPage JSON-LD for a county page.
+ * @param {Object} county - { name: string, slug: string, lat?: string, lng?: string }
+ * @param {Array}  faqs   - Optional array of { question, answer } objects
+ * @returns {Array} Array of schema objects
+ */
+export function generateCountySchemas(county, faqs = []) {
+    const schemas = [];
+    const pageUrl = countyPageUrl(county.slug);
+
+    // 1. LocalBusiness
+    schemas.push({
+        '@context': 'https://schema.org',
+        '@type':    'LocalBusiness',
+        '@id':      `${pageUrl}#localbusiness`,
+        name:        countyBusinessName(county.name),
+        description: `24/7 bail bond services in ${county.name}, Florida. Fast, confidential jail release. Call ${PHONE_PRIMARY.display}.`,
+        url:         pageUrl,
+        telephone:   PHONE_PRIMARY.e164,
+        priceRange:  '$$',
+        address: {
+            '@type':         'PostalAddress',
+            streetAddress:   ADDRESS.streetAddress,
+            addressLocality: ADDRESS.addressLocality,
+            addressRegion:   ADDRESS.addressRegion,
+            postalCode:      ADDRESS.postalCode,
+            addressCountry:  ADDRESS.addressCountry,
+        },
+        geo: {
+            '@type':    'GeoCoordinates',
+            latitude:   county.lat  || GEO.latitude,
+            longitude:  county.lng  || GEO.longitude,
+        },
+        openingHoursSpecification: {
+            '@type':     'OpeningHoursSpecification',
+            dayOfWeek:   HOURS.dayOfWeek,
+            opens:       HOURS.opens,
+            closes:      HOURS.closes,
+        },
+        areaServed: {
+            '@type': 'AdministrativeArea',
+            name:    `${county.name}, Florida`,
+        },
+    });
+
+    // 2. BreadcrumbList
+    schemas.push({
+        '@context': 'https://schema.org',
+        '@type':    'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home',               item: SITE_URL },
+            { '@type': 'ListItem', position: 2, name: 'Florida Bail Bonds', item: `${SITE_URL}/florida-bail-bonds` },
+            { '@type': 'ListItem', position: 3, name: county.name,          item: pageUrl },
+        ],
+    });
+
+    // 3. FAQPage (if provided)
+    if (Array.isArray(faqs) && faqs.length > 0) {
+        schemas.push({
+            '@context':  'https://schema.org',
+            '@type':     'FAQPage',
+            mainEntity:  faqs.map(faq => ({
+                '@type': 'Question',
+                name:    faq.question,
+                acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+            })),
+        });
+    }
+
+    return schemas;
+}
+
+/**
+ * Backwards-compatible wrapper kept for any callers that still use the old signature.
+ * @deprecated Use generateCountySchemas() instead.
  */
 export function generateLocalBusinessSchema(county) {
-    return {
-        "@context": "https://schema.org",
-        "@type": "BailBondBusiness",
-        "name": "Shamrock Bail Bonds",
-        "image": "https://www.shamrockbailbonds.com/logo.png",
-        "telephone": "+1-239-332-2245",
-        "url": `https://www.shamrockbailbonds.com/florida-bail-bonds/${county.slug}`,
-        "address": {
-            "@type": "PostalAddress",
-            "addressLocality": county.name.replace(" County", ""), // Approximate
-            "addressRegion": "FL",
-            "addressCountry": "US"
-        },
-        "geo": {
-            "@type": "GeoCoordinates",
-            "latitude": "26.640628", // Central HQ lat
-            "longitude": "-81.872306" // Central HQ long
-        },
-        "openingHoursSpecification": {
-            "@type": "OpeningHoursSpecification",
-            "dayOfWeek": [
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday"
-            ],
-            "opens": "00:00",
-            "closes": "23:59"
-        },
-        "priceRange": "$$"
-    };
+    return generateCountySchemas(county)[0];
 }

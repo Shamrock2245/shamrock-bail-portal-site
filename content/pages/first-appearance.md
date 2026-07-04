@@ -1,4 +1,11 @@
-# Florida First Appearance Hearings: What You Need to Know
+# Florida First Appearance Guide
+
+## Meta Information
+- **Title:** Florida First Appearance Hearings | Shamrock Bail Bonds
+- **Meta Description:** Understand what happens at a first appearance hearing in Florida. Learn about bail setting, ROR, and how Shamrock Bail Bonds can help secure fast release.
+- **Keywords:** first appearance hearing florida, bail hearing florida, 24 hour hearing, bail conditions, judge sets bail
+
+---
 
 If your loved one has been arrested in Florida, their **First Appearance Hearing** is one of the most critical moments in the criminal justice process. It is the first time they will stand before a judge, and it is when the judge decides whether they can be released on bail and under what conditions.
 
