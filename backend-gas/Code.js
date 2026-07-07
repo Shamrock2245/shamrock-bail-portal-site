@@ -545,6 +545,25 @@ function doPost(e) {
       }
     }
 
+    // NEW: SwipeSimple webhook handling (Bail School Payments)
+    if (data.action === 'swipesimple_webhook' || (data.event && data.event.startsWith('payment.'))) {
+      if (typeof handleSwipeSimpleWebhook === 'function') {
+        return createResponse(handleSwipeSimpleWebhook(data));
+      } else {
+        console.warn('handleSwipeSimpleWebhook function not found');
+      }
+    }
+
+    // NEW: Bail School Progress Logging
+    if (data.action === 'log_course_progress') {
+      if (typeof handleBailSchoolProgress === 'function') {
+        return createResponse(handleBailSchoolProgress(data));
+      } else {
+        console.error('handleBailSchoolProgress function not found');
+        return createErrorResponse('Function handleBailSchoolProgress not found', ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+
     // --- TELEGRAM MINI APP (no-cors — cannot send API key) ---
     // These actions bypass API key verification because the Mini App
     // uses fetch({ mode: 'no-cors' }) which cannot read responses or
@@ -572,18 +591,24 @@ function doPost(e) {
       }
     }
 
-    if (data.action === 'telegram_mini_app_upload') {
+    if (data.action === 'telegram_mini_app_upload' || data.action === 'bail_school_upload') {
       try {
-        Logger.log('📎 Telegram Mini App file upload: ' + data.docType);
+        Logger.log('📎 File upload via webhook: ' + data.docType);
         // Save file to Google Drive
         const folder = DriveApp.getFolderById(getConfig().GOOGLE_DRIVE_FOLDER_ID);
         const decoded = Utilities.base64Decode(data.base64Data);
-        const blob = Utilities.newBlob(decoded, data.mimeType || 'image/jpeg', data.fileName || 'upload.jpg');
+        // Sometimes base64 string includes data URL prefix, strip it if necessary
+        let cleanBase64 = data.base64Data;
+        if (cleanBase64.includes('base64,')) {
+            cleanBase64 = cleanBase64.split('base64,')[1];
+        }
+        const blob = Utilities.newBlob(Utilities.base64Decode(cleanBase64), data.mimeType || 'image/jpeg', data.fileName || 'upload.jpg');
         const file = folder.createFile(blob);
-        file.setDescription('Telegram Mini App upload | User: ' + (data.telegramUserId || 'unknown') + ' | Type: ' + (data.docType || 'unknown'));
+        const userId = data.telegramUserId || data.studentId || 'unknown';
+        file.setDescription('Upload | User: ' + userId + ' | Type: ' + (data.docType || 'unknown'));
         return createResponse({ success: true, fileId: file.getId(), fileUrl: file.getUrl() });
       } catch (uploadErr) {
-        Logger.log('❌ Mini App upload error: ' + uploadErr.message);
+        Logger.log('❌ Upload error: ' + uploadErr.message);
         return createErrorResponse(uploadErr.message, ERROR_CODES.INTERNAL_ERROR);
       }
     }

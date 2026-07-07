@@ -11,6 +11,12 @@ var CONFIG = {
   SHEET_ID: '1jq1-N7sCbwSiYPLAdI2ZnxhLzym1QsOSuHPy-Gw07Qc',
   SHEET_NAME: 'shamrock-leads-leecounty', // Update if your sheet tab has a different name
   
+  // ===== BAIL SCHOOL SETTINGS =====
+  BAIL_SCHOOL: {
+    SHEET_ID: 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE', // Create a new standalone spreadsheet and paste ID here
+    TAB_NAME: 'Student_Progress_Log'
+  },
+  
   // ===== QUALIFIED ARRESTS SETTINGS =====
   QUALIFIED_ARRESTS: {
     ENABLED: true,                                              // Enable qualified arrests automation
