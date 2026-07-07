@@ -554,13 +554,22 @@ function doPost(e) {
       }
     }
 
-    // NEW: Bail School Progress Logging
+    // NEW: Bail School Progress Logging & Course Unlocks
     if (data.action === 'log_course_progress') {
       if (typeof handleBailSchoolProgress === 'function') {
         return createResponse(handleBailSchoolProgress(data));
       } else {
         console.error('handleBailSchoolProgress function not found');
         return createErrorResponse('Function handleBailSchoolProgress not found', ERROR_CODES.INTERNAL_ERROR);
+      }
+    }
+    
+    if (data.action === 'unlock_course') {
+      if (typeof handleBailSchoolUnlock === 'function') {
+        return createResponse(handleBailSchoolUnlock(data));
+      } else {
+        console.error('handleBailSchoolUnlock function not found');
+        return createErrorResponse('Function handleBailSchoolUnlock not found', ERROR_CODES.INTERNAL_ERROR);
       }
     }
 

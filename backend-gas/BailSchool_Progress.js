@@ -157,3 +157,63 @@ function generateDailyComplianceReport() {
     totalHours
   ]);
 }
+
+/**
+ * Handle Webhook from Node-RED to unlock a course upon SwipeSimple payment
+ */
+function handleBailSchoolUnlock(data) {
+  try {
+    const studentEmail = data.studentEmail;
+    const courseId = data.courseId;
+    const amountPaid = data.amountPaid;
+
+    if (!studentEmail || !courseId) {
+      return { success: false, error: 'StudentEmail and CourseID are required' };
+    }
+
+    const sheetId = getConfig('BAIL_SCHOOL.SHEET_ID');
+    if (!sheetId || sheetId === 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
+      return { success: false, error: 'Bail School Sheet ID not configured in CONFIG.js' };
+    }
+
+    const ss = SpreadsheetApp.openById(sheetId);
+    let authSheet = ss.getSheetByName('Student_Auth');
+
+    // Auto-create Auth tab if it doesn't exist
+    if (!authSheet) {
+      authSheet = ss.insertSheet('Student_Auth');
+      authSheet.appendRow(['Timestamp', 'Student Email', 'Course ID', 'Amount Paid', 'Status']);
+      authSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#1A3D2B").setFontColor("#FFFFFF");
+      authSheet.setFrozenRows(1);
+    }
+
+    // Attempt to UPSERT
+    const lastRow = authSheet.getLastRow();
+    let rowUpdated = false;
+
+    if (lastRow > 1) {
+      const existingData = authSheet.getRange(2, 2, lastRow - 1, 2).getValues(); // [Email, CourseID]
+      for (let i = 0; i < existingData.length; i++) {
+        if (existingData[i][0] === studentEmail && existingData[i][1] === courseId) {
+          const rowNum = i + 2;
+          authSheet.getRange(rowNum, 1).setValue(new Date());
+          authSheet.getRange(rowNum, 4).setValue(amountPaid);
+          authSheet.getRange(rowNum, 5).setValue("Unlocked");
+          rowUpdated = true;
+          break;
+        }
+      }
+    }
+
+    if (!rowUpdated) {
+      authSheet.appendRow([new Date(), studentEmail, courseId, amountPaid, "Unlocked"]);
+    }
+
+    return { success: true, message: `Course ${courseId} unlocked for ${studentEmail}` };
+
+  } catch (error) {
+    console.error('Error unlocking course:', error);
+    return { success: false, error: error.message };
+  }
+}
+
