@@ -83,3 +83,23 @@ export async function grantCourseAccess(memberId, courseId) {
     console.log(` Granting access to ${courseId} for ${memberId}`);
     return true;
 }
+
+/**
+ * Check if the student has signed the mandatory DFS Integrity Acknowledgment
+ * @param {string} studentEmail
+ * @returns {Promise<boolean>}
+ */
+export async function hasSignedIntegrity(studentEmail) {
+    try {
+        const result = await wixData.query("education-acknowledgments")
+            .eq("studentEmail", studentEmail)
+            .eq("acknowledged", true)
+            .find({ suppressAuth: true });
+            
+        return result.items.length > 0;
+    } catch (error) {
+        console.error("Error checking integrity acknowledgment:", error);
+        return false;
+    }
+}
+
