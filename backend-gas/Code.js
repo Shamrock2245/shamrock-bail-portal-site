@@ -546,13 +546,9 @@ function doPost(e) {
     }
 
     // NEW: SwipeSimple webhook handling (Bail School Payments)
-    if (data.action === 'swipesimple_webhook' || (data.event && data.event.startsWith('payment.'))) {
-      if (typeof handleSwipeSimpleWebhook === 'function') {
-        return createResponse(handleSwipeSimpleWebhook(data));
-      } else {
-        console.warn('handleSwipeSimpleWebhook function not found');
-      }
-    }
+    // NOTE: SwipeSimple has no outbound webhooks. Payment detection is handled by
+    // pollSwipeSimpleReceipts() in BailSchoolPayments.js (time-driven trigger, every 5 min).
+    // It polls Gmail for receipts from noreply@swipesimple.com and calls handleBailSchoolUnlock() directly.
 
     // NEW: Bail School Progress Logging & Course Unlocks
     if (data.action === 'log_course_progress') {
