@@ -550,23 +550,55 @@ function doPost(e) {
     // pollSwipeSimpleReceipts() in BailSchoolPayments.js (time-driven trigger, every 5 min).
     // It polls Gmail for receipts from noreply@swipesimple.com and calls handleBailSchoolUnlock() directly.
 
-    // NEW: Bail School Progress Logging & Course Unlocks
+    // ── Bail School LMS (Next.js school.shamrockbailbonds.biz) ──
+    // Handlers in BailSchool_LMS.js (+ unlock dual-write in BailSchool_Progress.js)
+    if (data.action === 'sendSchoolMagicLink') {
+      if (typeof schoolHandleSendMagicLink === 'function') {
+        return schoolHandleSendMagicLink(data);
+      }
+      return createErrorResponse('schoolHandleSendMagicLink not found', ERROR_CODES.INTERNAL_ERROR);
+    }
+    if (data.action === 'verify_auth') {
+      if (typeof schoolHandleAuthVerification === 'function') {
+        return schoolHandleAuthVerification(data);
+      }
+      return createErrorResponse('schoolHandleAuthVerification not found', ERROR_CODES.INTERNAL_ERROR);
+    }
     if (data.action === 'log_course_progress') {
+      // Prefer LMS progress logger (module completeness); fallback to legacy
+      if (typeof schoolHandleLogProgress === 'function') {
+        return schoolHandleLogProgress(data);
+      }
       if (typeof handleBailSchoolProgress === 'function') {
         return createResponse(handleBailSchoolProgress(data));
-      } else {
-        console.error('handleBailSchoolProgress function not found');
-        return createErrorResponse('Function handleBailSchoolProgress not found', ERROR_CODES.INTERNAL_ERROR);
       }
+      return createErrorResponse('Bail school progress handler not found', ERROR_CODES.INTERNAL_ERROR);
     }
-    
-    if (data.action === 'unlock_course') {
-      if (typeof handleBailSchoolUnlock === 'function') {
-        return createResponse(handleBailSchoolUnlock(data));
-      } else {
-        console.error('handleBailSchoolUnlock function not found');
-        return createErrorResponse('Function handleBailSchoolUnlock not found', ERROR_CODES.INTERNAL_ERROR);
+    if (data.action === 'issue_certificate') {
+      if (typeof schoolHandleIssueCertificate === 'function') {
+        return schoolHandleIssueCertificate(data);
       }
+      return createErrorResponse('schoolHandleIssueCertificate not found', ERROR_CODES.INTERNAL_ERROR);
+    }
+    if (data.action === 'sign_integrity') {
+      if (typeof schoolHandleSignIntegrity === 'function') {
+        return schoolHandleSignIntegrity(data);
+      }
+      return createErrorResponse('schoolHandleSignIntegrity not found', ERROR_CODES.INTERNAL_ERROR);
+    }
+    if (data.action === 'unlock_course') {
+      // Legacy sheet unlock + LMS sheet/auth (schoolHandleUnlockCourse uses BAIL_SCHOOL.SHEET_ID)
+      if (typeof handleBailSchoolUnlock === 'function') {
+        var unlockLegacy = handleBailSchoolUnlock(data);
+        if (typeof schoolHandleUnlockCourse === 'function') {
+          try { schoolHandleUnlockCourse(data); } catch (e) { console.warn('school unlock dual', e); }
+        }
+        return createResponse(unlockLegacy);
+      }
+      if (typeof schoolHandleUnlockCourse === 'function') {
+        return schoolHandleUnlockCourse(data);
+      }
+      return createErrorResponse('unlock handler not found', ERROR_CODES.INTERNAL_ERROR);
     }
 
     // --- TELEGRAM MINI APP (no-cors — cannot send API key) ---
@@ -2238,6 +2270,23 @@ function handleGetAction(e) {
   if (action === 'health') return createResponse({ success: true, version: 'V409', timestamp: new Date().toISOString() }, callback);
   if (action === 'getNextReceiptNumber') return createResponse(getNextReceiptNumber(), callback);
   if (action === 'testSlack') return createResponse(testSlackIntegration(), callback);
+
+  // ── BAIL SCHOOL LMS (Next.js) ─────────────────────────────────────────────
+  if (action === 'get_progress' && typeof schoolHandleGetProgress === 'function') {
+    return schoolHandleGetProgress(e.parameter.email);
+  }
+  if (action === 'check_integrity' && typeof schoolHandleCheckIntegrity === 'function') {
+    return schoolHandleCheckIntegrity(e.parameter.studentEmail || e.parameter.email);
+  }
+  if (action === 'get_enrollments' && typeof schoolHandleGetEnrollments === 'function') {
+    return schoolHandleGetEnrollments(e.parameter.email);
+  }
+  if (action === 'get_admin_roster' && typeof schoolHandleGetAdminRoster === 'function') {
+    return schoolHandleGetAdminRoster();
+  }
+  if (action === 'get_roster' && typeof schoolHandleGetRoster === 'function') {
+    return schoolHandleGetRoster();
+  }
 
   // ── NODE-RED SCHEDULER ACTIONS (16) ──────────────────────────────────────
   // All functions confirmed to exist in their respective .js files.
