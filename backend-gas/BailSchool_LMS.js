@@ -385,24 +385,37 @@ function schoolHandleAuthVerification(data) {
   const now = new Date();
   
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][1] === token) {
+    // Token may be UUID string; coerce both sides for Sheets type quirks
+    if (String(rows[i][1]).trim() === String(token).trim()) {
       const expiry = new Date(rows[i][2]);
-      const used = rows[i][3];
+      const used = rows[i][3] === true || rows[i][3] === 'TRUE' || rows[i][3] === 'true';
+      const email = String(rows[i][0] || '').trim().toLowerCase();
       
-      if (used) throw new Error("Token already used");
-      if (now > expiry) throw new Error("Token expired");
-      
-      // Mark as used
-      linkSheet.getRange(i + 1, 4).setValue(true);
+      if (now > expiry) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: false,
+          error: 'Token expired'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      // Idempotent: React Strict Mode / double-click re-verifies the same token.
+      // Allow already-used tokens until expiry so the student still gets a session.
+      if (!used) {
+        linkSheet.getRange(i + 1, 4).setValue(true);
+      }
       
       return ContentService.createTextOutput(JSON.stringify({ 
         success: true, 
-        email: rows[i][0] 
+        email: email,
+        reused: used
       })).setMimeType(ContentService.MimeType.JSON);
     }
   }
   
-  throw new Error("Invalid token");
+  return ContentService.createTextOutput(JSON.stringify({
+    success: false,
+    error: 'Invalid token'
+  })).setMimeType(ContentService.MimeType.JSON);
 }
 
 /**
