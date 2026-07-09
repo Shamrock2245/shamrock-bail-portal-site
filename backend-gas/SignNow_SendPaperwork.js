@@ -59,14 +59,16 @@ const PHASE_1_DOCS = [
     'indemnity-agreement',   // Indemnitor fills out and signs
     'promissory-note',       // Signatures by all parties
     'disclosure-form',       // Signatures by all parties
-    'ssa-release'            // SSA release per person
+    'ssa-release',           // SSA release per person
+    'master-waiver'          // Master waiver (4-page, per-person initials) — aligned with leads
 ];
 
 const PHASE_2_DOCS = [
     'faq-defendants',        // FAQ for defendants (initials)
     'defendant-application', // App for Appearance Bond (needs POA)
     'surety-terms',          // Surety Terms & Conditions
-    'master-waiver',         // Master waiver
+    'master-waiver',         // Master waiver (defendant + agent sign)
+    'ssa-release',           // SSA release (defendant copy) — aligned with leads
     'collateral-receipt',    // Premium/collateral receipt (final amounts)
     'payment-plan'           // Payment plan (if applicable)
 ];
@@ -262,8 +264,13 @@ function handleSendPhase1Packet(formData, signerEmail, signerName) {
         const caseLabel = (formData['defendant-last-name'] || formData['case-number'] || 'Unknown').replace(/[^a-zA-Z0-9]/g, '_');
         const uploadedDocs = [];
         
+        // Resolve surety-specific template IDs (Palmetto overrides OSI for 5 doc types)
+        const phase1SuretyId = (formData['surety_id'] || formData['insuranceCompany'] === 'PALMETTO' ? 'palmetto' : 'osi');
+
         for (const templateKey of PHASE_1_DOCS) {
-            const templateId = SIGNNOW_TEMPLATE_MAP[templateKey];
+            const sureyKey = (phase1SuretyId === 'palmetto' && SIGNNOW_TEMPLATE_MAP[templateKey + '-palmetto'])
+                ? templateKey + '-palmetto' : templateKey;
+            const templateId = SIGNNOW_TEMPLATE_MAP[sureyKey];
             if (!templateId) { SN_log('Phase1_NoTemplate', templateKey); continue; }
             
             try {
@@ -280,7 +287,7 @@ function handleSendPhase1Packet(formData, signerEmail, signerName) {
                 var prefillResult = prefillDocument_(copyJson.id, formData, templateKey, -1);
                 SN_log('Phase1_Prefilled', { templateKey, documentId: copyJson.id, ok: prefillResult.success });
                 
-                uploadedDocs.push({ key: templateKey, documentId: copyJson.id, fileName: `Shamrock_${caseLabel}_Phase1_${templateKey}` });
+                uploadedDocs.push({ key: templateKey, documentId: copyJson.id, fileName: `Shamrock_${caseLabel}_Phase1_${sureyKey}` });
             } catch (e) {
                 SN_log('Phase1_CopyErr', { templateKey, err: e.toString() });
             }
@@ -364,15 +371,24 @@ function handleSendPhase2Packet(formData, signerEmail, signerName, poaNumber, ag
         
         // Inject agent/POA fields into formData for prefill
         formData['poa-number'] = poaNumber;
-        formData['agent-name'] = agentName || '';
-        formData['agent-license'] = agentLicense || '';
+        // Always enforce canonical agent constants regardless of what caller passed
+        formData['agent-name'] = 'Brendan O\'Neal';
+        formData['agent-license'] = 'P139768';
+        formData['AgentName'] = 'Brendan O\'Neal';
+        formData['AgentLicense'] = 'P139768';
+        formData['AgentLicenseNumber'] = 'P139768';
         
         const config = SN_getConfig();
         const caseLabel = (formData['defendant-last-name'] || formData['case-number'] || 'Unknown').replace(/[^a-zA-Z0-9]/g, '_');
         const uploadedDocs = [];
         
+        // Resolve surety-specific template IDs (Palmetto overrides OSI for 5 doc types)
+        const phase2SuretyId = (formData['surety_id'] || (formData['insuranceCompany'] === 'PALMETTO' ? 'palmetto' : 'osi'));
+
         for (const templateKey of PHASE_2_DOCS) {
-            const templateId = SIGNNOW_TEMPLATE_MAP[templateKey];
+            const sureyKey2 = (phase2SuretyId === 'palmetto' && SIGNNOW_TEMPLATE_MAP[templateKey + '-palmetto'])
+                ? templateKey + '-palmetto' : templateKey;
+            const templateId = SIGNNOW_TEMPLATE_MAP[sureyKey2];
             if (!templateId) { SN_log('Phase2_NoTemplate', templateKey); continue; }
             
             // Skip payment-plan if no payment plan indicated
@@ -395,7 +411,7 @@ function handleSendPhase2Packet(formData, signerEmail, signerName, poaNumber, ag
                 var prefillResult = prefillDocument_(copyJson.id, formData, templateKey, -1);
                 SN_log('Phase2_Prefilled', { templateKey, documentId: copyJson.id, ok: prefillResult.success });
                 
-                uploadedDocs.push({ key: templateKey, documentId: copyJson.id, fileName: `Shamrock_${caseLabel}_Phase2_${templateKey}` });
+                uploadedDocs.push({ key: templateKey, documentId: copyJson.id, fileName: `Shamrock_${caseLabel}_Phase2_${sureyKey2}` });
             } catch (e) {
                 SN_log('Phase2_CopyErr', { templateKey, err: e.toString() });
             }
@@ -535,11 +551,21 @@ function _shannon_buildFormData(data) {
         // --- Date fields ---
         'date':                    todayStr,
 
-        // --- Agency constants (always filled) ---
-        'agent-name':              'Shamrock Bail Bonds',
+        // --- Agent / Agency constants (always filled) ---
+        'agent-name':              'Brendan O\'Neal',
+        'agent-license':           'P139768',
+        'AgentName':               'Brendan O\'Neal',
+        'AgentLicense':            'P139768',
+        'AgentLicenseNumber':      'P139768',
         'agency-name':             'Shamrock Bail Bonds',
+        'AgencyName':              'Shamrock Bail Bonds',
         'agency-address':          '1528 Broadway, Fort Myers, FL 33901',
-        'agency-phone':            '(941) 304-2245'
+        'AgentAddress':            '1528 Broadway',
+        'AgentCity':               'Fort Myers',
+        'AgentState':              'FL',
+        'AgentZip':                '33901',
+        'agency-phone':            '(239) 332-2245',
+        'AgentPhone':              '(239) 332-2245'
     };
 }
 

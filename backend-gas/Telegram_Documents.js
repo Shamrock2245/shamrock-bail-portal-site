@@ -23,20 +23,30 @@
 // All templates are in production SignNow (api.signnow.com)
 
 const SIGNNOW_TEMPLATE_MAP = {
-    // All IDs from Team Templates folder (4a920d8f...) in admin@shamrockbailbonds.biz
-    'paperwork-header': '9b9dad3e319f4b1580094e05f9844929d5a6f7de',  // shamrock-paperwork-header
-    'faq-cosigners': '0820b9fef3bd4c38a91643455881021f3f0c3a88',  // Shamrock Bail Bonds - FAQ Cosigners
-    'faq-defendants': '1524f1c816c54a72be76d14fe128e4a6034579dc',  // Shamrock Bail Bonds- FAQ Defe.
-    'indemnity-agreement': 'ed5e6ca0a3444796a127fbeb6a880658371aafd7',  // Indemnity Agreement FINAL
-    'defendant-application': 'd50adc808f3245f087b218d33da89e4ace15ecd4',  // App for Appearance Bond FINAL
-    'promissory-note': '460bd43c2f514305a3b296481713a00ee8311c79',  // Promissory Side 2 FINAL
-    'disclosure-form': 'fb8b57bf55ac4d5e8bff820b018a0bfd3b17a37a',  // Disclosure FINAL
-    'surety-terms': '192aeb246230446bb0d7f658765afd2832704964',  // Surety Terms and Conditions FINAL
-    'master-waiver': '3b0e71188b3049cc8760d144e6c49df227ccd741',  // shamrock-master-waiver
-    'ssa-release': '4800defff07541079760889d83109059585b0cea',  // shamrock-ssa-release
-    'collateral-receipt': '4b1f5611840f4de4bc891677617f5dbf6ff7ad05',  // osi-premium-collateral-template
-    'payment-plan': '1861b158d7a447d48be5ac1dd24755f727f0773b',  // shamrock-premium-finance-notice
-    'appearance-bond': '7ba703e101e04604a2f1458c21d3addfce9ca86b'   // Appearance Bond blank (PRINT ONLY)
+    // ── Shared / OSI templates (all IDs from Team Templates folder in admin@shamrockbailbonds.biz) ──
+    'paperwork-header':          '9b9dad3e319f4b1580094e05f9844929d5a6f7de',  // shamrock-paperwork-header
+    'faq-cosigners':             '0820b9fef3bd4c38a91643455881021f3f0c3a88',  // Shamrock Bail Bonds - FAQ Cosigners
+    'faq-defendants':            '1524f1c816c54a72be76d14fe128e4a6034579dc',  // Shamrock Bail Bonds - FAQ Defendants
+    'indemnity-agreement':       'ed5e6ca0a3444796a127fbeb6a880658371aafd7',  // OSI Indemnity Agreement FINAL
+    'defendant-application':     'd50adc808f3245f087b218d33da89e4ace15ecd4',  // OSI App for Appearance Bond FINAL
+    'promissory-note':           '460bd43c2f514305a3b296481713a00ee8311c79',  // Promissory Side 2 FINAL
+    'disclosure-form':           'fb8b57bf55ac4d5e8bff820b018a0bfd3b17a37a',  // Disclosure FINAL
+    'surety-terms':              '192aeb246230446bb0d7f658765afd2832704964',  // OSI Surety Terms and Conditions FINAL
+    'master-waiver':             '3b0e71188b3049cc8760d144e6c49df227ccd741',  // shamrock-master-waiver
+    'ssa-release':               '4800defff07541079760889d83109059585b0cea',  // shamrock-ssa-release
+    'collateral-receipt':        '4b1f5611840f4de4bc891677617f5dbf6ff7ad05',  // OSI premium-collateral-template
+    'payment-plan':              '1861b158d7a447d48be5ac1dd24755f727f0773b',  // shamrock-premium-finance-notice
+    'appearance-bond':           '7ba703e101e04604a2f1458c21d3addfce9ca86b',  // OSI Appearance Bond blank (PRINT ONLY)
+
+    // ── Palmetto-Specific Overrides ──
+    // When surety_id === 'palmetto', these 5 keys replace their OSI counterparts.
+    // All other docs (header, FAQs, promissory, disclosure, master-waiver, ssa-release) are surety-agnostic.
+    'indemnity-agreement-palmetto':   '2359c0fdf9ea47ee8129d4426e698ece0112a85c',  // Palmetto Indemnity Agreement
+    'defendant-application-palmetto': '9c6f62509e03453a8d212bd67c88eccf65e65958',  // Palmetto App for Appearance Bond
+    'surety-terms-palmetto':          'c897c72df2674beaa0ad9c8bbf1f5856e150d553',  // Palmetto Surety Terms & Conditions
+    'collateral-receipt-palmetto':    'b5b89aec16f44bf4b8538891707beebf71977a19',  // Palmetto Premium Collateral Receipt
+    'payment-plan-palmetto':          '661390d6984c40439c948bd31813ada600163a8f',  // Palmetto Payment Plan Agreement
+    'appearance-bond-palmetto':       '9b1d3d0b5a4c4e3f8d2a1b7c6e5f4d3c2b1a0e9f'   // Palmetto Appearance Bond (PRINT ONLY)
 };
 
 // ============================================================================
@@ -58,7 +68,7 @@ const DOC_GENERATION_RULES = {
     'promissory-note': { rule: 'shared', label: 'Promissory Note' },
     'disclosure-form': { rule: 'shared', label: 'Disclosure Form' },
     'surety-terms': { rule: 'shared', label: 'Surety Terms & Conditions' },
-    'master-waiver': { rule: 'shared', label: 'Master Waiver' },
+    'master-waiver': { rule: 'per-person', label: 'Master Waiver' },  // per-person: 4-page waiver with per-person initials
     'ssa-release': { rule: 'per-person', label: 'SSA Release' },
     'collateral-receipt': { rule: 'shared', label: 'Collateral & Premium Receipt' },
     'payment-plan': { rule: 'shared', label: 'Payment Plan Agreement' },
@@ -90,7 +100,31 @@ const DOC_ORDER = [
  *   signerEmail:  'john@example.com'
  * }
  */
-function buildPacketManifest(caseData) {
+/**
+ * Resolve the correct template ID for a given doc key, accounting for surety.
+ * Palmetto overrides 5 OSI-specific docs; all other docs are surety-agnostic.
+ *
+ * @param {string} docId - Base doc key (e.g. 'indemnity-agreement')
+ * @param {string} surety_id - 'osi' or 'palmetto'
+ * @returns {string} SignNow template ID
+ */
+function _resolveTemplateId(docId, surety_id) {
+    var palmettoKey = docId + '-palmetto';
+    if (surety_id === 'palmetto' && SIGNNOW_TEMPLATE_MAP[palmettoKey]) {
+        return SIGNNOW_TEMPLATE_MAP[palmettoKey];
+    }
+    return SIGNNOW_TEMPLATE_MAP[docId] || null;
+}
+
+/**
+ * buildPacketManifest(caseData, surety_id)
+ *
+ * Given case data with defendant + indemnitors[], returns a flat array of
+ * document entries that need to be created for this bond.
+ * surety_id: 'osi' (default) or 'palmetto' — routes to correct SignNow templates.
+ */
+function buildPacketManifest(caseData, surety_id) {
+    surety_id = (surety_id || caseData.surety_id || 'osi').toLowerCase();
     var defendant = {
         name: ((caseData.defendantFirstName || '') + ' ' + (caseData.defendantLastName || '')).trim() || 'Defendant',
         email: caseData.defendantEmail || '',
@@ -132,7 +166,7 @@ function buildPacketManifest(caseData) {
     DOC_ORDER.forEach(function (docId) {
         if (selectedSet && !selectedSet[docId]) return; // Skip unselected docs
         var config = DOC_GENERATION_RULES[docId];
-        var templateId = SIGNNOW_TEMPLATE_MAP[docId];
+        var templateId = _resolveTemplateId(docId, surety_id);  // Surety-aware lookup
         if (!config || !templateId) return;
 
         switch (config.rule) {
@@ -440,7 +474,9 @@ function handleTelegramDocumentLookup(data) {
                 charges: getValue(['Charges', 'charges']),
                 county: getValue(['County', 'county']),
                 status: getValue(['Status', 'status']) || 'pending',
-                documentStatuses: docStatuses
+                documentStatuses: docStatuses,
+                // Surety routing — passed back to mini-app so signing URL requests use correct templates
+                surety_id: getValue(['SuretyID', 'surety_id', 'surety']) || 'osi'
             }
         };
 
@@ -469,7 +505,7 @@ function handleTelegramGetSigningUrl(data) {
 
         Logger.log('🖊️ Signing URL request: doc=' + docId + ' role=' + signerRole + ' signerIdx=' + signerIndex + ' case=' + caseNumber);
 
-        // Validate document ID
+        // Validate document ID (check base key; Palmetto override is handled by _resolveTemplateId)
         if (!SIGNNOW_TEMPLATE_MAP[docId]) {
             return { success: false, error: 'invalid_doc', message: 'Unknown document: ' + docId };
         }
@@ -484,7 +520,9 @@ function handleTelegramGetSigningUrl(data) {
         }
 
         var config = SN_getConfig();
-        var templateId = SIGNNOW_TEMPLATE_MAP[docId];
+        // Resolve surety-aware template ID
+        var surety_id = (data.surety_id || 'osi').toLowerCase();
+        var templateId = _resolveTemplateId(docId, surety_id);
 
         // Build tracker key — includes signerIndex for per-person/per-indemnitor docs
         var trackerDocKey = docId;

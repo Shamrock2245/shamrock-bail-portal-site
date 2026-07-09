@@ -689,7 +689,17 @@ const TEMPLATE_FILENAME_MAP = {
     'master-waiver': 'shamrock-master-waiver.pdf',
     'ssa-release': 'shamrock-ssa-release.pdf',
     'faq-defendants': 'Shamrock Bail Bonds- FAQ Defe..pdf',
-    'faq-cosigners': 'Shamrock Bail Bonds - FAQ Cosigners.pdf'
+    'faq-cosigners': 'Shamrock Bail Bonds - FAQ Cosigners.pdf',
+
+    // ── Palmetto-Specific Overrides ──
+    // These 5 keys are used when surety_id === 'palmetto'.
+    // All other docs (header, FAQs, promissory, disclosure, master-waiver, ssa-release) are surety-agnostic.
+    'indemnity-agreement-palmetto':   'Shamrock Palmetto Indemnity Agreement.pdf',
+    'defendant-application-palmetto': 'Shamrock Palmetto App for Appearance Bond.pdf',
+    'surety-terms-palmetto':          'Shamrock Palmetto Surety Terms and Conditions.pdf',
+    'collateral-receipt-palmetto':    'Shamrock Palmetto Premium Collateral Receipt.pdf',
+    'payment-plan-palmetto':          'Shamrock Palmetto Payment Plan Agreement.pdf',
+    'appearance-bond-palmetto':       'Shamrock Palmetto Appearance Bond.pdf'
 };
 
 /**

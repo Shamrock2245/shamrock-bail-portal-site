@@ -32,6 +32,13 @@
 | Location tracker no longer falls back to hardcoded API key | ✅ |
 | Expanded `.gitignore` / `.claspignore` for dumps & secrets | ✅ |
 | Ecosystem secrets checklist wrapper | `scripts/check_ecosystem_secrets.py` |
+| **Surety realignment (July 2026)** | ✅ |
+| &nbsp;&nbsp;`SignNow_SendPaperwork.js` — agent constants locked to Brendan O'Neal / P139768 | ✅ |
+| &nbsp;&nbsp;`SignNow_SendPaperwork.js` — `surety_id` extracted from payload; `_resolveTemplateId()` used for all three handlers | ✅ |
+| &nbsp;&nbsp;`SignNow_SendPaperwork.js` — PHASE_1_DOCS / PHASE_2_DOCS corrected to match leads implementation | ✅ |
+| &nbsp;&nbsp;`Telegram_Documents.js` — Palmetto template IDs added; `surety_id` passed through lookup → signing URL | ✅ |
+| &nbsp;&nbsp;`Telegram_IntakeQueue.js` — `surety_id` added to sheet header, `appendRow`, Wix sync, `_mapCanonicalToDashboardFormat` | ✅ |
+| &nbsp;&nbsp;`PDF_Mappings.js` — Palmetto filename entries added to `TEMPLATE_FILENAME_MAP` | ✅ |
 
 ---
 

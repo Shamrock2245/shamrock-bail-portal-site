@@ -62,7 +62,7 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
         'Timestamp', 'IntakeID', 'Role', 'Email', 'Phone', 'FullName',
         'DefendantName', 'DefendantPhone', 'CaseNumber', 'Status',
         'References', 'EmployerInfo', 'ResidenceType', 'ProcessedAt',
-        'AI_Risk', 'AI_Rationale', 'AI_Score'
+        'AI_Risk', 'AI_Rationale', 'AI_Score', 'SuretyID'
       ]);
       sheet.setFrozenRows(1);
       console.log('Created IntakeQueue sheet.');
@@ -145,7 +145,8 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
       '',                                                    // ProcessedAt (empty until processed)
       aiRisk,
       aiRationale,
-      aiScore
+      aiScore,
+      intakeData.surety_id || 'osi'                           // SuretyID (osi or palmetto)
     ];
 
     sheet.appendRow(row);
@@ -201,7 +202,10 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
           reference2Address: intakeData.Ref2Address || '',
 
           // Documents
-          docIdFront: intakeData.Doc_ID_Front || null
+          docIdFront: intakeData.Doc_ID_Front || null,
+
+          // Surety routing — osi (default) or palmetto
+          surety_id: intakeData.surety_id || 'osi'
         };
 
         const payload = {
@@ -298,6 +302,8 @@ function _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId) {
         // Location & Consent
         'GPSLatitude', 'GPSLongitude', 'ManualLocation',
         'ConsentGiven', 'ConsentTimestamp',
+        // Surety
+        'SuretyID',
         // Metadata
         'RawJSON'
       ]);
@@ -356,6 +362,8 @@ function _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId) {
       intakeData.manualLocation || '',
       intakeData.consent ? 'Yes' : 'No',
       intakeData.timestamp || new Date().toISOString(),
+      // Surety
+      intakeData.surety_id || 'osi',
       // Raw JSON for full fidelity
       JSON.stringify(intakeData)
     ]);
@@ -553,7 +561,11 @@ function _mapCanonicalToDashboardFormat(data, intakeId) {
     reference2Name: data.Ref2Name || '',
     reference2Phone: data.Ref2Phone || '',
     reference2Relation: data.Ref2Relation || '',
-    reference2Address: data.Ref2Address || ''
+    reference2Address: data.Ref2Address || '',
+
+    // Surety routing — osi (default) or palmetto
+    // Staff can override this in Dashboard before triggering paperwork
+    surety_id: data.surety_id || data.SuretyID || 'osi'
   };
 }
 
