@@ -12,8 +12,10 @@ var CONFIG = {
   SHEET_NAME: 'shamrock-leads-leecounty', // Update if your sheet tab has a different name
   
   // ===== BAIL SCHOOL SETTINGS =====
+  // Prefer Script Property BAIL_SCHOOL_SHEET_ID (authoritative at runtime).
+  // Fallback CONFIG id (provisioned 2026-07-09 via setup_bail_school).
   BAIL_SCHOOL: {
-    SHEET_ID: 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE', // Create a new standalone spreadsheet and paste ID here
+    SHEET_ID: '1yZyk4wXM1kT-Nfjos0CxAMaSFKFdwz_sc6OZhKZ03h8',
     TAB_NAME: 'Student_Progress_Log'
   },
   

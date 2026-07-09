@@ -587,18 +587,36 @@ function doPost(e) {
       return createErrorResponse('schoolHandleSignIntegrity not found', ERROR_CODES.INTERNAL_ERROR);
     }
     if (data.action === 'unlock_course') {
-      // Legacy sheet unlock + LMS sheet/auth (schoolHandleUnlockCourse uses BAIL_SCHOOL.SHEET_ID)
-      if (typeof handleBailSchoolUnlock === 'function') {
-        var unlockLegacy = handleBailSchoolUnlock(data);
-        if (typeof schoolHandleUnlockCourse === 'function') {
-          try { schoolHandleUnlockCourse(data); } catch (e) { console.warn('school unlock dual', e); }
-        }
-        return createResponse(unlockLegacy);
-      }
+      // Prefer LMS unlock (clear errors + magic link). Fall back to legacy sheet unlock.
       if (typeof schoolHandleUnlockCourse === 'function') {
-        return schoolHandleUnlockCourse(data);
+        try {
+          return schoolHandleUnlockCourse(data);
+        } catch (schoolUnlockErr) {
+          console.warn('schoolHandleUnlockCourse failed, trying legacy:', schoolUnlockErr);
+          // Surface sheet-limit / provision errors clearly instead of silent legacy fail
+          if (String(schoolUnlockErr && schoolUnlockErr.message || schoolUnlockErr).indexOf('10000000') !== -1) {
+            return createErrorResponse(
+              'Bail School sheet misconfigured (host workbook full). Cleared property — retry unlock to auto-provision a dedicated LMS sheet. ' +
+                (schoolUnlockErr.message || schoolUnlockErr),
+              ERROR_CODES.INTERNAL_ERROR
+            );
+          }
+        }
+      }
+      if (typeof handleBailSchoolUnlock === 'function') {
+        return createResponse(handleBailSchoolUnlock(data));
       }
       return createErrorResponse('unlock handler not found', ERROR_CODES.INTERNAL_ERROR);
+    }
+    if (data.action === 'setup_bail_school' || data.action === 'setupBailSchoolSpreadsheet') {
+      if (typeof setupBailSchoolSpreadsheet === 'function') {
+        try {
+          return createResponse(setupBailSchoolSpreadsheet());
+        } catch (setupErr) {
+          return createErrorResponse(setupErr.message || String(setupErr), ERROR_CODES.INTERNAL_ERROR);
+        }
+      }
+      return createErrorResponse('setupBailSchoolSpreadsheet not found', ERROR_CODES.INTERNAL_ERROR);
     }
 
     // --- TELEGRAM MINI APP (no-cors — cannot send API key) ---

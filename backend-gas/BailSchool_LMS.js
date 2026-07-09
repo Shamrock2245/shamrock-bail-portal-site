@@ -13,28 +13,210 @@ var SCHOOL_ROSTER_SHEET = "DFS_Compliance_Rosters";
 var SCHOOL_AUTH_SHEET = "Student_Auth";
 
 /**
+ * Resolve Bail School spreadsheet.
+ *
+ * Order:
+ *  1. Script Property BAIL_SCHOOL_SHEET_ID (preferred — set by setupBailSchoolSpreadsheet)
+ *  2. CONFIG.BAIL_SCHOOL.SHEET_ID when not a placeholder
+ *  3. Auto-provision a new spreadsheet and persist BAIL_SCHOOL_SHEET_ID
+ *
+ * NEVER use SpreadsheetApp.getActiveSpreadsheet() — this project may be
+ * container-bound (or previously polluted) to the main bonds workbook which
+ * is already near the 10M cell limit. LMS must stay on its own small file.
+ *
+ * IMPORTANT: Do NOT call getConfig('BAIL_SCHOOL.SHEET_ID'). Code.js defines
+ * getConfig() with no path arg and shadows CONFIG.js's path-based getConfig.
+ */
+function schoolResolveSpreadsheet_() {
+  var sid = schoolReadConfiguredSheetId_();
+  if (sid) {
+    try {
+      var ss = SpreadsheetApp.openById(sid);
+      // Reject clearly wrong hosts (main leads workbook / oversized files)
+      if (schoolSpreadsheetLooksUsable_(ss)) {
+        return ss;
+      }
+      console.warn('schoolResolveSpreadsheet_: rejecting oversized/wrong sheet ' + sid);
+      try {
+        PropertiesService.getScriptProperties().deleteProperty('BAIL_SCHOOL_SHEET_ID');
+      } catch (delErr) {}
+    } catch (openErr) {
+      console.error('schoolResolveSpreadsheet_: openById failed for ' + sid + ': ' + openErr);
+      try {
+        PropertiesService.getScriptProperties().deleteProperty('BAIL_SCHOOL_SHEET_ID');
+      } catch (delErr2) {}
+    }
+  }
+  return schoolProvisionSpreadsheet_();
+}
+
+/**
+ * LMS sheet should be small / purpose-built. Reject workbooks that are already
+ * near Google's 10M cell cap (e.g. main arrest/leads sheet mis-bound as school).
+ */
+function schoolSpreadsheetLooksUsable_(ss) {
+  if (!ss) return false;
+  try {
+    var sheets = ss.getSheets();
+    var totalCells = 0;
+    for (var i = 0; i < sheets.length; i++) {
+      var sh = sheets[i];
+      totalCells += sh.getMaxRows() * sh.getMaxColumns();
+      if (totalCells > 2000000) return false; // 2M max-cells soft limit for LMS host
+    }
+    // If Student_Auth already exists, treat as intentional LMS workbook
+    if (ss.getSheetByName(SCHOOL_AUTH_SHEET)) return true;
+    // Prefer named LMS titles; still allow empty new files
+    var name = String(ss.getName() || '').toLowerCase();
+    if (name.indexOf('bail school') !== -1 || name.indexOf('lms') !== -1) return true;
+    // Brand-new / small file without Student_Auth yet — OK
+    if (sheets.length <= 12 && totalCells < 500000) return true;
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
+/** @returns {string} sheet id or empty string */
+function schoolReadConfiguredSheetId_() {
+  var sid = '';
+  try {
+    sid = PropertiesService.getScriptProperties().getProperty('BAIL_SCHOOL_SHEET_ID') || '';
+  } catch (e0) {}
+  if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') return String(sid).trim();
+
+  try {
+    if (typeof CONFIG !== 'undefined' && CONFIG && CONFIG.BAIL_SCHOOL && CONFIG.BAIL_SCHOOL.SHEET_ID) {
+      sid = CONFIG.BAIL_SCHOOL.SHEET_ID || '';
+    }
+  } catch (e1) {}
+  if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') return String(sid).trim();
+  return '';
+}
+
+/** Create LMS spreadsheet + core tabs; persist Script Property. */
+function schoolProvisionSpreadsheet_() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var existing = schoolReadConfiguredSheetId_();
+    if (existing) {
+      try {
+        var existingSs = SpreadsheetApp.openById(existing);
+        if (schoolSpreadsheetLooksUsable_(existingSs)) {
+          schoolEnsureCoreTabs_(existingSs);
+          return existingSs;
+        }
+        PropertiesService.getScriptProperties().deleteProperty('BAIL_SCHOOL_SHEET_ID');
+      } catch (reopenErr) {
+        console.warn('schoolProvisionSpreadsheet_: configured id unusable, creating new: ' + reopenErr);
+        try {
+          PropertiesService.getScriptProperties().deleteProperty('BAIL_SCHOOL_SHEET_ID');
+        } catch (d) {}
+      }
+    }
+    var ss = SpreadsheetApp.create('Shamrock Bail School LMS');
+    var id = ss.getId();
+    PropertiesService.getScriptProperties().setProperty('BAIL_SCHOOL_SHEET_ID', id);
+    schoolEnsureCoreTabs_(ss);
+    console.log('Provisioned Bail School spreadsheet: ' + id + ' https://docs.google.com/spreadsheets/d/' + id);
+    return ss;
+  } finally {
+    try {
+      lock.releaseLock();
+    } catch (unlockErr) {}
+  }
+}
+
+/** Ensure Student_Auth, BailSchoolStudents, MagicLinks, progress tabs exist. */
+function schoolEnsureCoreTabs_(ss) {
+  if (!ss) return;
+  var auth = ss.getSheetByName(SCHOOL_AUTH_SHEET);
+  if (!auth) {
+    auth = ss.insertSheet(SCHOOL_AUTH_SHEET);
+    auth.appendRow(['Timestamp', 'Student Email', 'Course ID', 'Amount Paid', 'Status']);
+    auth.getRange('A1:E1').setFontWeight('bold').setBackground('#1A3D2B').setFontColor('#FFFFFF');
+    auth.setFrozenRows(1);
+  }
+  var students = ss.getSheetByName(SCHOOL_STUDENTS_SHEET);
+  if (!students) {
+    students = ss.insertSheet(SCHOOL_STUDENTS_SHEET);
+    students.appendRow(['Email', 'Name', 'EnrolledDate', 'Status']);
+    students.getRange('A1:D1').setFontWeight('bold');
+    students.setFrozenRows(1);
+  }
+  var links = ss.getSheetByName(SCHOOL_MAGIC_LINKS_SHEET);
+  if (!links) {
+    links = ss.insertSheet(SCHOOL_MAGIC_LINKS_SHEET);
+    links.appendRow(['Email', 'Token', 'Expiry', 'Used']);
+    links.getRange('A1:D1').setFontWeight('bold');
+    links.setFrozenRows(1);
+  }
+  var progress = ss.getSheetByName(SCHOOL_PROGRESS_SHEET);
+  if (!progress) {
+    progress = ss.insertSheet(SCHOOL_PROGRESS_SHEET);
+    progress.appendRow([
+      'Timestamp', 'StudentEmail', 'ModuleId', 'TimeSpentSeconds',
+      'Acknowledged', 'QuizPassed', 'QuizScore'
+    ]);
+    progress.getRange('A1:G1').setFontWeight('bold');
+    progress.setFrozenRows(1);
+  }
+  // Drop default "Sheet1" if we created named tabs and it is empty
+  try {
+    var def = ss.getSheetByName('Sheet1');
+    if (def && ss.getSheets().length > 1 && def.getLastRow() === 0) {
+      ss.deleteSheet(def);
+    }
+  } catch (delErr) {}
+}
+
+/**
+ * One-shot setup: ensure sheet exists, return id + URL for ops/docs.
+ * Run from Apps Script editor or: clasp run setupBailSchoolSpreadsheet
+ */
+function setupBailSchoolSpreadsheet() {
+  var ss = schoolResolveSpreadsheet_();
+  schoolEnsureCoreTabs_(ss);
+  var id = ss.getId();
+  var url = ss.getUrl();
+  PropertiesService.getScriptProperties().setProperty('BAIL_SCHOOL_SHEET_ID', id);
+  return {
+    success: true,
+    sheetId: id,
+    url: url,
+    message: 'Bail School spreadsheet ready. Script Property BAIL_SCHOOL_SHEET_ID set.'
+  };
+}
+
+
+
+/**
  * Require API key when GAS_API_KEY Script Property is set.
  * Set via: PropertiesService.getScriptProperties().setProperty('GAS_API_KEY', '...')
  * Browser magic-link (sendSchoolMagicLink) may omit key when REQUIRE_API_KEY_FOR_MAGIC_LINK !== 'true'.
  */
 function schoolGetOrCreateAuthSheet_() {
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
+  var ss = schoolResolveSpreadsheet_();
+  var authSheet = ss.getSheetByName(SCHOOL_AUTH_SHEET);
+  if (!authSheet) {
+    try {
+      authSheet = ss.insertSheet(SCHOOL_AUTH_SHEET);
+      authSheet.appendRow(['Timestamp', 'Student Email', 'Course ID', 'Amount Paid', 'Status']);
+      authSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#1A3D2B").setFontColor("#FFFFFF");
+      authSheet.setFrozenRows(1);
+    } catch (insertErr) {
+      // Host workbook full / wrong sheet — force dedicated LMS provision
+      console.warn('schoolGetOrCreateAuthSheet_ insert failed, re-provisioning: ' + insertErr);
+      try {
+        PropertiesService.getScriptProperties().deleteProperty('BAIL_SCHOOL_SHEET_ID');
+      } catch (d) {}
+      ss = schoolProvisionSpreadsheet_();
+      authSheet = ss.getSheetByName(SCHOOL_AUTH_SHEET);
+      if (!authSheet) {
+        throw insertErr;
       }
     }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
-  let authSheet = ss.getSheetByName(SCHOOL_AUTH_SHEET);
-  if (!authSheet) {
-    authSheet = ss.insertSheet(SCHOOL_AUTH_SHEET);
-    authSheet.appendRow(['Timestamp', 'Student Email', 'Course ID', 'Amount Paid', 'Status']);
-    authSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#1A3D2B").setFontColor("#FFFFFF");
-    authSheet.setFrozenRows(1);
   }
   return authSheet;
 }
@@ -80,17 +262,7 @@ function schoolHandleUnlockCourse(data) {
   }
 
   // Ensure student directory row
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+  const ss = schoolResolveSpreadsheet_();
   let studentSheet = ss.getSheetByName(SCHOOL_STUDENTS_SHEET);
   if (!studentSheet) {
     studentSheet = ss.insertSheet(SCHOOL_STUDENTS_SHEET);
@@ -128,20 +300,20 @@ function schoolHandleGetEnrollments(email) {
       .setMimeType(ContentService.MimeType.JSON);
   }
   const want = String(email).trim().toLowerCase();
-  const authSheet = (function() {
+  var authSheet;
   try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})().getSheetByName(SCHOOL_AUTH_SHEET);
+    authSheet = schoolResolveSpreadsheet_().getSheetByName(SCHOOL_AUTH_SHEET);
+  } catch (cfgErr) {
+    return ContentService.createTextOutput(JSON.stringify({
+      enrollments: [],
+      error: cfgErr.message || String(cfgErr)
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
   if (!authSheet) {
-    return ContentService.createTextOutput(JSON.stringify({ enrollments: [] }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({
+      enrollments: [],
+      error: 'Student_Auth sheet missing — run unlock once or create the tab'
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 
   const data = authSheet.getDataRange().getValues();
@@ -168,17 +340,7 @@ function schoolHandleSendMagicLink(data) {
   const email = String(data.email || '').trim().toLowerCase();
   if (!email) throw new Error("Email required");
   
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+  const ss = schoolResolveSpreadsheet_();
   
   // Verify student exists (or auto-create for open enrollment / post-payment)
   let studentSheet = ss.getSheetByName(SCHOOL_STUDENTS_SHEET);
@@ -215,17 +377,7 @@ function schoolHandleAuthVerification(data) {
   const token = data.token;
   if (!token) throw new Error("Token required");
   
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+  const ss = schoolResolveSpreadsheet_();
   const linkSheet = ss.getSheetByName(SCHOOL_MAGIC_LINKS_SHEET);
   if (!linkSheet) throw new Error("Auth system uninitialized");
   
@@ -257,17 +409,7 @@ function schoolHandleAuthVerification(data) {
  * 2. Progress Persistence
  */
 function schoolHandleLogProgress(data) {
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+  const ss = schoolResolveSpreadsheet_();
   let sheet = ss.getSheetByName(SCHOOL_PROGRESS_SHEET);
   
   if (!sheet) {
@@ -295,17 +437,7 @@ function schoolHandleLogProgress(data) {
 function schoolHandleGetProgress(email) {
   if (!email) throw new Error("Email required");
   
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+  const ss = schoolResolveSpreadsheet_();
   const sheet = ss.getSheetByName(SCHOOL_PROGRESS_SHEET);
   if (!sheet) return ContentService.createTextOutput(JSON.stringify({})).setMimeType(ContentService.MimeType.JSON);
   
@@ -333,17 +465,7 @@ function schoolHandleGetProgress(email) {
  * 3. Certificate Flow
  */
 function schoolStudentHasIntegritySignature_(email) {
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+  const ss = schoolResolveSpreadsheet_();
   const sheet = ss.getSheetByName("IntegritySignatures");
   if (!sheet) return false;
   const data = sheet.getDataRange().getValues();
@@ -369,17 +491,7 @@ function schoolRequiredModuleIds_(courseId) {
 }
 
 function schoolStudentHasPassingProgress_(email, courseId) {
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+  const ss = schoolResolveSpreadsheet_();
   const sheet = ss.getSheetByName(SCHOOL_PROGRESS_SHEET);
   if (!sheet) return false;
   const data = sheet.getDataRange().getValues();
@@ -408,17 +520,7 @@ function schoolStudentHasPassingProgress_(email, courseId) {
 }
 
 function schoolHandleGetAdminRoster() {
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+  const ss = schoolResolveSpreadsheet_();
   const authSheet = ss.getSheetByName(SCHOOL_AUTH_SHEET);
   const integritySheet = ss.getSheetByName('IntegritySignatures');
   const studentSheet = ss.getSheetByName(SCHOOL_STUDENTS_SHEET);
@@ -529,17 +631,7 @@ function schoolHandleIssueCertificate(data) {
 
     // 2. Look up student name from roster or use email prefix
     let studentName = studentEmail.split('@')[0];
-    const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+    const ss = schoolResolveSpreadsheet_();
     const rosterSheet = ss.getSheetByName(SCHOOL_ROSTER_SHEET);
     if (rosterSheet) {
       const rosterData = rosterSheet.getDataRange().getValues();
@@ -626,17 +718,7 @@ function schoolHandleIssueCertificate(data) {
  * 4. Compliance Integrity & Rosters
  */
 function schoolHandleSignIntegrity(data) {
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+  const ss = schoolResolveSpreadsheet_();
   let sheet = ss.getSheetByName("IntegritySignatures");
   if (!sheet) {
     sheet = ss.insertSheet("IntegritySignatures");
@@ -649,17 +731,7 @@ function schoolHandleSignIntegrity(data) {
 }
 
 function schoolHandleCheckIntegrity(email) {
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+  const ss = schoolResolveSpreadsheet_();
   const sheet = ss.getSheetByName("IntegritySignatures");
   if (!sheet) return ContentService.createTextOutput(JSON.stringify({ signed: false })).setMimeType(ContentService.MimeType.JSON);
   
@@ -673,17 +745,7 @@ function schoolHandleCheckIntegrity(email) {
 }
 
 function schoolHandleGetRoster() {
-  const ss = (function() {
-  try {
-    if (typeof getConfig === 'function') {
-      var sid = getConfig('BAIL_SCHOOL.SHEET_ID');
-      if (sid && sid !== 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-        return SpreadsheetApp.openById(sid);
-      }
-    }
-  } catch (e) {}
-  return SpreadsheetApp.getActiveSpreadsheet();
-})();
+  const ss = schoolResolveSpreadsheet_();
   const sheet = ss.getSheetByName(SCHOOL_ROSTER_SHEET);
   
   if (!sheet) {

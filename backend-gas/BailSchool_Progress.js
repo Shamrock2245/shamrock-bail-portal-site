@@ -8,14 +8,32 @@
 
 function handleBailSchoolProgress(data) {
   try {
-    const sheetId = getConfig('BAIL_SCHOOL.SHEET_ID');
-    const tabName = getConfig('BAIL_SCHOOL.TAB_NAME') || 'Student_Progress_Log';
+    var tabName = 'Student_Progress_Log';
+    try {
+      if (typeof CONFIG !== 'undefined' && CONFIG.BAIL_SCHOOL && CONFIG.BAIL_SCHOOL.TAB_NAME) {
+        tabName = CONFIG.BAIL_SCHOOL.TAB_NAME;
+      }
+    } catch (tErr) {}
 
-    if (!sheetId || sheetId === 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-      return { success: false, error: 'Bail School Sheet ID not configured in CONFIG.js' };
+    var ss;
+    if (typeof schoolResolveSpreadsheet_ === 'function') {
+      ss = schoolResolveSpreadsheet_();
+    } else {
+      var sheetId = '';
+      try {
+        sheetId = PropertiesService.getScriptProperties().getProperty('BAIL_SCHOOL_SHEET_ID') || '';
+      } catch (pErr) {}
+      try {
+        if ((!sheetId || sheetId === 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') &&
+            typeof CONFIG !== 'undefined' && CONFIG.BAIL_SCHOOL) {
+          sheetId = CONFIG.BAIL_SCHOOL.SHEET_ID || '';
+        }
+      } catch (cErr) {}
+      if (!sheetId || sheetId === 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
+        return { success: false, error: 'Bail School Sheet ID not configured — run setupBailSchoolSpreadsheet()' };
+      }
+      ss = SpreadsheetApp.openById(sheetId);
     }
-
-    const ss = SpreadsheetApp.openById(sheetId);
     let sheet = ss.getSheetByName(tabName);
 
     // Auto-create tab if it doesn't exist
@@ -112,11 +130,30 @@ function handleBailSchoolProgress(data) {
  * Set this up on a daily time-driven trigger in the GAS console.
  */
 function generateDailyComplianceReport() {
-  const sheetId = getConfig('BAIL_SCHOOL.SHEET_ID');
-  if (!sheetId || sheetId === 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') return;
-
-  const ss = SpreadsheetApp.openById(sheetId);
-  const logSheet = ss.getSheetByName(getConfig('BAIL_SCHOOL.TAB_NAME') || 'Student_Progress_Log');
+  var ss;
+  try {
+    if (typeof schoolResolveSpreadsheet_ === 'function') {
+      ss = schoolResolveSpreadsheet_();
+    } else {
+      var sheetId = PropertiesService.getScriptProperties().getProperty('BAIL_SCHOOL_SHEET_ID') || '';
+      if (!sheetId || sheetId === 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
+        if (typeof CONFIG !== 'undefined' && CONFIG.BAIL_SCHOOL) {
+          sheetId = CONFIG.BAIL_SCHOOL.SHEET_ID || '';
+        }
+      }
+      if (!sheetId || sheetId === 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') return;
+      ss = SpreadsheetApp.openById(sheetId);
+    }
+  } catch (e) {
+    return;
+  }
+  var tabName = 'Student_Progress_Log';
+  try {
+    if (typeof CONFIG !== 'undefined' && CONFIG.BAIL_SCHOOL && CONFIG.BAIL_SCHOOL.TAB_NAME) {
+      tabName = CONFIG.BAIL_SCHOOL.TAB_NAME;
+    }
+  } catch (tErr) {}
+  const logSheet = ss.getSheetByName(tabName);
   
   if (!logSheet) return; // No logs yet
 
@@ -171,12 +208,28 @@ function handleBailSchoolUnlock(data) {
       return { success: false, error: 'StudentEmail and CourseID are required' };
     }
 
-    const sheetId = getConfig('BAIL_SCHOOL.SHEET_ID');
-    if (!sheetId || sheetId === 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
-      return { success: false, error: 'Bail School Sheet ID not configured in CONFIG.js' };
+    // Prefer LMS resolver (Script Property / auto-provision). Do NOT use
+    // getConfig('BAIL_SCHOOL.SHEET_ID') — Code.js getConfig() has no path arg.
+    let ss;
+    if (typeof schoolResolveSpreadsheet_ === 'function') {
+      ss = schoolResolveSpreadsheet_();
+    } else {
+      var sheetId = '';
+      try {
+        sheetId = PropertiesService.getScriptProperties().getProperty('BAIL_SCHOOL_SHEET_ID') || '';
+      } catch (pErr) {}
+      if (!sheetId || sheetId === 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
+        try {
+          if (typeof CONFIG !== 'undefined' && CONFIG.BAIL_SCHOOL) {
+            sheetId = CONFIG.BAIL_SCHOOL.SHEET_ID || '';
+          }
+        } catch (cErr) {}
+      }
+      if (!sheetId || sheetId === 'YOUR_BAIL_SCHOOL_SHEET_ID_HERE') {
+        return { success: false, error: 'Bail School Sheet ID not configured — run setupBailSchoolSpreadsheet()' };
+      }
+      ss = SpreadsheetApp.openById(sheetId);
     }
-
-    const ss = SpreadsheetApp.openById(sheetId);
     let authSheet = ss.getSheetByName('Student_Auth');
 
     // Auto-create Auth tab if it doesn't exist
