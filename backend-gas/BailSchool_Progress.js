@@ -209,6 +209,30 @@ function handleBailSchoolUnlock(data) {
       authSheet.appendRow([new Date(), studentEmail, courseId, amountPaid, "Unlocked"]);
     }
 
+    // Optional dual-write: notify school Next.js GAS web app (same Student_Auth if shared sheet).
+    // Set Script Property BAIL_SCHOOL_WEBHOOK_URL to school Code.gs /exec URL if separate project.
+    try {
+      var schoolWebhook = PropertiesService.getScriptProperties().getProperty('BAIL_SCHOOL_WEBHOOK_URL');
+      var schoolKey = PropertiesService.getScriptProperties().getProperty('BAIL_SCHOOL_API_KEY')
+        || PropertiesService.getScriptProperties().getProperty('GAS_API_KEY');
+      if (schoolWebhook) {
+        UrlFetchApp.fetch(schoolWebhook, {
+          method: 'post',
+          contentType: 'application/json',
+          muteHttpExceptions: true,
+          payload: JSON.stringify({
+            action: 'unlock_course',
+            studentEmail: studentEmail,
+            courseId: courseId,
+            amountPaid: amountPaid,
+            apiKey: schoolKey || ''
+          })
+        });
+      }
+    } catch (dualErr) {
+      console.warn('School webhook dual-write skipped/failed:', dualErr);
+    }
+
     return { success: true, message: `Course ${courseId} unlocked for ${studentEmail}` };
 
   } catch (error) {
