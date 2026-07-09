@@ -47,11 +47,12 @@
 | Item | Notes |
 |------|--------|
 | **Secret rotation** | Keys that ever lived in git history — see `SECRETS_ROTATION_GUIDE.md` |
-| **GAS redeploy** | Live web app must include scrubbed files + Bail School handlers |
+| **GAS redeploy** | ✅ **@441** — school LMS + dedicated sheet `1yZyk4wXM1kT-Nfjos0CxAMaSFKFdwz_sc6OZhKZ03h8` |
 | **Wix publish** | Velo page FAQ/schema $649 |
 | **Embed host redeploy** | Netlify site serving `bail-school.html` so public site is not stuck on old $699 |
 | **SwipeSimple** | Confirm 120hr link charges **$649.00** |
-| **School sheet ID** | `BAIL_SCHOOL.SHEET_ID` = same spreadsheet as school LMS `Student_Auth` |
+| **School sheet ID** | ✅ Script Property `BAIL_SCHOOL_SHEET_ID` + CONFIG fallback set (smoke unlock OK) |
+| **SwipeSimple Gmail poller** | Confirm `setupSwipeSimpleTrigger()` still firing every 5 min |
 
 ---
 
