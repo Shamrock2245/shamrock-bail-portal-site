@@ -10,7 +10,8 @@ import { buildMagicLinkUrl } from 'backend/portal-url';
  */
 export async function generateAdminLinkForBrendan() {
     const email = "admin@shamrockbailbonds.biz";
-    const personId = "admin_master_01"; // Stable ID for the super admin
+    // Must match tenant.json staffAccounts + super-admin.js SUPER_ADMIN_PERSON_ID
+    const personId = "staff_admin_primary";
     const role = "admin";
 
     console.log(`Generating Admin Link for ${email}...`);
