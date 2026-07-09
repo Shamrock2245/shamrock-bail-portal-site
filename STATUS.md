@@ -64,4 +64,5 @@ Do not reintroduce **$699** on Agent Path.
 - `README.md`, `SYSTEM.md`, `AGENTS.md`, `SECRETS_ROTATION_GUIDE.md`
 - `docs/DEPLOYMENT_CHECKLIST.md`
 - School go-live: sibling repo `shamrock-bail-school/docs/GO_LIVE.md`
-- Cross-stack: `shamrock-leads/docs/ECOSYSTEM.md`
+- Cross-stack: `shamrock-leads/docs/ECOSYSTEM.md` (includes **node-red** as Zapier/n8n layer)
+- Automation: sibling `shamrock-node-red` (`STATUS.md`)
