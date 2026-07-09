@@ -58,7 +58,8 @@
         "admin@shamrockbailbonds.biz": {
             "role": "admin",
             "name": "Admin",
-            "personId": "staff_admin_primary"
+            "personId": "staff_admin_primary",
+            "isSuperAdmin": true
         },
         "shamrockbailoffice@gmail.com": {
             "role": "staff",

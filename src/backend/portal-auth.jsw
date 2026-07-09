@@ -26,6 +26,12 @@ import { sendSms } from 'backend/twilio-client';
 import { fetch } from 'wix-fetch';
 import { fetchWithRetry } from 'backend/utils';
 import { createHash, createHmac } from 'crypto';
+import {
+    isSuperAdminEmail,
+    getSuperAdminProfile,
+    elevateRoleIfSuperAdmin,
+    SUPER_ADMIN_PERSON_ID,
+} from 'backend/super-admin';
 
 // ============================================================================
 // CONFIGURATION
@@ -46,7 +52,7 @@ const CONFIG = {
     BASE_URL: 'https://shamrockbailbonds.biz',
     PORTAL_LANDING: '/portal-landing',
 
-    // STAFF_ACCOUNTS removed as per instruction
+    // STAFF_ACCOUNTS removed as per instruction — super admin is hardcoded in super-admin.js
 };
 
 // Portal URL building moved to backend/portal-url.jsw for centralized management
@@ -155,14 +161,32 @@ export async function lookupUserByContact(contact) {
             ? normalizeEmail(contact)
             : normalizePhone(contact);
 
-        // 1. Check if it's a staff account
+        // 0. Super admin — always full admin (hardcoded; never blocked by missing CMS config)
+        if (isEmail(contact) && isSuperAdminEmail(contact)) {
+            const superAdmin = getSuperAdminProfile(contact);
+            // Prefer tenant.json staffAccounts name/personId when present
+            const fromConfig = getStaffAccountDetails(contact, staffConfig);
+            console.log(`[OK] Super admin identified: ${superAdmin.email}`);
+            return {
+                found: true,
+                personId: (fromConfig && fromConfig.personId) || superAdmin.personId || SUPER_ADMIN_PERSON_ID,
+                role: 'admin',
+                email: superAdmin.email,
+                name: (fromConfig && fromConfig.name) || superAdmin.name,
+                isStaff: true,
+                isSuperAdmin: true
+            };
+        }
+
+        // 1. Check if it's a staff account (tenant.json staffAccounts)
         if (isEmail(contact) && isStaffAccount(contact, staffConfig)) {
             const staffDetails = getStaffAccountDetails(contact, staffConfig);
-            console.log(`[OK] Staff account identified: ${staffDetails.name} (${staffDetails.role})`);
+            const role = elevateRoleIfSuperAdmin(staffDetails.role, contact);
+            console.log(`[OK] Staff account identified: ${staffDetails.name} (${role})`);
             return {
                 found: true,
                 personId: staffDetails.personId,
-                role: staffDetails.role,
+                role: role,
                 email: normalized,
                 name: staffDetails.name,
                 isStaff: true
@@ -307,6 +331,9 @@ export async function createCustomSession(personId, role, caseId = null, contact
             targetRole = 'indemnitor';
         }
 
+        // Super admin always gets admin role (even if caller passed staff/indemnitor by mistake)
+        targetRole = elevateRoleIfSuperAdmin(targetRole, contactInfo.email);
+
         // 1. Check for existing active session to REUSE
         try {
             const existingSessions = await wixData.query(CONFIG.SESSIONS_COLLECTION)
@@ -396,17 +423,21 @@ export async function validateCustomSession(sessionToken) {
             return { valid: false, reason: 'expired' };
         }
 
+        // Super admin elevation on every validation (covers legacy sessions minted as staff)
+        const effectiveRole = elevateRoleIfSuperAdmin(session.role, session.email);
+
         return {
             valid: true,
             personId: session.personId,
-            role: session.role,
+            role: effectiveRole,
             caseId: session.caseId,
             email: session.email,
             phone: session.phone,
             name: session.name,
             createdAt: session.createdAt,
             expiresAt: session.expiresAt,
-            sessionToken: session.sessionToken // Return for robust checks
+            sessionToken: session.sessionToken, // Return for robust checks
+            isSuperAdmin: isSuperAdminEmail(session.email)
         };
 
     } catch (error) {
@@ -513,10 +544,13 @@ export async function onMagicLinkLoginV2(token) {
             }
             if (timeDiff < CONFIG.MAGIC_LINK_GRACE_PERIOD_MS) {
                 console.log('[!] Token reused within grace period (Scanner defense)');
-                // Create session anyway
+                const graceRole = elevateRoleIfSuperAdmin(linkData.role, linkData.email);
+                const gracePersonId = isSuperAdminEmail(linkData.email)
+                    ? (linkData.personId || SUPER_ADMIN_PERSON_ID)
+                    : linkData.personId;
                 const sessionToken = await createCustomSession(
-                    linkData.personId,
-                    linkData.role,
+                    gracePersonId,
+                    graceRole,
                     linkData.caseId,
                     {
                         email: linkData.email,
@@ -528,8 +562,9 @@ export async function onMagicLinkLoginV2(token) {
                     ok: true,
                     sessionToken: sessionToken,
                     wixSessionToken: null,
-                    role: linkData.role,
-                    personId: linkData.personId
+                    role: graceRole,
+                    personId: gracePersonId,
+                    isSuperAdmin: isSuperAdminEmail(linkData.email)
                 };
             }
             return { ok: false, message: 'Link already used' };
@@ -547,10 +582,16 @@ export async function onMagicLinkLoginV2(token) {
         linkData.usedAt = now;
         await wixData.update(CONFIG.MAGIC_LINKS_COLLECTION, linkData, { suppressAuth: true });
 
+        // Super admin: force admin role + stable personId on magic-link login
+        const loginRole = elevateRoleIfSuperAdmin(linkData.role, linkData.email);
+        const loginPersonId = isSuperAdminEmail(linkData.email)
+            ? (linkData.personId || SUPER_ADMIN_PERSON_ID)
+            : linkData.personId;
+
         // Create session
         const sessionToken = await createCustomSession(
-            linkData.personId,
-            linkData.role,
+            loginPersonId,
+            loginRole,
             linkData.caseId,
             {
                 email: linkData.email,
@@ -563,8 +604,9 @@ export async function onMagicLinkLoginV2(token) {
             ok: true,
             sessionToken: sessionToken,
             wixSessionToken: null,
-            role: linkData.role,
-            personId: linkData.personId
+            role: loginRole,
+            personId: loginPersonId,
+            isSuperAdmin: isSuperAdminEmail(linkData.email)
         };
 
     } catch (error) {
