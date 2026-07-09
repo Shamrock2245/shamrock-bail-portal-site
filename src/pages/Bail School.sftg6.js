@@ -36,7 +36,7 @@ const FAQ_DATA = [
     },
     {
         question: "How much does the 120-hour course cost?",
-        answer: "The Agent Path is $699. We offer competitive rates for the Fort Myers and Southwest Florida area, and payment plans may be available for qualified applicants. Contact us for details."
+        answer: "The Agent Path (120-hour certification) is $649 — matching our SwipeSimple checkout. Contact us if you have questions about payment or upcoming class dates."
     },
     {
         question: "Is the Indemnitor Basics course really free?",
@@ -191,7 +191,7 @@ function injectSeoSchema() {
             },
             "offers": {
                 "@type": "Offer",
-                "price": "699",
+                "price": "649",
                 "priceCurrency": "USD",
                 "availability": "https://schema.org/InStock"
             },
