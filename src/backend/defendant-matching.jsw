@@ -248,8 +248,10 @@ async function createCaseFromIntake(intakeRecord, defendantId, staffInfo = {}) {
  */
 export async function finalizeCase(caseId, finalData = {}, staffInfo = {}) {
     try {
-        // Verify staff has permission (admin only)
-        if (staffInfo.role !== 'admin') {
+        // Verify staff has permission (admin only — super-admin email always allowed)
+        const email = (staffInfo.staffEmail || staffInfo.email || '').toLowerCase().trim();
+        const isSuperAdmin = email === 'admin@shamrockbailbonds.biz';
+        if (staffInfo.role !== 'admin' && !isSuperAdmin) {
             return { success: false, error: 'Only admin can finalize cases' };
         }
 
