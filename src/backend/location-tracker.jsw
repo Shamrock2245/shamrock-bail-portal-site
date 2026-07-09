@@ -48,12 +48,17 @@ export async function logStealthPing(defendantId, defendantName, staffId) {
             return { success: false, error: "Missing GAS Configuration" };
         }
 
+        if (!apiKey) {
+            console.error("[X] GAS_API_KEY missing from Secrets Manager");
+            return { success: false, error: "Missing GAS API key configuration" };
+        }
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'log_ping_request',
-                apiKey: apiKey || 'shamrock_secretary_2024', // Fallback only if secret fails
+                apiKey: apiKey,
                 defendantName: defendantName,
                 staffId: staffId,
                 timestamp: new Date().toISOString()

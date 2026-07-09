@@ -249,11 +249,22 @@ function TEST_PRINCIPAL_ENGINEER_ALL() {
 // Run once, then delete or comment out.
 // =============================================================================
 
-function SETUP_SetAuthSecrets() {
+/**
+ * ONE-TIME SETUP — Set auth secrets in Script Properties.
+ * Pass secrets as arguments from the GAS editor; never hardcode them.
+ *
+ *   SETUP_SetAuthSecrets('elevenlabs-tool-secret', 'telegram-webhook-secret')
+ */
+function SETUP_SetAuthSecrets(elevenLabsToolSecret, telegramWebhookSecret) {
+    if (!elevenLabsToolSecret || !telegramWebhookSecret) {
+        throw new Error(
+            'Pass both secrets as arguments. Example: SETUP_SetAuthSecrets("el-secret", "tg-secret")'
+        );
+    }
     var props = PropertiesService.getScriptProperties();
 
-    props.setProperty('ELEVENLABS_TOOL_SECRET', 'XpOeDHyVYjmOooI0aQYi7632gYoC6cFGKV546tuODMc');
-    props.setProperty('TELEGRAM_WEBHOOK_SECRET', '10F3oEWzaUB7sLqaYOvGDJwxUx3iOO5W3oeZemB1S7I');
+    props.setProperty('ELEVENLABS_TOOL_SECRET', String(elevenLabsToolSecret).trim());
+    props.setProperty('TELEGRAM_WEBHOOK_SECRET', String(telegramWebhookSecret).trim());
 
     Logger.log('✅ Auth secrets set in Script Properties:');
     Logger.log('  ELEVENLABS_TOOL_SECRET: ' + props.getProperty('ELEVENLABS_TOOL_SECRET').substring(0, 6) + '...');
@@ -262,16 +273,19 @@ function SETUP_SetAuthSecrets() {
     Logger.log('⚠️ IMPORTANT: These same values must also be set in:');
     Logger.log('  1. Netlify env var: ELEVENLABS_TOOL_SECRET');
     Logger.log('  2. Wix Secret: TELEGRAM_WEBHOOK_SECRET');
-    Logger.log('  3. ElevenLabs tool webhook URLs: append ?secret=XpOeDHyV... to elevenlabs_tool URLs');
+    Logger.log('  3. ElevenLabs tool webhook URLs: append ?secret=<ELEVENLABS_TOOL_SECRET>');
 }
 
 /**
  * ONE-TIME SETUP: Set MEMO_API_KEY in Script Properties.
- * Run once from GAS Editor.
+ * Run once from GAS Editor: SETUP_SetMemoApiKey('your-memo-api-key')
  */
-function SETUP_SetMemoApiKey() {
+function SETUP_SetMemoApiKey(memoApiKey) {
+    if (!memoApiKey || !String(memoApiKey).trim()) {
+        throw new Error('Pass MEMO_API_KEY as an argument. Example: SETUP_SetMemoApiKey("m0-...")');
+    }
     PropertiesService.getScriptProperties().setProperty(
-        'MEMO_API_KEY', 'm0-IeF566UCSV7dht1RPrIXHTq01VFR73Mp5VVK9jqb'
+        'MEMO_API_KEY', String(memoApiKey).trim()
     );
     Logger.log('✅ MEMO_API_KEY set in Script Properties.');
 }

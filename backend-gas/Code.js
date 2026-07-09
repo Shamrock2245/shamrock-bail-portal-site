@@ -2001,12 +2001,19 @@ function handleAction(data) {
     }
   }
 
-  // --- EMERGENCY ADMIN ACTION ---
+  // --- EMERGENCY ADMIN ACTION (disabled) ---
+  // Previously hardcoded a shared secret into source control and returned it
+  // in the HTTP response. That is a critical vulnerability — removed.
+  // Rotate GAS_API_KEY / WIX_API_KEY only via Script Properties UI or a
+  // local-only editor run that never commits the value.
   if (action === 'RESET_KEYS_ADMIN_OVERRIDE') {
-    const secret = 'shamrock_gas_2026_secure_key_aqhrvpytqw';
-    PropertiesService.getScriptProperties().setProperty('GAS_API_KEY', secret);
-    PropertiesService.getScriptProperties().setProperty('WIX_API_KEY', secret);
-    return { success: true, message: 'API Keys reset to: ' + secret };
+    if (typeof logSecurityEvent === 'function') {
+      logSecurityEvent('RESET_KEYS_BLOCKED', { reason: 'disabled_hardcoded_override' });
+    }
+    return {
+      success: false,
+      error: 'RESET_KEYS_ADMIN_OVERRIDE is disabled. Set GAS_API_KEY in Script Properties manually.'
+    };
   }
   // ------------------------------
 
@@ -4133,7 +4140,11 @@ function approveIntake(intakeId) {
 
     // 3. Sync to Wix
     const wixUrl = 'https://www.shamrockbailbonds.biz/_functions/updateIntakeStatus';
-    const apiKey = PropertiesService.getScriptProperties().getProperty('GAS_API_KEY') || 'shamrock-secret-key';
+    const apiKey = PropertiesService.getScriptProperties().getProperty('GAS_API_KEY');
+    if (!apiKey) {
+      console.error('GAS_API_KEY not configured — refusing Wix sync with fallback secret');
+      return { success: false, error: 'GAS_API_KEY not configured in Script Properties' };
+    }
 
     const payload = {
       apiKey: apiKey,

@@ -5,24 +5,39 @@ node_modules/
 .wix/
 jsconfig.json
 venv/
+**/venv/
 
-# Environment & secrets
+# Environment & secrets (all variants)
 .env
-.env*
+.env.*
+!.env.example
+!**/.env.example
 .env.signnow
 *.real
-
-# Secrets - never commit
+*.pem
+credentials*.json
 **/service_account*.json
-backend-gas/ScriptProperties_Temp.js
-backend-gas/Get_Token_Temp.js
-backend-gas/Setup_OAuth_Props.js
-backend-gas/setup_webhooks.js
+**/*service-account*.json
+scripts/.env_eval
+**/.env_eval
 
-# GAS test output
+# Secrets / one-off property dumpers — never commit real values
+# (safe stubs may be tracked; these patterns block local dumps & outputs)
+backend-gas/ScriptProperties_Temp.js
+backend-gas/ScriptProperties_Temp.js.real
+backend-gas/setup_webhooks.js
+backend-gas/fetch_token.js
+backend-gas/fetch_token2.js
+backend-gas/fetch_token3.py
+backend-gas/fetch_token4.js
+backend-gas/fetch_token*
+
+# GAS test / scrape output
 backend-gas/*_output_*.json
 backend-gas/test_pdf_output.json
+backend-gas/test_pdf_output*.json
 backend-gas/*output*.json
+backend-gas/deployment_output*.txt
 
 # Data files - too large for version control
 *.csv
@@ -34,3 +49,9 @@ scripts/seo/indexing_report_*.json
 
 # One-time setup docs
 slack_setup.md
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*~

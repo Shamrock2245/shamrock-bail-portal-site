@@ -1,13 +1,25 @@
+/**
+ * Get_Token_Temp.js
+ *
+ * DANGEROUS utility — intentionally disabled in the repo.
+ * This file must never log, email, or print live secrets.
+ *
+ * If you need a property value during ops:
+ *  1. Open Script Properties in the GAS project UI, OR
+ *  2. Run a one-off function in the browser editor that is NOT saved/committed.
+ *
+ * This stub remains so clasp does not resurrect an old dump helper, and so
+ * anyone who opens the file sees the safe pattern.
+ */
+
 function emailToken() {
-  const props = PropertiesService.getScriptProperties();
-  const token = props.getProperty('TELEGRAM_BOT_TOKEN');
-  MailApp.sendEmail(Session.getEffectiveUser().getEmail(), "Shamrock Telegram Token", "Your Telegram Bot Token is: " + token);
+  throw new Error(
+    'emailToken() is disabled. Do not email Script Properties. Use the GAS Secrets UI or a non-committed local run.'
+  );
 }
+
 function dumpTokens() {
-  var props = PropertiesService.getScriptProperties().getProperties();
-  console.log("=== TELEGRAM_BOT_TOKEN ===");
-  console.log(props['TELEGRAM_BOT_TOKEN']);
-  console.log("=== TELEGRAM_CHAT_ID ===");
-  console.log(props['TELEGRAM_CHAT_ID']);
-  console.log("=== END_TOKENS ===");
+  throw new Error(
+    'dumpTokens() is disabled. Never console.log live tokens. Use Script Properties UI or a non-committed local run.'
+  );
 }

@@ -13,7 +13,7 @@ These are the EXACT values that must be in Wix Secrets Manager:
 ### Secret 1: GAS_API_KEY
 ```
 Name: GAS_API_KEY
-Value: shamrock-secure-2026
+Value: [REDACTED_LEGACY_API_KEY]
 ```
 
 ### Secret 2: GAS_WEB_APP_URL
@@ -54,7 +54,7 @@ Value: https://script.google.com/macros/s/AKfycbw6rv8C3vDSSESiIUrJJ7Db8vAhKfuyoM
 
 3. Find **GAS_API_KEY**:
    - Click the **Edit** (pencil) icon
-   - Update value to: `shamrock-secure-2026`
+   - Update value to: `[REDACTED_LEGACY_API_KEY]`
    - Click **Save**
 
 4. Find **GAS_WEB_APP_URL**:
@@ -75,7 +75,7 @@ Value: https://script.google.com/macros/s/AKfycbw6rv8C3vDSSESiIUrJJ7Db8vAhKfuyoM
 4. Create new secrets:
    - Click **+ New Secret**
    - Name: `GAS_API_KEY`
-   - Value: `shamrock-secure-2026`
+   - Value: `[REDACTED_LEGACY_API_KEY]`
    - Click **Add**
 
 5. Create second secret:
@@ -233,7 +233,7 @@ Before marking this as complete, verify:
 
 - [ ] GAS_API_KEY is set in GAS Script Properties
 - [ ] GAS_WEB_APP_URL is set in GAS Script Properties
-- [ ] GAS_API_KEY is added to Wix Secrets Manager (exact value: `shamrock-secure-2026`)
+- [ ] GAS_API_KEY is added to Wix Secrets Manager (exact value: `[REDACTED_LEGACY_API_KEY]`)
 - [ ] GAS_WEB_APP_URL is added to Wix Secrets Manager (exact URL)
 - [ ] Wix site is published after updating secrets
 - [ ] `testMagicLinkEmail()` runs successfully in GAS
@@ -269,7 +269,7 @@ When everything is working correctly, you should see this in the browser console
 ## 🔐 Security Notes
 
 **API Key:**
-- The API key `shamrock-secure-2026` is a shared secret
+- The API key `[REDACTED_LEGACY_API_KEY]` is a shared secret
 - It must match EXACTLY in both GAS and Wix
 - Keep it secret - never commit to GitHub
 - Rotate every 90 days for security

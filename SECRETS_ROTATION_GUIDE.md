@@ -102,9 +102,45 @@ FailedToGetMyAccount: 404 - Entity not found
 
 ---
 
+## 6. Secrets found in repo setup scripts (2026-07 scrub)
+
+These values were previously hardcoded in tracked source and are **compromised**.
+Rotate them even if production currently works.
+
+| Secret | Where it lived | Rotate in |
+|--------|----------------|-----------|
+| `WIX_WEBHOOK_SECRET` | `SetupUtilities.js` (scrubbed) | GAS Script Properties + any Wix/HMAC verifier |
+| `ELEVENLABS_WEBHOOK_SECRET` | `SetupUtilities.js` (scrubbed) | GAS + ElevenLabs console signing secret |
+| `ELEVENLABS_TOOL_SECRET` | `Test_PrincipalEngineer.js` (scrubbed) | GAS + Netlify env + ElevenLabs tool URLs |
+| `TELEGRAM_WEBHOOK_SECRET` | `Test_PrincipalEngineer.js` (scrubbed) | GAS + Wix Secrets + relay proxies |
+| `MEMO_API_KEY` | `Test_PrincipalEngineer.js` (scrubbed) | Memo provider + GAS Script Properties |
+| `GAS_API_KEY` / `WIX_API_KEY` | Hardcoded reset override in `Code.js` (removed) | GAS Script Properties **and** Wix Secrets Manager (`GAS_API_KEY`) — must match |
+| Legacy test API keys (`shamrock-secure-*`) | `scripts/testing/*` (now env-only) | If those values were ever production keys, rotate `GAS_API_KEY` |
+| `GITHUB_PAT` / `SLACK_BOT_TOKEN` | Local `ScriptProperties_Temp.js` only (gitignored) | GitHub + Slack app OAuth if those local values were ever real |
+
+### Safe setup pattern (use forever)
+
+```javascript
+// In GAS editor only — pass secrets as run arguments, never paste into committed files:
+SETUP_ElevenLabsWebhookSecret('wsec_...');
+SETUP_SetAuthSecrets('el-tool-secret', 'tg-webhook-secret');
+SETUP_SetMemoApiKey('m0-...');
+SETUP_MissingProperties('wix-webhook-hmac-secret');
+```
+
+Local Node tests:
+
+```bash
+export GAS_API_KEY='...'   # or scripts/testing/.env (gitignored)
+node scripts/testing/test_gas_email.mjs
+```
+
+---
+
 ## ✅ Final Verification
 
 After rotating all keys:
 1. Run a test flow (e.g., "Start Bail Paperwork") to ensure SignNow and Twilio still work.
 2. Check the Dashboard map to ensure it loads without errors.
 3. Trigger a manual Wix deploy to confirm `WIX_CLI_API_KEY` is valid and auto-deploy works.
+4. Confirm `GAS_API_KEY` in Wix Secrets Manager matches GAS Script Properties (no fallback defaults).

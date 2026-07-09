@@ -1,6 +1,26 @@
-fetch_token*.js
+# Never push secrets, dumps, debug noise, or one-off token utilities to GAS
+fetch_token*
+Get_Token_Temp.js
+ScriptProperties_Temp.js
+ScriptProperties_Temp.js.real
+Setup_OAuth_Props.js
+setup_webhooks.js
+*.real
+
+# Generated / test output
+*_output*.json
+test_pdf_output*.json
+auto_tag_output*.json
+deployment_output*.txt
+
+# Non-GAS project files
 *.py
 *.md
 *.json
 !appsscript.json
 extracted_scripts.js
+Bookmarklets.md
+
+# Local archives / legacy
+*.legacy
+Form_Old.html

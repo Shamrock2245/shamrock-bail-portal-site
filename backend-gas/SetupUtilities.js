@@ -393,12 +393,15 @@ function testWixHealth(apiKey) {
  * - SPREADSHEET_ID (Telegram Intake sheet)
  * - WIX_WEBHOOK_SECRET (HMAC verification for Wix→GAS webhooks)
  *
- * Run this once from the Apps Script editor, then it can be removed.
+ * NEVER hardcode secrets in this file. Pass them as arguments from the editor:
+ *   SETUP_MissingProperties('YOUR_WIX_WEBHOOK_SECRET')
+ * Or set only the non-secret sheet ID:
+ *   SETUP_MissingProperties()
  */
-function SETUP_MissingProperties() {
+function SETUP_MissingProperties(wixWebhookSecret) {
   const props = PropertiesService.getScriptProperties();
 
-  // 1. SPREADSHEET_ID — The main Telegram Intake spreadsheet
+  // 1. SPREADSHEET_ID — The main Telegram Intake spreadsheet (resource ID, not a secret)
   const SPREADSHEET_ID = '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E';
   props.setProperty('SPREADSHEET_ID', SPREADSHEET_ID);
   console.log('✅ Set SPREADSHEET_ID = ' + SPREADSHEET_ID);
@@ -411,10 +414,16 @@ function SETUP_MissingProperties() {
     console.error('   ❌ Could not access spreadsheet: ' + e.message);
   }
 
-  // 2. WIX_WEBHOOK_SECRET — For HMAC-verifying Wix webhook payloads
-  const WIX_WEBHOOK_SECRET = '48ac04b0aeae45346ebb7526a16ba04911ff3c0b1841af5de1f097d11da3859a';
-  props.setProperty('WIX_WEBHOOK_SECRET', WIX_WEBHOOK_SECRET);
-  console.log('✅ Set WIX_WEBHOOK_SECRET = [' + WIX_WEBHOOK_SECRET.substring(0, 8) + '...]');
+  // 2. WIX_WEBHOOK_SECRET — must be supplied at runtime (never committed)
+  if (wixWebhookSecret && String(wixWebhookSecret).trim()) {
+    const secret = String(wixWebhookSecret).trim();
+    props.setProperty('WIX_WEBHOOK_SECRET', secret);
+    console.log('✅ Set WIX_WEBHOOK_SECRET = [' + secret.substring(0, 8) + '...]');
+  } else if (props.getProperty('WIX_WEBHOOK_SECRET')) {
+    console.log('ℹ️ WIX_WEBHOOK_SECRET already set (left unchanged)');
+  } else {
+    console.warn('⚠️ WIX_WEBHOOK_SECRET not set. Re-run with: SETUP_MissingProperties("your-secret")');
+  }
 
   console.log('\n🎯 Done! Run runSystemDiagnostics() to verify green status.');
 }
@@ -465,12 +474,17 @@ function SETUP_ElevenLabsProperties() {
 
 /**
  * Sets the ElevenLabs webhook signing secret.
- * Run once from the Apps Script editor, then remove.
+ * Run once from the Apps Script editor with the secret as an argument:
+ *   SETUP_ElevenLabsWebhookSecret('wsec_...')
+ * NEVER hardcode secrets in source control.
  */
-function SETUP_ElevenLabsWebhookSecret() {
-  var secret = 'wsec_8f42d182dfe8357ba4b02172d9df26816bff3f1c7a7c8b6051b605cfbcf20770';
-  PropertiesService.getScriptProperties().setProperty('ELEVENLABS_WEBHOOK_SECRET', secret);
-  console.log('✅ Set ELEVENLABS_WEBHOOK_SECRET = [' + secret.substring(0, 12) + '...]');
+function SETUP_ElevenLabsWebhookSecret(secret) {
+  if (!secret || !String(secret).trim()) {
+    throw new Error('Pass the webhook secret as an argument. Example: SETUP_ElevenLabsWebhookSecret("wsec_...")');
+  }
+  var value = String(secret).trim();
+  PropertiesService.getScriptProperties().setProperty('ELEVENLABS_WEBHOOK_SECRET', value);
+  console.log('✅ Set ELEVENLABS_WEBHOOK_SECRET = [' + value.substring(0, 12) + '...]');
 }
 
 

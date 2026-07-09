@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 
-import { GAS_URL } from './test_config.mjs';
+import { GAS_URL, getGasApiKey } from './test_config.mjs';
 
 // --- MOCK DATA ---
 const MOCK_PDF_BASE64 = "JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwogIC9QYWdlcyAyIDAgUgo+PgplbmRvYmoKCjIgMCBvYmoKPDwKICAvVHlwZSAvUGFnZXwKICAvTWVkaWFCb3ggWyAwIDAgMjAwIDIwMCBdCiAgL0NvdW50IDEKICAvS2lkcyBbIDMgMCBSIF0KPj4KZW5kb2JqCgozIDAgb2JqCjw8CiAgL1R5cGUgL1BhZ2UKICAvUGFyZW50IDIgMCBSCiAgL1Jlc291cmNlcyA8PAogICAgL0ZvbnQgPDwKICAgICAgL0YxIDQgMCBSCisgICAgPj4KICA+PgogIC9Db250ZW50cyA1IDAgUgo+PgplbmRvYmoKCjQgMCBvYmoKPDwKICAvVHlwZSAvRm9udAogIC9TdWJ0eXBlIC9UeXBlMQogIC9CYXNlRm9udCAvVGltZXMtUm9tYW4KPj4KZW5kb2JqCgo1IDAgb2JqCjw8IC9MZW5ndGggNDQgPj4Kc3RyZWFtCkJUCjcwIDUwIFRECi9GMSAxMiBUZgwoSGVsbG8sIHdvcmxkISkgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDEwIDAwMDAwIG4gCjAwMDAwMDAwNjAgMDAwMDAgbiAKMDAwMDAwMDE1NyAwMDAwMCBuIAowMDAwMDAwMjU1IDAwMDAwIG4gCjAwMDAwMDAzNDQgMDAwMDAgbiAKdHJhaWxlcgo8PAogIC9TaXplIDYKICAvUm9vdCAxIDAgUgo+PgpzdGFydHhyZWYKNDQxCiUlRU9GCQ==";
@@ -26,7 +26,7 @@ async function testHealth() {
 }
 
 // 4. Robust Test (Split Steps) to handle raw PDF
-async function testRobustFlow() {
+async function testRobustFlow(apiKey) {
     console.log("\n--- Testing Robust Split Flow (Upload -> Fields -> Invite) ---");
 
     // Step 1: Upload
@@ -36,7 +36,7 @@ async function testRobustFlow() {
         const res = await fetch(GAS_URL, {
             method: 'POST',
             body: JSON.stringify({
-                apiKey: 'shamrock-secure-2026',
+                apiKey,
                 action: 'uploadToSignNow',
                 pdfBase64: MOCK_PDF_BASE64,
                 fileName: 'Robust_Test_Doc.pdf'
@@ -56,7 +56,7 @@ async function testRobustFlow() {
     try {
         console.log("2. Adding Fields...");
         const fieldsPayload = {
-            apiKey: 'shamrock-secure-2026',
+            apiKey,
             action: 'addSignatureFields',
             documentId: docId,
             fields: [
@@ -76,7 +76,7 @@ async function testRobustFlow() {
     try {
         console.log("3. Sending Invite...");
         const invitePayload = {
-            apiKey: 'shamrock-secure-2026',
+            apiKey,
             action: 'createSigningRequest',
             documentId: docId,
             fromEmail: 'admin@shamrockbailbonds.biz',
@@ -95,7 +95,7 @@ async function testRobustFlow() {
     try {
         console.log("4. Creating Kiosk Link...");
         const linkPayload = {
-            apiKey: 'shamrock-secure-2026',
+            apiKey,
             action: 'createEmbeddedLink',
             documentId: docId,
             signerEmail: 'brendan@shamrockbailbonds.biz',
@@ -110,10 +110,18 @@ async function testRobustFlow() {
 }
 
 async function run() {
+    let apiKey;
+    try {
+        apiKey = getGasApiKey();
+    } catch (e) {
+        console.error(e.message);
+        process.exit(1);
+    }
+
     const health = await testHealth();
     if (!health) return;
 
-    await testRobustFlow();
+    await testRobustFlow(apiKey);
 }
 
 run();

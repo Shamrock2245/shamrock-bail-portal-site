@@ -46,12 +46,12 @@ You need to add 2 secrets to Wix Secrets Manager:
 
 4. Replace with a secure random string (or use this one):
    ```javascript
-   'GAS_API_KEY': 'shamrock_gas_2026_secure_key_' + Math.random().toString(36).substring(2, 15),
+   'GAS_API_KEY': '[REDACTED_LEGACY_RESET_KEY]' + Math.random().toString(36).substring(2, 15),
    ```
 
    **Example secure key:**
    ```
-   shamrock_gas_2026_secure_key_a7b3c9d2e5f8
+   [REDACTED_LEGACY_RESET_KEY]
    ```
 
 5. Run the function: `ADMIN_UpdateAllProperties()`

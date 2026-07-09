@@ -1,17 +1,25 @@
 
 import fetch from 'node-fetch';
 
-import { GAS_URL } from './test_config.mjs';
+import { GAS_URL, getGasApiKey } from './test_config.mjs';
 
 async function testTemplateAccess() {
     console.log('Testing Drive Template Access...');
+
+    let apiKey;
+    try {
+        apiKey = getGasApiKey();
+    } catch (e) {
+        console.error(e.message);
+        process.exit(1);
+    }
 
     try {
         // API Key MUST be in the body for GAS doPost validation
         const payload = {
             action: 'getPDFTemplates',
             templateIds: ['indemnity-agreement'],
-            apiKey: 'shamrock_placeholder_redacted_for_git'
+            apiKey
         };
 
         const response = await fetch(GAS_URL, {
