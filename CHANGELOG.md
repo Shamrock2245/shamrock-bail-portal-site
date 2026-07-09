@@ -6,6 +6,26 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-07-08 — v2.7.0 — Security scrub, school price alignment, ecosystem docs
+
+**Security:**
+- Removed hardcoded API secrets / token dumpers from GAS setup & tests; fail closed without `GAS_API_KEY` where applicable.
+- Expanded `.gitignore` / `.claspignore`; documented rotation in `SECRETS_ROTATION_GUIDE.md`.
+- `location-tracker.jsw` no longer uses a hardcoded fallback key.
+
+**Bail School (marketing + payments):**
+- Public Agent Path / 120hr price set to **$649** across embeds, FAQ, and Course schema (was $699).
+- Removed incorrect $249 “pay” CTA that reused the $649 SwipeSimple link.
+- SwipeSimple unlock mapping remains `$199`→20hr, `$649`→120hr in `BailSchoolPayments.js`.
+
+**Docs / tooling:**
+- Added `STATUS.md` (true git vs ops state).
+- Added `scripts/check_ecosystem_secrets.py` wrapper (delegates to `shamrock-leads`).
+
+**Ops still required:** rotate leaked secrets; redeploy GAS; republish Wix; redeploy Netlify bail-school embed host.
+
+---
+
 ### 2026-04-24 — v2.6.0 — Infrastructure Sync & Documentation Overhaul
 
 **Added:**

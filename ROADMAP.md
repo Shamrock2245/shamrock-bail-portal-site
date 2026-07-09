@@ -1,7 +1,18 @@
 # 🗺 Technical Roadmap & Milestones
 
 > **"The Uber of Bail Bonds" — Fast. Frictionless. Everywhere.**  
-> **Last Updated:** April 24, 2026
+> **Last Updated:** 2026-07-08 · Authoritative runtime truth: [`STATUS.md`](./STATUS.md)
+
+---
+
+## July 2026 focus (done in git / still ops)
+
+| Item | Git `main` | Live |
+|------|------------|------|
+| Secret scrub + no hardcoded GAS fallbacks | ✅ | Redeploy GAS + rotate secrets |
+| Bail School marketing price **$649** | ✅ | Redeploy embed + Wix publish |
+| School LMS funnel | Sibling `shamrock-bail-school` | Netlify env + shared sheet |
+| Bond Auto-CRM / BB reliability | Sibling `shamrock-leads` | VPS + office BlueBubbles |
 
 ---
 

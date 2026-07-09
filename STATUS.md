@@ -1,0 +1,67 @@
+# Portal Site — True Status
+
+> **Last verified:** 2026-07-08  
+> **Repo:** `Shamrock2245/shamrock-bail-portal-site` · branch `main`  
+> **Product URL:** `https://shamrockbailbonds.biz` (Wix)  
+> **Role:** Public “clipboard” + GAS factory for bonds; marketing + payment unlock for Bail School
+
+---
+
+## What this repo is
+
+| Layer | Tech | Role |
+|-------|------|------|
+| Frontend | Wix Velo (`src/`) | Public site, portal pages, embeds |
+| Backend | Google Apps Script (`backend-gas/`, 190+ files) | Business logic, webhooks, school unlock poller |
+| Related | Netlify embeds | `netlify-embeds/bail-school.html` used by Wix `/bail-school` |
+
+**Not** the student LMS (that is `shamrock-bail-school`).  
+**Not** the arrest Super CRM (that is `shamrock-leads`).
+
+---
+
+## Code on `main` (recent, implemented)
+
+| Area | Status |
+|------|--------|
+| Bond portal, Telegram, Shannon, SignNow, multi-channel intake | ✅ Production-shaped |
+| Bail School education management in GAS (`BailSchool_Progress.js`, `BailSchoolPayments.js`) | ✅ |
+| SwipeSimple Gmail poll → unlock `$199`→20hr / `$649`→120hr | ✅ in code |
+| Public Bail School pricing aligned to **$649** (embeds, FAQ, schema) | ✅ July 2026 |
+| Hardcoded secrets scrubbed from GAS setup/test tooling | ✅ July 2026 |
+| Location tracker no longer falls back to hardcoded API key | ✅ |
+| Expanded `.gitignore` / `.claspignore` for dumps & secrets | ✅ |
+| Ecosystem secrets checklist wrapper | `scripts/check_ecosystem_secrets.py` |
+
+---
+
+## Ops still required (not proven by git alone)
+
+| Item | Notes |
+|------|--------|
+| **Secret rotation** | Keys that ever lived in git history — see `SECRETS_ROTATION_GUIDE.md` |
+| **GAS redeploy** | Live web app must include scrubbed files + Bail School handlers |
+| **Wix publish** | Velo page FAQ/schema $649 |
+| **Embed host redeploy** | Netlify site serving `bail-school.html` so public site is not stuck on old $699 |
+| **SwipeSimple** | Confirm 120hr link charges **$649.00** |
+| **School sheet ID** | `BAIL_SCHOOL.SHEET_ID` = same spreadsheet as school LMS `Student_Auth` |
+
+---
+
+## Bail School pricing (source of truth for marketing)
+
+| Course | Display | SwipeSimple unlock amount |
+|--------|---------|---------------------------|
+| 120-Hour Agent Path | **$649** | `$649.00` |
+| 20-Hour correspondence | **$199** (school app) | `$199.00` |
+
+Do not reintroduce **$699** on Agent Path.
+
+---
+
+## Related docs
+
+- `README.md`, `SYSTEM.md`, `AGENTS.md`, `SECRETS_ROTATION_GUIDE.md`
+- `docs/DEPLOYMENT_CHECKLIST.md`
+- School go-live: sibling repo `shamrock-bail-school/docs/GO_LIVE.md`
+- Cross-stack: `shamrock-leads/docs/ECOSYSTEM.md`

@@ -1,7 +1,8 @@
 # 🏗 Architecture & System
 
-> **Last Updated:** April 16, 2026  
-> **Status:** 🟢 Production — All Systems Operational
+> **Last Updated:** 2026-07-08  
+> **Status:** 🟢 Production bond stack · See [`STATUS.md`](./STATUS.md) for git vs live ops  
+> **Ecosystem:** School LMS = `shamrock-bail-school` · Auto-CRM = `shamrock-leads`
 
 ---
 
