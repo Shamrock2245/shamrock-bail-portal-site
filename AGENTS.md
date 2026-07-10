@@ -1,7 +1,13 @@
 # 🤖 AI Agent Handbook
 
-> **Last Updated:** April 4, 2026
+> **Last Updated:** 2026-07-10
 > **Status:** 🟢 9 Digital Employees Operational
+
+### Ecosystem non-negotiable — GAS Web App URL
+
+- **Keep the GAS `/exec` URL stable.** Push code and re-deploy the **existing** deployment only (`clasp deploy -i <ID>` from `.gas-config.json`).
+- **Never** create a new Web App deployment that changes the URL without an explicit human order.
+- **If the URL must change:** stop and notify the human — they must update **Wix Secrets Manager** (`GAS_WEB_APP_URL` / `GAS_WEBHOOK_URL`) outside this repo. See `backend-gas/GAS_DEVELOPMENT_RULES.md` §0 and `shamrock-leads/docs/policies/gas-url-policy.md`.
 
 ---
 

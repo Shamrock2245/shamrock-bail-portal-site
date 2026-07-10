@@ -1,8 +1,23 @@
 # GAS Backend — Development Rules
 
-> **Last Updated:** April 17, 2026
+> **Last Updated:** 2026-07-10
 > **Audience:** AI agents and developers editing the `backend-gas/` codebase
 > **Severity:** These rules are non-negotiable. Violating them breaks production.
+> **Ecosystem policy:** `shamrock-leads/docs/policies/gas-url-policy.md`
+
+---
+
+## 0. GAS Web App URL — ecosystem law
+
+| ✅ Always | ❌ Never (without explicit human order + Wix update) |
+|----------|------------------------------------------------------|
+| `clasp push -f` then **`clasp deploy -i <EXISTING_ID>`** | `Deploy → New deployment` that mints a new `/macros/s/…/exec` URL |
+| Keep `.gas-config.json` `gasWebAppUrl` stable | Silently change `GAS_WEB_APP_URL` / `GAS_WEBHOOK_URL` consumers |
+| Tell the human **before** any URL cutover | Assume Wix Secrets Manager was updated automatically |
+
+**If the Web App URL changes, the human MUST update Wix Secrets Manager** (`GAS_WEB_APP_URL` / `GAS_WEBHOOK_URL`). That store is outside the git/clasp/Netlify pipeline. Notify in chat with old URL, new URL, and reason — then wait for confirmation before treating the new URL as production.
+
+Canonical deployment ID / URL: project root `.gas-config.json`.
 
 ---
 
@@ -84,12 +99,16 @@
 ### Standard Deploy (Same URL)
 ```bash
 cd backend-gas/
+# Prefer ID from ../.gas-config.json → deploymentId
 npx @google/clasp push -f
-npx @google/clasp deploy -i AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z -d "V### - Description"
+npx @google/clasp deploy -i "$(python3 -c "import json;print(json.load(open('../.gas-config.json'))['deploymentId'])")" -d "V### - Description"
 ```
 
 > [!CAUTION]
-> **Never create a NEW deployment** unless explicitly instructed. A new deployment generates a new Web App URL, which requires updating `GAS_WEB_APP_URL` in Wix Secrets Manager, Netlify env vars, and Node-RED config. Always use the existing deployment ID above.
+> **Never create a NEW deployment** unless the human explicitly orders a URL change.
+> A new deployment generates a new Web App URL and **breaks production** until Wix Secrets Manager,
+> Netlify, VPS `.env`, Node-RED, and clients are updated. Agents must **stop and notify** the human
+> (Wix is manual). Full rule: ecosystem `docs/policies/gas-url-policy.md`.
 
 ### Post-Deploy Checklist
 - [ ] Open the Google Sheet and verify the ☘️ Shamrock Automation menu loads

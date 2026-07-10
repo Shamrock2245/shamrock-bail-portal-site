@@ -4,9 +4,17 @@
 # ============================================================
 # Single source of truth: .gas-config.json (project root)
 #
+# ECOSYSTEM LAW (see shamrock-leads/docs/policies/gas-url-policy.md):
+#   Prefer keeping the Web App URL stable and only re-deploying the
+#   existing deployment (clasp deploy -i <EXISTING_ID>).
+#   Changing the URL requires human approval + Wix Secrets Manager.
+#
 # Usage:
-#   ./scripts/update-gas-url.sh                        # reads from .gas-config.json
-#   ./scripts/update-gas-url.sh <NEW_DEPLOYMENT_ID>    # updates config + propagates
+#   ./scripts/update-gas-url.sh
+#       Re-propagate the EXISTING ID from .gas-config.json (no URL change).
+#   ./scripts/update-gas-url.sh <NEW_DEPLOYMENT_ID> --i-know-this-changes-wix
+#       Exception path: mint/propagate a new URL. Agents must have already
+#       notified the human; Wix Secrets Manager must be updated outside git.
 #
 # What it updates:
 #   1. .gas-config.json (if new ID provided)
@@ -32,18 +40,66 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}🍀 Shamrock GAS URL Propagation Script${NC}"
 echo "========================================"
 
+NEW_ID=""
+FORCE_URL_CHANGE=0
+for arg in "$@"; do
+    case "$arg" in
+        --i-know-this-changes-wix) FORCE_URL_CHANGE=1 ;;
+        -h|--help)
+            echo "Usage:"
+            echo "  $0                                      # re-propagate existing URL from .gas-config.json"
+            echo "  $0 <NEW_DEPLOYMENT_ID> --i-know-this-changes-wix"
+            echo ""
+            echo "URL changes require human notice for Wix Secrets Manager."
+            exit 0
+            ;;
+        *)
+            if [ -z "$NEW_ID" ]; then
+                NEW_ID="$arg"
+            else
+                echo -e "${RED}❌ Unknown argument: $arg${NC}"
+                exit 1
+            fi
+            ;;
+    esac
+done
+
 # ── 1. Determine the deployment ID ─────────────────────────
-if [ $# -ge 1 ]; then
-    NEW_ID="$1"
-    echo -e "${YELLOW}📝 New deployment ID provided: ${NEW_ID:0:20}...${NC}"
+if [ -n "$NEW_ID" ]; then
+    OLD_ID=""
+    if [ -f "$CONFIG_FILE" ]; then
+        OLD_ID=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['deploymentId'])" 2>/dev/null || true)
+    fi
+    if [ -n "$OLD_ID" ] && [ "$OLD_ID" != "$NEW_ID" ] && [ "$FORCE_URL_CHANGE" -ne 1 ]; then
+        echo -e "${RED}❌ Refusing to change GAS deployment URL.${NC}"
+        echo ""
+        echo "  Existing ID: ${OLD_ID:0:40}..."
+        echo "  Proposed ID: ${NEW_ID:0:40}..."
+        echo ""
+        echo "Ecosystem policy: keep the Web App URL stable; re-deploy the existing ID only."
+        echo "If a URL change is truly required:"
+        echo "  1. Notify the human (they must update Wix Secrets Manager)"
+        echo "  2. Re-run with: $0 $NEW_ID --i-know-this-changes-wix"
+        echo ""
+        echo "Policy: shamrock-leads/docs/policies/gas-url-policy.md"
+        exit 2
+    fi
+    if [ -n "$OLD_ID" ] && [ "$OLD_ID" != "$NEW_ID" ]; then
+        echo -e "${YELLOW}⚠️  URL CHANGE ACKNOWLEDGED (--i-know-this-changes-wix)${NC}"
+        echo -e "${YELLOW}   Human MUST update Wix Secrets Manager before cutover.${NC}"
+        echo -e "   Old: ${OLD_ID:0:40}..."
+        echo -e "   New: ${NEW_ID:0:40}..."
+    else
+        echo -e "${YELLOW}📝 Deployment ID provided: ${NEW_ID:0:20}...${NC}"
+    fi
 else
     if [ ! -f "$CONFIG_FILE" ]; then
         echo -e "${RED}❌ No .gas-config.json found and no ID argument provided.${NC}"
-        echo "Usage: $0 <NEW_DEPLOYMENT_ID>"
+        echo "Usage: $0 [<NEW_DEPLOYMENT_ID> --i-know-this-changes-wix]"
         exit 1
     fi
     NEW_ID=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['deploymentId'])")
-    echo -e "${CYAN}📖 Reading existing deployment ID from .gas-config.json${NC}"
+    echo -e "${CYAN}📖 Re-propagating EXISTING deployment ID from .gas-config.json (URL stable)${NC}"
 fi
 
 NEW_URL="https://script.google.com/macros/s/${NEW_ID}/exec"
@@ -179,7 +235,9 @@ echo -e "Deployment ID: ${CYAN}${NEW_ID:0:40}...${NC}"
 echo -e "Full URL:      ${CYAN}${NEW_URL:0:70}...${NC}"
 echo ""
 echo -e "${YELLOW}📋 MANUAL STEPS REMAINING:${NC}"
-echo -e "   1. Update GAS Script Properties → GAS_WEB_APP_URL"
-echo -e "   2. Verify Wix Secrets Manager → GAS_WEB_APP_URL"
-echo -e "   3. Deploy GAS: clasp push -f && clasp deploy -i $NEW_ID -d 'description'"
+echo -e "   1. Prefer same URL forever: clasp push -f && clasp deploy -i $NEW_ID -d 'description'"
+echo -e "   2. If this was a NEW URL: human updates Wix Secrets Manager → GAS_WEB_APP_URL / GAS_WEBHOOK_URL"
+echo -e "   3. If URL changed: also Netlify GAS_WEBHOOK_URL, VPS GAS_WEB_APP_URL, Node-RED env"
+echo -e "   4. GAS Script Properties → GAS_WEB_APP_URL (if used)"
+echo -e "   Policy: shamrock-leads/docs/policies/gas-url-policy.md"
 echo ""

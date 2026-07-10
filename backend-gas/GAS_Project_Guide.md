@@ -71,10 +71,11 @@ This document serves as the master reference for the Google Apps Script (GAS) ba
 
 ## 5. Critical Rules
 > [!IMPORTANT]
-> **GAS Web App URL Notification**
-> If any change requires a **New Deployment** (generating a new Web App URL), the User MUST be notified immediately.
-> *   **Scenario 1 (Standard):** Updating existing deployment (`clasp deploy -i ...`). URL stays same. No notification needed.
-> *   **Scenario 2 (New Version):** Creating fresh deployment. URL changes. **Notify User to update Wix Secret `GAS_WEB_APP_URL`.**
+> **GAS Web App URL stability (ecosystem law)**  
+> Full policy: `shamrock-leads/docs/policies/gas-url-policy.md` · portal rules: `GAS_DEVELOPMENT_RULES.md` §0  
+>
+> *   **Scenario 1 (Standard — default):** Update existing deployment (`clasp deploy -i <EXISTING_ID>`). **URL stays the same.** No Wix change.
+> *   **Scenario 2 (Exception only):** Creating a **new** Web App deployment changes the URL. **STOP. Notify the human immediately** so they can update **Wix Secrets Manager** (`GAS_WEB_APP_URL` / `GAS_WEBHOOK_URL`) plus Netlify / VPS / Node-RED. Do not cut over until they confirm Wix is updated.
 >
 > **Deployment Email Notification**
 > Whenever the Dashboard.html logic or URL is updated, send an email to `admin@shamrockbailbonds.biz` with the subject:
