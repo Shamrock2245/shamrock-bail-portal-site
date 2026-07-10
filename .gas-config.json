@@ -1,8 +1,10 @@
 {
-    "_comment": "Single source of truth for GAS deployment URL. Prefer clasp deploy -i deploymentId (URL stable). Run ./scripts/update-gas-url.sh only to re-propagate the SAME id; new ids require --i-know-this-changes-wix + human Wix Secrets update. Policy: shamrock-leads/docs/policies/gas-url-policy.md",
-    "deploymentId": "AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z",
-    "gasWebAppUrl": "https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec",
-    "lastUpdated": "2026-04-07T12:32:00-04:00",
-    "version": "V368 @426",
-    "note": "Keep this URL stable. If it ever changes: notify human — Wix Secrets Manager GAS_WEB_APP_URL/GAS_WEBHOOK_URL must match exactly before cutover."
+  "_comment": "Single source of truth for GAS deployment URL. Prefer clasp deploy -i deploymentId (URL stable). Run ./scripts/update-gas-url.sh only to re-propagate the SAME id; new ids require --i-know-this-changes-wix + human Wix Secrets update. Policy: shamrock-leads/docs/policies/gas-url-policy.md",
+  "deploymentId": "AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z",
+  "gasWebAppUrl": "https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec",
+  "lastUpdated": "2026-07-10T13:42:01Z",
+  "version": "@445 leads-url / @446 school-url \u2014 cert fail-closed 2026-07-10",
+  "note": "Keep URLs stable. Active production IDs: deploymentId (leads) + school Netlify uses AKfycbyV48043q007TwWikAIFfyma5TNKjOF6nHDaza-hRMefEVmMM3xKamujQeKFBkZQa_DMg \u2014 both redeployed same code 2026-07-10. Wix must match whichever portal uses.",
+  "schoolDeploymentId": "AKfycbyV48043q007TwWikAIFfyma5TNKjOF6nHDaza-hRMefEVmMM3xKamujQeKFBkZQa_DMg",
+  "schoolGasWebAppUrl": "https://script.google.com/macros/s/AKfycbyV48043q007TwWikAIFfyma5TNKjOF6nHDaza-hRMefEVmMM3xKamujQeKFBkZQa_DMg/exec"
 }
