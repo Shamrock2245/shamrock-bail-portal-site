@@ -2327,6 +2327,12 @@ function handleGetAction(e) {
   if (action === 'get_admin_roster' && typeof schoolHandleGetAdminRoster === 'function') {
     return schoolHandleGetAdminRoster();
   }
+  if (
+    (action === 'get_compliance_metrics' || action === 'get_fldfs_metrics') &&
+    typeof schoolHandleGetComplianceMetrics === 'function'
+  ) {
+    return schoolHandleGetComplianceMetrics();
+  }
   if (action === 'get_roster' && typeof schoolHandleGetRoster === 'function') {
     return schoolHandleGetRoster();
   }

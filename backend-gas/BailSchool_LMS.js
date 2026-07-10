@@ -490,7 +490,7 @@ function schoolHandleGetProgress(email) {
   
   // Rebuild latest state per module for this user
   for (let i = 1; i < data.length; i++) {
-    if (data[i][1] === email) {
+    if (String(data[i][1] || '').toLowerCase() === String(email || '').toLowerCase()) {
       const modId = data[i][2];
       if (!progress[modId]) progress[modId] = { timeSpent: 0, acknowledged: false, quizPassed: false, quizScore: 0 };
       
@@ -561,6 +561,192 @@ function schoolStudentHasPassingProgress_(email, courseId) {
     if (!passed[required[r]]) return false;
   }
   return true;
+}
+
+/**
+ * FLDFS auditor metrics — class enrollment, integrity, module completion.
+ * GET ?action=get_compliance_metrics
+ */
+function schoolHandleGetComplianceMetrics() {
+  const ss = schoolResolveSpreadsheet_();
+  const providerId = schoolGetProviderId_();
+  const providerName = schoolGetProviderName_();
+
+  const authSheet = ss.getSheetByName(SCHOOL_AUTH_SHEET);
+  const integritySheet = ss.getSheetByName('IntegritySignatures');
+  const progressSheet = ss.getSheetByName(SCHOOL_PROGRESS_SHEET);
+
+  const unlocked = { '20hr': 0, '120hr': 0 };
+  const studentEmails = {};
+  if (authSheet && authSheet.getLastRow() > 1) {
+    const rows = authSheet.getDataRange().getValues();
+    // Expect: … Email, CourseId, Status …
+    const headers = rows[0].map(function (h) {
+      return String(h || '').toLowerCase().trim();
+    });
+    const emailCol = Math.max(0, headers.indexOf('email') >= 0 ? headers.indexOf('email') : 1);
+    const courseCol = headers.indexOf('courseid') >= 0
+      ? headers.indexOf('courseid')
+      : headers.indexOf('course') >= 0
+        ? headers.indexOf('course')
+        : 2;
+    const statusCol = headers.indexOf('status') >= 0 ? headers.indexOf('status') : 3;
+    for (let i = 1; i < rows.length; i++) {
+      const em = String(rows[i][emailCol] || '').toLowerCase().trim();
+      if (!em) continue;
+      studentEmails[em] = true;
+      const course = String(rows[i][courseCol] || '').toLowerCase();
+      const status = String(rows[i][statusCol] || '').toLowerCase();
+      const active =
+        status.indexOf('unlock') !== -1 ||
+        status === 'active' ||
+        status === 'enrolled' ||
+        status === '';
+      if (!active) continue;
+      if (course.indexOf('20') !== -1) unlocked['20hr']++;
+      if (course.indexOf('120') !== -1) unlocked['120hr']++;
+    }
+  }
+
+  let integritySigned = 0;
+  const integrityEmails = {};
+  if (integritySheet && integritySheet.getLastRow() > 1) {
+    const idata = integritySheet.getDataRange().getValues();
+    for (let i = 1; i < idata.length; i++) {
+      const em = String(idata[i][1] || '').toLowerCase().trim();
+      if (em && !integrityEmails[em]) {
+        integrityEmails[em] = true;
+        integritySigned++;
+      }
+    }
+  }
+
+  const modulePassCounts = {
+    '120hr_1': 0,
+    '120hr_2': 0,
+    '120hr_3': 0,
+    '120hr_4': 0,
+    '120hr_5': 0,
+    '120hr_FINAL_EXAM': 0,
+    '20hr_1': 0,
+    '20hr_2': 0,
+    '20hr_3': 0,
+    '20hr_4': 0,
+    '20hr_5': 0
+  };
+  const quizScores = [];
+  const studentModulePass = {}; // email -> { modId: true }
+
+  if (progressSheet && progressSheet.getLastRow() > 1) {
+    const pdata = progressSheet.getDataRange().getValues();
+    for (let i = 1; i < pdata.length; i++) {
+      const em = String(pdata[i][1] || '').toLowerCase().trim();
+      const modId = String(pdata[i][2] || '');
+      const passed =
+        pdata[i][5] === true || pdata[i][5] === 'TRUE' || pdata[i][5] === 'true';
+      const score = pdata[i][6];
+      if (em && passed) {
+        if (!studentModulePass[em]) studentModulePass[em] = {};
+        studentModulePass[em][modId] = true;
+        if (/^\d+$/.test(modId)) studentModulePass[em]['20hr_' + modId] = true;
+      }
+      if (score !== '' && score !== 'N/A' && score != null && !isNaN(Number(score))) {
+        quizScores.push(Number(score));
+      }
+    }
+  }
+
+  Object.keys(studentModulePass).forEach(function (em) {
+    Object.keys(modulePassCounts).forEach(function (modId) {
+      if (studentModulePass[em][modId]) modulePassCounts[modId]++;
+    });
+  });
+
+  const uniqueStudents = Object.keys(studentEmails).length;
+  const integrityPct =
+    uniqueStudents > 0 ? Math.round((integritySigned / uniqueStudents) * 100) : 0;
+  const avgQuizScore =
+    quizScores.length > 0
+      ? Math.round(
+          quizScores.reduce(function (a, b) {
+            return a + b;
+          }, 0) / quizScores.length
+        )
+      : null;
+
+  // Students with all 5 module quizzes passed (120hr academic path, final optional in metric)
+  let complete120Modules = 0;
+  let complete20Modules = 0;
+  Object.keys(studentModulePass).forEach(function (em) {
+    const m = studentModulePass[em];
+    if (m['120hr_1'] && m['120hr_2'] && m['120hr_3'] && m['120hr_4'] && m['120hr_5']) {
+      complete120Modules++;
+    }
+    if (
+      (m['20hr_1'] || m['1']) &&
+      (m['20hr_2'] || m['2']) &&
+      (m['20hr_3'] || m['3']) &&
+      (m['20hr_4'] || m['4']) &&
+      (m['20hr_5'] || m['5'])
+    ) {
+      complete20Modules++;
+    }
+  });
+
+  return ContentService.createTextOutput(
+    JSON.stringify({
+      success: true,
+      providerId: providerId,
+      providerName: providerName,
+      generatedAt: new Date().toISOString(),
+      studentsTotal: uniqueStudents,
+      unlocked20hr: unlocked['20hr'],
+      unlocked120hr: unlocked['120hr'],
+      integritySigned: integritySigned,
+      integrityPct: integrityPct,
+      avgQuizScore: avgQuizScore,
+      quizAttemptsRecorded: quizScores.length,
+      complete20Modules: complete20Modules,
+      complete120Modules: complete120Modules,
+      modulePassCounts: modulePassCounts,
+      complianceThemes: [
+        {
+          id: 'fs_648',
+          title: 'F.S. Chapter 648 — Bail Bond Agents',
+          status: 'tracked',
+          note: 'Curriculum modules map to Chapter 648 licensing education requirements.'
+        },
+        {
+          id: 'integrity',
+          title: 'Academic integrity acknowledgment',
+          status: integrityPct >= 100 ? 'green' : integrityPct >= 50 ? 'amber' : 'red',
+          note: integritySigned + ' of ' + uniqueStudents + ' enrolled students signed (' + integrityPct + '%).'
+        },
+        {
+          id: 'roster_21day',
+          title: '21-day DFS roster export readiness',
+          status: uniqueStudents > 0 ? 'green' : 'amber',
+          note: 'Export available from Auditor dashboard → Compliance roster.'
+        },
+        {
+          id: 'progress',
+          title: 'Module quiz completion (80% pass)',
+          status: complete120Modules + complete20Modules > 0 ? 'green' : 'amber',
+          note:
+            complete20Modules +
+            ' students finished all 20hr modules; ' +
+            complete120Modules +
+            ' finished all 120hr module quizzes.'
+        },
+        {
+          id: 'provider',
+          title: 'DFS provider / school ID',
+          status: 'green',
+          note: 'Official school ID ' + providerId + ' stamped on certificates and exports.'
+        }
+      ]
+    })
+  ).setMimeType(ContentService.MimeType.JSON);
 }
 
 function schoolHandleGetAdminRoster() {
