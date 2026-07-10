@@ -1,9 +1,10 @@
 # Portal Site — True Status
 
-> **Last verified:** 2026-07-08  
+> **Last verified:** 2026-07-10  
 > **Repo:** `Shamrock2245/shamrock-bail-portal-site` · branch `main`  
 > **Product URL:** `https://shamrockbailbonds.biz` (Wix)  
-> **Role:** Public “clipboard” + GAS factory for bonds; marketing + payment unlock for Bail School
+> **Role:** Brand clipboard + GAS factory — **Shamrock’s Platform** factory layer  
+> **Platform prod checklist:** `shamrock-leads/docs/ECOSYSTEM_PROD_CHECKLIST.md`
 
 ---
 
@@ -53,6 +54,8 @@
 | **SwipeSimple** | Confirm 120hr link charges **$649.00** |
 | **School sheet ID** | ✅ Script Property `BAIL_SCHOOL_SHEET_ID` + CONFIG fallback set (smoke unlock OK) |
 | **SwipeSimple Gmail poller** | Confirm `setupSwipeSimpleTrigger()` still firing every 5 min |
+| **Certificate Script Properties** | `CERTIFICATE_TEMPLATE_ID` + `CERTIFICATE_FOLDER_ID` (issue_certificate fails closed without them) |
+| **Telegram Palmetto appearance-bond ID** | ✅ Aligned with leads TEMPLATE_MAP (2026-07-10) |
 
 ---
 

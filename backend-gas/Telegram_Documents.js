@@ -46,7 +46,7 @@ const SIGNNOW_TEMPLATE_MAP = {
     'surety-terms-palmetto':          'c897c72df2674beaa0ad9c8bbf1f5856e150d553',  // Palmetto Surety Terms & Conditions
     'collateral-receipt-palmetto':    'b5b89aec16f44bf4b8538891707beebf71977a19',  // Palmetto Premium Collateral Receipt
     'payment-plan-palmetto':          '661390d6984c40439c948bd31813ada600163a8f',  // Palmetto Payment Plan Agreement
-    'appearance-bond-palmetto':       '9b1d3d0b5a4c4e3f8d2a1b7c6e5f4d3c2b1a0e9f'   // Palmetto Appearance Bond (PRINT ONLY)
+    'appearance-bond-palmetto':       '9b1d3d0b64004153b347ceccda07420a906350e5'   // shamrock-palmetto-appearance-bond (PRINT ONLY — aligned with leads SignNowPacketService)
 };
 
 // ============================================================================

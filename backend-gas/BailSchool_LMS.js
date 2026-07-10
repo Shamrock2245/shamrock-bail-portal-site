@@ -627,18 +627,25 @@ function schoolHandleIssueCertificate(data) {
   }
 
   try {
-    // 1. Setup - Use placeholders or exact IDs if known
-    // In production, you would replace these with your actual Drive File/Folder IDs
-    const TEMPLATE_ID = PropertiesService.getScriptProperties().getProperty('CERTIFICATE_TEMPLATE_ID') || 'YOUR_SLIDES_TEMPLATE_ID_HERE';
-    const OUTPUT_FOLDER_ID = PropertiesService.getScriptProperties().getProperty('CERTIFICATE_FOLDER_ID') || 'YOUR_OUTPUT_FOLDER_ID_HERE';
-    
-    // Check if we're in dev mode (no real template ID set)
-    if (TEMPLATE_ID === 'YOUR_SLIDES_TEMPLATE_ID_HERE') {
-      console.warn("No real template ID set. Returning mock success.");
-      return ContentService.createTextOutput(JSON.stringify({ 
-        success: true, 
-        message: "Dev Mode: Certificate generated and emailed.",
-        downloadUrl: "https://shamrockbailbonds.biz/certificate-placeholder.pdf"
+    // 1. Drive template + output folder (Script Properties — required for real certs)
+    const props = PropertiesService.getScriptProperties();
+    const TEMPLATE_ID = (props.getProperty('CERTIFICATE_TEMPLATE_ID') || '').trim();
+    const OUTPUT_FOLDER_ID = (props.getProperty('CERTIFICATE_FOLDER_ID') || '').trim();
+    const looksPlaceholder = (id) =>
+      !id ||
+      /YOUR_|PLACEHOLDER|TODO|xxx/i.test(id) ||
+      id.length < 20;
+
+    // Fail closed — never return a fake "success" certificate in production
+    if (looksPlaceholder(TEMPLATE_ID) || looksPlaceholder(OUTPUT_FOLDER_ID)) {
+      console.error(
+        'issue_certificate: CERTIFICATE_TEMPLATE_ID / CERTIFICATE_FOLDER_ID not configured'
+      );
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        error:
+          'Certificate templates not configured. Set Script Properties CERTIFICATE_TEMPLATE_ID and CERTIFICATE_FOLDER_ID (Google Slides template + Drive folder).',
+        code: 'CERT_TEMPLATE_NOT_CONFIGURED'
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
