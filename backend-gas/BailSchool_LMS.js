@@ -663,26 +663,62 @@ function schoolHandleIssueCertificate(data) {
       }
     }
 
-    const courseName = courseId === '120hr' ? '120-Hour Basic Certification' : '20-Hour Pre-Licensing Correspondence Course';
-    const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    const fileName = `Certificate_${studentName.replace(/\\s+/g, '_')}_${courseId}`;
+    const courseName =
+      courseId === '120hr'
+        ? '120-Hour Basic Certification'
+        : '20-Hour Pre-Licensing Correspondence Course';
+    // DFS course numbers used on Shamrock certificate templates (slides 1=20hr, 2=120hr)
+    const courseNumber = courseId === '120hr' ? '120-HOUR BASIC' : '77045';
+    const dateStr = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const certId =
+      'SBS-' +
+      String(courseId).toUpperCase() +
+      '-' +
+      Utilities.getUuid().replace(/-/g, '').slice(0, 10).toUpperCase();
+    const authorizedSig = 'Brendan O\'Neal / Shamrock Bail School';
+    const fileName =
+      'Certificate_' + studentName.replace(/\s+/g, '_') + '_' + courseId + '_' + certId;
 
-    // 3. Copy template and replace placeholders
+    // 3. Copy template and replace placeholders (native Slides tokens from ops template)
     const templateFile = DriveApp.getFileById(TEMPLATE_ID);
     const outputFolder = DriveApp.getFolderById(OUTPUT_FOLDER_ID);
     const copyFile = templateFile.makeCopy(fileName, outputFolder);
     const copyId = copyFile.getId();
-    
+
     const presentation = SlidesApp.openById(copyId);
+    // Template has 2 slides: [0]=20hr, [1]=120hr — keep the matching slide only
+    const allSlides = presentation.getSlides();
+    if (allSlides.length >= 2) {
+      if (courseId === '120hr') {
+        allSlides[0].remove();
+      } else {
+        allSlides[1].remove();
+      }
+    }
     const slides = presentation.getSlides();
-    
-    // Replace text in all slides
-    slides.forEach(slide => {
-      slide.replaceAllText('{{Name}}', studentName);
-      slide.replaceAllText('{{Date}}', dateStr);
-      slide.replaceAllText('{{CourseName}}', courseName);
+    const replacements = {
+      '{{StudentName}}': studentName,
+      '{{StudentEmail}}': studentEmail,
+      '{{CourseName}}': courseName,
+      '{{CourseNumber}}': courseNumber,
+      '{{CompletionDate}}': dateStr,
+      '{{CertificateId}}': certId,
+      '{{AuthorizedSignature}}': authorizedSig,
+      // legacy aliases (older docs / tests)
+      '{{Name}}': studentName,
+      '{{Date}}': dateStr,
+      '{{Email}}': studentEmail
+    };
+    slides.forEach(function (slide) {
+      Object.keys(replacements).forEach(function (token) {
+        slide.replaceAllText(token, replacements[token]);
+      });
     });
-    
+
     presentation.saveAndClose();
 
     // 4. Export as PDF
