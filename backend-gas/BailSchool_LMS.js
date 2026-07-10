@@ -787,41 +787,167 @@ function schoolHandleGetRoster() {
 }
 
 /**
- * ─────────────────────────────────────────────────────────────────────────────
- * ONE-TIME SETUP: Certificate Template & Folder IDs
- * ─────────────────────────────────────────────────────────────────────────────
- * HOW TO USE:
- *   1. Find your Google Slides certificate template in Drive.
- *      Copy its ID from the URL:
- *      https://docs.google.com/presentation/d/  <<<THIS_IS_THE_ID>>>  /edit
+ * Bootstrap certificate Script Properties from a Drive folder that holds the template.
  *
- *   2. Find (or create) the Drive folder where completed PDFs should be saved.
- *      Copy its ID from the URL:
- *      https://drive.google.com/drive/folders/  <<<THIS_IS_THE_ID>>>
+ * Default folder (ops-provided): 11zU5p0_toBUpuNO9ca8bKKi5cFhiRn1C
+ * - Accepts Google Slides OR PPTX (PPTX is copied+converted to native Slides once).
+ * - Creates/reuses subfolder "Issued Certificates" for completed PDF output.
+ * - Sets CERTIFICATE_TEMPLATE_ID + CERTIFICATE_FOLDER_ID (output folder).
  *
- *   3. Paste both IDs into the two variables below.
- *
- *   4. In the GAS editor, select "setupCertificateProperties" from the
- *      function dropdown and click ▶ Run.
- *
- *   5. You will see "✅ Certificate properties saved." in the Execution Log.
- *      This function is safe to re-run — it will simply overwrite the values.
- *      DO NOT delete this function after running it; it is harmless to keep.
- * ─────────────────────────────────────────────────────────────────────────────
+ * Safe to re-run. Callable via POST action setup_certificate_config (apiKey required)
+ * or from the Apps Script editor: schoolBootstrapCertificateConfig().
  */
-function schoolSetupCertificateProperties() {
-  const TEMPLATE_ID    = 'PASTE_YOUR_SLIDES_TEMPLATE_ID_HERE';
-  const FOLDER_ID      = 'PASTE_YOUR_OUTPUT_FOLDER_ID_HERE';
+function schoolBootstrapCertificateConfig(opts) {
+  opts = opts || {};
+  const SOURCE_FOLDER_ID =
+    (opts.folderId || opts.FOLDER_ID || '11zU5p0_toBUpuNO9ca8bKKi5cFhiRn1C').toString().trim();
+  const SOURCE_FOLDER_NAME = 'certificate templates (ops)';
 
-  if (TEMPLATE_ID === 'PASTE_YOUR_SLIDES_TEMPLATE_ID_HERE' || FOLDER_ID === 'PASTE_YOUR_OUTPUT_FOLDER_ID_HERE') {
-    throw new Error('❌ You must replace the placeholder values before running this function.');
+  if (!SOURCE_FOLDER_ID || SOURCE_FOLDER_ID.length < 10) {
+    throw new Error('Invalid certificate source folder id');
+  }
+
+  const sourceFolder = DriveApp.getFolderById(SOURCE_FOLDER_ID);
+  let templateFile = null;
+  let pptxFile = null;
+  let convertedFromPptx = false;
+
+  // Prefer native Google Slides already in the folder
+  const slidesIt = sourceFolder.getFilesByType(MimeType.GOOGLE_SLIDES);
+  while (slidesIt.hasNext()) {
+    const f = slidesIt.next();
+    const n = (f.getName() || '').toLowerCase();
+    if (!templateFile || n.indexOf('certificate') !== -1 || n.indexOf('shamrock') !== -1) {
+      templateFile = f;
+      if (n.indexOf('certificate') !== -1) break;
+    }
+  }
+
+  // Fall back to PPTX (convert → Google Slides)
+  if (!templateFile) {
+    const pptxIt = sourceFolder.getFilesByType(MimeType.MICROSOFT_POWERPOINT);
+    while (pptxIt.hasNext()) {
+      const f = pptxIt.next();
+      const n = (f.getName() || '').toLowerCase();
+      if (!pptxFile || n.indexOf('certificate') !== -1 || n.indexOf('shamrock') !== -1) {
+        pptxFile = f;
+        if (n.indexOf('certificate') !== -1) break;
+      }
+    }
+    // Also catch application/vnd.openxmlformats-officedocument.presentationml.presentation
+    if (!pptxFile) {
+      const all = sourceFolder.getFiles();
+      while (all.hasNext()) {
+        const f = all.next();
+        const mt = f.getMimeType() || '';
+        const n = (f.getName() || '').toLowerCase();
+        if (
+          mt.indexOf('presentation') !== -1 ||
+          n.endsWith('.pptx') ||
+          n.endsWith('.ppt')
+        ) {
+          pptxFile = f;
+          if (n.indexOf('certificate') !== -1 || n.indexOf('shamrock') !== -1) break;
+        }
+      }
+    }
+  }
+
+  if (!templateFile && pptxFile) {
+    templateFile = schoolConvertPptxToGoogleSlides_(pptxFile, sourceFolder);
+    convertedFromPptx = true;
+  }
+
+  if (!templateFile) {
+    throw new Error(
+      'No Google Slides or PPTX certificate template found in folder ' +
+        SOURCE_FOLDER_ID +
+        ' (' +
+        SOURCE_FOLDER_NAME +
+        ')'
+    );
+  }
+
+  // Output folder for issued PDF certificates (not the template itself)
+  let issuedFolder = null;
+  const subIt = sourceFolder.getFoldersByName('Issued Certificates');
+  if (subIt.hasNext()) {
+    issuedFolder = subIt.next();
+  } else {
+    issuedFolder = sourceFolder.createFolder('Issued Certificates');
   }
 
   const props = PropertiesService.getScriptProperties();
-  props.setProperty('CERTIFICATE_TEMPLATE_ID', TEMPLATE_ID);
-  props.setProperty('CERTIFICATE_FOLDER_ID',   FOLDER_ID);
+  props.setProperty('CERTIFICATE_TEMPLATE_ID', templateFile.getId());
+  props.setProperty('CERTIFICATE_FOLDER_ID', issuedFolder.getId());
+  props.setProperty('CERTIFICATE_SOURCE_FOLDER_ID', SOURCE_FOLDER_ID);
 
-  Logger.log('✅ Certificate properties saved.');
-  Logger.log('   CERTIFICATE_TEMPLATE_ID → ' + props.getProperty('CERTIFICATE_TEMPLATE_ID'));
-  Logger.log('   CERTIFICATE_FOLDER_ID   → ' + props.getProperty('CERTIFICATE_FOLDER_ID'));
+  const result = {
+    success: true,
+    message: 'Certificate Script Properties configured',
+    CERTIFICATE_TEMPLATE_ID: templateFile.getId(),
+    CERTIFICATE_TEMPLATE_NAME: templateFile.getName(),
+    CERTIFICATE_TEMPLATE_MIME: templateFile.getMimeType(),
+    CERTIFICATE_FOLDER_ID: issuedFolder.getId(),
+    CERTIFICATE_FOLDER_NAME: issuedFolder.getName(),
+    CERTIFICATE_SOURCE_FOLDER_ID: SOURCE_FOLDER_ID,
+    convertedFromPptx: convertedFromPptx
+  };
+
+  Logger.log('✅ Certificate properties saved: ' + JSON.stringify(result));
+  return result;
+}
+
+/**
+ * Copy a PPTX into native Google Slides via Drive API v3 (OAuth of the script user).
+ * @private
+ */
+function schoolConvertPptxToGoogleSlides_(pptxFile, parentFolder) {
+  const token = ScriptApp.getOAuthToken();
+  const name = (pptxFile.getName() || 'Certificate Template')
+    .replace(/\.pptx?$/i, '')
+    .replace(/_+/g, ' ')
+    .trim() + ' (Google Slides)';
+
+  const meta = {
+    name: name,
+    mimeType: 'application/vnd.google-apps.presentation',
+    parents: [parentFolder.getId()]
+  };
+
+  const url =
+    'https://www.googleapis.com/drive/v3/files/' +
+    encodeURIComponent(pptxFile.getId()) +
+    '/copy?supportsAllDrives=true';
+
+  const res = UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + token },
+    payload: JSON.stringify(meta),
+    muteHttpExceptions: true
+  });
+
+  const code = res.getResponseCode();
+  const body = res.getContentText();
+  if (code < 200 || code >= 300) {
+    throw new Error('PPTX→Slides convert failed HTTP ' + code + ': ' + body.slice(0, 300));
+  }
+
+  const parsed = JSON.parse(body);
+  if (!parsed.id) {
+    throw new Error('PPTX→Slides convert returned no file id');
+  }
+
+  // Prefer DriveApp handle for later makeCopy / SlidesApp
+  return DriveApp.getFileById(parsed.id);
+}
+
+/**
+ * Manual editor fallback (hardcoded IDs). Prefer schoolBootstrapCertificateConfig().
+ */
+function schoolSetupCertificateProperties() {
+  return schoolBootstrapCertificateConfig({
+    folderId: '11zU5p0_toBUpuNO9ca8bKKi5cFhiRn1C'
+  });
 }

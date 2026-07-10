@@ -619,6 +619,31 @@ function doPost(e) {
       return createErrorResponse('setupBailSchoolSpreadsheet not found', ERROR_CODES.INTERNAL_ERROR);
     }
 
+    // One-time / idempotent: convert cert PPTX→Slides, set CERTIFICATE_* Script Properties
+    if (data.action === 'setup_certificate_config' || data.action === 'setupCertificateConfig') {
+      const expectedKey =
+        (PropertiesService.getScriptProperties().getProperty('GAS_API_KEY') || '') +
+        '';
+      const incomingKey = (data.apiKey || e.parameter && e.parameter.apiKey || '') + '';
+      if (!expectedKey || incomingKey !== expectedKey) {
+        return createErrorResponse('Unauthorized: Invalid API Key', ERROR_CODES.UNAUTHORIZED);
+      }
+      if (typeof schoolBootstrapCertificateConfig !== 'function') {
+        return createErrorResponse('schoolBootstrapCertificateConfig not found', ERROR_CODES.INTERNAL_ERROR);
+      }
+      try {
+        const certResult = schoolBootstrapCertificateConfig({
+          folderId: data.folderId || data.FOLDER_ID || '11zU5p0_toBUpuNO9ca8bKKi5cFhiRn1C'
+        });
+        return createResponse(certResult);
+      } catch (certSetupErr) {
+        return createErrorResponse(
+          certSetupErr.message || String(certSetupErr),
+          ERROR_CODES.INTERNAL_ERROR
+        );
+      }
+    }
+
     // --- TELEGRAM MINI APP (no-cors — cannot send API key) ---
     // These actions bypass API key verification because the Mini App
     // uses fetch({ mode: 'no-cors' }) which cannot read responses or
