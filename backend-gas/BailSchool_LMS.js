@@ -13,6 +13,37 @@ var SCHOOL_ROSTER_SHEET = "DFS_Compliance_Rosters";
 var SCHOOL_AUTH_SHEET = "Student_Auth";
 
 /**
+ * Florida DFS education provider / school official ID (Shamrock Bail School).
+ * Override via Script Property SCHOOL_PROVIDER_ID if it ever changes.
+ */
+var SCHOOL_PROVIDER_ID_DEFAULT = "2437582";
+var SCHOOL_PROVIDER_NAME_DEFAULT = "Shamrock Bail Bonds Education / Shamrock Bail School";
+
+/** DFS course approval numbers shown on certificates (course-specific, not provider id). */
+var SCHOOL_COURSE_NUMBERS = {
+  "20hr": "77045",
+  "120hr": "120-HOUR BASIC" // replace with official DFS course # when issued
+};
+
+/** @returns {string} DFS provider / school official ID */
+function schoolGetProviderId_() {
+  try {
+    var fromProps = (PropertiesService.getScriptProperties().getProperty("SCHOOL_PROVIDER_ID") || "").trim();
+    if (fromProps) return fromProps;
+  } catch (e) { /* ignore */ }
+  return SCHOOL_PROVIDER_ID_DEFAULT;
+}
+
+/** @returns {string} Provider display name for rosters / certs */
+function schoolGetProviderName_() {
+  try {
+    var fromProps = (PropertiesService.getScriptProperties().getProperty("SCHOOL_PROVIDER_NAME") || "").trim();
+    if (fromProps) return fromProps;
+  } catch (e) { /* ignore */ }
+  return SCHOOL_PROVIDER_NAME_DEFAULT;
+}
+
+/**
  * Resolve Bail School spreadsheet.
  *
  * Order:
@@ -667,8 +698,14 @@ function schoolHandleIssueCertificate(data) {
       courseId === '120hr'
         ? '120-Hour Basic Certification'
         : '20-Hour Pre-Licensing Correspondence Course';
-    // DFS course numbers used on Shamrock certificate templates (slides 1=20hr, 2=120hr)
-    const courseNumber = courseId === '120hr' ? '120-HOUR BASIC' : '77045';
+    // Course approval # (per product) vs school official provider ID (2437582)
+    const providerId = schoolGetProviderId_();
+    const providerName = schoolGetProviderName_();
+    const courseNumber =
+      (SCHOOL_COURSE_NUMBERS && SCHOOL_COURSE_NUMBERS[courseId]) ||
+      (courseId === '120hr' ? '120-HOUR BASIC' : '77045');
+    // Template line "DFS Course / Approval #" — show course # + provider for audit clarity
+    const courseApprovalLine = courseNumber + ' · Provider #' + providerId;
     const dateStr = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -676,10 +713,13 @@ function schoolHandleIssueCertificate(data) {
     });
     const certId =
       'SBS-' +
+      providerId +
+      '-' +
       String(courseId).toUpperCase() +
       '-' +
-      Utilities.getUuid().replace(/-/g, '').slice(0, 10).toUpperCase();
-    const authorizedSig = 'Brendan O\'Neal / Shamrock Bail School';
+      Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const authorizedSig =
+      "Brendan O'Neal · Shamrock Bail School · DFS Provider #" + providerId;
     const fileName =
       'Certificate_' + studentName.replace(/\s+/g, '_') + '_' + courseId + '_' + certId;
 
@@ -704,10 +744,16 @@ function schoolHandleIssueCertificate(data) {
       '{{StudentName}}': studentName,
       '{{StudentEmail}}': studentEmail,
       '{{CourseName}}': courseName,
-      '{{CourseNumber}}': courseNumber,
+      '{{CourseNumber}}': courseApprovalLine,
       '{{CompletionDate}}': dateStr,
       '{{CertificateId}}': certId,
       '{{AuthorizedSignature}}': authorizedSig,
+      '{{ProviderId}}': providerId,
+      '{{ProviderID}}': providerId,
+      '{{ProviderNumber}}': providerId,
+      '{{SchoolId}}': providerId,
+      '{{SchoolID}}': providerId,
+      '{{ProviderName}}': providerName,
       // legacy aliases (older docs / tests)
       '{{Name}}': studentName,
       '{{Date}}': dateStr,
@@ -740,12 +786,16 @@ function schoolHandleIssueCertificate(data) {
       
       Congratulations on completing the ${courseName}!
       
-      Your official FLDFS completion certificate is attached to this email. A copy has also been logged in our system for state auditing purposes.
+      Your official FLDFS completion certificate is attached to this email.
+      Certificate ID: ${certId}
+      DFS Provider / School ID: ${providerId}
+      A copy has also been logged in our system for state auditing purposes.
       
       If you have any questions, please contact us at admin@shamrockbailbonds.biz.
       
       Best regards,
       Shamrock Bail School
+      DFS Provider #${providerId}
     `;
     
     MailApp.sendEmail({
@@ -758,7 +808,10 @@ function schoolHandleIssueCertificate(data) {
     return ContentService.createTextOutput(JSON.stringify({ 
       success: true, 
       message: "Certificate generated and emailed.",
-      downloadUrl: downloadUrl
+      downloadUrl: downloadUrl,
+      certificateId: certId,
+      providerId: providerId,
+      courseNumber: courseNumber
     })).setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
@@ -807,7 +860,16 @@ function schoolHandleGetRoster() {
   if (!sheet) {
     // Return dummy CSV if sheet doesn't exist
     const csvHeaders = ["StudentName", "StudentEmail", "LicenseNumber", "ProviderName", "ProviderID", "CourseID", "CompletionDate", "FinalScore"];
-    const dummyRow = ["John Doe", "john@example.com", "W123456", "Shamrock Bail Co. Education", "P99999", "COURSE-120", new Date().toISOString().split('T')[0], "85"];
+    const dummyRow = [
+      "John Doe",
+      "john@example.com",
+      "W123456",
+      schoolGetProviderName_(),
+      schoolGetProviderId_(),
+      "COURSE-120",
+      new Date().toISOString().split('T')[0],
+      "85"
+    ];
     const csvContent = [csvHeaders.join(","), dummyRow.join(",")].join("\n");
     return ContentService.createTextOutput(csvContent).setMimeType(ContentService.MimeType.CSV);
   }
@@ -917,6 +979,15 @@ function schoolBootstrapCertificateConfig(opts) {
   props.setProperty('CERTIFICATE_TEMPLATE_ID', templateFile.getId());
   props.setProperty('CERTIFICATE_FOLDER_ID', issuedFolder.getId());
   props.setProperty('CERTIFICATE_SOURCE_FOLDER_ID', SOURCE_FOLDER_ID);
+  // Official Florida DFS school / provider ID (ops-confirmed: 2437582)
+  props.setProperty(
+    'SCHOOL_PROVIDER_ID',
+    (opts.providerId || SCHOOL_PROVIDER_ID_DEFAULT).toString().trim()
+  );
+  props.setProperty(
+    'SCHOOL_PROVIDER_NAME',
+    (opts.providerName || SCHOOL_PROVIDER_NAME_DEFAULT).toString().trim()
+  );
 
   const result = {
     success: true,
@@ -927,6 +998,8 @@ function schoolBootstrapCertificateConfig(opts) {
     CERTIFICATE_FOLDER_ID: issuedFolder.getId(),
     CERTIFICATE_FOLDER_NAME: issuedFolder.getName(),
     CERTIFICATE_SOURCE_FOLDER_ID: SOURCE_FOLDER_ID,
+    SCHOOL_PROVIDER_ID: schoolGetProviderId_(),
+    SCHOOL_PROVIDER_NAME: schoolGetProviderName_(),
     convertedFromPptx: convertedFromPptx
   };
 
