@@ -519,9 +519,10 @@ export function initGlobalSEO() {
                 ]
             },
             // Speakable: enables voice search / AI assistants to read this
+            // Speakable: enables voice search / AI assistants to read this
             "speakable": {
                 "@type": "SpeakableSpecification",
-                "cssSelector": ["h1", ".hero-subtitle", ".faq-question"]
+                "cssSelector": ["h1", ".hero-subtitle", ".faq-question", ".voice-trigger"]
             }
         },
 
