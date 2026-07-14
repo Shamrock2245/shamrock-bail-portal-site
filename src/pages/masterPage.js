@@ -263,6 +263,7 @@ function setupEmergencyCallButton() {
         const btn = $w('#emergencyCallButton');
         if (btn && btn.id) {
             btn.onClick(function() { trackEvent('emergency_call_clicked'); });
+            try { btn.customClassList.add('voice-trigger'); } catch (e) {}
         }
     } catch (e) { /* non-fatal */ }
 }

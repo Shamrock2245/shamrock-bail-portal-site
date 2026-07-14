@@ -144,6 +144,7 @@ function setupHeroSection() {
         const heroBtn = $w('#heroCallBtn');
         if (heroBtn && heroBtn.id) {
             heroBtn.onClick(() => { scrollToCountySelector(); });
+            try { heroBtn.customClassList.add('voice-trigger'); } catch (e) {}
         }
     } catch (e) { /* non-fatal */ }
 }
@@ -156,6 +157,7 @@ function setupCTAButtons() {
                 trackEvent('spanish_call_clicked', { location: 'hero_section' });
                 wixLocation.to('tel:12399550301');
             });
+            try { spanishBtn.customClassList.add('voice-trigger'); } catch (e) {}
         }
     } catch (e) { /* non-fatal */ }
 
@@ -163,6 +165,7 @@ function setupCTAButtons() {
         const telegramBtn = $w('#telegramBotBtn');
         if (telegramBtn && telegramBtn.id) {
             telegramBtn.onClick(() => { trackEvent('telegram_bot_clicked', { location: 'home_page' }); });
+            try { telegramBtn.customClassList.add('voice-trigger'); } catch (e) {}
         }
     } catch (e) { /* non-fatal */ }
 }

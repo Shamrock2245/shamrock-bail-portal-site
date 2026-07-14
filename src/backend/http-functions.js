@@ -21,6 +21,8 @@ import { syncCountiesToCms } from 'backend/cronJobs';
 
 import { createCustomSession, lookupUserByContact } from 'backend/portal-auth';
 
+import { llmSitemapContent } from 'backend/llmSitemapData';
+
 /**
  * GET /_functions/triggerCountySync
  * Manually trigger the county data sync (Admin only)
@@ -39,6 +41,17 @@ export async function get_triggerCountySync(request) {
             body: { success: false, error: error.message }
         });
     }
+}
+
+/**
+ * GET /_functions/llmSitemap
+ * Serves the LLM Markdown Sitemap for AI crawlers
+ */
+export function get_llmSitemap(request) {
+    return ok({
+        headers: { 'Content-Type': 'text/markdown' },
+        body: llmSitemapContent
+    });
 }
 
 /**
