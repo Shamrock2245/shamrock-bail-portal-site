@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * Test_PacketSend.gs
+ * Test_PacketSend.js
  * ============================================================================
  * Test & utility functions for the SignNow packet workflow.
  *

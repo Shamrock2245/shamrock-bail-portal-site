@@ -425,7 +425,7 @@ function SN_cancelInvites(documentId) {
  * 3. Saves to Google Drive
  * 4. Logs the completion
  */
-// The handleDocumentComplete logic was refactored and centralized in WebhookHandler.js and DriveFilingService.gs to avoid Global Namespace conflicts.
+// The handleDocumentComplete logic was refactored and centralized in WebhookHandler.js and DriveFilingService.js to avoid Global Namespace conflicts.
 
 
 // ============================================================================

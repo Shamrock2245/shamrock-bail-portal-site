@@ -6,7 +6,7 @@
  * 1. Deploy
  * 2. Run ?action=convert_templates
  * 3. Copy JSON output
- * 4. Update PDFService.gs with new IDs
+ * 4. Update PDFService.js with new IDs
  */
 
 const PDF_TEMPLATES_TO_CONVERT = {

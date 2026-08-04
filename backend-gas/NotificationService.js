@@ -1,14 +1,16 @@
 /**
  * ============================================================================
- * NotificationService.gs
+ * NotificationService.js
  * ============================================================================
  * Unified provider for all system alerts.
- * Supports: Slack (Webhooks), Twilio (SMS), Email (MailApp).
- * 
+ * Supports: Slack (Webhooks), Twilio (SMS/WhatsApp), Email (MailApp), Telegram.
+ *
  * Usage:
  * NotificationService.notifySlack(webhookKey, messageOrBlocks);
- * NotificationService.sendSms(to, body);
- * NotificationService.sendEmail(to, subject, body);
+ * NotificationService.sendSlack(channel, text, blocks);
+ * NotificationService.sendSms(to, body);   // also: sendSMS
+ * NotificationService.sendEmail(to, subject, body, htmlBody);
+ * NotificationService.sendTelegram(to, body, mediaUrl);
  */
 
 var NotificationService = (function() {
@@ -69,27 +71,42 @@ var NotificationService = (function() {
 
     /**
      * Helper to route legacy calls to correct webhook based on channel name.
-     * @param {string} channel - The channel name (e.g. '#new-cases')
+     * @param {string} channel - Channel name (e.g. '#new-cases'), property key, or full webhook URL
      * @param {string} text - The message text
      * @param {Array} blocks - Optional Block Kit blocks
      */
     sendSlack: function(channel, text, blocks) {
-      // 1. Determine Webhook Key based on Channel
+      // 1. Determine Webhook Key / URL based on Channel
       let webhookKey = 'SLACK_WEBHOOK_GENERAL'; // Default fallback
-      
+
       if (channel) {
-        const ch = channel.toLowerCase().trim();
-        if (ch === '#new-cases' || ch.includes('new-cases')) webhookKey = 'SLACK_WEBHOOK_NEW_CASES';
-        else if (ch === '#new-arrests-lee-county' || ch.includes('lee-county')) webhookKey = 'SLACK_WEBHOOK_NEW_ARRESTS_LEE_COUNTY';
-        else if (ch === '#intake' || ch.includes('intake')) webhookKey = 'SLACK_WEBHOOK_INTAKE';
-        else if (ch === '#court-dates' || ch.includes('court')) webhookKey = 'SLACK_WEBHOOK_COURT_DATES';
-        else if (ch === '#forfeitures' || ch.includes('forfeit')) webhookKey = 'SLACK_WEBHOOK_FORFEITURES';
-        else if (ch === '#discharges' || ch.includes('discharge')) webhookKey = 'SLACK_WEBHOOK_DISCHARGES';
-        else if (ch === '#signing-errors' || ch.includes('signing-error')) webhookKey = 'SLACK_WEBHOOK_SIGNING_ERRORS';
-        else if (ch === '#drive' || ch.includes('drive')) webhookKey = 'SLACK_WEBHOOK_DRIVE';
-        else if (ch === '#calendar' || ch.includes('calendar')) webhookKey = 'SLACK_WEBHOOK_CALENDAR';
-        else if (ch === 'shamrock bail bonds' || ch.includes('shamrock')) webhookKey = 'SLACK_WEBHOOK_SHAMROCK';
-        else if (ch === '#general' || ch.includes('general')) webhookKey = 'SLACK_WEBHOOK_GENERAL';
+        const raw = String(channel).trim();
+        // Direct webhook URL (e.g. HistoricalBondMonitor passes SLACK_WEBHOOK_SHAMROCK value)
+        if (raw.indexOf('https://') === 0 || raw.indexOf('http://') === 0) {
+          webhookKey = raw;
+        } else if (raw.indexOf('SLACK_WEBHOOK_') === 0) {
+          webhookKey = raw;
+        } else {
+          const ch = raw.toLowerCase();
+          if (ch === '#new-cases' || ch.includes('new-cases')) webhookKey = 'SLACK_WEBHOOK_NEW_CASES';
+          else if (ch === '#new-arrests-lee-county' || ch.includes('lee-county')) webhookKey = 'SLACK_WEBHOOK_NEW_ARRESTS_LEE_COUNTY';
+          else if (ch === '#intake' || ch.includes('intake')) webhookKey = 'SLACK_WEBHOOK_INTAKE';
+          else if (ch === '#court-dates' || ch.includes('court')) webhookKey = 'SLACK_WEBHOOK_COURT_DATES';
+          else if (ch === '#forfeitures' || ch.includes('forfeit')) webhookKey = 'SLACK_WEBHOOK_FORFEITURES';
+          else if (ch === '#discharges' || ch.includes('discharge')) webhookKey = 'SLACK_WEBHOOK_DISCHARGES';
+          else if (ch === '#signing-errors' || ch.includes('signing-error')) webhookKey = 'SLACK_WEBHOOK_SIGNING_ERRORS';
+          else if (ch === '#drive' || ch.includes('drive')) webhookKey = 'SLACK_WEBHOOK_DRIVE';
+          else if (ch === '#calendar' || ch.includes('calendar')) webhookKey = 'SLACK_WEBHOOK_CALENDAR';
+          else if (ch === 'shamrock bail bonds' || ch.includes('shamrock')) webhookKey = 'SLACK_WEBHOOK_SHAMROCK';
+          else if (ch === '#alerts' || ch.includes('alert')) webhookKey = 'SLACK_WEBHOOK_GENERAL';
+          else if (ch === '#ops' || ch.includes('ops')) webhookKey = 'SLACK_WEBHOOK_GENERAL';
+          else if (ch === '#after-hours' || ch.includes('after-hours') || ch.includes('afterhours')) webhookKey = 'SLACK_WEBHOOK_INTAKE';
+          else if (ch === '#leads' || ch.includes('lead')) webhookKey = 'SLACK_WEBHOOK_NEW_CASES';
+          else if (ch === '#client-messages' || ch.includes('client-message') || ch.includes('incoming-sms')) webhookKey = 'SLACK_WEBHOOK_GENERAL';
+          else if (ch === '#social-posts' || ch.includes('social')) webhookKey = 'SLACK_WEBHOOK_GENERAL';
+          else if (ch === '#urgent' || ch.includes('urgent')) webhookKey = 'SLACK_WEBHOOK_GENERAL';
+          else if (ch === '#general' || ch.includes('general')) webhookKey = 'SLACK_WEBHOOK_GENERAL';
+        }
       }
 
       // 2. Construct Payload
@@ -138,6 +155,7 @@ var NotificationService = (function() {
      */
     sendSms: function(to, body) {
       try {
+        if (!to) throw new Error('SMS recipient phone is required');
         const props = getConfig_();
         const sid = props.getProperty('TWILIO_ACCOUNT_SID');
         const token = props.getProperty('TWILIO_AUTH_TOKEN');
@@ -153,9 +171,9 @@ var NotificationService = (function() {
         else if (formattedTo.length === 11 && formattedTo.startsWith('1')) formattedTo = '+' + formattedTo;
         else if (!formattedTo.startsWith('+')) formattedTo = '+' + formattedTo;
 
-        const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+        const url = 'https://api.twilio.com/2010-04-01/Accounts/' + sid + '/Messages.json';
         const headers = {
-          "Authorization": "Basic " + Utilities.base64Encode(`${sid}:${token}`)
+          "Authorization": "Basic " + Utilities.base64Encode(sid + ':' + token)
         };
 
         // UrlFetchApp payload handling for POST form-data
@@ -173,7 +191,7 @@ var NotificationService = (function() {
         });
 
         const json = JSON.parse(res.getContentText());
-        
+
         if (res.getResponseCode() < 300) {
           return { success: true, sid: json.sid };
         } else {
@@ -184,6 +202,14 @@ var NotificationService = (function() {
         logError_('sendSms', e.message);
         return { success: false, error: e.message };
       }
+    },
+
+    /**
+     * Alias for sendSms — some callers use sendSMS (capital SMS).
+     * @see sendSms
+     */
+    sendSMS: function(to, body) {
+      return this.sendSms(to, body);
     },
 
     /**

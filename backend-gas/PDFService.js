@@ -1,7 +1,7 @@
 /**
  * @deprecated — 2026-03-20 — DO NOT USE FOR NEW DEVELOPMENT
  * ============================================================================
- * PDFService.gs
+ * PDFService.js
  * Version: 2.0.0 - Multi-Template Support
  * 
  * DEPRECATED: This file generates PDFs from Google Doc templates stored in Drive.

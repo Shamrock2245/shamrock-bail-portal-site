@@ -1,10 +1,10 @@
 /**
- * DriveFilingService.gs
- * Version: 1.0.0
- * 
+ * DriveFilingService.js
+ * Version: 1.0.1
+ *
  * Handles automatic filing of completed bond documents into defendant-specific folders
- * Folder Naming Convention: LastNameFirstLetters-MMDDYY
- * Example: JonesBob-021026
+ * Folder Naming Convention: Defendant Name - YYYY-MM-DD
+ * Example: Bobby Jones - 2026-02-10
  */
 
 // ============================================================================
@@ -174,18 +174,18 @@ function handleSignNowCompletedDocument(webhookData) {
     // 3. Extract defendant info from document metadata or custom fields
     // This assumes you've stored defendant info in the document metadata
     const metadata = webhookData.meta || webhookData.document_meta || {};
-    const defendantFirstName = metadata.defendantFirstName || metadata.DefFirstName;
-    const defendantLastName = metadata.defendantLastName || metadata.DefLastName;
+    let defendantFirstName = metadata.defendantFirstName || metadata.DefFirstName || '';
+    let defendantLastName = metadata.defendantLastName || metadata.DefLastName || '';
     const dateBondWritten = metadata.dateBondWritten || metadata.Date;
-    
+
     if (!defendantFirstName || !defendantLastName) {
       console.warn('⚠️ Missing defendant info in webhook, using fallback');
       const docName = webhookData.document_name || '';
       const extractedName = extractDefendantName(docName);
       if (extractedName && extractedName !== 'Unknown') {
-        const parts = extractedName.split(' ');
-        defendantFirstName = parts[0] || '';
-        defendantLastName = parts.slice(1).join(' ') || '';
+        const parts = extractedName.split(' ').filter(Boolean);
+        if (!defendantFirstName) defendantFirstName = parts[0] || '';
+        if (!defendantLastName) defendantLastName = parts.slice(1).join(' ') || '';
       }
     }
     
@@ -216,29 +216,41 @@ function handleSignNowCompletedDocument(webhookData) {
  */
 function downloadSignedPdfFromSignNow(documentId) {
   try {
-    const config = getConfig();
-    const accessToken = config.SIGNNOW_ACCESS_TOKEN;
-    
+    // Prefer shared getConfig(); fall back to SN_getConfig() when available
+    let accessToken = '';
+    let apiBase = 'https://api.signnow.com';
+
+    if (typeof getConfig === 'function') {
+      const config = getConfig();
+      accessToken = (config && config.SIGNNOW_ACCESS_TOKEN) || '';
+      apiBase = (config && config.SIGNNOW_API_BASE) || apiBase;
+    }
+    if (!accessToken && typeof SN_getConfig === 'function') {
+      const snConfig = SN_getConfig();
+      accessToken = (snConfig && (snConfig.ACCESS_TOKEN || snConfig.accessToken)) || '';
+      apiBase = (snConfig && (snConfig.API_BASE || snConfig.apiBase)) || apiBase;
+    }
+
     if (!accessToken) throw new Error('SignNow access token not configured');
-    
-    const url = `https://api.signnow.com/document/${documentId}/download`;
-    
+
+    const url = apiBase.replace(/\/$/, '') + '/document/' + documentId + '/download';
+
     const options = {
       method: 'get',
       headers: {
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': 'Bearer ' + accessToken
       },
       muteHttpExceptions: true
     };
-    
+
     const response = UrlFetchApp.fetch(url, options);
-    
+
     if (response.getResponseCode() !== 200) {
-      throw new Error(`SignNow API error: ${response.getContentText()}`);
+      throw new Error('SignNow API error: ' + response.getContentText());
     }
-    
+
     return response.getBlob();
-    
+
   } catch (error) {
     console.error('❌ Error downloading from SignNow:', error);
     throw error;

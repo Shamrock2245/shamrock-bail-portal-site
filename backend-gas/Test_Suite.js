@@ -48,7 +48,7 @@ function TEST_2_SendTestSlack() {
 }
 
 function TEST_3_SimulateCriticalFailure() {
-    // This validates the "Strike System" in Telemetry.gs
+    // This validates the "Strike System" in Telemetry.js
     Logger.log("🚨 Simulating 3 consecutive failures to trigger Critical Alert...");
 
     Telemetry.registerSuccess('TestModule'); // Reset first

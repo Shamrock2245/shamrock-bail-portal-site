@@ -1,5 +1,5 @@
 /**
- * @fileoverview MongoDbService.gs
+ * @fileoverview MongoDbService.js
  * Handles all MongoDB Atlas communication via the Cloud Function Proxy.
  *
  * Architecture:
@@ -132,6 +132,7 @@ var MongoDbService = {
 
   updateOne: function(collection, filter, updateMsg, upsert) {
     upsert = (upsert === true);
+    updateMsg = updateMsg || {};
     if (!updateMsg.$set) updateMsg.$set = {};
     updateMsg.$set.updatedAt = new Date().toISOString();
     Logger.log('[MongoDbService] updateOne → ' + collection);
@@ -140,6 +141,7 @@ var MongoDbService = {
 
   updateMany: function(collection, filter, updateMsg, upsert) {
     upsert = (upsert === true);
+    updateMsg = updateMsg || {};
     if (!updateMsg.$set) updateMsg.$set = {};
     updateMsg.$set.updatedAt = new Date().toISOString();
     Logger.log('[MongoDbService] updateMany → ' + collection);

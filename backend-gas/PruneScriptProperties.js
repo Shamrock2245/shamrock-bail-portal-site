@@ -48,7 +48,7 @@ function ADMIN_PruneObsoleteProperties() {
     // A. Define keys/values to target
     const keysToDelete = [
         // 'MCP_API_KEY',           // KEEP: Used in MCPServer.js for Manus auth
-        'TWILIO_VERIFY_SERVICE_SID' // Unused (NotificationService.gs uses SID/AuthToken/Phone)
+        'TWILIO_VERIFY_SERVICE_SID' // Unused (NotificationService.js uses SID/AuthToken/Phone)
     ];
 
     // B. Check specific values (Placeholders)

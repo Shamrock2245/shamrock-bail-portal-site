@@ -131,13 +131,13 @@
 | `SOC2_WebhookHandler.js` | `document.complete` webhook handler |
 | `PDF_Mappings.js` | JSON field → PDF coordinate mappings |
 | `PDF_Processor.js` | PDF generation & processing |
-| `PDFService.gs` | Low-level PDF service utilities |
+| `PDFService.js` | Low-level PDF service utilities (deprecated — SignNow is source of truth) |
 | `AdobeDataMapping.js` | Adobe PDF data field mapping |
-| `AdobePDFService.gs` | Adobe PDF services integration |
+| `AdobePDFService.js` | Adobe PDF services integration |
 | `DocFiller.js` | Document template field hydration |
 | `DocumentLogic.js` | Document workflow business logic |
 | `Server_DocumentLogic.js` | Server-side document processing |
-| `DriveFilingService.gs` | Google Drive case folder filing |
+| `DriveFilingService.js` | Google Drive case folder filing |
 
 ---
 
@@ -161,7 +161,7 @@
 | `SlackWebhook.js` | Slack webhook utilities |
 | `SlackConfig.js` | Slack channel configuration |
 | `SetupSlack.js` | Slack webhook setup wizard |
-| `NotificationService.gs` | Multi-channel notification dispatcher |
+| `NotificationService.js` | Multi-channel notification dispatcher (Slack/SMS/Email/Telegram) |
 | `ReminderManager.js` | Client reminder management |
 | `TwilioCampaignMonitor.js` | Twilio campaign monitoring |
 | `CommPrefsGate.js` | Communication preferences (opt-in/opt-out) |
@@ -223,7 +223,9 @@
 | `SystemHealthCheck.js` | Automated health checks across all integrations |
 | `DailyOpsReport.js` | End-of-day ops summary to Slack |
 | `StatsService.js` | System statistics collection |
-| `Telemetry.gs` | Usage telemetry |
+| `Telemetry.js` | Usage telemetry + consecutive-failure strike escalations |
+| `MongoDbService.js` | MongoDB Atlas proxy client (find/insert/update/delete) |
+| `MongoLogger.js` | Fire-and-forget business event logging to MongoDB |
 | `TokenRefreshService.js` | OAuth token auto-refresh |
 | `PruneScriptProperties.js` | Clean up stale script properties |
 | `ConfigBackend.js` | Config management backend |

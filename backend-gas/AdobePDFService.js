@@ -1,7 +1,7 @@
 /**
- * AdobePDFService.gs
+ * AdobePDFService.js
  * Version: 1.0.0
- * 
+ *
  * Handles PDF form filling using Adobe PDF Services API.
  * Integrates with the bail bond automation workflow to fill PDF forms
  * with data from Dashboard.html and prepare them for SignNow.

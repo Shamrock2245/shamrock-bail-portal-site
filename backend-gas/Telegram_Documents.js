@@ -1059,7 +1059,7 @@ function updateDocSigningStatus_(caseKey, docId, newStatus, ss) {
 //   4. Send ONE email invite to the indemnitor with the full packet
 //   5. Write doc IDs back to DocSigningTracker sheet
 //
-// CALLERS: Test_PacketSend.gs, server_sendSigningPacket (Dashboard button)
+// CALLERS: Test_PacketSend.js, server_sendSigningPacket (Dashboard button)
 // ============================================================================
 
 /**

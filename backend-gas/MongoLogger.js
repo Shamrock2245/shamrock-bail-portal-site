@@ -1,5 +1,5 @@
 /**
- * @fileoverview MongoLogger.gs
+ * @fileoverview MongoLogger.js
  * Fire-and-forget MongoDB logging layer for all GAS business events.
  *
  * Every function is wrapped in try/catch — if MongoDB is unreachable,
