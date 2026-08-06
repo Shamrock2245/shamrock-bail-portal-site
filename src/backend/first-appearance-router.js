@@ -20,13 +20,18 @@ import { ok, notFound } from 'wix-router';
 
 /**
  * Two pages live under this router.
- * Page NAMES must match Wix Editor → Site Structure → Routers → first-appearance
- * (live meta: h4fpl title="first-appearance", nmw1v title="first-appearance-page").
  *
- * Wrong names return Wix 500 pages titled "500 | Shamrock Bail Bonds" — uncrawlable.
+ * HUB (empty path) → first-appearance.h4fpl.js  — FULL hub page (embed + SEO).
+ *   Wix page name / title: "first-appearance"  (page id h4fpl)
+ *
+ * COUNTY (/{slug}) → first-appearance-page.nmw1v.js — county pSEO shell (minimal).
+ *   Wix page name / title: "first-appearance-page" (page id nmw1v)
+ *
+ * If ok(pageName) does not match the router page name exactly, Wix serves
+ * title "500 | Shamrock Bail Bonds" and h4fpl.js NEVER runs — Google sees an error page.
  */
-const HUB_PAGE = 'first-appearance';
-const COUNTY_PAGE = 'first-appearance-page';
+const HUB_PAGE = 'first-appearance'; // → first-appearance.h4fpl.js
+const COUNTY_PAGE = 'first-appearance-page'; // → first-appearance-page.nmw1v.js
 
 /** Florida counties for sitemap discovery (slug form used site-wide). */
 const COUNTY_SLUGS = [

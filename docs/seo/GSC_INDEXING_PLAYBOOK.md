@@ -15,7 +15,7 @@
 | **Blog** | 105 posts in blog sitemap ✅ | Discoverable |
 | **Wix `pages-sitemap.xml`** | Only **13** static URLs | Incomplete for static set |
 | **Private pages in sitemap** | `/portal-landing`, `/communication-preferences`, `/data-deletion` listed | Inflates “Excluded / noindex / crawled not indexed” |
-| **`/first-appearance`** | Live title was **`500 \| Shamrock Bail Bonds`** | **Critical** — soft error page, bad for crawl quality |
+| **`/first-appearance`** | Live title was **`500 \| Shamrock Bail Bonds`** | **Critical** — custom router page name mismatch; hub page code is **`first-appearance.h4fpl.js`** (full file). Wrong `ok('…')` name → 500 and h4fpl never runs |
 | **Custom sitemap** | `/_functions/sitemap` works but was **Disallowed** by `robots.txt` | Google ignored supplemental sitemap |
 | **Googlebot** | Not blocked by `User-agent: *` | OK |
 
