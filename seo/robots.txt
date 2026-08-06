@@ -34,6 +34,7 @@ Disallow: /*&viewMode=
 # Allow our custom public sitemap endpoints under _functions
 Allow: /_functions/sitemap
 Allow: /_functions/llmSitemap
+Allow: /_functions/llmsTxt
 
 # ---- DEFAULT (Bing, etc.) ----
 User-agent: *
@@ -58,6 +59,7 @@ Disallow: /*?viewMode=
 Disallow: /*&viewMode=
 Allow: /_functions/sitemap
 Allow: /_functions/llmSitemap
+Allow: /_functions/llmsTxt
 
 # ==============================================================
 # AI / answer engines — welcome (same public surface)
@@ -90,6 +92,7 @@ Disallow: /_api/
 Disallow: /*?lightbox=
 Allow: /_functions/sitemap
 Allow: /_functions/llmSitemap
+Allow: /_functions/llmsTxt
 
 # ==============================================================
 # Block zero-value scrapers (not Google)

@@ -22,6 +22,7 @@ import { syncCountiesToCms } from 'backend/cronJobs';
 import { createCustomSession, lookupUserByContact } from 'backend/portal-auth';
 
 import { llmSitemapContent } from 'backend/llmSitemapData';
+import { buildLlmsTxt, fetchLiveBlogPosts } from 'backend/llms-txt-builder';
 
 /**
  * GET /_functions/triggerCountySync
@@ -49,9 +50,41 @@ export async function get_triggerCountySync(request) {
  */
 export function get_llmSitemap(request) {
     return ok({
-        headers: { 'Content-Type': 'text/markdown' },
+        headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
         body: llmSitemapContent
     });
+}
+
+/**
+ * GET /_functions/llmsTxt
+ * Authority-optimized llms.txt with **live blog list from blog-feed.xml**.
+ * Future posts appear automatically when Wix publishes to the blog RSS.
+ * Paste a short pointer into Wix's native /llms.txt if the Editor overwrites body text:
+ *   See https://www.shamrockbailbonds.biz/_functions/llmsTxt
+ */
+export async function get_llmsTxt(request) {
+    try {
+        const posts = await fetchLiveBlogPosts();
+        const body = buildLlmsTxt({
+            posts,
+            generatedAt: new Date().toISOString()
+        });
+        return ok({
+            headers: {
+                'Content-Type': 'text/plain; charset=utf-8',
+                'Cache-Control': 'public, max-age=300'
+            },
+            body
+        });
+    } catch (error) {
+        console.error('get_llmsTxt error:', error);
+        // Still return static authority graph if RSS fails
+        const body = buildLlmsTxt({ posts: [], generatedAt: new Date().toISOString() });
+        return ok({
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            body
+        });
+    }
 }
 
 /**
