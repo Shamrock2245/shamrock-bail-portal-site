@@ -1142,7 +1142,10 @@
           ? '<span class="badge badge-live"><i class="ph ph-broadcast"></i> Live feed</span>'
           : '<span class="badge badge-dir">Directory</span>';
         const focus = (focusSlug && c.slug === focusSlug) ? ' style="outline:2px solid var(--gold);"' : '';
-        const detailUrl = 'https://www.shamrockbailbonds.biz/first-appearance/' + encodeURIComponent(c.slug || '');
+        // Stay on hub with county focus — separate /first-appearance/{slug} pages blanked when
+        // only one router template exists. Path form still works after router fix (same hub page).
+        const detailUrl =
+          'https://www.shamrockbailbonds.biz/first-appearance?county=' + encodeURIComponent(c.slug || '');
         return (
           '<div class="county-card' + (isLive ? ' has-feed' : '') + '" data-slug="' + escapeHtml(c.slug || '') + '"' + focus + '>' +
             '<div class="county-card-header">' +

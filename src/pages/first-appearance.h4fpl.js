@@ -39,9 +39,17 @@ import {
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
-const EMBED_VERSION = '2026-08-06-fa-v5-hardened';
-const EMBED_URL = `https://shamrock-embeds.netlify.app/first-appearance.html?v=${encodeURIComponent(EMBED_VERSION)}`;
+const EMBED_VERSION = '2026-08-06-fa-v6-focus';
 const EMBED_ID = '#firstAppearanceEmbed';
+
+/** Build embed URL; pass ?county= when deep-linked so the iframe focuses that card. */
+function buildEmbedUrl(focusSlug) {
+    let url = `https://shamrock-embeds.netlify.app/first-appearance.html?v=${encodeURIComponent(EMBED_VERSION)}`;
+    if (focusSlug) {
+        url += `&county=${encodeURIComponent(focusSlug)}`;
+    }
+    return url;
+}
 
 const PAGE_TITLE = 'First Appearance Hearing in Florida | Live Court Schedules | Shamrock Bail Bonds';
 const PAGE_DESC =
@@ -128,13 +136,45 @@ $w.onReady(function () {
 
     // CRITICAL: set crawlable SEO synchronously so Google never sees a blank/500 title
     // if this page successfully loads. (If the router 500s, this file never runs.)
-    setupSEO();
-    setupEmbed();
-    sendCountyData();
+    const focusSlug = resolveFocusSlug();
+    setupSEO(focusSlug);
+    setupEmbed(focusSlug);
+    sendCountyData(focusSlug);
     trackPageView();
 
-    console.log('✅ First Appearance hub ready');
+    console.log('✅ First Appearance hub ready', focusSlug ? `(focus: ${focusSlug})` : '');
 });
+
+/**
+ * County deep-link: /first-appearance/polk  OR  /first-appearance?county=polk
+ * Router only has one page (hub + embed); slug focuses that county in the grid.
+ */
+function resolveFocusSlug() {
+    try {
+        const q = (wixLocation.query && (wixLocation.query.county || wixLocation.query.c)) || '';
+        if (q) {
+            return String(q)
+                .toLowerCase()
+                .trim()
+                .replace(/-county$/i, '')
+                .replace(/\s+county$/i, '')
+                .replace(/\s+/g, '-');
+        }
+    } catch (_) { /* ignore */ }
+
+    try {
+        // Under custom router, path is usually ['polk'] for /first-appearance/polk
+        const path = wixLocation.path || [];
+        const segs = path
+            .map((s) => String(s || '').toLowerCase())
+            .filter((s) => s && s !== 'first-appearance' && s !== 'first-appearance-hub');
+        if (segs.length) {
+            return segs[0].replace(/-county$/i, '');
+        }
+    } catch (_) { /* ignore */ }
+
+    return '';
+}
 
 // ─── HTML EMBED SETUP ─────────────────────────────────────────────────────────
 
@@ -146,7 +186,7 @@ function getEmbed() {
     }
 }
 
-function setupEmbed() {
+function setupEmbed(focusSlug) {
     const embed = getEmbed();
     if (!embed) {
         console.warn(
@@ -160,8 +200,9 @@ function setupEmbed() {
             embed.style.height = '2200px';
         } catch (_) { /* style may be locked */ }
 
-        embed.src = EMBED_URL;
-        console.log('🔗 Embed URL set:', EMBED_URL);
+        const embedUrl = buildEmbedUrl(focusSlug);
+        embed.src = embedUrl;
+        console.log('🔗 Embed URL set:', embedUrl);
 
         if (typeof embed.onMessage !== 'function') {
             console.warn('[firstAppearanceEmbed] onMessage unavailable');
@@ -272,36 +313,24 @@ function postCountiesToEmbed(result) {
     }
 }
 
-/** Deep-link support: /first-appearance-hub?county=lee */
-function focusCountyFromQuery() {
-    try {
-        const q = (wixLocation.query && (wixLocation.query.county || wixLocation.query.c)) || '';
-        if (!q) return;
-        const slug = String(q)
-            .toLowerCase()
-            .trim()
-            .replace(/-county$/i, '')
-            .replace(/\s+county$/i, '')
-            .replace(/\s+/g, '-');
-        if (!slug) return;
-
-        const push = () => {
-            try {
-                const embed = getEmbed();
-                if (!embed || typeof embed.postMessage !== 'function') return;
-                embed.postMessage({ type: 'focusCounty', slug });
-            } catch (e) {
-                console.warn('focusCounty post failed:', e.message);
-            }
-        };
-        setTimeout(push, 1000);
-        setTimeout(push, 2500);
-    } catch (e) {
-        /* non-fatal */
-    }
+/** Focus a county card in the embed (query, path slug, or explicit). */
+function focusCountyInEmbed(slug) {
+    if (!slug) return;
+    const push = () => {
+        try {
+            const embed = getEmbed();
+            if (!embed || typeof embed.postMessage !== 'function') return;
+            embed.postMessage({ type: 'focusCounty', slug });
+        } catch (e) {
+            console.warn('focusCounty post failed:', e.message);
+        }
+    };
+    setTimeout(push, 800);
+    setTimeout(push, 1800);
+    setTimeout(push, 3200);
 }
 
-async function sendCountyData() {
+async function sendCountyData(focusSlug) {
     try {
         // 1) Immediate fetch without geo so embed gets all 67 quickly
         const initial = await getFirstAppearanceSchedules({});
@@ -310,9 +339,9 @@ async function sendCountyData() {
             setTimeout(() => postCountiesToEmbed(initial), 1800);
         }
 
-        focusCountyFromQuery();
+        focusCountyInEmbed(focusSlug);
 
-        // 2) Re-sort nearest-first once location is available
+        // 2) Re-sort nearest-first once location is available (skip re-sort if user deep-linked a county)
         const loc = await getVisitorLocation();
         if (!loc) return;
 
@@ -320,7 +349,7 @@ async function sendCountyData() {
         if (near && near.success && Array.isArray(near.counties) && near.counties.length > 0) {
             postCountiesToEmbed(near);
             setTimeout(() => postCountiesToEmbed(near), 500);
-            focusCountyFromQuery();
+            focusCountyInEmbed(focusSlug);
         }
     } catch (e) {
         console.warn('County data fetch failed (embed will use fallback data):', e.message);
@@ -405,12 +434,25 @@ async function trackPageView() {
 // Runs synchronously in onReady so SSR/crawlers get indexable tags when the
 // page successfully loads (router must not 500 first).
 
-function setupSEO() {
+function setupSEO(focusSlug) {
     try {
-        wixSeo.setTitle(PAGE_TITLE);
+        let title = PAGE_TITLE;
+        let desc = PAGE_DESC;
+        let url = PAGE_URL;
+        if (focusSlug) {
+            const name = focusSlug
+                .split('-')
+                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(' ');
+            title = `First Appearance Hearing in ${name} County, FL | Shamrock Bail Bonds`;
+            desc = `${name} County First Appearance schedule, location, and live feed if available. Serving all 67 Florida counties. Call (239) 332-2245.`;
+            url = `${PAGE_URL}/${encodeURIComponent(focusSlug)}`;
+        }
+
+        wixSeo.setTitle(title);
 
         wixSeo.setMetaTags([
-            { name: 'description', content: PAGE_DESC },
+            { name: 'description', content: desc },
             {
                 name: 'robots',
                 content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
@@ -420,19 +462,19 @@ function setupSEO() {
                 content:
                     'first appearance hearing Florida, first appearance court date, Florida bail hearing, bond set at first appearance, Lee County first appearance, Collier County first appearance, 24 hour bail bonds Florida, live court stream Florida, Shamrock Bail Bonds'
             },
-            { property: 'og:title', content: PAGE_TITLE },
-            { property: 'og:description', content: PAGE_DESC },
-            { property: 'og:url', content: PAGE_URL },
+            { property: 'og:title', content: title },
+            { property: 'og:description', content: desc },
+            { property: 'og:url', content: url },
             { property: 'og:type', content: 'article' },
             { property: 'og:image', content: OG_IMAGE },
             { property: 'og:site_name', content: 'Shamrock Bail Bonds' },
             { name: 'twitter:card', content: 'summary_large_image' },
-            { name: 'twitter:title', content: PAGE_TITLE },
-            { name: 'twitter:description', content: PAGE_DESC },
+            { name: 'twitter:title', content: title },
+            { name: 'twitter:description', content: desc },
             { name: 'twitter:image', content: OG_IMAGE }
         ]);
 
-        wixSeo.setLinks([{ rel: 'canonical', href: PAGE_URL }]);
+        wixSeo.setLinks([{ rel: 'canonical', href: url }]);
 
         wixSeo
             .setStructuredData([
@@ -442,7 +484,7 @@ function setupSEO() {
                 buildLegalServiceSchema(),
                 buildLocalBusinessSchema()
             ])
-            .then(() => console.log('✅ SEO: Full structured data set (h4fpl hub)'))
+            .then(() => console.log('✅ SEO: Full structured data set (h4fpl hub)', focusSlug || ''))
             .catch((err) => console.error('❌ SEO setStructuredData error:', err));
     } catch (err) {
         console.error('❌ SEO setup error:', err);
