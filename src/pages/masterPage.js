@@ -120,6 +120,13 @@ const FIRST_APPEARANCE_NAV_IDS = ['#navFirstAppearance', '#headerFirstAppearance
 $w.onReady(function () {
     const isMobile = wixWindow.formFactor === 'Mobile';
 
+    // Alias: /first-appearance-hub → working router hub (soft 404 fix)
+    try {
+        redirectFirstAppearanceHubAlias();
+    } catch (e) {
+        /* non-fatal */
+    }
+
     // 1. Immediate Critical Setup (Universal)
     initCriticalUI();
 
@@ -273,11 +280,62 @@ function setupBailSchoolNavLink() {
 }
 
 /**
- * RETIRED 2026-04-22 — First Appearance link is now set directly in the Wix nav menu.
- * Function is kept as a no-op to avoid removing the call from initCriticalUI().
+ * Force First Appearance nav targets to the working hub URL.
+ * Canonical hub is /first-appearance (router → h4fpl). /first-appearance-hub
+ * is an alias that should redirect; keep links pointed at the live hub.
  */
+const FA_HUB_PATH = '/first-appearance';
+const FA_NAV_IDS = [
+    '#navFirstAppearance',
+    '#firstAppearanceNav',
+    '#menuFirstAppearance',
+    '#headerFirstAppearance',
+    '#footerFirstAppearance',
+    '#footerLinkFirstAppearance',
+    '#btnFirstAppearance'
+];
+
+function redirectFirstAppearanceHubAlias() {
+    try {
+        const path = (wixLocation.path || []).join('/').toLowerCase();
+        const url = String(wixLocation.url || '').toLowerCase();
+        const isHubAlias =
+            path === 'first-appearance-hub' ||
+            path.endsWith('/first-appearance-hub') ||
+            url.indexOf('/first-appearance-hub') !== -1;
+        if (!isHubAlias) return;
+
+        const q = wixLocation.query || {};
+        const params = Object.keys(q)
+            .map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k]))
+            .join('&');
+        const dest = params ? FA_HUB_PATH + '?' + params : FA_HUB_PATH;
+        console.log('[FA] Redirecting hub alias →', dest);
+        wixLocation.to(dest);
+    } catch (e) {
+        /* non-fatal */
+    }
+}
+
 function setupFirstAppearanceNavLink() {
-    // Nav should target /first-appearance-hub (canonical FA hub).
+    FA_NAV_IDS.forEach(function (id) {
+        try {
+            const el = $w(id);
+            if (!el) return;
+            try {
+                el.link = FA_HUB_PATH;
+            } catch (e) {
+                /* may be button */
+            }
+            if (typeof el.onClick === 'function') {
+                el.onClick(function () {
+                    wixLocation.to(FA_HUB_PATH);
+                });
+            }
+        } catch (e) {
+            /* element not on this page variant */
+        }
+    });
 }
 
 function deferNonCriticalOperations(isMobile) {

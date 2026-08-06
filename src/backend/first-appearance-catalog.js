@@ -270,69 +270,114 @@ function haversineMiles(lat1, lon1, lat2, lon2) {
  * @param {{lat?: number, lon?: number}} [options]
  */
 export function buildFirstAppearanceCatalog(options = {}) {
-    const userLat = options.lat != null ? Number(options.lat) : null;
-    const userLon = options.lon != null ? Number(options.lon) : null;
-    const hasUser = userLat != null && userLon != null && isFinite(userLat) && isFinite(userLon);
+    try {
+        const userLat = options.lat != null ? Number(options.lat) : null;
+        const userLon = options.lon != null ? Number(options.lon) : null;
+        const hasUser =
+            userLat != null && userLon != null && isFinite(userLat) && isFinite(userLon);
 
-    const source = (allCountyData && allCountyData.counties) || [];
-    let list = source.map((c) => {
-        const slug = toSlug(c.slug || c.name);
-        const coords = COUNTY_COORDS[slug] || {};
-        const ov = FA_OVERRIDES[slug] || {};
-        const accessType = ov.accessType || 'directory';
-        const hasLiveFeed = accessType === 'zoom' || accessType === 'livestream';
-
-        const row = {
-            name: /county$/i.test(c.name) ? c.name : `${c.name} County`,
-            slug,
-            circuit: c.judicialCircuit || ov.circuit || '',
-            schedule: ov.schedule || 'Within 24 hours of arrest (call for daily courtroom time)',
-            location: ov.location || `${c.name} County Courthouse, ${c.countySeat || 'FL'}`,
-            accessType,
-            liveUrl: ov.liveUrl || 'https://courtrooms.flcourts.gov/',
-            notes:
-                ov.notes ||
-                'First Appearance is required within 24 hours. Check FL Courts Directory or call us for today’s time/feed.',
-            phone: String(ov.phone || c.clerkPhone || c.sheriffPhone || '(239) 332-2245').trim(),
-            countySeat: c.countySeat || '',
-            region: c.region || '',
-            lat: coords.lat ?? null,
-            lon: coords.lon ?? null,
-            hasLiveFeed,
-            tier: ov.tier != null ? ov.tier : hasLiveFeed ? 2 : 3
-        };
-
-        if (hasUser && row.lat != null && row.lon != null) {
-            row.distanceMiles = Math.round(haversineMiles(userLat, userLon, row.lat, row.lon) * 10) / 10;
-        } else {
-            row.distanceMiles = null;
+        const source = (allCountyData && Array.isArray(allCountyData.counties) && allCountyData.counties) || [];
+        if (!source.length) {
+            console.warn('[FA Catalog] allFloridaCounties.json empty or missing — using override-only fallback');
         }
-        return row;
-    });
 
-    if (hasUser) {
-        list.sort((a, b) => {
-            if (a.distanceMiles == null && b.distanceMiles == null) return a.name.localeCompare(b.name);
-            if (a.distanceMiles == null) return 1;
-            if (b.distanceMiles == null) return -1;
-            return a.distanceMiles - b.distanceMiles;
+        // Prefer JSON list; if missing, still expose counties we have overrides for
+        const slugSet = new Set();
+        const rows = [];
+
+        source.forEach((c) => {
+            const slug = toSlug(c.slug || c.name);
+            if (!slug || slugSet.has(slug)) return;
+            slugSet.add(slug);
+            rows.push(buildCountyRow(c, slug, hasUser, userLat, userLon));
         });
-    } else {
-        // No geo: SWFL tier first, then live feeds, then A–Z
-        list.sort((a, b) => {
-            if (a.tier !== b.tier) return a.tier - b.tier;
-            if (a.hasLiveFeed !== b.hasLiveFeed) return a.hasLiveFeed ? -1 : 1;
-            return a.name.localeCompare(b.name);
+
+        Object.keys(FA_OVERRIDES).forEach((slug) => {
+            if (slugSet.has(slug)) return;
+            slugSet.add(slug);
+            const name = slug
+                .split('-')
+                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(' ');
+            rows.push(
+                buildCountyRow(
+                    { name, slug, countySeat: 'FL', judicialCircuit: '', region: '' },
+                    slug,
+                    hasUser,
+                    userLat,
+                    userLon
+                )
+            );
         });
+
+        if (hasUser) {
+            rows.sort((a, b) => {
+                if (a.distanceMiles == null && b.distanceMiles == null) return a.name.localeCompare(b.name);
+                if (a.distanceMiles == null) return 1;
+                if (b.distanceMiles == null) return -1;
+                return a.distanceMiles - b.distanceMiles;
+            });
+        } else {
+            // No geo: SWFL tier first, then live feeds, then A–Z
+            rows.sort((a, b) => {
+                if (a.tier !== b.tier) return a.tier - b.tier;
+                if (a.hasLiveFeed !== b.hasLiveFeed) return a.hasLiveFeed ? -1 : 1;
+                return a.name.localeCompare(b.name);
+            });
+        }
+
+        return {
+            counties: rows,
+            totalCounties: rows.length,
+            sortedBy: hasUser ? 'distance' : 'tier',
+            userLocation: hasUser ? { lat: userLat, lon: userLon } : null,
+            lastUpdated: '2026-08-06'
+        };
+    } catch (err) {
+        console.error('[FA Catalog] build failed:', err);
+        return {
+            counties: [],
+            totalCounties: 0,
+            sortedBy: 'tier',
+            userLocation: null,
+            lastUpdated: '2026-08-06',
+            error: String(err && err.message ? err.message : err)
+        };
     }
+}
 
-    return {
-        counties: list,
-        totalCounties: list.length,
-        sortedBy: hasUser ? 'distance' : 'tier',
-        userLocation: hasUser ? { lat: userLat, lon: userLon } : null,
-        lastUpdated: '2026-08-06'
+function buildCountyRow(c, slug, hasUser, userLat, userLon) {
+    const coords = COUNTY_COORDS[slug] || {};
+    const ov = FA_OVERRIDES[slug] || {};
+    const accessType = ov.accessType || 'directory';
+    const hasLiveFeed = accessType === 'zoom' || accessType === 'livestream';
+    const baseName = c.name || slug;
+    const row = {
+        name: /county$/i.test(baseName) ? baseName : `${baseName} County`,
+        slug,
+        circuit: c.judicialCircuit || ov.circuit || '',
+        schedule: ov.schedule || 'Within 24 hours of arrest (call for daily courtroom time)',
+        location: ov.location || `${baseName} County Courthouse, ${c.countySeat || 'FL'}`,
+        accessType,
+        liveUrl: ov.liveUrl || 'https://courtrooms.flcourts.gov/',
+        notes:
+            ov.notes ||
+            'First Appearance is required within 24 hours. Check FL Courts Directory or call us for today’s time/feed.',
+        phone: String(ov.phone || c.clerkPhone || c.sheriffPhone || '(239) 332-2245').trim(),
+        countySeat: c.countySeat || '',
+        region: c.region || '',
+        lat: coords.lat != null ? coords.lat : null,
+        lon: coords.lon != null ? coords.lon : null,
+        hasLiveFeed,
+        tier: ov.tier != null ? ov.tier : hasLiveFeed ? 2 : 3
     };
+
+    if (hasUser && row.lat != null && row.lon != null) {
+        row.distanceMiles = Math.round(haversineMiles(userLat, userLon, row.lat, row.lon) * 10) / 10;
+    } else {
+        row.distanceMiles = null;
+    }
+    return row;
 }
 
 export function findCountySchedule(countyName) {

@@ -37,7 +37,7 @@ import {
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
-const EMBED_VERSION = '2026-08-06-fa-v4-hub';
+const EMBED_VERSION = '2026-08-06-fa-v5-hardened';
 const EMBED_URL = `https://shamrock-embeds.netlify.app/first-appearance.html?v=${encodeURIComponent(EMBED_VERSION)}`;
 const EMBED_ID = '#firstAppearanceEmbed';
 
