@@ -16,7 +16,7 @@
 A rewarding career helping families during difficult times. Learn the requirements, training, and steps to become a licensed bail bond agent in Florida.
 
 ### Badge
-🎓 **Shamrock Bail School Coming Soon!**
+🎓 **Shamrock Bail School — Enrolling Now**
 
 ---
 
@@ -105,7 +105,9 @@ Florida requires all bail bond agent applicants to complete a **120-hour pre-lic
 - Online: 4-8 weeks depending on your pace
 
 ### Course Cost
-Expect to pay $400-$800 for an approved 120-hour course.
+Shamrock Bail School tuition:
+- **20-Hour Correspondence Course:** $199 (list $299) — online, self-paced
+- **120-Hour Pre-Licensing Course:** $649 (list $1,200) — live webinars + hybrid, includes 1-year State Exam Simulator & Bail Mentor AI
 
 ---
 
@@ -115,21 +117,24 @@ Expect to pay $400-$800 for an approved 120-hour course.
 **🍀 Shamrock Bail School**
 
 ### Announcement Box
-**Coming Soon!**
+**Enrolling Now — FLDFS Provider #648-FL (pending course approval)**
 
-Shamrock Bail Bonds is launching our own state-approved bail bond training program. Learn from experienced professionals who work in the field every day.
+Shamrock Bail Bonds runs Florida pre-licensing programs built by active agents. Choose the self-paced 20-Hour Correspondence Course or the complete 120-Hour Basic Certification Training.
+
+### Live Programs
+- **20-Hour Correspondence Course ($199)** — self-paced online prerequisite with statutory time tracking
+- **120-Hour Pre-Licensing Course ($649)** — live interactive webinars + hybrid cohorts; bundles 1-year Exam Simulator & Bail Mentor AI
+- **Standalone Simulator Pass ($49)** — optional if you only need exam practice (included free with 120-Hour)
 
 ### What to Expect
-- **120-hour state-approved curriculum**
-- **Hands-on training** with real-world scenarios
-- **Mentorship opportunities** with active bail bondsmen
-- **Job placement assistance** for qualified graduates
-- **Flexible scheduling** including evening and weekend options
+- **FLDFS pre-licensing curriculum** (F.S. 648 & 903) pending course approval
+- **Live webinars and hybrid cohorts** for the 120-Hour track
+- **Pearson VUE-style state exam simulator** and Bail Mentor AI
+- **Student portal** at school.shamrockbailbonds.biz
+- **Class calendar** at school.shamrockbailbonds.biz/schedule
 
-### Stay Informed
-Be the first to know when enrollment opens.
-
-**[Sign Up for Updates Button]**
+### Enroll
+**[Visit Bail School →](https://www.shamrockbailbonds.biz/bail-school)** · **[Student Portal →](https://school.shamrockbailbonds.biz)**
 
 ### Contact
 Interested in Shamrock Bail School? Contact us:
@@ -313,10 +318,10 @@ Earnings vary widely based on location, experience, and effort. New agents typic
 **Ready to Start Your Journey?**
 
 ### Subtext
-Sign up to be notified when Shamrock Bail School opens enrollment, or contact us to learn about career opportunities.
+Enroll in the 20-Hour or 120-Hour pre-licensing program at Shamrock Bail School, or contact us about career opportunities.
 
 ### Button 1
-**Get School Updates →**
+**Enroll at Bail School →**
 
 ### Button 2
 **Contact Us**

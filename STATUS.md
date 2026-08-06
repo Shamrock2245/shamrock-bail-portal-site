@@ -1,6 +1,6 @@
 # Portal Site — True Status
 
-> **Last verified:** 2026-07-10  
+> **Last verified:** 2026-08-06  
 > **Repo:** `Shamrock2245/shamrock-bail-portal-site` · branch `main`  
 > **Product URL:** `https://shamrockbailbonds.biz` (Wix)  
 > **Role:** Brand clipboard + GAS factory — **Shamrock’s Platform** factory layer  
@@ -28,7 +28,8 @@
 | Bond portal, Telegram, Shannon, SignNow, multi-channel intake | ✅ Production-shaped |
 | Bail School education management in GAS (`BailSchool_Progress.js`, `BailSchoolPayments.js`) | ✅ |
 | SwipeSimple Gmail poll → unlock `$199`→20hr / `$649`→120hr | ✅ in code |
-| Public Bail School pricing aligned to **$649** (embeds, FAQ, schema) | ✅ July 2026 |
+| Public Bail School catalog aligned to school LMS (`20hr` / `120hr` / simulator) | ✅ August 2026 |
+| Netlify embed hardened (XSS escape, dual postMessage bridge, URL allowlist) | ✅ August 2026 |
 | Hardcoded secrets scrubbed from GAS setup/test tooling | ✅ July 2026 |
 | Location tracker no longer falls back to hardcoded API key | ✅ |
 | Expanded `.gitignore` / `.claspignore` for dumps & secrets | ✅ |
@@ -49,9 +50,9 @@
 |------|--------|
 | **Secret rotation** | Keys that ever lived in git history — see `SECRETS_ROTATION_GUIDE.md` |
 | **GAS redeploy** | ✅ **@445** (leads URL `…CvP-Z`) + **@446** (school Netlify URL `…Qa_DMg`) — 2026-07-10 cert fail-closed + Telegram Palmetto ID; sheet `1yZyk4wXM1kT-Nfjos0CxAMaSFKFdwz_sc6OZhKZ03h8` |
-| **Wix publish** | Velo page FAQ/schema $649 |
-| **Embed host redeploy** | Netlify site serving `bail-school.html` so public site is not stuck on old $699 |
-| **SwipeSimple** | Confirm 120hr link charges **$649.00** |
+| **Wix publish** | Publish Velo `Bail School.sftg6.js` + any editor HTML after git pull (cache-bust `?v=` on embed) |
+| **Embed host redeploy** | ✅ `shamrock-embeds` site (`95e4b170…`) serves updated `bail-school.html` |
+| **SwipeSimple** | Confirm links charge **$199** / **$649** / **$49** |
 | **School sheet ID** | ✅ Script Property `BAIL_SCHOOL_SHEET_ID` + CONFIG fallback set (smoke unlock OK) |
 | **SwipeSimple Gmail poller** | Confirm `setupSwipeSimpleTrigger()` still firing every 5 min |
 | **Certificate Script Properties** | `CERTIFICATE_TEMPLATE_ID` + `CERTIFICATE_FOLDER_ID` (issue_certificate fails closed without them) |
@@ -61,12 +62,15 @@
 
 ## Bail School pricing (source of truth for marketing)
 
-| Course | Display | SwipeSimple unlock amount |
-|--------|---------|---------------------------|
-| 120-Hour Agent Path | **$649** | `$649.00` |
-| 20-Hour correspondence | **$199** (school app) | `$199.00` |
+Canonical catalog: **`shamrock-bail-school/lib/courses.ts`**. Portal embeds must match.
 
-Do not reintroduce **$699** on Agent Path.
+| Course ID | Public name | Display | SwipeSimple unlock |
+|-----------|-------------|---------|---------------------|
+| `20hr` | 20-Hour Correspondence Pre-Licensing | **$199** (list $299) | `$199.00` |
+| `120hr` | 120-Hour Basic Certification Training | **$649** (list $1,200) | `$649.00` |
+| `simulator` | Simulator & Flashcard Pass | **$49** (list $99; free w/ 120hr) | `$49.00` |
+
+**Do not** reintroduce **$699**, or primary CTAs for retired names (*Indemnitor Basics*, *The Agent Path*, *30-Hour Correspondence*, *Bail Bond Masterclass*).
 
 ---
 

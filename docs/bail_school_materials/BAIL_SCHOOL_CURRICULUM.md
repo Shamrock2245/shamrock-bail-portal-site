@@ -1,54 +1,90 @@
 # Bail School & Curriculum Guidelines
 
-This document outlines the operational structure, curriculum tracks, and integrations for the Shamrock Bail Bonds "Bail School" division.
+> **Last updated:** 2026-08-06  
+> **Canonical catalog:** `shamrock-bail-school/lib/courses.ts`  
+> **Public marketing surfaces:** `netlify-embeds/bail-school.html`, Wix `/bail-school`, `school.shamrockbailbonds.biz`
+
+This document outlines the operational structure, live curriculum programs, and integrations for the Shamrock Bail Bonds "Bail School" division.
 
 ## 1. Core Mission of the Bail School
-The school serves a dual purpose:
-1. **Revenue & Education**: Pro-actively educating the community and indemnitors.
-2. **Lead Generation**: Capturing pre-qualified leads who may eventually need services, establishing Shamrock as the ultimate authority in Florida bail.
+
+1. **Pre-licensing education** — Florida DFS-aligned 20-Hour correspondence and 120-Hour basic certification training (pending FLDFS course approval; Provider #648-FL).
+2. **Exam readiness** — Pearson VUE–style State Exam Simulator, Bail Mentor AI, and master flashcards.
+3. **Recruitment pipeline** — Graduate pathway into agency internship / appointment consideration.
 
 ## 2. Platform Integrations
-The school's operational backbone relies on specific automations:
-- **`bail_school_manager` Skill**: The AI skill responsible for scheduling, booking lookups, and triggering certificate generation.
-- **Wix Bookings & Events**: The frontend interface where users register for courses.
-- **SignNow**: Used for generating completion certificates and signing liability waivers.
-- **SwipeSimple**: Handling course registration fees (if applicable).
 
-## 3. The Curriculum Tracks
-*These tracks map directly to the Wix frontend structure under the `/bail-school` routes.*
+| System | Role |
+|--------|------|
+| **`shamrock-bail-school`** | Student LMS at `school.shamrockbailbonds.biz` (dashboards, curriculum, simulator) |
+| **Wix `/bail-school`** | Public marketing page; HtmlComponent iframe → Netlify embed |
+| **Netlify `shamrock-embeds`** | Hosts `bail-school.html` (primary public cards + FAQ) |
+| **SwipeSimple** | Course payment links (`COURSES[*].paymentUrl`) |
+| **GAS `BailSchoolPayments.js`** | Gmail poll → unlock `$199`→`20hr`, `$649`→`120hr` |
+| **SignNow / certificates** | Completion certificate issuance (when Script Properties configured) |
 
-### Track A: Indemnitor Basics
-- **Target Audience**: First-time co-signers, family members of defendants.
-- **Duration**: 45 Minutes (Online / VOD).
-- **Core Topics**:
-  - What does it mean to co-sign? (Liability, Collateral).
-  - The lifecycle of a bond (Arrest to Case Closed).
-  - Understanding court dates and "Failure to Appear" consequences.
-- **Outcome**: Indemnitor receives a "Verified Co-Signer" badge/status in their CRM profile.
+## 3. Live Programs (canonical)
 
-### Track B: The Agent Path (Become a Bondsman)
-- **Target Audience**: Individuals looking to enter the industry. Maps to the `/become-bondsman` CMS page.
-- **Duration**: Multi-day / Hybrid.
-- **Core Topics**:
-  - Florida Statutes 648 and 903.
-  - Premium calculations and transfer fees.
-  - Risk assessment (The 0-100 Score algorithm).
-  - Technology stack (Using the Shamrock Portal).
-- **Outcome**: Certification generation and potential recruitment funnel.
+Do **not** advertise retired names as primary offerings: *Indemnitor Basics*, *The Agent Path*, *30-Hour Correspondence*, *Bail Bond Masterclass*, *Agency Operations*, *Risk Management & Skip Tracing* (as paid primary tracks). Those were educational/future-CE concepts or outdated naming.
 
-### Track C: Risk Management & Skip Tracing
-- **Target Audience**: Existing industry professionals or advanced students.
-- **Duration**: Advanced Seminar.
-- **Core Topics**:
-  - Advanced TLO/IRB cross-referencing.
-  - Understanding county scraper logic ("The Scout").
-  - Digital footprint tracking.
+### Program A — 20-Hour Correspondence Pre-Licensing
 
-## 4. Automation & Handoff
-- **Registration**: When a user registers on Wix, the data MUST map to the `BailSchoolRoster` schema.
-- **Pre-Course Reminders**: "The Concierge" sends SMS/WhatsApp reminders 24 hours and 1 hour before the course begins.
-- **Graduation Webhook**: Upon course completion, GAS generates a PDF certificate via SignNow and emails it automatically. 
+| Field | Value |
+|-------|--------|
+| **IDs** | `20hr` · dashboard `/dashboard/correspondence` |
+| **Price** | **$199** (list $299) |
+| **Format** | Online / self-paced / correspondence |
+| **Audience** | Aspiring agents completing the correspondence prerequisite |
+| **Includes** | ~10 modules, statutory time tracking, quizzes (80% gate), final exam, digital certificate |
+| **Payment** | SwipeSimple 20hr link from `COURSES['20hr'].paymentUrl` |
 
-## 5. UI/UX Rules for the School
-- **Aesthetics**: Premium, academic, and authoritative.
-- **Trust Signals**: Display instructor credentials, course completion metrics, and state compliance badges prominently on the school landing pages.
+### Program B — 120-Hour Basic Certification Training
+
+| Field | Value |
+|-------|--------|
+| **IDs** | `120hr` · dashboard `/dashboard/120hr` |
+| **Price** | **$649** (list $1,200) |
+| **Format** | Live interactive webinars + hybrid cohorts |
+| **Audience** | Aspiring Florida bail bond agents seeking full pre-licensing |
+| **Bundled** | 1-year State Exam Simulator + Bail Mentor AI + flashcards |
+| **Schedule** | `school.shamrockbailbonds.biz/schedule` |
+| **Payment** | SwipeSimple 120hr link from `COURSES['120hr'].paymentUrl` |
+
+### Program C — Simulator & Flashcard Pass (standalone)
+
+| Field | Value |
+|-------|--------|
+| **IDs** | `simulator` · dashboard `/dashboard/simulator` |
+| **Price** | **$49** (list $99) |
+| **Note** | Included free with 120-Hour enrollment |
+
+## 4. Unlock Rules (GAS + LMS)
+
+- **20-Hour payment** unlocks correspondence only.
+- **120-Hour payment** unlocks 120hr **and** 1-year simulator/mentor pass.
+- **Simulator payment** unlocks simulator only.
+- Super-admin / auditor emails may unlock all for curriculum audit.
+
+## 5. Automation & Handoff
+
+- **Interest capture:** Embed newsletter → `postMessage` → Velo `submitBailSchoolInterest`.
+- **Payment unlock:** SwipeSimple receipt email → GAS poller → Student_Auth sheet unlock.
+- **Graduation:** Certificate flow requires `CERTIFICATE_TEMPLATE_ID` + `CERTIFICATE_FOLDER_ID` Script Properties.
+
+## 6. UI/UX Rules for Public Surfaces
+
+- **Primary cards:** 20-Hour + 120-Hour only (simulator may appear as third card, not CE clutter).
+- **Never** lead with free “Indemnitor Basics” or “Agent Path” as product names.
+- **Prices / links** must match `lib/courses.ts`.
+- **Aesthetics:** Premium, academic; trust signals (pass rate, provider #, pending approval) OK when accurate.
+- **Dark-theme embed** design system + height postMessage bridge (`setHeight` + `RESIZE`) must stay intact.
+
+## 7. File map (portal repo)
+
+| Path | Role |
+|------|------|
+| `netlify-embeds/bail-school.html` | Live Netlify embed (deploy to site `shamrock-embeds`) |
+| `src/custom-embeds/bail-school-embed.html` | Mirror of Netlify embed (keep identical) |
+| `src/pages/Bail School.sftg6.js` | Wix page: iframe URL, resize, SEO schema, interest signup |
+| `src/backend/data/bailSchoolCourses.json` | Structured catalog + FAQs for backend/consumers |
+| `content/pages/become-bondsman.md` | CMS content for become-a-bondsman journey |

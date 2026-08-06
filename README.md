@@ -8,10 +8,10 @@ The **statewide Florida billboard** for Shamrock Bail Bonds. This isn't a websit
 
 Built on **Wix Velo** (frontend) + **Google Apps Script** (190+ file backend), powered by **9 AI agents**, serving clients through **5 omni-channel touchpoints** — web, Telegram, phone, mini-apps, and walk-in.
 
-**Current Status:** 🟢 Production bond portal (Wix + GAS) | **Docs truth:** [`STATUS.md`](./STATUS.md) (July 2026)  
+**Current Status:** 🟢 Production bond portal (Wix + GAS) | **Docs truth:** [`STATUS.md`](./STATUS.md) (August 2026)  
 **Related:** Bail School LMS → `shamrock-bail-school` · Auto-CRM → `shamrock-leads`
 
-> **July 2026 note:** Secrets scrubbed on `main`; Bail School public price for 120hr Agent Path is **$649** (SwipeSimple-aligned). Redeploy GAS + Netlify embeds + rotate historical secrets before treating security work as live.
+> **August 2026 note:** Public Bail School surfaces advertise the live LMS catalog only — **20-Hour Correspondence ($199)** and **120-Hour Basic Certification ($649)** (+ optional Simulator $49). Netlify embed: `https://shamrock-embeds.netlify.app/bail-school.html`. Publish Wix after pulling `main` so Velo SEO/FAQ stays in sync.
 
 ---
 

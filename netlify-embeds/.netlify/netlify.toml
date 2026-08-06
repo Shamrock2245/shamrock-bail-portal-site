@@ -1,3 +1,4 @@
+plugins = []
 headers = []
 redirects = []
 
@@ -5,15 +6,9 @@ redirects = []
 
 [functions."*"]
 
-[[plugins]]
-origin = "ui"
-package = "@netlify/plugin-lighthouse"
-
-[plugins.inputs]
-
 [build]
 publish = "/Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/netlify-embeds"
-publishOrigin = "ui"
+publishOrigin = "default"
 base = "/Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/netlify-embeds"
 
 [build.environment]

@@ -134,9 +134,10 @@
 
 ### 🟢 Backlog
 
-- [ ] **Bail School Landing Page**
-  - [ ] High-converting `/bail-school` registration page
-  - [ ] Video integration + auto-issue PDF certificate
+- [x] **Bail School Landing Page** (public catalog live Aug 2026)
+  - [x] `/bail-school` Netlify embed + Wix SEO aligned to 20hr / 120hr / simulator
+  - [ ] Video integration + auto-issue PDF certificate (LMS cert path still ops-gated)
+  - [ ] Wix Editor publish after `main` pull (human)
 - [ ] **Social Media Automation**
   - [ ] Pexels integration for post images
   - [ ] Scheduled social publishing via `SocialPublisher.js`

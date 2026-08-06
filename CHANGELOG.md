@@ -6,6 +6,26 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-08-06 — v2.8.0 — Bail School catalog alignment + embed harden
+
+**Bail School (public marketing):**
+- Replaced retired offerings (*Indemnitor Basics*, *The Agent Path*, *30-Hour Correspondence*, *Masterclass*, etc.) with the live LMS catalog from `shamrock-bail-school/lib/courses.ts`:
+  - **20-Hour Correspondence** — $199 (list $299), SwipeSimple 20hr link, dashboard `/dashboard/correspondence`
+  - **120-Hour Pre-Licensing** — $649 (list $1,200), SwipeSimple 120hr link + schedule CTA, dashboard `/dashboard/120hr`
+  - **Simulator pass** — $49 (list $99; included free with 120hr)
+- Updated `netlify-embeds/bail-school.html` + mirror `src/custom-embeds/bail-school-embed.html` (meta, JSON-LD, FAQ, hero, CTAs).
+- Rewrote `src/backend/data/bailSchoolCourses.json` and Wix `Bail School.sftg6.js` SEO FAQ/Course schema.
+- Updated `content/pages/become-bondsman.md`, Telegram hub school banner, curriculum docs.
+
+**Hardening:**
+- Embed: HTML escape for FAQ/cards, payment URL host allowlist, dual postMessage types (`setHeight`/`RESIZE`, `SUBSCRIBE_EMAIL`/`bailSchoolNotify`), parent ACK for subscribe success/error, email validation.
+- Wix page: cache-busted embed URL (`?v=`), dual message listeners, height clamp, safer email handling.
+- Netlify local link for embeds folder points at site **`shamrock-embeds`** (not telegram).
+
+**Ops:** Netlify `shamrock-embeds` prod redeployed; **Wix publish still required** for Velo page code.
+
+---
+
 ### 2026-07-08 — v2.7.0 — Security scrub, school price alignment, ecosystem docs
 
 **Security:**

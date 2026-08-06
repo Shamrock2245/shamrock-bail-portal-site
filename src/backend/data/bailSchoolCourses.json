@@ -1,143 +1,140 @@
 {
   "courses": [
     {
-      "id": "indemnitor-basics",
-      "title": "Indemnitor Basics",
-      "subtitle": "Understanding Your Role as a Co-Signer",
-      "track": "A",
-      "duration": "45 minutes",
-      "format": "Online / On-Demand",
-      "price": 0,
-      "priceLabel": "Free",
+      "id": "20hr",
+      "title": "20-Hour Correspondence Pre-Licensing",
+      "shortName": "20-Hour Course",
+      "subtitle": "Florida Pre-Licensing Prerequisite",
+      "duration": "20 hours",
+      "format": "Online / Self-Paced / Correspondence",
+      "price": 199,
+      "listPrice": 299,
+      "priceLabel": "$199",
       "level": "Beginner",
-      "audience": "First-time co-signers, family members of defendants",
-      "description": "Everything you need to know before co-signing a bail bond. Learn what liability means, understand the lifecycle of a bond from arrest to case closure, and know your rights and obligations as an indemnitor in the state of Florida.",
-      "longDescription": "When a loved one is arrested, the process can feel overwhelming. This free course walks you through every step — from understanding what a bail bond actually is, to knowing exactly what you're agreeing to when you co-sign. We cover Florida-specific laws, your financial obligations, what happens if the defendant misses court, and how to protect yourself throughout the process. By the end, you'll have the confidence to make informed decisions during one of life's most stressful moments.",
+      "audience": "Aspiring Florida bail bond agents completing the correspondence pre-licensing prerequisite",
+      "description": "The mandatory self-paced prerequisite. 10 interactive modules covering Florida bail bond law, skip tracing, and office management with automated FLDFS statutory time tracking.",
+      "longDescription": "Complete your Florida correspondence pre-licensing hours online at your own pace. Curriculum includes chapter quizzes (80% passing gate), a 50-question comprehensive final exam, official PDF study guides, and an instant official digital certificate. Student dashboard: /dashboard/correspondence.",
       "modules": [
         {
-          "title": "What Is a Bail Bond?",
-          "description": "The basics of bail, bonds, and how the Florida court system sets bail amounts.",
-          "duration": "8 min"
+          "title": "Bail as Surety & Criminal Defendant's Bond",
+          "description": "Constitutional foundations, Florida Statute 903, the tripartite contract, and core bond mechanics."
         },
         {
-          "title": "What Does It Mean to Co-Sign?",
-          "description": "Your legal obligations as an indemnitor — liability, collateral, and financial responsibility.",
-          "duration": "8 min"
+          "title": "Licensing, Regulation & Professional Conduct",
+          "description": "F.S. 648 agent licensing rules, DFS oversight, and ethical obligations."
         },
         {
-          "title": "The Lifecycle of a Bond",
-          "description": "Follow a bond from arrest to booking, bail hearing, release, court appearances, and case closure.",
-          "duration": "10 min"
+          "title": "Premiums, Collateral & Trust Accounting",
+          "description": "Filed rates, collateral handling, and fiduciary record-keeping."
         },
         {
-          "title": "Court Dates & Failure to Appear",
-          "description": "What happens when a defendant misses court — warrants, bond forfeiture, and your exposure.",
-          "duration": "7 min"
+          "title": "Court Process & First Appearance",
+          "description": "Arrest through first appearance, bond conditions, and court calendars."
         },
         {
-          "title": "Your Rights as an Indemnitor",
-          "description": "How to surrender a defendant, request bond cancellation, and protect your collateral.",
-          "duration": "6 min"
-        },
-        {
-          "title": "Payment Plans & Financial Obligations",
-          "description": "Understanding the 10% premium, payment plan terms, and what happens if payments are missed.",
-          "duration": "6 min"
-        }
-      ],
-      "outcome": "Verified Co-Signer status in your Shamrock client profile",
-      "icon": "📋",
-      "color": "#22c55e",
-      "cta": "Start Free Course",
-      "ctaUrl": "/contact",
-      "requirements": [
-        "No prior knowledge required",
-        "Must be 18 years or older",
-        "Valid email address for certificate delivery"
-      ],
-      "certificate": true,
-      "certificateTitle": "Shamrock Bail Bonds — Verified Co-Signer"
-    },
-    {
-      "id": "agent-path",
-      "title": "The Agent Path",
-      "subtitle": "Become a Licensed Florida Bail Bond Agent",
-      "track": "B",
-      "duration": "120+ hours (Multi-day)",
-      "format": "Hybrid (In-Person + Online)",
-      "price": null,
-      "priceLabel": "Contact for Pricing",
-      "level": "Professional",
-      "audience": "Aspiring bail bond agents seeking Florida licensure",
-      "description": "Comprehensive training program covering everything you need to become a licensed Limited Surety Agent in Florida. Covers FL Statutes 648 and 903, premium calculations, risk assessment, ethics, and hands-on technology training with the Shamrock Portal.",
-      "longDescription": "This is the real deal — the full path from civilian to licensed bail bond agent in the state of Florida. Our hybrid program combines classroom instruction with hands-on experience, covering every aspect of the bail bond industry. You'll master Florida's legal framework (Statutes 648 and 903), learn premium calculations, understand risk assessment algorithms, and get certified on the technology that powers Shamrock's statewide operations. Upon completion, you'll be prepared for the state exam and eligible for a 1-year internship placement at Shamrock Bail Bonds.",
-      "modules": [
-        {
-          "title": "Florida Statutes 648 & 903",
-          "description": "The complete legal framework governing bail bonds in Florida — licensing requirements, agent obligations, and regulatory compliance.",
-          "duration": "16 hours"
-        },
-        {
-          "title": "Bail Bond Premium Calculations",
-          "description": "Master the $100/charge minimum, 10% rule, transfer fees, and county-specific pricing strategies.",
-          "duration": "8 hours"
-        },
-        {
-          "title": "Risk Assessment & Underwriting",
-          "description": "Learn Shamrock's 0–100 risk scoring algorithm, flight risk indicators, and collateral evaluation techniques.",
-          "duration": "12 hours"
-        },
-        {
-          "title": "Ethics & DFS Compliance",
-          "description": "Florida Department of Financial Services compliance requirements, ethical obligations, and professional conduct standards.",
-          "duration": "8 hours"
-        },
-        {
-          "title": "Criminal Justice Procedures",
-          "description": "Understanding arrest, booking, arraignment, bond hearings, and the court system across Florida's 20 judicial circuits.",
-          "duration": "12 hours"
-        },
-        {
-          "title": "Underwriting & Collateral Evaluation",
-          "description": "Assessing indemnitor financial stability, collateral types and valuation, and managing agency risk exposure.",
-          "duration": "8 hours"
+          "title": "Underwriting & Risk Assessment",
+          "description": "Flight-risk factors, indemnitor evaluation, and agency underwriting standards."
         },
         {
           "title": "Skip Tracing Fundamentals",
-          "description": "Basic investigation techniques, database searches, and defendant location strategies within legal boundaries.",
-          "duration": "8 hours"
+          "description": "Lawful location techniques and recovery basics within statutory limits."
         },
         {
-          "title": "Technology: The Shamrock Portal",
-          "description": "Hands-on training with SignNow digital paperwork, the intake pipeline, CRM tools, and mobile-first client management.",
-          "duration": "8 hours"
+          "title": "Forfeiture, Estreatures & Surrender",
+          "description": "FTA timelines, forfeiture defense, and defendant surrender procedures."
         },
         {
-          "title": "Court Procedures & Bond Forfeiture Prevention",
-          "description": "Managing court dates, forfeiture timelines, motion to set aside, and estreature defense strategies.",
-          "duration": "12 hours"
+          "title": "Agency Operations & Compliance",
+          "description": "Office management, reporting, and DFS compliance hygiene."
+        },
+        {
+          "title": "Technology & Client Management",
+          "description": "Digital paperwork, intake workflows, and modern agency tools."
+        },
+        {
+          "title": "Exam Review & Certificate",
+          "description": "Comprehensive final review, exam strategies, and certificate issuance."
+        }
+      ],
+      "outcome": "Official digital certificate of completion for the 20-hour correspondence pre-licensing course",
+      "icon": "📚",
+      "color": "#22c55e",
+      "cta": "Enroll — $199",
+      "ctaUrl": "https://swipesimple.com/links/lnk_e7afc13b2c48a8f3a08ed7d8059b6a51",
+      "dashboardPath": "/dashboard/correspondence",
+      "paymentUrl": "https://swipesimple.com/links/lnk_e7afc13b2c48a8f3a08ed7d8059b6a51",
+      "requirements": [
+        "Must be at least 18 years old",
+        "High school diploma or GED recommended",
+        "Valid email for student portal access"
+      ],
+      "certificate": true,
+      "certificateTitle": "Shamrock Bail School — 20-Hour Correspondence Completion"
+    },
+    {
+      "id": "120hr",
+      "title": "120-Hour Basic Certification Training",
+      "shortName": "120-Hour Course",
+      "subtitle": "Pre-Licensing Course + Simulator Bundle",
+      "duration": "120 hours",
+      "format": "Live interactive webinars + hybrid",
+      "price": 649,
+      "listPrice": 1200,
+      "priceLabel": "$649",
+      "level": "Professional",
+      "audience": "Aspiring bail bond agents seeking Florida pre-licensing and state exam readiness",
+      "description": "The complete pre-licensing masterclass. Live interactive webinars led by veteran agents, bundled with 1-year FREE access to the Pearson VUE State Exam Simulator and Bail Mentor AI.",
+      "longDescription": "Full 120-hour basic certification training covering Florida Statutes 648 and 903, underwriting, ethics, court procedure, skip tracing, and exam preparation. Includes live cohort webinars, printable study guides, 122 master flashcards, and a 1-year State Exam Simulator + Bail Mentor AI pass. Student dashboard: /dashboard/120hr. Class calendar: school.shamrockbailbonds.biz/schedule.",
+      "modules": [
+        {
+          "title": "Criminal Justice System & Legal Framework",
+          "description": "Constitutional foundations, court structure, and pretrial release mechanics."
+        },
+        {
+          "title": "Florida Statutes 648 & 903",
+          "description": "Licensing law, agent obligations, and bail statutory framework."
+        },
+        {
+          "title": "Premium Calculations & Filed Rates",
+          "description": "$100/charge minimum, 10% rule, transfer fees, and county pricing."
+        },
+        {
+          "title": "Risk Assessment & Underwriting",
+          "description": "Flight-risk scoring, collateral evaluation, and agency risk controls."
+        },
+        {
+          "title": "Ethics & DFS Compliance",
+          "description": "Professional conduct and Florida DFS regulatory requirements."
+        },
+        {
+          "title": "Court Procedures & Bond Forfeiture",
+          "description": "Court calendars, FTA, forfeiture timelines, and estreature defense."
+        },
+        {
+          "title": "Skip Tracing & Recovery Basics",
+          "description": "Lawful investigation techniques and recovery boundaries."
+        },
+        {
+          "title": "Agency Technology & Operations",
+          "description": "Digital intake, paperwork, CRM, and modern agency workflows."
         },
         {
           "title": "State Exam Preparation",
-          "description": "Comprehensive review sessions, practice tests, study guides, and test-taking strategies for the FL DFS exam.",
-          "duration": "16 hours"
+          "description": "Pearson VUE-style practice, domain review, and test strategy."
         },
         {
-          "title": "1-Year Internship Requirements",
-          "description": "Understanding the temporary license period, supervision requirements, and the path to full licensure.",
-          "duration": "8 hours"
-        },
-        {
-          "title": "Building Your Career",
-          "description": "From temporary to full license — business development, client acquisition, agency partnerships, and career advancement.",
-          "duration": "4 hours"
+          "title": "Internship Path & Career Launch",
+          "description": "Temporary license period, supervision, and career advancement."
         }
       ],
-      "outcome": "State exam readiness + internship placement opportunity at Shamrock Bail Bonds",
+      "outcome": "FLDFS classroom certification readiness + 1-year Exam Simulator & Bail Mentor AI access",
       "icon": "🎓",
-      "color": "#6366f1",
-      "cta": "Apply Now",
-      "ctaUrl": "/contact",
+      "color": "#f97316",
+      "cta": "Enroll — $649",
+      "ctaUrl": "https://swipesimple.com/links/lnk_d26efb5d83e121cdf8354402893b9c96",
+      "dashboardPath": "/dashboard/120hr",
+      "paymentUrl": "https://swipesimple.com/links/lnk_d26efb5d83e121cdf8354402893b9c96",
+      "scheduleUrl": "https://school.shamrockbailbonds.biz/schedule",
       "requirements": [
         "Must be at least 18 years old",
         "U.S. citizen or legal resident",
@@ -146,115 +143,80 @@
         "Valid Florida driver's license or state ID"
       ],
       "certificate": true,
-      "certificateTitle": "Shamrock Bail Bonds — Agent Path Completion Certificate"
+      "certificateTitle": "Shamrock Bail School — 120-Hour Basic Certification",
+      "bundled": [
+        "1-year State Exam Simulator",
+        "1-year Bail Mentor AI",
+        "122 Master Flashcards"
+      ]
     },
     {
-      "id": "risk-management",
-      "title": "Risk Management & Skip Tracing",
-      "subtitle": "Advanced Techniques for Industry Professionals",
-      "track": "C",
-      "duration": "Full-day seminar (8 hours)",
-      "format": "In-Person / Live Zoom",
-      "price": null,
-      "priceLabel": "Contact for Pricing",
-      "level": "Advanced",
-      "audience": "Licensed agents, recovery professionals, agency owners",
-      "description": "Advanced seminar covering TLO/IRB cross-referencing, digital footprint tracking, county scraper intelligence, and modern skip tracing techniques used by Shamrock's technology-driven recovery operations.",
-      "longDescription": "This isn't your typical CE course. This advanced seminar pulls back the curtain on the technology and investigative techniques that power Shamrock's statewide operations. You'll learn how we use automated county jail scrapers to detect new arrests in real-time, cross-reference databases like TLO and IRB for deep background analysis, track digital footprints across social media, and manage GPS/check-in monitoring systems. This is the future of the bail bond industry — and you'll learn it here first.",
-      "modules": [
-        {
-          "title": "Advanced TLO/IRB Cross-Referencing",
-          "description": "Deep-dive into professional background investigation databases — search strategies, red flag identification, and report interpretation.",
-          "duration": "90 min"
-        },
-        {
-          "title": "Digital Footprint Analysis & OSINT",
-          "description": "Open-source intelligence techniques for locating defendants — social media analysis, public records, and digital trail mapping.",
-          "duration": "90 min"
-        },
-        {
-          "title": "County Scraper Intelligence",
-          "description": "How Shamrock's 'Scout' system automatically monitors jail rosters across 7+ Florida counties to detect new arrests and generate leads.",
-          "duration": "60 min"
-        },
-        {
-          "title": "Social Media Investigation",
-          "description": "Legal and ethical frameworks for social media monitoring, geo-tag analysis, and behavioral pattern recognition.",
-          "duration": "60 min"
-        },
-        {
-          "title": "GPS & Check-In Systems",
-          "description": "Administering defendant monitoring programs — GPS tracking, selfie verification, compliance check-ins, and violation protocols.",
-          "duration": "45 min"
-        },
-        {
-          "title": "Defendant Risk Re-Evaluation",
-          "description": "Dynamic risk scoring — when and how to escalate cases, revoke bonds, or recommend surrender based on changing circumstances.",
-          "duration": "45 min"
-        },
-        {
-          "title": "Bond Forfeiture Prevention & Recovery",
-          "description": "Proactive strategies to prevent forfeiture — court reminder systems, defendant engagement, and recovery action plans.",
-          "duration": "45 min"
-        },
-        {
-          "title": "Legal Boundaries",
-          "description": "What you can and can't do — Florida statutes on bail recovery, privacy laws, trespassing, and use of force limitations.",
-          "duration": "45 min"
-        }
-      ],
-      "outcome": "Advanced Risk Management certification from Shamrock Bail Bonds",
-      "icon": "🔍",
-      "color": "#f59e0b",
-      "cta": "Reserve Your Seat",
-      "ctaUrl": "/contact",
+      "id": "simulator",
+      "title": "Bail School Flashcards & State Test Simulator Access",
+      "shortName": "Simulator & Flashcard Pass",
+      "subtitle": "Standalone 1-Year Pass",
+      "duration": "1 year access",
+      "format": "Online",
+      "price": 49,
+      "listPrice": 99,
+      "priceLabel": "$49",
+      "level": "All Levels",
+      "audience": "Students who need exam practice without 120-hour tuition (included free with 120hr enrollment)",
+      "description": "Standalone 1-year pass for Bail Mentor AI, Pearson VUE state exam simulator, and 122 master flashcards. Included free with the 120-Hour Course.",
+      "longDescription": "Unlimited retakes of the timed state test simulator, statutory analysis explanations, score tracking, and the full flashcard deck. Student dashboard: /dashboard/simulator.",
+      "modules": [],
+      "outcome": "1-year access to Bail Mentor AI, state exam simulator, and flashcards",
+      "icon": "✨",
+      "color": "#a855f7",
+      "cta": "Get Simulator Pass — $49",
+      "ctaUrl": "https://swipesimple.com/links/lnk_25a615b543a1260805bbbe3001a24dea",
+      "dashboardPath": "/dashboard/simulator",
+      "paymentUrl": "https://swipesimple.com/links/lnk_25a615b543a1260805bbbe3001a24dea",
       "requirements": [
-        "Active Florida bail bond agent license (or equivalent)",
-        "Minimum 1 year of industry experience recommended",
-        "Laptop for hands-on exercises"
+        "Valid email for student portal access"
       ],
-      "certificate": true,
-      "certificateTitle": "Shamrock Bail Bonds — Advanced Risk Management"
+      "certificate": false,
+      "includedWith": "120hr"
     }
   ],
   "faqs": [
     {
       "question": "What is Shamrock Bail School?",
-      "answer": "Shamrock Bail School is the educational division of Shamrock Bail Bonds, LLC — Florida's most technology-driven bail bond agency. We offer courses ranging from free co-signer education to comprehensive professional agent training programs, all designed to bring transparency and professionalism to the bail bond industry."
+      "answer": "Shamrock Bail School is the education division of Shamrock Bail Bonds. We offer Florida pre-licensing programs: a 20-Hour Correspondence Course ($199) and a 120-Hour Basic Certification Training ($649) that includes a 1-year State Exam Simulator and Bail Mentor AI pass."
     },
     {
-      "question": "Do I need any prior experience to take a course?",
-      "answer": "No! Our Indemnitor Basics course (Track A) is designed for complete beginners — anyone who needs to understand the bail bond process. The Agent Path (Track B) requires a high school diploma but no prior industry experience. Only the Risk Management seminar (Track C) is designed for existing industry professionals."
+      "question": "Do I need any prior experience?",
+      "answer": "No prior industry experience is required. Both programs are designed for new students. Florida licensure still requires age 18+, a high school diploma or GED, U.S. citizenship or legal residency, and a clean background check."
     },
     {
-      "question": "How much does the 120-hour pre-licensing course cost?",
-      "answer": "Contact us at (239) 332-2245 for current pricing on our Agent Path program. We offer competitive rates and may have financing options available for qualified applicants."
+      "question": "How much does the 120-hour course cost?",
+      "answer": "The 120-Hour Pre-Licensing Course is $649 (list $1,200) via secure SwipeSimple checkout. Tuition includes 1-year access to the State Exam Simulator and Bail Mentor AI."
     },
     {
-      "question": "Is the Indemnitor Basics course really free?",
-      "answer": "Yes, 100% free. We believe that educated co-signers make better decisions and have smoother experiences. When you understand the process, everyone benefits — you, your loved one, and the justice system."
+      "question": "How much is the 20-Hour Correspondence Course?",
+      "answer": "The 20-Hour Correspondence Pre-Licensing Course is $199 (list $299). It is fully online and self-paced with automated FLDFS statutory time tracking."
     },
     {
-      "question": "Do I get a certificate after completing a course?",
-      "answer": "Yes! All three tracks include a digital certificate of completion. The Indemnitor Basics course awards a 'Verified Co-Signer' status. The Agent Path provides a completion certificate recognized for state exam preparation. The Risk Management seminar awards an Advanced Certification."
+      "question": "Do I get a certificate?",
+      "answer": "Yes. Completing either pre-licensing course provides an official digital certificate. The 120-Hour program prepares you to sit for the Florida DFS state licensing exam."
     },
     {
       "question": "Can I take courses from anywhere in Florida?",
-      "answer": "Yes. Our Indemnitor Basics course is fully online and on-demand — take it from anywhere, anytime. The Agent Path is a hybrid program with both online and in-person components at our Fort Myers location. The Risk Management seminar is available both in-person and via live Zoom."
+      "answer": "Yes. The 20-Hour Correspondence Course is fully online and self-paced. The 120-Hour Course uses live interactive webinars and hybrid cohorts."
     },
     {
-      "question": "Will completing the Agent Path guarantee me a job?",
-      "answer": "While we cannot guarantee employment, graduates of the Agent Path program are eligible for internship placement consideration at Shamrock Bail Bonds. Our program is specifically designed to prepare you for both the state exam and real-world agency operations."
+      "question": "Is the State Exam Simulator included?",
+      "answer": "Yes. The 120-Hour Course includes a free 1-year Bail Mentor AI and State Exam Simulator pass. A standalone simulator pass is also available for $49."
     },
     {
       "question": "How do I become a licensed bail bondsman in Florida?",
-      "answer": "You must: (1) Be at least 18 and a US citizen, (2) Complete a state-approved 120-hour pre-licensing course, (3) Pass the Florida DFS state exam, (4) Clear a Level 2 FDLE background check, and (5) Complete a 1-year supervised internship under a licensed agency. Our Agent Path program covers steps 1-4 and can facilitate step 5."
+      "answer": "Florida requires completing a state-approved 120-hour pre-licensing course, passing the DFS state exam, obtaining a surety appointment, and completing a supervised internship. Our 120-Hour Basic Certification Training covers the pre-licensing curriculum and exam prep."
     }
   ],
   "stats": {
     "studentsServed": "500+",
-    "courseCompletionRate": "94%",
-    "stateExamPassRate": "89%",
+    "firstTryPassRate": "98.4%",
+    "livePrograms": "2",
     "yearsTeaching": "13+"
   }
 }
