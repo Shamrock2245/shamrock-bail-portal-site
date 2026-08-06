@@ -144,6 +144,7 @@ function initCriticalUI() {
     setupFirstAppearanceNavLink();
     checkAuthStatus();
     setupFooterPaymentLink();
+    setupBailSchoolRegistrationBtn();
     setupMobilePaymentBtn();
     setupFooterDynamic();
 }
@@ -157,6 +158,37 @@ function setupFooterPaymentLink() {
             });
         }
     } catch (e) { /* non-fatal */ }
+}
+
+/**
+ * Footer "Bail School Registration" — live LMS schedule + enroll.
+ * Editor ID: #bailSchoolRegistrationBtn
+ */
+function setupBailSchoolRegistrationBtn() {
+    const REGISTER_URL = 'https://school.shamrockbailbonds.biz/schedule#register';
+    const ids = [
+        '#bailSchoolRegistrationBtn',
+        '#footerBailSchoolBtn',
+        '#footerLinkBailSchool'
+    ];
+    ids.forEach(function (id) {
+        try {
+            const el = $w(id);
+            if (!el || typeof el.onClick !== 'function') return;
+            try { el.link = ''; } catch (e) { /* may be button not link */ }
+            el.onClick(function () {
+                try {
+                    trackEvent('bail_school_registration_clicked', {
+                        location: 'footer',
+                        selector: id,
+                        destination: REGISTER_URL
+                    });
+                } catch (e) { /* non-fatal */ }
+                wixLocation.to(REGISTER_URL);
+            });
+            console.log('[Footer] Wired ' + id + ' → ' + REGISTER_URL);
+        } catch (e) { /* element not on this page */ }
+    });
 }
 
 function setupMobilePaymentBtn() {

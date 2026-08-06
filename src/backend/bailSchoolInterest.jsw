@@ -3,52 +3,99 @@ import wixData from 'wix-data';
 import { trackEvent } from 'backend/analytics';
 
 /**
- * Submits bail school interest by creating/updating a Wix Contact and tracking the event.
- * @param {string} email - The email address to register.
- * @returns {Promise<Object>} - Success status and contact ID.
+ * Submits Bail School interest: creates/updates a Wix Contact + optional CMS row.
+ *
+ * Accepts either:
+ *   submitBailSchoolInterest('person@example.com')
+ *   submitBailSchoolInterest({ email, name, source })
+ *
+ * Always returns { success, ok, contactId?, message? } so page code can rely on either flag.
+ *
+ * @param {string|{email?: string, name?: string, source?: string}} input
+ * @returns {Promise<{success: boolean, ok: boolean, contactId?: string, message?: string}>}
  */
-export async function submitBailSchoolInterest(email) {
-    const normalized = (email || '').trim().toLowerCase();
+export async function submitBailSchoolInterest(input) {
+    let email = '';
+    let name = '';
+    let source = 'Bail School page';
 
-    // Basic validation
-    if (!normalized || !normalized.includes('@')) {
-        throw new Error('Invalid email format');
+    if (typeof input === 'string') {
+        email = input;
+    } else if (input && typeof input === 'object') {
+        email = input.email || input.Email || '';
+        name = input.name || input.Name || '';
+        source = input.source || source;
+    }
+
+    const normalized = String(email || '').trim().toLowerCase();
+
+    if (!normalized || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+        return {
+            success: false,
+            ok: false,
+            message: 'Please enter a valid email address'
+        };
     }
 
     try {
-        // 1. Create or update contact
-        const contactId = await wixCrmBackend.contacts.appendOrCreateContact({
+        const cleanName = String(name || '').trim();
+        // Shape matches existing working call sites across the portal (string emails array)
+        const contactInfo = {
             emails: [normalized],
             labels: ['Bail School Interest']
-        });
-
-        // 2. Write to BailSchoolSignups collection (Persistence)
-        try {
-            await wixData.insert('BailSchoolSignups', {
-                email: normalized,
-                contactId: contactId,
-                signupDate: new Date(),
-                source: 'How to Become a Bondsman'
-            });
-        } catch (dbError) {
-            console.warn('Failed to insert into BailSchoolSignups collection:', dbError);
-            // Don't fail the whole request if just the collection insert fails, 
-            // as contact creation succeeded.
+        };
+        if (cleanName) {
+            const parts = cleanName.split(/\s+/);
+            contactInfo.name = {
+                first: parts[0] || cleanName,
+                last: parts.slice(1).join(' ') || ''
+            };
         }
 
-        // 3. Track Event (Robustness feature)
-        await trackEvent('bail_school_signup', {
-            email: normalized,
-            contactId,
-            page: 'How to Become a Bondsman'
-        });
+        // appendOrCreateContact may return contactId string or { contactId }
+        const contactResult = await wixCrmBackend.contacts.appendOrCreateContact(contactInfo);
+        const contactId =
+            typeof contactResult === 'string'
+                ? contactResult
+                : (contactResult && (contactResult.contactId || contactResult._id)) || null;
+
+        try {
+            await wixData.insert('BailSchoolSignups', {
+                title: normalized,
+                email: normalized,
+                name: cleanName || null,
+                contactId: contactId,
+                signupDate: new Date(),
+                source: source
+            });
+        } catch (dbError) {
+            // Contact already created — collection may be missing or schema-mismatched.
+            console.warn('BailSchoolSignups insert failed (contact still saved):', dbError);
+        }
+
+        try {
+            await trackEvent('bail_school_signup', {
+                email: normalized,
+                contactId,
+                page: source,
+                name: cleanName || undefined
+            });
+        } catch (trackErr) {
+            console.warn('bail_school_signup trackEvent failed:', trackErr);
+        }
 
         return {
+            success: true,
             ok: true,
-            contactId
+            contactId: contactId || undefined,
+            message: 'Subscribed'
         };
     } catch (error) {
         console.error('submitBailSchoolInterest error:', error);
-        throw error;
+        return {
+            success: false,
+            ok: false,
+            message: 'Server error. Please try again or call (239) 332-2245.'
+        };
     }
 }

@@ -107,6 +107,27 @@ const FLORIDA_COUNTIES = [
 const DROPDOWN_IDS    = ['#comp-mjiotw4a', '#countySelector', '#countyDropdown'];
 const GET_STARTED_IDS = ['#comp-mjip0apd', '#getStartedButton', '#getStartedBtn'];
 
+/** Canonical destinations — keep labels and URLs honest. */
+const DEST = {
+    phone: 'tel:+12393322245',
+    phoneSpanish: 'tel:+12399550301',
+    /** Open bot INSIDE Telegram (Mini Apps launch from the bot menu, not the public web). */
+    telegramBot: 'https://t.me/ShamrockBail_bot',
+    telegramStart: function (payload) {
+        const p = String(payload || '').replace(/[^a-zA-Z0-9_]/g, '').slice(0, 64);
+        return p ? 'https://t.me/ShamrockBail_bot?start=' + encodeURIComponent(p) : DEST.telegramBot;
+    },
+    bailSchool: '/bail-school',
+    bailSchoolSchedule: 'https://school.shamrockbailbonds.biz/schedule#calendar',
+    bailSchoolRegister: 'https://school.shamrockbailbonds.biz/schedule#register',
+    becomeBondsman: '/how-to-become-a-bondsman',
+    howBailWorks: '/how-bail-works',
+    firstAppearance: '/first-appearance',
+    contact: '/contact',
+    portal: '/portal-landing',
+    blog: '/blog'
+};
+
 // ---------------------------------------------------------------------------
 // onReady
 // ---------------------------------------------------------------------------
@@ -124,6 +145,7 @@ $w.onReady(function () {
     // Above-the-fold setup
     setupHeroSection();
     setupCTAButtons();
+    setupBailSchoolButtons();
 
     // Load county dropdown immediately -- data is inline, no async needed
     loadCountyDropdown();
@@ -131,43 +153,121 @@ $w.onReady(function () {
     // Testimonials: register viewport trigger; data loads on scroll, not on page load
     setTimeout(() => { initTestimonials(); }, isMobile ? 1500 : 800);
 
-    // Telegram Hub analytics bridge (non-blocking)
+    // Telegram Hub analytics + height + Mini-App deep-link policy
     initTelegramHubSection();
 });
+
+// ---------------------------------------------------------------------------
+// Safe helpers
+// ---------------------------------------------------------------------------
+
+function safeOnClick(selector, handler) {
+    try {
+        const el = $w(selector);
+        if (!el || typeof el.onClick !== 'function') return false;
+        el.onClick(function () {
+            try { handler(el); } catch (err) {
+                console.error('[Home] click failed for ' + selector, err);
+            }
+        });
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function goTo(url, eventName, eventData) {
+    if (eventName) trackEvent(eventName, eventData || {});
+    if (!url) return;
+    wixLocation.to(url);
+}
 
 // ---------------------------------------------------------------------------
 // Hero + CTA
 // ---------------------------------------------------------------------------
 
 function setupHeroSection() {
-    try {
-        const heroBtn = $w('#heroCallBtn');
-        if (heroBtn && heroBtn.id) {
-            heroBtn.onClick(() => { scrollToCountySelector(); });
-            try { heroBtn.customClassList.add('voice-trigger'); } catch (e) {}
-        }
-    } catch (e) { /* non-fatal */ }
+    // Hero primary CTA: start county selection (conversion funnel)
+    if (!safeOnClick('#heroCallBtn', function () {
+        trackEvent('hero_cta_clicked', { location: 'hero', action: 'scroll_to_county' });
+        scrollToCountySelector();
+    })) { /* optional */ }
+
+    // Explicit phone CTAs (IDs that mean "call")
+    ['#callNowBtn', '#heroPhoneBtn', '#headerCallBtn', '#stickyCallBtn', '#phoneCtaBtn'].forEach(function (id) {
+        safeOnClick(id, function () {
+            goTo(DEST.phone, 'phone_click', { location: 'home', selector: id });
+        });
+    });
 }
 
 function setupCTAButtons() {
-    try {
-        const spanishBtn = $w('#callNowSpanishBtn');
-        if (spanishBtn && spanishBtn.id) {
-            spanishBtn.onClick(() => {
-                trackEvent('spanish_call_clicked', { location: 'hero_section' });
-                wixLocation.to('tel:12399550301');
-            });
-            try { spanishBtn.customClassList.add('voice-trigger'); } catch (e) {}
-        }
-    } catch (e) { /* non-fatal */ }
+    // Spanish line
+    safeOnClick('#callNowSpanishBtn', function () {
+        goTo(DEST.phoneSpanish, 'spanish_call_clicked', { location: 'hero_section' });
+    });
 
-    try {
-        const telegramBtn = $w('#telegramBotBtn');
-        if (telegramBtn && telegramBtn.id) {
-            telegramBtn.onClick(() => { trackEvent('telegram_bot_clicked', { location: 'home_page' }); });
-            try { telegramBtn.customClassList.add('voice-trigger'); } catch (e) {}
-        }
-    } catch (e) { /* non-fatal */ }
+    // Telegram bot — MUST open Telegram (Mini Apps live only inside the bot)
+    safeOnClick('#telegramBotBtn', function () {
+        goTo(DEST.telegramBot, 'telegram_bot_clicked', { location: 'home_page' });
+    });
+    safeOnClick('#openTelegramBtn', function () {
+        goTo(DEST.telegramBot, 'telegram_bot_clicked', { location: 'home_page' });
+    });
+    safeOnClick('#telegramCtaBtn', function () {
+        goTo(DEST.telegramBot, 'telegram_bot_clicked', { location: 'home_page' });
+    });
+
+    // Other common homepage CTAs
+    safeOnClick('#startOnlineBtn', function () {
+        goTo(DEST.portal, 'start_online_clicked', { location: 'home' });
+    });
+    safeOnClick('#howBailWorksBtn', function () {
+        goTo(DEST.howBailWorks, 'how_bail_works_clicked', { location: 'home' });
+    });
+    safeOnClick('#firstAppearanceBtn', function () {
+        goTo(DEST.firstAppearance, 'first_appearance_clicked', { location: 'home' });
+    });
+    safeOnClick('#contactUsBtn', function () {
+        goTo(DEST.contact, 'contact_clicked', { location: 'home' });
+    });
+    safeOnClick('#blogBtn', function () {
+        goTo(DEST.blog, 'blog_clicked', { location: 'home' });
+    });
+}
+
+/**
+ * Bail School CTAs on the homepage + any local registration control.
+ * Footer #bailSchoolRegistrationBtn is also wired in masterPage.js (global).
+ */
+function setupBailSchoolButtons() {
+    // Explicit registration / schedule CTAs → live LMS schedule (upcoming cohorts + enroll)
+    const scheduleIds = [
+        '#bailSchoolRegistrationBtn',
+        '#bailSchoolScheduleBtn',
+        '#bailSchoolRegisterBtn',
+        '#viewBailSchoolScheduleBtn'
+    ];
+    scheduleIds.forEach(function (id) {
+        safeOnClick(id, function () {
+            goTo(DEST.bailSchoolRegister, 'bail_school_registration_clicked', {
+                location: 'home',
+                selector: id,
+                destination: DEST.bailSchoolRegister
+            });
+        });
+    });
+
+    // Marketing / hub page
+    ['#bailSchoolBtn', '#goToBailSchoolBtn', '#navBailSchool'].forEach(function (id) {
+        safeOnClick(id, function () {
+            goTo(DEST.bailSchool, 'bail_school_clicked', { location: 'home', selector: id });
+        });
+    });
+
+    safeOnClick('#becomeBondsmanBtn', function () {
+        goTo(DEST.becomeBondsman, 'become_bondsman_clicked', { location: 'home' });
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -703,7 +803,10 @@ function setupOrganizationSchema() {
 }
 
 // ---------------------------------------------------------------------------
-// Telegram Hub Section -- Analytics Bridge (no backend call)
+// Telegram Hub Section — analytics + iframe height + Telegram-only Mini Apps
+// ---------------------------------------------------------------------------
+// Mini Apps must open INSIDE Telegram (via t.me deep links). Public browsers
+// never open shamrock-telegram.netlify.app directly from this hub.
 // ---------------------------------------------------------------------------
 
 function initTelegramHubSection() {
@@ -712,9 +815,17 @@ function initTelegramHubSection() {
         if (embed && embed.onMessage) {
             embed.onMessage(handleTelegramHubMessage);
         }
+        // Ensure embed points at the hub HTML (if URL mode is used)
+        try {
+            if (embed && typeof embed.src === 'string') {
+                // Leave editor-configured src if already set; only log
+                console.log('[TelegramHub] embed ready');
+            }
+        } catch (e) { /* non-fatal */ }
     } catch (e) { /* #telegramHubEmbed not on page */ }
+
     try {
-        $w('#telegramHubSection').onViewportEnter(function() {
+        $w('#telegramHubSection').onViewportEnter(function () {
             trackEvent('TelegramHub_SectionVisible', { section: 'telegram_hub' });
         });
     } catch (e) { /* element may not exist */ }
@@ -724,10 +835,51 @@ function handleTelegramHubMessage(event) {
     let data;
     try {
         data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-    } catch (e) { return; }
-    if (!data) return;
+    } catch (e) {
+        return;
+    }
+    if (!data || !data.type) return;
 
-    if (data.type === 'shamrock_iframe_height' && data.height) {
+    // Auto-resize HtmlComponent to content height
+    if (
+        (data.type === 'shamrock_iframe_height' || data.type === 'setHeight' || data.type === 'RESIZE') &&
+        data.height
+    ) {
+        const h = Number(data.height);
+        if (h && isFinite(h)) {
+            try {
+                const embed = $w('#telegramHubEmbed');
+                if (embed) {
+                    embed.style.height = Math.min(Math.max(Math.ceil(h), 400), 12000) + 'px';
+                }
+            } catch (e) { /* non-fatal */ }
+        }
+        return;
+    }
+
+    // Embed requests open Mini App — always via Telegram deep link (never bare Netlify URL)
+    if (data.type === 'open_telegram_miniapp' || data.type === 'OPEN_TELEGRAM_MINIAPP') {
+        const app = String(data.app || data.label || 'hub').toLowerCase();
+        const startMap = {
+            hub: 'miniapps',
+            miniapps: 'miniapps',
+            intake: 'intake',
+            documents: 'documents',
+            docs: 'documents',
+            payment: 'payment',
+            payments: 'payment',
+            status: 'status',
+            checkin: 'updates',
+            updates: 'updates',
+            defendant: 'defendant'
+        };
+        const start = startMap[app] || 'miniapps';
+        goTo(DEST.telegramStart(start), 'TelegramHub_open_miniapp', { app: start });
+        return;
+    }
+
+    if (data.type === 'open_telegram_bot' || data.type === 'OPEN_TELEGRAM_BOT') {
+        goTo(DEST.telegramBot, 'TelegramHub_open_bot', {});
         return;
     }
 

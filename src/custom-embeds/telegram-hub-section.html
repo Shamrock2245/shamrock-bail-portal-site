@@ -1073,9 +1073,10 @@
     </header>
 
     <!-- ── PRIMARY CTAs ── -->
+    <!-- Mini Apps ONLY open inside Telegram (t.me deep links). Never bare Netlify URLs. -->
     <div class="tg-cta-row reveal reveal-delay-1">
       <a href="https://t.me/ShamrockBail_bot"
-         target="_blank" rel="noopener"
+         target="_blank" rel="noopener noreferrer"
          class="tg-btn tg-btn--primary"
          data-analytics-event="tg_cta_click"
          data-analytics-label="open_bot"
@@ -1085,14 +1086,14 @@
              style="width:22px;height:22px;filter:brightness(0) invert(1);flex-shrink:0;" />
         Open @ShamrockBail_bot
       </a>
-      <a href="https://shamrock-telegram.netlify.app"
-         target="_blank" rel="noopener"
+      <a href="https://t.me/ShamrockBail_bot?start=miniapps"
+         target="_blank" rel="noopener noreferrer"
          class="tg-btn tg-btn--gold"
          data-analytics-event="tg_cta_click"
          data-analytics-label="open_miniapps"
-         aria-label="Open Shamrock Bail Mini Apps">
+         aria-label="Open Shamrock Bail Mini Apps inside Telegram">
         <i class="ph ph-device-mobile"></i>
-        Open Mini Apps
+        Open Mini Apps in Telegram
       </a>
       <a href="tel:+12393322245"
          class="tg-btn tg-btn--ghost"
@@ -1194,63 +1195,69 @@
     </div>
 
     <!-- ── MINI APPS STRIP ── -->
+    <!-- Deep links open @ShamrockBail_bot in Telegram; Mini Apps only run inside Telegram WebApp. -->
     <div class="tg-apps-strip reveal">
-      <p class="tg-strip-label">Telegram Mini Apps — Open directly from the bot</p>
+      <p class="tg-strip-label">Telegram Mini Apps — open only inside Telegram via @ShamrockBail_bot</p>
       <div class="tg-apps-grid">
 
-        <a href="https://shamrock-telegram.netlify.app/intake/"
-           target="_blank" rel="noopener"
+        <a href="https://t.me/ShamrockBail_bot?start=intake"
+           target="_blank" rel="noopener noreferrer"
            class="tg-app-tile"
            data-analytics-event="miniapp_click"
            data-analytics-label="intake"
-           aria-label="Bail Intake Mini App">
+           data-tg-start="intake"
+           aria-label="Bail Intake Mini App — opens in Telegram">
           <i class="ph ph-clipboard-text"></i>
           <span>Bail Intake</span>
-          <span class="tg-badge tg-badge--live">LIVE</span>
+          <span class="tg-badge tg-badge--live">IN TELEGRAM</span>
         </a>
 
-        <a href="https://shamrock-telegram.netlify.app/documents/"
-           target="_blank" rel="noopener"
+        <a href="https://t.me/ShamrockBail_bot?start=documents"
+           target="_blank" rel="noopener noreferrer"
            class="tg-app-tile"
            data-analytics-event="miniapp_click"
            data-analytics-label="documents"
-           aria-label="Sign Documents Mini App">
+           data-tg-start="documents"
+           aria-label="Sign Documents Mini App — opens in Telegram">
           <i class="ph ph-file-magnifying-glass"></i>
           <span>Sign Docs</span>
-          <span class="tg-badge tg-badge--live">LIVE</span>
+          <span class="tg-badge tg-badge--live">IN TELEGRAM</span>
         </a>
 
-        <a href="https://shamrock-telegram.netlify.app/payment/"
-           target="_blank" rel="noopener"
+        <a href="https://t.me/ShamrockBail_bot?start=payment"
+           target="_blank" rel="noopener noreferrer"
            class="tg-app-tile"
            data-analytics-event="miniapp_click"
            data-analytics-label="payment"
-           aria-label="Make a Payment Mini App">
+           data-tg-start="payment"
+           aria-label="Make a Payment Mini App — opens in Telegram">
           <i class="ph ph-wallet"></i>
           <span>Payments</span>
-          <span class="tg-badge tg-badge--live">LIVE</span>
+          <span class="tg-badge tg-badge--live">IN TELEGRAM</span>
         </a>
 
-        <a href="https://shamrock-telegram.netlify.app/status/"
-           target="_blank" rel="noopener"
+        <a href="https://t.me/ShamrockBail_bot?start=status"
+           target="_blank" rel="noopener noreferrer"
            class="tg-app-tile"
            data-analytics-event="miniapp_click"
            data-analytics-label="status"
-           aria-label="Case Status Mini App">
+           data-tg-start="status"
+           aria-label="Case Status Mini App — opens in Telegram">
           <i class="ph ph-magnifying-glass"></i>
           <span>Case Status</span>
-          <span class="tg-badge tg-badge--live">LIVE</span>
+          <span class="tg-badge tg-badge--live">IN TELEGRAM</span>
         </a>
 
-        <a href="https://shamrock-telegram.netlify.app/checkin/"
-           target="_blank" rel="noopener"
+        <a href="https://t.me/ShamrockBail_bot?start=updates"
+           target="_blank" rel="noopener noreferrer"
            class="tg-app-tile"
            data-analytics-event="miniapp_click"
            data-analytics-label="checkin"
-           aria-label="Check-In Mini App">
+           data-tg-start="updates"
+           aria-label="Check-In Mini App — opens in Telegram">
           <i class="ph ph-map-pin-line"></i>
           <span>My Updates</span>
-          <span class="tg-badge tg-badge--live">LIVE</span>
+          <span class="tg-badge tg-badge--live">IN TELEGRAM</span>
         </a>
 
       </div>
@@ -1605,8 +1612,22 @@
     });
   });
 
-  /* ── 4d. OUTBOUND LINK TRACKING ── */
-  document.querySelectorAll('a[href^="https://t.me"], a[href^="https://shamrock-telegram"]').forEach(function (el) {
+  /* ── 4d. OUTBOUND LINK TRACKING + TELEGRAM-ONLY MINI APP GUARD ── */
+  // Never open bare Netlify mini-app URLs from the public site — rewrite to t.me
+  document.querySelectorAll('a[href*="shamrock-telegram.netlify.app"]').forEach(function (el) {
+    var href = el.getAttribute('href') || '';
+    var start = 'miniapps';
+    if (/\/intake/i.test(href)) start = 'intake';
+    else if (/\/documents/i.test(href)) start = 'documents';
+    else if (/\/payment/i.test(href)) start = 'payment';
+    else if (/\/status/i.test(href)) start = 'status';
+    else if (/\/updates|\/checkin|\/defendant/i.test(href)) start = 'updates';
+    el.setAttribute('href', 'https://t.me/ShamrockBail_bot?start=' + start);
+    el.setAttribute('target', '_blank');
+    el.setAttribute('rel', 'noopener noreferrer');
+  });
+
+  document.querySelectorAll('a[href^="https://t.me"]').forEach(function (el) {
     el.addEventListener('click', function () {
       fireEvent('outbound_click', el.href);
     });
