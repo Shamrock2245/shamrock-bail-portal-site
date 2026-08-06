@@ -151,7 +151,7 @@ function transformCountyData(county) {
     liveUrl: faRow.liveUrl || 'https://courtrooms.flcourts.gov/',
     notes: faRow.notes || '',
     hasLiveFeed: !!(faRow.hasLiveFeed || faRow.accessType === 'zoom' || faRow.accessType === 'livestream'),
-    hub_url: '/first-appearance-hub',
+    hub_url: '/first-appearance',
     county_url: `/first-appearance/${String(county.countySlug || countyName).toLowerCase().replace(/-county$/i, '').replace(/\s+/g, '-')}`
   };
 
@@ -385,11 +385,11 @@ function generateFAQs(name, circuitNum, circuitFull, cities, countySeat, phoneDi
     },
     {
       question: `What is a First Appearance hearing in ${name} County?`,
-      answer: `A First Appearance is when a judge${circuitStr} reviews charges, bond eligibility, and conditions within 24 hours of arrest under Florida Rule of Criminal Procedure 3.130. This hearing sets the bond amount and release conditions. For live schedules and court streams, see our First Appearance guide at shamrockbailbonds.biz/first-appearance-hub or call ${phoneDisplay}.`
+      answer: `A First Appearance is when a judge${circuitStr} reviews charges, bond eligibility, and conditions within 24 hours of arrest under Florida Rule of Criminal Procedure 3.130. This hearing sets the bond amount and release conditions. For live schedules and court streams, see our First Appearance guide at shamrockbailbonds.biz/first-appearance or call ${phoneDisplay}.`
     },
     {
       question: `When is First Appearance in ${name} County and can I watch it?`,
-      answer: `First Appearance in ${name} County must occur within 24 hours of arrest. Many Florida counties offer Zoom or livestream access; others are in-person or listed on the FL Courts directory. Shamrock can help you find the right stream or courtroom — call ${phoneDisplay}, or open shamrockbailbonds.biz/first-appearance-hub and search “${name}”.`
+      answer: `First Appearance in ${name} County must occur within 24 hours of arrest. Many Florida counties offer Zoom or livestream access; others are in-person or listed on the FL Courts directory. Shamrock can help you find the right stream or courtroom — call ${phoneDisplay}, or open shamrockbailbonds.biz/first-appearance and search “${name}”.`
     },
     {
       question: `What areas of ${name} County do you serve?`,

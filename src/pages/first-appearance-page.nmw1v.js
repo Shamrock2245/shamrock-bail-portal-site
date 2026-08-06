@@ -17,7 +17,7 @@ import {
     trackFirstAppearancePageView
 } from 'backend/first-appearance-api';
 
-const HUB_URL = '/first-appearance-hub';
+const HUB_URL = '/first-appearance';
 const PHONE = 'tel:+12393322245';
 const PHONE_DISPLAY = '(239) 332-2245';
 

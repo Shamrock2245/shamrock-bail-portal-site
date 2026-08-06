@@ -123,14 +123,14 @@ const DEST = {
     becomeBondsman: '/how-to-become-a-bondsman',
     howBailWorks: '/how-bail-works',
     /** Canonical FA hub (all 67 counties, nearest-first search). */
-    firstAppearance: '/first-appearance-hub',
+    firstAppearance: '/first-appearance',
     firstAppearanceCounty: function (slug) {
         const s = String(slug || '')
             .toLowerCase()
             .trim()
             .replace(/-county$/i, '')
             .replace(/\s+/g, '-');
-        return s ? '/first-appearance/' + s : '/first-appearance-hub';
+        return s ? '/first-appearance/' + s : '/first-appearance';
     },
     contact: '/contact',
     portal: '/portal-landing',

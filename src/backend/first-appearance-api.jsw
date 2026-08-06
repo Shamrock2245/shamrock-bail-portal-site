@@ -240,7 +240,7 @@ export async function generateFirstAppearanceCountyPage(countySlug) {
             // Cross-links
             links: {
                 county_bail_page: `/florida-bail-bonds/${normalized}`,
-                hub_page: '/first-appearance-hub',
+                hub_page: '/first-appearance',
                 home: '/',
                 portal: '/portal-landing'
             },

@@ -703,11 +703,11 @@ function populateInternalLinks(county, currentSlug) {
     // First Appearance — county page + statewide hub (pre-focused on this county)
     setLinkElement(
         ['#firstAppearanceLink', '#btnFirstAppearance', '#faCountyLink', '#firstAppearanceBtn'],
-        slug ? `/first-appearance/${slug}` : '/first-appearance-hub'
+        slug ? `/first-appearance/${slug}` : '/first-appearance'
     );
     setLinkElement(
         ['#firstAppearanceHubLink', '#btnFaHub'],
-        slug ? `/first-appearance-hub?county=${encodeURIComponent(slug)}` : '/first-appearance-hub'
+        slug ? `/first-appearance?county=${encodeURIComponent(slug)}` : '/first-appearance'
     );
     setTextElement(
         ['#firstAppearanceLinkText', '#faLinkLabel'],

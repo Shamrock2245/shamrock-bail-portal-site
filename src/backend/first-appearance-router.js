@@ -2,33 +2,30 @@
  * Router for First Appearance County Pages.
  * Handles: /first-appearance/{county-slug}
  *
- * Canonical HUB (full UI, all 67 counties, nearest-first search):
- *   /first-appearance-hub  → static page first-appearance.h4fpl.js
+ * HUB (full UI — all 67 counties, nearest-first search):
+ *   /first-appearance            → first-appearance.h4fpl.js (page name "first-appearance")
+ *   /first-appearance-hub        → same static page if URL slug is set in Editor
  *
  * County pSEO:
  *   /first-appearance/lee
  *   /first-appearance/miami-dade
  *   /first-appearance/lee-county  (normalized → lee)
  *
- * Bare /first-appearance redirects to the hub so there is one public URL.
+ * IMPORTANT: ok(pageName) must match the Wix router page name exactly or
+ * Wix serves title "500 | …" / blank and page code never runs.
  */
 
-import { ok, redirect } from 'wix-router';
+import { ok } from 'wix-router';
 
-/**
- * HUB is a static page (not under this router):
- *   Wix page: first-appearance.h4fpl.js @ URL /first-appearance-hub
- *
- * COUNTY (/{slug}) → first-appearance-page.nmw1v.js
- *   Wix page name / title: "first-appearance-page" (page id nmw1v)
- *
- * If ok(pageName) does not match the router page name exactly, Wix serves
- * title "500 | Shamrock Bail Bonds" and the page code never runs.
- */
-const COUNTY_PAGE = 'first-appearance-page'; // → first-appearance-page.nmw1v.js
-const HUB_PATH = '/first-appearance-hub';
+/** Hub page code: first-appearance.h4fpl.js */
+const HUB_PAGE = 'first-appearance';
+/** County pSEO shell: first-appearance-page.nmw1v.js */
+const COUNTY_PAGE = 'first-appearance-page';
 
-/** Florida counties for sitemap discovery (slug form used site-wide). */
+/** Public canonical hub path (marketing / internal links). */
+export const FA_HUB_PATH = '/first-appearance';
+
+/** Florida counties for sitemap discovery. */
 const COUNTY_SLUGS = [
     'alachua', 'baker', 'bay', 'bradford', 'brevard', 'broward', 'calhoun', 'charlotte',
     'citrus', 'clay', 'collier', 'columbia', 'desoto', 'dixie', 'duval', 'escambia',
@@ -41,10 +38,6 @@ const COUNTY_SLUGS = [
     'suwannee', 'taylor', 'union', 'volusia', 'wakulla', 'walton', 'washington'
 ];
 
-/**
- * Normalise the raw URL slug.
- * Strips trailing "-county", lowercases, and trims.
- */
 function normalizeSlug(raw) {
     return (raw || '')
         .toLowerCase()
@@ -53,11 +46,9 @@ function normalizeSlug(raw) {
 }
 
 /**
- * Main router export.
  * Prefix: first-appearance
  *
- * Routes:
- *   /first-appearance            → redirect → /first-appearance-hub
+ *   /first-appearance            → HUB_PAGE
  *   /first-appearance/lee        → COUNTY_PAGE
  *   /first-appearance/lee-county → COUNTY_PAGE (normalized → "lee")
  */
@@ -67,16 +58,14 @@ export function first_appearance_Router(request) {
 
     console.log(`[FA Router] Path: ${(request.path || []).join('/')} → slug: '${countySlug}'`);
 
-    // ── EMPTY SLUG → CANONICAL HUB ──
+    // ── EMPTY SLUG → HUB (full embed + SEO in h4fpl) ──
     if (!countySlug) {
-        // Preserve query string (e.g. ?county=lee)
-        const qs = request.query
-            ? '?' +
-              Object.keys(request.query)
-                  .map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(request.query[k]))
-                  .join('&')
-            : '';
-        return redirect(HUB_PATH + qs);
+        return ok(HUB_PAGE, {
+            title: 'First Appearance Hearing in Florida | Live Court Schedules | Shamrock Bail Bonds',
+            description:
+                'Find First Appearance hearing schedules for every Florida county. Live court streams, bail information, and 24/7 bond help from Shamrock Bail Bonds.',
+            slug: ''
+        });
     }
 
     // ── COUNTY SLUG → COUNTY PAGE ──
@@ -92,15 +81,18 @@ export function first_appearance_Router(request) {
     });
 }
 
-/**
- * Sitemap entries for Google via Wix router sitemap API.
- */
 export function first_appearance_SiteMap() {
     const entries = [
         {
-            // Hub is a static page; include for discovery under this prefix too
-            pageName: COUNTY_PAGE,
-            url: HUB_PATH,
+            pageName: HUB_PAGE,
+            url: FA_HUB_PATH,
+            title: 'First Appearance Hearings in Florida | Court Schedules & Bail Help',
+            lastModified: new Date()
+        },
+        // Alias path if static slug is configured in Editor
+        {
+            pageName: HUB_PAGE,
+            url: '/first-appearance-hub',
             title: 'First Appearance Hearings in Florida | Court Schedules & Bail Help',
             lastModified: new Date()
         }

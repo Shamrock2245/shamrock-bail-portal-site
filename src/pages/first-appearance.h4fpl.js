@@ -1,7 +1,7 @@
 /**
  * Shamrock Bail Bonds — First Appearance Page (FULL page code)
  * File: first-appearance.h4fpl.js
- * URL:  /first-appearance-hub   (canonical hub — all 67 counties, nearest-first)
+ * URL:  /first-appearance  (router hub) and /first-appearance-hub (static alias if set)
  *
  * County pSEO pages: /first-appearance/{county-slug} (router → first-appearance-page)
  *
@@ -19,9 +19,8 @@
  *    trackFirstAppearancePageView(data)
  *
  *  Router note (backend/first-appearance-router.js):
- *    Prefix /first-appearance serves county pages + optional redirect of bare
- *    /first-appearance → /first-appearance-hub. THIS static page must stay
- *    published at /first-appearance-hub with page code h4fpl.
+ *    Bare /first-appearance MUST return ok('first-appearance') so THIS page runs.
+ *    County paths load first-appearance-page.nmw1v.js.
  *
  * postMessage from embed:
  *    setHeight | RESIZE | CTA_CLICK | FAQ_EXPAND | COUNTY_SEARCH | SCROLL_DEPTH
@@ -45,8 +44,13 @@ const EMBED_ID = '#firstAppearanceEmbed';
 const PAGE_TITLE = 'First Appearance Hearing in Florida | Live Court Schedules | Shamrock Bail Bonds';
 const PAGE_DESC =
     'Your loved one has a court date in 24 hours. Learn what happens at a First Appearance hearing in Florida, watch live court streams, and get bail help fast. Serving all 67 Florida counties 24/7. Call (239) 332-2245.';
-/** Canonical public hub URL (static page slug). */
-const PAGE_URL = 'https://www.shamrockbailbonds.biz/first-appearance-hub';
+/**
+ * Canonical public hub URL.
+ * Router serves this page at /first-appearance. If the Editor page SEO slug
+ * is set to first-appearance-hub, both paths can work; prefer the router path
+ * for reliability after publish.
+ */
+const PAGE_URL = 'https://www.shamrockbailbonds.biz/first-appearance';
 const LOGO_URL = 'https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png';
 const OG_IMAGE = LOGO_URL;
 

@@ -1012,8 +1012,8 @@ export async function get_sitemap(request) {
     const staticPages = [
         { url: '/', priority: '1.0', changefreq: 'daily' },
         { url: '/how-bail-works', priority: '0.9', changefreq: 'monthly' },
-        { url: '/first-appearance-hub', priority: '0.9', changefreq: 'weekly' },
-        { url: '/first-appearance', priority: '0.5', changefreq: 'weekly' },
+        { url: '/first-appearance', priority: '0.9', changefreq: 'weekly' },
+        { url: '/first-appearance-hub', priority: '0.6', changefreq: 'weekly' },
         { url: '/bail-school', priority: '0.9', changefreq: 'weekly' },
         { url: '/how-to-become-a-bondsman', priority: '0.8', changefreq: 'monthly' },
         { url: '/contact', priority: '0.8', changefreq: 'monthly' },
