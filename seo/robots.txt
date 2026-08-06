@@ -1,138 +1,116 @@
-# =============================================================================
+# ============================================================
 # Shamrock Bail Bonds — robots.txt
-# Updated: 2026-03-02
-# Strategy: WELCOME AI search/answer bots that cite sources & drive traffic.
-#           BLOCK training-only scrapers and known spam bots.
-# =============================================================================
+# Updated: 2026-08-06
+# Goal: Maximize Google crawl + index of public pages.
+# Block only private portal/API noise and zero-value scrapers.
+# ============================================================
 
-# --- DEFAULT: Allow all standard crawlers ---
+# ---- Google Search (primary) ----
+User-agent: Googlebot
+User-agent: Googlebot-Image
+User-agent: Googlebot-News
+User-agent: Googlebot-Video
+User-agent: Storebot-Google
+User-agent: Google-InspectionTool
+Allow: /
+Disallow: /portal-defendant
+Disallow: /portal-staff
+Disallow: /portal-indemnitor
+Disallow: /portal-landing
+Disallow: /communication-preferences
+Disallow: /data-deletion
+Disallow: /_api/
+Disallow: /wix-warming-up
+Disallow: /*?lightbox=
+Disallow: /*&lightbox=
+Disallow: /*?appSectionParams=
+Disallow: /*&appSectionParams=
+Disallow: /*?instance=
+Disallow: /*&instance=
+Disallow: /*?compId=
+Disallow: /*&compId=
+Disallow: /*?viewMode=
+Disallow: /*&viewMode=
+# Allow our custom public sitemap endpoints under _functions
+Allow: /_functions/sitemap
+Allow: /_functions/llmSitemap
+
+# ---- DEFAULT (Bing, etc.) ----
 User-agent: *
 Allow: /
 Disallow: /portal-defendant
 Disallow: /portal-staff
 Disallow: /portal-indemnitor
-Disallow: /_functions/
-Disallow: *?lightbox=
+Disallow: /portal-landing
+Disallow: /communication-preferences
+Disallow: /data-deletion
+Disallow: /_api/
+Disallow: /wix-warming-up
+Disallow: /*?lightbox=
+Disallow: /*&lightbox=
+Disallow: /*?appSectionParams=
+Disallow: /*&appSectionParams=
+Disallow: /*?instance=
+Disallow: /*&instance=
+Disallow: /*?compId=
+Disallow: /*&compId=
+Disallow: /*?viewMode=
+Disallow: /*&viewMode=
+Allow: /_functions/sitemap
+Allow: /_functions/llmSitemap
 
-# =============================================================================
-# ✅ AI SEARCH & ANSWER BOTS — Welcome! (These cite & link back to your site)
-# =============================================================================
-
-# OpenAI — ChatGPT search feature (answers with citations)
-User-agent: OAI-SearchBot
-Allow: /
-
-# OpenAI — User-initiated browsing in ChatGPT
-User-agent: ChatGPT-User
-Allow: /
-
-# OpenAI — GPTBot (training + search grounding, allowing for visibility)
+# ==============================================================
+# AI / answer engines — welcome (same public surface)
+# ==============================================================
 User-agent: GPTBot
-Allow: /
-Disallow: /portal-defendant
-Disallow: /portal-staff
-Disallow: /portal-indemnitor
-
-# Anthropic — Claude search results (answers with citations)
-User-agent: Claude-SearchBot
-Allow: /
-
-# Anthropic — User-initiated browsing in Claude
-User-agent: Claude-User
-Allow: /
-
-# Anthropic — Claude model training (allowing for Claude search visibility)
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
 User-agent: ClaudeBot
-Allow: /
-Disallow: /portal-defendant
-Disallow: /portal-staff
-Disallow: /portal-indemnitor
-
-# Perplexity — AI search engine (cites + links sources directly)
-User-agent: PerplexityBot
-Allow: /
-
-# Perplexity — User-initiated fetches
-User-agent: Perplexity-User
-Allow: /
-
-# Google — Standard search + AI Overviews
-User-agent: Googlebot
-Allow: /
-
-# Google — Gemini AI training (allow for AI Overview visibility)
+User-agent: anthropic-ai
 User-agent: Google-Extended
-Allow: /
-
-# Apple — Siri, Spotlight, Apple Intelligence
+User-agent: GoogleOther
 User-agent: Applebot
-Allow: /
-
-# Apple — Apple Intelligence training
 User-agent: Applebot-Extended
-Allow: /
-
-# Microsoft — Bing search + Copilot AI answers
-User-agent: Bingbot
-Allow: /
-
-# You.com — AI search engine
+User-agent: bingbot
+User-agent: BingPreview
+User-agent: PerplexityBot
+User-agent: xAI-Grok
+User-agent: Meta-ExternalAgent
+User-agent: facebookexternalhit
+User-agent: Amazonbot
 User-agent: YouBot
 Allow: /
+Disallow: /portal-defendant
+Disallow: /portal-staff
+Disallow: /portal-indemnitor
+Disallow: /portal-landing
+Disallow: /communication-preferences
+Disallow: /data-deletion
+Disallow: /_api/
+Disallow: /*?lightbox=
+Allow: /_functions/sitemap
+Allow: /_functions/llmSitemap
 
-# Amazon — Alexa answers
-User-agent: Amazonbot
-Allow: /
-
-# Meta — shared link previews + AI features
-User-agent: FacebookExternalHit
-Allow: /
-User-agent: facebookexternalhit
-Allow: /
-User-agent: meta-externalagent
-Allow: /
-
-# Cohere — AI search (cites sources)
-User-agent: cohere-ai
-Allow: /
-
-# =============================================================================
-# ❌ BLOCKED — Aggressive scrapers & spam bots (no value, waste crawl budget)
-# =============================================================================
-
+# ==============================================================
+# Block zero-value scrapers (not Google)
+# ==============================================================
 User-agent: PetalBot
-Disallow: /
-
 User-agent: DotBot
-Disallow: /
-
 User-agent: Bytespider
-Disallow: /
-
 User-agent: CCBot
-Disallow: /
-
 User-agent: Diffbot
-Disallow: /
-
-User-agent: Omgilibot
-Disallow: /
-
 User-agent: SemrushBot
-Disallow: /
-
 User-agent: AhrefsBot
-Disallow: /
-
 User-agent: MJ12bot
-Disallow: /
-
 User-agent: DataForSeoBot
+User-agent: BLEXBot
+User-agent: ScreamingFrogSEOSpider
 Disallow: /
 
-# =============================================================================
-# 🗺 SITEMAP
-# =============================================================================
-
+# ==============================================================
+# Sitemaps (submit all of these in Google Search Console)
+# ==============================================================
 Sitemap: https://www.shamrockbailbonds.biz/sitemap.xml
-Sitemap: https://www.shamrockbailbonds.biz/_functions/llmSitemap
+Sitemap: https://www.shamrockbailbonds.biz/_functions/sitemap
+Sitemap: https://www.shamrockbailbonds.biz/pages-sitemap.xml
+Sitemap: https://www.shamrockbailbonds.biz/blog-posts-sitemap.xml

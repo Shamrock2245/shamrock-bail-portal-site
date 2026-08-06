@@ -100,9 +100,10 @@ const FAQ_DATA = [
 $w.onReady(function () {
     console.log("🟢 First Appearance Page Loading...");
 
+    // Set SEO first so crawlers never see a 500/blank title if router data is late
+    setupSEO();
     setupEmbed();
     sendCountyData();
-    setupSEO();
     trackPageView();
 
     console.log("✅ First Appearance Page Ready.");

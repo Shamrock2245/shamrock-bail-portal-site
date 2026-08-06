@@ -996,70 +996,129 @@ export function get_health(request) {
 
 /**
  * GET /_functions/sitemap
- * Serves a custom XML sitemap for Google Search Console
- * URL: https://www.shamrockbailbonds.biz/_functions/sitemap
- * UPDATED: Dynamic generation from database
+ * Comprehensive public XML sitemap for Google Search Console.
+ *
+ * NOTE: Live robots.txt currently Disallows /_functions/ for User-agent: *.
+ * Prefer submitting the Wix-native https://www.shamrockbailbonds.biz/sitemap.xml
+ * AND this URL only after robots allows /_functions/sitemap (or use Allow for that path).
+ *
+ * Public pages only — never include portal/*, lightboxes, or utility pages.
  */
 export async function get_sitemap(request) {
     const SITE_URL = 'https://www.shamrockbailbonds.biz';
     const LAST_MOD = new Date().toISOString().split('T')[0];
 
-    // Static pages with their priorities and change frequencies
+    // Keep in sync with public site structure (Wix pages that should be indexed)
     const staticPages = [
-        { url: '/', priority: '1.0', changefreq: 'weekly' },
+        { url: '/', priority: '1.0', changefreq: 'daily' },
         { url: '/how-bail-works', priority: '0.9', changefreq: 'monthly' },
-        { url: '/florida-sheriffs-clerks-directory', priority: '0.9', changefreq: 'monthly' },
+        { url: '/first-appearance', priority: '0.9', changefreq: 'weekly' },
+        { url: '/bail-school', priority: '0.9', changefreq: 'weekly' },
         { url: '/how-to-become-a-bondsman', priority: '0.8', changefreq: 'monthly' },
-        { url: '/locate-an-inmate', priority: '0.8', changefreq: 'monthly' },
         { url: '/contact', priority: '0.8', changefreq: 'monthly' },
-        { url: '/blog', priority: '0.7', changefreq: 'weekly' },
+        { url: '/about', priority: '0.7', changefreq: 'monthly' },
+        { url: '/blog', priority: '0.8', changefreq: 'daily' },
+        { url: '/testimonials', priority: '0.6', changefreq: 'monthly' },
         { url: '/privacy-policy', priority: '0.3', changefreq: 'yearly' },
-        { url: '/terms-of-service', priority: '0.3', changefreq: 'yearly' }
+        { url: '/terms-and-conditions', priority: '0.3', changefreq: 'yearly' }
     ];
+
+    // Fallback if CMS query fails (67 counties)
+    const FALLBACK_COUNTY_SLUGS = [
+        'alachua', 'baker', 'bay', 'bradford', 'brevard', 'broward', 'calhoun', 'charlotte',
+        'citrus', 'clay', 'collier', 'columbia', 'desoto', 'dixie', 'duval', 'escambia',
+        'flagler', 'franklin', 'gadsden', 'gilchrist', 'glades', 'gulf', 'hamilton', 'hardee',
+        'hendry', 'hernando', 'highlands', 'hillsborough', 'holmes', 'indian-river', 'jackson',
+        'jefferson', 'lafayette', 'lake', 'lee', 'leon', 'levy', 'liberty', 'madison',
+        'manatee', 'marion', 'martin', 'miami-dade', 'monroe', 'nassau', 'okaloosa',
+        'okeechobee', 'orange', 'osceola', 'palm-beach', 'pasco', 'pinellas', 'polk',
+        'putnam', 'santa-rosa', 'sarasota', 'seminole', 'st-johns', 'st-lucie', 'sumter',
+        'suwannee', 'taylor', 'union', 'volusia', 'wakulla', 'walton', 'washington'
+    ];
+
+    const urls = [];
+    const seen = new Set();
+
+    function addUrl(path, priority, changefreq, lastmod) {
+        const loc = path.startsWith('http') ? path : `${SITE_URL}${path.startsWith('/') ? path : '/' + path}`;
+        if (seen.has(loc)) return;
+        seen.add(loc);
+        urls.push({
+            loc,
+            lastmod: lastmod || LAST_MOD,
+            changefreq: changefreq || 'monthly',
+            priority: priority || '0.5'
+        });
+    }
+
+    staticPages.forEach((p) => addUrl(p.url, p.priority, p.changefreq, LAST_MOD));
+
+    // County bail pages
+    try {
+        const results = await wixData.query('FloridaCounties').limit(100).find();
+        if (results.items && results.items.length) {
+            results.items.forEach((county) => {
+                const slug = (county.countySlug || county.slug || '')
+                    .toString()
+                    .toLowerCase()
+                    .trim()
+                    .replace(/-county$/i, '');
+                if (slug) {
+                    addUrl(`/florida-bail-bonds/${encodeURIComponent(slug)}`, '0.85', 'weekly', LAST_MOD);
+                    addUrl(`/first-appearance/${encodeURIComponent(slug)}`, '0.7', 'monthly', LAST_MOD);
+                }
+            });
+        } else {
+            FALLBACK_COUNTY_SLUGS.forEach((slug) => {
+                addUrl(`/florida-bail-bonds/${slug}`, '0.85', 'weekly', LAST_MOD);
+                addUrl(`/first-appearance/${slug}`, '0.7', 'monthly', LAST_MOD);
+            });
+        }
+    } catch (error) {
+        console.error('Sitemap county query error:', error);
+        FALLBACK_COUNTY_SLUGS.forEach((slug) => {
+            addUrl(`/florida-bail-bonds/${slug}`, '0.85', 'weekly', LAST_MOD);
+            addUrl(`/first-appearance/${slug}`, '0.7', 'monthly', LAST_MOD);
+        });
+    }
+
+    // Blog posts (public only)
+    try {
+        // Prefer native Wix Blog if collection exists; otherwise skip silently
+        const blogResults = await wixData
+            .query('Blog/Posts')
+            .eq('status', 'PUBLISHED')
+            .limit(200)
+            .find()
+            .catch(() => null);
+        if (blogResults && blogResults.items) {
+            blogResults.items.forEach((post) => {
+                const slug = post.slug || post.postPageUrl || '';
+                if (slug) {
+                    const path = String(slug).startsWith('/')
+                        ? slug
+                        : `/single-post/${String(slug).replace(/^\/+/, '')}`;
+                    addUrl(path, '0.65', 'weekly', LAST_MOD);
+                }
+            });
+        }
+    } catch (e) {
+        console.warn('Sitemap blog query skipped:', e && e.message);
+    }
 
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-
-    // Add static pages
-    staticPages.forEach(page => {
-        xml += `  <url>
-    <loc>${SITE_URL}${page.url}</loc>
-    <lastmod>${LAST_MOD}</lastmod>
-    <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority}</priority>
-  </url>\n`;
+    urls.forEach((u) => {
+        xml += `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>\n`;
     });
-
-    // Add dynamic county pages from DB
-    try {
-        // Query "FloridaCounties" collection directly or via ID. 
-        // Using string "FloridaCounties" is safer here if we don't import public config, 
-        // but let's assume standard collection ID.
-        const results = await wixData.query("FloridaCounties")
-            .limit(100) // Fetch all (there are 67 counties)
-            .find();
-
-        results.items.forEach(county => {
-            if (county.countySlug) {
-                const safeSlug = encodeURIComponent(county.countySlug);
-                xml += `  <url>
-    <loc>${SITE_URL}/florida-bail-bonds/${safeSlug}</loc>
-    <lastmod>${LAST_MOD}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>\n`;
-            }
-        });
-    } catch (error) {
-        console.error("Sitemap generation error:", error);
-        // Fallback or ignore
-    }
-
     xml += '</urlset>';
 
     return ok({
         headers: {
-            "Content-Type": "application/xml"
+            'Content-Type': 'application/xml; charset=utf-8',
+            'Cache-Control': 'public, max-age=3600',
+            // Ensure Google can index this response when robots allows the path
+            'X-Robots-Tag': 'noindex'
         },
         body: xml
     });

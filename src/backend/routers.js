@@ -133,5 +133,6 @@ export async function florida_bail_bonds_Router(request) {
   return routeCountyPage(request);
 }
 
-// First Appearance county sub-pages: /first-appearance/{county-slug}
+// First Appearance hub + county sub-pages: /first-appearance[/{county-slug}]
 export { faRouter as first_appearance_Router };
+export { first_appearance_SiteMap } from 'backend/first-appearance-router';
