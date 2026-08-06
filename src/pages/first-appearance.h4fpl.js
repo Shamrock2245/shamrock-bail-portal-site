@@ -19,8 +19,10 @@
  *    trackFirstAppearancePageView(data)
  *
  *  Router note (backend/first-appearance-router.js):
- *    Bare /first-appearance MUST return ok('first-appearance') so THIS page runs.
- *    County paths load first-appearance-page.nmw1v.js.
+ *    Bare /first-appearance MUST return ok(<hub page name>) so THIS page runs.
+ *    If ok() name is not a page ON the router, Wix title becomes "500 | …"
+ *    and Google refuses indexing. County paths → first-appearance-page.nmw1v.js
+ *    (that page must also be added under the same First-appearance router).
  *
  * postMessage from embed:
  *    setHeight | RESIZE | CTA_CLICK | FAQ_EXPAND | COUNTY_SEARCH | SCROLL_DEPTH
