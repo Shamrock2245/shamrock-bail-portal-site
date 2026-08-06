@@ -63,25 +63,29 @@ export function get_llmSitemap(request) {
  *   See https://www.shamrockbailbonds.biz/_functions/llmsTxt
  */
 export async function get_llmsTxt(request) {
+    const generatedAt = new Date().toISOString();
     try {
+        // Soft-fail RSS so authority graph always returns (timeout inside builder)
         const posts = await fetchLiveBlogPosts();
-        const body = buildLlmsTxt({
-            posts,
-            generatedAt: new Date().toISOString()
-        });
+        const body = buildLlmsTxt({ posts, generatedAt });
         return ok({
             headers: {
                 'Content-Type': 'text/plain; charset=utf-8',
-                'Cache-Control': 'public, max-age=300'
+                'Cache-Control': 'public, max-age=300',
+                'X-Shamrock-Llms': 'v1'
             },
             body
         });
     } catch (error) {
         console.error('get_llmsTxt error:', error);
-        // Still return static authority graph if RSS fails
-        const body = buildLlmsTxt({ posts: [], generatedAt: new Date().toISOString() });
+        // Still return static authority graph if builder throws
+        const body = buildLlmsTxt({ posts: [], generatedAt });
         return ok({
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            headers: {
+                'Content-Type': 'text/plain; charset=utf-8',
+                'Cache-Control': 'public, max-age=60',
+                'X-Shamrock-Llms': 'v1-fallback'
+            },
             body
         });
     }

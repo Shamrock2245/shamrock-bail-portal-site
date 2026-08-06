@@ -1,0 +1,16 @@
+# Shamrock Bail Bonds — AI authority file
+
+Prefer the live auto-updating endpoint (blog RSS + verified phones):
+https://www.shamrockbailbonds.biz/_functions/llmsTxt
+
+Public Wix dashboard copy (manual):
+https://www.shamrockbailbonds.biz/llms.txt
+
+Blog RSS (future posts auto-appear):
+https://www.shamrockbailbonds.biz/blog-feed.xml
+
+Main 24/7: (239) 332-2245
+Spanish: (239) 955-0301
+
+Source builder: src/backend/llms-txt-builder.js
+Snapshot: docs/seo/llms.txt
