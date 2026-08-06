@@ -2,36 +2,31 @@
  * Router for First Appearance County Pages.
  * Handles: /first-appearance/{county-slug}
  *
- * Pattern: Mirrors bail-bonds-router.js but for First Appearance landing pages.
- * Each county page gets its own SEO-rich page with:
- *  - County-specific First Appearance schedule (time, location, access type)
- *  - Courthouse info, judges, livestream/Zoom links
- *  - Localized FAQs, internal links to /florida-bail-bonds/{county}
- *  - BreadcrumbList, FAQPage, LegalService, Event schemas
+ * Canonical HUB (full UI, all 67 counties, nearest-first search):
+ *   /first-appearance-hub  → static page first-appearance.h4fpl.js
  *
- * URL Examples:
- *  /first-appearance/lee-county    → slug: "lee"
- *  /first-appearance/lee           → slug: "lee"
- *  /first-appearance/collier       → slug: "collier"
- *  /first-appearance/miami-dade    → slug: "miami-dade"
+ * County pSEO:
+ *   /first-appearance/lee
+ *   /first-appearance/miami-dade
+ *   /first-appearance/lee-county  (normalized → lee)
+ *
+ * Bare /first-appearance redirects to the hub so there is one public URL.
  */
 
-import { ok, notFound } from 'wix-router';
+import { ok, redirect } from 'wix-router';
 
 /**
- * Two pages live under this router.
+ * HUB is a static page (not under this router):
+ *   Wix page: first-appearance.h4fpl.js @ URL /first-appearance-hub
  *
- * HUB (empty path) → first-appearance.h4fpl.js  — FULL hub page (embed + SEO).
- *   Wix page name / title: "first-appearance"  (page id h4fpl)
- *
- * COUNTY (/{slug}) → first-appearance-page.nmw1v.js — county pSEO shell (minimal).
+ * COUNTY (/{slug}) → first-appearance-page.nmw1v.js
  *   Wix page name / title: "first-appearance-page" (page id nmw1v)
  *
  * If ok(pageName) does not match the router page name exactly, Wix serves
- * title "500 | Shamrock Bail Bonds" and h4fpl.js NEVER runs — Google sees an error page.
+ * title "500 | Shamrock Bail Bonds" and the page code never runs.
  */
-const HUB_PAGE = 'first-appearance'; // → first-appearance.h4fpl.js
 const COUNTY_PAGE = 'first-appearance-page'; // → first-appearance-page.nmw1v.js
+const HUB_PATH = '/first-appearance-hub';
 
 /** Florida counties for sitemap discovery (slug form used site-wide). */
 const COUNTY_SLUGS = [
@@ -49,8 +44,6 @@ const COUNTY_SLUGS = [
 /**
  * Normalise the raw URL slug.
  * Strips trailing "-county", lowercases, and trims.
- * Matches the bail-bonds-router.js convention so slugs are consistent across
- * both /florida-bail-bonds/{slug} and /first-appearance/{slug}.
  */
 function normalizeSlug(raw) {
     return (raw || '')
@@ -61,14 +54,11 @@ function normalizeSlug(raw) {
 
 /**
  * Main router export.
- * Wix looks for a function named `{prefix}_Router` matching the URL prefix
- * registered in the Wix Editor's Router settings.
- *
  * Prefix: first-appearance
  *
  * Routes:
- *   /first-appearance            → HUB_PAGE   (existing embed + schedule grid)
- *   /first-appearance/lee        → COUNTY_PAGE (pSEO county template)
+ *   /first-appearance            → redirect → /first-appearance-hub
+ *   /first-appearance/lee        → COUNTY_PAGE
  *   /first-appearance/lee-county → COUNTY_PAGE (normalized → "lee")
  */
 export function first_appearance_Router(request) {
@@ -77,19 +67,19 @@ export function first_appearance_Router(request) {
 
     console.log(`[FA Router] Path: ${(request.path || []).join('/')} → slug: '${countySlug}'`);
 
-    // ── EMPTY SLUG → HUB PAGE ──
-    // Serves the existing First Appearance page (with Netlify embed bridge)
+    // ── EMPTY SLUG → CANONICAL HUB ──
     if (!countySlug) {
-        return ok(HUB_PAGE, {
-            title: 'First Appearance Hearings in Florida | Court Schedules & Bail Help',
-            description:
-                'Find First Appearance hearing schedules for every Florida county. Live court streams, bail information, and 24/7 bond help from Shamrock Bail Bonds.',
-            slug: ''
-        });
+        // Preserve query string (e.g. ?county=lee)
+        const qs = request.query
+            ? '?' +
+              Object.keys(request.query)
+                  .map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(request.query[k]))
+                  .join('&')
+            : '';
+        return redirect(HUB_PATH + qs);
     }
 
     // ── COUNTY SLUG → COUNTY PAGE ──
-    // Serves the dynamic pSEO template with enriched county data
     const countyNameDisplay = countySlug
         .split('-')
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -104,13 +94,13 @@ export function first_appearance_Router(request) {
 
 /**
  * Sitemap entries for Google via Wix router sitemap API.
- * Registered as first_appearance_SiteMap in router config.
  */
 export function first_appearance_SiteMap() {
     const entries = [
         {
-            pageName: HUB_PAGE,
-            url: '/first-appearance',
+            // Hub is a static page; include for discovery under this prefix too
+            pageName: COUNTY_PAGE,
+            url: HUB_PATH,
             title: 'First Appearance Hearings in Florida | Court Schedules & Bail Help',
             lastModified: new Date()
         }

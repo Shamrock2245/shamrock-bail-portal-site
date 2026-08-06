@@ -277,7 +277,7 @@ function setupBailSchoolNavLink() {
  * Function is kept as a no-op to avoid removing the call from initCriticalUI().
  */
 function setupFirstAppearanceNavLink() {
-    // No-op: nav menu handles /first-appearance routing directly.
+    // Nav should target /first-appearance-hub (canonical FA hub).
 }
 
 function deferNonCriticalOperations(isMobile) {

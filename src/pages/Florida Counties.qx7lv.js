@@ -692,10 +692,38 @@ async function populateMainUI(county, currentSlug) {
  */
 function populateInternalLinks(county, currentSlug) {
     const countyName = county.county_name || 'Florida';
+    const slug = (currentSlug || county.county_slug || '')
+        .toLowerCase()
+        .replace(/-county$/i, '');
 
     // Cross-link to Florida Directory hub page (critical for crawlability)
     setLinkElement(['#directoryLinkBtn', '#floridaDirectoryBtn', '#btnAllCounties'], '/florida-bail-bonds');
     setTextElement(['#directoryLink', '#floridaDirectoryLink'], 'View All 67 Florida Counties');
+
+    // First Appearance — county page + statewide hub (pre-focused on this county)
+    setLinkElement(
+        ['#firstAppearanceLink', '#btnFirstAppearance', '#faCountyLink', '#firstAppearanceBtn'],
+        slug ? `/first-appearance/${slug}` : '/first-appearance-hub'
+    );
+    setLinkElement(
+        ['#firstAppearanceHubLink', '#btnFaHub'],
+        slug ? `/first-appearance-hub?county=${encodeURIComponent(slug)}` : '/first-appearance-hub'
+    );
+    setTextElement(
+        ['#firstAppearanceLinkText', '#faLinkLabel'],
+        `First Appearance in ${countyName} County`
+    );
+
+    // If FA schedule data was attached by the generator, surface it
+    if (county.first_appearance) {
+        const fa = county.first_appearance;
+        setTextElement(['#faScheduleText', '#firstAppearanceSchedule'], fa.schedule || fa.time || '');
+        setTextElement(['#faLocationText', '#firstAppearanceLocation'], fa.location || '');
+        setTextElement(['#faNotesText', '#firstAppearanceNotes'], fa.notes || '');
+        if (fa.liveUrl) {
+            setLinkElement(['#faLiveBtn', '#firstAppearanceLiveBtn', '#watchFaBtn'], fa.liveUrl);
+        }
+    }
 
     // Cross-link to How Bail Works
     setLinkElement(['#howBailWorksLink', '#btnHowBailWorks'], '/how-bail-works');

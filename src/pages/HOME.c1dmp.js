@@ -122,7 +122,16 @@ const DEST = {
     bailSchoolRegister: 'https://school.shamrockbailbonds.biz/schedule#register',
     becomeBondsman: '/how-to-become-a-bondsman',
     howBailWorks: '/how-bail-works',
-    firstAppearance: '/first-appearance',
+    /** Canonical FA hub (all 67 counties, nearest-first search). */
+    firstAppearance: '/first-appearance-hub',
+    firstAppearanceCounty: function (slug) {
+        const s = String(slug || '')
+            .toLowerCase()
+            .trim()
+            .replace(/-county$/i, '')
+            .replace(/\s+/g, '-');
+        return s ? '/first-appearance/' + s : '/first-appearance-hub';
+    },
     contact: '/contact',
     portal: '/portal-landing',
     blog: '/blog'
@@ -364,8 +373,17 @@ function navigateToCounty(selectedCounty) {
         .replace(/\s+/g, '-');
 
     if (!cleanSlug) return;
-    console.log('[County Nav] Navigating to /florida-bail-bonds/' + cleanSlug);
-    wixLocation.to('/florida-bail-bonds/' + cleanSlug);
+
+    // Primary destination: that county’s bail bonds page (all 67 slugs).
+    // FA hub deep-link is available from the county page + /first-appearance/{slug}.
+    const dest = '/florida-bail-bonds/' + cleanSlug;
+    console.log('[County Nav] Navigating to', dest);
+    try {
+        session.setItem('last_county_slug', cleanSlug);
+    } catch (e) {
+        /* non-fatal */
+    }
+    wixLocation.to(dest);
 }
 
 function scrollToCountySelector() {

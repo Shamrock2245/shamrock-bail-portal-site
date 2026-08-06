@@ -1,7 +1,9 @@
 /**
  * Shamrock Bail Bonds — First Appearance Page (FULL page code)
  * File: first-appearance.h4fpl.js
- * URL:  /first-appearance
+ * URL:  /first-appearance-hub   (canonical hub — all 67 counties, nearest-first)
+ *
+ * County pSEO pages: /first-appearance/{county-slug} (router → first-appearance-page)
  *
  * This is the complete Velo page for the First Appearance hub.
  * UI is an HtmlComponent embed; this file owns routing of the embed,
@@ -12,15 +14,14 @@
  *  Element: #firstAppearanceEmbed (HtmlComponent, URL mode)
  *
  *  Backend (backend/first-appearance-api.jsw):
- *    getFirstAppearanceSchedules()
+ *    getFirstAppearanceSchedules({ lat, lon })
  *    trackFirstAppearanceAction(type, context)
  *    trackFirstAppearancePageView(data)
  *
  *  Router note (backend/first-appearance-router.js):
- *    Prefix /first-appearance is a custom Wix router. The hub path (no slug)
- *    MUST return ok('first-appearance') so THIS page (h4fpl) loads.
- *    If the router page name is wrong, Wix serves title "500 | …" and
- *    this file never runs — Google then sees an error page.
+ *    Prefix /first-appearance serves county pages + optional redirect of bare
+ *    /first-appearance → /first-appearance-hub. THIS static page must stay
+ *    published at /first-appearance-hub with page code h4fpl.
  *
  * postMessage from embed:
  *    setHeight | RESIZE | CTA_CLICK | FAQ_EXPAND | COUNTY_SEARCH | SCROLL_DEPTH
@@ -28,6 +29,7 @@
 
 import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
+import wixLocation from 'wix-location';
 import {
     getFirstAppearanceSchedules,
     trackFirstAppearanceAction,
@@ -36,14 +38,15 @@ import {
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
-const EMBED_VERSION = '2026-08-06-fa-v2';
+const EMBED_VERSION = '2026-08-06-fa-v4-hub';
 const EMBED_URL = `https://shamrock-embeds.netlify.app/first-appearance.html?v=${encodeURIComponent(EMBED_VERSION)}`;
 const EMBED_ID = '#firstAppearanceEmbed';
 
 const PAGE_TITLE = 'First Appearance Hearing in Florida | Live Court Schedules | Shamrock Bail Bonds';
 const PAGE_DESC =
     'Your loved one has a court date in 24 hours. Learn what happens at a First Appearance hearing in Florida, watch live court streams, and get bail help fast. Serving all 67 Florida counties 24/7. Call (239) 332-2245.';
-const PAGE_URL = 'https://www.shamrockbailbonds.biz/first-appearance';
+/** Canonical public hub URL (static page slug). */
+const PAGE_URL = 'https://www.shamrockbailbonds.biz/first-appearance-hub';
 const LOGO_URL = 'https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png';
 const OG_IMAGE = LOGO_URL;
 
@@ -222,26 +225,96 @@ function handleResize(height) {
 
 // ─── SEND COUNTY DATA TO EMBED ──────────────────────────────────────────────
 
+/**
+ * Try browser geolocation so nearest counties sort first.
+ * Fails soft (permission denied / timeout) → catalog falls back to tier order.
+ */
+async function getVisitorLocation() {
+    try {
+        if (typeof wixWindow.getCurrentGeolocation !== 'function') return null;
+        const geo = await Promise.race([
+            wixWindow.getCurrentGeolocation(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('geo timeout')), 6000))
+        ]);
+        const lat = geo && (geo.coords ? geo.coords.latitude : geo.latitude);
+        const lon = geo && (geo.coords ? geo.coords.longitude : geo.longitude);
+        if (lat != null && lon != null && isFinite(Number(lat)) && isFinite(Number(lon))) {
+            return { lat: Number(lat), lon: Number(lon) };
+        }
+    } catch (e) {
+        console.log('📍 Geolocation unavailable (using SWFL-first order):', e.message || e);
+    }
+    return null;
+}
+
+function postCountiesToEmbed(result) {
+    try {
+        const embed = getEmbed();
+        if (!embed || typeof embed.postMessage !== 'function') return;
+        embed.postMessage({
+            type: 'updateCounties',
+            data: result.counties,
+            sortedBy: result.sortedBy || 'tier',
+            userLocation: result.userLocation || null,
+            totalCounties: result.totalCounties || result.counties.length
+        });
+        console.log(
+            `📊 Sent ${result.counties.length} county schedules to embed (sortedBy=${result.sortedBy || 'tier'})`
+        );
+    } catch (e) {
+        console.warn('Failed to post county data to embed:', e.message);
+    }
+}
+
+/** Deep-link support: /first-appearance-hub?county=lee */
+function focusCountyFromQuery() {
+    try {
+        const q = (wixLocation.query && (wixLocation.query.county || wixLocation.query.c)) || '';
+        if (!q) return;
+        const slug = String(q)
+            .toLowerCase()
+            .trim()
+            .replace(/-county$/i, '')
+            .replace(/\s+county$/i, '')
+            .replace(/\s+/g, '-');
+        if (!slug) return;
+
+        const push = () => {
+            try {
+                const embed = getEmbed();
+                if (!embed || typeof embed.postMessage !== 'function') return;
+                embed.postMessage({ type: 'focusCounty', slug });
+            } catch (e) {
+                console.warn('focusCounty post failed:', e.message);
+            }
+        };
+        setTimeout(push, 1000);
+        setTimeout(push, 2500);
+    } catch (e) {
+        /* non-fatal */
+    }
+}
+
 async function sendCountyData() {
     try {
-        const result = await getFirstAppearanceSchedules();
-        if (result && result.success && Array.isArray(result.counties) && result.counties.length > 0) {
-            const push = () => {
-                try {
-                    const embed = getEmbed();
-                    if (!embed || typeof embed.postMessage !== 'function') return;
-                    embed.postMessage({
-                        type: 'updateCounties',
-                        data: result.counties
-                    });
-                    console.log(`📊 Sent ${result.counties.length} county schedules to embed`);
-                } catch (e) {
-                    console.warn('Failed to post county data to embed:', e.message);
-                }
-            };
-            // Embed may still be loading
-            setTimeout(push, 800);
-            setTimeout(push, 2000);
+        // 1) Immediate fetch without geo so embed gets all 67 quickly
+        const initial = await getFirstAppearanceSchedules({});
+        if (initial && initial.success && Array.isArray(initial.counties) && initial.counties.length > 0) {
+            setTimeout(() => postCountiesToEmbed(initial), 600);
+            setTimeout(() => postCountiesToEmbed(initial), 1800);
+        }
+
+        focusCountyFromQuery();
+
+        // 2) Re-sort nearest-first once location is available
+        const loc = await getVisitorLocation();
+        if (!loc) return;
+
+        const near = await getFirstAppearanceSchedules({ lat: loc.lat, lon: loc.lon });
+        if (near && near.success && Array.isArray(near.counties) && near.counties.length > 0) {
+            postCountiesToEmbed(near);
+            setTimeout(() => postCountiesToEmbed(near), 500);
+            focusCountyFromQuery();
         }
     } catch (e) {
         console.warn('County data fetch failed (embed will use fallback data):', e.message);

@@ -8,13 +8,13 @@
   <title>First Appearance Hearing in Florida | Live Court Schedules | Shamrock Bail Bonds</title>
   <meta name="description" content="Your loved one has a court date in 24 hours. Learn what happens at a First Appearance hearing in Florida, watch live court streams, and get bail help fast. Call 239-332-2245." />
   <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://www.shamrockbailbonds.biz/first-appearance" />
+  <link rel="canonical" href="https://www.shamrockbailbonds.biz/first-appearance-hub" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="article" />
   <meta property="og:title" content="Florida First Appearance Hearing Guide | Shamrock Bail Bonds" />
   <meta property="og:description" content="What happens at a First Appearance hearing in Florida. Live court schedules, Zoom links, and how to post bail fast." />
-  <meta property="og:url" content="https://www.shamrockbailbonds.biz/first-appearance" />
+  <meta property="og:url" content="https://www.shamrockbailbonds.biz/first-appearance-hub" />
   <meta property="og:site_name" content="Shamrock Bail Bonds" />
 
   <!-- JSON-LD -->
@@ -414,8 +414,8 @@
     }
 
     .search-bar {
-      max-width: 500px;
-      margin: 0 auto 32px;
+      max-width: 560px;
+      margin: 0 auto 16px;
       position: relative;
     }
 
@@ -434,7 +434,6 @@
       border: 2px solid var(--border);
       border-radius: var(--radius-md);
       font-family: 'Inter', sans-serif;
-      font-size: 15px;
       background: var(--white);
       transition: var(--transition);
       outline: none;
@@ -448,6 +447,52 @@
     .search-bar input::placeholder {
       color: #9CA3AF;
     }
+
+    .county-toolbar {
+      max-width: 1000px;
+      margin: 0 auto 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      color: var(--navy);
+      cursor: pointer;
+      transition: var(--transition);
+      min-height: 40px;
+    }
+    .filter-chip:hover {
+      border-color: var(--blue-bright);
+      color: var(--blue-bright);
+    }
+    .filter-chip.active {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: var(--white);
+    }
+    .filter-chip i { font-size: 16px; }
+
+    .county-status {
+      text-align: center;
+      font-size: 13px;
+      color: var(--mid-grey);
+      margin-bottom: 20px;
+      min-height: 20px;
+    }
+    .county-status strong { color: var(--navy); font-weight: 600; }
 
     .county-grid {
       display: grid;
@@ -469,12 +514,16 @@
       box-shadow: var(--shadow-md);
       transform: translateY(-2px);
     }
+    .county-card.has-feed {
+      border-color: rgba(34,197,94,0.35);
+    }
 
     .county-card-header {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       margin-bottom: 12px;
+      gap: 12px;
     }
 
     .county-card h3 {
@@ -488,7 +537,40 @@
       font-size: 13px;
       color: var(--blue-bright);
       font-weight: 500;
-      margin-bottom: 12px;
+      margin-bottom: 4px;
+    }
+
+    .county-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: flex-start;
+      justify-content: flex-end;
+      flex-shrink: 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'Poppins', sans-serif;
+      padding: 4px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .badge-live {
+      background: rgba(34,197,94,0.12);
+      color: var(--green-dark);
+    }
+    .badge-dist {
+      background: rgba(13,110,253,0.1);
+      color: var(--blue-bright);
+    }
+    .badge-dir {
+      background: var(--light-grey);
+      color: var(--mid-grey);
     }
 
     .status-dot {
@@ -861,17 +943,31 @@
   <!-- ═══════════════════════════════════════════════════════════════
        SECTION 5: COUNTY SCHEDULES — Filterable Cards
   ═══════════════════════════════════════════════════════════════ -->
-  <section class="county-section">
+  <section class="county-section" id="countySchedules">
     <div class="container">
-      <h2 class="section-title reveal">Live First Appearance Schedules by County</h2>
+      <h2 class="section-title reveal">First Appearance Schedules — All 67 Florida Counties</h2>
       <p class="section-subtitle reveal">
-        Many Florida counties now livestream First Appearance hearings or offer Zoom access. Find your county below.
+        Counties nearest you appear first when location is allowed. Search any county, or filter to live Zoom / livestream feeds when available.
       </p>
 
       <div class="search-bar reveal">
         <i class="ph ph-magnifying-glass"></i>
-        <input type="text" id="countySearch" placeholder="Search by county name..." autocomplete="off" />
+        <input type="text" id="countySearch" placeholder="Search by county, city seat, or circuit..." autocomplete="off" aria-label="Search counties" />
       </div>
+
+      <div class="county-toolbar reveal">
+        <button type="button" class="filter-chip active" data-filter="all" id="filterAll">
+          <i class="ph ph-map-trifold"></i> All counties
+        </button>
+        <button type="button" class="filter-chip" data-filter="live" id="filterLive">
+          <i class="ph ph-broadcast"></i> Live feeds
+        </button>
+        <button type="button" class="filter-chip" data-filter="near" id="filterNear">
+          <i class="ph ph-navigation-arrow"></i> Near me
+        </button>
+      </div>
+
+      <div class="county-status" id="countyStatus" aria-live="polite"></div>
 
       <div class="county-grid" id="countyGrid">
         <!-- Rendered by JS -->
@@ -879,12 +975,12 @@
 
       <div class="no-results" id="noResults">
         <i class="ph ph-map-trifold"></i>
-        No counties match your search. Try a different name.
+        No counties match your search. Try a different name, or clear filters.
       </div>
 
       <div class="dir-link reveal">
         <a href="https://courtrooms.flcourts.gov/" target="_blank" rel="noopener" class="btn btn--outline" id="flCourtsDirBtn">
-          <i class="ph ph-magnifying-glass"></i> Search All 67 Counties on FL Courts Directory
+          <i class="ph ph-magnifying-glass"></i> Open FL Courts Live Directory
         </a>
       </div>
     </div>
@@ -922,106 +1018,111 @@
   </section>
 
   <!-- ═══════════════════════════════════════════════════════════════
-       JAVASCRIPT — Data, Rendering, Interactions
+       JAVASCRIPT — All 67 counties, nearest-first, search + feed filters
   ═══════════════════════════════════════════════════════════════ -->
   <script>
-    // ─── COUNTY DATA (mirrors backend First Appearance.js) ────────
-    const COUNTY_DATA = [
-      {
-        name: "Lee County", circuit: "20th Judicial Circuit",
-        schedule: "10:00 AM — Daily (M–F)", location: "Lee County Justice Center, Fort Myers",
-        accessType: "livestream", liveUrl: "https://courtrooms.flcourts.gov/",
-        notes: "Livestream available"
-      },
-      {
-        name: "Hendry County", circuit: "20th Judicial Circuit",
-        schedule: "Varies (Check Zoom)", location: "Hendry County Courthouse, LaBelle",
-        accessType: "zoom", liveUrl: "https://zoom.us/j/94329649927?pwd=l5J4yPuaqHacJ1lQoe3GaJK9TTpA7a.1",
-        notes: "Zoom ID: 943 2964 9927 / Passcode: 550315"
-      },
-      {
-        name: "Charlotte County", circuit: "20th Judicial Circuit",
-        schedule: "Daily (M–F)", location: "Charlotte County Justice Center, Punta Gorda",
-        accessType: "livestream", liveUrl: "https://courtrooms.flcourts.gov/",
-        notes: "Livestream available"
-      },
-      {
-        name: "Collier County", circuit: "20th Judicial Circuit",
-        schedule: "Daily (M–F)", location: "Collier County Courthouse, Naples",
-        accessType: "livestream", liveUrl: "https://courtrooms.flcourts.gov/",
-        notes: "Livestream available"
-      },
-      {
-        name: "Hillsborough County", circuit: "13th Judicial Circuit",
-        schedule: "1:30 PM (M–F)", location: "Hillsborough County Courthouse, Tampa",
-        accessType: "inperson", liveUrl: "https://courtrooms.flcourts.gov/",
-        notes: "In-person only"
-      },
-      {
-        name: "Orange County", circuit: "9th Judicial Circuit",
-        schedule: "Varies", location: "Orange County Courthouse, Orlando",
-        accessType: "livestream", liveUrl: "https://ninthcircuit.org/communication-outreach/initial-appearances-live",
-        notes: "Livestream available"
-      },
-      {
-        name: "Sarasota County", circuit: "12th Judicial Circuit",
-        schedule: "Varies", location: "Sarasota County Courthouse",
-        accessType: "directory", liveUrl: "https://courtrooms.flcourts.gov/",
-        notes: "Check FL Courts Directory"
-      },
-      {
-        name: "Manatee County", circuit: "12th Judicial Circuit",
-        schedule: "Varies", location: "Manatee County Courthouse, Bradenton",
-        accessType: "directory", liveUrl: "https://courtrooms.flcourts.gov/",
-        notes: "Check FL Courts Directory"
-      },
-      {
-        name: "DeSoto County", circuit: "12th Judicial Circuit",
-        schedule: "Varies", location: "DeSoto County Courthouse, Arcadia",
-        accessType: "directory", liveUrl: "https://courtrooms.flcourts.gov/",
-        notes: "Check FL Courts Directory"
-      },
-      {
-        name: "Palm Beach County", circuit: "15th Judicial Circuit",
-        schedule: "Varies", location: "Palm Beach County Courthouse, West Palm Beach",
-        accessType: "directory", liveUrl: "https://courtrooms.flcourts.gov/",
-        notes: "Check FL Courts Directory"
-      },
-      {
-        name: "Seminole County", circuit: "18th Judicial Circuit",
-        schedule: "Varies", location: "Seminole County Courthouse, Sanford",
-        accessType: "directory", liveUrl: "https://courtrooms.flcourts.gov/",
-        notes: "Check FL Courts Directory"
-      },
-      {
-        name: "Polk County", circuit: "10th Judicial Circuit",
-        schedule: "Varies", location: "Polk County Courthouse, Bartow",
-        accessType: "directory", liveUrl: "https://courtrooms.flcourts.gov/",
-        notes: "Check FL Courts Directory"
-      }
-    ];
+    // Fallback catalog (all 67). Parent Velo may replace via postMessage updateCounties.
+    const COUNTY_FALLBACK = [{"name":"Charlotte County","slug":"charlotte","circuit":"20th (Twentieth Judicial Circuit)","schedule":"Daily (M–F)","location":"Charlotte County Justice Center, Punta Gorda","accessType":"livestream","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Livestream available via FL Courts","lat":26.9,"lon":-81.92,"hasLiveFeed":true,"tier":1,"region":"Southwest","countySeat":"Punta Gorda"},{"name":"Collier County","slug":"collier","circuit":"20th (Twentieth Judicial Circuit)","schedule":"Daily (M–F)","location":"Collier County Courthouse, Naples","accessType":"livestream","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Livestream available via FL Courts","lat":26.1,"lon":-81.39,"hasLiveFeed":true,"tier":1,"region":"Southwest","countySeat":"Naples"},{"name":"Hendry County","slug":"hendry","circuit":"20th (Twentieth Judicial Circuit)","schedule":"Varies (check Zoom)","location":"Hendry County Courthouse, LaBelle","accessType":"zoom","liveUrl":"https://zoom.us/j/94329649927?pwd=l5J4yPuaqHacJ1lQoe3GaJK9TTpA7a.1","notes":"Zoom ID: 943 2964 9927 / Passcode: 550315","lat":26.54,"lon":-81.14,"hasLiveFeed":true,"tier":1,"region":"Southwest","countySeat":"LaBelle"},{"name":"Lee County","slug":"lee","circuit":"20th (Twentieth Judicial Circuit)","schedule":"10:00 AM — Daily (M–F)","location":"Lee County Justice Center, Fort Myers","accessType":"livestream","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Livestream available via FL Courts","lat":26.58,"lon":-81.85,"hasLiveFeed":true,"tier":1,"region":"Southwest","countySeat":"Fort Myers"},{"name":"DeSoto County","slug":"desoto","circuit":"12th (Twelfth Judicial Circuit)","schedule":"Varies","location":"DeSoto County Courthouse, Arcadia","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":27.2,"lon":-81.81,"hasLiveFeed":false,"tier":1,"region":"Southwest","countySeat":"Arcadia"},{"name":"Manatee County","slug":"manatee","circuit":"12th (Twelfth Judicial Circuit)","schedule":"Varies","location":"Manatee County Courthouse, Bradenton","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":27.49,"lon":-82.35,"hasLiveFeed":false,"tier":1,"region":"West Central","countySeat":"Bradenton"},{"name":"Sarasota County","slug":"sarasota","circuit":"12th (Twelfth Judicial Circuit)","schedule":"Varies","location":"Sarasota County Courthouse, Sarasota","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":27.18,"lon":-82.35,"hasLiveFeed":false,"tier":1,"region":"Southwest","countySeat":"Sarasota"},{"name":"Orange County","slug":"orange","circuit":"9th (Ninth Judicial Circuit)","schedule":"Varies","location":"Orange County Courthouse, Orlando","accessType":"livestream","liveUrl":"https://ninthcircuit.org/communication-outreach/initial-appearances-live","notes":"Livestream via 9th Circuit","lat":28.51,"lon":-81.32,"hasLiveFeed":true,"tier":2,"region":"Central","countySeat":"Orlando"},{"name":"Brevard County","slug":"brevard","circuit":"18th (Eighteenth Judicial Circuit)","schedule":"Varies","location":"Brevard County Courthouse, Titusville / Viera","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":28.3,"lon":-80.7,"hasLiveFeed":false,"tier":2,"region":"East Central","countySeat":"Titusville"},{"name":"Broward County","slug":"broward","circuit":"17th (Seventeenth Judicial Circuit)","schedule":"Varies","location":"Broward County Courthouse, Fort Lauderdale","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":26.15,"lon":-80.45,"hasLiveFeed":false,"tier":2,"region":"Southeast","countySeat":"Fort Lauderdale"},{"name":"Duval County","slug":"duval","circuit":"4th (Fourth Judicial Circuit)","schedule":"Varies","location":"Duval County Courthouse, Jacksonville","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":30.33,"lon":-81.67,"hasLiveFeed":false,"tier":2,"region":"Northeast","countySeat":"Jacksonville"},{"name":"Glades County","slug":"glades","circuit":"20th (Twentieth Judicial Circuit)","schedule":"Varies","location":"Glades County Courthouse, Moore Haven","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":26.95,"lon":-81.18,"hasLiveFeed":false,"tier":2,"region":"Southwest","countySeat":"Moore Haven"},{"name":"Hillsborough County","slug":"hillsborough","circuit":"13th (Thirteenth Judicial Circuit)","schedule":"1:30 PM — Daily (M–F)","location":"Hillsborough County Courthouse, Tampa","accessType":"inperson","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Primarily in-person","lat":27.91,"lon":-82.35,"hasLiveFeed":false,"tier":2,"region":"West Central","countySeat":"Tampa"},{"name":"Miami-Dade County","slug":"miami-dade","circuit":"11th (Eleventh Judicial Circuit)","schedule":"Daily","location":"Richard E. Gerstein Justice Building, Miami","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":25.61,"lon":-80.56,"hasLiveFeed":false,"tier":2,"region":"Southeast","countySeat":"Miami"},{"name":"Palm Beach County","slug":"palm-beach","circuit":"15th (Fifteenth Judicial Circuit)","schedule":"Varies","location":"Palm Beach County Courthouse, West Palm Beach","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":26.63,"lon":-80.44,"hasLiveFeed":false,"tier":2,"region":"Southeast","countySeat":"West Palm Beach"},{"name":"Pinellas County","slug":"pinellas","circuit":"6th (Sixth Judicial Circuit)","schedule":"Varies","location":"Pinellas County Justice Center, Clearwater","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":27.9,"lon":-82.74,"hasLiveFeed":false,"tier":2,"region":"West Central","countySeat":"Clearwater"},{"name":"Polk County","slug":"polk","circuit":"10th (Tenth Judicial Circuit)","schedule":"Varies","location":"Polk County Courthouse, Bartow","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":27.96,"lon":-81.87,"hasLiveFeed":false,"tier":2,"region":"Central","countySeat":"Bartow"},{"name":"Seminole County","slug":"seminole","circuit":"18th (Eighteenth Judicial Circuit)","schedule":"Varies","location":"Seminole County Courthouse, Sanford","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"Check FL Courts Directory","lat":28.72,"lon":-81.21,"hasLiveFeed":false,"tier":2,"region":"Central","countySeat":"Sanford"},{"name":"Alachua County","slug":"alachua","circuit":"8th (Eighth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Alachua County Courthouse, Gainesville","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.67,"lon":-82.35,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Gainesville"},{"name":"Baker County","slug":"baker","circuit":"8th (Eighth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Baker County Courthouse, Macclenny","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.33,"lon":-82.29,"hasLiveFeed":false,"tier":3,"region":"Northeast","countySeat":"Macclenny"},{"name":"Bay County","slug":"bay","circuit":"14th (Fourteenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Bay County Courthouse, Panama City","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.26,"lon":-85.63,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Panama City"},{"name":"Bradford County","slug":"bradford","circuit":"8th (Eighth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Bradford County Courthouse, Starke","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.95,"lon":-82.16,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Starke"},{"name":"Calhoun County","slug":"calhoun","circuit":"14th (Fourteenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Calhoun County Courthouse, Blountstown","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.41,"lon":-85.2,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Blountstown"},{"name":"Citrus County","slug":"citrus","circuit":"5th (Fifth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Citrus County Courthouse, Inverness","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":28.85,"lon":-82.47,"hasLiveFeed":false,"tier":3,"region":"West Central","countySeat":"Inverness"},{"name":"Clay County","slug":"clay","circuit":"4th (Fourth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Clay County Courthouse, Green Cove Springs","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.98,"lon":-81.86,"hasLiveFeed":false,"tier":3,"region":"Northeast","countySeat":"Green Cove Springs"},{"name":"Columbia County","slug":"columbia","circuit":"3rd (Third Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Columbia County Courthouse, Lake City","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.22,"lon":-82.63,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Lake City"},{"name":"Dixie County","slug":"dixie","circuit":"3rd (Third Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Dixie County Courthouse, Cross City","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.6,"lon":-83.15,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Cross City"},{"name":"Escambia County","slug":"escambia","circuit":"1st (First Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Escambia County Courthouse, Pensacola","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.65,"lon":-87.35,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Pensacola"},{"name":"Flagler County","slug":"flagler","circuit":"7th (Seventh Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Flagler County Courthouse, Bunnell","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.47,"lon":-81.3,"hasLiveFeed":false,"tier":3,"region":"Northeast","countySeat":"Bunnell"},{"name":"Franklin County","slug":"franklin","circuit":"2nd (Second Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Franklin County Courthouse, Apalachicola","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.8,"lon":-84.8,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Apalachicola"},{"name":"Gadsden County","slug":"gadsden","circuit":"2nd (Second Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Gadsden County Courthouse, Quincy","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.56,"lon":-84.63,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Quincy"},{"name":"Gilchrist County","slug":"gilchrist","circuit":"8th (Eighth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Gilchrist County Courthouse, Trenton","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.72,"lon":-82.78,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Trenton"},{"name":"Gulf County","slug":"gulf","circuit":"14th (Fourteenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Gulf County Courthouse, Port St. Joe","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.93,"lon":-85.22,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Port St. Joe"},{"name":"Hamilton County","slug":"hamilton","circuit":"3rd (Third Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Hamilton County Courthouse, Jasper","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.51,"lon":-82.95,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Jasper"},{"name":"Hardee County","slug":"hardee","circuit":"10th (Tenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Hardee County Courthouse, Wauchula","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":27.49,"lon":-81.79,"hasLiveFeed":false,"tier":3,"region":"Central","countySeat":"Wauchula"},{"name":"Hernando County","slug":"hernando","circuit":"5th (Fifth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Hernando County Courthouse, Brooksville","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":28.56,"lon":-82.46,"hasLiveFeed":false,"tier":3,"region":"West Central","countySeat":"Brooksville"},{"name":"Highlands County","slug":"highlands","circuit":"10th (Tenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Highlands County Courthouse, Sebring","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":27.35,"lon":-81.35,"hasLiveFeed":false,"tier":3,"region":"Central","countySeat":"Sebring"},{"name":"Holmes County","slug":"holmes","circuit":"14th (Fourteenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Holmes County Courthouse, Bonifay","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.86,"lon":-85.81,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Bonifay"},{"name":"Indian River County","slug":"indian-river","circuit":"19th (Nineteenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Indian River County Courthouse, Vero Beach","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":27.67,"lon":-80.49,"hasLiveFeed":false,"tier":3,"region":"East Central","countySeat":"Vero Beach"},{"name":"Jackson County","slug":"jackson","circuit":"14th (Fourteenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Jackson County Courthouse, Marianna","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.79,"lon":-85.22,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Marianna"},{"name":"Jefferson County","slug":"jefferson","circuit":"2nd (Second Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Jefferson County Courthouse, Monticello","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.41,"lon":-83.9,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Monticello"},{"name":"Lafayette County","slug":"lafayette","circuit":"3rd (Third Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Lafayette County Courthouse, Mayo","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.07,"lon":-83.18,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Mayo"},{"name":"Lake County","slug":"lake","circuit":"5th (Fifth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Lake County Courthouse, Tavares","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":28.75,"lon":-81.72,"hasLiveFeed":false,"tier":3,"region":"Central","countySeat":"Tavares"},{"name":"Leon County","slug":"leon","circuit":"2nd (Second Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Leon County Courthouse, Tallahassee","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.46,"lon":-84.27,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Tallahassee"},{"name":"Levy County","slug":"levy","circuit":"8th (Eighth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Levy County Courthouse, Bronson","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.27,"lon":-82.61,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Bronson"},{"name":"Liberty County","slug":"liberty","circuit":"2nd (Second Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Liberty County Courthouse, Bristol","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.25,"lon":-84.86,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Bristol"},{"name":"Madison County","slug":"madison","circuit":"3rd (Third Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Madison County Courthouse, Madison","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.45,"lon":-83.47,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Madison"},{"name":"Marion County","slug":"marion","circuit":"5th (Fifth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Marion County Courthouse, Ocala","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.19,"lon":-82.13,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Ocala"},{"name":"Martin County","slug":"martin","circuit":"19th (Nineteenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Martin County Courthouse, Stuart","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":27.08,"lon":-80.42,"hasLiveFeed":false,"tier":3,"region":"Southeast","countySeat":"Stuart"},{"name":"Monroe County","slug":"monroe","circuit":"16th (Sixteenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Monroe County Courthouse, Key West","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":25.1,"lon":-81.1,"hasLiveFeed":false,"tier":3,"region":"Southeast","countySeat":"Key West"},{"name":"Nassau County","slug":"nassau","circuit":"4th (Fourth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Nassau County Courthouse, Fernandina Beach","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.61,"lon":-81.76,"hasLiveFeed":false,"tier":3,"region":"Northeast","countySeat":"Fernandina Beach"},{"name":"Okaloosa County","slug":"okaloosa","circuit":"1st (First Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Okaloosa County Courthouse, Crestview","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.66,"lon":-86.58,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Crestview"},{"name":"Okeechobee County","slug":"okeechobee","circuit":"19th (Nineteenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Okeechobee County Courthouse, Okeechobee","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":27.25,"lon":-80.89,"hasLiveFeed":false,"tier":3,"region":"Central","countySeat":"Okeechobee"},{"name":"Osceola County","slug":"osceola","circuit":"9th (Ninth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Osceola County Courthouse, Kissimmee","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":28.06,"lon":-81.15,"hasLiveFeed":false,"tier":3,"region":"Central","countySeat":"Kissimmee"},{"name":"Pasco County","slug":"pasco","circuit":"6th (Sixth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Pasco County Courthouse, Dade City","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":28.3,"lon":-82.46,"hasLiveFeed":false,"tier":3,"region":"West Central","countySeat":"Dade City"},{"name":"Putnam County","slug":"putnam","circuit":"7th (Seventh Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Putnam County Courthouse, Palatka","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.62,"lon":-81.73,"hasLiveFeed":false,"tier":3,"region":"Northeast","countySeat":"Palatka"},{"name":"Santa Rosa County","slug":"santa-rosa","circuit":"1st (First Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Santa Rosa County Courthouse, Milton","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.69,"lon":-87.01,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Milton"},{"name":"St. Johns County","slug":"st-johns","circuit":"7th (Seventh Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"St. Johns County Courthouse, St. Augustine","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.93,"lon":-81.42,"hasLiveFeed":false,"tier":3,"region":"Northeast","countySeat":"St. Augustine"},{"name":"St. Lucie County","slug":"st-lucie","circuit":"19th (Nineteenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"St. Lucie County Courthouse, Fort Pierce","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":27.38,"lon":-80.43,"hasLiveFeed":false,"tier":3,"region":"Southeast","countySeat":"Fort Pierce"},{"name":"Sumter County","slug":"sumter","circuit":"5th (Fifth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Sumter County Courthouse, Bushnell","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":28.71,"lon":-82.08,"hasLiveFeed":false,"tier":3,"region":"Central","countySeat":"Bushnell"},{"name":"Suwannee County","slug":"suwannee","circuit":"3rd (Third Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Suwannee County Courthouse, Live Oak","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.19,"lon":-83,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Live Oak"},{"name":"Taylor County","slug":"taylor","circuit":"3rd (Third Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Taylor County Courthouse, Perry","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.05,"lon":-83.61,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Perry"},{"name":"Union County","slug":"union","circuit":"8th (Eighth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Union County Courthouse, Lake Butler","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.04,"lon":-82.37,"hasLiveFeed":false,"tier":3,"region":"North Central","countySeat":"Lake Butler"},{"name":"Volusia County","slug":"volusia","circuit":"7th (Seventh Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Volusia County Courthouse, DeLand","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":29.03,"lon":-81.07,"hasLiveFeed":false,"tier":3,"region":"East Central","countySeat":"DeLand"},{"name":"Wakulla County","slug":"wakulla","circuit":"2nd (Second Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Wakulla County Courthouse, Crawfordville","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.15,"lon":-84.37,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Crawfordville"},{"name":"Walton County","slug":"walton","circuit":"1st (First Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Walton County Courthouse, DeFuniak Springs","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.64,"lon":-86.17,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"DeFuniak Springs"},{"name":"Washington County","slug":"washington","circuit":"14th (Fourteenth Judicial Circuit)","schedule":"Within 24 hours of arrest (call for daily courtroom time)","location":"Washington County Courthouse, Chipley","accessType":"directory","liveUrl":"https://courtrooms.flcourts.gov/","notes":"First Appearance required within 24 hours. Check FL Courts Directory or call (239) 332-2245.","lat":30.61,"lon":-85.66,"hasLiveFeed":false,"tier":3,"region":"Northwest","countySeat":"Chipley"}];
+    let COUNTY_DATA = COUNTY_FALLBACK.slice();
+    let activeFilter = 'all'; // all | live | near
+    let userLoc = null; // { lat, lon }
+    let sortedBy = 'tier';
+    let focusSlug = null;
 
     const FAQ_DATA = [
       { q: "How long after arrest is the First Appearance held?", a: "Under Florida Rule of Criminal Procedure 3.130, the First Appearance must be held within 24 hours of arrest. If it is not, the defendant may be entitled to release." },
-      { q: "Can I attend my loved one's First Appearance?", a: "Many Florida counties now broadcast First Appearance hearings live via Zoom or online streaming. You can watch using the links in our county schedule table above. Some courtrooms (like Hillsborough) are primarily in-person and may have limited public seating." },
-      { q: "What should the defendant say at First Appearance?", a: "Very little. The defendant should confirm their name and that they understand their rights. They should NOT explain the facts of the case, argue with the judge, or make any statements about what happened. Everything said in court is recorded." },
-      { q: "What if the judge sets a high bond amount?", a: "Call Shamrock Bail Bonds immediately at 239-332-2245. We only require 10% of the bond amount (the Florida-regulated premium). We can also discuss payment plans and begin the process the moment the bond is set." },
-      { q: "What is the difference between First Appearance and Arraignment?", a: "First Appearance happens within 24 hours of arrest and focuses on bail. Arraignment is a separate, later hearing where the defendant formally enters a plea of Guilty, Not Guilty, or No Contest. They are two distinct steps in the criminal process." },
-      { q: "What if there is no probable cause at First Appearance?", a: "If the judge finds there is no probable cause to support the arrest, the defendant must be released immediately. This is rare but does happen, particularly in cases where the arrest report is incomplete." },
-      { q: "Can the bond amount be changed after First Appearance?", a: "Yes. An attorney can file a motion to reduce or modify the bond at a later hearing. However, the fastest path to release is to post the bond that is set at First Appearance and work with an attorney afterward." }
+      { q: "Can I attend my loved one's First Appearance?", a: "Many Florida counties broadcast First Appearance hearings live via Zoom or online streaming. Use the county cards below for links when available. Some courtrooms are primarily in-person." },
+      { q: "What should the defendant say at First Appearance?", a: "Very little. Confirm name and that you understand your rights. Do NOT explain the facts of the case or argue with the judge. Everything said in court is recorded." },
+      { q: "What if the judge sets a high bond amount?", a: "Call Shamrock Bail Bonds immediately at 239-332-2245. We only require 10% of the bond amount (the Florida-regulated premium) and can begin the process the moment the bond is set." },
+      { q: "What is the difference between First Appearance and Arraignment?", a: "First Appearance happens within 24 hours of arrest and focuses on bail. Arraignment is a later hearing where the defendant formally enters a plea." },
+      { q: "What if there is no probable cause at First Appearance?", a: "If the judge finds no probable cause, the defendant must be released immediately. This is uncommon but does happen when the arrest report is incomplete." },
+      { q: "Can the bond amount be changed after First Appearance?", a: "Yes. An attorney can file a motion to reduce or modify the bond. The fastest path to release is usually posting the bond set at First Appearance, then working with counsel." },
+      { q: "Does Shamrock serve all 67 Florida counties?", a: "Yes. We post bonds statewide. A $125 transfer fee may apply outside Lee and Charlotte counties and is waived for bonds over $25,000. Call 239-332-2245." }
     ];
 
-    // ─── RENDER COUNTY CARDS ──────────────────────────────────────
-    function renderCounties(data) {
+    function haversineMiles(lat1, lon1, lat2, lon2) {
+      const R = 3958.8;
+      const toRad = (d) => (d * Math.PI) / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function applyDistances() {
+      if (!userLoc) return;
+      COUNTY_DATA.forEach((c) => {
+        if (c.lat != null && c.lon != null) {
+          c.distanceMiles = Math.round(haversineMiles(userLoc.lat, userLoc.lon, c.lat, c.lon) * 10) / 10;
+        } else {
+          c.distanceMiles = null;
+        }
+      });
+    }
+
+    function sortCounties() {
+      if (userLoc || activeFilter === 'near') {
+        COUNTY_DATA.sort((a, b) => {
+          if (a.distanceMiles == null && b.distanceMiles == null) return a.name.localeCompare(b.name);
+          if (a.distanceMiles == null) return 1;
+          if (b.distanceMiles == null) return -1;
+          return a.distanceMiles - b.distanceMiles;
+        });
+        sortedBy = 'distance';
+      } else {
+        COUNTY_DATA.sort((a, b) => {
+          if (a.tier !== b.tier) return a.tier - b.tier;
+          if (!!a.hasLiveFeed !== !!b.hasLiveFeed) return a.hasLiveFeed ? -1 : 1;
+          return a.name.localeCompare(b.name);
+        });
+        sortedBy = 'tier';
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function getFiltered() {
+      const term = (document.getElementById('countySearch').value || '').toLowerCase().trim();
+      return COUNTY_DATA.filter((c) => {
+        if (activeFilter === 'live') {
+          const live = c.hasLiveFeed || c.accessType === 'zoom' || c.accessType === 'livestream';
+          if (!live) return false;
+        }
+        if (!term) return true;
+        const hay = [c.name, c.slug, c.circuit, c.location, c.countySeat, c.region, c.notes]
+          .filter(Boolean).join(' ').toLowerCase();
+        return hay.includes(term);
+      });
+    }
+
+    function updateStatus(visibleCount) {
+      const el = document.getElementById('countyStatus');
+      if (!el) return;
+      const sortLabel = sortedBy === 'distance'
+        ? 'nearest to you first'
+        : 'Southwest Florida & live feeds first';
+      const locNote = userLoc ? ' · location on' : '';
+      el.innerHTML = 'Showing <strong>' + visibleCount + '</strong> of <strong>' +
+        COUNTY_DATA.length + '</strong> counties · sorted ' + sortLabel + locNote;
+    }
+
+    function renderCounties() {
+      const data = getFiltered();
       const grid = document.getElementById('countyGrid');
       const noResults = document.getElementById('noResults');
+      updateStatus(data.length);
 
-      if (data.length === 0) {
+      if (!data.length) {
         grid.innerHTML = '';
         noResults.style.display = 'block';
+        reportHeight();
         return;
       }
-
       noResults.style.display = 'none';
 
       const btnLabels = {
@@ -1031,124 +1132,251 @@
         inperson: { icon: 'ph-map-pin', text: 'Courthouse Info' }
       };
 
-      grid.innerHTML = data.map(c => {
-        const isLive = c.accessType === 'zoom' || c.accessType === 'livestream';
+      grid.innerHTML = data.map((c) => {
+        const isLive = c.accessType === 'zoom' || c.accessType === 'livestream' || c.hasLiveFeed;
         const btn = btnLabels[c.accessType] || { icon: 'ph-link', text: 'View' };
-
-        return `
-          <div class="county-card">
-            <div class="county-card-header">
-              <div>
-                <h3>${c.name}</h3>
-                <div class="county-circuit">${c.circuit}</div>
-              </div>
-              <div class="status-dot ${isLive ? 'live' : 'offline'}"></div>
-            </div>
-            <div class="county-detail"><i class="ph ph-clock"></i> ${c.schedule}</div>
-            <div class="county-detail"><i class="ph ph-buildings"></i> ${c.location}</div>
-            <div class="county-notes">${c.notes}</div>
-            <a href="${c.liveUrl}" target="_blank" rel="noopener" class="btn btn--primary">
-              <i class="ph ${btn.icon}"></i> ${btn.text} <i class="ph ph-arrow-square-out" style="font-size:14px;"></i>
-            </a>
-          </div>
-        `;
+        const dist = (c.distanceMiles != null)
+          ? '<span class="badge badge-dist"><i class="ph ph-navigation-arrow"></i> ' + c.distanceMiles + ' mi</span>'
+          : '';
+        const liveBadge = isLive
+          ? '<span class="badge badge-live"><i class="ph ph-broadcast"></i> Live feed</span>'
+          : '<span class="badge badge-dir">Directory</span>';
+        const focus = (focusSlug && c.slug === focusSlug) ? ' style="outline:2px solid var(--gold);"' : '';
+        const detailUrl = 'https://www.shamrockbailbonds.biz/first-appearance/' + encodeURIComponent(c.slug || '');
+        return (
+          '<div class="county-card' + (isLive ? ' has-feed' : '') + '" data-slug="' + escapeHtml(c.slug || '') + '"' + focus + '>' +
+            '<div class="county-card-header">' +
+              '<div>' +
+                '<h3>' + escapeHtml(c.name) + '</h3>' +
+                '<div class="county-circuit">' + escapeHtml(c.circuit || '') + '</div>' +
+              '</div>' +
+              '<div class="county-badges">' + liveBadge + dist +
+                '<div class="status-dot ' + (isLive ? 'live' : 'offline') + '"></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="county-detail"><i class="ph ph-clock"></i> ' + escapeHtml(c.schedule) + '</div>' +
+            '<div class="county-detail"><i class="ph ph-buildings"></i> ' + escapeHtml(c.location) + '</div>' +
+            '<div class="county-notes">' + escapeHtml(c.notes) + '</div>' +
+            '<div style="display:flex;flex-direction:column;gap:8px;">' +
+              '<a href="' + escapeHtml(c.liveUrl) + '" target="_blank" rel="noopener" class="btn btn--primary" data-action="' + escapeHtml(c.accessType) + '" data-county="' + escapeHtml(c.name) + '">' +
+                '<i class="ph ' + btn.icon + '"></i> ' + btn.text +
+                ' <i class="ph ph-arrow-square-out" style="font-size:14px;"></i>' +
+              '</a>' +
+              '<a href="' + detailUrl + '" class="btn btn--outline" style="width:100%;font-size:13px;" data-action="county_page" data-county="' + escapeHtml(c.name) + '">' +
+                '<i class="ph ph-info"></i> ' + escapeHtml((c.name || '').replace(/ County$/i, '')) + ' FA details' +
+              '</a>' +
+            '</div>' +
+          '</div>'
+        );
       }).join('');
+
+      // Wire CTA tracking
+      grid.querySelectorAll('a[data-action]').forEach((a) => {
+        a.addEventListener('click', () => {
+          try {
+            window.parent.postMessage({
+              type: 'CTA_CLICK',
+              action: a.getAttribute('data-action'),
+              county: a.getAttribute('data-county')
+            }, '*');
+          } catch (e) { /* ignore */ }
+        });
+      });
+
+      reportHeight();
     }
 
-    // ─── RENDER FAQ ───────────────────────────────────────────────
+    function setFilter(filter) {
+      activeFilter = filter;
+      document.querySelectorAll('.filter-chip').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-filter') === filter);
+      });
+      if (filter === 'near' && !userLoc) {
+        requestNearMe();
+        return;
+      }
+      if (filter === 'near') sortCounties();
+      renderCounties();
+    }
+
+    function requestNearMe() {
+      const status = document.getElementById('countyStatus');
+      if (status) status.textContent = 'Getting your location…';
+      if (!navigator.geolocation) {
+        if (status) status.textContent = 'Location not available in this browser. Showing SWFL-first order.';
+        activeFilter = 'all';
+        document.querySelectorAll('.filter-chip').forEach((btn) => {
+          btn.classList.toggle('active', btn.getAttribute('data-filter') === 'all');
+        });
+        renderCounties();
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          userLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          applyDistances();
+          sortCounties();
+          activeFilter = 'near';
+          document.querySelectorAll('.filter-chip').forEach((btn) => {
+            btn.classList.toggle('active', btn.getAttribute('data-filter') === 'near');
+          });
+          renderCounties();
+          try {
+            window.parent.postMessage({ type: 'COUNTY_SEARCH', query: 'near_me', resultsCount: COUNTY_DATA.length }, '*');
+          } catch (e) { /* ignore */ }
+        },
+        () => {
+          if (status) status.textContent = 'Location permission denied. Showing SWFL & live feeds first — search any county.';
+          activeFilter = 'all';
+          document.querySelectorAll('.filter-chip').forEach((btn) => {
+            btn.classList.toggle('active', btn.getAttribute('data-filter') === 'all');
+          });
+          renderCounties();
+        },
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+      );
+    }
+
     function renderFAQ() {
       const list = document.getElementById('faqList');
-      list.innerHTML = FAQ_DATA.map((f, i) => `
-        <div class="faq-item" id="faq-${i}">
-          <button class="faq-question" onclick="toggleFaq(${i})" aria-expanded="false" aria-controls="faq-answer-${i}">
-            <span>${f.q}</span>
-            <span class="faq-toggle">+</span>
-          </button>
-          <div class="faq-answer" id="faq-answer-${i}" role="region">
-            <div class="faq-answer-inner">${f.a}</div>
-          </div>
-        </div>
-      `).join('');
+      list.innerHTML = FAQ_DATA.map((f, i) =>
+        '<div class="faq-item" id="faq-' + i + '">' +
+          '<button class="faq-question" onclick="toggleFaq(' + i + ')" aria-expanded="false" aria-controls="faq-answer-' + i + '">' +
+            '<span>' + escapeHtml(f.q) + '</span><span class="faq-toggle">+</span>' +
+          '</button>' +
+          '<div class="faq-answer" id="faq-answer-' + i + '" role="region">' +
+            '<div class="faq-answer-inner">' + escapeHtml(f.a) + '</div>' +
+          '</div>' +
+        '</div>'
+      ).join('');
     }
 
     function toggleFaq(idx) {
-      const item = document.getElementById(`faq-${idx}`);
+      const item = document.getElementById('faq-' + idx);
       const btn = item.querySelector('.faq-question');
       const isOpen = item.classList.contains('open');
-
-      // Close all others
-      document.querySelectorAll('.faq-item.open').forEach(el => {
+      document.querySelectorAll('.faq-item.open').forEach((el) => {
         el.classList.remove('open');
         el.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
       });
-
-      // Toggle current
       if (!isOpen) {
         item.classList.add('open');
         btn.setAttribute('aria-expanded', 'true');
+        try {
+          window.parent.postMessage({ type: 'FAQ_EXPAND', question: FAQ_DATA[idx].q }, '*');
+        } catch (e) { /* ignore */ }
       }
+      reportHeight();
+    }
+    window.toggleFaq = toggleFaq;
+
+    function reportHeight() {
+      const height = document.documentElement.scrollHeight;
+      try { window.parent.postMessage({ type: 'setHeight', height: height }, '*'); } catch (e) { /* ignore */ }
     }
 
-    // ─── SEARCH / FILTER ──────────────────────────────────────────
-    document.getElementById('countySearch').addEventListener('input', function(e) {
-      const term = e.target.value.toLowerCase().trim();
-      const filtered = term
-        ? COUNTY_DATA.filter(c => c.name.toLowerCase().includes(term) || c.circuit.toLowerCase().includes(term))
-        : COUNTY_DATA;
-      renderCounties(filtered);
+    function readQueryFocus() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const q = params.get('county') || params.get('c') || '';
+        if (q) {
+          focusSlug = String(q).toLowerCase().replace(/-county$/, '').trim();
+          const input = document.getElementById('countySearch');
+          if (input && !input.value) {
+            // Prefer human-readable name if we know it
+            const match = COUNTY_DATA.find((c) => c.slug === focusSlug);
+            input.value = match ? match.name.replace(/ County$/i, '') : focusSlug;
+          }
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    // Search
+    document.getElementById('countySearch').addEventListener('input', function (e) {
+      const term = e.target.value;
+      renderCounties();
+      try {
+        window.parent.postMessage({
+          type: 'COUNTY_SEARCH',
+          query: term,
+          resultsCount: getFiltered().length
+        }, '*');
+      } catch (err) { /* ignore */ }
     });
 
-    // ─── SCROLL REVEAL ────────────────────────────────────────────
+    // Filter chips
+    document.querySelectorAll('.filter-chip').forEach((btn) => {
+      btn.addEventListener('click', () => setFilter(btn.getAttribute('data-filter')));
+    });
+
+    // Parent Velo bridge
+    window.addEventListener('message', function (event) {
+      try {
+        const msg = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (!msg || !msg.type) return;
+
+        if (msg.type === 'updateCounties' && Array.isArray(msg.data) && msg.data.length) {
+          COUNTY_DATA = msg.data.map((c) => Object.assign({}, c, {
+            hasLiveFeed: c.hasLiveFeed || c.accessType === 'zoom' || c.accessType === 'livestream'
+          }));
+          if (msg.userLocation && msg.userLocation.lat != null) {
+            userLoc = { lat: Number(msg.userLocation.lat), lon: Number(msg.userLocation.lon) };
+          }
+          if (msg.sortedBy) sortedBy = msg.sortedBy;
+          if (!userLoc) applyDistances();
+          else applyDistances();
+          if (sortedBy === 'distance' || userLoc) sortCounties();
+          else sortCounties();
+          renderCounties();
+        }
+
+        if (msg.type === 'focusCounty' && msg.slug) {
+          focusSlug = String(msg.slug).toLowerCase().replace(/-county$/, '');
+          const input = document.getElementById('countySearch');
+          const match = COUNTY_DATA.find((c) => c.slug === focusSlug);
+          if (input) input.value = match ? match.name.replace(/ County$/i, '') : focusSlug;
+          renderCounties();
+          const card = document.querySelector('[data-slug="' + focusSlug + '"]');
+          if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        if (msg.type === 'scrollToSection' && msg.section) {
+          const target = document.querySelector('.' + msg.section);
+          if (target) target.scrollIntoView({ behavior: 'smooth' });
+        }
+      } catch (e) { /* ignore non-JSON */ }
+    });
+
     function initReveal() {
       const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('visible');
             observer.unobserve(entry.target);
           }
         });
       }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-
-      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
     }
 
-    // ─── POST MESSAGE BRIDGE — Wix Velo Communication ─────────────
-    // The parent Wix page can send messages to update data or trigger actions
-    window.addEventListener('message', function(event) {
-      try {
-        const msg = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-
-        if (msg.type === 'updateCounties' && Array.isArray(msg.data)) {
-          COUNTY_DATA.length = 0;
-          msg.data.forEach(c => COUNTY_DATA.push(c));
-          renderCounties(COUNTY_DATA);
-        }
-
-        if (msg.type === 'scrollToSection' && msg.section) {
-          const target = document.querySelector(`.${msg.section}`);
-          if (target) target.scrollIntoView({ behavior: 'smooth' });
-        }
-      } catch (e) { /* ignore non-JSON messages */ }
-    });
-
-    // Notify parent of height changes for iframe auto-resize
-    function reportHeight() {
-      const height = document.documentElement.scrollHeight;
-      window.parent.postMessage({ type: 'setHeight', height: height }, '*');
-    }
-
-    // ─── INIT ─────────────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', function() {
-      renderCounties(COUNTY_DATA);
+    document.addEventListener('DOMContentLoaded', function () {
+      readQueryFocus();
+      sortCounties();
+      renderCounties();
       renderFAQ();
       initReveal();
-
-      // Report height on load and resize
       reportHeight();
       window.addEventListener('resize', reportHeight);
-
-      // Re-report after images/fonts load
       window.addEventListener('load', () => setTimeout(reportHeight, 300));
+
+      // Soft-prompt near-me if permission already granted (no modal spam)
+      try {
+        if (navigator.permissions && navigator.permissions.query) {
+          navigator.permissions.query({ name: 'geolocation' }).then((r) => {
+            if (r.state === 'granted') requestNearMe();
+          }).catch(() => {});
+        }
+      } catch (e) { /* ignore */ }
     });
   </script>
 
