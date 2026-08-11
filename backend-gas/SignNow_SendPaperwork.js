@@ -93,6 +93,7 @@ const PHASE_2_DOCS = [
  * @param {string} data.caller_phone - Caller's phone number
  * @param {string} data.defendant_name - Full name of the defendant
  * @param {string} data.county - County where defendant is held
+ * @param {string} [data.surety_id] - Optional surety: 'osi' (default) or 'palmetto'
  * @returns {object} Result for ElevenLabs to read back to caller
  */
 function handleShannonSendPaperwork(data) {
@@ -107,6 +108,12 @@ function handleShannonSendPaperwork(data) {
             return { success: false, message: "I need the defendant's full name to prepare the paperwork." };
         }
 
+        // Normalize surety — only osi | palmetto (default osi)
+        var rawSurety = String(data.surety_id || data.surety || data.insuranceCompany || 'osi').toLowerCase().trim();
+        if (rawSurety === 'palmetto surety' || rawSurety === 'palmetto insurance') rawSurety = 'palmetto';
+        if (rawSurety !== 'palmetto' && rawSurety !== 'osi') rawSurety = 'osi';
+        data.surety_id = rawSurety;
+
         const defParts = _shannon_splitName(data.defendant_name);
         const config = SN_getConfig();
 
@@ -116,14 +123,17 @@ function handleShannonSendPaperwork(data) {
         // -----------------------------------------------------------------
         // 1. COPY — Copy each SignNow template directly (no Drive fetch)
         // Templates are tagged and live in SignNow. No PDF upload needed.
-        // Uses SIGNNOW_TEMPLATE_MAP from Telegram_Documents.js (single source of truth).
+        // Uses SIGNNOW_TEMPLATE_MAP + _resolveTemplateId (surety-aware).
         // -----------------------------------------------------------------
-        SN_log('Shannon_CopyTemplates', { count: SHANNON_TEMPLATE_ORDER.length });
+        SN_log('Shannon_CopyTemplates', { count: SHANNON_TEMPLATE_ORDER.length, surety_id: data.surety_id });
         const uploadedDocs = [];
         const caseLabel = (data.case_number || defParts.last || 'Unknown').replace(/[^a-zA-Z0-9]/g, '_');
 
         for (const templateKey of SHANNON_TEMPLATE_ORDER) {
-            const templateId = SIGNNOW_TEMPLATE_MAP[templateKey];
+            // Palmetto overrides OSI for 5 surety-specific docs via -palmetto keys
+            const templateId = (typeof _resolveTemplateId === 'function')
+                ? _resolveTemplateId(templateKey, data.surety_id)
+                : SIGNNOW_TEMPLATE_MAP[templateKey];
             if (!templateId) {
                 SN_log('Shannon_NoTemplateID', templateKey);
                 continue;
@@ -498,8 +508,14 @@ function _shannon_buildFormData(data) {
     const todayStr = new Date().toLocaleDateString('en-US');
     const now = new Date();
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var suretyId = String(data.surety_id || 'osi').toLowerCase().trim();
+    if (suretyId !== 'palmetto' && suretyId !== 'osi') suretyId = 'osi';
 
     return {
+        // --- Surety routing (OSI default / Palmetto when requested) ---
+        'surety_id':              suretyId,
+        'insuranceCompany':       suretyId === 'palmetto' ? 'PALMETTO' : 'OSI',
+
         // --- Defendant fields (Dashboard key format) ---
         'defendant-first-name':    defParts.first || '',
         'defendant-middle-name':   defParts.middle || '',

@@ -35,7 +35,7 @@ import { submitBailSchoolInterest } from 'backend/bailSchoolInterest';
 
 // ─── EMBED CONFIG ─────────────────────────────────────────────────────────────
 // Bump EMBED_VERSION after every Netlify redeploy of bail-school.html
-const EMBED_VERSION = '2026-08-06-catalog-v3';
+const EMBED_VERSION = '2026-08-11-price-649';
 const EMBED_BASE = 'https://shamrock-embeds.netlify.app/bail-school.html';
 const EMBED_URL = `${EMBED_BASE}?v=${encodeURIComponent(EMBED_VERSION)}`;
 const EMBED_ID = '#bailSchoolEmbed';
