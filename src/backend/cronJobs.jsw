@@ -16,6 +16,13 @@ import { getConfig } from 'backend/config-loader';
  * Strategy: Upsert based on 'countySlug'.
  */
 import allCountiesData from 'backend/data/allFloridaCounties.json';
+import {
+    getAllLocalLandings,
+    getCountyGeo,
+    buildCmsLandingRecord,
+    buildCountyCitySections,
+    buildCountyJailBlock
+} from 'backend/local-landings';
 
 /**
  * Syncs the 'routing.counties' from tenant.json AND 'allFloridaCounties.json' 
@@ -82,6 +89,19 @@ export async function syncCountiesToCms() {
 
             // Construct Name
             const countyName = richData.name || configData.name || (baseSlug.charAt(0).toUpperCase() + baseSlug.slice(1));
+            const geo = getCountyGeo(finalSlug) || {};
+            const cities = richData.cities || [];
+            const primaryCity = cities[0] || richData.countySeat || '';
+            const jailName = geo.jailName || `${countyName} County Jail`;
+            const jailAddress = geo.jailAddress || '';
+            const brandPhone = configData.agentPhone || config.brand.phone;
+            const uniqueAbout = [
+                `Shamrock Bail Bonds posts 24/7 surety bonds in ${countyName} County, Florida${primaryCity ? `, including ${primaryCity}` : ''}${cities.length > 1 ? ` and ${cities.slice(1, 4).join(', ')}` : ''}.`,
+                jailAddress ? `Booking is at ${jailName}, ${jailAddress}.` : `Booking is at ${jailName}.`,
+                `Florida premium is 10% of the face amount ($100 minimum per charge). Call ${brandPhone}.`,
+                buildCountyJailBlock(countyName, geo),
+                buildCountyCitySections(countyName, cities, jailName, jailAddress)
+            ].filter(Boolean).join(' ');
 
             // 1. Construct the record object
             // Required Schema Fields from ANTIGRAVITY-FOUNDATION-SPEC & CollectionIds.js
@@ -101,7 +121,7 @@ export async function syncCountiesToCms() {
                 primaryPhone: configData.agentPhone || config.brand.phone,
 
                 // Jail Data (Merge: Config wins location/phone, JSON wins URLs)
-                jailName: `${countyName} County Jail`, // Default standard naming
+                jailName: jailName,
                 jailPhone: configData.jailPhone || richData.sheriffPhone || config.brand.phone,
                 jailBookingUrl: richData.bookingUrl || '',
                 // jailAddress: configData.jailLocation || '', // Schema might not have jailAddress column, checked collectionIds.js -> not strictly there, but 'serviceAreaCopy' is.
@@ -119,11 +139,13 @@ export async function syncCountiesToCms() {
                 recordsSearchLink: richData.recordsUrl || '',
 
                 // SEO / Content
-                seoTitle: `${countyName} County Bail Bonds - 24/7 Fast Release | ${config.brand.name}`,
-                seoDescription: `Need bail in ${countyName} County? ${config.brand.name} provides 24/7 fast release service. Licensed, trusted, and ready to help. Call ${configData.agentPhone || config.brand.phone} now.`,
+                seoTitle: primaryCity
+                    ? `${countyName} County Bail Bonds | ${primaryCity} 24/7 | Shamrock`
+                    : `${countyName} County Bail Bonds | 24/7 Fast Release | Shamrock`,
+                seoDescription: `24/7 bail bonds in ${countyName} County, FL${primaryCity ? `, including ${primaryCity}` : ''}. We post at ${jailName}. Licensed since 2012. Call ${brandPhone}.`,
 
-                h1Headline: `${countyName} County Bail Bonds`,
-                serviceAreaCopy: `We proudly serve all of ${countyName} County. Our agents are ready to assist you 24/7 at the ${countyName} County Jail and Courthouse.`,
+                h1Headline: `${countyName} County Bail Bonds — 24/7 Fast Release`,
+                serviceAreaCopy: uniqueAbout,
 
                 // Metadata
                 tier: configData.tier || (Object.keys(configCounties).includes(baseSlug) ? 1 : 2),
@@ -152,6 +174,15 @@ export async function syncCountiesToCms() {
             }
         }
 
+        const landingResult = await seedCityAndJailLandings({
+            brandName: config.brand.name,
+            phone: config.brand.phone,
+            richDataMap
+        });
+        added += landingResult.added;
+        updated += landingResult.updated;
+        errors += landingResult.errors;
+
         console.log(`[OK] Sync Complete: ${added} added, ${updated} updated, ${errors} errors.`);
 
         // Verify specifically for Lee (Primary)
@@ -165,4 +196,58 @@ export async function syncCountiesToCms() {
         console.error('CRITICAL: County Sync Failed', globalError);
         return { success: false, error: globalError.message };
     }
+}
+
+/**
+ * Inserts city + jail slugs into FloridaCounties so Wix dynamic URLs
+ * like /florida-bail-bonds/cape-coral stop 404ing.
+ */
+export async function seedCityAndJailLandings({ brandName, phone, richDataMap = {} } = {}) {
+    const landings = getAllLocalLandings();
+    let added = 0;
+    let updated = 0;
+    let errors = 0;
+
+    for (const landing of landings) {
+        try {
+            const parentKey = landing.countySlug;
+            const rich = richDataMap[parentKey] || {};
+            const parentRows = await wixData.query('FloridaCounties')
+                .eq('countySlug', parentKey)
+                .limit(1)
+                .find({ suppressAuth: true });
+            const parent = parentRows.items[0] || {
+                jailName: `${landing.countyName} County Jail`,
+                jailPhone: phone,
+                jailBookingUrl: rich.bookingUrl || '',
+                clerkPhone: rich.clerkPhone || '',
+                clerkWebsite: rich.clerkWebsite || '',
+                recordsSearchLink: rich.recordsUrl || '',
+                region: rich.region || '',
+                cities: rich.cities || []
+            };
+
+            const record = buildCmsLandingRecord(landing, parent, brandName, phone);
+            const existing = await wixData.query('FloridaCounties')
+                .eq('countySlug', landing.slug)
+                .find({ suppressAuth: true });
+
+            if (existing.items.length > 0) {
+                await wixData.update(
+                    'FloridaCounties',
+                    { ...existing.items[0], ...record },
+                    { suppressAuth: true }
+                );
+                updated++;
+            } else {
+                await wixData.insert('FloridaCounties', record, { suppressAuth: true });
+                added++;
+            }
+        } catch (err) {
+            console.error(`[X] Failed to seed landing: ${landing.slug}`, err);
+            errors++;
+        }
+    }
+
+    return { added, updated, errors };
 }

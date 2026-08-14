@@ -423,8 +423,8 @@ async function setupFAQ() {
 // --- 7. SEO Injection ---
 function updatePageSEO(faqItems) {
     // 0. Meta Tags (Title, Description, OG, Twitter)
-    const title = 'How Bail Works in Florida | Bail Bond Process Explained | Shamrock Bail Bonds';
-    const description = 'Learn how bail bonds work in Florida. Step-by-step guide to posting bail, payment options, jail release times, and what co-signers need to know. 24/7 help: (239) 332-2245.';
+    const title = 'How Bail Works in Florida | Cost, Process & Payment Plans';
+    const description = 'Florida bail is 10% ($100 minimum per charge). Learn the process, indemnitor duties, payment plans, and Lee County Jail release times. Call (239) 332-2245.';
     const pageUrl = 'https://www.shamrockbailbonds.biz/how-bail-works';
 
     wixSeo.setTitle(title);

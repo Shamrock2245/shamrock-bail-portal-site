@@ -53,6 +53,13 @@ export const PHONE_SECONDARY = {
     note:     'After-Hours & AI Agent Line',
 };
 
+export const PHONE_SPANISH = {
+    display:  '(239) 955-0301',
+    e164:     '+12399550301',
+    tel:      'tel:+12399550301',
+    note:     'Spanish / bilingual line',
+};
+
 export const EMAIL_PRIMARY = 'admin@shamrockbailbonds.biz';
 export const EMAIL_SCHOOL  = 'school@shamrockbailbonds.biz';
 
@@ -110,6 +117,14 @@ export const CONTACT_POINTS = [
         availableLanguage: LANGUAGES,
         description:       PHONE_SECONDARY.note,
     },
+    {
+        '@type':           'ContactPoint',
+        telephone:         PHONE_SPANISH.e164,
+        contactType:       'Customer Service',
+        areaServed:        'US-FL',
+        availableLanguage: ['Spanish'],
+        description:       PHONE_SPANISH.note,
+    },
 ];
 
 // ─── AREA SERVED ──────────────────────────────────────────────────────────────
@@ -117,6 +132,16 @@ export const CONTACT_POINTS = [
 export const AREA_SERVED = [
     { '@type': 'State',              name: 'Florida',              '@id': 'https://en.wikipedia.org/wiki/Florida' },
     { '@type': 'AdministrativeArea', name: 'Southwest Florida' },
+    { '@type': 'AdministrativeArea', name: 'Lee County' },
+    { '@type': 'AdministrativeArea', name: 'Collier County' },
+    { '@type': 'AdministrativeArea', name: 'Charlotte County' },
+    { '@type': 'AdministrativeArea', name: 'Hendry County' },
+    { '@type': 'City',               name: 'Fort Myers' },
+    { '@type': 'City',               name: 'Cape Coral' },
+    { '@type': 'City',               name: 'Naples' },
+    { '@type': 'City',               name: 'Punta Gorda' },
+    { '@type': 'City',               name: 'Lehigh Acres' },
+    { '@type': 'City',               name: 'Bonita Springs' },
     { '@type': 'AdministrativeArea', name: 'Southeast Florida' },
     { '@type': 'AdministrativeArea', name: 'Central Florida' },
     { '@type': 'AdministrativeArea', name: 'Tampa Bay Area' },
@@ -141,6 +166,12 @@ export const KNOWS_ABOUT = [
     'Bail Near Me',
     'Local Bondsman',
     'Lee County Bail Bonds',
+    'Cape Coral Bail Bonds',
+    'Fort Myers Bail Bonds',
+    'Naples Bail Bonds',
+    'Punta Gorda Bail Bonds',
+    'Lehigh Acres Bail Bonds',
+    'Lee County Jail',
     'Charlotte County Bail Bonds',
     'Collier County Bail Bonds',
     'Manatee County Bail Bonds',

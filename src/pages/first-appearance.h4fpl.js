@@ -138,6 +138,7 @@ $w.onReady(function () {
     // if this page successfully loads. (If the router 500s, this file never runs.)
     const focusSlug = resolveFocusSlug();
     setupSEO(focusSlug);
+    injectCrawlableCopy(focusSlug);
     setupEmbed(focusSlug);
     sendCountyData(focusSlug);
     trackPageView();
@@ -426,6 +427,27 @@ async function trackPageView() {
         });
     } catch (e) {
         console.warn('Page view tracking failed:', e.message);
+    }
+}
+
+function injectCrawlableCopy(focusSlug) {
+    const pretty = focusSlug
+        ? focusSlug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+        : 'Florida';
+    const intro = focusSlug
+        ? `${pretty} County First Appearance is held within 24 hours of arrest under Florida Rule of Criminal Procedure 3.130. Shamrock Bail Bonds posts the bond 24/7 at (239) 332-2245.`
+        : 'Florida First Appearance hearings must occur within 24 hours of arrest. Shamrock Bail Bonds covers all 67 counties. Call (239) 332-2245 as soon as bond is set.';
+    const faqText = FAQ_DATA.map((f) => `${f.question} ${f.answer}`).join(' ');
+    const ids = ['#seoBody', '#crawlableCopy', '#faIntro', '#pageIntro', '#textSEO'];
+    for (const id of ids) {
+        try {
+            const el = $w(id);
+            if (el && typeof el.text === 'string') {
+                el.text = `${intro} ${faqText}`;
+                el.expand();
+                return;
+            }
+        } catch (e) { /* optional SEO block */ }
     }
 }
 

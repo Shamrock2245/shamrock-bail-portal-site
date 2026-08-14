@@ -23,6 +23,7 @@ import { createCustomSession, lookupUserByContact } from 'backend/portal-auth';
 
 import { llmSitemapContent } from 'backend/llmSitemapData';
 import { buildLlmsTxt, fetchLiveBlogPosts } from 'backend/llms-txt-builder';
+import { getCityLandingSlugs } from 'backend/local-landings';
 
 /**
  * GET /_functions/triggerCountySync
@@ -1090,6 +1091,10 @@ export async function get_sitemap(request) {
     }
 
     staticPages.forEach((p) => addUrl(p.url, p.priority, p.changefreq, LAST_MOD));
+
+    getCityLandingSlugs().forEach((slug) => {
+        addUrl(`/florida-bail-bonds/${slug}`, '0.9', 'weekly', LAST_MOD);
+    });
 
     // County bail pages
     try {

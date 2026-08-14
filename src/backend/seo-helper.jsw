@@ -23,8 +23,8 @@ import {
  * @returns {Array}
  */
 export function generateCountySEOTags(county) {
-    const title       = `Bail Bonds in ${county.name} | ${BUSINESS_SHORT_NAME}`;
-    const description = `Fast, reliable bail bonds in ${county.name}, Florida. 24/7 service, no collateral needed for most cases. Call ${PHONE_PRIMARY.display} now.`;
+    const title       = `${county.name} Bail Bonds | 24/7 Jail Release | ${BUSINESS_SHORT_NAME}`;
+    const description = `24/7 bail bonds in ${county.name}, Florida. Fast jail release and payment plans. Call ${PHONE_PRIMARY.display}.`;
     const canonicalUrl = countyPageUrl(county.slug);
 
     return [

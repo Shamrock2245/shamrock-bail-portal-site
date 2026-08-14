@@ -83,8 +83,10 @@ $w.onReady(async function () {
 });
 
 function setupSEO(county) {
-    const cn = county.county_name;
-    const cnLower = cn.toLowerCase();
+    const cn = county.parent_county_name || county.county_name;
+    const displayName = county.display_name || county.county_name_full || `${cn} County`;
+    const cnLower = String(cn).toLowerCase();
+    const isPlaceLanding = county.landing_type === 'city' || county.landing_type === 'jail';
     const canonUrl = `https://www.shamrockbailbonds.biz${county.seo.canonical_url}`;
 
     // ─── EXPANDED KEYWORDS (long-tail for AI search + voice) ───
@@ -142,7 +144,7 @@ function setupSEO(county) {
         "itemListElement": [
             { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
             { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": "https://www.shamrockbailbonds.biz/florida-bail-bonds" },
-            { "@type": "ListItem", "position": 3, "name": `${cn} County Bail Bonds`, "item": canonUrl }
+            { "@type": "ListItem", "position": 3, "name": isPlaceLanding ? `${displayName} Bail Bonds` : `${cn} County Bail Bonds`, "item": canonUrl }
         ]
     });
 
@@ -152,8 +154,8 @@ function setupSEO(county) {
         "@type": ["LocalBusiness", "ProfessionalService"],
         "additionalType": "https://schema.org/ProfessionalService",
         "@id": `${canonUrl}#localbusiness`,
-        "name": `Shamrock Bail Bonds - ${cn} County`,
-        "description": `${county.seo.meta_description} Are you searching for bail near me? We provide fast 24/7 jail release.`,
+        "name": isPlaceLanding ? `Shamrock Bail Bonds — ${displayName}` : `Shamrock Bail Bonds - ${cn} County`,
+        "description": county.seo.meta_description,
         "url": canonUrl,
         "telephone": "+1-239-332-2245",
         "image": "https://www.shamrockbailbonds.biz/logo.png",
@@ -162,8 +164,10 @@ function setupSEO(county) {
         "sameAs": [
             "https://www.facebook.com/ShamrockBail",
             "https://www.instagram.com/shamrock_bail_bonds",
-            "https://t.me/ShamrockBail_bot",
-            "https://www.google.com/maps/place/Shamrock+Bail+Bonds",
+            "https://www.youtube.com/@ShamrockBailBonds_FL",
+            "https://www.tiktok.com/@shamrockbailbonds",
+            "https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers",
+            "https://t.me/Shamrock_Bail_Bonds",
             "https://www.shamrockbailbonds.biz"
         ],
         "address": {
@@ -187,13 +191,6 @@ function setupSEO(county) {
                 "areaServed": "US-FL",
                 "availableLanguage": ["English", "Spanish"],
                 "hoursAvailable": { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"], "opens": "00:00", "closes": "23:59" }
-            },
-            {
-                "@type": "ContactPoint",
-                "telephone": "+1-239-332-5245",
-                "contactType": "Emergency",
-                "areaServed": "US-FL",
-                "availableLanguage": ["English", "Spanish"]
             },
             {
                 "@type": "ContactPoint",
@@ -232,13 +229,6 @@ function setupSEO(county) {
         "priceRange": "$$",
         "paymentAccepted": "Cash, Credit Card, Debit Card, Payment Plans",
         "currenciesAccepted": "USD",
-        "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "reviewCount": "127",
-            "bestRating": "5",
-            "worstRating": "1"
-        },
         "hasOfferCatalog": {
             "@type": "OfferCatalog",
             "name": `Bail Bond Services in ${cn} County`,
@@ -368,11 +358,42 @@ function setupSEO(county) {
         });
     }
 
+    if (county.jail && county.jail.name) {
+        schemas.push({
+            "@context": "https://schema.org",
+            "@type": "Place",
+            "@id": `${canonUrl}#jail`,
+            "name": county.jail.name,
+            "address": county.jail.address || `${cn} County, Florida`
+        });
+    }
+
     // Store schemas; FAQPage will be appended in populateMainUI
     county._seoSchemas = schemas;
 }
 
 // --- HELPER UI FUNCTIONS ---
+function setRichText(selectorOrArray, plain, html) {
+    const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
+    for (const selector of selectors) {
+        try {
+            const el = $w(selector);
+            if (!el) continue;
+            if (html && typeof el.html === 'string') {
+                el.html = html;
+                el.expand();
+                return true;
+            }
+            if (el.type === '$w.Text') {
+                el.text = plain || '';
+                el.expand();
+                return true;
+            }
+        } catch (e) { /* try next */ }
+    }
+    return false;
+}
+
 function setText(selectorOrArray, value) {
     const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
     let found = false;
@@ -418,15 +439,23 @@ async function populateMainUI(county, currentSlug) {
     // Header & Hero (Support both old and new IDs from Screenshot)
     // Old: #countyName, #dynamicHeader, #heroSubtitle
     // New: #countyNameHeadline, #aboutCountyText (Maybe hero text?), #heroCallButton
-    setText(['#countyName', '#countyNameHeadline', '#dynamicHeader'], county.county_name);
+    const heroH1 = (county.content && county.content.hero_headline)
+        || `${county.county_name_full || county.county_name} Bail Bonds — 24/7 Fast Release`;
+    setText(['#countyName', '#countyNameHeadline', '#dynamicHeader'], heroH1);
 
     // Subtitle / About Text in Hero
     setText(['#heroSubtitle', '#aboutCountyText', '#heroDescription'], county.content.hero_subheadline);
 
-    // About Section Headers
-    // Header often has IDs like: #aboutHeader, #aboutTitle, #textAboutCounty
-    setText(['#aboutHeader', '#aboutTitle', '#textAboutCounty', '#aboutSectionTitle', '#textAboutTitle'], `About Bail Bonds in ${county.county_name} County, Florida`);
-    setText(['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'], county.content.about_county);
+    // About Section Headers — never "Cape Coral County"
+    const aboutTitle = county.landing_type === 'city' || county.landing_type === 'jail'
+        ? `About Bail Bonds in ${county.display_name || county.county_name}`
+        : `About Bail Bonds in ${county.parent_county_name || county.county_name} County, Florida`;
+    setText(['#aboutHeader', '#aboutTitle', '#textAboutCounty', '#aboutSectionTitle', '#textAboutTitle'], aboutTitle);
+    setRichText(
+        ['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'],
+        county.content.about_county,
+        county.content.about_html
+    );
 
     // Why Choose Us
     setText(['#whyChooseHeader', '#whyChooseTitle'], `Why Choose Us in ${county.county_name} County`);
@@ -459,6 +488,10 @@ async function populateMainUI(county, currentSlug) {
     // Jail Name & Phone
     setText(['#jailName', '#jailTitle', '#textJailName'], county.jail.name);
     setText(['#sheriffPhone', '#jailPhone', '#textJailPhone'], county.jail.booking_phone);
+    if (county.jail && county.jail.address) {
+        setText(['#jailAddress', '#textJailAddress', '#jailLocation'], county.jail.address);
+        try { $w('#jailAddress').expand(); } catch (e) { /* optional */ }
+    }
 
     // Clerk Name & Phone (Added Clerk Name mapping)
     setText(['#clerkName', '#clerkTitle', '#textClerkName'], "Clerk of Court"); // Fixed Label or data if available
@@ -486,8 +519,7 @@ async function populateMainUI(county, currentSlug) {
     // 2. Secondary/Start Button (Link to portal landing page with county context)
     setLink(['#heroStartButton', '#startBailBtn'], `/portal-landing?county=${county.slug || county.countySlug || currentSlug}`, "Start Bail Bond");
 
-    // Jail Address (if element exists and data provided)
-    try { $w('#jailAddress').collapse(); } catch (e) { }
+    // Jail address is shown above when present.
 
     // POPULATE FAQs (Repeater) - Now pulls from CMS Faqs collection
     // Safe element getter — prevents crashes from accessing non-existent Wix elements
@@ -566,10 +598,12 @@ async function populateMainUI(county, currentSlug) {
         // 4. MERGE with embedded FAQs from county-generator to guarantee content
         const embeddedFaqs = (county.content && county.content.faq) || [];
         if (embeddedFaqs.length > 0) {
-            // Only add embedded FAQs that don't duplicate existing CMS questions
-            const existingQuestions = new Set(faqs.map(f => f.question.toLowerCase().trim()));
+            const faqKey = (q) => String(q || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+            const existingQuestions = new Set(faqs.map(f => faqKey(f.question)));
             for (const ef of embeddedFaqs) {
-                if (!existingQuestions.has(ef.question.toLowerCase().trim())) {
+                const key = faqKey(ef.question);
+                if (key && !existingQuestions.has(key)) {
+                    existingQuestions.add(key);
                     faqs.push({ _id: `embed-${faqs.length}-${Date.now()}`, question: ef.question, answer: ef.answer });
                 }
             }
@@ -691,10 +725,11 @@ async function populateMainUI(county, currentSlug) {
  * ───────────────────────────────────────────────────────────────────────
  */
 function populateInternalLinks(county, currentSlug) {
-    const countyName = county.county_name || 'Florida';
-    const slug = (currentSlug || county.county_slug || '')
+    const countyName = county.parent_county_name || county.county_name || 'Florida';
+    const slug = String(county.parent_county_name || currentSlug || county.county_slug || '')
         .toLowerCase()
-        .replace(/-county$/i, '');
+        .replace(/-county$/i, '')
+        .replace(/\s+/g, '-');
 
     // Cross-link to Florida Directory hub page (critical for crawlability)
     setLinkElement(['#directoryLinkBtn', '#floridaDirectoryBtn', '#btnAllCounties'], '/florida-bail-bonds');

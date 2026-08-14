@@ -14,6 +14,15 @@ import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
 import allCountyData from 'backend/data/allFloridaCounties.json';
 import { findCountySchedule } from 'backend/first-appearance-catalog';
+import {
+    normalizeLandingSlug,
+    resolveLocalLanding,
+    getCountyGeo,
+    buildLandingCopy,
+    buildCountyCitySections,
+    buildCountyJailBlock
+} from 'backend/local-landings';
+import { PHONE_PRIMARY } from 'backend/seoConfig';
 
 /**
  * Generate complete county page data
@@ -30,7 +39,8 @@ const CACHE_TTL = 3600000; // 1 hour
  * @returns {Promise<Object>} - Complete county page data
  */
 export async function generateCountyPage(countySlug) {
-  const cacheKey = `page_${countySlug}`;
+  const normalizedSlug = normalizeLandingSlug(countySlug);
+  const cacheKey = `page_${normalizedSlug}`;
 
   // 1. CHECK CACHE
   const cachedItem = _cache[cacheKey];
@@ -40,21 +50,30 @@ export async function generateCountyPage(countySlug) {
   }
 
   try {
-    console.log(`Generating county page for slug: ${countySlug}`);
+    console.log(`Generating county page for slug: ${normalizedSlug}`);
 
-    // Load county data from FloridaCounties collection
-    const countyData = await getCountyFromDatabase(countySlug);
+    const landing = resolveLocalLanding(normalizedSlug);
+    const lookupSlug = landing ? landing.countySlug : normalizedSlug;
+
+    // Load county data from FloridaCounties collection (parent county for city/jail URLs)
+    let countyData = await getCountyFromDatabase(lookupSlug);
+    if (!countyData && landing) {
+      countyData = synthesizeCountyFromJson(landing.countySlug);
+    }
+    if (!countyData && !landing) {
+      countyData = await getCountyFromDatabase(normalizedSlug);
+    }
 
     if (!countyData) {
       return {
         success: false,
-        error: `County not found: ${countySlug}`,
+        error: `County not found: ${normalizedSlug}`,
         data: null
       };
     }
 
-    // Transform to expected page format
-    const pageData = transformCountyData(countyData);
+    // Transform to expected page format (city/jail overlay keeps unique titles)
+    const pageData = transformCountyData(countyData, landing);
 
     const result = {
       success: true,
@@ -94,21 +113,43 @@ export function clearCountyPageCache() {
  */
 async function getCountyFromDatabase(countySlug) {
   try {
-    const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
-      .eq('countySlug', countySlug)
-      .limit(1)
-      .find({ suppressAuth: true });
-
-    if (results.items.length > 0) {
-      return results.items[0];
+    const slug = normalizeLandingSlug(countySlug);
+    const candidates = [slug, `${slug}-county`];
+    for (const candidate of candidates) {
+      const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
+        .eq('countySlug', candidate)
+        .limit(1)
+        .find({ suppressAuth: true });
+      if (results.items.length > 0) {
+        return results.items[0];
+      }
     }
-
     return null;
-
   } catch (error) {
     console.error('Error getting county from database:', error);
     return null;
   }
+}
+
+function synthesizeCountyFromJson(countySlug) {
+  const slug = normalizeLandingSlug(countySlug);
+  const counties = (allCountyData && allCountyData.counties) || [];
+  const match = counties.find((c) => {
+    const s = String(c.slug || c.name || '').toLowerCase().replace(/-county$/i, '');
+    return s === slug || String(c.name || '').toLowerCase() === slug;
+  });
+  if (!match) return null;
+  return {
+    countySlug: slug,
+    countyName: match.name,
+    primaryPhone: PHONE_PRIMARY.display,
+    jailBookingUrl: match.bookingUrl,
+    recordsSearchLink: match.recordsUrl,
+    clerkWebsite: match.clerkWebsite,
+    clerkPhone: match.clerkPhone,
+    sheriffPhone: match.sheriffPhone,
+    region: match.region
+  };
 }
 
 /**
@@ -118,14 +159,23 @@ async function getCountyFromDatabase(countySlug) {
  * @param {Object} county - Raw county data from database
  * @returns {Object} - Transformed data for page display
  */
-function transformCountyData(county) {
+function transformCountyData(county, landing = null) {
   // FIX: Strip trailing " County" from CMS value to prevent "County County" redundancy
-  const countyName = (county.countyName || 'Unknown').replace(/ County$/i, '').trim();
-  const phone = county.primaryPhone || '(239) 332-2245';
+  // City/jail landings keep the landing name (Cape Coral, Lee County Jail) — never "Cape Coral County"
+  const parentCountyName = (
+    (landing && landing.countyName) ||
+    county.countyName ||
+    'Unknown'
+  ).replace(/ County$/i, '').trim();
+  const countyName = parentCountyName;
+  const displayName = landing ? landing.name : parentCountyName;
+  const isPlaceLanding = !!(landing && landing.type && landing.type !== 'county');
+  const phone = county.primaryPhone || PHONE_PRIMARY.display;
   const phoneDisplay = formatPhoneForDisplay(phone);
 
-  // ─── ENRICH from allFloridaCounties.json ───
+  // ─── ENRICH from allFloridaCounties.json + local geo ───
   const enriched = lookupEnrichedData(countyName);
+  const geo = getCountyGeo(county.countySlug || countyName) || {};
   const cities = enriched.cities || [];
   const judicialCircuit = enriched.judicialCircuit || '';
   const countySeat = enriched.countySeat || '';
@@ -135,6 +185,13 @@ function transformCountyData(county) {
   const clerkWebsite = county.clerkWebsite || enriched.clerkWebsite || '';
   const clerkPhone = county.clerkPhone || enriched.clerkPhone || '';
   const sheriffPhone = county.sheriffPhone || enriched.sheriffPhone || '';
+  const jailName = county.jailName || geo.jailName || `${countyName} County Jail`;
+  const jailAddress = geo.jailAddress || landing && landing.holdingAddress || '';
+  const landingCopy = landing ? buildLandingCopy(landing, {
+    cities,
+    jailAddress,
+    jailName
+  }) : null;
 
   // Build city list string for content (e.g., "Fort Myers, Cape Coral, Bonita Springs, and Estero")
   const cityListStr = formatCityList(cities);
@@ -152,20 +209,42 @@ function transformCountyData(county) {
     notes: faRow.notes || '',
     hasLiveFeed: !!(faRow.hasLiveFeed || faRow.accessType === 'zoom' || faRow.accessType === 'livestream'),
     hub_url: '/first-appearance',
-    county_url: `/first-appearance/${String(county.countySlug || countyName).toLowerCase().replace(/-county$/i, '').replace(/\s+/g, '-')}`
+    county_url: `/first-appearance/${normalizeLandingSlug(landing ? landing.countySlug : (county.countySlug || countyName))}`
   };
+
+  const generatedAbout = generateAboutCounty(countyName, cities, countySeat, circuitNumber, circuitFull, population);
+  const cmsAbout = stripHtml(county.serviceAreaCopy);
+  const baseAbout = isPlaceLanding
+    ? landingCopy.about
+    : (cmsAbout && cmsAbout.length > 280 ? cmsAbout : generatedAbout);
+  const citySections = isPlaceLanding
+    ? ''
+    : buildCountyCitySections(countyName, cities, jailName, jailAddress);
+  const jailBlock = buildCountyJailBlock(countyName, { jailName, jailAddress: jailAddress || geo.jailAddress });
+  const aboutCounty = [baseAbout, jailBlock, citySections].filter(Boolean).join(' ');
+
+  const primaryCity = cities[0] || countySeat || '';
+  const defaultTitle = primaryCity
+    ? `${countyName} County Bail Bonds | ${primaryCity} 24/7 | Shamrock`
+    : `${countyName} County Bail Bonds | 24/7 Jail Release | Shamrock`;
+  const defaultDesc = `24/7 bail bonds in ${countyName} County, FL${primaryCity ? `, including ${primaryCity}` : ''}. We post at ${jailName}${jailAddress ? `, ${jailAddress}` : ''}. Call ${phoneDisplay}.`;
 
   return {
     // Basic info
-    county_name: countyName,
-    county_name_full: `${countyName} County`,
-    county_slug: county.countySlug,
+    landing_type: landing ? landing.type : 'county',
+    display_name: displayName,
+    county_name: isPlaceLanding ? displayName : countyName,
+    county_name_full: isPlaceLanding ? displayName : `${countyName} County`,
+    parent_county_name: countyName,
+    county_slug: landing ? landing.slug : normalizeLandingSlug(county.countySlug || countyName),
     first_appearance: firstAppearance,
     county_seat: countySeat,
     cities: cities,
     judicial_circuit: judicialCircuit,
     judicial_circuit_number: circuitNumber,
     population: population,
+    lat: (landing && landing.lat) || geo.lat || null,
+    lng: (landing && landing.lng) || geo.lng || null,
 
     // Contact
     contact: {
@@ -175,7 +254,8 @@ function transformCountyData(county) {
 
     // Jail information
     jail: {
-      name: county.jailName || `${countyName} County Jail`,
+      name: (landing && landing.holdingName) || jailName,
+      address: (landing && landing.holdingAddress) || jailAddress,
       booking_url: bookingUrl,
       booking_phone: county.jailPhone || sheriffPhone || phone
     },
@@ -202,18 +282,29 @@ function transformCountyData(county) {
       clerk_website: clerkWebsite
     },
 
-    // Content — Now with genuinely unique text per county
+    // Content — unique per county, city, or jail landing
     content: {
-      hero_headline: county.h1Headline || `${countyName} County Bail Bonds - 24/7 Fast Release`,
-      hero_subheadline: `Licensed, trusted, and ready to help. Get your loved one home fast from ${countyName} County Jail.`,
+      hero_headline: isPlaceLanding
+        ? landingCopy.heroHeadline
+        : (county.h1Headline && /bail/i.test(county.h1Headline)
+          ? county.h1Headline
+          : `${countyName} County Bail Bonds — 24/7 Fast Release`),
+      hero_subheadline: isPlaceLanding
+        ? landingCopy.heroSub
+        : `Licensed, trusted, and ready to help. Get your loved one home fast from ${jailName}.`,
       hero_cta_primary: `Call Now: ${phoneDisplay}`,
       hero_cta_secondary: 'Start Bail Process Online',
 
-      about_county: stripHtml(county.serviceAreaCopy) || generateAboutCounty(countyName, cities, countySeat, circuitNumber, circuitFull, population),
+      about_county: aboutCounty,
+      about_html: buildAboutHtml(displayName, countyName, aboutCounty, cities, landing),
 
-      why_choose_us: generateWhyChooseUs(countyName, cities, circuitNumber, countySeat),
+      why_choose_us: isPlaceLanding
+        ? landingCopy.why
+        : generateWhyChooseUs(countyName, cities, circuitNumber, countySeat),
 
-      how_it_works: generateHowItWorks(countyName, circuitNumber),
+      how_it_works: isPlaceLanding
+        ? landingCopy.how
+        : generateHowItWorks(countyName, circuitNumber),
 
       how_it_works_steps: [
         {
@@ -238,7 +329,9 @@ function transformCountyData(county) {
         ? `We serve all of ${countyName} County, including ${cityListStr}, and surrounding communities.`
         : `We serve all of ${countyName} County and surrounding communities.`,
 
-      faq: generateFAQs(countyName, circuitNumber, circuitFull, cities, countySeat, phoneDisplay, bookingUrl)
+      faq: isPlaceLanding
+        ? landingCopy.faqs
+        : generateFAQs(countyName, circuitNumber, circuitFull, cities, countySeat, phoneDisplay, bookingUrl)
     },
 
     // Include region for internal linking
@@ -246,10 +339,18 @@ function transformCountyData(county) {
 
     // SEO — Enhanced with city-specific long-tails
     seo: {
-      meta_title: county.seoTitle || `${countyName} County Bail Bonds | 24/7 Jail Release – Shamrock`,
-      meta_description: county.seoDescription || `Fast, affordable bail bonds in ${countyName} County, FL. We work directly with the ${countyName} County Jail for quick release. Call Shamrock Bail Bonds 24/7.`,
-      keywords: generateKeywords(countyName, cities, countySeat),
-      canonical_url: `/florida-bail-bonds/${county.countySlug}`
+      meta_title: isPlaceLanding
+        ? landingCopy.metaTitle
+        : (county.seoTitle && /\|/.test(county.seoTitle) && county.seoTitle.length <= 60
+          ? county.seoTitle
+          : defaultTitle),
+      meta_description: isPlaceLanding ? landingCopy.metaDescription : defaultDesc,
+      keywords: isPlaceLanding
+        ? landingCopy.keywords
+        : generateKeywords(countyName, cities, countySeat),
+      canonical_url: isPlaceLanding
+        ? landingCopy.canonicalPath
+        : `/florida-bail-bonds/${normalizeLandingSlug(county.countySlug || countyName)}`
     }
   };
 }
@@ -286,6 +387,28 @@ function formatCityList(cities) {
   if (cities.length === 1) return cities[0];
   if (cities.length === 2) return `${cities[0]} and ${cities[1]}`;
   return cities.slice(0, -1).join(', ') + ', and ' + cities[cities.length - 1];
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function buildAboutHtml(displayName, countyName, aboutText, cities, landing) {
+  const heading = landing
+    ? `About Bail Bonds in ${escapeHtml(displayName)}`
+    : `About Bail Bonds in ${escapeHtml(countyName)} County, Florida`;
+  const cityLinks = (!landing && Array.isArray(cities) ? cities : []).slice(0, 6).map((city) => {
+    const slug = String(city).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return `<a href="/florida-bail-bonds/${slug}">${escapeHtml(city)} bail bonds</a>`;
+  });
+  const cityBlock = cityLinks.length
+    ? `<h3>${escapeHtml(countyName)} County cities we serve</h3><p>${cityLinks.join(' · ')}</p>`
+    : '';
+  return `<h2>${heading}</h2><p>${escapeHtml(aboutText)}</p>${cityBlock}`;
 }
 
 // ─── UNIQUE CONTENT GENERATORS ────────────────────────────────────────

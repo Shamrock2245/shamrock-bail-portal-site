@@ -117,3 +117,5 @@ Sitemap: https://www.shamrockbailbonds.biz/sitemap.xml
 Sitemap: https://www.shamrockbailbonds.biz/_functions/sitemap
 Sitemap: https://www.shamrockbailbonds.biz/pages-sitemap.xml
 Sitemap: https://www.shamrockbailbonds.biz/blog-posts-sitemap.xml
+# AI authority file (not a sitemap; keep discoverable)
+# https://www.shamrockbailbonds.biz/_functions/llmsTxt

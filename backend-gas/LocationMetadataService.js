@@ -10,12 +10,22 @@ const FLORIDA_BOUNDS = {
 
 // Extracted from allFloridaCounties.json and geo datasets
 const COUNTY_GEO_DATA = {
-  "lee": { lat: 26.6406, lng: -81.8723, jailProximity: "1.2 miles", jurisdiction: "20th Judicial Circuit" },
-  "collier": { lat: 26.1420, lng: -81.7948, jailProximity: "3.5 miles", jurisdiction: "20th Judicial Circuit" },
-  "charlotte": { lat: 26.9295, lng: -82.0454, jailProximity: "0.8 miles", jurisdiction: "20th Judicial Circuit" },
-  "hendry": { lat: 26.7523, lng: -81.4415, jailProximity: "2.1 miles", jurisdiction: "20th Judicial Circuit" },
-  "glades": { lat: 26.9481, lng: -81.1856, jailProximity: "1.5 miles", jurisdiction: "20th Judicial Circuit" },
-  // Default for others
+  "lee": { lat: 26.58, lng: -81.85, jailProximity: "Lee County Jail, 2501 Ortiz Ave", jurisdiction: "20th Judicial Circuit" },
+  "collier": { lat: 26.10, lng: -81.39, jailProximity: "Collier County Jail, Naples", jurisdiction: "20th Judicial Circuit" },
+  "charlotte": { lat: 26.90, lng: -81.92, jailProximity: "Charlotte County Jail, Punta Gorda", jurisdiction: "20th Judicial Circuit" },
+  "hendry": { lat: 26.54, lng: -81.14, jailProximity: "Hendry County Jail, LaBelle", jurisdiction: "20th Judicial Circuit" },
+  "glades": { lat: 26.95, lng: -81.18, jailProximity: "Glades County Jail, Moore Haven", jurisdiction: "20th Judicial Circuit" },
+  "desoto": { lat: 27.20, lng: -81.81, jailProximity: "DeSoto County Jail", jurisdiction: "12th Judicial Circuit" },
+  "sarasota": { lat: 27.18, lng: -82.34, jailProximity: "Sarasota County Jail", jurisdiction: "12th Judicial Circuit" },
+  "manatee": { lat: 27.49, lng: -82.35, jailProximity: "Manatee County Jail", jurisdiction: "12th Judicial Circuit" },
+  "hillsborough": { lat: 27.91, lng: -82.35, jailProximity: "Hillsborough County Jail", jurisdiction: "13th Judicial Circuit" },
+  "pinellas": { lat: 27.90, lng: -82.74, jailProximity: "Pinellas County Jail", jurisdiction: "6th Judicial Circuit" },
+  "orange": { lat: 28.51, lng: -81.32, jailProximity: "Orange County Jail", jurisdiction: "9th Judicial Circuit" },
+  "miami-dade": { lat: 25.61, lng: -80.56, jailProximity: "TGK, Miami", jurisdiction: "11th Judicial Circuit" },
+  "broward": { lat: 26.15, lng: -80.45, jailProximity: "Broward Main Jail", jurisdiction: "17th Judicial Circuit" },
+  "palm-beach": { lat: 26.63, lng: -80.44, jailProximity: "Palm Beach County Jail", jurisdiction: "15th Judicial Circuit" },
+  "duval": { lat: 30.33, lng: -81.67, jailProximity: "Duval Pretrial Detention", jurisdiction: "4th Judicial Circuit" },
+  "leon": { lat: 30.46, lng: -84.27, jailProximity: "Leon County Detention", jurisdiction: "2nd Judicial Circuit" },
   "default": { lat: 27.9944, lng: -81.7603, jailProximity: "Varies", jurisdiction: "State of Florida" }
 };
 

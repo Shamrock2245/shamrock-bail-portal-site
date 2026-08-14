@@ -16,7 +16,32 @@ $w.onReady(async function () {
     // if(query.jail) $w('#dropdownJail').value = query.jail;
 
     updatePageSEO();
+    fixPlaceholderHeadings();
 });
+
+function fixPlaceholderHeadings() {
+    const replacements = {
+        '#capsTitle': 'Our Fort Myers Office',
+        '#textCapsTitle': 'Our Fort Myers Office',
+        '#officeHeading': 'Our Fort Myers Office'
+    };
+    Object.keys(replacements).forEach((id) => {
+        try {
+            const el = $w(id);
+            if (el && typeof el.text === 'string' && /caps title/i.test(el.text)) {
+                el.text = replacements[id];
+            }
+        } catch (e) { /* editor-only placeholder */ }
+    });
+    ['#text1', '#text2', '#text3', '#text4', '#text5', '#text6', '#text7', '#text8'].forEach((id) => {
+        try {
+            const el = $w(id);
+            if (el && typeof el.text === 'string' && el.text.trim().toUpperCase() === 'CAPS TITLE') {
+                el.text = 'Our Fort Myers Office';
+            }
+        } catch (e) { /* skip */ }
+    });
+}
 
 function updatePageSEO() {
     const pageTitle = "Contact Shamrock Bail Bonds | 24/7 Emergency Bail Bonds Fort Myers FL";

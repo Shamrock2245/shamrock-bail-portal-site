@@ -434,8 +434,8 @@ function loadTestimonials() {
 // ---------------------------------------------------------------------------
 
 function setupHomepageMeta() {
-    const title = '24/7 Bail Bonds Florida | Shamrock Bail Bonds - Fort Myers Since 2012';
-    const description = 'Shamrock Bail Bonds is located in Lee County, FL. We are the bail bonding agency of choice for fast, professional, discreet service. We serve all of Florida. Located steps away from the Lee County Jail and in the heartbeat of the Legal Community in Downtown Fort Myers.';
+    const title = 'Fort Myers Bail Bonds | Cape Coral & Lee County | Shamrock';
+    const description = '24/7 bail bonds in Fort Myers, Cape Coral, Naples, and all 67 Florida counties. Fast Lee County Jail release, payment plans, licensed since 2012. Call (239) 332-2245.';
     const url = 'https://www.shamrockbailbonds.biz';
 
     wixSeo.setTitle(title);
@@ -456,7 +456,7 @@ function setupHomepageMeta() {
         { name: 'twitter:title', content: title },
         { name: 'twitter:description', content: description },
         { name: 'twitter:image', content: url + '/logo.png' },
-        { name: 'keywords', content: 'bail bonds Florida, Fort Myers bail bonds, 24/7 bail bondsman, Florida jail release, Lee County bail bonds, Collier County bail bonds, Charlotte County bail bonds, Sarasota County bail bonds, Manatee County bail bonds, DeSoto County bail bonds, Hendry County bail bonds, bail bond payment plans, bail near me, #bailnearme, #bailbondsleecounty, #bailbondsmannearme, #FloridaBailBonds, #LeeCountyBailBonds, #CharlotteCountyBailBonds, #ManateeCountyBailBonds, #DeSotoCountyBailBonds, #HendryCountyBailBonds, #SarasotaCountyBailBonds' }
+        { name: 'keywords', content: 'Fort Myers bail bonds, Cape Coral bail bonds, Lee County bail bonds, Naples bail bonds, Punta Gorda bail bonds, Lehigh Acres bail bonds, 24/7 bail bondsman, Lee County Jail, bail bonds near me, Florida jail release, bail bond payment plans' }
     ]);
 }
 
@@ -496,7 +496,6 @@ function setupOrganizationSchema() {
                         "opens": "00:00", "closes": "23:59"
                     }
                 },
-                { "@type": "ContactPoint", "telephone": "+1-239-332-5245", "contactType": "Emergency", "areaServed": "FL", "availableLanguage": ["English", "Spanish"] },
                 { "@type": "ContactPoint", "telephone": "+1-239-955-0301", "contactType": "Customer Service", "areaServed": "FL", "availableLanguage": "Spanish" },
                 { "@type": "ContactPoint", "telephone": "+1-727-295-2245", "contactType": "Customer Service", "areaServed": ["Tampa Bay Area", "St. Petersburg", "FL"], "availableLanguage": ["English", "Spanish"], "description": "After-Hours & AI Agent Line" }
             ],
@@ -511,7 +510,10 @@ function setupOrganizationSchema() {
             "sameAs": [
                 "https://www.facebook.com/ShamrockBail",
                 "https://www.instagram.com/shamrock_bail_bonds",
-                "https://t.me/ShamrockBail_bot"
+                "https://www.youtube.com/@ShamrockBailBonds_FL",
+                "https://www.tiktok.com/@shamrockbailbonds",
+                "https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers",
+                "https://t.me/Shamrock_Bail_Bonds"
             ]
         },
         {
@@ -532,7 +534,7 @@ function setupOrganizationSchema() {
             "url": "https://www.shamrockbailbonds.biz",
             "telephone": "+1-239-332-2245",
             "priceRange": "$$",
-            "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "127", "bestRating": "5", "worstRating": "1" },
+            "aggregateRating": { "@type": "AggregateRating", "ratingValue": "5", "reviewCount": "4", "bestRating": "5", "worstRating": "1" },
             "review": [
                 {
                     "@type": "Review",
@@ -569,7 +571,10 @@ function setupOrganizationSchema() {
             "sameAs": [
                 "https://www.facebook.com/ShamrockBail",
                 "https://www.instagram.com/shamrock_bail_bonds",
-                "https://t.me/ShamrockBail_bot"
+                "https://www.youtube.com/@ShamrockBailBonds_FL",
+                "https://www.tiktok.com/@shamrockbailbonds",
+                "https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers",
+                "https://t.me/Shamrock_Bail_Bonds"
             ]
         },
         {
@@ -577,7 +582,16 @@ function setupOrganizationSchema() {
             "@type": "Service",
             "serviceType": "Bail Bonds",
             "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
-            "areaServed": [{ "@type": "State", "name": "Florida" }],
+            "areaServed": [
+                { "@type": "State", "name": "Florida" },
+                { "@type": "City", "name": "Fort Myers, Florida" },
+                { "@type": "City", "name": "Cape Coral, Florida" },
+                { "@type": "City", "name": "Naples, Florida" },
+                { "@type": "City", "name": "Punta Gorda, Florida" },
+                { "@type": "AdministrativeArea", "name": "Lee County, Florida" },
+                { "@type": "AdministrativeArea", "name": "Collier County, Florida" },
+                { "@type": "AdministrativeArea", "name": "Charlotte County, Florida" }
+            ],
             "availableChannel": {
                 "@type": "ServiceChannel",
                 "servicePhone": { "@type": "ContactPoint", "telephone": "+1-239-332-2245", "availableLanguage": ["English", "Spanish"] },
@@ -685,7 +699,7 @@ function setupOrganizationSchema() {
                 "name": "Does Shamrock Bail Bonds serve all Florida counties?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Yes. Shamrock Bail Bonds is licensed to serve all 67 Florida counties. Our office is located at 1528 Broadway, Fort Myers, FL 33901, steps from the Lee County Jail. We handle bonds remotely for all other counties — including Miami-Dade, Broward, Hillsborough, Orange, and Collier — with no office visit required."
+                    "text": "Yes. Shamrock Bail Bonds is licensed to serve all 67 Florida counties. Our office is located at 1528 Broadway, Fort Myers, FL 33901, near the Lee County Justice Center. We post bonds at Lee County Jail (2501 Ortiz Ave) and handle every other Florida county remotely — including Miami-Dade, Broward, Hillsborough, Orange, and Collier — with no office visit required."
                 }
             },
             {
@@ -717,7 +731,7 @@ function setupOrganizationSchema() {
                 "name": "Where is Shamrock Bail Bonds located?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Shamrock Bail Bonds is located at 1528 Broadway, Fort Myers, FL 33901 — directly across the street from the Lee County Justice Center and steps from the Lee County Jail. This prime location means faster bond posting for local clients. We are open 24/7 for walk-ins and phone calls. For all other Florida counties, we operate fully remotely."
+                    "text": "Shamrock Bail Bonds is located at 1528 Broadway, Fort Myers, FL 33901 — downtown near the Lee County Justice Center. We post bonds 24/7 at Lee County Jail, 2501 Ortiz Ave, and for Cape Coral, Naples, and all 67 Florida counties. Walk-ins welcome; most families finish paperwork by phone."
                 }
             }
         ]
@@ -813,6 +827,33 @@ function setupOrganizationSchema() {
                 "position": index + 1,
                 "name": county.name + " County Bail Bonds",
                 "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/" + county.slug
+            };
+        })
+    });
+
+    const LOCAL_CITIES = [
+        { name: 'Cape Coral', slug: 'cape-coral' },
+        { name: 'Fort Myers', slug: 'fort-myers' },
+        { name: 'Lehigh Acres', slug: 'lehigh-acres' },
+        { name: 'Bonita Springs', slug: 'bonita-springs' },
+        { name: 'Estero', slug: 'estero' },
+        { name: 'Naples', slug: 'naples' },
+        { name: 'Punta Gorda', slug: 'punta-gorda' },
+        { name: 'Port Charlotte', slug: 'port-charlotte' },
+        { name: 'Lee County Jail', slug: 'lee-county-jail' }
+    ];
+    schemas.push({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Southwest Florida Bail Bonds by City",
+        "description": "City and jail landing pages for Shamrock Bail Bonds in Southwest Florida.",
+        "numberOfItems": LOCAL_CITIES.length,
+        "itemListElement": LOCAL_CITIES.map(function(city, index) {
+            return {
+                "@type": "ListItem",
+                "position": index + 1,
+                "name": city.name + " Bail Bonds",
+                "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/" + city.slug
             };
         })
     });
