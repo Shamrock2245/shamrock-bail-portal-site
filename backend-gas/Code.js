@@ -38,7 +38,6 @@ function getConfig() {
   if (_CONFIG_CACHE) return _CONFIG_CACHE;
   const props = PropertiesService.getScriptProperties();
   _CONFIG_CACHE = {
-    SIGNNOW_API_BASE: props.getProperty('SIGNNOW_API_BASE_URL') || 'https://api.signnow.com',
     SIGNNOW_ACCESS_TOKEN: props.getProperty('SIGNNOW_API_TOKEN') || '',
     SIGNNOW_FOLDER_ID: props.getProperty('SIGNNOW_FOLDER_ID') || '79a05a382b38460b95a78d94a6d79a5ad55e89e6',
     SIGNNOW_TEMPLATE_ID: props.getProperty('SIGNNOW_TEMPLATE_ID') || '',
@@ -3139,28 +3138,10 @@ function fillDocumentFields(documentId, fields) {
   return documentId;
 }
 function createEmbeddedLink(documentId, email, role, expirationMinutes) {
-  const payload = {
-    invites: [{
-      email: email,
-      role: role || 'Defendant',
-      order: 1,
-      auth_method: 'none'
-    }],
-    link_expiration: expirationMinutes || 60
-  };
-  const res = SN_makeRequest('/document/' + documentId + '/embedded/invite', 'POST', payload);
-  if (res.data && res.data.length > 0) {
-    return { success: true, link: res.data[0].link, documentId: documentId };
-  }
-  return { success: false, error: 'No link returned', debug: res };
+  return { success: false, error: 'Legacy e-sign integration is retired. Use the validated DocuSeal workflow.' };
 }
-/**
- * @deprecated Use SN_uploadDocument() from SignNow_Integration_Complete.js.
- * Shim for backward compatibility — all callers route to the canonical implementation.
- */
 function uploadFilledPdfToSignNow(pdfBase64, fileName) {
-  Logger.log('[Code.js] uploadFilledPdfToSignNow() → delegating to SN_uploadDocument() [canonical]');
-  return SN_uploadDocument(pdfBase64, fileName);
+  return { success: false, error: 'Legacy e-sign integration is retired. Use the validated DocuSeal workflow.' };
 }
 function createSigningRequest(data) {
   // Convert simplified signer objects to SignNow API format
@@ -3201,27 +3182,7 @@ function generateDataLinks(documentId, signers) {
   return links;
 }
 function SN_makeRequest(endpoint, method, body) {
-  const config = getConfig();
-  const options = {
-    method: method || 'GET',
-    headers: { 'Authorization': 'Bearer ' + config.SIGNNOW_ACCESS_TOKEN, 'Content-Type': 'application/json' },
-    muteHttpExceptions: true
-  };
-  if (body) options.payload = JSON.stringify(body);
-  const url = config.SIGNNOW_API_BASE + (endpoint.startsWith('/') ? endpoint : '/' + endpoint);
-  const res = UrlFetchApp.fetch(url, options);
-  const responseCode = res.getResponseCode();
-  const content = res.getContentText();
-
-  if (responseCode === 401) throw new Error("SignNow Unauthorized - Check Token");
-  if (responseCode >= 400) throw new Error(`SignNow API Error (${responseCode}): ${content}`);
-
-  try {
-    return JSON.parse(content);
-  } catch (e) {
-    if (content.includes('<!DOCTYPE html>')) throw new Error('SignNow Gateway Error (HTML received)');
-    return { success: true, raw: content }; // Fallback for non-JSON success
-  }
+  throw new Error('Legacy e-sign integration is retired. Use the validated DocuSeal workflow.');
 }
 function mapFormDataToSignNowFields(data) {
   const MAPPING = {

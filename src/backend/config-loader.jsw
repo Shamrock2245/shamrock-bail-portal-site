@@ -21,13 +21,11 @@ export async function getConfig() {
     // 1. Load critical secrets in parallel
     const [
         gasWebAppUrl,
-        signNowToken,
         twilioAuthToken,
         googleMapsKey,
         openAiKey
     ] = await Promise.all([
         wixSecretsBackend.getSecret('GAS_WEB_APP_URL').catch(() => ''),
-        wixSecretsBackend.getSecret('SIGNNOW_API_TOKEN').catch(() => ''),
         wixSecretsBackend.getSecret('TWILIO_AUTH_TOKEN').catch(() => ''),
         wixSecretsBackend.getSecret('GOOGLE_MAPS_API_KEY').catch(() => ''),
         wixSecretsBackend.getSecret('OPENAI_API_KEY').catch(() => '')
@@ -40,7 +38,6 @@ export async function getConfig() {
     // Inject Secrets
     runtimeConfig.secrets = {
         gasWebAppUrl,
-        signNowToken,
         twilioAuthToken,
         googleMapsKey,
         openAiKey

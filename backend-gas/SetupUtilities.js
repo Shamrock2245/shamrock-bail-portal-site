@@ -122,7 +122,6 @@ function setupScriptProperties() {
 
   // 1. Set Defaults for commonly constant values if missing
   const defaults = {
-    'SIGNNOW_API_BASE_URL': 'https://api.signnow.com',
     'CURRENT_RECEIPT_NUMBER': '202500' // Start of 2025 sequence
   };
 
@@ -337,27 +336,8 @@ function generateMyWixApiKey() {
 // =============================================================================
 
 function testSignNowConnection(token) {
-  try {
-    const response = UrlFetchApp.fetch('https://api.signnow.com/user', {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${token}` },
-      muteHttpExceptions: true
-    });
-
-    if (response.getResponseCode() === 200) {
-      const user = JSON.parse(response.getContentText());
-      console.log(`✅ SignNow Connected: ${user.email} (ID: ${user.id})`);
-      return true;
-    } else {
-      console.error(`❌ SignNow Error ${response.getResponseCode()}: ${response.getContentText()}`);
-      return false;
-    }
-  } catch (e) {
-    console.error(`❌ SignNow Exception: ${e.message}`);
-    return false;
-  }
+  return { success: false, error: 'Legacy e-sign integration is retired.' };
 }
-
 function testWixHealth(apiKey) {
   // Try to hit the health endpoint
   // Note: Adjust URL if using a different site/environment

@@ -14,7 +14,6 @@ import { saveUserLocation } from 'backend/location';
 import { validateCustomSession, getDefendantDetails, getUserConsentStatus } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
-import { createEmbeddedLink } from 'backend/signnow-integration';
 import { initiateSigningWorkflow } from 'backend/signing-methods';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import { generatePDFPacket } from 'backend/packet-generator';
@@ -120,7 +119,7 @@ $w.onReady(async function () {
         const name = data?.firstName || "Client";
         currentSession.email = data?.email || ""; // Store retrieved email
         currentSession.paperworkStatus = data?.paperworkStatus || currentSession.paperworkStatus;
-        // Glue Fix: Ensure SignNow flow uses the Case Number we just found
+        // Preserve the validated case number for the staff-reviewed paperwork workflow.
         if (data?.caseNumber && data.caseNumber !== "Pending") {
             currentSession.caseId = data.caseNumber;
         }
@@ -454,52 +453,24 @@ async function handlePaperworkStart() {
 
     // 4. Signing
     console.log("START FLOW: Ready for Signing");
-    await proceedToSignNow();
+    await showDocuSealStaffReview();
 }
 
 // ... existing code ...
 
-async function proceedToSignNow() {
-    if (!currentSession) return;
-
-    const caseId = currentSession.caseId || "Active_Case_Fallback";
-
-    // Determine method based on available info or user choice (default to kiosk/embedded for portal)
-    // However, if the user clicked "Sign via Email" (caller should flag this), we would use that.
-    // For now, this function assumes Kiosk/Embedded flow as it opens the signing frame.
-
-    const userEmail = currentSession.email || `defendant_${currentSession.personId}@shamrock.local`;
-
-    // Generate Link using consolidated method
-    // We use 'kiosk' method here to get an embedded link for the lightbox
-
+async function showDocuSealStaffReview() {
+    // New signing links may only be created after staff verifies the validated
+    // Match, BondCase, surety, POA, and recipient records in Super CRM.
     try {
-        const result = await initiateSigningWorkflow({
-            caseId: caseId,
-            method: 'kiosk',
-            defendantInfo: {
-                email: userEmail,
-                phone: currentSession.phone
-            },
-            indemnitorInfo: [],
-            documentIds: [] // Empty = use default template
-        });
-
-        if (result.success && result.links && result.links.length > 0) {
-            LightboxController.show('signing', {
-                signingUrl: result.links[0], // Kiosk method returns array of links
-                documentId: result.documentId
-            });
-        } else {
-            throw new Error(result.error || "No link returned");
+        if ($w('#textSigningStatus').type) {
+            $w('#textSigningStatus').text = (
+                "Your paperwork is pending staff review. A verified DocuSeal link will be sent "
+                "only after the case details are confirmed."
+            );
+            $w('#textSigningStatus').show();
         }
-    } catch (e) {
-        console.error('Failed to create SignNow link:', e);
-        try {
-            if ($w('#textSigningStatus').type) {
-                $w('#textSigningStatus').text = "Error preparing documents.";
-            }
-        } catch (err) { }
+    } catch (err) {
+        console.warn('Unable to show paperwork review status.');
     }
 }
 
@@ -614,7 +585,7 @@ async function handleDefendantWizardSubmission(data) {
         try { local.setItem(`consent_${currentSession.personId}`, 'true'); } catch(e) {}
     }
 
-    // Forward to GAS backend for processing (SignNow packet generation)
+    // Forward to the approved backend workflow for staff-reviewed paperwork processing.
     try {
         const { callGasAction } = await import('backend/gasIntegration');
         const result = await callGasAction('submitDefendantApplication', {

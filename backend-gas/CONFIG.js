@@ -308,7 +308,6 @@ function getConfig(path) {
     try {
       var props = PropertiesService.getScriptProperties();
       return {
-        SIGNNOW_API_BASE: props.getProperty('SIGNNOW_API_BASE_URL') || 'https://api.signnow.com',
         SIGNNOW_ACCESS_TOKEN: props.getProperty('SIGNNOW_API_TOKEN') || '',
         SIGNNOW_FOLDER_ID: props.getProperty('SIGNNOW_FOLDER_ID') || '',
         SIGNNOW_TEMPLATE_ID: props.getProperty('SIGNNOW_TEMPLATE_ID') || '',

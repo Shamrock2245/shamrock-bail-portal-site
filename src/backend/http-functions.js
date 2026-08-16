@@ -258,7 +258,7 @@ export async function get_testAuth(request) {
  *     "defendantName": "John Doe",
  *     "caseNumber": "2024-CF-001234",
  *     "documentName": "Bail Bond Packet - John Doe",
- *     "signingLink": "https://app.signnow.com/...",
+ *     "signingLink": "https://sign.shamrockbailbonds.biz/...",
  *     "signerRole": "defendant",
  *     "signNowDocumentId": "abc123",
  *     "expiresAt": "2024-12-31T23:59:59Z"
@@ -338,92 +338,7 @@ export async function post_documentsBatch(request) {
     }
 }
 
-/**
- * POST /api/documents/status
- * Update document status (called by SignNow webhook)
- * 
- * Request body:
- * {
- *   "apiKey": "your-api-key",
- *   "signNowDocumentId": "abc123",
- *   "status": "signed"
- * }
- */
-export async function post_documentsStatus(request) {
-    try {
-        const body = await request.body.json();
 
-        if (!body.apiKey || !body.signNowDocumentId || !body.status) {
-            return badRequest({
-                body: { success: false, message: 'Missing required fields' }
-            });
-        }
-
-        const result = await updateDocumentStatus(body.signNowDocumentId, body.status, body.apiKey);
-
-        if (result.success) {
-            return ok({
-                headers: { 'Content-Type': 'application/json' },
-                body: result
-            });
-        } else {
-            return forbidden({
-                body: result
-            });
-        }
-
-    } catch (error) {
-        return serverError({
-            body: { success: false, message: error.message }
-        });
-    }
-}
-
-/**
- * POST /api/webhook/signnow
- * SignNow webhook endpoint for document completion
- * 
- * Securely verifies SignNow HMAC signature
- */
-export async function post_webhookSignnow(request) {
-    try {
-        const signature = request.headers['x-signnow-signature'];
-        const bodyText = await request.body.text();
-
-        // 1. Verify Signature
-        if (signature) {
-            const secret = await getSecret('SIGNNOW_WEBHOOK_SECRET').catch(() => '');
-            if (secret) {
-                const generatedSignature = createHmac('sha256', secret)
-                    .update(bodyText)
-                    .digest('hex');
-
-                if (signature !== generatedSignature) {
-                    logSafe('Invalid SignNow Signature', { signature, generatedSignature }, 'warn');
-                    return forbidden({ body: { error: 'Invalid signature' } });
-                }
-            } else {
-                console.warn('SIGNNOW_WEBHOOK_SECRET missing. Skipping signature check (Legacy Mode).');
-            }
-        }
-
-        const body = JSON.parse(bodyText);
-        const eventType = body.event || body.meta?.event;
-        const documentId = body.document_id || body.content?.document_id;
-
-        if (eventType === 'document.complete' || eventType === 'document_complete') {
-            const apiKey = await getSecret('GAS_API_KEY').catch(() => 'webhook-internal');
-            await updateDocumentStatus(documentId, 'signed', apiKey);
-            return ok({ body: { received: true, status: 'processed' } });
-        }
-
-        return ok({ body: { received: true, status: 'ignored' } });
-
-    } catch (error) {
-        console.error('Webhook error:', error);
-        return serverError({ body: { received: false, error: error.message } });
-    }
-}
 
 // Social Auth Imports
 import { verifyGoogleUser, verifyFacebookUser } from 'backend/social-auth';
@@ -723,7 +638,7 @@ export async function post_smsSend(request) {
  * {
  *   "apiKey": "your-api-key",
  *   "phone": "2395551234",
- *   "signingLink": "https://app.signnow.com/...",
+ *   "signingLink": "https://sign.shamrockbailbonds.biz/...",
  *   "recipientType": "defendant" | "indemnitor",
  *   "defendantName": "John Doe" (optional)
  * }
@@ -1310,36 +1225,6 @@ export async function post_updateDefendantData(request) {
         }
 
         const result = await gasIntegration.updateDefendantData(body.caseId, body.data);
-
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: result
-        });
-    } catch (error) {
-        return serverError({ body: { success: false, message: error.message } });
-    }
-}
-
-/**
- * POST /_functions/updateSignNowData
- * Update intake with SignNow document info
- * Proxies to gasIntegration.updateSignNowData()
- */
-export async function post_updateSignNowData(request) {
-    try {
-        const body = await request.body.json();
-        const apiKey = body.apiKey;
-
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (apiKey !== validApiKey) {
-            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
-        }
-
-        if (!body.caseId || !body.data) {
-            return badRequest({ body: { success: false, message: 'Missing caseId or data' } });
-        }
-
-        const result = await gasIntegration.updateSignNowData(body.caseId, body.data);
 
         return ok({
             headers: { 'Content-Type': 'application/json' },
@@ -2061,7 +1946,7 @@ export async function post_intakeSubmit(request) {
  *   "apiKey": "GAS_API_KEY",
  *   "telegramChatId": "123456789",
  *   "defendantName": "John Doe",
- *   "signingLink": "https://app.signnow.com/...",
+ *   "signingLink": "https://sign.shamrockbailbonds.biz/...",
  *   "paymentLink": "https://swipesimple.com/..."
  * }
  */

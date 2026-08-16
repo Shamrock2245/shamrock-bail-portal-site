@@ -524,7 +524,6 @@ function getMCPConfig() {
   // Fallback: read from Script Properties directly
   const props = PropertiesService.getScriptProperties();
   return {
-    SIGNNOW_API_BASE: props.getProperty('SIGNNOW_API_BASE_URL') || 'https://api.signnow.com',
     SIGNNOW_ACCESS_TOKEN: props.getProperty('SIGNNOW_API_TOKEN') || props.getProperty('SIGNNOW_ACCESS_TOKEN'),
     TARGET_SPREADSHEET_ID: props.getProperty('TARGET_SPREADSHEET_ID') || '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E'
   };

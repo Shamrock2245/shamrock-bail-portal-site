@@ -1,7 +1,7 @@
 /**
  * WebhookHandler.gs
  * 
- * Google Apps Script Web App for handling webhooks from SignNow and Wix
+ * Google Apps Script Web App for handling retired e-sign callback rejection and Wix webhooks
  * 
  * DEPLOYMENT INSTRUCTIONS:
  * 1. In GAS, click Deploy → New deployment
@@ -10,8 +10,7 @@
  * 4. Set "Who has access" to "Anyone"
  * 5. Click Deploy
  * 6. Copy the Web app URL
- * 7. Register this URL as a webhook in SignNow
- */
+ *  */
 
 /**
  * Handle GET requests (for testing/health check)
@@ -27,7 +26,7 @@ function webhookHealthCheck(e) {
 }
 
 /**
- * Handle POST requests (webhooks from SignNow and Wix)
+ * Handle POST requests (Wix webhooks; retired e-sign callbacks are rejected)
  * Called by proper routing in Code.gs
  */
 function handleIncomingWebhook(e) {
@@ -40,14 +39,11 @@ function handleIncomingWebhook(e) {
     let result;
 
     switch (source) {
-      case 'signnow':
-        result = handleSignNowWebhook(payload);
-        break;
       case 'wix':
         result = handleWixWebhook(payload);
         break;
       default:
-        result = { success: false, error: 'Unknown webhook source' };
+        result = { success: false, error: 'Unsupported webhook source' };
     }
 
     return ContentService.createTextOutput(JSON.stringify(result))
@@ -66,139 +62,12 @@ function handleIncomingWebhook(e) {
  * Detect the source of the webhook based on payload structure
  */
 function detectWebhookSource(payload, e) {
-  // Check for SignNow webhook indicators
-  if (payload.event || payload.meta?.event || payload.document_id) {
-    return 'signnow';
-  }
-
-  // Check for Wix webhook indicators
   if (payload.action || e.parameter?.source === 'wix') {
     return 'wix';
   }
-
   return 'unknown';
 }
 
-/**
- * Handle SignNow webhooks
- */
-function handleSignNowWebhook(payload) {
-  const event = payload.event || payload.meta?.event;
-  const documentId = payload.document_id || payload.content?.document_id;
-
-  console.log(`SignNow event: ${event}, Document: ${documentId}`);
-
-  switch (event) {
-    case 'document.complete':
-    case 'document_complete':
-      MongoLogger.logSignNow('document_complete', { documentId: documentId, document_name: payload.document_name, rawPayload: payload });
-      return handleDocumentComplete(documentId, payload);
-
-    case 'document.update':
-    case 'document_update':
-      return handleDocumentUpdate(documentId, payload);
-
-    case 'invite.sent':
-    case 'invite_sent':
-      MongoLogger.logSignNow('invite_sent', { documentId: documentId, rawPayload: payload });
-      return handleInviteSent(documentId, payload);
-
-    default:
-      console.log(`Unhandled SignNow event: ${event}`);
-      return { success: true, message: `Event ${event} acknowledged` };
-  }
-}
-
-/**
- * Handle document completion - download and save to Google Drive,
- * then trigger the post-signing Telegram notification pipeline.
- */
-function handleDocumentComplete(documentId, payload) {
-  try {
-    console.log(`Delegating Document ${documentId} completion to DriveFilingService...`);
-    // Pass the payload directly to the centralized service
-    const result = DriveFilingService.handleSignNowCompletedDocument(payload);
-
-    if (result && result.success) {
-      const defendantName = extractDefendantName(payload?.document_name);
-      logCompletion(documentId, defendantName, result.fileUrl);
-      // ── Update DocSigningTracker ─────────────────────────────────────────────
-      // Document name format: Shamrock_<docId>_signer<N>_<caseNumber>
-      // Parse it to update the tracker row so staff can see signing status
-      try {
-        const docName = payload?.document_name || '';
-        const trackerMatch = docName.match(/^Shamrock_([^_]+(?:_[^_]+)*)_signer(-?\d+)_(.+)$/) ||
-          docName.match(/^Shamrock_([^_]+(?:_[^_]+)*)_(.+)$/);
-        if (trackerMatch) {
-          const parsedDocId = trackerMatch[1];
-          const parsedCase = trackerMatch[trackerMatch.length - 1];
-          const signerIdx = trackerMatch.length === 4 ? parseInt(trackerMatch[2]) : -1;
-          const trackerKey = signerIdx >= 0 ? parsedDocId + ':signer-' + signerIdx : parsedDocId;
-          if (typeof updateDocSigningStatus_ === 'function') {
-            updateDocSigningStatus_(parsedCase, trackerKey, 'signed');
-          }
-        }
-      } catch (trackerErr) {
-        console.warn('[WebhookHandler] DocSigningTracker update failed (non-fatal):', trackerErr.message);
-      }
-      // ────────────────────────────────────────────────────────────────────────
-
-      // ── Post-signing pipeline ────────────────────────────────────────────────
-      // Trigger Telegram notification + ID upload request via PDF_Processor.js
-      // This closes the loop: signing complete → client notified → ID upload requested
-      if (typeof triggerPostSigningFromWebhook === 'function') {
-        try {
-          triggerPostSigningFromWebhook({
-            documentId: documentId,
-            documentName: payload?.document_name || '',
-            defendantName: defendantName,
-            fileUrl: result.fileUrl,
-            folderId: result.folderId,
-            payload: payload,
-          });
-        } catch (pipelineErr) {
-          // Non-fatal — Drive filing already succeeded; log and continue
-          console.error('[WebhookHandler] Post-signing pipeline error (non-fatal):', pipelineErr);
-          logProcessingEvent('POST_SIGNING_PIPELINE_ERROR', {
-            documentId: documentId,
-            error: pipelineErr.message
-          });
-        }
-      } else {
-        console.warn('[WebhookHandler] triggerPostSigningFromWebhook not available — skipping Telegram notification');
-      }
-      // ────────────────────────────────────────────────────────────────────────
-
-      return {
-        success: true,
-        message: 'Document saved to Google Drive via DriveFilingService',
-        fileUrl: result.fileUrl,
-        folderId: result.folderId
-      };
-    } else {
-      throw new Error((result && result.error) || 'Failed in DriveFilingService');
-    }
-  } catch (error) {
-    console.error('Error handling document completion delegated task:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Handle document update events
- */
-function handleDocumentUpdate(documentId, payload) {
-  console.log(`Document ${documentId} updated - check skipped in centralized handler`);
-  return { success: true, message: 'Update acknowledged' };
-}
-
-/**
- * Handle invite sent events
- */
-function handleInviteSent(documentId, payload) {
-  console.log(`Invite sent for document ${documentId}`);
-  return { success: true, message: 'Invite sent acknowledged' };
-}
 
 /**
  * Handle Wix webhooks
@@ -400,6 +269,6 @@ function testWebhookHandler() {
   };
 
   console.log('Testing webhook handler...');
-  const result = handleSignNowWebhook(testPayload);
+  const result = { success: false, error: 'Legacy e-sign webhooks are retired' };
   console.log('Result:', result);
 }
