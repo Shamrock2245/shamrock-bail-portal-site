@@ -208,21 +208,9 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Unauthorized' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
-    try {
-      const paperworkData = JSON.parse(decodeURIComponent(e.parameter.data));
-      Logger.log('📄 Shannon send-paperwork request: ' + JSON.stringify(paperworkData));
-      if (typeof handleShannonSendPaperwork === 'function') {
-        const result = handleShannonSendPaperwork(paperworkData);
-        return ContentService.createTextOutput(JSON.stringify(result))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-      return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Handler not found' }))
-        .setMimeType(ContentService.MimeType.JSON);
-    } catch (parseErr) {
-      Logger.log('❌ Send-paperwork parse error: ' + parseErr.message);
-      return ContentService.createTextOutput(JSON.stringify({ success: false, message: parseErr.message }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
+    const result = blockLegacyDirectPaperwork_('get_send_paperwork');
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 
   // Shannon Notify Bondsman Tool (Path A) — log intake + Slack alert
@@ -1444,6 +1432,8 @@ function handleAction(data) {
 
   // 1c. STAFF PORTAL — Generate full SignNow packet from staff-portal.html
   if (action === 'staffGeneratePacket') {
+    return blockLegacyDirectPaperwork_('staff_generate_packet');
+
     try {
       Logger.log('🏢 Staff Portal: Generate packet for ' + (data.defendant_name || 'unknown'));
       MongoLogger.logActivity('staffGeneratePacket', 'staff_portal');
@@ -1476,6 +1466,8 @@ function handleAction(data) {
 
   // 1e. PHASE 1 — Indemnitor wizard submits → save intake + send 6 indemnitor-facing docs
   if (action === 'submitIndemnitorPhase1') {
+    return blockLegacyDirectPaperwork_('submit_indemnitor_phase_1');
+
     try {
       Logger.log('📋 Phase 1: Indemnitor submission from ' + (data.signerEmail || 'unknown'));
       MongoLogger.logIntake(data.formData || data, 'indemnitor_phase1');
@@ -1512,6 +1504,8 @@ function handleAction(data) {
 
   // 1f. PHASE 2 — Staff approves bond → POA entered → send 6 court/agent docs
   if (action === 'staffApproveAndSendPhase2') {
+    return blockLegacyDirectPaperwork_('staff_approve_and_send_phase_2');
+
     try {
       Logger.log('✅ Phase 2: Bond approval by ' + (data.agentName || 'unknown') + ' | POA: ' + (data.poaNumber || 'missing'));
       MongoLogger.logActivity('staffApproveAndSendPhase2', 'staff_portal');

@@ -97,6 +97,8 @@ const PHASE_2_DOCS = [
  * @returns {object} Result for ElevenLabs to read back to caller
  */
 function handleShannonSendPaperwork(data) {
+    return blockLegacyDirectPaperwork_('shannon_send_paperwork');
+
     try {
         SN_log('Shannon_Start', data);
 
@@ -263,6 +265,8 @@ function handleShannonSendPaperwork(data) {
  * @returns {object} { success, signingLink, entityId, documentsCount }
  */
 function handleSendPhase1Packet(formData, signerEmail, signerName) {
+    return blockLegacyDirectPaperwork_('legacy_phase_1_packet');
+
     try {
         SN_log('Phase1_Start', { signerEmail, signerName, docCount: PHASE_1_DOCS.length });
         
@@ -369,6 +373,8 @@ function handleSendPhase1Packet(formData, signerEmail, signerName) {
  * @returns {object} { success, signingLink, entityId, documentsCount }
  */
 function handleSendPhase2Packet(formData, signerEmail, signerName, poaNumber, agentName, agentLicense) {
+    return blockLegacyDirectPaperwork_('legacy_phase_2_packet');
+
     try {
         SN_log('Phase2_Start', { signerEmail, poaNumber, agentName, docCount: PHASE_2_DOCS.length });
         

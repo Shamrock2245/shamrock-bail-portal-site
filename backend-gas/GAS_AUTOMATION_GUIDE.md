@@ -1,6 +1,6 @@
 # GAS Backend — Automation & Routing Reference
 
-> **Last Updated:** April 17, 2026
+> **Last Updated:** August 16, 2026
 > **Runtime:** Google Apps Script V8
 > **Entry Point:** `Code.js` → `doPost()` / `doGet()`
 
@@ -25,6 +25,9 @@ Called via `?action=xxx` query parameter. Used primarily by Node-RED and health 
 
 > [!NOTE]
 > `handleGetAction()` routes to `NodeRedHandlers.js` functions. See Section 3 below.
+
+> [!CAUTION]
+> **Direct SignNow paperwork routes are retired and fail closed.** `source=send_paperwork`, `staffGeneratePacket`, `submitIndemnitorPhase1`, and `staffApproveAndSendPhase2` do not create packets, signing links, payment requests, or client contact. Active paperwork is **DocuSeal-first in Super CRM** and may begin only after a validated match, bonded case, explicit surety, assigned POA, and staff approval. This guard does not change the existing GAS `/exec` URL.
 
 ### doPost() Actions — Pre-Auth (No API Key Required)
 
