@@ -1,6 +1,6 @@
 # Portal Site — True Status
 
-> **Last verified:** 2026-08-12  
+> **Last verified:** 2026-08-16
 > **Repo:** `Shamrock2245/shamrock-bail-portal-site` · branch `main`  
 > **Product URL:** `https://shamrockbailbonds.biz` (Wix)  
 > **Role:** Brand clipboard + GAS factory — **Shamrock’s Platform** factory layer  
@@ -34,6 +34,7 @@
 | Location tracker no longer falls back to hardcoded API key | ✅ |
 | Expanded `.gitignore` / `.claspignore` for dumps & secrets | ✅ |
 | Ecosystem secrets checklist wrapper | `scripts/check_ecosystem_secrets.py` |
+| **Legacy direct paperwork routes** | ✅ **Live @462** — Shannon, staff packet generation, and Phase 1/2 direct SignNow routes now return a non-mutating block. Active paperwork remains Super CRM DocuSeal-only after validated Match → BondCase → surety → POA → staff approval. |
 | **Surety realignment (July 2026)** | ✅ |
 | &nbsp;&nbsp;`SignNow_SendPaperwork.js` — agent constants locked to Brendan O'Neal / P139768 | ✅ |
 | &nbsp;&nbsp;`SignNow_SendPaperwork.js` — `surety_id` extracted from payload; `_resolveTemplateId()` used for all three handlers | ✅ |
@@ -49,8 +50,8 @@
 | Item | Notes |
 |------|--------|
 | **Secret rotation** | Keys that ever lived in git history — see `SECRETS_ROTATION_GUIDE.md` |
-| **GAS redeploy** | ✅ **@445** (leads URL `…CvP-Z`) + **@446** (school Netlify URL `…Qa_DMg`) — 2026-07-10 cert fail-closed + Telegram Palmetto ID; sheet `1yZyk4wXM1kT-Nfjos0CxAMaSFKFdwz_sc6OZhKZ03h8` |
-| **Wix publish / leftover $699 FAQ** | Page JS catalog is **$649**. Live `/bail-school` JSON-LD still contains “The Agent Path is $699” (Wix SEO/CMS, not git). **Republish Wix FAQ/SEO** before calling C2 done. |
+| **GAS redeploy** | ✅ **@462** on the existing stable portal deployment — 2026-08-16 direct legacy paperwork routes fail closed with no `/exec` URL change. Prior school deployment remains **@446**. |
+| **Wix publish / Bail School pricing** | ✅ **C2 verified live 2026-08-12** — public page JSON-LD lists the 120-hour course at **$649**; no retired “The Agent Path” or `$699` string was found in live page source. |
 | **Embed host redeploy** | ✅ `shamrock-embeds` site (`95e4b170…`) serves updated `bail-school.html` |
 | **SwipeSimple** | Confirm links charge **$199** / **$649** / **$49** |
 | **School sheet ID** | ✅ Script Property `BAIL_SCHOOL_SHEET_ID` + CONFIG fallback set (smoke unlock OK) |

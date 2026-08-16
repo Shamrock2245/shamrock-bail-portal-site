@@ -6,6 +6,20 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-08-16 — v2.8.1 — Direct paperwork safety guard
+
+**Production release:**
+- Promoted `ff28e9e` to `main`; Wix release workflow `31973032502` completed successfully.
+- Pushed the portal factory and redeployed the **existing** stable Apps Script deployment as **@462** (`V462 - fail closed retired direct paperwork routes`). The stable `/exec` URL did not change.
+
+**Fail-closed paperwork control:**
+- Retired direct SignNow routes for Shannon, staff packet generation, Phase 1, and Phase 2 now return a non-mutating block before any packet, signing link, payment request, client contact, or record mutation.
+- Active paperwork remains **Super CRM DocuSeal-only**, following validated Match → BondCase → explicit surety → assigned POA → staff approval.
+
+**Verification:**
+- Stable factory health returned `success:true` (`V409` health identifier); leads `/health`, DocuSeal, Bail School, paperwork portal, and Postiz `/auth` returned `200`.
+- This release does **not** complete the staff-gated write-bond → DocuSeal paperwork or outbound iMessage smokes, and does not replace historical secret rotation.
+
 ### 2026-08-06 — v2.8.0 — Bail School catalog alignment + embed harden
 
 **Bail School (public marketing):**
