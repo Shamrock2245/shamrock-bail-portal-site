@@ -216,6 +216,5 @@ function testSaveCompletedBond() {
 // Export for other files
 var DriveFilingService = {
   getOrCreateDefendantFolder: getOrCreateDefendantFolder,
-  saveCompletedBondToDrive: saveCompletedBondToDrive,
-  handleSignNowCompletedDocument: handleSignNowCompletedDocument
+  saveCompletedBondToDrive: saveCompletedBondToDrive
 };
