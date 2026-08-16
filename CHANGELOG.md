@@ -6,6 +6,22 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-08-16 — v2.8.2 — Legacy e-sign retirement and DocuSeal binding gate
+
+**Production release:**
+- Promoted portal commit `6fae72c` and factory-load follow-up `90f0aac` to `main`; Wix release workflow `31976250717` completed successfully.
+- Updated the **existing** stable Apps Script deployment to **@464** (`V464 - fix retired legacy export`) without changing its `/exec` URL.
+
+**Retirement and safety controls:**
+- Removed active legacy e-sign provider modules, direct webhooks, factory senders, provider network calls, embedded-signing lightboxes, Node-RED tracker flows, and unverified signing-link delivery routes.
+- Retained historical packet fields as read-only compatibility data; no signed packet is mutated in place.
+- Hardened active DocuSeal packet creation to require validated Match, bound BondCase, explicit OSI/Palmetto surety, assigned POA tier, canonical recipient email, and a fresh packet ID. Packet-time identity, recipient, case, POA, and financial overrides now fail closed.
+
+**Verification:**
+- Focused DocuSeal service suite passed (**19 tests**); deployment workflows for the portal, Auto-CRM, and Node-RED completed successfully.
+- Stable factory health returned `success:true`; leads, DocuSeal, Bail School, paperwork portal, and Postiz `/auth` returned `200`.
+- This release does **not** complete the staff-gated write-bond → DocuSeal → payment → active-bond smoke, staff-approved outbound iMessage smoke, or historical secret rotation.
+
 ### 2026-08-16 — v2.8.1 — Direct paperwork safety guard
 
 **Production release:**

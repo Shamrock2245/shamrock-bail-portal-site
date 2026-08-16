@@ -25,7 +25,7 @@
 
 | Area | Status |
 |------|--------|
-| Bond portal, Telegram, Shannon, SignNow, multi-channel intake | ✅ Production-shaped |
+| Bond portal, Telegram, Shannon, DocuSeal, multi-channel intake | ⚠️ Code and public-surface checks complete; staff end-to-end smoke remains required |
 | Bail School education management in GAS (`BailSchool_Progress.js`, `BailSchoolPayments.js`) | ✅ |
 | SwipeSimple Gmail poll → unlock `$199`→20hr / `$649`→120hr | ✅ in code |
 | Public Bail School catalog aligned to school LMS (`20hr` / `120hr` / simulator) | ✅ August 2026 |
@@ -34,14 +34,9 @@
 | Location tracker no longer falls back to hardcoded API key | ✅ |
 | Expanded `.gitignore` / `.claspignore` for dumps & secrets | ✅ |
 | Ecosystem secrets checklist wrapper | `scripts/check_ecosystem_secrets.py` |
-| **Legacy direct paperwork routes** | ✅ **Live @462** — Shannon, staff packet generation, and Phase 1/2 direct SignNow routes now return a non-mutating block. Active paperwork remains Super CRM DocuSeal-only after validated Match → BondCase → surety → POA → staff approval. |
-| **Surety realignment (July 2026)** | ✅ |
-| &nbsp;&nbsp;`SignNow_SendPaperwork.js` — agent constants locked to Brendan O'Neal / P139768 | ✅ |
-| &nbsp;&nbsp;`SignNow_SendPaperwork.js` — `surety_id` extracted from payload; `_resolveTemplateId()` used for all three handlers | ✅ |
-| &nbsp;&nbsp;`SignNow_SendPaperwork.js` — PHASE_1_DOCS / PHASE_2_DOCS corrected to match leads implementation | ✅ |
-| &nbsp;&nbsp;`Telegram_Documents.js` — Palmetto template IDs added; `surety_id` passed through lookup → signing URL | ✅ |
-| &nbsp;&nbsp;`Telegram_IntakeQueue.js` — `surety_id` added to sheet header, `appendRow`, Wix sync, `_mapCanonicalToDashboardFormat` | ✅ |
-| &nbsp;&nbsp;`PDF_Mappings.js` — Palmetto filename entries added to `TEMPLATE_FILENAME_MAP` | ✅ |
+| **Legacy SignNow execution** | ✅ **Live @464** — direct routes, provider modules, callbacks, factory helpers, Node-RED flows, and client embedded-signing surfaces are retired. Historical record fields remain read-only. |
+| **DocuSeal packet gate** | ✅ Code-enforced: validated Match, bound BondCase, explicit OSI/Palmetto surety, assigned POA tier, validated recipient email, immutable packet version, and staff-approved delivery path. |
+| **Surety realignment (July 2026)** | ✅ Active paperwork requires an explicit `surety_id`; OSI is preferred and Palmetto is selected only under the documented policy. |
 
 ---
 
@@ -50,14 +45,14 @@
 | Item | Notes |
 |------|--------|
 | **Secret rotation** | Keys that ever lived in git history — see `SECRETS_ROTATION_GUIDE.md` |
-| **GAS redeploy** | ✅ **@462** on the existing stable portal deployment — 2026-08-16 direct legacy paperwork routes fail closed with no `/exec` URL change. Prior school deployment remains **@446**. |
+| **GAS redeploy** | ✅ **@464** on the existing stable portal deployment — 2026-08-16 legacy SignNow execution retired and DocuSeal guards live with no `/exec` URL change. The stable factory health action returned `success:true`. |
 | **Wix publish / Bail School pricing** | ✅ **C2 verified live 2026-08-12** — public page JSON-LD lists the 120-hour course at **$649**; no retired “The Agent Path” or `$699` string was found in live page source. |
 | **Embed host redeploy** | ✅ `shamrock-embeds` site (`95e4b170…`) serves updated `bail-school.html` |
 | **SwipeSimple** | Confirm links charge **$199** / **$649** / **$49** |
 | **School sheet ID** | ✅ Script Property `BAIL_SCHOOL_SHEET_ID` + CONFIG fallback set (smoke unlock OK) |
 | **SwipeSimple Gmail poller** | Confirm `setupSwipeSimpleTrigger()` still firing every 5 min |
 | **Certificate Script Properties** | `CERTIFICATE_TEMPLATE_ID` + `CERTIFICATE_FOLDER_ID` (issue_certificate fails closed without them) |
-| **Telegram Palmetto appearance-bond ID** | ✅ Aligned with leads TEMPLATE_MAP (2026-07-10) |
+| **Telegram legacy signing flow** | ✅ Retired; the Telegram mini-app must use the staff-approved DocuSeal workflow rather than generating an embedded signing link. |
 
 ---
 
