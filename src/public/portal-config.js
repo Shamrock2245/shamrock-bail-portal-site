@@ -18,6 +18,13 @@
 export const API_BASE_URL = 'https://api.shamrockbailbonds.biz/api/v1';
 
 /**
+ * Netlify-hosted indemnitor/defendant paperwork popup
+ * (PIN → ID/selfie → remaining fields → DocuSeal).
+ * @constant {string}
+ */
+export const PAPERWORK_APP_URL = 'https://shamrock-telegram.netlify.app/paperwork/';
+
+/**
  * API timeout in milliseconds
  * @constant {number}
  */

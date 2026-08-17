@@ -187,7 +187,13 @@ async function triggerPaperworkModal() {
             sessionToken: getSessionToken()
         };
 
-        const result = await LightboxController.show('idUpload', modalContext);
+        let result = null;
+        try {
+            result = await LightboxController.show('signing', modalContext);
+        } catch (signErr) {
+            console.warn('[!] Signing lightbox unavailable, falling back to ID upload:', signErr);
+            result = await LightboxController.show('idUpload', modalContext);
+        }
 
         if (result && result.success) {
             console.log("[OK] Paperwork & ID Modal completed successfully");
