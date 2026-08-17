@@ -29,11 +29,27 @@ $w.onReady(() => {
 
         const frame = $w('#signingFrame');
         if (frame) {
-            frame.src = url;
+            const member = ctx.memberData || {};
+            const payload = {
+                type: 'shamrock-paperwork-open',
+                url,
+                phone: member.phone || ctx.phone || '',
+                sessionToken: ctx.sessionToken || ctx.st || '',
+                signUrl: ctx.signUrl || '',
+                caseId: ctx.packetId || ctx.caseId || ''
+            };
+            try { frame.src = url; } catch (_) { /* Code-mode HTML iframe ignores src */ }
+            if (typeof frame.postMessage === 'function') {
+                frame.postMessage(payload);
+                setTimeout(() => frame.postMessage(payload), 400);
+            }
             frame.show();
             if (typeof frame.onMessage === 'function') {
                 frame.onMessage((event) => {
                     const msg = event && event.data;
+                    if (msg && msg.type === 'shamrock-paperwork-ready') {
+                        if (typeof frame.postMessage === 'function') frame.postMessage(payload);
+                    }
                     if (msg && (msg.type === 'shamrock-paperwork-complete' || msg.type === 'shamrock-paperwork-close')) {
                         wixWindow.lightbox.close({ success: msg.type === 'shamrock-paperwork-complete' });
                     }

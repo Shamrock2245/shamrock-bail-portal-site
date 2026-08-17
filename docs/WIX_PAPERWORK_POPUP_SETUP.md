@@ -55,36 +55,67 @@ Do **not** rename `#signingFrame`.
 
 ---
 
-## 3. Turn `#signingFrame` into an HTML iframe
+## 3. Paste the HTML into `#signingFrame`
 
-The old iframe was hidden because SignNow embed was retired. Turn it back on as a blank host.
+You already have the right element: **`#signingFrame`** with **HTML Settings** open.
 
-1. Select `#signingFrame`.
-2. If it is **not** an **HTML iframe / HtmlComponent**:
-   - Delete the old box.
-   - **Add** → **Embed** → **Embed a site** / **HTML iframe**.
-   - Set the element ID back to `signingFrame`.
-3. Size it for a phone popup:
-   - Width: stretch to lightbox padding (about **340–400px** on mobile, full width on desktop).
-   - Height: **620px** minimum (PIN + ID + remaining-fields popups).
-4. In the iframe settings:
-   - Temporary src can be `https://shamrock-telegram.netlify.app/paperwork/?embed=1`
-   - Velo overwrites `.src` on open with phone + session query params.
-5. Allow:
-   - Camera
-   - Microphone (off is fine)
-   - Geolocation not required
-6. Lightbox itself:
-   - Mobile: full screen or 90% height.
-   - Close on overlay click: **off** (people are mid-ID scan).
-   - Touch targets on `#cancelBtn` ≥ 44px.
+1. Leave **Code** selected (not Website address).
+2. Replace the old SignNow placeholder. Change **What's in the embed?** to: `Shamrock Paperwork Popup`
+3. Paste the HTML below into **Add your code here**, then **Apply**.
+4. Stretch `#signingFrame` to at least **620px** tall.
 
-Code that mounts it:
-
-```js
-frame.src = 'https://shamrock-telegram.netlify.app/paperwork/?embed=1&phone=…&st=…';
-frame.show();
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b1120; }
+    iframe { border: 0; width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+  <iframe
+    id="app"
+    src="https://shamrock-telegram.netlify.app/paperwork/?embed=1"
+    allow="camera; microphone; clipboard-read; clipboard-write; fullscreen"
+    allowfullscreen></iframe>
+  <script>
+    var BASE = 'https://shamrock-telegram.netlify.app/paperwork/';
+    var frame = document.getElementById('app');
+    function openPaperwork(data) {
+      data = data || {};
+      try {
+        var parsed = new URL(data.url || BASE, BASE);
+        parsed.searchParams.set('embed', '1');
+        if (data.phone) parsed.searchParams.set('phone', String(data.phone).replace(/\D/g, ''));
+        if (data.sessionToken || data.st) parsed.searchParams.set('st', data.sessionToken || data.st);
+        if (data.signUrl) parsed.searchParams.set('link', data.signUrl);
+        frame.src = parsed.toString();
+      } catch (e) {
+        frame.src = BASE + '?embed=1';
+      }
+    }
+    window.onmessage = function (event) {
+      var data = event && event.data;
+      if (!data) return;
+      if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { return; } }
+      if (data.type === 'shamrock-paperwork-open' || data.phone || data.sessionToken || data.url) {
+        openPaperwork(data); return;
+      }
+      if (data.type === 'shamrock-paperwork-complete' || data.type === 'shamrock-paperwork-close') {
+        if (window.parent !== window) window.parent.postMessage(data, '*');
+      }
+    };
+  </script>
+</body>
+</html>
 ```
+
+The SignNow “Still Connecting…” card should disappear after Apply. You should see the Netlify **Unlock your packet** screen.
+
+Same file in the repo: `src/custom-embeds/signing-frame.html`.
 
 ---
 

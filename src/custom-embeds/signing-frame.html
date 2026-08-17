@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shamrock Paperwork</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b1120; }
+    iframe { border: 0; width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+  <iframe
+    id="app"
+    src="https://shamrock-telegram.netlify.app/paperwork/?embed=1"
+    allow="camera; microphone; clipboard-read; clipboard-write; fullscreen"
+    allowfullscreen
+    title="Shamrock paperwork"></iframe>
+  <script>
+    var BASE = 'https://shamrock-telegram.netlify.app/paperwork/';
+    var frame = document.getElementById('app');
+
+    function openPaperwork(data) {
+      data = data || {};
+      var url = data.url || BASE;
+      try {
+        var parsed = new URL(url, BASE);
+        parsed.searchParams.set('embed', '1');
+        if (data.phone) parsed.searchParams.set('phone', String(data.phone).replace(/\D/g, ''));
+        if (data.sessionToken || data.st) parsed.searchParams.set('st', data.sessionToken || data.st);
+        if (data.signUrl) parsed.searchParams.set('link', data.signUrl);
+        if (data.caseId) parsed.searchParams.set('case', String(data.caseId));
+        frame.src = parsed.toString();
+      } catch (e) {
+        frame.src = BASE + '?embed=1';
+      }
+    }
+
+    window.onmessage = function (event) {
+      var data = event && event.data;
+      if (!data) return;
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch (e) { return; }
+      }
+      if (data.type === 'shamrock-paperwork-open' || data.phone || data.sessionToken || data.url) {
+        openPaperwork(data);
+        return;
+      }
+      if (data.type === 'shamrock-paperwork-complete' || data.type === 'shamrock-paperwork-close') {
+        if (window.parent !== window) window.parent.postMessage(data, '*');
+      }
+    };
+
+    frame.addEventListener('load', function () {
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'shamrock-paperwork-ready' }, '*');
+      }
+    });
+  </script>
+</body>
+</html>
