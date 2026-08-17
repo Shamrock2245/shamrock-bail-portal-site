@@ -297,3 +297,66 @@ export async function verifyDocument(documentId, verified, notes) {
         };
     }
 }
+
+/**
+ * Check whether an indemnitor needs to complete their paperwork or upload ID.
+ *
+ * @param {string} sessionToken - Custom session token
+ * @returns {Promise<{success: boolean, needsPaperwork: boolean, needsId: boolean, currentIntake: Object|null}>}
+ */
+export async function checkIndemnitorPaperworkStatus(sessionToken) {
+    try {
+        if (!sessionToken) return { success: false, needsPaperwork: true, needsId: true, currentIntake: null };
+        const session = await validateCustomSession(sessionToken);
+        if (!session || !session.valid) {
+            return { success: false, needsPaperwork: true, needsId: true, currentIntake: null };
+        }
+
+        const email = (session.email || '').toLowerCase().trim();
+
+        // 1. Check ID upload in MemberDocuments
+        let hasId = false;
+        if (email) {
+            const idDocs = await wixData.query(COLLECTIONS.MEMBER_DOCUMENTS)
+                .eq('memberEmail', email)
+                .find({ suppressAuth: true });
+
+            hasId = idDocs.items.some(doc =>
+                doc.documentType === 'government_id' ||
+                doc.documentType === 'id' ||
+                doc.documentType === 'drivers_license'
+            );
+        }
+
+        // 2. Check existing intake in IntakeQueue
+        let currentIntake = null;
+        if (email) {
+            const intakeResults = await wixData.query(COLLECTIONS.INTAKE_QUEUE)
+                .eq('indemnitorEmail', email)
+                .descending('_createdDate')
+                .limit(1)
+                .find({ suppressAuth: true });
+
+            if (intakeResults.items.length > 0) {
+                currentIntake = intakeResults.items[0];
+            }
+        }
+
+        const isPaperworkComplete = !!(
+            currentIntake &&
+            (currentIntake.documentStatus === 'completed' || currentIntake.documentStatus === 'filed' || currentIntake.status === 'completed')
+        );
+
+        return {
+            success: true,
+            needsPaperwork: !currentIntake || !isPaperworkComplete,
+            needsId: !hasId,
+            currentIntake: currentIntake
+        };
+
+    } catch (error) {
+        console.error('Error checking indemnitor paperwork status:', error);
+        return { success: false, needsPaperwork: true, needsId: true, currentIntake: null };
+    }
+}
+

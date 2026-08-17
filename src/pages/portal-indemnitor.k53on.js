@@ -2,23 +2,13 @@
  * Shamrock Bail Bonds - Indemnitor Portal Page
  * 
  * This is the main indemnitor portal where indemnitors:
- * 1. Fill out their information via the embedded Wizard Form (#indemnitorWizard)
- * 2. Submit intake form to IntakeQueue (handled by wizard → GAS direct)
+ * 1. Fill out their information via the embedded Wizard Form (#indemnitorWizard) or Modal
+ * 2. Submit intake form to IntakeQueue (handled by modal/wizard → GAS direct)
  * 3. View bond status, paperwork, and payment information
  * 4. Communicate with Shamrock staff
  * 
  * URL: /portal-indemnitor
  * File: portal-indemnitor.k53on.js
- * 
- * REFACTORED: March 2026 — Replaced native Wix form with embedded HTML wizard.
- * All form collection, validation, input masking, and submission now happen
- * inside the wizard Custom Element. This page code handles:
- *   - Session authentication (magic link flow)
- *   - Wizard ↔ Page postMessage bridge
- *   - Bond Dashboard for returning users
- *   - Choice Screen (Resume vs New)
- *   - Messaging, payments, paperwork buttons
- *   - Defendant link feature
  */
 
 import wixLocation from 'wix-location';
@@ -27,6 +17,8 @@ import wixData from 'wix-data';
 import { validateCustomSession, getIndemnitorDetails, linkDefendantToCase } from 'backend/portal-auth';
 import { callGasAction } from 'backend/gasIntegration';
 import { sendInAppNotification } from 'backend/notificationService';
+import { checkIndemnitorPaperworkStatus } from 'backend/documentUpload';
+import { LightboxController } from 'public/lightbox-controller';
 import wixSeo from 'wix-seo';
 import wixAnimations from 'wix-animations';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
@@ -43,9 +35,10 @@ $w.onReady(async function () {
 
     console.log(" Indemnitor Portal: Page Code Loaded");
 
+    // Initialize lightbox controller for modal operations
+    LightboxController.init($w);
+
     // 1. Handle Magic Link Token from URL
-    // SAFETY NET: Magic links should land on /portal-landing first.
-    // If a raw ?token= somehow arrives here, redirect to portal-landing.
     const query = wixLocation.query;
     if (query.token && wixWindow.rendering.env === 'browser') {
         console.log(" Indemnitor Portal: Raw magic link token detected -- bouncing to portal-landing...");
@@ -120,6 +113,26 @@ async function initializePage() {
         // Check for existing intake
         await checkExistingIntake();
 
+        // 3. Auto-Prompt Verification: Check if Paperwork/ID is incomplete or autoPaperwork requested
+        const query = wixLocation.query;
+        const autoStart = query.autoPaperwork === '1' || query.autoPaperwork === 'true';
+        const paperworkStatus = await checkIndemnitorPaperworkStatus(sessionToken);
+
+        console.log(" Paperwork check status:", paperworkStatus);
+
+        if (autoStart || paperworkStatus.needsPaperwork || paperworkStatus.needsId || !currentIntake) {
+            console.log(" Action Required: Paperwork or ID missing. Showing prompt...");
+            safeShow('#bannerPaperworkRequired');
+            safeShow('#boxActionRequired');
+
+            // Trigger modal in browser
+            if (wixWindow.rendering.env === 'browser') {
+                setTimeout(() => {
+                    triggerPaperworkModal();
+                }, 600);
+            }
+        }
+
         // Setup UI based on state
         if (!currentIntake) {
             console.log(" No existing intake found. Showing wizard.");
@@ -145,6 +158,56 @@ async function initializePage() {
         console.error('Page initialization error:', error);
         showError('Error loading page. Please refresh or call (239) 332-2245.');
         showLoading(false);
+    }
+}
+
+// ============================================================================
+// PAPERWORK & ID MODAL TRIGGER
+// ============================================================================
+
+/**
+ * Prompt the user with the Indemnitor Paperwork & ID Verification Modal
+ */
+async function triggerPaperworkModal() {
+    console.log(" Indemnitor Portal: Launching Paperwork & ID Modal...");
+    try {
+        const modalContext = {
+            memberData: {
+                name: indemnitorData?.firstName ? `${indemnitorData.firstName} ${indemnitorData.lastName || ''}`.trim() : '',
+                firstName: indemnitorData?.firstName || '',
+                lastName: indemnitorData?.lastName || '',
+                email: currentSession?.email || indemnitorData?.email || '',
+                phone: currentSession?.phone || indemnitorData?.phone || '',
+                dlNumber: indemnitorData?.dl || '',
+                ssn: indemnitorData?.ssn || '',
+                defendantName: currentIntake?.defendantName || indemnitorData?.defendantName || '',
+                county: currentIntake?.county || indemnitorData?.county || 'Lee'
+            },
+            caseId: currentIntake?.caseId || currentIntake?._id || currentSession?.caseId || null,
+            sessionToken: getSessionToken()
+        };
+
+        const result = await LightboxController.show('idUpload', modalContext);
+
+        if (result && result.success) {
+            console.log("[OK] Paperwork & ID Modal completed successfully");
+            showSuccess("☘️ Paperwork & ID submitted successfully! Preparing your documents...");
+            safeHide('#bannerPaperworkRequired');
+            safeHide('#boxActionRequired');
+            safeHide('#indemnitorWizard');
+
+            // Refresh intake record and dashboard
+            await checkExistingIntake();
+            showBondDashboard();
+        } else if (result && result.skipped) {
+            console.log("[!] Paperwork modal skipped by user");
+            safeShow('#bannerPaperworkRequired');
+        } else {
+            safeShow('#bannerPaperworkRequired');
+        }
+    } catch (err) {
+        console.warn("[!] Lightbox modal failed to open, falling back to wizard embed:", err);
+        showWizard();
     }
 }
 
@@ -177,8 +240,8 @@ function sendContextToWizard() {
                 data: {
                     firstName: indemnitorData.firstName || '',
                     lastName: indemnitorData.lastName || '',
-                    email: indemnitorData.email || '',
-                    phone: indemnitorData.phone || '',
+                    email: indemnitorData.email || currentSession?.email || '',
+                    phone: indemnitorData.phone || currentSession?.phone || '',
                     address: indemnitorData.address || '',
                     city: indemnitorData.city || '',
                     state: indemnitorData.state || '',
@@ -239,8 +302,9 @@ function setupWizardListener() {
  * Handle successful form submission from the wizard
  */
 function handleWizardSubmission(data) {
-    // Show success state
     safeHide('#indemnitorWizard');
+    safeHide('#bannerPaperworkRequired');
+    safeHide('#boxActionRequired');
     safeShow('#groupSuccess');
 
     const caseId = data?.caseId || 'Pending';
@@ -274,8 +338,9 @@ async function handlePhase1Submission(msg) {
         console.log('[Phase1] GAS response:', JSON.stringify(result));
 
         if (result && result.success) {
-            // Show success state
             safeHide('#indemnitorWizard');
+            safeHide('#bannerPaperworkRequired');
+            safeHide('#boxActionRequired');
             safeShow('#groupSuccess');
 
             const successMsg = `☘️ Phase 1 Complete!\n\n` +
@@ -440,6 +505,12 @@ function setupEventListeners() {
     // Wizard iframe bridge
     setupWizardListener();
 
+    // Paperwork & ID Modal Triggers
+    safeOnClick('#btnPromptPaperwork', triggerPaperworkModal);
+    safeOnClick('#btnUploadId', triggerPaperworkModal);
+    safeOnClick('#btnCompletePaperwork', triggerPaperworkModal);
+    safeOnClick('#bannerPaperworkRequired', triggerPaperworkModal);
+
     // Dashboard buttons
     safeOnClick('#signPaperworkBtn', handleSignPaperwork);
     safeOnClick('#makePaymentBtn', handleMakePayment);
@@ -536,10 +607,6 @@ async function handleSendMessage() {
 // ============================================================================
 
 function setupDefendantLink() {
-    // Auto-collapse if user interacts with wizard (they're an indemnitor, not defendant)
-    // The wizard handles form interaction, so we just collapse on page load if wizard is active
-    // Manual collapse handled by the "Find My Paperwork" button below
-
     safeOnClick('#btnSubmitLink', async () => {
         const caseNum = safeGetValue('#inputLinkCaseNumber')?.trim();
         const indemName = safeGetValue('#inputLinkIndemnitorName')?.trim();

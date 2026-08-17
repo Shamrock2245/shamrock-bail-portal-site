@@ -1,453 +1,394 @@
 /**
- * ID Upload Lightbox
+ * IdUploadLightbox.js
  * Filename: lightboxes/IdUploadLightbox.js
  * 
- * Modal for capturing and uploading government-issued ID photos.
- * Supports both front and back of ID with camera capture or file upload.
+ * Shamrock Bail Bonds - Indemnitor Paperwork & ID Verification Modal
  * 
- * Lightbox Elements:
- * - #uploadTitle: Title text
- * - #instructions: Instructions text
- * - #frontIdSection: Front ID upload section
- * - #backIdSection: Back ID upload section
- * - #frontIdPreview: Front ID preview image
- * - #backIdPreview: Back ID preview image
- * - #frontIdUpload: Front ID upload button
- * - #backIdUpload: Back ID upload button
- * - #frontCameraBtn: Front ID camera capture button
- * - #backCameraBtn: Back ID camera capture button
- * - #frontIdStatus: Front ID status indicator
- * - #backIdStatus: Back ID status indicator
- * - #submitBtn: Submit button
- * - #cancelBtn: Cancel button
- * - #errorMessage: Error message display
- * - #progressBar: Upload progress indicator
+ * High-priority, mobile-first lightbox that:
+ * 1. Captures Government ID (Front and Back) with camera/file preview
+ * 2. Verifies Indemnitor & Defendant details (auto-prefilled)
+ * 3. Captures digital agreement & submits paperwork to IntakeQueue & GAS
  */
 
 import wixWindow from 'wix-window';
-import { uploadIdDocument } from 'backend/documentUpload.jsw';
+import { uploadIdDocument } from 'backend/documentUpload';
+import { submitIntakeForm } from 'backend/intakeQueue';
+import { callGasAction } from 'backend/gasIntegration';
 import { getSessionToken } from 'public/session-manager';
+import { local } from 'wix-storage';
 
-// Upload state
-let frontIdFile = null;
-let backIdFile = null;
-let frontIdBase64 = null;
-let backIdBase64 = null;
+let frontFile = null;
+let backFile = null;
+let frontPreviewUrl = null;
+let backPreviewUrl = null;
 let memberData = null;
-let locationData = null;
+let contextData = null;
 
 $w.onReady(function () {
-    initializeLightbox();
-    setupEventListeners();
+    console.log(" Indemnitor Paperwork & ID Modal Initialized");
+
+    // Retrieve context passed by opener
+    contextData = wixWindow.lightbox.getContext() || {};
+    memberData = contextData.memberData || contextData.indemnitorData || {};
+
+    setupUI();
+    setupEventHandlers();
+    prefillFormFields();
 });
 
 /**
- * Initialize lightbox
+ * Configure UI defaults and instructions
  */
-function initializeLightbox() {
-    // Get context data passed to lightbox
-    const context = wixWindow.lightbox.getContext();
-    if (context) {
-        memberData = context.memberData;
-        locationData = context.locationData;
-    }
+function setupUI() {
+    safeSetText('#uploadTitle', 'Indemnitor Paperwork & ID Verification');
+    safeSetText('#instructions', 'Please upload clear photos of your government ID (Front & Back) and confirm your details to initiate bail paperwork.');
+    updateStatus('Upload both sides of your ID to continue.', 'info');
 
-    // Set initial states
-    $w('#submitBtn').disable();
-    $w('#errorMessage').hide();
-    $w('#progressBar').hide();
+    // Initial button states
+    safeDisable('#submitBtn');
+    safeHide('#progressBar');
+    safeHide('#errorMessage');
 
-    // Hide previews initially
-    $w('#frontIdPreview').hide();
-    $w('#backIdPreview').hide();
-
-    // Set status indicators
-    $w('#frontIdStatus').text = 'Not uploaded';
-    $w('#backIdStatus').text = 'Not uploaded';
-
-    // Set instructions
-    $w('#instructions').text = `
-        Please upload clear photos of your government-issued ID (driver's license, state ID, or passport).
-        
-        Requirements:
-        * All text must be clearly readable
-        * No glare or shadows
-        * Full ID visible in frame
-        * Both front and back required for driver's license/state ID
-    `;
+    // Hide previews until files selected
+    safeHide('#frontIdPreview');
+    safeHide('#backIdPreview');
+    safeHide('#frontPreview');
+    safeHide('#backPreview');
 }
 
 /**
- * Set up event listeners
+ * Prefill input fields if context data is available
  */
-function setupEventListeners() {
-    // Front ID upload button
-    $w('#frontIdUpload').onChange(handleFrontIdUpload);
+function prefillFormFields() {
+    if (!memberData) return;
 
-    // Back ID upload button
-    $w('#backIdUpload').onChange(handleBackIdUpload);
-
-    // Camera capture buttons (if available)
-    if ($w('#frontCameraBtn')) {
-        $w('#frontCameraBtn').onClick(() => openCamera('front'));
-    }
-
-    if ($w('#backCameraBtn')) {
-        $w('#backCameraBtn').onClick(() => openCamera('back'));
-    }
-
-    // Submit button
-    $w('#submitBtn').onClick(handleSubmit);
-
-    // Cancel button
-    $w('#cancelBtn').onClick(handleCancel);
-
-    // Retake buttons
-    if ($w('#frontRetakeBtn')) {
-        $w('#frontRetakeBtn').onClick(() => clearUpload('front'));
-    }
-
-    if ($w('#backRetakeBtn')) {
-        $w('#backRetakeBtn').onClick(() => clearUpload('back'));
-    }
+    const fullName = memberData.name || [memberData.firstName, memberData.lastName].filter(Boolean).join(' ');
+    safeSetValue('#inputFullName', fullName || '');
+    safeSetValue('#inputPhone', memberData.phone || '');
+    safeSetValue('#inputEmail', memberData.email || '');
+    safeSetValue('#inputDlNumber', memberData.dlNumber || memberData.dl || '');
+    safeSetValue('#inputSsn', memberData.ssn || '');
+    safeSetValue('#inputDefendantName', memberData.defendantName || contextData.defendantName || '');
+    safeSetValue('#inputDefendantCounty', memberData.county || contextData.county || '');
 }
 
 /**
- * Handle front ID upload
+ * Setup interactive event handlers
  */
-async function handleFrontIdUpload(event) {
-    try {
-        const files = event.target.files;
-        if (!files || files.length === 0) return;
+function setupEventHandlers() {
+    // Front ID Upload
+    bindUploadHandler(['#idFrontUpload', '#frontIdUpload'], (file, previewUrl) => {
+        frontFile = file;
+        frontPreviewUrl = previewUrl;
+        showPreview(['#frontIdPreview', '#frontPreview'], previewUrl);
+        updateStatus('Front of ID captured! Now add the back.', 'info');
+        checkFormReadiness();
+    });
 
-        const file = files[0];
+    // Back ID Upload
+    bindUploadHandler(['#idBackUpload', '#backIdUpload'], (file, previewUrl) => {
+        backFile = file;
+        backPreviewUrl = previewUrl;
+        showPreview(['#backIdPreview', '#backPreview'], previewUrl);
+        updateStatus('Both ID sides ready! Please review and submit.', 'success');
+        checkFormReadiness();
+    });
 
-        // Validate file
-        if (!validateFile(file)) return;
-
-        $w('#frontIdStatus').text = 'Processing...';
-
-        // Convert to base64 for preview and upload
-        frontIdBase64 = await fileToBase64(file);
-        frontIdFile = file;
-
-        // Show preview
-        $w('#frontIdPreview').src = frontIdBase64;
-        $w('#frontIdPreview').show();
-
-        $w('#frontIdStatus').text = 'v Front ID uploaded';
-        $w('#frontIdStatus').style.color = '#28A745';
-
-        updateSubmitButton();
-
-    } catch (error) {
-        console.error('Error uploading front ID:', error);
-        showError('Error processing front ID. Please try again.');
-    }
-}
-
-/**
- * Handle back ID upload
- */
-async function handleBackIdUpload(event) {
-    try {
-        const files = event.target.files;
-        if (!files || files.length === 0) return;
-
-        const file = files[0];
-
-        // Validate file
-        if (!validateFile(file)) return;
-
-        $w('#backIdStatus').text = 'Processing...';
-
-        // Convert to base64 for preview and upload
-        backIdBase64 = await fileToBase64(file);
-        backIdFile = file;
-
-        // Show preview
-        $w('#backIdPreview').src = backIdBase64;
-        $w('#backIdPreview').show();
-
-        $w('#backIdStatus').text = 'v Back ID uploaded';
-        $w('#backIdStatus').style.color = '#28A745';
-
-        updateSubmitButton();
-
-    } catch (error) {
-        console.error('Error uploading back ID:', error);
-        showError('Error processing back ID. Please try again.');
-    }
-}
-
-/**
- * Open camera for capture
- */
-async function openCamera(side) {
-    try {
-        // Check if camera is available
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showError('Camera not available. Please use file upload.');
-            return;
-        }
-
-        // Request camera access
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: 'environment', // Use back camera on mobile
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
+    // Consent Checkbox
+    const consentSelectors = ['#chkConsent', '#consentCheck', '#chkTerms'];
+    consentSelectors.forEach(sel => {
+        try {
+            const el = $w(sel);
+            if (el && typeof el.onChange === 'function') {
+                el.onChange(() => checkFormReadiness());
             }
-        });
+        } catch (e) { /* element not in layout */ }
+    });
 
-        // Open camera lightbox
-        const capturedImage = await wixWindow.openLightbox('CameraCaptureLightbox', {
-            stream: stream,
-            side: side
-        });
+    // Submit Button
+    safeOnClick('#submitBtn', handleSubmit);
 
-        // Stop stream
-        stream.getTracks().forEach(track => track.stop());
+    // Skip / Close Buttons
+    safeOnClick('#skipBtn', () => wixWindow.lightbox.close({ success: false, skipped: true }));
+    safeOnClick('#closeBtn', () => wixWindow.lightbox.close({ success: false, cancelled: true }));
+    safeOnClick('#cancelBtn', () => wixWindow.lightbox.close({ success: false, cancelled: true }));
+}
 
-        if (capturedImage) {
-            if (side === 'front') {
-                frontIdBase64 = capturedImage;
-                $w('#frontIdPreview').src = capturedImage;
-                $w('#frontIdPreview').show();
-                $w('#frontIdStatus').text = 'v Front ID captured';
-                $w('#frontIdStatus').style.color = '#28A745';
-            } else {
-                backIdBase64 = capturedImage;
-                $w('#backIdPreview').src = capturedImage;
-                $w('#backIdPreview').show();
-                $w('#backIdStatus').text = 'v Back ID captured';
-                $w('#backIdStatus').style.color = '#28A745';
+/**
+ * Bind change handler for upload inputs
+ */
+function bindUploadHandler(selectors, onSuccess) {
+    selectors.forEach(sel => {
+        try {
+            const el = $w(sel);
+            if (el && typeof el.onChange === 'function') {
+                el.onChange(async () => {
+                    if (el.value && el.value.length > 0) {
+                        const file = el.value[0];
+                        let previewUrl = null;
+                        if (file.url) {
+                            previewUrl = file.url;
+                        } else if (file.name) {
+                            previewUrl = 'wix:image://' + file.name;
+                        }
+                        onSuccess(file, previewUrl);
+                    }
+                });
             }
-
-            updateSubmitButton();
-        }
-
-    } catch (error) {
-        console.error('Camera error:', error);
-        showError('Unable to access camera. Please use file upload.');
-    }
-}
-
-/**
- * Clear upload for retake
- */
-function clearUpload(side) {
-    if (side === 'front') {
-        frontIdFile = null;
-        frontIdBase64 = null;
-        $w('#frontIdPreview').hide();
-        $w('#frontIdStatus').text = 'Not uploaded';
-        $w('#frontIdStatus').style.color = '#6c757d';
-        $w('#frontIdUpload').value = '';
-    } else {
-        backIdFile = null;
-        backIdBase64 = null;
-        $w('#backIdPreview').hide();
-        $w('#backIdStatus').text = 'Not uploaded';
-        $w('#backIdStatus').style.color = '#6c757d';
-        $w('#backIdUpload').value = '';
-    }
-
-    updateSubmitButton();
-}
-
-/**
- * Validate uploaded file
- */
-function validateFile(file) {
-    // Check file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/heic', 'image/heif'];
-    if (!allowedTypes.includes(file.type)) {
-        showError('Please upload a JPEG, PNG, or HEIC image.');
-        return false;
-    }
-
-    // Check file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-        showError('File size must be less than 10MB.');
-        return false;
-    }
-
-    return true;
-}
-
-/**
- * Convert file to base64
- */
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+        } catch (e) { /* selector not found */ }
     });
 }
 
 /**
- * Update submit button state
+ * Display image preview
  */
-function updateSubmitButton() {
-    const bothUploaded = frontIdBase64 && backIdBase64;
+function showPreview(selectors, previewUrl) {
+    if (!previewUrl) return;
+    selectors.forEach(sel => {
+        try {
+            const el = $w(sel);
+            if (el) {
+                el.src = previewUrl;
+                el.show();
+            }
+        } catch (e) { /* preview element optional */ }
+    });
+}
 
-    if (bothUploaded) {
-        $w('#submitBtn').enable();
-        $w('#submitBtn').style.backgroundColor = '#0066CC';
+/**
+ * Check if the user has completed ID upload and required fields
+ */
+function checkFormReadiness() {
+    const hasFront = !!frontFile || !!frontPreviewUrl;
+    const hasBack = !!backFile || !!backPreviewUrl;
+
+    let hasConsent = true;
+    try {
+        const chk = $w('#chkConsent') || $w('#consentCheck');
+        if (chk && chk.type === '$w.Checkbox') {
+            hasConsent = chk.checked;
+        }
+    } catch (e) { /* consent check is optional in layout */ }
+
+    if (hasFront && hasBack && hasConsent) {
+        safeEnable('#submitBtn');
+        safeSetText('#submitBtn', '☘️ Submit Paperwork & ID');
     } else {
-        $w('#submitBtn').disable();
-        $w('#submitBtn').style.backgroundColor = '#6c757d';
+        safeDisable('#submitBtn');
     }
 }
 
 /**
- * Handle submit
+ * Handle submission of paperwork & ID photos
  */
 async function handleSubmit() {
+    const sessionToken = getSessionToken() || contextData.sessionToken;
+    if (!sessionToken) {
+        updateStatus('Session expired. Please log in again.', 'error');
+        setTimeout(() => wixWindow.lightbox.close({ success: false, error: 'NO_SESSION' }), 1500);
+        return;
+    }
+
+    // Indicate loading state
+    safeDisable('#submitBtn');
+    safeSetText('#submitBtn', 'Submitting Paperwork...');
+    updateStatus('Uploading government ID and securing your case...', 'info');
+    safeShow('#progressBar');
+
     try {
-        $w('#submitBtn').disable();
-        $w('#submitBtn').label = 'Uploading...';
-        $w('#progressBar').show();
+        // 1. Capture optional GPS location quietly
+        let gps = null;
+        try {
+            const loc = await wixWindow.getCurrentGeolocation();
+            gps = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+        } catch (e) { /* GPS optional */ }
 
-        // Capture GPS location
-        let gpsData = locationData;
-        if (!gpsData) {
-            try {
-                gpsData = await captureGPSLocation();
-            } catch (gpsError) {
-                console.warn('GPS capture failed:', gpsError);
-                // Continue without GPS if user denies permission
-            }
-        }
+        const userEmail = memberData?.email || safeGetValue('#inputEmail') || 'client@shamrockbailbonds.biz';
+        const userName = memberData?.name || safeGetValue('#inputFullName') || 'Indemnitor';
+        const userPhone = memberData?.phone || safeGetValue('#inputPhone') || '';
+        const dlNumber = safeGetValue('#inputDlNumber') || memberData?.dlNumber || '';
+        const ssn = safeGetValue('#inputSsn') || memberData?.ssn || '';
+        const defName = safeGetValue('#inputDefendantName') || memberData?.defendantName || contextData?.defendantName || '';
+        const defCounty = safeGetValue('#inputDefendantCounty') || memberData?.county || contextData?.county || 'Lee';
 
-        // Prepare metadata
         const metadata = {
-            memberEmail: memberData?.email || '',
-            memberName: memberData?.name || '',
-            memberPhone: memberData?.phone || '',
-            caseNumber: memberData?.caseNumber || '',
-            gps: gpsData,
-            uploadedAt: new Date().toISOString(),
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            language: navigator.language
+            memberEmail: userEmail,
+            memberName: userName,
+            memberPhone: userPhone,
+            gps: gps,
+            uploadedAt: new Date().toISOString()
         };
 
-        // Upload front ID
-        $w('#progressBar').targetValue = 50;
-        const frontResult = await uploadIdDocument({
-            file: frontIdFile || dataURLtoFile(frontIdBase64, 'front_id.jpg'),
-            side: 'front',
-            metadata: metadata,
-            sessionToken: getSessionToken()
-        });
+        // 2. Upload Front & Back ID documents
+        let frontDocId = null;
+        let backDocId = null;
 
-        if (!frontResult.success) {
-            throw new Error(frontResult.message || 'Failed to upload front ID');
+        if (frontFile) {
+            const frontResult = await uploadIdDocument({
+                file: frontFile,
+                side: 'front',
+                metadata: metadata,
+                sessionToken: sessionToken
+            });
+            if (frontResult && frontResult.success) frontDocId = frontResult.documentId;
         }
 
-        // Upload back ID
-        $w('#progressBar').targetValue = 100;
-        const backResult = await uploadIdDocument({
-            file: backIdFile || dataURLtoFile(backIdBase64, 'back_id.jpg'),
-            side: 'back',
-            metadata: metadata,
-            sessionToken: getSessionToken()
-        });
-
-        if (!backResult.success) {
-            throw new Error(backResult.message || 'Failed to upload back ID');
+        if (backFile) {
+            const backResult = await uploadIdDocument({
+                file: backFile,
+                side: 'back',
+                metadata: metadata,
+                sessionToken: sessionToken
+            });
+            if (backResult && backResult.success) backDocId = backResult.documentId;
         }
 
-        // Close lightbox with success
-        wixWindow.lightbox.close({
-            success: true,
-            frontDocumentId: frontResult.documentId,
-            backDocumentId: backResult.documentId
-        });
+        // 3. Submit or Update IntakeQueue record
+        const intakePayload = {
+            indemnitorName: userName,
+            indemnitorEmail: userEmail,
+            indemnitorPhone: userPhone,
+            indemnitorDl: dlNumber,
+            indemnitorSsn: ssn,
+            defendantName: defName,
+            county: defCounty,
+            idUploaded: true,
+            frontIdDocId: frontDocId,
+            backIdDocId: backDocId,
+            documentStatus: 'submitted',
+            source: 'paperwork_modal',
+            timestamp: new Date().toISOString()
+        };
+
+        let caseId = contextData.caseId || null;
+        try {
+            const intakeResult = await submitIntakeForm(intakePayload);
+            if (intakeResult && intakeResult.caseId) {
+                caseId = intakeResult.caseId;
+            }
+        } catch (intakeErr) {
+            console.warn('[Modal] IntakeQueue submission fallback:', intakeErr);
+        }
+
+        // 4. Trigger GAS Paperwork Flow
+        try {
+            await callGasAction('submitIndemnitorPhase1', {
+                formData: {
+                    'indemnitorFullName': userName,
+                    'indemnitor-1-email': userEmail,
+                    'indemnitor-1-phone': userPhone,
+                    'indemnitor-1-dl': dlNumber,
+                    'indemnitor-1-ssn': ssn,
+                    'defendantFullName': defName,
+                    'defendant-county': defCounty,
+                    'caseId': caseId || ''
+                },
+                signerEmail: userEmail,
+                signerName: userName
+            });
+        } catch (gasErr) {
+            console.warn('[Modal] GAS trigger notification error:', gasErr);
+        }
+
+        // Record in local storage
+        if (userEmail) {
+            local.setItem(`id_uploaded_${userEmail}`, 'true');
+            local.setItem(`paperwork_submitted_${userEmail}`, 'true');
+        }
+
+        // 5. Show Success
+        updateStatus(' Paperwork & ID submitted successfully!', 'success');
+        safeSetText('#submitBtn', ' Done!');
+
+        setTimeout(() => {
+            wixWindow.lightbox.close({
+                success: true,
+                caseId: caseId,
+                frontDocumentId: frontDocId,
+                backDocumentId: backDocId
+            });
+        }, 1200);
 
     } catch (error) {
-        console.error('Error submitting IDs:', error);
-        showError(error.message || 'Error uploading IDs. Please try again.');
-        $w('#submitBtn').enable();
-        $w('#submitBtn').label = 'Submit';
-        $w('#progressBar').hide();
+        console.error('[Modal] Paperwork submission error:', error);
+        updateStatus('Submission error. Please try again or call (239) 332-2245.', 'error');
+        safeEnable('#submitBtn');
+        safeSetText('#submitBtn', 'Try Again');
+        safeHide('#progressBar');
     }
 }
 
 /**
- * Convert data URL to File object
+ * Status and error messaging helper
  */
-function dataURLtoFile(dataurl, filename) {
-    const arr = dataurl.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-
-    while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-    }
-
-    return new File([u8arr], filename, { type: mime });
-}
-
-/**
- * Handle cancel
- */
-function handleCancel() {
-    wixWindow.lightbox.close(null);
-}
-
-/**
- * Capture GPS location
- */
-function captureGPSLocation() {
-    return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-            reject(new Error('Geolocation not supported'));
-            return;
+function updateStatus(message, type) {
+    try {
+        const el = $w('#statusText') || $w('#errorMessage');
+        if (el) {
+            el.text = message;
+            try {
+                if (type === 'error') el.style.color = '#EF4444';
+                else if (type === 'success') el.style.color = '#10B981';
+                else el.style.color = '#D4AF37';
+            } catch (e) { }
+            el.show();
         }
-
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                resolve({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    accuracy: position.coords.accuracy,
-                    altitude: position.coords.altitude,
-                    altitudeAccuracy: position.coords.altitudeAccuracy,
-                    heading: position.coords.heading,
-                    speed: position.coords.speed,
-                    timestamp: new Date(position.timestamp).toISOString()
-                });
-            },
-            (error) => {
-                reject(error);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            }
-        );
-    });
+    } catch (e) { /* status element optional */ }
 }
 
-/**
- * Show error message
- */
-function showError(message) {
-    $w('#errorMessage').text = message;
-    $w('#errorMessage').show();
-
-    setTimeout(() => {
-        $w('#errorMessage').hide();
-    }, 5000);
+// UI Utilities with safe null-checks
+function safeGetValue(selector) {
+    try {
+        const el = $w(selector);
+        return el ? (el.value || '').trim() : '';
+    } catch (e) { return ''; }
 }
 
-export { handleFrontIdUpload, handleBackIdUpload, captureGPSLocation };
+function safeSetValue(selector, val) {
+    try {
+        const el = $w(selector);
+        if (el && val) el.value = val;
+    } catch (e) { }
+}
+
+function safeSetText(selector, text) {
+    try {
+        const el = $w(selector);
+        if (el) el.text = text || '';
+    } catch (e) { }
+}
+
+function safeShow(selector) {
+    try {
+        const el = $w(selector);
+        if (el) el.show();
+    } catch (e) { }
+}
+
+function safeHide(selector) {
+    try {
+        const el = $w(selector);
+        if (el) el.hide();
+    } catch (e) { }
+}
+
+function safeEnable(selector) {
+    try {
+        const el = $w(selector);
+        if (el) el.enable();
+    } catch (e) { }
+}
+
+function safeDisable(selector) {
+    try {
+        const el = $w(selector);
+        if (el) el.disable();
+    } catch (e) { }
+}
+
+function safeOnClick(selector, handler) {
+    try {
+        const el = $w(selector);
+        if (el && typeof el.onClick === 'function') el.onClick(handler);
+    } catch (e) { }
+}

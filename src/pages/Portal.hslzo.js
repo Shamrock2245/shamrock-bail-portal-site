@@ -22,11 +22,12 @@ $w.onReady(async function () {
             // User has a valid session with a role - redirect to their dashboard
             const roleRedirects = {
                 'defendant': '/portal-defendant',
-                'indemnitor': '/portal-indemnitor',
-                'coindemnitor': '/portal-indemnitor',
+                'indemnitor': '/portal-indemnitor?autoPaperwork=1',
+                'coindemnitor': '/portal-indemnitor?autoPaperwork=1',
                 'staff': '/portal-staff',
                 'admin': '/portal-staff'
             };
+
             
             const destination = roleRedirects[session.role] || '/portal-landing';
             console.log(`[OK] Valid session, redirecting to ${destination}`);
