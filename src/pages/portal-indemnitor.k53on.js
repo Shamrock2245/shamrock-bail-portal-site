@@ -181,8 +181,10 @@ async function triggerPaperworkModal() {
                 dlNumber: indemnitorData?.dl || '',
                 ssn: indemnitorData?.ssn || '',
                 defendantName: currentIntake?.defendantName || indemnitorData?.defendantName || '',
-                county: currentIntake?.county || indemnitorData?.county || 'Lee'
+                county: currentIntake?.county || indemnitorData?.county || 'Lee',
+                role: currentSession?.role || 'indemnitor'
             },
+            role: currentSession?.role || 'indemnitor',
             caseId: currentIntake?.caseId || currentIntake?._id || currentSession?.caseId || null,
             sessionToken: getSessionToken()
         };

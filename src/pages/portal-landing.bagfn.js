@@ -477,7 +477,7 @@ const PORTAL_MAP = {
  */
 function redirectToPortal(role) {
     const destination = PORTAL_MAP[role] || '/portal-indemnitor';
-    const autoParam = (role === 'indemnitor' || !role || role === 'coindemnitor') ? '?autoPaperwork=1' : '';
+    const autoParam = (role === 'indemnitor' || !role || role === 'coindemnitor' || role === 'defendant') ? '?autoPaperwork=1' : '';
     const url = `${destination}${autoParam}`;
     console.log(` Redirecting to: ${url}`);
     wixLocation.to(url);
@@ -490,7 +490,7 @@ function redirectToPortal(role) {
  */
 function redirectToPortalWithToken(role, sessionToken) {
     const destination = PORTAL_MAP[role] || '/portal-indemnitor';
-    const autoParam = (role === 'indemnitor' || !role || role === 'coindemnitor') ? '&autoPaperwork=1' : '';
+    const autoParam = (role === 'indemnitor' || !role || role === 'coindemnitor' || role === 'defendant') ? '&autoPaperwork=1' : '';
     const url = `${destination}?st=${encodeURIComponent(sessionToken)}${autoParam}`;
     console.log(` Redirecting to: ${url}`);
     wixLocation.to(url);

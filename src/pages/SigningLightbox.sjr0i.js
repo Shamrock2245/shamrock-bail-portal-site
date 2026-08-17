@@ -7,10 +7,12 @@ function buildPaperworkUrl(ctx) {
     const phone = member.phone || ctx.phone || '';
     const token = ctx.sessionToken || ctx.st || '';
     const packet = ctx.packetId || ctx.caseId || '';
+    const role = member.role || ctx.role || '';
     if (phone) params.set('phone', String(phone).replace(/\D/g, ''));
     if (token) params.set('st', token);
     if (packet) params.set('case', String(packet));
     if (ctx.signUrl) params.set('link', ctx.signUrl);
+    if (role) params.set('role', String(role));
     return `${PAPERWORK_APP_URL}?${params.toString()}`;
 }
 
@@ -21,10 +23,14 @@ $w.onReady(() => {
     try {
         $w('#loadingIndicator').hide();
         $w('#errorMessage').hide();
+        const role = (ctx.role || (ctx.memberData && ctx.memberData.role) || '').toLowerCase();
+        const roleHint = role === 'defendant'
+            ? 'You are signing as the defendant. Unlock with your PIN, confirm your ID, then sign.'
+            : role === 'coindemnitor'
+                ? 'You are signing as a co-indemnitor. Unlock with your PIN, confirm your ID, then sign.'
+                : 'Unlock with the PIN we text you, confirm your ID, then sign. Same steps for every party on the bond.';
         $w('#signingTitle').text = 'Bond Paperwork';
-        $w('#signingInstructions').text = (
-            'Unlock with the PIN we text you, scan your ID, confirm remaining fields, then sign.'
-        );
+        $w('#signingInstructions').text = roleHint;
         $w('#signingInstructions').show();
 
         const frame = $w('#signingFrame');
@@ -36,7 +42,8 @@ $w.onReady(() => {
                 phone: member.phone || ctx.phone || '',
                 sessionToken: ctx.sessionToken || ctx.st || '',
                 signUrl: ctx.signUrl || '',
-                caseId: ctx.packetId || ctx.caseId || ''
+                caseId: ctx.packetId || ctx.caseId || '',
+                role: member.role || ctx.role || ''
             };
             try { frame.src = url; } catch (_) { /* Code-mode HTML iframe ignores src */ }
             if (typeof frame.postMessage === 'function') {

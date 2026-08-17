@@ -387,72 +387,43 @@ async function checkConsentStatus(personId) {
 async function handlePaperworkStart() {
     if (!currentSession) return;
 
-    // Use REAL email or fallback
-    const userEmail = currentSession.email || `defendant_${currentSession.personId}@shamrock.local`;
-    // console.log("Portal: Using email for paperwork:", userEmail); // Redacted for privacy
-
-    // 0. FORTRESS GATE: Check if paperwork is already active
     const status = currentSession.paperworkStatus || "Pending";
-
-    // Allow re-signing if status is 'Incomplete' or if user manually clicks retry
-    // But warn if it looks like it's already done
     if (status === "Packet Sent" || status === "Signed") {
         console.warn("Portal: Paperwork status is", status);
     }
 
-    // 1. ID Upload Check
-    const hasUploadedId = await checkIdUploadStatus(userEmail, currentSession.token);
-    if (!hasUploadedId) {
-        console.log("START FLOW: ID Missing -> Opening Lightbox");
-        const idResult = await LightboxController.show('idUpload', {
-            memberData: { email: userEmail, name: "Client" }
+    // Same popup as indemnitor / co-indemnitor: PIN → ID → sign.
+    // Old Wix ID/consent/contact lightboxes stay as fallback only.
+    console.log("START FLOW: Ready for Signing");
+    try {
+        const result = await LightboxController.show('signing', {
+            memberData: {
+                name: currentSession?.firstName
+                    ? `${currentSession.firstName} ${currentSession.lastName || ''}`.trim()
+                    : 'Defendant',
+                email: currentSession?.email || '',
+                phone: currentSession?.phone || '',
+                role: 'defendant',
+            },
+            caseId: currentSession?.caseId || null,
+            sessionToken: getSessionToken(),
+            role: 'defendant',
         });
-        if (!idResult?.success) return;
-    }
-
-    // 2. Consent Check
-    const hasConsented = await checkConsentStatus(currentSession.personId);
-    if (!hasConsented) {
-        console.log("START FLOW: Consent Missing -> Opening Lightbox");
-        const consentResult = await LightboxController.show('consent');
-        if (consentResult?.success) {
-            local.setItem(`consent_${currentSession.personId}`, 'true');
-            currentSession.hasConsented = true;
-        } else {
+        if (result && result.success) {
+            try {
+                if ($w('#textSigningStatus').type) {
+                    $w('#textSigningStatus').text = 'Signed';
+                    $w('#textSigningStatus').show();
+                }
+                if ($w('#textPaperworkStatus').type) {
+                    $w('#textPaperworkStatus').text = 'Signed';
+                }
+            } catch (_) { /* optional dashboard labels */ }
             return;
         }
+    } catch (signErr) {
+        console.warn('[!] Signing lightbox unavailable, showing staff-review status:', signErr);
     }
-
-    // 3. Missing Info Check (Email/Phone)
-    // Critical for "Sign via Email" or "Sign via SMS"
-    // We check this even for Kiosk to ensure we have contact info on file
-    if (!currentSession.email || !currentSession.phone || currentSession.email.includes('shamrock.local')) {
-        console.log("START FLOW: Contact Info Missing -> Opening Update Lightbox");
-        try {
-            // Attempt to open update lightbox. 
-            // If it doesn't exist, this will throw or return null, so we must handle gracefully.
-            const updateResult = await wixWindow.openLightbox('ContactInfoUpdate', {
-                personId: currentSession.personId,
-                currentEmail: currentSession.email,
-                currentPhone: currentSession.phone
-            });
-
-            if (updateResult && updateResult.success) {
-                // Update local session data with new info
-                currentSession.email = updateResult.email || currentSession.email;
-                currentSession.phone = updateResult.phone || currentSession.phone;
-                console.log("START FLOW: Contact info updated.");
-            } else {
-                console.warn("START FLOW: Contact update cancelled or failed. Proceeding with caution.");
-                // We proceed, but the backend might fail if it strictly needs email
-            }
-        } catch (e) {
-            console.log("Note: ContactInfoUpdate lightbox not found or error. Proceeding.", e);
-        }
-    }
-
-    // 4. Signing
-    console.log("START FLOW: Ready for Signing");
     await showDocuSealStaffReview();
 }
 

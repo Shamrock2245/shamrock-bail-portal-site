@@ -30,6 +30,7 @@
         if (data.sessionToken || data.st) parsed.searchParams.set('st', data.sessionToken || data.st);
         if (data.signUrl) parsed.searchParams.set('link', data.signUrl);
         if (data.caseId) parsed.searchParams.set('case', String(data.caseId));
+        if (data.role) parsed.searchParams.set('role', String(data.role));
         frame.src = parsed.toString();
       } catch (e) {
         frame.src = BASE + '?embed=1';
