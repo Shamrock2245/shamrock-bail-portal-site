@@ -92,6 +92,7 @@ You already have the right element: **`#signingFrame`** with **HTML Settings** o
         if (data.phone) parsed.searchParams.set('phone', String(data.phone).replace(/\D/g, ''));
         if (data.sessionToken || data.st) parsed.searchParams.set('st', data.sessionToken || data.st);
         if (data.signUrl) parsed.searchParams.set('link', data.signUrl);
+        if (data.role) parsed.searchParams.set('role', String(data.role));
         frame.src = parsed.toString();
       } catch (e) {
         frame.src = BASE + '?embed=1';
