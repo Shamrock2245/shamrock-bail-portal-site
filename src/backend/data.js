@@ -106,19 +106,11 @@ export function IntakeQueue_afterUpdate(item, context) {
         });
     }
 
-    // If SignNow documents were sent, notify indemnitor
+    // Historical provider links may remain in legacy records for schema compatibility,
+    // but Wix must never distribute them. Staff issues DocuSeal only through Super CRM
+    // after the documented validation gates; the secure portal launchpad handles access.
     if (item.documentStatus === 'sent_for_signature' && item.signNowIndemnitorLink) {
-        sendMemberNotification(NOTIFICATION_TYPES.PAPERWORK_READY, {
-            memberEmail: item.indemnitorEmail,
-            memberName: item.indemnitorName,
-            memberPhone: item.indemnitorPhone,
-            variables: {
-                signingLink: item.signNowIndemnitorLink,
-                defendantName: item.defendantName
-            }
-        }).catch(err => {
-            console.error('[X] Signing notification failed:', err);
-        });
+        console.warn('[Paperwork] Suppressed legacy direct-link notification for case:', item.caseId);
     }
 
     return item;

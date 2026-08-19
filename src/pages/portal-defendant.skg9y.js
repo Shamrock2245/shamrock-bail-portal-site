@@ -14,7 +14,6 @@ import { saveUserLocation } from 'backend/location';
 import { validateCustomSession, getDefendantDetails, getUserConsentStatus } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
-import { initiateSigningWorkflow } from 'backend/signing-methods';
 import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
 import { generatePDFPacket } from 'backend/packet-generator';
 import wixSeo from 'wix-seo';
@@ -435,7 +434,7 @@ async function showDocuSealStaffReview() {
     try {
         if ($w('#textSigningStatus').type) {
             $w('#textSigningStatus').text = (
-                "Your paperwork is pending staff review. A verified DocuSeal link will be sent "
+                "Your paperwork is pending staff review. A verified DocuSeal link will be sent " +
                 "only after the case details are confirmed."
             );
             $w('#textSigningStatus').show();

@@ -1,6 +1,6 @@
 # 📚 Documentation Index
 
-> **Last Updated:** April 17, 2026
+> **Last Updated:** August 19, 2026
 > **Philosophy:** Fewer docs, sharper content. Every file earns its place.
 
 ---
@@ -31,6 +31,8 @@
 ### Architecture & Schemas
 | Doc | Purpose |
 |-----|---------|
+| [CURRENT_PAPERWORK_ARCHITECTURE.md](CURRENT_PAPERWORK_ARCHITECTURE.md) | **Canonical current-state DocuSeal-only signing boundary** |
+| [DISCOVERABILITY_FOUNDATION_2026-08-19.md](DISCOVERABILITY_FOUNDATION_2026-08-19.md) | Technical SEO, GEO, AI retrieval, and owner-operated discovery roadmap |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Detailed system architecture with diagrams |
 | [SCHEMAS.md](SCHEMAS.md) | Canonical data schemas (Master 34, IntakeQueue, CMS, Sheets) |
 | [API_SPEC.md](API_SPEC.md) | All GAS POST/GET endpoints, Wix modules, Netlify functions |
@@ -63,7 +65,7 @@
 | [GAS_DEVELOPMENT_RULES.md](../backend-gas/GAS_DEVELOPMENT_RULES.md) | Agent instructions: how to add scrapers, endpoints, commands, deploy |
 | [GAS_Project_Guide.md](../backend-gas/GAS_Project_Guide.md) | Google Sheets tab map and deep-dive reference |
 | [SCRAPER_NOTES.md](../backend-gas/SCRAPER_NOTES.md) | Scraper architecture (Lee, Collier, Bookmarklet) |
-| [CONFIGURATION_GUIDE.md](../backend-gas/CONFIGURATION_GUIDE.md) | SignNow + Wix configuration steps |
+| [CONFIGURATION_GUIDE.md](../backend-gas/CONFIGURATION_GUIDE.md) | Historical configuration reference; do not use for active signing setup. See `CURRENT_PAPERWORK_ARCHITECTURE.md`. |
 
 ### Directories
 | Directory | Contents |
@@ -83,6 +85,6 @@ Historical implementation notes, handoff documents, and superseded guides organi
 |---|---|
 | `2026-01/` | January implementation notes |
 | `2026-02/` | February redesign and portal work |
-| `2026-03/` | March SignNow and Telegram integration |
+| `2026-03/` | March historical provider and Telegram integration notes |
 | `2026-04/` | April cleanup notes |
 | `2026-04-docs-consolidation/` | Files archived during April 16 consolidation (SECURITY, STYLEGUIDE, CONTRIBUTING, etc.) |

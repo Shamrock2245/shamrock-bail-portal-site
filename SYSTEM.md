@@ -23,7 +23,7 @@ We enforce a distributed, service-oriented architecture. The frontend (Wix) exis
 | **AI / LLM** | OpenAI GPT-4o-mini (via GAS) | 9 digital employees: Clerk, Analyst, Investigator, Concierge, Closer, Manus Brain, Shannon, Watchdog, Bounty Hunter. |
 | **Voice AI** | ElevenLabs Conversational AI | "Shannon" — 24/7 after-hours phone intake agent with live call transfer. |
 | **Database** | Wix CMS + Google Sheets + MongoDB Atlas | Wix CMS for portal data. Sheets for ops. MongoDB for arrest analytics & event logging. |
-| **Signing** | SignNow API | 14-document packet generation. Embedded mobile-first signing. Webhook-driven completion. |
+| **Signing** | DocuSeal via Super CRM | Staff-issued packet workflow. Wix hosts only the secure Netlify launchpad and cannot create packets or signing links. |
 | **Payments** | SwipeSimple | One-click payment links, virtual terminal, payment plan reconciliation. |
 | **SMS / Voice** | Twilio | External client comms — SMS & WhatsApp (10DLC compliant). Court reminders, check-ins. |
 | **Internal Ops** | Slack (12+ webhook channels) | Staff alerts, intake notifications, arrest feeds, error reporting. |
@@ -55,11 +55,11 @@ Client starts via ──→ Magic Link (Web) / Telegram Bot / Shannon (Phone)
                          │
                     Validation: Phone/Email verified, location consent captured
                          │
-                    "The Clerk" hydrates data → 14-doc SignNow packet generated
+                    Staff validates Match, BondCase, surety, POA, recipient, and approval in Super CRM
                          │
-                    SignNow link sent via SMS / WhatsApp / Telegram
+                    Staff issues DocuSeal packet; secure launchpad presents the existing session
                          │
-                    Client signs on mobile → document.complete webhook fires
+                    Client signs on mobile → approved completion workflow records the result
                          │
                     Bot requests ID upload (front, back, selfie) → OCR extracts data
                          │
@@ -81,7 +81,7 @@ Client starts via ──→ Magic Link (Web) / Telegram Bot / Shannon (Phone)
 | **MongoDB Atlas** | Arrest data, event logging | Analytics, cross-county dedup, business event audit trail |
 | **Twilio** | SMS, WhatsApp, Voice routing | External client communications |
 | **ElevenLabs** | Voice AI | Shannon — phone-based intake agent |
-| **SignNow** | Document signing | 14-doc bail bond packet generation and tracking |
+| **DocuSeal via Super CRM** | Document signing | Staff-issued packet generation and tracking; Wix remains a non-issuing launchpad |
 
 ---
 
@@ -117,7 +117,7 @@ shamrock-bail-portal-site    ←→    GAS Backend (Factory)
 - **PII Encryption**: All sensitive data encrypted at rest in Wix Collections.
 - **API Keys**: Never in frontend code. Managed via Wix Secrets Manager + GAS Script Properties.
 - **Webhook Auth**: HMAC verification on all Node-RED inbound endpoints.
-- **Audit Trails**: All SignNow documents tracked with Case IDs. All business events logged to MongoDB via `MongoLogger.gs`.
+- **Audit Trails**: Historical provider records remain keyed by Case ID for compatibility. Active DocuSeal issuance and completion follow the Super CRM approval workflow; business events are logged to MongoDB via `MongoLogger.gs`.
 - **10DLC Compliance**: Twilio SMS follows carrier regulations. Communication preferences respected (`CommPrefsManager.js`).
 - **Idempotent Writes**: All data writes check for duplicates. `Booking_Number + County` is the dedup key.
 
@@ -133,3 +133,4 @@ shamrock-bail-portal-site    ←→    GAS Backend (Factory)
 | [TOOLS.md](TOOLS.md) | MCP servers, agent skills, workflows, external services |
 | [USER.md](USER.md) | Brendan's preferences, priorities, working style |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Deep-dive system architecture with Mermaid diagrams |
+| [docs/CURRENT_PAPERWORK_ARCHITECTURE.md](docs/CURRENT_PAPERWORK_ARCHITECTURE.md) | Canonical DocuSeal-only signing boundary |

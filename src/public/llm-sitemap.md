@@ -12,7 +12,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 ## County Service Directory
 
 ### Alachua County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/alachua-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/alachua
 - **Region:** North Central
 - **County Seat:** Gainesville
 - **Judicial Circuit:** 8th (Eighth Judicial Circuit)
@@ -24,7 +24,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.alachuaclerk.org/court_records/index.cfm?section=login&r=331568
 
 ### Baker County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/baker-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/baker
 - **Region:** Northeast
 - **County Seat:** Macclenny
 - **Judicial Circuit:** 8th (Eighth Judicial Circuit)
@@ -36,7 +36,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.civitekflorida.com/ocrs/app/search.xhtml
 
 ### Bay County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/bay-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/bay
 - **Region:** Northwest
 - **County Seat:** Panama City
 - **Judicial Circuit:** 14th (Fourteenth Judicial Circuit)
@@ -48,7 +48,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://records2.baycoclerk.com/
 
 ### Bradford County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/bradford-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/bradford
 - **Region:** North Central
 - **County Seat:** Starke
 - **Judicial Circuit:** 8th (Eighth Judicial Circuit)
@@ -60,7 +60,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.bradfordcountyclerk.com/search.aspx
 
 ### Brevard County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/brevard-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/brevard
 - **Region:** East Central
 - **County Seat:** Titusville
 - **Judicial Circuit:** 18th (Eighteenth Judicial Circuit)
@@ -72,7 +72,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://vweb1.brevardclerk.us/
 
 ### Broward County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/broward-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/broward
 - **Region:** Southeast
 - **County Seat:** Fort Lauderdale
 - **Judicial Circuit:** 17th (Seventeenth Judicial Circuit)
@@ -84,7 +84,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.browardclerk.org/Web2
 
 ### Calhoun County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/calhoun-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/calhoun
 - **Region:** Northwest
 - **County Seat:** Blountstown
 - **Judicial Circuit:** 14th (Fourteenth Judicial Circuit)
@@ -96,7 +96,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://calhounclerk.com/official-records/
 
 ### Charlotte County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte
 - **Region:** Southwest
 - **County Seat:** Punta Gorda
 - **Judicial Circuit:** 20th (Twentieth Judicial Circuit)
@@ -108,7 +108,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://records.charlotteclerk.com/records/
 
 ### Citrus County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/citrus-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/citrus
 - **Region:** West Central
 - **County Seat:** Inverness
 - **Judicial Circuit:** 5th (Fifth Judicial Circuit)
@@ -120,7 +120,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.citrusclerk.org/recordsearch/
 
 ### Clay County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/clay-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/clay
 - **Region:** Northeast
 - **County Seat:** Green Cove Springs
 - **Judicial Circuit:** 4th (Fourth Judicial Circuit)
@@ -132,7 +132,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://records.clayclerk.com/
 
 ### Collier County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/collier-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/collier
 - **Region:** Southwest
 - **County Seat:** Naples
 - **Judicial Circuit:** 20th (Twentieth Judicial Circuit)
@@ -144,7 +144,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://collierclerk.com/records-search/
 
 ### Columbia County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/columbia-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/columbia
 - **Region:** North Central
 - **County Seat:** Lake City
 - **Judicial Circuit:** 3rd (Third Judicial Circuit)
@@ -156,7 +156,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://columbiaclerk.com/official-records/
 
 ### DeSoto County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/desoto-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/desoto
 - **Region:** Southwest
 - **County Seat:** Arcadia
 - **Judicial Circuit:** 12th (Twelfth Judicial Circuit)
@@ -168,7 +168,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://desotoclerk.com/official-records/
 
 ### Dixie County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/dixie-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/dixie
 - **Region:** North Central
 - **County Seat:** Cross City
 - **Judicial Circuit:** 3rd (Third Judicial Circuit)
@@ -180,7 +180,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.dixieclerk.com/
 
 ### Duval County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/duval-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/duval
 - **Region:** Northeast
 - **County Seat:** Jacksonville
 - **Judicial Circuit:** 4th (Fourth Judicial Circuit)
@@ -192,7 +192,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://core.duvalclerk.com/
 
 ### Escambia County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/escambia-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/escambia
 - **Region:** Northwest
 - **County Seat:** Pensacola
 - **Judicial Circuit:** 1st (First Judicial Circuit)
@@ -204,7 +204,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.escambiaclerk.com/
 
 ### Flagler County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/flagler-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/flagler
 - **Region:** Northeast
 - **County Seat:** Bunnell
 - **Judicial Circuit:** 7th (Seventh Judicial Circuit)
@@ -216,7 +216,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.flaglerclerk.com/
 
 ### Franklin County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/franklin-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/franklin
 - **Region:** Northwest
 - **County Seat:** Apalachicola
 - **Judicial Circuit:** 2nd (Second Judicial Circuit)
@@ -228,7 +228,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.franklinclerk.com/
 
 ### Gadsden County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/gadsden-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/gadsden
 - **Region:** Northwest
 - **County Seat:** Quincy
 - **Judicial Circuit:** 2nd (Second Judicial Circuit)
@@ -240,7 +240,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.gadsdenclerk.com/
 
 ### Gilchrist County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/gilchrist-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/gilchrist
 - **Region:** North Central
 - **County Seat:** Trenton
 - **Judicial Circuit:** 8th (Eighth Judicial Circuit)
@@ -252,7 +252,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://gilchristclerk.com/official-records/
 
 ### Glades County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/glades-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/glades
 - **Region:** Southwest
 - **County Seat:** Moore Haven
 - **Judicial Circuit:** 20th (Twentieth Judicial Circuit)
@@ -264,7 +264,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.gladesclerk.com/
 
 ### Gulf County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/gulf-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/gulf
 - **Region:** Northwest
 - **County Seat:** Port St. Joe
 - **Judicial Circuit:** 14th (Fourteenth Judicial Circuit)
@@ -276,7 +276,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.gulfclerk.com/
 
 ### Hamilton County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/hamilton-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/hamilton
 - **Region:** North Central
 - **County Seat:** Jasper
 - **Judicial Circuit:** 3rd (Third Judicial Circuit)
@@ -288,7 +288,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.hamiltonclerk.com/
 
 ### Hardee County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/hardee-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/hardee
 - **Region:** Central
 - **County Seat:** Wauchula
 - **Judicial Circuit:** 10th (Tenth Judicial Circuit)
@@ -300,7 +300,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.hardeecountyclerk.com/
 
 ### Hendry County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/hendry-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/hendry
 - **Region:** Southwest
 - **County Seat:** LaBelle
 - **Judicial Circuit:** 20th (Twentieth Judicial Circuit)
@@ -312,7 +312,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.hendryclerk.org/
 
 ### Hernando County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/hernando-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/hernando
 - **Region:** West Central
 - **County Seat:** Brooksville
 - **Judicial Circuit:** 5th (Fifth Judicial Circuit)
@@ -324,7 +324,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.hernandoclerk.com/
 
 ### Highlands County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/highlands-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/highlands
 - **Region:** Central
 - **County Seat:** Sebring
 - **Judicial Circuit:** 10th (Tenth Judicial Circuit)
@@ -336,7 +336,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.highlandsclerk.org/
 
 ### Hillsborough County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/hillsborough-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/hillsborough
 - **Region:** West Central
 - **County Seat:** Tampa
 - **Judicial Circuit:** 13th (Thirteenth Judicial Circuit)
@@ -348,7 +348,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://hover.hillsclerk.com/
 
 ### Holmes County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/holmes-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/holmes
 - **Region:** Northwest
 - **County Seat:** Bonifay
 - **Judicial Circuit:** 14th (Fourteenth Judicial Circuit)
@@ -360,7 +360,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.holmesclerk.com/
 
 ### Indian River County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/indian-river-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/indian-river
 - **Region:** East Central
 - **County Seat:** Vero Beach
 - **Judicial Circuit:** 19th (Nineteenth Judicial Circuit)
@@ -372,7 +372,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://ori.indian-river.org/
 
 ### Jackson County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/jackson-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/jackson
 - **Region:** Northwest
 - **County Seat:** Marianna
 - **Judicial Circuit:** 14th (Fourteenth Judicial Circuit)
@@ -384,7 +384,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.jacksonclerk.com/officialrecords/
 
 ### Jefferson County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/jefferson-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/jefferson
 - **Region:** Northwest
 - **County Seat:** Monticello
 - **Judicial Circuit:** 2nd (Second Judicial Circuit)
@@ -396,7 +396,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.jeffersonclerk.com/
 
 ### Lafayette County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/lafayette-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/lafayette
 - **Region:** North Central
 - **County Seat:** Mayo
 - **Judicial Circuit:** 3rd (Third Judicial Circuit)
@@ -408,7 +408,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.lafayetteclerk.com/
 
 ### Lake County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/lake-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/lake
 - **Region:** Central
 - **County Seat:** Tavares
 - **Judicial Circuit:** 5th (Fifth Judicial Circuit)
@@ -420,7 +420,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.lakecountyclerk.org/
 
 ### Lee County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/lee-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/lee
 - **Region:** Southwest
 - **County Seat:** Fort Myers
 - **Judicial Circuit:** 20th (Twentieth Judicial Circuit)
@@ -432,7 +432,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://matrix.leeclerk.org/
 
 ### Leon County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/leon-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/leon
 - **Region:** Northwest
 - **County Seat:** Tallahassee
 - **Judicial Circuit:** 2nd (Second Judicial Circuit)
@@ -444,7 +444,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://oncore.leonclerk.com/
 
 ### Levy County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/levy-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/levy
 - **Region:** North Central
 - **County Seat:** Bronson
 - **Judicial Circuit:** 8th (Eighth Judicial Circuit)
@@ -456,7 +456,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.levyclerk.com/
 
 ### Liberty County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/liberty-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/liberty
 - **Region:** Northwest
 - **County Seat:** Bristol
 - **Judicial Circuit:** 2nd (Second Judicial Circuit)
@@ -468,7 +468,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.libertyclerk.com/
 
 ### Madison County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/madison-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/madison
 - **Region:** North Central
 - **County Seat:** Madison
 - **Judicial Circuit:** 3rd (Third Judicial Circuit)
@@ -480,7 +480,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.madisonclerk.com/
 
 ### Manatee County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/manatee-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/manatee
 - **Region:** West Central
 - **County Seat:** Bradenton
 - **Judicial Circuit:** 12th (Twelfth Judicial Circuit)
@@ -492,7 +492,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://records.manateeclerk.com/
 
 ### Marion County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/marion-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/marion
 - **Region:** North Central
 - **County Seat:** Ocala
 - **Judicial Circuit:** 5th (Fifth Judicial Circuit)
@@ -504,7 +504,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.marioncountyclerk.org/
 
 ### Martin County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/martin-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/martin
 - **Region:** Southeast
 - **County Seat:** Stuart
 - **Judicial Circuit:** 19th (Nineteenth Judicial Circuit)
@@ -516,7 +516,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://ori.martinclerk.com/
 
 ### Miami-Dade County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/miami-dade-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/miami-dade
 - **Region:** Southeast
 - **County Seat:** Miami
 - **Judicial Circuit:** 11th (Eleventh Judicial Circuit)
@@ -528,7 +528,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www2.miami-dadeclerk.com/public-records/
 
 ### Monroe County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/monroe-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/monroe
 - **Region:** Southeast
 - **County Seat:** Key West
 - **Judicial Circuit:** 16th (Sixteenth Judicial Circuit)
@@ -540,7 +540,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://gov.kofiletech.us/FL-Monroe/
 
 ### Nassau County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/nassau-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/nassau
 - **Region:** Northeast
 - **County Seat:** Fernandina Beach
 - **Judicial Circuit:** 4th (Fourth Judicial Circuit)
@@ -552,7 +552,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.nassauclerk.com/
 
 ### Okaloosa County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/okaloosa-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/okaloosa
 - **Region:** Northwest
 - **County Seat:** Crestview
 - **Judicial Circuit:** 1st (First Judicial Circuit)
@@ -564,7 +564,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://officialrecords.okaloosaclerk.com/
 
 ### Okeechobee County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/okeechobee-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/okeechobee
 - **Region:** Central
 - **County Seat:** Okeechobee
 - **Judicial Circuit:** 19th (Nineteenth Judicial Circuit)
@@ -576,7 +576,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://ori.clerk.co.okeechobee.fl.us/
 
 ### Orange County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/orange-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/orange
 - **Region:** Central
 - **County Seat:** Orlando
 - **Judicial Circuit:** 9th (Ninth Judicial Circuit)
@@ -588,7 +588,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://myeclerk.myorangeclerk.com/
 
 ### Osceola County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/osceola-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/osceola
 - **Region:** Central
 - **County Seat:** Kissimmee
 - **Judicial Circuit:** 9th (Ninth Judicial Circuit)
@@ -600,7 +600,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://ori.osceolaclerk.com/
 
 ### Palm Beach County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/palm-beach-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/palm-beach
 - **Region:** Southeast
 - **County Seat:** West Palm Beach
 - **Judicial Circuit:** 15th (Fifteenth Judicial Circuit)
@@ -612,7 +612,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://appsgp.mypalmbeachclerk.com/eCaseView/
 
 ### Pasco County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/pasco-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/pasco
 - **Region:** West Central
 - **County Seat:** Dade City
 - **Judicial Circuit:** 6th (Sixth Judicial Circuit)
@@ -624,7 +624,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.pascoclerk.com/172/Search-Court-Records
 
 ### Pinellas County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/pinellas-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/pinellas
 - **Region:** West Central
 - **County Seat:** Clearwater
 - **Judicial Circuit:** 6th (Sixth Judicial Circuit)
@@ -636,7 +636,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://ccmspa.pinellascounty.org/PublicAccess/default.aspx
 
 ### Polk County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/polk-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/polk
 - **Region:** Central
 - **County Seat:** Bartow
 - **Judicial Circuit:** 10th (Tenth Judicial Circuit)
@@ -648,7 +648,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://pro.polkcountyclerk.net/PRO
 
 ### Putnam County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/putnam-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/putnam
 - **Region:** Northeast
 - **County Seat:** Palatka
 - **Judicial Circuit:** 7th (Seventh Judicial Circuit)
@@ -660,7 +660,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.civitekflorida.com/ocrs/county/54/
 
 ### Santa Rosa County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/santa-rosa-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/santa-rosa
 - **Region:** Northwest
 - **County Seat:** Milton
 - **Judicial Circuit:** 1st (First Judicial Circuit)
@@ -672,7 +672,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.civitekflorida.com/ocrs/county/57/
 
 ### Sarasota County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/sarasota-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/sarasota
 - **Region:** Southwest
 - **County Seat:** Sarasota
 - **Judicial Circuit:** 12th (Twelfth Judicial Circuit)
@@ -684,7 +684,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://secure.sarasotaclerk.com/Login.aspx?session=0
 
 ### Seminole County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/seminole-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/seminole
 - **Region:** Central
 - **County Seat:** Sanford
 - **Judicial Circuit:** 18th (Eighteenth Judicial Circuit)
@@ -696,7 +696,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://courtrecords.seminoleclerk.org/criminal/default.aspx
 
 ### St. Johns County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/st-johns-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/st-johns
 - **Region:** Northeast
 - **County Seat:** St. Augustine
 - **Judicial Circuit:** 7th (Seventh Judicial Circuit)
@@ -708,7 +708,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://apps.stjohnsclerk.com/Benchmark/Home.aspx/Search
 
 ### St. Lucie County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/st-lucie-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/st-lucie
 - **Region:** Southeast
 - **County Seat:** Fort Pierce
 - **Judicial Circuit:** 19th (Nineteenth Judicial Circuit)
@@ -720,7 +720,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://stlucieclerk.gov/public-search-gen/search-court-cases
 
 ### Sumter County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/sumter-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/sumter
 - **Region:** Central
 - **County Seat:** Bushnell
 - **Judicial Circuit:** 5th (Fifth Judicial Circuit)
@@ -732,7 +732,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.civitekflorida.com/ocrs/county/60/
 
 ### Suwannee County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/suwannee-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/suwannee
 - **Region:** North Central
 - **County Seat:** Live Oak
 - **Judicial Circuit:** 3rd (Third Judicial Circuit)
@@ -744,7 +744,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.suwgov.org/county-recorder/
 
 ### Taylor County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/taylor-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/taylor
 - **Region:** North Central
 - **County Seat:** Perry
 - **Judicial Circuit:** 3rd (Third Judicial Circuit)
@@ -756,7 +756,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** http://pubrecs.taylorclerk.com/PublicInquiry/Search.aspx?Type=Name
 
 ### Union County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/union-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/union
 - **Region:** North Central
 - **County Seat:** Lake Butler
 - **Judicial Circuit:** 8th (Eighth Judicial Circuit)
@@ -768,7 +768,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.civitekflorida.com/ocrs/county/63/
 
 ### Volusia County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/volusia-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/volusia
 - **Region:** East Central
 - **County Seat:** DeLand
 - **Judicial Circuit:** 7th (Seventh Judicial Circuit)
@@ -780,7 +780,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://ccms.clerk.org/
 
 ### Wakulla County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/wakulla-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/wakulla
 - **Region:** Northwest
 - **County Seat:** Crawfordville
 - **Judicial Circuit:** 2nd (Second Judicial Circuit)
@@ -792,7 +792,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://www.civitekflorida.com/ocrs/county/65/
 
 ### Walton County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/walton-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/walton
 - **Region:** Northwest
 - **County Seat:** DeFuniak Springs
 - **Judicial Circuit:** 1st (First Judicial Circuit)
@@ -804,7 +804,7 @@ This document provides a clean, text-only map of all 67 Florida counties served 
 - **Court Records URL:** https://waltonclerk.com/courtrecords
 
 ### Washington County
-- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/washington-county
+- **Service URL:** https://www.shamrockbailbonds.biz/florida-bail-bonds/washington
 - **Region:** Northwest
 - **County Seat:** Chipley
 - **Judicial Circuit:** 14th (Fourteenth Judicial Circuit)

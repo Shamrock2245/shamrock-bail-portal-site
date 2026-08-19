@@ -7,10 +7,10 @@ These rules are **absolute**. No exceptions, no overrides.
 ## 1. Wix is the Clipboard
 - Wix collects data and passes it back. It does NOT own the heavy lifting.
 - Never put business logic in page code — only UI logic and event handlers.
-- All heavy processing (PDF gen, AI, signing) belongs in GAS.
+- All heavy processing belongs in backend systems. Wix may not create paperwork packets, signing links, or provider invitations.
 
 ## 2. GAS is the Factory
-- All PDF generation, risk assessment, signing orchestration, and communication routing happens in Google Apps Script.
+- GAS remains the established factory for approved automation, but active DocuSeal packet issuance is authorized only in Super CRM after the required validation gates.
 - Single entry point: `Code.js doPost()` / `doGet()` with action routing.
 - Never create parallel entry points.
 
@@ -31,7 +31,7 @@ These rules are **absolute**. No exceptions, no overrides.
 - `docs/SCHEMAS.md` defines the canonical data schemas. It is the source of truth.
 - Dedup key for arrest records is always `Booking_Number + County`.
 - Never add, remove, or rename schema columns without updating all consumers.
-- All SignNow documents must track `caseId` — it is the session key across all systems.
+- Historical signing records retain their existing `caseId` linkage and field names for compatibility. Active DocuSeal packets must remain bound to the validated BondCase and must not prompt a schema rename.
 
 ## 6. Mobile First — Always
 - 90% of clients are on phones in a crisis.
@@ -55,7 +55,7 @@ These rules are **absolute**. No exceptions, no overrides.
 ## 9. Idempotent Writes
 - All data writes (scraper, intake, webhooks) must check for duplicates before inserting.
 - Re-running a process should never create duplicate records.
-- SignNow webhooks must be idempotent — `document.complete` may fire multiple times.
+- Approved DocuSeal completion processing must be idempotent. Legacy SignNow webhooks remain retired and must not be re-enabled.
 
 ## 10. Wix Velo Runtime Constraints
 - Never import `public/*` or `backend/*` files into `masterPage.js` — it crashes the strict-mode runtime.
@@ -80,6 +80,7 @@ These rules are **absolute**. No exceptions, no overrides.
 - Stale docs are worse than no docs — they cause wrong decisions.
 - Run `/self-improving-agent` at end of significant sessions.
 - Never reference archived files from active documentation.
+- Current paperwork documentation must point to `docs/CURRENT_PAPERWORK_ARCHITECTURE.md`; archived SignNow references are historical context only.
 
 ## 14. Finish the Factory
 - Don't redesign what works. Connect existing pipes to new outputs.

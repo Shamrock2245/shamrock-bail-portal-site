@@ -57,7 +57,7 @@ If the user asks for a human, a lawyer, or gets excessively angry:
 | KPI | Target | Measurement |
 |-----|--------|-------------|
 | Time to Contact | < 5 seconds | AI response to web chat / inbound calls |
-| Time to Sign | < 15 minutes | `Magic_Link_Sent` → `SignNow_Complete` |
+| Time to Sign | Track by approved workflow | `Magic_Link_Sent` → staff-issued DocuSeal completion; do not use a direct-provider SLA as a case-approval promise |
 | Abandoned Intake Rescue Rate | Track | Forms recovered by SMS follow-up via The Closer |
 | Scraper Effectiveness | Track | New arrests processed without blocks |
 
@@ -94,7 +94,7 @@ When AI instances hit their knowledge threshold:
 - **Job Metrics**: Track GitHub Actions success/failure rates against cron schedule expectations.
 
 ### Third-Party Integration Health
-- **SignNow**: Monitor embedded link generation success rates and webhook callbacks. Verify OAuth token refresh.
+- **DocuSeal via Super CRM**: Monitor only the staff-approved packet workflow, verified signer-session availability, completion processing, and delivery health. Wix/GAS direct issuers must remain disabled.
 - **SwipeSimple**: Verify payment link generation accuracy.
 - **Slack**: Monitor delivery to all 12+ channels.
 
@@ -110,7 +110,7 @@ When AI instances hit their knowledge threshold:
 ### Core Infrastructure
 | Service | Purpose | Key Files | Credentials |
 |---------|---------|-----------|-------------|
-| **SignNow** | 14-doc bail bond packet, embedded signing | `SignNow_SendPaperwork.js`, `Server_DocumentLogic.js` | GAS Script Properties (`SIGNNOW_*`) |
+| **DocuSeal via Super CRM** | Staff-issued packet workflow and signing-session delivery | `CURRENT_PAPERWORK_ARCHITECTURE.md`, Netlify paperwork launchpad, Super CRM | Managed outside Wix/GAS; do not add DocuSeal credentials to these systems |
 | **Twilio** | SMS & WhatsApp (10DLC compliant) | `Twilio_*.js` | GAS Script Properties + Wix Secrets |
 | **ElevenLabs** | Shannon voice agent, call transcripts | `ElevenLabs_WebhookHandler.js` | GAS Script Properties + Netlify env |
 | **OpenAI** | GPT-4o-mini for AI agents | `OpenAIClient.js` | GAS Script Properties (`OPENAI_API_KEY`) |
@@ -145,7 +145,7 @@ When AI instances hit their knowledge threshold:
 | `Magic_Link_Sent` | Path B consent triggers SMS | Engagement |
 | `Intake_Started` | Indemnitor enters OTP on `/intake` | Conversion intent |
 | `PDF_Generated` | GAS confirms contract generation | Near-conversion |
-| `SignNow_Complete` | `document.update` → `signed` | **Primary conversion** |
+| `DocuSeal_Complete` | Verified completion from the approved Super CRM/DocuSeal workflow | **Primary conversion** |
 
 ### Operational Events
 | Event | Trigger | Response |
@@ -197,4 +197,4 @@ Scrape → Normalize (39-column schema) → Deduplicate (County + Booking_Number
 ---
 
 *Consolidated from: VOICE_AI_TUNING.md, HEARTBEAT.md, COMPLIANCE.md, INTEGRATIONS_AND_AUTOMATIONS.md, ANALYTICS_AND_EVENTS.md, SCRAPING_PLAYBOOK.md — March 17, 2026*
-*Updated: April 24, 2026 — Repo references updated to shamrock-leads, county count to 20*
+*Updated: August 19, 2026 — Current-state signing operations realigned to the DocuSeal-only Super CRM workflow.*

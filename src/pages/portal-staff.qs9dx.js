@@ -1036,7 +1036,7 @@ function setupStaffPortalIframe() {
                     await handleStaffBookingLookup(portal, msg.query);
                     break;
 
-                // ── Generate SignNow Packet ──────────────────────────────
+                // ── Legacy direct packet action (retired; DocuSeal is issued in Super CRM) ──
                 case 'staff-generate-packet':
                     await handleStaffGeneratePacket(portal, msg.data);
                     break;
@@ -1158,81 +1158,29 @@ async function handleStaffBookingLookup(portal, query) {
 }
 
 /**
- * Handle SignNow packet generation from staff portal.
- * Calls GAS staffGeneratePacket action (routes to handleShannonSendPaperwork).
+ * Direct packet generation from the Wix staff portal is intentionally retired.
+ * Staff must issue DocuSeal from Super CRM after a validated Match, bonded case,
+ * explicit surety, assigned POA tier, recipient validation, and staff approval.
  */
-async function handleStaffGeneratePacket(portal, data) {
-    if (!data) return;
-
-    try {
-        showStaffMessage('Generating 12-document SignNow packet...', 'info');
-
-        const { callGasAction } = await import('backend/gasIntegration');
-        const result = await callGasAction('staffGeneratePacket', data);
-
-        portal.postMessage({
-            type: 'staff-packet-result',
-            success: result.success || false,
-            message: result.message || '',
-            signingLink: result.signingLink || '',
-            documentCount: result.documentCount || 0,
-            entityId: result.entityId || ''
-        });
-
-        if (result.success) {
-            showStaffMessage('✅ Packet sent! ' + (result.documentCount || 12) + ' documents generated', 'success');
-        } else {
-            showStaffMessage('Packet generation failed: ' + (result.error || result.message), 'error');
-        }
-    } catch (e) {
-        console.error('Packet generation error:', e);
-        portal.postMessage({ type: 'staff-packet-result', success: false, error: e.message });
-        showStaffMessage('Error generating packet: ' + e.message, 'error');
-    }
+async function handleStaffGeneratePacket(portal) {
+    const error = 'Direct packet creation is retired. Use the Super CRM DocuSeal workflow after the case, surety, POA, recipient, and staff-approval checks are complete.';
+    portal.postMessage({ type: 'staff-packet-result', success: false, error });
+    showStaffMessage(error, 'info');
 }
 
 /**
- * Handle Phase 2 bond approval from staff portal.
- * Calls GAS staffApproveAndSendPhase2 action (sends court/agent docs after POA entry).
+ * Direct Phase 2 sending from the Wix staff portal is intentionally retired.
+ * The staff-approved Super CRM DocuSeal workflow is the sole packet authority.
  */
 async function handleStaffApprovePhase2(portal, msg) {
-    if (!msg || !msg.poaNumber) {
-        portal.postMessage({ type: 'staff-phase2-result', success: false, error: 'POA number is required.' });
-        return;
-    }
-
-    try {
-        showStaffMessage(`Approving bond (POA: ${msg.poaNumber}) & sending Phase 2 docs...`, 'info');
-
-        const { callGasAction } = await import('backend/gasIntegration');
-        const result = await callGasAction('staffApproveAndSendPhase2', {
-            formData: msg.formData || {},
-            signerEmail: msg.signerEmail || '',
-            signerName: msg.signerName || '',
-            poaNumber: msg.poaNumber,
-            agentName: msg.agentName || '',
-            agentLicense: msg.agentLicense || ''
-        });
-
-        portal.postMessage({
-            type: 'staff-phase2-result',
-            success: result.success || false,
-            message: result.message || '',
-            signingLink: result.signing?.signingLink || '',
-            documentCount: result.signing?.documentsCount || 0,
-            poaNumber: msg.poaNumber
-        });
-
-        if (result.success) {
-            showStaffMessage(`✅ Bond approved! POA: ${msg.poaNumber} — Phase 2 docs sent`, 'success');
-        } else {
-            showStaffMessage('Phase 2 failed: ' + (result.error || result.message), 'error');
-        }
-    } catch (e) {
-        console.error('Phase 2 approval error:', e);
-        portal.postMessage({ type: 'staff-phase2-result', success: false, error: e.message });
-        showStaffMessage('Error approving bond: ' + e.message, 'error');
-    }
+    const error = 'Direct Phase 2 sending is retired. Complete bond approval and issue DocuSeal from Super CRM; Wix must not create or send paperwork.';
+    portal.postMessage({
+        type: 'staff-phase2-result',
+        success: false,
+        error,
+        poaNumber: msg?.poaNumber || ''
+    });
+    showStaffMessage(error, 'info');
 }
 
 /**

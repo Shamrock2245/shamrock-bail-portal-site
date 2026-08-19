@@ -317,7 +317,7 @@ function handleWizardSubmission(data) {
 
     const caseId = data?.caseId || 'Pending';
     const successMsg = ` Success! Your Case ID is: ${caseId}\n\n` +
-        `Stand by. Our AI agent is reviewing your file and will email you the completed SignNow documents to review and sign shortly.\n\n` +
+        `Stand by while our team reviews your file. Once staff has issued a secure DocuSeal packet, return to this portal to review and sign it.\n\n` +
         ` Next Steps:\n` +
         `If you know the premium due, please feel free to pay your defendant's bond securely using our payment page.\n\n` +
         `Redirecting to our secure payment portal...`;
@@ -334,47 +334,12 @@ function handleWizardSubmission(data) {
 /**
  * Handle Phase 1 indemnitor submission — send formData to GAS for intake + Phase 1 signing
  */
-async function handlePhase1Submission(msg) {
-    try {
-        console.log('[Phase1] Sending to GAS: submitIndemnitorPhase1');
-        const result = await callGasAction('submitIndemnitorPhase1', {
-            formData: msg.formData,
-            signerEmail: msg.signerEmail,
-            signerName: msg.signerName
-        });
-
-        console.log('[Phase1] GAS response:', JSON.stringify(result));
-
-        if (result && result.success) {
-            safeHide('#indemnitorWizard');
-            safeHide('#bannerPaperworkRequired');
-            safeHide('#boxActionRequired');
-            safeShow('#groupSuccess');
-
-            const successMsg = `☘️ Phase 1 Complete!\n\n` +
-                `We've sent ${result.signing?.documentsCount || 6} documents to ${msg.signerEmail} for signing.\n\n` +
-                `📋 Next Steps:\n` +
-                `1. Check your email for the SignNow signing link\n` +
-                `2. Review and sign the initial paperwork\n` +
-                `3. Our bondsman will review your application\n` +
-                `4. Once approved, you'll receive the remaining documents\n\n` +
-                `Redirecting to our secure payment portal...`;
-
-            safeSetText('#textSuccessMessage', successMsg);
-            wixWindow.scrollTo(0, 0);
-
-            setTimeout(() => {
-                console.log(" Redirecting to payments page ->");
-                wixLocation.to('/payments');
-            }, 10000);
-        } else {
-            console.error('[Phase1] GAS returned error:', result?.error || result?.message);
-            showError('There was an issue submitting your application. Our team has been notified. Please call (239) 332-2245.');
-        }
-    } catch (error) {
-        console.error('[Phase1] Error:', error);
-        showError('Submission failed. Please try again or call (239) 332-2245.');
-    }
+async function handlePhase1Submission() {
+    // The direct Phase 1 sender is intentionally retired. Paperwork can begin
+    // only inside the existing Netlify launchpad after staff has issued a
+    // validated DocuSeal packet. Do not add a new Wix- or GAS-originated sender.
+    console.warn('[Paperwork] Direct Phase 1 submission is retired; opening the secure DocuSeal launchpad.');
+    await triggerPaperworkModal();
 }
 
 // ============================================================================
@@ -442,7 +407,9 @@ function showBondDashboard() {
         safeShow('#makePaymentBtn');
     }
 
-    if (paperworkStatus === 'sent_for_signature' && currentIntake.signNowIndemnitorLink) {
+    if (paperworkStatus === 'sent_for_signature') {
+        // Never expose or follow historical provider links from the Wix portal.
+        // The button opens the existing staff-gated DocuSeal launchpad instead.
         safeShow('#signPaperworkBtn');
     } else {
         safeHide('#signPaperworkBtn');
@@ -550,9 +517,10 @@ function handleLogout() {
 }
 
 function handleSignPaperwork() {
-    if (currentIntake?.signNowIndemnitorLink) {
-        wixLocation.to(currentIntake.signNowIndemnitorLink);
-    }
+    triggerPaperworkModal().catch((error) => {
+        console.warn('[Paperwork] Secure launchpad could not open:', error);
+        showError('Unable to open secure paperwork. Please call (239) 332-2245.');
+    });
 }
 
 function handleMakePayment() {

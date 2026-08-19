@@ -19,8 +19,8 @@ Built on **Wix Velo** (frontend) + **Google Apps Script** (190+ file backend), p
 
 *   **5 Ways to Get a Bond** — Web portal, Telegram bot, Telegram mini-app, Shannon (voice AI), or walk-in.
 *   **Telegram-First Client Intake:** Conversational bot guides clients through the entire intake process.
-*   **Automated Document Generation:** One-click 14-document SignNow packet from the staff dashboard.
-*   **Mobile-First Electronic Signing:** Embedded SignNow sessions via SMS, Telegram, or web.
+*   **Staff-Gated Document Preparation:** Super CRM validates the Match, BondCase, surety, POA, recipient, and staff approval before issuing a DocuSeal packet.
+*   **Mobile-First Electronic Signing:** The Wix portal opens the secure Netlify paperwork launchpad; it may display a staff-issued DocuSeal session after verification. Wix never creates packets or signing links.
 *   **Automated ID Verification:** Bot requests and processes ID photos (front, back, selfie) via Cloud Vision OCR.
 *   **Closed-Loop Document Delivery:** Signed docs auto-processed (merged, watermarked) and delivered via Telegram.
 *   **Communication Preferences:** Client opt-in/out respected across all outbound channels (`CommPrefsManager.js`).
@@ -38,7 +38,7 @@ Built on **Wix Velo** (frontend) + **Google Apps Script** (190+ file backend), p
 | **AI/LLM** | OpenAI GPT-4o-mini | 6 specialized agents via GAS `UrlFetchApp` |
 | **Voice AI** | ElevenLabs Conversational AI | "Shannon" — 24/7 phone intake, live call transfer |
 | **Database** | Wix CMS + Google Sheets + MongoDB Atlas | Portal data, ops data, arrest analytics + event logging |
-| **Signatures** | SignNow API | 14-document bail bond packet, embedded mobile signing |
+| **Signatures** | DocuSeal via Super CRM | Staff-issued packet workflow; Wix is a secure, non-issuing launchpad |
 | **Payments** | SwipeSimple | One-click links, virtual terminal, payment plans |
 | **SMS/Voice** | Twilio | External comms — SMS & WhatsApp (10DLC compliant) |
 | **Internal Ops** | Slack (12+ channels) | Staff alerts, intake notifications, arrest feeds |
@@ -127,7 +127,7 @@ For detailed architecture, see [SYSTEM.md](./SYSTEM.md).
 ## 🔄 Key Workflows
 
 ### 1. Telegram Intake & Signing
-Client → `@ShamrockBail_bot` → Guided intake → SignNow packet → Sign on mobile → ID upload → Documents delivered
+Client → `@ShamrockBail_bot` → Guided intake → staff validation → DocuSeal packet issued in Super CRM → secure mobile signing → documents delivered
 
 ### 2. Lead Scoring & Arrest Monitoring
 20 county scrapers → Google Sheets + MongoDB → Lead scored (0-100) → Slack alerts → Staff action
@@ -136,7 +136,7 @@ Client → `@ShamrockBail_bot` → Guided intake → SignNow packet → Sign on 
 Client calls → Twilio → ElevenLabs → Shannon AI → Paperwork sent via SMS during call → Live transfer if needed
 
 ### 4. Portal Intake
-Magic link auth → Form → Staff dashboard → SignNow signing → Slack notification → Case filed
+Magic link auth → secure paperwork launchpad → staff validation in Super CRM → staff-issued DocuSeal signing → Slack notification → Case filed
 
 ---
 
@@ -145,14 +145,15 @@ Magic link auth → Form → Staff dashboard → SignNow signing → Slack notif
 ### Prerequisites
 *   Google Workspace account with GAS, Drive, and Sheets access
 *   Wix account with Velo enabled
-*   API keys for: Telegram, SignNow, ElevenLabs, OpenAI, Twilio, Slack
+*   Access to the staff-approved Super CRM DocuSeal workflow; DocuSeal credentials and packet creation do **not** belong in Wix or GAS
+*   API keys for: Telegram, ElevenLabs, OpenAI, Twilio, Slack
 
 ### Deployment
 1.  **Clone:** `git clone https://github.com/Shamrock2245/shamrock-bail-portal-site.git`
 2.  **Secrets:** Add all API keys to Wix Secrets Manager
 3.  **Deploy GAS:** Use `clasp` to push `backend-gas/`. Run `setupTelegramProperties`. Deploy as Web App.
 4.  **Deploy Wix:** Use Wix CLI or editor. Ensure `http-functions.js` has correct GAS URL.
-5.  **Webhooks:** Register Telegram + SignNow webhooks via `SetupUtilities.js`
+5.  **Webhooks:** Register only approved active-service webhooks. Legacy SignNow webhooks and direct senders remain retired; do not re-enable them.
 
 See [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) for the full checklist.
 
@@ -175,6 +176,8 @@ See [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) for the full check
 | [CHANGELOG.md](./CHANGELOG.md) | Change log |
 | [ONBOARDING.md](./ONBOARDING.md) | Start-here guide for new agents/developers |
 | [SECRETS_ROTATION_GUIDE.md](./SECRETS_ROTATION_GUIDE.md) | Emergency key rotation procedures |
+| [CURRENT_PAPERWORK_ARCHITECTURE.md](./docs/CURRENT_PAPERWORK_ARCHITECTURE.md) | DocuSeal-only signing boundary and legacy-retirement policy |
+| [DISCOVERABILITY_FOUNDATION_2026-08-19.md](./docs/DISCOVERABILITY_FOUNDATION_2026-08-19.md) | Technical SEO, GEO, AI-search, and owner-action roadmap |
 
 ---
 
@@ -184,6 +187,7 @@ See [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) for the full check
 *   **10DLC Compliance:** Twilio SMS follows carrier regulations.
 *   **Communication Preferences:** Client opt-in/out enforced across all outbound channels.
 *   **Webhook Auth:** HMAC verification on all Node-RED endpoints.
+*   **Paperwork Boundary:** Wix and GAS do not create provider packets or signing links. Only staff may issue DocuSeal through Super CRM after the documented validation gates.
 
 ---
 
@@ -199,4 +203,4 @@ See [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) for the full check
 
 ---
 
-*Maintained by Shamrock Engineering & AI Agents · Updated April 24, 2026*
+*Maintained by Shamrock Engineering & AI Agents · Current-architecture review updated August 19, 2026*

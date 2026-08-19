@@ -1,268 +1,68 @@
 /**
  * backend/signing-methods.jsw
- * 
- * Integration layer between Wix Portal and GAS Dashboard for all signing methods:
- * - Email: SignNow sends email with signing link
- * - SMS: Twilio sends text message with signing link (via Wix backend)
- * - Kiosk: In-office iPad signing (embedded SignNow)
- * - Print: Generate PDFs for wet signature
- * 
- * SMS Flow:
- * 1. GAS creates SignNow document and generates signing link
- * 2. Wix receives the link and sends SMS via Twilio
- * This ensures Twilio credentials stay in Wix Secrets, not GAS
+ *
+ * Compatibility boundary for retired Wix/GAS-originated signing flows.
+ *
+ * Active paperwork is DocuSeal-only and is issued by staff in Super CRM after
+ * a validated Match, bonded case, explicit surety, assigned POA tier, recipient
+ * validation, and staff approval. Wix must not create a packet, generate a
+ * signing URL, or send a provider invitation. The portal opens the existing
+ * Netlify paperwork launchpad, which may display a staff-issued DocuSeal link.
+ *
+ * Historical CMS records and safe status reads remain available below. Legacy
+ * callers receive a fail-closed response rather than triggering a retired
+ * provider workflow.
  */
 
-import { fetchWithRetry } from 'backend/utils';
-import { getGasWebAppUrl, getGasApiKey } from 'backend/secretsManager';
 import { sendSms } from 'backend/twilio-client';
 import wixData from 'wix-data';
 
-const PAYMENT_LINK = 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
+const DIRECT_PAPERWORK_DISABLED = Object.freeze({
+    success: false,
+    code: 'LEGACY_DIRECT_PAPERWORK_DISABLED',
+    requiresStaffReview: true,
+    error: 'Direct paperwork is retired. Staff must issue DocuSeal from Super CRM after the required validation and approval checks.'
+});
 
-/**
- * Core function to call GAS Backend
- */
-async function callGasBackend(payload) {
-    try {
-        const url = await getGasWebAppUrl();
-        const apiKey = await getGasApiKey();
-
-        // Inject API Key for Security
-        if (apiKey) {
-            payload.apiKey = apiKey;
-        }
-
-        const response = await fetchWithRetry(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`GAS Backend Error: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error('Failed to call GAS Backend:', error);
-        return { success: false, error: error.message };
-    }
+function legacyDirectPaperworkDisabled() {
+    return { ...DIRECT_PAPERWORK_DISABLED };
 }
 
 /**
- * Send paperwork via Email
- * Uses SignNow's built-in email invite functionality
- * @param {Object} params - { caseId, defendantEmail, indemnitorEmails[], documentIds[] }
+ * Retired: Wix may not request a provider email invitation.
+ * @returns {Promise<Object>} A fail-closed response.
  */
-export async function sendViaEmail(params) {
-    const { caseId, defendantEmail, indemnitorEmails, documentIds, emailSubject } = params;
-
-    const result = await callGasBackend({
-        action: 'sendEmailInvite',
-        documentId: documentIds[0], // Primary document
-        signers: [
-            { email: defendantEmail, role: 'Defendant', order: 1 }
-        ].concat((indemnitorEmails || []).map((email, idx) => ({
-            email,
-            role: 'Indemnitor',
-            order: idx + 2
-        }))),
-        options: {
-            subject: emailSubject || 'Shamrock Bail Bonds - Documents for Signature',
-            message: `Please review and sign the attached bail bond documents.\n\nTo pay by credit card: ${PAYMENT_LINK}`
-        }
-    });
-
-    if (result.success) {
-        // Log to Wix collection
-        await logSigningEvent(caseId, 'email', result);
-    }
-
-    return result;
+export async function sendViaEmail() {
+    return legacyDirectPaperworkDisabled();
 }
 
 /**
- * Send paperwork via SMS
- * Creates embedded signing link via GAS/SignNow, then sends via Twilio
- * @param {Object} params - { caseId, defendantPhone, indemnitorPhones[], documentIds[] }
+ * Retired: Wix may not generate an SMS signing session or signing URL.
+ * @returns {Promise<Object>} A fail-closed response.
  */
-export async function sendViaSMS(params) {
-    const { caseId, defendantPhone, indemnitorPhones, documentIds } = params;
-
-    try {
-        let signingLink = '';
-        let indemnitorResults = [];
-
-        // CASE 1: Document Already Exists
-        if (documentIds && documentIds.length > 0 && documentIds[0] !== 'doc_123') {
-            // Step 1: Get embedded signing link from GAS/SignNow
-            const linkResult = await callGasBackend({
-                action: 'createEmbeddedLink',
-                documentId: documentIds[0],
-                signerEmail: `sms_${defendantPhone.replace(/\D/g, '')}@shamrockbailbonds.biz`,
-                signerRole: 'Defendant',
-                linkExpiration: 1440 // 24 hours for SMS
-            });
-
-            if (!linkResult.success || !linkResult.link) {
-                console.error('Failed to get signing link from GAS:', linkResult);
-                return { success: false, error: linkResult.error || 'Failed to generate signing link' };
-            }
-            signingLink = linkResult.link;
-
-        } else {
-            // CASE 2: New Document from Template (Default Flow)
-            console.log(" No document ID provided. Requesting new packet from GAS Template...");
-            const templateResult = await callGasBackend({
-                action: 'createSigningRequest',
-                method: 'sms_return_links',
-                bookingData: {
-                    defendantPhone: defendantPhone,
-                    indemnitorPhone: (indemnitorPhones && indemnitorPhones.length > 0) ? indemnitorPhones[0] : null
-                }
-            });
-
-            if (!templateResult.success || !templateResult.links) {
-                return { success: false, error: templateResult.error || 'Failed to generate links from template' };
-            }
-
-            // Extract defendant link
-            // GAS returns links array: [{ email, phone, role, link }]
-            const defLinkObj = templateResult.links.find(l => l.role === 'Defendant');
-            if (defLinkObj) signingLink = defLinkObj.link;
-
-            // Extract indemnitor link
-            const indLinkObjs = templateResult.links.filter(l => l.role === 'Indemnitor');
-            for (const indLink of indLinkObjs) {
-                // Use the phone number returned by GAS if available (it should match input)
-                const phoneToSend = indLink.phone;
-                // Match with input param indemnitorPhones if needed, but GAS link object is reliable if built from input
-                if (phoneToSend) {
-                    const indSmsBody = `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${indLink.link}\n\nPay Bail: ${PAYMENT_LINK}\n\nQuestions? Call (727) 295-2245`;
-                    const indSmsResult = await sendSms(phoneToSend, indSmsBody);
-                    indemnitorResults.push({ phone: phoneToSend, success: indSmsResult.success });
-                }
-            }
-        }
-
-        // Step 2: Send SMS via Twilio (Wix backend) - Defendant
-        if (signingLink) {
-            const smsBody = `Shamrock Bail Bonds: Your bail paperwork is ready to sign.\n\nClick here to sign: ${signingLink}\n\nPay Bail: ${PAYMENT_LINK}\n\nThis link expires in 24 hours. Questions? Call (727) 295-2245`;
-            const smsResult = await sendSms(defendantPhone, smsBody);
-
-            if (!smsResult.success) {
-                console.error('Failed to send SMS via Twilio:', smsResult);
-                return { success: false, error: smsResult.error || 'Failed to send SMS' };
-            }
-        }
-
-        // Step 3: Handle Indemnitors for EXISTING DOCS (Case 1)
-        // (Template flow handled above inside the else block because we already got links)
-        if (documentIds && documentIds.length > 0 && documentIds[0] !== 'doc_123') {
-            if (indemnitorPhones && indemnitorPhones.length > 0) {
-                for (const phone of indemnitorPhones) {
-                    if (phone) {
-                        const indLinkResult = await callGasBackend({
-                            action: 'createEmbeddedLink',
-                            documentId: documentIds[0],
-                            signerEmail: `sms_${phone.replace(/\D/g, '')}@shamrockbailbonds.biz`,
-                            signerRole: 'Indemnitor',
-                            linkExpiration: 1440
-                        });
-
-                        if (indLinkResult.success && indLinkResult.link) {
-                            const indSmsBody = `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${indLinkResult.link}\n\nPay Bail: ${PAYMENT_LINK}\n\nQuestions? Call (727) 295-2245`;
-                            const indSmsResult = await sendSms(phone, indSmsBody);
-                            indemnitorResults.push({ phone, success: indSmsResult.success });
-                        }
-                    }
-                }
-            }
-        }
-
-        return {
-            success: true,
-            message: `SMS sent to ${defendantPhone}`,
-            signingLink
-        };
-
-    } catch (error) {
-        console.error('SMS signing workflow error:', error);
-        return { success: false, error: error.message };
-    }
+export async function sendViaSMS() {
+    return legacyDirectPaperworkDisabled();
 }
 
 /**
- * Create embedded signing link for Kiosk Mode
- * @param {Object} params - { caseId, documentId, signerEmail, signerRole, formData }
+ * Retired: Wix may not generate an embedded/kiosk signing session.
+ * @returns {Promise<Object>} A fail-closed response.
  */
-export async function createKioskLink(params) {
-    const { caseId, documentId, signerEmail, signerRole, formData } = params;
-
-    // If no documentId provided but we have formData, use createPortalSigningSession
-    // which generates documents from templates on-the-fly
-    const action = documentId ? 'createEmbeddedLink' : 'createPortalSigningSession';
-
-    const result = await callGasBackend({
-        action,
-        caseId,
-        documentId,
-        signerEmail: signerEmail || 'signer@example.com',
-        signerRole: signerRole || 'Signer',
-        linkExpiration: 60, // 1 hour for kiosk
-        formData // Pass form data for document generation
-    });
-
-    if (result.success && (result.link || (result.links && result.links[0]))) {
-        // Normalize link from complex return structure if necessary
-        const link = result.link || result.links[0].link || result.links[0];
-
-        // Save kiosk link to PendingDocuments collection
-        await savePendingDocument({
-            caseId,
-            documentId,
-            signingLink: link,
-            method: 'kiosk',
-            status: 'pending',
-            expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
-        });
-
-        await logSigningEvent(caseId, 'kiosk', result);
-
-        // Return clear structure for frontend
-        return { success: true, links: [link] };
-    }
-
-    return result;
+export async function createKioskLink() {
+    return legacyDirectPaperworkDisabled();
 }
 
 /**
- * Generate PDFs for print/download
- * @param {Object} params - { caseId, documentIds[] }
+ * Retired: Wix may not generate print packets from the legacy direct workflow.
+ * @returns {Promise<Object>} A fail-closed response.
  */
-export async function generatePrintPDFs(params) {
-    const { caseId, documentIds } = params;
-
-    const result = await callGasBackend({
-        action: 'generatePDFs',
-        method: 'download',
-        caseId,
-        documentIds: documentIds || []
-    });
-
-    if (result.success) {
-        await logSigningEvent(caseId, 'print', result);
-    }
-
-    return result;
+export async function generatePrintPDFs() {
+    return legacyDirectPaperworkDisabled();
 }
 
 /**
- * Get signing status for a case
+ * Read the latest signing-session record without creating, mutating, or sending
+ * paperwork. Historical field names are intentionally retained for compatibility.
  * @param {string} caseId
  */
 export async function getSigningStatus(caseId) {
@@ -290,7 +90,8 @@ export async function getSigningStatus(caseId) {
 }
 
 /**
- * Get pending documents for a member
+ * Read pending-document records only. This function does not expose or create
+ * provider links; the active portal uses the DocuSeal launchpad.
  * @param {string} memberId
  */
 export async function getPendingDocuments(memberId) {
@@ -300,10 +101,7 @@ export async function getPendingDocuments(memberId) {
             .eq('status', 'pending')
             .find({ suppressAuth: true });
 
-        return {
-            success: true,
-            documents: results.items
-        };
+        return { success: true, documents: results.items };
     } catch (error) {
         console.error('Error getting pending documents:', error);
         return { success: false, error: error.message };
@@ -311,7 +109,7 @@ export async function getPendingDocuments(memberId) {
 }
 
 /**
- * Mark document as signed
+ * Preserve historical document-status maintenance for completed records.
  * @param {string} documentId
  */
 export async function markDocumentSigned(documentId) {
@@ -336,139 +134,37 @@ export async function markDocumentSigned(documentId) {
 }
 
 /**
- * Save pending document to collection
+ * Retired: all former email/SMS/kiosk/print direct signing routes are blocked.
+ * Existing callers remain supported at the API level and receive the standard
+ * fail-closed response instead of touching any external provider.
  */
-async function savePendingDocument(data) {
-    try {
-        await wixData.insert('PendingDocuments', {
-            ...data,
-            createdAt: new Date()
-        }, { suppressAuth: true });
-    } catch (error) {
-        console.error('Error saving pending document:', error);
-    }
+export async function initiateSigningWorkflow() {
+    return legacyDirectPaperworkDisabled();
 }
 
 /**
- * Log signing event to collection and update Case status
- */
-async function logSigningEvent(caseId, method, result) {
-    try {
-        // 1. Log Event
-        await wixData.insert('SignatureEvents', {
-            caseId,
-            method,
-            result: JSON.stringify(result),
-            eventTime: new Date()
-        }, { suppressAuth: true });
-
-        // 2. Update Case Status
-        // If method is 'email' or 'sms' or 'kiosk', we consider it 'Sent'
-        let newStatus = 'Sent';
-        if (method === 'print') newStatus = 'Downloaded';
-
-        const caseQ = await wixData.query("Cases").eq("_id", caseId).find({ suppressAuth: true });
-        if (caseQ.items.length > 0) {
-            let record = caseQ.items[0];
-            record.paperworkStatus = newStatus;
-            record.signingMethod = method;
-            record._updatedDate = new Date();
-            await wixData.update("Cases", record, { suppressAuth: true });
-        }
-
-    } catch (error) {
-        console.error('Error logging signing event:', error);
-    }
-}
-
-/**
- * Initiate signing workflow from Staff Portal
- * @param {Object} params - { caseId, method, defendantInfo, indemnitorInfo, documentIds }
- */
-export async function initiateSigningWorkflow(params) {
-    const { caseId, method, defendantInfo, indemnitorInfo, documentIds, customSigner, formData } = params;
-
-    // Validate required params
-    if (!caseId) {
-        return { success: false, error: 'Missing caseId' };
-    }
-
-    // For kiosk mode with formData, documents are generated on-the-fly from templates
-    // So documentIds can be empty when using customSigner with formData
-    const isKioskWithFormData = method === 'kiosk' && (customSigner?.formData || formData);
-    if (!isKioskWithFormData && (!documentIds || documentIds.length === 0)) {
-        return { success: false, error: 'No documents specified' };
-    }
-
-    switch (method) {
-        case 'email':
-            if (!defendantInfo.email) {
-                return { success: false, error: 'Defendant email required for email signing' };
-            }
-            return await sendViaEmail({
-                caseId,
-                defendantEmail: defendantInfo.email,
-                indemnitorEmails: (indemnitorInfo || []).map(i => i.email).filter(e => e),
-                documentIds
-            });
-
-        case 'sms':
-            if (!defendantInfo.phone) {
-                return { success: false, error: 'Defendant phone required for SMS signing' };
-            }
-            return await sendViaSMS({
-                caseId,
-                defendantPhone: defendantInfo.phone,
-                indemnitorPhones: (indemnitorInfo || []).map(i => i.phone).filter(p => p),
-                documentIds
-            });
-
-        case 'kiosk':
-            // Support custom signer (e.g. Indemnitor portal) or default to Defendant
-            const signerEmail = customSigner?.email || defendantInfo?.email || `kiosk_${caseId}@shamrockbailbonds.biz`;
-            const signerRole = customSigner?.role || 'Defendant';
-            const data = customSigner?.formData || formData || {};
-
-            // documentId can be null/undefined when using formData - GAS will generate from template
-            const docId = documentIds && documentIds.length > 0 ? documentIds[0] : null;
-
-            return await createKioskLink({
-                caseId,
-                documentId: docId,
-                signerEmail,
-                signerRole,
-                formData: data
-            });
-
-        case 'print':
-            return await generatePrintPDFs({
-                caseId,
-                documentIds
-            });
-
-        default:
-            return { success: false, error: 'Invalid signing method. Use: email, sms, kiosk, or print' };
-    }
-}
-
-/**
- * Send signing link directly via SMS (utility function)
- * Can be called independently when you already have a signing link
- * @param {string} phone - Phone number to send to
- * @param {string} signingLink - The SignNow signing URL
- * @param {string} recipientType - 'defendant' or 'indemnitor'
+ * Deliver a staff-issued signing URL by SMS. This helper does not create a
+ * packet or link and is provider-neutral; callers must pass only a verified,
+ * staff-issued DocuSeal URL after the Super CRM approval workflow.
+ *
+ * @param {string} phone
+ * @param {string} signingLink
+ * @param {'defendant'|'indemnitor'} recipientType
  */
 export async function sendSigningLinkViaSms(phone, signingLink, recipientType = 'defendant') {
     if (!phone || !signingLink) {
         return { success: false, error: 'Phone and signing link are required' };
     }
 
-    const messageTemplates = {
-        defendant: `Shamrock Bail Bonds: Your bail paperwork is ready to sign.\n\nClick here to sign: ${signingLink}\n\nPay Bail: ${PAYMENT_LINK}\n\nThis link expires in 24 hours. Questions? Call (727) 295-2245`,
-        indemnitor: `Shamrock Bail Bonds: You are listed as an indemnitor. Please review and sign the bail paperwork.\n\nClick here: ${signingLink}\n\nPay Bail: ${PAYMENT_LINK}\n\nQuestions? Call (727) 295-2245`
-    };
-
-    const smsBody = messageTemplates[recipientType] || messageTemplates.defendant;
-
-    return await sendSms(phone, smsBody);
+    const recipientLabel = recipientType === 'indemnitor' ? 'You are listed as an indemnitor.' : 'Your bail paperwork is ready.';
+    const message = `Shamrock Bail Bonds: ${recipientLabel}\n\nOpen your secure DocuSeal paperwork: ${signingLink}\n\nQuestions? Call (239) 332-2245`;
+    return sendSms(phone, message);
 }
+
+export const signingWorkflowPolicy = Object.freeze({
+    provider: 'DocuSeal',
+    packetAuthority: 'Super CRM',
+    wixMayCreatePackets: false,
+    wixMayGenerateSigningLinks: false,
+    wixMayDeliverVerifiedStaffIssuedLinks: true
+});

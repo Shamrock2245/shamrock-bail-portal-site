@@ -282,25 +282,10 @@ async function handleSubmit() {
             console.warn('[Modal] IntakeQueue submission fallback:', intakeErr);
         }
 
-        // 4. Trigger GAS Paperwork Flow
-        try {
-            await callGasAction('submitIndemnitorPhase1', {
-                formData: {
-                    'indemnitorFullName': userName,
-                    'indemnitor-1-email': userEmail,
-                    'indemnitor-1-phone': userPhone,
-                    'indemnitor-1-dl': dlNumber,
-                    'indemnitor-1-ssn': ssn,
-                    'defendantFullName': defName,
-                    'defendant-county': defCounty,
-                    'caseId': caseId || ''
-                },
-                signerEmail: userEmail,
-                signerName: userName
-            });
-        } catch (gasErr) {
-            console.warn('[Modal] GAS trigger notification error:', gasErr);
-        }
+        // 4. Direct provider initiation is intentionally unavailable here.
+        // This legacy fallback may capture intake and ID data only. The active
+        // paperwork experience is the staff-gated DocuSeal launchpad hosted by
+        // SigningLightbox/Netlify, where a validated packet must already exist.
 
         // Record in local storage
         if (userEmail) {
@@ -309,7 +294,7 @@ async function handleSubmit() {
         }
 
         // 5. Show Success
-        updateStatus(' Paperwork & ID submitted successfully!', 'success');
+        updateStatus('ID information submitted. Staff will review your case before sending secure DocuSeal paperwork.', 'success');
         safeSetText('#submitBtn', ' Done!');
 
         setTimeout(() => {
