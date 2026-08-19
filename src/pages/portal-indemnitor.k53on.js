@@ -181,10 +181,10 @@ async function triggerPaperworkModal() {
                 dlNumber: indemnitorData?.dl || '',
                 ssn: indemnitorData?.ssn || '',
                 defendantName: currentIntake?.defendantName || indemnitorData?.defendantName || '',
-                county: currentIntake?.county || indemnitorData?.county || 'Lee',
-                role: currentSession?.role || 'indemnitor'
+                county: currentIntake?.county || indemnitorData?.county || 'Lee'
             },
-            role: currentSession?.role || 'indemnitor',
+            // Do not preselect a role. The paperwork app asks the client whether
+            // they are the defendant or an indemnitor before ID collection.
             caseId: currentIntake?.caseId || currentIntake?._id || currentSession?.caseId || null,
             sessionToken: getSessionToken()
         };

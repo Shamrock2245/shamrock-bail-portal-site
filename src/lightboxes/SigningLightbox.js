@@ -3,17 +3,21 @@ import { PAPERWORK_APP_URL } from 'public/portal-config';
 
 /**
  * Paperwork popup — hosts the Netlify paperwork mini-app.
- * The iframe never creates a packet. Staff must already have issued DocuSeal.
+ * The iframe starts a client-owned intake when no packet exists. It opens
+ * DocuSeal only after staff has issued a validated final packet.
  */
 function buildPaperworkUrl(ctx) {
     const params = new URLSearchParams({ embed: '1' });
     const member = (ctx && ctx.memberData) || {};
     const phone = member.phone || ctx.phone || '';
-    const token = ctx.sessionToken || ctx.st || '';
+    // The embedded paperwork app owns its own verified PIN session. Do not pass
+    // the separate Wix portal token as `st`, because it is not a CRM PIN token.
+    const token = ctx.paperworkSessionToken || ctx.portalSessionToken || '';
     const packet = ctx.packetId || ctx.caseId || '';
     if (phone) params.set('phone', String(phone).replace(/\D/g, ''));
     if (token) params.set('st', token);
     if (packet) params.set('case', String(packet));
+    if (ctx.role) params.set('role', String(ctx.role));
     if (ctx.signUrl) params.set('link', ctx.signUrl);
     return `${PAPERWORK_APP_URL}?${params.toString()}`;
 }
@@ -27,7 +31,7 @@ $w.onReady(() => {
         $w('#errorMessage').hide();
         $w('#signingTitle').text = 'Bond Paperwork';
         $w('#signingInstructions').text = (
-            'Unlock with the PIN we text you, scan your ID, confirm remaining fields, then sign.'
+            'Choose your role, unlock with a PIN, scan your ID, and review your own information. Shamrock staff will match the case and complete final paperwork when needed.'
         );
         $w('#signingInstructions').show();
 
@@ -38,7 +42,8 @@ $w.onReady(() => {
                 type: 'shamrock-paperwork-open',
                 url,
                 phone: member.phone || ctx.phone || '',
-                sessionToken: ctx.sessionToken || ctx.st || '',
+                paperworkSessionToken: ctx.paperworkSessionToken || ctx.portalSessionToken || '',
+                role: ctx.role || '',
                 signUrl: ctx.signUrl || '',
                 caseId: ctx.packetId || ctx.caseId || ''
             };
