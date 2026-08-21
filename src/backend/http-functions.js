@@ -990,6 +990,37 @@ export async function get_sitemap(request) {
         'suwannee', 'taylor', 'union', 'volusia', 'wakulla', 'walton', 'washington'
     ];
 
+    /**
+     * Resolve CMS variations such as "PalmBeach", "Santa Rosa County", and
+     * "St. Johns" to the single canonical county path already used by the
+     * public county pages. Unknown values are excluded rather than emitted as
+     * crawlable variants.
+     */
+    function canonicalCountySlug(county) {
+        const candidates = [
+            county && county.countyName,
+            county && county.name,
+            county && county.county_name,
+            county && county.display_name,
+            county && county.countySlug,
+            county && county.slug
+        ];
+
+        for (const raw of candidates) {
+            if (!raw) continue;
+            const slug = String(raw)
+                .trim()
+                .replace(/([a-z])([A-Z])/g, '$1-$2')
+                .replace(/\bcounty\b/gi, '')
+                .replace(/[^a-zA-Z0-9]+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '')
+                .toLowerCase();
+            if (FALLBACK_COUNTY_SLUGS.includes(slug)) return slug;
+        }
+        return '';
+    }
+
     const urls = [];
     const seen = new Set();
 
@@ -1016,11 +1047,7 @@ export async function get_sitemap(request) {
         const results = await wixData.query('FloridaCounties').limit(100).find();
         if (results.items && results.items.length) {
             results.items.forEach((county) => {
-                const slug = (county.countySlug || county.slug || '')
-                    .toString()
-                    .toLowerCase()
-                    .trim()
-                    .replace(/-county$/i, '');
+                const slug = canonicalCountySlug(county);
                 if (slug) {
                     addUrl(`/florida-bail-bonds/${encodeURIComponent(slug)}`, '0.85', 'weekly', LAST_MOD);
                     addUrl(`/first-appearance/${encodeURIComponent(slug)}`, '0.7', 'monthly', LAST_MOD);
