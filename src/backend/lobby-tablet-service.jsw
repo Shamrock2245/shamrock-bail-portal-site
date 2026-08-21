@@ -1,0 +1,168 @@
+/**
+ * Lobby Tablet Service Module
+ * File: backend/lobby-tablet-service.jsw
+ * 
+ * Powers in-office & parking-lot iPad/tablet closings:
+ * 1. 15-second walk-in case creation.
+ * 2. Instant attachment to existing arrest leads from shamrock-leads / IntakeQueue.
+ * 3. Kiosk PIN lock & tablet handoff to client.
+ * 4. "Mark Ready for Super CRM Issuance" status bridge.
+ * 
+ * @module lobby-tablet-service
+ */
+
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'public/collectionIds';
+import { callGasAction, notifyGASOfNewIntake } from 'backend/gasIntegration';
+import { persistCanonicalCaseToCms } from 'backend/canonical-sync-service';
+import { createCanonicalCase, createCanonicalPerson } from 'public/canonical-paperwork-mapper';
+
+/**
+ * Creates or attaches a walk-in intake on the lobby tablet
+ * @param {Object} params
+ * @param {string} params.role - 'defendant' | 'indemnitor' | 'coindemnitor'
+ * @param {string} [params.leadId] - Optional lead / booking match ID
+ * @param {string} [params.staffEmail] - Staff member initiating
+ * @param {Object} [params.personData] - Hydrated person from ID scan
+ * @param {Object} [params.caseFacts] - Attached arrest facts
+ * @returns {Promise<Object>} Created case details & handoff URL
+ */
+export async function startWalkInPacket(params) {
+    const { role = 'indemnitor', leadId, staffEmail = 'staff@shamrockbailbonds.biz', personData, caseFacts } = params;
+
+    try {
+        const caseId = `WALKIN-${Date.now().toString(36).toUpperCase()}`;
+        console.log(`⚡ [Lobby Tablet] Starting 15s Walk-in Packet ${caseId} (${role})...`);
+
+        const canonicalCase = createCanonicalCase();
+        canonicalCase.caseId = caseId;
+        canonicalCase.metadata = {
+            intakeSource: 'lobby-tablet',
+            staffInitiatedBy: staffEmail,
+            createdAt: new Date().toISOString()
+        };
+
+        // Attach person data from camera scan
+        if (personData) {
+            if (role === 'defendant') {
+                canonicalCase.defendant = { ...canonicalCase.defendant, ...personData };
+            } else if (role === 'coindemnitor') {
+                canonicalCase.coIndemnitor = { ...canonicalCase.coIndemnitor, ...personData };
+            } else {
+                canonicalCase.indemnitor = { ...canonicalCase.indemnitor, ...personData };
+            }
+        }
+
+        // Attach case facts from matched lead
+        if (caseFacts) {
+            canonicalCase.county = caseFacts.county || canonicalCase.county;
+            canonicalCase.jail = caseFacts.jailFacility || canonicalCase.jail;
+            canonicalCase.bookingNumber = caseFacts.bookingNumber || '';
+            canonicalCase.charges = caseFacts.charges || [];
+            canonicalCase.totalBond = caseFacts.totalBond || 0;
+            canonicalCase.premiumEstimate = caseFacts.premiumEstimate || 0;
+            canonicalCase.courtDates = caseFacts.courtDates || [];
+        }
+
+        // Persist to CMS
+        await persistCanonicalCaseToCms(canonicalCase);
+
+        // Notify GAS & Super CRM
+        await callGasAction('startWalkInCase', {
+            caseId,
+            role,
+            staffEmail,
+            leadId,
+            canonicalCase
+        });
+
+        const handoffUrl = `/portal-start?caseId=${caseId}&role=${role}&kiosk=1`;
+
+        return {
+            success: true,
+            caseId,
+            handoffUrl,
+            canonicalCase
+        };
+
+    } catch (error) {
+        console.error("❌ [Lobby Tablet] Error starting walk-in packet:", error);
+        throw error;
+    }
+}
+
+/**
+ * Marks a case as "Ready for Super CRM Issuance"
+ * @param {Object} params
+ * @param {string} params.caseId - Case ID
+ * @param {string} params.staffEmail - Verifying staff email
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+export async function markReadyForSuperCrm(params) {
+    const { caseId, staffEmail = 'staff@shamrockbailbonds.biz' } = params;
+
+    try {
+        console.log(`🚀 [Lobby Tablet] Marking Case ${caseId} Ready for Super CRM Issuance...`);
+
+        // 1. Update Cases CMS collection
+        const caseQuery = await wixData.query(COLLECTIONS.CASES || 'Cases')
+            .eq('caseId', caseId)
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (caseQuery.items.length > 0) {
+            const item = caseQuery.items[0];
+            item.status = 'ready_for_issuance';
+            item.staffApprovedBy = staffEmail;
+            item.staffApprovedAt = new Date();
+            await wixData.update(COLLECTIONS.CASES || 'Cases', item, { suppressAuth: true });
+        }
+
+        // 2. Alert Super CRM & Slack
+        await callGasAction('markCaseReadyForIssuance', {
+            caseId,
+            staffEmail
+        });
+
+        return {
+            success: true,
+            message: `Case ${caseId} marked Ready for Super CRM Issuance.`
+        };
+
+    } catch (e) {
+        console.error("❌ [Lobby Tablet] Error marking ready for Super CRM:", e);
+        throw e;
+    }
+}
+
+/**
+ * Searches recent unposted arrest leads for instant attachment
+ * @param {string} query - Name, county, or booking number
+ * @returns {Promise<Array>} List of open lead matches
+ */
+export async function searchOpenLeadsForTablet(query = '') {
+    try {
+        const result = await callGasAction('searchArrestLeads', { query });
+        if (result && result.success && Array.isArray(result.leads)) {
+            return result.leads;
+        }
+
+        // Fallback to local ArrestLeads CMS
+        const cmsQuery = wixData.query(COLLECTIONS.ARREST_LEADS || 'ArrestLeads');
+        if (query) {
+            cmsQuery.contains('defendantName', query);
+        }
+        const res = await cmsQuery.limit(10).find({ suppressAuth: true });
+        return res.items;
+
+    } catch (e) {
+        console.warn("Leads search non-fatal:", e.message);
+        return [];
+    }
+}
+
+export default {
+    startWalkInPacket,
+    markReadyForSuperCrm,
+    searchOpenLeadsForTablet
+};

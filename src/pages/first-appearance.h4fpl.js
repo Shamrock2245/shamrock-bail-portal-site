@@ -378,6 +378,14 @@ async function handleCtaClick(msg) {
             buttonId: msg.buttonId || null,
             device: wixWindow.formFactor || 'Unknown'
         });
+
+        // Educational CTA Hook: "Scan your ID and we’ll fill the forms."
+        if (msg.action === 'online' || msg.action === 'paperwork' || msg.action === 'start') {
+            const countyParam = msg.county ? `?county=${encodeURIComponent(msg.county)}` : '';
+            wixLocation.to(`/portal-start${countyParam}`);
+        } else if (msg.action === 'phone') {
+            wixLocation.to('tel:+12393322245');
+        }
     } catch (e) {
         console.warn('CTA tracking failed:', e.message);
     }

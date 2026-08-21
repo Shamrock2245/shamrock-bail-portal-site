@@ -1,0 +1,124 @@
+/**
+ * Wizard Draft Persistence Service
+ * File: backend/wizard-draft-service.jsw
+ * 
+ * Manages real-time multi-device draft saving and resumption for:
+ * 1. Defendant Multi-Step Wizard
+ * 2. Indemnitor & Co-Indemnitor Multi-Step Wizard
+ * 
+ * Rules:
+ * - Saves canonical state automatically after every step transition.
+ * - Restores state when client resumes on another phone, tablet, or desktop.
+ * - Enforces role-scoped data isolation (defendant vs cosigner).
+ * 
+ * @module wizard-draft-service
+ */
+
+import wixData from 'wix-data';
+import { validateCustomSession } from 'backend/portal-auth';
+import { persistCanonicalCaseToCms } from 'backend/canonical-sync-service';
+
+const DRAFTS_COLLECTION = 'PortalSessions';
+
+/**
+ * Save wizard progress draft to session and CMS
+ * @param {Object} params
+ * @param {string} params.sessionToken - Auth session token
+ * @param {string} params.role - 'defendant' | 'indemnitor' | 'coindemnitor'
+ * @param {number} params.currentStep - 1-based step index
+ * @param {Object} params.canonicalCase - Full canonical case object
+ * @returns {Promise<{success: boolean, savedAt: string}>}
+ */
+export async function saveWizardDraft(params) {
+    const { sessionToken, role, currentStep, canonicalCase } = params;
+
+    if (!sessionToken) {
+        return { success: false, error: 'NO_SESSION_TOKEN' };
+    }
+
+    try {
+        const session = await validateCustomSession(sessionToken);
+        if (!session) {
+            return { success: false, error: 'INVALID_SESSION' };
+        }
+
+        const userKey = session.memberEmail || session.memberPhone || sessionToken;
+        const now = new Date();
+
+        // 1. Update Session record with draft snapshot
+        const sessionQuery = await wixData.query(DRAFTS_COLLECTION)
+            .eq('token', sessionToken)
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (sessionQuery.items.length > 0) {
+            const item = sessionQuery.items[0];
+            item.wizardDraft = JSON.stringify({
+                role,
+                currentStep,
+                canonicalCase,
+                savedAt: now.toISOString()
+            });
+            item.lastActive = now;
+            await wixData.update(DRAFTS_COLLECTION, item, { suppressAuth: true });
+        }
+
+        // 2. Persist to Cases / Defendants / Indemnitors CMS
+        if (canonicalCase && canonicalCase.caseId) {
+            await persistCanonicalCaseToCms(canonicalCase);
+        }
+
+        return {
+            success: true,
+            userKey,
+            savedAt: now.toISOString()
+        };
+
+    } catch (error) {
+        console.warn('⚠️ [Wizard Draft] Non-fatal draft save warning:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Retrieve active wizard progress draft for resumption
+ * @param {Object} params
+ * @param {string} params.sessionToken - Auth session token
+ * @param {string} [params.role] - Requested role
+ * @returns {Promise<{found: boolean, draft?: Object}>}
+ */
+export async function getWizardDraft(params) {
+    const { sessionToken, role } = params;
+
+    if (!sessionToken) {
+        return { found: false, error: 'NO_SESSION_TOKEN' };
+    }
+
+    try {
+        const sessionQuery = await wixData.query(DRAFTS_COLLECTION)
+            .eq('token', sessionToken)
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (sessionQuery.items.length > 0 && sessionQuery.items[0].wizardDraft) {
+            const draft = JSON.parse(sessionQuery.items[0].wizardDraft);
+            if (!role || draft.role === role) {
+                return {
+                    found: true,
+                    draft: draft
+                };
+            }
+        }
+
+        return { found: false };
+
+    } catch (error) {
+        console.warn('⚠️ [Wizard Draft] Non-fatal draft fetch warning:', error.message);
+        return { found: false, error: error.message };
+    }
+}
+
+export default {
+    saveWizardDraft,
+    getWizardDraft
+};

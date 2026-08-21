@@ -49,6 +49,22 @@
       "type": "fallback",
       "language": "en",
       "description": "Statewide fallback number"
+    },
+    "sms": {
+      "id": "sms",
+      "number": "+12399550178",
+      "display": "(239) 955-0178",
+      "displayFormatted": "239-955-0178",
+      "counties": ["all"],
+      "hours": {
+        "start": "00:00",
+        "end": "23:59",
+        "timezone": "America/New_York"
+      },
+      "priority": 1,
+      "type": "sms",
+      "language": "en",
+      "description": "Dedicated SMS & iMessage text line"
     }
   },
   "routing_rules": {

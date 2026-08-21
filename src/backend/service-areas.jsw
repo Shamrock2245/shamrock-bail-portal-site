@@ -1,0 +1,135 @@
+/**
+ * Service Areas Backend Module
+ * 
+ * Layer C — Multi-State Service Areas CMS Management
+ * 
+ * Interacts with the 'ServiceAreas' CMS collection to enforce the growth ladder:
+ * 1. Homepage and footer read ONLY live states (status === 'live').
+ * 2. Multi-state routes are dynamically resolved without publishing empty states.
+ * 3. Fallback to statically verified expansion registry if CMS is empty.
+ * 
+ * @module service-areas
+ */
+
+import wixData from 'wix-data';
+import { EXPANSION_STATES } from 'public/portal-config';
+
+const COLLECTION_SERVICE_AREAS = 'ServiceAreas';
+
+/**
+ * Get all active/live service areas (Florida + any live expansion states)
+ * @returns {Promise<Array<Object>>} List of live service areas
+ */
+export async function getLiveServiceAreas() {
+    try {
+        const query = await wixData.query(COLLECTION_SERVICE_AREAS)
+            .eq('status', 'live')
+            .ascending('state')
+            .find();
+
+        if (query && query.items && query.items.length > 0) {
+            return query.items.map(formatServiceArea);
+        }
+    } catch (e) {
+        console.warn('[ServiceAreas] CMS query failed or collection empty, using static registry:', e.message);
+    }
+
+    // Default static fallback: FL is live, other states are gated
+    return [
+        {
+            state: 'Florida',
+            stateCode: 'FL',
+            status: 'live',
+            phone: '(239) 332-2245',
+            licensingNote: 'Florida Department of Financial Services (DFS) Licensed Surety Agency',
+            countiesCount: 67,
+            statutoryFeeNote: 'Florida statutory rate: 10% of total bond amount ($100 minimum per charge)'
+        }
+    ];
+}
+
+/**
+ * Check if a specific state is marked live for public routing
+ * @param {string} stateCode - 2-letter state code (e.g., "GA", "TX")
+ * @returns {Promise<boolean>}
+ */
+export async function isStateLive(stateCode) {
+    if (!stateCode) return false;
+    const code = stateCode.toUpperCase().trim();
+    if (code === 'FL') return true;
+
+    try {
+        const query = await wixData.query(COLLECTION_SERVICE_AREAS)
+            .eq('stateCode', code)
+            .eq('status', 'live')
+            .limit(1)
+            .find();
+
+        if (query && query.items && query.items.length > 0) {
+            return true;
+        }
+    } catch (e) {
+        // non-fatal
+    }
+
+    // Check static expansion states config
+    const stateConfig = EXPANSION_STATES[code];
+    return !!(stateConfig && stateConfig.status === 'live');
+}
+
+/**
+ * Get service area metadata by state code
+ * @param {string} stateCode - 2-letter state code
+ * @returns {Promise<Object|null>}
+ */
+export async function getServiceArea(stateCode) {
+    if (!stateCode) return null;
+    const code = stateCode.toUpperCase().trim();
+
+    try {
+        const query = await wixData.query(COLLECTION_SERVICE_AREAS)
+            .eq('stateCode', code)
+            .limit(1)
+            .find();
+
+        if (query && query.items && query.items.length > 0) {
+            return formatServiceArea(query.items[0]);
+        }
+    } catch (e) {
+        // non-fatal
+    }
+
+    const staticConfig = EXPANSION_STATES[code];
+    if (staticConfig) {
+        return {
+            state: staticConfig.name,
+            stateCode: staticConfig.code,
+            status: staticConfig.status || 'coming',
+            phone: '(239) 332-2245',
+            licensingNote: staticConfig.licensingNote || `Licensed Bail Bond Surety Agency — ${staticConfig.name}`,
+            countiesCount: staticConfig.countiesCount || 0,
+            statutoryFeeNote: staticConfig.feeNote || 'Statutory bond rate applies per state law'
+        };
+    }
+
+    return null;
+}
+
+function formatServiceArea(item) {
+    return {
+        _id: item._id,
+        state: item.state || item.title || 'Unknown',
+        stateCode: (item.stateCode || item.code || '').toUpperCase(),
+        status: (item.status || 'coming').toLowerCase(),
+        phone: item.phone || '(239) 332-2245',
+        licensingNote: item.licensingNote || '',
+        countiesCount: item.countiesCount || 0,
+        statutoryFeeNote: item.statutoryFeeNote || item.feeNote || ''
+    };
+}
+
+export default {
+    getLiveServiceAreas,
+    isStateLive,
+    getServiceArea
+};

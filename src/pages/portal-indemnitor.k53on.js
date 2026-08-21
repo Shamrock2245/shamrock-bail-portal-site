@@ -1,721 +1,195 @@
 /**
- * Shamrock Bail Bonds - Indemnitor Portal Page
+ * Page: portal-indemnitor.k53on.js
+ * Function: Indemnitor After-Care Dashboard (Cosigner Lifecycle)
  * 
- * This is the main indemnitor portal where indemnitors:
- * 1. Fill out their information via the embedded Wizard Form (#indemnitorWizard) or Modal
- * 2. Submit intake form to IntakeQueue (handled by modal/wizard → GAS direct)
- * 3. View bond status, paperwork, and payment information
- * 4. Communicate with Shamrock staff
+ * Capabilities:
+ * 1. Contingent Liabilities & Bond Status (Active liability sum, release status)
+ * 2. Payment Plan Manager (Installment schedule, balance, 1-tap SwipeSimple pay)
+ * 3. Case Documents (Download signed Indemnity Agreement, Receipts, Receipts)
+ * 4. "Add Co-Indemnitor" (Invite second cosigner via SMS magic link to /portal-start)
+ * 5. "Upload Extra ID / Collateral" (Upload vehicle title, deed, collateral docs)
+ * 6. Persistent "Continue Paperwork" Banner: Displayed ONLY if packet is incomplete.
  * 
- * URL: /portal-indemnitor
- * File: portal-indemnitor.k53on.js
+ * Note: Initial ID scanning & intake occurs on /portal-start.
+ * 
+ * @version 3.0.0
+ * @updated 2026-08-21
  */
 
-import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
-import wixData from 'wix-data';
-import { validateCustomSession, getIndemnitorDetails, linkDefendantToCase } from 'backend/portal-auth';
-import { callGasAction } from 'backend/gasIntegration';
-import { sendInAppNotification } from 'backend/notificationService';
-import { checkIndemnitorPaperworkStatus } from 'backend/documentUpload';
-import { LightboxController } from 'public/lightbox-controller';
+import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
-import wixAnimations from 'wix-animations';
-import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
+import { validateCustomSession, getIndemnitorDetails } from 'backend/portal-auth';
+import { LightboxController } from 'public/lightbox-controller';
+import { getMemberDocuments } from 'backend/documentUpload';
+import { getSessionToken, clearSessionToken } from 'public/session-manager';
 
-// Page state
 let currentSession = null;
 let indemnitorData = null;
-let currentIntake = null;
-let eventListenersReady = false;
 
 $w.onReady(async function () {
-    // SEO: Prevent Indexing (Protected Page)
+    // SEO: Prevent Indexing (Protected Member Area)
     wixSeo.setMetaTags([{ "name": "robots", "content": "noindex, nofollow" }]);
+    console.log("🛡️ [Indemnitor Dashboard] Loading After-Care Portal...");
 
-    console.log(" Indemnitor Portal: Page Code Loaded");
-
-    // Initialize lightbox controller for modal operations
     LightboxController.init($w);
+    setupActionHandlers();
 
-    // 1. Handle Magic Link Token from URL
-    const query = wixLocation.query;
-    if (query.token && wixWindow.rendering.env === 'browser') {
-        console.log(" Indemnitor Portal: Raw magic link token detected -- bouncing to portal-landing...");
-        wixLocation.to(`/portal-landing?token=${encodeURIComponent(query.token)}`);
-        return;
-    } else if (query.st && wixWindow.rendering.env === 'browser') {
-        console.log(" Indemnitor Portal: Found session token in URL, storing...");
-        await setSessionToken(query.st);
-        wixLocation.queryParams.remove(['st']);
-    }
-
-    await initializePage();
-
-    // 2. Setup Listeners AFTER page initialization
-    setupEventListeners();
-});
-
-// ============================================================================
-// PAGE INITIALIZATION
-// ============================================================================
-
-async function initializePage() {
     try {
-        showLoading(true);
-        console.log(" Indemnitor Portal: Initializing...");
-
-        // Custom Authentication Check
-        const sessionToken = getSessionToken();
-        console.log(" Session Token Present:", !!sessionToken);
+        const query = wixLocation.query;
+        const sessionToken = query.st || getSessionToken();
 
         if (!sessionToken) {
-            console.warn(" Indemnitor Portal: No session token found. Redirecting to Landing.");
-            wixLocation.to('/portal-landing?auth_error=1');
+            console.warn("No active session token. Redirecting to login.");
+            wixLocation.to('/portal-landing');
             return;
         }
 
-        console.log(" Validating Session...");
-        let session = null;
-        try {
-            const validationResult = await validateCustomSession(sessionToken);
-
-            if (validationResult && validationResult.valid) {
-                session = validationResult;
-            } else if (validationResult && validationResult.reason === 'error') {
-                console.error("[!] Session validation failed due to network/DB error:", validationResult.message);
-                showError("Connection Error. Please check your internet and refresh.");
-                showLoading(false);
-                return;
-            } else {
-                console.warn(" Indemnitor session invalid/expired. Redirecting.", validationResult);
-                clearSessionToken();
-                wixLocation.to('/portal-landing?auth_error=1');
-                return;
-            }
-        } catch (err) {
-            console.error("[X] Critical error during session validation:", err);
-            showError("System Error. Please refresh.");
-            showLoading(false);
+        // Validate Session
+        const validation = await validateCustomSession(sessionToken);
+        if (!validation || !validation.valid) {
+            console.warn("Invalid session:", validation);
+            wixLocation.to('/portal-landing');
             return;
         }
 
-        currentSession = session;
-        console.log(`[OK] Indemnitor Portal: Authenticated as ${session.personId} (${session.role})`);
+        currentSession = validation;
 
-        // Load Data from Backend
+        // Fetch Indemnitor Record
         indemnitorData = await getIndemnitorDetails(sessionToken);
-        if (!indemnitorData) {
-            console.error("[X] Failed to load indemnitor details");
-            showError("Error loading your profile. Please contact support.");
-        }
+        populateDashboardUI(indemnitorData);
+        evaluatePaperworkCompletion(indemnitorData);
 
-        // Check for existing intake
-        await checkExistingIntake();
-
-        // 3. Auto-Prompt Verification: Check if Paperwork/ID is incomplete or autoPaperwork requested
-        const query = wixLocation.query;
-        const autoStart = query.autoPaperwork === '1' || query.autoPaperwork === 'true';
-        const paperworkStatus = await checkIndemnitorPaperworkStatus(sessionToken);
-
-        console.log(" Paperwork check status:", paperworkStatus);
-
-        if (autoStart || paperworkStatus.needsPaperwork || paperworkStatus.needsId || !currentIntake) {
-            console.log(" Action Required: Paperwork or ID missing. Showing prompt...");
-            safeShow('#bannerPaperworkRequired');
-            safeShow('#boxActionRequired');
-
-            // Trigger modal in browser
-            if (wixWindow.rendering.env === 'browser') {
-                setTimeout(() => {
-                    triggerPaperworkModal();
-                }, 600);
-            }
-        }
-
-        // Setup UI based on state
-        if (!currentIntake) {
-            console.log(" No existing intake found. Showing wizard.");
-            showWizard();
-        } else {
-            console.log(" Existing intake found. Checking for Choice UI...");
-            try {
-                const boxChoice = $w('#boxChoice');
-                if (boxChoice && boxChoice.id) {
-                    setupChoiceScreen();
-                } else {
-                    throw new Error('not found');
-                }
-            } catch (_) {
-                console.log("[!] #boxChoice not found. Defaulting to Dashboard.");
-                showBondDashboard();
-            }
-        }
-
-        showLoading(false);
-
-    } catch (error) {
-        console.error('Page initialization error:', error);
-        showError('Error loading page. Please refresh or call (239) 332-2245.');
-        showLoading(false);
-    }
-}
-
-// ============================================================================
-// PAPERWORK & ID MODAL TRIGGER
-// ============================================================================
-
-/**
- * Prompt the user with the Indemnitor Paperwork & ID Verification Modal
- */
-async function triggerPaperworkModal() {
-    console.log(" Indemnitor Portal: Launching Paperwork & ID Modal...");
-    try {
-        const modalContext = {
-            memberData: {
-                name: indemnitorData?.firstName ? `${indemnitorData.firstName} ${indemnitorData.lastName || ''}`.trim() : '',
-                firstName: indemnitorData?.firstName || '',
-                lastName: indemnitorData?.lastName || '',
-                email: currentSession?.email || indemnitorData?.email || '',
-                phone: currentSession?.phone || indemnitorData?.phone || '',
-                dlNumber: indemnitorData?.dl || '',
-                ssn: indemnitorData?.ssn || '',
-                defendantName: currentIntake?.defendantName || indemnitorData?.defendantName || '',
-                county: currentIntake?.county || indemnitorData?.county || 'Lee'
-            },
-            // Do not preselect a role. The paperwork app asks the client whether
-            // they are the defendant or an indemnitor before ID collection.
-            caseId: currentIntake?.caseId || currentIntake?._id || currentSession?.caseId || null,
-            sessionToken: getSessionToken()
-        };
-
-        let result = null;
-        try {
-            result = await LightboxController.show('signing', modalContext);
-        } catch (signErr) {
-            console.warn('[!] Signing lightbox unavailable, falling back to ID upload:', signErr);
-            result = await LightboxController.show('idUpload', modalContext);
-        }
-
-        if (result && result.success) {
-            console.log("[OK] Paperwork & ID Modal completed successfully");
-            showSuccess("☘️ Paperwork & ID submitted successfully! Preparing your documents...");
-            safeHide('#bannerPaperworkRequired');
-            safeHide('#boxActionRequired');
-            safeHide('#indemnitorWizard');
-
-            // Refresh intake record and dashboard
-            await checkExistingIntake();
-            showBondDashboard();
-        } else if (result && result.skipped) {
-            console.log("[!] Paperwork modal skipped by user");
-            safeShow('#bannerPaperworkRequired');
-        } else {
-            safeShow('#bannerPaperworkRequired');
-        }
     } catch (err) {
-        console.warn("[!] Lightbox modal failed to open, falling back to wizard embed:", err);
-        showWizard();
+        console.error("Critical error during indemnitor dashboard load:", err);
     }
-}
-
-// ============================================================================
-// WIZARD IFRAME BRIDGE
-// ============================================================================
+});
 
 /**
- * Show the wizard Custom Element and send prefill data
+ * Populates all after-care widgets with real case data
  */
-function showWizard() {
-    safeShow('#indemnitorWizard');
-    safeHide('#bondDashboardSection');
+function populateDashboardUI(data) {
+    if (!data) return;
 
-    // Send session context to wizard for auto-prefill
-    sendContextToWizard();
-}
+    const name = data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : "Cosigner";
+    safeSetText('#textUserWelcome', `Welcome, ${name}`);
+    safeSetText('#textDefendantName', data.defendantName || "Defendant in Custody");
+    safeSetText('#textCaseNumber', data.caseNumber || "Case Pending");
 
-/**
- * Send indemnitor session data to the wizard iframe for prefill
- */
-function sendContextToWizard() {
-    if (!indemnitorData) return;
+    // Liabilities & Bond Amounts
+    const bondAmount = Number(data.bondAmount || data.totalBond || 0);
+    safeSetText('#textTotalLiability', `$${bondAmount.toLocaleString()}`);
+    safeSetText('#textDefendantStatus', data.defendantStatus || "Released on Bond ✅");
 
-    // Small delay to let iframe load
-    setTimeout(() => {
-        try {
-            /** @type {any} */ ($w('#indemnitorWizard')).postMessage({
-                type: 'prefill',
-                data: {
-                    firstName: indemnitorData.firstName || '',
-                    lastName: indemnitorData.lastName || '',
-                    email: indemnitorData.email || currentSession?.email || '',
-                    phone: indemnitorData.phone || currentSession?.phone || '',
-                    address: indemnitorData.address || '',
-                    city: indemnitorData.city || '',
-                    state: indemnitorData.state || '',
-                    zip: indemnitorData.zip || '',
-                    sessionToken: getSessionToken()
-                }
-            });
-            console.log("[OK] Sent prefill data to wizard");
-        } catch (e) {
-            console.warn("[!] Could not send prefill to wizard:", e.message);
-        }
-    }, 1500);
-}
+    // Payment Plan
+    const balance = Number(data.balanceDue || 0);
+    const monthlyPayment = Number(data.monthlyPayment || data.installmentAmount || 150);
+    const nextDue = data.nextPaymentDue ? new Date(data.nextPaymentDue).toLocaleDateString() : '1st of Next Month';
 
-/**
- * Setup listener for messages FROM the wizard iframe
- */
-function setupWizardListener() {
-    try {
-        /** @type {any} */ ($w('#indemnitorWizard')).onMessage((event) => {
-            const msg = event.data;
-            if (!msg || !msg.type) return;
+    safeSetText('#textBalanceDue', `$${balance.toLocaleString()}`);
+    safeSetText('#textMonthlyPayment', `$${monthlyPayment.toLocaleString()}/mo`);
+    safeSetText('#textNextDueDate', `Due: ${nextDue}`);
 
-            console.log(" Wizard message received:", msg.type);
-
-            switch (msg.type) {
-                case 'shamrock-form-submitted':
-                    console.log('[OK] Wizard form submitted successfully');
-                    handleWizardSubmission(msg.data);
-                    break;
-
-                case 'shamrock-form-error':
-                    console.error('[X] Wizard submission error:', msg.error);
-                    showError('Form submission error. Please try again or call (239) 332-2245.');
-                    break;
-
-                case 'wizard-ready':
-                    console.log('[OK] Wizard iframe ready, sending prefill...');
-                    sendContextToWizard();
-                    break;
-
-                case 'indemnitor-submit-phase1':
-                    console.log('[OK] Phase 1 submission received from wizard');
-                    handlePhase1Submission(msg);
-                    break;
-
-                default:
-                    break;
-            }
-        });
-        console.log("[OK] Wizard message listener attached");
-    } catch (e) {
-        console.warn("[!] Could not attach wizard listener:", e.message);
+    if (balance <= 0) {
+        safeHide('#btnPayInstallment');
+        safeSetText('#textPaymentStatus', 'Paid in Full ✅');
     }
 }
 
 /**
- * Handle successful form submission from the wizard
+ * Evaluates paperwork status and toggles the "Continue Paperwork" banner
  */
-function handleWizardSubmission(data) {
-    safeHide('#indemnitorWizard');
-    safeHide('#bannerPaperworkRequired');
-    safeHide('#boxActionRequired');
-    safeShow('#groupSuccess');
+function evaluatePaperworkCompletion(data) {
+    const pwStatus = (data?.paperworkStatus || 'incomplete').toLowerCase();
+    const isComplete = pwStatus === 'complete' || pwStatus === 'signed' || pwStatus === 'active';
 
-    const caseId = data?.caseId || 'Pending';
-    const successMsg = ` Success! Your Case ID is: ${caseId}\n\n` +
-        `Stand by while our team reviews your file. Once staff has issued a secure DocuSeal packet, return to this portal to review and sign it.\n\n` +
-        ` Next Steps:\n` +
-        `If you know the premium due, please feel free to pay your defendant's bond securely using our payment page.\n\n` +
-        `Redirecting to our secure payment portal...`;
-
-    safeSetText('#textSuccessMessage', successMsg);
-    wixWindow.scrollTo(0, 0);
-
-    setTimeout(() => {
-        console.log(" Redirecting to payments page ->");
-        wixLocation.to('/payments');
-    }, 10000);
-}
-
-/**
- * Handle Phase 1 indemnitor submission — send formData to GAS for intake + Phase 1 signing
- */
-async function handlePhase1Submission() {
-    // The direct Phase 1 sender is intentionally retired. Paperwork can begin
-    // only inside the existing Netlify launchpad after staff has issued a
-    // validated DocuSeal packet. Do not add a new Wix- or GAS-originated sender.
-    console.warn('[Paperwork] Direct Phase 1 submission is retired; opening the secure DocuSeal launchpad.');
-    await triggerPaperworkModal();
-}
-
-// ============================================================================
-// EXISTING INTAKE CHECK
-// ============================================================================
-
-async function checkExistingIntake() {
-    try {
-        const email = currentSession.email || indemnitorData?.email;
-        if (!email) return;
-
-        const results = await wixData.query('IntakeQueue')
-            .eq('indemnitorEmail', email)
-            .descending('_createdDate')
-            .limit(1)
-            .find();
-
-        if (results.items.length > 0) {
-            currentIntake = results.items[0];
-            console.log("[OK] Found existing intake:", currentIntake._id);
-        }
-    } catch (error) {
-        console.error('Error checking existing intake:', error);
-    }
-}
-
-// ============================================================================
-// BOND DASHBOARD (Returning Users)
-// ============================================================================
-
-function showBondDashboard() {
-    if (!currentIntake) return;
-
-    safeHide('#indemnitorWizard');
-    safeHide('#groupDefendantLink');
-    safeShow('#bondDashboardSection');
-
-    // Populate defendant status
-    safeSetText('#defendantNameDisplay', currentIntake.defendantName || 'Unknown');
-    safeSetText('#defendantStatusDisplay', formatStatus(currentIntake.status));
-    safeSetText('#lastCheckInDisplay', formatDate(currentIntake._updatedDate));
-    safeSetText('#nextCourtDateDisplay', formatDate(currentIntake.nextCourtDate) || 'TBD');
-
-    const paperworkStatus = currentIntake.documentStatus || 'pending';
-    safeSetText('#paperworkStatusDisplay', formatDocumentStatus(paperworkStatus));
-
-    // Financial Liability Section
-    const liability = currentIntake.totalLiability || 0;
-    const premium = currentIntake.totalPremium || 0;
-    const downPayment = currentIntake.downPayment || 0;
-    const chargesCount = currentIntake.chargesCount || 0;
-
-    safeSetText('#textTotalLiability', formatCurrency(liability));
-    safeSetText('#textTotalPremium', formatCurrency(premium));
-    safeSetText('#textDownPayment', formatCurrency(downPayment));
-    safeSetText('#textChargesCount', chargesCount.toString());
-
-    const balanceDue = currentIntake.balanceDue !== undefined ? currentIntake.balanceDue : currentIntake.premiumAmount;
-
-    if (balanceDue !== undefined) {
-        safeSetText('#remainingBalanceDisplay', formatCurrency(balanceDue));
-        safeSetText('#paymentTermsDisplay', currentIntake.paymentTerms || 'TBD');
-        safeSetText('#paymentFrequencyDisplay', currentIntake.paymentFrequency || 'Contact Office');
-        safeSetText('#nextPaymentDateDisplay', formatDate(currentIntake.nextPaymentDate) || 'TBD');
-        safeShow('#makePaymentBtn');
-    }
-
-    if (paperworkStatus === 'sent_for_signature') {
-        // Never expose or follow historical provider links from the Wix portal.
-        // The button opens the existing staff-gated DocuSeal launchpad instead.
-        safeShow('#signPaperworkBtn');
+    if (isComplete) {
+        // Hide intake wizard chrome entirely
+        safeHide('#bannerIncompletePaperwork');
+        safeHide('#boxIntakeWizardFallback');
+        safeShow('#boxAfterCareModules');
     } else {
-        safeHide('#signPaperworkBtn');
-    }
-}
-
-// ============================================================================
-// CHOICE SCREEN (Resume vs New)
-// ============================================================================
-
-function setupChoiceScreen() {
-    safeHide('#indemnitorWizard');
-    safeHide('#bondDashboardSection');
-    safeShow('#boxChoice');
-
-    const firstName = indemnitorData?.firstName || 'Back';
-    safeSetText('#textWelcomeChoice', `Welcome ${firstName}`);
-
-    const defName = currentIntake.defendantName || 'Unknown Defendant';
-    safeSetText('#textExistingInfo', `You have an active bond started for ${defName}.`);
-
-    animateChoiceScreen();
-}
-
-function animateChoiceScreen() {
-    try {
-        const box = $w('#boxChoice');
-        const content = [$w('#textWelcomeChoice'), $w('#textExistingInfo'), $w('#btnResumeBond'), $w('#btnStartNewBond')];
-
-        const timeline = wixAnimations.timeline();
-
-        timeline.add(box, { "scale": 0.95, "opacity": 0, "duration": 0 })
-            .add(content, { "y": 10, "opacity": 0, "duration": 0 });
-
-        timeline.add(box, {
-            "scale": 1, "opacity": 1, "duration": 500, "easing": "easeOutBack"
-        }).add(content, {
-            "y": 0, "opacity": 1, "duration": 400, "easing": "easeOutQuad"
-        }, 100);
-
-        timeline.play();
-    } catch (e) {
-        console.warn("Animation error:", e);
-    }
-}
-
-function handleStartNewBond() {
-    console.log(" Starting New Bond...");
-    currentIntake = null;
-    safeHide('#boxChoice');
-    showWizard();
-}
-
-function handleResumeBond() {
-    console.log(" Resuming Existing Bond...");
-    safeHide('#boxChoice');
-    showBondDashboard();
-}
-
-// ============================================================================
-// EVENT LISTENERS
-// ============================================================================
-
-function setupEventListeners() {
-    if (eventListenersReady) return;
-    eventListenersReady = true;
-
-    // Wizard iframe bridge
-    setupWizardListener();
-
-    // Paperwork & ID Modal Triggers
-    safeOnClick('#btnPromptPaperwork', triggerPaperworkModal);
-    safeOnClick('#btnUploadId', triggerPaperworkModal);
-    safeOnClick('#btnCompletePaperwork', triggerPaperworkModal);
-    safeOnClick('#bannerPaperworkRequired', triggerPaperworkModal);
-
-    // Dashboard buttons
-    safeOnClick('#signPaperworkBtn', handleSignPaperwork);
-    safeOnClick('#makePaymentBtn', handleMakePayment);
-    safeOnClick('#sendMessageBtn', handleSendMessage);
-
-    // Logout
-    safeOnClick('#logoutBtn', handleLogout);
-
-    // Communication Preferences
-    safeOnClick('#btnCommPrefs', () => {
-        wixLocation.to('/communication-preferences');
-    });
-
-    // Choice Screen Buttons
-    safeOnClick('#btnResumeBond', handleResumeBond);
-    safeOnClick('#btnStartNewBond', handleStartNewBond);
-
-    // Defendant Link Feature
-    setupDefendantLink();
-}
-
-// ============================================================================
-// ACTION HANDLERS
-// ============================================================================
-
-function handleLogout() {
-    clearSessionToken();
-    wixLocation.to('/portal-landing');
-}
-
-function handleSignPaperwork() {
-    triggerPaperworkModal().catch((error) => {
-        console.warn('[Paperwork] Secure launchpad could not open:', error);
-        showError('Unable to open secure paperwork. Please call (239) 332-2245.');
-    });
-}
-
-function handleMakePayment() {
-    wixLocation.to('/payments');
-}
-
-async function handleSendMessage() {
-    const message = safeGetValue('#messageInput');
-    if (!message?.trim()) {
-        showError('Please enter a message');
-        return;
-    }
-
-    try {
-        safeDisable('#sendMessageBtn');
-
-        const caseId = currentSession?.caseId || indemnitorData?.caseId || null;
-        const senderName = (
-            (indemnitorData?.indemnitorFirstName || indemnitorData?.firstName || '') + ' ' +
-            (indemnitorData?.indemnitorLastName || indemnitorData?.lastName || '')
-        ).trim() || currentSession?.name || 'Indemnitor';
-
-        // Notify GAS -- logs to Sheets + triggers Slack alert to staff
-        await callGasAction('portalClientMessage', {
-            caseId: caseId,
-            senderName: senderName,
-            senderEmail: currentSession?.email || '',
-            message: message.trim(),
-            source: 'indemnitor_portal',
-            timestamp: new Date().toISOString()
+        // Show persistent "Continue Paperwork" banner
+        safeShow('#bannerIncompletePaperwork');
+        safeSetText('#textPaperworkBanner', '⚠️ Your cosigner paperwork is incomplete. Complete signature to secure release.');
+        
+        safeOnClick('#btnContinuePaperwork', () => {
+            const caseId = data?.caseNumber || currentSession?.caseId || '';
+            wixLocation.to(`/portal-start?caseId=${caseId}&role=indemnitor`);
         });
-
-        // Store in-app notification for staff dashboard
-        if (caseId) {
-            await sendInAppNotification(
-                'staff',
-                `Message from ${senderName}`,
-                message.trim(),
-                'client_message',
-                `/portal-staff?caseId=${caseId}`
-            );
-        }
-
-        // Clear input and confirm
-        if (/** @type {any} */ ($w('#messageInput')).type === '$w.TextInput') {
-            /** @type {any} */ ($w('#messageInput')).value = '';
-        }
-        showSuccess('Message sent! Our team will respond shortly.');
-
-    } catch (e) {
-        console.error('Message Error', e);
-        showError('Could not send message. Please call us at (239) 332-2245.');
-    } finally {
-        safeEnable('#sendMessageBtn');
     }
 }
 
-// ============================================================================
-// DEFENDANT LINKING FEATURE
-// ============================================================================
+/**
+ * Configure buttons and after-care actions
+ */
+function setupActionHandlers() {
+    // 1. Add Co-Indemnitor (Second Cosigner)
+    safeOnClick('#btnAddCoIndemnitor', () => {
+        const caseId = indemnitorData?.caseNumber || '';
+        wixLocation.to(`/portal-start?caseId=${caseId}&role=coindemnitor&mode=add-cosigner`);
+    });
 
-function setupDefendantLink() {
-    safeOnClick('#btnSubmitLink', async () => {
-        const caseNum = safeGetValue('#inputLinkCaseNumber')?.trim();
-        const indemName = safeGetValue('#inputLinkIndemnitorName')?.trim();
+    // 2. Upload Extra ID or Collateral
+    safeOnClick('#btnUploadCollateral', () => {
+        wixWindow.openLightbox('IdUploadLightbox', {
+            role: 'indemnitor',
+            caseId: indemnitorData?.caseNumber,
+            documentType: 'collateral',
+            memberData: indemnitorData
+        });
+    });
 
-        if (!caseNum && !indemName) {
-            showError("Please enter either a Case Number OR Indemnitor's Last Name.");
-            return;
-        }
+    // 3. Pay Installment / Balance
+    safeOnClick('#btnPayInstallment', () => {
+        const payUrl = indemnitorData?.paymentUrl || 'https://shamrockbailbonds.biz/payment';
+        wixWindow.openLightbox('PrivacyLightbox', { paymentUrl: payUrl });
+    });
 
-        safeSetText('#btnSubmitLink', 'Searching...');
-        safeDisable('#btnSubmitLink');
+    // 4. View / Download Documents
+    safeOnClick('#btnViewDocuments', async () => {
+        const docs = await getMemberDocuments({
+            memberEmail: indemnitorData?.email || currentSession?.memberEmail,
+            sessionToken: getSessionToken()
+        });
+        wixWindow.openLightbox('DefendantDetails', {
+            documents: docs?.documents || [],
+            caseData: indemnitorData
+        });
+    });
 
-        try {
-            const result = await linkDefendantToCase(caseNum, indemName);
-
-            if (result.success && result.sessionToken) {
-                showSuccess(result.message);
-                await setSessionToken(result.sessionToken);
-                wixLocation.to(`/portal-defendant?st=${encodeURIComponent(result.sessionToken)}&autoPaperwork=1`);
-            } else {
-                showError(result.message || 'Could not find case. Check details.');
-                safeSetText('#btnSubmitLink', 'Find My Paperwork');
-                safeEnable('#btnSubmitLink');
-            }
-        } catch (e) {
-            console.error(e);
-            showError("System Error.");
-            safeEnable('#btnSubmitLink');
-        }
+    // 5. Logout
+    safeOnClick('#btnLogout', () => {
+        clearSessionToken();
+        wixLocation.to('/portal-landing');
     });
 }
 
-// ============================================================================
-// UTILITIES
-// ============================================================================
-
-function safeGetValue(selector) {
+// UI Utilities
+function safeSetText(id, text) {
     try {
-        const el = $w(selector);
-        if (!el) return null;
-        if (el.type === '$w.TextInput' || el.type === '$w.TextBox') return el.value;
-        if (el.type === '$w.Dropdown') return el.value;
-        if (el.type === '$w.AddressInput') return el.value ? el.value.formatted : '';
-        if (el.value !== undefined) return el.value;
-        return null;
-    } catch (e) {
-        return null;
-    }
+        const el = $w(id);
+        if (el) el.text = text;
+    } catch (e) {}
 }
 
-function safeSetText(selector, text) {
-    try { $w(selector).text = text || ''; } catch (e) { }
-}
-
-function safeShow(selector) {
-    try { $w(selector).expand().then(() => $w(selector).show()); } catch (e) { }
-}
-
-function safeHide(selector) {
-    try { $w(selector).hide().then(() => $w(selector).collapse()); } catch (e) { }
-}
-
-function safeEnable(selector) {
-    try { $w(selector).enable(); } catch (e) { }
-}
-
-function safeDisable(selector) {
-    try { $w(selector).disable(); } catch (e) { }
-}
-
-function safeOnClick(selector, handler) {
-    try { $w(selector).onClick(handler); } catch (e) { }
-}
-
-function showLoading(show) {
-    if (show) safeShow('#loadingIndicator');
-    else safeHide('#loadingIndicator');
-}
-
-function showError(msg) {
-    safeSetText('#errorMessage', msg);
-    safeShow('#errorGroup');
-    setTimeout(() => safeHide('#errorGroup'), 5000);
-}
-
-function showSuccess(msg) {
+function safeShow(id) {
     try {
-        if (/** @type {any} */ ($w('#textSuccessMessage')).id) /** @type {any} */ ($w('#textSuccessMessage')).text = msg;
-        safeShow('#groupSuccess');
-        safeHide('#errorGroup');
-        setTimeout(() => safeHide('#groupSuccess'), 5000);
-    } catch (e) {
-        safeSetText('#successMessage', msg);
-        safeShow('#successMessage');
-        safeHide('#errorMessage');
-        setTimeout(() => safeHide('#successMessage'), 5000);
-    }
+        const el = $w(id);
+        if (el) el.show();
+    } catch (e) {}
 }
 
-function formatCurrency(amount) {
-    if (amount === undefined || amount === null) return '$0';
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-    }).format(amount);
-}
-
-function formatStatus(status) {
-    const statusMap = {
-        'pending': 'Pending Review',
-        'ready_for_documents': 'Preparing Documents',
-        'awaiting_signatures': 'Awaiting Signatures',
-        'completed': 'Active Bond',
-        'discharged': 'Discharged'
-    };
-    return statusMap[status] || (status ? status.replace(/_/g, ' ').toUpperCase() : 'Unknown');
-}
-
-function formatDocumentStatus(status) {
-    const statusMap = {
-        'pending': 'Pending',
-        'sent_for_signature': 'Pending Signature(s)',
-        'completed': 'Signed',
-        'filed': 'Filed'
-    };
-    return statusMap[status] || (status ? status.replace(/_/g, ' ').toUpperCase() : 'Pending');
-}
-
-function formatDate(dateStr) {
-    if (!dateStr) return '';
+function safeHide(id) {
     try {
-        return new Date(dateStr).toLocaleDateString('en-US', {
-            month: 'short', day: 'numeric', year: 'numeric'
-        });
-    } catch (e) { return ''; }
+        const el = $w(id);
+        if (el) el.hide();
+    } catch (e) {}
+}
+
+function safeOnClick(id, handler) {
+    try {
+        const el = $w(id);
+        if (el && typeof el.onClick === 'function') el.onClick(handler);
+    } catch (e) {}
 }

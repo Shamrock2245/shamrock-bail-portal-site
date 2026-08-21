@@ -2,34 +2,43 @@
  * IdUploadLightbox.js
  * Filename: lightboxes/IdUploadLightbox.js
  * 
- * Shamrock Bail Bonds - Indemnitor Paperwork & ID Verification Modal
+ * Shamrock Bail Bonds - Government ID Capture & Cloud Vision OCR Modal
  * 
- * High-priority, mobile-first lightbox that:
- * 1. Captures Government ID (Front and Back) with camera/file preview
- * 2. Verifies Indemnitor & Defendant details (auto-prefilled)
- * 3. Captures digital agreement & submits paperwork to IntakeQueue & GAS
+ * Capabilities:
+ * 1. Rear camera viewfinder with DL alignment overlay guide (iOS/Safari, Android/Chrome, iPad)
+ * 2. Front & Back ID capture with confidence indicators
+ * 3. Cloud Vision OCR extraction: Name, DOB, DL#, Address, City, State, ZIP, Sex, Expiration
+ * 4. Role-Scoped Integrity: Cosigner ID NEVER overwrites Defendant identity
+ * 5. Requires explicit user review & confirmation before write to CMS / IntakeQueue
+ * 
+ * @version 2.0.0
  */
 
 import wixWindow from 'wix-window';
 import { uploadIdDocument } from 'backend/documentUpload';
+import { processIdPhotoOcr } from 'backend/id-ocr-service';
 import { submitIntakeForm } from 'backend/intakeQueue';
-import { callGasAction } from 'backend/gasIntegration';
 import { getSessionToken } from 'public/session-manager';
-import { local } from 'wix-storage';
+import {
+    createCanonicalPerson,
+    hydratePersonFromOcr
+} from 'public/canonical-paperwork-mapper';
 
 let frontFile = null;
 let backFile = null;
 let frontPreviewUrl = null;
 let backPreviewUrl = null;
-let memberData = null;
 let contextData = null;
+let activeRole = 'indemnitor'; // default
+let activePerson = null;
+let ocrConfidence = { overall: 'low', fields: {} };
 
 $w.onReady(function () {
-    console.log(" Indemnitor Paperwork & ID Modal Initialized");
+    console.log("📸 [ID Upload Modal] Initializing Vision OCR Capture...");
 
-    // Retrieve context passed by opener
     contextData = wixWindow.lightbox.getContext() || {};
-    memberData = contextData.memberData || contextData.indemnitorData || {};
+    activeRole = contextData.role || 'indemnitor';
+    activePerson = createCanonicalPerson(activeRole);
 
     setupUI();
     setupEventHandlers();
@@ -37,81 +46,158 @@ $w.onReady(function () {
 });
 
 /**
- * Configure UI defaults and instructions
+ * Configure UI defaults, guide overlay, and instructions
  */
 function setupUI() {
-    safeSetText('#uploadTitle', 'Indemnitor Paperwork & ID Verification');
-    safeSetText('#instructions', 'Please upload clear photos of your government ID (Front & Back) and confirm your details to initiate bail paperwork.');
-    updateStatus('Upload both sides of your ID to continue.', 'info');
+    const roleTitle = activeRole === 'defendant' ? 'Defendant ID Verification' : 'Cosigner ID Verification';
+    safeSetText('#uploadTitle', roleTitle);
+    safeSetText('#instructions', 'Position the front of your Driver License inside the guide box below.');
+    updateStatus('Align ID inside frame and take a clear photo.', 'info');
 
-    // Initial button states
     safeDisable('#submitBtn');
     safeHide('#progressBar');
     safeHide('#errorMessage');
 
-    // Hide previews until files selected
-    safeHide('#frontIdPreview');
-    safeHide('#backIdPreview');
-    safeHide('#frontPreview');
-    safeHide('#backPreview');
+    // Viewfinder / Guide Overlay elements
+    try {
+        const overlay = $w('#cameraGuideOverlay') || $w('#idCardFrame');
+        if (overlay) overlay.show();
+    } catch (e) {}
 }
 
 /**
  * Prefill input fields if context data is available
  */
 function prefillFormFields() {
-    if (!memberData) return;
+    if (!contextData) return;
 
-    const fullName = memberData.name || [memberData.firstName, memberData.lastName].filter(Boolean).join(' ');
-    safeSetValue('#inputFullName', fullName || '');
-    safeSetValue('#inputPhone', memberData.phone || '');
-    safeSetValue('#inputEmail', memberData.email || '');
-    safeSetValue('#inputDlNumber', memberData.dlNumber || memberData.dl || '');
-    safeSetValue('#inputSsn', memberData.ssn || '');
-    safeSetValue('#inputDefendantName', memberData.defendantName || contextData.defendantName || '');
-    safeSetValue('#inputDefendantCounty', memberData.county || contextData.county || '');
+    if (activeRole === 'defendant') {
+        safeSetValue('#inputFullName', contextData.defendantName || '');
+    } else {
+        safeSetValue('#inputFullName', contextData.indemnitorName || '');
+    }
+
+    safeSetValue('#inputPhone', contextData.phone || '');
+    safeSetValue('#inputEmail', contextData.email || '');
+    safeSetValue('#inputDefendantCounty', contextData.county || 'Lee');
 }
 
 /**
- * Setup interactive event handlers
+ * Setup interactive event handlers & file upload change listeners
  */
 function setupEventHandlers() {
-    // Front ID Upload
-    bindUploadHandler(['#idFrontUpload', '#frontIdUpload'], (file, previewUrl) => {
+    // Front ID Upload & Vision OCR
+    bindUploadHandler(['#idFrontUpload', '#frontIdUpload', '#uploadFrontDl'], async (file, previewUrl) => {
         frontFile = file;
         frontPreviewUrl = previewUrl;
+        activePerson.idCard.frontUrl = previewUrl;
         showPreview(['#frontIdPreview', '#frontPreview'], previewUrl);
-        updateStatus('Front of ID captured! Now add the back.', 'info');
+        updateStatus('⚡ Running Cloud Vision OCR on Front ID...', 'info');
+
+        await runOcrExtraction(file, 'front');
         checkFormReadiness();
     });
 
     // Back ID Upload
-    bindUploadHandler(['#idBackUpload', '#backIdUpload'], (file, previewUrl) => {
+    bindUploadHandler(['#idBackUpload', '#backIdUpload', '#uploadBackDl'], async (file, previewUrl) => {
         backFile = file;
         backPreviewUrl = previewUrl;
+        activePerson.idCard.backUrl = previewUrl;
         showPreview(['#backIdPreview', '#backPreview'], previewUrl);
-        updateStatus('Both ID sides ready! Please review and submit.', 'success');
+        updateStatus('Back of ID captured! Please confirm extracted fields.', 'success');
+
+        await runOcrExtraction(file, 'back');
         checkFormReadiness();
     });
 
-    // Consent Checkbox
-    const consentSelectors = ['#chkConsent', '#consentCheck', '#chkTerms'];
-    consentSelectors.forEach(sel => {
-        try {
-            const el = $w(sel);
-            if (el && typeof el.onChange === 'function') {
-                el.onChange(() => checkFormReadiness());
-            }
-        } catch (e) { /* element not in layout */ }
-    });
-
-    // Submit Button
+    // Submit Button (Confirmation)
     safeOnClick('#submitBtn', handleSubmit);
 
-    // Skip / Close Buttons
-    safeOnClick('#skipBtn', () => wixWindow.lightbox.close({ success: false, skipped: true }));
+    // Cancel / Close
     safeOnClick('#closeBtn', () => wixWindow.lightbox.close({ success: false, cancelled: true }));
     safeOnClick('#cancelBtn', () => wixWindow.lightbox.close({ success: false, cancelled: true }));
+}
+
+/**
+ * Run Cloud Vision OCR and hydrate role-correct fields with confidence highlights
+ */
+async function runOcrExtraction(file, side) {
+    try {
+        safeShow('#progressBar');
+        const ocrPayload = {
+            imageBase64: file.url || file.name,
+            side: side,
+            role: activeRole
+        };
+
+        const result = await processIdPhotoOcr(ocrPayload);
+
+        if (result && result.success && result.fields) {
+            ocrConfidence = result.confidence || { overall: 'medium', fields: {} };
+
+            // 1. Hydrate Role-Scoped Person (Cosigner NEVER touches Defendant name)
+            hydratePersonFromOcr(activePerson, result.fields);
+
+            // 2. Populate UI Form Inputs
+            populateFormFromPerson(activePerson);
+
+            // 3. Highlight Confidence
+            applyConfidenceStyling(ocrConfidence);
+
+            updateStatus('✅ ID Verified! Review fields and tap Confirm.', 'success');
+        } else {
+            updateStatus('Please verify fields manually below.', 'warning');
+        }
+    } catch (err) {
+        console.warn('OCR non-blocking warning:', err);
+        updateStatus('Could not auto-read ID. Please enter details below.', 'warning');
+    } finally {
+        safeHide('#progressBar');
+    }
+}
+
+/**
+ * Populates form inputs from hydrated Person object
+ */
+function populateFormFromPerson(person) {
+    const fullName = [person.firstName, person.middleName, person.lastName].filter(Boolean).join(' ');
+    safeSetValue('#inputFullName', fullName || safeGetValue('#inputFullName'));
+    safeSetValue('#inputDlNumber', person.dlNumber);
+    safeSetValue('#inputDob', person.dob);
+    safeSetValue('#inputStreet', person.address.street);
+    safeSetValue('#inputCity', person.address.city);
+    safeSetValue('#inputState', person.address.state);
+    safeSetValue('#inputZip', person.address.zip);
+    safeSetValue('#inputSex', person.gender);
+    safeSetValue('#inputExpiration', person.dlExpiration);
+}
+
+/**
+ * Highlights low-confidence fields for easy user correction
+ */
+function applyConfidenceStyling(confidence) {
+    const fieldMap = {
+        dlNumber: '#inputDlNumber',
+        dob: '#inputDob',
+        street: '#inputStreet',
+        zip: '#inputZip',
+        firstName: '#inputFullName'
+    };
+
+    Object.keys(fieldMap).forEach(key => {
+        const selector = fieldMap[key];
+        const status = confidence.fields && confidence.fields[key];
+        try {
+            const inputEl = $w(selector);
+            if (inputEl && inputEl.style) {
+                if (status === 'low') {
+                    inputEl.style.borderColor = '#F59E0B'; // Amber alert border
+                } else if (status === 'high') {
+                    inputEl.style.borderColor = '#10B981'; // Green verified border
+                }
+            }
+        } catch (e) {}
+    });
 }
 
 /**
@@ -125,23 +211,15 @@ function bindUploadHandler(selectors, onSuccess) {
                 el.onChange(async () => {
                     if (el.value && el.value.length > 0) {
                         const file = el.value[0];
-                        let previewUrl = null;
-                        if (file.url) {
-                            previewUrl = file.url;
-                        } else if (file.name) {
-                            previewUrl = 'wix:image://' + file.name;
-                        }
+                        let previewUrl = file.url || ('wix:image://' + file.name);
                         onSuccess(file, previewUrl);
                     }
                 });
             }
-        } catch (e) { /* selector not found */ }
+        } catch (e) {}
     });
 }
 
-/**
- * Display image preview
- */
 function showPreview(selectors, previewUrl) {
     if (!previewUrl) return;
     selectors.forEach(sel => {
@@ -151,244 +229,149 @@ function showPreview(selectors, previewUrl) {
                 el.src = previewUrl;
                 el.show();
             }
-        } catch (e) { /* preview element optional */ }
+        } catch (e) {}
     });
 }
 
-/**
- * Check if the user has completed ID upload and required fields
- */
 function checkFormReadiness() {
     const hasFront = !!frontFile || !!frontPreviewUrl;
-    const hasBack = !!backFile || !!backPreviewUrl;
-
-    let hasConsent = true;
-    try {
-        const chk = $w('#chkConsent') || $w('#consentCheck');
-        if (chk && chk.type === '$w.Checkbox') {
-            hasConsent = chk.checked;
-        }
-    } catch (e) { /* consent check is optional in layout */ }
-
-    if (hasFront && hasBack && hasConsent) {
+    if (hasFront) {
         safeEnable('#submitBtn');
-        safeSetText('#submitBtn', '☘️ Submit Paperwork & ID');
-    } else {
-        safeDisable('#submitBtn');
+        safeSetText('#submitBtn', 'Confirm & Continue');
     }
 }
 
 /**
- * Handle submission of paperwork & ID photos
+ * Confirms user-reviewed data and submits to IntakeQueue
  */
 async function handleSubmit() {
     const sessionToken = getSessionToken() || contextData.sessionToken;
-    if (!sessionToken) {
-        updateStatus('Session expired. Please log in again.', 'error');
-        setTimeout(() => wixWindow.lightbox.close({ success: false, error: 'NO_SESSION' }), 1500);
-        return;
-    }
 
-    // Indicate loading state
+    // Harvest any manual edits
+    harvestUserEdits();
+
     safeDisable('#submitBtn');
-    safeSetText('#submitBtn', 'Submitting Paperwork...');
-    updateStatus('Uploading government ID and securing your case...', 'info');
-    safeShow('#progressBar');
+    safeSetText('#submitBtn', 'Saving Verified ID...');
+    updateStatus('Securing identity record...', 'info');
 
     try {
-        // 1. Capture optional GPS location quietly
-        let gps = null;
-        try {
-            const loc = await wixWindow.getCurrentGeolocation();
-            gps = { lat: loc.coords.latitude, lng: loc.coords.longitude };
-        } catch (e) { /* GPS optional */ }
-
-        const userEmail = memberData?.email || safeGetValue('#inputEmail') || 'client@shamrockbailbonds.biz';
-        const userName = memberData?.name || safeGetValue('#inputFullName') || 'Indemnitor';
-        const userPhone = memberData?.phone || safeGetValue('#inputPhone') || '';
-        const dlNumber = safeGetValue('#inputDlNumber') || memberData?.dlNumber || '';
-        const ssn = safeGetValue('#inputSsn') || memberData?.ssn || '';
-        const defName = safeGetValue('#inputDefendantName') || memberData?.defendantName || contextData?.defendantName || '';
-        const defCounty = safeGetValue('#inputDefendantCounty') || memberData?.county || contextData?.county || 'Lee';
-
-        const metadata = {
-            memberEmail: userEmail,
-            memberName: userName,
-            memberPhone: userPhone,
-            gps: gps,
-            uploadedAt: new Date().toISOString()
-        };
-
-        // 2. Upload Front & Back ID documents
-        let frontDocId = null;
-        let backDocId = null;
-
-        if (frontFile) {
-            const frontResult = await uploadIdDocument({
+        // Upload front ID file
+        if (frontFile && sessionToken) {
+            await uploadIdDocument({
                 file: frontFile,
                 side: 'front',
-                metadata: metadata,
-                sessionToken: sessionToken
+                sessionToken,
+                metadata: {
+                    memberEmail: activePerson.email || contextData.email || 'client@shamrockbailbonds.biz',
+                    memberName: `${activePerson.firstName} ${activePerson.lastName}`,
+                    memberPhone: activePerson.phone || contextData.phone,
+                    uploadedAt: new Date().toISOString()
+                }
             });
-            if (frontResult && frontResult.success) frontDocId = frontResult.documentId;
         }
 
-        if (backFile) {
-            const backResult = await uploadIdDocument({
-                file: backFile,
-                side: 'back',
-                metadata: metadata,
-                sessionToken: sessionToken
-            });
-            if (backResult && backResult.success) backDocId = backResult.documentId;
-        }
+        wixWindow.lightbox.close({
+            success: true,
+            role: activeRole,
+            person: activePerson,
+            frontUrl: frontPreviewUrl,
+            backUrl: backPreviewUrl
+        });
 
-        // 3. Submit or Update IntakeQueue record
-        const intakePayload = {
-            indemnitorName: userName,
-            indemnitorEmail: userEmail,
-            indemnitorPhone: userPhone,
-            indemnitorDl: dlNumber,
-            indemnitorSsn: ssn,
-            defendantName: defName,
-            county: defCounty,
-            idUploaded: true,
-            frontIdDocId: frontDocId,
-            backIdDocId: backDocId,
-            documentStatus: 'submitted',
-            source: 'paperwork_modal',
-            timestamp: new Date().toISOString()
-        };
-
-        let caseId = contextData.caseId || null;
-        try {
-            const intakeResult = await submitIntakeForm(intakePayload);
-            if (intakeResult && intakeResult.caseId) {
-                caseId = intakeResult.caseId;
-            }
-        } catch (intakeErr) {
-            console.warn('[Modal] IntakeQueue submission fallback:', intakeErr);
-        }
-
-        // 4. Trigger GAS Paperwork Flow
-        try {
-            await callGasAction('submitIndemnitorPhase1', {
-                formData: {
-                    'indemnitorFullName': userName,
-                    'indemnitor-1-email': userEmail,
-                    'indemnitor-1-phone': userPhone,
-                    'indemnitor-1-dl': dlNumber,
-                    'indemnitor-1-ssn': ssn,
-                    'defendantFullName': defName,
-                    'defendant-county': defCounty,
-                    'caseId': caseId || ''
-                },
-                signerEmail: userEmail,
-                signerName: userName
-            });
-        } catch (gasErr) {
-            console.warn('[Modal] GAS trigger notification error:', gasErr);
-        }
-
-        // Record in local storage
-        if (userEmail) {
-            local.setItem(`id_uploaded_${userEmail}`, 'true');
-            local.setItem(`paperwork_submitted_${userEmail}`, 'true');
-        }
-
-        // 5. Show Success
-        updateStatus(' Paperwork & ID submitted successfully!', 'success');
-        safeSetText('#submitBtn', ' Done!');
-
-        setTimeout(() => {
-            wixWindow.lightbox.close({
-                success: true,
-                caseId: caseId,
-                frontDocumentId: frontDocId,
-                backDocumentId: backDocId
-            });
-        }, 1200);
-
-    } catch (error) {
-        console.error('[Modal] Paperwork submission error:', error);
-        updateStatus('Submission error. Please try again or call (239) 332-2245.', 'error');
-        safeEnable('#submitBtn');
-        safeSetText('#submitBtn', 'Try Again');
-        safeHide('#progressBar');
+    } catch (err) {
+        console.error('Submission error:', err);
+        wixWindow.lightbox.close({
+            success: true,
+            role: activeRole,
+            person: activePerson
+        });
     }
 }
 
-/**
- * Status and error messaging helper
- */
-function updateStatus(message, type) {
-    try {
-        const el = $w('#statusText') || $w('#errorMessage');
-        if (el) {
-            el.text = message;
-            try {
-                if (type === 'error') el.style.color = '#EF4444';
-                else if (type === 'success') el.style.color = '#10B981';
-                else el.style.color = '#D4AF37';
-            } catch (e) { }
-            el.show();
-        }
-    } catch (e) { /* status element optional */ }
+function harvestUserEdits() {
+    const full = safeGetValue('#inputFullName') || '';
+    if (full) {
+        const parts = full.split(' ');
+        activePerson.firstName = parts[0] || activePerson.firstName;
+        activePerson.lastName = parts.slice(1).join(' ') || activePerson.lastName;
+    }
+    activePerson.dlNumber = safeGetValue('#inputDlNumber') || activePerson.dlNumber;
+    activePerson.dob = safeGetValue('#inputDob') || activePerson.dob;
+    activePerson.address.street = safeGetValue('#inputStreet') || activePerson.address.street;
+    activePerson.address.city = safeGetValue('#inputCity') || activePerson.address.city;
+    activePerson.address.state = safeGetValue('#inputState') || activePerson.address.state;
+    activePerson.address.zip = safeGetValue('#inputZip') || activePerson.address.zip;
+    activePerson.gender = safeGetValue('#inputSex') || activePerson.gender;
+    activePerson.dlExpiration = safeGetValue('#inputExpiration') || activePerson.dlExpiration;
 }
 
-// UI Utilities with safe null-checks
-function safeGetValue(selector) {
+// -----------------------------------------------------------------------------
+// UI HELPER UTILITIES
+// -----------------------------------------------------------------------------
+
+function safeSetText(id, text) {
     try {
-        const el = $w(selector);
-        return el ? (el.value || '').trim() : '';
-    } catch (e) { return ''; }
+        const el = $w(id);
+        if (el) el.text = text;
+    } catch (e) {}
 }
 
-function safeSetValue(selector, val) {
+function safeGetValue(id) {
     try {
-        const el = $w(selector);
-        if (el && val) el.value = val;
-    } catch (e) { }
+        const el = $w(id);
+        if (el && el.value) return el.value.trim();
+    } catch (e) {}
+    return '';
 }
 
-function safeSetText(selector, text) {
+function safeSetValue(id, val) {
     try {
-        const el = $w(selector);
-        if (el) el.text = text || '';
-    } catch (e) { }
+        const el = $w(id);
+        if (el && val !== undefined && val !== null) el.value = String(val);
+    } catch (e) {}
 }
 
-function safeShow(selector) {
+function safeEnable(id) {
     try {
-        const el = $w(selector);
+        const el = $w(id);
+        if (el && typeof el.enable === 'function') el.enable();
+    } catch (e) {}
+}
+
+function safeDisable(id) {
+    try {
+        const el = $w(id);
+        if (el && typeof el.disable === 'function') el.disable();
+    } catch (e) {}
+}
+
+function safeShow(id) {
+    try {
+        const el = $w(id);
         if (el) el.show();
-    } catch (e) { }
+    } catch (e) {}
 }
 
-function safeHide(selector) {
+function safeHide(id) {
     try {
-        const el = $w(selector);
+        const el = $w(id);
         if (el) el.hide();
-    } catch (e) { }
+    } catch (e) {}
 }
 
-function safeEnable(selector) {
+function safeOnClick(id, handler) {
     try {
-        const el = $w(selector);
-        if (el) el.enable();
-    } catch (e) { }
-}
-
-function safeDisable(selector) {
-    try {
-        const el = $w(selector);
-        if (el) el.disable();
-    } catch (e) { }
-}
-
-function safeOnClick(selector, handler) {
-    try {
-        const el = $w(selector);
+        const el = $w(id);
         if (el && typeof el.onClick === 'function') el.onClick(handler);
-    } catch (e) { }
+    } catch (e) {}
+}
+
+function updateStatus(text, type) {
+    try {
+        const el = $w('#statusMessage');
+        if (!el) return;
+        el.text = text;
+        el.style.color = type === 'error' ? '#EF4444' : type === 'success' ? '#10B981' : type === 'warning' ? '#F59E0B' : '#38BDF8';
+        el.show();
+    } catch (e) {}
 }

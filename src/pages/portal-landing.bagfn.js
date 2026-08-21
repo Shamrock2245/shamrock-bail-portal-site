@@ -1,38 +1,27 @@
 /**
- * Shamrock Bail Bonds - Portal Landing Page
+ * Shamrock Bail Bonds - Portal Landing Page (Wix Studio)
  * File: portal-landing.bagfn.js
- * Last Updated: 2026-02-23
- *
- * AUTHENTICATION FLOW:
- *
- * A. MAGIC LINK (Primary -- email or SMS):
- *    1. User enters email or phone -> "Get Started"
- *    2. Backend sends magic link to /portal-landing?token=...
- *    3. This page intercepts the token, validates it, creates a session,
- *       then redirects to /portal-indemnitor?st=<sessionToken>
- *    NOTE: Magic links MUST land here (portal-landing), NOT on portal-indemnitor.
- *          portal-indemnitor is a Members-Area-protected page and will 404 for
- *          unauthenticated cold arrivals.
- *
- * B. SESSION TOKEN REDIRECT (Social/OAuth callbacks):
- *    URL: /portal-landing?st=<sessionToken>
- *    Validates session, redirects to role-appropriate portal.
- *
- * C. FRESH LOGIN (No token):
- *    Shows the email/phone input form.
- *
- * Required Wix Editor Elements:
- *   #emailPhoneInput  -- textarea/input for email or phone
- *   #getStartedBtn    -- primary CTA button
- *   #statusMessage    -- text element for feedback
- *   #loadingBox       -- optional loading container
- *   #otpInputBox      -- optional OTP container (hidden by default)
- *   #googleLoginBtn   -- optional Google login button
- *   #telegramHtml     -- optional Telegram widget HTML component
- *   #boxAIChat        -- optional AI concierge container
+ * 
+ * Flow:
+ * 1. Phone or email -> Magic link / OTP via portal-auth.jsw
+ * 2. Auto-detect returning vs new user
+ * 3. Returning Staff/Admin -> /portal-staff (No access-code theater)
+ * 4. Returning Defendant with active case -> /portal-defendant
+ * 5. Returning Indemnitor with active case -> /portal-indemnitor
+ * 6. New User -> Instant Role Selection (Defendant / Indemnitor / Co-indemnitor) -> /portal-start
+ * 
+ * Roles map:
+ * - defendant -> /portal-start?role=defendant (Defendant fields + signature blocks)
+ * - indemnitor -> /portal-start?role=indemnitor (Indemnitor/cosigner packet)
+ * - coindemnitor -> /portal-start?role=coindemnitor (Same indemnitor packet, second-signer slots)
+ * 
+ * @version 3.0.0 (Wix Studio)
  */
 
 import wixLocation from 'wix-location';
+import wixWindow from 'wix-window';
+import wixSeo from 'wix-seo';
+import { local } from 'wix-storage';
 import {
     sendMagicLinkSimplified,
     onMagicLinkLoginV2,
@@ -42,382 +31,316 @@ import {
 import { getGoogleAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 import { initAIChat } from 'public/ai-concierge';
-import wixSeo from 'wix-seo';
-import wixWindow from 'wix-window';
-import { local } from 'wix-storage';
 
 // -----------------------------------------------------------------------------
 // PAGE INIT
 // -----------------------------------------------------------------------------
 
 $w.onReady(async function () {
-    console.log(" Portal Landing: Initializing...");
-
+    console.log("⚡ [Portal Landing] Initializing Studio Portal Flow...");
     updatePageSEO();
 
-    const query = wixLocation.query;
+    const query = wixLocation.query || {};
+    const countyParam = query.county ? `&county=${encodeURIComponent(query.county)}` : '';
 
-    // -- Priority 1: Magic link token in URL (?token=...) ---------------------
-    // This is the primary entry point when a user clicks the link in their email.
-    // MUST be handled BEFORE anything else, and ONLY in the browser (not SSR).
+    // -- Priority 1: Magic Link Token (?token=...) -----------------------------
     if (query.token && wixWindow.rendering.env === 'browser') {
-        console.log(" Magic link token detected in URL -- processing...");
-        showMessage("Logging you in securely...", "info");
-        showLoading();
-        await handleMagicLinkToken(query.token);
-        return; // Stop -- redirect will happen inside handleMagicLinkToken
-    }
-
-    // -- Priority 2: Session token in URL (?st=... or ?sessionToken=...) ------
-    // Used by OAuth callbacks and legacy redirects.
-    const sessionToken = query.st || query.sessionToken;
-    if (sessionToken && wixWindow.rendering.env === 'browser') {
-        console.log(" Session token detected in URL -- validating...");
-        showMessage("Verifying your session...", "info");
-        showLoading();
-        await handleSessionTokenRedirect(sessionToken);
+        console.log("🔗 Magic link token detected in URL");
+        showSpinner("Authenticating secure session...");
+        await handleMagicLinkToken(query.token, countyParam);
         return;
     }
 
-    // -- Priority 3: Existing valid session in browser storage ----------------
-    // If the user already has a session, skip the login form entirely.
+    // -- Priority 2: Session Token (?st=... or ?sessionToken=...) ---------------
+    const sessionToken = query.st || query.sessionToken;
+    if (sessionToken && wixWindow.rendering.env === 'browser') {
+        console.log("🔑 Session token detected in URL");
+        showSpinner("Verifying session...");
+        await handleSessionTokenRedirect(sessionToken, countyParam);
+        return;
+    }
+
+    // -- Priority 3: Existing Valid Session in Browser Storage -----------------
     const existingToken = getSessionToken();
     if (existingToken && wixWindow.rendering.env === 'browser') {
-        console.log(" Existing session found -- validating...");
         try {
             const session = await validateCustomSession(existingToken);
-            if (session && session.valid && session.role) {
-                console.log(`[OK] Existing session valid (${session.role}). Redirecting...`);
-                showMessage("Welcome back! Redirecting...", "success");
-                redirectToPortal(session.role);
+            if (session && session.valid) {
+                console.log(`✅ Existing session valid (Role: ${session.role || 'user'}). Redirecting...`);
+                routeAuthenticatedUser(session.role, existingToken, session.isNewUser, countyParam);
                 return;
             }
         } catch (e) {
-            // Session invalid or expired -- fall through to login form
-            console.warn("[!] Existing session invalid, showing login form:", e.message);
+            console.warn("⚠️ Existing session expired:", e.message);
         }
         clearSessionToken();
     }
 
-    // -- Default: Show the login form -----------------------------------------
-    // Check if user has already given consent (including SMS for A2P 10DLC)
+    // -- Default: Show Login Surface -------------------------------------------
     await showConsentIfNeeded();
-
-    setupLoginForm();
-    setupTelegramWidget();
+    setupLoginForm(countyParam);
+    setupRoleSelectionCards(countyParam);
+    setupTelegramWidget(countyParam);
     setupAIConcierge();
 });
 
 // -----------------------------------------------------------------------------
-// MAGIC LINK TOKEN HANDLER
+// AUTHENTICATION & ROUTING LOGIC
 // -----------------------------------------------------------------------------
 
 /**
- * Validate a magic link token from the URL and redirect to the indemnitor portal.
- * This is the ONLY correct entry point for magic link clicks.
- *
- * @param {string} token - The raw token from ?token=...
+ * Validates magic link token and routes user according to status
  */
-async function handleMagicLinkToken(token) {
+async function handleMagicLinkToken(token, countyParam) {
     try {
         const result = await onMagicLinkLoginV2(token);
 
         if (result.ok && result.sessionToken) {
-            console.log("[OK] Magic link valid -- session created");
-
-            // Store session in browser storage
             setSessionToken(result.sessionToken);
-
-            // Determine target role -- default everyone to indemnitor.
-            // Defendants can identify themselves via the case-lookup widget
-            // at the top of the indemnitor portal.
-            const role = result.role || 'indemnitor';
-            const targetRole = (role === 'staff' || role === 'admin') ? role : 'indemnitor';
-
-            showMessage("Welcome! Taking you to your portal...", "success");
-
-            // Redirect with session token in URL as belt-and-suspenders
-            // (in case browser storage write hasn't flushed yet)
-            redirectToPortalWithToken(targetRole, result.sessionToken);
-
+            routeAuthenticatedUser(result.role, result.sessionToken, result.isNewUser, countyParam);
         } else {
-            // Token invalid or expired
-            const reason = result.message || 'Link expired or already used.';
-            console.warn("[!] Magic link rejected:", reason);
-
-            hideLoading();
-            showMessage(
-                "This link has expired or was already used. Enter your email below to get a new one.",
-                "error"
-            );
-
-            // Show the login form so they can request a new link immediately
-            setupLoginForm();
-            setupTelegramWidget();
-
-            // Pre-fill the button label to "Resend Link" for clarity
-            try {
-                const btn = $w('#getStartedBtn');
-                if (btn) btn.label = "Send New Link";
-            } catch (e) { /* optional */ }
+            hideSpinner();
+            showMessage(result.message || "Link expired or already used. Please request a new link.", "error");
+            setupLoginForm(countyParam);
         }
-
-    } catch (error) {
-        console.error("[X] Critical error validating magic link token:", error);
-        hideLoading();
+    } catch (err) {
+        console.error("❌ Magic link error:", err);
+        hideSpinner();
         clearSessionToken();
-        showMessage("System error. Please try again or call (239) 332-2245.", "error");
-        setupLoginForm();
+        showMessage("System error. Call (239) 332-2245 for 24/7 dispatch.", "error");
+        setupLoginForm(countyParam);
     }
 }
 
-// -----------------------------------------------------------------------------
-// SESSION TOKEN REDIRECT HANDLER
-// -----------------------------------------------------------------------------
-
 /**
- * Validate a session token from the URL (?st=...) and redirect to the
- * appropriate portal. Used by OAuth callbacks and legacy redirects.
- *
- * @param {string} token - The raw session token from ?st=...
+ * Validates existing session token and routes
  */
-async function handleSessionTokenRedirect(token) {
+async function handleSessionTokenRedirect(token, countyParam) {
     try {
         setSessionToken(token);
         const session = await validateCustomSession(token);
 
-        if (session && session.valid && session.role) {
-            console.log(`[OK] Session valid (${session.role}). Redirecting...`);
-            redirectToPortal(session.role);
+        if (session && session.valid) {
+            routeAuthenticatedUser(session.role, token, session.isNewUser, countyParam);
         } else {
-            throw new Error("Session invalid or role missing");
+            throw new Error("Invalid session");
         }
-
     } catch (err) {
-        console.error("[X] Session token validation failed:", err);
+        console.warn("❌ Session token rejected:", err.message);
         clearSessionToken();
-        hideLoading();
-        showMessage("Login session expired. Please enter your email below.", "error");
-        setupLoginForm();
+        hideSpinner();
+        showMessage("Session expired. Enter your email or phone below.", "error");
+        setupLoginForm(countyParam);
+    }
+}
+
+/**
+ * Intelligent Router: Directs returning members to dashboards and new intakes to /portal-start
+ */
+function routeAuthenticatedUser(role, sessionToken, isNewUser, countyParam) {
+    const cleanRole = (role || '').toLowerCase().trim();
+
+    // 1. Staff / Admin -> Instant Staff Queue (No access code theater)
+    if (cleanRole === 'staff' || cleanRole === 'admin' || cleanRole === 'superadmin') {
+        console.log("👮 Routing to Staff Portal");
+        wixLocation.to(`/portal-staff?st=${encodeURIComponent(sessionToken)}`);
+        return;
+    }
+
+    // 2. Returning Defendant with Existing Case -> Defendant Dashboard
+    if (cleanRole === 'defendant' && !isNewUser) {
+        console.log("👤 Routing to Defendant Dashboard");
+        wixLocation.to(`/portal-defendant?st=${encodeURIComponent(sessionToken)}`);
+        return;
+    }
+
+    // 3. Returning Indemnitor with Existing Case -> Indemnitor Dashboard
+    if ((cleanRole === 'indemnitor' || cleanRole === 'coindemnitor') && !isNewUser) {
+        console.log("📋 Routing to Indemnitor Dashboard");
+        wixLocation.to(`/portal-indemnitor?st=${encodeURIComponent(sessionToken)}`);
+        return;
+    }
+
+    // 4. If role is explicitly known on fresh session -> Direct to /portal-start
+    if (cleanRole === 'defendant' || cleanRole === 'indemnitor' || cleanRole === 'coindemnitor') {
+        const dest = `/portal-start?role=${cleanRole}&st=${encodeURIComponent(sessionToken)}${countyParam}`;
+        console.log(`🚀 Routing new user directly to intake launchpad: ${dest}`);
+        wixLocation.to(dest);
+        return;
+    }
+
+    // 5. New User / Unassigned Role -> Prompt Immediate Role Choice
+    console.log("⚡ New user detected — revealing role selection modal/cards");
+    hideSpinner();
+    revealRolePicker(sessionToken, countyParam);
+}
+
+// -----------------------------------------------------------------------------
+// ROLE SELECTION (FOR NEW INTAKES)
+// -----------------------------------------------------------------------------
+
+function setupRoleSelectionCards(countyParam) {
+    // Role Buttons / Cards
+    const roles = [
+        { id: '#btnRoleDefendant', role: 'defendant' },
+        { id: '#cardRoleDefendant', role: 'defendant' },
+        { id: '#btnRoleIndemnitor', role: 'indemnitor' },
+        { id: '#cardRoleIndemnitor', role: 'indemnitor' },
+        { id: '#btnRoleCoIndemnitor', role: 'coindemnitor' },
+        { id: '#cardRoleCoIndemnitor', role: 'coindemnitor' }
+    ];
+
+    roles.forEach(({ id, role }) => {
+        try {
+            const el = $w(id);
+            if (el && typeof el.onClick === 'function') {
+                el.onClick(() => {
+                    const token = getSessionToken() || '';
+                    const dest = `/portal-start?role=${role}&st=${encodeURIComponent(token)}${countyParam}`;
+                    console.log(`🎯 Role selected [${role}] -> Navigating to ${dest}`);
+                    wixLocation.to(dest);
+                });
+            }
+        } catch (e) { /* non-fatal */ }
+    });
+}
+
+function revealRolePicker(sessionToken, countyParam) {
+    try {
+        const roleBox = $w('#boxRoleSelection') || $w('#rolePickerContainer');
+        const loginBox = $w('#boxLoginForm') || $w('#loginContainer');
+
+        if (loginBox && typeof loginBox.collapse === 'function') loginBox.collapse();
+        if (roleBox && typeof roleBox.expand === 'function') {
+            roleBox.expand();
+            roleBox.show();
+        } else {
+            // Fallback: Default to indemnitor launchpad if no role UI box in DOM
+            wixLocation.to(`/portal-start?role=indemnitor&st=${encodeURIComponent(sessionToken)}${countyParam}`);
+        }
+    } catch (e) {
+        wixLocation.to(`/portal-start?role=indemnitor&st=${encodeURIComponent(sessionToken)}${countyParam}`);
     }
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN FORM
+// LOGIN FORM SETUP
 // -----------------------------------------------------------------------------
 
-/**
- * Set up the email/phone input form.
- */
-function setupLoginForm() {
-    console.log(" Setting up login form...");
-
+function setupLoginForm(countyParam) {
     const input = $w('#emailPhoneInput');
     const button = $w('#getStartedBtn');
 
-    if (!input || !button) {
-        console.error("[X] #emailPhoneInput or #getStartedBtn not found in Wix Editor!");
-        showMessage("Configuration error. Please contact support.", "error");
-        return;
-    }
+    if (!input || !button) return;
 
-    // Auto-focus
     try { input.focus(); } catch (e) { /* optional */ }
 
-    // Enter key submits
     input.onKeyPress((event) => {
-        if (event.key === 'Enter') handleGetStarted();
+        if (event.key === 'Enter') handleGetStarted(countyParam);
     });
 
-    // Button click
-    button.onClick(() => handleGetStarted());
+    button.onClick(() => handleGetStarted(countyParam));
 
-    // Collapse OTP box (not used in magic link flow)
-    try {
-        $w('#otpInputBox').hide();
-        $w('#otpInputBox').collapse();
-    } catch (e) { /* optional element */ }
-
-    // Google login
+    // Social Google Auth
     try {
         const googleBtn = $w('#googleLoginBtn');
         if (googleBtn) googleBtn.onClick(() => startSocialLogin('google'));
     } catch (e) { /* optional */ }
-
-    // Facebook login -- collapsed per user request
-    try {
-        $w('#facebookLoginBtn').collapse();
-    } catch (e) { /* optional */ }
-
-    console.log("[OK] Login form ready");
 }
 
-/**
- * Handle "Get Started" button click.
- */
-async function handleGetStarted() {
+async function handleGetStarted(countyParam) {
     const input = $w('#emailPhoneInput');
     const button = $w('#getStartedBtn');
-
     const emailOrPhone = (input.value || '').trim();
 
     if (!emailOrPhone) {
-        showMessage("Please enter your email or phone number.", "error");
-        try { input.focus(); } catch (e) { /* optional */ }
+        showMessage("Please enter your phone number or email.", "error");
         return;
     }
 
     if (!isValidEmailOrPhone(emailOrPhone)) {
-        showMessage("Please enter a valid email address or phone number.", "error");
-        try { input.focus(); } catch (e) { /* optional */ }
+        showMessage("Enter a valid 10-digit phone number or email address.", "error");
         return;
     }
 
-    await sendMagicLinkFlow(emailOrPhone, button);
-}
-
-/**
- * Send magic link and handle UX state.
- *
- * @param {string} emailOrPhone
- * @param {Object} button - Wix button element
- */
-async function sendMagicLinkFlow(emailOrPhone, button) {
     button.disable();
     const originalLabel = button.label;
-    button.label = "Sending...";
+    button.label = "Sending Link...";
     showMessage("Sending your secure link...", "info");
 
     try {
         const result = await sendMagicLinkSimplified(emailOrPhone);
 
         if (result.success) {
-            button.label = "Sent! v";
-            showMessage(
-                "Check your email or phone -- your secure link is on the way. It expires in 24 hours.",
-                "success"
-            );
-            try { $w('#emailPhoneInput').value = ""; } catch (e) { /* optional */ }
+            button.label = "Sent!";
+            showMessage("Secure link sent! Check your text messages or email.", "success");
+            try { input.value = ""; } catch (e) {}
 
-            // Countdown before allowing resend (prevents spam)
             let countdown = 60;
             const timer = setInterval(() => {
                 countdown--;
-                button.label = `Resend in ${countdown}s`;
+                button.label = `Resend (${countdown}s)`;
                 if (countdown <= 0) {
                     clearInterval(timer);
-                    button.label = "Resend Link";
+                    button.label = originalLabel;
                     button.enable();
                 }
             }, 1000);
-
         } else {
-            console.error("[X] Magic link send failed:", result.message);
-            showMessage(result.message || "Unable to send link. Please try again.", "error");
+            showMessage(result.message || "Could not send link. Please call (239) 332-2245.", "error");
             button.label = originalLabel;
             button.enable();
         }
-
-    } catch (error) {
-        console.error("[X] Critical error sending magic link:", error);
-        showMessage("System error. Please try again or call (239) 332-2245.", "error");
+    } catch (err) {
+        showMessage("System error. Call (239) 332-2245 for immediate release.", "error");
         button.label = originalLabel;
         button.enable();
     }
 }
 
 // -----------------------------------------------------------------------------
-// CONSENT LIGHTBOX
+// HELPERS, CONSENT & SOCIAL
 // -----------------------------------------------------------------------------
 
-/**
- * Show the ConsentLightbox if the user hasn't consented yet.
- * Consent is stored in localStorage so it only appears once per device.
- * This is critical for A2P 10DLC SMS compliance -- Twilio reviewers
- * will verify that this opt-in flow exists.
- */
 async function showConsentIfNeeded() {
     try {
-        // Skip if not in browser (SSR)
         if (wixWindow.rendering.env !== 'browser') return;
+        if (local.getItem('shamrock_sms_consent') === 'true') return;
 
-        // Check if user already consented on this device
-        const hasConsented = local.getItem('shamrock_sms_consent');
-        if (hasConsented === 'true') {
-            console.log('[OK] User has already given consent (including SMS). Skipping lightbox.');
-            return;
-        }
-
-        console.log(' Showing consent lightbox for first-time visitor...');
-
-        // Open the consent lightbox and wait for result
         const consentResult = await wixWindow.openLightbox('ConsentLightbox');
-
         if (consentResult && consentResult.success) {
-            // User agreed to all consents including SMS
             local.setItem('shamrock_sms_consent', 'true');
-            local.setItem('shamrock_consent_timestamp', consentResult.consentTimestamp || new Date().toISOString());
-            console.log('[OK] All consents captured (including SMS). Proceeding to login form.');
-        } else {
-            // User cancelled -- show a message but still allow the page to load
-            console.warn('[!] User did not complete consent. Some features may be limited.');
-            showMessage(
-                'To use our services, you must agree to our terms and SMS notifications. You can try again by refreshing the page.',
-                'error'
-            );
+            local.setItem('shamrock_consent_timestamp', new Date().toISOString());
         }
-    } catch (e) {
-        // Don't block the page if lightbox fails
-        console.warn('[!] Consent lightbox error (non-blocking):', e.message);
-    }
+    } catch (e) { /* non-blocking */ }
 }
 
-// -----------------------------------------------------------------------------
-// TELEGRAM WIDGET
-// -----------------------------------------------------------------------------
-
-function setupTelegramWidget() {
+function setupTelegramWidget(countyParam) {
     try {
-        const telegramHtml = $w('#telegramHtml');
-        if (!telegramHtml) return;
+        const widget = $w('#telegramHtml');
+        if (!widget) return;
 
-        console.log(" Telegram Login Widget: attaching listener");
-
-        telegramHtml.onMessage(async (event) => {
+        widget.onMessage(async (event) => {
             try {
-                const telegramData = typeof event.data === 'string'
-                    ? JSON.parse(event.data)
-                    : event.data;
+                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                if (!data || !data.hash) return;
 
-                if (!telegramData || !telegramData.hash) return;
-
-                showMessage("Verifying Telegram login...", "info");
-                showLoading();
-
-                const result = await onTelegramLogin(telegramData);
-
+                showSpinner("Verifying Telegram...");
+                const result = await onTelegramLogin(data);
                 if (result.ok && result.sessionToken) {
                     setSessionToken(result.sessionToken);
-                    showMessage("Login successful! Redirecting...", "success");
-                    setTimeout(() => redirectToPortal(result.role || 'indemnitor'), 800);
+                    routeAuthenticatedUser(result.role, result.sessionToken, result.isNewUser, countyParam);
                 } else {
-                    hideLoading();
-                    showMessage(result.message || "Telegram login failed. Please try email.", "error");
+                    hideSpinner();
+                    showMessage("Telegram login failed. Use phone or email.", "error");
                 }
-            } catch (error) {
-                console.error("[X] Telegram login error:", error);
-                hideLoading();
-                showMessage("Error verifying Telegram login. Please try email.", "error");
+            } catch (err) {
+                hideSpinner();
+                showMessage("Telegram authentication error.", "error");
             }
         });
-    } catch (e) {
-        // Telegram widget is optional
-    }
+    } catch (e) { /* optional */ }
 }
-
-// -----------------------------------------------------------------------------
-// AI CONCIERGE
-// -----------------------------------------------------------------------------
 
 function setupAIConcierge() {
     try {
@@ -432,74 +355,19 @@ function setupAIConcierge() {
                     openBtn: $w('#btnAIOpen')
                 }
             });
-            console.log(" AI Concierge initialized");
         }
-    } catch (e) {
-        // AI concierge is optional
-    }
+    } catch (e) { /* optional */ }
 }
-
-// -----------------------------------------------------------------------------
-// SOCIAL LOGIN
-// -----------------------------------------------------------------------------
 
 async function startSocialLogin(provider) {
     showMessage(`Connecting to ${provider}...`, "info");
     try {
-        let authUrl = "";
-        if (provider === 'google') authUrl = await getGoogleAuthUrl();
-        if (!authUrl) {
-            showMessage(`${provider} login is not configured. Please use email.`, "error");
-            return;
-        }
-        wixLocation.to(authUrl);
-    } catch (error) {
-        console.error("[X] Social login error:", error);
-        showMessage(`Could not connect to ${provider}. Please use email.`, "error");
+        const authUrl = await getGoogleAuthUrl();
+        if (authUrl) wixLocation.to(authUrl);
+    } catch (e) {
+        showMessage("Social login unavailable. Use phone or email.", "error");
     }
 }
-
-// -----------------------------------------------------------------------------
-// REDIRECT HELPERS
-// -----------------------------------------------------------------------------
-
-const PORTAL_MAP = {
-    'defendant': '/portal-defendant',
-    'indemnitor': '/portal-indemnitor',
-    'coindemnitor': '/portal-indemnitor',
-    'staff': '/portal-staff',
-    'admin': '/portal-staff'
-};
-
-/**
- * Redirect to the role-appropriate portal (no token in URL).
- * Use only when session is already reliably stored in browser storage.
- */
-function redirectToPortal(role) {
-    const destination = PORTAL_MAP[role] || '/portal-indemnitor';
-    const autoParam = (role === 'indemnitor' || !role || role === 'coindemnitor' || role === 'defendant') ? '?autoPaperwork=1' : '';
-    const url = `${destination}${autoParam}`;
-    console.log(` Redirecting to: ${url}`);
-    wixLocation.to(url);
-}
-
-/**
- * Redirect to the role-appropriate portal WITH the session token in the URL.
- * Belt-and-suspenders: ensures the token reaches the portal page even if
- * browser storage hasn't flushed yet (common on mobile Safari).
- */
-function redirectToPortalWithToken(role, sessionToken) {
-    const destination = PORTAL_MAP[role] || '/portal-indemnitor';
-    const autoParam = (role === 'indemnitor' || !role || role === 'coindemnitor' || role === 'defendant') ? '&autoPaperwork=1' : '';
-    const url = `${destination}?st=${encodeURIComponent(sessionToken)}${autoParam}`;
-    console.log(` Redirecting to: ${url}`);
-    wixLocation.to(url);
-}
-
-
-// -----------------------------------------------------------------------------
-// UI HELPERS
-// -----------------------------------------------------------------------------
 
 function showMessage(text, type) {
     try {
@@ -507,20 +375,28 @@ function showMessage(text, type) {
         if (!el) return;
         el.text = text;
         try {
-            if (type === 'error') el.style.color = '#FF4444';
-            else if (type === 'success') el.style.color = '#00C851';
-            else el.style.color = '#33B5E5';
-        } catch (e) { /* style API optional */ }
+            el.style.color = type === 'error' ? '#EF4444' : type === 'success' ? '#10B981' : '#38BDF8';
+        } catch (e) {}
         el.show();
-    } catch (e) { /* element optional */ }
+    } catch (e) {}
 }
 
-function showLoading() {
-    try { $w('#loadingBox').show(); } catch (e) { /* optional */ }
+function showSpinner(text) {
+    try {
+        const box = $w('#loadingBox') || $w('#spinnerContainer');
+        if (box) {
+            const label = $w('#loadingText');
+            if (label && text) label.text = text;
+            box.show();
+        }
+    } catch (e) {}
 }
 
-function hideLoading() {
-    try { $w('#loadingBox').hide(); } catch (e) { /* optional */ }
+function hideSpinner() {
+    try {
+        const box = $w('#loadingBox') || $w('#spinnerContainer');
+        if (box) box.hide();
+    } catch (e) {}
 }
 
 function isValidEmailOrPhone(input) {
@@ -529,32 +405,10 @@ function isValidEmailOrPhone(input) {
     return emailPattern.test(input) || phonePattern.test(input);
 }
 
-// -----------------------------------------------------------------------------
-// SEO
-// -----------------------------------------------------------------------------
-
 function updatePageSEO() {
-    const pageTitle = "Client Portal Login | Shamrock Bail Bonds";
-    const pageDesc = "Secure client portal for Shamrock Bail Bonds. Manage your bail case, check in, and view paperwork.";
-    const pageUrl = "https://www.shamrockbailbonds.biz/portal-landing";
-
-    wixSeo.setTitle(pageTitle);
+    wixSeo.setTitle("Client Portal Login | Shamrock Bail Bonds");
     wixSeo.setMetaTags([
-        { name: "description", content: pageDesc },
-        { property: "og:title", content: pageTitle },
-        { property: "og:description", content: pageDesc },
-        { property: "og:url", content: pageUrl },
-        { property: "og:type", content: "website" },
+        { name: "description", content: "Fast, secure client portal for Shamrock Bail Bonds. Start paperwork, check in, and view case status." },
         { name: "robots", content: "noindex, nofollow" }
-    ]);
-    wixSeo.setStructuredData([
-        {
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
-                { "@type": "ListItem", "position": 2, "name": "Portal Login", "item": pageUrl }
-            ]
-        }
     ]);
 }

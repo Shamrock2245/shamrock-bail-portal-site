@@ -1,0 +1,274 @@
+/**
+ * Case Facts Hydrator & Lead Matching Service
+ * File: backend/case-facts-hydrator.jsw
+ * 
+ * Auto-hydrates case facts when a user enters defendant name + county,
+ * or when staff pushes corrections from /portal-staff.
+ * 
+ * Data Sources:
+ * 1. Wix CMS `ArrestLeads` & `Cases` Collections
+ * 2. GAS Factory / shamrock-leads Arrest Scraper & DB API
+ * 
+ * Florida Bail Bond Fee Rules:
+ * - 10% of face value OR $100 minimum per charge (whichever is greater)
+ * - Managed via calculateBondFee in bailCalculator.jsw
+ * 
+ * Multi-Charge Structure:
+ * - Always stored as structured arrays: [{ statute, description, bondAmount, chargeLevel }]
+ * - Never flattened to an unstructured text blob
+ * 
+ * @module case-facts-hydrator
+ */
+
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'public/collectionIds';
+import { callGasAction } from 'backend/gasIntegration';
+import { calculateBondFee, calculateTransferFee } from 'backend/bailCalculator';
+
+/**
+ * Look up defendant booking and charge facts across Wix CMS and shamrock-leads
+ * @param {Object} searchParams
+ * @param {string} searchParams.defendantName - Full or partial name
+ * @param {string} [searchParams.county='Lee'] - County name
+ * @param {string} [searchParams.bookingNumber] - Booking / Inmate #
+ * @returns {Promise<{found: boolean, match?: Object, source: string}>}
+ */
+export async function lookupDefendantCaseFacts(searchParams) {
+    const { defendantName, county = 'Lee', bookingNumber } = searchParams;
+
+    if (!defendantName && !bookingNumber) {
+        return { found: false, message: "Defendant name or booking number required." };
+    }
+
+    try {
+        console.log(`🔍 [Case Facts Lookup] Searching for "${defendantName || bookingNumber}" in ${county}...`);
+
+        // 1. Check Wix CMS ArrestLeads collection first
+        const cmsMatch = await searchWixArrestLeads(defendantName, county, bookingNumber);
+        if (cmsMatch) {
+            return {
+                found: true,
+                source: 'cms-arrest-leads',
+                match: cmsMatch
+            };
+        }
+
+        // 2. Check GAS / shamrock-leads arrest scrapers via GAS action
+        const gasResult = await callGasAction('lookupDefendant', {
+            name: defendantName,
+            county: county,
+            bookingNumber: bookingNumber
+        });
+
+        if (gasResult && gasResult.success && gasResult.data) {
+            const normalized = normalizeLeadMatch(gasResult.data, county);
+            return {
+                found: true,
+                source: 'shamrock-leads-api',
+                match: normalized
+            };
+        }
+
+        return {
+            found: false,
+            message: "No current roster match found. Manual entry enabled."
+        };
+
+    } catch (err) {
+        console.warn("⚠️ [Case Facts Lookup] Non-fatal error during roster lookup:", err.message);
+        return {
+            found: false,
+            message: "Roster lookup offline. Manual entry enabled."
+        };
+    }
+}
+
+/**
+ * Searches the local Wix ArrestLeads collection
+ * @private
+ */
+async function searchWixArrestLeads(name, county, bookingNumber) {
+    try {
+        let query = wixData.query(COLLECTIONS.ARREST_LEADS || 'ArrestLeads');
+
+        if (bookingNumber) {
+            query = query.eq('bookingNumber', bookingNumber);
+        } else if (name) {
+            const parts = name.trim().split(' ');
+            const lastName = parts[parts.length - 1];
+            query = query.contains('defendantName', lastName);
+            if (county) {
+                query = query.eq('county', county);
+            }
+        }
+
+        const results = await query.limit(1).find({ suppressAuth: true });
+        if (results.items.length > 0) {
+            return normalizeLeadMatch(results.items[0], county);
+        }
+        return null;
+    } catch (e) {
+        console.warn("[ArrestLeads CMS] Query error:", e.message);
+        return null;
+    }
+}
+
+/**
+ * Normalizes arrest lead record into canonical case facts structure
+ * @param {Object} raw - Raw lead data from scraper/CMS
+ * @param {string} defaultCounty - Fallback county
+ * @returns {Object} Structured case facts
+ */
+export function normalizeLeadMatch(raw, defaultCounty = 'Lee') {
+    const rawCharges = Array.isArray(raw.charges) ? raw.charges : 
+                       typeof raw.charges === 'string' ? parseChargesString(raw.charges) : [];
+
+    let totalBond = Number(raw.totalBond || raw.total_bond_amount || raw.totalBondAmount || 0);
+
+    const structuredCharges = rawCharges.map(c => {
+        if (typeof c === 'string') {
+            return {
+                statute: extractStatute(c),
+                description: cleanChargeDesc(c),
+                bondAmount: extractChargeBond(c) || 0,
+                chargeLevel: 'Misdemeanor'
+            };
+        }
+        return {
+            statute: c.statute || '',
+            description: c.description || c.charge_description || c.chargeDescription || 'Arrest Charge',
+            bondAmount: Number(c.bondAmount || c.bond_amount || 0),
+            chargeLevel: c.chargeLevel || c.charge_level || 'Misdemeanor'
+        };
+    });
+
+    // If total bond not set, sum charges
+    if (!totalBond) {
+        totalBond = structuredCharges.reduce((sum, c) => sum + (Number(c.bondAmount) || 0), 0);
+    }
+
+    const county = raw.county || defaultCounty;
+    const feeCalculation = calculateBondFee(totalBond, Math.max(structuredCharges.length, 1));
+    const transferFee = calculateTransferFee(county).fee || 0;
+
+    return {
+        defendantName: raw.defendantName || raw.defendant_name || raw.name || '',
+        bookingNumber: raw.bookingNumber || raw.booking_number || '',
+        caseNumbers: raw.caseNumber || raw.caseNumbers ? [raw.caseNumber || raw.caseNumbers].flat() : [],
+        county: county,
+        jailFacility: raw.jailFacility || raw.facility || raw.jail || `${county} County Jail / Detention Center`,
+        charges: structuredCharges,
+        totalBond: totalBond,
+        premiumEstimate: feeCalculation.premium + transferFee,
+        transferFee: transferFee,
+        courtDates: raw.courtDate || raw.court_date ? [
+            {
+                date: raw.courtDate || raw.court_date,
+                courtroom: raw.courtroom || 'Courtroom 1',
+                time: raw.courtTime || '09:00 AM',
+                zoomLink: raw.zoomLink || ''
+            }
+        ] : [],
+        bookingDate: raw.bookingDate || raw.booking_date || new Date().toISOString().split('T')[0],
+        mugshotUrl: raw.mugshotUrl || raw.mugshot || null
+    };
+}
+
+/**
+ * Staff push or correct case facts directly from /portal-staff
+ * @param {Object} payload
+ * @param {string} payload.caseId - Case ID
+ * @param {Object} payload.correctedCaseFacts - Full updated case facts
+ * @param {string} payload.staffUser - Email / name of updating staff
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+export async function pushStaffCaseCorrection(payload) {
+    const { caseId, correctedCaseFacts, staffUser = 'staff@shamrockbailbonds.biz' } = payload;
+
+    if (!caseId || !correctedCaseFacts) {
+        throw new Error("Missing required caseId or correctedCaseFacts payload");
+    }
+
+    try {
+        console.log(`👨‍💼 [Staff Correction] Staff ${staffUser} updating Case ${caseId}...`);
+
+        const feeCalc = calculateBondFee(
+            correctedCaseFacts.totalBond || 0,
+            Math.max(correctedCaseFacts.charges?.length || 1, 1)
+        );
+
+        const updateRecord = {
+            caseId: caseId,
+            county: correctedCaseFacts.county || 'Lee',
+            jailFacility: correctedCaseFacts.jailFacility || '',
+            totalBond: Number(correctedCaseFacts.totalBond) || 0,
+            premiumEstimate: feeCalc.premium,
+            chargesJson: JSON.stringify(correctedCaseFacts.charges || []),
+            courtDatesJson: JSON.stringify(correctedCaseFacts.courtDates || []),
+            staffVerifiedBy: staffUser,
+            staffVerifiedAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        const existing = await wixData.query(COLLECTIONS.CASES || 'Cases')
+            .eq('caseId', caseId)
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (existing.items.length > 0) {
+            updateRecord._id = existing.items[0]._id;
+            await wixData.update(COLLECTIONS.CASES || 'Cases', updateRecord, { suppressAuth: true });
+        } else {
+            updateRecord._createdDate = new Date();
+            await wixData.insert(COLLECTIONS.CASES || 'Cases', updateRecord, { suppressAuth: true });
+        }
+
+        // Forward staff correction to GAS / Super CRM
+        await callGasAction('updateCaseFactsFromStaff', {
+            caseId,
+            caseFacts: correctedCaseFacts,
+            staffUser
+        });
+
+        return {
+            success: true,
+            message: `Case ${caseId} updated and verified by staff.`
+        };
+
+    } catch (e) {
+        console.error("❌ [Staff Correction] Failed to save staff correction:", e);
+        throw e;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// STRING PARSING HELPERS
+// -----------------------------------------------------------------------------
+
+function parseChargesString(str) {
+    if (!str) return [];
+    return str.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+}
+
+function extractStatute(desc) {
+    const match = desc.match(/\b\d{3}\.\d{2,4}(?:\(\d+[a-z]?\))?\b/i);
+    return match ? match[0] : '';
+}
+
+function cleanChargeDesc(desc) {
+    return desc.replace(/\b\d{3}\.\d{2,4}(?:\(\d+[a-z]?\))?\b/i, '').replace(/[\$\d,\.\-]+/g, '').trim() || desc;
+}
+
+function extractChargeBond(desc) {
+    const match = desc.match(/\$[\d,]+(?:\.\d{2})?/);
+    if (match) {
+        return parseFloat(match[0].replace(/[\$,]/g, ''));
+    }
+    return 0;
+}
+
+export default {
+    lookupDefendantCaseFacts,
+    normalizeLeadMatch,
+    pushStaffCaseCorrection
+};

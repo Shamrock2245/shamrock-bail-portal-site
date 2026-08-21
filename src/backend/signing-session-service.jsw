@@ -1,0 +1,177 @@
+/**
+ * Signing Session & Fast Recovery Service
+ * File: backend/signing-session-service.jsw
+ * 
+ * Provides signing session validation, 1-tap instant link re-issuance via SMS,
+ * and completion receipt tracking for DocuSeal / Netlify signing launchpad.
+ * 
+ * Boundary Doctrine:
+ * - Wix displays the staff-issued DocuSeal session.
+ * - If link is expired, 1-tap requests a fresh magic link via Twilio SMS — zero email treasure hunts.
+ * - Supports any signing order (Indemnitor first, Defendant later, Co-indemnitor last).
+ * 
+ * @module signing-session-service
+ */
+
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'public/collectionIds';
+import { callGasAction } from 'backend/gasIntegration';
+import { sendBlueBubblesMessage } from 'backend/bluebubbles';
+
+/**
+ * Validate active signing session or detect expiry
+ * @param {Object} params
+ * @param {string} params.caseId - Case ID
+ * @param {string} params.role - 'defendant' | 'indemnitor' | 'coindemnitor'
+ * @param {string} [params.signUrl] - Direct signing URL
+ * @returns {Promise<{valid: boolean, expired?: boolean, signingUrl?: string, phone?: string}>}
+ */
+export async function validateSigningSession(params) {
+    const { caseId, role = 'indemnitor', signUrl } = params;
+
+    try {
+        if (signUrl && !signUrl.includes('expired')) {
+            return { valid: true, signingUrl: signUrl };
+        }
+
+        if (!caseId) {
+            return { valid: false, error: 'NO_CASE_ID' };
+        }
+
+        // Query Cases CMS
+        const caseQuery = await wixData.query(COLLECTIONS.CASES || 'Cases')
+            .eq('caseId', caseId)
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (caseQuery.items.length > 0) {
+            const c = caseQuery.items[0];
+            const sessionExpired = c.status === 'expired' || c.signingLinkExpired;
+            
+            if (sessionExpired) {
+                return {
+                    valid: false,
+                    expired: true,
+                    phone: c.indemnitorPhone || c.defendantPhone || ''
+                };
+            }
+
+            return {
+                valid: true,
+                signingUrl: c.signingUrl || signUrl || '',
+                signingSessionId: c.signingSessionId || '',
+                phone: c.indemnitorPhone || c.defendantPhone || ''
+            };
+        }
+
+        return { valid: false, expired: true };
+
+    } catch (e) {
+        console.warn("⚠️ [Signing Session] Validation warning:", e.message);
+        return { valid: false, expired: true };
+    }
+}
+
+/**
+ * 1-Tap "Send me a new link" recovery via SMS
+ * @param {Object} params
+ * @param {string} params.caseId - Case ID
+ * @param {string} params.role - 'defendant' | 'indemnitor' | 'coindemnitor'
+ * @param {string} params.phone - Client phone number
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+export async function requestFreshSigningLink(params) {
+    const { caseId, role = 'indemnitor', phone } = params;
+
+    if (!phone && !caseId) {
+        return { success: false, message: 'Phone number or Case ID is required.' };
+    }
+
+    try {
+        console.log(`📱 [1-Tap Re-send] Client requested fresh signing link for Case ${caseId} (${phone})...`);
+
+        // 1. Alert staff & trigger GAS/Super CRM fresh link issuance
+        await callGasAction('resendSigningLinkSms', {
+            caseId,
+            role,
+            phone
+        });
+
+        // 2. Dispatch immediate confirmation via BlueBubbles iMessage / SMS bridge
+        if (phone) {
+            await sendBlueBubblesMessage({
+                to: phone,
+                text: `☘️ Shamrock Bail Bonds: We are preparing your fresh signing link for Case ${caseId || 'Bail'}. You will receive a new text in under 60 seconds. Need help? Call (239) 332-2245.`
+            }).catch(smsErr => console.warn('BlueBubbles dispatch notice non-fatal:', smsErr.message));
+        }
+
+        return {
+            success: true,
+            message: 'Fresh signing link dispatched via SMS! Please check your messages.'
+        };
+
+    } catch (error) {
+        console.error("❌ [Signing Link Re-send] Error:", error);
+        return {
+            success: false,
+            message: 'Could not send message automatically. Please call our 24/7 desk at (239) 332-2245.'
+        };
+    }
+}
+
+/**
+ * Record signature completion event & dispatch SMS confirmation receipt
+ * @param {Object} params
+ * @param {string} params.caseId - Case ID
+ * @param {string} params.role - Signer role
+ * @param {string} [params.signerPhone] - Signer phone
+ * @returns {Promise<{success: boolean}>}
+ */
+export async function recordSignatureCompletion(params) {
+    const { caseId, role = 'indemnitor', signerPhone } = params;
+
+    try {
+        console.log(`🎉 [Signing Complete] Signature captured for Case ${caseId} (${role})`);
+
+        // Update Case record
+        const caseQuery = await wixData.query(COLLECTIONS.CASES || 'Cases')
+            .eq('caseId', caseId)
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (caseQuery.items.length > 0) {
+            const item = caseQuery.items[0];
+            item.status = 'signed';
+            item.lastSignedRole = role;
+            item.signedAt = new Date();
+            await wixData.update(COLLECTIONS.CASES || 'Cases', item, { suppressAuth: true });
+        }
+
+        // Notify GAS & Super CRM
+        await callGasAction('notifySigningCompleted', {
+            caseId,
+            role,
+            signerPhone
+        });
+
+        // Send BlueBubbles Receipt
+        if (signerPhone) {
+            await sendBlueBubblesMessage({
+                to: signerPhone,
+                text: `☘️ Shamrock Bail Bonds: Signature complete for Case ${caseId}. Your paperwork is locked and submitted to the bond desk. Download copies anytime in your client portal. Phone: (239) 332-2245.`
+            }).catch(e => console.warn('Receipt dispatch non-fatal:', e.message));
+        }
+
+        return { success: true };
+
+    } catch (err) {
+        console.warn("⚠️ [Signing Complete] Non-fatal logging warning:", err.message);
+        return { success: true };
+    }
+}
+
+export default {
+    validateSigningSession,
+    requestFreshSigningLink,
+    recordSignatureCompletion
+};

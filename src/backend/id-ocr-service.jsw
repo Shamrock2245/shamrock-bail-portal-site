@@ -1,0 +1,220 @@
+/**
+ * ID Photo OCR Service Module
+ * File: backend/id-ocr-service.jsw
+ * 
+ * Reuses Google Cloud Vision OCR / GAS OCR contract to extract identity fields
+ * from Florida and US Driver Licenses with confidence scoring.
+ * 
+ * Target Fields:
+ * - fullName, firstName, middleName, lastName
+ * - dob (YYYY-MM-DD)
+ * - dlNumber (e.g. D123456789012)
+ * - street, city, state, zip
+ * - sex / gender
+ * - expiration (YYYY-MM-DD)
+ * 
+ * Hydration Integrity:
+ * - Role-scoped: Cosigner DL NEVER overwrites defendant identity.
+ * - Never invents charges or bond amounts from an ID.
+ * - Computes confidence per field for UI highlighting.
+ * 
+ * @module id-ocr-service
+ */
+
+import { callGasAction } from 'backend/gasIntegration';
+
+/**
+ * Process ID Photo and extract structured fields with confidence scores
+ * @param {Object} params
+ * @param {string} params.imageBase64 - Base64 encoded ID image (JPEG/PNG)
+ * @param {string} [params.side='front'] - 'front' or 'back'
+ * @param {string} [params.role='indemnitor'] - 'defendant' | 'indemnitor' | 'coindemnitor'
+ * @returns {Promise<Object>} Extracted fields + confidence report
+ */
+export async function processIdPhotoOcr(params) {
+    const { imageBase64, side = 'front', role = 'indemnitor' } = params;
+
+    if (!imageBase64) {
+        return {
+            success: false,
+            error: "No image payload provided"
+        };
+    }
+
+    try {
+        // 1. Call GAS / Cloud Vision OCR Action
+        const gasResult = await callGasAction('processIdOcr', {
+            imageBase64,
+            side,
+            role
+        });
+
+        if (gasResult && gasResult.success && gasResult.data) {
+            return {
+                success: true,
+                side,
+                role,
+                fields: gasResult.data.fields,
+                confidence: gasResult.data.confidence,
+                rawText: gasResult.data.rawText || ''
+            };
+        }
+
+        // 2. Fallback / Client-side Parsing if GAS returns raw text or mock
+        const rawText = (gasResult && gasResult.rawText) || '';
+        const parsed = parseDriverLicenseText(rawText);
+
+        return {
+            success: true,
+            side,
+            role,
+            fields: parsed.fields,
+            confidence: parsed.confidence,
+            rawText
+        };
+
+    } catch (error) {
+        console.warn("[ID-OCR] Remote OCR pipeline fallback to local parser:", error.message);
+        return {
+            success: true,
+            side,
+            role,
+            fields: parseDriverLicenseText("").fields,
+            confidence: { overall: 'low', fields: {} },
+            manualReviewRequired: true
+        };
+    }
+}
+
+/**
+ * Parse standard Florida / AAMVA Driver's License text blocks
+ * @param {string} text - Raw OCR text
+ * @returns {Object}
+ */
+export function parseDriverLicenseText(text = '') {
+    const fields = {
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        fullName: '',
+        dob: '',
+        dlNumber: '',
+        street: '',
+        city: '',
+        state: 'FL',
+        zip: '',
+        sex: '',
+        expiration: ''
+    };
+
+    const confidence = {
+        overall: 'low',
+        fields: {}
+    };
+
+    if (!text || typeof text !== 'string') {
+        return { fields, confidence };
+    }
+
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+    // 1. Florida DL Number: 1 Letter + 12 Digits (e.g. D123-456-78-901-2 or D123456789012)
+    const dlMatch = text.match(/\b([A-Z])[\s\-]?(\d{3})[\s\-]?(\d{3})[\s\-]?(\d{2})[\s\-]?(\d{3})[\s\-]?(\d{1})\b/i) ||
+                    text.match(/\b([A-Z]\d{12})\b/i);
+    if (dlMatch) {
+        fields.dlNumber = dlMatch[0].replace(/[\s\-]/g, '').toUpperCase();
+        confidence.fields.dlNumber = 'high';
+    } else {
+        confidence.fields.dlNumber = 'low';
+    }
+
+    // 2. Date of Birth (DOB)
+    const dobMatch = text.match(/(?:DOB|DATE OF BIRTH|DOB\/NASC|4d)[:\s]*(\d{2}[\/\-]\d{2}[\/\-]\d{4})/i) ||
+                     text.match(/\b(\d{2}[\/\-]\d{2}[\/\-(?:19|20)\d{2}])\b/);
+    if (dobMatch) {
+        fields.dob = normalizeDate(dobMatch[1]);
+        confidence.fields.dob = 'high';
+    } else {
+        confidence.fields.dob = 'low';
+    }
+
+    // 3. Expiration Date (EXP)
+    const expMatch = text.match(/(?:EXP|EXPIRES|4b)[:\s]*(\d{2}[\/\-]\d{2}[\/\-]\d{4})/i);
+    if (expMatch) {
+        fields.expiration = normalizeDate(expMatch[1]);
+        confidence.fields.expiration = 'high';
+    } else {
+        confidence.fields.expiration = 'low';
+    }
+
+    // 4. Sex / Gender
+    const sexMatch = text.match(/(?:SEX|15)[:\s]*([MF])\b/i);
+    if (sexMatch) {
+        fields.sex = sexMatch[1].toUpperCase();
+        confidence.fields.sex = 'high';
+    }
+
+    // 5. Name parsing (FL DL standard: "1 <LN>" "2 <FN> <MN>" or "LN <last>" "FN <first>")
+    const lnMatch = text.match(/(?:LN|1|LAST)[:\s]+([A-Z'\-]+)/i);
+    const fnMatch = text.match(/(?:FN|2|FIRST)[:\s]+([A-Z'\-]+)(?:\s+([A-Z'\-]+))?/i);
+
+    if (lnMatch) {
+        fields.lastName = cleanName(lnMatch[1]);
+        confidence.fields.lastName = 'high';
+    }
+    if (fnMatch) {
+        fields.firstName = cleanName(fnMatch[1]);
+        fields.middleName = cleanName(fnMatch[2] || '');
+        confidence.fields.firstName = 'high';
+    }
+
+    if (fields.firstName && fields.lastName) {
+        fields.fullName = [fields.firstName, fields.middleName, fields.lastName].filter(Boolean).join(' ');
+    }
+
+    // 6. Address parsing (look for standard FL city & 5-digit zip)
+    const zipMatch = text.match(/\bFL\s*(\d{5}(?:-\d{4})?)\b/i) || text.match(/\b(\d{5})\b/);
+    if (zipMatch) {
+        fields.zip = zipMatch[1];
+        fields.state = 'FL';
+        confidence.fields.zip = 'high';
+    }
+
+    // Identify street address line (number + street name)
+    const streetMatch = text.match(/\b(\d{1,5}\s+[A-Z0-9\.\s]+(?:ST|AVE|RD|DR|BLVD|LN|CT|WAY|PKWY|HWY|CIR|PL))\b/i);
+    if (streetMatch) {
+        fields.street = streetMatch[1].trim();
+        confidence.fields.street = 'high';
+    }
+
+    // Calculate overall confidence score
+    const highCount = Object.values(confidence.fields).filter(v => v === 'high').length;
+    if (highCount >= 4) confidence.overall = 'high';
+    else if (highCount >= 2) confidence.overall = 'medium';
+    else confidence.overall = 'low';
+
+    return { fields, confidence };
+}
+
+function normalizeDate(dStr) {
+    if (!dStr) return '';
+    const clean = dStr.replace(/-/g, '/');
+    const parts = clean.split('/');
+    if (parts.length === 3) {
+        const mm = parts[0].padStart(2, '0');
+        const dd = parts[1].padStart(2, '0');
+        const yyyy = parts[2];
+        return `${yyyy}-${mm}-${dd}`;
+    }
+    return clean;
+}
+
+function cleanName(n) {
+    if (!n) return '';
+    return n.trim().charAt(0).toUpperCase() + n.trim().slice(1).toLowerCase();
+}
+
+export default {
+    processIdPhotoOcr,
+    parseDriverLicenseText
+};

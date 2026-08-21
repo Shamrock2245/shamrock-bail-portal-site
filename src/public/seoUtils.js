@@ -84,8 +84,10 @@ export function generateLocalBusinessSchema(options = {}) {
         "priceRange": "$$",
         "address": {
             "@type": "PostalAddress",
+            "streetAddress": "1528 Broadway",
             "addressLocality": "Fort Myers",
             "addressRegion": "FL",
+            "postalCode": "33901",
             "addressCountry": "US"
         },
         "geo": {
@@ -93,6 +95,24 @@ export function generateLocalBusinessSchema(options = {}) {
             "latitude": 26.6406,
             "longitude": -81.8723
         },
+        "contactPoint": [
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-239-332-2245",
+                "contactType": "Emergency Bail Dispatch",
+                "areaServed": "FL",
+                "availableLanguage": ["English", "Spanish"]
+            },
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-239-955-0178",
+                "contactType": "Customer Support",
+                "contactOption": "HearingImpairedSupported",
+                "areaServed": "FL",
+                "availableLanguage": ["English", "Spanish"],
+                "description": "24/7 SMS & iMessage Support"
+            }
+        ],
         "openingHoursSpecification": {
             "@type": "OpeningHoursSpecification",
             "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],

@@ -507,19 +507,43 @@ async function populateMainUI(county, currentSlug) {
     setLink(['#sheriffWebsite', '#btnJailWeb'], county.jail.booking_url, "Jail / Sheriff Website");
 
     setLink(['#callClerkBtn', '#btnCallClerk'], county.clerk.website, "Clerk of Court");
-    setLink(['#clerkWebsite', '#btnClerkWeb'], county.clerk.website, "Clerk Website");
+    // ─── 3-LAYER WIRE: Locate + Get Someone Out + First Appearance (County Prefilled) ───
+    const activeCountySlug = county.slug || county.countySlug || currentSlug;
+    const isSwflCore = ['lee', 'collier', 'charlotte', 'hendry', 'glades'].indexOf(activeCountySlug) !== -1;
 
-    // Primary Call Button (Sticky or Hero)
-    // Screenshot 1 shows: #heroCallButton, #heroStartButton
-    const primaryPhoneLink = `tel:${county.contact.primary_phone_display.replace(/[^0-9]/g, '')}`;
+    // 1. Hero Primary Call Button
+    setLink(['#heroCallButton', '#callShamrockBtn', '#callCountiesBtn', '#btnEmergencyCall'], primaryPhoneLink, county.content.hero_cta_primary || "Call (239) 332-2245");
 
-    // 1. Hero Call Button
-    setLink(['#heroCallButton', '#callShamrockBtn', '#callCountiesBtn'], primaryPhoneLink, county.content.hero_cta_primary || "Call Now");
+    // 2. Get Someone Out / Start Online Release (Prefilled County)
+    const getOutUrl = `/portal-start?county=${encodeURIComponent(activeCountySlug)}`;
+    setLink(
+        ['#heroStartButton', '#startBailBtn', '#getSomeoneOutBtn', '#btnGetOut', '#startOnlineBtn', '#btnGetSomeoneOut'],
+        getOutUrl,
+        "Get Someone Out"
+    );
 
-    // 2. Secondary/Start Button (Link to portal landing page with county context)
-    setLink(['#heroStartButton', '#startBailBtn'], `/portal-landing?county=${county.slug || county.countySlug || currentSlug}`, "Start Bail Bond");
+    // 3. Locate / Inmate Lookup (Direct County Booking Search or Prefilled /locate)
+    const locateUrl = (county.resources && county.resources.inmate_search_url)
+        ? county.resources.inmate_search_url
+        : `/locate?county=${encodeURIComponent(activeCountySlug)}`;
+    setLink(
+        ['#inmateSearchBtn', '#btnInmateSearch', '#searchInmatesBtn', '#locateInmateBtn', '#btnLocate'],
+        locateUrl,
+        `Locate ${county.county_name} Inmate`
+    );
 
-    // Jail address is shown above when present.
+    // 4. First Appearance Court Calendar (County Prefilled)
+    setLink(
+        ['#firstAppearanceBtn', '#faScheduleBtn', '#btnFirstAppearance', '#viewCourtScheduleBtn'],
+        `/first-appearance/${encodeURIComponent(activeCountySlug)}`,
+        `View ${county.county_name} Court Times`
+    );
+
+    // 5. Layer A — SWFL Core Flagship Badge
+    if (isSwflCore) {
+        setText(['#flagshipBadge', '#swflCoreCallout', '#localDispatchNotice'],
+            `⭐ SWFL Flagship Hub: 24/7 Rapid Mobile Dispatch from 1528 Broadway, Fort Myers (<20 min ETA to ${county.jail.name || 'Jail Desk'})`);
+    }
 
     // POPULATE FAQs (Repeater) - Now pulls from CMS Faqs collection
     // Safe element getter — prevents crashes from accessing non-existent Wix elements

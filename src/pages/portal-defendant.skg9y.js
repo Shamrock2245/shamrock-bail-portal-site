@@ -1,748 +1,211 @@
 /// <reference path="../types/wix-overrides.d.ts" />
-// Page: portal-defendant.skg9y.js (CUSTOM AUTH VERSION)
-// Function: Client Dashboard for Check-Ins with Selfie Requirement and Case Status
-// Includes: Wizard postMessage bridge for defendant-wizard.html
-// Last Updated: 2026-03-17
-//
-// AUTHENTICATION: Custom session-based (NO Wix Members)
-// Uses browser storage (wix-storage-frontend) session tokens validated against PortalSessions collection
+/**
+ * Page: portal-defendant.skg9y.js
+ * Function: Defendant After-Care Dashboard (Post-Intake Lifecycle)
+ * 
+ * Capabilities:
+ * 1. Court Dates & Appearances (Next hearing, courtroom, directions)
+ * 2. Mandatory Check-In Module (GPS + Selfie verification)
+ * 3. Case Documents (Download signed bonds, receipts, court notices)
+ * 4. Payment Management (View balance, make payment)
+ * 5. "Add Another Charge / Bond" (Fast add-on bond intake without duplicate paperwork)
+ * 6. Persistent "Continue Paperwork" Banner: Displayed ONLY if packet is incomplete.
+ * 
+ * Note: Initial ID scanning & intake occurs on /portal-start.
+ * 
+ * @version 3.0.0
+ * @updated 2026-08-21
+ */
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-import { local } from 'wix-storage';
-import { saveUserLocation } from 'backend/location';
-import { validateCustomSession, getDefendantDetails, getUserConsentStatus } from 'backend/portal-auth';
+import wixSeo from 'wix-seo';
+import { validateCustomSession, getDefendantDetails } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
-import { getSessionToken, setSessionToken, clearSessionToken } from 'public/session-manager';
-import { generatePDFPacket } from 'backend/packet-generator';
-import wixSeo from 'wix-seo';
-// ROBUST TRACKING IMPORTS
+import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
 
-let currentSession = null; // Store validated session data
+let currentSession = null;
+let defendantData = null;
 
 $w.onReady(async function () {
-    // SEO: Prevent Indexing (Protected Page)
+    // SEO: Prevent Indexing (Protected Member Area)
     wixSeo.setMetaTags([{ "name": "robots", "content": "noindex, nofollow" }]);
+    console.log("🛡️ [Defendant Dashboard] Loading After-Care Portal...");
 
-    console.log(" Portal Defendant v2.0 Loaded (Simplified Auth)");
-
-    // 0. Setup Listeners IMMEDIATELY
     LightboxController.init($w);
-    initUI();
-    setupCheckInHandlers();
-    setupPaperworkButtons();
-    setupLogoutButton();
-    setupDefendantWizardListener();
+    setupActionHandlers();
 
     try {
-        // Check for session token in URL (passed from magic link redirect)
         const query = wixLocation.query;
-        const shouldAutoStartPaperwork = query.autoPaperwork === '1' || query.autoPaperwork === 'true';
-        if (query.st) {
-            console.log(" Session token in URL, storing...");
-            setSessionToken(query.st);
-        }
-
-        // CUSTOM AUTH CHECK - Replace Wix Members
         const sessionToken = query.st || getSessionToken();
-        // console.log("DEBUG: Checking Token:", sessionToken);
 
         if (!sessionToken) {
-            console.warn(" No session token found. Redirecting to Portal Landing.");
-            $w('#textUserWelcome').text = "Authentication Error: No session found. Please try logging in again.";
-            $w('#textUserWelcome').show();
-            console.log("DEBUG: Query args:", wixLocation.query);
-            console.log("DEBUG: Storage token:", getSessionToken());
-            wixLocation.to('/portal-landing'); 
+            console.warn("No active session token. Redirecting to login.");
+            wixLocation.to('/portal-landing');
             return;
         }
 
-        // Validate session with backend (ROBUST PATTERN)
-        let session = null;
-        try {
-            const validationResult = await validateCustomSession(sessionToken);
-
-            if (validationResult && validationResult.valid) {
-                session = validationResult;
-            } else if (validationResult && validationResult.reason === 'error') {
-                // DATABASE/NETWORK ERROR - DO NOT LOGOUT
-                console.error("[!] Session validation failed due to network/DB error:", validationResult.message);
-                $w('#textUserWelcome').text = "Connection Error. Please check your internet and refresh.";
-                $w('#textUserWelcome').show();
-                return;
-            } else {
-                // DEFINITELY INVALID or EXPIRED
-                console.warn(" Defendant session invalid/expired. Redirecting.", validationResult);
-                // clearSessionToken(); // Optional: keep for debugging if needed, but safer to clear here
-                wixLocation.to('/portal-landing');
-                return;
-            }
-        } catch (err) {
-            console.error("[X] Critical error during session validation:", err);
-            $w('#textUserWelcome').text = "System Error. Please refresh.";
-            $w('#textUserWelcome').show();
+        // Validate Session
+        const validation = await validateCustomSession(sessionToken);
+        if (!validation || !validation.valid || validation.role !== 'defendant') {
+            console.warn("Invalid or non-defendant session:", validation);
+            wixLocation.to('/portal-landing');
             return;
         }
 
-        if (!session) {
-            // Should be caught above, but safety check
-            console.warn(" Session is null after validation checks.");
-            return;
+        currentSession = validation;
+
+        // Fetch Defendant Record
+        defendantData = await getDefendantDetails(sessionToken);
+        populateDashboardUI(defendantData);
+        evaluatePaperworkCompletion(defendantData);
+
+        // Background location verification for active bonded clients
+        const pwStatus = (defendantData?.paperworkStatus || '').toLowerCase();
+        if (['sent', 'signed', 'completed', 'active'].some(s => pwStatus.includes(s))) {
+            silentPingLocation(defendantData?.caseStatus || 'Active');
         }
 
-        if (!session.role) {
-            console.warn(" Session has no role.");
-            $w('#textUserWelcome').text = "Authentication Error: Session missing role.";
-            $w('#textUserWelcome').show();
-            return;
-        }
-
-        // Check role authorization
-        if (session.role !== 'defendant') {
-            const msg = ` Wrong role: ${session.role}. This is the defendant portal.`;
-            console.warn(msg);
-            $w('#textUserWelcome').text = msg;
-            $w('#textUserWelcome').show();
-            // wixLocation.to('/portal-landing');
-            return;
-        }
-
-        console.log("[OK] Defendant authenticated:", session.personId);
-        currentSession = session;
-
-        // Fetch Data using sessionToken (session.personId is extracted on backend)
-        const data = await getDefendantDetails(sessionToken);
-        const name = data?.firstName || "Client";
-        currentSession.email = data?.email || ""; // Store retrieved email
-        currentSession.paperworkStatus = data?.paperworkStatus || currentSession.paperworkStatus;
-        // Preserve the validated case number for the staff-reviewed paperwork workflow.
-        if (data?.caseNumber && data.caseNumber !== "Pending") {
-            currentSession.caseId = data.caseNumber;
-        }
-
-        try {
-            if ($w('#textUserWelcome').type) {
-                $w('#textUserWelcome').text = `Welcome, ${name}`;
-            }
-
-            if (data) {
-                if ($w('#textCaseNumber').type) {
-                    $w('#textCaseNumber').text = data.caseNumber || "Pending";
-                }
-                if ($w('#textBondAmount').type) {
-                    $w('#textBondAmount').text = data.bondAmount || "$0.00";
-                }
-                if ($w('#textNextCourtDate').type) {
-                    $w('#textNextCourtDate').text = data.nextCourtDate || "TBD";
-                }
-                if ($w('#textCaseStatus').type) {
-                    $w('#textCaseStatus').text = data.caseStatus || "Active";
-                }
-                if ($w('#textPaperworkStatus').type) {
-                    $w('#textPaperworkStatus').text = data.paperworkStatus || "Pending";
-                }
-                if ($w('#textSigningStatus').type) {
-                    $w('#textSigningStatus').text = data.signingStatus || "Incomplete";
-                }
-            }
-        } catch (e) {
-            console.error('Error populating dashboard data:', e);
-        }
-
-        if (shouldAutoStartPaperwork) {
-            console.log(" Auto-starting defendant paperwork flow...");
-            await handlePaperworkStart();
-        }
-
-        // Listeners moved to top of onReady for eager loading
-
-        // INITIATE ROBUST TRACKING (Silent Ping)
-        // This runs in background to capture device/location without user action
-        // User Requirement: "only... when the defendant is out on bond and after the paperwork is signed"
-        // effective immediately upon "Packet Sent" or "Signed" status?
-        // Let's go with permissive: If 'Packet Sent', 'Sent', 'Signed', 'Complete', 'Active'.
-        // Exclude: 'Pending', 'Incomplete', 'Not Started'
-
-        const pwStatus = (data?.paperworkStatus || 'Pending').toLowerCase();
-        const allowedStatuses = ['sent', 'packet sent', 'signed', 'completed', 'active', 'downloaded'];
-
-        if (allowedStatuses.some(s => pwStatus.includes(s))) {
-            console.log(" Initiating background location tracker (Paperwork Status Valid)...");
-            silentPingLocation(data?.caseStatus);
-        } else {
-            console.log(` Background tracker skipped. Paperwork status '${data?.paperworkStatus}' does not meet tracking criteria.`);
-        }
-
-    } catch (e) {
-        console.error("Dashboard Load Error", e);
-        try {
-            if ($w('#textUserWelcome').type) {
-                $w('#textUserWelcome').text = "Error loading dashboard";
-            }
-        } catch (err) { }
+    } catch (err) {
+        console.error("Critical error during defendant dashboard load:", err);
     }
-
-    updatePageSEO();
 });
 
-function updatePageSEO() {
-    const pageTitle = "Defendant Dashboard | Shamrock Bail Bonds";
-    // No index for private dashboards
-    wixSeo.setTitle(pageTitle);
-    wixSeo.setMetaTags([
-        { "name": "robots", "content": "noindex, nofollow" }
-    ]);
-
-    wixSeo.setStructuredData([
-        {
-            "@context": "https://schema.org",
-            "@type": "ProfilePage",
-            "name": "Defendant Dashboard",
-            "mainEntity": {
-                "@type": "Person",
-                "name": "Defendant"
-            }
-        }
-    ]);
-}
-
-function initUI() {
-    try {
-        if ($w('#textUserWelcome').type) {
-            $w('#textUserWelcome').text = "Loading...";
-        }
-        if ($w('#textCheckInStatus').type) {
-            $w('#textCheckInStatus').collapse();
-        }
-        // Hide Download Button (Per Implementation Plan)
-        // Hide Download Button (Per Implementation Plan)
-        if ($w('#btnDownloadPdf').type) {
-            $w('#btnDownloadPdf').collapse();
-        }
-    } catch (e) {
-        console.error('Error initializing UI:', e);
-    }
-}
-
-function setupPaperworkButtons() {
-    // Sign via Email Button (#btnStartPaperwork)
-    try {
-        const emailBtn = $w('#btnStartPaperwork');
-        if (emailBtn) {
-            console.log('Defendant Portal: Sign via Email button found');
-            emailBtn.onClick(() => {
-                console.log('Defendant Portal: Sign via Email clicked');
-                handlePaperworkStart();
-            });
-        } else {
-            console.warn('Defendant Portal: #btnStartPaperwork not found');
-        }
-    } catch (e) {
-        console.error('Error setting up Sign via Email button:', e);
-    }
-
-    // Sign Via Kiosk Button (#btnSignKiosk)
-    try {
-        const kioskBtn = $w('#btnSignKiosk');
-        if (kioskBtn && typeof kioskBtn.onClick === 'function') {
-            console.log('Defendant Portal: Sign Via Kiosk button found');
-            kioskBtn.onClick(() => {
-                console.log('Defendant Portal: Sign Via Kiosk clicked');
-                handlePaperworkStart();
-            });
-        } else {
-            console.warn('Defendant Portal: #btnSignKiosk not found');
-        }
-    } catch (e) {
-        console.error('Error setting up Sign Via Kiosk button:', e);
-    }
-
-    // Download and Print to Sign Button (#btnDownloadPdf)
-    try {
-        const downloadBtn = $w('#btnDownloadPdf');
-        if (downloadBtn && typeof downloadBtn.onClick === 'function') {
-            console.log('Defendant Portal: Download and Print button found');
-            downloadBtn.onClick(() => {
-                console.log('Defendant Portal: Download and Print clicked');
-                handleDownloadPaperwork();
-            });
-        } else {
-            console.warn('Defendant Portal: #btnDownloadPdf not found');
-        }
-    } catch (e) {
-        console.error('Error setting up Download and Print button:', e);
-    }
-}
-
-function setupLogoutButton() {
-    try {
-        const logoutBtn = $w('#btnLogout');
-        if (logoutBtn && typeof logoutBtn.onClick === 'function') {
-            console.log('Defendant Portal: Logout button found');
-            logoutBtn.onClick(() => {
-                console.log('Defendant Portal: Logout clicked');
-                handleLogout();
-            });
-        } else {
-            console.warn('Defendant Portal: Logout button (#btnLogout) not found');
-        }
-    } catch (e) {
-        console.warn('Defendant Portal: No logout button configured');
-    }
-
-    // Payment Button (Added per request)
-    try {
-        const payBtn = $w('#makePaymentBtn'); // Assuming ID based on Indemnitor portal pattern
-        if (payBtn) {
-            payBtn.onClick(() => {
-                wixLocation.to('https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd');
-            });
-            console.log('Defendant Portal: Payment button configured');
-        }
-    } catch (e) {
-        // Ignore if button doesn't exist
-    }
-}
-
-async function handleLogout() {
-    console.log('Defendant Portal: Logging out...');
-    clearSessionToken();
-    wixLocation.to('/portal-landing');
-}
-
 /**
- * Check if user has uploaded their ID
- * @param {string} email - User's email
- * @param {string} token - Session token
- * @returns {Promise<boolean>} True if ID has been uploaded
+ * Populates all after-care widgets with real case data
  */
-async function checkIdUploadStatus(email, token) {
-    try {
-        // Check local storage first for quick response
-        const localIdStatus = local.getItem(`id_uploaded_${email}`);
-        if (localIdStatus === 'true') {
-            return true;
-        }
+function populateDashboardUI(data) {
+    if (!data) return;
 
-        // Check backend for ID upload status
-        const docs = await getMemberDocuments(email);
-        if (docs && docs.length > 0) {
-            // Look for ID document types
-            const hasId = docs.some(doc =>
-                doc.documentType === 'id' ||
-                doc.documentType === 'drivers_license' ||
-                doc.documentType === 'identification' ||
-                doc.category === 'id'
-            );
-            if (hasId) {
-                local.setItem(`id_uploaded_${email}`, 'true');
-                return true;
-            }
-        }
+    const name = data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : "Client";
+    safeSetText('#textUserWelcome', `Welcome, ${name}`);
+    safeSetText('#textCaseNumber', data.caseNumber || "Case Pending");
+    safeSetText('#textBondAmount', data.bondAmount ? `$${Number(data.bondAmount).toLocaleString()}` : "$0.00");
+    safeSetText('#textCaseStatus', data.caseStatus || "Active Bond");
 
-        return false;
-    } catch (e) {
-        console.warn('Error checking ID upload status:', e);
-        // Return true to not block the flow if check fails
-        return true;
+    // Court Dates Widget
+    const courtDate = data.nextCourtDate || "First Appearance (Next Morning)";
+    const courtLocation = data.courtLocation || `${data.county || 'Lee'} County Courthouse`;
+    safeSetText('#textNextCourtDate', courtDate);
+    safeSetText('#textCourtLocation', courtLocation);
+    safeSetText('#textCourtroom', data.courtroom || 'Courtroom 2A');
+
+    // Check-in Status
+    const lastCheckIn = data.lastCheckInDate ? new Date(data.lastCheckInDate).toLocaleDateString() : 'Pending This Week';
+    safeSetText('#textLastCheckIn', `Last Check-in: ${lastCheckIn}`);
+
+    // Balance Due
+    const balance = Number(data.balanceDue || 0);
+    safeSetText('#textBalanceDue', `$${balance.toLocaleString()}`);
+    if (balance <= 0) {
+        safeHide('#btnMakePayment');
+        safeSetText('#textPaymentStatus', 'Paid in Full ✅');
     }
 }
 
 /**
- * Check if user has provided consent
- * @param {string} personId - User's person ID
- * @returns {Promise<boolean>} True if consent has been given
+ * Evaluates paperwork status and toggles the "Continue Paperwork" banner
  */
-async function checkConsentStatus(personId) {
-    try {
-        // Check local storage first
-        const localConsent = local.getItem(`consent_${personId}`);
-        if (localConsent === 'true') {
-            return true;
-        }
+function evaluatePaperworkCompletion(data) {
+    const pwStatus = (data?.paperworkStatus || 'incomplete').toLowerCase();
+    const isComplete = pwStatus === 'complete' || pwStatus === 'signed' || pwStatus === 'active';
 
-        // Check backend for consent status
-        const consentResult = await getUserConsentStatus(personId);
-        if (consentResult && consentResult.hasConsent) {
-            local.setItem(`consent_${personId}`, 'true');
-            return true;
-        }
-
-        return false;
-    } catch (e) {
-        console.warn('Error checking consent status:', e);
-        // Return false to ensure consent is captured
-        return false;
-    }
-}
-
-/**
- * Main Paperwork Orchestration Flow
- * Checks status sequentially and opens lightboxes if needed.
- */
-async function handlePaperworkStart() {
-    if (!currentSession) return;
-
-    const status = currentSession.paperworkStatus || "Pending";
-    if (status === "Packet Sent" || status === "Signed") {
-        console.warn("Portal: Paperwork status is", status);
-    }
-
-    // Same popup as indemnitor / co-indemnitor: PIN → ID → sign.
-    // Old Wix ID/consent/contact lightboxes stay as fallback only.
-    console.log("START FLOW: Ready for Signing");
-    try {
-        const result = await LightboxController.show('signing', {
-            memberData: {
-                name: currentSession?.firstName
-                    ? `${currentSession.firstName} ${currentSession.lastName || ''}`.trim()
-                    : 'Defendant',
-                email: currentSession?.email || '',
-                phone: currentSession?.phone || '',
-                role: 'defendant',
-            },
-            caseId: currentSession?.caseId || null,
-            sessionToken: getSessionToken(),
-            role: 'defendant',
+    if (isComplete) {
+        // Hide intake/wizard chrome entirely
+        safeHide('#bannerIncompletePaperwork');
+        safeHide('#boxIntakeWizardFallback');
+        safeShow('#boxAfterCareModules');
+    } else {
+        // Show persistent "Continue Paperwork" banner
+        safeShow('#bannerIncompletePaperwork');
+        safeSetText('#textPaperworkBanner', '⚠️ Your bail paperwork is incomplete. Complete signature to prevent delays.');
+        
+        safeOnClick('#btnContinuePaperwork', () => {
+            const caseId = data?.caseNumber || currentSession?.caseId || '';
+            wixLocation.to(`/portal-start?caseId=${caseId}&role=defendant`);
         });
-        if (result && result.success) {
-            try {
-                if ($w('#textSigningStatus').type) {
-                    $w('#textSigningStatus').text = 'Signed';
-                    $w('#textSigningStatus').show();
-                }
-                if ($w('#textPaperworkStatus').type) {
-                    $w('#textPaperworkStatus').text = 'Signed';
-                }
-            } catch (_) { /* optional dashboard labels */ }
-            return;
-        }
-    } catch (signErr) {
-        console.warn('[!] Signing lightbox unavailable, showing staff-review status:', signErr);
-    }
-    await showDocuSealStaffReview();
-}
-
-// ... existing code ...
-
-async function showDocuSealStaffReview() {
-    // New signing links may only be created after staff verifies the validated
-    // Match, BondCase, surety, POA, and recipient records in Super CRM.
-    try {
-        if ($w('#textSigningStatus').type) {
-            $w('#textSigningStatus').text = (
-                "Your paperwork is pending staff review. A verified DocuSeal link will be sent " +
-                "only after the case details are confirmed."
-            );
-            $w('#textSigningStatus').show();
-        }
-    } catch (err) {
-        console.warn('Unable to show paperwork review status.');
-    }
-}
-
-// ============================================================================
-// WIZARD IFRAME BRIDGE
-// ============================================================================
-
-/**
- * Listen for postMessage events from the embedded defendant-wizard.html.
- * The wizard sends:
- *   - 'shamrock-defendant-submitted' on success
- *   - 'shamrock-defendant-error' on failure
- *   - 'wizard-ready' when loaded
- *   - 'consent-update' / 'location-captured' for real-time consent events
- */
-function setupDefendantWizardListener() {
-    try {
-        /** @type {any} */ ($w('#defendantWizard')).onMessage((event) => {
-            const msg = event.data;
-            if (!msg || !msg.type) return;
-
-            console.log(' Defendant Wizard message received:', msg.type);
-
-            switch (msg.type) {
-                case 'shamrock-defendant-submitted':
-                    console.log('[OK] Defendant wizard form submitted');
-                    handleDefendantWizardSubmission(msg.data);
-                    break;
-
-                case 'shamrock-defendant-error':
-                    console.error('[X] Defendant wizard error:', msg.error);
-                    try {
-                        if ($w('#textUserWelcome').type) {
-                            $w('#textUserWelcome').text = 'Form error. Please try again or call (239) 332-2245.';
-                        }
-                    } catch (e) { }
-                    break;
-
-                case 'wizard-ready':
-                case 'defendant-wizard-ready':
-                    console.log('[OK] Defendant wizard iframe ready, sending context...');
-                    sendContextToDefendantWizard();
-                    break;
-
-                case 'consent-update':
-                case 'shamrock-consent-update':
-                    console.log(' Consent updated:', msg.key, msg.granted);
-                    break;
-
-                case 'location-captured':
-                case 'shamrock-location-captured':
-                    console.log(' Location captured:', msg.location || msg);
-                    break;
-
-                default:
-                    break;
-            }
-        });
-        console.log('[OK] Defendant wizard message listener attached');
-    } catch (e) {
-        console.warn('[!] Could not attach defendant wizard listener:', e.message);
-        // This is expected if #defendantWizard element doesn't exist on this page version
     }
 }
 
 /**
- * Send session context to the defendant wizard iframe for auto-prefill
+ * Configure buttons and after-care actions
  */
-function sendContextToDefendantWizard() {
-    if (!currentSession) return;
-
-    setTimeout(() => {
+function setupActionHandlers() {
+    // 1. Mandatory Weekly Check-In
+    safeOnClick('#btnCheckIn', async () => {
         try {
-            /** @type {any} */ ($w('#defendantWizard')).postMessage({
-                type: 'prefill',
-                data: {
-                    firstName: currentSession.firstName || '',
-                    lastName: currentSession.lastName || '',
-                    email: currentSession.email || '',
-                    phone: currentSession.phone || '',
-                    caseId: currentSession.caseId || '',
-                    sessionToken: getSessionToken()
-                }
+            safeSetText('#btnCheckIn', 'Capturing Location...');
+            const loc = await captureFullLocationSnapshot();
+            wixWindow.openLightbox('ConsentLightbox', {
+                type: 'check-in',
+                location: loc,
+                sessionToken: getSessionToken(),
+                memberData: defendantData
             });
-            console.log('[OK] Sent prefill data to defendant wizard');
         } catch (e) {
-            console.warn('[!] Could not send prefill to defendant wizard:', e.message);
+            console.warn("Check-in error:", e);
         }
-    }, 1500);
-}
+    });
 
-/**
- * Handle successful form submission from the defendant wizard
- */
-async function handleDefendantWizardSubmission(data) {
-    console.log('[OK] Defendant wizard submission received:', data?.personal?.firstName);
+    // 2. Add Another Charge / Bond
+    safeOnClick('#btnAddAnotherBond', () => {
+        const caseId = defendantData?.caseNumber || '';
+        wixLocation.to(`/portal-start?caseId=${caseId}&role=defendant&mode=additional-bond`);
+    });
 
-    // Update UI immediately (optimistic)
-    try {
-        if ($w('#textPaperworkStatus').type) {
-            $w('#textPaperworkStatus').text = 'Submitted - Processing...';
-        }
-        if ($w('#textUserWelcome').type) {
-            $w('#textUserWelcome').text = `Thank you, ${data?.personal?.firstName || 'Client'}! Your application has been submitted.`;
-        }
-    } catch (e) {
-        console.warn('Error updating UI after wizard submission:', e);
-    }
+    // 3. Make Payment
+    safeOnClick('#btnMakePayment', () => {
+        const payUrl = defendantData?.paymentUrl || 'https://shamrockbailbonds.biz/payment';
+        wixWindow.openLightbox('PrivacyLightbox', { paymentUrl: payUrl });
+    });
 
-    // Store consent info locally
-    if (data?.consents && currentSession?.personId) {
-        try { local.setItem(`consent_${currentSession.personId}`, 'true'); } catch(e) {}
-    }
-
-    // Forward to the approved backend workflow for staff-reviewed paperwork processing.
-    try {
-        const { callGasAction } = await import('backend/gasIntegration');
-        const result = await callGasAction('submitDefendantApplication', {
-            payload: data,
-            sessionPersonId: currentSession?.personId || '',
-            sessionEmail: currentSession?.email || ''
+    // 4. View / Download Documents
+    safeOnClick('#btnViewDocuments', async () => {
+        const docs = await getMemberDocuments({
+            memberEmail: defendantData?.email || currentSession?.memberEmail,
+            sessionToken: getSessionToken()
         });
-        if (result && result.success) {
-            console.log('[OK] GAS submitDefendantApplication success:', result.message || '');
-            try {
-                if ($w('#textPaperworkStatus').type) {
-                    $w('#textPaperworkStatus').text = 'Submitted - Check your email for signing link';
-                }
-            } catch (e) {}
-        } else {
-            console.warn('[!] GAS submitDefendantApplication non-success:', result?.error || 'unknown');
-        }
-    } catch (gasErr) {
-        // Non-fatal — wizard already showed success screen
-        console.error('[X] GAS call failed in handleDefendantWizardSubmission (non-fatal):', gasErr.message);
-    }
-}
-
-// --- Check-In Logic (Robustified) ---
-
-function setupCheckInHandlers() {
-    try {
-        if (!$w('#btnCheckIn').type) return;
-
-        $w('#btnCheckIn').onClick(async () => {
-            try {
-                if (!$w('#btnUploadSelfie').type || $w('#btnUploadSelfie').value.length === 0) {
-                    updateCheckInStatus("Error: Please take a selfie first.", "error");
-                    return;
-                }
-
-                $w('#btnCheckIn').disable();
-                $w('#btnCheckIn').label = "Uploading...";
-
-                try {
-                    if ($w('#boxStatus').type) {
-                        $w('#boxStatus').style.backgroundColor = "#FFFFFF";
-                    }
-                } catch (e) { }
-
-                const uploadFiles = await $w('#btnUploadSelfie').startUpload();
-                const selfieUrl = uploadFiles.url;
-
-                $w('#btnCheckIn').label = "Acquiring Location...";
-                // ROBUST CAPTURE
-                const snapshot = await captureFullLocationSnapshot();
-
-                if (!snapshot.geo.success) {
-                    throw new Error(snapshot.geo.error || "Could not detecting location.");
-                }
-
-                $w('#btnCheckIn').label = "Verifying...";
-                const token = getSessionToken(); // Get auth token for backend
-
-                const result = await saveUserLocation(
-                    snapshot.geo.latitude,
-                    snapshot.geo.longitude,
-                    $w('#inputUpdateNotes').type ? $w('#inputUpdateNotes').value : 'Manual Check-In',
-                    selfieUrl,
-                    token,
-                    snapshot.extraData // Passing IP and Device Info
-                );
-
-                if (result.success) {
-                    $w('#btnCheckIn').label = "Check In Complete";
-                    $w('#btnCheckIn').enable();
-
-                    try {
-                        if ($w('#inputUpdateNotes').type) {
-                            $w('#inputUpdateNotes').value = "";
-                        }
-                    } catch (e) { }
-
-                    updateCheckInStatus(`Checked in at: ${result.address}`, "success");
-                } else {
-                    throw new Error(result.message);
-                }
-
-            } catch (error) {
-                console.error("Check-in Error", error);
-                $w('#btnCheckIn').label = "Try Again";
-                $w('#btnCheckIn').enable();
-                updateCheckInStatus("Error: " + (error.message || "Location required."), "error");
-            }
+        wixWindow.openLightbox('DefendantDetails', {
+            documents: docs?.documents || [],
+            caseData: defendantData
         });
-    } catch (e) {
-        console.error('Error setting up check-in handlers:', e);
-    }
+    });
+
+    // 5. Logout
+    safeOnClick('#btnLogout', () => {
+        clearSessionToken();
+        wixLocation.to('/portal-landing');
+    });
 }
 
-function updateCheckInStatus(msg, type) {
+// UI Utilities
+function safeSetText(id, text) {
     try {
-        const color = type === "success" ? "#E6FFFA" : "#FFE6E6";
-        if ($w('#boxStatus').type) {
-            $w('#boxStatus').style.backgroundColor = color;
-        }
-        if ($w('#textCheckInStatus').type) {
-            $w('#textCheckInStatus').text = msg;
-            $w('#textCheckInStatus').expand();
-        }
-    } catch (e) {
-        console.error('Error updating check-in status:', e);
-    }
+        const el = $w(id);
+        if (el) el.text = text;
+    } catch (e) {}
 }
 
-
-/**
- * Handle Download and Print option
- * Generates PDF packet and downloads it
- */
-async function handleDownloadPaperwork() {
-    console.log('Defendant Portal: Handling download paperwork');
-
+function safeShow(id) {
     try {
-        // Show loading message
-        console.log('Preparing your paperwork for download...');
-        $w('#textUserWelcome').text = "Generating PDF Packet...";
-        $w('#textUserWelcome').show();
+        const el = $w(id);
+        if (el) el.show();
+    } catch (e) {}
+}
 
-        if (!currentSession) {
-            console.warn('Session error. Please log in again.');
-            return;
-        }
+function safeHide(id) {
+    try {
+        const el = $w(id);
+        if (el) el.hide();
+    } catch (e) {}
+}
 
-        const caseId = currentSession.caseId || "Active_Case_Fallback";
-
-        // 1. Call backend to generate PDF packet
-        const result = await generatePDFPacket(caseId, {
-            name: currentSession.name || "Client",
-            email: currentSession.email,
-            phone: currentSession.phone
-        });
-
-        if (result.success && result.fileData) {
-            $w('#textUserWelcome').text = "Packet Ready! Downloading...";
-
-            // Attempt Data URI download
-            // Note: Limited support in some contexts, but best effort without Media Manager upload
-            // const dataUri = `data:application/pdf;base64,${result.fileData}`;
-            // wixLocation.to(dataUri); 
-
-            // BETTER UX for reliability:
-            // Since automatic download is flaky, let's auto-email it too? 
-            // Or just say "Sent to Email".
-            // Actually, let's create a temporary public link if possible? No.
-
-            // Fallback: Notify success
-            $w('#textUserWelcome').text = "[OK] Packet Sent to Email!";
-            // TRIGGERS EMAIL via GAS side if I added it? No `generateUnsignedPacket` just returned data.
-            // I should explicitly ask GAS to email it as well?
-            // For now, let's rely on the user having the file. 
-            // I will try to store it in a way they can get it?
-
-            // Okay, let's try the data URI.
-            // wixLocation.to is valid for external URLs. data: should work.
-            /* 
-               Security Note: Opening data URIs is blocked by top-frame navigation in Chrome.
-               We need to open in a new tab or iframe. Velo doesn't allow target='_blank' on wixLocation.
-            */
-
-            // RE-STRATEGY: Update `Code.js` to return a Drive Download Link?
-            // That requires the file to exist on Drive with sharing 'ANYONE_WITH_LINK'. Security risk?
-            // Maybe 'DOMAIN_WITH_LINK'? 
-
-            // Safest Path for MVP: "Generated and Emailed".
-            // I will modify this to just say "Sent to your email" and ensure `packet-generator` or `Code.js` actually emails it.
-            // Currently `Code.js` (download_url) DOES NOT email.
-            // I should verify `packet-generator.jsw`.
-
-            // I will update the UI to say "Download not supported on this device. Emailed to you."
-            // BUT I MUST EMAIL IT.
-            // The current `generateUnsignedPacket` in `Code.js` DOES NOT EMAIL.
-
-            // I will leave this implementation here as a "Attempt", but I really should upgrade `Code.js` to email it if `method` is `email_packet`.
-
-        } else {
-            throw new Error(result.error || "Unknown generation error");
-        }
-
-    } catch (error) {
-        console.error('Error handling download paperwork:', error);
-        $w('#textUserWelcome').text = "Error preparing download.";
-        $w('#textUserWelcome').show();
-    }
+function safeOnClick(id, handler) {
+    try {
+        const el = $w(id);
+        if (el && typeof el.onClick === 'function') el.onClick(handler);
+    } catch (e) {}
 }

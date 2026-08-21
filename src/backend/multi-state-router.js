@@ -11,8 +11,9 @@
  * @module multi-state-router
  */
 
-import { ok, notFound, redirect } from 'wix-router';
+import { ok, redirect } from 'wix-router';
 import { EXPANSION_STATES } from 'public/portal-config';
+import { isStateLive } from 'backend/service-areas';
 
 const MULTI_STATE_PAGE = 'Florida Counties'; // Uses the dynamic location template
 
@@ -31,6 +32,12 @@ export async function routeMultiStatePage(request) {
     
     if (stateMatch) {
       const stateInfo = EXPANSION_STATES[stateMatch];
+      const live = await isStateLive(stateInfo.code);
+      if (!live) {
+        // Do not publish empty or non-live state pages
+        return redirect('/#counties');
+      }
+
       return ok(MULTI_STATE_PAGE, {
         title: `${stateInfo.name} Bail Bonds | 24/7 Jail Release | Shamrock`,
         description: `Licensed 24/7 bail bond services in ${stateInfo.name}. Instant phone consult, payment plans, and fast jail dispatch. Call (239) 332-2245.`,
@@ -57,6 +64,12 @@ export async function routeMultiStatePage(request) {
     const stateCode = (pathSegments[0] || '').toUpperCase();
     const countySlug = (pathSegments[1] || '').toLowerCase().trim().replace(/-county$/i, '');
     const stateInfo = EXPANSION_STATES[stateCode] || { name: stateCode, code: stateCode };
+
+    const live = await isStateLive(stateInfo.code);
+    if (!live) {
+      // Do not publish empty or non-live state pages
+      return redirect('/#counties');
+    }
 
     const countyDisplay = countySlug
       .split('-')

@@ -1,55 +1,85 @@
+/**
+ * Page: Contact.ilgty.js
+ * Function: Contact & 24/7 Emergency Dispatch Center
+ * 
+ * Architecture:
+ * 1. Distinct paths: Emergency "Call/Text Us Now" vs. Self-Service "Start Paperwork Online"
+ * 2. Headquarters: 1528 Broadway, Fort Myers, FL 33901 (SWFL Core First, Statewide Second)
+ * 3. Omni-Channel Intake: Highlights 24/7 Phone, SMS, Shannon Voice AI, and Telegram Bot
+ * 
+ * @module Contact
+ */
+
 import { submitContactForm } from 'backend/contact-api';
 import { getCounties } from 'public/countyUtils';
 import wixSeo from 'wix-seo';
+import wixLocation from 'wix-location';
 
 $w.onReady(async function () {
-    console.log(" Contact Page Loaded");
+    console.log("☘️ [Contact Page] Initializing 24/7 Emergency & Paperwork Dispatch...");
 
-    // Initialize Event Handlers
-    $w('#btnSubmit').onClick(handleSubmit);
-
-    // Load Jails
+    setupActionPaths();
     await loadJails();
-
-    // Optional: Pre-fill data if query params exist (e.g. from a "Quick Contact" link)
-    // const query = wixLocation.query;
-    // if(query.jail) $w('#dropdownJail').value = query.jail;
-
     updatePageSEO();
     fixPlaceholderHeadings();
 });
 
+/**
+ * Configure distinct action paths: Call/Text vs. Start Paperwork Online
+ */
+function setupActionPaths() {
+    // 1. Emergency Call/Text Direct Links
+    safeOnClick('#btnCallNow', () => {
+        wixLocation.to('tel:+12393322245');
+    });
+
+    safeOnClick('#btnTextNow', () => {
+        wixLocation.to('sms:+12399550178');
+    });
+
+    // 2. Start Paperwork Online (Self-Service Path)
+    safeOnClick('#btnStartPaperwork', () => {
+        wixLocation.to('/portal-start');
+    });
+
+    safeOnClick('#btnGetSomeoneOut', () => {
+        wixLocation.to('/portal-start');
+    });
+
+    // 3. Telegram Bot & Shannon Voice AI Alternate Channels
+    safeOnClick('#btnTelegramBot', () => {
+        wixLocation.to('https://t.me/ShamrockBail_bot');
+    });
+
+    // 4. Form Submit
+    const btnSubmit = $w('#btnSubmit');
+    if (btnSubmit && typeof btnSubmit.onClick === 'function') {
+        btnSubmit.onClick(handleSubmit);
+    }
+}
+
 function fixPlaceholderHeadings() {
     const replacements = {
-        '#capsTitle': 'Our Fort Myers Office',
-        '#textCapsTitle': 'Our Fort Myers Office',
-        '#officeHeading': 'Our Fort Myers Office'
+        '#capsTitle': 'Flagship Office · Fort Myers HQ',
+        '#textCapsTitle': '1528 Broadway, Fort Myers, FL 33901',
+        '#officeHeading': 'Southwest Florida Headquarters'
     };
     Object.keys(replacements).forEach((id) => {
         try {
             const el = $w(id);
-            if (el && typeof el.text === 'string' && /caps title/i.test(el.text)) {
+            if (el && typeof el.text === 'string') {
                 el.text = replacements[id];
             }
-        } catch (e) { /* editor-only placeholder */ }
-    });
-    ['#text1', '#text2', '#text3', '#text4', '#text5', '#text6', '#text7', '#text8'].forEach((id) => {
-        try {
-            const el = $w(id);
-            if (el && typeof el.text === 'string' && el.text.trim().toUpperCase() === 'CAPS TITLE') {
-                el.text = 'Our Fort Myers Office';
-            }
-        } catch (e) { /* skip */ }
+        } catch (e) {}
     });
 }
 
 function updatePageSEO() {
-    const pageTitle = "Contact Shamrock Bail Bonds | 24/7 Emergency Bail Bonds Fort Myers FL";
-    const pageDesc = "Need immediate bail bond help? Contact Shamrock Bail Bonds 24/7 at (239) 332-2245. Serving Fort Myers, Naples, Cape Coral, and all 67 Florida counties. Walk-ins welcome at 1528 Broadway.";
+    const pageTitle = "Contact Shamrock Bail Bonds | 24/7 Emergency Dispatch Fort Myers FL";
+    const pageDesc = "Need immediate bail bond help? Call or text Shamrock Bail Bonds 24/7 at (239) 332-2245, start paperwork online at /portal-start, or visit 1528 Broadway, Fort Myers, FL 33901.";
     const pageUrl = "https://www.shamrockbailbonds.biz/contact";
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
-    // 1. Meta Tags (Action-oriented)
     wixSeo.setTitle(pageTitle);
     wixSeo.setMetaTags([
         { "name": "description", "content": pageDesc },
@@ -59,80 +89,25 @@ function updatePageSEO() {
         { "property": "og:type", "content": "website" },
         { "property": "og:image", "content": logoUrl },
         { "property": "og:site_name", "content": "Shamrock Bail Bonds" },
-        { "property": "og:locale", "content": "en_US" },
-        { "name": "twitter:card", "content": "summary_large_image" },
-        { "name": "twitter:title", "content": pageTitle },
-        { "name": "twitter:description", "content": pageDesc },
-        { "name": "robots", "content": "index, follow, max-snippet:-1" },
-        { "name": "keywords", "content": "contact bail bondsman Fort Myers, 24/7 bail bonds Florida, emergency bail bond number, Shamrock Bail Bonds phone" }
+        { "name": "robots", "content": "index, follow, max-snippet:-1" }
     ]);
 
-    wixSeo.setLinks([
-        { "rel": "canonical", "href": pageUrl }
-    ]);
+    wixSeo.setLinks([{ "rel": "canonical", "href": pageUrl }]);
 
-    // 2. Structured Data (ContactPage + LocalBusiness w/ 24/7 ContactPoint)
     wixSeo.setStructuredData([
-        {
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
-                { "@type": "ListItem", "position": 2, "name": "Contact", "item": pageUrl }
-            ]
-        },
         {
             "@context": "https://schema.org",
             "@type": "ContactPage",
             "name": pageTitle,
             "url": pageUrl,
             "description": pageDesc,
-            "speakable": {
-                "@type": "SpeakableSpecification",
-                "cssSelector": ["h1", "h2", ".contact-info", "address"]
-            },
             "mainEntity": {
                 "@type": "LocalBusiness",
                 "name": "Shamrock Bail Bonds, LLC",
                 "@id": "https://www.shamrockbailbonds.biz/#organization",
                 "image": logoUrl,
-                "logo": { "@type": "ImageObject", "url": logoUrl },
                 "telephone": "+1-239-332-2245",
-                "url": "https://www.shamrockbailbonds.biz/",
                 "priceRange": "$$",
-                "openingHoursSpecification": {
-                    "@type": "OpeningHoursSpecification",
-                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                    "opens": "00:00",
-                    "closes": "23:59"
-                },
-                "sameAs": [
-                    "https://www.facebook.com/ShamrockBail",
-                    "https://www.instagram.com/shamrock_bail_bonds",
-                    "https://t.me/ShamrockBail_bot"
-                ],
-                "contactPoint": [
-                    {
-                        "@type": "ContactPoint",
-                        "telephone": "+1-239-332-2245",
-                        "contactType": "customer service",
-                        "areaServed": { "@type": "State", "name": "Florida" },
-                        "availableLanguage": ["English", "Spanish"],
-                        "hoursAvailable": {
-                            "@type": "OpeningHoursSpecification",
-                            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                            "opens": "00:00",
-                            "closes": "23:59"
-                        }
-                    },
-                    {
-                        "@type": "ContactPoint",
-                        "telephone": "+1-239-332-2245",
-                        "contactType": "emergency",
-                        "areaServed": { "@type": "State", "name": "Florida" },
-                        "availableLanguage": "English"
-                    }
-                ],
                 "address": {
                     "@type": "PostalAddress",
                     "streetAddress": "1528 Broadway",
@@ -143,12 +118,17 @@ function updatePageSEO() {
                 },
                 "geo": {
                     "@type": "GeoCoordinates",
-                    "latitude": 26.6406,
-                    "longitude": -81.8723
+                    "latitude": "26.6406",
+                    "longitude": "-81.8723"
+                },
+                "openingHoursSpecification": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
                 }
             }
         },
-        // FAQPage — AI citation targets for contact queries
         {
             "@context": "https://schema.org",
             "@type": "FAQPage",
@@ -158,38 +138,28 @@ function updatePageSEO() {
                     "name": "Where is Shamrock Bail Bonds located?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Shamrock Bail Bonds is located at 1528 Broadway, Fort Myers, FL 33901 — directly across the street from the Lee County Justice Center and steps from the Lee County Jail. Walk-ins are welcome 24/7."
+                        "text": "Shamrock Bail Bonds is located at 1528 Broadway, Fort Myers, FL 33901 — directly across the street from the Lee County Justice Center and steps from the Ortiz Ave Core Facility. Walk-ins welcome 24/7."
                     }
                 },
                 {
                     "@type": "Question",
-                    "name": "What are Shamrock Bail Bonds hours?",
+                    "name": "What is the fastest way to get someone out of jail?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Shamrock Bail Bonds is open 24 hours a day, 7 days a week, including all holidays. Call (239) 332-2245 any time — we answer immediately, day or night. Our Fort Myers office at 1528 Broadway is staffed for walk-ins during business hours, with after-hours service available by phone and online."
+                        "text": "If you have an ID and 2 minutes, start online at shamrockbailbonds.biz/portal-start to scan your license and sign paperwork instantly. For phone assistance, call Shannon or our live dispatchers 24/7 at (239) 332-2245."
                     }
                 },
                 {
                     "@type": "Question",
-                    "name": "How do I contact Shamrock Bail Bonds?",
+                    "name": "Can I use Telegram to post bail?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "You can reach Shamrock Bail Bonds 24/7 by phone at (239) 332-2245, via our website at shamrockbailbonds.biz, through our Telegram bot @ShamrockBail_bot, or by visiting our office at 1528 Broadway, Fort Myers, FL 33901. For Spanish, call (239) 955-0301."
-                    }
-                },
-                {
-                    "@type": "Question",
-                    "name": "Can I start the bail bond process without visiting the office?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Yes. Shamrock Bail Bonds handles the entire process remotely. Call us, use our online portal, or message our Telegram bot. All paperwork is sent to your phone for digital signature via SignNow. No office visit is required — we serve all 67 Florida counties remotely."
+                        "text": "Yes. Search @ShamrockBail_bot on Telegram for instant conversational intake, ID scan, quote calculator, and automated paperwork links."
                     }
                 }
             ]
         }
-    ])
-        .then(() => console.log("[OK] Contact Page SEO Set"))
-        .catch(e => console.error("[X] Contact Page SEO Error", e));
+    ]);
 }
 
 async function loadJails() {
@@ -199,96 +169,117 @@ async function loadJails() {
             label: c.jailName,
             value: c.jailName
         }));
-
-        // Sort alphabetically
         opts.sort((a, b) => a.label.localeCompare(b.label));
-
-        $w('#dropdownJail').options = opts;
+        const dd = $w('#dropdownJail');
+        if (dd) dd.options = opts;
     } catch (err) {
-        console.error("Failed to load jails", err);
+        console.warn("Failed to load jails:", err);
     }
 }
 
-/**
- * Handle Submit Button Click
- */
 async function handleSubmit() {
     const $btn = $w('#btnSubmit');
     const $err = $w('#textError');
     const $success = $w('#textSuccess');
 
-    // 1. Reset State
-    $btn.disable();
-    $btn.label = "Submitting...";
-    $err.hide();
-    $success.hide();
+    safeDisable('#btnSubmit');
+    safeSetText('#btnSubmit', "Submitting...");
+    safeHide('#textError');
+    safeHide('#textSuccess');
 
-    // 2. Collect Data
     const formData = {
-        name: $w('#inputName').value,
-        phone: $w('#inputPhone').value,
-        email: $w('#inputEmail').value,
-        relationship: $w('#dropdownRelationship').value,
-        defendantName: $w('#inputDefendantName').value,
-        defendantDob: $w('#datePickerDefendantDOB').value,
-        jail: $w('#dropdownJail').value,
-        bookingNumber: $w('#inputBookingNumber').value,
-        charges: $w('#inputCharges').value,
-        source: $w('#dropdownSource').value,
-        notes: $w('#inputNotes').value,
-        consent: $w('#checkboxConsent').checked
+        name: safeGetValue('#inputName'),
+        phone: safeGetValue('#inputPhone'),
+        email: safeGetValue('#inputEmail'),
+        relationship: safeGetValue('#dropdownRelationship'),
+        defendantName: safeGetValue('#inputDefendantName'),
+        defendantDob: safeGetValue('#datePickerDefendantDOB'),
+        jail: safeGetValue('#dropdownJail'),
+        bookingNumber: safeGetValue('#inputBookingNumber'),
+        charges: safeGetValue('#inputCharges'),
+        source: safeGetValue('#dropdownSource') || 'Website Contact',
+        notes: safeGetValue('#inputNotes'),
+        consent: safeGetChecked('#checkboxConsent')
     };
 
-    console.log("DEBUG: Submitting form...", formData);
-
-    // 3. Client-Side Validation (Fast Fail)
-    if (!formData.name || !formData.phone || !formData.defendantName || !formData.jail) {
-        showError("Please fill in all required fields marked with *.");
-        resetButton();
+    if (!formData.name || !formData.phone || !formData.defendantName) {
+        safeSetText('#textError', "Please fill in all required fields (Name, Phone, Defendant Name).");
+        safeShow('#textError');
+        safeEnable('#btnSubmit');
+        safeSetText('#btnSubmit', "Send Message");
         return;
     }
 
-    if (!formData.consent) {
-        showError("You must consent to be contacted to proceed.");
-        resetButton();
-        return;
-    }
-
-    // 4. Send to Backend
     try {
-        const result = await submitContactForm(formData);
-
-        if (result.success) {
-            // Success State
-            $success.text = "Request submitted! We will contact you momentarily.";
-            $success.show();
-            $w('#btnSubmit').hide(); // Hide button to prevent double submit
-
-            // Optional: Clear form
-            // clearForm(); 
+        const res = await submitContactForm(formData);
+        if (res && res.success) {
+            safeSetText('#textSuccess', "Thank you. A bondsman will call you immediately. Need instant paperwork? Tap 'Start Paperwork Online'.");
+            safeShow('#textSuccess');
+            safeSetText('#btnSubmit', "Message Sent ✅");
         } else {
-            // Backend Error
-            showError(result.error || "An error occurred. Please call us directly.");
-            resetButton();
+            throw new Error(res?.message || "Failed to submit");
         }
-
-    } catch (error) {
-        console.error("Submission Error:", error);
-        showError("Network error. Please try again or call (239) 332-2245.");
-        resetButton();
+    } catch (e) {
+        safeSetText('#textError', "Error submitting form. Call (239) 332-2245 for immediate help.");
+        safeShow('#textError');
+        safeEnable('#btnSubmit');
+        safeSetText('#btnSubmit', "Send Message");
     }
 }
 
-function showError(msg) {
-    const $err = $w('#textError');
-    $err.text = msg;
-    $err.show();
-    // Auto-hide after 5 seconds
-    setTimeout(() => $err.hide(), 5000);
+// Helpers
+function safeGetValue(id) {
+    try {
+        const el = $w(id);
+        return el && el.value ? String(el.value).trim() : '';
+    } catch (e) { return ''; }
 }
 
-function resetButton() {
-    const $btn = $w('#btnSubmit');
-    $btn.label = "Submit Request ->";
-    $btn.enable();
+function safeGetChecked(id) {
+    try {
+        const el = $w(id);
+        return el ? !!el.checked : true;
+    } catch (e) { return true; }
+}
+
+function safeSetText(id, text) {
+    try {
+        const el = $w(id);
+        if (el) el.text = text;
+    } catch (e) {}
+}
+
+function safeShow(id) {
+    try {
+        const el = $w(id);
+        if (el) el.show();
+    } catch (e) {}
+}
+
+function safeHide(id) {
+    try {
+        const el = $w(id);
+        if (el) el.hide();
+    } catch (e) {}
+}
+
+function safeEnable(id) {
+    try {
+        const el = $w(id);
+        if (el && typeof el.enable === 'function') el.enable();
+    } catch (e) {}
+}
+
+function safeDisable(id) {
+    try {
+        const el = $w(id);
+        if (el && typeof el.disable === 'function') el.disable();
+    } catch (e) {}
+}
+
+function safeOnClick(id, handler) {
+    try {
+        const el = $w(id);
+        if (el && typeof el.onClick === 'function') el.onClick(handler);
+    } catch (e) {}
 }

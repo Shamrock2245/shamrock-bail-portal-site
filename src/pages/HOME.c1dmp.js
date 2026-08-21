@@ -514,6 +514,7 @@ function setupOrganizationSchema() {
                         "opens": "00:00", "closes": "23:59"
                     }
                 },
+                { "@type": "ContactPoint", "telephone": "+1-239-955-0178", "contactType": "Customer Support", "contactOption": "HearingImpairedSupported", "areaServed": "FL", "availableLanguage": ["English", "Spanish"], "description": "24/7 SMS & iMessage Support" },
                 { "@type": "ContactPoint", "telephone": "+1-239-955-0301", "contactType": "Customer Service", "areaServed": "FL", "availableLanguage": "Spanish" },
                 { "@type": "ContactPoint", "telephone": "+1-727-295-2245", "contactType": "Customer Service", "areaServed": ["Tampa Bay Area", "St. Petersburg", "FL"], "availableLanguage": ["English", "Spanish"], "description": "After-Hours & AI Agent Line" }
             ],

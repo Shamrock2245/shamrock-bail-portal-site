@@ -7,11 +7,12 @@ import { getSessionToken, setSessionToken, clearSessionToken } from 'public/sess
 // @ts-ignore
 import wixSeo from 'wix-seo';
 import { getDashboardUrl } from 'backend/gasIntegration';
-import { generateAndSendMagicLink, generateMagicLinkOnly } from 'backend/magic-link-manager';
-import { sendStealthPingSms } from 'backend/twilio-client';
 // @ts-ignore
 import wixAnimations from 'wix-animations';
 import { finalizeCase } from 'backend/defendant-matching';
+import { startWalkInPacket, markReadyForSuperCrm, searchOpenLeadsForTablet } from 'backend/lobby-tablet-service';
+import { lookupDefendantCaseFacts } from 'backend/case-facts-hydrator';
+import { createCanonicalPerson } from 'public/canonical-paperwork-mapper';
 
 let allCases = []; // Store locally for fast filtering
 let currentSession = null; // Store validated session data
@@ -149,6 +150,7 @@ $w.onReady(async function () {
     setupBondTrackerButton();   // Setup "Open Bond Tracker" -> Telegram Intake Sheet
     setupStartPaperworkButton(); // Setup "Start Paperwork" button (CRITICAL)
     setupStaffPortalIframe();   // Setup Command Center iframe bridge
+    setupLobbyTabletWalkInLauncher(); // Setup 15-Second Lobby Tablet Walk-In Engine
 
     try {
         if ($w('#searchBar').type) {
@@ -1425,3 +1427,151 @@ async function handleStaffLoadIntake(portal, intakeId) {
         showStaffMessage('Error loading intake: ' + e.message, 'error');
     }
 }
+
+// ============================================================================
+// LOBBY TABLET 15-SECOND WALK-IN & PARKING LOT ENGINE
+// ============================================================================
+
+let selectedLobbyRole = 'indemnitor';
+let attachedLeadData = null;
+let scannedPersonData = null;
+
+function setupLobbyTabletWalkInLauncher() {
+    console.log("📱 [Staff Portal] Initializing Lobby Tablet Walk-In Engine...");
+
+    // 1. Role Selection (Defendant vs Primary Indemnitor vs Second Cosigner)
+    const roleBtns = [
+        { id: '#btnLobbyRoleDef', role: 'defendant' },
+        { id: '#btnLobbyRoleInd', role: 'indemnitor' },
+        { id: '#btnLobbyRoleCoInd', role: 'coindemnitor' }
+    ];
+
+    roleBtns.forEach(({ id, role }) => {
+        try {
+            const btn = $w(id);
+            if (btn && typeof btn.onClick === 'function') {
+                btn.onClick(() => {
+                    selectedLobbyRole = role;
+                    highlightSelectedRole(roleBtns, id);
+                    showStaffMessage(`Walk-in role set: ${role.toUpperCase()}`, 'info');
+                });
+            }
+        } catch (e) {}
+    });
+
+    // 2. Launch Camera for ID Scan
+    try {
+        const btnScan = $w('#btnLobbyScanId') || $w('#btnQuickScanDL');
+        if (btnScan && typeof btnScan.onClick === 'function') {
+            btnScan.onClick(() => {
+                wixWindow.openLightbox('IdUploadLightbox', {
+                    role: selectedLobbyRole,
+                    mode: 'lobby-tablet'
+                }).then((res) => {
+                    if (res && res.success && res.person) {
+                        scannedPersonData = res.person;
+                        const name = scannedPersonData.legalName?.full || `${scannedPersonData.legalName?.first} ${scannedPersonData.legalName?.last}`;
+                        safeSetText('#lobbyScannedName', `✅ ID Verified: ${name}`);
+                        showStaffMessage(`ID Captured for ${name}! Attach lead or hand over tablet.`, 'success');
+                    }
+                });
+            });
+        }
+    } catch (e) {}
+
+    // 3. Search & Attach to Open Lead from shamrock-leads / IntakeQueue
+    try {
+        const searchInput = $w('#inputLobbyLeadSearch');
+        const btnAttachLead = $w('#btnLobbyAttachLead');
+
+        if (btnAttachLead && typeof btnAttachLead.onClick === 'function') {
+            btnAttachLead.onClick(async () => {
+                const query = (searchInput && searchInput.value) || '';
+                if (!query) return;
+
+                showStaffMessage(`Searching open leads for "${query}"...`, 'info');
+                const leads = await searchOpenLeadsForTablet(query);
+
+                if (leads && leads.length > 0) {
+                    attachedLeadData = leads[0];
+                    const defName = attachedLeadData.defendantName || attachedLeadData.name || 'Defendant';
+                    const bookingNo = attachedLeadData.bookingNumber ? ` (Bk #${attachedLeadData.bookingNumber})` : '';
+                    safeSetText('#lobbyAttachedLeadText', `📎 Attached Lead: ${defName}${bookingNo}`);
+                    showStaffMessage(`Attached to open lead: ${defName}`, 'success');
+                } else {
+                    showStaffMessage(`No lead found for "${query}". Manual creation ready.`, 'warning');
+                }
+            });
+        }
+    } catch (e) {}
+
+    // 4. Hand Tablet to Client (Enters Locked Kiosk Mode)
+    try {
+        const btnHandover = $w('#btnHandTabletToClient') || $w('#btnStartWalkInWizard');
+        if (btnHandover && typeof btnHandover.onClick === 'function') {
+            btnHandover.onClick(async () => {
+                btnHandover.disable();
+                showStaffMessage("Launching locked client kiosk mode...", "info");
+
+                try {
+                    const result = await startWalkInPacket({
+                        role: selectedLobbyRole,
+                        leadId: attachedLeadData?._id || attachedLeadData?.caseId,
+                        staffEmail: currentSession?.memberEmail || 'staff@shamrockbailbonds.biz',
+                        personData: scannedPersonData,
+                        caseFacts: attachedLeadData
+                    });
+
+                    if (result && result.success && result.handoffUrl) {
+                        wixLocation.to(result.handoffUrl);
+                    }
+                } catch (err) {
+                    showStaffMessage("Error starting walk-in: " + err.message, "error");
+                    btnHandover.enable();
+                }
+            });
+        }
+    } catch (e) {}
+
+    // 5. Mark Ready for Super CRM Issuance
+    try {
+        const btnReady = $w('#btnMarkReadySuperCrm') || $w('#btnApproveForIssuance');
+        if (btnReady && typeof btnReady.onClick === 'function') {
+            btnReady.onClick(async () => {
+                const caseId = attachedLeadData?.caseId || attachedLeadData?.caseNumber;
+                if (!caseId) {
+                    showStaffMessage("Please select or attach a case first.", "warning");
+                    return;
+                }
+
+                btnReady.disable();
+                const res = await markReadyForSuperCrm({
+                    caseId,
+                    staffEmail: currentSession?.memberEmail || 'staff@shamrockbailbonds.biz'
+                });
+
+                if (res && res.success) {
+                    showStaffMessage(res.message, "success");
+                }
+            });
+        }
+    } catch (e) {}
+}
+
+function highlightSelectedRole(btns, activeId) {
+    btns.forEach(({ id }) => {
+        try {
+            const el = $w(id);
+            if (el && el.style) {
+                if (id === activeId) {
+                    el.style.backgroundColor = '#00A86B';
+                    el.style.color = '#FFFFFF';
+                } else {
+                    el.style.backgroundColor = '#131F2E';
+                    el.style.color = '#94A3B8';
+                }
+            }
+        } catch (e) {}
+    });
+}
+

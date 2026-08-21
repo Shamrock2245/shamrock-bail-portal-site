@@ -16,13 +16,13 @@ $w.onReady(function () {
 
     // 2. Setup Buttons
     const startBtn = $w('#startBailProcessBtn');
-    if (startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal-landing'));
+    if (startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal-start'));
 
     const bottomOnline = $w('#bottomOnlineBtn');
-    if (bottomOnline.valid) bottomOnline.onClick(() => wixLocation.to('/portal-landing'));
+    if (bottomOnline.valid) bottomOnline.onClick(() => wixLocation.to('/portal-start'));
 
     const bottomCall = $w('#bottomCallBtn');
-    if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:12393322245')); // Real Shamrock number
+    if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:+12393322245'));
     // 3. DEBUG CMS (User Request)
     debugCMS();
 });
@@ -49,34 +49,37 @@ async function debugCMS() {
 // --- 1. The Arrest Process ---
 function setupBailProcess() {
     const data = [
-        { _id: "1", title: "Booking", text: "After arrest, the defendant is taken to jail for booking. This includes fingerprinting, photographing, and recording personal information. This process typically takes 2-4 hours." },
-        { _id: "2", title: "Bail Setting", text: "A judge reviews the case and sets a bail amount. For common offenses, there may be a pre-set bail schedule. For more serious charges, a bail hearing may be required." },
-        { _id: "3", title: "Bail Payment Options", text: "Once bail is set, you have three options: Cash Bail (pay full to court), Property Bond (use collateral), or Bail Bond (pay 10% to bondsman)." },
-        { _id: "4", title: "Release", text: "After bail is posted, the jail processes the release. This can take anywhere from 2-12 hours depending on the facility." },
-        { _id: "5", title: "Court Appearances", text: "The defendant must appear at all scheduled court dates. Failure to appear results in bail forfeiture and an arrest warrant." }
+        { _id: "1", title: "1. Booking & Charges", text: "After arrest, the defendant is booked at the county jail. Fingerprints, photo, and charges are filed into the court roster (2-4 hours)." },
+        { _id: "2", title: "2. Bail & First Appearance", text: "Bail is set by county bond schedule or at First Appearance within 24 hours. Florida law mandates 10% premium with a $100 minimum per charge." },
+        { _id: "3", title: "3. Scan ID & Prepare Forms", text: "Instead of filling out 14 legal documents by hand, scan your ID in 60 seconds. Our system hydrates the paperwork automatically." },
+        { _id: "4", title: "4. Bond Posted & Release", text: "Shamrock posts the appearance bond directly with the jail desk. Processing time ranges from 2 to 6 hours depending on facility." },
+        { _id: "5", title: "5. Court Appearances", text: "The defendant is released with mandatory scheduled court dates. Shamrock provides automated reminders to keep them in compliance." }
     ];
-
-    // Note: User might not be using a repeater for this section yet based on specs, 
-    // but if they do (recommended), here is the ID.
-    /* 
-    const rep = $w('#processRepeater');
-    if(rep.valid) {
-        rep.data = data;
-        rep.onItemReady(($item, itemData) => {
-            $item('#stepTitle').text = itemData.title;
-            $item('#stepText').text = itemData.text;
-        });
-    }
-    */
 }
 
 // --- 2. Bail Bonds Explained ---
 function setupBailBondsExplained() {
     const data = [
-        { _id: "1", title: "The Cost", body: "In Florida, bail bond premiums are regulated at 10% of the total bail amount. If bail is $10,000, you pay $1,000. This is non-refundable." },
-        { _id: "2", title: "The Process", body: "1. Contact Shamrock\n2. Provide defendant info\n3. Pay premium & sign\n4. We post bail\n5. Defendant released" },
-        { _id: "3", title: "Responsibility", body: "As the indemnitor (signer), you guarantee the defendant appears in court. If they skip, you are liable for the full bail amount." },
-        { _id: "4", title: "Collateral", body: "For large bonds, we may need collateral (real estate, cash, cars) to secure the bond. It is returned when the case closes." }
+        { 
+            _id: "1", 
+            title: "Florida Statutory Premium (10% / $100 Min)", 
+            body: "Under Florida Statutes 648 & 903, bail bond premiums are strictly regulated at 10% of total bail, or a $100 minimum per individual charge (whichever is greater). There are never hidden fees or surprise markups." 
+        },
+        { 
+            _id: "2", 
+            title: "What is an Indemnitor (Cosigner)?", 
+            body: "The indemnitor is the loved one or guarantor who stands behind the bond. You guarantee the defendant appears in court and review case facts. No paper clipboards — review and sign from your phone." 
+        },
+        { 
+            _id: "3", 
+            title: "What Paperwork Will You Sign?", 
+            body: "Florida requires a 14-document state packet (Appearance Bond, Indemnity Agreement, Premium Receipt). Shamrock translates this into a simple 1-screen human review before you sign." 
+        },
+        { 
+            _id: "4", 
+            title: "Scan Your ID & Fill The Forms", 
+            body: "Ready to get started? Have 2 minutes and a license? Scan your ID on your phone and our system fills the paperwork automatically so you don't type from scratch." 
+        }
     ];
 
     const rep = $w('#bondsRepeater');

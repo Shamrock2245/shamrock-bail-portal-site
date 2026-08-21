@@ -94,6 +94,9 @@ export async function portal_Router(request) {
       case 'landing':
         return redirectWithQuery('/portal-landing');
 
+      case 'start':
+        return redirectWithQuery('/portal-start');
+
       case undefined:
       case '':
         // Intelligent root redirect based on role

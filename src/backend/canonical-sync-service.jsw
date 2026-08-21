@@ -1,0 +1,185 @@
+/**
+ * Canonical CMS Persistence & GAS Sync Service
+ * File: backend/canonical-sync-service.jsw
+ * 
+ * Persists Canonical Case/Person models to Wix CMS:
+ * 1. Cases Collection (Case Facts, Charges, Bond Amounts, Status)
+ * 2. Defendants Collection (Defendant Profile, Address, DL, Booking info)
+ * 3. Indemnitors Collection (Cosigner & Co-Indemnitor profiles, References)
+ * 
+ * Syncs to GAS Factory via callGasAction('syncCanonicalIntake')
+ * 
+ * Doctrine: "The Website is the Clipboard. The Backend is the Brain."
+ * 
+ * @module canonical-sync-service
+ */
+
+import wixData from 'wix-data';
+import { COLLECTIONS } from 'public/collectionIds';
+import { callGasAction, notifyGASOfNewIntake } from 'backend/gasIntegration';
+import { exportToLegacyPacketMap } from 'public/canonical-paperwork-mapper';
+
+/**
+ * Persists Canonical Case and associated Persons to Wix CMS collections
+ * @param {Object} canonicalCase - Canonical Case instance
+ * @returns {Promise<Object>} Result with created/updated record IDs
+ */
+export async function persistCanonicalCaseToCms(canonicalCase) {
+    if (!canonicalCase || !canonicalCase.caseId) {
+        throw new Error("Invalid canonical case payload: missing caseId");
+    }
+
+    const caseId = canonicalCase.caseId;
+    const def = canonicalCase.defendant || {};
+    const ind = canonicalCase.indemnitor || {};
+    const coInd = canonicalCase.coIndemnitor || {};
+
+    try {
+        console.log(`💾 [CMS Persist] Storing canonical case ${caseId} to CMS...`);
+
+        // 1. Persist Case Record to Cases Collection
+        const caseRecord = {
+            caseId: caseId,
+            county: canonicalCase.county || 'Lee',
+            state: canonicalCase.state || 'FL',
+            jailFacility: canonicalCase.jail || '',
+            totalBond: canonicalCase.totalBond || 0,
+            premiumEstimate: canonicalCase.premiumEstimate || 0,
+            transferFee: canonicalCase.transferFee || 0,
+            suretyCode: canonicalCase.suretyCode || 'ACCREDITED',
+            chargesJson: JSON.stringify(canonicalCase.charges || []),
+            courtDatesJson: JSON.stringify(canonicalCase.courtDates || []),
+            status: canonicalCase.packet?.status || 'pending_review',
+            signingSessionId: canonicalCase.packet?.signingSessionId || '',
+            defendantName: def.legalName?.full || '',
+            indemnitorName: ind.legalName?.full || '',
+            updatedAt: new Date()
+        };
+
+        let savedCase = null;
+        const existingCaseQuery = await wixData.query(COLLECTIONS.CASES || 'Cases')
+            .eq('caseId', caseId)
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (existingCaseQuery.items.length > 0) {
+            caseRecord._id = existingCaseQuery.items[0]._id;
+            savedCase = await wixData.update(COLLECTIONS.CASES || 'Cases', caseRecord, { suppressAuth: true });
+        } else {
+            caseRecord._createdDate = new Date();
+            savedCase = await wixData.insert(COLLECTIONS.CASES || 'Cases', caseRecord, { suppressAuth: true });
+        }
+
+        // 2. Persist Defendant Record
+        if (def.legalName?.full || def.dlNumber) {
+            const defAddr = def.addresses?.[0] || {};
+            const defRecord = {
+                caseId: caseId,
+                role: 'defendant',
+                fullName: def.legalName.full,
+                firstName: def.legalName.first,
+                lastName: def.legalName.last,
+                dob: def.dob,
+                dlNumber: def.dlNumber,
+                dlState: def.dlState,
+                phone: def.phones?.[0] || '',
+                email: def.emails?.[0] || '',
+                addressJson: JSON.stringify(defAddr),
+                employmentJson: JSON.stringify(def.employment || {}),
+                idCardFrontUrl: def.idCard?.frontUrl || '',
+                idCardBackUrl: def.idCard?.backUrl || '',
+                updatedAt: new Date()
+            };
+
+            await upsertPersonRecord('Defendants', 'caseId', caseId, defRecord);
+        }
+
+        // 3. Persist Indemnitor Record
+        if (ind.legalName?.full || ind.dlNumber) {
+            const indAddr = ind.addresses?.[0] || {};
+            const indRecord = {
+                caseId: caseId,
+                role: 'indemnitor',
+                fullName: ind.legalName.full,
+                firstName: ind.legalName.first,
+                lastName: ind.legalName.last,
+                dob: ind.dob,
+                dlNumber: ind.dlNumber,
+                dlState: ind.dlState,
+                phone: ind.phones?.[0] || '',
+                email: ind.emails?.[0] || '',
+                addressJson: JSON.stringify(indAddr),
+                employmentJson: JSON.stringify(ind.employment || {}),
+                referencesJson: JSON.stringify(ind.references || []),
+                idCardFrontUrl: ind.idCard?.frontUrl || '',
+                idCardBackUrl: ind.idCard?.backUrl || '',
+                updatedAt: new Date()
+            };
+
+            await upsertPersonRecord('Indemnitors', 'caseId', caseId, indRecord);
+        }
+
+        // 4. Sync to GAS Backend (The Brain)
+        await syncCanonicalCaseToGas(canonicalCase);
+
+        return {
+            success: true,
+            caseId,
+            caseRecordId: savedCase._id,
+            message: "Canonical case persisted to CMS and synchronized to backend."
+        };
+
+    } catch (error) {
+        console.error("❌ [CMS Persist] Error persisting canonical case:", error);
+        throw error;
+    }
+}
+
+/**
+ * Synchronizes Canonical Case to Google Apps Script / Super CRM
+ * @param {Object} canonicalCase
+ */
+export async function syncCanonicalCaseToGas(canonicalCase) {
+    try {
+        const legacyMap = exportToLegacyPacketMap(canonicalCase);
+        
+        console.log(`🔄 [GAS Sync] Forwarding canonical case ${canonicalCase.caseId} to GAS factory...`);
+        const gasResponse = await callGasAction('syncCanonicalIntake', {
+            caseId: canonicalCase.caseId,
+            canonical: canonicalCase,
+            legacyMap
+        });
+
+        // Also trigger intake notification
+        await notifyGASOfNewIntake(canonicalCase.caseId);
+        return gasResponse;
+
+    } catch (gasErr) {
+        console.warn("⚠️ [GAS Sync] Non-fatal GAS sync warning:", gasErr.message);
+        return { success: false, warning: gasErr.message };
+    }
+}
+
+async function upsertPersonRecord(collectionName, keyField, keyValue, record) {
+    try {
+        const query = await wixData.query(collectionName)
+            .eq(keyField, keyValue)
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (query.items.length > 0) {
+            record._id = query.items[0]._id;
+            return await wixData.update(collectionName, record, { suppressAuth: true });
+        } else {
+            record._createdDate = new Date();
+            return await wixData.insert(collectionName, record, { suppressAuth: true });
+        }
+    } catch (e) {
+        console.warn(`[CMS Upsert] Non-fatal error updating ${collectionName}:`, e.message);
+    }
+}
+
+export default {
+    persistCanonicalCaseToCms,
+    syncCanonicalCaseToGas
+};

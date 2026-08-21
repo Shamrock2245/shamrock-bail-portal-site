@@ -35,10 +35,20 @@ export const API_TIMEOUT = 30000;
 // ============================================================================
 
 /**
- * Company phone number
+ * Company voice phone number (24/7 Calls)
  * @constant {string}
  */
 export const PHONE_NUMBER = '(239) 332-2245';
+export const PHONE_E164 = '+12393322245';
+export const PHONE_LINK = 'tel:+12393322245';
+
+/**
+ * Company SMS / Text contact number (+12399550178)
+ * @constant {string}
+ */
+export const SMS_PHONE_NUMBER = '(239) 955-0178';
+export const SMS_PHONE_E164 = '+12399550178';
+export const SMS_LINK = 'sms:+12399550178';
 
 /**
  * Company office address
