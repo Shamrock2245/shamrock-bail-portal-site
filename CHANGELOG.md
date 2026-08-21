@@ -31,7 +31,7 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 - GAS doPost API-key compare is fail-closed and timing-safe; client error bodies no longer include stack traces.
 - Mini-app Drive uploads are MIME/size/filename constrained and rate-limited.
 
-**Ops:** Wix publish + `clasp deploy -i <existing ID>` (no new `/exec` URL). Node-RED GET scheduler calls must include `?apiKey=`. Re-run Telegram webhook setup after `TELEGRAM_WEBHOOK_SECRET` is set so Telegram sends the secret token.
+**Ops:** Wix publish + `clasp deploy -i <existing ID>` (no new `/exec` URL). Node-RED jobs now send `apiKey` in the GAS JSON body (headers are ignored by Apps Script). Re-run Telegram webhook setup after `TELEGRAM_WEBHOOK_SECRET` is set so Telegram sends the secret token. Sync `shamrock-node-red` flows to the VPS after pull.
 
 ### 2026-08-16 — v2.8.2 — Legacy e-sign retirement and DocuSeal binding gate
 

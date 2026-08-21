@@ -2315,7 +2315,9 @@ function handleGetAction(e) {
       version: 'v4.2.0'
     }, callback);
   }
-  if (action === 'health') return createResponse({ success: true, version: 'V409', timestamp: new Date().toISOString() }, callback);
+  if (action === 'health' || action === 'healthCheck') {
+    return createResponse({ success: true, version: 'V409', timestamp: new Date().toISOString() }, callback);
+  }
 
   if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(e.parameter.apiKey || data.apiKey)) {
     return createErrorResponse('Unauthorized', ERROR_CODES.UNAUTHORIZED);
