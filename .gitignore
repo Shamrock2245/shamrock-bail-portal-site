@@ -6,6 +6,8 @@ node_modules/
 jsconfig.json
 venv/
 **/venv/
+__pycache__/
+*.pyc
 
 # Environment & secrets (all variants)
 .env

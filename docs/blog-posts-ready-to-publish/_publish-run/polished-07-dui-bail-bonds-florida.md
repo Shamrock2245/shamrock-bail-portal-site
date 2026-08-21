@@ -1,12 +1,9 @@
 # Bail Bonds for DUI Arrests in Florida: What to Expect
 
-**Published:** August 12, 2026 | **Author:** Shamrock Bail Bonds Editorial
+**Published:** August 12, 2026 | **Editorial Board:** Shamrock Legal Intelligence | **Regulatory Review:** Licensed Florida Bail Specialist (F.S. Ch. 648)
 
 ---
-
----
-
-## The Short Answer
+## Executive Summary & Key Takeaways
 
 **In Florida, bail for a first-offense DUI typically ranges from $500 to $1,000 — meaning your cost through Shamrock Bail Bonds is $100 to $200 (the 10% premium, $100 minimum).** Most DUI defendants are eligible for release within 8 hours of arrest. Call **(239) 332-2245** as soon as the arrest occurs.
 

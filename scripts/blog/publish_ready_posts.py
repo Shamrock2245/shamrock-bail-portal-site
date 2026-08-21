@@ -110,15 +110,17 @@ SCHEDULE = [
 ]
 
 DISCLAIMER = (
-    "This article is for general educational purposes only and is not legal advice. "
-    "Bail amounts, holds, and release procedures vary by county and case. "
-    "For situation-specific guidance, call Shamrock Bail Bonds at (239) 332-2245 "
-    "or consult a licensed Florida attorney."
+    "This advisory publication is provided for institutional information and general educational purposes under Florida law. "
+    "It does not constitute formal legal counsel. Bail bond requirements, statutory holds, and judicial release procedures "
+    "are governed by Florida Statutes Chapters 903 and 648 and local judicial circuit administrative orders. "
+    "For case-specific underwriting and immediate 24/7 jail release assistance, contact Shamrock Bail Bonds at (239) 332-2245 "
+    "or consult a licensed Florida criminal defense attorney."
 )
 
 CTA = (
-    "Need help now? Shamrock Bail Bonds is available 24/7 at (239) 332-2245. "
-    "Or start online at shamrockbailbonds.biz."
+    "Need immediate assistance securing release for a loved one in Florida? "
+    "Shamrock Bail Bonds provides 24/7 licensed bail underwriting and digital paperwork statewide. "
+    "Call our dispatch desk at (239) 332-2245 or initiate your secure digital intake online at shamrockbailbonds.biz."
 )
 
 
@@ -387,8 +389,8 @@ def md_to_ricos(body: str) -> dict:
     return {"nodes": nodes}
 
 
-def polish_markdown(raw: str, publish_label: str) -> tuple[str, str, str, str]:
-    """Return title, excerpt, category_hint, polished body (without H1)."""
+def polish_markdown(raw: str, publish_label: str) -> tuple[str, str, str]:
+    """Return title, excerpt, polished body (without H1)."""
     lines = raw.splitlines()
     title = "Untitled"
     body_start = 0
@@ -398,7 +400,7 @@ def polish_markdown(raw: str, publish_label: str) -> tuple[str, str, str, str]:
             body_start = idx + 1
             break
 
-    # Drop old meta line Published: April...
+    # Drop old meta line Published: ...
     rest = lines[body_start:]
     cleaned = []
     for line in rest:
@@ -408,32 +410,33 @@ def polish_markdown(raw: str, publish_label: str) -> tuple[str, str, str, str]:
 
     body = "\n".join(cleaned).strip()
 
-    # Professional meta block
-    meta = f"**Published:** {publish_label} | **Author:** Shamrock Bail Bonds Editorial"
+    # Enterprise Institutional Meta Block
+    meta = f"**Published:** {publish_label} | **Editorial Board:** Shamrock Legal Intelligence | **Regulatory Review:** Licensed Florida Bail Specialist (F.S. Ch. 648)"
     if not body.startswith("**Published:**"):
         body = meta + "\n\n---\n\n" + body
 
-    # Ensure Short Answer remains; add disclaimer + CTA at end if missing
+    # Ensure Executive Summary remains; add disclaimer + CTA at end if missing
     lower = body.lower()
-    if "not legal advice" not in lower:
-        body += f"\n\n---\n\n## Important Disclaimer\n\n{DISCLAIMER}\n"
+    if "not legal advice" not in lower and "formal legal counsel" not in lower:
+        body += f"\n\n---\n\n## Institutional Legal Advisory\n\n{DISCLAIMER}\n"
     if "(239) 332-2245" not in body[-800:]:
-        body += f"\n\n## Ready to Talk to a Bondsman?\n\n{CTA}\n"
+        body += f"\n\n## 24/7 Immediate Jail Release Assistance\n\n{CTA}\n"
 
-    # Excerpt from short answer if present
+    # Excerpt from Executive Summary / Short Answer if present
     excerpt = ""
-    m = re.search(r"## The Short Answer\s*\n+(.+?)(?:\n---|\n## )", body, re.S)
+    m = re.search(r"## (?:Executive Summary|The Short Answer|Key Takeaways)\s*\n+(.+?)(?:\n---|\n## )", body, re.S)
     if m:
         excerpt = re.sub(r"\*\*|__|`|#", "", m.group(1)).strip()
         excerpt = re.sub(r"\s+", " ", excerpt)[:480]
     if not excerpt:
-        excerpt = f"{title}. Practical guidance from Shamrock Bail Bonds in Fort Myers, Florida."
+        excerpt = f"{title}. Authoritative Florida bail bond intelligence and procedural guidance from Shamrock Bail Bonds."
 
-    # Soft professional tone fixes
+    # Institutional tone upgrades
     replacements = [
         (r"\bright now\b", "today"),
-        (r"\bCall anyway\b", "Still call us"),
-        (r"\bthe real deal\b", "comprehensive training"),
+        (r"\bCall anyway\b", "Contact our dispatch desk"),
+        (r"\bthe real deal\b", "rigorous statutory accreditation"),
+        (r"## The Short Answer", "## Executive Summary & Key Takeaways"),
     ]
     for pat, rep in replacements:
         body = re.sub(pat, rep, body, flags=re.I)
