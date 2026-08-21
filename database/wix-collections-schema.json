@@ -97,8 +97,13 @@
           "type": "text"
         },
         {
-          "key": "signNowDocumentId",
-          "displayName": "SignNow Document ID",
+          "key": "docuSealSubmissionId",
+          "displayName": "DocuSeal Submission ID",
+          "type": "text"
+        },
+        {
+          "key": "signingSessionId",
+          "displayName": "Signing Session ID",
           "type": "text"
         },
         {
@@ -401,8 +406,13 @@
           "type": "text"
         },
         {
-          "key": "signNowDocumentId",
-          "displayName": "SignNow Document ID",
+          "key": "docuSealSubmissionId",
+          "displayName": "DocuSeal Submission ID",
+          "type": "text"
+        },
+        {
+          "key": "signingSessionId",
+          "displayName": "Signing Session ID",
           "type": "text"
         },
         {
@@ -621,6 +631,48 @@
           "key": "deviceInfo",
           "displayName": "Device Info",
           "type": "richText"
+        }
+      ]
+    },
+    {
+      "id": "ServiceAreas",
+      "displayName": "ServiceAreas",
+      "permissions": {
+        "insert": "Admin",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Anyone"
+      },
+      "fields": [
+        {
+          "key": "state",
+          "displayName": "State Name",
+          "type": "text"
+        },
+        {
+          "key": "slug",
+          "displayName": "State Slug",
+          "type": "text"
+        },
+        {
+          "key": "stateCode",
+          "displayName": "State Code",
+          "type": "text"
+        },
+        {
+          "key": "status",
+          "displayName": "Status (live | planned)",
+          "type": "text"
+        },
+        {
+          "key": "licensingNote",
+          "displayName": "Licensing Note",
+          "type": "text"
+        },
+        {
+          "key": "primaryPhone",
+          "displayName": "Primary Phone",
+          "type": "text"
         }
       ]
     }

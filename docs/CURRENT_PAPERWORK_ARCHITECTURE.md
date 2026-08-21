@@ -1,10 +1,10 @@
 # Current Paperwork Architecture — DocuSeal Finalization & Studio Intake Clipboard
 
-**Status:** Current production architecture  
+**Status:** Current production architecture (Backend wired; Studio visual canvas UI not built yet)  
 **Effective date:** 2026-08-21  
 **Applies to:** Wix Studio / Velo, Netlify paperwork UI, Super CRM (`shamrock-leads`), Google Apps Script, member portals, staff tooling, Telegram, and outbound communications  
 
-> **Canonical Rule:** **DocuSeal is the sole active signing provider.** A client may complete a secure intake before a defendant, bond amount, or final case is known. Only authorized staff in Super CRM may reconcile that intake to a bond, select the surety carrier, assign POA tier, and issue final DocuSeal paperwork.
+> **Canonical Rule:** **DocuSeal is the sole active signing provider.** A client may complete a secure intake before a defendant, bond amount, or final case is known. Only authorized staff in Super CRM may reconcile that intake to a bond, select the surety carrier, assign POA tier, and issue final DocuSeal paperwork. Wix never creates DocuSeal submissions.
 
 ---
 

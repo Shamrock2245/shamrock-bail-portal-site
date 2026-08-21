@@ -41,6 +41,8 @@ export const COLLECTIONS = {
 
   // Location & County Data
   FLORIDA_COUNTIES: 'FloridaCounties',         // Florida county data (Verified: No space in ID)
+  SERVICE_AREAS: 'ServiceAreas',               // Multi-state expansion areas (state, status, licenseNote)
+  ARREST_LEADS: 'ArrestLeads',                 // Scraped arrest booking leads
   // COUNTIES: 'Import21',                     // DEPRECATED: Empty collection, use FLORIDA_COUNTIES instead
   GEOLOCATION_CACHE: 'Geolocationcache',       // Cached geolocation lookups
   USER_LOCATIONS: 'Userlocations',             // User location check-ins

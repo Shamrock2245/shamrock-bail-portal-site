@@ -117,6 +117,81 @@
         "siteMember": { "invoke": false },
         "anonymous": { "invoke": false }
       }
+    },
+    "packet-generator.jsw": {
+      "*": {
+        "siteOwner": { "invoke": false },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "lobby-tablet-service.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "canonical-sync-service.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "bluebubbles.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "signing-methods.jsw": {
+      "*": {
+        "siteOwner": { "invoke": false },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "case-facts-hydrator.jsw": {
+      "pushStaffCaseCorrection": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": false }
+      },
+      "lookupDefendantCaseFacts": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": true }
+      }
+    },
+    "wizard-draft-service.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": true }
+      }
+    },
+    "id-ocr-service.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": true }
+      }
+    },
+    "signing-session-service.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": true }
+      }
+    },
+    "service-areas.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": true }
+      }
     }
   }
 }

@@ -11,41 +11,45 @@
 - [ ] **Milestone A: Studio Visual System & Public IA**
   - [x] Establish SWFL regional dominance on Homepage & NAP (Fort Myers HQ primary)
   - [x] Multi-state routing module (`src/backend/multi-state-router.js` & `routers.js`)
+  - [x] ServiceAreas backend registry & status filter (`src/backend/service-areas.jsw`)
   - [ ] Wix Studio breakpoint matrix styling (fluid typography, container queries, no stock templates)
-  - [ ] Programmatic county pages verification on Studio surface
+  - [ ] Programmatic county pages verification on Studio visual surface
 
 - [ ] **Milestone B: Port Portals & Launchpads**
   - [x] Enforce clipboard vs brain boundary (no DocuSeal packet creation in Wix)
   - [x] Update `SigningLightbox` and `portal-config.js` for Netlify paperwork launchpad
-  - [ ] Port `portal-landing`, `portal-defendant`, `portal-indemnitor`, `portal-staff` to Studio layout
+  - [x] Build backend signing session service & BlueBubbles 1-tap link recovery (`signing-session-service.jsw`)
+  - [ ] Port `portal-landing`, `portal-defendant`, `portal-indemnitor`, `portal-staff` to Studio visual canvas
 
 - [ ] **Milestone C: `/portal-start` Autopilot Wizard**
   - [x] Create Canonical Schema Mapper (`src/public/canonical-paperwork-mapper.js`)
-  - [ ] Mobile/tablet intake flow: Role Selector (Defendant / Indemnitor / Co-Indemnitor)
-  - [ ] Camera ID Scan + Cloud Vision OCR auto-hydration (role-scoped, never overwrite defendant)
-  - [ ] Auto-hydrate known case facts (from Super CRM / booking match)
-  - [ ] Collect missing delta fields only (employment, references, household)
-  - [ ] 1-tap plain-language preview & finger/stylus signature pad
+  - [x] Create Vision ID OCR Service (`src/backend/id-ocr-service.jsw`)
+  - [x] Create Case Facts Hydrator with $100 min/charge calculation (`src/backend/case-facts-hydrator.jsw`)
+  - [x] Create Cross-Device Wizard Draft Persistence (`src/backend/wizard-draft-service.jsw`)
+  - [x] Create Human Paperwork Preview & DocuSeal launchpad bridge (`paperwork-preview-studio.js`)
+  - [ ] Build Studio visual wizard canvas (Role selector, Camera viewfinder layout, 2-col tablet layout)
 
 - [ ] **Milestone D: Staff Lobby-Tablet Handoff**
-  - [ ] Rapid tablet launch QR code / PIN for in-person office or jail lobby clients
-  - [ ] Staff-gated handoff to Super CRM bond reconciliation
+  - [x] Build Lobby Tablet backend engine (`src/backend/lobby-tablet-service.jsw`)
+  - [x] Connect unposted scraper lead attachment and "Ready for Super CRM" status bridge
+  - [ ] Build Studio visual staff kiosk interface
 
 - [ ] **Milestone E: `ServiceAreas` Multi-State CMS**
-  - [x] Configure `EXPANSION_STATES` registry in `portal-config.js`
-  - [ ] Multi-state CMS collection hookup for 11+ states when `status = live`
+  - [x] Configure `EXPANSION_STATES` registry in `portal-config.js` and `collectionIds.js`
+  - [x] Update `database/wix-collections-schema.json` with `ServiceAreas` schema
+  - [ ] Multi-state CMS collection hookup in Wix Studio Editor
 
 ---
 
 ## 🔄 Phase 8: Growth, Messaging & Revenue (Active Pipeline)
 
-- [ ] **WhatsApp Business Integration**
-  - [ ] Enable Twilio WhatsApp Sandbox
-  - [ ] Wire to Node-RED relay
-  - [ ] Test WhatsApp campaigns tab (pending 10DLC approval)
+- [x] **BlueBubbles iMessage Engine**
+  - [x] Cloudflare Tunnel integration (`bb.shamrockbailbonds.biz`)
+  - [x] Dedicated text contact number **`+12399550178`**
+  - [x] Instant 1-tap link recovery & SMS receipt dispatch
 - [ ] **"The Closer" Drip Campaigns**
   - [ ] Wire Node-RED "The Closer" tab → GAS `runTheCloser()` endpoint
-  - [ ] Automated SMS/WhatsApp follow-ups for abandoned mobile intakes
+  - [ ] Automated SMS/iMessage follow-ups for abandoned mobile intakes
 - [ ] **Review Harvester**
   - [ ] GAS endpoint to send Google review requests post-bond
   - [ ] Wire to Node-RED scheduling
@@ -53,38 +57,5 @@
   - [ ] Clone DeSoto scraper → Bradford, Dixie, Escambia, Gadsden, Gilchrist, Glades, Hamilton, Levy, Putnam, Santa Rosa, Sumter, Suwannee, Taylor
 - [ ] **Shannon Enhancements**
   - [ ] Multi-language support (Spanish priority — Collier/Lee demographics)
-  - [ ] Paperwork launchpad link delivery via Twilio SMS during active calls (for staff-issued sessions)
+  - [ ] Paperwork launchpad link delivery via SMS during active calls (for staff-issued sessions)
   - [ ] Shannon call analytics dashboard
-
----
-
-## ✅ Completed Milestones
-
-### Phase 1: Foundation & Security
-- [x] Monorepo migration — unified Wix Velo + GAS backend
-- [x] Security audit — PII redaction, Secret Manager integration
-- [x] Core 34-column intake schema defined (`IntakeQueue`)
-
-### Phase 2: Core Portals & Signing Modernization
-- [x] DocuSeal signing migration & permanent SignNow retirement (Live @464)
-- [x] Indemnitor & Defendant Portals with Magic Link auth
-- [x] Staff-gated document preparation boundary in Super CRM
-
-### Phase 3: AI Workforce & Telegram Ecosystem
-- [x] OpenAI GPT-4o integration — 9 specialized AI digital employees
-- [x] Telegram Bot (`@ShamrockBail_bot`) + 7 Netlify Mini-Apps
-- [x] Cloud Vision Driver License OCR parser
-
-### Phase 4: Ops Dashboard & Scraping Expansion
-- [x] Node-RED Ops Dashboard — 21 flow tabs, 836 nodes, 64 crons
-- [x] 20 active Florida county jail scrapers (DrissionPage / Puppeteer / Docker)
-- [x] MongoDB Atlas event logging via `MongoLogger.gs` + `mongo_writer.py`
-
-### Phase 5: Voice AI & School Alignment
-- [x] ElevenLabs Shannon 24/7 phone intake agent
-- [x] Bail School public catalog aligned to live LMS ($199 20hr / $649 120hr)
-- [x] Communication Preferences system (`CommPrefsManager.js`)
-
----
-
-Maintained by Shamrock Engineering & AI Agents

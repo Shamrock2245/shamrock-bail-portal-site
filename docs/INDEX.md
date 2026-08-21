@@ -41,6 +41,7 @@
 | Doc | Purpose |
 |---|---|
 | [CURRENT_PAPERWORK_ARCHITECTURE.md](CURRENT_PAPERWORK_ARCHITECTURE.md) | **Canonical current-state DocuSeal-only signing boundary & Studio intake flow** |
+| [PHASE_85_GAP_REPORT.md](PHASE_85_GAP_REPORT.md) | **Phase 18.5 Omni-Repo Gap Audit, Wiring Matrix & Studio Canvas Handoff** |
 | [WIX_STUDIO_SITEMAP_AND_IA.md](WIX_STUDIO_SITEMAP_AND_IA.md) | **Complete Wix Studio sitemap, Growth Ladder routing, and file mappings** |
 | [ANTIGRAVITY-FOUNDATION-SPEC.md](ANTIGRAVITY-FOUNDATION-SPEC.md) | Wix Velo & Studio platform contract |
 | [SCHEMAS.md](SCHEMAS.md) | Canonical data schemas (Master 34, IntakeQueue, CMS, Sheets) |

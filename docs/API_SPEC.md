@@ -1,115 +1,69 @@
 # 🔌 API Specification
 
-> **Last Updated:** April 16, 2026
-
-All internal and external API endpoints in the Shamrock ecosystem.
-
----
-
-## 1. GAS Web App — Single Entry Point
-
-**URL:** Deployed GAS Web App URL (stored in Wix Secrets as `GAS_WEB_APP_URL`)
-
-### POST Endpoints (`doPost()`)
-All POST requests route through `Code.js doPost()` with an `action` parameter.
-
-| Action | Handler | Purpose | Caller |
-|--------|---------|---------|--------|
-| `submitIntake` | `IntakeHandler.js` | New intake submission | Wix Portal |
-| `syncCase` | `WixPortalIntegration.js` | Sync case data to Wix CMS | Node-RED cron |
-| `sendPaperwork` | `SignNow_SendPaperwork.js` | Generate & send SignNow packet | Shannon / Bot |
-| `telegramWebhook` | `Telegram_WebhookHandler.js` | Process Telegram messages | Wix HTTP webhook |
-| `signNowWebhook` | `SignNow_WebhookHandler.js` | `document.complete` events | SignNow |
-| `elevenLabsWebhook` | `ElevenLabs_WebhookHandler.js` | Shannon voice call data | Netlify Edge Fn |
-| `runTheCloser` | `TheCloser.js` | Execute drip campaign cycle | Node-RED cron |
-| `runReviewHarvester` | `ReviewHarvester.js` | Send review request SMS | Node-RED cron |
-
-### GET Endpoints (`doGet()`)
-All GET requests route through `Code.js doGet()` / `handleGetAction()`.
-
-| Action | Handler | Purpose | Caller |
-|--------|---------|---------|--------|
-| `getLeads` | `NodeRedHandlers.js` | Qualified leads by county | Node-RED |
-| `getCourtDates` | `NodeRedHandlers.js` | Upcoming court dates | Node-RED |
-| `getRevenue` | `NodeRedHandlers.js` | Revenue dashboard data | Node-RED |
-| `getDailyOps` | `DailyOpsReport.js` | Daily operations summary | Node-RED |
-| `getSystemHealth` | `NodeRedHandlers.js` | GAS health check | Node-RED / Watchdog |
-| `lookupDefendant` | `NodeRedHandlers.js` | Search by name/booking# | Shannon |
-| `calculatePremium` | `Telegram_InlineQuote.js` | Premium estimate | Shannon / Bot |
+> **Last Updated:** 2026-08-21  
+> **Signing Boundary:** DocuSeal is the sole active signing provider. Wix acts as a non-issuing clipboard launchpad. SignNow is retired.
 
 ---
 
-## 2. Wix Backend Modules (.jsw / .web.js)
+## 1. New Velo Web Methods (`src/backend/*.jsw`)
 
-### `http-functions.js` (HTTP Endpoints)
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/_functions/gasProxy` | POST | Forward requests to GAS Web App |
-| `/_functions/telegramWebhook` | POST | Receive Telegram bot updates |
+### `id-ocr-service.jsw`
+| Method | Auth | Arguments | Returns | Failure Modes |
+|---|---|---|---|---|
+| `processIdPhotoOcr` | Anonymous / Member | `{ fileUrl, base64Image, side: 'front' \| 'back', signerRole: 'defendant' \| 'indemnitor' \| 'coindemnitor' }` | `{ success: boolean, extractedData: Object, confidenceScore: number, role: string }` | • Missing image payload<br>• Vision API quota/timeout<br>• Blocks writing to `defendant.*` if role is indemnitor/coindemnitor |
 
-### `portal-auth.jsw`
-| Function | Input | Output |
-|----------|-------|--------|
-| `getUserRole()` | (none) | `{ role: 'DEFENDANT' \| 'INDEMNITOR' \| 'STAFF' \| 'ADMIN' }` |
-| `validateMagicLink(token)` | `string` | `{ valid: boolean, email: string, caseId: string }` |
+### `case-facts-hydrator.jsw`
+| Method | Auth | Arguments | Returns | Failure Modes |
+|---|---|---|---|---|
+| `lookupDefendantCaseFacts` | Anonymous / Member | `{ firstName, lastName, county, bookingNumber, dob }` | `{ success: boolean, matched: boolean, caseFacts: Object, charges: Array, totalBond: number, estimatedPremium: number }` | • No match (returns empty defaults, never invents data)<br>• Missing last name |
+| `pushStaffCaseCorrection` | Staff / Owner | `{ caseId, correctedFacts, staffEmail }` | `{ success: boolean, caseId: string, updatedFields: Array }` | • Unauthorized non-staff caller<br>• Invalid caseId |
 
-### `ai-service.jsw`
-| Function | Input | Output |
-|----------|-------|--------|
-| `getAIResponse(message, context)` | `string, object` | `{ reply: string, intent: string }` |
+### `wizard-draft-service.jsw`
+| Method | Auth | Arguments | Returns | Failure Modes |
+|---|---|---|---|---|
+| `saveWizardDraft` | Anonymous / Member | `{ caseId, role, currentStep, canonicalCase, contactIdentifier }` | `{ success: boolean, draftId: string, lastSavedStep: number, updatedAt: string }` | • Missing caseId<br>• CMS write timeout (falls back to local draft) |
+| `getWizardDraft` | Anonymous / Member | `(caseId, contactIdentifier)` | `{ success: boolean, hasDraft: boolean, draft: Object }` | • Draft expired (>7 days)<br>• Case not found |
+| `clearWizardDraft` | Anonymous / Member | `(caseId)` | `{ success: boolean }` | • Invalid caseId |
 
-### `geocoding.jsw`
-| Function | Input | Output |
-|----------|-------|--------|
-| `detectCounty(lat, lng)` | `number, number` | `{ success: boolean, county: string, confidence: number, method: string }` |
+### `canonical-sync-service.jsw`
+| Method | Auth | Arguments | Returns | Failure Modes |
+|---|---|---|---|---|
+| `persistCanonicalCaseToCms` | Staff / Member | `(canonicalCase)` | `{ success: boolean, caseId: string, defendantId: string, indemnitorId: string }` | • Missing required case data<br>• Database constraint violation |
+| `syncCanonicalCaseToGas` | Staff / Member | `(canonicalCase)` | `{ success: boolean, gasSyncStatus: 'synced', gasResponse: Object }` | • GAS network timeout<br>• Netlify proxy unreachable |
 
-### `routing.jsw`
-| Function | Input | Output |
-|----------|-------|--------|
-| `getPhoneNumber(context)` | `{ county, language, device }` | `{ success: boolean, number: string, display: string }` |
+### `signing-session-service.jsw` (READ-Only Launchpad)
+| Method | Auth | Arguments | Returns | Failure Modes |
+|---|---|---|---|---|
+| `validateSigningSession` | Anonymous / Member | `(sessionId, caseId)` | `{ success: boolean, isValid: boolean, isExpired: boolean, status: string, embedUrl: string }` | • Session expired (>24h)<br>• Invalid sessionId |
+| `requestFreshSigningLink` | Anonymous / Member | `{ caseId, signerEmail, signerPhone, signerRole }` | `{ success: boolean, message: string }` | • Missing contact info<br>• Dispatches 1-tap recovery via BlueBubbles/SMS to staff |
+| `recordSignatureCompletion` | Anonymous / Member | `{ caseId, signerRole, completionTimestamp }` | `{ success: boolean, receiptSent: boolean }` | • Missing caseId<br>• Updates CMS and dispatches SMS receipt |
+
+### `lobby-tablet-service.jsw` (Lobby Kiosk Engine)
+| Method | Auth | Arguments | Returns | Failure Modes |
+|---|---|---|---|---|
+| `startWalkInPacket` | Staff / Owner | `{ initialRole, staffEmail, county, defendantName }` | `{ success: boolean, caseId: string, launchUrl: string, pinCode: string }` | • Unauthorized non-staff caller<br>• Missing staff credentials |
+| `searchOpenLeadsForTablet` | Staff / Owner | `{ query, county, limit }` | `{ success: boolean, leads: Array }` | • Scraper backend timeout<br>• Non-staff access denied |
+| `markReadyForSuperCrm` | Staff / Owner | `{ caseId, staffNotes, staffEmail }` | `{ success: boolean, notifiedUnderwriter: boolean }` | • Case not in valid state<br>• Alerts Super CRM queue and Slack |
+
+### `service-areas.jsw`
+| Method | Auth | Arguments | Returns | Failure Modes |
+|---|---|---|---|---|
+| `getLiveServiceAreas` | Public | `()` | `{ success: boolean, states: Array<{ state: string, slug: string, status: 'live' }> }` | • None (defaults to Florida if CMS empty) |
+| `getServiceAreaByState` | Public | `(stateSlug)` | `{ success: boolean, area: Object \| null }` | • State not found or not live (returns null for 404 router) |
+| `isStateLive` | Public | `(stateSlug)` | `boolean` | • Returns false for unlisted/planned states |
+
+### `bluebubbles.jsw`
+| Method | Auth | Arguments | Returns | Failure Modes |
+|---|---|---|---|---|
+| `sendBlueBubblesMessage` | Staff / Member | `{ to, message, subject }` | `{ success: boolean, messageId: string, channel: 'imessage' \| 'sms' }` | • Missing recipient/text<br>• Cloudflare tunnel unreachable (fails closed with safe error) |
 
 ---
 
-## 3. Netlify Edge Functions
+## 2. Router & HTTP Functions
 
-| Function | Path | Purpose |
-|----------|------|---------|
-| `elevenlabs-init.js` | `/api/elevenlabs-init` | ElevenLabs conversation webhook (avoids GAS 302) |
-| `send-paperwork.mjs` | `/api/send-paperwork` | Proxy paperwork requests to GAS |
-| `notify-bondsman.mjs` | `/api/notify-bondsman` | Slack alert from Shannon calls |
-
----
-
-## 4. SignNow Webhooks
-
-| Event | Fires When | GAS Handler |
-|-------|-----------|-------------|
-| `document.complete` | All signatures collected | Updates case status → Slack alert |
-| `document.viewed` | Client opens signing link | Logs view event |
-| `invite.declined` | Client declines to sign | Flags case for follow-up |
-
----
-
-## 5. Standard Response Format
-
-All GAS endpoints return:
-```json
-{
-  "success": true,
-  "action": "submitIntake",
-  "data": { ... },
-  "error": null,
-  "timestamp": "2026-04-16T12:00:00Z"
-}
-```
-
-Error responses:
-```json
-{
-  "success": false,
-  "action": "submitIntake",
-  "data": null,
-  "error": "Missing required field: defendantName",
-  "timestamp": "2026-04-16T12:00:00Z"
-}
-```
+| Endpoint / Router | Method / Type | Purpose | Auth / Boundary |
+|---|---|---|---|
+| `/florida-bail-bonds/:slug` | Wix Router | Dynamic programmatic 67 Florida county landing pages | Public |
+| `/bail-bonds/:state/:county` | Multi-State Router | Multi-state expansion directory | Strictly returns `ok()` if `isStateLive(state)` is true; 404 otherwise |
+| `/_functions/triggerCountySync` | GET | Admin cron sync of Florida county metadata | HMAC / `GAS_API_KEY` required |
+| `/_functions/llmsTxt` | GET | Generative Engine Optimization feed for AI search engines | Public |

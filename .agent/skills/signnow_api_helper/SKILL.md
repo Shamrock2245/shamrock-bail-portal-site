@@ -3,9 +3,9 @@ name: SignNow API Helper
 description: AI-powered development guide for SignNow API, providing access to official documentation and code generation.
 ---
 
-# SignNow API Helper MCP
+# RETIRED — See docuseal_paperwork_manager + Super CRM
 
-> **Notice (2026-08-21):** SignNow execution is permanently retired in favor of DocuSeal and Super CRM (`shamrock-leads`). This helper is retained solely for legacy documentation and audit reference.
+> **Notice (2026-08-21):** SignNow execution is **permanently retired** across all Shamrock Bail Bonds workflows in favor of DocuSeal and Super CRM (`shamrock-leads`). This helper is retained solely for legacy documentation and historical audit reference. Do NOT execute or issue SignNow packets.
 
 ## Prerequisites
 

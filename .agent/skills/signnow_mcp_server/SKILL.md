@@ -3,9 +3,9 @@ name: SignNow MCP Server
 description: Action-performing server for SignNow, enabling the agent to execute workflows like sending invites, checking document status, and listing templates.
 ---
 
-# SignNow MCP Server
+# RETIRED — See docuseal_paperwork_manager + Super CRM
 
-> **Notice (2026-08-21):** SignNow execution is permanently retired across production workflows in favor of DocuSeal and Super CRM (`shamrock-leads`). This tool is preserved for historical audit only.
+> **Notice (2026-08-21):** SignNow execution is **permanently retired** across production workflows in favor of DocuSeal and Super CRM (`shamrock-leads`). This tool is preserved for historical audit only. Do NOT execute or issue SignNow packets.
 
 ## Prerequisites
 

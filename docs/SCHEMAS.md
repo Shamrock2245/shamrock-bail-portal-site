@@ -1,148 +1,175 @@
 # 📊 Data Schemas
 
-> **Last Updated:** April 16, 2026
-
-This document defines the canonical data structures used across the Shamrock ecosystem.
+> **Last Updated:** 2026-08-21  
+> **Signer Boundary:** DocuSeal is the sole active signing provider. Canonical schemas map to any surety packet (OSI, Accredited, Bankers, Palmetto) without tying UI to raw PDF coordinates.
 
 ---
 
-## 1. Arrest Record — The Master 34
+## 1. Canonical Paperwork Schema (`src/public/canonical-paperwork-mapper.js`)
 
-The primary data object used by scrapers. Every script **MUST** output these columns. Dedup key: `Booking_Number + County`.
+The core object model used by the Studio clipboard wizards, ID OCR hydrator, and Super CRM sync bridge.
 
-| # | Column | Type | Required | Notes |
-|---|--------|------|----------|-------|
-| 1 | `Scrape_Timestamp` | ISO Date | ✅ | When the record was scraped |
-| 2 | `County` | String | ✅ | Lowercase (e.g., `"lee"`) |
-| 3 | `Booking_Number` | String | ✅ | **Primary Key** (with County) |
-| 4 | `Person_ID` | String | | County-specific person ID |
-| 5 | `Full_Name` | String | ✅ | `"LAST, FIRST MIDDLE"` |
-| 6 | `First_Name` | String | ✅ | Title Case |
-| 7 | `Middle_Name` | String | | Title Case |
-| 8 | `Last_Name` | String | ✅ | Title Case |
-| 9 | `DOB` | String | | `YYYY-MM-DD` |
-| 10 | `Booking_Date` | String | ✅ | `YYYY-MM-DD` |
-| 11 | `Booking_Time` | String | | `HH:MM` |
-| 12 | `Status` | String | | In Custody / Released / etc. |
-| 13 | `Facility` | String | | Jail name |
-| 14 | `Race` | String | | Single char: W/B/H/A/O |
-| 15 | `Sex` | String | | M/F |
-| 16 | `Height` | String | | `5'11"` |
-| 17 | `Weight` | String | | `180` |
-| 18 | `Address` | String | | Street address |
-| 19 | `City` | String | | |
-| 20 | `State` | String | | 2-letter abbreviation |
-| 21 | `ZIP` | String | | 5-digit |
-| 22 | `Mugshot_URL` | String | | Direct image URL |
-| 23 | `Charges` | String | | Pipe-separated: `"DUI \| DWLS"` |
-| 24 | `Bond_Amount` | Number | ✅ | Total bond in dollars (numeric only) |
-| 25 | `Bond_Paid` | String | | `YES` / `NO` |
-| 26 | `Bond_Type` | String | | SURETY / CASH / ROR |
-| 27 | `Court_Type` | String | | |
-| 28 | `Case_Number` | String | | |
-| 29 | `Court_Date` | String | | `YYYY-MM-DD` |
-| 30 | `Court_Time` | String | | `HH:MM` |
-| 31 | `Court_Location` | String | | |
-| 32 | `Detail_URL` | String | | Link to booking detail page |
-| 33 | `Lead_Score` | Number | | 0-100 (auto-calculated) |
-| 34 | `Lead_Status` | String | | Hot / Warm / Cold / Disqualified |
+### Canonical Person Object (`CanonicalPerson`)
+```typescript
+interface CanonicalPerson {
+    role: 'defendant' | 'indemnitor' | 'coindemnitor';
+    identity: {
+        firstName: string;
+        middleName: string;
+        lastName: string;
+        fullName: string;
+        dob: string; // YYYY-MM-DD
+        ssn: string; // Redacted or raw
+        driversLicense: string;
+        dlState: string;
+        citizenship: string;
+    };
+    contact: {
+        email: string;
+        phone: string;
+        altPhone: string;
+    };
+    address: {
+        street: string;
+        unit: string;
+        city: string;
+        state: string;
+        zip: string;
+        residenceType: 'own' | 'rent' | 'family' | 'other';
+        monthsAtAddress: number;
+    };
+    employment: {
+        employer: string;
+        position: string;
+        supervisor: string;
+        phone: string;
+        monthlyIncome: number;
+        monthsEmployed: number;
+    };
+    references: Array<{
+        name: string;
+        relationship: string;
+        phone: string;
+        address: string;
+    }>;
+    vehicles: Array<{
+        make: string;
+        model: string;
+        year: number;
+        color: string;
+        vin: string;
+        plate: string;
+    }>;
+    indemnitorSpecific?: {
+        relationshipToDefendant: string;
+        ownHome: boolean;
+        homeValue: number;
+        mortgageBalance: number;
+        collateralOffered: string;
+    };
+}
+```
+
+### Canonical Case Object (`CanonicalCase`)
+```typescript
+interface CanonicalCase {
+    caseId: string; // e.g. "CASE-2026-0821-X9A2"
+    county: string; // e.g. "lee"
+    bookingNumber: string;
+    jailFacility: string;
+    arrestDate: string; // YYYY-MM-DD
+    courtName: string;
+    courtDate: string;
+    caseNumber: string;
+    charges: Array<{
+        statute: string;
+        description: string;
+        bondAmount: number;
+        bondType: string;
+        fee: number; // Statutory 10% or $100 min
+    }>;
+    financials: {
+        totalBondAmount: number;
+        statutoryPremium: number;
+        transferFee: number;
+        totalDue: number;
+        amountPaid: number;
+        balanceRemaining: number;
+    };
+    defendant: CanonicalPerson;
+    indemnitor: CanonicalPerson;
+    coIndemnitor?: CanonicalPerson;
+    metadata: {
+        createdAt: string;
+        updatedAt: string;
+        source: 'web_portal' | 'lobby_tablet' | 'telegram' | 'voice_ai';
+        isDraft: boolean;
+        lastSavedStep: number;
+        docuSealSubmissionId?: string;
+        signingSessionStatus: 'draft' | 'pending_review' | 'issued' | 'completed';
+    };
+}
+```
 
 ---
 
 ## 2. Wix CMS Collections
 
-### IntakeQueue (Primary Intake Collection)
+### `IntakeQueue` (Primary Intake & Drafts Collection)
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `caseId` | TEXT | ✅ | Unique case identifier (e.g., `CASE-2026-001234`) |
+|---|---|---|---|
+| `caseId` | TEXT | ✅ | Unique case identifier (`CASE-2026-XXXX`) |
+| `isDraft` | BOOLEAN | | `true` while intake is incomplete; `false` when ready for underwriter |
+| `lastSavedStep` | NUMBER | | Step number (1-5) for cross-device resumption |
+| `draftData` | TEXT | | JSON payload of `CanonicalCase` draft |
 | `defendantName` | TEXT | ✅ | Full defendant name |
-| `defendantEmail` | TEXT | | Defendant email |
-| `defendantPhone` | TEXT | | Defendant phone (E.164) |
-| `indemnitorName` | TEXT | ✅ | Co-signer name |
-| `indemnitorEmail` | TEXT | ✅ | Used for SignNow + magic link auth |
-| `indemnitorPhone` | TEXT | | |
-| `county` | TEXT | | Where arrest occurred |
-| `arrestDate` | DATETIME | | Date/time of arrest |
-| `charges` | TEXT | | Comma-separated or JSON |
-| `bondAmount` | NUMBER | | Total bond amount |
-| `premiumAmount` | NUMBER | | Premium charged (typically 10%) |
-| `documentStatus` | TEXT | ✅ | pending → sent → signed → completed |
-| `signNowDocumentId` | TEXT | | SignNow tracking ID |
-| `signNowStatus` | TEXT | | pending / signed / declined |
-| `gasSyncStatus` | TEXT | | pending / synced / error |
-| `gasSyncTimestamp` | DATETIME | | Last sync timestamp |
-| `status` | TEXT | ✅ | intake → in_progress → completed → cancelled |
-| `completedTimestamp` | DATETIME | | When case was fully processed |
-| `notes` | TEXT | | Additional notes |
+| `defendantFirstName` | TEXT | | First name |
+| `defendantLastName` | TEXT | | Last name |
+| `defendantEmail` | TEXT | | Email |
+| `defendantPhone` | TEXT | | Mobile phone |
+| `defendantBookingNumber` | TEXT | | Jail booking number |
+| `indemnitorName` | TEXT | | Primary indemnitor full name |
+| `indemnitorEmail` | TEXT | | Primary indemnitor email |
+| `indemnitorPhone` | TEXT | | Primary indemnitor phone |
+| `county` | TEXT | ✅ | Lowercase county slug (e.g., `lee`, `collier`) |
+| `bondAmount` | NUMBER | | Total bond face value |
+| `premiumAmount` | NUMBER | | Total statutory fee ($100 min/charge) |
+| `status` | TEXT | | `draft` \| `pending_review` \| `ready_for_super_crm` \| `issued` \| `completed` |
+| `docuSealSubmissionId` | TEXT | | Staff-issued DocuSeal submission ID |
+| `signingSessionId` | TEXT | | Active signing session ID |
 
-**Permissions:** ADMIN-only for all CRUD operations.
+### `ServiceAreas` (Multi-State Expansion CMS)
 
-### Other Collections
-
-| Collection | Purpose | Key Fields |
-|------------|---------|------------|
-| `FloridaCounties` | County data for router | `countyName`, `slug`, `isActive`, `bookingWebsite`, `jailAddress` |
-| `ArrestLeads` | Live leads for portal | Matches Master 34 schema |
-| `PortalSessions` | Magic link sessions | `sessionId`, `email`, `expiresAt`, `memberId` |
-| `MagicLinks` | Auth link tracking | `token`, `email`, `caseId`, `used` |
-| `PendingDocuments` | Pre-signing docs | `caseId`, `documentType`, `status` |
-| `MemberDocuments` | Post-signing docs | `caseId`, `memberId`, `signedUrl` |
-| `AnalyticsEvents` | System tracking | `eventType`, `memberId`, `properties`, `timestamp` |
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `state` | TEXT | ✅ | Full state name (e.g. `"Florida"`, `"Texas"`) |
+| `slug` | TEXT | ✅ | URL slug (e.g. `"florida"`, `"texas"`) |
+| `stateCode` | TEXT | ✅ | 2-letter postal code (e.g. `"FL"`, `"TX"`) |
+| `status` | TEXT | ✅ | `"live"` (publicly routed) \| `"planned"` (returns 404) |
+| `licensingNote` | TEXT | | State statutory licensing disclaimer |
+| `primaryPhone` | TEXT | | Dispatch phone line for this state |
 
 ---
 
-## 3. Google Sheets Tabs
+## 3. Arrest Record — The Master 34
 
-| Tab | Purpose | Key Columns |
-|-----|---------|-------------|
-| `IntakeQueue` | Intake pipeline | Mirrors Wix IntakeQueue |
-| `ShannonCallLog` | Voice AI transcripts | `callId`, `timestamp`, `transcript`, `disposition` |
-| `PaymentLog` | SwipeSimple payments | `caseId`, `amount`, `date`, `method` |
-| `CheckInLog` | Client check-ins | `caseId`, `type`, `timestamp`, `location` |
-| `Ingestion_Log` | Scraper audit trail | `county`, `count`, `timestamp`, `errors` |
-| `Qualified_Arrests` | Scored leads (≥70) | Subset of Master 34 |
-| `{County}_Arrests` | Per-county raw data | Full Master 34 |
+The operational data structure output by county scrapers (`shamrock-leads`). Dedup key: `Booking_Number + County`.
 
----
-
-## 4. API Response Schemas
-
-### GAS Standard Response
-```json
-{
-  "success": true,
-  "action": "submitIntake",
-  "data": { ... },
-  "error": null
-}
-```
-
-### Geocoding Response
-```json
-{
-  "success": true,
-  "county": "lee",
-  "confidence": 0.95,
-  "method": "gps"
-}
-```
-
-### Lead Score Response
-```json
-{
-  "score": 85,
-  "reasoning": "Local FL resident, misdemeanor charges only, recent booking."
-}
-```
-
----
-
-## 5. Schema Rules
-
-1. **Never rename IntakeQueue fields** without a full migration plan.
-2. **Dedup key** for arrest records is always `Booking_Number + County`.
-3. **Dates** in backends use ISO 8601. Display uses `MM/DD/YYYY`.
-4. **Phone numbers** use E.164 (`+1XXXXXXXXXX`) in storage, `(XXX) XXX-XXXX` in display.
-5. **Bond amounts** are always numeric (no `$`, no commas).
-6. **`indemnitorEmail`** is the critical key linking magic links → signing → case records.
+| # | Column | Type | Required | Notes |
+|---|---|---|---|---|
+| 1 | `Scrape_Timestamp` | ISO Date | ✅ | When the record was scraped |
+| 2 | `County` | String | ✅ | Lowercase (e.g., `"lee"`) |
+| 3 | `Booking_Number` | String | ✅ | Primary Key (with County) |
+| 4 | `Full_Name` | String | ✅ | `"LAST, FIRST MIDDLE"` |
+| 5 | `First_Name` | String | ✅ | Title Case |
+| 6 | `Last_Name` | String | ✅ | Title Case |
+| 7 | `DOB` | String | | `YYYY-MM-DD` |
+| 8 | `Booking_Date` | String | ✅ | `YYYY-MM-DD` |
+| 9 | `Facility` | String | | Jail facility name |
+| 10 | `Charges` | String | | Pipe-separated list |
+| 11 | `Bond_Amount` | Number | ✅ | Total bond in dollars |
+| 12 | `Court_Date` | String | | `YYYY-MM-DD` |
+| 13 | `Case_Number` | String | | Court clerk case number |
+| 14 | `Lead_Score` | Number | | 0-100 (urgency × bond × county) |
+| 15 | `Lead_Status` | String | | Hot / Warm / Cold / Disqualified |

@@ -28,13 +28,15 @@
 
 ## 🔴 Phase 8.5: Wix Studio Translation + Autopilot Paperwork Clipboard (CURRENT PRIORITY)
 
+> **Phase 18.5 Status (2026-08-21):** Backend clipboard services, canonical mapper, ID OCR, case hydrator, draft engine, and permissions allowlist are fully wired in code. Studio visual canvas assembly is queued next.
+
 | Milestone | Scope | Key Deliverables | Status |
 |---|---|---|---|
-| **A. Studio Visual System & Public IA** | Translation of live Wix Editor to modern Wix Studio | Full visual system, fluid responsive breakpoints, SWFL hero dominance, 67-county directory, killing stock templates | 🔄 In Progress |
-| **B. Portal & Launchpad Translation** | Port member dashboards & launchpads | `portal-landing`, `portal-defendant`, `portal-indemnitor`, `portal-staff`, `SigningLightbox` with DocuSeal boundary | 🔄 In Progress |
-| **C. `/portal-start` Autopilot Wizard** | Mobile/tablet intake wizard | Role → ID scan → OCR Hydrate → Delta fields → Plain preview → Signing shell | 🔄 In Progress |
-| **D. Staff Lobby-Tablet Handoff** | In-person tablet intake workflow | Instant QR/PIN tablet handoff for clients in office or jail lobby | 📋 Queued |
-| **E. `ServiceAreas` Multi-State CMS** | Non-FL expansion directory | Multi-state routing (`/bail-bonds/:state/:county`) without altering FL homepage | 🔄 In Progress |
+| **A. Studio Visual System & Public IA** | Translation of live Wix Editor to modern Wix Studio | Full visual system, fluid responsive breakpoints, SWFL hero dominance, 67-county directory, killing stock templates | 🎨 Backend Wired / Canvas Next |
+| **B. Portal & Launchpad Translation** | Port member dashboards & launchpads | `portal-landing`, `portal-defendant`, `portal-indemnitor`, `portal-staff`, `SigningLightbox` with DocuSeal boundary | 🔒 Backend Wired / Canvas Next |
+| **C. `/portal-start` Autopilot Wizard** | Mobile/tablet intake wizard | Role → ID scan → OCR Hydrate → Delta fields → Plain preview → Signing shell | ⚡ Backend Wired / Canvas Next |
+| **D. Staff Lobby-Tablet Handoff** | In-person tablet intake workflow | Instant QR/PIN tablet handoff for clients in office or jail lobby | 📱 Backend Wired / Canvas Next |
+| **E. `ServiceAreas` Multi-State CMS** | Non-FL expansion directory | Multi-state routing (`/bail-bonds/:state/:county`) without altering FL homepage | 🗺️ Backend Wired / Canvas Next |
 
 *Success Metric for C:* A panicked indemnitor on an iPhone can scan a FL Driver's License and reach a correct signature pad without retyping identity fields.
 

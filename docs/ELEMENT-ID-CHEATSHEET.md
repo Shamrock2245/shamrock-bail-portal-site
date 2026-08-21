@@ -97,6 +97,34 @@ General inquiry form.
 
 ---
 
+---
+
+## 📱 PROPOSED STUDIO INTAKE WIZARD (`/portal-start`)
+Proposed IDs for future Wix Studio canvas layout. (Backend is wired in `portal-start.js`; canvas elements to be placed in Studio).
+
+| ID | Description |
+| :--- | :--- |
+| `#roleSelectDefendant` | Role Selection: Defendant button |
+| `#roleSelectIndemnitor` | Role Selection: Primary Indemnitor button |
+| `#roleSelectCoIndemnitor` | Role Selection: Co-Indemnitor button |
+| `#btnStartCamera` | Step 1: Launch camera / file picker |
+| `#uploadIdInput` | Step 1: Native file/image upload input |
+| `#btnSwitchCameraSide` | Step 1: Toggle front/back ID capture |
+| `#ocrConfidenceBadge` | Step 1: OCR confidence score indicator |
+| `#step0RoleBox` | Wizard Step 0 container (Role Selection) |
+| `#step1CameraBox` | Wizard Step 1 container (ID Camera Scan) |
+| `#step2ReviewBox` | Wizard Step 2 container (Identity Review) |
+| `#step3CaseFactsBox` | Wizard Step 3 container (Charges & Bond Facts) |
+| `#step4DeltaBox` | Wizard Step 4 container (Employment & References) |
+| `#step5PreviewBox` | Wizard Step 5 container (Plain Paperwork Preview) |
+| `#btnNextStep` | Wizard primary navigation: Next Step |
+| `#btnPrevStep` | Wizard primary navigation: Previous Step |
+| `#btnSaveDraft` | Wizard secondary action: Save Draft |
+| `#btnLaunchDocuSeal` | Step 5 Final CTA: Sign Paperwork Launchpad |
+| `#wizardStatusMessage` | Real-time status / error message text |
+
+---
+
 ## 📏 RULES OF ENGAGEMENT
 
 1.  **Exact Match**: IDs MUST match exactly (case-sensitive).
@@ -105,4 +133,4 @@ General inquiry form.
 4.  **Immutable**: Do not rename IDs after deployment.
 
 > [!TIP]
-> If an element is missing or named incorrectly in the Editor, **fix the Editor**, do not change the code.
+> If an element is missing or named incorrectly in the Editor/Studio, **fix the Editor/Studio**, do not change the code.

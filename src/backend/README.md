@@ -1,115 +1,38 @@
-# The Backend Code Folder
+# 🧠 Shamrock Backend Architecture & Clipboard Registry
 
-This folder contains the backend code files for your site. These files correspond to the ones found in the [**Backend**](https://support.wix.com/en/article/velo-working-with-the-velo-sidebar#backend) section of the **Public & Backend** 
-![image](https://user-images.githubusercontent.com/89579857/184862813-e55cdd98-b723-4d64-b73c-593eb9af21c7.png) tab in the Velo sidebar. Add the following files to this folder to include them in your site:
-+ [**Web Modules:**](https://support.wix.com/en/article/velo-web-modules-calling-backend-code-from-the-frontend)  
-  These are files that allow you to expose functions in your site's backend that you can run in your frontend code. These files require a `.jsw` file extension.
-  >**Note:**  
-  >You can't change [web module permissions](https://support.wix.com/en/article/velo-about-web-module-permissions) in Wix editors when using Git Integration & Wix CLI. Instead, use the [permissions.json](#permissionsjson) file to set function permissions.
+> **Last Updated:** 2026-08-21  
+> **Doctrine:** The website is a **clipboard**; Super CRM (`shamrock-leads`) / GAS is the **brain**.  
+> **Signing Boundary:** **DocuSeal is the sole active signing provider.** All legal packets are generated and issued strictly by authorized staff inside Super CRM. Wix and GAS never create DocuSeal submissions directly. SignNow is permanently retired.
 
-+ **data.js**  
-  A file for [adding data hooks](https://support.wix.com/en/article/velo-using-data-hooks) to your site's collections.
+---
 
-+ **routers.js**  
-  A file for implementing [routing and sitemap](https://support.wix.com/en/article/velo-about-routers#routing-code) functionality for your site.
+## 1. Backend Clipboard Module Registry
 
-+ **events.js**  
-  A file for implementing your site's [backend event handlers](https://support.wix.com/en/article/velo-backend-events). 
+| File | Purpose | Who May Call It | Paperwork Boundary Policy |
+|---|---|---|---|
+| [`id-ocr-service.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/id-ocr-service.jsw) | Google Cloud Vision OCR extraction for front/back driver licenses with confidence scoring and normalization. | Anonymous, SiteMember (`/portal-start`, `IdUploadLightbox`, Lobby Tablet) | **Does not issue packets.** Refuses to write `defendant.*` when signer role is `indemnitor` or `coindemnitor`. |
+| [`case-facts-hydrator.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/case-facts-hydrator.jsw) | Auto-hydrates structured case facts (charges, individual bonds, court dates) from live scrapers (`shamrock-leads`) and `ArrestLeads` CMS. | Anonymous (`lookupDefendantCaseFacts`), Staff (`pushStaffCaseCorrection`) | **Does not issue packets.** Charges and bond amounts come from arrest roster match; never invented from ID scan. |
+| [`wizard-draft-service.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/wizard-draft-service.jsw) | Real-time cross-device intake draft saving and resumption. | Anonymous, SiteMember (`/portal-start`, `portal-defendant`, `portal-indemnitor`) | **Does not issue packets.** Persists draft data to CMS/GAS idempotently on `caseId`. |
+| [`canonical-sync-service.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/canonical-sync-service.jsw) | Persists completed canonical case model to `Cases`, `Defendants`, `Indemnitors` CMS and syncs to GAS Factory. | SiteMember, SiteOwner (`/portal-start`, staff actions) | **Does not issue packets.** Transmits canonical intake data to GAS Factory; marks status as deferred for Super CRM issuance. |
+| [`signing-session-service.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/signing-session-service.jsw) | READ-only validation of active signing session, 1-tap SMS link recovery via BlueBubbles, and completion receipt logging. | Anonymous, SiteMember (`SigningLightbox`, `/portal-start`) | **Does not issue packets.** READ-only launchpad. Returns staff-issued DocuSeal session URL if present, else `pending_review`. |
+| [`lobby-tablet-service.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/lobby-tablet-service.jsw) | 15-second walk-in intake launcher, lead attachment from `shamrock-leads`, kiosk client handoff, and "Ready for Super CRM Issuance" signaling. | Staff, SiteOwner (`/portal-staff`) | **Does not issue packets.** Alerts staff in Super CRM and Slack to release the verified DocuSeal packet. |
+| [`service-areas.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/service-areas.jsw) | Reads expansion states and returns only live licensed states. | Anyone, Public (`masterPage`, routers, footer) | **Does not issue packets.** Strictly returns states where `status === 'live'`. Planned states return 404. |
+| [`bluebubbles.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/bluebubbles.jsw) | Primary high-conversion iMessage/SMS bridge via permanent Cloudflare Tunnel (`bb.shamrockbailbonds.biz`). | SiteMember, SiteOwner (`signing-session-service`, staff alerts) | **Does not issue packets.** Dispatches text messages from dedicated text line **`+12399550178`**. |
+| [`bailCalculator.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/bailCalculator.jsw) | Statutory fee calculation under Florida Chapter 648/903 (10% rate OR $100 min per individual charge). | Public (`/how-bail-works`, `/portal-start`, calculator widgets) | **Does not issue packets.** Mathematical pricing engine only. |
+| [`portal-auth.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/portal-auth.jsw) | Custom session authentication (`PortalSessions`, `Magiclinks`), PIN/OTP validation, and role resolution. | Public, SiteMember (`portal-landing`, portal routers) | **Does not issue packets.** Authenticates client and staff sessions. |
+| [`portal-url.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/portal-url.jsw) | Production-hardened URL builder for magic links, portal redirects, and kiosk sessions. | Backend modules | **Does not issue packets.** Generates canonical destination paths. |
+| [`defendant-matching.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/defendant-matching.jsw) | Fuzzy search and matching of arrest records across SWFL counties and master database. | SiteMember, Staff (`portal-staff`, `portal-start`) | **Does not issue packets.** Data lookup and matching engine. |
+| [`documentUpload.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/documentUpload.jsw) | Secure upload of driver licenses, selfies, and collateral documents to Wix Media & Google Drive. | SiteMember (`IdUploadLightbox`, client dashboards) | **Does not issue packets.** File storage and Drive archiving bridge. |
+| [`gasIntegration.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/gasIntegration.jsw) | Bi-directional communication with Google Apps Script Factory via Netlify Edge proxy. | Backend modules, Staff | **Does not issue packets.** Relays data between Wix and GAS Factory. |
+| [`http-functions.js`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/http-functions.js) | Public and authenticated HTTP webhook endpoints for GAS, Telegram, and monitoring. | Authenticated GAS, Webhooks | **Does not issue packets.** Strictly fail-closed endpoints with HMAC/API key auth. |
+| [`packet-generator.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/packet-generator.jsw) | **RETIRED & HARD-LOCKED.** Direct PDF/packet generation from Wix is permanently disabled. | None (Fail-Closed) | **Does not issue packets.** Returns fail-closed `DIRECT_PAPERWORK_DISABLED` error. |
+| [`signing-methods.jsw`](file:///Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/src/backend/signing-methods.jsw) | **RETIRED & HARD-LOCKED.** Legacy SignNow direct packet generation is permanently disabled. | None (Fail-Closed) | **Does not issue packets.** Returns `LEGACY_DIRECT_PAPERWORK_DISABLED` error. |
 
-+ **http-functions.js**  
-  A file for implementing [HTTP endpoints](https://www.wix.com/velo/reference/wix-http-functions/introduction) that are exposed on your site.
+---
 
-+ **jobs.config**  
-  A file for [scheduling recurring jobs](https://support.wix.com/en/article/velo-scheduling-recurring-jobs). Jobs consist of other backend code that's run at regular intervals.
-  
-+ **General backend files**  
-  JavaScript code files. You can import code from these files into any other backend file on your site. These files require a `.js` file extension.
+## 2. Permissions Architecture (`permissions.json`)
 
-Use the following syntax to import code from backend files: 
-```js 
-import { myFunctionName } from 'backend/myFileName';
-```  
-Trying to import from the relative path in your site's repo doesn't work.
-
-Learn more about [this repo's file structure](https://support.wix.com/en/article/velo-understanding-your-sites-github-repository-beta).
-
-## permissions.json
-This file defines [permissions](https://support.wix.com/en/article/velo-about-web-module-permissions) for the functions in your web module files. The file contains a key, `"web-methods"`, whose value is an object that can contain keys named after the web module files in your `backend` folder. Name these keys with the following syntax: `"backend/{path to file}myFile.jsw"`. The value for each file name key is an object that can contain keys named after the functions in that file. Each function key has a value with the following format:
-```js
-"backend/myFile.jsw": {
-  "siteOwner" : {
-    "invoke" : // Boolean
-  },
-  "siteMember" : {
-    "invoke" : // Boolean
-  },
-  "anonymous" : {
-    "invoke" : // Boolean
-  }  
-}
-```
-These values reflect the different levels of web module function permissions. You can set them using the following options:
-| |`siteOwner`|`siteMember`|`anonymous`|
-|-|-----------|------------|-----------|
-|Owner-only access| `true` | `false` | `false`|
-|Site member access| `true` | `true` | `false`|
-|Anyone can access| `true` | `true`| `true`|
-
-The `"web-methods"` object must also contain a `"*"` key. The value for this key defines the default permissions that are applied to any function whose permissions you don't set manually.
-
-Here is an example `permissions.json` file for a site with a backend file called `helperFunctions.jsw`. The file's functions are called `calculate`, `fetchData`, and `syncWithServer`. In this case anyone can call `calculate`, site members can call `syncWithServer`, and only site owners can call `fetchData`.
-
-```json
-{
-  "web-methods": {
-    "*": {
-      "*": {
-        "siteOwner": {
-          "invoke": true
-        },
-        "siteMember": {
-          "invoke": true
-        },
-        "anonymous": {
-          "invoke": true
-        }
-      }
-    },
-    "backend/helperFunctions.jsw": {
-      "calculate": {
-        "siteOwner": {
-          "invoke": true
-        },
-        "siteMember": {
-          "invoke": true
-        },
-        "anonymous": {
-          "invoke": true
-        }
-      },
-      "fetchData": {
-        "siteOwner": {
-          "invoke": true
-        },
-        "siteMember": {
-          "invoke": false
-        },
-        "anonymous": {
-          "invoke": false
-        }
-      },
-      "syncWithServer": {
-        "siteOwner": {
-          "invoke": true
-        },
-        "siteMember": {
-          "invoke": true
-        },
-        "anonymous": {
-          "invoke": false
-        }
-      }
-    }
-  }
-}
-```
+Web methods exposed by `.jsw` modules adhere to strict default-deny principles:
+- **Anonymous Access:** Allowed only for public intake steps (`processIdPhotoOcr`, `lookupDefendantCaseFacts`, `saveWizardDraft`, `validateSigningSession`, `getLiveServiceAreas`, `calculateBondFee`).
+- **Staff / SiteMember Access:** Required for all case mutations, staff overrides (`pushStaffCaseCorrection`), and walk-in packet management (`lobby-tablet-service.jsw`, `canonical-sync-service.jsw`, `bluebubbles.jsw`).
+- **Retired Modules:** Permanently locked to `false` for all caller levels (`packet-generator.jsw`, `signing-methods.jsw`, `secretsManager.jsw`).

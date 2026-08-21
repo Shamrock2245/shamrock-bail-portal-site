@@ -12,10 +12,11 @@
 
 | Layer | Tech | Role |
 |---|---|---|
-| **Frontend (Public / Editor)** | Wix Velo (`src/`) | Live public site (`shamrockbailbonds.biz`) on Wix Editor |
-| **Frontend (Studio Rebuild)** | Wix Studio (`src/`) | 🔄 In Progress — Translation to Wix Studio layout & `/portal-start` wizard (not public yet) |
-| **Backend** | Google Apps Script (`backend-gas/`, 190+ files) | Factory business logic, webhook processing, school unlocks |
-| **Related** | Netlify embeds & Mini-Apps | Netlify paperwork launchpad, Telegram WebApps, Bail School embed |
+| **Frontend (Public / Editor Live)** | Wix Velo (`src/`) | Live public site (`shamrockbailbonds.biz`) on Wix Editor. |
+| **Frontend (Studio Canvas)** | Wix Studio Canvas | 🟡 **Not Built Yet** — Visual canvas design and drag-and-drop page assembly have not started. |
+| **Backend Clipboard Services** | Wix Velo Backend (`src/backend/*.jsw`) | ✅ **Fully Wired & Registered** — ID OCR, Case Facts Hydrator, Wizard Drafts, Canonical Sync, Signing Launchpad, ServiceAreas, Lobby Tablet. |
+| **Backend Factory** | Google Apps Script (`backend-gas/`, 190+ files) | Factory business logic, webhook processing, school unlocks, stable `/exec` deployment. |
+| **Related** | Netlify embeds & Mini-Apps | Netlify paperwork launchpad, Telegram WebApps, Bail School embed. |
 
 **Not** the student LMS (that is `shamrock-bail-school`).  
 **Not** the arrest Super CRM & multi-state brain (that is `shamrock-leads`).
@@ -26,8 +27,8 @@
 
 | Area | Status |
 |---|---|
-| **Wix Studio Translation & IA Expansion** | 🔄 In Progress (Phase 8.5) — Multi-state routing, canonical paperwork mapper, and SWFL hero dominance in code; cutover pending completion. |
-| **Bond Portal, Telegram, Shannon, DocuSeal** | ✅ Code-enforced: DocuSeal is sole active signing provider; staff-gated issuance in Super CRM; Wix acts as non-issuing clipboard launchpad. |
+| **Wix Studio Translation & IA Expansion** | 🟡 **Phase 18.5 Complete** — Backend clipboard services, canonical mapper, permissions allowlist, and IA models live on `main`. Visual canvas not built. |
+| **Bond Portal, Telegram, Shannon, DocuSeal** | ✅ **Code-enforced:** DocuSeal is sole active signing provider; staff-gated issuance in Super CRM; Wix acts strictly as non-issuing clipboard launchpad. |
 | **Legacy SignNow Execution** | ✅ **Retired (Live @464)** — All direct routes, factory senders, and legacy webhooks disabled. Historical fields remain read-only. |
 | **Surety Realignment** | ✅ Active paperwork requires explicit `surety_id` (OSI preferred, Palmetto policy-gated, Accredited/Bankers mapped via canonical schema). |
 | **Bail School Education Management** | ✅ GAS unlock poller, SwipeSimple integration ($199 20hr / $649 120hr / $49 simulator), live catalog aligned. |
@@ -41,7 +42,7 @@
 | Item | Notes |
 |---|---|
 | **GAS Deployment** | ✅ **@464** on stable portal deployment — DocuSeal guards and SignNow retirement live with no `/exec` URL change. Health check returns `success: true`. |
-| **Wix Public Surface** | Live on Wix Editor. Wix Studio migration in active development on `main` branch. Cutover after Studio validation. |
+| **Wix Public Surface** | Live on Wix Editor. Wix Studio migration in active development on `main` branch. Cutover pending visual canvas build and Prompt 19 QA. |
 | **Bail School Pricing** | ✅ Verified live — JSON-LD lists 120hr course at $649; $199 20hr. |
 | **Netlify Paperwork Host** | Serves role-aware intake launchpad; presents DocuSeal only when staff-issued session exists. |
 | **SwipeSimple Gmail Poller** | Automated 5-min trigger active for course unlock and payment plan reconciliation. |
@@ -50,12 +51,9 @@
 
 ## 4. Canonical Links & Related Repos
 
+- **Phase 8.5 Gap Report:** [`docs/PHASE_85_GAP_REPORT.md`](docs/PHASE_85_GAP_REPORT.md)
 - **Canonical Paperwork Architecture:** [`docs/CURRENT_PAPERWORK_ARCHITECTURE.md`](docs/CURRENT_PAPERWORK_ARCHITECTURE.md)
 - **Super CRM & Scraper Fleet:** `shamrock-leads` (Hetzner VPS Docker stack)
 - **Ops Hub & Scheduler:** `shamrock-node-red`
 - **Bail School LMS:** `shamrock-bail-school`
 - **Telegram Mini-Apps:** `shamrock-telegram-app`
-
----
-
-*Maintained by Shamrock Engineering & AI Agents*
