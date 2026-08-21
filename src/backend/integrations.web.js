@@ -6,6 +6,30 @@
 import wixData from 'wix-data';
 import { fetch } from 'wix-fetch';
 import wixSecretsBackend from 'wix-secrets-backend';
+import { authenticateGasRequest } from 'backend/http-auth';
+
+function unauthorized() {
+  return {
+    status: 403,
+    headers: { 'Content-Type': 'application/json' },
+    body: { success: false, error: 'Unauthorized' }
+  };
+}
+
+function serverFault() {
+  return {
+    status: 500,
+    headers: { 'Content-Type': 'application/json' },
+    body: { success: false, error: 'Internal server error' }
+  };
+}
+
+async function requireGasAuth(request, extraProvided) {
+  const auth = await authenticateGasRequest(request, extraProvided);
+  if (auth.ok) return null;
+  if (auth.status === 500) return serverFault();
+  return unauthorized();
+}
 
 // ============================================
 // PENDING DOCUMENTS (SignNow Integration)
@@ -18,6 +42,8 @@ import wixSecretsBackend from 'wix-secrets-backend';
 export async function post_documentsAdd(request) {
   try {
     const body = await request.body.json();
+    const denied = await requireGasAuth(request, body && body.apiKey);
+    if (denied) return denied;
     
     const {
       signerEmail,
@@ -75,13 +101,7 @@ export async function post_documentsAdd(request) {
     
   } catch (error) {
     console.error('Error adding document:', error);
-    return {
-      status: 500,
-      body: {
-        success: false,
-        error: error.message
-      }
-    };
+    return serverFault();
   }
 }
 
@@ -92,6 +112,8 @@ export async function post_documentsAdd(request) {
 export async function post_documentsBatch(request) {
   try {
     const body = await request.body.json();
+    const denied = await requireGasAuth(request, body && body.apiKey);
+    if (denied) return denied;
     const { documents } = body;
     
     if (!documents || !Array.isArray(documents)) {
@@ -160,6 +182,8 @@ export async function post_documentsBatch(request) {
 export async function post_documentsStatus(request) {
   try {
     const body = await request.body.json();
+    const denied = await requireGasAuth(request, body && body.apiKey);
+    if (denied) return denied;
     const { documentId, status, signedAt } = body;
     
     if (!documentId || !status) {
@@ -236,18 +260,8 @@ export async function post_arrestLeadsAdd(request) {
   try {
     const body = await request.body.json();
     const { leads, apiKey } = body;
-    
-    // Verify API key
-    const validApiKey = await wixSecretsBackend.getSecret('ARREST_SCRAPER_API_KEY');
-    if (apiKey !== validApiKey) {
-      return {
-        status: 401,
-        body: {
-          success: false,
-          error: 'Invalid API key'
-        }
-      };
-    }
+    const denied = await requireGasAuth(request, apiKey);
+    if (denied) return denied;
     
     if (!leads || !Array.isArray(leads)) {
       return {
@@ -339,6 +353,8 @@ export async function post_arrestLeadsAdd(request) {
  */
 export async function get_arrestLeadsGet(request) {
   try {
+    const denied = await requireGasAuth(request);
+    if (denied) return denied;
     const { query } = request;
     const limit = parseInt(query.limit) || 50;
     const status = query.status || 'Hot';
@@ -384,6 +400,26 @@ export async function get_arrestLeadsGet(request) {
 // GOOGLE SHEETS SYNC
 // ============================================
 
+async function syncFormToSheets(formType, formData) {
+  const webhookUrl = await wixSecretsBackend.getSecret('GOOGLE_SHEETS_WEBHOOK_URL');
+  if (!webhookUrl) {
+    console.log('Google Sheets webhook not configured');
+    return { success: true, skipped: true };
+  }
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      formType: formType,
+      data: formData,
+      timestamp: new Date().toISOString(),
+      source: 'wix'
+    })
+  });
+  if (!response.ok) throw new Error('Google Sheets sync failed');
+  return { success: true };
+}
+
 /**
  * Sync form submission to Google Sheets
  * POST /_functions/sheetsSync
@@ -391,57 +427,17 @@ export async function get_arrestLeadsGet(request) {
 export async function post_sheetsSync(request) {
   try {
     const body = await request.body.json();
+    const denied = await requireGasAuth(request, body && body.apiKey);
+    if (denied) return denied;
     const { formData, formType } = body;
-    
-    // Get Google Sheets webhook URL from secrets
-    const webhookUrl = await wixSecretsBackend.getSecret('GOOGLE_SHEETS_WEBHOOK_URL');
-    
-    if (!webhookUrl) {
-      console.log('Google Sheets webhook not configured');
-      return {
-        status: 200,
-        body: {
-          success: true,
-          message: 'Sync skipped - webhook not configured'
-        }
-      };
-    }
-    
-    // Send to Google Sheets via Apps Script webhook
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        formType: formType,
-        data: formData,
-        timestamp: new Date().toISOString(),
-        source: 'wix'
-      })
-    });
-    
-    if (response.ok) {
-      return {
-        status: 200,
-        body: {
-          success: true,
-          message: 'Synced to Google Sheets'
-        }
-      };
-    } else {
-      throw new Error('Google Sheets sync failed');
-    }
-    
+    await syncFormToSheets(formType, formData);
+    return {
+      status: 200,
+      body: { success: true, message: 'Synced to Google Sheets' }
+    };
   } catch (error) {
     console.error('Error syncing to Google Sheets:', error);
-    return {
-      status: 500,
-      body: {
-        success: false,
-        error: error.message
-      }
-    };
+    return serverFault();
   }
 }
 
@@ -489,6 +485,8 @@ async function notifySlack(options) {
 export async function post_slackNotify(request) {
   try {
     const body = await request.body.json();
+    const denied = await requireGasAuth(request, body && body.apiKey);
+    if (denied) return denied;
     const { message, channel, username, icon_emoji } = body;
     
     if (!message) {
@@ -551,16 +549,14 @@ export async function post_contactFormSubmit(request) {
         }
       };
     }
+    if (String(name).length > 120 || String(email).length > 254 || String(message).length > 2000) {
+      return {
+        status: 400,
+        body: { success: false, error: 'Invalid field length' }
+      };
+    }
     
-    // Sync to Google Sheets
-    await post_sheetsSync({
-      body: {
-        json: async () => ({
-          formType: 'contact',
-          formData: { name, email, phone, message, county, urgency }
-        })
-      }
-    });
+    await syncFormToSheets('contact', { name, email, phone, message, county, urgency });
     
     // Send Slack notification
     const urgencyEmoji = urgency === 'urgent' ? '' : urgency === 'high' ? '[!]' : '';

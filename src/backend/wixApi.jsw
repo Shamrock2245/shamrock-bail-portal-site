@@ -32,9 +32,11 @@ const COLLECTION_REQUIRED_DOCUMENTS = 'RequiredDocuments';
 async function validateApiKey(apiKey) {
     try {
         const storedKey = await getSecret('GAS_API_KEY');
-        return apiKey === storedKey;
+        if (!storedKey || !apiKey) return false;
+        const { safeEqual } = await import('backend/http-auth');
+        return safeEqual(String(apiKey), String(storedKey));
     } catch (error) {
-        console.error('Error validating API key:', error);
+        console.error('Error validating API key');
         return false;
     }
 }

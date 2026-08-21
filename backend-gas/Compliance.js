@@ -2,6 +2,32 @@
 // Compliance.gs - SOC II Compliance Controls
 //
 
+function timingSafeEqual_(a, b) {
+  a = String(a || '');
+  b = String(b || '');
+  var aa = Utilities.newBlob(a).getBytes();
+  var bb = Utilities.newBlob(b).getBytes();
+  if (aa.length !== bb.length || aa.length === 0) {
+    return false;
+  }
+  var diff = 0;
+  for (var i = 0; i < aa.length; i++) {
+    diff |= aa[i] ^ bb[i];
+  }
+  return diff === 0;
+}
+
+function requireGasApiKey_(provided) {
+  var expected = '';
+  try {
+    expected = PropertiesService.getScriptProperties().getProperty('GAS_API_KEY') || '';
+  } catch (_) {
+    expected = '';
+  }
+  if (!expected) return false;
+  return timingSafeEqual_(provided, expected);
+}
+
 /**
  * Retrieves a secret from Script Properties.
  * @param {string} key The property key.
@@ -92,7 +118,7 @@ function verifyElevenLabsToolSecret_(e) {
     provided = e.headers['x-tool-secret'];
   }
 
-  if (provided !== secret) {
+  if (!timingSafeEqual_(provided, secret)) {
     logSecurityEvent('ELEVENLABS_TOOL_AUTH_FAIL', {
       tool: (e && e.parameter) ? e.parameter.tool : 'unknown'
     });
@@ -140,9 +166,45 @@ function verifyTelegramWebhookSecret_(e) {
     }
   }
 
-  if (provided !== secret) {
+  if (!timingSafeEqual_(provided, secret)) {
     logSecurityEvent('TELEGRAM_WEBHOOK_AUTH_FAIL', {});
     return false;
   }
   return true;
+}
+
+function allowMiniAppUpload_(data) {
+  var allowedMime = {
+    'image/jpeg': true,
+    'image/jpg': true,
+    'image/png': true,
+    'image/webp': true,
+    'image/heic': true,
+    'image/heif': true,
+    'application/pdf': true
+  };
+  var mime = String((data && data.mimeType) || 'image/jpeg').toLowerCase();
+  if (!allowedMime[mime]) return { ok: false, error: 'Unsupported file type' };
+
+  var raw = String((data && data.base64Data) || '');
+  if (raw.indexOf('base64,') !== -1) raw = raw.split('base64,')[1];
+  if (!raw || raw.length > 7000000) return { ok: false, error: 'File too large' };
+
+  var name = String((data && data.fileName) || 'upload.jpg').replace(/[^a-zA-Z0-9._-]/g, '_');
+  if (name.length > 80) name = name.slice(0, 80);
+  if (!name) name = 'upload.jpg';
+  return { ok: true, mime: mime, fileName: name, base64: raw };
+}
+
+function rateLimitMiniApp_(bucket, maxPerWindow, windowSec) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var key = 'rl_' + String(bucket || 'unknown').slice(0, 80);
+    var count = parseInt(cache.get(key) || '0', 10);
+    if (count >= maxPerWindow) return false;
+    cache.put(key, String(count + 1), windowSec);
+    return true;
+  } catch (_) {
+    return true;
+  }
 }

@@ -353,7 +353,31 @@ export async function getIntakeByCaseId(caseId) {
  * @param {string} action - The action name (e.g., 'generateCertificate')
  * @param {Object} payload - The data to send
  */
+const ALLOWED_GAS_ACTIONS = new Set([
+    'portalClientMessage',
+    'submitDefendantApplication',
+    'submitIndemnitorPhase1',
+    'staffLookupBooking',
+    'staffGetActiveCases',
+    'staffGetArrestsFeed',
+    'staffGetHealth',
+    'staffFetchQueue',
+    'staffMarkProcessed',
+    'staffRunReport',
+    'getTelegramIntakeData',
+    'generateBlogAudio',
+    'generateCertificate',
+    'sendSlackAlert',
+    'newIntake',
+    'logTelegramSectionEvent'
+]);
+
 export async function callGasAction(action, payload) {
+    if (!action || !ALLOWED_GAS_ACTIONS.has(String(action))) {
+        console.error('Blocked disallowed GAS action');
+        throw new Error('Unauthorized action');
+    }
+
     const apiKey = await getGasApiKey();
 
     const body = {

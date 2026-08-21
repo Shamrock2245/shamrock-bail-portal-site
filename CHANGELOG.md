@@ -6,6 +6,33 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-08-21 — v2.8.3 — Public HTTP and factory surface hardening
+
+**Wix HTTP functions:**
+- Retired unauthenticated diagnostics (`testAuth`, `testTwilio`, `testGasConnection`, `debugCounties`).
+- Fail-closed, timing-safe `GAS_API_KEY` checks on admin/sync/intake/SMS/secrets endpoints.
+- Removed spoofable `x-gas-caller` bootstrap that returned `GAS_API_KEY`. Secrets dump is now allowlisted and never returns `GAS_API_KEY`.
+- Twilio status/inbound signatures fail closed; inbound TwiML XML-escapes caller content.
+- Telegram webhook verifies `X-Telegram-Bot-Api-Secret-Token` when `TELEGRAM_WEBHOOK_SECRET` is set.
+- Intake webhook, county sync, and setup routes no longer run without a key.
+- Public responses no longer echo `error.message` / stacks.
+
+**Other portal hardening:**
+- `callGasAction` allowlists GAS actions so anonymous web-method callers cannot fire arbitrary factory actions.
+- Locked dangerous `.jsw` web methods (secrets, admin provisioning, cron, debug/test modules) away from anonymous invoke.
+- Staff portal HTML-escapes roster fields and restricts iframe `postMessage` origin.
+
+**GAS factory:**
+- Unauthenticated `?test=connection` no longer returns masked keys or script URLs.
+- `?testDoc`, `?format=json` scrape/test/setup, and all GET `action=` routes except `ping`/`health` now require `apiKey`.
+
+**Follow-up hardening:**
+- Locked unauthenticated `integrations.web.js` routes (`documentsAdd/Batch/Status`, arrest leads, Slack notify, sheets sync). Contact form stays public with field-length limits.
+- GAS doPost API-key compare is fail-closed and timing-safe; client error bodies no longer include stack traces.
+- Mini-app Drive uploads are MIME/size/filename constrained and rate-limited.
+
+**Ops:** Wix publish + `clasp deploy -i <existing ID>` (no new `/exec` URL). Node-RED GET scheduler calls must include `?apiKey=`. Re-run Telegram webhook setup after `TELEGRAM_WEBHOOK_SECRET` is set so Telegram sends the secret token.
+
 ### 2026-08-16 — v2.8.2 — Legacy e-sign retirement and DocuSeal binding gate
 
 **Production release:**

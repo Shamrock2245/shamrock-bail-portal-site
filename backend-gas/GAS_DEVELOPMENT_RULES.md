@@ -67,9 +67,10 @@ Canonical deployment ID / URL: project root `.gas-config.json`.
 ### Add a New Node-RED Handler (GET)
 
 1. **Add function** to `NodeRedHandlers.js`: `function handleYourAction(data) { ... }`
-2. **Register route** in `Code_Helpers.js` → `handleGetAction()` switch/if block
-3. **Return format**: Always return `ContentService.createTextOutput(JSON.stringify({...}))`
-4. **Update docs**: Add to `GAS_AUTOMATION_GUIDE.md` Section 3
+2. **Register route** in `Code.js` → `handleGetAction()` switch/if block
+3. **Auth**: All GET `action=` routes except `ping` and `health` require `?apiKey=` matching `GAS_API_KEY`. Node-RED and Bail School LMS callers must send the key.
+4. **Return format**: Always return `ContentService.createTextOutput(JSON.stringify({...}))`
+5. **Update docs**: Add to `GAS_AUTOMATION_GUIDE.md` Section 3
 
 ### Add a New Telegram Bot Command
 

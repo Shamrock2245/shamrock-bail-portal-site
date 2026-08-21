@@ -27,7 +27,10 @@ export function logSafe(message, data = {}, level = 'info') {
  * Masks: email, phone, password, token, key
  */
 function maskPII(obj) {
-    const SENSITIVE_KEYS = ['email', 'phone', 'password', 'token', 'key', 'secret', 'authorization', 'signature'];
+    const SENSITIVE_KEYS = [
+        'email', 'phone', 'password', 'token', 'key', 'secret', 'authorization', 'signature',
+        'ssn', 'dob', 'address', 'booking', 'credit', 'cvv', 'card', 'provided', 'sid', 'auth'
+    ];
 
     if (typeof obj !== 'object' || obj === null) return obj;
 

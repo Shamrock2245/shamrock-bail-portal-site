@@ -12,6 +12,111 @@
           "invoke": true
         }
       }
+    },
+    "secretsManager.jsw": {
+      "*": {
+        "siteOwner": { "invoke": false },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "admin-provisioning.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "auth-utils.jsw": {
+      "*": {
+        "siteOwner": { "invoke": false },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "cronJobs.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "config-loader.jsw": {
+      "*": {
+        "siteOwner": { "invoke": false },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "debug-counties.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "dev-tools.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "googleDriveService.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "scheduler.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "telegram-webhook.jsw": {
+      "*": {
+        "siteOwner": { "invoke": false },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "test_auth_flow.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "test-collections.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "testBridge.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "test-maps.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
+    },
+    "elevenLabs.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
     }
   }
 }

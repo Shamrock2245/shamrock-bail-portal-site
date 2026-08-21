@@ -2,9 +2,19 @@
 // Filename: backend/http-functions.js
 // These endpoints can be called from Dashboard.html/GAS
 
-import { ok, badRequest, serverError, forbidden } from 'wix-http-functions';
+import { ok, badRequest, serverError, forbidden, response } from 'wix-http-functions';
 import { buildPortalUrl } from 'backend/portal-url';
 import { createHmac } from 'crypto';
+import {
+    authenticateGasRequest,
+    escapeXml,
+    sanitizeRedirectUrl,
+    candidateTwilioUrls,
+    verifyTwilioSignature,
+    isSecretAllowlisted,
+    GAS_SECRETS_ALLOWLIST,
+    safeEqual
+} from 'backend/http-auth';
 import {
     addPendingDocument,
     addPendingDocumentsBatch,
@@ -25,23 +35,38 @@ import { llmSitemapContent } from 'backend/llmSitemapData';
 import { buildLlmsTxt, fetchLiveBlogPosts } from 'backend/llms-txt-builder';
 import { getCityLandingSlugs } from 'backend/local-landings';
 
+const JSON_HEADERS = { 'Content-Type': 'application/json' };
+
+async function requireAuth(request, extraProvided) {
+    const auth = await authenticateGasRequest(request, extraProvided);
+    if (auth.ok) return null;
+    if (auth.status === 500) {
+        console.error('CRITICAL: GAS_API_KEY secret is missing. Blocking request.');
+        return serverError({ body: { success: false, message: 'Server misconfiguration' } });
+    }
+    return forbidden({ body: { success: false, message: 'Unauthorized' } });
+}
+
+function publicError(error) {
+    console.error(error);
+    return serverError({ body: { success: false, message: 'Internal server error' } });
+}
+
 /**
  * GET /_functions/triggerCountySync
  * Manually trigger the county data sync (Admin only)
  */
 export async function get_triggerCountySync(request) {
-    // Ideally protect this with a secret or admin check
-    // For now, let's just run it as it's a safe idempotent operation
+    const denied = await requireAuth(request);
+    if (denied) return denied;
     try {
         const result = await syncCountiesToCms();
         return ok({
-            headers: { 'Content-Type': 'application/json' },
+            headers: JSON_HEADERS,
             body: result
         });
     } catch (error) {
-        return serverError({
-            body: { success: false, error: error.message }
-        });
+        return publicError(error);
     }
 }
 
@@ -122,29 +147,8 @@ export async function get_llmsTxt(request) {
 export async function post_apiSyncCaseData(request) {
     try {
         const body = await request.body.json();
-
-        // Validate API key
-        if (!body.apiKey) {
-            return badRequest({
-                body: { success: false, message: 'Missing apiKey' }
-            });
-        }
-
-        // Verify API key against stored secret
-        const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
-
-        // Fail closed if secret is missing
-        if (!validApiKey) {
-            console.error('CRITICAL: GAS_API_KEY secret is missing. Blocking request.');
-            return serverError({ body: { success: false, message: 'Server misconfiguration' } });
-        }
-
-        if (body.apiKey !== validApiKey) {
-            logSafe('Invalid API Key attempt', { provided: body.apiKey }, 'warn');
-            return forbidden({
-                body: { success: false, message: 'Invalid API key' }
-            });
-        }
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
 
         // Validate case data
         if (!body.caseData || !body.caseData.caseNumber) {
@@ -223,24 +227,16 @@ export async function post_apiSyncCaseData(request) {
         }
 
     } catch (error) {
-        console.error('Error syncing case data:', error);
-        return serverError({
-            body: { success: false, message: error.message }
-        });
+        return publicError(error);
     }
 }
 
 /**
  * GET /_functions/testAuth
- * Triggers the full auth flow test
+ * Retired diagnostic — always fail closed.
  */
 export async function get_testAuth(request) {
-    const { testFullAuthFlow } = await import('backend/test_auth_flow');
-    const result = await testFullAuthFlow();
-    return ok({
-        headers: { 'Content-Type': 'application/json' },
-        body: result
-    });
+    return forbidden({ body: { success: false, message: 'Unauthorized' } });
 }
 
 // Debug endpoints removed after verification
@@ -289,9 +285,7 @@ export async function post_documentsAdd(request) {
         }
 
     } catch (error) {
-        return serverError({
-            body: { success: false, message: error.message }
-        });
+        return publicError(error);
     }
 }
 
@@ -332,9 +326,7 @@ export async function post_documentsBatch(request) {
         }
 
     } catch (error) {
-        return serverError({
-            body: { success: false, message: error.message }
-        });
+        return publicError(error);
     }
 }
 
@@ -359,7 +351,7 @@ export async function get_authCallback(request) {
 
     // 1. Handle Errors
     if (error || !code) {
-        return response(200, renderCloseScript({ success: false, message: "Login denied or failed." }));
+        return htmlOk(renderCloseScript({ success: false, message: "Login denied or failed." }));
     }
 
     try {
@@ -410,7 +402,7 @@ export async function get_authCallback(request) {
         // 4. Return Success HTML with token
         const targetUrl = await buildPortalUrl('/portal-landing', { st: sessionToken });
 
-        return response(200, renderCloseScript({
+        return htmlOk(renderCloseScript({
             success: true,
             message: "Login successful!"
         }, targetUrl));
@@ -418,7 +410,7 @@ export async function get_authCallback(request) {
     } catch (err) {
         console.error("Auth Callback Error:", err);
         const fallbackUrl = await buildPortalUrl('/portal-landing');
-        return response(200, renderCloseScript({ success: false, message: "System error during login." }, fallbackUrl));
+        return htmlOk(renderCloseScript({ success: false, message: "System error during login." }, fallbackUrl));
     }
 }
 
@@ -474,8 +466,8 @@ export async function post_metaDataDeletion(request) {
         // Verify HMAC SHA-256 signature
         const expectedSig = createHmac('sha256', secret).update(payload).digest('hex');
 
-        if (sigHex !== expectedSig) {
-            logSafe('Invalid Meta Data Deletion Signature', { received: sigHex, expected: expectedSig }, 'warn');
+        if (!safeEqual(sigHex, expectedSig)) {
+            logSafe('Invalid Meta Data Deletion Signature', { received: 'mismatch' }, 'warn');
             return forbidden({ body: { error: "Invalid signature" } });
         }
 
@@ -503,7 +495,7 @@ export async function post_metaDataDeletion(request) {
 /**
  * Helper to return HTML response
  */
-function response(status, body) {
+function htmlOk(body) {
     return ok({
         headers: { "Content-Type": "text/html" },
         body: body
@@ -519,8 +511,7 @@ function response(status, body) {
  */
 function renderCloseScript(data, targetUrl) {
     const safeData = JSON.stringify(data);
-    // Default fallback if no target provided
-    const finalUrl = targetUrl || "https://shamrockbailbonds.biz/portal-landing";
+    const finalUrl = sanitizeRedirectUrl(targetUrl, "https://www.shamrockbailbonds.biz/portal-landing");
 
     return `
       <!DOCTYPE html>
@@ -584,21 +575,8 @@ function renderCloseScript(data, targetUrl) {
 export async function post_smsSend(request) {
     try {
         const body = await request.body.json();
-
-        // Validate API key
-        if (!body.apiKey) {
-            return badRequest({
-                body: { success: false, message: 'Missing apiKey' }
-            });
-        }
-
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (body.apiKey !== validApiKey) {
-            logSafe('Invalid SMS API Key', { provided: body.apiKey }, 'warn');
-            return forbidden({
-                body: { success: false, message: 'Invalid API key' }
-            });
-        }
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
 
         // Validate required fields
         if (!body.to || !body.body) {
@@ -623,10 +601,7 @@ export async function post_smsSend(request) {
         }
 
     } catch (error) {
-        console.error('SMS send error:', error);
-        return serverError({
-            body: { success: false, message: error.message }
-        });
+        return publicError(error);
     }
 }
 
@@ -646,21 +621,8 @@ export async function post_smsSend(request) {
 export async function post_smsSigningLink(request) {
     try {
         const body = await request.body.json();
-
-        // Validate API key
-        if (!body.apiKey) {
-            return badRequest({
-                body: { success: false, message: 'Missing apiKey' }
-            });
-        }
-
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (body.apiKey !== validApiKey) {
-            logSafe('Invalid Link API Key', { provided: body.apiKey }, 'warn');
-            return forbidden({
-                body: { success: false, message: 'Invalid API key' }
-            });
-        }
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
 
         // Validate required fields
         if (!body.phone || !body.signingLink) {
@@ -688,10 +650,7 @@ export async function post_smsSigningLink(request) {
         }
 
     } catch (error) {
-        console.error('Signing link SMS error:', error);
-        return serverError({
-            body: { success: false, message: error.message }
-        });
+        return publicError(error);
     }
 }
 
@@ -712,33 +671,14 @@ export async function post_twilioStatus(request) {
         const bodyText = await request.body.text();
         const params = new URLSearchParams(bodyText);
 
-        // 1. Verify Twilio Signature
         const authToken = await getSecret('TWILIO_AUTH_TOKEN').catch(() => '');
-        if (authToken && signature) {
-            const url = 'https://www.shamrockbailbonds.biz/_functions/twilioStatus';
-
-            // Reconstruct payload for validation
-            // Twilio signs: URL + sorted params
-            const paramObj = {};
-            for (const [key, value] of params.entries()) {
-                paramObj[key] = value;
-            }
-
-            const sortedKeys = Object.keys(paramObj).sort();
-            let data = url;
-            for (const key of sortedKeys) {
-                data += `${key}${paramObj[key]}`;
-            }
-
-            const generatedSignature = createHmac('sha1', authToken)
-                .update(Buffer.from(data, 'utf-8'))
-                .digest('base64');
-
-            if (signature !== generatedSignature) {
-                console.warn('Twilio Signature Mismatch', { signature, generatedSignature });
-                // We log but don't hard block yet to prevent outages if URL is slightly off
-                // return forbidden({ body: { error: 'Invalid signature' } });
-            }
+        const paramObj = {};
+        for (const [key, value] of params.entries()) {
+            paramObj[key] = value;
+        }
+        if (!authToken || !signature || !verifyTwilioSignature(authToken, signature, paramObj, candidateTwilioUrls(request, 'twilioStatus'))) {
+            logSafe('Twilio status signature rejected', { hasSignature: !!signature }, 'warn');
+            return forbidden({ body: { error: 'Invalid signature' } });
         }
 
         const statusData = {
@@ -798,35 +738,21 @@ export async function post_twilioInbound(request) {
         const bodyText = await request.body.text();
         const params = new URLSearchParams(bodyText);
 
-        // 1. Verify Twilio Signature
         const authToken = await getSecret('TWILIO_AUTH_TOKEN').catch(() => '');
-        if (authToken && signature) {
-            const url = 'https://www.shamrockbailbonds.biz/_functions/twilioInbound';
-
-            // Reconstruct payload for validation
-            const paramObj = {};
-            for (const [key, value] of params.entries()) {
-                paramObj[key] = value;
-            }
-
-            const sortedKeys = Object.keys(paramObj).sort();
-            let data = url;
-            for (const key of sortedKeys) {
-                data += `${key}${paramObj[key]}`;
-            }
-
-            const generatedSignature = createHmac('sha1', authToken)
-                .update(Buffer.from(data, 'utf-8'))
-                .digest('base64');
-
-            if (signature !== generatedSignature) {
-                console.warn('Twilio Inbound Signature Mismatch', { signature, generatedSignature });
-                // return forbidden({ body: '<Response></Response>' });
-            }
+        const paramObj = {};
+        for (const [key, value] of params.entries()) {
+            paramObj[key] = value;
+        }
+        if (!authToken || !signature || !verifyTwilioSignature(authToken, signature, paramObj, candidateTwilioUrls(request, 'twilioInbound'))) {
+            logSafe('Twilio inbound signature rejected', { hasSignature: !!signature }, 'warn');
+            return forbidden({
+                headers: { 'Content-Type': 'text/xml' },
+                body: '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'
+            });
         }
 
-        const fromNumber = params.get('From');
-        const messageBody = params.get('Body');
+        const fromNumber = escapeXml(params.get('From'));
+        const messageBody = escapeXml(params.get('Body'));
 
         // Office Phones to forward to
         const FORWARD_TO = ['+12399550178', '+12399550301'];
@@ -836,7 +762,7 @@ export async function post_twilioInbound(request) {
         twiml += '<Response>';
 
         FORWARD_TO.forEach(phone => {
-            twiml += `<Message to="${phone}">`;
+            twiml += `<Message to="${escapeXml(phone)}">`;
             twiml += `Shamrock Reply from ${fromNumber}: ${messageBody}`;
             twiml += '</Message>';
         });
@@ -863,73 +789,18 @@ export async function post_twilioInbound(request) {
 
 /**
  * GET /_functions/testTwilio
- * Temporary Debug Endpoint
- * Usage: https://www.shamrockbailbonds.biz/_functions/testTwilio?phone=+15551234567&key=shamrock-debug
+ * Retired diagnostic — always fail closed.
  */
 export async function get_testTwilio(request) {
-    const phone = request.query.phone;
-    const msg = request.query.msg || "Test from Shamrock Debugger";
-    const key = request.query.key;
-
-    if (key !== 'shamrock-debug') {
-        return forbidden({ body: { error: "Invalid debug key" } });
-    }
-
-    if (!phone) {
-        return badRequest({ body: { error: "Missing 'phone' query parameter" } });
-    }
-
-    try {
-        // Dynamic import to test module resolution too
-        const { sendSms } = await import('backend/twilio-client');
-
-        // Test Secret Access first
-        const secretCheck = await getSecret('TWILIO_ACCOUNT_SID').catch(e => "FAILED_TO_READ");
-
-        const start = Date.now();
-        const result = await sendSms(phone, msg);
-        const duration = Date.now() - start;
-
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: {
-                test: "Twilio SMS",
-                target: phone,
-                duration: `${duration}ms`,
-                secretStatus: secretCheck === "FAILED_TO_READ" ? "Values Missing/Unreadable" : "Readable",
-                result: result
-            }
-        });
-    } catch (error) {
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: {
-                success: false,
-                error: error.message,
-                stack: error.stack
-            }
-        });
-    }
+    return forbidden({ body: { success: false, message: 'Unauthorized' } });
 }
 
 /**
  * GET /_functions/debugCounties
- * List all counties in the DB
+ * Retired diagnostic — always fail closed.
  */
 export async function get_debugCounties(request) {
-    try {
-        const { listAllCounties } = await import('backend/debug-counties');
-        const data = await listAllCounties();
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: { success: true, count: data.length, items: data }
-        });
-    } catch (error) {
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: { success: false, error: error.message }
-        });
-    }
+    return forbidden({ body: { success: false, message: 'Unauthorized' } });
 }
 
 /**
@@ -1119,15 +990,10 @@ export async function get_sitemap(request) {
  */
 export async function get_getIndemnitorProfile(request) {
     try {
-        const apiKey = request.headers['api-key'];
+        const denied = await requireAuth(request);
+        if (denied) return denied;
         const email = request.query.email;
         const includeDocs = request.query.includeDocs === 'true';
-
-        // 1. Auth Check
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (apiKey !== validApiKey) {
-            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
-        }
 
         if (!email) {
             return badRequest({ body: { success: false, message: 'Missing email' } });
@@ -1184,8 +1050,7 @@ export async function get_getIndemnitorProfile(request) {
         });
 
     } catch (error) {
-        console.error("Profile Lookup Error:", error);
-        return serverError({ body: { success: false, message: error.message } });
+        return publicError(error);
     }
 }
 
@@ -1196,13 +1061,8 @@ export async function get_getIndemnitorProfile(request) {
  */
 export async function get_getPendingIntakes(request) {
     try {
-        const apiKey = request.headers['api-key'];
-
-        // 1. Auth Check
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (apiKey !== validApiKey) {
-            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
-        }
+        const denied = await requireAuth(request);
+        if (denied) return denied;
 
         // 2. Call Implementation
         const result = await gasIntegration.getPendingIntakesForGAS();
@@ -1219,7 +1079,7 @@ export async function get_getPendingIntakes(request) {
         }
 
     } catch (error) {
-        return serverError({ body: { success: false, message: error.message } });
+        return publicError(error);
     }
 }
 
@@ -1240,12 +1100,8 @@ export async function post_markIntakeSynced(request) {
 export async function post_updateDefendantData(request) {
     try {
         const body = await request.body.json();
-        const apiKey = body.apiKey;
-
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (apiKey !== validApiKey) {
-            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
-        }
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
 
         if (!body.caseId || !body.data) {
             return badRequest({ body: { success: false, message: 'Missing caseId or data' } });
@@ -1258,7 +1114,7 @@ export async function post_updateDefendantData(request) {
             body: result
         });
     } catch (error) {
-        return serverError({ body: { success: false, message: error.message } });
+        return publicError(error);
     }
 }
 
@@ -1270,12 +1126,8 @@ export async function post_updateDefendantData(request) {
 export async function post_markIntakeSigned(request) {
     try {
         const body = await request.body.json();
-        const apiKey = body.apiKey;
-
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (apiKey !== validApiKey) {
-            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
-        }
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
 
         if (!body.caseId || !body.data) {
             return badRequest({ body: { success: false, message: 'Missing caseId or data' } });
@@ -1288,7 +1140,7 @@ export async function post_markIntakeSigned(request) {
             body: result
         });
     } catch (error) {
-        return serverError({ body: { success: false, message: error.message } });
+        return publicError(error);
     }
 }
 
@@ -1301,13 +1153,9 @@ export async function post_markIntakeProcessed(request) {
     // Re-implementing using direct logic for backward compat
     try {
         const body = await request.body.json();
-        const apiKey = body.apiKey;
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
         const intakeId = body.intakeId;
-
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (apiKey !== validApiKey) {
-            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
-        }
 
         if (!intakeId) return badRequest({ body: { success: false, message: 'Missing intakeId' } });
 
@@ -1327,7 +1175,7 @@ export async function post_markIntakeProcessed(request) {
             body: { success: true, message: "Marked as processed" }
         });
     } catch (error) {
-        return serverError({ body: { success: false, message: error.message } });
+        return publicError(error);
     }
 }
 
@@ -1337,13 +1185,9 @@ export async function post_markIntakeProcessed(request) {
 async function handleIntakeAction(request, actionFunction, idField = 'caseId') {
     try {
         const body = await request.body.json();
-        const apiKey = body.apiKey;
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
         const id = body[idField];
-
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (apiKey !== validApiKey) {
-            return forbidden({ body: { success: false, message: 'Invalid API Key' } });
-        }
 
         if (!id) return badRequest({ body: { success: false, message: `Missing ${idField}` } });
 
@@ -1354,7 +1198,7 @@ async function handleIntakeAction(request, actionFunction, idField = 'caseId') {
             body: result
         });
     } catch (error) {
-        return serverError({ body: { success: false, message: error.message } });
+        return publicError(error);
     }
 }
 
@@ -1383,8 +1227,9 @@ async function handleIntakeAction(request, actionFunction, idField = 'caseId') {
  */
 export async function post_intakeWebhook(request) {
     try {
-        // Parse webhook payload
         const payload = await request.body.json();
+        const denied = await requireAuth(request, payload && payload.apiKey);
+        if (denied) return denied;
 
         // Extract intake data
         const intakeData = payload.data || payload;
@@ -1459,13 +1304,7 @@ export async function post_intakeWebhook(request) {
         });
 
     } catch (error) {
-        console.error('Error processing intake webhook:', error);
-        return serverError({
-            body: {
-                success: false,
-                error: error.message
-            }
-        });
+        return publicError(error);
     }
 }
 
@@ -1493,21 +1332,9 @@ export async function post_intakeWebhook(request) {
  */
 export async function get_pendingIntakes(request) {
     try {
-        const { apiKey, since } = request.query;
-
-        // Validate API key
-        if (!apiKey) {
-            return badRequest({
-                body: { success: false, error: 'Missing apiKey' }
-            });
-        }
-
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (apiKey !== validApiKey) {
-            return forbidden({
-                body: { success: false, error: 'Invalid API key' }
-            });
-        }
+        const denied = await requireAuth(request);
+        if (denied) return denied;
+        const { since } = request.query;
 
         // Query IntakeQueue for new/pending records
         // 'gasSyncStatus' is the correct status field for GAS synchronization
@@ -1557,13 +1384,7 @@ export async function get_pendingIntakes(request) {
         });
 
     } catch (error) {
-        console.error('Error fetching pending intakes:', error);
-        return serverError({
-            body: {
-                success: false,
-                error: error.message
-            }
-        });
+        return publicError(error);
     }
 }
 /**
@@ -1582,11 +1403,8 @@ export async function post_updateIntakeStatus(request) {
     try {
         const body = await request.body.json();
 
-        // Validate API key
-        if (!body.apiKey) return badRequest({ body: { success: false, message: 'Missing apiKey' } });
-
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (body.apiKey !== validApiKey) return forbidden({ body: { success: false, message: 'Invalid API key' } });
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
 
         if (!body.caseId || !body.status) {
             return badRequest({ body: { success: false, message: 'Missing caseId or status' } });
@@ -1618,10 +1436,7 @@ export async function post_updateIntakeStatus(request) {
         });
 
     } catch (error) {
-        console.error('Error updating intake status:', error);
-        return serverError({
-            body: { success: false, message: error.message }
-        });
+        return publicError(error);
     }
 }
 
@@ -1632,20 +1447,16 @@ export async function post_updateIntakeStatus(request) {
  */
 export async function get_adminSyncCounties(request) {
     try {
-        const apiKey = request.query.apiKey;
-        const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
-
-        if (!validApiKey || apiKey !== validApiKey) {
-            return forbidden({ body: { error: 'Unauthorized' } });
-        }
+        const denied = await requireAuth(request);
+        if (denied) return denied;
 
         const result = await syncCountiesToCms();
         return ok({
-            headers: { "Content-Type": "application/json" },
+            headers: JSON_HEADERS,
             body: result
         });
     } catch (error) {
-        return serverError({ body: { error: error.message } });
+        return publicError(error);
     }
 }
 
@@ -1666,28 +1477,28 @@ export async function post_openAIWebhook(request) {
         // or just log it securely if configured.
 
         const webhookSecret = await getSecret('OPENAI_WEBHOOK_SECRET').catch(() => '');
-
-        if (webhookSecret && signature) {
-            const generatedSignature = createHmac('sha256', webhookSecret)
-                .update(bodyText)
-                .digest('hex');
-
-            // Note: Verify exact OpenAI signature format from their docs if strict security is needed.
-            // Often it involves the timestamp too.
-            // For this implementation, we will log payload but default to 200 OK 
-            // so we don't break the integration while debugging.
+        if (!webhookSecret) {
+            return forbidden({ body: { error: 'Unauthorized' } });
+        }
+        if (!signature) {
+            return forbidden({ body: { error: 'Unauthorized' } });
+        }
+        const generatedSignature = createHmac('sha256', webhookSecret)
+            .update(bodyText)
+            .digest('hex');
+        if (!safeEqual(String(signature), generatedSignature)) {
+            return forbidden({ body: { error: 'Unauthorized' } });
         }
 
-        console.log(" OpenAI Webhook Received:", bodyText.substring(0, 500)); // Log first 500 chars
+        logSafe('OpenAI webhook received', { bytes: bodyText.length });
 
         return ok({
-            headers: { "Content-Type": "application/json" },
+            headers: JSON_HEADERS,
             body: { received: true }
         });
 
     } catch (error) {
-        console.error("OpenAI Webhook Error:", error);
-        return serverError({ body: { error: error.message } });
+        return publicError(error);
     }
 }
 
@@ -1699,15 +1510,8 @@ export async function post_openAIWebhook(request) {
  */
 export async function get_outreachLeads(request) {
     try {
-        const apiKey = request.query.apiKey;
-
-        // Validate API Key
-        const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
-        if (!apiKey || apiKey !== validApiKey) {
-            return forbidden({
-                body: { success: false, message: 'Invalid API key' }
-            });
-        }
+        const denied = await requireAuth(request);
+        if (denied) return denied;
 
         // Query IntakeQueue for potential leads
         // You might want to filter by status or created date here
@@ -1734,10 +1538,7 @@ export async function get_outreachLeads(request) {
         });
 
     } catch (error) {
-        console.error('Error fetching outreach leads:', error);
-        return serverError({
-            body: { success: false, message: error.message }
-        });
+        return publicError(error);
     }
 }
 
@@ -1754,31 +1555,32 @@ export async function get_outreachLeads(request) {
  * This endpoint is called by Telegram when users interact with the bot
  */
 export async function post_telegramWebhook(request) {
-    console.log(' Telegram webhook triggered');
-
     try {
-        // Parse request body
+        const expectedSecret = await getSecret('TELEGRAM_WEBHOOK_SECRET').catch(() => null);
+        const providedSecret =
+            (request.headers && (request.headers['x-telegram-bot-api-secret-token'] || request.headers['X-Telegram-Bot-Api-Secret-Token'])) || '';
+        if (expectedSecret) {
+            if (!providedSecret || !safeEqual(String(providedSecret), String(expectedSecret))) {
+                return forbidden({ body: { ok: false, error: 'Unauthorized' } });
+            }
+        } else {
+            console.warn('TELEGRAM_WEBHOOK_SECRET is not set; telegram webhook is running without secret-token verification');
+        }
+
         const update = await request.body.json();
-
-        // Import telegram webhook handler
         const { handleTelegramWebhook } = await import('backend/telegram-webhook');
-
-        // Process update
         const result = await handleTelegramWebhook(update);
 
-        // Return OK to Telegram (required)
         return ok({
-            headers: { 'Content-Type': 'application/json' },
+            headers: JSON_HEADERS,
             body: { ok: true, result: result }
         });
 
     } catch (error) {
         console.error('Telegram webhook error:', error);
-
-        // Still return OK to Telegram to avoid retries
         return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: { ok: true, error: error.message }
+            headers: JSON_HEADERS,
+            body: { ok: true }
         });
     }
 }
@@ -1788,27 +1590,23 @@ export async function post_telegramWebhook(request) {
  * Get Telegram webhook configuration info (for debugging)
  */
 export async function get_telegramWebhookInfo(request) {
+    const denied = await requireAuth(request);
+    if (denied) return denied;
     try {
         const botToken = await getSecret('TELEGRAM_BOT_TOKEN');
-
         if (!botToken) {
-            return badRequest({
-                body: { success: false, error: 'Bot token not configured' }
-            });
+            return serverError({ body: { success: false, error: 'Bot token not configured' } });
         }
 
         const { getTelegramWebhookInfo } = await import('backend/telegram-webhook');
         const info = await getTelegramWebhookInfo(botToken);
 
         return ok({
-            headers: { 'Content-Type': 'application/json' },
+            headers: JSON_HEADERS,
             body: info
         });
-
     } catch (error) {
-        return serverError({
-            body: { success: false, error: error.message }
-        });
+        return publicError(error);
     }
 }
 
@@ -1818,31 +1616,25 @@ export async function get_telegramWebhookInfo(request) {
  * Requires ?auth=GAS_API_KEY
  */
 export async function get_setupTelegramWebhook(request) {
+    const denied = await requireAuth(request);
+    if (denied) return denied;
     try {
-        const providedAuth = request.query['auth'];
-        const expectedAuth = await getSecret('GAS_API_KEY');
-
-        if (providedAuth !== expectedAuth && expectedAuth) {
-            return forbidden({ body: { error: 'Unauthorized' } });
-        }
-
         const botToken = await getSecret('TELEGRAM_BOT_TOKEN');
         if (!botToken) {
             return serverError({ body: { error: 'TELEGRAM_BOT_TOKEN not found in secrets' } });
         }
 
+        const webhookSecret = await getSecret('TELEGRAM_WEBHOOK_SECRET').catch(() => null);
         const { setTelegramWebhook } = await import('backend/telegram-webhook');
         const webhookUrl = 'https://www.shamrockbailbonds.biz/_functions/telegramWebhook';
-        const result = await setTelegramWebhook(botToken, webhookUrl);
+        const result = await setTelegramWebhook(botToken, webhookUrl, webhookSecret);
 
         return ok({
-            headers: { 'Content-Type': 'application/json' },
+            headers: JSON_HEADERS,
             body: result
         });
     } catch (error) {
-        return serverError({
-            body: { success: false, error: error.message }
-        });
+        return publicError(error);
     }
 }
 
@@ -1885,17 +1677,8 @@ export async function post_intakeSubmit(request) {
 
     try {
         const body = await request.body.json();
-
-        // -- Auth --------------------------------------------------------------
-        const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
-        if (!validApiKey) {
-            console.error('CRITICAL: GAS_API_KEY secret missing');
-            return serverError({ body: { success: false, message: 'Server misconfiguration' } });
-        }
-        if (!body.apiKey || body.apiKey !== validApiKey) {
-            console.warn('Invalid API key on intake submit');
-            return forbidden({ body: { success: false, message: 'Invalid API key' } });
-        }
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
 
         // -- Validate required fields ------------------------------------------
         const required = ['indemnitorName', 'indemnitorPhone', 'defendantName', 'county'];
@@ -1956,10 +1739,7 @@ export async function post_intakeSubmit(request) {
         });
 
     } catch (error) {
-        console.error('Error processing intake submission:', error);
-        return serverError({
-            body: { success: false, message: error.message }
-        });
+        return publicError(error);
     }
 }
 
@@ -1982,12 +1762,8 @@ export async function post_sendSigningLink(request) {
 
     try {
         const body = await request.body.json();
-
-        // -- Auth --------------------------------------------------------------
-        const validApiKey = await getSecret('GAS_API_KEY').catch(() => null);
-        if (!validApiKey || !body.apiKey || body.apiKey !== validApiKey) {
-            return forbidden({ body: { success: false, message: 'Invalid API key' } });
-        }
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
 
         // -- Validate ----------------------------------------------------------
         if (!body.telegramChatId || !body.signingLink) {
@@ -2002,15 +1778,27 @@ export async function post_sendSigningLink(request) {
             return serverError({ body: { success: false, message: 'TELEGRAM_BOT_TOKEN not configured' } });
         }
 
-        const paymentLink = body.paymentLink || 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
-        const defendantName = body.defendantName || 'your loved one';
+        const signingLink = sanitizeRedirectUrl(body.signingLink, '', [
+            'sign.shamrockbailbonds.biz',
+            'www.shamrockbailbonds.biz',
+            'shamrockbailbonds.biz'
+        ]);
+        if (!signingLink) {
+            return badRequest({ body: { success: false, message: 'Invalid signing link host' } });
+        }
+        const paymentLink = sanitizeRedirectUrl(
+            body.paymentLink || 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd',
+            'https://www.shamrockbailbonds.biz',
+            ['swipesimple.com', 'www.swipesimple.com', 'www.shamrockbailbonds.biz', 'shamrockbailbonds.biz']
+        );
+        const defendantName = String(body.defendantName || 'your loved one').replace(/[\[\]\(\)*_`]/g, '');
 
         const messageText = ` *Your Bail Bond Paperwork is Ready!*
 
 The documents for *${defendantName}* are ready to sign.
 
 *Step 1 -- Sign the paperwork:*
- [Tap here to sign](${body.signingLink})
+ [Tap here to sign](${signingLink})
 
 *Step 2 -- Pay the premium:*
  [Tap here to pay](${paymentLink})
@@ -2025,7 +1813,7 @@ Questions? Reply here or call *(239) 332-2245*`;
             parse_mode: 'Markdown',
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: ' Sign Documents', url: body.signingLink }],
+                    [{ text: ' Sign Documents', url: signingLink }],
                     [{ text: ' Pay Premium', url: paymentLink }],
                     [{ text: ' Call Us Now', url: 'tel:+12393322245' }]
                 ]
@@ -2062,33 +1850,27 @@ Questions? Reply here or call *(239) 332-2245*`;
         });
 
     } catch (error) {
-        console.error('Error sending signing link:', error);
-        return serverError({
-            body: { success: false, message: error.message }
-        });
+        return publicError(error);
     }
 }
 
 // ==== SECRETS SYNC ENDPOINT ====
 
 /**
- * Endpoint for GAS backend to retrieve secrets securely during setup
- * Requires X-GAS-Caller header and valid API Key
+ * Endpoint for GAS backend to retrieve allowlisted secrets during setup.
+ * Requires GAS_API_KEY. Does not return GAS_API_KEY itself.
  */
 export async function get_gasSecrets(request) {
     const responseHeaders = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store"
     };
 
     try {
-        const callerIP = request.ip || 'Unknown';
-        const queryParams = request.query || {};
-        const secretName = queryParams.secret;
-        const providedApiKey = queryParams.apiKey;
-        const gasCaller = request.headers['x-gas-caller'];
+        const denied = await requireAuth(request);
+        if (denied) return denied;
 
-        console.log(`[gasSecrets] Request for ${secretName} from ${callerIP}`);
-
+        const secretName = (request.query && request.query.secret) || '';
         if (!secretName) {
             return response({
                 status: 400,
@@ -2097,56 +1879,19 @@ export async function get_gasSecrets(request) {
             });
         }
 
-        // Very important: If the secret requested is GAS_API_KEY, 
-        // we only authenticate via the known GAS Webhook URL (x-gas-caller).
-        // For ALL OTHER secrets, we require the GAS_API_KEY itself to be passed.
-
-        if (secretName === 'GAS_API_KEY') {
-            // We just verify the caller looks kinda like a GAS URL, 
-            // though this isn't high security, the API key itself is the real security token
-            if (!gasCaller || !gasCaller.includes('script.google.com/macros/')) {
-                console.warn(`[gasSecrets] Attempt to fetch GAS_API_KEY without valid GAS caller. Caller: ${gasCaller}`);
-                return response({
-                    status: 403,
-                    headers: responseHeaders,
-                    body: { error: 'Forbidden' }
-                });
-            }
-
-            const gasApiKey = await getSecret('GAS_API_KEY');
-            return response({
-                status: 200,
-                headers: responseHeaders,
-                body: { value: gasApiKey }
-            });
-        }
-
-        // For everything else, require valid API key
-        if (!providedApiKey) {
-            return response({
-                status: 401,
-                headers: responseHeaders,
-                body: { error: 'Unauthorized: Missing API Key' }
-            });
-        }
-
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (providedApiKey !== validApiKey) {
-            console.warn(`[gasSecrets] Invalid API key used by ${gasCaller}`);
+        if (secretName === 'GAS_API_KEY' || !isSecretAllowlisted(secretName)) {
             return response({
                 status: 403,
                 headers: responseHeaders,
-                body: { error: 'Forbidden: Invalid API Key' }
+                body: { error: 'Forbidden' }
             });
         }
 
-        // The requested secret
         let value = null;
         try {
             value = await getSecret(secretName);
         } catch (e) {
-            console.error(`[gasSecrets] Failed to fetch secret ${secretName}:`, e);
-            // Don't fail the request, just return null so caller knows it doesn't exist yet
+            console.error('[gasSecrets] Failed to fetch allowlisted secret');
         }
 
         return response({
@@ -2156,7 +1901,7 @@ export async function get_gasSecrets(request) {
         });
 
     } catch (error) {
-        console.error("[gasSecrets] Fatal error fetching secret:", error);
+        console.error("[gasSecrets] Fatal error fetching secret");
         return response({
             status: 500,
             headers: responseHeaders,
@@ -2188,47 +1933,10 @@ export async function get_gasSecretsBundle(request) {
     };
 
     try {
-        // -- Auth --------------------------------------------------------------
-        const providedKey = (request.query && request.query['apiKey']) || '';
-        const validKey = await getSecret('GAS_API_KEY').catch(() => null);
+        const denied = await requireAuth(request);
+        if (denied) return denied;
 
-        if (!validKey) {
-            return response({
-                status: 500,
-                headers: responseHeaders,
-                body: { success: false, error: 'GAS_API_KEY not configured in Wix Secrets Manager' }
-            });
-        }
-
-        if (!providedKey || providedKey !== validKey) {
-            return response({
-                status: 403,
-                headers: responseHeaders,
-                body: { success: false, error: 'Forbidden: Invalid API Key' }
-            });
-        }
-
-        // -- Fetch all secrets in parallel -------------------------------------
-        const secretNames = [
-            'TELEGRAM_BOT_TOKEN',
-            'ELEVENLABS_API_KEY',
-            'SIGNNOW_API_KEY',
-            'SIGNNOW_WEBHOOK_SECRET',
-            'TWILIO_ACCOUNT_SID',
-            'TWILIO_AUTH_TOKEN',
-            'TWILIO_PHONE_NUMBER',
-            'OPENAI_API_KEY',
-            'SLACK_WEBHOOK_URL',
-            'GOOGLE_MAPS_API_KEY',
-            'STRIPE_SECRET_KEY',
-            'STRIPE_PUBLISHABLE_KEY',
-            'WIX_API_KEY',
-            'GAS_WEBHOOK_URL',
-            'SIGNNOW_BASE_URL',
-            'ELEVENLABS_VOICE_ID',
-            'GOOGLE_CLIENT_ID',
-            'GOOGLE_CLIENT_SECRET'
-        ];
+        const secretNames = GAS_SECRETS_ALLOWLIST;
 
         const secretResults = await Promise.allSettled(
             secretNames.map(name =>
@@ -2262,11 +1970,11 @@ export async function get_gasSecretsBundle(request) {
         });
 
     } catch (error) {
-        console.error('[gasSecretsBundle] Fatal error:', error);
+        console.error('[gasSecretsBundle] Fatal error');
         return response({
             status: 500,
             headers: responseHeaders,
-            body: { success: false, error: error.message }
+            body: { success: false, error: 'Internal Server Error' }
         });
     }
 }
@@ -2278,17 +1986,8 @@ export async function get_gasSecretsBundle(request) {
 export async function post_telegramIntake(request) {
     try {
         const body = await request.body.json();
-
-        // Validate API key
-        if (!body.apiKey) {
-            return badRequest({ body: { success: false, message: 'Missing apiKey' } });
-        }
-
-        const validApiKey = await getSecret('GAS_API_KEY');
-        if (body.apiKey !== validApiKey) {
-            logSafe('Invalid API Key attempt for Telegram Intake', { provided: body.apiKey }, 'warn');
-            return forbidden({ body: { success: false, message: 'Invalid API key' } });
-        }
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
 
         // Validate required fields
         if (!body.intakeData || !body.intakeData.indemnitorName) {
@@ -2314,111 +2013,14 @@ export async function post_telegramIntake(request) {
         }
 
     } catch (error) {
-        console.error('Telegram intake error:', error);
-        return serverError({
-            body: { success: false, message: error.message }
-        });
+        return publicError(error);
     }
 }
 
 /**
  * GET /_functions/testGasConnection
- * Diagnostic endpoint to test Wix→GAS POST from within Wix infrastructure.
- * Returns detailed debugging info about the fetch result.
- * TEMPORARY — remove after debugging portal auth.
+ * Retired diagnostic — always fail closed.
  */
 export async function get_testGasConnection(request) {
-    try {
-        const { fetch } = await import('wix-fetch');
-
-        const [gasUrl, apiKey] = await Promise.all([
-            getSecret('GAS_WEB_APP_URL'),
-            getSecret('GAS_API_KEY')
-        ]);
-
-        const diagnostics = {
-            gasUrlSet: !!gasUrl,
-            gasUrlLength: gasUrl ? gasUrl.length : 0,
-            gasUrlPrefix: gasUrl ? gasUrl.substring(0, 50) + '...' : 'MISSING',
-            gasUrlSuffix: gasUrl ? '...' + gasUrl.slice(-30) : 'MISSING',
-            gasUrlHasWhitespace: gasUrl ? gasUrl !== gasUrl.trim() : false,
-            gasUrlHasNewline: gasUrl ? /[\r\n]/.test(gasUrl) : false,
-            apiKeySet: !!apiKey,
-            apiKeyLength: apiKey ? apiKey.length : 0,
-            apiKeyMasked: apiKey ? `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}` : 'MISSING'
-        };
-
-        // Test 1: Simple POST with wrong API key (shouldn't crash)
-        const testPayload = {
-            action: 'sendEmail',
-            apiKey: 'diagnostic-test-key',
-            to: 'test@test.com',
-            subject: 'Diagnostic Test',
-            htmlBody: '<p>Diagnostic test from Wix</p>'
-        };
-
-        let test1Result;
-        try {
-            const cleanUrl = gasUrl ? gasUrl.trim() : '';
-            const resp = await fetch(cleanUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(testPayload)
-            });
-            const body = await resp.text();
-            test1Result = {
-                status: resp.status,
-                statusText: resp.statusText,
-                bodyPreview: body.substring(0, 500),
-                bodyIsJson: body.trim().startsWith('{') || body.trim().startsWith('['),
-                bodyIsHtml: body.trim().startsWith('<')
-            };
-        } catch (fetchErr) {
-            test1Result = { error: fetchErr.message, stack: fetchErr.stack };
-        }
-
-        // Test 2: POST with real API key (should succeed with UNAUTHORIZED or success)
-        let test2Result;
-        try {
-            const cleanUrl = gasUrl ? gasUrl.trim() : '';
-            const realPayload = {
-                action: 'sendEmail',
-                apiKey: apiKey ? apiKey.trim() : '',
-                to: 'diagnostic-noreply@shamrockbailbonds.biz',
-                subject: '[DIAG] Connection Test',
-                htmlBody: '<p>Wix→GAS diagnostic test</p>'
-            };
-            const resp2 = await fetch(cleanUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(realPayload)
-            });
-            const body2 = await resp2.text();
-            test2Result = {
-                status: resp2.status,
-                statusText: resp2.statusText,
-                bodyPreview: body2.substring(0, 500),
-                bodyIsJson: body2.trim().startsWith('{') || body2.trim().startsWith('['),
-                bodyIsHtml: body2.trim().startsWith('<')
-            };
-        } catch (fetchErr) {
-            test2Result = { error: fetchErr.message, stack: fetchErr.stack };
-        }
-
-        return ok({
-            headers: { 'Content-Type': 'application/json' },
-            body: {
-                success: true,
-                timestamp: new Date().toISOString(),
-                diagnostics,
-                test1_wrongKey: test1Result,
-                test2_realKey: test2Result
-            }
-        });
-
-    } catch (error) {
-        return serverError({
-            body: { success: false, error: error.message, stack: error.stack }
-        });
-    }
+    return forbidden({ body: { success: false, message: 'Unauthorized' } });
 }

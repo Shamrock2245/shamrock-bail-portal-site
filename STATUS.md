@@ -1,6 +1,6 @@
 # Portal Site — True Status
 
-> **Last verified:** 2026-08-16
+> **Last verified:** 2026-08-21
 > **Repo:** `Shamrock2245/shamrock-bail-portal-site` · branch `main`  
 > **Product URL:** `https://shamrockbailbonds.biz` (Wix)  
 > **Role:** Brand clipboard + GAS factory — **Shamrock’s Platform** factory layer  
@@ -30,6 +30,7 @@
 | SwipeSimple Gmail poll → unlock `$199`→20hr / `$649`→120hr | ✅ in code |
 | Public Bail School catalog aligned to school LMS (`20hr` / `120hr` / simulator) | ✅ August 2026 |
 | Netlify embed hardened (XSS escape, dual postMessage bridge, URL allowlist) | ✅ August 2026 |
+| Public HTTP diagnostics retired; webhook signatures fail closed; GAS GET actions require apiKey except ping/health | ✅ August 2026 (code) — Wix publish + existing GAS deploy still required |
 | Hardcoded secrets scrubbed from GAS setup/test tooling | ✅ July 2026 |
 | Location tracker no longer falls back to hardcoded API key | ✅ |
 | Expanded `.gitignore` / `.claspignore` for dumps & secrets | ✅ |

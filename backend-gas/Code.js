@@ -139,24 +139,24 @@ function doGet(e) {
   // --- DIAGNOSTIC ENDPOINT (KI: wix_gas_integration_troubleshooting) ---
   // Usage: curl -L "https://script.google.com/macros/s/.../exec?test=connection"
   if (e.parameter && e.parameter.test === 'connection') {
-    const props = PropertiesService.getScriptProperties();
-    const gasKey = props.getProperty('GAS_API_KEY');
-    const wixUrl = props.getProperty('WIX_SITE_URL');
-    const maskedKey = gasKey ? `${gasKey.slice(0, 4)}...${gasKey.slice(-4)} (${gasKey.length} chars)` : '(MISSING)';
-    const diagnostics = {
+    const publicDiagnostics = {
       status: 'ok',
-      timestamp: new Date().toISOString(),
-      gasApiKey: maskedKey,
-      wixSiteUrl: wixUrl || '(MISSING)',
-      mailQuota: MailApp.getRemainingDailyQuota(),
-      scriptUrl: ScriptApp.getService().getUrl(),
-      deploymentId: e.parameter.deploymentId || 'unknown'
+      timestamp: new Date().toISOString()
     };
-    return ContentService.createTextOutput(JSON.stringify(diagnostics, null, 2))
+    if (typeof requireGasApiKey_ === 'function' && requireGasApiKey_(e.parameter.apiKey)) {
+      const props = PropertiesService.getScriptProperties();
+      publicDiagnostics.wixSiteUrlSet = !!props.getProperty('WIX_SITE_URL');
+      publicDiagnostics.gasApiKeySet = !!props.getProperty('GAS_API_KEY');
+      publicDiagnostics.mailQuota = MailApp.getRemainingDailyQuota();
+    }
+    return ContentService.createTextOutput(JSON.stringify(publicDiagnostics, null, 2))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
   if (e.parameter && e.parameter.testDoc) {
+    if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(e.parameter.apiKey)) {
+      return createErrorResponse('Unauthorized', ERROR_CODES.UNAUTHORIZED);
+    }
     if (typeof generateMotionForRemission === 'function') {
       try {
         var result = generateMotionForRemission({
@@ -258,6 +258,9 @@ function doGet(e) {
   if (e.parameter.action) return handleGetAction(e);
 
   if (e.parameter.format === 'json') {
+    if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(e.parameter.apiKey)) {
+      return createErrorResponse('Unauthorized', ERROR_CODES.UNAUTHORIZED);
+    }
     if (e.parameter.mode === 'scrape') {
       const result = runLeeScraper();
       return createResponse(result);
@@ -637,6 +640,13 @@ function doPost(e) {
     // send custom headers reliably. Security is via Telegram initData.
     if (data.action === 'telegram_mini_app_intake') {
       try {
+        var intakeActor = data.telegramUserId || data.telegramChatId || 'mini_app_unknown';
+        if (typeof rateLimitMiniApp_ === 'function' && !rateLimitMiniApp_('intake_' + intakeActor, 20, 600)) {
+          return createErrorResponse('Too many requests', ERROR_CODES.UNAUTHORIZED);
+        }
+        if (!data.DefName && !data.defendantName) {
+          return createErrorResponse('Missing defendant name', ERROR_CODES.INVALID_JSON);
+        }
         Logger.log('📱 Telegram Mini App intake received');
         const result = saveTelegramIntakeToQueue(data, data.telegramUserId || 'mini_app_unknown');
         // Send Slack notification
@@ -660,23 +670,25 @@ function doPost(e) {
 
     if (data.action === 'telegram_mini_app_upload' || data.action === 'bail_school_upload') {
       try {
-        Logger.log('📎 File upload via webhook: ' + data.docType);
-        // Save file to Google Drive
-        const folder = DriveApp.getFolderById(getConfig().GOOGLE_DRIVE_FOLDER_ID);
-        const decoded = Utilities.base64Decode(data.base64Data);
-        // Sometimes base64 string includes data URL prefix, strip it if necessary
-        let cleanBase64 = data.base64Data;
-        if (cleanBase64.includes('base64,')) {
-            cleanBase64 = cleanBase64.split('base64,')[1];
+        var uploadActor = data.telegramUserId || data.studentId || 'unknown';
+        if (typeof rateLimitMiniApp_ === 'function' && !rateLimitMiniApp_('upload_' + uploadActor, 15, 600)) {
+          return createErrorResponse('Too many requests', ERROR_CODES.UNAUTHORIZED);
         }
-        const blob = Utilities.newBlob(Utilities.base64Decode(cleanBase64), data.mimeType || 'image/jpeg', data.fileName || 'upload.jpg');
+        var uploadCheck = (typeof allowMiniAppUpload_ === 'function')
+          ? allowMiniAppUpload_(data)
+          : { ok: true, mime: data.mimeType || 'image/jpeg', fileName: data.fileName || 'upload.jpg', base64: data.base64Data };
+        if (!uploadCheck.ok) {
+          return createErrorResponse(uploadCheck.error, ERROR_CODES.INVALID_JSON);
+        }
+        Logger.log('📎 File upload via webhook: ' + data.docType);
+        const folder = DriveApp.getFolderById(getConfig().GOOGLE_DRIVE_FOLDER_ID);
+        const blob = Utilities.newBlob(Utilities.base64Decode(uploadCheck.base64), uploadCheck.mime, uploadCheck.fileName);
         const file = folder.createFile(blob);
-        const userId = data.telegramUserId || data.studentId || 'unknown';
-        file.setDescription('Upload | User: ' + userId + ' | Type: ' + (data.docType || 'unknown'));
+        file.setDescription('Upload | User: ' + uploadActor + ' | Type: ' + (data.docType || 'unknown'));
         return createResponse({ success: true, fileId: file.getId(), fileUrl: file.getUrl() });
       } catch (uploadErr) {
         Logger.log('❌ Upload error: ' + uploadErr.message);
-        return createErrorResponse(uploadErr.message, ERROR_CODES.INTERNAL_ERROR);
+        return createErrorResponse('Upload failed', ERROR_CODES.INTERNAL_ERROR);
       }
     }
     if (data.action === 'telegram_payment_log') {
@@ -1199,11 +1211,11 @@ function doPost(e) {
     const config = getConfig();
     // Allow if it matches the configured Wix API Key
     // OR if we are in a dev/test mode (verify via Property)? No, enforcing strict now.
-    if (data.apiKey !== config.WIX_API_KEY) {
-      // Diagnostic logging (masked keys for debugging without exposure)
-      const incomingMasked = data.apiKey ? `${String(data.apiKey).slice(0, 4)}...${String(data.apiKey).slice(-4)}` : '(empty)';
-      const expectedMasked = config.WIX_API_KEY ? `${config.WIX_API_KEY.slice(0, 4)}...${config.WIX_API_KEY.slice(-4)}` : '(empty)';
-      console.warn(`API Key Mismatch — Incoming: ${incomingMasked}, Expected: ${expectedMasked}, Action: ${data.action || 'unknown'}`);
+    const incomingKey = data.apiKey || '';
+    const configKeyOk = !!(config.WIX_API_KEY && typeof timingSafeEqual_ === 'function' && timingSafeEqual_(incomingKey, config.WIX_API_KEY));
+    const gasKeyOk = (typeof requireGasApiKey_ === 'function') ? requireGasApiKey_(incomingKey) : false;
+    if (!configKeyOk && !gasKeyOk) {
+      console.warn('API Key Mismatch — Action: ' + (data.action || 'unknown'));
       if (typeof logSecurityEvent === 'function') logSecurityEvent('UNAUTHORIZED_API_ACCESS', { error: 'Invalid API Key', action: data.action });
       return createErrorResponse('Unauthorized: Invalid API Key', ERROR_CODES.UNAUTHORIZED);
     }
@@ -1214,7 +1226,7 @@ function doPost(e) {
     return createResponse(result); // Result typically has success: true/false
   } catch (error) {
     if (typeof logSecurityEvent === 'function') logSecurityEvent('DOPOST_FAILURE', { error: error.toString() });
-    return createErrorResponse(error.toString(), ERROR_CODES.INTERNAL_ERROR, error.stack);
+    return createErrorResponse('Internal error', ERROR_CODES.INTERNAL_ERROR);
   }
 }
 
@@ -2304,6 +2316,11 @@ function handleGetAction(e) {
     }, callback);
   }
   if (action === 'health') return createResponse({ success: true, version: 'V409', timestamp: new Date().toISOString() }, callback);
+
+  if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(e.parameter.apiKey || data.apiKey)) {
+    return createErrorResponse('Unauthorized', ERROR_CODES.UNAUTHORIZED);
+  }
+
   if (action === 'getNextReceiptNumber') return createResponse(getNextReceiptNumber(), callback);
   if (action === 'testSlack') return createResponse(testSlackIntegration(), callback);
 

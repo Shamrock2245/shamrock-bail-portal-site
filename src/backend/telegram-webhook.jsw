@@ -110,18 +110,20 @@ export async function handleTelegramWebhook(update) {
  * @param {string} webhookUrl - Public webhook URL
  * @returns {object} - Result
  */
-export async function setTelegramWebhook(botToken, webhookUrl) {
+export async function setTelegramWebhook(botToken, webhookUrl, secretToken) {
   try {
     const apiUrl = `https://api.telegram.org/bot${botToken}/setWebhook`;
+    const payload = { url: webhookUrl };
+    if (secretToken) {
+      payload.secret_token = String(secretToken);
+    }
 
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        url: webhookUrl
-      })
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json();

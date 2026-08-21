@@ -443,6 +443,15 @@ input,select,textarea,button { font-family:var(--font); }
 // All GAS calls go through parent Wix page (portal-staff.qs9dx.js)
 // ═══════════════════════════════════════════════════════
 
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 var SP = {
   chargeCount: 1,
   indemnitorCount: 1,
@@ -453,7 +462,11 @@ var SP = {
   // postMessage helpers
   // ───────────────────────────────────────────────────
   sendToParent: function(msg) {
-    window.parent.postMessage(msg, '*');
+    var parentOrigin = (window.location.ancestorOrigins && window.location.ancestorOrigins[0]) || '';
+    if (parentOrigin.indexOf('shamrockbailbonds.biz') === -1) {
+      parentOrigin = 'https://www.shamrockbailbonds.biz';
+    }
+    window.parent.postMessage(msg, parentOrigin);
   },
 
   // ─── TAB SWITCHING ───
@@ -733,10 +746,14 @@ var SP = {
     }
     tbody.innerHTML = cases.map(function(c) {
       var badge = c.status === 'posted' ? 'badge-posted' : c.status === 'signed' ? 'badge-signed' : c.status === 'sent' ? 'badge-sent' : 'badge-pending';
-      return '<tr><td>' + (c.caseNumber||'—') + '</td><td><strong>' + (c.defendantName||'—') + '</strong></td><td>' +
-        (c.county||'—') + '</td><td>$' + (Number(c.bondAmount)||0).toLocaleString() + '</td><td><span class="badge ' + badge + '">' +
-        (c.status||'pending') + '</span></td><td>' + (c.docsSigned||0) + '/' + (c.docsTotal||12) + '</td>' +
-        '<td><button class="btn btn-sm btn-secondary" onclick="SP.startCaseFromRow(\'' + (c.defendantName||'').replace(/'/g,'\\\'') + '\',\'' + (c.county||'').replace(/'/g,'\\\'') + '\')">📋</button></td></tr>';
+      var safeName = escapeHtml(c.defendantName || '—');
+      var safeCounty = escapeHtml(c.county || '—');
+      var attrName = encodeURIComponent(c.defendantName || '');
+      var attrCounty = encodeURIComponent(c.county || '');
+      return '<tr><td>' + escapeHtml(c.caseNumber||'—') + '</td><td><strong>' + safeName + '</strong></td><td>' +
+        safeCounty + '</td><td>$' + (Number(c.bondAmount)||0).toLocaleString() + '</td><td><span class="badge ' + badge + '">' +
+        escapeHtml(c.status||'pending') + '</span></td><td>' + escapeHtml(c.docsSigned||0) + '/' + escapeHtml(c.docsTotal||12) + '</td>' +
+        '<td><button class="btn btn-sm btn-secondary" data-name="' + attrName + '" data-county="' + attrCounty + '" onclick="SP.startCaseFromRow(decodeURIComponent(this.getAttribute(\'data-name\')), decodeURIComponent(this.getAttribute(\'data-county\')))">📋</button></td></tr>';
     }).join('');
   },
 
@@ -750,10 +767,22 @@ var SP = {
       var score = a.leadScore || 0;
       var scoreBadge = score >= 70 ? 'badge-hot' : score >= 40 ? 'badge-warm' : 'badge-cold';
       var scoreLabel = score >= 70 ? '🔥 ' + score : score >= 40 ? '🟡 ' + score : score;
-      return '<tr><td><strong>' + (a.name||'—') + '</strong></td><td>' + (a.county||'—') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-        (a.charges||'—') + '</td><td>$' + (Number(a.bondAmount)||0).toLocaleString() + '</td><td><span class="badge ' + scoreBadge + '">' +
-        scoreLabel + '</span></td><td>' + (a.bookingDate||'—') + '</td>' +
-        '<td><button class="btn btn-sm btn-primary" onclick="SP.startCaseFromArrest(\'' + encodeURIComponent(JSON.stringify(a)) + '\')">Start Case →</button></td></tr>';
+      var payload = encodeURIComponent(JSON.stringify({
+        name: a.name || '',
+        firstName: a.firstName || '',
+        lastName: a.lastName || '',
+        county: a.county || '',
+        charges: a.charges || '',
+        bondAmount: a.bondAmount || 0,
+        bookingDate: a.bookingDate || '',
+        bookingNumber: a.bookingNumber || '',
+        facility: a.facility || '',
+        leadScore: score
+      }));
+      return '<tr><td><strong>' + escapeHtml(a.name||'—') + '</strong></td><td>' + escapeHtml(a.county||'—') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+        escapeHtml(a.charges||'—') + '</td><td>$' + (Number(a.bondAmount)||0).toLocaleString() + '</td><td><span class="badge ' + scoreBadge + '">' +
+        escapeHtml(scoreLabel) + '</span></td><td>' + escapeHtml(a.bookingDate||'—') + '</td>' +
+        '<td><button class="btn btn-sm btn-primary" data-arrest="' + payload + '" onclick="SP.startCaseFromArrest(this.getAttribute(\'data-arrest\'))">Start Case →</button></td></tr>';
     }).join('');
   },
 
