@@ -1,99 +1,58 @@
 # 🗺 Technical Roadmap & Milestones
 
 > **"The Uber of Bail Bonds" — Fast. Frictionless. Everywhere.**  
-> **Last Updated:** 2026-07-08 · Authoritative runtime truth: [`STATUS.md`](./STATUS.md)
+> **Last Updated:** 2026-08-21 · Authoritative runtime truth: [`STATUS.md`](./STATUS.md)
 
 ---
 
-## July 2026 focus (done in git / still ops)
+## 🚀 Growth Ladder (Information Architecture Law)
 
-| Item | Git `main` | Live |
-|------|------------|------|
-| Secret scrub + no hardcoded GAS fallbacks | ✅ | Redeploy GAS + rotate secrets |
-| Bail School marketing price **$649** | ✅ | Redeploy embed + Wix publish |
-| School LMS funnel | Sibling `shamrock-bail-school` | Netlify env + shared sheet |
-| Bond Auto-CRM / BB reliability | Sibling `shamrock-leads` | VPS + office BlueBubbles |
+1. **Local/Regional Dominance First**: Lee, Collier, Charlotte, Hendry, Glades. Homepage, NAP, and hero are SWFL / Fort Myers / Cape Coral first.
+2. **Statewide Florida**: All 67 counties via dynamic programmatic county pages (`/florida-bail-bonds/:slug`) + First Appearance calendars.
+3. **11+ State Expansion**: Decoupled multi-state directory (`/bail-bonds/:state/:county`) integrated with `shamrock-leads` multi-state ops. Add states only when `ServiceAreas.status = live`.
 
 ---
 
-## The "Everywhere" Omni-Channel Experience
+## 📱 Paperwork North Star (Mobile & Tablet First)
 
-We have engineered **FIVE distinct ways** to secure a bond — zero friction, 24/7:
-
-1. **In-Person**: Flagship office at **1528 Broadway, Ft. Myers, FL 33901**.
-2. **Web Portal**: `shamrockbailbonds.biz` → Magic link → Mobile-first app → SignNow signing.
-3. **Telegram Conversational AI**: `@ShamrockBail_bot` → Natural text intake → Auto-generated paperwork.
-4. **Telegram Mini-App**: In-bot "Portal" button → 5-screen lightning intake without leaving chat.
-5. **Shannon (Voice AI)**: Call in → Speak to AI → Paperwork completed *during the call* → SignNow links sent before hanging up. Live call transfer to 3 numbers.
-
----
-
-## What's Built — Completed Milestones
-
-### ✅ Foundation (2025)
-- Wix Velo ↔ Google Apps Script bridge with secret management
-- SignNow 14-document packet generation with PDF coordinate mapping
-- Core 34-column intake schema
-- Magic Link authentication system
-
-### ✅ AI Workforce (Q4 2025 – Q1 2026)
-- **9 AI Digital Employees** operational:
-  - The Concierge (web/SMS/Telegram chat)
-  - Shannon (ElevenLabs voice — 24/7 phone intake, live call transfer)
-  - The Clerk (booking parser, OCR)
-  - The Analyst (flight risk scoring 0-100)
-  - The Investigator (background analysis)
-  - The Closer (drip campaigns)
-  - Manus Brain (Telegram AI handler)
-  - The Watchdog (5-min system health checks)
-  - Bounty Hunter (high-value lead surfacing >$2,500)
-- Communication Preferences: `CommPrefsManager.js` — client opt-in/out respected across all channels
-
-### ✅ Telegram Ecosystem (Q1 2026)
-- `@ShamrockBail_bot` — full conversational intake, inline quotes, court reminders
-- 7 Mini-Apps on Netlify (Portal, Intake, Documents, Payments, Check-in, Status, Signing)
-- ID OCR via Google Cloud Vision (FL DL → name, DOB, DL#, address)
-- Closed-loop signing: intake → sign → ID upload → document delivery
-
-### ✅ Geographic Expansion — The Scout (Q1 2026)
-- **20 active county scrapers** across Florida
-- Counties: Brevard, Broward, Charlotte, Collier, DeSoto, Duval, Escambia, Hendry, Hillsborough, Lee, Manatee, Orange, Osceola, Palm Beach, Pasco, Pinellas, Polk, Sarasota, Seminole, Volusia
-- 15 GitHub Actions workflows with staggered cron schedules
-- Data pipeline: Google Sheets + MongoDB Atlas + Slack alerts per county
-- Lead scoring with automated prioritization (0-100)
-
-### ✅ Infrastructure & Operations (Q1 2026)
-- **Node-RED**: 21 flow tabs, 836 nodes, 64 crons, 10 dashboard pages, 5 reusable subflows
-- **Dashboard**: 10-page premium glassmorphism UI with 26 widget groups
-- **Hetzner Cloud**: VPS for Dockerized `shamrock-leads` fleet + `shamrock-bond-tracker` microservice
-- **MongoDB Atlas**: Arrest data storage + business event logging (`MongoLogger.gs`)
-- **Netlify Edge Functions**: Shannon voice init proxy, county geolocation, Twilio routing
-- **Google Cloud Functions**: MongoDB proxy bridging GAS and Atlas
-- **SEO**: All county pages indexed, JSON-LD schema, OG/Twitter/geo meta tags
-
-### ✅ DevOps & Deploy Pipeline (April 2026)
-- **ESM Crypto Imports**: Fixed all Wix Backend files for strict ESM compliance
-- **Auto-Deploy**: GitHub Actions → Wix CLI auto-publish on push to `main`
-- **WIX_CLI_API_KEY**: Rotation procedure documented in `SECRETS_ROTATION_GUIDE.md`
-- **Site Health**: Dynamic copyright year, broken footer link fixes, SEO schema date fixes
+1. **Login**: Passwordless phone OTP / Magic Link (`portal-auth.jsw`).
+2. **Role Picker**: Defendant | Primary Indemnitor | Co-Indemnitor.
+3. **ID Camera Scan**: Cloud Vision OCR extracts & hydrates role-correct fields (Name, DOB, Address, DL#). Cosigner ID never overwrites defendant fields.
+4. **Case Facts Auto-Hydration**: Charges, bail, case #, court date, jail — prefilled from Super CRM / arrest scrape when known.
+5. **Delta Fields Only**: Collect only missing items (employment, references, household).
+6. **Canonical Schema**: Maps one person/case model onto any surety packet (OSI, Accredited, Bankers). UI never binds to one company’s PDF layout.
+7. **Lowest-Friction Signing**: One-tap plain-language review and finger/stylus signature.
+8. **Staff-Gated Security Gate**: Wix remains the launchpad; staff reconciles intake and issues final DocuSeal packets in Super CRM.
 
 ---
 
-## What's Next — Active Roadmap
+## 🔴 Phase 8.5: Wix Studio Translation + Autopilot Paperwork Clipboard (CURRENT PRIORITY)
 
-### 🔴 Phase 8: WhatsApp & Revenue Growth (Q2 2026)
+| Milestone | Scope | Key Deliverables | Status |
+|---|---|---|---|
+| **A. Studio Visual System & Public IA** | Translation of live Wix Editor to modern Wix Studio | Full visual system, fluid responsive breakpoints, SWFL hero dominance, 67-county directory, killing stock templates | 🔄 In Progress |
+| **B. Portal & Launchpad Translation** | Port member dashboards & launchpads | `portal-landing`, `portal-defendant`, `portal-indemnitor`, `portal-staff`, `SigningLightbox` with DocuSeal boundary | 🔄 In Progress |
+| **C. `/portal-start` Autopilot Wizard** | Mobile/tablet intake wizard | Role → ID scan → OCR Hydrate → Delta fields → Plain preview → Signing shell | 🔄 In Progress |
+| **D. Staff Lobby-Tablet Handoff** | In-person tablet intake workflow | Instant QR/PIN tablet handoff for clients in office or jail lobby | 📋 Queued |
+| **E. `ServiceAreas` Multi-State CMS** | Non-FL expansion directory | Multi-state routing (`/bail-bonds/:state/:county`) without altering FL homepage | 🔄 In Progress |
+
+*Success Metric for C:* A panicked indemnitor on an iPhone can scan a FL Driver's License and reach a correct signature pad without retyping identity fields.
+
+---
+
+## 🔄 Active & Upcoming Phases
+
+### Phase 8: Growth, Messaging & Revenue
 | Item | Status | Key Files |
 |------|--------|-----------|
-| WhatsApp Business via Twilio | ⏳ Blocked (10DLC) | `twilio-client.jsw`, Node-RED WhatsApp tab |
-| "The Closer" drip campaigns | 🔧 Wiring | `TheCloser.js`, Node-RED "The Closer" tab |
+| WhatsApp Business via Twilio | ⏳ Blocked (10DLC) | `twilio-client.jsw`, Node-RED WhatsApp relay |
+| "The Closer" drip campaigns | 🔧 Wiring | `TheCloser.js`, Node-RED abandoned intake flows |
 | Review Harvester (post-bond Google reviews) | 📋 Queued | `ReviewHarvester.js` (GAS) |
 | Wave 1 SmartCOP Blitz (13 counties) | 📋 Planned | Clone DeSoto → ~30 min/county |
 | Shannon Spanish support | 📋 Planned | ElevenLabs agent config |
 | Shannon call analytics dashboard | 📋 Planned | GAS + Node-RED |
 
-**Post-Phase Target**: 32 counties (48% FL coverage), WhatsApp live, drip campaigns active.
-
-### 🟡 Phase 9: Scale & Optimize (Q3-Q4 2026)
+### Phase 9: Scale & Optimization (Q3-Q4 2026)
 | Item | Status | Details |
 |------|--------|---------|
 | Wave 2 — 19 DrissionPage counties | 📋 Planned | Standard DP build, 1-3 hrs/county |
@@ -102,59 +61,26 @@ We have engineered **FIVE distinct ways** to secure a bond — zero friction, 24
 | ML-based lead scoring | 📋 Planned | Upgrade from rules-based to ML |
 | Per-county health dashboard | 📋 Planned | Monitoring + alerting |
 | Bail School landing page | 📋 Planned | Video + auto-certificate |
-| Self-hosted runner auto-scaling | 📋 Planned | Hetzner API fleet management |
 
-**Post-Phase Target**: 46-59 counties (69-88% FL coverage), MongoDB primary.
-
-### 🟢 Phase 10: Statewide Domination (2027)
+### Phase 10: Statewide Domination & Multi-State Expansion (2027)
 | Item | Status | Details |
 |------|--------|---------|
 | Wave 4 — PDF counties | 📋 Future | `pdfplumber` parsing |
 | Wave 5 — Manual investigation | 📋 Future | App-only, feasibility TBD |
 | Court date prediction (ML) | 📋 Future | Historical data → prediction model |
-| Historical analytics dashboard | 📋 Future | Full arrest data analytics |
-
-**Post-Phase Target**: 67/67 counties (100% FL coverage) 🎯
+| 11+ State Expansion Launch | 📋 Future | Full multi-state scraper & surety sync |
 
 ---
 
-## Infrastructure Evolution
+## ✅ Completed Milestones (Historical)
 
-| Component | Current | Target | Timeline |
-|-----------|---------|--------|----------|
-| **Execution** | GH Actions (shared + self-hosted) | Self-hosted runner fleet on Hetzner | Q3 2026 |
-| **Storage** | Google Sheets (primary) + MongoDB (secondary) | MongoDB (primary) + Sheets (backup) | Q4 2026 |
-| **Scheduling** | Per-county GH Actions cron | Centralized scheduler | Q2 2027 |
-| **Monitoring** | Ingestion_Log + Slack alerts | Dedicated health dashboard | Q3 2026 |
-| **Proxy** | Direct IPs | Rotating proxy pool for high-block counties | When needed |
-
----
-
-## The "Wow" Factor
-
-Every surface of this system follows the Premium Design Standard:
-- `/ui-ux-pro-max` skill — 50+ styles, 95+ color palettes
-- Glassmorphism, micro-animations, dark modes with vibrant accents
-- Modern typography (Inter, Roboto, Outfit)
-- **If it looks cheap, it's broken. Fix it.**
-
----
-
-## Key Metrics
-
-| Metric | Value |
-|--------|-------|
-| GAS Deployment Version | V368 @432 |
-| Active Repos | 7 |
-| Active Counties | 20 / 67 |
-| Node-RED Flow Tabs | 21 |
-| Node-RED Cron Jobs | 64 |
-| Node-RED Nodes | 836 |
-| Dashboard Pages | 10 |
-| Slack Alert Channels | 12+ |
-| AI Digital Employees | 9 |
-| Telegram Mini-Apps | 7 |
-| GitHub Actions Workflows | 15 |
+- **DocuSeal Signing Migration & SignNow Retirement (Live @464)**: Direct SignNow routes retired; DocuSeal staff-gated issuance established; historical fields remain read-only.
+- **Bail School Pricing Alignment**: $199 20hr / $649 120hr (+ $49 simulator pass).
+- **Foundation & Core Portals**: Monorepo migration, Magic Link auth, PII encryption, SOC II logging.
+- **AI Digital Workforce (9 Agents)**: Concierge, Shannon (voice AI), Clerk, Analyst, Investigator, Closer, Manus Brain, Watchdog, Bounty Hunter.
+- **Telegram Ecosystem**: `@ShamrockBail_bot`, 7 Netlify Mini-Apps, Cloud Vision DL OCR.
+- **20-County Scraper Fleet**: Automated scraping across Florida, MongoDB Atlas event logging, Slack feeds.
+- **Node-RED Ops Dashboard**: 21 flow tabs, 836 nodes, 64 crons, 10 dashboard pages.
 
 ---
 

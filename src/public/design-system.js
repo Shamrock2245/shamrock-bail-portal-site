@@ -1,60 +1,90 @@
 /**
  * public/design-system.js
  * 
- * Centralized Design System for Shamrock Bail Bonds
- * Use these constants to ensure consistent styling across Velo pages.
+ * Centralized Design System Constants for Shamrock Bail Bonds
+ * Dark, Premium, High-Contrast Emergency UI
  */
 
 export const COLORS = {
-    // Brand Colors
-    SHAMROCK_GREEN: '#009B4D', // Main Brand Color
-    GOLD_ACCENT: '#FFD700',    // Calls to Action / Highlights
-    PRO_BLUE: '#1A5490',       // Professional/Trust (Secondary)
+    // Brand & Emergency Colors
+    CANVAS: '#0B1118',
+    SURFACE: '#0E1724',
+    CARD_BG: '#131F2E',
+    SHAMROCK_GREEN: '#00A86B',
+    SHAMROCK_DEEP: '#006644',
+    EMERGENCY_GOLD: '#FDB913',
+    ACTION_BLUE: '#0066CC',
 
     // Status Colors
-    SUCCESS: '#00C851',
-    WARNING: '#FFBB33',
-    ERROR: '#FF4444',
-    INFO: '#33B5E5',
+    SUCCESS: '#10B981',
+    WARNING: '#F59E0B',
+    ERROR: '#EF4444',
+    INFO: '#38BDF8',
 
-    // Neutrals
+    // High-Contrast Text & Neutrals
     WHITE: '#FFFFFF',
-    LIGHT_GREY: '#F4F4F4',
-    DARK_GREY: '#333333',
-    BLACK: '#000000'
+    TEXT_SECONDARY: '#F1F5F9',
+    TEXT_MUTED: '#94A3B8',
+    TEXT_DIM: '#64748B',
+    BORDER_SUBTLE: 'rgba(255, 255, 255, 0.12)',
+    BORDER_GREEN: 'rgba(0, 168, 107, 0.4)'
 };
 
 export const TYPOGRAPHY = {
-    HEADING_FONT: 'avenir-lt-w01_85-heavy1475544, sans-serif', // Example Wix font
-    BODY_FONT: 'avenir-lt-w01_35-light1475496, sans-serif',
+    HEADING_FONT: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    BODY_FONT: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
 };
 
 export const STYLES = {
-    BOX_SHADOW: '0px 4px 8px rgba(0,0,0,0.1)',
-    BORDER_RADIUS: '8px',
+    BOX_SHADOW_EMERGENCY: '0 0 24px rgba(0, 168, 107, 0.25)',
+    BOX_SHADOW_GOLD: '0 0 20px rgba(253, 185, 19, 0.25)',
+    BOX_SHADOW_CARD: '0 10px 30px -5px rgba(0, 0, 0, 0.6)',
+    BORDER_RADIUS: '10px',
+    TAP_TARGET_MIN: '44px',
+    TAP_TARGET_STANDARD: '52px'
 };
 
 /**
- * Apply status styling to a box and text element
- * @param {object} $w_box - The container box element
- * @param {object} $w_text - The text element
+ * Apply high-contrast status styling to a box and text element
+ * @param {object} $w_box - Container box element
+ * @param {object} $w_text - Text label element
  * @param {'success'|'error'|'warning'|'info'} type 
  * @param {string} message 
  */
 export function applyStatusStyle($w_box, $w_text, type, message) {
     if (!$w_box || !$w_text) return;
 
-    let color = COLORS.INFO;
+    let bgColor = 'rgba(56, 189, 248, 0.15)';
+    let textColor = COLORS.INFO;
+
     switch (type) {
-        case 'success': color = COLORS.SUCCESS; break;
-        case 'error': color = COLORS.ERROR; break;
-        case 'warning': color = COLORS.WARNING; break;
+        case 'success':
+            bgColor = 'rgba(16, 185, 129, 0.15)';
+            textColor = COLORS.SUCCESS;
+            break;
+        case 'error':
+            bgColor = 'rgba(239, 68, 68, 0.2)';
+            textColor = COLORS.ERROR;
+            break;
+        case 'warning':
+            bgColor = 'rgba(245, 158, 11, 0.18)';
+            textColor = COLORS.WARNING;
+            break;
     }
 
-    $w_box.style.backgroundColor = color;
-    // Note: Velo elements like Boxes expose .style.backgroundColor (if enabled) in newer Editor X, 
-    // Classic Wix editor mostly uses design properties. If not supported, this logic 
-    // should be used to lookup hex codes for $w('#box').background.src or similar manually.
+    try {
+        if ($w_box.style) {
+            $w_box.style.backgroundColor = bgColor;
+            $w_box.style.borderColor = textColor;
+        }
+    } catch (e) { /* non-fatal */ }
 
     $w_text.text = message;
 }
+
+export default {
+    COLORS,
+    TYPOGRAPHY,
+    STYLES,
+    applyStatusStyle
+};

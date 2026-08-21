@@ -5,7 +5,7 @@ description: Action-performing server for SignNow, enabling the agent to execute
 
 # SignNow MCP Server
 
-The SignNow MCP Server allows your AI assistant to securely interact with SignNow’s eSignature APIs. Unlike the API Helper (which provides information), this server **executes actions** directly.
+> **Notice (2026-08-21):** SignNow execution is permanently retired across production workflows in favor of DocuSeal and Super CRM (`shamrock-leads`). This tool is preserved for historical audit only.
 
 ## Prerequisites
 

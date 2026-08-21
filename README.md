@@ -1,206 +1,99 @@
 # 🍀 Shamrock Bail Bonds — The Digital Bail Agency
 
-> **"The Uber of Bail Bonds" — Fast. Frictionless. Everywhere.**
-
-The **statewide Florida billboard** for Shamrock Bail Bonds. This isn't a website — it's a living, breathing, dynamic platform designed to dominate the bail bond market through superior speed, premium aesthetics, and AI-driven reach across all 67 Florida counties.
-
-**The Website is a Clipboard; The Backend is the Brain.**
-
-Built on **Wix Velo** (frontend) + **Google Apps Script** (190+ file backend), powered by **9 AI agents**, serving clients through **5 omni-channel touchpoints** — web, Telegram, phone, mini-apps, and walk-in.
-
-**Current Status:** 🟢 Production bond portal (Wix + GAS) | **Docs truth:** [`STATUS.md`](./STATUS.md) (August 2026)  
-**Related:** Bail School LMS → `shamrock-bail-school` · Auto-CRM → `shamrock-leads`
-
-> **August 2026 note:** Public Bail School surfaces advertise the live LMS catalog only — **20-Hour Correspondence ($199)** and **120-Hour Basic Certification ($649)** (+ optional Simulator $49). Netlify embed: `https://shamrock-embeds.netlify.app/bail-school.html`. Publish Wix after pulling `main` so Velo SEO/FAQ stays in sync.
+> **"The Uber of Bail Bonds" — Fast. Frictionless. Everywhere.**  
+> **HQ / NAP:** 1528 Broadway, Fort Myers, FL 33901 · (239) 332-2245 · admin@shamrockbailbonds.biz  
+> **Live Site:** [shamrockbailbonds.biz](https://www.shamrockbailbonds.biz) (Wix Editor live; Wix Studio rebuild in progress)  
+> **Authoritative Runtime Truth:** [`STATUS.md`](./STATUS.md) · [`docs/CURRENT_PAPERWORK_ARCHITECTURE.md`](./docs/CURRENT_PAPERWORK_ARCHITECTURE.md)
 
 ---
 
-## 📌 Core Features
+## 🏛 Core Architectural Doctrine
 
-*   **5 Ways to Get a Bond** — Web portal, Telegram bot, Telegram mini-app, Shannon (voice AI), or walk-in.
-*   **Telegram-First Client Intake:** Conversational bot guides clients through the entire intake process.
-*   **Staff-Gated Document Preparation:** Super CRM validates the Match, BondCase, surety, POA, recipient, and staff approval before issuing a DocuSeal packet.
-*   **Mobile-First Electronic Signing:** The Wix portal opens the secure Netlify paperwork launchpad; it may display a staff-issued DocuSeal session after verification. Wix never creates packets or signing links.
-*   **Automated ID Verification:** Bot requests and processes ID photos (front, back, selfie) via Cloud Vision OCR.
-*   **Closed-Loop Document Delivery:** Signed docs auto-processed (merged, watermarked) and delivered via Telegram.
-*   **Communication Preferences:** Client opt-in/out respected across all outbound channels (`CommPrefsManager.js`).
-*   **MongoDB Event Logging:** All business events logged to MongoDB Atlas via `MongoLogger.gs`.
-*   **20-County Arrest Monitoring:** Real-time scraping pipeline with lead scoring and Slack alerts.
+> **"The Website is the Clipboard. The Backend is the Brain."**
+
+- **The Website (Wix Studio / Velo)** is the high-converting, mobile-first **Clipboard**. It captures customer intent, authenticates members via magic links/OTP, provides a camera-first ID scanning launchpad, auto-hydrates form fields, and presents staff-approved signature sessions.
+- **The Brain (`shamrock-leads` Super CRM & GAS)** is the multi-state intelligence engine. It runs county jail scrapers, performs flight risk underwriting, reconciles defendant/indemnitor matches, validates surety/POA limits, and generates legal DocuSeal signature packets under strict staff review.
+- **Strict Boundary:** Wix never creates DocuSeal packets or provider signing links directly. Wix is a secure launchpad.
 
 ---
 
-## 🛠 Tech Stack
+## 🚀 Growth Ladder (Information Architecture Law)
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------| 
-| **Frontend** | Wix Velo (JavaScript) | Premium UI/UX, magic link auth, member dashboards |
-| **Backend** | Google Apps Script (GAS) | 190+ files — all business logic, single entry point (`Code.js`) |
-| **AI/LLM** | OpenAI GPT-4o-mini | 6 specialized agents via GAS `UrlFetchApp` |
-| **Voice AI** | ElevenLabs Conversational AI | "Shannon" — 24/7 phone intake, live call transfer |
-| **Database** | Wix CMS + Google Sheets + MongoDB Atlas | Portal data, ops data, arrest analytics + event logging |
-| **Signatures** | DocuSeal via Super CRM | Staff-issued packet workflow; Wix is a secure, non-issuing launchpad |
-| **Payments** | SwipeSimple | One-click links, virtual terminal, payment plans |
-| **SMS/Voice** | Twilio | External comms — SMS & WhatsApp (10DLC compliant) |
-| **Internal Ops** | Slack (12+ channels) | Staff alerts, intake notifications, arrest feeds |
-| **Messaging** | Telegram Bot API | Conversational intake, inline quotes, mini-apps, OCR |
-| **Mini Apps** | Netlify | 7 Telegram WebApps (Portal, Intake, Documents, Payments, etc.) |
-| **Edge Functions** | Netlify Edge | Shannon webhook proxy, county geolocation |
-| **OCR** | Google Cloud Vision | FL Driver License extraction |
-| **Automation** | Node-RED | 21 flow tabs, 64 crons, 836 nodes, ops dashboard |
-| **Scrapers** | Python (DrissionPage) + Node.js | 20 active Florida county jail scrapers |
-| **Infrastructure** | Hetzner Cloud + Docker | VPS for scraper fleet + self-hosted GitHub Actions runners |
-| **Deployment** | `clasp` + Wix CLI + GitHub | Versioned GAS deployments, 5 repos under `Shamrock2245` |
+1. **Local/Regional Dominance First**: Lee, Collier, Charlotte, Hendry, Glades. Homepage, NAP, and hero are SWFL / Fort Myers / Cape Coral first. Never flatten the homepage into a generic national brochure.
+2. **Statewide Florida**: All 67 counties supported via programmatic dynamic pages (`/florida-bail-bonds/:slug`) and First Appearance court calendars (`/first-appearance/:county`).
+3. **11+ State Multi-State Expansion**: Multi-state directories live under `/bail-bonds/:state/:county`, backed by `shamrock-leads` multi-state scrapers. States are surfaced in navigation only when `ServiceAreas.status = live`.
 
 ---
 
-## 🤖 AI Digital Workforce (9 Agents)
+## 📱 Client Paperwork North Star (Mobile & Tablet First)
 
-| Agent | Role | Key File(s) |
-|-------|------|-------------|
-| **The Concierge** | 24/7 client support & intake chat | `ai-service.jsw`, `AIConcierge.js` |
-| **Shannon** | After-hours voice intake agent | `ElevenLabs_AfterHoursAgent.js` |
-| **The Clerk** | Booking data parsing & OCR | `AI_BookingParser.js` |
-| **The Analyst** | Risk assessment & underwriting (0-100) | `AI_FlightRisk.js` |
-| **The Investigator** | Deep background check analysis | `AI_Investigator.js` |
-| **The Closer** | Lead recovery & drip campaigns | `TheCloser.js` |
-| **Manus Brain** | Telegram AI conversational handler | `Manus_Brain.js` |
-| **The Watchdog** | System health monitor (5-min checks) | Node-RED flow |
-| **Bounty Hunter** | High-value lead surfacing (>$2.5K) | Node-RED flow |
+Designed specifically for someone in crisis on a mobile phone or tablet:
 
----
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Client (Phone / Tablet)
+    participant Wix as Wix Studio (Clipboard)
+    participant Netlify as Netlify Paperwork / OCR
+    participant SuperCRM as Super CRM / GAS (Brain)
+    participant DocuSeal as DocuSeal (Signing)
 
-## 📱 Telegram Ecosystem
-
-The bot (`@ShamrockBail_bot`) is the primary client touchpoint, supporting full intake through delivery.
-
-### Core Capabilities
-| Feature | File(s) | Description |
-|---------|---------|-------------|
-| **Conversational Intake** | `Telegram_IntakeFlow.js` | Guided multi-step bail bond intake |
-| **Inline Quote Bot** | `Telegram_InlineQuote.js` | `@ShamrockBail_bot 5000 2 lee` → instant premium card |
-| **Court Date Reminders** | `Telegram_Notifications.js` | 4-touch sequence (7d, 3d, 1d, morning-of) |
-| **One-Tap Signing** | `Telegram_Notifications.js` | Deep link to Documents mini app |
-| **Bot Analytics** | `Telegram_Analytics.js` | Event logging + funnel conversion queries |
-| **ID OCR** | `Telegram_OCR.js` | Cloud Vision FL DL parser (name, DOB, DL#, address) |
-| **Office Locator** | `LocationMetadataService.js` | GPS → nearest office with Call/Directions |
-| **Payment Progress** | `Telegram_Notifications.js` | Visual progress bar + weekly notifications |
-
-### Telegram Mini Apps (Netlify)
-| App | URL | Purpose |
-|-----|-----|---------|
-| Portal | `shamrock-telegram.netlify.app/` | Main menu |
-| Intake | `shamrock-telegram.netlify.app/intake` | New bond intake |
-| Documents | `shamrock-telegram.netlify.app/documents` | View + sign docs |
-| Payments | `shamrock-telegram.netlify.app/payments` | Make payments |
-| Check-in | `shamrock-telegram.netlify.app/checkin` | GPS + selfie check-in |
-| Status | `shamrock-telegram.netlify.app/status` | Case lookup |
-
----
-
-## 🚀 System Architecture
-
-```
-         ┌───────────┐  ┌──────────┐  ┌────────────┐  ┌──────────┐
-         │ Wix Portal│  │ Telegram │  │  Shannon   │  │  County  │
-         │  (Web)    │  │   Bot    │  │  (Voice)   │  │  Jails   │
-         └─────┬─────┘  └────┬─────┘  └─────┬──────┘  └────┬─────┘
-               │              │              │               │
-               └──────────────┴──────┬───────┴───────────────┘
-                                     │
-                        ┌────────────▼────────────┐
-                        │   Google Apps Script     │
-                        │   "The Factory"          │
-                        │   190+ files, V368+      │
-                        └──┬────────┬────────┬─────┘
-                           │        │        │
-                    ┌──────▼──┐ ┌───▼────┐ ┌─▼──────────┐
-                    │ Node-RED│ │ Slack  │ │ MongoDB    │
-                    │ 21 tabs │ │ 12+ch  │ │ Atlas      │
-                    │ 64 crons│ │        │ │ Event Logs │
-                    └─────────┘ └────────┘ └────────────┘
+    Client->>Wix: 1. Login via Magic Link / Phone OTP
+    Wix->>Wix: 2. Pick Role (Defendant / Indemnitor / Co-Indemnitor)
+    Wix->>Netlify: 3. Open Secure Launchpad (SigningLightbox)
+    Client->>Netlify: 4. Scan ID with camera
+    Netlify->>Netlify: 5. Cloud Vision OCR extracts Name, DOB, DL#, Address
+    Netlify->>Wix: 6. Hydrate role-correct fields (Cosigner ID never overwrites defendant)
+    Wix->>Client: 7. Auto-populate known case facts (from booking match / staff)
+    Client->>Wix: 8. Fill missing delta fields only (employment, references)
+    Wix->>SuperCRM: 9. Save independent deferred intake record
+    Note over SuperCRM: Staff reconciles case, verifies surety & POA, and issues DocuSeal packet
+    SuperCRM->>DocuSeal: 10. Generate staff-approved submission
+    DocuSeal->>Client: 11. 1-tap plain-language signing on mobile/tablet
 ```
 
-For detailed architecture, see [SYSTEM.md](./SYSTEM.md).
+- **Canonical Person+Case Schema:** Defined in [`src/public/canonical-paperwork-mapper.js`](src/public/canonical-paperwork-mapper.js). Abstracts surety carrier formats (OSI, Accredited, Bankers, etc.) so UI never binds to one company's PDF layout.
+- **Role-Scoped Hydration:** ID scanning populates only the selected role’s field group. Cosigner scans cannot overwrite defendant records.
 
 ---
 
-## 🔄 Key Workflows
+## 🛠 Tech Stack & Ecosystem
 
-### 1. Telegram Intake & Signing
-Client → `@ShamrockBail_bot` → Guided intake → staff validation → DocuSeal packet issued in Super CRM → secure mobile signing → documents delivered
-
-### 2. Lead Scoring & Arrest Monitoring
-20 county scrapers → Google Sheets + MongoDB → Lead scored (0-100) → Slack alerts → Staff action
-
-### 3. Voice Intake (Shannon)
-Client calls → Twilio → ElevenLabs → Shannon AI → Paperwork sent via SMS during call → Live transfer if needed
-
-### 4. Portal Intake
-Magic link auth → secure paperwork launchpad → staff validation in Super CRM → staff-issued DocuSeal signing → Slack notification → Case filed
+| System | Role | Technology |
+|---|---|---|
+| **Public Site & Portals** | The Clipboard | Wix Studio / Velo (`src/`), JavaScript |
+| **Backend & Factory** | The Engine | Google Apps Script (`backend-gas/`, 190+ files) |
+| **Arrest Intel & Super CRM** | The Brain | `shamrock-leads` (Python, Docker, Hetzner VPS, MongoDB Atlas) |
+| **Ops Dashboard & Scheduler** | Operations Hub | `shamrock-node-red` (21 tabs, 64 crons, 836 nodes) |
+| **Mobile Paperwork Launchpad** | Mini-Apps & OCR | `shamrock-telegram-app` (Netlify PWA, Cloud Vision API) |
+| **Voice AI Agent** | 24/7 Phone Intake | Shannon (ElevenLabs Conversational AI + Netlify Edge) |
+| **Bail School LMS** | Education Platform | `shamrock-bail-school` ($199 20hr / $649 120hr / $49 simulator) |
 
 ---
 
-## 📦 Setup & Configuration
+## 🤖 Digital Workforce (9 Agents)
 
-### Prerequisites
-*   Google Workspace account with GAS, Drive, and Sheets access
-*   Wix account with Velo enabled
-*   Access to the staff-approved Super CRM DocuSeal workflow; DocuSeal credentials and packet creation do **not** belong in Wix or GAS
-*   API keys for: Telegram, ElevenLabs, OpenAI, Twilio, Slack
-
-### Deployment
-1.  **Clone:** `git clone https://github.com/Shamrock2245/shamrock-bail-portal-site.git`
-2.  **Secrets:** Add all API keys to Wix Secrets Manager
-3.  **Deploy GAS:** Use `clasp` to push `backend-gas/`. Run `setupTelegramProperties`. Deploy as Web App.
-4.  **Deploy Wix:** Use Wix CLI or editor. Ensure `http-functions.js` has correct GAS URL.
-5.  **Webhooks:** Register only approved active-service webhooks. Legacy SignNow webhooks and direct senders remain retired; do not re-enable them.
-
-See [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) for the full checklist.
+| Agent | Role | Channel |
+|---|---|---|
+| **The Concierge** | 24/7 Client Support & Intake | Web Chat, SMS, Telegram |
+| **Shannon** | After-Hours Voice Phone Intake | Phone (ElevenLabs) |
+| **The Clerk** | Booking Scraper & OCR Parser | Automated |
+| **The Analyst** | Risk Assessment (0-100 score) | Automated |
+| **The Investigator** | Deep Background & Relationship Vetting | On-Demand |
+| **The Closer** | Abandoned Intake Recovery Drips | SMS / WhatsApp |
+| **Manus Brain** | Telegram AI Conversational Engine | Telegram Bot |
+| **The Watchdog** | 5-Minute System Health Checks | Node-RED |
+| **Bounty Hunter** | High-Value Unposted Bond Surfacing (>$2.5K) | Node-RED Ops |
 
 ---
 
-## 📂 Documentation Index
+## 🔒 Preserved Collections & Velo Modules
 
-| Document | Purpose |
-|----------|---------|
-| [SYSTEM.md](./SYSTEM.md) | Architecture, tech stack, inter-repo data flows |
-| [RULES.md](./RULES.md) | 14 non-negotiable agent rules |
-| [ERROR_CATALOG.md](./ERROR_CATALOG.md) | Known error patterns + fixes across all systems |
-| [AGENTS.md](./AGENTS.md) | All 9 AI agent personas, prompts, handoff patterns |
-| [OPERATIONS.md](./OPERATIONS.md) | Voice AI, compliance, health, integrations, scraping |
-| [TOOLS.md](./TOOLS.md) | MCP servers, skills, workflows, external services |
-| [USER.md](./USER.md) | User context, priorities & preferences |
-| [TASKS.md](./TASKS.md) | Current project tasks & phase tracking |
-| [ROADMAP.md](./ROADMAP.md) | Strategic milestones & expansion plan |
-| [COUNTY_STATUS.md](./COUNTY_STATUS.md) | 20-county scraper status ledger |
-| [CHANGELOG.md](./CHANGELOG.md) | Change log |
-| [ONBOARDING.md](./ONBOARDING.md) | Start-here guide for new agents/developers |
-| [SECRETS_ROTATION_GUIDE.md](./SECRETS_ROTATION_GUIDE.md) | Emergency key rotation procedures |
-| [CURRENT_PAPERWORK_ARCHITECTURE.md](./docs/CURRENT_PAPERWORK_ARCHITECTURE.md) | DocuSeal-only signing boundary and legacy-retirement policy |
-| [DISCOVERABILITY_FOUNDATION_2026-08-19.md](./docs/DISCOVERABILITY_FOUNDATION_2026-08-19.md) | Technical SEO, GEO, AI-search, and owner-action roadmap |
+The following core modules and Wix CMS collections remain the foundation of the platform:
+- **Collections:** `Cases`, `Defendants`, `Indemnitors`, `PortalUsers`, `PortalSessions`, `Magiclinks`, `PendingDocuments`, `SigningSessions`.
+- **Backend Services:** `portal-auth.jsw`, `gasIntegration.jsw`, `first-appearance-api.jsw`, `county-generator.jsw`, `multi-state-router.js`.
+- **Lightboxes & Wizards:** `IdUploadLightbox`, `SigningLightbox`, `DefendantDetails`, `defendant-wizard`, `indemnitor-wizard`.
 
 ---
 
-## 🔒 Security & Compliance
-*   **API Keys:** Wix Secrets Manager + GAS Script Properties. Never in frontend code.
-*   **Audit Trails:** All business events logged to MongoDB Atlas via `MongoLogger.gs`.
-*   **10DLC Compliance:** Twilio SMS follows carrier regulations.
-*   **Communication Preferences:** Client opt-in/out enforced across all outbound channels.
-*   **Webhook Auth:** HMAC verification on all Node-RED endpoints.
-*   **Paperwork Boundary:** Wix and GAS do not create provider packets or signing links. Only staff may issue DocuSeal through Super CRM after the documented validation gates.
-
----
-
-## 🔗 Related Repos
-
-| Repo | Purpose |
-|------|---------|
-| [shamrock-bail-portal-site](https://github.com/Shamrock2245/shamrock-bail-portal-site) | **This repo** — Wix + GAS core platform |
-| [shamrock-leads](https://github.com/Shamrock2245/shamrock-leads) | 20-county arrest intelligence platform (Python, Docker, Hetzner VPS) |
-| [shamrock-bond-tracker](https://github.com/Shamrock2245/shamrock-bond-tracker) | Active bond GPS/geolocation tracker microservice (Hetzner VPS) |
-| [shamrock-node-red](https://github.com/Shamrock2245/shamrock-node-red) | Ops dashboard & automation engine |
-| [shamrock-telegram-app](https://github.com/Shamrock2245/shamrock-telegram-app) | Telegram Mini-Apps (Netlify PWA) |
-
----
-
-*Maintained by Shamrock Engineering & AI Agents · Current-architecture review updated August 19, 2026*
+*Maintained by Shamrock Engineering & AI Agents*

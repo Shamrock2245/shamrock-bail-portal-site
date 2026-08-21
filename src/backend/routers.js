@@ -16,6 +16,7 @@
 import { redirect } from 'wix-router';
 import { validateCustomSession } from 'backend/portal-auth';
 import { routeCountyPage } from 'backend/bail-bonds-router';
+import { routeMultiStatePage } from 'backend/multi-state-router';
 import { first_appearance_Router as faRouter } from 'backend/first-appearance-router';
 
 const ROLES = {
@@ -120,13 +121,13 @@ export function portal_afterRouter(request, response) {
   return response;
 }
 
-// County router aliases for both URL prefixes.
+// County & Multi-State router aliases.
 export async function bailbonds_Router(request) {
-  return routeCountyPage(request);
+  return routeMultiStatePage(request);
 }
 
 export async function bail_bonds_Router(request) {
-  return routeCountyPage(request);
+  return routeMultiStatePage(request);
 }
 
 export async function florida_bail_bonds_Router(request) {

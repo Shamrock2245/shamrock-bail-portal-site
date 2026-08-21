@@ -6,10 +6,9 @@ version: 1.0.0
 
 # Skill: PDF Template Manager
 
-Use this skill to maintain the mapping between `IntakeQueue` data and the Legal PDF Templates.
+> **Notice (2026-08-21):** SignNow direct PDF generation is retired. All active signing packets use DocuSeal issued in Super CRM (`shamrock-leads`). The canonical field mappings for surety templates (OSI, Accredited, Bankers) are managed in `src/public/canonical-paperwork-mapper.js`. This document preserves legacy tag references for historical audit.
 
-## 1. The Mapping Logic
-When generating a PDF via GAS, we map `IntakeQueue` keys to "Tags" in the SignNow template.
+Use this skill to understand the historical mapping between `IntakeQueue` data and Legal PDF Templates.
 
 **Standard Naming Convention:**
 *   **Tag format:** `{{FieldName}}`

@@ -145,7 +145,9 @@ $w.onReady(function () {
 
 function initCriticalUI() {
     try { setupStickyHeader(); } catch (e) { /* non-fatal */ }
+    setupPortalModeHeaderFooter();
     setupEmergencyCallButton();
+    setupStickyMobileCallBar();
     setupFindJailButton();
     setupBailSchoolNavLink();
     setupFirstAppearanceNavLink();
@@ -154,6 +156,60 @@ function initCriticalUI() {
     setupBailSchoolRegistrationBtn();
     setupMobilePaymentBtn();
     setupFooterDynamic();
+}
+
+/**
+ * Portal Mode — Strips marketing banners/popups on authenticated portal pages
+ * while preserving identical dark-theme header, footer, and emergency NAP.
+ */
+function setupPortalModeHeaderFooter() {
+    try {
+        const path = (wixLocation.path || []).join('/').toLowerCase();
+        const isPortal = path.startsWith('portal') || path.startsWith('sign');
+
+        if (isPortal) {
+            const marketingIds = [
+                '#marketingBanner',
+                '#promoTicker',
+                '#headerSalesCta',
+                '#leadPopupTrigger',
+                '#salesAnnouncement'
+            ];
+            marketingIds.forEach(function(id) {
+                try {
+                    const el = $w(id);
+                    if (el && typeof el.collapse === 'function') el.collapse();
+                } catch (e) { /* non-fatal */ }
+            });
+        }
+    } catch (e) { /* non-fatal */ }
+}
+
+/**
+ * Mobile Sticky Emergency Call Bar
+ * Ensures 1-tap dialer for panicked users on mobile devices (>=44px tap target).
+ */
+function setupStickyMobileCallBar() {
+    const stickyCallIds = [
+        '#mobileStickyCallBar',
+        '#mobileStickyCallBtn',
+        '#stickyCallBtn',
+        '#stickyEmergencyBtn',
+        '#mobileBottomCallBtn'
+    ];
+    stickyCallIds.forEach(function(id) {
+        try {
+            const btn = $w(id);
+            if (btn && btn.id) {
+                if (typeof btn.onClick === 'function') {
+                    btn.onClick(function() {
+                        trackEvent('emergency_call_clicked', { source: 'mobile_sticky_bar' });
+                        wixLocation.to('tel:+12393322245');
+                    });
+                }
+            }
+        } catch (e) { /* non-fatal */ }
+    });
 }
 
 function setupFooterPaymentLink() {

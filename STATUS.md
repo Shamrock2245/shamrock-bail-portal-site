@@ -1,80 +1,61 @@
 # Portal Site — True Status
 
-> **Last verified:** 2026-08-21
+> **Last verified:** 2026-08-21  
 > **Repo:** `Shamrock2245/shamrock-bail-portal-site` · branch `main`  
-> **Product URL:** `https://shamrockbailbonds.biz` (Wix)  
+> **Product URL:** `https://shamrockbailbonds.biz` (Live public site on Wix Editor; Wix Studio translation in progress)  
 > **Role:** Brand clipboard + GAS factory — **Shamrock’s Platform** factory layer  
 > **Platform prod checklist:** `shamrock-leads/docs/ECOSYSTEM_PROD_CHECKLIST.md`
 
 ---
 
-## What this repo is
+## 1. What this repo is
 
 | Layer | Tech | Role |
-|-------|------|------|
-| Frontend | Wix Velo (`src/`) | Public site, portal pages, embeds |
-| Backend | Google Apps Script (`backend-gas/`, 190+ files) | Business logic, webhooks, school unlock poller |
-| Related | Netlify embeds | `netlify-embeds/bail-school.html` used by Wix `/bail-school` |
+|---|---|---|
+| **Frontend (Public / Editor)** | Wix Velo (`src/`) | Live public site (`shamrockbailbonds.biz`) on Wix Editor |
+| **Frontend (Studio Rebuild)** | Wix Studio (`src/`) | 🔄 In Progress — Translation to Wix Studio layout & `/portal-start` wizard (not public yet) |
+| **Backend** | Google Apps Script (`backend-gas/`, 190+ files) | Factory business logic, webhook processing, school unlocks |
+| **Related** | Netlify embeds & Mini-Apps | Netlify paperwork launchpad, Telegram WebApps, Bail School embed |
 
 **Not** the student LMS (that is `shamrock-bail-school`).  
-**Not** the arrest Super CRM (that is `shamrock-leads`).
+**Not** the arrest Super CRM & multi-state brain (that is `shamrock-leads`).
 
 ---
 
-## Code on `main` (recent, implemented)
+## 2. Code on `main` (Implemented & Current)
 
 | Area | Status |
-|------|--------|
-| Bond portal, Telegram, Shannon, DocuSeal, multi-channel intake | ⚠️ Code and public-surface checks complete; staff end-to-end smoke remains required |
-| Bail School education management in GAS (`BailSchool_Progress.js`, `BailSchoolPayments.js`) | ✅ |
-| SwipeSimple Gmail poll → unlock `$199`→20hr / `$649`→120hr | ✅ in code |
-| Public Bail School catalog aligned to school LMS (`20hr` / `120hr` / simulator) | ✅ August 2026 |
-| Netlify embed hardened (XSS escape, dual postMessage bridge, URL allowlist) | ✅ August 2026 |
-| Public HTTP diagnostics retired; webhook signatures fail closed; GAS GET actions require apiKey except ping/health | ✅ August 2026 (code) — Wix publish + existing GAS deploy still required |
-| Hardcoded secrets scrubbed from GAS setup/test tooling | ✅ July 2026 |
-| Location tracker no longer falls back to hardcoded API key | ✅ |
-| Expanded `.gitignore` / `.claspignore` for dumps & secrets | ✅ |
-| Ecosystem secrets checklist wrapper | `scripts/check_ecosystem_secrets.py` |
-| **Legacy SignNow execution** | ✅ **Live @464** — direct routes, provider modules, callbacks, factory helpers, Node-RED flows, and client embedded-signing surfaces are retired. Historical record fields remain read-only. |
-| **DocuSeal packet gate** | ✅ Code-enforced: validated Match, bound BondCase, explicit OSI/Palmetto surety, assigned POA tier, validated recipient email, immutable packet version, and staff-approved delivery path. |
-| **Surety realignment (July 2026)** | ✅ Active paperwork requires an explicit `surety_id`; OSI is preferred and Palmetto is selected only under the documented policy. |
+|---|---|
+| **Wix Studio Translation & IA Expansion** | 🔄 In Progress (Phase 8.5) — Multi-state routing, canonical paperwork mapper, and SWFL hero dominance in code; cutover pending completion. |
+| **Bond Portal, Telegram, Shannon, DocuSeal** | ✅ Code-enforced: DocuSeal is sole active signing provider; staff-gated issuance in Super CRM; Wix acts as non-issuing clipboard launchpad. |
+| **Legacy SignNow Execution** | ✅ **Retired (Live @464)** — All direct routes, factory senders, and legacy webhooks disabled. Historical fields remain read-only. |
+| **Surety Realignment** | ✅ Active paperwork requires explicit `surety_id` (OSI preferred, Palmetto policy-gated, Accredited/Bankers mapped via canonical schema). |
+| **Bail School Education Management** | ✅ GAS unlock poller, SwipeSimple integration ($199 20hr / $649 120hr / $49 simulator), live catalog aligned. |
+| **Security & Secrets Scrub** | ✅ Hardcoded secrets scrubbed; HMAC webhook signatures fail closed; script properties standardized. |
+| **MongoDB Atlas Event Logging** | ✅ `MongoLogger.gs` + `mongo_writer.py` logging business events to Atlas. |
 
 ---
 
-## Ops still required (not proven by git alone)
+## 3. Ops Checklist (Runtime Truth)
 
 | Item | Notes |
-|------|--------|
-| **Secret rotation** | Keys that ever lived in git history — see `SECRETS_ROTATION_GUIDE.md` |
-| **GAS redeploy** | ✅ **@464** on the existing stable portal deployment — 2026-08-16 legacy SignNow execution retired and DocuSeal guards live with no `/exec` URL change. The stable factory health action returned `success:true`. |
-| **Wix publish / Bail School pricing** | ✅ **C2 verified live 2026-08-12** — public page JSON-LD lists the 120-hour course at **$649**; no retired “The Agent Path” or `$699` string was found in live page source. |
-| **Embed host redeploy** | ✅ `shamrock-embeds` site (`95e4b170…`) serves updated `bail-school.html` |
-| **SwipeSimple** | Confirm links charge **$199** / **$649** / **$49** |
-| **School sheet ID** | ✅ Script Property `BAIL_SCHOOL_SHEET_ID` + CONFIG fallback set (smoke unlock OK) |
-| **SwipeSimple Gmail poller** | Confirm `setupSwipeSimpleTrigger()` still firing every 5 min |
-| **Certificate Script Properties** | `CERTIFICATE_TEMPLATE_ID` + `CERTIFICATE_FOLDER_ID` (issue_certificate fails closed without them) |
-| **Telegram legacy signing flow** | ✅ Retired; the Telegram mini-app must use the staff-approved DocuSeal workflow rather than generating an embedded signing link. |
+|---|---|
+| **GAS Deployment** | ✅ **@464** on stable portal deployment — DocuSeal guards and SignNow retirement live with no `/exec` URL change. Health check returns `success: true`. |
+| **Wix Public Surface** | Live on Wix Editor. Wix Studio migration in active development on `main` branch. Cutover after Studio validation. |
+| **Bail School Pricing** | ✅ Verified live — JSON-LD lists 120hr course at $649; $199 20hr. |
+| **Netlify Paperwork Host** | Serves role-aware intake launchpad; presents DocuSeal only when staff-issued session exists. |
+| **SwipeSimple Gmail Poller** | Automated 5-min trigger active for course unlock and payment plan reconciliation. |
 
 ---
 
-## Bail School pricing (source of truth for marketing)
+## 4. Canonical Links & Related Repos
 
-Canonical catalog: **`shamrock-bail-school/lib/courses.ts`**. Portal embeds must match.
-
-| Course ID | Public name | Display | SwipeSimple unlock |
-|-----------|-------------|---------|---------------------|
-| `20hr` | 20-Hour Correspondence Pre-Licensing | **$199** (list $299) | `$199.00` |
-| `120hr` | 120-Hour Basic Certification Training | **$649** (list $1,200) | `$649.00` |
-| `simulator` | Simulator & Flashcard Pass | **$49** (list $99; free w/ 120hr) | `$49.00` |
-
-**Do not** reintroduce **$699**, or primary CTAs for retired names (*Indemnitor Basics*, *The Agent Path*, *30-Hour Correspondence*, *Bail Bond Masterclass*).
+- **Canonical Paperwork Architecture:** [`docs/CURRENT_PAPERWORK_ARCHITECTURE.md`](docs/CURRENT_PAPERWORK_ARCHITECTURE.md)
+- **Super CRM & Scraper Fleet:** `shamrock-leads` (Hetzner VPS Docker stack)
+- **Ops Hub & Scheduler:** `shamrock-node-red`
+- **Bail School LMS:** `shamrock-bail-school`
+- **Telegram Mini-Apps:** `shamrock-telegram-app`
 
 ---
 
-## Related docs
-
-- `README.md`, `SYSTEM.md`, `AGENTS.md`, `SECRETS_ROTATION_GUIDE.md`
-- `docs/DEPLOYMENT_CHECKLIST.md`
-- School go-live: sibling repo `shamrock-bail-school/docs/GO_LIVE.md`
-- Cross-stack: `shamrock-leads/docs/ECOSYSTEM.md` (includes **node-red** as Zapier/n8n layer)
-- Automation: sibling `shamrock-node-red` (`STATUS.md`)
+*Maintained by Shamrock Engineering & AI Agents*

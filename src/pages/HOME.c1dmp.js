@@ -311,18 +311,36 @@ function loadCountyDropdown() {
     }
 
     try {
-        // Populate directly from inline data -- synchronous, no async needed
-        dropdown.options = FLORIDA_COUNTIES.map(function(county) {
-            return { label: county.name, value: county.slug };
+        const swflSlugs = ['lee', 'collier', 'charlotte', 'hendry', 'glades'];
+        const swflDisplayMap = {
+            lee: '⭐ Lee County (HQ — Fort Myers / Cape Coral)',
+            collier: '⭐ Collier County (Naples / Immokalee)',
+            charlotte: '⭐ Charlotte County (Punta Gorda / Port Charlotte)',
+            hendry: '⭐ Hendry County (LaBelle / Clewiston)',
+            glades: '⭐ Glades County (Moore Haven)'
+        };
+
+        const swflOptions = swflSlugs.map(function(slug) {
+            return { label: swflDisplayMap[slug], value: slug };
         });
-        dropdown.placeholder = 'Select a County';
+
+        const otherOptions = FLORIDA_COUNTIES
+            .filter(function(c) { return swflSlugs.indexOf(c.slug) === -1; })
+            .map(function(county) {
+                return { label: county.name + ' County', value: county.slug };
+            });
+
+        // Combine SWFL Priority First + All 67 FL Counties
+        dropdown.options = swflOptions.concat(otherOptions);
+        dropdown.placeholder = 'Select Your County (Lee, Collier, Charlotte...)';
 
         // Wire onChange handler
         dropdown.onChange(function() { handleCountySelection(dropdown); });
 
-        // Wire Get Started button
+        // Wire Get Started / Get Them Out button
         const getStartedBtn = resolveElement(GET_STARTED_IDS);
         if (getStartedBtn) {
+            try { getStartedBtn.label = 'Get Them Out'; } catch (e) {}
             getStartedBtn.onClick(function() { handleGetStarted(dropdown); });
         } else {
             console.warn('[County Dropdown] Get Started button not found. Tried: ' + GET_STARTED_IDS.join(', '));

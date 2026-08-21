@@ -72,13 +72,19 @@ export const BUSINESS_HOURS = '24/7 - Available Anytime';
 // ============================================================================
 
 /**
+ * Core SWFL Regional Dominance Counties (Fort Myers HQ primary service area)
+ * @constant {Array<string>}
+ */
+export const SWFL_DOMINANT_COUNTIES = ['Lee', 'Collier', 'Charlotte', 'Hendry', 'Glades'];
+
+/**
  * Primary service counties (no transfer fee)
  * @constant {Array<string>}
  */
-export const PRIMARY_COUNTIES = ['Lee', 'Charlotte', 'Collier'];
+export const PRIMARY_COUNTIES = ['Lee', 'Charlotte', 'Collier', 'Hendry', 'Glades'];
 
 /**
- * All 65 Florida counties served
+ * All 67 Florida counties served
  * @constant {Array<string>}
  */
 export const ALL_FLORIDA_COUNTIES = [
@@ -93,6 +99,124 @@ export const ALL_FLORIDA_COUNTIES = [
   'Sarasota', 'Seminole', 'Sumter', 'Suwannee', 'Taylor', 'Union', 'Volusia',
   'Wakulla', 'Walton', 'Washington'
 ];
+
+/**
+ * Multi-State Licensed Jurisdictions (11+ States Expansion)
+ * Integrated with shamrock-leads for multi-state lead hydration & dispatch.
+ * @constant {Object}
+ */
+export const EXPANSION_STATES = {
+  FL: {
+    code: 'FL',
+    name: 'Florida',
+    slug: 'florida',
+    statutoryPremiumRate: 0.10,
+    minimumFeePerCharge: 100,
+    requiresCollateralThreshold: 50000,
+    primaryHQ: true,
+    routePrefix: '/florida-bail-bonds'
+  },
+  GA: {
+    code: 'GA',
+    name: 'Georgia',
+    slug: 'georgia',
+    statutoryPremiumRate: 0.12,
+    minimumFeePerCharge: 100,
+    requiresCollateralThreshold: 25000,
+    primaryHQ: false,
+    routePrefix: '/bail-bonds/ga'
+  },
+  SC: {
+    code: 'SC',
+    name: 'South Carolina',
+    slug: 'south-carolina',
+    statutoryPremiumRate: 0.10,
+    minimumFeePerCharge: 100,
+    requiresCollateralThreshold: 25000,
+    primaryHQ: false,
+    routePrefix: '/bail-bonds/sc'
+  },
+  NC: {
+    code: 'NC',
+    name: 'North Carolina',
+    slug: 'north-carolina',
+    statutoryPremiumRate: 0.15,
+    minimumFeePerCharge: 100,
+    requiresCollateralThreshold: 30000,
+    primaryHQ: false,
+    routePrefix: '/bail-bonds/nc'
+  },
+  TX: {
+    code: 'TX',
+    name: 'Texas',
+    slug: 'texas',
+    statutoryPremiumRate: 0.10,
+    minimumFeePerCharge: 100,
+    requiresCollateralThreshold: 50000,
+    primaryHQ: false,
+    routePrefix: '/bail-bonds/tx'
+  },
+  AL: {
+    code: 'AL',
+    name: 'Alabama',
+    slug: 'alabama',
+    statutoryPremiumRate: 0.10,
+    minimumFeePerCharge: 100,
+    requiresCollateralThreshold: 25000,
+    primaryHQ: false,
+    routePrefix: '/bail-bonds/al'
+  },
+  TN: {
+    code: 'TN',
+    name: 'Tennessee',
+    slug: 'tennessee',
+    statutoryPremiumRate: 0.10,
+    minimumFeePerCharge: 100,
+    requiresCollateralThreshold: 25000,
+    primaryHQ: false,
+    routePrefix: '/bail-bonds/tn'
+  },
+  OH: {
+    code: 'OH',
+    name: 'Ohio',
+    slug: 'ohio',
+    statutoryPremiumRate: 0.10,
+    minimumFeePerCharge: 100,
+    requiresCollateralThreshold: 25000,
+    primaryHQ: false,
+    routePrefix: '/bail-bonds/oh'
+  },
+  PA: {
+    code: 'PA',
+    name: 'Pennsylvania',
+    slug: 'pennsylvania',
+    statutoryPremiumRate: 0.10,
+    minimumFeePerCharge: 100,
+    requiresCollateralThreshold: 25000,
+    primaryHQ: false,
+    routePrefix: '/bail-bonds/pa'
+  },
+  VA: {
+    code: 'VA',
+    name: 'Virginia',
+    slug: 'virginia',
+    statutoryPremiumRate: 0.10,
+    minimumFeePerCharge: 100,
+    requiresCollateralThreshold: 30000,
+    primaryHQ: false,
+    routePrefix: '/bail-bonds/va'
+  },
+  MS: {
+    code: 'MS',
+    name: 'Mississippi',
+    slug: 'mississippi',
+    statutoryPremiumRate: 0.10,
+    minimumFeePerCharge: 100,
+    requiresCollateralThreshold: 25000,
+    primaryHQ: false,
+    routePrefix: '/bail-bonds/ms'
+  }
+};
 
 /**
  * Transfer fee for counties outside primary service area

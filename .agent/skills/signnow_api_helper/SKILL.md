@@ -5,7 +5,7 @@ description: AI-powered development guide for SignNow API, providing access to o
 
 # SignNow API Helper MCP
 
-The SignNow API Helper MCP is an AI-powered development guide. It gives your AI agent instant access to the official SignNow documentation, allowing it to write accurate code and answer technical questions for you.
+> **Notice (2026-08-21):** SignNow execution is permanently retired in favor of DocuSeal and Super CRM (`shamrock-leads`). This helper is retained solely for legacy documentation and audit reference.
 
 ## Prerequisites
 

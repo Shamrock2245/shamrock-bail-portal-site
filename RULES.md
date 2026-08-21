@@ -1,88 +1,73 @@
 # 🚫 Agent Rules — Non-Negotiable
 
-These rules are **absolute**. No exceptions, no overrides.
+> **Last Updated:** 2026-08-21  
+> These rules are **absolute**. No exceptions, no overrides.
 
 ---
 
-## 1. Wix is the Clipboard
-- Wix collects data and passes it back. It does NOT own the heavy lifting.
-- Never put business logic in page code — only UI logic and event handlers.
-- All heavy processing belongs in backend systems. Wix may not create paperwork packets, signing links, or provider invitations.
+## 1. The Website is the Clipboard; The Backend is the Brain
+- Wix collects data, validates roles, captures ID scans, presents review fields, and launches signing sessions. It does NOT own underwriting, case matching, or legal packet issuance.
+- Never put business logic or document creation inside page code.
+- All underwriting authority, case reconciliation, surety selection, and DocuSeal packet issuance remain staff-gated inside Super CRM (`shamrock-leads`) and GAS backend.
 
-## 2. GAS is the Factory
-- GAS remains the established factory for approved automation, but active DocuSeal packet issuance is authorized only in Super CRM after the required validation gates.
-- Single entry point: `Code.js doPost()` / `doGet()` with action routing.
-- Never create parallel entry points.
+## 2. No DocuSeal Packet Issuance from Wix
+- Wix pages, lightboxes, and client-side scripts are strictly forbidden from creating DocuSeal submissions or requesting signing links from the provider.
+- Wix opens `SigningLightbox` as a secure launchpad. When a staff-issued session exists, it renders the signer form. Otherwise, it presents client intake and review.
 
-## 3. Secrets are Sacred
+## 3. No SignNow Revival
+- SignNow is permanently retired (Live @464). Direct routes, factory senders, and legacy webhook handlers must remain disabled.
+- Historical fields (`signNowDocumentId`, `signNowIndemnitorLink`) remain read-only historical compatibility data.
+
+## 4. Role-Scoped ID Hydration & Canonical Schema
+- ID scanning must hydrate strictly into the selected role’s field group (`Def*` or `Ind*`).
+- Cosigner / Indemnitor ID scans must NEVER overwrite the defendant’s identity fields.
+- Frontend forms must map to canonical Person and Case objects (`canonical-paperwork-mapper.js`) so UI is never hardcoded to one surety’s 14-page PDF boxes.
+
+## 5. Growth Ladder IA Law (Local → State → Multi-State)
+- **Local/Regional Dominance First**: Homepage, NAP, and hero are SWFL / Fort Myers / Cape Coral first (1528 Broadway, Fort Myers, FL 33901 · 239-332-2245). Primary counties: Lee, Collier, Charlotte, Hendry, Glades.
+- **Never flatten the homepage** into a generic national brochure.
+- **Statewide Florida**: All 67 counties supported via programmatic dynamic pages (`/florida-bail-bonds/:slug`).
+- **11+ State Expansion**: Multi-state directories live under `/bail-bonds/:state/:county`. Add states to navigation only when `ServiceAreas.status = live`.
+
+## 6. Ecosystem non-negotiable — Keep GAS `/exec` URL Stable
+- Push code and re-deploy the **existing** deployment only (`clasp deploy -i <ID>` from `.gas-config.json`).
+- **Never** create a new Web App deployment that changes the URL without an explicit human order.
+
+## 7. Secrets are Sacred
 - API Keys live in **Wix Secrets Manager** and **GAS Script Properties**. Never in frontend code.
 - Never hardcode API keys, Sheet IDs, or webhook URLs in `.js` or `.jsw` files.
 - Never commit `.env` files or service account JSON.
-- Rotation procedures: see `SECRETS_ROTATION_GUIDE.md`.
 
-## 4. Never Break Production
-- Never modify `masterPage.js` without testing global side effects.
-- Never rename Wix element IDs without updating `docs/ELEMENT-ID-CHEATSHEET.md`.
-- Never rename IntakeQueue fields without a full migration plan.
-- Never delete a file without verifying no imports depend on it.
-- Never push code that imports a module you haven't verified exists.
-
-## 5. Schema Governance
-- `docs/SCHEMAS.md` defines the canonical data schemas. It is the source of truth.
-- Dedup key for arrest records is always `Booking_Number + County`.
-- Never add, remove, or rename schema columns without updating all consumers.
-- Historical signing records retain their existing `caseId` linkage and field names for compatibility. Active DocuSeal packets must remain bound to the validated BondCase and must not prompt a schema rename.
-
-## 6. Mobile First — Always
+## 8. Mobile & Tablet First — Always
 - 90% of clients are on phones in a crisis.
 - Touch targets must be ≥44px.
 - Input fields must be ≥16px font-size (prevents iOS auto-zoom).
 - Never display "Loading..." text — always use spinners or skeleton loaders.
 - Primary CTA must be sticky on mobile viewports.
 
-## 7. Premium Aesthetics are Mandatory
+## 9. Premium Aesthetics are Mandatory
 - If it looks cheap, it is considered broken. Fix it immediately.
-- Use glassmorphism, micro-animations, dark modes with vibrant accents.
-- Use modern typography (Google Fonts: Inter, Roboto, Outfit) — never browser defaults.
-- Every deployed surface must feel incredibly premium and untraditional for this industry.
+- Use glassmorphism, micro-animations, dark modes with vibrant accents, and modern typography (Outfit, Inter).
 
-## 8. 10DLC & Communication Compliance
+## 10. 10DLC & Communication Compliance
 - All SMS/WhatsApp messaging must be 10DLC compliant. No spam.
-- Client communication preferences (`CommPrefsManager.js`) must be checked before all outbound messages.
-- Every outbound message must include opt-out instructions (`Reply STOP`).
-- AI agents must never provide legal advice.
+- Client communication preferences (`CommPrefsManager.js`) must be checked before outbound messages.
+- Outbound messages must include opt-out instructions (`Reply STOP`). AI agents must never provide legal advice.
 
-## 9. Idempotent Writes
+## 11. Idempotent Writes
 - All data writes (scraper, intake, webhooks) must check for duplicates before inserting.
-- Re-running a process should never create duplicate records.
-- Approved DocuSeal completion processing must be idempotent. Legacy SignNow webhooks remain retired and must not be re-enabled.
+- Dedup key for arrest records is always `Booking_Number + County`.
 
-## 10. Wix Velo Runtime Constraints
+## 12. Wix Velo & Studio Runtime Constraints
 - Never import `public/*` or `backend/*` files into `masterPage.js` — it crashes the strict-mode runtime.
-- Wix routers (e.g., `/florida-bail-bonds/{slug}`) return 404 on bare prefix URLs.
-- Footer overrides must be inlined in `masterPage.js` via `setupFooterDynamic()`.
-- ESM only: Use named imports for Node.js built-ins (`import { createHmac } from 'crypto'`).
-- Never use CommonJS default imports in `.jsw` files.
-
-## 11. Node-RED is Ops — Not Logic
-- Node-RED handles scheduling, monitoring, and data relay.
-- Business logic belongs in GAS, not in Node-RED function nodes.
-- The reusable "POST to GAS" subflow is the standard pattern for GAS calls.
-
-## 12. Security Before Push
-- Run `audit_security` skill before any production deployment.
-- All webhook endpoints must use HMAC verification.
-- PII must be redacted in logs (phone numbers, emails, addresses).
-- RBAC enforced: defendants cannot see other defendants' data.
+- Wix routers return 404 on bare prefix URLs; ensure fallback redirection.
+- ESM only: Use named imports for Node.js built-ins.
 
 ## 13. Documentation is Living
-- If code changes, update the affected docs in the same commit.
-- Stale docs are worse than no docs — they cause wrong decisions.
-- Run `/self-improving-agent` at end of significant sessions.
-- Never reference archived files from active documentation.
-- Current paperwork documentation must point to `docs/CURRENT_PAPERWORK_ARCHITECTURE.md`; archived SignNow references are historical context only.
+- If code changes, update affected documentation in the same commit.
+- Authoritative runtime truth lives in `STATUS.md` and `docs/CURRENT_PAPERWORK_ARCHITECTURE.md`.
+- User intent lives in `USER.md` and `RULES.md`.
 
 ## 14. Finish the Factory
 - Don't redesign what works. Connect existing pipes to new outputs.
-- Every new feature should leverage existing GAS endpoints, not create parallel systems.
-- Before building something new, check if a GAS endpoint, Node-RED flow, or skill already exists.
+- Every new feature should leverage existing GAS endpoints and Super CRM services.

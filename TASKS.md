@@ -1,155 +1,89 @@
 # 📋 Project Tasks
 
-> **Mission:** Build the "Uber of Bail Bonds" for Florida — Fast. Frictionless. Everywhere.  
-> **Last Updated:** April 16, 2026
+> **Mission:** Build the "Uber of Bail Bonds" — Fast. Frictionless. Everywhere.  
+> **Last Updated:** 2026-08-21  
+> **Authoritative Runtime Status:** [`STATUS.md`](./STATUS.md)
 
 ---
 
-## ✅ Phase 1: Foundation & Security (Complete)
+## 🔴 Phase 8.5: Wix Studio Translation + Autopilot Paperwork Clipboard (CURRENT #1 PRIORITY)
 
-- [x] Monorepo migration — unified Wix Velo + GAS backend
-- [x] Security audit — PII redaction, Secret Manager integration
-- [x] SOC II logging patterns implemented
-- [x] Core 34-column intake schema defined (`IntakeQueue`)
+- [ ] **Milestone A: Studio Visual System & Public IA**
+  - [x] Establish SWFL regional dominance on Homepage & NAP (Fort Myers HQ primary)
+  - [x] Multi-state routing module (`src/backend/multi-state-router.js` & `routers.js`)
+  - [ ] Wix Studio breakpoint matrix styling (fluid typography, container queries, no stock templates)
+  - [ ] Programmatic county pages verification on Studio surface
 
-## ✅ Phase 2: Core Portals (Complete)
+- [ ] **Milestone B: Port Portals & Launchpads**
+  - [x] Enforce clipboard vs brain boundary (no DocuSeal packet creation in Wix)
+  - [x] Update `SigningLightbox` and `portal-config.js` for Netlify paperwork launchpad
+  - [ ] Port `portal-landing`, `portal-defendant`, `portal-indemnitor`, `portal-staff` to Studio layout
 
-- [x] Indemnitor Portal — Financial Indemnity Form + SignNow Lightbox
-- [x] Defendant Portal — Appearance Application + GPS Check-in
-- [x] Magic Links — secure session-based auth (no passwords)
-- [x] PDF Engine — automated layout mapping for court forms
+- [ ] **Milestone C: `/portal-start` Autopilot Wizard**
+  - [x] Create Canonical Schema Mapper (`src/public/canonical-paperwork-mapper.js`)
+  - [ ] Mobile/tablet intake flow: Role Selector (Defendant / Indemnitor / Co-Indemnitor)
+  - [ ] Camera ID Scan + Cloud Vision OCR auto-hydration (role-scoped, never overwrite defendant)
+  - [ ] Auto-hydrate known case facts (from Super CRM / booking match)
+  - [ ] Collect missing delta fields only (employment, references, household)
+  - [ ] 1-tap plain-language preview & finger/stylus signature pad
 
-## ✅ Phase 3: AI Concierge & Telegram Integration (Complete)
+- [ ] **Milestone D: Staff Lobby-Tablet Handoff**
+  - [ ] Rapid tablet launch QR code / PIN for in-person office or jail lobby clients
+  - [ ] Staff-gated handoff to Super CRM bond reconciliation
 
-- [x] OpenAI GPT-4o integration — 6 specialized AI agents built
-- [x] Telegram Bot (`@ShamrockBail_bot`) — full conversational intake
-- [x] Inline Quote Bot — `@ShamrockBail_bot 5000 2 lee` → instant premium
-- [x] Court Date Reminders — 4-touch SMS sequence (7d, 3d, 1d, morning-of)
-- [x] ID OCR — Google Cloud Vision FL Driver License parser
-- [x] Office Locator — GPS → nearest office with Call/Directions
-- [x] Payment Progress Notifications — visual progress bars (████░░ 65%)
-- [x] Telegram Mini-Apps (7) — Portal, Intake, Documents, Payments, Check-in, Status, Signing
-
-## ✅ Phase 4: Core Automation (Complete)
-
-- [x] "The Clerk" — booking data scraping and OCR
-- [x] "The Analyst" — risk assessment with 0-100 flight risk scoring
-- [x] "The Investigator" — deep background check analysis
-- [x] "The Closer" — abandoned intake drip campaigns
-- [x] Court Email Processor — auto-parse court date emails
-- [x] Bond Reporting Engine — weekly liability, commissions, reconciliation
-- [x] Client Check-In System — weekly SMS with text response tracking
-- [x] Payment Plan Reconciliation — SwipeSimple delinquency tracking
-- [x] Universal Payment Link — SwipeSimple in portals, SMS, email
-
-## ✅ Phase 5: Shannon Voice AI (Complete)
-
-- [x] ElevenLabs Conversational AI — "Shannon" 24/7 after-hours intake
-- [x] Inbound Twilio → ElevenLabs routing
-- [x] Init webhook as Netlify Edge Function (near-zero cold start)
-- [x] Two-path flow: Path A (notify bondsman) / Path B (send paperwork)
-- [x] SignNow link creation + SMS delivery during active calls
-- [x] ShannonCallLog Google Sheet (full transcript recording)
-- [x] Knowledge base — all 67 FL counties, statutes, bond schedules, FAQs
-- [x] 8 webhook tools — calculate_premium, create_intake, lookup_defendant, send_payment_link, schedule_callback, transfer_to_bondsman, check_inmate_status, send_directions
-- [x] Live call transfer — 3 phone numbers (primary, secondary, Spanish line)
-
-## ✅ Phase 6: Infrastructure & Operations (Complete)
-
-- [x] Node-RED Ops Dashboard — 21 flow tabs, 836 nodes, 64 crons
-- [x] 10-page dashboard with premium glassmorphism UI, 26 widget groups
-- [x] Global error handler → Slack alerts
-- [x] Webhook authentication (HMAC) on all inbound endpoints
-- [x] Bond Renewal Reminder Pipeline
-- [x] Quick-Bond Calculator Widget
-- [x] Error Aggregation Dashboard
-- [x] Agent Activity Scoreboard (9 agents with status/KPIs)
-- [x] Reusable "POST to GAS" subflow in Shamrock palette
-- [x] SLACK_TOKEN fix — `env.get('SLACK_BOT_TOKEN')` in Configure Global Vars
-
-## ✅ Phase 7: Geographic Expansion — 19 Counties (Complete)
-
-- [x] 19 active county scrapers — Brevard, Charlotte, Collier, DeSoto, Hendry, Highlands, Hillsborough, Indian River, Lake, Lee, Manatee, Martin, Orange, Osceola, Palm Beach, Pinellas, Polk, Sarasota, Seminole
-- [x] 15 GitHub Actions workflows for scheduled runs
-- [x] Python/DrissionPage as primary engine
-- [x] Docker Compose for containerized execution
-- [x] MongoDB Atlas writer (`mongo_writer.py`) — bulk upsert with dedup
-- [x] Lead scoring system (`LeadScoringSystem.js`) with auto-prioritization
-- [x] Slack alerts per county (#new-arrests-{county})
-- [x] Hetzner Cloud VPS for self-hosted GitHub Actions runners
-- [x] SEO — all county pages indexed, JSON-LD, OG/Twitter meta, geo tags
-
-## ✅ Phase 7.5: MongoDB & Communication Preferences (Complete)
-
-- [x] MongoDB Atlas event logging via `MongoLogger.gs`
-- [x] All critical business events logged — intakes, signing, payments, court dates, check-ins, comms, leads
-- [x] Communication Preferences — `CommPrefsManager.js` in GAS
-- [x] Wix portal comm prefs page — `Communication Preferences.f870g.js` → `comm-prefs-sync.jsw` → GAS
-- [x] `pymongo[srv]` dependency added to scrapers
-- [x] Scraper pipeline Step 5b — non-fatal MongoDB write after Sheets
-
-## ✅ Phase 7.6: DevOps & Deploy Pipeline Hardening (Complete — Apr 7)
-
-- [x] **ESM Crypto Imports** — Replaced all `import crypto from 'crypto'` (CommonJS default) with named imports across 5 backend files
-- [x] **Multiline Call Collapse** — Resolved multiline `crypto.createHmac` chained patterns
-- [x] **Naming Conflict** — Aliased imported `createHash` as `_cryptoCreateHash` in `auth-utils.jsw`
-- [x] **WIX_CLI_API_KEY Renewal** — Expired GitHub Secret regenerated from `manage.wix.com/account/api-keys`
-- [x] **Auto-Deploy Verified** — GitHub Actions Run #25 ✅ (32s). Auto-deploy on push to `main`
-
-## ✅ Phase 7.7: Site Health & SEO Maintenance (Complete — Apr 16)
-
-- [x] **Dynamic Copyright Year** — `setupFooterDynamic()` in `masterPage.js` uses `new Date().getFullYear()`
-- [x] **Broken Footer Links** — All footer links fixed: Counties → `/#counties`, Directory → `/#counties`, Become a Bondsman → `/how-to-become-a-bondsman`
-- [x] **SEO Schema Date** — Testimonials page schema fallback date now dynamic
-- [x] **Wix Sync** — Removed deleted `Bail School.js`, synced `uiVersion` bump
-- [x] **Site-wide Documentation Refresh** — All 14 root docs updated to current state
+- [ ] **Milestone E: `ServiceAreas` Multi-State CMS**
+  - [x] Configure `EXPANSION_STATES` registry in `portal-config.js`
+  - [ ] Multi-state CMS collection hookup for 11+ states when `status = live`
 
 ---
 
-## 🔄 Phase 8: Growth & Scale (In Progress)
-
-### 🔴 Immediate Priority
+## 🔄 Phase 8: Growth, Messaging & Revenue (Active Pipeline)
 
 - [ ] **WhatsApp Business Integration**
   - [ ] Enable Twilio WhatsApp Sandbox
   - [ ] Wire to Node-RED relay
-  - [ ] Test WhatsApp campaigns tab (currently disabled pending 10DLC)
-
-### 🟡 This Quarter
-
+  - [ ] Test WhatsApp campaigns tab (pending 10DLC approval)
 - [ ] **"The Closer" Drip Campaigns**
   - [ ] Wire Node-RED "The Closer" tab → GAS `runTheCloser()` endpoint
-  - [ ] Automated SMS/WhatsApp follow-up sequences for abandoned intakes
+  - [ ] Automated SMS/WhatsApp follow-ups for abandoned mobile intakes
 - [ ] **Review Harvester**
   - [ ] GAS endpoint to send Google review requests post-bond
   - [ ] Wire to Node-RED scheduling
 - [ ] **Wave 1 SmartCOP Blitz** (13 counties)
   - [ ] Clone DeSoto scraper → Bradford, Dixie, Escambia, Gadsden, Gilchrist, Glades, Hamilton, Levy, Putnam, Santa Rosa, Sumter, Suwannee, Taylor
-  - [ ] ~30 min per county. Post-wave target: 32 counties (48% FL coverage)
 - [ ] **Shannon Enhancements**
   - [ ] Multi-language support (Spanish priority — Collier/Lee demographics)
-  - [ ] Shannon → "The Closer" handoff for abandoned intakes
+  - [ ] Paperwork launchpad link delivery via Twilio SMS during active calls (for staff-issued sessions)
   - [ ] Shannon call analytics dashboard
-  - [ ] Telegram signing link delivery during calls
 
-### 🟢 Backlog
+---
 
-- [x] **Bail School Landing Page** (public catalog live Aug 2026)
-  - [x] `/bail-school` Netlify embed + Wix SEO aligned to 20hr / 120hr / simulator
-  - [ ] Video integration + auto-issue PDF certificate (LMS cert path still ops-gated)
-  - [ ] Wix Editor publish after `main` pull (human)
-- [ ] **Social Media Automation**
-  - [ ] Pexels integration for post images
-  - [ ] Scheduled social publishing via `SocialPublisher.js`
-- [ ] **MongoDB Primary Migration**
-  - [ ] Migrate primary data store from Sheets → MongoDB Atlas
-  - [ ] Keep Sheets as backup/dashboard view
-- [ ] **Wave 2–5 County Expansion**
-  - [ ] Wave 2: 19 standard DrissionPage counties (Q3 2026)
-  - [ ] Wave 3: 13 complex targets — CAPTCHAs, SPAs (Q4 2026)
-  - [ ] Wave 4: 3 PDF-based counties (Q1 2027)
-  - [ ] Wave 5: 5 manual investigation counties (Q2 2027)
-  - [ ] Goal: 67/67 counties (100% FL coverage)
+## ✅ Completed Milestones
+
+### Phase 1: Foundation & Security
+- [x] Monorepo migration — unified Wix Velo + GAS backend
+- [x] Security audit — PII redaction, Secret Manager integration
+- [x] Core 34-column intake schema defined (`IntakeQueue`)
+
+### Phase 2: Core Portals & Signing Modernization
+- [x] DocuSeal signing migration & permanent SignNow retirement (Live @464)
+- [x] Indemnitor & Defendant Portals with Magic Link auth
+- [x] Staff-gated document preparation boundary in Super CRM
+
+### Phase 3: AI Workforce & Telegram Ecosystem
+- [x] OpenAI GPT-4o integration — 9 specialized AI digital employees
+- [x] Telegram Bot (`@ShamrockBail_bot`) + 7 Netlify Mini-Apps
+- [x] Cloud Vision Driver License OCR parser
+
+### Phase 4: Ops Dashboard & Scraping Expansion
+- [x] Node-RED Ops Dashboard — 21 flow tabs, 836 nodes, 64 crons
+- [x] 20 active Florida county jail scrapers (DrissionPage / Puppeteer / Docker)
+- [x] MongoDB Atlas event logging via `MongoLogger.gs` + `mongo_writer.py`
+
+### Phase 5: Voice AI & School Alignment
+- [x] ElevenLabs Shannon 24/7 phone intake agent
+- [x] Bail School public catalog aligned to live LMS ($199 20hr / $649 120hr)
+- [x] Communication Preferences system (`CommPrefsManager.js`)
 
 ---
 

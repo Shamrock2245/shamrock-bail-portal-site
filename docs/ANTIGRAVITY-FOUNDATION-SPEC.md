@@ -1,24 +1,18 @@
 # ANTIGRAVITY FOUNDATION SPEC
-## Shamrock Bail Bonds — Wix + Velo Platform
+## Shamrock Bail Bonds — Wix Studio & Velo Platform
 
-Version: 1.0  
+Version: 2.0  
 Status: CANONICAL  
+Last Updated: 2026-08-21  
 Audience: AI Agents (Antigravity), Senior Developers, System Architects  
 
 ---
 
 ## 0. ABSOLUTE AUTHORITY STATEMENT
 
-This document is the **single authoritative foundation** for this repository.
+This document is the **canonical platform specification** for this repository.
 
-If any instruction in:
-- README files
-- legacy .md files
-- agent prompts
-- inline comments
-- external suggestions
-
-conflicts with this document, **THIS DOCUMENT OVERRIDES ALL OTHERS**.
+If any instruction in legacy notes, archived drafts, or external discussions conflicts with this document, **THIS DOCUMENT AND [`CURRENT_PAPERWORK_ARCHITECTURE.md`](CURRENT_PAPERWORK_ARCHITECTURE.md) OVERRIDE ALL OTHERS**.
 
 Agents must treat this file as:
 - the system contract
@@ -28,320 +22,86 @@ Agents must treat this file as:
 
 ---
 
-## 1. SYSTEM INTENT (WHY THIS EXISTS)
+## 1. SYSTEM INTENT & EXPANSION IA
 
 This system exists to:
 
-1. Generate **urgent, high-intent bail bond leads**
-2. Route those leads **correctly by county and context**
-3. Protect legally sensitive workflows (paperwork, signatures, payments)
-4. Scale to **all 67 Florida counties** without fragmentation
-5. Provide clean data to downstream systems (scrapers, analytics, staff ops)
+1. Generate **urgent, high-intent bail bond leads** with instant call/text response.
+2. Maintain **SWFL Local Dominance**: Flagship Fort Myers HQ (`1528 Broadway, Fort Myers, FL 33901` · `239-332-2245`), prioritizing Lee, Collier, Charlotte, Hendry, and Glades counties.
+3. Scale across **Statewide Florida**: All 67 counties via dynamic programmatic pages (`/florida-bail-bonds/:slug`) and First Appearance court calendars (`/first-appearance/:county`).
+4. Support **11+ Multi-State Expansion**: Dynamic routing for non-FL states (`/bail-bonds/:state/:county`) integrated with `shamrock-leads` multi-state ops, without genericizing the homepage.
+5. Provide a zero-friction **Mobile/Tablet-First Paperwork Clipboard**: Role selection, camera ID scan, Cloud Vision OCR auto-hydration, and staff-approved DocuSeal signing launchpad.
 
-This is **not** a generic website.  
-It is a **conversion engine under legal constraints**.
+This is **not** a generic brochure. It is a **high-conversion legal operational platform**.
 
 ---
 
 ## 2. HARD SYSTEM BOUNDARIES (NON-NEGOTIABLE)
 
-### 2.1 Protected Systems (DO NOT TOUCH)
-
-The following systems are **outside agent authority**:
-
-- SignNow (documents, flows, URLs, tokens)
-- Google Sheets used by ops (unless via GAS API)
-- External APIs not explicitly wrapped in backend modules
-
-The **Google Apps Script (GAS)** project is now **INTEGRATED** into this repository (`backend-gas/`).
-Agents **ARE AUTHORIZED** to modify, optimize, and deploy GAS code, provided they follow `clasp` deployment protocols.
-
-Agents may:
-- call them only through existing, approved interfaces
-- pass data forward
-- NEVER modify, intercept, or reimplement them
-
----
+### 2.1 Clipboard vs. Brain Doctrine
+- **Wix Studio / Velo (`src/`) is the Clipboard:** Captures intent, authenticates members (`portal-auth.jsw`), hosts `/portal-start` intake, auto-hydrates OCR data into canonical schemas, and opens `SigningLightbox`.
+- **Super CRM (`shamrock-leads`) & GAS is the Brain:** Case matching, arrest scrapers, risk scoring, surety carrier selection, POA assignment, and staff-gated DocuSeal submission creation.
+- **Strict Prohibition:** Wix code is strictly forbidden from creating DocuSeal submissions or requesting signing URLs directly from the provider.
+- **Retired Providers:** SignNow execution is permanently retired (Live @464). Historical records remain read-only.
 
 ### 2.2 Security Rules
-
 - **NO API keys in frontend code**
-- **Secrets Manager only** (accessed via `src/backend/secretsManager.jsw`)
-- Backend logic goes in `.jsw` files only
-- Never store PII unnecessarily in Wix collections
-- Never duplicate data already handled by SignNow or external systems
-
-Violation = critical failure.
+- **Secrets Manager only** (accessed via `src/backend/secretsManager.jsw` or GAS Script Properties)
+- Backend logic goes in `.jsw` and `.js` files only
+- Never store unnecessary PII in public datasets
+- Keep stable GAS `/exec` URL deployment intact (`clasp deploy -i <ID>`)
 
 ---
 
-## 3. OPERATIONAL FLOW (MENTAL MODEL)
+## 3. OPERATIONAL FLOW & MENTAL MODEL
 
 ### 3.1 Anonymous Visitor
-
-Landing → County Detection → Phone CTA → Call Logged → Human
+Landing (SWFL Hero) → County / Jail Detection → Instant Call / Text CTA → Call Logged → Bondsman Dispatched
 
 ### 3.2 Informed Visitor
-Landing → County Page → Learn → Phone or Form → Logged
+Landing → County Page / First Appearance Calendar → Learn → Call or Start Online Intake
 
-### 3.3 Member (Paperwork Flow)
-Login → Consent → Start Bail → SignNow → External Automation
-
-After the SignNow handoff, **Wix is no longer authoritative**.  
-No additional data capture, retries, previews, or interception is permitted.
-
----
-
-## 4. COUNTY SYSTEM (CORE SCALING MECHANISM)
-
-### 4.1 County Slugs (CANONICAL)
-- lowercase only
-- no spaces
-- no special characters
-- immutable once published
-- used consistently across:
-  - URLs
-  - CMS
-  - analytics
-  - call logs
-  - scrapers
-
-Example: `lee`, `collier`, `charlotte`
-
-### 4.2 County Configuration Source (NEW)
-**Truth Source:** `src/backend/config/tenant.json`
-- All active counties must be defined here.
-- Controls routing, phone numbers, and features.
-- Hydrated at runtime via `config-loader.jsw`.
-
-### 4.2 County Tier Model
-- **Tier 1**: Full operations, active scraping, priority routing, rich content
-- **Tier 2**: Partial operations, manual handling, limited content
-- **Tier 3**: SEO presence + call-only conversion
-
-Agents MUST respect tier logic when:
-- generating content
-- enabling features
-- wiring routing or analytics
-
-Tier downgrades are not permitted without explicit instruction.
+### 3.3 Client Paperwork Flow (Mobile & Tablet First)
+1. **Auth:** Magic Link / Phone OTP (`portal-auth.jsw`).
+2. **Role Selection:** Defendant | Primary Indemnitor | Co-Indemnitor.
+3. **Camera ID Scan:** Cloud Vision OCR extracts personal facts into role-correct fields (Cosigner ID never overwrites defendant).
+4. **Auto-Hydrate Case Facts:** Charges, bond amount, court date, jail prefilled from Super CRM when known.
+5. **Delta Fields Only:** Client fills only missing employment/reference data.
+6. **Canonical Schema:** Maps to standardized Person/Case model (`canonical-paperwork-mapper.js`).
+7. **Staff Reconciliation & DocuSeal Issuance:** Staff verifies bond in Super CRM and generates DocuSeal packet.
+8. **1-Tap Signing:** Client signs inside `SigningLightbox` on phone or tablet.
 
 ---
 
-## 5. CMS IS AN OPERATIONAL DATABASE (NOT MARKETING CONTENT)
+## 4. CMS & SCHEMA GOVERNANCE
 
-CMS collections are **live system components**.  
-Schema drift is considered a breaking change.
+CMS collections are **live operational datasets**. Schema drift is considered a breaking change.
 
-### 5.1 Canonical CMS Collections
-
-#### FloridaCounties (MASTER DATASET)
-Primary Key: `countySlug`
-
-##### Identity
-- countySlug (Text, unique, required)
-- countyName (Text, required)
-- countyNameFull (Text)
-- active (Boolean, required)
-- featured (Boolean)
-- tier (Number, required)
-
-##### Contact & Routing
-- primaryPhone (Text, required)
-- spanishPhone (Text)
-- email (Text)
-
-##### Geography
-- centroidLat (Number)
-- centroidLng (Number)
-- boundsNorth (Number)
-- boundsSouth (Number)
-- boundsEast (Number)
-- boundsWest (Number)
-- majorCities (Text or JSON)
-
-##### Jail Data
-- jailName (Text)
-- jailAddress (Text)
-- jailPhone (Text)
-- bookingUrl (URL)
-
-##### Clerk of Court
-- clerkName (Text)
-- clerkUrl (URL)
-- clerkPhone (Text)
-- recordsUrl (URL)
-
-##### SEO (MANDATORY)
-- metaTitle (Text, required)
-- metaDescription (Text, required)
-- keywords (Text or JSON)
-- schemaType (Text)
-
-##### Content Blocks
-- heroHeadline (Text)
-- heroSubheadline (Text)
-- aboutCounty (Text)
-- whyChooseUs (Text)
-
-##### Scraper Integration
-- scraperEnabled (Boolean)
-- scraperCountyCode (Text)
-- leadScoreThreshold (Number)
+### Canonical Collections:
+- `FloridaCounties`: Master 67-county dataset for dynamic pages and SEO.
+- `Cases`, `Defendants`, `Indemnitors`: Canonical party and case records.
+- `PortalUsers`, `PortalSessions`, `Magiclinks`: Authentication and session security.
+- `PendingDocuments`, `SigningSessions`: Document and signing status trackers.
+- `CallLogs`, `AnalyticsEvents`, `UserLocations`: Conversion attribution and geo-logging.
 
 ---
 
-#### CallLogs (CONVERSION TRUTH SOURCE)
-- trackingId (Text, unique)
-- sessionId (Text)
-- memberId (Text, nullable)
-- county (Text)
-- phoneNumber (Text)
-- source (Text)
-- page (Text)
-- device (Text)
-- timestamp (DateTime)
-- geolocation (Object)
-
----
-
-#### AnalyticsEvents (BEHAVIORAL DATA)
-- eventType (Text)
-- sessionId (Text)
-- memberId (Text, nullable)
-- county (Text)
-- page (Text)
-- device (Text)
-- properties (Object)
-- timestamp (DateTime)
-
----
-
-#### UserLocations (CONSENT-BASED GEO)
-- sessionId (Text)
-- memberId (Text, nullable)
-- latitude (Number)
-- longitude (Number)
-- accuracy (Number)
-- county (Text)
-- consentGiven (Boolean)
-- timestamp (DateTime)
-
----
-
-#### Portal / Paperwork State Collections
-These collections track **state only**, never document contents:
-- PortalUsers
-- PortalSessions
-- PendingDocuments
-- RequiredDocuments
-- MemberDocuments
-
----
-
-## 6. ELEMENT ID GOVERNANCE
+## 5. ELEMENT ID GOVERNANCE
 
 Element IDs are **API contracts**.
-
-Rules:
-- Case-sensitive
-- Never renamed after deployment
-- Never auto-generated
-- Never reused across contexts
-
-Breaking an element ID is equivalent to breaking an API.
+- Case-sensitive.
+- Never renamed after deployment.
+- Documented in `docs/ELEMENT-ID-CHEATSHEET.md`.
 
 ---
 
-## 7. BACKEND / FRONTEND SEPARATION OF CONCERNS
-
-### 7.1 Backend (.jsw) Responsibilities
-- geolocation resolution
-- county detection
-- phone routing
-- call logging
-- analytics logging
-- county page generation
-- business rules
-
-### 7.2 Frontend Responsibilities
-- UI rendering
-- event triggering
-- form validation
-- invoking backend methods
-
-Frontend code MUST NOT:
-- infer county logic
-- decide routing
-- access secrets
-- bypass backend validation
-
----
-
-## 8. SIGNNOW HANDOFF (CRITICAL & IMMUTABLE)
-
-The following sequence is fixed:
-
-1. Member authenticated
-2. Explicit consent captured
-3. “Start Bail Paperwork” clicked
-4. Backend prepares payload
-5. Redirect to SignNow
-
- Rules:
-- **Embedded Lightbox is the STANDARD** (via `createEmbeddedLink`).
-- Fallback to Email Invite only if Lightbox fails.
-- No "Preview" step - straight to signing.
-- Handoff must be immediate after "Submit".
-
-If SignNow fails, fallback is **human intervention** (Call CTA), then email retry.
-
----
-
-## 9. ANALYTICS TRUTH MODEL
-
-Priority of truth:
-1. Phone calls
-2. Call logs
-3. County attribution
-4. Behavioral events
-5. Forms
-
-Every phone interaction MUST:
-- log once
-- include county
-- include source
-- include device
-
-Silent failures are unacceptable.
-
----
-
-## 10. DEFINITION OF SUCCESS
+## 6. DEFINITION OF SUCCESS
 
 This system is successful when:
-- A panicked mobile user can call within 3 seconds
-- The call logs with correct county and source
-- Staff can trust the data without manual cleanup
-- County pages scale without manual rework
-- Legal, paperwork, and payment workflows remain untouched
-- Agents can operate without tribal knowledge
-
----
-
-## 11. ANTIGRAVITY OPERATING DIRECTIVES
-
-When operating in this repository, Antigravity MUST:
-
-1. Read this document first
-2. Treat schemas as contracts
-3. Prefer safety over cleverness
-4. Never “simplify” by removing structure
-5. Ask for clarification ONLY if:
-   - a direct conflict exists
-   - a required field is missing
-
-This system values **durability, correctness, and legal safety** over speed.
+- A panicked mobile user can call within 3 seconds.
+- A client in crisis can scan an ID on an iPhone and reach a plain-language signing pad without retyping fields.
+- Staff can reconcile bonds, select carriers, and issue DocuSeal packets seamlessly in Super CRM.
+- County and multi-state pages scale without manual rework or homepage regression.
 
 ---
 

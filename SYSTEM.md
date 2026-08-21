@@ -1,8 +1,16 @@
 # 🏗 Architecture & System
 
-> **Last Updated:** 2026-07-08  
+> **Last Updated:** 2026-08-21  
 > **Status:** 🟢 Production bond stack · See [`STATUS.md`](./STATUS.md) for git vs live ops  
-> **Ecosystem:** School LMS = `shamrock-bail-school` · Auto-CRM = `shamrock-leads`
+> **Ecosystem:** Auto-CRM & Multi-State Brain = `shamrock-leads` · Ops Hub = `shamrock-node-red` · School LMS = `shamrock-bail-school`
+
+---
+
+## ⚠️ Mandatory Agent Onboarding Directive
+
+> **ATTENTION AGENTS:** Before modifying, creating, or refactoring any page code or backend endpoints, you MUST thoroughly review **[`USER.md`](./USER.md)**, **[`RULES.md`](./RULES.md)**, **[`docs/CURRENT_PAPERWORK_ARCHITECTURE.md`](./docs/CURRENT_PAPERWORK_ARCHITECTURE.md)**, and **Phase 8.5 (Wix Studio Translation & Autopilot Paperwork Clipboard)** in **[`ROADMAP.md`](./ROADMAP.md)**.
+> 
+> **Core Doctrine:** The website is the clipboard. The backend is the brain. Wix never creates DocuSeal packets or replaces Super CRM underwriting authority.
 
 ---
 
@@ -10,19 +18,19 @@
 
 **"The Website is a Clipboard; The Backend is the Brain."**
 
-We enforce a distributed, service-oriented architecture. The frontend (Wix) exists to collect and display. All heavy lifting — PDF generation, AI processing, signing orchestration, communication routing — runs in Google Apps Script (GAS), the central "Factory."
+We enforce a distributed, service-oriented architecture. The frontend (Wix Studio / Velo) exists to collect customer intent, authenticate members, provide camera ID scanning, auto-hydrate form fields, and launch signing sessions. All heavy lifting — scrapers, risk underwriting, case reconciliation, surety/POA assignment, and DocuSeal packet generation — runs in Super CRM (`shamrock-leads`) and Google Apps Script (GAS).
 
 ---
 
 ## The Modern Stack
 
 | Layer | Technology | Role |
-|-------|-----------|------|
-| **Frontend / UI** | Wix Velo | Premium UI — Glassmorphism, animations, magic link auth. Collects data, passes it to GAS. |
-| **Backend / Factory** | Google Apps Script (GAS) | Single entry point (`Code.js doPost()/doGet()`). 190+ files. All business logic. v415+. |
-| **AI / LLM** | OpenAI GPT-4o-mini (via GAS) | 9 digital employees: Clerk, Analyst, Investigator, Concierge, Closer, Manus Brain, Shannon, Watchdog, Bounty Hunter. |
+|---|---|---|
+| **Frontend / UI** | Wix Studio & Velo | Premium responsive UI — Glassmorphism, animations, magic link auth, camera ID scan launchpad. |
+| **Backend / Factory** | Google Apps Script (GAS) | Single entry point (`Code.js doPost()/doGet()`). 190+ files. All business logic. v464+. |
+| **Arrest Brain & CRM** | `shamrock-leads` | Multi-state scraper fleet, MongoDB Atlas, Super CRM case reconciliation, staff-gated DocuSeal issuance. |
 | **Voice AI** | ElevenLabs Conversational AI | "Shannon" — 24/7 after-hours phone intake agent with live call transfer. |
-| **Database** | Wix CMS + Google Sheets + MongoDB Atlas | Wix CMS for portal data. Sheets for ops. MongoDB for arrest analytics & event logging. |
+| **Database** | Wix CMS + Google Sheets + MongoDB Atlas | Wix CMS for portal data. Sheets for ops master. MongoDB for arrest analytics & event logging. |
 | **Signing** | DocuSeal via Super CRM | Staff-issued packet workflow. Wix hosts only the secure Netlify launchpad and cannot create packets or signing links. |
 | **Payments** | SwipeSimple | One-click payment links, virtual terminal, payment plan reconciliation. |
 | **SMS / Voice** | Twilio | External client comms — SMS & WhatsApp (10DLC compliant). Court reminders, check-ins. |
@@ -32,8 +40,7 @@ We enforce a distributed, service-oriented architecture. The frontend (Wix) exis
 | **Edge Functions** | Netlify Edge | Shannon init webhook proxy, county geolocation, Twilio voice routing. |
 | **OCR** | Google Cloud Vision API | FL Driver License extraction (name, DOB, DL#, address). |
 | **Automation** | Node-RED | 21 flow tabs, 836 nodes, 64 crons, 10 dashboard pages. Ops command center. |
-| **Scrapers** | Python (DrissionPage) + Node.js (Puppeteer) | 19 active county jail scrapers across Florida. Dockerized. |
-| **Infrastructure** | Hetzner Cloud + Docker | VPS hosting for scraper fleet. GitHub Actions self-hosted runners. |
+| **Scrapers** | Python (DrissionPage) + Node.js (Puppeteer) | 20 active Florida county jail scrapers + multi-state expansion fleet. Dockerized on Hetzner VPS. |
 | **Deployment** | `clasp` (GAS) + Wix CLI + GitHub | Versioned GAS deployments. 5 repos under `Shamrock2245`. |
 
 ---
@@ -41,7 +48,7 @@ We enforce a distributed, service-oriented architecture. The frontend (Wix) exis
 ## Operating Logic & Pipeline
 
 ```
-Collect → Normalize → Store → Trigger → AI Process → Handoff
+Collect → Normalize → Store → Trigger → AI Process → Staff Gate → Sign
 ```
 
 ### The Intake-to-Bond Pipeline
@@ -53,84 +60,36 @@ Arrest Detected ──→ Scraper writes to Sheets + MongoDB + Slack
                          │
 Client starts via ──→ Magic Link (Web) / Telegram Bot / Shannon (Phone)
                          │
-                    Validation: Phone/Email verified, location consent captured
+                    Role Chosen: Defendant / Primary Indemnitor / Co-Indemnitor
                          │
-                    Staff validates Match, BondCase, surety, POA, recipient, and approval in Super CRM
+                    Camera ID Scan: Cloud Vision OCR extracts & hydrates role-scoped fields
                          │
-                    Staff issues DocuSeal packet; secure launchpad presents the existing session
+                    Auto-Hydrate Case Facts (charges, bail, court, jail) from Super CRM
                          │
-                    Client signs on mobile → approved completion workflow records the result
+                    Client Completes Missing Delta Fields (employment, references)
                          │
-                    Bot requests ID upload (front, back, selfie) → OCR extracts data
+                    Super CRM saves independent staff-deferred intake record
                          │
-                    Signed docs auto-saved to Drive → Staff alerted on Slack
+                    Staff validates Match, BondCase, surety carrier, and POA limit in Super CRM
                          │
-                    Case file complete ── ✅ Bond Posted
+                    Staff issues DocuSeal packet; secure launchpad presents the active session
+                         │
+                    Client signs on mobile/tablet → DocuSeal submission completed
+                         │
+                    Signed docs auto-saved to Drive → Staff alerted on Slack → Bond Dispatched
 ```
-
----
-
-## Cloud & Hosting
-
-| Service | Hosts | Purpose |
-|---------|-------|---------| 
-| **Wix** | Portal frontend, CMS | Client-facing UI, member dashboards, magic link auth |
-| **Google Cloud** | GAS, Sheets, Drive, Vision API, Cloud Functions | Backend logic, data, storage, OCR, MongoDB proxy |
-| **Netlify** | Edge Functions, Mini Apps | ElevenLabs webhook proxy, Telegram WebApps |
-| **Hetzner** | VPS (cpx21, Ubuntu 24.04) | Dockerized scraper fleet, self-hosted GitHub runners |
-| **MongoDB Atlas** | Arrest data, event logging | Analytics, cross-county dedup, business event audit trail |
-| **Twilio** | SMS, WhatsApp, Voice routing | External client communications |
-| **ElevenLabs** | Voice AI | Shannon — phone-based intake agent |
-| **DocuSeal via Super CRM** | Document signing | Staff-issued packet generation and tracking; Wix remains a non-issuing launchpad |
-
----
-
-## Inter-Repo Architecture
-
-```
-shamrock-bail-portal-site    ←→    GAS Backend (Factory)
-        │                               │
-        │                    ┌───────────┼───────────┐
-        │                    │           │           │
-   shamrock-node-red    shamrock-leads    shamrock-telegram-app
-   (Ops Dashboard)      (Arrest Intel)    (Telegram Mini Apps)
-        │                    │                │
-   shamrock-bond-tracker     │                │
-   (GPS/Geo Tracking)       │                │
-        └──────── All flow through GAS doPost()/doGet() ────────┘
-```
-
-### The Shamrock Repos
-
-| Repo | Purpose | Status |
-|------|---------|--------|
-| `shamrock-bail-portal-site` | Wix Velo frontend + GAS backend (190+ files) | 🟢 Production |
-| `shamrock-leads` | 20-county arrest intelligence platform (Python, Docker, Hetzner VPS) | 🟢 Production |
-| `shamrock-bond-tracker` | Active bond GPS/geolocation tracker microservice (Hetzner VPS) | 🟢 Production |
-| `shamrock-node-red` | Ops Dashboard — 21 flow tabs, 64 crons, 836 nodes | 🟢 Production |
-| `shamrock-telegram-app` | Telegram Mini-Apps (Netlify PWA) | 🟢 Production |
 
 ---
 
 ## Security & Compliance
 
-- **PII Encryption**: All sensitive data encrypted at rest in Wix Collections.
+- **Role-Scoped Hydration**: Indemnitor ID scans never overwrite defendant data.
+- **PII Encryption**: Sensitive data encrypted at rest in Wix Collections.
 - **API Keys**: Never in frontend code. Managed via Wix Secrets Manager + GAS Script Properties.
-- **Webhook Auth**: HMAC verification on all Node-RED inbound endpoints.
 - **Audit Trails**: Historical provider records remain keyed by Case ID for compatibility. Active DocuSeal issuance and completion follow the Super CRM approval workflow; business events are logged to MongoDB via `MongoLogger.gs`.
 - **10DLC Compliance**: Twilio SMS follows carrier regulations. Communication preferences respected (`CommPrefsManager.js`).
 - **Idempotent Writes**: All data writes check for duplicates. `Booking_Number + County` is the dedup key.
 
 ---
 
-## Related Documents
-
-| Document | Purpose |
-|----------|---------|
-| [RULES.md](RULES.md) | Prime Directives, security rules, schema governance |
-| [AGENTS.md](AGENTS.md) | All 9 AI agent personas, prompts, and handoff patterns |
-| [OPERATIONS.md](OPERATIONS.md) | Voice AI, compliance, health monitoring, scraping, analytics |
-| [TOOLS.md](TOOLS.md) | MCP servers, agent skills, workflows, external services |
-| [USER.md](USER.md) | Brendan's preferences, priorities, working style |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Deep-dive system architecture with Mermaid diagrams |
-| [docs/CURRENT_PAPERWORK_ARCHITECTURE.md](docs/CURRENT_PAPERWORK_ARCHITECTURE.md) | Canonical DocuSeal-only signing boundary |
+*Maintained by Shamrock Engineering & AI Agents*

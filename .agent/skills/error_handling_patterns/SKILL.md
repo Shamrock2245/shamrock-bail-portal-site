@@ -28,7 +28,7 @@ return ContentService.createTextOutput(JSON.stringify({
 | :--- | :--- | :--- | :--- |
 | `AUTH_FAIL` | API Key Invalid | "Access Denied. Contact Support." | No |
 | `SCHEMA_MISMATCH` | Missing fields | "Form Error. Please refresh." | No |
-| `SIGNNOW_API_FAIL` | SignNow is down | "Document Service Busy. Retrying..." | Yes |
+| `DOCUSEAL_API_FAIL` | DocuSeal submission error | "Document Service Busy. Retrying..." | Yes |
 | `LOCK_TIMEOUT` | Simultaneous edits | "System Busy. Please submit again." | Yes |
 | `DRIVE_QUOTA` | Google Drive full | "Storage Error. Call Dispatch." | No |
 

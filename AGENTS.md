@@ -1,13 +1,14 @@
 # 🤖 AI Agent Handbook
 
-> **Last Updated:** 2026-07-10
-> **Status:** 🟢 9 Digital Employees Operational
+> **Last Updated:** 2026-08-21  
+> **Status:** 🟢 9 Digital Employees Operational  
+> **Doctrine:** The website is the clipboard. The backend is the brain.
 
-### Ecosystem non-negotiable — GAS Web App URL
+### Ecosystem non-negotiable — GAS Web App URL & DocuSeal Boundary
 
 - **Keep the GAS `/exec` URL stable.** Push code and re-deploy the **existing** deployment only (`clasp deploy -i <ID>` from `.gas-config.json`).
 - **Never** create a new Web App deployment that changes the URL without an explicit human order.
-- **If the URL must change:** stop and notify the human — they must update **Wix Secrets Manager** (`GAS_WEB_APP_URL` / `GAS_WEBHOOK_URL`) outside this repo. See `backend-gas/GAS_DEVELOPMENT_RULES.md` §0 and `shamrock-leads/docs/policies/gas-url-policy.md`.
+- **Signing Boundary**: DocuSeal is the sole active signing provider. Packets are created and issued strictly by authorized staff inside Super CRM (`shamrock-leads`). Wix, GAS, and Telegram act as secure launchpads and NEVER create DocuSeal submissions directly.
 
 ---
 
@@ -39,11 +40,11 @@ We treat AI agents as **Digital Employees** with specific roles, strict toolsets
 > You are dealing with people experiencing a stressful situation (a loved one is in jail).
 >
 > 1. Tone: Empathetic, professional, reassuring, incredibly fast.
-> 2. Goal: Stop them from shopping around. Get the defendant's name, county, and the caller's phone number.
+> 2. Goal: Stop them from shopping around. Guide them to scan their ID on their mobile device or tablet to start the paperwork instantly.
 > 3. PRICING RULE: NEVER quote a specific price. Always state: "Our bondsman will review the charges and explain all payment options to you shortly."
 > 4. Do not offer legal advice.
 
-**Flow:** Lead detected → Score ≥ 70 → AI generates personalized SMS → Slack alert to `#leads`.
+**Flow:** Lead detected → Score ≥ 70 → AI generates personalized mobile link → Slack alert to `#leads`.
 
 ---
 
@@ -99,7 +100,7 @@ Reads detailed background reports (TLO/IRB/iDiCore) for both Defendant and Indem
 
 > You are "The Closer". A client started an intake for a defendant but abandoned the form 30 minutes ago.
 > Given the defendant's name and county, craft a 1-2 sentence SMS reminder.
-> Tone: Helpful, urgent but not aggressive.
+> Tone: Helpful, urgent but not aggressive. Remind them they can finish by scanning their ID on their phone in 60 seconds.
 > Requirement: Include a placeholder `{{magic_link}}`.
 > Keep it under 160 characters.
 
@@ -112,14 +113,14 @@ Reads detailed background reports (TLO/IRB/iDiCore) for both Defendant and Indem
 **Two Paths:**
 
 - **Path A (Notify Bondsman):** Collect basics → log to ShannonIntake sheet → Slack alert.
-- **Path B (Send Paperwork):** Collect full info + email → trigger SignNow packet → text signing link via Twilio SMS during active call.
+- **Path B (Initiate Intake):** Collect full info + email → create intake record in Super CRM → send secure paperwork launchpad link via SMS. Staff validates bond details and releases DocuSeal packet.
 
 **Webhook Tools (8 total):**
 
 | Tool | Purpose | Returns Response |
 | ------ | --------- | ----------------- |
 | `calculate_premium` | Estimate bail bond premium | Yes |
-| `create_intake` | Create new intake case file in GAS | Yes |
+| `create_intake` | Create new intake case file in GAS / Super CRM | Yes |
 | `lookup_defendant` | Search defendant by name or booking # | Yes |
 | `send_payment_link` | Text SwipeSimple payment link to caller | No |
 | `schedule_callback` | Book callback time with bondsman | No |
@@ -134,135 +135,48 @@ Reads detailed background reports (TLO/IRB/iDiCore) for both Defendant and Indem
 - **Fillers**: Use natural transitions ("Got it.", "Okay.", "Let me check that.") to mask webhook latency.
 - **End of Turn Timeout**: 700ms–1000ms (stressed callers pause frequently).
 - **Interruption Sensitivity**: High — Shannon must stop speaking immediately if client talks.
-- **Latency Masking**: Acknowledge action first ("Hold on while I look that up..."), webhook must return within 5 seconds.
 - **Fallback**: If user asks for a human or gets angry, immediately trigger `transfer_to_bondsman`.
 
-**Knowledge Base:** RAG-indexed `docs/shannon-knowledge-base.txt` (67 FL counties, statutes 648/903, bond schedules, 17 FAQs, 8 paperwork descriptions).
-**Files:** `elevenlabs-init.js` (Edge Function), `send-paperwork.mjs`, `notify-bondsman.mjs` (Netlify), `ElevenLabs_WebhookHandler.js` + `SignNow_SendPaperwork.js` (GAS).
-
 ---
 
-### 🧠 Manus Brain (Telegram AI)
-
-Routes and processes all Telegram bot conversations using context-aware AI responses. Handles inline queries, callback routing, and conversational state management.
-
----
-
-### 🐕 The Watchdog (System Health)
-
-Runs 5-minute health checks across all endpoints via Node-RED. Monitors GAS bridge latency, scraper success rates, webhook deliverability, and Twilio SMS delivery.
-
----
-
-### 💰 Bounty Hunter (Lead Surfacing)
-
-Node-RED dashboard widget that filters the live arrest feed for unposted bonds >$2,500. Surfaces high-value opportunities to staff in real-time.
-
----
-
-## 3. Agent Handoffs & Context Variables
-
-Agents are not monolithic. They use **handoffs** to pass the baton:
-
-```text
-Client contacts us → The Concierge captures name + county + phone
-    → transfer_to_clerk(defendant_name, county)
-        → The Clerk scrapes jail roster + creates Case ID
-            → transfer_to_analyst(case_id)
-                → The Analyst scores risk (0-100)
-                    → if high-risk: Slack human approval gate
-                    → if approved: SignNow packet generated
-```
-
-**Context Variables:** The `Case ID` is the session key that maintains statefulness across the entire pipeline. All agents read and write to the same case record.
-
----
-
-## 4. Agent Personas for Code Tasks
+## 3. Agent Personas for Code Tasks
 
 When working on the codebase, adopt these lenses:
 
-### 🎨 `@velo-expert` (Frontend)
+### 📱 `@paperwork-clipboard` (Intake & Signing Shell)
+- **Role:** Owns `/portal-start`, mobile/tablet ID scanning, Cloud Vision OCR hydration, canonical schema mapping, and `SigningLightbox`.
+- **Rules:** Role-scoped ID hydration (cosigner DL never overwrites defendant identity), delta-only fields, canonical person/case mapping (surety-agnostic), no direct DocuSeal submission creation in client code.
 
-- **Trigger:** "Fix the button," "Make it look better," "Add a field."
-- **Rules:** Ghost ID Check (verify against `docs/ELEMENT-ID-CHEATSHEET.md`), use `safeGetValue()` and `safeOnClick()` wrappers, ensure touch targets >44px.
+### 🎨 `@studio-translator` (Wix Studio Layout & IA)
+- **Role:** Translates Wix Editor pages into modern Wix Studio responsive layouts with fluid typography, container queries, and the 3-tier Expansion IA.
+- **Rules:** Preserve all Velo backend modules; SWFL Fort Myers HQ dominance on homepage/NAP; multi-state routes in `/bail-bonds/:state/:county` without genericizing the homepage.
 
-### ⚙️ `@gas-integrator` (Backend)
-
-- **Trigger:** "It's not syncing," "PDF is wrong," "Update the bridge."
-- **Tool:** Use `wix_gas_bridge_integrity` skill on error.
-- **Rules:** Idempotent syncs (check `caseId` first), secrets in Wix Secrets Manager only, extensive `console.log` for Stackdriver tracing.
+### ⚙️ `@gas-integrator` (Backend & Automation)
+- **Role:** Maintains GAS endpoints, Super CRM bridge, and webhook routers.
+- **Rules:** Idempotent syncs (check `caseId` first), secrets in Wix Secrets Manager / Script Properties only, keep GAS `/exec` URL stable.
 
 ### ⚖️ `@legal-compliance` (Audit)
-
-- **Trigger:** "Review this," "Is it safe?", "Handoff."
-- **Rules:** Sacred schemas (don't rename IntakeQueue fields), redact PII in logs.
+- **Role:** Ensures 10DLC compliance, PII redaction, and strict adherence to Florida Chapter 648/903 surety statutes.
 
 ---
 
-## 5. Lead Scoring ("The Secret Sauce")
-
-Leads are qualified based on a score of **≥ 70** (Hot):
-
-- **Bond Amount**: $500+ (+30), $1,500+ (+50 total)
-- **Recency**: Arrest <1 day (+10), <2 days (+20)
-- **Charges**: Serious keywords (Battery, DUI, Theft, Domestic) (+20)
-- **Disqualifiers**: Status = "Released" or Bond = $0 → **Disqualified**
-
----
-
-## 6. Florida Premium Calculation
-
-- **$100 per charge minimum** — always charged
-- **10% of bail face amount** — if bail ≥ $1,000 (use whichever is greater)
-- **$125 transfer fee** — for bonds outside Lee & Charlotte County
-- **Transfer fee waived** — for bonds >$25,000 OR Lee/Charlotte County
-- Logic: `Telegram_InlineQuote.js` → `calculatePremium()`
-
----
-
-## 7. Human-in-the-Loop Safety Gates
-
-Operations involving financial risk or legal compliance are protected:
-
-- **Read-Only by Default**: The Clerk and Investigator extract data but don't execute real-world actions.
-- **Safe Outputs**: Actions passed as structured JSON (prevents prompt injection).
-- **Human Approval Gates**: High-risk cases (score <50) trigger Slack interactive message: *"Case #1234 requires approval. Flight Risk: 82. [APPROVE] / [DENY]"*. Only human interaction unlocks the final step.
-- **Escalation Protocol**: If caller asks for a human, gets angry, or asks a legal question → "I am an automated assistant. Let me grab the on-call bondsman for you." → Warm-transfer via ElevenLabs or Slack `#intake-alerts`.
-
----
-
-## 8. GAS MCP Server (Backend AI Bridge)
-
-The custom MCP Server in `MCPServer.js` allows AI agents to drive backend tools:
-
-- `get_pending_intakes`: Fetch the intake queue
-- `sync_case_data`: Push data back to Wix CMS
-
-**Best Practice:** Keep MCP "dumb" — expose atomic tools only. Business logic belongs in the agent that calls it, not in the server.
-
----
-
-## 9. Agent Pipeline Flow
+## 4. Agent Handoffs & Pipeline Flow
 
 ```mermaid
 graph TD
-    A[New Lead / Call] -->|Data Entry| B(The Clerk)
-    B -->|Clean Data| C{The Analyst}
-    C -->|Score > 80| D[The Concierge]
-    D -->|Slack Alert| E[Staff Notification]
-    D -->|SMS Intro| F[Customer]
+    A[New Lead / Call / Telegram] -->|Data Entry| B(The Clerk / Shannon)
+    B -->|Create Case ID & Clean Data| C{The Analyst}
+    C -->|Score > 80| D[The Concierge / Mobile Intake Launchpad]
+    D -->|Client Scans ID & Reviews Gaps| E[Super CRM Deferred Intake Record]
     
-    C -->|Score < 50| G[Manager Review]
-    G -->|Need More Info?| H(The Investigator)
+    C -->|Score < 50| F[Manager Review & Human Approval Gate]
+    F -->|Approved| E
     
-    I[Defendant Released] -->|Weekly Check-In| J(The Monitor / Watchdog)
-    J -->|Red Flag?| K[Slack Alert: URGENT]
-    
-    L[Abandoned Intake] -->|30 min timeout| M(The Closer)
-    M -->|SMS Follow-up| F
+    E -->|Staff Matches Case, Carrier & POA| G[Staff Issues DocuSeal Submission in Super CRM]
+    G -->|Staff-Approved Session Released| H[Client Signs on Studio / Mobile / Tablet]
+    H -->|Signed Packet Complete| I[Drive Archive & Bond Dispatched]
 ```
 
 ---
 
-Consolidated from: IDENTITY.md, AI_PROMPTS.md, AGENT_PATTERNS.md, MCP_AI_GUIDE.md, docs/AGENTS.md, docs/AI_CAPABILITIES.md — March 17, 2026
+*Maintained by Shamrock Engineering & AI Agents*
