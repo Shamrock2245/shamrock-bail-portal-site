@@ -26,6 +26,8 @@ import { validateCustomSession } from 'backend/portal-auth';
 import { submitIntakeForm } from 'backend/intakeQueue';
 import { persistCanonicalCaseToCms } from 'backend/canonical-sync-service';
 import { lookupDefendantCaseFacts } from 'backend/case-facts-hydrator';
+import { processIdPhotoOcr } from 'backend/id-ocr-service';
+import { saveWizardDraft } from 'backend/wizard-draft-service';
 import { renderPaperworkPreview } from 'public/paperwork-preview-studio';
 import {
     createCanonicalPerson,
@@ -91,6 +93,7 @@ $w.onReady(async function () {
     setupStep3CaseDetails();
     setupStep4MissingDelta();
     setupStep5Prepare();
+    setupCustomElementBridge();
 
     // 4. If role is not specified in query, show Step 0; else jump to Step 1
     if (!query.role) {
@@ -645,4 +648,66 @@ function updatePageSEO() {
         { name: "description", content: "Fast mobile bail intake. Scan ID, verify case details, and launch electronic signing in seconds." },
         { name: "robots", content: "noindex, nofollow" }
     ]);
+}
+
+function setupCustomElementBridge() {
+    try {
+        const ce = $w('#intakeWizardCustomElement') || $w('#customElement1');
+        if (!ce) return;
+
+        console.log("⚡ [Portal Start] Custom Element <shamrock-intake-wizard> detected — initializing bridge");
+
+        // 1. Listen for OCR Requests
+        ce.on('request-id-ocr', async (event) => {
+            const { base64Image, role, fileName } = event.detail || {};
+            try {
+                const ocrResult = await processIdPhotoOcr({
+                    base64Image,
+                    side: 'front',
+                    signerRole: role || activeRole,
+                    fileName
+                });
+
+                if (ocrResult && ocrResult.success) {
+                    hydratePersonFromOcr(activePerson, ocrResult.extractedData);
+                    ce.setAttribute('ocr-status', 'success');
+                }
+            } catch (err) {
+                console.error("[X] Custom Element OCR bridge failed:", err);
+            }
+        });
+
+        // 2. Listen for Step Changes / Auto-Save
+        ce.on('wizard-step-changed', async (event) => {
+            const { step, state } = event.detail || {};
+            try {
+                if (state && state.caseId) {
+                    await saveWizardDraft({
+                        caseId: state.caseId,
+                        role: state.role,
+                        currentStep: step,
+                        canonicalCase: state,
+                        contactIdentifier: state.person?.phone || state.person?.email || ''
+                    });
+                }
+            } catch (err) {
+                console.warn("[!] Draft auto-save non-fatal failure:", err);
+            }
+        });
+
+        // 3. Listen for Wizard Completion -> Launch DocuSeal / Super CRM
+        ce.on('wizard-completed', async (event) => {
+            const { state } = event.detail || {};
+            try {
+                await persistCanonicalCaseToCms(canonicalCase || state);
+                wixWindow.openLightbox('SigningLightbox', {
+                    caseId: state?.caseId || canonicalCase?.caseId,
+                    signerRole: state?.role || activeRole,
+                    sessionToken
+                });
+            } catch (err) {
+                console.error("[X] Wizard completion sync error:", err);
+            }
+        });
+    } catch (e) {}
 }
