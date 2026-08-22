@@ -23,7 +23,7 @@
  */
 
 import { getConfig } from 'backend/config-loader';
-import { getSecret } from 'backend/secretsManager';
+import { getSecureSecret } from 'backend/secretsManager';
 
 // ============================================================================
 // CONFIGURATION
@@ -117,7 +117,7 @@ export async function getPortalBaseUrl() {
 
     // Layer 1: Try Secrets Manager
     try {
-        const secretUrl = await getSecret('PORTAL_BASE_URL');
+        const secretUrl = await getSecureSecret('PORTAL_BASE_URL');
         if (secretUrl) {
             sources.push({ source: 'Secrets Manager', url: secretUrl });
         }

@@ -1,0 +1,14 @@
+# ESLint ignore patterns
+node_modules/
+backend-gas/
+docs/
+tmp_scripts/
+scripts/
+data_imports/
+cloud-functions/
+cms-templates/
+netlify-embeds/
+.wix/
+.agent/
+.agents/
+.shared/

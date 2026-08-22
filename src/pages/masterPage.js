@@ -281,7 +281,7 @@ function setupFooterDynamic() {
         }
     } catch (e) { /* non-fatal */ }
 
-    // 2. Fix footer county directory link → homepage county selector
+    // 2. Fix footer county directory links → homepage county selector
     try {
         const countyDirLink = $w('#footerLinkCounties');
         if (countyDirLink && countyDirLink.id) {
@@ -289,12 +289,33 @@ function setupFooterDynamic() {
         }
     } catch (e) { /* non-fatal */ }
 
-    // 3. Fix any "Florida County Directory" text links
     try {
         const dirLink = $w('#footerLinkDirectory');
         if (dirLink && dirLink.id) {
             dirLink.link = '/#counties';
         }
+    } catch (e) { /* non-fatal */ }
+
+    // 3. Fix footer Terms & Conditions links → /terms-and-conditions
+    try {
+        const termsLinkIds = ['#footerLinkTerms', '#footerTerms', '#linkTerms', '#termsLink'];
+        termsLinkIds.forEach(id => {
+            try {
+                const el = $w(id);
+                if (el && el.id) el.link = '/terms-and-conditions';
+            } catch (err) {}
+        });
+    } catch (e) { /* non-fatal */ }
+
+    // 4. Fix footer Privacy Policy links → /privacy-policy
+    try {
+        const privacyLinkIds = ['#footerLinkPrivacy', '#footerPrivacy', '#linkPrivacy', '#privacyLink'];
+        privacyLinkIds.forEach(id => {
+            try {
+                const el = $w(id);
+                if (el && el.id) el.link = '/privacy-policy';
+            } catch (err) {}
+        });
     } catch (e) { /* non-fatal */ }
 }
 

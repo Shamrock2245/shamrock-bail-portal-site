@@ -24,21 +24,31 @@ import { sendBlueBubblesMessage } from 'backend/bluebubbles';
  * @param {string} params.caseId - Case ID
  * @param {string} params.role - 'defendant' | 'indemnitor' | 'coindemnitor'
  * @param {string} [params.signUrl] - Direct signing URL
- * @returns {Promise<{valid: boolean, expired?: boolean, signingUrl?: string, phone?: string}>}
+ * @returns {Promise<{valid: boolean, expired?: boolean, signingUrl?: string, phone?: string, error?: string}>}
  */
 export async function validateSigningSession(params) {
-    const { caseId, role = 'indemnitor', signUrl } = params;
+    const { caseId, role = 'indemnitor', signUrl } = params || {};
 
     try {
-        if (signUrl && !signUrl.includes('expired')) {
+        let isDirectUrlValid = false;
+        if (signUrl && typeof signUrl === 'string') {
+            const trimmed = signUrl.trim();
+            if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
+                if (!trimmed.toLowerCase().includes('expired')) {
+                    isDirectUrlValid = true;
+                }
+            }
+        }
+
+        if (!caseId && isDirectUrlValid) {
             return { valid: true, signingUrl: signUrl };
         }
 
         if (!caseId) {
-            return { valid: false, error: 'NO_CASE_ID' };
+            return { valid: false, expired: true, error: 'NO_CASE_ID' };
         }
 
-        // Query Cases CMS
+        // 1. Query Cases CMS
         const caseQuery = await wixData.query(COLLECTIONS.CASES || 'Cases')
             .eq('caseId', caseId)
             .limit(1)
@@ -46,7 +56,7 @@ export async function validateSigningSession(params) {
 
         if (caseQuery.items.length > 0) {
             const c = caseQuery.items[0];
-            const sessionExpired = c.status === 'expired' || c.signingLinkExpired;
+            const sessionExpired = c.status === 'expired' || c.signingLinkExpired || c.status === 'void';
             
             if (sessionExpired) {
                 return {
@@ -58,17 +68,37 @@ export async function validateSigningSession(params) {
 
             return {
                 valid: true,
-                signingUrl: c.signingUrl || signUrl || '',
+                signingUrl: c.signingUrl || (isDirectUrlValid ? signUrl : ''),
                 signingSessionId: c.signingSessionId || '',
                 phone: c.indemnitorPhone || c.defendantPhone || ''
             };
         }
 
-        return { valid: false, expired: true };
+        // 2. Query IntakeQueue CMS fallback
+        const intakeQuery = await wixData.query(COLLECTIONS.INTAKE_QUEUE || 'IntakeQueue')
+            .eq('caseId', caseId)
+            .limit(1)
+            .find({ suppressAuth: true });
+
+        if (intakeQuery.items.length > 0) {
+            const item = intakeQuery.items[0];
+            return {
+                valid: true,
+                signingUrl: item.signingUrl || (isDirectUrlValid ? signUrl : ''),
+                phone: item.phone || item.indemnitorPhone || item.defendantPhone || ''
+            };
+        }
+
+        // If direct URL is valid, allow launchpad to proceed
+        if (isDirectUrlValid) {
+            return { valid: true, signingUrl: signUrl };
+        }
+
+        return { valid: false, expired: true, error: 'CASE_NOT_FOUND' };
 
     } catch (e) {
         console.warn("⚠️ [Signing Session] Validation warning:", e.message);
-        return { valid: false, expired: true };
+        return { valid: false, expired: true, error: e.message };
     }
 }
 
@@ -81,7 +111,7 @@ export async function validateSigningSession(params) {
  * @returns {Promise<{success: boolean, message: string}>}
  */
 export async function requestFreshSigningLink(params) {
-    const { caseId, role = 'indemnitor', phone } = params;
+    const { caseId, role = 'indemnitor', phone } = params || {};
 
     if (!phone && !caseId) {
         return { success: false, message: 'Phone number or Case ID is required.' };
@@ -123,17 +153,23 @@ export async function requestFreshSigningLink(params) {
  * Record signature completion event & dispatch SMS confirmation receipt
  * @param {Object} params
  * @param {string} params.caseId - Case ID
- * @param {string} params.role - Signer role
+ * @param {string} params.role - Signer role ('defendant' | 'indemnitor' | 'coindemnitor')
  * @param {string} [params.signerPhone] - Signer phone
- * @returns {Promise<{success: boolean}>}
+ * @param {string} [params.sessionToken] - Active session token
+ * @param {string} [params.submissionId] - DocuSeal submission ID
+ * @returns {Promise<{success: boolean, error?: string}>}
  */
 export async function recordSignatureCompletion(params) {
-    const { caseId, role = 'indemnitor', signerPhone } = params;
+    const { caseId, role = 'indemnitor', signerPhone, sessionToken, submissionId } = params || {};
+
+    if (!caseId) {
+        return { success: false, error: 'MISSING_CASE_ID' };
+    }
 
     try {
         console.log(`🎉 [Signing Complete] Signature captured for Case ${caseId} (${role})`);
 
-        // Update Case record
+        // 1. Update Case record in CMS
         const caseQuery = await wixData.query(COLLECTIONS.CASES || 'Cases')
             .eq('caseId', caseId)
             .limit(1)
@@ -144,17 +180,37 @@ export async function recordSignatureCompletion(params) {
             item.status = 'signed';
             item.lastSignedRole = role;
             item.signedAt = new Date();
+            if (submissionId) item.docusealSubmissionId = submissionId;
             await wixData.update(COLLECTIONS.CASES || 'Cases', item, { suppressAuth: true });
         }
 
-        // Notify GAS & Super CRM
+        // 2. Update IntakeQueue record if present
+        try {
+            const intakeQuery = await wixData.query(COLLECTIONS.INTAKE_QUEUE || 'IntakeQueue')
+                .eq('caseId', caseId)
+                .limit(1)
+                .find({ suppressAuth: true });
+
+            if (intakeQuery.items.length > 0) {
+                const intakeItem = intakeQuery.items[0];
+                intakeItem.status = 'signed';
+                intakeItem.signedAt = new Date();
+                await wixData.update(COLLECTIONS.INTAKE_QUEUE || 'IntakeQueue', intakeItem, { suppressAuth: true });
+            }
+        } catch (intakeErr) {
+            console.warn("Intake status update non-fatal:", intakeErr.message);
+        }
+
+        // 3. Notify GAS & Super CRM
         await callGasAction('notifySigningCompleted', {
             caseId,
             role,
-            signerPhone
-        });
+            signerPhone,
+            sessionToken,
+            submissionId
+        }).catch(gasErr => console.warn("GAS notification non-fatal:", gasErr.message));
 
-        // Send BlueBubbles Receipt
+        // 4. Send BlueBubbles Receipt
         if (signerPhone) {
             await sendBlueBubblesMessage({
                 to: signerPhone,
@@ -165,8 +221,8 @@ export async function recordSignatureCompletion(params) {
         return { success: true };
 
     } catch (err) {
-        console.warn("⚠️ [Signing Complete] Non-fatal logging warning:", err.message);
-        return { success: true };
+        console.error("❌ [Signing Complete] Error updating case status:", err);
+        return { success: false, error: err.message };
     }
 }
 
@@ -175,3 +231,4 @@ export default {
     requestFreshSigningLink,
     recordSignatureCompletion
 };
+

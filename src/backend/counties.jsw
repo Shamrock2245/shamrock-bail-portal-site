@@ -8,6 +8,8 @@
  * 4. Add error handling
  */
 
+import allCountiesData from 'backend/data/allFloridaCounties.json';
+
 // Shim for in-memory caching since wix-storage-backend is not available
 const _cache = {};
 const memory = {
@@ -202,7 +204,65 @@ async function fetchCountiesFromDatabase() {
     return getStaticCounties();
 }
 
-import allCountiesData from 'backend/data/allFloridaCounties.json';
+/**
+ * Alias for getCounties for API consistency
+ */
+export async function getAllCounties() {
+    return getCounties();
+}
+
+/**
+ * Get featured priority counties (SWFL primary market + major hubs)
+ */
+export async function getFeaturedCounties() {
+    const featuredSlugs = ['lee', 'collier', 'charlotte', 'desoto', 'hendry', 'manatee', 'sarasota', 'hillsborough', 'miami-dade', 'orange'];
+    const counties = await getCounties();
+    return counties.filter(c => featuredSlugs.includes(c.slug));
+}
+
+/**
+ * Search counties by query (name, slug, region, cities, countySeat)
+ * @param {string} query - Search term
+ * @returns {Promise<Array>}
+ */
+export async function searchCounties(query) {
+    if (!query || typeof query !== 'string') return getCounties();
+    const q = query.toLowerCase().trim();
+    const counties = await getCounties();
+    const fullDataList = (allCountiesData && allCountiesData.counties) || [];
+
+    return counties.filter(c => {
+        if (c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q) || (c.region && c.region.toLowerCase().includes(q))) {
+            return true;
+        }
+        const raw = fullDataList.find(r => (r.slug || '').toLowerCase().replace(/-county$/i, '') === c.slug);
+        if (raw) {
+            if (raw.countySeat && raw.countySeat.toLowerCase().includes(q)) return true;
+            if (Array.isArray(raw.cities) && raw.cities.some(city => city.toLowerCase().includes(q))) return true;
+        }
+        return false;
+    });
+}
+
+/**
+ * Get summary statistics for Florida counties
+ * @returns {Promise<Object>}
+ */
+export async function getCountyStats() {
+    const counties = await getCounties();
+    const regions = {};
+    counties.forEach(c => {
+        const r = c.region || 'other';
+        regions[r] = (regions[r] || 0) + 1;
+    });
+
+    return {
+        totalCounties: counties.length,
+        totalCoverage: 67,
+        primaryRegion: 'Southwest Florida',
+        regions
+    };
+}
 
 /**
  * Get static county data (optimized for performance).

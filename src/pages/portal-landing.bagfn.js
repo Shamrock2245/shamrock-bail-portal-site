@@ -76,8 +76,13 @@ $w.onReady(async function () {
         clearSessionToken();
     }
 
-    // -- Default: Show Login Surface -------------------------------------------
-    await showConsentIfNeeded();
+    // -- Default: Show Login Surface (Enforce Consent Gate) -------------------
+    const hasConsent = await showConsentIfNeeded();
+    if (!hasConsent && local.getItem('shamrock_sms_consent') !== 'true') {
+        showConsentRequiredState(countyParam);
+        return;
+    }
+
     setupLoginForm(countyParam);
     setupRoleSelectionCards(countyParam);
     setupTelegramWidget(countyParam);
@@ -304,15 +309,41 @@ async function handleGetStarted(countyParam) {
 
 async function showConsentIfNeeded() {
     try {
-        if (wixWindow.rendering.env !== 'browser') return;
-        if (local.getItem('shamrock_sms_consent') === 'true') return;
+        if (wixWindow.rendering.env !== 'browser') return true;
+        if (local.getItem('shamrock_sms_consent') === 'true') return true;
 
         const consentResult = await wixWindow.openLightbox('ConsentLightbox');
         if (consentResult && consentResult.success) {
             local.setItem('shamrock_sms_consent', 'true');
             local.setItem('shamrock_consent_timestamp', new Date().toISOString());
+            return true;
         }
-    } catch (e) { /* non-blocking */ }
+        return false;
+    } catch (e) {
+        console.warn("⚠️ Consent lightbox handling warning:", e?.message);
+        return false;
+    }
+}
+
+function showConsentRequiredState(countyParam) {
+    try {
+        showMessage("⚠️ Electronic & SMS consent is required to access bail paperwork and portal services.", "error");
+        const button = $w('#getStartedBtn') || $w('#btnLogin');
+        if (button) {
+            button.label = "Review & Accept Consent";
+            button.onClick(async () => {
+                const granted = await showConsentIfNeeded();
+                if (granted || local.getItem('shamrock_sms_consent') === 'true') {
+                    button.label = "Get Started →";
+                    showMessage("✓ Consent recorded. You may now continue.", "success");
+                    setupLoginForm(countyParam);
+                    setupRoleSelectionCards(countyParam);
+                    setupTelegramWidget(countyParam);
+                    setupAIConcierge();
+                }
+            });
+        }
+    } catch (e) {}
 }
 
 function setupTelegramWidget(countyParam) {

@@ -35,7 +35,7 @@ function buildPaperworkUrl(ctx) {
     const phone = member.phone || ctx.phone || '';
     const token = ctx.sessionToken || ctx.st || '';
     const packet = ctx.packetId || ctx.caseId || '';
-    const role = member.role || ctx.role || 'indemnitor';
+    const role = member.role || ctx.role || ctx.signerRole || 'indemnitor';
 
     if (phone) params.set('phone', String(phone).replace(/\D/g, ''));
     if (token) params.set('st', token);
@@ -50,9 +50,13 @@ $w.onReady(async () => {
     console.log("✍️ [Signing Launchpad] Initializing mobile thumb signing UX...");
 
     contextData = wixWindow.lightbox.getContext() || {};
-    const role = (contextData.role || (contextData.memberData && contextData.memberData.role) || 'indemnitor').toLowerCase();
+    const role = (contextData.role || contextData.signerRole || (contextData.memberData && contextData.memberData.role) || 'indemnitor').toLowerCase();
     const caseId = contextData.packetId || contextData.caseId || '';
     const clientPhone = contextData.phone || (contextData.memberData && contextData.memberData.phone) || '';
+
+    // Ensure role is preserved back in contextData
+    contextData.role = role;
+    contextData.signerRole = role;
 
     setupUI(role, caseId);
     setupEventHandlers(caseId, role, clientPhone);
@@ -92,6 +96,7 @@ function mountSigningFrame(ctx) {
     if (!frame) return;
 
     const member = ctx.memberData || {};
+    const effectiveRole = member.role || ctx.role || ctx.signerRole || 'indemnitor';
     const payload = {
         type: 'shamrock-paperwork-open',
         url,
@@ -99,7 +104,8 @@ function mountSigningFrame(ctx) {
         sessionToken: ctx.sessionToken || ctx.st || '',
         signUrl: ctx.signUrl || '',
         caseId: ctx.packetId || ctx.caseId || '',
-        role: member.role || ctx.role || 'indemnitor'
+        role: effectiveRole,
+        signerRole: effectiveRole
     };
 
     try { frame.src = url; } catch (e) {}
@@ -129,7 +135,7 @@ function mountSigningFrame(ctx) {
 
             // Completion Event
             if (msg.type === 'shamrock-paperwork-complete' || msg.type === 'docuseal-completed') {
-                handleSigningComplete(ctx);
+                handleSigningComplete(ctx, msg);
             }
 
             if (msg.type === 'shamrock-paperwork-close') {
@@ -149,7 +155,7 @@ function updateProgressUI(current, total) {
     } catch (e) {}
 }
 
-async function handleSigningComplete(ctx) {
+async function handleSigningComplete(ctx, msgData = {}) {
     isCompleted = true;
     safeHide('#signingFrame');
     safeHide('#boxSigningControls');
@@ -158,10 +164,16 @@ async function handleSigningComplete(ctx) {
     safeSetText('#successTitle', '✅ Paperwork Signed & Locked!');
     safeSetText('#successMessage', 'Your signature has been verified and transmitted to the Shamrock dispatch desk. An SMS receipt has been sent to your phone.');
 
+    const role = (ctx.role || ctx.signerRole || (ctx.memberData && ctx.memberData.role) || 'indemnitor').toLowerCase();
+    const caseId = ctx.packetId || ctx.caseId || '';
+    const signerPhone = ctx.phone || (ctx.memberData && ctx.memberData.phone) || '';
+
     await recordSignatureCompletion({
-        caseId: ctx.packetId || ctx.caseId,
-        role: ctx.role || 'indemnitor',
-        signerPhone: ctx.phone || (ctx.memberData && ctx.memberData.phone)
+        caseId,
+        role,
+        signerPhone,
+        sessionToken: ctx.sessionToken || ctx.st || '',
+        submissionId: msgData?.submissionId || msgData?.token || ''
     });
 }
 

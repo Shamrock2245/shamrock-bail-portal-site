@@ -650,12 +650,70 @@ function updatePageSEO() {
     ]);
 }
 
+function mergeWizardStateIntoCanonical(cCase, aPerson, wizardState) {
+    if (!wizardState) return;
+    const p = wizardState.person || {};
+    const cf = wizardState.caseFacts || {};
+
+    if (p.firstName) aPerson.firstName = p.firstName;
+    if (p.lastName) aPerson.lastName = p.lastName;
+    if (p.middleName) aPerson.middleName = p.middleName;
+    if (p.dob) aPerson.dob = p.dob;
+    if (p.dlNumber) aPerson.dlNumber = p.dlNumber;
+    if (p.dlState) aPerson.dlState = p.dlState;
+    if (p.phone) aPerson.phone = p.phone;
+    if (p.email) aPerson.email = p.email;
+    if (p.street) aPerson.address = { ...aPerson.address, street: p.street };
+    if (p.city) aPerson.address = { ...aPerson.address, city: p.city };
+    if (p.state) aPerson.address = { ...aPerson.address, state: p.state };
+    if (p.zip) aPerson.address = { ...aPerson.address, zip: p.zip };
+    if (p.employer) aPerson.employer = { ...aPerson.employer, name: p.employer };
+    if (p.monthlyIncome) aPerson.employer = { ...aPerson.employer, monthlyIncome: p.monthlyIncome };
+    if (p.references) aPerson.references = p.references;
+    if (p.relationshipToDefendant) aPerson.relationshipToDefendant = p.relationshipToDefendant;
+
+    const r = (wizardState.role || activeRole || 'indemnitor').toLowerCase();
+    if (r === 'defendant') {
+        cCase.defendant = aPerson;
+    } else if (r === 'coindemnitor') {
+        cCase.coIndemnitor = aPerson;
+    } else {
+        cCase.indemnitor = aPerson;
+    }
+
+    if (wizardState.county) cCase.county = wizardState.county;
+    if (cf.defendantName && (!cCase.defendant || !cCase.defendant.firstName)) {
+        const parts = cf.defendantName.trim().split(/\s+/);
+        if (!cCase.defendant) cCase.defendant = createCanonicalPerson('defendant');
+        cCase.defendant.firstName = parts[0] || '';
+        cCase.defendant.lastName = parts.slice(1).join(' ') || '';
+    }
+    if (cf.bookingNumber) cCase.bookingNumber = cf.bookingNumber;
+    if (cf.facility) cCase.facility = cf.facility;
+    if (cf.courtDate) cCase.courtDate = cf.courtDate;
+    if (cf.totalBond) cCase.totalBond = cf.totalBond;
+    if (Array.isArray(cf.charges) && cf.charges.length > 0) {
+        cCase.charges = cf.charges;
+    }
+}
+
 function setupCustomElementBridge() {
     try {
         const ce = $w('#intakeWizardCustomElement') || $w('#customElement1');
         if (!ce) return;
 
         console.log("⚡ [Portal Start] Custom Element <shamrock-intake-wizard> detected — initializing bridge");
+
+        // Sync canonical caseId, activeRole, and selectedCounty down to custom element
+        if (canonicalCase && canonicalCase.caseId) {
+            try {
+                ce.setAttribute('case-id', canonicalCase.caseId);
+                ce.setAttribute('role', activeRole);
+                ce.setAttribute('county', selectedCounty);
+            } catch (attrErr) {
+                console.warn("[!] Could not set initial custom element attributes:", attrErr);
+            }
+        }
 
         // 1. Listen for OCR Requests
         ce.on('request-id-ocr', async (event) => {
@@ -670,10 +728,18 @@ function setupCustomElementBridge() {
 
                 if (ocrResult && ocrResult.success) {
                     hydratePersonFromOcr(activePerson, ocrResult.extractedData);
-                    ce.setAttribute('ocr-status', 'success');
+                    try {
+                        ce.setAttribute('ocr-data', JSON.stringify(ocrResult.extractedData || {}));
+                        ce.setAttribute('ocr-status', 'success');
+                    } catch (e) {
+                        console.warn("[!] Could not push OCR data attribute to custom element:", e);
+                    }
+                } else {
+                    try { ce.setAttribute('ocr-status', 'error'); } catch (e) {}
                 }
             } catch (err) {
                 console.error("[X] Custom Element OCR bridge failed:", err);
+                try { ce.setAttribute('ocr-status', 'error'); } catch (e) {}
             }
         });
 
@@ -681,13 +747,17 @@ function setupCustomElementBridge() {
         ce.on('wizard-step-changed', async (event) => {
             const { step, state } = event.detail || {};
             try {
-                if (state && state.caseId) {
+                const effectiveCaseId = state?.caseId || canonicalCase?.caseId;
+                if (effectiveCaseId) {
+                    if (state && state.person) {
+                        mergeWizardStateIntoCanonical(canonicalCase, activePerson, state);
+                    }
                     await saveWizardDraft({
-                        caseId: state.caseId,
-                        role: state.role,
+                        caseId: effectiveCaseId,
+                        role: state?.role || activeRole,
                         currentStep: step,
-                        canonicalCase: state,
-                        contactIdentifier: state.person?.phone || state.person?.email || ''
+                        canonicalCase: canonicalCase,
+                        contactIdentifier: state?.person?.phone || state?.person?.email || activePerson?.phone || ''
                     });
                 }
             } catch (err) {
@@ -699,10 +769,15 @@ function setupCustomElementBridge() {
         ce.on('wizard-completed', async (event) => {
             const { state } = event.detail || {};
             try {
-                await persistCanonicalCaseToCms(canonicalCase || state);
+                if (state && state.person) {
+                    mergeWizardStateIntoCanonical(canonicalCase, activePerson, state);
+                }
+                await persistCanonicalCaseToCms(canonicalCase);
+                const targetRole = (state?.role || activeRole || 'indemnitor').toLowerCase();
                 wixWindow.openLightbox('SigningLightbox', {
-                    caseId: state?.caseId || canonicalCase?.caseId,
-                    signerRole: state?.role || activeRole,
+                    caseId: canonicalCase.caseId,
+                    role: targetRole,
+                    signerRole: targetRole,
                     sessionToken
                 });
             } catch (err) {
@@ -711,3 +786,4 @@ function setupCustomElementBridge() {
         });
     } catch (e) {}
 }
+

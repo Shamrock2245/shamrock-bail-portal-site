@@ -3,13 +3,14 @@
  * Web module for exposing county data to frontend
  */
 
-import { getAllCounties, getFeaturedCounties, getCountyBySlug, searchCounties, getCountyStats } from 'backend/counties';
+import { Permissions, webMethod } from 'wix-web-module';
+import { getAllCounties, getFeaturedCounties, getCountyBySlug, searchCounties, getCountyStats } from 'backend/counties.jsw';
 
 /**
  * Get all counties (public endpoint)
  * @returns {Promise<Object>} Response with counties array
  */
-export async function get_allCounties() {
+export const get_allCounties = webMethod(Permissions.Anyone, async function () {
   try {
     const counties = await getAllCounties();
     return {
@@ -24,13 +25,13 @@ export async function get_allCounties() {
       error: error.message
     };
   }
-}
+});
 
 /**
  * Get featured counties (public endpoint)
  * @returns {Promise<Object>} Response with featured counties array
  */
-export async function get_featuredCounties() {
+export const get_featuredCounties = webMethod(Permissions.Anyone, async function () {
   try {
     const counties = await getFeaturedCounties();
     return {
@@ -45,14 +46,14 @@ export async function get_featuredCounties() {
       error: error.message
     };
   }
-}
+});
 
 /**
  * Get county by slug (public endpoint)
  * @param {string} slug - County slug
  * @returns {Promise<Object>} Response with county object
  */
-export async function get_countyBySlug(slug) {
+export const get_countyBySlug = webMethod(Permissions.Anyone, async function (slug) {
   try {
     const county = await getCountyBySlug(slug);
     return {
@@ -66,14 +67,14 @@ export async function get_countyBySlug(slug) {
       error: error.message
     };
   }
-}
+});
 
 /**
  * Search counties (public endpoint)
  * @param {string} searchTerm - Search term
  * @returns {Promise<Object>} Response with matching counties
  */
-export async function post_searchCounties(searchTerm) {
+export const post_searchCounties = webMethod(Permissions.Anyone, async function (searchTerm) {
   try {
     const counties = await searchCounties(searchTerm);
     return {
@@ -89,13 +90,13 @@ export async function post_searchCounties(searchTerm) {
       error: error.message
     };
   }
-}
+});
 
 /**
  * Get county statistics (public endpoint)
  * @returns {Promise<Object>} Response with statistics
  */
-export async function get_countyStats() {
+export const get_countyStats = webMethod(Permissions.Anyone, async function () {
   try {
     const stats = await getCountyStats();
     return {
@@ -109,4 +110,5 @@ export async function get_countyStats() {
       error: error.message
     };
   }
-}
+});
+

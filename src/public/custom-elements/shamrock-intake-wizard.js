@@ -54,6 +54,72 @@ class ShamrockIntakeWizard extends HTMLElement {
         };
     }
 
+    static get observedAttributes() {
+        return ['case-id', 'role', 'county', 'ocr-status', 'ocr-data'];
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (!newValue || oldValue === newValue) return;
+
+        if (name === 'case-id') {
+            this.state.caseId = newValue;
+        } else if (name === 'role') {
+            const r = newValue.toLowerCase().trim();
+            if (r === 'defendant' || r === 'indemnitor' || r === 'coindemnitor') {
+                this.state.role = r;
+                if (this.state.currentStep === 0) {
+                    this.render();
+                    this.bindEvents();
+                }
+            }
+        } else if (name === 'county') {
+            this.state.county = newValue;
+        } else if (name === 'ocr-data') {
+            try {
+                const data = typeof newValue === 'string' ? JSON.parse(newValue) : newValue;
+                if (data && typeof data === 'object') {
+                    this.state.person = {
+                        ...this.state.person,
+                        firstName: data.firstName || data.first_name || this.state.person.firstName,
+                        middleName: data.middleName || data.middle_name || this.state.person.middleName,
+                        lastName: data.lastName || data.last_name || this.state.person.lastName,
+                        dob: data.dob || data.dateOfBirth || data.birth_date || this.state.person.dob,
+                        dlNumber: data.dlNumber || data.dl_number || data.licenseNumber || this.state.person.dlNumber,
+                        dlState: data.dlState || data.state || 'FL',
+                        street: data.street || data.address || this.state.person.street,
+                        city: data.city || this.state.person.city,
+                        state: data.state || 'FL',
+                        zip: data.zip || data.postalCode || this.state.person.zip,
+                        phone: data.phone || this.state.person.phone,
+                        email: data.email || this.state.person.email
+                    };
+                    this.state.ocrFrontDone = true;
+                    this.state.ocrConfidence = data.confidence || 98;
+                    this.state.statusMessage = '✓ ID scanned & details auto-filled!';
+                    this.state.statusType = 'success';
+                    this.render();
+                    this.bindEvents();
+                }
+            } catch (err) {
+                console.warn("[!] Failed to parse ocr-data attribute:", err);
+            }
+        } else if (name === 'ocr-status') {
+            if (newValue === 'success') {
+                this.state.ocrFrontDone = true;
+                this.state.ocrConfidence = this.state.ocrConfidence || 96;
+                this.state.statusMessage = '✓ ID scan processed successfully.';
+                this.state.statusType = 'success';
+                this.render();
+                this.bindEvents();
+            } else if (newValue === 'error' || newValue === 'failed') {
+                this.state.statusMessage = '⚠️ ID scan could not be read. Please verify fields manually.';
+                this.state.statusType = 'error';
+                this.render();
+                this.bindEvents();
+            }
+        }
+    }
+
     connectedCallback() {
         this.render();
         this.bindEvents();
@@ -61,7 +127,19 @@ class ShamrockIntakeWizard extends HTMLElement {
 
     // Allow page code to update state (e.g. from OCR results or DB match)
     updateWizardState(partialState) {
-        this.state = { ...this.state, ...partialState };
+        if (!partialState || typeof partialState !== 'object') return;
+        this.state = {
+            ...this.state,
+            ...partialState,
+            person: {
+                ...this.state.person,
+                ...(partialState.person || {})
+            },
+            caseFacts: {
+                ...this.state.caseFacts,
+                ...(partialState.caseFacts || {})
+            }
+        };
         this.render();
         this.bindEvents();
     }
