@@ -186,6 +186,28 @@ def main() -> int:
     existing_tts["agent_output_audio_format"] = "ulaw_8000"
     existing_asr["user_input_audio_format"] = "ulaw_8000"
 
+    built_in = json.loads(json.dumps(prompt_cfg.get("built_in_tools") or {}))
+    ttn = built_in.get("transfer_to_number")
+    if isinstance(ttn, dict):
+        ttn.setdefault("params", {})
+        ttn["params"]["transfers"] = [{
+            "transfer_destination": {"type": "phone", "phone_number": "+12399550301"},
+            "transfer_type": "conference",
+            "phone_number": "+12399550301",
+            "condition": "Caller requests a bondsman or live agent. Office line is 239-955-0301. Never 727-295-2245 or 239-332-2245.",
+            "custom_sip_headers": [],
+            "require_acceptance": False,
+        }]
+
+    prompt_patch = {
+        "prompt": prompt,
+        "llm": "gpt-4o",
+        "temperature": 0.3,
+        "tool_ids": tool_ids,
+    }
+    if built_in:
+        prompt_patch["built_in_tools"] = built_in
+
     patch = {
         "name": "Shannon — Shamrock Paperwork Assistant",
         "conversation_config": {
@@ -196,12 +218,7 @@ def main() -> int:
                     "What is your first name?"
                 ),
                 "language": "en",
-                "prompt": {
-                    "prompt": prompt,
-                    "llm": "gpt-4o",
-                    "temperature": 0.3,
-                    "tool_ids": tool_ids,
-                },
+                "prompt": prompt_patch,
             },
             "turn": {
                 "turn_eagerness": "patient",

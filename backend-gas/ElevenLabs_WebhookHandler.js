@@ -1197,7 +1197,7 @@ function toolTransferToBondsman(params) {
     // SMS the on-call agent
     var onCallPhone = '';
     try {
-        onCallPhone = PropertiesService.getScriptProperties().getProperty('ON_CALL_AGENT_PHONE') || '';
+        onCallPhone = PropertiesService.getScriptProperties().getProperty('ON_CALL_AGENT_PHONE') || '2399550301';
     } catch (_) { }
 
     if (onCallPhone) {

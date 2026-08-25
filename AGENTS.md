@@ -110,7 +110,7 @@ Reads detailed background reports (TLO/IRB/iDiCore) for both Defendant and Indem
 
 **Platform:** ElevenLabs Conversational AI · **Agent ID:** `agent_2001kjth4na5ftqvdf1pp3gfb1cb`
 
-**Availability:** 24/7 when `SHANNON_LIVE=true` (Netlify env). Brendan flips that switch. Jail/sheriff numbers still ring the office.
+**Availability:** `(727) 295-2245` forwards to office `(239) 955-0301`. Shannon answers if 0301 misses. Flip `SHANNON_LIVE=true` to put Shannon on the 727 front door. Jail/sheriff numbers always ring 0301.
 
 **Two Paths:**
 
