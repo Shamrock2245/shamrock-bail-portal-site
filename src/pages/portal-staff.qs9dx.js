@@ -13,10 +13,19 @@ import { finalizeCase } from 'backend/defendant-matching';
 import { startWalkInPacket, markReadyForSuperCrm, searchOpenLeadsForTablet } from 'backend/lobby-tablet-service';
 import { lookupDefendantCaseFacts } from 'backend/case-facts-hydrator';
 import { createCanonicalPerson } from 'public/canonical-paperwork-mapper';
+import { generateAndSendMagicLink, generateMagicLinkOnly } from 'backend/magic-link-manager';
+import { sendStealthPingSms } from 'backend/twilio-client';
 
 let allCases = []; // Store locally for fast filtering
 let currentSession = null; // Store validated session data
 let lastStats = null; // Cache stats for status restoration
+
+function safeSetText(id, text) {
+    try {
+        const el = $w(id);
+        if (el) el.text = String(text || '');
+    } catch (e) {}
+}
 
 $w.onReady(async function () {
     // SEO: Prevent Indexing (Protected Page)

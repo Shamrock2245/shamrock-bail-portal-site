@@ -511,7 +511,8 @@ async function populateMainUI(county, currentSlug) {
     const activeCountySlug = county.slug || county.countySlug || currentSlug;
     const isSwflCore = ['lee', 'collier', 'charlotte', 'hendry', 'glades'].indexOf(activeCountySlug) !== -1;
 
-    // 1. Hero Primary Call Button
+    // 1. Hero Primary Call Button — voice line, not the iMessage text line
+    const primaryPhoneLink = 'tel:+12393322245';
     setLink(['#heroCallButton', '#callShamrockBtn', '#callCountiesBtn', '#btnEmergencyCall'], primaryPhoneLink, county.content.hero_cta_primary || "Call (239) 332-2245");
 
     // 2. Get Someone Out / Start Online Release (Prefilled County)

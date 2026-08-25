@@ -6,6 +6,25 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-08-25 — v2.8.4 — Clipboard factory harmony (Editor live, no Studio cutover)
+
+**Doctrine:** Website is the clipboard. Super CRM is the brain. DocuSeal is staff-gated. OSI preferred.
+
+**GAS (existing `/exec` IDs only):**
+- Pushed factory and redeployed portal `…CvP-Z` and school `…Qa_DMg` as **@468**. Health identifier is `V468`.
+- Added `ClipboardBridge.js` so Wix clipboard actions (`syncCanonicalIntake`, `lookupDefendant`, `processIdOcr`, walk-in/kiosk, signing completion) persist and notify without issuing packets.
+- Remaining SignNow send wrappers (`sendForSignature`, portal signing sessions, MCP packet create, `generateAndSendWithWixPortal*`) fail closed.
+- Shannon factory prompt Path B creates intake only; it does not promise a signing packet.
+
+**Wix Editor (published local Velo):**
+- `callGasAction` allowlist includes clipboard actions and drops retired `submitIndemnitorPhase1`.
+- Staff dashboard opens the canonical factory URL, not the dead `R6fSFQ` 404.
+- Signing launchpad accepts only `sign.shamrockbailbonds.biz` / DocuSeal hosts.
+- Booking lookup no longer invents mock defendants.
+- Staff portal magic-link / stealth-poke imports and county hero `tel:+12393322245` restored so publish validation passes.
+
+**Not in this release:** Wix Studio canvas, Prompt 19 device QA, human-gated B3/B5/D2 smokes, BlueBubbles tunnel restore, ElevenLabs UI prompt resync.
+
 ### 2026-08-21 — v2.8.3 — Public HTTP and factory surface hardening
 
 **Wix HTTP functions:**

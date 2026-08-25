@@ -26,9 +26,9 @@
 
 ---
 
-## 🔴 Phase 8.5: Wix Studio Translation + Autopilot Paperwork Clipboard (CURRENT PRIORITY)
+## 🔴 Phase 8.5: Wix Studio Translation + Autopilot Paperwork Clipboard
 
-> **Phase 18.5 Status (2026-08-21):** Backend clipboard services, canonical mapper, ID OCR, case hydrator, draft engine, and permissions allowlist are fully wired in code. Studio visual canvas assembly is queued next.
+> **Production (2026-08-25):** Clipboard is live on the **Wix Editor** site and GAS **@468**. Studio visual canvas is **deferred** — do not treat it as the current production path. Backend clipboard services, canonical mapper, ID OCR, case hydrator, draft engine, ClipboardBridge, and permissions allowlist are wired and published.
 
 | Milestone | Scope | Key Deliverables | Status |
 |---|---|---|---|

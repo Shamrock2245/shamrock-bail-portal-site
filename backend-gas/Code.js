@@ -1709,7 +1709,7 @@ function handleAction(data) {
 
   // 4. UTILS
   if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
-  if (action === 'health') return { success: true, version: 'V409', timestamp: new Date().toISOString() };
+  if (action === 'health') return { success: true, version: 'V468', timestamp: new Date().toISOString() };
 
 
   // --- CLERICAL OPERATIONS ---
@@ -2321,7 +2321,7 @@ function handleGetAction(e) {
     }, callback);
   }
   if (action === 'health' || action === 'healthCheck') {
-    return createResponse({ success: true, version: 'V409', timestamp: new Date().toISOString() }, callback);
+    return createResponse({ success: true, version: 'V468', timestamp: new Date().toISOString() }, callback);
   }
 
   if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(e.parameter.apiKey || data.apiKey)) {

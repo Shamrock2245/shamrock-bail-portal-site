@@ -1,8 +1,8 @@
 # Portal Site — True Status
 
-> **Last verified:** 2026-08-21  
+> **Last verified:** 2026-08-25  
 > **Repo:** `Shamrock2245/shamrock-bail-portal-site` · branch `main`  
-> **Product URL:** `https://shamrockbailbonds.biz` (Live public site on Wix Editor; Wix Studio translation in progress)  
+> **Product URL:** `https://shamrockbailbonds.biz` (Live public site on Wix Editor. Studio canvas is deferred — Editor is the production surface.)  
 > **Role:** Brand clipboard + GAS factory — **Shamrock’s Platform** factory layer  
 > **Platform prod checklist:** `shamrock-leads/docs/ECOSYSTEM_PROD_CHECKLIST.md`
 
@@ -13,8 +13,8 @@
 | Layer | Tech | Role |
 |---|---|---|
 | **Frontend (Public / Editor Live)** | Wix Velo (`src/`) | Live public site (`shamrockbailbonds.biz`) on Wix Editor. |
-| **Frontend (Studio Canvas)** | Wix Studio Canvas | 🟡 **Not Built Yet** — Visual canvas design and drag-and-drop page assembly have not started. |
-| **Backend Clipboard Services** | Wix Velo Backend (`src/backend/*.jsw`) | ✅ **Fully Wired & Registered** — ID OCR, Case Facts Hydrator, Wizard Drafts, Canonical Sync, Signing Launchpad, ServiceAreas, Lobby Tablet. |
+| **Frontend (Studio Canvas)** | Wix Studio Canvas | ⏸ **Deferred** — Not required for current production. Live clipboard is the Wix Editor site. |
+| **Backend Clipboard Services** | Wix Velo Backend (`src/backend/*.jsw`) | ✅ **Live on Editor (2026-08-25)** — ID OCR, case hydrator, drafts, canonical sync, signing launchpad, ServiceAreas, lobby tablet; factory allowlist + GAS ClipboardBridge wired. |
 | **Backend Factory** | Google Apps Script (`backend-gas/`, 190+ files) | Factory business logic, webhook processing, school unlocks, stable `/exec` deployment. |
 | **Related** | Netlify embeds & Mini-Apps | Netlify paperwork launchpad, Telegram WebApps, Bail School embed. |
 
@@ -27,9 +27,9 @@
 
 | Area | Status |
 |---|---|
-| **Wix Studio Translation & IA Expansion** | 🟡 **Phase 18.5 Complete** — Backend clipboard services, canonical mapper, permissions allowlist, and IA models live on `main`. Visual canvas not built. |
+| **Wix Studio Translation & IA Expansion** | ⏸ **Deferred** — Backend clipboard is live on Editor. Visual Studio canvas is not in the current production path. |
 | **Bond Portal, Telegram, Shannon, DocuSeal** | ✅ **Code-enforced:** DocuSeal is sole active signing provider; staff-gated issuance in Super CRM; Wix acts strictly as non-issuing clipboard launchpad. |
-| **Legacy SignNow Execution** | ✅ **Retired (Live @464)** — All direct routes, factory senders, and legacy webhooks disabled. Historical fields remain read-only. |
+| **Legacy SignNow Execution** | ✅ **Retired (Live @468)** — Direct routes, factory senders, MCP packet helpers, and Wix portal send wrappers fail closed. Historical fields remain read-only. |
 | **Surety Realignment** | ✅ Active paperwork requires explicit `surety_id` (OSI preferred, Palmetto policy-gated, Accredited/Bankers mapped via canonical schema). |
 | **Bail School Education Management** | ✅ GAS unlock poller, SwipeSimple integration ($199 20hr / $649 120hr / $49 simulator), live catalog aligned. |
 | **Security & Secrets Scrub** | ✅ Hardcoded secrets scrubbed; HMAC webhook signatures fail closed; script properties standardized. |
@@ -41,8 +41,8 @@
 
 | Item | Notes |
 |---|---|
-| **GAS Deployment** | ✅ **@464** on stable portal deployment — DocuSeal guards and SignNow retirement live with no `/exec` URL change. Health check returns `success: true`. |
-| **Wix Public Surface** | Live on Wix Editor. Wix Studio migration in active development on `main` branch. Cutover pending visual canvas build and Prompt 19 QA. |
+| **GAS Deployment** | ✅ **@468** on both stable `/exec` IDs (portal `…CvP-Z`, school `…Qa_DMg`). Health returns `{"success":true,"version":"V468"}`. URL unchanged. |
+| **Wix Public Surface** | Live on Wix Editor (`wix publish --source local` 2026-08-25). Staff dashboard uses the canonical factory URL. Studio canvas is not the live surface. |
 | **Bail School Pricing** | ✅ Verified live — JSON-LD lists 120hr course at $649; $199 20hr. |
 | **Netlify Paperwork Host** | Serves role-aware intake launchpad; presents DocuSeal only when staff-issued session exists. |
 | **SwipeSimple Gmail Poller** | Automated 5-min trigger active for course unlock and payment plan reconciliation. |
