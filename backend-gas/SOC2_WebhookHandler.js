@@ -34,6 +34,32 @@ function handleSOC2Webhook(e) {
                     return ContentService.createTextOutput('Unauthorized').setMimeType(ContentService.MimeType.TEXT);
                 }
                 return handleElevenLabsToolCall(e);
+            case "send_paperwork":
+                if (!verifyElevenLabsToolSecret_(e)) {
+                    logSecurityEvent('ELEVENLABS_TOOL_AUTH_FAIL', { tool: 'send_paperwork' });
+                    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unauthorized' }))
+                        .setMimeType(ContentService.MimeType.JSON);
+                }
+                if (typeof toolEmailPaperworkToIndemnitor === 'function') {
+                    var sendPayload = {};
+                    try { sendPayload = JSON.parse(e.postData && e.postData.contents || '{}'); } catch (err) { sendPayload = e.parameter || {}; }
+                    return toolEmailPaperworkToIndemnitor(sendPayload);
+                }
+                return handleElevenLabsToolCall(e);
+            case "notify_bondsman":
+                if (!verifyElevenLabsToolSecret_(e)) {
+                    logSecurityEvent('ELEVENLABS_TOOL_AUTH_FAIL', { tool: 'notify_bondsman' });
+                    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unauthorized' }))
+                        .setMimeType(ContentService.MimeType.JSON);
+                }
+                if (typeof handleShannonNotifyBondsman === 'function') {
+                    var notifyPayload = {};
+                    try { notifyPayload = JSON.parse(e.postData && e.postData.contents || '{}'); } catch (err) { notifyPayload = e.parameter || {}; }
+                    var notifyResult = handleShannonNotifyBondsman(notifyPayload);
+                    return ContentService.createTextOutput(JSON.stringify(notifyResult))
+                        .setMimeType(ContentService.MimeType.JSON);
+                }
+                return handleElevenLabsToolCall(e);
             case "elevenlabs_init":
                 // Auth: Verify shared secret for conversation init
                 if (!verifyElevenLabsToolSecret_(e)) {

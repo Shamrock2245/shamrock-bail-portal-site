@@ -106,21 +106,26 @@ Reads detailed background reports (TLO/IRB/iDiCore) for both Defendant and Indem
 
 ---
 
-### 📞 Shannon (Voice AI — After-Hours Intake)
+### 📞 Shannon (Voice AI — 24/7 Paperwork Assistant)
 
 **Platform:** ElevenLabs Conversational AI · **Agent ID:** `agent_2001kjth4na5ftqvdf1pp3gfb1cb`
 
+**Availability:** 24/7 when `SHANNON_LIVE=true` (Netlify env). Brendan flips that switch. Jail/sheriff numbers still ring the office.
+
 **Two Paths:**
 
-- **Path A (Notify Bondsman):** Collect basics → log to ShannonIntake sheet → Slack alert.
-- **Path B (Initiate Intake):** Collect full info + email → create intake record in Super CRM → send secure paperwork launchpad link via SMS. Staff validates bond details and releases DocuSeal packet.
+- **Path A (Notify Bondsman):** Collect basics → log intake → Slack alert / callback.
+- **Path B (Paperwork assistant):** Identify role (defendant / indemnitor / co-indemnitor) → walk the packet fields → `create_intake` + `save_paperwork_answers` → **email the indemnitor** DocuSeal signing link + SwipeSimple payment link. Staff still matches surety and POA in Super CRM.
 
-**Webhook Tools (8 total):**
+**Webhook Tools:**
 
 | Tool | Purpose | Returns Response |
 | ------ | --------- | ----------------- |
 | `calculate_premium` | Estimate bail bond premium | Yes |
 | `create_intake` | Create new intake case file in GAS / Super CRM | Yes |
+| `save_paperwork_answers` | Save each paperwork section during the call | Yes |
+| `email_paperwork_to_indemnitor` | Email DocuSeal signing link + payment link to the indemnitor | Yes |
+| `send_paperwork` | Same as email_paperwork_to_indemnitor | Yes |
 | `lookup_defendant` | Search defendant by name or booking # | Yes |
 | `send_payment_link` | Text SwipeSimple payment link to caller | No |
 | `schedule_callback` | Book callback time with bondsman | No |

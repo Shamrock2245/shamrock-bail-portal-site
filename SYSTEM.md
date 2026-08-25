@@ -29,7 +29,7 @@ We enforce a distributed, service-oriented architecture. The frontend (Wix Studi
 | **Frontend / UI** | Wix Studio & Velo | Premium responsive UI — Glassmorphism, animations, magic link auth, camera ID scan launchpad. |
 | **Backend / Factory** | Google Apps Script (GAS) | Single entry point (`Code.js doPost()/doGet()`). 190+ files. All business logic. v464+. |
 | **Arrest Brain & CRM** | `shamrock-leads` | Multi-state scraper fleet, MongoDB Atlas, Super CRM case reconciliation, staff-gated DocuSeal issuance. |
-| **Voice AI** | ElevenLabs Conversational AI | "Shannon" — 24/7 after-hours phone intake agent with live call transfer. |
+| **Voice AI** | ElevenLabs Conversational AI | "Shannon" — 24/7 paperwork assistant (SHANNON_LIVE switch). Walks any role through packet fields, emails DocuSeal + payment to the indemnitor, transfers to a bondsman as last resort. |
 | **Database** | Wix CMS + Google Sheets + MongoDB Atlas | Wix CMS for portal data. Sheets for ops master. MongoDB for arrest analytics & event logging. |
 | **Signing** | DocuSeal via Super CRM | Staff-issued packet workflow. Wix hosts only the secure Netlify launchpad and cannot create packets or signing links. |
 | **Payments** | SwipeSimple | One-click payment links, virtual terminal, payment plan reconciliation. |

@@ -1,6 +1,6 @@
 # 📖 Operations Handbook
 
-> **Last Updated:** April 24, 2026
+> **Last Updated:** August 25, 2026
 > **Status:** 🟢 All Systems Operational
 
 This document consolidates all operational runbooks: voice AI tuning, compliance, health monitoring, integrations, analytics, and scraping protocols.
@@ -12,8 +12,18 @@ This document consolidates all operational runbooks: voice AI tuning, compliance
 ### Configuration
 - **Platform:** ElevenLabs Conversational AI
 - **Agent ID:** `agent_2001kjth4na5ftqvdf1pp3gfb1cb`
-- **Routing:** Twilio inbound → ElevenLabs WebSocket
+- **Role:** 24/7 paperwork assistant (not nights-only). Walks defendant, indemnitor, or co-indemnitor through packet fields, then emails the indemnitor the DocuSeal signing link and SwipeSimple payment link.
+- **Routing:** Twilio inbound → Netlify Edge `twilio-voice-inbound.js` → Shannon
 - **Init Proxy:** Netlify Edge Function `elevenlabs-init.js` (avoids GAS 302 redirect)
+
+### Shannon live switch
+Set in Netlify site `shamrock-telegram` → Environment variables (production). No code change.
+
+| Variable | Effect |
+|----------|--------|
+| `SHANNON_LIVE=true` (default) | Public callers go to Shannon. Jail/sheriff whitelist still rings the office. |
+| `SHANNON_LIVE=false` | Public callers ring office phones. If nobody answers, Shannon still picks up so no call is dropped. |
+| `SHANNON_ROTATE_ERIC=true` | Optional. Mixes Eric in. Default is Shannon only. |
 
 ### Voice Prompting Rules
 Voice AI requires vastly different prompting than text AI:

@@ -24,7 +24,7 @@
 | **Premium** | Fee paid to Shamrock for posting a bond (10% of face value in FL, $100/charge minimum). |
 | **Qualified Arrest** | Arrest record that passes lead scoring (score ≥ 70, not released, bond > $0). |
 | **Router** | Wix dynamic page system (e.g., `/florida-bail-bonds/{county-slug}`). |
-| **Shannon** | ElevenLabs voice AI agent handling after-hours phone intake. |
+| **Shannon** | ElevenLabs voice AI paperwork assistant. Answers when `SHANNON_LIVE` is on, walks any role through bond packet fields, and emails the indemnitor DocuSeal signing + payment links. |
 | **SignNow Packet** | The 14-document signing package generated for each bail bond case. |
 | **The Clerk** | AI agent that parses booking data into structured JSON. |
 | **The Closer** | AI agent that runs abandoned intake SMS/WhatsApp drip campaigns. |

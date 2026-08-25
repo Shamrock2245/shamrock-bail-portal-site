@@ -114,9 +114,10 @@
 
 | File | Purpose |
 |------|---------|
-| `ElevenLabs_AfterHoursAgent.js` | Shannon agent configuration & tool definitions |
+| `ElevenLabs_AfterHoursAgent.js` | Shannon 24/7 paperwork-assistant prompt and agent config |
 | `ElevenLabs_Client.js` | ElevenLabs API client wrapper |
 | `ElevenLabs_WebhookHandler.js` | Processes Shannon's webhook tool calls |
+| `Shannon_PaperworkTools.js` | Incremental packet save + email DocuSeal signing/payment to indemnitor |
 
 ---
 

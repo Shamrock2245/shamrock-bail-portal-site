@@ -405,16 +405,23 @@ function handleElevenLabsToolCall(e) {
 
     Logger.log('🔧 ElevenLabs Tool Call: ' + toolName + ' | Params: ' + JSON.stringify(payload));
 
-    // Idempotency: Prevent duplicate tool actions (e.g. double-SMS)
-    // Uses a composite key of tool name + phone + 5-minute window
-    if (typeof IdempotencyGuard !== 'undefined') {
-        var toolPhone = payload.caller_phone || payload.phone_number || payload.phone || '';
-        var toolWindow = Math.floor(Date.now() / 300000); // 5-minute buckets
+    // Idempotency only for outbound contact tools. Paperwork saves and lookups
+    // must be allowed repeatedly during a Shannon interview.
+    var outboundTools = {
+        send_sms: true,
+        send_payment_link: true,
+        send_directions: true,
+        email_paperwork_to_indemnitor: true,
+        send_paperwork: true
+    };
+    if (outboundTools[toolName] && typeof IdempotencyGuard !== 'undefined') {
+        var toolPhone = payload.caller_phone || payload.phone_number || payload.phone || payload.indemnitor_email || '';
+        var toolWindow = Math.floor(Date.now() / 300000);
         var toolIdempKey = IdempotencyGuard.compositeKey(toolName, toolPhone, toolWindow);
         if (toolPhone && IdempotencyGuard.isDuplicate('elevenlabs_tool', toolIdempKey, 600)) {
-            Logger.log('⚡ Idempotency: Duplicate tool call skipped [' + toolName + '] phone=' + toolPhone);
+            Logger.log('⚡ Idempotency: Duplicate tool call skipped [' + toolName + ']');
             return ContentService.createTextOutput(JSON.stringify({
-                status: 'skipped', message: 'Duplicate tool call detected'
+                status: 'skipped', message: 'That message was already sent a moment ago.'
             })).setMimeType(ContentService.MimeType.JSON);
         }
     }
@@ -425,6 +432,15 @@ function handleElevenLabsToolCall(e) {
                 return toolLookupDefendant(payload);
             case 'create_intake':
                 return toolCreateIntake(payload);
+            case 'save_paperwork_answers':
+                return toolSavePaperworkAnswers(payload);
+            case 'email_paperwork_to_indemnitor':
+            case 'send_paperwork':
+                return toolEmailPaperworkToIndemnitor(payload);
+            case 'notify_bondsman':
+                var notified = handleShannonNotifyBondsman(payload);
+                return ContentService.createTextOutput(JSON.stringify(notified))
+                    .setMimeType(ContentService.MimeType.JSON);
             case 'calculate_premium':
                 return toolCalculatePremium(payload);
             case 'send_payment_link':
@@ -646,7 +662,7 @@ function toolCreateIntake(params) {
 
     sheet.appendRow([
         new Date(),
-        'ElevenLabs After-Hours',
+        'Shannon Voice',
         defName,
         params.charges || '',
         params.facility || '',
@@ -654,7 +670,9 @@ function toolCreateIntake(params) {
         callerName,
         callerPhone,
         'New - AI Intake',
-        (params.notes || '') + ' | Ref: ' + caseRef
+        (params.notes || '') + ' | Ref: ' + caseRef +
+        ' | role=' + (params.caller_role || '') +
+        ' | indemnitor_email=' + (params.indemnitor_email || params.caller_email || '')
     ]);
 
     // ── SYNC TO WIX CMS INTAKEQUEUE ───────────────────────────────────────
@@ -668,7 +686,7 @@ function toolCreateIntake(params) {
                 caseId: caseRef,
                 consentGiven: true,
                 consentTimestamp: new Date().toISOString(),
-                notes: 'Submitted via ElevenLabs AI After-Hours Call. ' + (params.notes || ''),
+                notes: 'Submitted via Shannon voice paperwork assistant. ' + (params.notes || ''),
                 // Defendant
                 defendantName: defName,
                 defendantPhone: '',
@@ -706,13 +724,35 @@ function toolCreateIntake(params) {
         Logger.log('⚠️ Wix CMS sync error (non-fatal): ' + wixSyncErr.message);
     }
 
+    try {
+        if (typeof shannonSyncIntakeToCrm_ === 'function') {
+            shannonSyncIntakeToCrm_({
+                case_reference: caseRef,
+                caller_role: params.caller_role || '',
+                defendant_name: defName,
+                county: params.county || '',
+                charges: params.charges || '',
+                bond_amount: params.bond_amount || '',
+                facility: params.facility || '',
+                caller_name: callerName,
+                caller_phone: callerPhone,
+                indemnitor_name: params.indemnitor_name || callerName,
+                indemnitor_email: params.indemnitor_email || params.caller_email || '',
+                indemnitor_phone: params.indemnitor_phone || callerPhone,
+                notes: params.notes || ''
+            });
+        }
+    } catch (crmSyncErr) {
+        Logger.log('⚠️ Super CRM intake sync error (non-fatal): ' + crmSyncErr.message);
+    }
+
     // Slack alert
     try {
         var config = getConfig();
         var slackChannel = config.SLACK_WEBHOOK_INTAKE || config.SLACK_WEBHOOK_SHAMROCK;
         if (slackChannel && typeof sendSlackMessage === 'function') {
             sendSlackMessage(slackChannel,
-                '🤖 *AI After-Hours Intake Created*\n' +
+                '🎙 *Shannon intake created*\n' +
                 '• Defendant: ' + defName + '\n' +
                 '• Charges: ' + (params.charges || 'TBD') + '\n' +
                 '• Facility: ' + (params.facility || 'TBD') + '\n' +

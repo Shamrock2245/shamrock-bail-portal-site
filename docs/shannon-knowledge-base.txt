@@ -54,7 +54,7 @@ A: A cosigner (also called an indemnitor) is the person who guarantees the defen
 BAIL BOND PAPERWORK (WHAT YOU WILL SIGN)
 -----------------------------------------
 
-When you bail someone out, you'll sign these documents electronically on your phone via our secure SignNow system:
+When you bail someone out, you'll sign these documents electronically on your phone via our secure DocuSeal system at sign.shamrockbailbonds.biz. Shannon can email the signing link and the payment link to the indemnitor during the call.
 
 1. APPEARANCE BOND
    The official court document that guarantees the defendant will appear at all scheduled court hearings. This is filed directly with the court.
@@ -77,7 +77,7 @@ When you bail someone out, you'll sign these documents electronically on your ph
 7. SSA RELEASE / WAIVER
    Standard release and waiver forms required for processing.
 
-All documents are sent to your phone or email for electronic signature. You do not need to come to our office to sign — everything can be done from your phone while we're on the call together.
+All documents are emailed to the indemnitor for electronic signature on DocuSeal. Shannon also sends the SwipeSimple payment link. You do not need to come to our office. A bondsman still reviews the case, surety, and power number before the bond is posted.
 
 
 FLORIDA COUNTY JAIL GUIDE (CORE SERVICE AREA)

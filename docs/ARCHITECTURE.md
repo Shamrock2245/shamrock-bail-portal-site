@@ -177,15 +177,16 @@ Dockerized at `localhost:1880`. Premium glassmorphism UI. Static ngrok domain fo
 
 ### 3.6 Shannon — Voice AI (`ElevenLabs Conversational AI`)
 
-24/7 after-hours voice intake agent.
+24/7 paperwork assistant when `SHANNON_LIVE=true`. Brendan flips the switch in Netlify env.
 
 | Component | Details |
 |-----------|---------|
 | **Platform** | ElevenLabs Conversational AI |
+| **Routing** | Twilio inbound → Netlify Edge `twilio-voice-inbound.js` |
 | **Init Proxy** | Netlify Edge Function `elevenlabs-init.js` (avoids GAS 302 redirect) |
-| **Capabilities** | Collect caller info, send SignNow links via SMS during call, live transfer to 3 bondsman numbers |
+| **Capabilities** | Walk defendant / indemnitor / co-indemnitor through packet fields, email DocuSeal signing + SwipeSimple payment to the indemnitor, live transfer as last resort |
 | **Post-Call** | `ElevenLabs_WebhookHandler.js` processes transcripts, writes to IntakeQueue |
-| **GAS Files** | `ElevenLabs_AfterHoursAgent.js`, `ElevenLabs_WebhookHandler.js` |
+| **GAS Files** | `ElevenLabs_AfterHoursAgent.js`, `ElevenLabs_WebhookHandler.js`, `Shannon_PaperworkTools.js` |
 
 ---
 

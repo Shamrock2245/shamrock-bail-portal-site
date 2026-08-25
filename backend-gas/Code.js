@@ -200,16 +200,26 @@ function doGet(e) {
     }
   }
 
-  // Shannon Send Paperwork Tool — forwarded from Netlify proxy
-  if (e.parameter && e.parameter.source === 'send_paperwork' && e.parameter.data) {
-    // Auth: Verify shared secret
+  // Shannon email paperwork — legacy GET query payload from older tool URLs
+  if (e.parameter && e.parameter.source === 'send_paperwork') {
     if (!verifyElevenLabsToolSecret_(e)) {
       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Unauthorized' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
-    const result = blockLegacyDirectPaperwork_('get_send_paperwork');
-    return ContentService.createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON);
+    try {
+      var sendPayload = e.parameter.data
+        ? JSON.parse(decodeURIComponent(e.parameter.data))
+        : (e.parameter || {});
+      if (typeof toolEmailPaperworkToIndemnitor === 'function') {
+        return toolEmailPaperworkToIndemnitor(sendPayload);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Paperwork email handler not loaded' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (parseErr) {
+      Logger.log('❌ send_paperwork parse error: ' + parseErr.message);
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Parse error' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
   }
 
   // Shannon Notify Bondsman Tool (Path A) — log intake + Slack alert
@@ -238,9 +248,10 @@ function doGet(e) {
 
   // Shannon Mid-Call Tool Requests — ElevenLabs POSTs to ?source=elevenlabs_tool&tool=<name>
   // The agent reads the JSON response to continue the conversation in real-time.
-  // Tools: lookup_defendant, create_intake, calculate_premium, send_payment_link,
-  //        schedule_callback, transfer_to_bondsman, check_inmate_status,
-  //        send_directions, send_sms, check_caller_history
+  // Tools: lookup_defendant, create_intake, save_paperwork_answers,
+  //        email_paperwork_to_indemnitor/send_paperwork, calculate_premium,
+  //        send_payment_link, schedule_callback, transfer_to_bondsman,
+  //        check_inmate_status, send_directions, send_sms, check_caller_history
   if (e.parameter && e.parameter.source === 'elevenlabs_tool') {
     if (!verifyElevenLabsToolSecret_(e)) {
       return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unauthorized' }))
@@ -1709,7 +1720,7 @@ function handleAction(data) {
 
   // 4. UTILS
   if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
-  if (action === 'health') return { success: true, version: 'V468', timestamp: new Date().toISOString() };
+  if (action === 'health') return { success: true, version: 'V469', timestamp: new Date().toISOString() };
 
 
   // --- CLERICAL OPERATIONS ---
@@ -2321,7 +2332,7 @@ function handleGetAction(e) {
     }, callback);
   }
   if (action === 'health' || action === 'healthCheck') {
-    return createResponse({ success: true, version: 'V468', timestamp: new Date().toISOString() }, callback);
+    return createResponse({ success: true, version: 'V469', timestamp: new Date().toISOString() }, callback);
   }
 
   if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(e.parameter.apiKey || data.apiKey)) {
