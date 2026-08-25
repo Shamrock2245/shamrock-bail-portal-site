@@ -67,14 +67,17 @@ export async function startWalkInPacket(params) {
         // Persist to CMS
         await persistCanonicalCaseToCms(canonicalCase);
 
-        // Notify GAS & Super CRM
-        await callGasAction('startWalkInCase', {
-            caseId,
-            role,
-            staffEmail,
-            leadId,
-            canonicalCase
-        });
+        try {
+            await callGasAction('startWalkInCase', {
+                caseId,
+                role,
+                staffEmail,
+                leadId,
+                canonicalCase
+            });
+        } catch (gasErr) {
+            console.warn('Walk-in GAS notify non-fatal:', gasErr.message);
+        }
 
         const handoffUrl = `/portal-start?caseId=${caseId}&role=${role}&kiosk=1`;
 
@@ -118,11 +121,14 @@ export async function markReadyForSuperCrm(params) {
             await wixData.update(COLLECTIONS.CASES || 'Cases', item, { suppressAuth: true });
         }
 
-        // 2. Alert Super CRM & Slack
-        await callGasAction('markCaseReadyForIssuance', {
-            caseId,
-            staffEmail
-        });
+        try {
+            await callGasAction('markCaseReadyForIssuance', {
+                caseId,
+                staffEmail
+            });
+        } catch (gasErr) {
+            console.warn('Ready-for-issuance GAS notify non-fatal:', gasErr.message);
+        }
 
         return {
             success: true,

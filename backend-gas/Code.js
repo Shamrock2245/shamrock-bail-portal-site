@@ -285,14 +285,7 @@ function doGet(e) {
     }
 
     if (e.parameter.setup === 'signnow') {
-      const url = ScriptApp.getService().getUrl();
-      // Ensure we register the current active URL
-      try {
-        SN_registerCompletionWebhook(url);
-        return ContentService.createTextOutput(`Webhook Registered Successfully to: ${url}`);
-      } catch (err) {
-        return ContentService.createTextOutput(`Webhook Registration Failed: ${err.message}`);
-      }
+      return createResponse(blockLegacyDirectPaperwork_('setup_signnow_webhook'));
     }
 
     return createErrorResponse('No action specified', ERROR_CODES.MISSING_ACTION);
@@ -1431,6 +1424,18 @@ function handleAction(data) {
   if (action === 'intakeSubmission') { MongoLogger.logIntake(data, 'web'); return handleIntakeSubmission(data); }
   if (action === 'newIntake') { MongoLogger.logIntake(data, 'web'); return handleNewIntake(data.caseId, data.data); }
 
+  // Clipboard (Wix) → factory notify/persist. Never issue packets.
+  if (action === 'syncCanonicalIntake') return handleClipboardSyncCanonicalIntake(data);
+  if (action === 'lookupDefendant') return handleClipboardLookupDefendant(data);
+  if (action === 'processIdOcr') return handleClipboardProcessIdOcr(data);
+  if (action === 'startWalkInCase') return handleClipboardStartWalkInCase(data);
+  if (action === 'markCaseReadyForIssuance') return handleClipboardMarkCaseReadyForIssuance(data);
+  if (action === 'searchArrestLeads') return handleClipboardSearchArrestLeads(data);
+  if (action === 'sendBlueBubblesRelay') return handleClipboardSendBlueBubblesRelay(data);
+  if (action === 'notifySigningCompleted') return handleClipboardNotifySigningCompleted(data);
+  if (action === 'updateCaseFactsFromStaff') return handleClipboardUpdateCaseFactsFromStaff(data);
+  if (action === 'notifyStaffPacketPending') return handleClipboardNotifyStaffPacketPending(data);
+
   // 1b. WIZARD FORM SUBMISSIONS (defendant-wizard.html & indemnitor-wizard.html)
   if (action === 'submitDefendantApplication') {
     MongoLogger.logIntake(data.payload || data, 'defendant_wizard');
@@ -1673,17 +1678,17 @@ function handleAction(data) {
 
   // --- Granular SignNow Actions (Supported by Dashboard.html) ---
   if (action === 'uploadToSignNow') return SN_uploadDocument(data.pdfBase64, data.fileName);
-  if (action === 'addSignatureFields') return SN_addFields(data.documentId, data.fields);
-  if (action === 'sendEmailInvite') return SN_sendEmailInvite(data.documentId, data.signers, data.options);
-  if (action === 'sendSmsInvite') return SN_sendSmsInvite(data.documentId, data.signers, data.options);
-  if (action === 'createEmbeddedLink') return SN_createEmbeddedLink(data.documentId, data.email, data.role);
+  if (action === 'addSignatureFields') return blockLegacyDirectPaperwork_('add_signature_fields');
+  if (action === 'sendEmailInvite') return blockLegacyDirectPaperwork_('send_email_invite');
+  if (action === 'sendSmsInvite') return blockLegacyDirectPaperwork_('send_sms_invite');
+  if (action === 'createEmbeddedLink') return blockLegacyDirectPaperwork_('create_embedded_link');
   if (action === 'batchSaveToWixPortal') return batchSaveToWixPortal(data);
   if (action === 'fillSinglePdfWithAdobe') return fillSinglePdfWithAdobe(data);
   if (action === 'getFieldMapping') return getMappingForDocumentTemplate(data.templateKey, data.intakeData);
 
-  // 2. SIGNING & DOCS
-  if (action === 'sendForSignature') { MongoLogger.logSignNow('packet_sent', data); return handleSendForSignature(data); }
-  if (action === 'createPortalSigningSession') return createPortalSigningSession(data);
+  // 2. SIGNING & DOCS — retired direct issuance
+  if (action === 'sendForSignature') return blockLegacyDirectPaperwork_('send_for_signature');
+  if (action === 'createPortalSigningSession') return blockLegacyDirectPaperwork_('create_portal_signing_session');
 
   // 4. CHECK-INS
   if (action === 'logDefendantLocation') { MongoLogger.logCheckIn(data.data || data, 'web'); return handleLocationLog(data.data); }
@@ -1704,7 +1709,7 @@ function handleAction(data) {
 
   // 4. UTILS
   if (action === 'getNextReceiptNumber') return getNextReceiptNumber();
-  if (action === 'health') return { success: true, version: '5.9', timestamp: new Date().toISOString() };
+  if (action === 'health') return { success: true, version: 'V409', timestamp: new Date().toISOString() };
 
 
   // --- CLERICAL OPERATIONS ---
@@ -2870,6 +2875,7 @@ function downloadSignedPdf(documentId) {
 // UNIFIED SIGNNOW WORKFLOW
 // ============================================================================
 function handleSendForSignature(data) {
+  return blockLegacyDirectPaperwork_('handle_send_for_signature');
   const config = getConfig();
   // FLOW A: PDF PROVIDED (Legacy/Upload)
   if (data.pdfBase64) {
@@ -2985,6 +2991,7 @@ function handleSendForSignature(data) {
  * @returns {Object} - {success, embeddedLink, documentId, error}
  */
 function createPortalSigningSession(data) {
+  return blockLegacyDirectPaperwork_('create_portal_signing_session');
   const config = getConfig();
 
   // Validate required data
@@ -3163,6 +3170,7 @@ function uploadFilledPdfToSignNow(pdfBase64, fileName) {
   return { success: false, error: 'Legacy e-sign integration is retired. Use the validated DocuSeal workflow.' };
 }
 function createSigningRequest(data) {
+  return blockLegacyDirectPaperwork_('create_signing_request');
   // Convert simplified signer objects to SignNow API format
   const invitePayload = {
     to: data.signers.map(s => ({
@@ -3182,6 +3190,7 @@ function getDocumentStatus(documentId) {
   return SN_makeRequest('/document/' + documentId, 'GET');
 }
 function generateDataLinks(documentId, signers) {
+  return [];
   const config = getConfig();
   const links = [];
   for (const signer of signers) {
@@ -3934,6 +3943,7 @@ function markIntakeAsProcessed(intakeId) {
  * Safe wrapper for generateAndSendWithWixPortal (SOC II compliant)
  */
 function generateAndSendWithWixPortal_Safe(data) {
+  return blockLegacyDirectPaperwork_('generate_and_send_with_wix_portal_safe');
   // Log the request for audit
   if (typeof logProcessingEvent === 'function') {
     logProcessingEvent('GENERATE_AND_SEND_REQUEST', {

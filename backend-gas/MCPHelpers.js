@@ -25,6 +25,7 @@
  * This function calls the robust handleSendForSignature workflow in Code.gs
  */
 function createAndSendSignNowPacket(formData) {
+  return blockLegacyDirectPaperwork_('mcp_create_and_send_signnow_packet');
   try {
     console.log('MCP: Creating SignNow Packet for', formData.defendantName || formData['defendant-last-name']);
 

@@ -145,6 +145,7 @@ function saveSigningLinksToWixBatch(signers, caseData) {
  * This is the Function called by 'sendToWixPortal' action in Code.gs
  */
 function generateAndSendWithWixPortal(formData) {
+  return blockLegacyDirectPaperwork_('generate_and_send_with_wix_portal');
   Logger.log('🚀 Starting Wix Portal Workflow...');
 
   // 1. Validate Dependencies

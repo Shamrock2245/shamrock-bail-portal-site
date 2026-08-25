@@ -356,7 +356,6 @@ export async function getIntakeByCaseId(caseId) {
 const ALLOWED_GAS_ACTIONS = new Set([
     'portalClientMessage',
     'submitDefendantApplication',
-    'submitIndemnitorPhase1',
     'staffLookupBooking',
     'staffGetActiveCases',
     'staffGetArrestsFeed',
@@ -369,7 +368,17 @@ const ALLOWED_GAS_ACTIONS = new Set([
     'generateCertificate',
     'sendSlackAlert',
     'newIntake',
-    'logTelegramSectionEvent'
+    'logTelegramSectionEvent',
+    'syncCanonicalIntake',
+    'lookupDefendant',
+    'processIdOcr',
+    'startWalkInCase',
+    'markCaseReadyForIssuance',
+    'searchArrestLeads',
+    'sendBlueBubblesRelay',
+    'notifySigningCompleted',
+    'updateCaseFactsFromStaff',
+    'notifyStaffPacketPending'
 ]);
 
 export async function callGasAction(action, payload) {

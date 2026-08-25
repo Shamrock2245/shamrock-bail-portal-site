@@ -20,7 +20,8 @@ function runSystemDiagnostics() {
         googleDrive: checkGoogleDriveAccess(),
         manusTemplates: checkManusTemplates(),
         googleSheets: checkSheetAccess(),
-        signNow: checkSignNowConnectivity(),
+        docuSealBoundary: checkSignNowConnectivity(),
+        superCrm: checkSuperCrmConnectivity(),
         wix: checkWixConnectivity(),
         twilio: checkTwilioConfiguration()
     };
@@ -41,7 +42,7 @@ function runSystemDiagnostics() {
 function checkScriptProperties() {
     try {
         const props = PropertiesService.getScriptProperties().getProperties();
-        const required = ['WIX_API_KEY', 'SIGNNOW_API_TOKEN', 'AUDIT_LOG_SHEET_ID'];
+        const required = ['WIX_API_KEY', 'AUDIT_LOG_SHEET_ID'];
         const missing = required.filter(k => !props[k]);
 
         if (missing.length > 0) return { success: false, error: 'Missing properties: ' + missing.join(', ') };
@@ -77,15 +78,16 @@ function checkSheetAccess() {
 }
 
 function checkSignNowConnectivity() {
+    return {
+        success: true,
+        message: 'SignNow retired. Active paperwork is DocuSeal via Super CRM only.'
+    };
+}
+
+function checkSuperCrmConnectivity() {
     try {
-        // Simple User Get call
-        const cfg = SN_getConfig(); // From SignNow_Integration_Complete.js
-        const res = UrlFetchApp.fetch(cfg.API_BASE + '/user', {
-            headers: { 'Authorization': 'Bearer ' + cfg.ACCESS_TOKEN },
-            muteHttpExceptions: true
-        });
-        if (res.getResponseCode() === 200) return { success: true };
-        return { success: false, error: 'SignNow API returned ' + res.getResponseCode() };
+        const res = UrlFetchApp.fetch('https://leads.shamrockbailbonds.biz/health', { muteHttpExceptions: true });
+        return { success: res.getResponseCode() === 200, code: res.getResponseCode() };
     } catch (e) {
         return { success: false, error: e.message };
     }

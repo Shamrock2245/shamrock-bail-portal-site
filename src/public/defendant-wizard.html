@@ -666,7 +666,7 @@ var W = {
       } else {
         // FALLBACK: Standalone mode (e.g. direct URL access) — use production GAS URL from context
         // The context URL is injected by parent via postMessage on load (window.GAS_URL)
-        var gasUrl = window.GAS_URL || 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
+        var gasUrl = window.GAS_URL || 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
         await fetch(gasUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

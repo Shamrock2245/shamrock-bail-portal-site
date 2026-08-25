@@ -422,7 +422,7 @@ function filterData() {
  * Now opens the Google Apps Script Dashboard
  */
 function setupMagicLinkGenerator() {
-    const GAS_DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
+    const CANONICAL_GAS_DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
 
     try {
         // robust check: prioritize user's requested ID 'btnOpenDashboard', fallback to original
@@ -432,9 +432,16 @@ function setupMagicLinkGenerator() {
             console.log('Staff Portal: Dashboard button found');
             dashboardBtn.label = "Open Dashboard";
 
-            dashboardBtn.onClick(() => {
+            dashboardBtn.onClick(async () => {
                 console.log('Opening GAS Control Center...');
-                wixLocation.to(GAS_DASHBOARD_URL);
+                try {
+                    const result = await getDashboardUrl();
+                    const url = (result && result.success && result.url) ? result.url : CANONICAL_GAS_DASHBOARD_URL;
+                    wixLocation.to(url);
+                } catch (navErr) {
+                    console.warn('Staff Portal: dashboard URL secret missing, using canonical factory');
+                    wixLocation.to(CANONICAL_GAS_DASHBOARD_URL);
+                }
             });
         }
     } catch (e) {

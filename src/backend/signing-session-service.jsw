@@ -7,7 +7,7 @@
  * 
  * Boundary Doctrine:
  * - Wix displays the staff-issued DocuSeal session.
- * - If link is expired, 1-tap requests a fresh magic link via Twilio SMS — zero email treasure hunts.
+ * - Expired sessions alert Super CRM staff; Wix never mints a signing URL.
  * - Supports any signing order (Indemnitor first, Defendant later, Co-indemnitor last).
  * 
  * @module signing-session-service
@@ -17,6 +17,18 @@ import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
 import { callGasAction } from 'backend/gasIntegration';
 import { sendBlueBubblesMessage } from 'backend/bluebubbles';
+
+function isApprovedDocuSealSigningUrl(signUrl) {
+    if (!signUrl || typeof signUrl !== 'string') return false;
+    try {
+        const parsed = new URL(signUrl.trim());
+        if (parsed.protocol !== 'https:') return false;
+        const host = parsed.hostname.toLowerCase();
+        return host === 'sign.shamrockbailbonds.biz' || host === 'docuseal.com' || host.endsWith('.docuseal.com');
+    } catch (e) {
+        return false;
+    }
+}
 
 /**
  * Validate active signing session or detect expiry
@@ -30,15 +42,7 @@ export async function validateSigningSession(params) {
     const { caseId, role = 'indemnitor', signUrl } = params || {};
 
     try {
-        let isDirectUrlValid = false;
-        if (signUrl && typeof signUrl === 'string') {
-            const trimmed = signUrl.trim();
-            if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
-                if (!trimmed.toLowerCase().includes('expired')) {
-                    isDirectUrlValid = true;
-                }
-            }
-        }
+        const isDirectUrlValid = isApprovedDocuSealSigningUrl(signUrl);
 
         if (!caseId && isDirectUrlValid) {
             return { valid: true, signingUrl: signUrl };
@@ -66,9 +70,11 @@ export async function validateSigningSession(params) {
                 };
             }
 
+            const approvedUrl = isApprovedDocuSealSigningUrl(c.signingUrl) ? c.signingUrl : (isDirectUrlValid ? signUrl : '');
             return {
-                valid: true,
-                signingUrl: c.signingUrl || (isDirectUrlValid ? signUrl : ''),
+                valid: !!approvedUrl,
+                expired: !approvedUrl,
+                signingUrl: approvedUrl,
                 signingSessionId: c.signingSessionId || '',
                 phone: c.indemnitorPhone || c.defendantPhone || ''
             };
@@ -82,9 +88,11 @@ export async function validateSigningSession(params) {
 
         if (intakeQuery.items.length > 0) {
             const item = intakeQuery.items[0];
+            const approvedIntakeUrl = isApprovedDocuSealSigningUrl(item.signingUrl) ? item.signingUrl : (isDirectUrlValid ? signUrl : '');
             return {
-                valid: true,
-                signingUrl: item.signingUrl || (isDirectUrlValid ? signUrl : ''),
+                valid: !!approvedIntakeUrl,
+                expired: !approvedIntakeUrl,
+                signingUrl: approvedIntakeUrl,
                 phone: item.phone || item.indemnitorPhone || item.defendantPhone || ''
             };
         }
@@ -118,26 +126,18 @@ export async function requestFreshSigningLink(params) {
     }
 
     try {
-        console.log(`📱 [1-Tap Re-send] Client requested fresh signing link for Case ${caseId} (${phone})...`);
+        console.log(`📱 [1-Tap Re-send] Client requested a staff-issued signing link for Case ${caseId} (${phone})...`);
 
-        // 1. Alert staff & trigger GAS/Super CRM fresh link issuance
-        await callGasAction('resendSigningLinkSms', {
+        await callGasAction('notifyStaffPacketPending', {
             caseId,
             role,
-            phone
+            phone,
+            reason: 'fresh_signing_link_request'
         });
-
-        // 2. Dispatch immediate confirmation via BlueBubbles iMessage / SMS bridge
-        if (phone) {
-            await sendBlueBubblesMessage({
-                to: phone,
-                text: `☘️ Shamrock Bail Bonds: We are preparing your fresh signing link for Case ${caseId || 'Bail'}. You will receive a new text in under 60 seconds. Need help? Call (239) 332-2245.`
-            }).catch(smsErr => console.warn('BlueBubbles dispatch notice non-fatal:', smsErr.message));
-        }
 
         return {
             success: true,
-            message: 'Fresh signing link dispatched via SMS! Please check your messages.'
+            message: 'A Shamrock bondsman will send your official signing link from Super CRM. Need help now? Call (239) 332-2245.'
         };
 
     } catch (error) {

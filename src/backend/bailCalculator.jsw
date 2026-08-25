@@ -12,9 +12,8 @@
  * @module bailCalculator
  */
 
-import { fetch } from 'wix-fetch';
 import wixData from 'wix-data';
-import { getGasWebAppUrl } from 'backend/secretsManager';
+import { callGasAction } from 'backend/gasIntegration';
 import { PRIMARY_COUNTIES, TRANSFER_FEE_BASE, BOND_FEE_PERCENTAGE, BOND_FEE_MINIMUM } from 'public/portal-config';
 
 // ============================================================================
@@ -46,38 +45,21 @@ export async function fetchBookingData(searchParams) {
             return { success: false, message: 'Last name is required' };
         }
 
-        // Get the GAS endpoint URL from secrets
-        let gasEndpoint;
         try {
-            gasEndpoint = await getGasWebAppUrl();
-        } catch (e) {
-            // Fallback to default endpoint if secret not configured
-            gasEndpoint = null;
-        }
-
-        // If we have a GAS endpoint configured, use it
-        if (gasEndpoint) {
-            const response = await fetch(gasEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    action: 'fetchBooking',
-                    params: searchParams
-                })
+            const gasResult = await callGasAction('lookupDefendant', {
+                name: [searchParams.firstName, searchParams.lastName].filter(Boolean).join(' '),
+                county: searchParams.county,
+                bookingNumber: searchParams.bookingNumber
             });
-
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success && result.data) {
-                    return {
-                        success: true,
-                        data: normalizeBookingData(result.data),
-                        source: 'gas'
-                    };
-                }
+            if (gasResult && gasResult.success && (gasResult.data || (gasResult.results && gasResult.results[0]))) {
+                return {
+                    success: true,
+                    data: normalizeBookingData(gasResult.data || gasResult.results[0]),
+                    source: 'gas'
+                };
             }
+        } catch (gasErr) {
+            console.warn('Booking lookup via GAS failed:', gasErr.message);
         }
 
         // Check local cache for recent booking data
@@ -90,13 +72,9 @@ export async function fetchBookingData(searchParams) {
             };
         }
 
-        // Return mock data for development/demo purposes
-        // In production, this would return an error if no data found
         return {
-            success: true,
-            data: generateMockBookingData(searchParams),
-            source: 'mock',
-            message: 'Using estimated data - verify with county records'
+            success: false,
+            message: 'No booking record found. Manual verification required.'
         };
 
     } catch (error) {

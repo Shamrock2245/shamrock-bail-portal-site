@@ -190,6 +190,7 @@ function purgeOldFiles(cutoffDate) {
  * @returns {object} The result of the operation.
  */
 function generateAndSendWithWixPortal_Safe(formData) {
+  return blockLegacyDirectPaperwork_('compliance_generate_and_send_with_wix_portal_safe');
   const user = Session.getActiveUser() ? Session.getActiveUser().getEmail() : 'anonymous';
   const caseId = formData.caseNumber || formData['case-number'] || 'UNKNOWN_CASE';
 

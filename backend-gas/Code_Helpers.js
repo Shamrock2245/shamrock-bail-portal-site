@@ -4,6 +4,7 @@
  * @param {object} payload The data sent from the Wix portal.
  */
 function generateAndSendWithWixPortal_Safe(payload) {
+    return blockLegacyDirectPaperwork_('helpers_generate_and_send_with_wix_portal_safe');
     const userId = payload.userId || (payload.formData ? payload.formData.email : 'unknown');
     const caseId = payload.caseId || payload.caseNumber || 'pending';
 
