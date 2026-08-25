@@ -96,6 +96,33 @@ function shannonLeadsHeaders_() {
   return { 'Content-Type': 'application/json', 'X-API-Key': key };
 }
 
+function sendShannonText_(to, body) {
+  if (!to || !body) return { success: false, error: 'missing_to_or_body' };
+  try {
+    var res = UrlFetchApp.fetch(SHANNON_LEADS_URL + '/api/imessage/shannon/send', {
+      method: 'post',
+      headers: shannonLeadsHeaders_(),
+      payload: JSON.stringify({ phone: to, message: body, source: 'shannon_voice' }),
+      muteHttpExceptions: true,
+      followRedirects: true
+    });
+    var parsed = {};
+    try { parsed = JSON.parse(res.getContentText() || '{}'); } catch (e) { parsed = {}; }
+    var ok = res.getResponseCode() >= 200 && res.getResponseCode() < 300 &&
+      (parsed.success || parsed.sent || parsed.queued);
+    return {
+      success: !!ok,
+      sent: !!parsed.sent,
+      queued: !!parsed.queued,
+      channel: parsed.channel || 'bluebubbles',
+      error: parsed.error || (ok ? '' : ('http_' + res.getResponseCode()))
+    };
+  } catch (err) {
+    Logger.log('Shannon BlueBubbles text failed: ' + err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 function shannonSyncIntakeToCrm_(params) {
   var url = SHANNON_LEADS_URL + '/api/intake/submit';
   var res = UrlFetchApp.fetch(url, {
@@ -326,11 +353,11 @@ function toolEmailPaperworkToIndemnitor(params) {
   }
 
   var phone = String(payload.indemnitor_phone || payload.caller_phone || '').trim();
-  if (phone && typeof sendSmsViaTwilio === 'function' && links.indemnitor_sign_url) {
+  if (phone && links.indemnitor_sign_url) {
     try {
-      sendSmsViaTwilio(phone, '☘️ Shamrock Bail Bonds: Sign paperwork for ' + defName + ': ' + links.indemnitor_sign_url + ' Pay: ' + (links.payment_link || SHANNON_PAYMENT_LINK));
+      sendShannonText_(phone, '☘️ Shamrock Bail Bonds: Sign paperwork for ' + defName + ': ' + links.indemnitor_sign_url + ' Pay: ' + (links.payment_link || SHANNON_PAYMENT_LINK));
     } catch (smsErr) {
-      Logger.log('Shannon paperwork SMS non-fatal: ' + smsErr.message);
+      Logger.log('Shannon paperwork text non-fatal: ' + smsErr.message);
     }
   }
 

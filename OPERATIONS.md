@@ -25,6 +25,8 @@ Set in Netlify site `shamrock-telegram` → Environment variables (production). 
 | `SHANNON_LIVE=false` | Public callers ring office phones. If nobody answers, Shannon still picks up so no call is dropped. |
 | `SHANNON_ROTATE_ERIC=true` | Optional. Mixes Eric in. Default is Shannon only. |
 
+Shannon mid-call texts (`send_sms`, payment link, directions, paperwork follow-up) go through **BlueBubbles** (`POST /api/imessage/shannon/send`). Twilio is voice-only. Live SIP transfer is not available on the register-call path; Shannon notifies a bondsman to call back.
+
 ### Voice Prompting Rules
 Voice AI requires vastly different prompting than text AI:
 1. **No Formatting**: Never output markdown, bullet points, or asterisks. Shannon reads them literally (e.g., "asterisk bold asterisk").

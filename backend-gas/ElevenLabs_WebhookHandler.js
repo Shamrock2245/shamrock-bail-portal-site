@@ -1050,7 +1050,9 @@ function toolSendPaymentLink(params) {
         '\nPay securely here:\n' + paymentLink +
         '\n\nQuestions? Call (239) 332-2245';
 
-    var smsResult = sendSmsViaTwilio(callerPhone, smsBody);
+    var smsResult = (typeof sendShannonText_ === 'function')
+        ? sendShannonText_(callerPhone, smsBody)
+        : { success: false, error: 'BlueBubbles text helper not loaded' };
 
     // Slack notification
     try {
@@ -1074,7 +1076,7 @@ function toolSendPaymentLink(params) {
         return ContentService.createTextOutput(JSON.stringify({
             status: 'sent',
             payment_link: paymentLink,
-            message: 'I just sent a secure payment link to your phone. You should receive a text message in the next few seconds with a link to make your payment online.'
+            message: 'I just texted a secure payment link to your phone. You should get it in a few seconds.'
         })).setMimeType(ContentService.MimeType.JSON);
     } else {
         return ContentService.createTextOutput(JSON.stringify({
@@ -1164,8 +1166,8 @@ function toolScheduleCallback(params) {
 
 /**
  * Tool: transfer_to_bondsman
- * Alerts the on-call bondsman via Slack + SMS. Shannon provides a hold message.
- * NOTE: Does NOT perform a live SIP transfer — that requires ElevenLabs Twilio config.
+ * Alerts the on-call bondsman via Slack + BlueBubbles. Shannon cannot SIP-transfer
+ * on the register-call Twilio path (ElevenLabs does not have our Twilio credentials).
  *
  * Expected params: { "caller_phone": "...", "reason": "..." }
  */
@@ -1184,7 +1186,7 @@ function toolTransferToBondsman(params) {
                 '• Caller: ' + (callerPhone || 'Unknown') + '\n' +
                 '• Reason: ' + reason + '\n' +
                 '• Action: Call this person back IMMEDIATELY.\n' +
-                '• Source: Shannon (AI After-Hours Agent)',
+                '• Source: Shannon voice paperwork assistant',
                 null
             );
         }
@@ -1200,11 +1202,13 @@ function toolTransferToBondsman(params) {
 
     if (onCallPhone) {
         try {
-            sendSmsViaTwilio(onCallPhone,
-                '🚨 URGENT: Caller ' + (callerPhone || 'unknown') + ' needs a bondsman NOW.\n' +
-                'Reason: ' + reason + '\n' +
-                'Please call them back immediately. — Shannon AI'
-            );
+            if (typeof sendShannonText_ === 'function') {
+                sendShannonText_(onCallPhone,
+                    '🚨 URGENT: Caller ' + (callerPhone || 'unknown') + ' needs a bondsman NOW.\n' +
+                    'Reason: ' + reason + '\n' +
+                    'Please call them back immediately. — Shannon'
+                );
+            }
         } catch (smsErr) {
             Logger.log('On-call SMS failed (non-fatal): ' + smsErr.message);
         }
@@ -1348,7 +1352,9 @@ function toolSendDirections(params) {
         (countyInfo.jail_phone ? 'Jail Phone: ' + countyInfo.jail_phone + '\n' : '') +
         'Questions? Call (239) 332-2245';
 
-    var smsResult = sendSmsViaTwilio(callerPhone, smsBody);
+    var smsResult = (typeof sendShannonText_ === 'function')
+        ? sendShannonText_(callerPhone, smsBody)
+        : { success: false, error: 'BlueBubbles text helper not loaded' };
 
     if (smsResult && smsResult.success) {
         return ContentService.createTextOutput(JSON.stringify({
@@ -1371,8 +1377,7 @@ function toolSendDirections(params) {
 
 /**
  * Tool: send_sms
- * Sends a custom text message to a phone number via Twilio.
- * Used by the agent to text court dates, directions, confirmations, etc.
+ * Sends a custom text via BlueBubbles (iMessage/SMS relay). Never Twilio.
  *
  * Expected params: { "to_phone": "...", "message": "..." }
  */
@@ -1421,7 +1426,9 @@ function toolSendSMS(params) {
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    var smsResult = sendSmsViaTwilio(toPhone, message);
+    var smsResult = (typeof sendShannonText_ === 'function')
+        ? sendShannonText_(toPhone, message)
+        : { success: false, error: 'BlueBubbles text helper not loaded' };
 
     if (smsResult && smsResult.success) {
         // Increment daily counter (expires in 24h)

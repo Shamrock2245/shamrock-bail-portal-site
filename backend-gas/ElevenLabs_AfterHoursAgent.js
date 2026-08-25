@@ -42,7 +42,7 @@ var AFTER_HOURS_AGENT_CONFIG = {
         "1. NEVER ask for the caller's phone number — use {{caller_phone}} automatically.",
         "2. NEVER quote exact prices as guarantees — always frame as estimates until bond is confirmed.",
         "3. NEVER give legal advice. Say: I am not an attorney, but a lot of our clients find it helpful to consult with one.",
-        "4. NEVER transfer to 239-332-2245 — it loops back to you via Twilio. Only transfer to 239-955-0178.",
+        "4. NEVER transfer to 239-332-2245 — it loops back to you via Twilio. Do not use transfer_to_number. Live SIP transfer is not available on this line. Call transfer_to_bondsman or notify_bondsman so a bondsman calls them back at 239-955-0178.",
         "5. Defendant name + county = minimum to start. Then collect the paperwork fields for the caller's role.",
         "6. Log everything. create_intake is required. Save paperwork answers as you go.",
         "7. Paperwork interviews may take 10 to 15 minutes. Do not rush. Ask one or two fields at a time.",
@@ -52,6 +52,7 @@ var AFTER_HOURS_AGENT_CONFIG = {
         "11. Do not invent bond amounts, charges, POA numbers, or surety. If unknown, say we will confirm.",
         "12. Output spoken sentences only. No markdown, bullets, or asterisks.",
         "13. You MAY email the indemnitor the DocuSeal signing link and the payment link once you have their name and email.",
+        "14. All texts you send go through BlueBubbles iMessage, never Twilio SMS. After send_sms, send_payment_link, or send_directions, tell the caller you texted them.",
         "",
         "# Spanish Detection (HIGHEST PRIORITY — Execute Before Anything Else)",
         "If the caller speaks, writes, or uses ANY Spanish word or phrase — including but not limited to: hola, buenos dias, necesito, ayuda, fianza, mi hijo, mi esposo, carcel, preso, por favor — IMMEDIATELY call transfer_to_agent to route to Sofia WITHOUT asking any questions first. Do not greet them in English. Do not ask if they speak Spanish. Zero-delay transfer. This step is critically important.",
@@ -128,7 +129,7 @@ var AFTER_HOURS_AGENT_CONFIG = {
         "- Underwriting decision is beyond AI scope (bonds over $100K, complex collateral situations)",
         "- Caller is an attorney or law enforcement requesting specific operational details",
         "",
-        "When transferring: ALWAYS call create_intake first to log everything collected so far, then explain: \"Let me connect you with one of our bondsmen right now.\""
+        "When they need a person: ALWAYS call create_intake first, then transfer_to_bondsman or notify_bondsman. Say: A bondsman is going to call you right back at this number. Do not promise a live warm transfer."
     ].join('\n'),
 
     // Voice: Jessica — warm, bright, playful American female (Shannon's voice)
@@ -439,18 +440,14 @@ function sendAfterHoursConfirmationSMS_(phone, name) {
         'If urgent, call our office at (239) 332-2245. — Shamrock Bail Bonds 🍀';
 
     try {
-        // Use existing Twilio client if available
-        if (typeof TwilioClient !== 'undefined') {
-            TwilioClient.sendSMS(phone, message);
-            console.log('📱 Confirmation SMS sent to ' + phone);
-        } else if (typeof NotificationService !== 'undefined' && NotificationService.sendSMS) {
-            NotificationService.sendSMS(phone, message);
-            console.log('📱 Confirmation SMS sent to ' + phone);
+        if (typeof sendShannonText_ === 'function') {
+            sendShannonText_(phone, message);
+            console.log('📱 Confirmation text queued via BlueBubbles to ' + phone);
         } else {
-            console.warn('No SMS client available. SMS not sent.');
+            console.warn('BlueBubbles text helper not loaded. Confirmation not sent.');
         }
     } catch (e) {
-        console.error('SMS Confirmation Failed: ' + e.message);
+        console.error('Confirmation text failed: ' + e.message);
     }
 }
 

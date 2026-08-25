@@ -181,6 +181,11 @@ def main() -> int:
         except Exception as exc:
             print("send_paperwork tool patch skipped:", exc)
 
+    existing_tts = dict(((existing.get("conversation_config") or {}).get("tts") or {}))
+    existing_asr = dict(((existing.get("conversation_config") or {}).get("asr") or {}))
+    existing_tts["agent_output_audio_format"] = "ulaw_8000"
+    existing_asr["user_input_audio_format"] = "ulaw_8000"
+
     patch = {
         "name": "Shannon — Shamrock Paperwork Assistant",
         "conversation_config": {
@@ -204,6 +209,8 @@ def main() -> int:
                 "silence_end_call_timeout": 45,
             },
             "conversation": {"max_duration_seconds": 900},
+            "asr": existing_asr,
+            "tts": existing_tts,
         },
     }
     _el_request("PATCH", f"/v1/convai/agents/{agent_id}", patch)
