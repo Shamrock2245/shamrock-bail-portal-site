@@ -89,15 +89,16 @@ EMAIL_TOOL_ID = "tool_0501m0xjhwh5evqtfnhn50mb9bk7"
 ID_TOOL_ID = "tool_0701m0zcarw2fvsr1gekvsr43djy"
 OFFICE_E164 = "+12393322245"
 
-# Streaming custom guardrails can only end the call. Warm transfer to the
-# office requires blocking + retry, which injects this feedback so Shannon
-# calls transfer_to_number instead of hanging up.
-_GUARDRAIL_TRANSFER_FEEDBACK = (
-    "Your response was blocked by a guardrail that blocks content that matches "
-    "this condition/category: '{{trigger_reason}}'. Do not repeat the blocked "
-    "content. During your next turn you MUST transfer the call to a human "
-    f"operator using the transfer_to_number tool to {OFFICE_E164}. Say you are "
-    "connecting them to the office at 239-332-2245. Never send them to 727-295-2245."
+# Blocking + retry: rewrite the turn. Do not transfer. Shannon's Twilio
+# register-call path cannot use transfer_to_number (external calls).
+_GUARDRAIL_CONTINUE_FEEDBACK = (
+    "Your previous response was blocked. Blocked text: '{{agent_message}}'. "
+    "During your next turn continue the bail paperwork on this call. Ask for "
+    "the indemnitor name as it appears on their driver license, then their email. "
+    "Do not transfer unless the caller asked for a person. Do not call "
+    "transfer_to_number. Do not give legal advice about pleas, judges, or specific "
+    "attorneys. Never send them to 727-295-2245. If they asked for a person, the "
+    "office is 239-332-2245. Do not repeat the blocked wording."
 )
 
 
@@ -109,7 +110,7 @@ def _custom_guardrail(name: str, prompt: str) -> dict:
         "execution_mode": "blocking",
         "trigger_action": {
             "type": "retry",
-            "feedback": _GUARDRAIL_TRANSFER_FEEDBACK,
+            "feedback": _GUARDRAIL_CONTINUE_FEEDBACK,
         },
     }
 
@@ -117,9 +118,13 @@ def _custom_guardrail(name: str, prompt: str) -> dict:
 SHANNON_CUSTOM_GUARDRAILS = [
     _custom_guardrail(
         "No legal advice",
-        "Block only if Shannon gives legal advice: what to plead, what a judge will do, "
-        "whether a charge will be dropped, whether they need a lawyer, or a specific attorney. "
-        "Allow: she is not an attorney, a bondsman will review, call 239-332-2245.",
+        "Block only if Shannon tells the caller what to plead, predicts what a judge or "
+        "prosecutor will do, says a charge will be dropped or dismissed, or recommends a "
+        "specific attorney. Never block paperwork. Always allow starting the packet, asking "
+        "for the name on the driver license, saying legal name, email, ID photos, county, "
+        "listed charges, bond amount, Florida premium estimates, inmate status, and emailing "
+        "DocuSeal. The phrase legal name is paperwork, not legal advice. Allow saying she is "
+        "not an attorney and a bondsman will review.",
     ),
     _custom_guardrail(
         "Never send them to 727",
@@ -136,7 +141,7 @@ SHANNON_CUSTOM_GUARDRAILS = [
 
 
 def _merge_guardrails(existing: dict | None) -> dict:
-    """Keep Focus + Manipulation on, Content off, custom rails with office transfer."""
+    """Keep Focus + Manipulation on, Content off, custom rails that continue paperwork."""
     g = json.loads(json.dumps(existing or {}))
     g["version"] = "1"
     g.setdefault("focus", {})["is_enabled"] = True
@@ -193,10 +198,23 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str) -> dict:
             "the spelled address. Ask if anything else is needed. Office is 239-332-2245."
         )
     if "n_a_present" in nodes:
+        nodes["n_a_present"]["edge_order"] = ["e27", "e28"]
         nodes["n_a_present"]["additional_prompt"] = (
-            "Give a Florida estimate only, never a guaranteed price. Spell the indemnitor email "
-            "before sending paperwork. Offer paperwork now or a bondsman at 239-332-2245."
+            "They are posting the bond. Start paperwork now. Collect the indemnitor name as it "
+            "appears on the driver license, then email. Do not transfer unless they asked for a person."
         )
+    if "e27" in edges:
+        edges["e27"]["forward_condition"] = {
+            "label": None,
+            "type": "llm",
+            "condition": "The caller is posting the bond or wants paperwork, even if they did not use the word paperwork.",
+        }
+    if "e28" in edges:
+        edges["e28"]["forward_condition"] = {
+            "label": None,
+            "type": "llm",
+            "condition": "The caller explicitly asked for a person, a bondsman, or to be transferred. Starting paperwork is not a transfer.",
+        }
     if id_tid and "n_a_id" not in nodes and "n_a_intake" in nodes:
         nodes["n_a_id"] = {
             "type": "tool",
@@ -495,7 +513,7 @@ def main() -> int:
         "transfer_type": "conference",
         "phone_number": OFFICE_E164,
         "condition": (
-            "Caller requests a person, is angry, or a policy guardrail required a human bondsman. "
+            "Caller explicitly asked for a person or a bondsman. Starting paperwork is not a transfer. "
             "Office line is 239-332-2245. Never send them back to 727-295-2245."
         ),
         "custom_sip_headers": [],

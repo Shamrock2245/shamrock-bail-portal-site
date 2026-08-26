@@ -37,10 +37,13 @@ def test_tune_workflow_drops_underwriting_edges():
     assert out["nodes"]["n_a_bg"]["tools"] == []
 
 
-def test_custom_guardrails_warm_transfer_to_office():
+def test_custom_guardrails_continue_paperwork_not_transfer():
     rails = _mod.SHANNON_CUSTOM_GUARDRAILS
     names = {item["name"] for item in rails}
     assert names == {"No legal advice", "Never send them to 727", "No promised release"}
+    legal = next(item for item in rails if item["name"] == "No legal advice")
+    assert "legal name" in legal["prompt"].lower()
+    assert "never block paperwork" in legal["prompt"].lower()
     merged = _mod._merge_guardrails({
         "content": {"config": {"violence": {"is_enabled": True, "threshold": 0.5}}},
         "focus": {"is_enabled": False},
@@ -52,12 +55,30 @@ def test_custom_guardrails_warm_transfer_to_office():
         assert item["is_enabled"] is True
         assert item["execution_mode"] == "blocking"
         assert item["trigger_action"]["type"] == "retry"
-        assert "+12393322245" in item["trigger_action"]["feedback"]
-        assert "transfer_to_number" in item["trigger_action"]["feedback"]
+        fb = item["trigger_action"]["feedback"]
+        assert "continue the bail paperwork" in fb.lower()
+        assert "Do not call transfer_to_number" in fb
+        assert "MUST transfer" not in fb
         assert "end_call" not in str(item["trigger_action"])
+
+
+def test_present_node_prefers_paperwork_over_office():
+    wf = {
+        "nodes": {
+            "n_a_present": {"edge_order": ["e27", "e28"], "additional_prompt": ""},
+        },
+        "edges": {
+            "e27": {"source": "n_a_present", "target": "n_a_intake", "forward_condition": {"type": "llm"}},
+            "e28": {"source": "n_a_present", "target": "n_transfer", "forward_condition": {"type": "llm"}},
+        },
+    }
+    out = _mod._tune_workflow(wf, "email_tid", "id_tid")
+    assert "start paperwork" in out["nodes"]["n_a_present"]["additional_prompt"].lower()
+    assert "explicitly asked for a person" in out["edges"]["e28"]["forward_condition"]["condition"].lower()
 
 
 if __name__ == "__main__":
     test_tune_workflow_drops_underwriting_edges()
-    test_custom_guardrails_warm_transfer_to_office()
+    test_custom_guardrails_continue_paperwork_not_transfer()
+    test_present_node_prefers_paperwork_over_office()
     print("ok")
