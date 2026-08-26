@@ -62,6 +62,21 @@ def test_custom_guardrails_continue_paperwork_not_transfer():
         assert "end_call" not in str(item["trigger_action"])
 
 
+def test_transfer_twiml_dials_office_not_shannon():
+    path = (
+        Path(__file__).resolve().parents[2]
+        / "shamrock-telegram-app"
+        / "netlify"
+        / "edge-functions"
+        / "twilio-transfer-office.js"
+    )
+    text = path.read_text(encoding="utf-8")
+    assert "const OFFICE_LINE = '+12393322245'" in text
+    assert "<Number>${OFFICE_LINE}</Number>" in text
+    assert "<Number>+17272952245</Number>" not in text
+    assert "Never dial 727-295-2245" in text or "Never dial 727" in text
+
+
 def test_present_node_prefers_paperwork_over_office():
     wf = {
         "nodes": {
@@ -77,8 +92,26 @@ def test_present_node_prefers_paperwork_over_office():
     assert "explicitly asked for a person" in out["edges"]["e28"]["forward_condition"]["condition"].lower()
 
 
+def test_workflow_transfer_node_is_office_not_0178():
+    wf = {
+        "nodes": {
+            "n_transfer": {
+                "type": "phone_number",
+                "phone_number": "+12399550178",
+                "transfer_destination": {"type": "phone", "phone_number": "+12399550178"},
+            }
+        },
+        "edges": {},
+    }
+    out = _mod._tune_workflow(wf, "email_tid", "id_tid")
+    assert out["nodes"]["n_transfer"]["phone_number"] == "+12393322245"
+    assert out["nodes"]["n_transfer"]["transfer_destination"]["phone_number"] == "+12393322245"
+
+
 if __name__ == "__main__":
     test_tune_workflow_drops_underwriting_edges()
     test_custom_guardrails_continue_paperwork_not_transfer()
+    test_transfer_twiml_dials_office_not_shannon()
     test_present_node_prefers_paperwork_over_office()
+    test_workflow_transfer_node_is_office_not_0178()
     print("ok")

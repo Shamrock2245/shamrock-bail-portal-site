@@ -92,7 +92,7 @@ var AFTER_HOURS_AGENT_CONFIG = {
         "save_paperwork_answers: after every section. Pass case_reference.",
         "email_paperwork_to_indemnitor: after they confirm the spelled email, email the MAIN indemnitor the DocuSeal signing link and payment link. indemnitor_email must be name@domain.com. Never email the jail. Do not also call send_paperwork.",
         "request_id_photo: text an ID photo-upload link or email ID instructions. method is upload or email. Then ask if it arrived.",
-        "notify_bondsman and transfer_to_bondsman: human at 239-332-2245.",
+        "notify_bondsman: Slack the office for a callback. transfer_to_bondsman: connect this live call to 239-332-2245. Pass caller_phone and call_sid from {{call_sid}}. Use only if they asked for a person. Do not use transfer_to_number.",
         "send_payment_link and send_sms: BlueBubbles texts.",
         "schedule_callback: if they cannot finish.",
         "send_directions: jail or courthouse address.",

@@ -1245,17 +1245,52 @@ function toolScheduleCallback(params) {
     })).setMimeType(ContentService.MimeType.JSON);
 }
 
+function redirectLiveCallToOffice_(callSid, callerPhone) {
+    var secret = '';
+    try {
+        secret = PropertiesService.getScriptProperties().getProperty('ELEVENLABS_TOOL_SECRET') || '';
+    } catch (_) {}
+    if (!secret) return { ok: false, error: 'missing_tool_secret' };
+    var url = 'https://shamrock-telegram.netlify.app/api/twilio-transfer-office';
+    try {
+        var resp = UrlFetchApp.fetch(url, {
+            method: 'post',
+            contentType: 'application/json',
+            headers: { 'X-API-Key': secret, 'X-Internal-Token': secret },
+            payload: JSON.stringify({
+                call_sid: callSid || '',
+                caller_phone: callerPhone || '',
+                reason: 'shannon_transfer'
+            }),
+            muteHttpExceptions: true,
+            followRedirects: true
+        });
+        var body = {};
+        try { body = JSON.parse(resp.getContentText() || '{}'); } catch (_) {}
+        return {
+            ok: resp.getResponseCode() >= 200 && resp.getResponseCode() < 300 && body.success === true,
+            status: resp.getResponseCode(),
+            body: body
+        };
+    } catch (err) {
+        return { ok: false, error: err.message };
+    }
+}
+
 /**
  * Tool: transfer_to_bondsman
- * Alerts the on-call bondsman via Slack + BlueBubbles. Shannon cannot SIP-transfer
- * on the register-call Twilio path (ElevenLabs does not have our Twilio credentials).
+ * Redirects the live Twilio call to (239) 332-2245, then Slack + BlueBubbles
+ * the on-call bondsman. Native ElevenLabs transfer_to_number does not work on
+ * the register-call path.
  *
- * Expected params: { "caller_phone": "...", "reason": "..." }
+ * Expected params: { "caller_phone": "...", "reason": "...", "call_sid": "CA..." }
  */
 function toolTransferToBondsman(params) {
-    var callerPhone = (params.caller_phone || '').trim();
+    var callerPhone = (params.caller_phone || params.caller_id || '').trim();
     var reason = (params.reason || 'Caller requested live agent').trim();
+    var callSid = (params.call_sid || params.CallSid || params.callSid || '').trim();
 
+    var live = redirectLiveCallToOffice_(callSid, callerPhone);
     var config = getConfig();
 
     // Send Slack alert to staff
@@ -1295,10 +1330,18 @@ function toolTransferToBondsman(params) {
         }
     }
 
+    if (live.ok) {
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'connecting',
+            result: 'Connecting you to the office at 239-332-2245 now. Please stay on the line.',
+            message: 'Connecting you to the office at 239-332-2245 now. Please stay on the line.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
         status: 'transfer_requested',
-        message: 'You can reach our office at 239-332-2245. I have also notified a bondsman, ' +
-            'and they can call you back at this number. Keep your phone nearby.'
+        result: 'I could not connect this live call automatically. You can reach our office at 239-332-2245. I have notified a bondsman, and they can call you back. Keep your phone nearby.',
+        message: 'I could not connect this live call automatically. You can reach our office at 239-332-2245. I have notified a bondsman, and they can call you back. Keep your phone nearby.'
     })).setMimeType(ContentService.MimeType.JSON);
 }
 

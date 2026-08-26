@@ -65,13 +65,13 @@ def _tool_url(tool: str) -> str:
     return f"{GAS_EXEC}?source=elevenlabs_tool&tool={tool}&secret={secret}"
 
 
-def _prop(name: str, description: str, required: bool = False) -> dict:
+def _prop(name: str, description: str, required: bool = False, dynamic_variable: str = "") -> dict:
     return {
         "type": "string",
         "description": description,
         "enum": None,
         "is_system_provided": False,
-        "dynamic_variable": "",
+        "dynamic_variable": dynamic_variable,
         "is_omitted": False,
     }
 
@@ -87,6 +87,7 @@ DROP_AGENT_TOOLS = frozenset({
 })
 EMAIL_TOOL_ID = "tool_0501m0xjhwh5evqtfnhn50mb9bk7"
 ID_TOOL_ID = "tool_0701m0zcarw2fvsr1gekvsr43djy"
+TRANSFER_TOOL_ID = "tool_6201kjw9k6xff9p9qa8qtbjr8ya4"
 OFFICE_E164 = "+12393322245"
 
 # Blocking + retry: rewrite the turn. Do not transfer. Shannon's Twilio
@@ -215,6 +216,12 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str) -> dict:
             "type": "llm",
             "condition": "The caller explicitly asked for a person, a bondsman, or to be transferred. Starting paperwork is not a transfer.",
         }
+    if "n_transfer" in nodes:
+        nodes["n_transfer"]["transfer_destination"] = {
+            "type": "phone",
+            "phone_number": OFFICE_E164,
+        }
+        nodes["n_transfer"]["phone_number"] = OFFICE_E164
     if id_tid and "n_a_id" not in nodes and "n_a_intake" in nodes:
         nodes["n_a_id"] = {
             "type": "tool",
@@ -331,6 +338,45 @@ def _ensure_knowledge_base(agent: dict) -> list[dict]:
         "usage_mode": "auto",
     })
     return kept
+
+
+def _ensure_transfer_tool() -> None:
+    """Keep call_sid on transfer_to_bondsman so Twilio can redirect the live call."""
+    existing = _el_request("GET", f"/v1/convai/tools/{TRANSFER_TOOL_ID}")
+    cfg = existing.get("tool_config") or {}
+    schema = ((cfg.get("api_schema") or {}).get("request_body_schema") or {})
+    props = dict(schema.get("properties") or {})
+    # ElevenLabs allows only one of description / dynamic_variable per property.
+    props["call_sid"] = {
+        "type": "string",
+        "dynamic_variable": "call_sid",
+        "enum": None,
+        "is_system_provided": False,
+        "allowed_values_dynamic_variable": "",
+        "constant_value": "",
+        "is_omitted": False,
+    }
+    props["caller_phone"] = {
+        "type": "string",
+        "dynamic_variable": "caller_phone",
+        "enum": None,
+        "is_system_provided": False,
+        "allowed_values_dynamic_variable": "",
+        "constant_value": "",
+        "is_omitted": False,
+    }
+    schema["properties"] = props
+    schema["required"] = ["reason"]
+    cfg["api_schema"]["request_body_schema"] = schema
+    cfg["description"] = (
+        "Connect this live phone call to the Shamrock office at 239-332-2245. "
+        "Use only when the caller asked for a person or a bondsman. Do not use "
+        "for starting paperwork. call_sid and caller_phone are filled from the live call."
+    )
+    cfg["force_pre_tool_speech"] = True
+    cfg["disable_interruptions"] = True
+    _el_request("PATCH", f"/v1/convai/tools/{TRANSFER_TOOL_ID}", {"tool_config": cfg})
+    print("Updated transfer_to_bondsman to pass call_sid")
 
 
 def _webhook_tool(name: str, description: str, properties: dict, required: list[str]) -> dict:
@@ -453,6 +499,14 @@ def main() -> int:
     if id_tid:
         created_ids.append(id_tid)
 
+    try:
+        _ensure_transfer_tool()
+    except Exception as exc:
+        print("transfer_to_bondsman tool patch skipped:", exc)
+    transfer_tid = existing_names.get("transfer_to_bondsman") or TRANSFER_TOOL_ID
+    if transfer_tid and transfer_tid not in tool_ids:
+        tool_ids.append(transfer_tid)
+
     for tid in created_ids:
         if tid not in tool_ids:
             tool_ids.append(tid)
@@ -503,22 +557,9 @@ def main() -> int:
         knowledge_base = list(prompt_cfg.get("knowledge_base") or [])
 
     built_in = json.loads(json.dumps(prompt_cfg.get("built_in_tools") or {}))
-    ttn = built_in.get("transfer_to_number")
-    if not isinstance(ttn, dict):
-        ttn = {"type": "system", "name": "transfer_to_number", "params": {}}
-        built_in["transfer_to_number"] = ttn
-    ttn.setdefault("params", {})
-    ttn["params"]["transfers"] = [{
-        "transfer_destination": {"type": "phone", "phone_number": OFFICE_E164},
-        "transfer_type": "conference",
-        "phone_number": OFFICE_E164,
-        "condition": (
-            "Caller explicitly asked for a person or a bondsman. Starting paperwork is not a transfer. "
-            "Office line is 239-332-2245. Never send them back to 727-295-2245."
-        ),
-        "custom_sip_headers": [],
-        "require_acceptance": False,
-    }]
+    # Native transfer_to_number fails on register-call. Live transfer is
+    # transfer_to_bondsman → Twilio REST Dial to 239-332-2245.
+    built_in["transfer_to_number"] = None
 
     prompt_patch = {
         "prompt": prompt,
