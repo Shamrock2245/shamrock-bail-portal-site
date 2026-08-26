@@ -80,39 +80,80 @@ def _data_field(description: str, dtype: str = "string") -> dict:
     return {"type": dtype, "description": description}
 
 
+DROP_AGENT_TOOLS = frozenset({
+    "evaluate_flight_risk",
+    "run_background_verification",
+    "send_paperwork",
+})
+
+
 def _ensure_knowledge_base(agent: dict) -> list[dict]:
-    """Attach docs/shannon-knowledge-base.txt; reuse an existing Shannon KB doc if present."""
+    """Refresh Shannon RAG from docs/shannon-knowledge-base.txt."""
     prompt_cfg = ((agent.get("conversation_config") or {}).get("agent") or {}).get("prompt") or {}
     existing_kb = list(prompt_cfg.get("knowledge_base") or [])
     wanted_name = "Shannon Shamrock Knowledge"
-    already = any(
-        (doc.get("name") or "") == wanted_name or "shannon" in str(doc.get("name") or "").lower()
-        for doc in existing_kb
-        if isinstance(doc, dict)
-    )
-    if already:
-        return existing_kb
-
     kb_path = ROOT / "docs" / "shannon-knowledge-base.txt"
     if not kb_path.is_file():
         print("Knowledge base file missing; skipping attach")
         return existing_kb
 
+    text = kb_path.read_text(encoding="utf-8")
+    existing_id = None
+    for doc in existing_kb:
+        if not isinstance(doc, dict):
+            continue
+        name = str(doc.get("name") or "")
+        if name == wanted_name or "shannon" in name.lower():
+            existing_id = doc.get("id")
+            break
+
+    if existing_id:
+        try:
+            _el_request("PATCH", f"/v1/convai/knowledge-base/{existing_id}", {
+                "name": wanted_name,
+                "text": text,
+            })
+            print(f"Updated knowledge base {wanted_name}: {existing_id}")
+            kept = []
+            replaced = False
+            for doc in existing_kb:
+                if not isinstance(doc, dict):
+                    continue
+                name = str(doc.get("name") or "")
+                if name == wanted_name or "shannon" in name.lower():
+                    if not replaced:
+                        kept.append({
+                            "type": doc.get("type") or "text",
+                            "id": existing_id,
+                            "name": wanted_name,
+                            "usage_mode": "auto",
+                        })
+                        replaced = True
+                    continue
+                kept.append(doc)
+            return kept
+        except Exception as exc:
+            print("Knowledge base PATCH skipped:", exc)
+
     created = _el_request("POST", "/v1/convai/knowledge-base/text", {
-        "text": kb_path.read_text(encoding="utf-8"),
+        "text": text,
         "name": wanted_name,
     })
     doc_id = created.get("id") or created.get("documentation_id")
     print(f"Created knowledge base {wanted_name}: {doc_id}")
     if not doc_id:
         return existing_kb
-    existing_kb.append({
+    kept = [
+        doc for doc in existing_kb
+        if isinstance(doc, dict) and "shannon" not in str(doc.get("name") or "").lower()
+    ]
+    kept.append({
         "type": "text",
         "id": doc_id,
         "name": wanted_name,
         "usage_mode": "auto",
     })
-    return existing_kb
+    return kept
 
 
 def _webhook_tool(name: str, description: str, properties: dict, required: list[str]) -> dict:
@@ -238,6 +279,12 @@ def main() -> int:
         if tid not in tool_ids:
             tool_ids.append(tid)
 
+    drop_ids = {tid for name, tid in existing_names.items() if name in DROP_AGENT_TOOLS}
+    if drop_ids:
+        before = len(tool_ids)
+        tool_ids = [tid for tid in tool_ids if tid not in drop_ids]
+        print(f"Dropped investigator/duplicate tools: {before - len(tool_ids)}")
+
     if not skip_create:
         send_id = "tool_4401kjz6dcxxeyfbr37eesvvz6h4"
         try:
@@ -293,6 +340,7 @@ def main() -> int:
         "prompt": prompt,
         "llm": "gpt-4o",
         "temperature": 0.55,
+        "timezone": "America/New_York",
         "tool_ids": tool_ids,
         "knowledge_base": knowledge_base,
         "rag": {
@@ -327,10 +375,12 @@ def main() -> int:
                 "turn_eagerness": "patient",
                 "turn_timeout": 8,
                 "silence_end_call_timeout": 45,
+                "speculative_turn": False,
                 "soft_timeout_config": {
                     "timeout_seconds": 3.0,
                     "message": "Okay.",
                     "use_llm_generated_message": False,
+                    "disable_until_first_user_message": True,
                 },
             },
             "conversation": {"max_duration_seconds": 900},
@@ -355,7 +405,7 @@ def main() -> int:
                         "id": "paperwork_emailed_to_indemnitor",
                         "name": "paperwork_emailed_to_indemnitor",
                         "type": "prompt",
-                        "conversation_goal_prompt": "Success if the agent emailed or sent DocuSeal signing and payment links to the MAIN indemnitor, not to a jail email.",
+                        "conversation_goal_prompt": "If the caller wanted paperwork, success if the agent spelled the indemnitor email back, got confirmation, then emailed DocuSeal signing and payment links to the MAIN indemnitor, not a jail email. If they only wanted a person, a lookup, or directions, mark unknown.",
                     },
                     {
                         "id": "human_offered_3322245",
