@@ -108,6 +108,18 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str) -> dict:
         )
     if "e23" in edges:
         edges["e23"]["forward_condition"] = {"label": None, "type": "unconditional"}
+        edges["e23"]["target"] = edges["e23"].get("target") or "n_a_present"
+    for eid, edge in list(edges.items()):
+        if not isinstance(edge, dict):
+            continue
+        if eid in ("e21", "e22") or edge.get("target") in ("n_a_flight", "n_a_bg"):
+            edges.pop(eid, None)
+    for dead_node in ("n_a_flight", "n_a_bg"):
+        node = nodes.get(dead_node)
+        if isinstance(node, dict):
+            node["tools"] = []
+            node["edge_order"] = []
+            node["additional_prompt"] = "Disabled. Do not run flight risk or background checks on this call."
     if "n_c_general" in nodes:
         nodes["n_c_general"]["additional_prompt"] = (
             "Answer using the knowledge base. Never recommend a specific attorney. "
