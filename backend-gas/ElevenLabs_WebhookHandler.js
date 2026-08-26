@@ -47,7 +47,12 @@ function handleElevenLabsWebhookSOC2(e) {
             IdempotencyGuard.isDuplicate('elevenlabs_postcall', payload.call_id)) {
             return ContentService.createTextOutput('Duplicate post-call skipped').setMimeType(ContentService.MimeType.TEXT);
         }
-        return handlePostCallTranscription(payload);
+        try {
+            return handlePostCallTranscription(payload);
+        } catch (postErr) {
+            Logger.log('ElevenLabs post-call processing error (returning 200): ' + postErr.message);
+            return ContentService.createTextOutput('Transcription received').setMimeType(ContentService.MimeType.TEXT);
+        }
     }
 
     if (payload.type === 'call_initiation_failure') {
@@ -111,12 +116,33 @@ function handlePostCallTranscription(payload) {
         }
     }
 
-    // Slack notification with case link if matched
+    // Slack notification with case link, evals, and extracted fields
     if (typeof NotificationService !== 'undefined') {
         const caseRef = matchedCaseId ? ' | Case: ' + matchedCaseId : '';
+        const summary = (analysis && (analysis.call_summary || analysis.transcript_summary)) || '(No summary)';
+        let evalLine = '';
+        const evals = analysis && analysis.evaluation_criteria_results;
+        if (evals && typeof evals === 'object') {
+            const bits = [];
+            Object.keys(evals).forEach(function (k) {
+                const r = evals[k] && evals[k].result;
+                if (r) bits.push(k + '=' + r);
+            });
+            if (bits.length) evalLine = '\nEvals: ' + bits.join(', ');
+        }
+        let collectedLine = '';
+        const collected = analysis && analysis.data_collection_results;
+        if (collected && typeof collected === 'object') {
+            const bits = [];
+            Object.keys(collected).forEach(function (k) {
+                const v = collected[k] && collected[k].value;
+                if (v !== undefined && v !== null && String(v) !== '') bits.push(k + '=' + v);
+            });
+            if (bits.length) collectedLine = '\nFields: ' + bits.join(', ');
+        }
         NotificationService.sendSlack(
             '#ai-conversations',
-            '\uD83C\uDFA4 *New AI Conversation*' + caseRef + '\n\n' + (analysis ? analysis.call_summary : '(No summary)')
+            '\uD83C\uDFA4 *Shannon call*' + caseRef + '\n\n' + summary + evalLine + collectedLine
         );
     }
 
@@ -153,10 +179,21 @@ function handlePostCallTranscription(payload) {
             const summary = analysis ? (analysis.call_summary || '') : '';
             // Detect if paperwork was dispatched during this call
             let paperworkSent = 'No';
+            var paperworkTools = {
+                send_paperwork: true,
+                email_paperwork_to_indemnitor: true
+            };
             if (payload.tool_calls && Array.isArray(payload.tool_calls)) {
                 paperworkSent = payload.tool_calls.some(function (t) {
-                    return t.tool_name === 'send_paperwork';
+                    var n = (t && (t.tool_name || t.name)) || '';
+                    return !!paperworkTools[n];
                 }) ? 'Yes' : 'No';
+            }
+            if (paperworkSent !== 'Yes' && analysis && analysis.data_collection_results) {
+                var packetField = analysis.data_collection_results.packet_sent;
+                if (packetField && (packetField.value === true || packetField.value === 'true' || packetField.value === 'Yes')) {
+                    paperworkSent = 'Yes';
+                }
             }
             logSheet.appendRow([
                 new Date(),
@@ -337,6 +374,14 @@ function getCallerContext_(phone) {
  * @param {string} phone - Raw phone string
  * @param {object} facts - Key facts to remember: { call_summary, outcome, defendant_name, ... }
  */
+function redactMem0Text_(text) {
+    var out = String(text || '');
+    out = out.replace(/\b\d{3}-\d{2}-\d{4}\b/g, '[SSN]');
+    out = out.replace(/\b\d{3}\s\d{2}\s\d{4}\b/g, '[SSN]');
+    out = out.replace(/\b(?:\d[ -]*?){13,19}\b/g, '[CARD]');
+    return out;
+}
+
 function saveMem0Memory_(phone, facts) {
     var apiKey = PropertiesService.getScriptProperties().getProperty('MEMO_API_KEY');
     if (!apiKey || !phone) return;
@@ -350,6 +395,7 @@ function saveMem0Memory_(phone, facts) {
     if (facts.outcome) memoryText += 'Outcome: ' + facts.outcome + '. ';
     if (facts.call_summary) memoryText += 'Summary: ' + facts.call_summary.slice(0, 400) + '. ';
     if (facts.paperwork_sent === 'Yes') memoryText += 'Paperwork was sent during this call.';
+    memoryText = redactMem0Text_(memoryText);
 
     try {
         var response = UrlFetchApp.fetch('https://api.mem0.ai/v1/memories/', {
@@ -864,28 +910,60 @@ function toolCheckCallerHistory(payload) {
         Logger.log('Error checking IntakeQueue for history: ' + e.toString());
     }
 
-    // 2. Check Mem0 API
+    // 2. Check Mem0 API (search first, list fallback — same user_id as iMessage)
     try {
         var mem0ApiKey = PropertiesService.getScriptProperties().getProperty('MEMO_API_KEY');
         if (mem0ApiKey) {
-            var mem0Url = 'https://api.mem0.ai/v1/memories/?user_id=' + numOnly;
-            var response = UrlFetchApp.fetch(mem0Url, {
-                method: 'GET',
-                headers: {
-                    'Authorization': 'Token ' + mem0ApiKey,
-                    'Content-Type': 'application/json'
-                },
-                muteHttpExceptions: true
-            });
-
-            if (response.getResponseCode() === 200) {
-                var mem0Data = JSON.parse(response.getContentText());
-                if (mem0Data && mem0Data.length > 0) {
-                    historyResult.found = true;
-                    // Extract memory strings
-                    var memories = mem0Data.map(function (m) { return m.memory; });
-                    historyResult.mem0_context = memories.join(". ");
+            var mem0Headers = {
+                'Authorization': 'Token ' + mem0ApiKey,
+                'Content-Type': 'application/json'
+            };
+            var mem0Facts = [];
+            var searchUrls = ['https://api.mem0.ai/v2/memories/search/', 'https://api.mem0.ai/v1/memories/search/'];
+            var searchBodies = [
+                { query: 'prior bail bond conversation', filters: { user_id: numOnly }, limit: 6 },
+                { query: 'prior bail bond conversation', user_id: numOnly, limit: 6 }
+            ];
+            var s = 0;
+            while (s < searchUrls.length && mem0Facts.length === 0) {
+                var b = 0;
+                while (b < searchBodies.length && mem0Facts.length === 0) {
+                    try {
+                        var searchRes = UrlFetchApp.fetch(searchUrls[s], {
+                            method: 'post',
+                            headers: mem0Headers,
+                            payload: JSON.stringify(searchBodies[b]),
+                            muteHttpExceptions: true
+                        });
+                        if (searchRes.getResponseCode() === 200 || searchRes.getResponseCode() === 201) {
+                            var parsed = JSON.parse(searchRes.getContentText() || '{}');
+                            var items = Array.isArray(parsed) ? parsed : (parsed.results || parsed.memories || parsed.data || []);
+                            mem0Facts = items.map(function (m) {
+                                return (m && (m.memory || m.text)) || '';
+                            }).filter(function (t) { return t; });
+                        }
+                    } catch (_) { }
+                    b++;
                 }
+                s++;
+            }
+            if (mem0Facts.length === 0) {
+                var listRes = UrlFetchApp.fetch('https://api.mem0.ai/v1/memories/?user_id=' + numOnly + '&limit=6', {
+                    method: 'GET',
+                    headers: mem0Headers,
+                    muteHttpExceptions: true
+                });
+                if (listRes.getResponseCode() === 200) {
+                    var listData = JSON.parse(listRes.getContentText() || '[]');
+                    var listItems = Array.isArray(listData) ? listData : (listData.results || listData.memories || []);
+                    mem0Facts = listItems.map(function (m) {
+                        return (m && (m.memory || m.text)) || '';
+                    }).filter(function (t) { return t; });
+                }
+            }
+            if (mem0Facts.length > 0) {
+                historyResult.found = true;
+                historyResult.mem0_context = mem0Facts.join('. ');
             }
         }
     } catch (e) {
@@ -903,7 +981,7 @@ function toolCheckCallerHistory(payload) {
         if (historyResult.notes) agentResponse += "Status: " + historyResult.notes + "\n";
         if (historyResult.mem0_context) agentResponse += "Previous Call Notes (Mem0): " + historyResult.mem0_context + "\n";
 
-        agentResponse += "\nIMPORTANT: Acknowledge that they have called before. If they previously asked about a specific defendant, ask if they are calling about them again.";
+        agentResponse += "\nIMPORTANT: Acknowledge that they have called before. If they previously asked about a specific defendant, ask if they are calling about them again. Do not invent history beyond these notes.";
     }
 
     return ContentService.createTextOutput(JSON.stringify({

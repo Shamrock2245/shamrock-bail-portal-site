@@ -76,6 +76,45 @@ def _prop(name: str, description: str, required: bool = False) -> dict:
     }
 
 
+def _data_field(description: str, dtype: str = "string") -> dict:
+    return {"type": dtype, "description": description}
+
+
+def _ensure_knowledge_base(agent: dict) -> list[dict]:
+    """Attach docs/shannon-knowledge-base.txt; reuse an existing Shannon KB doc if present."""
+    prompt_cfg = ((agent.get("conversation_config") or {}).get("agent") or {}).get("prompt") or {}
+    existing_kb = list(prompt_cfg.get("knowledge_base") or [])
+    wanted_name = "Shannon Shamrock Knowledge"
+    already = any(
+        (doc.get("name") or "") == wanted_name or "shannon" in str(doc.get("name") or "").lower()
+        for doc in existing_kb
+        if isinstance(doc, dict)
+    )
+    if already:
+        return existing_kb
+
+    kb_path = ROOT / "docs" / "shannon-knowledge-base.txt"
+    if not kb_path.is_file():
+        print("Knowledge base file missing; skipping attach")
+        return existing_kb
+
+    created = _el_request("POST", "/v1/convai/knowledge-base/text", {
+        "text": kb_path.read_text(encoding="utf-8"),
+        "name": wanted_name,
+    })
+    doc_id = created.get("id") or created.get("documentation_id")
+    print(f"Created knowledge base {wanted_name}: {doc_id}")
+    if not doc_id:
+        return existing_kb
+    existing_kb.append({
+        "type": "text",
+        "id": doc_id,
+        "name": wanted_name,
+        "usage_mode": "auto",
+    })
+    return existing_kb
+
+
 def _webhook_tool(name: str, description: str, properties: dict, required: list[str]) -> dict:
     return {
         "type": "webhook",
@@ -111,35 +150,35 @@ def main() -> int:
 
     save_tool = _webhook_tool(
         "save_paperwork_answers",
-        "Save a section of bond paperwork answers during the call. Call after every section. Reuse case_reference.",
+        "Save a section of bond paperwork answers during the call. Call after every section. Reuse case_reference from create_intake.",
         {
-            "case_reference": _prop("case_reference", "Intake reference from create_intake"),
-            "caller_role": _prop("caller_role", "defendant, indemnitor, or coindemnitor"),
-            "caller_phone": _prop("caller_phone", "Caller phone from {{caller_phone}}"),
-            "defendant_name": _prop("defendant_name", "Defendant full name"),
-            "county": _prop("county", "Florida county"),
-            "section": _prop("section", "Which section was just collected"),
+            "case_reference": _prop("case_reference", "Intake reference from create_intake, e.g. SH-2395550100-SMITH"),
+            "caller_role": _prop("caller_role", "Exactly one of: defendant, indemnitor, coindemnitor"),
+            "caller_phone": _prop("caller_phone", "Digits from {{caller_phone}}, e.g. +12395550100"),
+            "defendant_name": _prop("defendant_name", "Defendant legal full name, e.g. Jane Ann Doe"),
+            "county": _prop("county", "Florida county name only, e.g. Lee"),
+            "section": _prop("section", "Section just collected, e.g. indemnitor_identity"),
             "indemnitor_name": _prop("indemnitor_name", "Indemnitor legal name"),
-            "indemnitor_email": _prop("indemnitor_email", "Indemnitor email"),
-            "indemnitor_phone": _prop("indemnitor_phone", "Indemnitor phone"),
-            "notes": _prop("notes", "Freeform extras"),
+            "indemnitor_email": _prop("indemnitor_email", "Standard email, e.g. name@domain.com"),
+            "indemnitor_phone": _prop("indemnitor_phone", "Digits only, e.g. 2395550100"),
+            "notes": _prop("notes", "Freeform extras. No SSN."),
         },
         ["caller_role"],
     )
     email_tool = _webhook_tool(
         "email_paperwork_to_indemnitor",
-        "Email the indemnitor the DocuSeal signing link and SwipeSimple payment link. Use when you have indemnitor name, indemnitor email, and defendant name. Do not email the person in jail.",
+        "Email the MAIN indemnitor the DocuSeal signing link and SwipeSimple payment link. Use when indemnitor name, indemnitor email, and defendant name are known. Never email the person in jail.",
         {
-            "case_reference": _prop("case_reference", "Intake reference"),
-            "caller_role": _prop("caller_role", "defendant, indemnitor, or coindemnitor"),
-            "defendant_name": _prop("defendant_name", "Defendant full name"),
-            "county": _prop("county", "Florida county"),
-            "indemnitor_name": _prop("indemnitor_name", "Person who will sign as cosigner"),
-            "indemnitor_email": _prop("indemnitor_email", "Cosigner email"),
-            "indemnitor_phone": _prop("indemnitor_phone", "Cosigner phone"),
-            "caller_phone": _prop("caller_phone", "Caller phone"),
-            "surety_id": _prop("surety_id", "osi or palmetto"),
-            "bond_amount": _prop("bond_amount", "Bond amount if known"),
+            "case_reference": _prop("case_reference", "Intake reference from create_intake"),
+            "caller_role": _prop("caller_role", "Exactly one of: defendant, indemnitor, coindemnitor"),
+            "defendant_name": _prop("defendant_name", "Defendant legal full name"),
+            "county": _prop("county", "Florida county name only, e.g. Lee"),
+            "indemnitor_name": _prop("indemnitor_name", "Person who will sign as the main cosigner"),
+            "indemnitor_email": _prop("indemnitor_email", "Standard email, e.g. name@domain.com. Never a jail email."),
+            "indemnitor_phone": _prop("indemnitor_phone", "Digits only, e.g. 2395550100"),
+            "caller_phone": _prop("caller_phone", "Caller phone from {{caller_phone}}"),
+            "surety_id": _prop("surety_id", "osi or palmetto. Default osi."),
+            "bond_amount": _prop("bond_amount", "Numeric dollars if known, e.g. 5000"),
             "charges": _prop("charges", "Charges if known"),
         },
         ["defendant_name", "indemnitor_name", "indemnitor_email"],
@@ -184,7 +223,19 @@ def main() -> int:
     existing_tts = dict(((existing.get("conversation_config") or {}).get("tts") or {}))
     existing_asr = dict(((existing.get("conversation_config") or {}).get("asr") or {}))
     existing_tts["agent_output_audio_format"] = "ulaw_8000"
+    existing_tts["text_normalisation_type"] = "elevenlabs"
     existing_asr["user_input_audio_format"] = "ulaw_8000"
+    keywords = list(existing_asr.get("keywords") or [])
+    for word in ("Charlotte", "Sarasota", "indemnitor", "capias", "DocuSeal", "Shamrock", "Lee County"):
+        if word not in keywords:
+            keywords.append(word)
+    existing_asr["keywords"] = keywords
+
+    try:
+        knowledge_base = _ensure_knowledge_base(existing)
+    except Exception as exc:
+        print("Knowledge base attach skipped:", exc)
+        knowledge_base = list(prompt_cfg.get("knowledge_base") or [])
 
     built_in = json.loads(json.dumps(prompt_cfg.get("built_in_tools") or {}))
     ttn = built_in.get("transfer_to_number")
@@ -204,6 +255,13 @@ def main() -> int:
         "llm": "gpt-4o",
         "temperature": 0.3,
         "tool_ids": tool_ids,
+        "knowledge_base": knowledge_base,
+        "rag": {
+            "enabled": True,
+            "embedding_model": "e5_mistral_7b_instruct",
+            "max_documents_length": 50000,
+            "max_retrieved_rag_chunks_count": 12,
+        },
     }
     if built_in:
         prompt_patch["built_in_tools"] = built_in
@@ -218,18 +276,80 @@ def main() -> int:
                     "What is your first name?"
                 ),
                 "language": "en",
+                "dynamic_variables": {
+                    "dynamic_variable_placeholders": {
+                        "caller_phone": "+12395550100",
+                        "caller_id": "+12395550100",
+                        "call_sid": "",
+                        "returning_client": "no",
+                        "known_defendant": "",
+                        "prior_notes": "",
+                    }
+                },
                 "prompt": prompt_patch,
             },
             "turn": {
                 "turn_eagerness": "patient",
                 "turn_timeout": 8,
                 "silence_end_call_timeout": 45,
+                "soft_timeout_config": {
+                    "timeout_seconds": 3.0,
+                    "message": "Okay.",
+                    "use_llm_generated_message": False,
+                },
             },
             "conversation": {"max_duration_seconds": 900},
             "asr": existing_asr,
             "tts": existing_tts,
         },
+        "platform_settings": {
+            "guardrails": {
+                "version": "1",
+                "prompt_injection": {"is_enabled": True},
+                "focus": {"is_enabled": True},
+            },
+            "evaluation": {
+                "criteria": [
+                    {
+                        "id": "intake_created",
+                        "name": "intake_created",
+                        "type": "prompt",
+                        "conversation_goal_prompt": "Success if the agent created an intake or obtained a case reference for the defendant.",
+                    },
+                    {
+                        "id": "paperwork_emailed_to_indemnitor",
+                        "name": "paperwork_emailed_to_indemnitor",
+                        "type": "prompt",
+                        "conversation_goal_prompt": "Success if the agent emailed or sent DocuSeal signing and payment links to the MAIN indemnitor, not to a jail email.",
+                    },
+                    {
+                        "id": "human_offered_3322245",
+                        "name": "human_offered_3322245",
+                        "type": "prompt",
+                        "conversation_goal_prompt": "If the caller asked for a person, success if the agent gave 239-332-2245 and did not send them to 727-295-2245. If they did not ask for a person, mark unknown.",
+                    },
+                    {
+                        "id": "no_legal_advice",
+                        "name": "no_legal_advice",
+                        "type": "prompt",
+                        "conversation_goal_prompt": "Success if the agent did not give legal advice or guaranteed court outcomes.",
+                    },
+                ]
+            },
+            "data_collection": {
+                "caller_role": _data_field("Caller role: defendant, indemnitor, or coindemnitor."),
+                "defendant_name": _data_field("Defendant legal full name if stated."),
+                "county": _data_field("Florida county name if stated."),
+                "indemnitor_email": _data_field("Main indemnitor email in name@domain.com form if collected."),
+                "packet_sent": _data_field("True if DocuSeal or payment links were emailed to the indemnitor.", "boolean"),
+                "human_requested": _data_field("True if the caller asked for a person.", "boolean"),
+                "returning_caller": _data_field("True if this was a returning caller with prior history.", "boolean"),
+            },
+        },
     }
+    existing_platform = dict(existing.get("platform_settings") or {})
+    existing_platform.update(patch["platform_settings"])
+    patch["platform_settings"] = existing_platform
     _el_request("PATCH", f"/v1/convai/agents/{agent_id}", patch)
     print("Patched Shannon agent", agent_id)
     return 0
