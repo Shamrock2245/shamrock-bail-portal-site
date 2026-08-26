@@ -87,6 +87,68 @@ DROP_AGENT_TOOLS = frozenset({
 })
 EMAIL_TOOL_ID = "tool_0501m0xjhwh5evqtfnhn50mb9bk7"
 ID_TOOL_ID = "tool_0701m0zcarw2fvsr1gekvsr43djy"
+OFFICE_E164 = "+12393322245"
+
+# Streaming custom guardrails can only end the call. Warm transfer to the
+# office requires blocking + retry, which injects this feedback so Shannon
+# calls transfer_to_number instead of hanging up.
+_GUARDRAIL_TRANSFER_FEEDBACK = (
+    "Your response was blocked by a guardrail that blocks content that matches "
+    "this condition/category: '{{trigger_reason}}'. Do not repeat the blocked "
+    "content. During your next turn you MUST transfer the call to a human "
+    f"operator using the transfer_to_number tool to {OFFICE_E164}. Say you are "
+    "connecting them to the office at 239-332-2245. Never send them to 727-295-2245."
+)
+
+
+def _custom_guardrail(name: str, prompt: str) -> dict:
+    return {
+        "is_enabled": True,
+        "name": name,
+        "prompt": prompt,
+        "execution_mode": "blocking",
+        "trigger_action": {
+            "type": "retry",
+            "feedback": _GUARDRAIL_TRANSFER_FEEDBACK,
+        },
+    }
+
+
+SHANNON_CUSTOM_GUARDRAILS = [
+    _custom_guardrail(
+        "No legal advice",
+        "Block only if Shannon gives legal advice: what to plead, what a judge will do, "
+        "whether a charge will be dropped, whether they need a lawyer, or a specific attorney. "
+        "Allow: she is not an attorney, a bondsman will review, call 239-332-2245.",
+    ),
+    _custom_guardrail(
+        "Never send them to 727",
+        "Block only if Shannon tells the caller to dial, redial, or call back 727-295-2245. "
+        "Allow 239-332-2245 and any other office number.",
+    ),
+    _custom_guardrail(
+        "No promised release",
+        "Block only if Shannon promises they will be released, names a release time, or "
+        "guarantees a court outcome. Allow Florida premium estimates that are clearly estimates, "
+        "jail or court directions, and inmate status from tools.",
+    ),
+]
+
+
+def _merge_guardrails(existing: dict | None) -> dict:
+    """Keep Focus + Manipulation on, Content off, custom rails with office transfer."""
+    g = json.loads(json.dumps(existing or {}))
+    g["version"] = "1"
+    g.setdefault("focus", {})["is_enabled"] = True
+    g.setdefault("prompt_injection", {})["is_enabled"] = True
+    content = g.setdefault("content", {})
+    content.setdefault("config", {})
+    content["trigger_action"] = content.get("trigger_action") or {"type": "end_call"}
+    for cat in content.get("config") or {}:
+        if isinstance(content["config"].get(cat), dict):
+            content["config"][cat]["is_enabled"] = False
+    g["custom"] = {"config": {"configs": list(SHANNON_CUSTOM_GUARDRAILS)}}
+    return g
 
 
 def _tune_workflow(wf: dict, email_tid: str, id_tid: str) -> dict:
@@ -424,16 +486,21 @@ def main() -> int:
 
     built_in = json.loads(json.dumps(prompt_cfg.get("built_in_tools") or {}))
     ttn = built_in.get("transfer_to_number")
-    if isinstance(ttn, dict):
-        ttn.setdefault("params", {})
-        ttn["params"]["transfers"] = [{
-            "transfer_destination": {"type": "phone", "phone_number": "+12393322245"},
-            "transfer_type": "conference",
-            "phone_number": "+12393322245",
-            "condition": "Caller requests a person. Office line is 239-332-2245. Never send them back to 727-295-2245.",
-            "custom_sip_headers": [],
-            "require_acceptance": False,
-        }]
+    if not isinstance(ttn, dict):
+        ttn = {"type": "system", "name": "transfer_to_number", "params": {}}
+        built_in["transfer_to_number"] = ttn
+    ttn.setdefault("params", {})
+    ttn["params"]["transfers"] = [{
+        "transfer_destination": {"type": "phone", "phone_number": OFFICE_E164},
+        "transfer_type": "conference",
+        "phone_number": OFFICE_E164,
+        "condition": (
+            "Caller requests a person, is angry, or a policy guardrail required a human bondsman. "
+            "Office line is 239-332-2245. Never send them back to 727-295-2245."
+        ),
+        "custom_sip_headers": [],
+        "require_acceptance": False,
+    }]
 
     prompt_patch = {
         "prompt": prompt,
@@ -487,11 +554,7 @@ def main() -> int:
             "tts": existing_tts,
         },
         "platform_settings": {
-            "guardrails": {
-                "version": "1",
-                "prompt_injection": {"is_enabled": True},
-                "focus": {"is_enabled": True},
-            },
+            "guardrails": _merge_guardrails((existing.get("platform_settings") or {}).get("guardrails")),
             "evaluation": {
                 "criteria": [
                     {

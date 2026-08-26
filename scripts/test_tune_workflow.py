@@ -37,6 +37,27 @@ def test_tune_workflow_drops_underwriting_edges():
     assert out["nodes"]["n_a_bg"]["tools"] == []
 
 
+def test_custom_guardrails_warm_transfer_to_office():
+    rails = _mod.SHANNON_CUSTOM_GUARDRAILS
+    names = {item["name"] for item in rails}
+    assert names == {"No legal advice", "Never send them to 727", "No promised release"}
+    merged = _mod._merge_guardrails({
+        "content": {"config": {"violence": {"is_enabled": True, "threshold": 0.5}}},
+        "focus": {"is_enabled": False},
+    })
+    assert merged["focus"]["is_enabled"] is True
+    assert merged["prompt_injection"]["is_enabled"] is True
+    assert merged["content"]["config"]["violence"]["is_enabled"] is False
+    for item in merged["custom"]["config"]["configs"]:
+        assert item["is_enabled"] is True
+        assert item["execution_mode"] == "blocking"
+        assert item["trigger_action"]["type"] == "retry"
+        assert "+12393322245" in item["trigger_action"]["feedback"]
+        assert "transfer_to_number" in item["trigger_action"]["feedback"]
+        assert "end_call" not in str(item["trigger_action"])
+
+
 if __name__ == "__main__":
     test_tune_workflow_drops_underwriting_edges()
+    test_custom_guardrails_warm_transfer_to_office()
     print("ok")
