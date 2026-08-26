@@ -52,7 +52,7 @@ def test_custom_guardrails_continue_paperwork_not_transfer():
     assert merged["prompt_injection"]["is_enabled"] is True
     assert merged["content"]["config"]["violence"]["is_enabled"] is False
     for item in merged["custom"]["config"]["configs"]:
-        assert item["is_enabled"] is True
+        assert item["is_enabled"] is False
         assert item["execution_mode"] == "blocking"
         assert item["trigger_action"]["type"] == "retry"
         fb = item["trigger_action"]["feedback"]
@@ -92,6 +92,24 @@ def test_present_node_prefers_paperwork_over_office():
     assert "explicitly asked for a person" in out["edges"]["e28"]["forward_condition"]["condition"].lower()
 
 
+def test_greet_skips_blocking_history_lookup():
+    wf = {
+        "nodes": {
+            "n_greet": {"edge_order": ["e02"], "additional_prompt": ""},
+            "n_history": {"type": "tool", "tools": [{"tool_id": "hist"}], "edge_order": ["e03"]},
+            "n_personalize": {"edge_order": ["e04"], "additional_prompt": ""},
+            "n_intent": {"edge_order": ["e08"], "additional_prompt": ""},
+        },
+        "edges": {
+            "e02": {"source": "n_greet", "target": "n_history", "forward_condition": {"type": "unconditional"}},
+            "e03": {"source": "n_history", "target": "n_personalize", "forward_condition": {"type": "unconditional"}},
+        },
+    }
+    out = _mod._tune_workflow(wf, "email_tid", "id_tid")
+    assert out["edges"]["e02"]["target"] == "n_personalize"
+    assert out["nodes"]["n_history"]["tools"] == []
+
+
 def test_workflow_transfer_node_is_office_not_0178():
     wf = {
         "nodes": {
@@ -113,5 +131,6 @@ if __name__ == "__main__":
     test_custom_guardrails_continue_paperwork_not_transfer()
     test_transfer_twiml_dials_office_not_shannon()
     test_present_node_prefers_paperwork_over_office()
+    test_greet_skips_blocking_history_lookup()
     test_workflow_transfer_node_is_office_not_0178()
     print("ok")

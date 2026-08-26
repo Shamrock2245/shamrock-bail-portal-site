@@ -105,7 +105,9 @@ _GUARDRAIL_CONTINUE_FEEDBACK = (
 
 def _custom_guardrail(name: str, prompt: str) -> dict:
     return {
-        "is_enabled": True,
+        # Blocking evaluators add 200-500ms after every user turn. Off for
+        # live voice; rules stay in the system prompt.
+        "is_enabled": False,
         "name": name,
         "prompt": prompt,
         "execution_mode": "blocking",
@@ -165,7 +167,29 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str) -> dict:
     edges = wf.setdefault("edges", {})
     if "n_greet" in nodes:
         nodes["n_greet"]["additional_prompt"] = (
-            "The first line is already spoken. Do not greet again. Listen to why they called."
+            "The first line is already spoken. Answer what they just said. Do not wait on a tool."
+        )
+    # Mem0 is already injected at ring. Do not block the first reply on history.
+    if "e02" in edges and "n_personalize" in nodes:
+        edges["e02"]["target"] = "n_personalize"
+        edges["e02"]["forward_condition"] = {"label": None, "type": "unconditional"}
+        if "n_greet" in nodes:
+            nodes["n_greet"]["edge_order"] = ["e02"]
+    if "n_history" in nodes:
+        nodes["n_history"]["tools"] = []
+        nodes["n_history"]["additional_prompt"] = "Skip. Memory is already on the call."
+    if "n_personalize" in nodes:
+        nodes["n_personalize"]["additional_prompt"] = (
+            "Spanish to Sofia. Then talk. Use returning_client if it is yes. "
+            "Do not wait on check_caller_history. Do not re-greet."
+        )
+    if "n_intent" in nodes:
+        nodes["n_intent"]["additional_prompt"] = (
+            "Answer them first. One short question. Posting a bond is paperwork, not a transfer."
+        )
+    if "n_a_gather" in nodes:
+        nodes["n_a_gather"]["additional_prompt"] = (
+            "Ask the defendant's full name. Then the county. One question at a time. No extra courtesy padding."
         )
     if "n_a_paper" in nodes and email_tid:
         nodes["n_a_paper"]["tools"] = [{"tool_id": email_tid, "schema_overrides": None}]
@@ -540,8 +564,10 @@ def main() -> int:
     existing_tts["agent_output_audio_format"] = "ulaw_8000"
     existing_tts["text_normalisation_type"] = "elevenlabs"
     existing_tts["expressive_mode"] = True
-    if existing_tts.get("stability") is None or float(existing_tts.get("stability") or 1) > 0.45:
-        existing_tts["stability"] = 0.42
+    existing_tts["model_id"] = "eleven_flash_v2"
+    existing_tts["optimize_streaming_latency"] = 4
+    existing_tts["stability"] = 0.38
+    existing_tts["speed"] = 1.05
     existing_tts = _ensure_pronunciation(existing_tts)
     existing_asr["user_input_audio_format"] = "ulaw_8000"
     keywords = list(existing_asr.get("keywords") or [])
@@ -563,16 +589,17 @@ def main() -> int:
 
     prompt_patch = {
         "prompt": prompt,
-        "llm": "gpt-4o",
-        "temperature": 0.55,
+        "llm": "gpt-4o-mini",
+        "temperature": 0.7,
+        "max_tokens": 140,
         "timezone": "America/New_York",
         "tool_ids": tool_ids,
         "knowledge_base": knowledge_base,
         "rag": {
             "enabled": True,
             "embedding_model": "e5_mistral_7b_instruct",
-            "max_documents_length": 50000,
-            "max_retrieved_rag_chunks_count": 12,
+            "max_documents_length": 12000,
+            "max_retrieved_rag_chunks_count": 4,
         },
     }
     if built_in:
@@ -597,14 +624,15 @@ def main() -> int:
                 "prompt": prompt_patch,
             },
             "turn": {
-                "turn_eagerness": "patient",
-                "turn_timeout": 8,
+                "turn_eagerness": "normal",
+                "turn_timeout": 5,
                 "silence_end_call_timeout": 45,
-                "speculative_turn": False,
+                "speculative_turn": True,
                 "soft_timeout_config": {
-                    "timeout_seconds": 3.0,
-                    "message": "Okay.",
+                    "timeout_seconds": 2.5,
+                    "message": "Mm-hmm.",
                     "use_llm_generated_message": False,
+                    "randomize_fillers": True,
                     "disable_until_first_user_message": True,
                 },
             },
