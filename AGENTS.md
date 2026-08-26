@@ -128,6 +128,7 @@ Reads detailed background reports (TLO/IRB/iDiCore) for both Defendant and Indem
 | `save_paperwork_answers` | Save each paperwork section during the call | Yes |
 | `email_paperwork_to_indemnitor` | Email DocuSeal signing link + payment link to the indemnitor | Yes |
 | `send_paperwork` | Same as email_paperwork_to_indemnitor | Yes |
+| `request_id_photo` | Text an ID photo-upload link or email front/back ID instructions | Yes |
 | `lookup_defendant` | Search defendant by name or booking # | Yes |
 | `send_payment_link` | Text SwipeSimple payment link to caller | No |
 | `schedule_callback` | Book callback time with bondsman | No |

@@ -458,7 +458,8 @@ function handleElevenLabsToolCall(e) {
         send_payment_link: true,
         send_directions: true,
         email_paperwork_to_indemnitor: true,
-        send_paperwork: true
+        send_paperwork: true,
+        request_id_photo: true
     };
     if (outboundTools[toolName] && typeof IdempotencyGuard !== 'undefined') {
         var toolPhone = payload.caller_phone || payload.phone_number || payload.phone || payload.indemnitor_email || '';
@@ -483,6 +484,8 @@ function handleElevenLabsToolCall(e) {
             case 'email_paperwork_to_indemnitor':
             case 'send_paperwork':
                 return toolEmailPaperworkToIndemnitor(payload);
+            case 'request_id_photo':
+                return toolRequestIdPhoto(payload);
             case 'notify_bondsman':
                 var notified = handleShannonNotifyBondsman(payload);
                 return ContentService.createTextOutput(JSON.stringify(notified))

@@ -165,6 +165,22 @@ def main() -> int:
         },
         ["caller_role"],
     )
+    id_tool = _webhook_tool(
+        "request_id_photo",
+        "Ask the caller for a government ID. method=upload texts a mobile photo-upload link. method=email emails instructions to send front and back photos. Never email the jail. Prefer upload for defendants in custody.",
+        {
+            "method": _prop("method", "Exactly upload or email. upload texts a scan link. email sends ID photo instructions."),
+            "caller_role": _prop("caller_role", "Exactly one of: defendant, indemnitor, coindemnitor"),
+            "caller_phone": _prop("caller_phone", "Digits from {{caller_phone}} for the texted upload link"),
+            "phone": _prop("phone", "Mobile number to text the upload link if different from caller_phone"),
+            "email": _prop("email", "Standard email for ID instructions, e.g. name@domain.com. Never a jail email."),
+            "indemnitor_email": _prop("indemnitor_email", "Alias for email"),
+            "caller_name": _prop("caller_name", "Person sending the ID"),
+            "defendant_name": _prop("defendant_name", "Defendant legal full name"),
+            "case_reference": _prop("case_reference", "Intake reference from create_intake"),
+        },
+        ["method"],
+    )
     email_tool = _webhook_tool(
         "email_paperwork_to_indemnitor",
         "Email the MAIN indemnitor the DocuSeal signing link and SwipeSimple payment link. Use when indemnitor name, indemnitor email, and defendant name are known. Never email the person in jail.",
@@ -197,6 +213,26 @@ def main() -> int:
             print(f"Created tool {spec['name']}: {tid}")
             if tid:
                 created_ids.append(tid)
+
+    # Attach request_id_photo once. Do not duplicate save/email tools.
+    existing_names: dict[str, str] = {}
+    try:
+        listing = _el_request("GET", "/v1/convai/tools")
+        for item in listing.get("tools") or listing.get("items") or []:
+            tid = item.get("id") or item.get("tool_id")
+            cfg = item.get("tool_config") or item
+            name = cfg.get("name")
+            if tid and name:
+                existing_names[str(name)] = str(tid)
+    except Exception as exc:
+        print("Tool listing skipped:", exc)
+    id_tid = existing_names.get("request_id_photo")
+    if not id_tid:
+        created = _el_request("POST", "/v1/convai/tools", {"tool_config": id_tool})
+        id_tid = created.get("id") or created.get("tool_id")
+        print(f"Created tool request_id_photo: {id_tid}")
+    if id_tid:
+        created_ids.append(id_tid)
 
     for tid in created_ids:
         if tid not in tool_ids:

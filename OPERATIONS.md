@@ -44,6 +44,8 @@ Voice AI requires vastly different prompting than text AI:
 3. **Bite-Sized Output**: Keep responses under 2 sentences before asking a clarifying question.
 4. **Fillers**: Use natural transitions ("Got it.", "Okay.", "Let me check that.") to mask tool-calling latency.
 5. **Choices**: After she hears them, offer a path (look something up, get a bondsman, pick up paperwork, walk paperwork on the call). Identify defendant vs indemnitor from what they said.
+6. **ID**: Offer a texted photo-upload link (`request_id_photo` method upload) or email of front/back photos (method email). Never email the jail.
+7. **Signing**: `email_paperwork_to_indemnitor` emails the MAIN indemnitor a DocuSeal signing link plus payment. Staff still match surety and POA.
 
 ### Pronunciation Dictionary
 Florida counties and legal terms that confuse TTS — add to ElevenLabs Custom Pronunciation Dictionary:

@@ -249,9 +249,10 @@ function doGet(e) {
   // Shannon Mid-Call Tool Requests — ElevenLabs POSTs to ?source=elevenlabs_tool&tool=<name>
   // The agent reads the JSON response to continue the conversation in real-time.
   // Tools: lookup_defendant, create_intake, save_paperwork_answers,
-  //        email_paperwork_to_indemnitor/send_paperwork, calculate_premium,
-  //        send_payment_link, schedule_callback, transfer_to_bondsman,
-  //        check_inmate_status, send_directions, send_sms, check_caller_history
+  //        email_paperwork_to_indemnitor/send_paperwork, request_id_photo,
+  //        calculate_premium, send_payment_link, schedule_callback,
+  //        transfer_to_bondsman, check_inmate_status, send_directions,
+  //        send_sms, check_caller_history
   if (e.parameter && e.parameter.source === 'elevenlabs_tool') {
     if (!verifyElevenLabsToolSecret_(e)) {
       return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unauthorized' }))

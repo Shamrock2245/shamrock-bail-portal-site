@@ -11,6 +11,8 @@ var SHANNON_PAPERWORK_SHEET = 'ShannonPaperwork';
 var SHANNON_PAYMENT_LINK = 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
 var SHANNON_PORTAL_URL = 'https://paperwork.shamrockbailbonds.biz';
 var SHANNON_LEADS_URL = 'https://leads.shamrockbailbonds.biz';
+var SHANNON_ID_UPLOAD_URL = 'https://www.shamrockbailbonds.biz/portal-start';
+var SHANNON_ID_INBOX = 'admin@shamrockbailbonds.biz';
 
 function shannonPaperworkSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -396,6 +398,120 @@ function toolEmailPaperworkToIndemnitor(params) {
     signing_link_included: !!links.indemnitor_sign_url,
     payment_link: links.payment_link || SHANNON_PAYMENT_LINK,
     source: source,
+    message: spoken
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function toolRequestIdPhoto(params) {
+  params = params || {};
+  var method = String(params.method || params.channel || 'upload').toLowerCase();
+  if (method === 'text' || method === 'link' || method === 'sms' || method === 'imessage' || method === 'scan') {
+    method = 'upload';
+  }
+  if (method === 'mail' || method === 'e-mail') method = 'email';
+  if (method !== 'email' && method !== 'both') method = 'upload';
+
+  var role = String(params.signer_role || params.caller_role || 'indemnitor').toLowerCase();
+  if (role === 'cosigner' || role === 'primary') role = 'indemnitor';
+  var caseRef = shannonCaseKey_(params);
+  var phone = String(params.phone || params.to_phone || params.caller_phone || params.indemnitor_phone || '').trim();
+  var email = String(params.email || params.indemnitor_email || '').trim();
+  var name = String(params.caller_name || params.indemnitor_name || '').trim();
+  var defName = String(params.defendant_name || '').trim();
+
+  if (role === 'defendant' && method === 'email') {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      message: 'Do not email the jail. I can text a photo-upload link to the family member posting the bond instead.'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var uploadUrl = SHANNON_ID_UPLOAD_URL + '?source=shannon&role=' + encodeURIComponent(role);
+  if (caseRef) uploadUrl += '&case=' + encodeURIComponent(caseRef);
+
+  var sentText = false;
+  var sentEmail = false;
+
+  if (method === 'email' || method === 'both') {
+    if (!email || email.indexOf('@') < 0) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'error',
+        message: 'I need their email address to send the ID instructions, or I can text an upload link instead.'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    var subject = 'Shamrock Bail Bonds — send a photo of your ID' + (defName ? (' for ' + defName) : '');
+    var html = '' +
+      '<div style="font-family:Arial,sans-serif;color:#1A3D2B;max-width:640px">' +
+      '<h2>☘️ Shamrock Bail Bonds</h2>' +
+      '<p>Hi ' + (name || 'there') + ',</p>' +
+      '<p>Please send a clear photo of the <strong>front and back</strong> of your driver license or state ID' +
+      (defName ? (' for the bond for <strong>' + defName + '</strong>') : '') + '.</p>' +
+      '<p><strong>Easiest:</strong> open this link on your phone and photograph it:<br>' +
+      '<a href="' + uploadUrl + '">' + uploadUrl + '</a></p>' +
+      '<p>Or reply to this email with the two photos, or send them to ' + SHANNON_ID_INBOX +
+      ' with the defendant name in the subject.</p>' +
+      '<p>Call (239) 332-2245 anytime.</p></div>';
+    try {
+      MailApp.sendEmail({
+        to: email,
+        cc: SHANNON_ID_INBOX,
+        subject: subject,
+        htmlBody: html,
+        name: 'Shamrock Bail Bonds'
+      });
+      sentEmail = true;
+    } catch (mailErr) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'error',
+        message: 'I could not send that email. Confirm the address, or I can text an upload link instead.'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  if (method === 'upload' || method === 'both' || (method === 'email' && phone)) {
+    if (!phone && method === 'upload') {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'error',
+        message: 'I need a mobile number to text the ID upload link.'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (phone) {
+      var sms = 'Photograph the front and back of your ID here: ' + uploadUrl +
+        '. Or email both photos to ' + SHANNON_ID_INBOX +
+        (defName ? (' with ' + defName + ' in the subject') : '') + '.';
+      var smsRes = (typeof sendShannonText_ === 'function') ? sendShannonText_(phone, sms) : { success: false };
+      sentText = !!(smsRes && smsRes.success);
+      if (method === 'upload' && !sentText) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: 'error',
+          upload_url: uploadUrl,
+          id_inbox: SHANNON_ID_INBOX,
+          message: 'I could not text the link. You can open ' + uploadUrl +
+            ' on your phone, or email photos of the front and back to ' + SHANNON_ID_INBOX + '.'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+  }
+
+  var spoken = '';
+  if (sentText && sentEmail) {
+    spoken = 'I texted you a link to photograph your ID, and I emailed the same instructions. Open the text, or reply to the email with the front and back.';
+  } else if (sentText) {
+    spoken = 'I just texted you a link. Open it and photograph the front and back of your ID. You can also email those photos to ' + SHANNON_ID_INBOX + '.';
+  } else if (sentEmail) {
+    spoken = 'I emailed you. Reply with a photo of the front and back of your ID, or send them to ' + SHANNON_ID_INBOX + '.';
+  } else {
+    spoken = 'You can photograph your ID at ' + uploadUrl + ', or email the front and back to ' + SHANNON_ID_INBOX + '.';
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'sent',
+    method: method,
+    sent_text: sentText,
+    sent_email: sentEmail,
+    upload_url: uploadUrl,
+    id_inbox: SHANNON_ID_INBOX,
+    case_reference: caseRef,
     message: spoken
   })).setMimeType(ContentService.MimeType.JSON);
 }
