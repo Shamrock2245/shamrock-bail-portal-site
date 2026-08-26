@@ -323,26 +323,24 @@ function toolEmailPaperworkToIndemnitor(params) {
   payload.surety_id = payload.surety_id || 'osi';
 
   var links = null;
-  var source = '';
+  var source = 'super_crm';
   try {
     links = shannonCreateDocusealViaCrm_(payload);
-    source = 'super_crm';
   } catch (crmErr) {
-    Logger.log('Shannon CRM paperwork fallback: ' + crmErr.message);
+    Logger.log('Shannon CRM paperwork failed (no GAS DocuSeal fallback): ' + crmErr.message);
     try {
-      links = shannonCreateDocusealDirect_(payload, draftKey);
-      source = 'docuseal_direct';
-    } catch (dsErr) {
-      Logger.log('Shannon DocuSeal fallback failed: ' + dsErr.message);
-      links = {
-        success: false,
-        indemnitor_sign_url: '',
-        payment_link: SHANNON_PAYMENT_LINK,
-        portal_url: SHANNON_PORTAL_URL,
-        error: dsErr.message
-      };
-      source = 'portal_only';
-    }
+      if (typeof sendSlackMessage === 'function') {
+        sendSlackMessage('#intake-alerts',
+          '⚠️ Shannon could not create a DocuSeal packet in Super CRM for `' + draftKey +
+          '`. No GAS fallback ran. Staff: issue the packet in Super CRM.',
+          null);
+      }
+    } catch (slackErr) {}
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      case_reference: draftKey,
+      message: 'I could not create the signing packet just now. I can text the payment link, or you can reach our office at 239-332-2245.'
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 
   try {
@@ -428,6 +426,28 @@ function toolRequestIdPhoto(params) {
 
   var uploadUrl = SHANNON_ID_UPLOAD_URL + '?source=shannon&role=' + encodeURIComponent(role);
   if (caseRef) uploadUrl += '&case=' + encodeURIComponent(caseRef);
+  try {
+    var linkRes = UrlFetchApp.fetch(SHANNON_LEADS_URL + '/api/paperwork/shannon/id-link', {
+      method: 'post',
+      headers: shannonLeadsHeaders_(),
+      payload: JSON.stringify({
+        packet_id: caseRef,
+        case_reference: caseRef,
+        caller_role: role,
+        defendant_name: defName
+      }),
+      muteHttpExceptions: true,
+      followRedirects: true
+    });
+    var linkBody = {};
+    try { linkBody = JSON.parse(linkRes.getContentText() || '{}'); } catch (e) { linkBody = {}; }
+    if (linkRes.getResponseCode() >= 200 && linkRes.getResponseCode() < 300 && linkBody.upload_url) {
+      uploadUrl = String(linkBody.upload_url);
+      if (linkBody.packet_id) caseRef = String(linkBody.packet_id);
+    }
+  } catch (linkErr) {
+    Logger.log('Shannon ID link CRM miss, using portal-start: ' + linkErr.message);
+  }
 
   var sentText = false;
   var sentEmail = false;

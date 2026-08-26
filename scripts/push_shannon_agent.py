@@ -85,6 +85,91 @@ DROP_AGENT_TOOLS = frozenset({
     "run_background_verification",
     "send_paperwork",
 })
+EMAIL_TOOL_ID = "tool_0501m0xjhwh5evqtfnhn50mb9bk7"
+ID_TOOL_ID = "tool_0701m0zcarw2fvsr1gekvsr43djy"
+
+
+def _tune_workflow(wf: dict, email_tid: str, id_tid: str) -> dict:
+    """Listen-first greeting, DocuSeal email node, skip investigator tools, ID capture."""
+    if not isinstance(wf, dict) or not isinstance(wf.get("nodes"), dict):
+        return wf
+    nodes = wf["nodes"]
+    edges = wf.setdefault("edges", {})
+    if "n_greet" in nodes:
+        nodes["n_greet"]["additional_prompt"] = (
+            "The first line is already spoken. Do not greet again. Listen to why they called."
+        )
+    if "n_a_paper" in nodes and email_tid:
+        nodes["n_a_paper"]["tools"] = [{"tool_id": email_tid, "schema_overrides": None}]
+    if "n_a_large" in nodes:
+        nodes["n_a_large"]["edge_order"] = ["e23"]
+        nodes["n_a_large"]["additional_prompt"] = (
+            "Do not run flight risk or background checks on this call. Proceed to the premium estimate."
+        )
+    if "e23" in edges:
+        edges["e23"]["forward_condition"] = {"label": None, "type": "unconditional"}
+    if "n_c_general" in nodes:
+        nodes["n_c_general"]["additional_prompt"] = (
+            "Answer using the knowledge base. Never recommend a specific attorney. "
+            "Never give legal advice. Office number is 239-332-2245. Never 727-295-2245."
+        )
+    if "n_a_conf_p" in nodes:
+        nodes["n_a_conf_p"]["additional_prompt"] = (
+            "Confirm the DocuSeal signing email went to the indemnitor after they confirmed "
+            "the spelled address. Ask if anything else is needed. Office is 239-332-2245."
+        )
+    if "n_a_present" in nodes:
+        nodes["n_a_present"]["additional_prompt"] = (
+            "Give a Florida estimate only, never a guaranteed price. Spell the indemnitor email "
+            "before sending paperwork. Offer paperwork now or a bondsman at 239-332-2245."
+        )
+    if id_tid and "n_a_id" not in nodes and "n_a_intake" in nodes:
+        nodes["n_a_id"] = {
+            "type": "tool",
+            "position": {"x": 50.0, "y": 1500.0},
+            "edge_order": ["e29b"],
+            "parent_subgraph_id": None,
+            "tools": [{"tool_id": id_tid, "schema_overrides": None}],
+        }
+        if "e29" in edges:
+            edges["e29"]["target"] = "n_a_id"
+        edges["e29b"] = {
+            "source": "n_a_id",
+            "target": "n_a_paper",
+            "forward_condition": {"label": None, "type": "unconditional"},
+            "backward_condition": None,
+        }
+    return wf
+
+
+def _ensure_pronunciation(tts: dict) -> dict:
+    locators = list(tts.get("pronunciation_dictionary_locators") or [])
+    if locators:
+        return tts
+    try:
+        created = _el_request("POST", "/v1/pronunciation-dictionaries/add-from-rules", {
+            "name": "Shannon Florida legal",
+            "rules": [
+                {"type": "alias", "string_to_replace": "Charlotte", "alias": "Shar-let"},
+                {"type": "alias", "string_to_replace": "Sarasota", "alias": "Sara-so-ta"},
+                {"type": "alias", "string_to_replace": "indemnitor", "alias": "in-dem-ni-tor"},
+                {"type": "alias", "string_to_replace": "capias", "alias": "cap-ee-us"},
+                {"type": "alias", "string_to_replace": "DocuSeal", "alias": "Doc-you-seal"},
+            ],
+        })
+        pid = created.get("id") or created.get("pronunciation_dictionary_id")
+        vid = created.get("version_id")
+        if pid and vid:
+            tts["pronunciation_dictionary_locators"] = [{
+                "pronunciation_dictionary_id": pid,
+                "version_id": vid,
+            }]
+            print("Attached pronunciation dictionary", pid)
+        else:
+            print("Pronunciation dictionary response missing ids")
+    except Exception as exc:
+        print("Pronunciation dictionary skipped:", exc)
+    return tts
 
 
 def _ensure_knowledge_base(agent: dict) -> list[dict]:
@@ -246,7 +331,8 @@ def main() -> int:
     prompt_cfg = ((existing.get("conversation_config") or {}).get("agent") or {}).get("prompt") or {}
     tool_ids = list(prompt_cfg.get("tool_ids") or [])
     created_ids = []
-    skip_create = "--prompt-only" in sys.argv or "--skip-create-tools" in sys.argv
+    # Default is prompt-only. Creating tools duplicates ElevenLabs workspace tools.
+    skip_create = "--create-tools" not in sys.argv
     if not skip_create:
         for spec in (save_tool, email_tool):
             created = _el_request("POST", "/v1/convai/tools", {"tool_config": spec})
@@ -310,6 +396,7 @@ def main() -> int:
     existing_tts["expressive_mode"] = True
     if existing_tts.get("stability") is None or float(existing_tts.get("stability") or 1) > 0.45:
         existing_tts["stability"] = 0.42
+    existing_tts = _ensure_pronunciation(existing_tts)
     existing_asr["user_input_audio_format"] = "ulaw_8000"
     keywords = list(existing_asr.get("keywords") or [])
     for word in ("Charlotte", "Sarasota", "indemnitor", "capias", "DocuSeal", "Shamrock", "Lee County"):
@@ -435,6 +522,14 @@ def main() -> int:
     existing_platform = dict(existing.get("platform_settings") or {})
     existing_platform.update(patch["platform_settings"])
     patch["platform_settings"] = existing_platform
+    try:
+        wf = json.loads(json.dumps(existing.get("workflow") or {}))
+        email_tid = existing_names.get("email_paperwork_to_indemnitor") or EMAIL_TOOL_ID
+        id_tid = existing_names.get("request_id_photo") or ID_TOOL_ID
+        patch["workflow"] = _tune_workflow(wf, email_tid, id_tid)
+        print("Tuned Shannon workflow nodes")
+    except Exception as exc:
+        print("Workflow tune skipped:", exc)
     _el_request("PATCH", f"/v1/convai/agents/{agent_id}", patch)
     print("Patched Shannon agent", agent_id)
     return 0

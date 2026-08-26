@@ -3,6 +3,13 @@ name: Deploy to Wix
 on:
   push:
     branches: [main]
+    paths:
+      - "src/**"
+      - "wix.config.json"
+      - "wix.lock"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/wix-deploy.yml"
   workflow_dispatch:   # allow manual trigger from GitHub UI
 
 concurrency:
