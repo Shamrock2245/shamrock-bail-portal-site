@@ -92,6 +92,25 @@ def test_present_node_prefers_paperwork_over_office():
     assert "explicitly asked for a person" in out["edges"]["e28"]["forward_condition"]["condition"].lower()
 
 
+def test_gather_can_route_to_id_upload():
+    wf = {
+        "nodes": {
+            "n_a_gather": {"type": "override_agent", "edge_order": ["e13", "e14"], "tools": []},
+            "n_a_id": {"type": "tool", "edge_order": ["e29b"], "tools": []},
+            "n_a_check": {"type": "tool", "edge_order": []},
+        },
+        "edges": {
+            "e13": {"source": "n_a_gather", "target": "n_a_check", "forward_condition": {"type": "llm"}},
+            "e14": {"source": "n_a_gather", "target": "n_transfer", "forward_condition": {"type": "llm"}},
+        },
+    }
+    out = _mod._tune_workflow(wf, "email_tid", "id_tid_123")
+    assert out["edges"]["e13_id"]["target"] == "n_a_id"
+    assert out["nodes"]["n_a_gather"]["edge_order"][0] == "e13_id"
+    assert any(t.get("tool_id") == "id_tid_123" for t in out["nodes"]["n_a_gather"]["tools"])
+    assert "request_id_photo" in out["nodes"]["n_a_gather"]["additional_prompt"]
+
+
 def test_greet_skips_blocking_history_lookup():
     wf = {
         "nodes": {
@@ -131,6 +150,7 @@ if __name__ == "__main__":
     test_custom_guardrails_continue_paperwork_not_transfer()
     test_transfer_twiml_dials_office_not_shannon()
     test_present_node_prefers_paperwork_over_office()
+    test_gather_can_route_to_id_upload()
     test_greet_skips_blocking_history_lookup()
     test_workflow_transfer_node_is_office_not_0178()
     print("ok")

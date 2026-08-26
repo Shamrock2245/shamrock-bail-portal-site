@@ -189,8 +189,28 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str) -> dict:
         )
     if "n_a_gather" in nodes:
         nodes["n_a_gather"]["additional_prompt"] = (
-            "Ask the defendant's full name. Then the county. One question at a time. No extra courtesy padding."
+            "Ask the defendant's full name, then the county, one question at a time. "
+            "When they agree to send ID, call request_id_photo immediately. "
+            "Do not say you texted a link until the tool result says you did."
         )
+        if id_tid:
+            tools = list(nodes["n_a_gather"].get("tools") or [])
+            if not any((t or {}).get("tool_id") == id_tid for t in tools):
+                tools.append({"tool_id": id_tid, "schema_overrides": None})
+            nodes["n_a_gather"]["tools"] = tools
+            if "n_a_id" in nodes:
+                edges["e13_id"] = {
+                    "source": "n_a_gather",
+                    "target": "n_a_id",
+                    "forward_condition": {
+                        "label": None,
+                        "type": "llm",
+                        "condition": "The caller wants to upload, text, or email a photo of their ID.",
+                    },
+                    "backward_condition": None,
+                }
+                order = list(nodes["n_a_gather"].get("edge_order") or [])
+                nodes["n_a_gather"]["edge_order"] = ["e13_id"] + [e for e in order if e != "e13_id"]
     if "n_a_paper" in nodes and email_tid:
         nodes["n_a_paper"]["tools"] = [{"tool_id": email_tid, "schema_overrides": None}]
     if "n_a_large" in nodes:
@@ -262,6 +282,19 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str) -> dict:
             "forward_condition": {"label": None, "type": "unconditional"},
             "backward_condition": None,
         }
+    if id_tid and "n_a_id" in nodes and "n_a_gather" in nodes and "e13_id" not in edges:
+        edges["e13_id"] = {
+            "source": "n_a_gather",
+            "target": "n_a_id",
+            "forward_condition": {
+                "label": None,
+                "type": "llm",
+                "condition": "The caller wants to upload, text, or email a photo of their ID.",
+            },
+            "backward_condition": None,
+        }
+        order = list(nodes["n_a_gather"].get("edge_order") or [])
+        nodes["n_a_gather"]["edge_order"] = ["e13_id"] + [e for e in order if e != "e13_id"]
     return wf
 
 
@@ -589,9 +622,9 @@ def main() -> int:
 
     prompt_patch = {
         "prompt": prompt,
-        "llm": "gpt-4o-mini",
-        "temperature": 0.7,
-        "max_tokens": 140,
+        "llm": "gpt-4o",
+        "temperature": 0.6,
+        "max_tokens": 500,
         "timezone": "America/New_York",
         "tool_ids": tool_ids,
         "knowledge_base": knowledge_base,

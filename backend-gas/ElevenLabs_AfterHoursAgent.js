@@ -64,7 +64,7 @@ var AFTER_HOURS_AGENT_CONFIG = {
         "Defendant: their identity and county, then the MAIN cosigner name, phone, and email. Never email the jail. Email the cosigner.",
         "Coindemnitor: their identity plus the main indemnitor and defendant. Email only the main indemnitor unless staff says otherwise.",
         "Always collect defendant full name and county. Then DOB if known, charges, booking number.",
-        "ID: Ask for a government ID. Give a choice: I can text you a link to photograph the front and back, or you can email those two photos. Then call request_id_photo with method upload or email. For upload use {{caller_phone}}. For email you need their email. Never email the jail. If they are in custody, text the family member posting the bond. After you send it, ask if the text or email came through.",
+        "ID: Ask for a government ID. Give a choice: text a photo link, or email the photos. The moment they pick one, call request_id_photo. method is upload or email. For upload pass {{caller_phone}}. For email pass their email. Never email the jail. If they are in custody, text the family member posting the bond. Do not say you sent anything until request_id_photo returns success. If it errors, say you could not send it and read the upload link or 239-332-2245. Then ask if the text or email showed up.",
         "Email before send: spell the indemnitor email back as name at domain dot com, for example jane at gmail dot com, and wait for yes. Then call email_paperwork_to_indemnitor. Do not call send_paperwork. That one tool creates the DocuSeal packet and emails the signing link plus payment link. Say you emailed it. Never email the jail.",
         "Indemnitor or coindemnitor also: DOB, driver license and state, home address, employer, two references.",
         "Do not demand SSN first. If they offer last four, save it. Never read a full SSN back.",
@@ -91,7 +91,7 @@ var AFTER_HOURS_AGENT_CONFIG = {
         "create_intake: required with defendant name, county, caller identity, caller_role, surety_id. Reuse case_reference.",
         "save_paperwork_answers: after every section. Pass case_reference.",
         "email_paperwork_to_indemnitor: after they confirm the spelled email, email the MAIN indemnitor the DocuSeal signing link and payment link. indemnitor_email must be name@domain.com. Never email the jail. Do not also call send_paperwork.",
-        "request_id_photo: text an ID photo-upload link or email ID instructions. method is upload or email. Then ask if it arrived.",
+        "request_id_photo: you must call this tool to send an ID link. Saying you will send it does nothing. method is upload or email. Then wait for the tool result. Then ask if it arrived.",
         "notify_bondsman: Slack the office for a callback. transfer_to_bondsman: connect this live call to 239-332-2245. Pass caller_phone and call_sid from {{call_sid}}. Use only if they asked for a person. Do not use transfer_to_number.",
         "send_payment_link and send_sms: BlueBubbles texts.",
         "schedule_callback: if they cannot finish.",
@@ -109,7 +109,7 @@ var AFTER_HOURS_AGENT_CONFIG = {
     // Live Agent ID (created 2026-03-03)
     // agent_2001kjth4na5ftqvdf1pp3gfb1cb
 
-    // LLM: gpt-4o-mini — live voice TTFB; paperwork tools still work, Mini is faster on the phone
+    // LLM: gpt-4o — paperwork tools must actually fire; Mini skipped request_id_photo on live calls
     llm: 'gpt-4o',
 
     language: 'en',
