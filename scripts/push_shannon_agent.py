@@ -191,10 +191,10 @@ def main() -> int:
     if isinstance(ttn, dict):
         ttn.setdefault("params", {})
         ttn["params"]["transfers"] = [{
-            "transfer_destination": {"type": "phone", "phone_number": "+12399550301"},
+            "transfer_destination": {"type": "phone", "phone_number": "+12393322245"},
             "transfer_type": "conference",
-            "phone_number": "+12399550301",
-            "condition": "Caller requests a bondsman or live agent. Office line is 239-955-0301. Never 727-295-2245 or 239-332-2245.",
+            "phone_number": "+12393322245",
+            "condition": "Caller requests a person. Office line is 239-332-2245. Never send them back to 727-295-2245.",
             "custom_sip_headers": [],
             "require_acceptance": False,
         }]

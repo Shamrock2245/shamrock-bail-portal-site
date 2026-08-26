@@ -191,7 +191,7 @@ function handleShannonNotifyBondsman(params) {
   return {
     success: true,
     status: 'notified',
-    message: 'I have notified a bondsman. Someone from Shamrock will call you back ' +
+    message: 'You can reach our office at 239-332-2245. I also notified a bondsman who can call you back ' +
       (preferredTime && preferredTime !== 'ASAP' ? 'around ' + preferredTime : 'as soon as possible') + '.'
   };
 }

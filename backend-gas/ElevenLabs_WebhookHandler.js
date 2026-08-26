@@ -1197,7 +1197,7 @@ function toolTransferToBondsman(params) {
     // SMS the on-call agent
     var onCallPhone = '';
     try {
-        onCallPhone = PropertiesService.getScriptProperties().getProperty('ON_CALL_AGENT_PHONE') || '2399550301';
+        onCallPhone = PropertiesService.getScriptProperties().getProperty('ON_CALL_AGENT_PHONE') || '2393322245';
     } catch (_) { }
 
     if (onCallPhone) {
@@ -1216,9 +1216,8 @@ function toolTransferToBondsman(params) {
 
     return ContentService.createTextOutput(JSON.stringify({
         status: 'transfer_requested',
-        message: 'I have notified our on-call bondsman and they will be calling you right back at this number. ' +
-            'Please keep your phone nearby. If you do not receive a call within 5 minutes, ' +
-            'please call us directly at 239-332-2245.'
+        message: 'You can reach our office at 239-332-2245. I have also notified a bondsman, ' +
+            'and they can call you back at this number. Keep your phone nearby.'
     })).setMimeType(ContentService.MimeType.JSON);
 }
 

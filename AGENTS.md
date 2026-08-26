@@ -110,7 +110,7 @@ Reads detailed background reports (TLO/IRB/iDiCore) for both Defendant and Indem
 
 **Platform:** ElevenLabs Conversational AI · **Agent ID:** `agent_2001kjth4na5ftqvdf1pp3gfb1cb`
 
-**Availability:** `(727) 295-2245` forwards to office `(239) 955-0301`. Shannon answers if 0301 misses. Flip `SHANNON_LIVE=true` to put Shannon on the 727 front door. Jail/sheriff numbers always ring 0301.
+**Availability:** `SHANNON_LIVE=true` — Shannon answers `(727) 295-2245`. Callers who need a person are sent to `(239) 332-2245`. Jail/sheriff callers to 727 ring 332-2245.
 
 **Two Paths:**
 

@@ -21,13 +21,13 @@ Set in Netlify site `shamrock-telegram` → Environment variables (production). 
 
 | Variable | Effect |
 |----------|--------|
-| `SHANNON_LIVE=false` (default) | **(727) 295-2245** forwards to office **(239) 955-0301**. If 0301 does not answer, Shannon picks up. |
-| `SHANNON_LIVE=true` | Shannon answers 727 first. Jail/sheriff whitelist still rings 0301. |
+| `SHANNON_LIVE=true` (production) | Shannon answers **(727) 295-2245**. Anyone who needs a person is sent to **(239) 332-2245**. |
+| `SHANNON_LIVE=false` | 727 rings 239-332-2245. Shannon picks up if the office misses. |
 | `SHANNON_ROTATE_ERIC=true` | Optional. Mixes Eric in. Default is Shannon only. |
 
-Do not call-forward 239-955-0301 back to 727-295-2245 (loop).
+Do not call-forward 239-332-2245 back to 727-295-2245 (loop). Jail/sheriff callers to 727 still ring 332-2245.
 
-Shannon mid-call texts (`send_sms`, payment link, directions, paperwork follow-up) go through **BlueBubbles** (`POST /api/imessage/shannon/send`). Twilio is voice-only. Live SIP transfer is not available on register-call; Shannon notifies 239-955-0301 to call back. Native import of 727 later would transfer to 0301.
+Shannon mid-call texts go through **BlueBubbles**. Twilio is voice-only. Shannon tells callers the office number is 239-332-2245 and notifies a bondsman.
 
 ### Voice Prompting Rules
 Voice AI requires vastly different prompting than text AI:
