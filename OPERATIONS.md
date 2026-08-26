@@ -33,6 +33,8 @@ Twilio Console for **(727) 295-2245** (set 2026-08-26):
 
 Shannon mid-call texts go through **BlueBubbles** on the office iMac (239-955-0178). Twilio is voice-only. Super CRM reaches BlueBubbles over **Tailscale** (`http://100.102.10.86:1234`); **frp** `:12434` is the backup. Warren is scraper residential egress only — not this path. Do not send Shannon texts through ngrok or `bb.shamrockbailbonds.biz`. Shannon tells callers the office number is 239-332-2245 and notifies a bondsman.
 
+Wix clipboard texts (`src/backend/bluebubbles.jsw`) also go through Super CRM: `POST /api/imessage/wix/send` with `GAS_API_KEY`. Fallback is `/api/imessage/shannon/send`. Off-mesh Wix cannot use Tailscale `100.x` and must not POST `bb.shamrockbailbonds.biz`.
+
 Mem0 at ring: Netlify `twilio-voice-inbound.js` POSTs `/api/agent-brain/memory/lookup` before register-call. Requires Netlify `GAS_API_KEY` or `LEADS_INTERNAL_TOKEN` matching Super CRM. `user_id` is last 10 phone digits, shared with iMessage Shannon. Do not enable ElevenLabs built-in memory.
 
 ### Voice Prompting Rules

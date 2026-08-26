@@ -44,7 +44,7 @@ npx eslint src/backend/id-ocr-service.jsw src/public/canonical-paperwork-mapper.
 **Goal:** Verify SMS/iMessage dispatches from verified line `+12399550178`.
 
 **Pass Criteria:**
-- `sendBlueBubblesMessage()` should reach Super CRM iMessage (Tailscale to office iMac). Direct `bb.shamrockbailbonds.biz` is legacy and fails on-mesh because of MagicDNS.
+- `sendBlueBubblesMessage()` POSTs Super CRM `/api/imessage/wix/send` (machine auth). Do not POST `bb.shamrockbailbonds.biz`. Probe with `probeIMessageBridge()` — empty send body must 400, never a live client text.
 - `requestFreshSigningLink()` sends recovery text to the signer.
 
 ---

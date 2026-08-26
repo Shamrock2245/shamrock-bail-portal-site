@@ -1,95 +1,189 @@
 /**
  * BlueBubbles iMessage Bridge Backend Module
  * File: backend/bluebubbles.jsw
- * 
- * Primary high-conversion messaging engine for Shamrock Bail Bonds (98%+ open rate).
- * Super CRM (leads.shamrockbailbonds.biz) is the intended sender: Tailscale to
- * office iMac BlueBubbles. Direct bb.shamrockbailbonds.biz is legacy (MagicDNS
- * on the shamrockbailbonds.biz tailnet shadows that hostname).
- * Hosted on office iMac (shamrockbailoffice@gmail.com / 239-955-0178).
- * 
- * Capabilities:
- * - High-speed text dispatch via Private API
- * - Typing indicators for natural human feel
- * - Fast link re-issuance & paperwork launchpad delivery
- * 
+ *
+ * Wix never talks to the office iMac or bb.shamrockbailbonds.biz.
+ * Off-mesh Wix cannot use Tailscale 100.x. Super CRM is the sender:
+ *   POST https://leads.shamrockbailbonds.biz/api/imessage/wix/send
+ *   (machine auth: GAS_API_KEY). Shannon send is the already-live fallback.
+ * Super CRM reaches BlueBubbles over Tailscale, frp backup.
+ *
  * @module bluebubbles
  */
 
 import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
-import { callGasAction } from 'backend/gasIntegration';
 
-const BB_BASE_URL = "https://bb.shamrockbailbonds.biz";
+const LEADS_BASE = 'https://leads.shamrockbailbonds.biz';
+const SEND_PATHS = [
+    '/api/imessage/wix/send',
+    '/api/imessage/shannon/send'
+];
+
+function digitsOnly(value) {
+    return String(value || '').replace(/\D/g, '');
+}
+
+function toE164(phone) {
+    const clean = digitsOnly(phone);
+    if (!clean) return '';
+    if (clean.length === 10) return `+1${clean}`;
+    if (clean.length === 11 && clean.charAt(0) === '1') return `+${clean}`;
+    return `+${clean}`;
+}
+
+function parseJsonSafe(raw) {
+    try {
+        return JSON.parse(raw || '{}');
+    } catch (e) {
+        return {};
+    }
+}
+
+function sendAccepted(response, data) {
+    if (!response || !response.ok) return false;
+    return !!(data.success || data.sent || data.queued);
+}
 
 /**
- * Send an iMessage / SMS via BlueBubbles Server
+ * Send an iMessage / SMS via Super CRM → office iMac BlueBubbles.
  * @param {Object} params
  * @param {string} params.to - Phone number (E.164 or 10-digit)
+ * @param {string} [params.phone] - Alias for to
  * @param {string} params.text - Message content
- * @param {boolean} [params.sendTypingIndicator=true] - Simulate human typing
- * @returns {Promise<{success: boolean, data?: Object, message?: string}>}
+ * @param {string} [params.message] - Alias for text
+ * @returns {Promise<{success: boolean, data?: Object, message?: string, messageId?: string, channel?: string}>}
  */
 export async function sendBlueBubblesMessage(params) {
-    const { to, text, sendTypingIndicator = true } = params;
+    const to = params && (params.to || params.phone);
+    const text = params && (params.text || params.message);
 
     if (!to || !text) {
-        return { success: false, message: "Missing recipient phone or text." };
+        return { success: false, message: 'Missing recipient phone or text.' };
     }
 
-    const cleanPhone = to.replace(/\D/g, '');
-    const formattedPhone = cleanPhone.length === 10 ? `+1${cleanPhone}` : `+${cleanPhone}`;
-    const chatGuid = `iMessage;-;${formattedPhone}`;
+    const formattedPhone = toE164(to);
+    if (!formattedPhone || digitsOnly(formattedPhone).length < 10) {
+        return { success: false, message: 'Invalid recipient phone.' };
+    }
 
+    let apiKey = '';
     try {
-        let password = "";
+        apiKey = await getSecret('GAS_API_KEY');
+    } catch (e) {
+        apiKey = '';
+    }
+    if (!apiKey) {
+        return { success: false, message: 'Missing GAS_API_KEY for Super CRM iMessage.' };
+    }
+
+    const payload = {
+        phone: formattedPhone,
+        to: formattedPhone,
+        message: String(text),
+        text: String(text),
+        source: 'wix_clipboard',
+        agent_name: 'Wix Clipboard'
+    };
+
+    let lastError = 'Super CRM iMessage unreachable';
+
+    for (let i = 0; i < SEND_PATHS.length; i++) {
+        const path = SEND_PATHS[i];
         try {
-            password = await getSecret('BLUEBUBBLES_PASSWORD');
-        } catch (e) {
-            // Secret not configured in Wix Secrets Manager; fallback to Super CRM bridge
-        }
-
-        if (password) {
-            // Legacy direct hostname (off-mesh only). Prefer GAS/Super CRM relay below.
-            const endpoint = `${BB_BASE_URL}/api/v1/message/text?password=${encodeURIComponent(password)}`;
-            const payload = {
-                chatGuid: chatGuid,
-                text: text,
-                method: "private-api"
-            };
-
-            const response = await fetch(endpoint, {
+            const response = await fetch(`${LEADS_BASE}${path}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey
+                },
                 body: JSON.stringify(payload)
             });
+            const raw = await response.text();
+            const data = parseJsonSafe(raw);
 
-            if (response.ok) {
-                const data = await response.json();
-                return { success: true, data };
+            if (sendAccepted(response, data)) {
+                return {
+                    success: true,
+                    data,
+                    messageId: data.messageId || data.queued_id || '',
+                    channel: data.channel === 'sms' ? 'sms' : 'imessage'
+                };
             }
+
+            lastError = data.error || data.message || (`http_${response.status}`);
+            if (response.status !== 404 && response.status !== 401) {
+                break;
+            }
+        } catch (error) {
+            lastError = error.message || String(error);
+        }
+    }
+
+    console.warn('⚠️ [BlueBubbles] Super CRM dispatch failed:', lastError);
+    return { success: false, message: lastError };
+}
+
+/**
+ * Health + auth probe. GET status and POST an empty send body.
+ * Empty body must 400 after auth — it never includes a recipient, so no client text is sent.
+ * @returns {Promise<{success: boolean, connected?: boolean, pathInUse?: string, sendProbeStatus?: number, error?: string}>}
+ */
+export async function probeIMessageBridge() {
+    try {
+        const statusRes = await fetch(`${LEADS_BASE}/api/imessage/status`);
+        const status = parseJsonSafe(await statusRes.text());
+
+        let apiKey = '';
+        try {
+            apiKey = await getSecret('GAS_API_KEY');
+        } catch (e) {
+            apiKey = '';
+        }
+        if (!apiKey) {
+            return {
+                success: false,
+                connected: !!status.connected,
+                pathInUse: status.servers && status.servers[0] && status.servers[0].path_in_use,
+                error: 'Missing GAS_API_KEY'
+            };
         }
 
-        // Fallback: Dispatch via GAS / Super CRM Python Bridge
-        const gasResult = await callGasAction('sendBlueBubblesRelay', {
-            to: formattedPhone,
-            text,
-            chatGuid,
-            sendTypingIndicator
+        const sendRes = await fetch(`${LEADS_BASE}/api/imessage/wix/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': apiKey
+            },
+            body: JSON.stringify({})
         });
-
-        if (gasResult && gasResult.success) {
-            return { success: true, data: gasResult };
+        let sendStatus = sendRes.status;
+        if (sendStatus === 404 || sendStatus === 401) {
+            const fallback = await fetch(`${LEADS_BASE}/api/imessage/shannon/send`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey
+                },
+                body: JSON.stringify({})
+            });
+            sendStatus = fallback.status;
         }
 
-        return { success: true, message: "Dispatched to message queue." };
-
+        const ok = !!status.connected && sendStatus === 400;
+        return {
+            success: ok,
+            connected: !!status.connected,
+            pathInUse: status.servers && status.servers[0] && status.servers[0].path_in_use,
+            sendProbeStatus: sendStatus,
+            error: ok ? '' : `expected send 400 after auth, got ${sendStatus}`
+        };
     } catch (error) {
-        console.warn("⚠️ [BlueBubbles] Non-fatal dispatch warning:", error.message);
-        return { success: false, error: error.message };
+        return { success: false, error: error.message || String(error) };
     }
 }
 
 export default {
-    sendBlueBubblesMessage
+    sendBlueBubblesMessage,
+    probeIMessageBridge
 };

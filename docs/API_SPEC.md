@@ -55,7 +55,8 @@
 ### `bluebubbles.jsw`
 | Method | Auth | Arguments | Returns | Failure Modes |
 |---|---|---|---|---|
-| `sendBlueBubblesMessage` | Staff / Member | `{ to, message, subject }` | `{ success: boolean, messageId: string, channel: 'imessage' \| 'sms' }` | • Missing recipient/text<br>• Super CRM / iMac BlueBubbles unreachable (fails closed with safe error) |
+| `sendBlueBubblesMessage` | Staff / Member | `{ to \| phone, text \| message }` | `{ success: boolean, messageId: string, channel: 'imessage' \| 'sms' }` | • Missing recipient/text<br>• Super CRM `/api/imessage/wix/send` (or shannon fallback) unreachable — fails closed, never fakes a queue success |
+| `probeIMessageBridge` | Staff / Member | `()` | `{ success: boolean, connected: boolean, sendProbeStatus: number }` | • Empty POST must 400 after auth (no recipient, no client text)<br>• Missing `GAS_API_KEY` |
 
 ---
 
