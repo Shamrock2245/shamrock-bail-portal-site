@@ -486,6 +486,8 @@ function handleElevenLabsToolCall(e) {
                 return toolEmailPaperworkToIndemnitor(payload);
             case 'request_id_photo':
                 return toolRequestIdPhoto(payload);
+            case 'check_id_upload':
+                return toolCheckIdUpload(payload);
             case 'notify_bondsman':
                 var notified = handleShannonNotifyBondsman(payload);
                 return ContentService.createTextOutput(JSON.stringify(notified))

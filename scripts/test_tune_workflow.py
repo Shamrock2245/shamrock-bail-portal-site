@@ -92,6 +92,24 @@ def test_present_node_prefers_paperwork_over_office():
     assert "explicitly asked for a person" in out["edges"]["e28"]["forward_condition"]["condition"].lower()
 
 
+def test_id_wait_before_paperwork_email():
+    wf = {
+        "nodes": {
+            "n_a_id": {"type": "tool", "edge_order": ["e29b"], "tools": []},
+            "n_a_paper": {"type": "tool", "edge_order": ["e31"], "tools": []},
+        },
+        "edges": {
+            "e29b": {"source": "n_a_id", "target": "n_a_paper", "forward_condition": {"type": "unconditional"}},
+        },
+    }
+    out = _mod._tune_workflow(wf, "email_tid", "id_tid_123", "check_tid_123")
+    assert out["edges"]["e29b"]["target"] == "n_a_id_wait"
+    assert out["edges"]["e29c"]["source"] == "n_a_id_wait"
+    assert out["edges"]["e29c"]["target"] == "n_a_paper"
+    assert "Do not hang up" in out["nodes"]["n_a_id_wait"]["additional_prompt"]
+    assert "check_tid_123" in (out["nodes"]["n_a_id_wait"].get("additional_tool_ids") or [])
+
+
 def test_gather_can_route_to_id_upload():
     wf = {
         "nodes": {
@@ -150,6 +168,7 @@ if __name__ == "__main__":
     test_custom_guardrails_continue_paperwork_not_transfer()
     test_transfer_twiml_dials_office_not_shannon()
     test_present_node_prefers_paperwork_over_office()
+    test_id_wait_before_paperwork_email()
     test_gather_can_route_to_id_upload()
     test_greet_skips_blocking_history_lookup()
     test_workflow_transfer_node_is_office_not_0178()

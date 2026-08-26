@@ -25,9 +25,14 @@ function shannonPaperworkSheet_() {
   return sheet;
 }
 
+function shannonLooksLikeTwilioId_(ref) {
+  var s = String(ref || '').trim();
+  return /^(CA|SM|MM|NO|PN)[0-9a-f]{32}$/i.test(s) || /^conv_/i.test(s) || /^tlcal_/i.test(s);
+}
+
 function shannonCaseKey_(params) {
   var ref = String(params.case_reference || params.packet_id || '').trim();
-  if (ref) return ref;
+  if (ref && !shannonLooksLikeTwilioId_(ref)) return ref;
   var phone = String(params.caller_phone || params.indemnitor_phone || '').replace(/\D/g, '').slice(-10);
   var defName = String(params.defendant_name || '').trim().toUpperCase().replace(/\s+/g, '-').slice(0, 24);
   return 'SH-' + (phone || 'UNK') + '-' + (defName || Date.now().toString(36).toUpperCase());
@@ -353,9 +358,11 @@ function toolEmailPaperworkToIndemnitor(params) {
   }
 
   var phone = String(payload.indemnitor_phone || payload.caller_phone || '').trim();
+  var textSent = false;
   if (phone && links.indemnitor_sign_url) {
     try {
-      sendShannonText_(phone, '☘️ Shamrock Bail Bonds: Sign paperwork for ' + defName + ': ' + links.indemnitor_sign_url + ' Pay: ' + (links.payment_link || SHANNON_PAYMENT_LINK));
+      var textRes = sendShannonText_(phone, '☘️ Shamrock Bail Bonds: Sign for ' + defName + ': ' + links.indemnitor_sign_url + ' Pay: ' + (links.payment_link || SHANNON_PAYMENT_LINK));
+      textSent = !!(textRes && textRes.success);
     } catch (smsErr) {
       Logger.log('Shannon paperwork text non-fatal: ' + smsErr.message);
     }
@@ -385,18 +392,61 @@ function toolEmailPaperworkToIndemnitor(params) {
     }
   } catch (slackErr) {}
 
-  var spoken = links.indemnitor_sign_url
-    ? 'I emailed the signing link and payment link to ' + indEmail + '. They can sign on their phone and pay the premium from that email.'
-    : 'I emailed payment instructions and our paperwork portal to ' + indEmail + '. A bondsman will attach the official signing packet as soon as the case is matched.';
+  var spoken = '';
+  if (links.indemnitor_sign_url && textSent) {
+    spoken = 'I texted you the signing link and emailed it to ' + indEmail + '. Open the text on your phone to sign, then pay from that same message.';
+  } else if (links.indemnitor_sign_url) {
+    spoken = 'I emailed the signing link to ' + indEmail + '. I could not text it. Open the email on your phone to sign.';
+  } else {
+    spoken = 'I emailed payment instructions to ' + indEmail + '. A bondsman will attach the official signing packet as soon as the case is matched.';
+  }
 
   return ContentService.createTextOutput(JSON.stringify({
     status: 'sent',
     case_reference: draftKey,
     emailed_to: indEmail,
+    texted: textSent,
     signing_link_included: !!links.indemnitor_sign_url,
     payment_link: links.payment_link || SHANNON_PAYMENT_LINK,
     source: source,
     message: spoken
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function toolCheckIdUpload(params) {
+  params = params || {};
+  var caseRef = shannonCaseKey_(params);
+  try {
+    var res = UrlFetchApp.fetch(SHANNON_LEADS_URL + '/api/paperwork/shannon/id-status', {
+      method: 'post',
+      headers: shannonLeadsHeaders_(),
+      payload: JSON.stringify({ packet_id: caseRef, case_reference: caseRef }),
+      muteHttpExceptions: true,
+      followRedirects: true
+    });
+    var body = {};
+    try { body = JSON.parse(res.getContentText() || '{}'); } catch (e) { body = {}; }
+    if (res.getResponseCode() >= 200 && res.getResponseCode() < 300 && body.success) {
+      var spoken = body.spoken || (body.received
+        ? 'I have the ID photo.'
+        : 'I do not have an ID photo yet. Tell them to open the text and photograph the front and back.');
+      return ContentService.createTextOutput(JSON.stringify({
+        status: body.received ? 'received' : 'waiting',
+        received: !!body.received,
+        slots: body.slots || {},
+        ocr: body.ocr || {},
+        case_reference: caseRef,
+        message: spoken
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (err) {
+    Logger.log('Shannon ID status failed: ' + err.message);
+  }
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'waiting',
+    received: false,
+    case_reference: caseRef,
+    message: 'I do not have an ID photo yet. Keep them on the line while they upload.'
   })).setMimeType(ContentService.MimeType.JSON);
 }
 

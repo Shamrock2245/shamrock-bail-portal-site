@@ -87,6 +87,7 @@ DROP_AGENT_TOOLS = frozenset({
 })
 EMAIL_TOOL_ID = "tool_0501m0xjhwh5evqtfnhn50mb9bk7"
 ID_TOOL_ID = "tool_0701m0zcarw2fvsr1gekvsr43djy"
+CHECK_ID_TOOL_NAME = "check_id_upload"
 TRANSFER_TOOL_ID = "tool_6201kjw9k6xff9p9qa8qtbjr8ya4"
 OFFICE_E164 = "+12393322245"
 
@@ -159,7 +160,7 @@ def _merge_guardrails(existing: dict | None) -> dict:
     return g
 
 
-def _tune_workflow(wf: dict, email_tid: str, id_tid: str) -> dict:
+def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -> dict:
     """Listen-first greeting, DocuSeal email node, skip investigator tools, ID capture."""
     if not isinstance(wf, dict) or not isinstance(wf.get("nodes"), dict):
         return wf
@@ -239,8 +240,8 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str) -> dict:
         )
     if "n_a_conf_p" in nodes:
         nodes["n_a_conf_p"]["additional_prompt"] = (
-            "Confirm the DocuSeal signing email went to the indemnitor after they confirmed "
-            "the spelled address. Ask if anything else is needed. Office is 239-332-2245."
+            "Confirm the signing link was texted and emailed. Ask them to open the text. "
+            "Office is 239-332-2245."
         )
     if "n_a_present" in nodes:
         nodes["n_a_present"]["edge_order"] = ["e27", "e28"]
@@ -278,8 +279,40 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str) -> dict:
             edges["e29"]["target"] = "n_a_id"
         edges["e29b"] = {
             "source": "n_a_id",
-            "target": "n_a_paper",
+            "target": "n_a_id_wait",
             "forward_condition": {"label": None, "type": "unconditional"},
+            "backward_condition": None,
+        }
+    if "n_a_id" in nodes:
+        if "e29b" in edges:
+            edges["e29b"]["source"] = "n_a_id"
+            edges["e29b"]["target"] = "n_a_id_wait"
+            edges["e29b"]["forward_condition"] = {"label": None, "type": "unconditional"}
+        nodes["n_a_id_wait"] = {
+            "type": "override_agent",
+            "position": {"x": 50.0, "y": 1650.0},
+            "edge_order": ["e29c"],
+            "parent_subgraph_id": None,
+            "label": "Wait for ID upload",
+            "entry_behavior": "auto",
+            "additional_knowledge_base": [],
+            "additional_tool_ids": [check_tid] if check_tid else [],
+            "additional_prompt": (
+                "Stay on the line while they photograph the ID. Do not hang up. "
+                "Do not email paperwork yet. If they are quiet they are taking photos. "
+                "Do not ask are you still there more than once. Call check_id_upload "
+                "when they say they uploaded, or after a pause. Read back the name "
+                "on the license. Then send paperwork. Tell them the signing link is texted."
+            ),
+        }
+        edges["e29c"] = {
+            "source": "n_a_id_wait",
+            "target": "n_a_paper",
+            "forward_condition": {
+                "label": None,
+                "type": "llm",
+                "condition": "The ID photo was received and they confirmed the name, or they asked to skip ID and send the signing link now.",
+            },
             "backward_condition": None,
         }
     if id_tid and "n_a_id" in nodes and "n_a_gather" in nodes and "e13_id" not in edges:
@@ -502,6 +535,17 @@ def main() -> int:
         },
         ["method"],
     )
+    check_id_tool = _webhook_tool(
+        CHECK_ID_TOOL_NAME,
+        "Check whether the caller uploaded ID photos yet. Call this while they photograph the front and back. Do not send paperwork until this says received, unless they skip ID.",
+        {
+            "case_reference": _prop("case_reference", "Same case_reference used for request_id_photo. Never a CallSid."),
+            "packet_id": _prop("packet_id", "Packet id from request_id_photo if different from case_reference."),
+            "caller_phone": _prop("caller_phone", "Caller E.164 from {{caller_phone}}."),
+            "defendant_name": _prop("defendant_name", "Defendant name if known."),
+        },
+        ["case_reference"],
+    )
     email_tool = _webhook_tool(
         "email_paperwork_to_indemnitor",
         "Email the MAIN indemnitor the DocuSeal signing link and SwipeSimple payment link. Use when indemnitor name, indemnitor email, and defendant name are known. Never email the person in jail.",
@@ -555,6 +599,15 @@ def main() -> int:
         print(f"Created tool request_id_photo: {id_tid}")
     if id_tid:
         created_ids.append(id_tid)
+
+    check_tid = existing_names.get(CHECK_ID_TOOL_NAME)
+    if not check_tid:
+        created = _el_request("POST", "/v1/convai/tools", {"tool_config": check_id_tool})
+        check_tid = created.get("id") or created.get("tool_id")
+        print(f"Created tool {CHECK_ID_TOOL_NAME}: {check_tid}")
+        existing_names[CHECK_ID_TOOL_NAME] = str(check_tid or "")
+    if check_tid:
+        created_ids.append(check_tid)
 
     try:
         _ensure_transfer_tool()
@@ -721,7 +774,7 @@ def main() -> int:
         wf = json.loads(json.dumps(existing.get("workflow") or {}))
         email_tid = existing_names.get("email_paperwork_to_indemnitor") or EMAIL_TOOL_ID
         id_tid = existing_names.get("request_id_photo") or ID_TOOL_ID
-        patch["workflow"] = _tune_workflow(wf, email_tid, id_tid)
+        patch["workflow"] = _tune_workflow(wf, email_tid, id_tid, check_tid or "")
         print("Tuned Shannon workflow nodes")
     except Exception as exc:
         print("Workflow tune skipped:", exc)
