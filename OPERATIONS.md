@@ -27,7 +27,9 @@ Set in Netlify site `shamrock-telegram` → Environment variables (production). 
 
 Do not call-forward 239-332-2245 back to 727-295-2245 (loop). Jail/sheriff callers to 727 still ring 332-2245.
 
-Twilio Console fallback URL (if Netlify is down): `https://shamrock-telegram.netlify.app/api/twilio-voice-fallback` — Dials 239-332-2245 from +17272952245.
+Twilio Console for **(727) 295-2245** (set 2026-08-26):
+- Primary voice URL: `https://shamrock-telegram.netlify.app/api/twilio-voice`
+- Fallback URL: `https://shamrock-telegram.netlify.app/api/twilio-voice-fallback` — Dials 239-332-2245 from +17272952245.
 
 Shannon mid-call texts go through **BlueBubbles**. Twilio is voice-only. Shannon tells callers the office number is 239-332-2245 and notifies a bondsman.
 
