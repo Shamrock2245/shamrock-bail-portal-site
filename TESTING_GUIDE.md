@@ -44,7 +44,7 @@ npx eslint src/backend/id-ocr-service.jsw src/public/canonical-paperwork-mapper.
 **Goal:** Verify SMS/iMessage dispatches from verified line `+12399550178`.
 
 **Pass Criteria:**
-- `sendBlueBubblesMessage()` connects to Cloudflare Named Tunnel (`bb.shamrockbailbonds.biz`).
+- `sendBlueBubblesMessage()` should reach Super CRM iMessage (Tailscale to office iMac). Direct `bb.shamrockbailbonds.biz` is legacy and fails on-mesh because of MagicDNS.
 - `requestFreshSigningLink()` sends recovery text to the signer.
 
 ---

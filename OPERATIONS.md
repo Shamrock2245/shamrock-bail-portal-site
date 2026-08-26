@@ -31,7 +31,7 @@ Twilio Console for **(727) 295-2245** (set 2026-08-26):
 - Primary voice URL: `https://shamrock-telegram.netlify.app/api/twilio-voice`
 - Fallback URL: `https://shamrock-telegram.netlify.app/api/twilio-voice-fallback` — Dials 239-332-2245 from +17272952245.
 
-Shannon mid-call texts go through **BlueBubbles**. Twilio is voice-only. Shannon tells callers the office number is 239-332-2245 and notifies a bondsman.
+Shannon mid-call texts go through **BlueBubbles** on the office iMac (239-955-0178). Twilio is voice-only. Super CRM reaches BlueBubbles over **Tailscale** (`http://100.102.10.86:1234`); **frp** `:12434` is the backup. Warren is scraper residential egress only — not this path. Do not send Shannon texts through ngrok or `bb.shamrockbailbonds.biz`. Shannon tells callers the office number is 239-332-2245 and notifies a bondsman.
 
 Mem0 at ring: Netlify `twilio-voice-inbound.js` POSTs `/api/agent-brain/memory/lookup` before register-call. Requires Netlify `GAS_API_KEY` or `LEADS_INTERNAL_TOKEN` matching Super CRM. `user_id` is last 10 phone digits, shared with iMessage Shannon. Do not enable ElevenLabs built-in memory.
 

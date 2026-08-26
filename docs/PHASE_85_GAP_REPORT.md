@@ -30,7 +30,7 @@ All backend clipboard services are now wired, tested, and registered. Direct pap
 | **`/portal-start` Route** | ✅ Yes (`portal-start.js`) | ✅ Yes | ✅ [`docs/WIX_STUDIO_SITEMAP_AND_IA.md`](./WIX_STUDIO_SITEMAP_AND_IA.md) | Built in Velo code; visual Studio canvas elements to be assembled in Studio Editor. |
 | **Permissions Allowlist** | ✅ Yes (`permissions.json`) | ✅ Yes | ✅ [`src/backend/README.md`](../src/backend/README.md) | Default-deny configured. Staff-only methods require `siteMember`/`siteOwner`. Retired modules locked to `false`. |
 | **CMS Collections Schema** | ✅ Yes (`collectionIds.js` & schema) | ✅ Yes | ✅ [`docs/SCHEMAS.md`](./SCHEMAS.md) | `ServiceAreas` added; `IntakeQueue` updated with draft and DocuSeal session keys; SignNow keys replaced. |
-| **BlueBubbles iMessage Line** | ✅ Yes (`bluebubbles.jsw`) | ✅ Yes | ✅ [`src/backend/README.md`](../src/backend/README.md) | High-conversion messaging via Cloudflare Tunnel (`bb.shamrockbailbonds.biz`) on dedicated text line **`+12399550178`**. |
+| **BlueBubbles iMessage Line** | ✅ Yes (`bluebubbles.jsw`) | ✅ Yes | ✅ [`src/backend/README.md`](../src/backend/README.md) | iMessage via Super CRM → Tailscale to office iMac on **`+12399550178`**. Direct `bb.shamrockbailbonds.biz` is legacy. |
 
 ---
 

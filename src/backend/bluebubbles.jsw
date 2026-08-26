@@ -3,7 +3,9 @@
  * File: backend/bluebubbles.jsw
  * 
  * Primary high-conversion messaging engine for Shamrock Bail Bonds (98%+ open rate).
- * Connects to the permanent Cloudflare Named Tunnel: https://bb.shamrockbailbonds.biz
+ * Super CRM (leads.shamrockbailbonds.biz) is the intended sender: Tailscale to
+ * office iMac BlueBubbles. Direct bb.shamrockbailbonds.biz is legacy (MagicDNS
+ * on the shamrockbailbonds.biz tailnet shadows that hostname).
  * Hosted on office iMac (shamrockbailoffice@gmail.com / 239-955-0178).
  * 
  * Capabilities:
@@ -48,7 +50,7 @@ export async function sendBlueBubblesMessage(params) {
         }
 
         if (password) {
-            // Direct Cloudflare Tunnel POST
+            // Legacy direct hostname (off-mesh only). Prefer GAS/Super CRM relay below.
             const endpoint = `${BB_BASE_URL}/api/v1/message/text?password=${encodeURIComponent(password)}`;
             const payload = {
                 chatGuid: chatGuid,

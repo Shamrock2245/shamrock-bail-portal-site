@@ -55,7 +55,7 @@
 ### `bluebubbles.jsw`
 | Method | Auth | Arguments | Returns | Failure Modes |
 |---|---|---|---|---|
-| `sendBlueBubblesMessage` | Staff / Member | `{ to, message, subject }` | `{ success: boolean, messageId: string, channel: 'imessage' \| 'sms' }` | • Missing recipient/text<br>• Cloudflare tunnel unreachable (fails closed with safe error) |
+| `sendBlueBubblesMessage` | Staff / Member | `{ to, message, subject }` | `{ success: boolean, messageId: string, channel: 'imessage' \| 'sms' }` | • Missing recipient/text<br>• Super CRM / iMac BlueBubbles unreachable (fails closed with safe error) |
 
 ---
 

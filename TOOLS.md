@@ -35,7 +35,7 @@ Always consult the relevant `SKILL.md` before modifying complex logic.
 | Skill | Purpose |
 |---|---|
 | **DocuSeal Paperwork Manager** | DocuSeal signing boundary, canonical schema mapping (`canonical-paperwork-mapper.js`), and staff-gated issuance |
-| **BlueBubbles Messaging** | High-conversion iMessage bridge, Cloudflare named tunnel (`bb.shamrockbailbonds.biz`), human-feel messaging |
+| **BlueBubbles Messaging** | High-conversion iMessage bridge on office iMac via Tailscale (frp backup). Super CRM `/api/imessage/*`. Never Twilio SMS for Shannon. |
 | **ElevenLabs Voice Architecture** | Shannon 24/7 Voice AI employee, Netlify Edge proxy, 8 webhook tools, call transfers |
 | **UI/UX Pro Max** | Premium design intelligence — 50+ styles, 95+ palettes, design system generation |
 | **Wix-GAS Bridge Integrity** | Diagnose and repair 403 Forbidden errors between Wix and GAS |
