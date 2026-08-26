@@ -39,9 +39,11 @@ Mem0 at ring: Netlify `twilio-voice-inbound.js` POSTs `/api/agent-brain/memory/l
 
 ### Voice Prompting Rules
 Voice AI requires vastly different prompting than text AI:
-1. **No Formatting**: Never output markdown, bullet points, or asterisks. Shannon reads them literally (e.g., "asterisk bold asterisk").
-2. **Bite-Sized Output**: Keep responses under 2 sentences before asking a clarifying question.
-3. **Fillers**: Use natural transitions ("Got it.", "Okay.", "Let me check that.") to mask tool-calling latency.
+1. **Opening**: First line is always "Shamrock Bail Bonds. How may I help you today?" Then listen. Do not ask their name or pitch paperwork in the greeting.
+2. **No Formatting**: Never output markdown, bullet points, or asterisks. Shannon reads them literally (e.g., "asterisk bold asterisk").
+3. **Bite-Sized Output**: Keep responses under 2 sentences before asking a clarifying question.
+4. **Fillers**: Use natural transitions ("Got it.", "Okay.", "Let me check that.") to mask tool-calling latency.
+5. **Choices**: After she hears them, offer a path (look something up, get a bondsman, pick up paperwork, walk paperwork on the call). Identify defendant vs indemnitor from what they said.
 
 ### Pronunciation Dictionary
 Florida counties and legal terms that confuse TTS — add to ElevenLabs Custom Pronunciation Dictionary:

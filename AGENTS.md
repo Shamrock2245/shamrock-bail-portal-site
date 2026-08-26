@@ -112,10 +112,12 @@ Reads detailed background reports (TLO/IRB/iDiCore) for both Defendant and Indem
 
 **Availability:** `SHANNON_LIVE=true` — Shannon answers `(727) 295-2245`. Callers who need a person are sent to `(239) 332-2245`. Jail/sheriff callers to 727 ring 332-2245.
 
+**Opening:** "Shamrock Bail Bonds. How may I help you today?" Then listen.
+
 **Two Paths:**
 
-- **Path A (Notify Bondsman):** Collect basics → log intake → Slack alert / callback.
-- **Path B (Paperwork assistant):** Identify role (defendant / indemnitor / co-indemnitor) → walk the packet fields → `create_intake` + `save_paperwork_answers` → **email the indemnitor** DocuSeal signing link + SwipeSimple payment link. Staff still matches surety and POA in Super CRM.
+- **Path A (Notify Bondsman):** Collect basics → log intake → Slack alert / callback. Spoken office number is **(239) 332-2245**. Never 727.
+- **Path B (Paperwork assistant):** Identify role (defendant / indemnitor / co-indemnitor) from what they said, offer choices (court date, inmate lookup, resume paperwork, or walk the packet now) → `create_intake` + `save_paperwork_answers` → **email the indemnitor** DocuSeal signing link + SwipeSimple payment link. Staff still matches surety and POA in Super CRM.
 
 **Webhook Tools:**
 

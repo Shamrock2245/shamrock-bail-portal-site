@@ -224,6 +224,9 @@ def main() -> int:
     existing_asr = dict(((existing.get("conversation_config") or {}).get("asr") or {}))
     existing_tts["agent_output_audio_format"] = "ulaw_8000"
     existing_tts["text_normalisation_type"] = "elevenlabs"
+    existing_tts["expressive_mode"] = True
+    if existing_tts.get("stability") is None or float(existing_tts.get("stability") or 1) > 0.45:
+        existing_tts["stability"] = 0.42
     existing_asr["user_input_audio_format"] = "ulaw_8000"
     keywords = list(existing_asr.get("keywords") or [])
     for word in ("Charlotte", "Sarasota", "indemnitor", "capias", "DocuSeal", "Shamrock", "Lee County"):
@@ -253,7 +256,7 @@ def main() -> int:
     prompt_patch = {
         "prompt": prompt,
         "llm": "gpt-4o",
-        "temperature": 0.3,
+        "temperature": 0.55,
         "tool_ids": tool_ids,
         "knowledge_base": knowledge_base,
         "rag": {
@@ -270,11 +273,7 @@ def main() -> int:
         "name": "Shannon — Shamrock Paperwork Assistant",
         "conversation_config": {
             "agent": {
-                "first_message": (
-                    "Hey there, thank you for calling Shamrock Bail Bonds. "
-                    "My name is Shannon and I can walk you through the paperwork on this call. "
-                    "What is your first name?"
-                ),
+                "first_message": "Shamrock Bail Bonds. How may I help you today?",
                 "language": "en",
                 "dynamic_variables": {
                     "dynamic_variable_placeholders": {
