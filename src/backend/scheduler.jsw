@@ -5,6 +5,71 @@ import { getGasWebAppUrl } from 'backend/secretsManager';
 
 import { sendSms } from 'backend/twilio-client';
 
+const INDEXNOW_KEY = 'a7c3e91b4d2f48c0a1e65f0b9c4d8e21';
+const SITE_HOST = 'www.shamrockbailbonds.biz';
+const SITEMAP_INDEX = 'https://www.shamrockbailbonds.biz/sitemap.xml';
+
+/**
+ * Daily: tell Bing/IndexNow about public URLs from the Wix-native sitemap.
+ * Google is notified via GAS Search Console sitemap submit (runSitemapSubmission).
+ */
+export async function notifySearchEngines() {
+    const urls = [];
+    const seen = {};
+    try {
+        const indexXml = await (await fetch(SITEMAP_INDEX, { method: 'GET' })).text();
+        const childMaps = [...indexXml.matchAll(/<loc>\s*([^<]+)\s*<\/loc>/gi)].map((m) => m[1].trim());
+        const feeds = [SITEMAP_INDEX].concat(childMaps.filter((u) => u.includes('sitemap')));
+        for (const feed of feeds) {
+            try {
+                const xml = await (await fetch(feed, { method: 'GET' })).text();
+                [...xml.matchAll(/<loc>\s*([^<]+)\s*<\/loc>/gi)].forEach((m) => {
+                    const loc = m[1].trim();
+                    if (!loc || seen[loc]) return;
+                    if (loc.includes('-sitemap.xml') || loc.endsWith('sitemap.xml')) return;
+                    if (/\/portal-|\/communication-preferences|\/data-deletion/i.test(loc)) return;
+                    seen[loc] = true;
+                    urls.push(loc);
+                });
+            } catch (e) {
+                console.warn('sitemap fetch skipped', feed, e && e.message);
+            }
+        }
+        if (!urls.length) {
+            console.warn('notifySearchEngines: no public URLs');
+            return { success: false, count: 0 };
+        }
+        const body = JSON.stringify({
+            host: SITE_HOST,
+            key: INDEXNOW_KEY,
+            keyLocation: 'https://www.shamrockbailbonds.biz/_functions/indexnow',
+            urlList: urls.slice(0, 10000)
+        });
+        const endpoints = [
+            'https://api.indexnow.org/indexnow',
+            'https://www.bing.com/indexnow'
+        ];
+        const results = [];
+        for (const ep of endpoints) {
+            try {
+                const res = await fetch(ep, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                    body
+                });
+                results.push({ endpoint: ep, status: res.status });
+            } catch (e) {
+                results.push({ endpoint: ep, error: e && e.message });
+            }
+        }
+        console.log('notifySearchEngines', urls.length, results);
+        return { success: true, count: urls.length, results };
+    } catch (err) {
+        console.error('notifySearchEngines failed', err);
+        return { success: false, error: String(err && err.message || err) };
+    }
+}
+
 // ... existing imports ...
 
 /**

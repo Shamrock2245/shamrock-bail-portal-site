@@ -22,7 +22,8 @@ var TRIGGER_REGISTRY = [
   { id: 5, name: 'TG Court Reminders',    fn: 'TG_processCourtDateReminders',   type: 'minutes', interval: 30, desc: 'Sends Telegram court date reminders' },
   { id: 6, name: 'TG Weekly Payments',    fn: 'TG_processWeeklyPaymentProgress', type: 'weekly',  day: 'MONDAY', hour: 10, desc: 'Monday payment progress via Telegram' },
   { id: 7, name: 'Social Auto-Posting',   fn: 'runAutoPostingEngine',           type: 'minutes', interval: 5,  desc: 'Social media auto-posting engine' },
-  { id: 8, name: 'Daily Slack Summary',   fn: 'sendDailySummaryToSlack',        type: 'daily',   hour: 17,     desc: 'End-of-day ops summary to Slack' }
+  { id: 8, name: 'Daily Slack Summary',   fn: 'sendDailySummaryToSlack',        type: 'daily',   hour: 17,     desc: 'End-of-day ops summary to Slack' },
+  { id: 9, name: 'GSC Sitemap Submit',    fn: 'runSitemapSubmission',           type: 'daily',   hour: 6,      desc: 'Submit Wix sitemaps to Google + IndexNow/Bing' }
 ];
 
 

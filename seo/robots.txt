@@ -31,8 +31,8 @@ Disallow: /*?compId=
 Disallow: /*&compId=
 Disallow: /*?viewMode=
 Disallow: /*&viewMode=
-# Allow our custom public sitemap endpoints under _functions
 Allow: /_functions/sitemap
+Allow: /_functions/indexnow
 Allow: /_functions/llmSitemap
 Allow: /_functions/llmsTxt
 
@@ -58,6 +58,7 @@ Disallow: /*&compId=
 Disallow: /*?viewMode=
 Disallow: /*&viewMode=
 Allow: /_functions/sitemap
+Allow: /_functions/indexnow
 Allow: /_functions/llmSitemap
 Allow: /_functions/llmsTxt
 

@@ -9,14 +9,26 @@
  */
 
 const GSC_SITE_URL = 'https://www.shamrockbailbonds.biz/'; // Must match GSC property exactly (check trailing slash)
-const GSC_SITEMAP_URL = 'https://www.shamrockbailbonds.biz/sitemap.xml'; // Or _functions/sitemap if dynamic
+const GSC_SITEMAP_INDEX = 'https://www.shamrockbailbonds.biz/sitemap.xml';
+const INDEXNOW_KEY = 'a7c3e91b4d2f48c0a1e65f0b9c4d8e21';
+const INDEXNOW_KEY_LOCATION = 'https://www.shamrockbailbonds.biz/_functions/indexnow';
 
 /**
- * Main function to run the submission.
- * Can be triggered manually or via clock trigger.
+ * Weekly/daily trigger. Submits the Wix sitemap index and every child sitemap
+ * to Google Search Console, then notifies IndexNow/Bing of public URLs.
  */
 function runSitemapSubmission() {
-  submitSitemapToGSC(GSC_SITE_URL, GSC_SITEMAP_URL);
+  var results = { gsc: [], indexnow: null };
+  var feeds = [GSC_SITEMAP_INDEX].concat(fetchChildSitemaps_(GSC_SITEMAP_INDEX));
+  var seen = {};
+  feeds.forEach(function (feed) {
+    if (!feed || seen[feed]) return;
+    seen[feed] = true;
+    results.gsc.push(submitSitemapToGSC(GSC_SITE_URL, feed));
+  });
+  results.indexnow = notifyIndexNowFromSitemaps_(feeds);
+  Logger.log(JSON.stringify(results));
+  return results;
 }
 
 /**
@@ -69,4 +81,82 @@ function inspectUrl(url) {
     console.error("Error inspecting URL:", e);
     return null;
   }
+}
+
+function fetchChildSitemaps_(indexUrl) {
+  try {
+    var xml = UrlFetchApp.fetch(indexUrl, { muteHttpExceptions: true, followRedirects: true }).getContentText() || '';
+    var locs = [];
+    var re = /<loc>\s*([^<]+)\s*<\/loc>/gi;
+    var match;
+    while ((match = re.exec(xml))) {
+      var loc = String(match[1] || '').trim();
+      if (loc && loc.indexOf('sitemap') !== -1) locs.push(loc);
+    }
+    return locs;
+  } catch (e) {
+    Logger.log('Child sitemap parse failed: ' + e.message);
+    return [];
+  }
+}
+
+function collectSitemapUrls_(feedUrl) {
+  try {
+    var xml = UrlFetchApp.fetch(feedUrl, { muteHttpExceptions: true, followRedirects: true }).getContentText() || '';
+    var urls = [];
+    var re = /<loc>\s*([^<]+)\s*<\/loc>/gi;
+    var match;
+    while ((match = re.exec(xml))) {
+      var loc = String(match[1] || '').trim();
+      if (!loc) continue;
+      if (loc.indexOf('-sitemap.xml') !== -1 || loc.slice(-12) === 'sitemap.xml') continue;
+      urls.push(loc);
+    }
+    return urls;
+  } catch (e) {
+    Logger.log('URL collect failed for ' + feedUrl + ': ' + e.message);
+    return [];
+  }
+}
+
+function notifyIndexNowFromSitemaps_(feeds) {
+  var urls = [];
+  var seen = {};
+  (feeds || []).forEach(function (feed) {
+    collectSitemapUrls_(feed).forEach(function (u) {
+      if (seen[u]) return;
+      if (/\/portal-|\/communication-preferences|\/data-deletion/i.test(u)) return;
+      seen[u] = true;
+      urls.push(u);
+    });
+  });
+  if (!urls.length) return { success: false, error: 'no_urls' };
+
+  var payload = {
+    host: 'www.shamrockbailbonds.biz',
+    key: INDEXNOW_KEY,
+    keyLocation: INDEXNOW_KEY_LOCATION,
+    urlList: urls.slice(0, 10000)
+  };
+  var endpoints = [
+    'https://api.indexnow.org/indexnow',
+    'https://www.bing.com/indexnow'
+  ];
+  var out = [];
+  endpoints.forEach(function (ep) {
+    try {
+      var res = UrlFetchApp.fetch(ep, {
+        method: 'post',
+        contentType: 'application/json; charset=utf-8',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true,
+        followRedirects: true
+      });
+      out.push({ endpoint: ep, status: res.getResponseCode() });
+    } catch (e) {
+      out.push({ endpoint: ep, error: e.message });
+    }
+  });
+  Logger.log('IndexNow notified ' + urls.length + ' URLs: ' + JSON.stringify(out));
+  return { success: true, count: urls.length, results: out };
 }

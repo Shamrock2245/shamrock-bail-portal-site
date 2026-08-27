@@ -5,6 +5,8 @@
 
 This document consolidates all operational runbooks: voice AI tuning, compliance, health monitoring, integrations, analytics, and scraping protocols.
 
+Google indexing of county/blog pages: Wix-native `sitemap.xml` already lists them. GAS `runSitemapSubmission` (daily 06:00) submits that index plus child sitemaps to Search Console and pings IndexNow/Bing. Wix job `notifySearchEngines` does the same ping at 06:15. In Wix SEO → robots.txt, add `Allow: /_functions/sitemap` and `Allow: /_functions/indexnow` above `Disallow: /_functions/` so the IndexNow key and custom sitemap are crawlable. Do not noindex public county or blog pages.
+
 ---
 
 ## 1. Voice AI — Shannon Operations

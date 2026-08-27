@@ -828,6 +828,24 @@ export function get_health(request) {
  *
  * Public pages only — never include portal/*, lightboxes, or utility pages.
  */
+const INDEXNOW_KEY = 'a7c3e91b4d2f48c0a1e65f0b9c4d8e21';
+
+/**
+ * GET /_functions/indexnow
+ * IndexNow key file so Bing/Yandex/Seznam can verify URL notifications.
+ */
+export async function get_indexnow(request) {
+    return response({
+        status: 200,
+        headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'public, max-age=86400',
+            'X-Robots-Tag': 'noindex'
+        },
+        body: INDEXNOW_KEY
+    });
+}
+
 export async function get_sitemap(request) {
     const SITE_URL = 'https://www.shamrockbailbonds.biz';
     const LAST_MOD = new Date().toISOString().split('T')[0];
