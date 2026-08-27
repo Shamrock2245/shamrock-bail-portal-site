@@ -10,10 +10,11 @@ export const BLOG_FEED_TIMEOUT_MS = 8000;
 /** Verified Shamrock lines (calls + texts). Digits only for matching. */
 export const VERIFIED_SHAMROCK_PHONES = Object.freeze([
     { display: '(239) 332-2245', digits: '2393322245', e164: '+12393322245', notes: 'Main 24/7 Voice Bond Line (Calls)' },
-    { display: '(239) 955-0301', digits: '2399550301', e164: '+12399550301', notes: 'Spanish / Bilingual Line' },
+    { display: '(239) 955-0301', digits: '2399550301', e164: '+12399550301', notes: 'Spanish / Shannon live-person overflow from 727' },
     { display: '(239) 955-0178', digits: '2399550178', e164: '+12399550178', notes: 'Primary 24/7 SMS & iMessage Line (Texts)' },
-    { display: '(239) 955-0314', digits: '2399550314', e164: '+12399550314', notes: 'Verified Shamrock Line' },
-    { display: '(239) 784-9365', digits: '2397849365', e164: '+12397849365', notes: 'Verified Shamrock Line' },
+    { display: '(239) 955-0314', digits: '2399550314', e164: '+12399550314', notes: 'Spare DID / failover. Not NAP, not iMessage, not Shannon public.' },
+    { display: '(239) 784-9365', digits: '2397849365', e164: '+12397849365', notes: 'Staff desk / Shannon human-ack texts' },
+    { display: '(239) 319-7008', digits: '2393197008', e164: '+12393197008', notes: 'Staff desk / Shannon human-ack texts' },
     { display: '(727) 295-2245', digits: '7272952245', e164: '+17272952245', notes: 'Verified Shamrock Line (Tampa Bay Area Code)' }
 ]);
 

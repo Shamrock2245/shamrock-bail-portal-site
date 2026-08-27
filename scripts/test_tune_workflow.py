@@ -71,8 +71,10 @@ def test_transfer_twiml_dials_office_not_shannon():
         / "twilio-transfer-office.js"
     )
     text = path.read_text(encoding="utf-8")
-    assert "const OFFICE_LINE = '+12393322245'" in text
-    assert "<Number>${OFFICE_LINE}</Number>" in text
+    assert "const DESK_LINE = '+12399550301'" in text
+    assert "const NAP_LINE = '+12393322245'" in text
+    assert "<Number>${DESK_LINE}</Number>" in text
+    assert "<Number>${NAP_LINE}</Number>" in text
     assert "<Number>+17272952245</Number>" not in text
     assert "Never dial 727-295-2245" in text or "Never dial 727" in text
 
@@ -159,8 +161,8 @@ def test_workflow_transfer_node_is_office_not_0178():
         "edges": {},
     }
     out = _mod._tune_workflow(wf, "email_tid", "id_tid")
-    assert out["nodes"]["n_transfer"]["phone_number"] == "+12393322245"
-    assert out["nodes"]["n_transfer"]["transfer_destination"]["phone_number"] == "+12393322245"
+    assert out["nodes"]["n_transfer"]["phone_number"] == "+12399550301"
+    assert out["nodes"]["n_transfer"]["transfer_destination"]["phone_number"] == "+12399550301"
 
 
 if __name__ == "__main__":

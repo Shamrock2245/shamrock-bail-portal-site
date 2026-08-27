@@ -103,6 +103,63 @@ function shannonLeadsHeaders_() {
   return { 'Content-Type': 'application/json', 'X-API-Key': key };
 }
 
+// Staff phones that must get a BlueBubbles text when Shannon needs a human.
+// 0178 is also the BB from-line; include it so the office iMessage thread sees the alert.
+var SHANNON_STAFF_DESK_PHONES = [
+  '+12397849365',
+  '+12393197008',
+  '+12399550301',
+  '+12399550178'
+];
+
+function shannonNormalizePhone_(value) {
+  var d = String(value || '').replace(/\D/g, '');
+  if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
+  if (d.length !== 10) return '';
+  if (d === '7272952245') return '';
+  return '+1' + d;
+}
+
+function shannonStaffDeskPhones_() {
+  var raw = SHANNON_STAFF_DESK_PHONES.slice();
+  try {
+    var extra = PropertiesService.getScriptProperties().getProperty('SHANNON_STAFF_DESK_PHONES') || '';
+    if (extra) raw = raw.concat(String(extra).split(/[,\s]+/));
+    var onCall = PropertiesService.getScriptProperties().getProperty('ON_CALL_AGENT_PHONE') || '';
+    if (onCall) raw.push(onCall);
+  } catch (e) {}
+  var seen = {};
+  var out = [];
+  for (var i = 0; i < raw.length; i++) {
+    var p = shannonNormalizePhone_(raw[i]);
+    if (!p || seen[p]) continue;
+    seen[p] = true;
+    out.push(p);
+  }
+  return out;
+}
+
+function notifyShannonStaffDesk_(message, skipPhone) {
+  if (!message || typeof sendShannonText_ !== 'function') {
+    return { success: false, sent: 0, attempted: 0 };
+  }
+  var skip = shannonNormalizePhone_(skipPhone);
+  var phones = shannonStaffDeskPhones_();
+  var sent = 0;
+  var errors = [];
+  for (var i = 0; i < phones.length; i++) {
+    if (skip && phones[i] === skip) continue;
+    try {
+      var res = sendShannonText_(phones[i], message);
+      if (res && res.success) sent++;
+      else errors.push(phones[i]);
+    } catch (err) {
+      errors.push(phones[i]);
+    }
+  }
+  return { success: sent > 0, sent: sent, attempted: phones.length, errors: errors };
+}
+
 function sendShannonText_(to, body) {
   if (!to || !body) return { success: false, error: 'missing_to_or_body' };
   try {
@@ -175,7 +232,8 @@ function handleShannonNotifyBondsman(params) {
         caller_name: callerName,
         caller_phone: callerPhone,
         preferred_time: preferredTime,
-        notes: notes + (defName ? ' | defendant=' + defName : '') + (county ? ' | county=' + county : '')
+        notes: notes + (defName ? ' | defendant=' + defName : '') + (county ? ' | county=' + county : ''),
+        skip_staff_text: true
       });
     }
   } catch (cbErr) {
@@ -196,10 +254,23 @@ function handleShannonNotifyBondsman(params) {
     }
   } catch (slackErr) {}
 
+  try {
+    notifyShannonStaffDesk_(
+      '☘️ Shannon needs a callback. ' +
+      (callerName || 'Caller') + ' ' + (callerPhone || '') +
+      (defName ? ' | def ' + defName : '') +
+      (county ? ' | ' + county : '') +
+      '. Call them back. Desk 239-955-0301.',
+      callerPhone
+    );
+  } catch (deskErr) {
+    Logger.log('Shannon staff desk text failed (non-fatal): ' + deskErr.message);
+  }
+
   return {
     success: true,
     status: 'notified',
-    message: 'You can reach our office at 239-332-2245. I also notified a bondsman who can call you back ' +
+    message: 'You can reach our office at 239-955-0301. I also notified a bondsman who can call you back ' +
       (preferredTime && preferredTime !== 'ASAP' ? 'around ' + preferredTime : 'as soon as possible') + '.'
   };
 }

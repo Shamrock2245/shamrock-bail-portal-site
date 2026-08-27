@@ -1,6 +1,6 @@
 # 📖 Operations Handbook
 
-> **Last Updated:** August 26, 2026
+> **Last Updated:** August 27, 2026
 > **Status:** 🟢 All Systems Operational
 
 This document consolidates all operational runbooks: voice AI tuning, compliance, health monitoring, integrations, analytics, and scraping protocols.
@@ -21,7 +21,7 @@ Set in Netlify site `shamrock-telegram` → Environment variables (production). 
 
 | Variable | Effect |
 |----------|--------|
-| `SHANNON_LIVE=true` (production) | Shannon answers **(727) 295-2245**. Anyone who needs a person is sent to **(239) 332-2245**. |
+| `SHANNON_LIVE=true` (production) | Shannon answers **(727) 295-2245**. Anyone who needs a person is sent to **(239) 955-0301**, then **(239) 332-2245** if nobody answers. |
 | `SHANNON_LIVE=false` | 727 rings 239-332-2245. Shannon picks up if the office misses. |
 | `SHANNON_ROTATE_ERIC=true` | Optional. Mixes Eric in. Default is Shannon only. |
 
@@ -29,9 +29,11 @@ Do not call-forward 239-332-2245 back to 727-295-2245 (loop). Jail/sheriff calle
 
 Twilio Console for **(727) 295-2245** (set 2026-08-26):
 - Primary voice URL: `https://shamrock-telegram.netlify.app/api/twilio-voice`
-- Fallback URL: `https://shamrock-telegram.netlify.app/api/twilio-voice-fallback` — Dials 239-332-2245 from +17272952245.
+- Fallback URL: `https://shamrock-telegram.netlify.app/api/twilio-voice-fallback` — Dials 239-955-0301, then 239-332-2245, from +17272952245.
 
-Shannon mid-call texts go through **BlueBubbles** on the office iMac (239-955-0178). Twilio is voice-only. Super CRM reaches BlueBubbles over **Tailscale** (`http://100.102.10.86:1234`); **frp** `:12434` is the backup. Warren is scraper residential egress only — not this path. Do not send Shannon texts through ngrok or `bb.shamrockbailbonds.biz`. Shannon tells callers the office number is 239-332-2245 and notifies a bondsman.
+Shannon mid-call texts go through **BlueBubbles** on the office iMac (239-955-0178). Twilio is voice-only. Super CRM reaches BlueBubbles over **Tailscale** (`http://100.102.10.86:1234`); **frp** `:12434` is the backup. Warren is scraper residential egress only — not this path. Do not send Shannon texts through ngrok or `bb.shamrockbailbonds.biz`. Shannon tells callers the live desk is 239-955-0301 (backup 239-332-2245) and notifies a bondsman.
+
+When Shannon needs a human (notify_bondsman, live transfer, callback, or intake CRM miss), BlueBubbles texts **239-784-9365**, **239-319-7008**, **239-955-0301**, and **239-955-0178**. Never 727. Never the caller’s own number.
 
 Wix clipboard texts (`src/backend/bluebubbles.jsw`) also go through Super CRM: `POST /api/imessage/wix/send` with `GAS_API_KEY`. Fallback is `/api/imessage/shannon/send`. Off-mesh Wix cannot use Tailscale `100.x` and must not POST `bb.shamrockbailbonds.biz`.
 
@@ -49,11 +51,25 @@ Voice AI requires vastly different prompting than text AI:
 8. **Soft timeout**: “Okay.” only after the caller has spoken once (`disable_until_first_user_message`).
 
 ### Pronunciation Dictionary
-Florida counties and legal terms that confuse TTS — add to ElevenLabs Custom Pronunciation Dictionary:
+Attached on Shannon as **Shannon Florida legal** (`WPpspEPWYXgSi99P7PhY`):
 - "Charlotte" → `Shar-let`
 - "Sarasota" → `Sara-so-ta`
 - "Indemnitor" → `In-dem-ni-tor`
 - "Capias" → `Cap-ee-us`
+- "DocuSeal" → `Doc-you-seal`
+
+ASR keywords match the same list plus Shamrock / Lee County.
+
+### Simulated tests
+Four attached ElevenLabs tests (create/run via `scripts/shannon_simulated_tests.py --run`):
+- Indemnitor happy path (simulation)
+- Spanish → Sofia
+- Want a person → 239-955-0301, then 239-332-2245, never 727
+- Missing email does not send paperwork
+
+### Watchdog
+Public path: `GET https://leads.shamrockbailbonds.biz/api/ops/shannon-health`
+Checks BlueBubbles Tailscale, Mem0 `/api/agent-brain/memory/status`, unsigned Netlify voice **403**, fallback Dial **+12399550301** then **+12393322245** from **+17272952245**, and GAS health. Super CRM Watchdog cron consumes the same checks.
 
 ### Latency & Interruption Tuning
 - **End of Turn Timeout**: 700ms–1000ms. Bail bond clients are often crying or stressed and may pause frequently.

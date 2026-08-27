@@ -20,9 +20,9 @@
     },
     "spanish": {
       "id": "spanish",
-      "number": "+12995503010",
-      "display": "(299) 550-3010",
-      "displayFormatted": "299-550-3010",
+      "number": "+12399550301",
+      "display": "(239) 955-0301",
+      "displayFormatted": "239-955-0301",
       "counties": ["all"],
       "hours": {
         "start": "00:00",
