@@ -31,11 +31,6 @@
         "userSymbol": "People",
         "version": "v1",
         "serviceId": "peopleapi"
-      },
-      {
-        "userSymbol": "SearchConsole",
-        "version": "v1",
-        "serviceId": "searchconsole"
       }
     ],
     "libraries": [
@@ -62,6 +57,9 @@
   ],
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",
+  "executionApi": {
+    "access": "MYSELF"
+  },
   "webapp": {
     "executeAs": "USER_DEPLOYING",
     "access": "ANYONE_ANONYMOUS"
