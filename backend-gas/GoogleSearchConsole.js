@@ -20,16 +20,16 @@ var GSC_PROP_RESOLVED = 'GSC_RESOLVED_SITE_URL';
 var GSC_PROP_LAST_RUN = 'GSC_LAST_RUN';
 
 var GSC_SITE_CANDIDATES = [
+  'sc-domain:shamrockbailbonds.biz',
   'https://www.shamrockbailbonds.biz/',
   'https://www.shamrockbailbonds.biz',
-  'sc-domain:shamrockbailbonds.biz',
   'https://shamrockbailbonds.biz/',
   'https://shamrockbailbonds.biz'
 ];
 
 /**
- * Daily trigger. Submits the Wix sitemap index and every child sitemap
- * to Google Search Console, then notifies IndexNow/Bing of public URLs.
+ * Daily trigger. Submit ONLY the Wix sitemap index to GSC (Google reads
+ * child sitemaps from the index). Child feeds are still fetched for IndexNow.
  * Never throws — triggers must complete cleanly.
  */
 function runSitemapSubmission() {
@@ -37,9 +37,12 @@ function runSitemapSubmission() {
   var results = {
     ok: false,
     siteUrl: null,
+    siteUrls: [],
     feeds: [],
     gsc: [],
+    gscCleanup: [],
     indexnow: null,
+    trigger: null,
     error: null,
     at: new Date().toISOString()
   };
@@ -52,34 +55,36 @@ function runSitemapSubmission() {
 
   try {
     var indexXml = fetchXml_(GSC_SITEMAP_INDEX);
-    var feeds = [GSC_SITEMAP_INDEX].concat(parseSitemapLocs_(indexXml, true));
+    var childFeeds = parseSitemapLocs_(indexXml, true);
     var seen = {};
-    feeds.forEach(function (feed) {
+    results.feeds.push(GSC_SITEMAP_INDEX);
+    childFeeds.forEach(function (feed) {
       if (!feed || seen[feed]) return;
       seen[feed] = true;
       results.feeds.push(feed);
     });
 
-    var site = resolveGscSiteUrl_();
-    results.siteUrl = site.siteUrl;
-    if (!site.ok) {
-      results.error = site.error;
-      results.gsc = results.feeds.map(function (feed) {
-        return { success: false, feed: feed, error: site.error };
-      });
+    var sites = listMatchingGscProperties_();
+    results.siteUrls = sites.siteUrls;
+    results.siteUrl = sites.siteUrl;
+    if (!sites.ok) {
+      results.error = sites.error;
+      results.gsc.push({ success: false, feed: GSC_SITEMAP_INDEX, error: sites.error });
     } else {
-      results.feeds.forEach(function (feed) {
-        results.gsc.push(submitSitemapToGSC(site.siteUrl, feed));
+      sites.siteUrls.forEach(function (siteUrl) {
+        results.gsc.push(submitSitemapToGSC(siteUrl, GSC_SITEMAP_INDEX));
+        results.gscCleanup = results.gscCleanup.concat(
+          cleanupGscChildSitemaps_(siteUrl, childFeeds)
+        );
       });
     }
 
     results.indexnow = notifyIndexNowFromSitemaps_(results.feeds);
+    results.trigger = ensureGscSitemapTrigger_();
     var gscOk = results.gsc.length && results.gsc.every(function (r) { return r && r.success; });
-    var indexOk = !!(results.indexnow && results.indexnow.success);
-    results.ok = gscOk && indexOk;
-    if (!results.ok && !results.error) {
-      results.error = gscOk ? 'indexnow_failed' : 'gsc_failed';
-    }
+    results.ok = gscOk;
+    if (!gscOk && !results.error) results.error = 'gsc_failed';
+    else if (gscOk && results.indexnow && !results.indexnow.success) results.error = 'indexnow_failed';
   } catch (e) {
     if (isUrlFetchAuthError_(e)) throw e;
     results.error = e.message;
@@ -191,6 +196,96 @@ function installGscSitemapTrigger() {
   return installSingleTrigger('GSC Sitemap Submit');
 }
 
+function ensureGscSitemapTrigger_() {
+  var triggers = ScriptApp.getProjectTriggers();
+  var exists = triggers.some(function (t) {
+    return t.getHandlerFunction() === 'runSitemapSubmission';
+  });
+  if (exists) return { installed: false, already: true };
+  installSingleTrigger('GSC Sitemap Submit');
+  return { installed: true, already: false };
+}
+
+function listMatchingGscProperties_() {
+  var listed = gscFetch_(GSC_SITES_API, { method: 'get' });
+  if (!listed.ok) {
+    return { ok: false, siteUrl: GSC_SITE_URL, siteUrls: [], error: listed.error };
+  }
+  var entries = (listed.json && listed.json.siteEntry) || [];
+  var available = {};
+  entries.forEach(function (entry) {
+    if (entry && entry.siteUrl) available[entry.siteUrl] = entry.permissionLevel || true;
+  });
+  var siteUrls = [];
+  GSC_SITE_CANDIDATES.forEach(function (c) {
+    if (available[c] && siteUrls.indexOf(c) === -1) siteUrls.push(c);
+  });
+  Object.keys(available).forEach(function (url) {
+    if (!/shamrockbailbonds\.biz/i.test(url)) return;
+    if (/^https:\/\/school\./i.test(url)) return;
+    if (siteUrls.indexOf(url) === -1) siteUrls.push(url);
+  });
+  if (!siteUrls.length) {
+    return { ok: false, siteUrl: GSC_SITE_URL, siteUrls: [], error: 'no_matching_gsc_property', available: Object.keys(available) };
+  }
+  PropertiesService.getScriptProperties().setProperty(GSC_PROP_RESOLVED, siteUrls[0]);
+  return { ok: true, siteUrl: siteUrls[0], siteUrls: siteUrls };
+}
+
+/**
+ * GSC should only have the sitemap index. Child Wix feeds submitted as
+ * standalone sitemaps show as Type Unknown / Couldn't fetch.
+ */
+function cleanupGscChildSitemaps_(siteUrl, childFeeds) {
+  var out = [];
+  var listed = gscFetch_(
+    GSC_SITES_API + '/' + encodeURIComponent(siteUrl) + '/sitemaps',
+    { method: 'get' }
+  );
+  var paths = {};
+  (childFeeds || []).forEach(function (feed) { if (feed) paths[feed] = true; });
+  if (listed.ok && listed.json && listed.json.sitemap) {
+    listed.json.sitemap.forEach(function (entry) {
+      if (entry && entry.path) paths[entry.path] = true;
+    });
+  }
+  Object.keys(paths).forEach(function (feed) {
+    if (!isStandaloneChildSitemap_(feed)) return;
+    var del = gscFetch_(
+      GSC_SITES_API + '/' + encodeURIComponent(siteUrl) + '/sitemaps/' + encodeURIComponent(feed),
+      { method: 'delete' }
+    );
+    out.push({ feed: feed, deleted: !!del.ok, error: del.ok ? null : del.error });
+  });
+  return out;
+}
+
+function isStandaloneChildSitemap_(feed) {
+  var url = String(feed || '');
+  if (!/shamrockbailbonds\.biz/i.test(url)) return false;
+  if (/^https:\/\/school\./i.test(url)) return false;
+  if (/\/\/www\.shamrockbailbonds\.biz\/sitemap\.xml$/i.test(url)) return false;
+  return /\/pages-sitemap\.xml$/i.test(url)
+    || /\/blog-posts-sitemap\.xml$/i.test(url)
+    || /\/blog-categories-sitemap\.xml$/i.test(url)
+    || /dynamic-florida-bail-bonds.*sitemap\.xml$/i.test(url)
+    || /\/.+-sitemap\.xml$/i.test(url);
+}
+
+/** Editor helper: remove child sitemap submissions, keep the index. */
+function cleanupGscChildSitemaps() {
+  var sites = listMatchingGscProperties_();
+  if (!sites.ok) return sites;
+  var childFeeds = [];
+  try { childFeeds = parseSitemapLocs_(fetchXml_(GSC_SITEMAP_INDEX), true); } catch (e) { childFeeds = []; }
+  var out = [];
+  sites.siteUrls.forEach(function (siteUrl) {
+    out = out.concat(cleanupGscChildSitemaps_(siteUrl, childFeeds));
+  });
+  Logger.log(JSON.stringify(out));
+  return out;
+}
+
 /**
  * First-run OAuth. Run this in the editor so Google can show Review permissions.
  * Do not wrap this in try/catch — Apps Script only prompts if the error is uncaught.
@@ -245,44 +340,7 @@ function isUrlFetchAuthError_(e) {
 }
 
 function resolveGscSiteUrl_() {
-  var props = PropertiesService.getScriptProperties();
-  var cached = String(props.getProperty(GSC_PROP_RESOLVED) || '').trim();
-  var listed = gscFetch_(GSC_SITES_API, { method: 'get' });
-  if (!listed.ok) {
-    return { ok: false, siteUrl: cached || GSC_SITE_URL, error: listed.error };
-  }
-
-  var entries = (listed.json && listed.json.siteEntry) || [];
-  var available = {};
-  entries.forEach(function (entry) {
-    if (entry && entry.siteUrl) available[entry.siteUrl] = entry.permissionLevel || true;
-  });
-
-  var candidates = [];
-  if (cached) candidates.push(cached);
-  GSC_SITE_CANDIDATES.forEach(function (c) {
-    if (candidates.indexOf(c) === -1) candidates.push(c);
-  });
-  Object.keys(available).forEach(function (url) {
-    if (/shamrockbailbonds\.biz/i.test(url) && candidates.indexOf(url) === -1) {
-      candidates.push(url);
-    }
-  });
-
-  var i;
-  for (i = 0; i < candidates.length; i++) {
-    if (available[candidates[i]]) {
-      if (cached !== candidates[i]) props.setProperty(GSC_PROP_RESOLVED, candidates[i]);
-      return { ok: true, siteUrl: candidates[i], permissionLevel: available[candidates[i]] };
-    }
-  }
-
-  return {
-    ok: false,
-    siteUrl: cached || GSC_SITE_URL,
-    error: 'no_matching_gsc_property',
-    available: Object.keys(available)
-  };
+  return listMatchingGscProperties_();
 }
 
 function gscFetch_(url, options) {
@@ -488,6 +546,8 @@ function saveGscLastRun_(results) {
       gsc: ((results && results.gsc) || []).map(function (r) {
         return { success: !!(r && r.success), feed: r && r.feed, error: r && r.error, lastSubmitted: r && r.lastSubmitted };
       }),
+      gscCleanup: (results && results.gscCleanup) || [],
+      trigger: results && results.trigger,
       indexnow: results && results.indexnow
         ? { success: !!results.indexnow.success, count: results.indexnow.count, results: results.indexnow.results }
         : null
