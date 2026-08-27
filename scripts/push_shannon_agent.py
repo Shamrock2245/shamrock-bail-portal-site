@@ -191,6 +191,9 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
     if "n_a_gather" in nodes:
         nodes["n_a_gather"]["additional_prompt"] = (
             "Ask the defendant's full name, then the county, one question at a time. "
+            "For the caller's legal last name, if it sounds Irish or has an apostrophe, "
+            "ask them to spell it. O'Neal is N-E-A-L. O'Neill is N-E-I-L-L. Pass that "
+            "spelling as caller_name / indemnitor_name on request_id_photo. "
             "When they agree to send ID, call request_id_photo immediately. "
             "Do not say you texted a link until the tool result says you did."
         )
@@ -302,7 +305,10 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
                 "Do not email paperwork yet. If they are quiet they are taking photos. "
                 "Do not ask are you still there more than once. Call check_id_upload "
                 "when they say they uploaded, or after a pause. Read back the name "
-                "on the license. Then send paperwork. Tell them the signing link is texted."
+                "on the license. If name_conflict is set, have them spell the last "
+                "name letter by letter. O'Neal (N-E-A-L) is not O'Neill (N-E-I-L-L). "
+                "Keep the spelling they confirm. Then send paperwork. Tell them the "
+                "signing link is texted."
             ),
         }
         edges["e29c"] = {
@@ -529,7 +535,8 @@ def main() -> int:
             "phone": _prop("phone", "Mobile number to text the upload link if different from caller_phone"),
             "email": _prop("email", "Standard email for ID instructions, e.g. name@domain.com. Never a jail email."),
             "indemnitor_email": _prop("indemnitor_email", "Alias for email"),
-            "caller_name": _prop("caller_name", "Person sending the ID"),
+            "caller_name": _prop("caller_name", "Person sending the ID. Pass the spelled legal name, e.g. Brendan O'Neal."),
+            "indemnitor_name": _prop("indemnitor_name", "Same as caller_name when they are the indemnitor. Keep O'Neal if they spelled N-E-A-L."),
             "defendant_name": _prop("defendant_name", "Defendant legal full name"),
             "case_reference": _prop("case_reference", "Intake reference from create_intake"),
         },
@@ -537,7 +544,7 @@ def main() -> int:
     )
     check_id_tool = _webhook_tool(
         CHECK_ID_TOOL_NAME,
-        "Check whether the caller uploaded ID photos yet. Call this while they photograph the front and back. Do not send paperwork until this says received, unless they skip ID.",
+        "Check whether the caller uploaded ID photos yet. Call this while they photograph the front and back. If name_conflict is set, have them spell the last name on the license. Do not send paperwork until this says received, unless they skip ID.",
         {
             "case_reference": _prop("case_reference", "Same case_reference used for request_id_photo. Never a CallSid."),
             "packet_id": _prop("packet_id", "Packet id from request_id_photo if different from case_reference."),

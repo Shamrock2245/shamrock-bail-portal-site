@@ -435,6 +435,8 @@ function toolCheckIdUpload(params) {
         received: !!body.received,
         slots: body.slots || {},
         ocr: body.ocr || {},
+        name_conflict: body.name_conflict || null,
+        name_source: body.name_source || '',
         case_reference: caseRef,
         message: spoken
       })).setMimeType(ContentService.MimeType.JSON);
@@ -484,7 +486,9 @@ function toolRequestIdPhoto(params) {
         packet_id: caseRef,
         case_reference: caseRef,
         caller_role: role,
-        defendant_name: defName
+        defendant_name: defName,
+        caller_name: name,
+        indemnitor_name: name
       }),
       muteHttpExceptions: true,
       followRedirects: true
