@@ -53,7 +53,8 @@
     "https://www.googleapis.com/auth/script.scriptapp",
     "https://www.googleapis.com/auth/script.container.ui",
     "https://www.googleapis.com/auth/business.manage",
-    "https://www.googleapis.com/auth/webmasters"
+    "https://www.googleapis.com/auth/webmasters",
+    "https://www.googleapis.com/auth/webmasters.readonly"
   ],
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",

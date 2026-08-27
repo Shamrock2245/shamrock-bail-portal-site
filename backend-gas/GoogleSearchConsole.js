@@ -81,6 +81,7 @@ function runSitemapSubmission() {
       results.error = gscOk ? 'indexnow_failed' : 'gsc_failed';
     }
   } catch (e) {
+    if (isUrlFetchAuthError_(e)) throw e;
     results.error = e.message;
     console.error('runSitemapSubmission: ' + e.message);
   } finally {
@@ -190,6 +191,59 @@ function installGscSitemapTrigger() {
   return installSingleTrigger('GSC Sitemap Submit');
 }
 
+/**
+ * First-run OAuth. Run this in the editor so Google can show Review permissions.
+ * Do not wrap this in try/catch — Apps Script only prompts if the error is uncaught.
+ * The token must include webmasters or GSC REST calls return HTTP 403.
+ */
+function authorizeGscAccess() {
+  var token = ScriptApp.getOAuthToken();
+  UrlFetchApp.fetch(GSC_SITEMAP_INDEX, { muteHttpExceptions: true, followRedirects: true });
+
+  var infoRes = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo', {
+    method: 'post',
+    payload: { access_token: token },
+    muteHttpExceptions: true
+  });
+  var info = {};
+  try { info = JSON.parse(infoRes.getContentText() || '{}'); } catch (e) { info = {}; }
+  var scopes = String(info.scope || '').split(/\s+/).filter(function (s) { return !!s; });
+  Logger.log('Granted OAuth scopes: ' + scopes.join(' | '));
+  if (!hasWebmastersScope_(scopes)) {
+    throw new Error(WEBMASTERS_REAUTH_MSG_);
+  }
+
+  var gsc = UrlFetchApp.fetch(GSC_SITES_API, {
+    method: 'get',
+    headers: { Authorization: 'Bearer ' + token },
+    muteHttpExceptions: true
+  });
+  var code = gsc.getResponseCode();
+  var body = gsc.getContentText() || '';
+  Logger.log('GSC sites HTTP ' + code);
+  if (code === 403 && /insufficient authentication scopes/i.test(body)) {
+    throw new Error(WEBMASTERS_REAUTH_MSG_);
+  }
+  if (code < 200 || code >= 300) {
+    throw new Error('GSC sites HTTP ' + code + ': ' + body.slice(0, 400));
+  }
+  Logger.log('GSC UrlFetch + webmasters authorization succeeded.');
+  return { ok: true, siteCount: (JSON.parse(body || '{}').siteEntry || []).length };
+}
+
+var WEBMASTERS_REAUTH_MSG_ = 'webmasters_scope_missing: Google Account → Third-party access → remove shamrock-automations → Run authorizeGscAccess again and allow "View Search Console data for your verified sites".';
+
+function hasWebmastersScope_(scopes) {
+  return (scopes || []).some(function (s) {
+    return s === 'https://www.googleapis.com/auth/webmasters'
+      || s === 'https://www.googleapis.com/auth/webmasters.readonly';
+  });
+}
+
+function isUrlFetchAuthError_(e) {
+  return !!(e && /permission to call UrlFetchApp|Authorization is required|required permissions/i.test(String(e.message || e)));
+}
+
 function resolveGscSiteUrl_() {
   var props = PropertiesService.getScriptProperties();
   var cached = String(props.getProperty(GSC_PROP_RESOLVED) || '').trim();
@@ -273,12 +327,7 @@ function gscFetch_(url, options) {
       return { ok: false, code: code, json: json, body: body, error: gscErrorMessage_(code, body, json) };
     } catch (e) {
       last = { ok: false, error: e.message };
-      if (/permission to call UrlFetchApp/i.test(e.message)) {
-        return {
-          ok: false,
-          error: 'urlfetch_not_authorized: run runSitemapSubmission in the editor and accept permissions (script.external_request + webmasters)'
-        };
-      }
+      if (isUrlFetchAuthError_(e)) throw e;
       Utilities.sleep(Math.pow(2, attempt) * 400);
     }
   }
@@ -288,6 +337,9 @@ function gscFetch_(url, options) {
 function gscErrorMessage_(code, body, json) {
   var apiMsg = json && json.error && (json.error.message || json.error.status);
   if (code === 401) return 'unauthorized_reauth_required';
+  if (code === 403 && /insufficient authentication scopes/i.test(String(apiMsg || body || ''))) {
+    return WEBMASTERS_REAUTH_MSG_;
+  }
   if (code === 403 && /has not been used in project|is disabled/i.test(String(apiMsg || body || ''))) {
     return 'search_console_api_disabled: enable Search Console API on the Apps Script GCP project, then re-run';
   }
@@ -319,12 +371,7 @@ function fetchXmlMeta_(url) {
       return { ok: true, text: text, code: code };
     } catch (e) {
       lastErr = e.message;
-      if (/permission to call UrlFetchApp/i.test(e.message)) {
-        return {
-          ok: false,
-          error: 'urlfetch_not_authorized: run runSitemapSubmission in the editor and accept permissions'
-        };
-      }
+      if (isUrlFetchAuthError_(e)) throw e;
       Utilities.sleep(Math.pow(2, attempt) * 400);
     }
   }
@@ -355,6 +402,14 @@ function fetchChildSitemaps_(indexUrl) {
   }
 }
 
+function canonicalizePublicUrl_(raw) {
+  var loc = String(raw || '').trim();
+  if (loc === 'https://www.shamrockbailbonds.biz') loc = 'https://www.shamrockbailbonds.biz/';
+  if (loc.indexOf('https://www.shamrockbailbonds.biz/') !== 0) return '';
+  if (/\/portal-|\/communication-preferences|\/data-deletion/i.test(loc)) return '';
+  return loc;
+}
+
 function collectSitemapUrls_(feedUrl) {
   try {
     return parseSitemapLocs_(fetchXml_(feedUrl), false);
@@ -369,10 +424,10 @@ function notifyIndexNowFromSitemaps_(feeds) {
   var seen = {};
   (feeds || []).forEach(function (feed) {
     collectSitemapUrls_(feed).forEach(function (u) {
-      if (seen[u]) return;
-      if (/\/portal-|\/communication-preferences|\/data-deletion/i.test(u)) return;
-      seen[u] = true;
-      urls.push(u);
+      var loc = canonicalizePublicUrl_(u);
+      if (!loc || seen[loc]) return;
+      seen[loc] = true;
+      urls.push(loc);
     });
   });
   if (!urls.length) return { success: false, error: 'no_urls' };
