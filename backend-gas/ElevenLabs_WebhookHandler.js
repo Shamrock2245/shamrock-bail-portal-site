@@ -687,9 +687,10 @@ function toolLookupDefendant(params) {
  * }
  */
 function toolCreateIntake(params) {
+    params = params || {};
     var defName = (params.defendant_name || '').trim();
-    var callerName = (params.caller_name || '').trim();
-    var callerPhone = (params.caller_phone || '').trim();
+    var callerName = (params.caller_name || params.indemnitor_name || '').trim();
+    var callerPhone = (params.caller_phone || params.indemnitor_phone || '').trim();
 
     if (!defName) {
         return ContentService.createTextOutput(JSON.stringify({
@@ -698,86 +699,18 @@ function toolCreateIntake(params) {
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    var ss = SpreadsheetApp.openById(
-        PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID')
-    );
-    var sheet = ss.getSheetByName('IntakeQueue');
-    if (!sheet) {
-        sheet = ss.insertSheet('IntakeQueue');
-        sheet.appendRow(['Timestamp', 'Source', 'DefName', 'Charges', 'DefFacility', 'BondAmt',
-            'IndName', 'IndPhone', 'Status', 'Notes']);
-        sheet.setFrozenRows(1);
-    }
+    // Same key as ID upload / paperwork. Do not mint AI- timestamps — those
+    // never match the SH-{phone}-{defendant} packet, so OCR cannot keep the
+    // spelled last name. Never open SpreadsheetApp here (3–7s cold start 504s ElevenLabs).
+    var caseRef = (typeof shannonCaseKey_ === 'function')
+        ? shannonCaseKey_(params)
+        : ('SH-' + String(callerPhone || '').replace(/\D/g, '').slice(-10) + '-' +
+            defName.toUpperCase().replace(/\s+/g, '-').slice(0, 24));
 
-    var caseRef = 'AI-' + new Date().getTime().toString(36).toUpperCase();
-
-    sheet.appendRow([
-        new Date(),
-        'Shannon Voice',
-        defName,
-        params.charges || '',
-        params.facility || '',
-        params.bond_amount || '',
-        callerName,
-        callerPhone,
-        'New - AI Intake',
-        (params.notes || '') + ' | Ref: ' + caseRef +
-        ' | role=' + (params.caller_role || '') +
-        ' | indemnitor_email=' + (params.indemnitor_email || params.caller_email || '')
-    ]);
-
-    // ── SYNC TO WIX CMS INTAKEQUEUE ───────────────────────────────────────
-    // Voice intakes from Shannon must appear in the Wix portal for staff.
-    // Uses the same sendToWixWithRetry path as Telegram mini-app intakes.
-    try {
-        if (typeof getWixPortalConfig === 'function' && typeof sendToWixWithRetry === 'function') {
-            var wixConfig = getWixPortalConfig();
-            var wixMappedData = {
-                source: 'elevenlabs_voice',
-                caseId: caseRef,
-                consentGiven: true,
-                consentTimestamp: new Date().toISOString(),
-                notes: 'Submitted via Shannon voice paperwork assistant. ' + (params.notes || ''),
-                // Defendant
-                defendantName: defName,
-                defendantPhone: '',
-                defendantEmail: '',
-                charges: params.charges || '',
-                bondAmount: params.bond_amount || '',
-                county: params.county || '',
-                // Indemnitor (caller)
-                indemnitorName: callerName,
-                indemnitorPhone: callerPhone,
-                indemnitorEmail: params.caller_email || '',
-                indemnitorRelation: params.relation || '',
-                indemnitorStreetAddress: '',
-                indemnitorCity: '',
-                indemnitorState: 'FL',
-                indemnitorZipCode: '',
-                // References
-                reference1Name: '',
-                reference1Phone: '',
-                reference1Relation: '',
-                reference2Name: '',
-                reference2Phone: '',
-                reference2Relation: '',
-                docIdFront: null
-            };
-            var wixPayload = { apiKey: wixConfig.apiKey, intakeData: wixMappedData };
-            var wixResult = sendToWixWithRetry('/telegramIntake', wixPayload);
-            if (wixResult && wixResult.success) {
-                Logger.log('✅ Voice intake synced to Wix CMS: ' + caseRef);
-            } else {
-                Logger.log('⚠️ Voice intake saved to Sheets, Wix CMS sync failed: ' + JSON.stringify(wixResult));
-            }
-        }
-    } catch (wixSyncErr) {
-        Logger.log('⚠️ Wix CMS sync error (non-fatal): ' + wixSyncErr.message);
-    }
-
+    var crmOk = false;
     try {
         if (typeof shannonSyncIntakeToCrm_ === 'function') {
-            shannonSyncIntakeToCrm_({
+            var crmCode = shannonSyncIntakeToCrm_({
                 case_reference: caseRef,
                 caller_role: params.caller_role || '',
                 defendant_name: defName,
@@ -790,14 +723,15 @@ function toolCreateIntake(params) {
                 indemnitor_name: params.indemnitor_name || callerName,
                 indemnitor_email: params.indemnitor_email || params.caller_email || '',
                 indemnitor_phone: params.indemnitor_phone || callerPhone,
-                notes: params.notes || ''
+                notes: params.notes || '',
+                skip_match: true
             });
+            crmOk = crmCode >= 200 && crmCode < 300;
         }
     } catch (crmSyncErr) {
         Logger.log('⚠️ Super CRM intake sync error (non-fatal): ' + crmSyncErr.message);
     }
 
-    // Slack alert
     try {
         var config = getConfig();
         var slackChannel = config.SLACK_WEBHOOK_INTAKE || config.SLACK_WEBHOOK_SHAMROCK;
@@ -808,7 +742,8 @@ function toolCreateIntake(params) {
                 '• Charges: ' + (params.charges || 'TBD') + '\n' +
                 '• Facility: ' + (params.facility || 'TBD') + '\n' +
                 '• Caller: ' + (callerName || 'Unknown') + ' ' + (callerPhone || '') + '\n' +
-                '• Ref: ' + caseRef,
+                '• Ref: `' + caseRef + '`\n' +
+                '• CRM: ' + (crmOk ? 'saved' : 'miss — staff check Super CRM'),
                 null
             );
         }
@@ -817,7 +752,7 @@ function toolCreateIntake(params) {
     }
 
     return ContentService.createTextOutput(JSON.stringify({
-        status: 'created',
+        status: crmOk ? 'created' : 'created_local',
         case_reference: caseRef,
         message: 'Intake record created for ' + defName + '. Reference: ' + caseRef
     })).setMimeType(ContentService.MimeType.JSON);

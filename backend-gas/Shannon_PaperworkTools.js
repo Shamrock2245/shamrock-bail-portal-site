@@ -147,7 +147,8 @@ function shannonSyncIntakeToCrm_(params) {
       indemnitorName: params.indemnitor_name || params.caller_name || '',
       indemnitorPhone: params.indemnitor_phone || params.caller_phone || '',
       indemnitorEmail: params.indemnitor_email || '',
-      notes: (params.notes || '') + ' | role=' + (params.caller_role || '')
+      notes: (params.notes || '') + ' | role=' + (params.caller_role || ''),
+      skip_match: true
     }),
     muteHttpExceptions: true,
     followRedirects: true
