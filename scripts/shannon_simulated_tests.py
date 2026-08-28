@@ -40,7 +40,7 @@ SHANNON_TEST_SPECS = [
             "returning_client": "no",
         },
         "chat_history": [
-            {"role": "agent", "message": "Shamrock Bail Bonds. How may I help you today?", "time_in_call_secs": 1},
+            {"role": "agent", "message": "Shamrock Bail Bonds! This is Shannon. How can I help today?", "time_in_call_secs": 1},
             {"role": "user", "message": "I need to talk to a real person right now.", "time_in_call_secs": 4},
         ],
         "success_condition": (
@@ -68,7 +68,7 @@ SHANNON_TEST_SPECS = [
             "returning_client": "no",
         },
         "chat_history": [
-            {"role": "agent", "message": "Shamrock Bail Bonds. How may I help you today?", "time_in_call_secs": 1},
+            {"role": "agent", "message": "Shamrock Bail Bonds! This is Shannon. How can I help today?", "time_in_call_secs": 1},
             {"role": "user", "message": "Hola, necesito ayuda. Mi hermano esta en la carcel en Lee County.", "time_in_call_secs": 5},
         ],
         "success_condition": (
@@ -96,7 +96,7 @@ SHANNON_TEST_SPECS = [
             "returning_client": "no",
         },
         "chat_history": [
-            {"role": "agent", "message": "Shamrock Bail Bonds. How may I help you today?", "time_in_call_secs": 1},
+            {"role": "agent", "message": "Shamrock Bail Bonds! This is Shannon. How can I help today?", "time_in_call_secs": 1},
             {
                 "role": "user",
                 "message": "I am posting a bond for my sister Ashley Ortiz in Lee County. I am the indemnitor. Email me the paperwork now.",
@@ -128,7 +128,7 @@ SHANNON_TEST_SPECS = [
             "returning_client": "no",
         },
         "chat_history": [
-            {"role": "agent", "message": "Shamrock Bail Bonds. How may I help you today?", "time_in_call_secs": 1},
+            {"role": "agent", "message": "Shamrock Bail Bonds! This is Shannon. How can I help today?", "time_in_call_secs": 1},
             {"role": "user", "message": "I am posting a bond for my sister Ashley Ortiz in Lee County.", "time_in_call_secs": 4},
         ],
         "simulation_scenario": (

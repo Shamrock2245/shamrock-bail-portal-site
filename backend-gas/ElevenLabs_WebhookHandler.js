@@ -973,7 +973,7 @@ function handleElevenLabsConversationInit(e) {
             type: 'conversation_initiation_client_data',
             dynamic_variables: { caller_name: '', has_existing_case: 'no' },
             conversation_config_override: {
-                agent: { first_message: 'Shamrock Bail Bonds. How may I help you today?' }
+                agent: { first_message: 'Shamrock Bail Bonds! This is Shannon. How can I help today?' }
             }
         })).setMimeType(ContentService.MimeType.JSON);
     }
@@ -1017,7 +1017,14 @@ function _doConversationInit(e) {
         call_sid: callSid
     };
 
-    var firstMessage = "Shamrock Bail Bonds. How may I help you today?";
+    var firstTails = [
+        'How can I help today?',
+        'What can I do for you?',
+        'How can I help?',
+        'What do you need?'
+    ];
+    var firstMessage = 'Shamrock Bail Bonds! This is Shannon. ' +
+        firstTails[Math.floor(Math.random() * firstTails.length)];
 
     // TODO: Re-enable personalized lookup once we add CacheService or a warm-keep trigger.
     // SpreadsheetApp.openById() takes 3-7s cold start, which exceeds ElevenLabs timeout.

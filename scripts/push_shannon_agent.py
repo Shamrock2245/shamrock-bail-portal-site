@@ -170,7 +170,7 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
     edges = wf.setdefault("edges", {})
     if "n_greet" in nodes:
         nodes["n_greet"]["additional_prompt"] = (
-            "The first line is already spoken and should sound bright. Keep that energy. Answer what they just said. Do not wait on a tool."
+            "The opening is already spoken: Shamrock Bail Bonds, this is Shannon, then a short how-can-I-help. No hey. Keep that energy. Answer what they just said. Do not wait on a tool."
         )
     # Mem0 is already injected at ring. Do not block the first reply on history.
     if "e02" in edges and "n_personalize" in nodes:
@@ -706,7 +706,7 @@ def main() -> int:
         "name": "Shannon — Shamrock Paperwork Assistant",
         "conversation_config": {
             "agent": {
-                "first_message": "Hey, Shamrock Bail Bonds! This is Shannon, how can I help?",
+                "first_message": "Shamrock Bail Bonds! This is Shannon. How can I help today?",
                 "language": "en",
                 "dynamic_variables": {
                     "dynamic_variable_placeholders": {
