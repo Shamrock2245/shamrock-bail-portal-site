@@ -1193,7 +1193,7 @@ function toolScheduleCallback(params) {
                 '☘️ Shannon callback ' + callbackRef + '. ' +
                 (callerName || 'Caller') + ' ' + callerPhone +
                 (preferredTime ? ' at ' + preferredTime : '') +
-                '. Call them back. Desk 239-955-0301.',
+                '. Call them back. Office 239-332-2245.',
                 callerPhone
             );
         } catch (deskErr) {
@@ -1244,9 +1244,9 @@ function redirectLiveCallToOffice_(callSid, callerPhone) {
 
 /**
  * Tool: transfer_to_bondsman
- * Redirects the live Twilio call to (239) 955-0301 (then 332-2245 if no
- * answer), then Slack + BlueBubbles the staff desk phones. Native ElevenLabs
- * transfer_to_number does not work on the register-call path.
+ * Redirects the live Twilio call to 239-332-2245 and 239-955-0301 at the
+ * same time (first staff pickup wins), then Slack + BlueBubbles. Native
+ * ElevenLabs transfer_to_number does not work on the register-call path.
  *
  * Expected params: { "caller_phone": "...", "reason": "...", "call_sid": "CA..." }
  */
@@ -1278,7 +1278,7 @@ function toolTransferToBondsman(params) {
     try {
         notifyShannonStaffDesk_(
             '🚨 Shannon LIVE TRANSFER. Caller ' + (callerPhone || 'unknown') +
-            '. ' + reason + '. Ringing 239-955-0301 now. Call them back if it misses.',
+            '. ' + reason + '. Ringing 239-332-2245 and 239-955-0301. Call them back if it misses.',
             callerPhone
         );
     } catch (deskErr) {
@@ -1288,15 +1288,15 @@ function toolTransferToBondsman(params) {
     if (live.ok) {
         return ContentService.createTextOutput(JSON.stringify({
             status: 'connecting',
-            result: 'Connecting you to the office at 239-955-0301 now. Please stay on the line.',
-            message: 'Connecting you to the office at 239-955-0301 now. Please stay on the line.'
+            result: 'Connecting you to the office at 239-332-2245 now. Please stay on the line.',
+            message: 'Connecting you to the office at 239-332-2245 now. Please stay on the line.'
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
     return ContentService.createTextOutput(JSON.stringify({
         status: 'transfer_requested',
-        result: 'I could not connect this live call automatically. You can reach our office at 239-955-0301. I have notified a bondsman, and they can call you back. Keep your phone nearby.',
-        message: 'I could not connect this live call automatically. You can reach our office at 239-955-0301. I have notified a bondsman, and they can call you back. Keep your phone nearby.'
+        result: 'I could not connect this live call automatically. You can reach our office at 239-332-2245. I have notified a bondsman, and they can call you back. Keep your phone nearby.',
+        message: 'I could not connect this live call automatically. You can reach our office at 239-332-2245. I have notified a bondsman, and they can call you back. Keep your phone nearby.'
     })).setMimeType(ContentService.MimeType.JSON);
 }
 

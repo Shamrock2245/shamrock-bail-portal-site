@@ -30,7 +30,7 @@ AGENT_ID_DEFAULT = "agent_2001kjth4na5ftqvdf1pp3gfb1cb"
 # Live calls inject the real Twilio From. Never text this placeholder.
 SHANNON_TEST_SPECS = [
     {
-        "name": "Shannon want-a-person offers 239-955-0301",
+        "name": "Shannon want-a-person offers 239-332-2245",
         "type": "llm",
         "workflow_node_id": "n_intent",
         "dynamic_variables": {
@@ -44,13 +44,13 @@ SHANNON_TEST_SPECS = [
             {"role": "user", "message": "I need to talk to a real person right now.", "time_in_call_secs": 4},
         ],
         "success_condition": (
-            "Return True if Shannon gives 239-955-0301 or transfers to that desk, "
-            "or gives 239-332-2245 as backup, and does not tell the caller to dial or call back 727-295-2245. "
-            "Transferring or offering a bondsman at 239-955-0301 is success."
+            "Return True if Shannon gives 239-332-2245 or transfers to the office, "
+            "and does not tell the caller to dial or call back 727-295-2245. "
+            "Transferring or offering a bondsman at 239-332-2245 is success."
         ),
         "success_examples": [
-            {"response": "I'll connect you with our office at 239-955-0301. Please hold.", "type": "success"},
-            {"response": "You can reach a bondsman at two three nine, nine five five, zero three zero one.", "type": "success"},
+            {"response": "I'll connect you with our office at 239-332-2245. Please hold.", "type": "success"},
+            {"response": "You can reach a bondsman at two three nine, three three two, two two four five.", "type": "success"},
         ],
         "failure_examples": [
             {"response": "Please call us back at 727-295-2245.", "type": "failure"},

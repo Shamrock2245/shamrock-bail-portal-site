@@ -4,8 +4,8 @@ SHAMROCK BAIL BONDS — KNOWLEDGE BASE FOR SHANNON (AI AGENT)
 ABOUT SHAMROCK BAIL BONDS
 - Company: Shamrock Bail Bonds
 - Office: 1528 Broadway, Fort Myers, FL 33901
-- Human desk for Shannon transfers: (239) 955-0301
-- Public HQ / backup office: (239) 332-2245
+- Office landline (say this number): (239) 332-2245
+- Also rings with the landline on live transfer: (239) 955-0301
 - Shannon public line: (727) 295-2245 — never tell a caller to redial 727
 - Hours: 24 hours a day, 7 days a week, 365 days a year
 - Website: shamrockbailbonds.biz

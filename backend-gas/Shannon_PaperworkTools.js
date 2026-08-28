@@ -260,7 +260,7 @@ function handleShannonNotifyBondsman(params) {
       (callerName || 'Caller') + ' ' + (callerPhone || '') +
       (defName ? ' | def ' + defName : '') +
       (county ? ' | ' + county : '') +
-      '. Call them back. Desk 239-955-0301.',
+      '. Call them back. Office 239-332-2245.',
       callerPhone
     );
   } catch (deskErr) {
@@ -270,7 +270,7 @@ function handleShannonNotifyBondsman(params) {
   return {
     success: true,
     status: 'notified',
-    message: 'You can reach our office at 239-955-0301. I also notified a bondsman who can call you back ' +
+    message: 'You can reach our office at 239-332-2245. I also notified a bondsman who can call you back ' +
       (preferredTime && preferredTime !== 'ASAP' ? 'around ' + preferredTime : 'as soon as possible') + '.'
   };
 }

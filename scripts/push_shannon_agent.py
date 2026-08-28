@@ -91,7 +91,7 @@ CHECK_ID_TOOL_NAME = "check_id_upload"
 TRANSFER_TOOL_ID = "tool_6201kjw9k6xff9p9qa8qtbjr8ya4"
 DESK_E164 = "+12399550301"
 NAP_E164 = "+12393322245"
-OFFICE_E164 = DESK_E164
+OFFICE_E164 = NAP_E164
 
 # Blocking + retry: rewrite the turn. Do not transfer. Shannon's Twilio
 # register-call path cannot use transfer_to_number (external calls).
@@ -102,7 +102,7 @@ _GUARDRAIL_CONTINUE_FEEDBACK = (
     "Do not transfer unless the caller asked for a person. Do not call "
     "transfer_to_number. Do not give legal advice about pleas, judges, or specific "
     "attorneys. Never send them to 727-295-2245. If they asked for a person, the "
-    "office is 239-955-0301. Do not repeat the blocked wording."
+    "office is 239-332-2245. Do not repeat the blocked wording."
 )
 
 
@@ -241,12 +241,12 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
     if "n_c_general" in nodes:
         nodes["n_c_general"]["additional_prompt"] = (
             "Answer using the knowledge base. Never recommend a specific attorney. "
-            "Never give legal advice. Live-person desk is 239-955-0301. Backup is 239-332-2245. Never 727-295-2245."
+            "Never give legal advice. Office landline is 239-332-2245. Transfer rings that line and 239-955-0301 together. Never 727-295-2245."
         )
     if "n_a_conf_p" in nodes:
         nodes["n_a_conf_p"]["additional_prompt"] = (
             "Confirm the signing link was texted and emailed. Ask them to open the text. "
-            "Office desk is 239-955-0301."
+            "Office landline is 239-332-2245."
         )
     if "n_a_present" in nodes:
         nodes["n_a_present"]["edge_order"] = ["e27", "e28"]
@@ -467,7 +467,7 @@ def _ensure_transfer_tool() -> None:
     schema["required"] = ["reason"]
     cfg["api_schema"]["request_body_schema"] = schema
     cfg["description"] = (
-        "Connect this live phone call to the Shamrock desk at 239-955-0301. "
+        "Connect this live phone call to the Shamrock office. It rings 239-332-2245 and 239-955-0301 together. Tell the caller 239-332-2245. "
         "Use only when the caller asked for a person or a bondsman. Do not use "
         "for starting paperwork. call_sid and caller_phone are filled from the live call."
     )
@@ -681,7 +681,7 @@ def main() -> int:
 
     built_in = json.loads(json.dumps(prompt_cfg.get("built_in_tools") or {}))
     # Native transfer_to_number fails on register-call. Live transfer is
-    # transfer_to_bondsman → Twilio REST Dial 239-955-0301, then 239-332-2245.
+    # transfer_to_bondsman → simultaneous Dial 239-332-2245 and 239-955-0301.
     built_in["transfer_to_number"] = None
 
     prompt_patch = {
@@ -758,7 +758,7 @@ def main() -> int:
                         "id": "human_offered_3322245",
                         "name": "human_offered_3322245",
                         "type": "prompt",
-                        "conversation_goal_prompt": "If the caller asked for a person, success if the agent gave 239-955-0301 or 239-332-2245 and did not send them to 727-295-2245. If they did not ask for a person, mark unknown.",
+                        "conversation_goal_prompt": "If the caller asked for a person, success if the agent gave 239-332-2245 and did not send them to 727-295-2245. If they did not ask for a person, mark unknown.",
                     },
                     {
                         "id": "no_legal_advice",

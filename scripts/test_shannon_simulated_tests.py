@@ -8,7 +8,7 @@ from shannon_simulated_tests import SHANNON_TEST_SPECS
 
 def test_four_required_scenarios_exist():
     names = {spec["name"] for spec in SHANNON_TEST_SPECS}
-    assert "Shannon want-a-person offers 239-955-0301" in names
+    assert "Shannon want-a-person offers 239-332-2245" in names
     assert "Shannon Spanish hands off to Sofia" in names
     assert "Shannon missing email does not send paperwork" in names
     assert "Shannon indemnitor happy path starts paperwork" in names
@@ -16,7 +16,7 @@ def test_four_required_scenarios_exist():
 
 def test_want_a_person_never_loops_to_727():
     spec = next(s for s in SHANNON_TEST_SPECS if "want-a-person" in s["name"])
-    assert "239-955-0301" in spec["success_condition"]
+    assert "239-332-2245" in spec["success_condition"]
     assert "727-295-2245" in spec["success_condition"]
     failures = " ".join(ex["response"] for ex in spec["failure_examples"])
     assert "727-295-2245" in failures

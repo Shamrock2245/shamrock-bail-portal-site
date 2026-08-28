@@ -23,17 +23,17 @@ Set in Netlify site `shamrock-telegram` → Environment variables (production). 
 
 | Variable | Effect |
 |----------|--------|
-| `SHANNON_LIVE=true` (production) | Shannon answers **(727) 295-2245**. Anyone who needs a person is sent to **(239) 955-0301**, then **(239) 332-2245** if nobody answers. |
-| `SHANNON_LIVE=false` | 727 rings 239-332-2245. Shannon picks up if the office misses. |
+| `SHANNON_LIVE=true` (production) | Shannon answers **(727) 295-2245**. Anyone who needs a person is transferred: **(239) 332-2245** and **(239) 955-0301** ring together. She tells them the landline **239-332-2245**. |
+| `SHANNON_LIVE=false` | 727 rings 239-332-2245 and 239-955-0301 together. Shannon picks up if the office misses. |
 | `SHANNON_ROTATE_ERIC=true` | Optional. Mixes Eric in. Default is Shannon only. |
 
 Do not call-forward 239-332-2245 back to 727-295-2245 (loop). Jail/sheriff callers to 727 still ring 332-2245.
 
 Twilio Console for **(727) 295-2245** (set 2026-08-26):
 - Primary voice URL: `https://shamrock-telegram.netlify.app/api/twilio-voice`
-- Fallback URL: `https://shamrock-telegram.netlify.app/api/twilio-voice-fallback` — Dials 239-955-0301, then 239-332-2245, from +17272952245.
+- Fallback URL: `https://shamrock-telegram.netlify.app/api/twilio-voice-fallback` — rings 239-332-2245 and 239-955-0301 together from +17272952245.
 
-Shannon mid-call texts go through **BlueBubbles** on the office iMac (239-955-0178). Twilio is voice-only. Super CRM reaches BlueBubbles over **Tailscale** (`http://100.102.10.86:1234`); **frp** `:12434` is the backup. Warren is scraper residential egress only — not this path. Do not send Shannon texts through ngrok or `bb.shamrockbailbonds.biz`. Shannon tells callers the live desk is 239-955-0301 (backup 239-332-2245) and notifies a bondsman.
+Shannon mid-call texts go through **BlueBubbles** on the office iMac (239-955-0178). Twilio is voice-only. Super CRM reaches BlueBubbles over **Tailscale** (`http://100.102.10.86:1234`); **frp** `:12434` is the backup. Warren is scraper residential egress only — not this path. Do not send Shannon texts through ngrok or `bb.shamrockbailbonds.biz`. Shannon tells callers the office landline is **239-332-2245**. Live transfer rings 332-2245 and 239-955-0301 together (first pickup wins). Never 727.
 
 When Shannon needs a human (notify_bondsman, live transfer, callback, or intake CRM miss), BlueBubbles texts **239-784-9365**, **239-319-7008**, **239-955-0301**, and **239-955-0178**. Never 727. Never the caller’s own number.
 
@@ -66,7 +66,7 @@ ASR keywords match the same list plus Shamrock / Lee County.
 Four attached ElevenLabs tests (create/run via `scripts/shannon_simulated_tests.py --run`):
 - Indemnitor happy path (simulation)
 - Spanish → Sofia
-- Want a person → 239-955-0301, then 239-332-2245, never 727
+- Want a person → say 239-332-2245; ring 332-2245 and 239-955-0301 together; never 727
 - Missing email does not send paperwork
 
 ### Watchdog
