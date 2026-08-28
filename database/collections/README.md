@@ -2,6 +2,9 @@
 
 This directory contains the JSON schema definitions for the custom authentication CMS collections created via Wix Data Collections API.
 
+**These collections are the bond portal login. They are not Wix Members Area.**  
+Wix Dashboard → Members → Profile Info (First Name, Last Name, Phone, Birthdate) does **not** drive `/portal-start`, indemnitor/defendant roles, or Bail School. School auth is `school.shamrockbailbonds.biz`. Portal roles default to **indemnitor** in `portal-auth.jsw`.
+
 ## Collections
 
 ### 1. Portal Users (`create_portal_users.json`)

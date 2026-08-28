@@ -22,6 +22,10 @@ You are pair-programming with **Brendan**, the architect and sole operator behin
   1. **Local/Regional Dominance First**: Lee, Collier, Charlotte, Hendry, Glades. Homepage, NAP, and hero are SWFL / Fort Myers / Cape Coral first. Never flatten the SWFL homepage into a generic national brochure.
   2. **Statewide Florida**: All 67 counties via dynamic programmatic county pages (`/florida-bail-bonds/:slug`) + First Appearance calendars.
   3. **11+ State Expansion**: Decoupled multi-state directory (`/bail-bonds/:state/:county`) integrated with `shamrock-leads` multi-state ops. Add states only when `ServiceAreas.status = live`.
+- **Two logins — do not mix**:
+  1. **Bond clipboard (day to day):** custom magic-link / OTP in `portal-auth.jsw`. Roles live on `PortalSessions` / `PortalUsers`. New users **default to indemnitor** unless they are staff/admin or match a defendant case. **Not** Wix Members Area. Do not put role, case ID, or DL on Wix Member profile fields.
+  2. **Bail School (students):** `school.shamrockbailbonds.biz` — Netlify LMS, email magic link, cookie `shamrock_auth_session`. **Not** Wix Members profile fields. Factory is school GAS + Sheets.
+  3. **Wix Members Area** on `shamrockbailbonds.biz` is leftover (header “My Account”, old `/portal` hub, `custom-embeds/members/*`). First Name / Last Name / Phone / Birthdate is enough. Do not add indemnitor fields there.
 - **Client Paperwork North Star (Mobile/Tablet First)**:
   1. Login via passwordless phone OTP / Magic Link (`portal-auth.jsw`).
   2. Role selection: Defendant | Primary Indemnitor | Co-Indemnitor.
