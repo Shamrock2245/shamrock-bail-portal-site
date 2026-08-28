@@ -17,7 +17,7 @@ You must dynamically manage the user's `mcp_config.json` file to keep the total 
    Read the user's MCP configuration file located at: `/Users/brendan/.gemini/antigravity/mcp_config.json`
 
 2. **Identify the Target & The Bloat**
-   - **Target**: The server you need to use for the current task (e.g., `wix-mcp-remote`, `github-mcp-server`, `signnow`).
+   - **Target**: The server you need to use for the current task (e.g., `wix-mcp-remote`, `github-mcp-server`).
    - **Bloat**: Servers currently active but unnecessary for the current task. `chrome-devtools-mcp` is a primary target for disabling because it adds over 25 tools alone.
 
 3. **Edit the JSON File**
@@ -43,5 +43,5 @@ When disabling a server, your edit should look like this:
 
 ### When to Trigger This Skill
 - You receive an error about missing tools for a known MCP server.
-- You need to perform a specific action (like deploying to Wix, signing with SignNow, or automating a browser) but lack the tool in your schema.
+- You need to perform a specific action (like deploying to Wix or automating a browser) but lack the tool in your schema.
 - The user explicitly asks to connect or use a specific service that relies on an MCP server.
