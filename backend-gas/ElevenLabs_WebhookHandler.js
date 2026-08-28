@@ -1019,9 +1019,11 @@ function _doConversationInit(e) {
 
     var firstTails = [
         'How can I help today?',
+        'How can I help you today?',
         'What can I do for you?',
         'How can I help?',
-        'What do you need?'
+        "I'm here, how can I help?",
+        'What can I help you with?'
     ];
     var firstMessage = 'Shamrock Bail Bonds! This is Shannon. ' +
         firstTails[Math.floor(Math.random() * firstTails.length)];
