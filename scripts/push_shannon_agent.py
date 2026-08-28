@@ -170,7 +170,7 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
     edges = wf.setdefault("edges", {})
     if "n_greet" in nodes:
         nodes["n_greet"]["additional_prompt"] = (
-            "The first line is already spoken. Answer what they just said. Do not wait on a tool."
+            "The first line is already spoken and should sound bright. Keep that energy. Answer what they just said. Do not wait on a tool."
         )
     # Mem0 is already injected at ring. Do not block the first reply on history.
     if "e02" in edges and "n_personalize" in nodes:
@@ -661,8 +661,10 @@ def main() -> int:
     existing_tts["expressive_mode"] = True
     existing_tts["model_id"] = "eleven_flash_v2"
     existing_tts["optimize_streaming_latency"] = 4
-    existing_tts["stability"] = 0.38
-    existing_tts["speed"] = 1.05
+    # Lower stability = more lift in the greeting; period-heavy copy was reading "down".
+    existing_tts["stability"] = 0.28
+    existing_tts["speed"] = 1.08
+    existing_tts["similarity_boost"] = 0.7
     existing_tts = _ensure_pronunciation(existing_tts)
     existing_asr["user_input_audio_format"] = "ulaw_8000"
     keywords = list(existing_asr.get("keywords") or [])
@@ -704,7 +706,7 @@ def main() -> int:
         "name": "Shannon — Shamrock Paperwork Assistant",
         "conversation_config": {
             "agent": {
-                "first_message": "Shamrock Bail Bonds. How may I help you today?",
+                "first_message": "Hey, Shamrock Bail Bonds! This is Shannon, how can I help?",
                 "language": "en",
                 "dynamic_variables": {
                     "dynamic_variable_placeholders": {
