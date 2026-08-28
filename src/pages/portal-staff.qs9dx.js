@@ -19,6 +19,7 @@ import { sendStealthPingSms } from 'backend/twilio-client';
 let allCases = []; // Store locally for fast filtering
 let currentSession = null; // Store validated session data
 let lastStats = null; // Cache stats for status restoration
+const pendingStaffPrompts = {};
 
 function safeSetText(id, text) {
     try {
@@ -33,7 +34,7 @@ $w.onReady(async function () {
 
     try {
         if ($w('#welcomeText').type) {
-            $w('#welcomeText').text = "Loading Dashboard...";
+            $w('#welcomeText').text = "Connecting to staff dashboard";
         }
     } catch (e) { }
 
@@ -882,10 +883,15 @@ async function handleFinalizePaperwork(itemData) {
     try {
         console.log(' Finalizing paperwork for:', itemData.defendantName);
 
-        // Step 1: Verify signatures are complete
         if (itemData.paperworkStatus !== 'signed' && itemData.paperworkStatus !== 'completed') {
-            const proceed = await $w('#lightbox1').show(); // TODO: Create confirmation lightbox
-            if (!proceed) return;
+            const proceed = await promptForSelect(
+                'Paperwork is not marked signed. Finalize anyway?',
+                ['cancel', 'finalize']
+            );
+            if (proceed !== 'finalize') {
+                showStaffMessage('Finalize cancelled. Complete signatures in Super CRM first.', 'info');
+                return;
+            }
         }
 
         // Step 2: Prompt for Power Number & Case Number
@@ -939,77 +945,68 @@ async function handleFinalizePaperwork(itemData) {
     }
 }
 
-/**
- * Prompt user for text input
- * Uses wixWindow.openLightbox when a named lightbox exists;
- * falls back to a Wix-safe inline prompt via wixWindow.openModal
- * (avoids browser prompt() which is blocked in Wix preview).
- */
-async function promptForInput(title, placeholder) {
-    try {
-        // Try the dedicated input lightbox first (add 'StaffInputLightbox' in Editor if desired)
-        const result = await wixWindow.openLightbox('StaffInputLightbox', { title, placeholder });
-        if (result && result.value !== undefined) return result.value || null;
-    } catch (_) {
-        // Lightbox not found -- use inline fallback via staff page elements
-    }
-    // Inline fallback: surface a hidden input panel on the staff page
-    // Staff page should have #staffPromptBox, #staffPromptLabel, #staffPromptInput, #staffPromptConfirmBtn
-    return new Promise((resolve) => {
-        try {
-            $w('#staffPromptLabel').text = title;
-            $w('#staffPromptInput').placeholder = placeholder;
-            $w('#staffPromptInput').value = '';
-            $w('#staffPromptBox').expand();
-            const cleanup = () => {
-                try { $w('#staffPromptBox').collapse(); } catch (_) { }
-            };
-            $w('#staffPromptConfirmBtn').onClick(() => {
-                const val = $w('#staffPromptInput').value.trim();
-                cleanup();
-                resolve(val || null);
-            });
-        } catch (e) {
-            // Elements not in Editor yet -- resolve null so flow continues gracefully
-            console.warn('promptForInput: staff prompt elements not found. Resolving null.', e.message);
-            resolve(null);
-        }
-    });
+function staffPromptRequestId() {
+    return 'sp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
 }
 
-/**
- * Prompt user for select option
- * Uses wixWindow.openLightbox when available; falls back gracefully.
- */
-async function promptForSelect(title, options) {
+function promptViaStaffIframe(spec) {
     try {
-        const result = await wixWindow.openLightbox('StaffSelectLightbox', { title, options });
-        if (result && result.value !== undefined) {
-            return options.includes(result.value) ? result.value : null;
-        }
-    } catch (_) {
-        // Lightbox not found
-    }
-    // Inline fallback via #staffSelectBox, #staffSelectLabel, #staffSelectDropdown, #staffSelectConfirmBtn
-    return new Promise((resolve) => {
-        try {
-            $w('#staffSelectLabel').text = title;
-            $w('#staffSelectDropdown').options = options.map(o => ({ label: o, value: o }));
-            $w('#staffSelectDropdown').value = options[0];
-            $w('#staffSelectBox').expand();
-            const cleanup = () => {
-                try { $w('#staffSelectBox').collapse(); } catch (_) { }
-            };
-            $w('#staffSelectConfirmBtn').onClick(() => {
-                const val = $w('#staffSelectDropdown').value;
-                cleanup();
-                resolve(options.includes(val) ? val : null);
+        const portal = /** @type {any} */ ($w('#staffPortal'));
+        if (!portal || typeof portal.postMessage !== 'function') return null;
+        const requestId = staffPromptRequestId();
+        return new Promise((resolve) => {
+            pendingStaffPrompts[requestId] = { resolve };
+            portal.postMessage({
+                type: 'staff-prompt-open',
+                requestId,
+                mode: spec.mode,
+                title: spec.title,
+                placeholder: spec.placeholder || '',
+                hint: spec.hint || '',
+                options: spec.options || []
             });
-        } catch (e) {
-            console.warn('promptForSelect: staff select elements not found. Resolving null.', e.message);
-            resolve(null);
+        });
+    } catch (e) {
+        return null;
+    }
+}
+
+async function staffPrompt(spec) {
+    const iframePrompt = promptViaStaffIframe(spec);
+    if (iframePrompt) return iframePrompt;
+
+    try {
+        const result = await LightboxController.show('staffPrompt', spec);
+        if (result && Object.prototype.hasOwnProperty.call(result, 'value')) {
+            return result.cancelled ? null : result.value;
         }
-    });
+    } catch (_) { /* Editor lightbox not created yet */ }
+
+    try {
+        const el = $w('#staffPromptElement');
+        if (el) {
+            return await new Promise((resolve) => {
+                el.on('staff-prompt-result', (event) => {
+                    const detail = (event && event.detail) || {};
+                    resolve(detail.cancelled ? null : detail.value);
+                });
+                el.setAttribute('prompt', JSON.stringify(spec));
+            });
+        }
+    } catch (_) { /* custom element not on the page */ }
+
+    showStaffMessage('Staff prompt UI is missing. Add StaffPromptLightbox in the Editor, or keep #staffPortal on this page.', 'error');
+    return null;
+}
+
+async function promptForInput(title, placeholder) {
+    return staffPrompt({ mode: 'input', title, placeholder });
+}
+
+async function promptForSelect(title, options) {
+    const value = await staffPrompt({ mode: 'select', title, options });
+    if (!value) return null;
+    return options.includes(value) ? value : null;
 }
 
 // Export for use in other parts of the staff portal
@@ -1044,6 +1041,15 @@ function setupStaffPortalIframe() {
 
             switch (msg.type) {
                 // ── Iframe Ready ─────────────────────────────────────────
+                case 'staff-prompt-result': {
+                    const pending = pendingStaffPrompts[msg.requestId];
+                    if (pending) {
+                        delete pendingStaffPrompts[msg.requestId];
+                        pending.resolve(msg.cancelled ? null : msg.value);
+                    }
+                    break;
+                }
+
                 case 'staff-portal-ready':
                     console.log('[OK] Staff portal iframe ready, sending context...');
                     sendStaffPortalContext(portal);

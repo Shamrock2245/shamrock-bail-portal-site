@@ -55,6 +55,10 @@ export class LightboxController {
             'consent': 'ConsentLightbox',
             'signing': 'SigningLightbox',
             'defendantDetails': 'DefendantDetails',
+            'staffPrompt': 'StaffPromptLightbox',
+            'StaffPromptLightbox': 'StaffPromptLightbox',
+            'StaffInputLightbox': 'StaffPromptLightbox',
+            'StaffSelectLightbox': 'StaffPromptLightbox',
             // Aliases if needed:
             'EmergencyCtaLightbox': 'EmergencyCtaLightbox',
             'PrivacyLightbox': 'PrivacyLightbox',

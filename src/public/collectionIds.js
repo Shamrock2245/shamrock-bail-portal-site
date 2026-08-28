@@ -31,8 +31,8 @@ export const COLLECTIONS = {
   MEMBER_DOCUMENTS: 'Memberdocuments',         // Uploaded IDs and documents
   PENDING_DOCUMENTS: 'Pendingdocuments',       // Documents pending signature
   REQUIRED_DOCUMENTS: 'Requireddocuments',     // Required document types
-  SIGNING_SESSIONS: 'Signing Sessions',        // SignNow signing sessions (space in name!)
-  SIGNNOW_HANDOFFS: 'Signnowhandoffs',         // SignNow integration handoff records
+  SIGNING_SESSIONS: 'Signing Sessions',        // Historical signing-session CMS (space in name)
+  SIGNNOW_HANDOFFS: 'Signnowhandoffs',         // Retired SignNow handoff records (read-only)
 
   // Financial
   FINANCIAL_OBLIGATIONS: 'Financial Obligations', // Financial tracking (space in name!)

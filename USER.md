@@ -41,11 +41,11 @@ You are pair-programming with **Brendan**, the architect and sole operator behin
 ## Current Priorities (August 2026)
 
 ### 🔴 Immediate (#1 Focus)
-1. **Phase 8.5: Wix Studio Translation + Autopilot Paperwork Clipboard**:
-   - Translate live Wix Editor site (`shamrockbailbonds.biz`) into clean, responsive Wix Studio implementation.
-   - Deploy `/portal-start` mobile/tablet wizard: Role → ID scan → Hydrate → Delta fields → Preview → Launchpad.
-   - Staff lobby-tablet handoff for instant in-person / remote intake.
-   - Multi-state `ServiceAreas` CMS registry without diluting SWFL homepage dominance.
+1. **Production clipboard (Wix Editor is live; Studio canvas is deferred)**:
+   - Keep `shamrockbailbonds.biz` as the public launchpad. Do not wait on Studio to ship production work.
+   - Staff issue DocuSeal packets only in Super CRM (`shamrock-leads`). Wix opens or texts a staff-issued session.
+   - Remaining Super CRM gates: B3 on a real BondCase, B5 one staff-approved DocuSeal packet. D2 iMessage is confirmed. C3 rotation is deferred. See `shamrock-leads/docs/ECOSYSTEM_PROD_CHECKLIST.md`.
+   - Studio visual translation stays queued; backend wizard/lobby/ServiceAreas are already wired on Editor.
 
 ### 🟡 Growth & Revenue (Active Pipeline)
 2. **WhatsApp Business Integration**: Wire Twilio WhatsApp Sandbox → Node-RED relay (blocked on 10DLC).

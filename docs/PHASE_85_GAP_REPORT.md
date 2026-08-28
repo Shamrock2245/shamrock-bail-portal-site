@@ -40,8 +40,8 @@ All backend clipboard services are now wired, tested, and registered. Direct pap
 |---|---|---|
 | `packet-generator.jsw` | **RETIRED & HARD-LOCKED** | Returns fail-closed `DIRECT_PAPERWORK_DISABLED` error. All permissions set to `false`. |
 | `signing-methods.jsw` | **RETIRED & HARD-LOCKED** | Returns `LEGACY_DIRECT_PAPERWORK_DISABLED`. Blocks legacy email, SMS, and kiosk direct creation. |
-| `signnow_api_helper` skill | **RETIRED** | Marked as retired in frontmatter and header; redirects to `docuseal_paperwork_manager`. |
-| `signnow_mcp_server` skill | **RETIRED** | Marked as retired in frontmatter and header; preserved for audit reference only. |
+| `signnow_api_helper` skill | **REMOVED (2026-08-28)** | Deleted from `.agent/skills`. Use `docuseal_paperwork_manager`. |
+| `signnow_mcp_server` skill | **REMOVED (2026-08-28)** | Deleted from `.agent/skills`. SignNow MCP is retired from Antigravity. |
 
 ---
 

@@ -1,294 +1,230 @@
+/**
+ * DefendantDetails.jgsv8.js
+ *
+ * Staff case lightbox. Wix is the clipboard: it may display and deliver a
+ * staff-issued DocuSeal session. It must not mint packets or signing URLs.
+ */
 import wixWindow from 'wix-window';
 import wixData from 'wix-data';
-import { initiateSigningWorkflow } from 'backend/signing-methods';
+import { validateSigningSession } from 'backend/signing-session-service';
+import { sendSigningLinkViaSms } from 'backend/signing-methods';
+import { SUPER_CRM_URL } from 'public/portal-config';
+
+const ISSUE_IN_CRM = 'Issue the DocuSeal packet in Super CRM first. Wix only opens a staff-issued signing session.';
+
+function hasEl(id) {
+    try {
+        return $w(id) && $w(id).length;
+    } catch (e) {
+        return false;
+    }
+}
+
+function setText(id, value) {
+    if (hasEl(id)) $w(id).text = value;
+}
+
+function setLabel(id, value) {
+    if (hasEl(id)) $w(id).label = value;
+}
+
+function setStatus(message) {
+    if (!hasEl('#signingStatusText')) return;
+    $w('#signingStatusText').text = message;
+    $w('#signingStatusText').expand();
+}
+
+function caseKey(data) {
+    return data.caseId || data._id || '';
+}
+
+async function resolveIssuedSession(data) {
+    return validateSigningSession({
+        caseId: caseKey(data),
+        role: 'indemnitor',
+        signUrl: data.signingUrl || data.signUrl || ''
+    });
+}
+
+function openIssuedLaunchpad(data, session) {
+    wixWindow.openLightbox('SigningLightbox', {
+        signUrl: session.signingUrl,
+        caseId: caseKey(data),
+        packetId: caseKey(data),
+        defendantName: data.defendantName,
+        caseNumber: data.caseNumber,
+        phone: session.phone || data.indemnitorPhone || data.phone || '',
+        role: 'indemnitor'
+    });
+}
 
 $w.onReady(function () {
     const data = wixWindow.lightbox.getContext();
     if (!data) return;
 
-    // 1. Map Status Fields
-    if ($w('#detailsNameText').length) $w('#detailsNameText').text = data.defendantName || "No Name";
-    if ($w('#detailsCaseNumberText').length) $w('#detailsCaseNumberText').text = data.caseNumber || "No Case";
-    if ($w('#detailsBondText').length) $w('#detailsBondText').text = data.bondAmount || "$0.00";
-    if ($w('#detailsStatusText').length) $w('#detailsStatusText').text = data.status || "Unknown";
+    setText('#detailsNameText', data.defendantName || 'No Name');
+    setText('#detailsCaseNumberText', data.caseNumber || 'No Case');
+    setText('#detailsBondText', data.bondAmount || '$0.00');
+    setText('#detailsStatusText', data.status || 'Unknown');
 
-    // 2. Setup Close
-    const closeBtn = $w('#closeBtn');
-    if (closeBtn.length) closeBtn.onClick(() => wixWindow.lightbox.close());
+    if (hasEl('#closeBtn')) $w('#closeBtn').onClick(() => wixWindow.lightbox.close());
 
-    // 4. Manual Approval Workflow
-    // ------------------------------------------------
-    const approveBtn = $w('#approveBtn');
-    const actionButtons = [$w('#sendEmailBtn'), $w('#sendSmsBtn'), $w('#openKioskBtn')];
+    const approveBtn = hasEl('#approveBtn') ? $w('#approveBtn') : null;
+    const actionButtons = ['#sendEmailBtn', '#sendSmsBtn', '#openKioskBtn']
+        .filter(hasEl)
+        .map((id) => $w(id));
 
-    // Check current status
-    const currentStatus = (data.paperworkStatus || data.status || "Pending");
+    const currentStatus = (data.paperworkStatus || data.status || 'Pending');
     const isApproved = currentStatus.toLowerCase() === 'approved';
 
-    // Initial State: Disable buttons if not approved
     if (!isApproved) {
-        actionButtons.forEach(btn => {
-            if (btn.length) {
-                btn.disable();
-                btn.label = "Approve First";
-            }
+        actionButtons.forEach((btn) => {
+            btn.disable();
+            btn.label = 'Approve First';
         });
     }
 
-    // Setup Approve Button
-    if (approveBtn.length) {
+    if (approveBtn) {
         if (isApproved) {
-            approveBtn.label = "Approved [OK]";
+            approveBtn.label = 'Approved';
             approveBtn.disable();
         } else {
             approveBtn.onClick(async () => {
-                approveBtn.label = "Approving...";
+                approveBtn.label = 'Saving';
                 approveBtn.disable();
                 try {
-                    // Update Status in Backend
-                    // We need a backend function to update status. 
-                    // Using wixData.update or a dedicated backend function.
-                    // IMPORTANT: We should update both Cases and IntakeQueue if possible or just the source.
-                    // Assuming data._id is the item ID in the source collection.
-
-                    // Simple approach: Update status column directly for now
-                    // Note: Ideally call a backend function 'approveBond(id)'
-
                     if (data._id) {
-                        // Decide collection based on context or try both?
-                        // Staff portal often loads mixed data. Let's assume 'Cases' or 'IntakeQueue' based on fields.
-                        const collection = data.collectionName || 'Cases'; // Warning: data.collectionName might need to be passed from repeater
-
-                        // Fallback: Try to update 'Cases'
-                        // NOTE: User context implies 'IntakeQueue' is the source of "submissions"
-                        // But staff portal repeater usually binds to Cases? 
-                        // Let's check portal-staff logic -> getStaffDashboardData -> usually checks both.
-
-                        // SAFEST: Call a backend helper.
-                        // For now, I will unlock the buttons locally and assume the user handles backend sync or I'll add a simple wixData update
-
+                        const collection = data.collectionName || 'Cases';
                         await wixData.update(collection, { ...data, status: 'Approved', paperworkStatus: 'Approved' });
                     }
-
-                    // Update UI
-                    $w('#detailsStatusText').text = "Approved";
-                    approveBtn.label = "Approved [OK]";
-
-                    // Enable Action Buttons
-                    actionButtons.forEach(btn => {
-                        if (btn.length) {
-                            btn.enable();
-                            // Restore labels
-                            if (btn.id.includes('Email')) btn.label = "Send Email";
-                            if (btn.id.includes('Sms')) btn.label = "Send SMS";
-                            if (btn.id.includes('Kiosk')) btn.label = "Open Kiosk";
-                        }
+                    setText('#detailsStatusText', 'Approved');
+                    approveBtn.label = 'Approved';
+                    actionButtons.forEach((btn) => {
+                        btn.enable();
+                        if (btn.id.includes('Email')) btn.label = 'Open launchpad';
+                        if (btn.id.includes('Sms')) btn.label = 'Text signing link';
+                        if (btn.id.includes('Kiosk')) btn.label = 'Open kiosk';
                     });
-
-                    if ($w('#signingStatusText').length) {
-                        $w('#signingStatusText').text = "Bond Approved. You may now initiate signing.";
-                        $w('#signingStatusText').expand();
-                    }
-
+                    setStatus('Bond approved in Wix. Issue the DocuSeal packet in Super CRM, then use these buttons to open or text the staff-issued link.');
                 } catch (e) {
-                    console.error("Approval Failed", e);
-                    approveBtn.label = "Retry Approval";
+                    console.error('Approval Failed', e);
+                    approveBtn.label = 'Retry Approval';
                     approveBtn.enable();
                 }
             });
         }
-    } else {
-        // If no approve button exists, we can't enforce it easily OR the user forgot to add it.
-        // But user said "There has to be a manual review". 
-        // We will assume if the button is missing, the layout isn't updated, 
-        // so we just warn in console but keep logic (which might block usage if not approved).
-        if (!isApproved) {
-            console.warn("Approve Button #approveBtn missing, but case is not approved. Actions are disabled.");
-        }
+    } else if (!isApproved) {
+        console.warn('Approve Button #approveBtn missing, but case is not approved. Actions are disabled.');
     }
 
-    // 3. SignNow Integration Handlers
-    // ------------------------------------------------
-
-    // A. Send via Email
-    const sendEmailBtn = $w('#sendEmailBtn');
-    if (sendEmailBtn.length) {
-        sendEmailBtn.onClick(async () => {
-            $w('#sendEmailBtn').label = "Sending...";
-            const statusText = $w('#signingStatusText');
-            if (statusText.length) {
-                statusText.text = "Sending email request...";
-                statusText.expand();
-            }
-
+    if (hasEl('#sendEmailBtn')) {
+        $w('#sendEmailBtn').onClick(async () => {
+            setLabel('#sendEmailBtn', 'Checking');
+            setStatus('Looking up staff-issued DocuSeal session…');
             try {
-                // Get most up-to-date contact info
-                const contactInfo = await getLatestContactInfo(data);
-
-                if (!contactInfo.email) {
-                    throw new Error("No email address found for this defendant.");
+                const session = await resolveIssuedSession(data);
+                if (!session.valid || !session.signingUrl) {
+                    throw new Error(ISSUE_IN_CRM);
                 }
-
-                const defendantInfo = {
-                    email: contactInfo.email,
-                    phone: contactInfo.phone || '555-555-5555'
-                };
-
-                const result = await initiateSigningWorkflow({
-                    caseId: data._id,
-                    method: 'email',
-                    defendantInfo,
-                    indemnitorInfo: [], // Add indemnitors if available
-                    documentIds: [] // Empty = Use Default Template
-                });
-
-                if (result.success) {
-                    $w('#sendEmailBtn').label = "Sent!";
-                    if (statusText.length) statusText.text = "Email sent successfully.";
-                } else {
-                    throw new Error(result.error);
-                }
+                openIssuedLaunchpad(data, session);
+                setLabel('#sendEmailBtn', 'Open launchpad');
+                setStatus('Opened the staff-issued signing launchpad. Packets are created in Super CRM: ' + SUPER_CRM_URL);
             } catch (e) {
-                console.error(e);
-                $w('#sendEmailBtn').label = "Retry";
-                if (statusText.length) statusText.text = "Error sending email: " + e.message;
+                setLabel('#sendEmailBtn', 'Issue in Super CRM');
+                setStatus(e.message || ISSUE_IN_CRM);
             }
         });
     }
 
-    // B. Send via SMS
-    const sendSmsBtn = $w('#sendSmsBtn');
-    if (sendSmsBtn.length) {
-        sendSmsBtn.onClick(async () => {
-            $w('#sendSmsBtn').label = "Sending...";
-            const statusText = $w('#signingStatusText');
-            if (statusText.length) {
-                statusText.text = "Sending SMS request...";
-                statusText.expand();
-            }
-
+    if (hasEl('#sendSmsBtn')) {
+        $w('#sendSmsBtn').onClick(async () => {
+            setLabel('#sendSmsBtn', 'Checking');
+            setStatus('Looking up staff-issued DocuSeal session…');
             try {
-                // Get most up-to-date contact info
+                const session = await resolveIssuedSession(data);
+                if (!session.valid || !session.signingUrl) {
+                    throw new Error(ISSUE_IN_CRM);
+                }
                 const contactInfo = await getLatestContactInfo(data);
-
-                if (!contactInfo.phone) {
-                    throw new Error("No phone number found for this defendant.");
+                const phone = session.phone || contactInfo.phone;
+                if (!phone) {
+                    throw new Error('No phone on file. Add a number in Super CRM, then retry.');
                 }
-
-                const defendantInfo = {
-                    email: contactInfo.email || 'no-email@example.com',
-                    phone: contactInfo.phone
-                };
-
-                const result = await initiateSigningWorkflow({
-                    caseId: data._id,
-                    method: 'sms',
-                    defendantInfo,
-                    indemnitorInfo: [],
-                    documentIds: [] // Empty = Use Default Template
-                });
-
-                if (result.success) {
-                    $w('#sendSmsBtn').label = "Sent!";
-                    if (statusText.length) statusText.text = "SMS sent successfully.";
-                } else {
-                    throw new Error(result.error);
+                const result = await sendSigningLinkViaSms(phone, session.signingUrl, 'indemnitor');
+                if (!result.success) {
+                    throw new Error(result.error || 'SMS delivery failed');
                 }
+                setLabel('#sendSmsBtn', 'Sent');
+                setStatus('Staff-issued DocuSeal link texted.');
             } catch (e) {
-                console.error(e);
-                $w('#sendSmsBtn').label = "Retry";
-                if (statusText.length) statusText.text = "Error sending SMS: " + e.message;
+                setLabel('#sendSmsBtn', 'Retry');
+                setStatus(e.message || ISSUE_IN_CRM);
             }
         });
     }
 
-    // C. Kiosk Mode (Open Signing Lightbox)
-    const openKioskBtn = $w('#openKioskBtn');
-    if (openKioskBtn.length) {
-        openKioskBtn.onClick(async () => {
-            $w('#openKioskBtn').label = "Opening...";
-            const statusText = $w('#signingStatusText');
-            if (statusText.length) {
-                statusText.text = "Generating kiosk link...";
-                statusText.expand();
-            }
-
+    if (hasEl('#openKioskBtn')) {
+        $w('#openKioskBtn').onClick(async () => {
+            setLabel('#openKioskBtn', 'Checking');
+            setStatus('Looking up staff-issued DocuSeal session…');
             try {
-                const result = await initiateSigningWorkflow({
-                    caseId: data._id,
-                    method: 'kiosk',
-                    defendantInfo: { email: 'kiosk@test.com' }, // Kiosk dummy email
-                    indemnitorInfo: [],
-                    documentIds: [] // Empty = Use Default Template
-                });
-
-                if (result.success && result.links && result.links[0]) {
-                    // Open the *Signing* Lightbox with the link
-                    wixWindow.openLightbox("SigningLightbox", {
-                        signingUrl: result.links[0],
-                        documentId: null
-                    });
-                    $w('#openKioskBtn').label = "Open Kiosk";
-                    if (statusText.length) statusText.text = "Kiosk session started.";
-                } else {
-                    throw new Error("No link returned.");
+                const session = await resolveIssuedSession(data);
+                if (!session.valid || !session.signingUrl) {
+                    throw new Error(ISSUE_IN_CRM);
                 }
+                openIssuedLaunchpad(data, session);
+                setLabel('#openKioskBtn', 'Open kiosk');
+                setStatus('Kiosk launchpad opened for the staff-issued session.');
             } catch (e) {
-                console.error(e);
-                $w('#openKioskBtn').label = "Retry";
-                if (statusText.length) statusText.text = "Kiosk Error: " + e.message;
+                setLabel('#openKioskBtn', 'Issue in Super CRM');
+                setStatus(e.message || ISSUE_IN_CRM);
             }
         });
     }
 });
 
-/**
- * Attempts to retrieve the latest phone/email for a case/defendant.
- * 1. Checks the passed itemData.
- * 2. Queries 'Cases' collection.
- * 3. Queries 'IntakeQueue' collection.
- */
 async function getLatestContactInfo(itemData) {
-    // 1. Check itemData first
     if (itemData.email && itemData.phone) {
         return { email: itemData.email, phone: itemData.phone };
     }
 
     const info = {
-        email: itemData.email || itemData.defendantEmail,
-        phone: itemData.phone || itemData.defendantPhone
+        email: itemData.email || itemData.defendantEmail || itemData.indemnitorEmail || '',
+        phone: itemData.phone || itemData.defendantPhone || itemData.indemnitorPhone || ''
     };
 
     if (info.email && info.phone) return info;
 
-    // 2. Query 'Cases' if we have an ID
     if (itemData._id) {
         try {
-            const caseRes = await wixData.query("Cases").eq("_id", itemData._id).find();
+            const caseRes = await wixData.query('Cases').eq('_id', itemData._id).find();
             if (caseRes.items.length > 0) {
                 const c = caseRes.items[0];
-                if (!info.email) info.email = c.email || c.defendantEmail;
-                if (!info.phone) info.phone = c.phone || c.defendantPhone;
+                if (!info.email) info.email = c.email || c.defendantEmail || c.indemnitorEmail;
+                if (!info.phone) info.phone = c.phone || c.defendantPhone || c.indemnitorPhone;
             }
-        } catch (e) { console.warn("Case query failed", e); }
+        } catch (e) {
+            console.warn('Case query failed', e);
+        }
     }
 
     if (info.email && info.phone) return info;
 
-    // 3. Query 'IntakeQueue' (fallback)
-    if (itemData._id) { // Assuming ID matches or we search by caseNumber
+    if (itemData._id) {
         try {
-            let intakeQ = wixData.query("IntakeQueue").eq("_id", itemData._id);
+            let intakeQ = wixData.query('IntakeQueue').eq('_id', itemData._id);
             if (itemData.caseNumber) {
-                intakeQ = intakeQ.or(wixData.query("IntakeQueue").eq("caseId", itemData.caseNumber));
+                intakeQ = intakeQ.or(wixData.query('IntakeQueue').eq('caseId', itemData.caseNumber));
             }
             const intakeRes = await intakeQ.find();
             if (intakeRes.items.length > 0) {
                 const i = intakeRes.items[0];
-                if (!info.email) info.email = i.defendantEmail;
-                if (!info.phone) info.phone = i.defendantPhone;
+                if (!info.email) info.email = i.defendantEmail || i.indemnitorEmail;
+                if (!info.phone) info.phone = i.defendantPhone || i.indemnitorPhone;
             }
-        } catch (e) { console.warn("Intake query failed", e); }
+        } catch (e) {
+            console.warn('Intake query failed', e);
+        }
     }
 
     return info;

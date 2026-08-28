@@ -6,6 +6,25 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-08-28 — v2.8.6 — Staff prompt lightbox
+
+- Added `StaffPromptLightbox` Velo file, `<shamrock-staff-prompt>` custom element, and an in-iframe modal in `staff-portal.html`.
+- `/portal-staff` finalize / power / case / custody prompts use the iframe modal first (works without a new Editor lightbox), then `StaffPromptLightbox`, then the custom element.
+- Editor bind (optional): create lightbox named `StaffPromptLightbox` with `#promptTitle`, `#promptHint`, `#promptInput`, `#promptSelect`, `#promptConfirmBtn`, `#promptCancelBtn`. Keep `#staffPortal` on the staff page.
+
+### 2026-08-28 — v2.8.5 — Staff launchpad boundary + production docs
+
+**Wix clipboard:**
+- Staff Defendant Details (page + lightbox) no longer calls retired `initiateSigningWorkflow` packet-create. Email/SMS/kiosk now look up a staff-issued DocuSeal URL, open `SigningLightbox`, or text that URL. Missing sessions tell staff to issue in Super CRM.
+- Staff finalize no longer depends on a missing `#lightbox1`; unsigned cases confirm via the existing select prompt.
+- Added `SUPER_CRM_URL` on `portal-config.js`.
+
+**Docs (portal + Super CRM):**
+- `USER.md` / `TASKS.md` / `STATUS.md`: Editor is the live production surface; Studio canvas is deferred. Next gates are B3/B5/D2 in `shamrock-leads`.
+- Retired SignNow MCP help skills removed from `.agent/skills`.
+
+**Not in this release:** Wix Studio canvas, human-gated B3/B5/D2 smokes, secret rotation (C3).
+
 ### 2026-08-25 — v2.8.4 — Clipboard factory harmony (Editor live, no Studio cutover)
 
 **Doctrine:** Website is the clipboard. Super CRM is the brain. DocuSeal is staff-gated. OSI preferred.

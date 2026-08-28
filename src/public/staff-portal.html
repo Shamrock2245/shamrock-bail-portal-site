@@ -122,6 +122,19 @@ input,select,textarea,button { font-family:var(--font); }
 .spinner { width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--emerald); border-radius:50%; animation:spin .6s linear infinite; display:inline-block; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
+/* ─── STAFF PROMPT LIGHTBOX ─── */
+.sp-overlay { display:none; position:fixed; inset:0; background:rgba(5,8,16,.72); z-index:10000; align-items:center; justify-content:center; padding:24px; }
+.sp-overlay.open { display:flex; }
+.sp-modal { width:100%; max-width:440px; background:var(--bg-card); border:1px solid var(--border); border-radius:16px; box-shadow:0 24px 64px rgba(0,0,0,.55); padding:24px; }
+.sp-modal h2 { font-size:18px; font-weight:700; margin-bottom:8px; }
+.sp-modal p { font-size:13px; color:var(--text-dim); margin-bottom:16px; line-height:1.45; }
+.sp-modal input, .sp-modal select { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:12px 14px; border-radius:10px; font-size:16px; min-height:44px; }
+.sp-modal input:focus, .sp-modal select:focus { outline:none; border-color:var(--emerald); box-shadow:0 0 0 3px var(--emerald-glow); }
+.sp-options { display:flex; flex-direction:column; gap:8px; }
+.sp-option { min-height:44px; padding:12px 16px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:15px; font-weight:600; cursor:pointer; text-align:left; }
+.sp-option:hover, .sp-option.selected { border-color:var(--emerald); background:var(--emerald-glow); color:var(--emerald); }
+.sp-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+
 /* ─── RESPONSIVE ─── */
 @media(max-width:768px) {
   .form-grid { grid-template-columns:1fr; }
@@ -430,6 +443,20 @@ input,select,textarea,button { font-family:var(--font); }
       <button class="btn btn-secondary" onclick="SP.runReport('commissions')">💰 Commission Report</button>
       <button class="btn btn-secondary" onclick="SP.runReport('reconciliation')">🔍 Void/Discharge Recon</button>
       <button class="btn btn-secondary" onclick="SP.runReport('daily')">📋 Daily Ops Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- STAFF PROMPT LIGHTBOX (used when Wix Editor has no StaffPromptLightbox) -->
+<div id="staffPromptOverlay" class="sp-overlay" role="dialog" aria-modal="true" aria-labelledby="staffPromptTitle">
+  <div class="sp-modal">
+    <h2 id="staffPromptTitle">Staff prompt</h2>
+    <p id="staffPromptHint"></p>
+    <input id="staffPromptInput" type="text" autocomplete="off">
+    <div id="staffPromptOptions" class="sp-options" hidden></div>
+    <div class="sp-actions">
+      <button type="button" class="btn btn-secondary" id="staffPromptCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="staffPromptConfirm">Continue</button>
     </div>
   </div>
 </div>
@@ -1008,6 +1035,68 @@ var SP = {
     t.classList.add('show');
     clearTimeout(SP._tt);
     SP._tt = setTimeout(function(){ t.classList.remove('show'); }, 4000);
+  },
+
+  _promptRequestId: null,
+  _promptMode: 'input',
+  _promptSelected: '',
+
+  openPrompt: function(spec) {
+    spec = spec || {};
+    SP._promptRequestId = spec.requestId || '';
+    SP._promptMode = spec.mode === 'select' ? 'select' : 'input';
+    SP._promptSelected = '';
+    document.getElementById('staffPromptTitle').textContent = spec.title || 'Staff prompt';
+    document.getElementById('staffPromptHint').textContent = spec.hint || spec.placeholder || '';
+    var input = document.getElementById('staffPromptInput');
+    var optionsBox = document.getElementById('staffPromptOptions');
+    var confirmBtn = document.getElementById('staffPromptConfirm');
+    if (SP._promptMode === 'select') {
+      input.hidden = true;
+      optionsBox.hidden = false;
+      optionsBox.innerHTML = '';
+      var options = spec.options || [];
+      options.forEach(function(opt, idx) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sp-option' + (idx === 0 ? ' selected' : '');
+        btn.textContent = String(opt).replace(/_/g, ' ');
+        btn.dataset.value = opt;
+        if (idx === 0) SP._promptSelected = opt;
+        btn.onclick = function() {
+          optionsBox.querySelectorAll('.sp-option').forEach(function(el){ el.classList.remove('selected'); });
+          btn.classList.add('selected');
+          SP._promptSelected = opt;
+        };
+        optionsBox.appendChild(btn);
+      });
+      confirmBtn.textContent = 'Confirm';
+    } else {
+      input.hidden = false;
+      optionsBox.hidden = true;
+      input.value = '';
+      input.placeholder = spec.placeholder || '';
+      confirmBtn.textContent = 'Continue';
+      setTimeout(function(){ try { input.focus(); } catch (e) {} }, 50);
+    }
+    document.getElementById('staffPromptOverlay').classList.add('open');
+  },
+
+  closePrompt: function(cancelled) {
+    document.getElementById('staffPromptOverlay').classList.remove('open');
+    var value = null;
+    if (!cancelled) {
+      value = SP._promptMode === 'select'
+        ? (SP._promptSelected || null)
+        : (document.getElementById('staffPromptInput').value || '').trim() || null;
+    }
+    SP.sendToParent({
+      type: 'staff-prompt-result',
+      requestId: SP._promptRequestId,
+      cancelled: !!cancelled,
+      value: value
+    });
+    SP._promptRequestId = null;
   }
 };
 
@@ -1022,6 +1111,10 @@ window.addEventListener('message', function(event) {
 
   switch (msg.type) {
     // ── Context from parent page ──
+    case 'staff-prompt-open':
+      SP.openPrompt(msg);
+      break;
+
     case 'staff-context':
       SP.session = msg.session || {};
       SP.gasUrl = msg.gasUrl || '';
@@ -1132,6 +1225,17 @@ try {
   var draft = localStorage.getItem('shamrock_staff_draft');
   if (draft) console.log('[StaffPortal] Draft available in localStorage');
 } catch(e) {}
+
+document.getElementById('staffPromptCancel').addEventListener('click', function() {
+  SP.closePrompt(true);
+});
+document.getElementById('staffPromptConfirm').addEventListener('click', function() {
+  SP.closePrompt(false);
+});
+document.getElementById('staffPromptInput').addEventListener('keydown', function(ev) {
+  if (ev.key === 'Enter') SP.closePrompt(false);
+  if (ev.key === 'Escape') SP.closePrompt(true);
+});
 
 // Signal ready to parent Wix page
 document.addEventListener('DOMContentLoaded', function() {

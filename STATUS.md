@@ -1,6 +1,6 @@
 # Portal Site — True Status
 
-> **Last verified:** 2026-08-25  
+> **Last verified:** 2026-08-28  
 > **Repo:** `Shamrock2245/shamrock-bail-portal-site` · branch `main`  
 > **Product URL:** `https://shamrockbailbonds.biz` (Live public site on Wix Editor. Studio canvas is deferred — Editor is the production surface.)  
 > **Role:** Brand clipboard + GAS factory — **Shamrock’s Platform** factory layer  
@@ -28,7 +28,7 @@
 | Area | Status |
 |---|---|
 | **Wix Studio Translation & IA Expansion** | ⏸ **Deferred** — Backend clipboard is live on Editor. Visual Studio canvas is not in the current production path. |
-| **Bond Portal, Telegram, Shannon, DocuSeal** | ✅ **Code-enforced:** DocuSeal is sole active signing provider; staff-gated issuance in Super CRM; Wix acts strictly as non-issuing clipboard launchpad. |
+| **Bond Portal, Telegram, Shannon, DocuSeal** | ✅ **Code-enforced:** DocuSeal is sole active signing provider; staff-gated issuance in Super CRM; Wix acts strictly as non-issuing clipboard launchpad. Staff Defendant Details opens/texts a staff-issued session only. Staff prompts (finalize / power / custody) use the Command Center iframe modal, with optional Editor lightbox `StaffPromptLightbox`. |
 | **Legacy SignNow Execution** | ✅ **Retired (Live @468)** — Direct routes, factory senders, MCP packet helpers, and Wix portal send wrappers fail closed. Historical fields remain read-only. |
 | **Surety Realignment** | ✅ Active paperwork requires explicit `surety_id` (OSI preferred, Palmetto policy-gated, Accredited/Bankers mapped via canonical schema). |
 | **Bail School Education Management** | ✅ GAS unlock poller, SwipeSimple integration ($199 20hr / $649 120hr / $49 simulator), live catalog aligned. |

@@ -25,6 +25,12 @@ export const API_BASE_URL = 'https://api.shamrockbailbonds.biz/api/v1';
 export const PAPERWORK_APP_URL = 'https://shamrock-telegram.netlify.app/paperwork/';
 
 /**
+ * Super CRM (brain). Staff issue DocuSeal packets here — never from Wix.
+ * @constant {string}
+ */
+export const SUPER_CRM_URL = 'https://leads.shamrockbailbonds.biz';
+
+/**
  * API timeout in milliseconds
  * @constant {number}
  */

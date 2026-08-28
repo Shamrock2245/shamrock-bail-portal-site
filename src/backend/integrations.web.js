@@ -1,6 +1,7 @@
 /**
  * Shamrock Bail Bonds - Integration HTTP Functions
- * Handles external integrations: SignNow, Google Sheets, Slack, Arrest Scrapers
+ * Handles external integrations: Google Sheets, Slack, Arrest Scrapers.
+ * Active e-sign is DocuSeal via Super CRM. SignNow routes here are historical.
  */
 
 import wixData from 'wix-data';

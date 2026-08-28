@@ -6,7 +6,21 @@
 
 ---
 
-## 🔴 Phase 8.5: Wix Studio Translation + Autopilot Paperwork Clipboard (CURRENT #1 PRIORITY)
+## 🔴 Production clipboard (CURRENT #1 PRIORITY)
+
+Editor is the live public surface. Studio canvas is deferred — do not block production work on it.
+
+- [x] Clipboard vs brain boundary (no DocuSeal packet creation in Wix)
+- [x] Signing launchpad + BlueBubbles 1-tap recovery (`signing-session-service.jsw`)
+- [x] Staff case lightbox opens or texts a **staff-issued** DocuSeal session only (2026-08-28)
+- [x] Staff finalize no longer depends on a missing `#lightbox1`
+- [x] Staff prompt lightbox (iframe modal + `StaffPromptLightbox.js` + `<shamrock-staff-prompt>`)
+- [x] D2 iMessage smoke (Brendan confirmed 2026-08-28)
+- [ ] B3 write-bond → paperwork on a **real** BondCase
+- [ ] B5 one staff-approved DocuSeal packet (OSI + Palmetto templates)
+- [ ] C3 secret rotation (owner-deferred; not a formal blocker)
+
+## ⏸ Phase 8.5: Wix Studio visual canvas (DEFERRED — backend already live on Editor)
 
 - [ ] **Milestone A: Studio Visual System & Public IA**
   - [x] Establish SWFL regional dominance on Homepage & NAP (Fort Myers HQ primary)

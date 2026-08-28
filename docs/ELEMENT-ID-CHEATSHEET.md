@@ -97,6 +97,27 @@ General inquiry form.
 
 ---
 
+## 🧑‍💼 STAFF PORTAL (`/portal-staff`)
+
+| ID | Description |
+| :--- | :--- |
+| `#staffPortal` | HtmlComponent hosting `public/staff-portal.html` (Command Center). Required for the in-iframe staff prompt. |
+| `#staffPromptElement` | Optional Custom Element `shamrock-staff-prompt` if the iframe is not on the page. |
+| `#welcomeText` | Staff greeting / connection status. |
+
+### StaffPromptLightbox (create in Wix Editor)
+
+Lightbox **name:** `StaffPromptLightbox`. Bind `src/lightboxes/StaffPromptLightbox.js`.
+
+| ID | Description |
+| :--- | :--- |
+| `#promptTitle` | Prompt heading |
+| `#promptHint` | Helper text |
+| `#promptInput` | Text input (input mode) |
+| `#promptSelect` | Dropdown (select mode) |
+| `#promptConfirmBtn` | Continue — min 44px |
+| `#promptCancelBtn` | Cancel — min 44px |
+
 ---
 
 ## 📱 PROPOSED STUDIO INTAKE WIZARD (`/portal-start`)

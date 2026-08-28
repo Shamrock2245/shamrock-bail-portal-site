@@ -26,7 +26,7 @@
 
 ---
 
-## 🔴 Phase 8.5: Wix Studio Translation + Autopilot Paperwork Clipboard
+## ⏸ Phase 8.5: Wix Studio visual canvas (deferred — Editor is production)
 
 > **Production (2026-08-25):** Clipboard is live on the **Wix Editor** site and GAS **@468**. Studio visual canvas is **deferred** — do not treat it as the current production path. Backend clipboard services, canonical mapper, ID OCR, case hydrator, draft engine, ClipboardBridge, and permissions allowlist are wired and published.
 

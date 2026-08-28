@@ -3,7 +3,7 @@
  *
  * Member-only page for defendants to:
  *   1. View their case status
- *   2. Sign pending documents (embedded SignNow)
+ *   2. Sign pending documents (staff-issued DocuSeal launchpad)
  *   3. Upload government ID after signing
  *   4. Perform certified check-ins (GPS + selfie)
  *
@@ -177,7 +177,7 @@ function openSigningOverlay(signingUrl, docRecordId) {
 
     trackEvent('Defendant_Sign_Start', { docId: docRecordId });
 
-    // Open SignNow embedded signing in a lightbox
+    // Open staff-issued DocuSeal launchpad in a lightbox
     wixWindow.openLightbox('SigningOverlay', {
         signingUrl: signingUrl,
         docRecordId: docRecordId
