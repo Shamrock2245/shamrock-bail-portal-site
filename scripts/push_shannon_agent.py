@@ -55,9 +55,14 @@ def _el_request(method: str, path: str, payload: dict | None = None) -> dict:
     req = urllib.request.Request(url, data=data, method=method)
     req.add_header("xi-api-key", key)
     req.add_header("Content-Type", "application/json")
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        raw = resp.read().decode()
-        return json.loads(raw) if raw else {}
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            raw = resp.read().decode()
+            return json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as exc:
+        err_body = exc.read().decode()
+        print(f"ElevenLabs API Error [{exc.code} {exc.reason}]: {err_body}")
+        raise
 
 
 def _tool_url(tool: str) -> str:
@@ -143,7 +148,18 @@ SHANNON_CUSTOM_GUARDRAILS = [
         "guarantees a court outcome. Allow Florida premium estimates that are clearly estimates, "
         "jail or court directions, and inmate status from tools.",
     ),
+    _custom_guardrail(
+        "No fee rebating or unauthorized discounts",
+        "Block only if Shannon offers or agrees to premium discounts below Florida statutory 10% rate, "
+        "or offers illegal rebates. Allow explaining statutory 10% rate and 0% interest payment plans.",
+    ),
+    _custom_guardrail(
+        "No P2P payments",
+        "Block only if Shannon accepts or suggests CashApp, Venmo, Zelle, PayPal, or crypto. "
+        "Allow SwipeSimple card link and in-person payment at 1528 Broadway.",
+    ),
 ]
+
 
 
 def _merge_guardrails(existing: dict | None) -> dict:
@@ -659,7 +675,7 @@ def main() -> int:
     existing_tts["agent_output_audio_format"] = "ulaw_8000"
     existing_tts["text_normalisation_type"] = "elevenlabs"
     existing_tts["expressive_mode"] = True
-    existing_tts["model_id"] = "eleven_flash_v2"
+    existing_tts["model_id"] = "eleven_turbo_v2"
     existing_tts["optimize_streaming_latency"] = 4
     # Lower stability = more lift in the greeting; period-heavy copy was reading "down".
     existing_tts["stability"] = 0.28
