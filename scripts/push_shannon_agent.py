@@ -760,6 +760,23 @@ def main() -> int:
         tool_ids = [tid for tid in tool_ids if tid not in drop_ids]
         print(f"Dropped investigator/duplicate tools: {before - len(tool_ids)}")
 
+    req_id_tool_id = "tool_0701m0zcarw2fvsr1gekvsr43djy"
+    try:
+        _el_request("PATCH", f"/v1/convai/tools/{req_id_tool_id}", {
+            "tool_config": {
+                **id_tool,
+                "name": "request_id_photo",
+                "description": id_tool["description"],
+                "api_schema": {
+                    **id_tool["api_schema"],
+                    "url": _tool_url("request_id_photo"),
+                },
+            }
+        })
+        print("Updated request_id_photo tool with phone parameter handling")
+    except Exception as exc:
+        print("request_id_photo tool patch skipped:", exc)
+
     if not skip_create:
         send_id = "tool_4401kjz6dcxxeyfbr37eesvvz6h4"
         try:
@@ -777,6 +794,7 @@ def main() -> int:
             print("Updated send_paperwork tool to email DocuSeal + payment")
         except Exception as exc:
             print("send_paperwork tool patch skipped:", exc)
+
 
     existing_tts = dict(((existing.get("conversation_config") or {}).get("tts") or {}))
     existing_asr = dict(((existing.get("conversation_config") or {}).get("asr") or {}))
