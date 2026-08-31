@@ -357,17 +357,27 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
 
 def _ensure_pronunciation(tts: dict) -> dict:
     locators = list(tts.get("pronunciation_dictionary_locators") or [])
-    if locators:
-        return tts
     try:
         created = _el_request("POST", "/v1/pronunciation-dictionaries/add-from-rules", {
-            "name": "Shannon Florida legal",
+            "name": "Shannon SWFL Legal & Local",
             "rules": [
                 {"type": "alias", "string_to_replace": "Charlotte", "alias": "Shar-let"},
                 {"type": "alias", "string_to_replace": "Sarasota", "alias": "Sara-so-ta"},
+                {"type": "alias", "string_to_replace": "Immokalee", "alias": "ih-MAH-kuh-lee"},
+                {"type": "alias", "string_to_replace": "Punta Gorda", "alias": "PUN-tuh GOR-duh"},
+                {"type": "alias", "string_to_replace": "Estero", "alias": "eh-STAIR-oh"},
+                {"type": "alias", "string_to_replace": "Ortiz", "alias": "or-TEEZ"},
+                {"type": "alias", "string_to_replace": "Babcock Ranch", "alias": "BAB-cock ranch"},
+                {"type": "alias", "string_to_replace": "Sanibel", "alias": "SAN-ih-bell"},
+                {"type": "alias", "string_to_replace": "Captiva", "alias": "cap-TEE-vuh"},
+                {"type": "alias", "string_to_replace": "Hendry", "alias": "HEN-dree"},
+                {"type": "alias", "string_to_replace": "DeSoto", "alias": "dee-SOH-toh"},
+                {"type": "alias", "string_to_replace": "Collier", "alias": "CALL-yer"},
                 {"type": "alias", "string_to_replace": "indemnitor", "alias": "in-dem-ni-tor"},
                 {"type": "alias", "string_to_replace": "capias", "alias": "cap-ee-us"},
                 {"type": "alias", "string_to_replace": "DocuSeal", "alias": "Doc-you-seal"},
+                {"type": "alias", "string_to_replace": "SwipeSimple", "alias": "Swipe Simple"},
+                {"type": "alias", "string_to_replace": "BlueBubbles", "alias": "Blue Bubbles"},
             ],
         })
         pid = created.get("id") or created.get("pronunciation_dictionary_id")
@@ -377,7 +387,7 @@ def _ensure_pronunciation(tts: dict) -> dict:
                 "pronunciation_dictionary_id": pid,
                 "version_id": vid,
             }]
-            print("Attached pronunciation dictionary", pid)
+            print("Attached SWFL pronunciation dictionary", pid)
         else:
             print("Pronunciation dictionary response missing ids")
     except Exception as exc:
@@ -677,14 +687,17 @@ def main() -> int:
     existing_tts["expressive_mode"] = True
     existing_tts["model_id"] = "eleven_turbo_v2"
     existing_tts["optimize_streaming_latency"] = 4
-    # Lower stability = more lift in the greeting; period-heavy copy was reading "down".
-    existing_tts["stability"] = 0.28
-    existing_tts["speed"] = 1.08
-    existing_tts["similarity_boost"] = 0.7
+    existing_tts["stability"] = 0.35
+    existing_tts["speed"] = 1.02
+    existing_tts["similarity_boost"] = 0.78
     existing_tts = _ensure_pronunciation(existing_tts)
     existing_asr["user_input_audio_format"] = "ulaw_8000"
     keywords = list(existing_asr.get("keywords") or [])
-    for word in ("Charlotte", "Sarasota", "indemnitor", "capias", "DocuSeal", "Shamrock", "Lee County"):
+    for word in (
+        "Charlotte", "Sarasota", "Lee County", "Collier", "Hendry", "DeSoto",
+        "Immokalee", "Estero", "Punta Gorda", "Ortiz", "indemnitor", "capias",
+        "DocuSeal", "SwipeSimple", "BlueBubbles", "Shamrock"
+    ):
         if word not in keywords:
             keywords.append(word)
     existing_asr["keywords"] = keywords
@@ -733,10 +746,13 @@ def main() -> int:
                         "returning_client": "no",
                         "known_defendant": "",
                         "prior_notes": "",
+                        "is_jail_call": "no",
+                        "jail_facility": "",
                     }
                 },
                 "prompt": prompt_patch,
             },
+
             "turn": {
                 "turn_eagerness": "normal",
                 "turn_timeout": 5,
