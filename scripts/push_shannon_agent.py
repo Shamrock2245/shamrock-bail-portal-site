@@ -897,9 +897,11 @@ def main() -> int:
     existing_tts["expressive_mode"] = True
     existing_tts["model_id"] = "eleven_turbo_v2"
     existing_tts["optimize_streaming_latency"] = 4
-    existing_tts["stability"] = 0.35
-    existing_tts["speed"] = 1.02
-    existing_tts["similarity_boost"] = 0.78
+    existing_tts["stability"] = 0.42
+    existing_tts["speed"] = 0.94
+    existing_tts["similarity_boost"] = 0.80
+
+
     existing_tts = _ensure_pronunciation(existing_tts)
     existing_asr["user_input_audio_format"] = "ulaw_8000"
     keywords = list(existing_asr.get("keywords") or [])
