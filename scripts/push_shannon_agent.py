@@ -355,30 +355,128 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
     return wf
 
 
+SWFL_AND_BAIL_PRONUNCIATIONS = [
+    # --- SWFL Municipalities, Regions & Waterways ---
+    {"type": "alias", "string_to_replace": "Bonita Springs", "alias": "boh-NEE-tuh springs"},
+    {"type": "alias", "string_to_replace": "Caloosahatchee", "alias": "kuh-LOO-suh-hatch-ee"},
+    {"type": "alias", "string_to_replace": "Calusa", "alias": "kuh-LOO-suh"},
+    {"type": "alias", "string_to_replace": "Matlacha", "alias": "MAT-luh-shay"},
+    {"type": "alias", "string_to_replace": "Alva", "alias": "AL-vuh"},
+    {"type": "alias", "string_to_replace": "Bokeelia", "alias": "boh-KEEL-yuh"},
+    {"type": "alias", "string_to_replace": "Chokoloskee", "alias": "chok-oh-LUSS-kee"},
+    {"type": "alias", "string_to_replace": "Ochopee", "alias": "oh-CHOP-ee"},
+    {"type": "alias", "string_to_replace": "Palmdale", "alias": "PAHM-dale"},
+    {"type": "alias", "string_to_replace": "LaBelle", "alias": "luh-BELL"},
+    {"type": "alias", "string_to_replace": "Clewiston", "alias": "CLUE-iss-ton"},
+    {"type": "alias", "string_to_replace": "Port Charlotte", "alias": "port SHAR-let"},
+    {"type": "alias", "string_to_replace": "Charlotte", "alias": "Shar-let"},
+    {"type": "alias", "string_to_replace": "Punta Gorda", "alias": "PUN-tuh GOR-duh"},
+    {"type": "alias", "string_to_replace": "Rotonda", "alias": "roh-TAHN-duh"},
+    {"type": "alias", "string_to_replace": "Englewood", "alias": "ENG-ul-wood"},
+    {"type": "alias", "string_to_replace": "Sarasota", "alias": "Sara-so-ta"},
+    {"type": "alias", "string_to_replace": "Venice", "alias": "VEN-iss"},
+    {"type": "alias", "string_to_replace": "Nokomis", "alias": "noh-KOH-miss"},
+    {"type": "alias", "string_to_replace": "Osprey", "alias": "OSS-pree"},
+    {"type": "alias", "string_to_replace": "Siesta Key", "alias": "see-ESS-tuh key"},
+    {"type": "alias", "string_to_replace": "Lido Key", "alias": "LEE-doh key"},
+    {"type": "alias", "string_to_replace": "Longboat Key", "alias": "LONG-boat key"},
+    {"type": "alias", "string_to_replace": "Bradenton", "alias": "BRAY-den-ton"},
+    {"type": "alias", "string_to_replace": "Palmetto", "alias": "pal-MET-oh"},
+    {"type": "alias", "string_to_replace": "Anna Maria", "alias": "AN-nuh muh-REE-uh"},
+    {"type": "alias", "string_to_replace": "Arcadia", "alias": "ar-KAY-dee-uh"},
+    {"type": "alias", "string_to_replace": "Nocatee", "alias": "NOK-uh-tee"},
+    {"type": "alias", "string_to_replace": "Wauchula", "alias": "wah-CHOO-luh"},
+    {"type": "alias", "string_to_replace": "Zolfo Springs", "alias": "ZOL-foh springs"},
+    {"type": "alias", "string_to_replace": "Immokalee", "alias": "ih-MAH-kuh-lee"},
+    {"type": "alias", "string_to_replace": "Marco Island", "alias": "MAR-koh island"},
+    {"type": "alias", "string_to_replace": "Everglades City", "alias": "EV-er-glades city"},
+    {"type": "alias", "string_to_replace": "Ave Maria", "alias": "AH-vay muh-REE-uh"},
+    {"type": "alias", "string_to_replace": "Golden Gate", "alias": "GOHL-den gate"},
+    {"type": "alias", "string_to_replace": "Estero", "alias": "eh-STAIR-oh"},
+    {"type": "alias", "string_to_replace": "San Carlos Park", "alias": "san CAR-los park"},
+    {"type": "alias", "string_to_replace": "Lehigh Acres", "alias": "LEE-high acres"},
+    {"type": "alias", "string_to_replace": "Cape Coral", "alias": "cape COR-al"},
+    {"type": "alias", "string_to_replace": "Fort Myers", "alias": "fort MY-erz"},
+    {"type": "alias", "string_to_replace": "North Fort Myers", "alias": "north fort MY-erz"},
+    {"type": "alias", "string_to_replace": "Fort Myers Beach", "alias": "fort MY-erz beach"},
+    {"type": "alias", "string_to_replace": "Sanibel", "alias": "SAN-ih-bell"},
+    {"type": "alias", "string_to_replace": "Captiva", "alias": "cap-TEE-vuh"},
+    {"type": "alias", "string_to_replace": "Useppa", "alias": "yoo-SEP-uh"},
+    {"type": "alias", "string_to_replace": "Babcock Ranch", "alias": "BAB-cock ranch"},
+    {"type": "alias", "string_to_replace": "Hendry", "alias": "HEN-dree"},
+    {"type": "alias", "string_to_replace": "DeSoto", "alias": "dee-SOH-toh"},
+    {"type": "alias", "string_to_replace": "Collier", "alias": "CALL-yer"},
+
+    # --- Local Roads, Jails & Facilities ---
+    {"type": "alias", "string_to_replace": "Ortiz", "alias": "or-TEEZ"},
+    {"type": "alias", "string_to_replace": "Ortiz Avenue", "alias": "or-TEEZ avenue"},
+    {"type": "alias", "string_to_replace": "Alicia Street", "alias": "uh-LEE-shuh street"},
+    {"type": "alias", "string_to_replace": "Del Prado", "alias": "del PRAH-doh"},
+    {"type": "alias", "string_to_replace": "Chiquita", "alias": "chih-KEE-tuh"},
+    {"type": "alias", "string_to_replace": "Santa Barbara", "alias": "SAN-tuh BAR-bur-uh"},
+    {"type": "alias", "string_to_replace": "Skyline", "alias": "SKY-line"},
+    {"type": "alias", "string_to_replace": "Tamiami", "alias": "tam-ee-AM-ee"},
+    {"type": "alias", "string_to_replace": "Daniells", "alias": "DAN-yellz"},
+    {"type": "alias", "string_to_replace": "Metro Parkway", "alias": "MET-roh parkway"},
+    {"type": "alias", "string_to_replace": "Colonial", "alias": "kuh-LOH-nee-ul"},
+    {"type": "alias", "string_to_replace": "Winkler", "alias": "WINK-ler"},
+    {"type": "alias", "string_to_replace": "Summerlin", "alias": "SUM-mer-lin"},
+    {"type": "alias", "string_to_replace": "McGregor", "alias": "muh-GREG-er"},
+    {"type": "alias", "string_to_replace": "Cleveland Avenue", "alias": "CLEEV-land avenue"},
+
+    # --- Bail Bonds, Surety & Legal Terms ---
+    {"type": "alias", "string_to_replace": "indemnitor", "alias": "in-dem-ni-tor"},
+    {"type": "alias", "string_to_replace": "indemnitors", "alias": "in-dem-ni-tors"},
+    {"type": "alias", "string_to_replace": "coindemnitor", "alias": "co in-dem-ni-tor"},
+    {"type": "alias", "string_to_replace": "co-indemnitor", "alias": "co in-dem-ni-tor"},
+    {"type": "alias", "string_to_replace": "coindemnitors", "alias": "co in-dem-ni-tors"},
+    {"type": "alias", "string_to_replace": "co-indemnitors", "alias": "co in-dem-ni-tors"},
+    {"type": "alias", "string_to_replace": "capias", "alias": "cap-ee-us"},
+    {"type": "alias", "string_to_replace": "mittimus", "alias": "MIT-ih-mus"},
+    {"type": "alias", "string_to_replace": "surety", "alias": "SHUR-uh-tee"},
+    {"type": "alias", "string_to_replace": "sureties", "alias": "SHUR-uh-teez"},
+    {"type": "alias", "string_to_replace": "affidavit", "alias": "af-ih-DAY-vit"},
+    {"type": "alias", "string_to_replace": "collateral", "alias": "kuh-LAT-er-ul"},
+    {"type": "alias", "string_to_replace": "promissory", "alias": "PRAHM-ih-sor-ee"},
+    {"type": "alias", "string_to_replace": "forfeiture", "alias": "FOR-fih-chur"},
+    {"type": "alias", "string_to_replace": "exoneration", "alias": "eg-zahn-er-AY-shun"},
+    {"type": "alias", "string_to_replace": "estreature", "alias": "eh-STREE-chur"},
+    {"type": "alias", "string_to_replace": "arraignment", "alias": "uh-RAIN-ment"},
+    {"type": "alias", "string_to_replace": "extradition", "alias": "ex-truh-DISH-un"},
+    {"type": "alias", "string_to_replace": "subpoena", "alias": "suh-PEE-nuh"},
+    {"type": "alias", "string_to_replace": "docket", "alias": "DAHK-it"},
+    {"type": "alias", "string_to_replace": "nolle pros", "alias": "NAH-lee prahss"},
+    {"type": "alias", "string_to_replace": "nolle prosequi", "alias": "NAH-lee PRAH-suh-kwee"},
+    {"type": "alias", "string_to_replace": "habeas corpus", "alias": "HAY-bee-us KOR-pus"},
+    {"type": "alias", "string_to_replace": "supersedeas", "alias": "soo-per-SEE-dee-us"},
+    {"type": "alias", "string_to_replace": "scire facias", "alias": "SY-ree FAY-shee-us"},
+    {"type": "alias", "string_to_replace": "recusal", "alias": "rih-KYOO-zul"},
+
+    # --- Abbreviations & System Platforms ---
+    {"type": "alias", "string_to_replace": "ROR", "alias": "R-O-R"},
+    {"type": "alias", "string_to_replace": "DWLSR", "alias": "D-W-L-S-R"},
+    {"type": "alias", "string_to_replace": "DUI", "alias": "D-U-I"},
+    {"type": "alias", "string_to_replace": "VOP", "alias": "V-O-P"},
+    {"type": "alias", "string_to_replace": "FTA", "alias": "F-T-A"},
+    {"type": "alias", "string_to_replace": "FDLE", "alias": "F-D-L-E"},
+    {"type": "alias", "string_to_replace": "FDC", "alias": "F-D-C"},
+    {"type": "alias", "string_to_replace": "DOC", "alias": "D-O-C"},
+    {"type": "alias", "string_to_replace": "LCSO", "alias": "L-C-S-O"},
+    {"type": "alias", "string_to_replace": "CCSO", "alias": "C-C-S-O"},
+    {"type": "alias", "string_to_replace": "FMPD", "alias": "F-M-P-D"},
+    {"type": "alias", "string_to_replace": "CCPD", "alias": "C-C-P-D"},
+    {"type": "alias", "string_to_replace": "DocuSeal", "alias": "Doc-you-seal"},
+    {"type": "alias", "string_to_replace": "SwipeSimple", "alias": "Swipe Simple"},
+    {"type": "alias", "string_to_replace": "BlueBubbles", "alias": "Blue Bubbles"},
+    {"type": "alias", "string_to_replace": "Shamrock", "alias": "SHAM-rock"},
+]
+
+
 def _ensure_pronunciation(tts: dict) -> dict:
-    locators = list(tts.get("pronunciation_dictionary_locators") or [])
     try:
         created = _el_request("POST", "/v1/pronunciation-dictionaries/add-from-rules", {
-            "name": "Shannon SWFL Legal & Local",
-            "rules": [
-                {"type": "alias", "string_to_replace": "Charlotte", "alias": "Shar-let"},
-                {"type": "alias", "string_to_replace": "Sarasota", "alias": "Sara-so-ta"},
-                {"type": "alias", "string_to_replace": "Immokalee", "alias": "ih-MAH-kuh-lee"},
-                {"type": "alias", "string_to_replace": "Punta Gorda", "alias": "PUN-tuh GOR-duh"},
-                {"type": "alias", "string_to_replace": "Estero", "alias": "eh-STAIR-oh"},
-                {"type": "alias", "string_to_replace": "Ortiz", "alias": "or-TEEZ"},
-                {"type": "alias", "string_to_replace": "Babcock Ranch", "alias": "BAB-cock ranch"},
-                {"type": "alias", "string_to_replace": "Sanibel", "alias": "SAN-ih-bell"},
-                {"type": "alias", "string_to_replace": "Captiva", "alias": "cap-TEE-vuh"},
-                {"type": "alias", "string_to_replace": "Hendry", "alias": "HEN-dree"},
-                {"type": "alias", "string_to_replace": "DeSoto", "alias": "dee-SOH-toh"},
-                {"type": "alias", "string_to_replace": "Collier", "alias": "CALL-yer"},
-                {"type": "alias", "string_to_replace": "indemnitor", "alias": "in-dem-ni-tor"},
-                {"type": "alias", "string_to_replace": "capias", "alias": "cap-ee-us"},
-                {"type": "alias", "string_to_replace": "DocuSeal", "alias": "Doc-you-seal"},
-                {"type": "alias", "string_to_replace": "SwipeSimple", "alias": "Swipe Simple"},
-                {"type": "alias", "string_to_replace": "BlueBubbles", "alias": "Blue Bubbles"},
-            ],
+            "name": "Shannon SWFL & Bail Master Lexicon",
+            "rules": SWFL_AND_BAIL_PRONUNCIATIONS,
         })
         pid = created.get("id") or created.get("pronunciation_dictionary_id")
         vid = created.get("version_id")
@@ -387,7 +485,7 @@ def _ensure_pronunciation(tts: dict) -> dict:
                 "pronunciation_dictionary_id": pid,
                 "version_id": vid,
             }]
-            print("Attached SWFL pronunciation dictionary", pid)
+            print(f"Attached SWFL & Bail Lexicon ({len(SWFL_AND_BAIL_PRONUNCIATIONS)} rules): {pid}")
         else:
             print("Pronunciation dictionary response missing ids")
     except Exception as exc:
@@ -695,8 +793,15 @@ def main() -> int:
     keywords = list(existing_asr.get("keywords") or [])
     for word in (
         "Charlotte", "Sarasota", "Lee County", "Collier", "Hendry", "DeSoto",
-        "Immokalee", "Estero", "Punta Gorda", "Ortiz", "indemnitor", "capias",
-        "DocuSeal", "SwipeSimple", "BlueBubbles", "Shamrock"
+        "Immokalee", "Estero", "Punta Gorda", "Bonita Springs", "Caloosahatchee",
+        "Calusa", "Matlacha", "Alva", "Bokeelia", "Chokoloskee", "LaBelle",
+        "Clewiston", "Port Charlotte", "Rotonda", "Englewood", "Venice", "Nokomis",
+        "Osprey", "Siesta Key", "Bradenton", "Palmetto", "Arcadia", "Wauchula",
+        "Marco Island", "Everglades City", "Ave Maria", "Golden Gate", "Lehigh Acres",
+        "Cape Coral", "Fort Myers", "Sanibel", "Captiva", "Babcock Ranch", "Ortiz",
+        "indemnitor", "coindemnitor", "capias", "mittimus", "surety", "affidavit",
+        "collateral", "promissory", "forfeiture", "exoneration", "estreature",
+        "arraignment", "extradition", "DocuSeal", "SwipeSimple", "BlueBubbles", "Shamrock"
     ):
         if word not in keywords:
             keywords.append(word)
