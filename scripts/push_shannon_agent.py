@@ -643,14 +643,24 @@ def main() -> int:
             "caller_phone": _prop("caller_phone", "Digits from {{caller_phone}}, e.g. +12395550100"),
             "defendant_name": _prop("defendant_name", "Defendant legal full name, e.g. Jane Ann Doe"),
             "county": _prop("county", "Florida county name only, e.g. Lee"),
-            "section": _prop("section", "Section just collected, e.g. indemnitor_identity"),
+            "section": _prop("section", "Section just collected, e.g. indemnitor_identity, marital_status, employer, references"),
             "indemnitor_name": _prop("indemnitor_name", "Indemnitor legal name"),
             "indemnitor_email": _prop("indemnitor_email", "Standard email, e.g. name@domain.com"),
             "indemnitor_phone": _prop("indemnitor_phone", "Digits only, e.g. 2395550100"),
+            "marital_status": _prop("marital_status", "Marital status: married, single, divorced, or widowed"),
+            "spouse_name": _prop("spouse_name", "Spouse legal full name if married"),
+            "spouse_phone": _prop("spouse_phone", "Spouse mobile phone number if married"),
+            "spouse_employer": _prop("spouse_employer", "Spouse employer or occupation if married"),
+            "home_ownership": _prop("home_ownership", "own, rent, or other"),
+            "employer_name": _prop("employer_name", "Indemnitor employer or company name"),
+            "job_title": _prop("job_title", "Indemnitor occupation or job title"),
+            "reference_1": _prop("reference_1", "First personal reference: name, relationship, phone"),
+            "reference_2": _prop("reference_2", "Second personal reference: name, relationship, phone"),
             "notes": _prop("notes", "Freeform extras. No SSN."),
         },
         ["caller_role"],
     )
+
     id_tool = _webhook_tool(
         "request_id_photo",
         "Ask the caller for a government ID. method=upload texts a mobile photo-upload link. method=email emails instructions to send front and back photos. Never email the jail. Prefer upload for defendants in custody.",
@@ -776,6 +786,24 @@ def main() -> int:
         print("Updated request_id_photo tool with phone parameter handling")
     except Exception as exc:
         print("request_id_photo tool patch skipped:", exc)
+
+    save_tool_id = "tool_7001m0xjhw8efbp82qcm2a12mbvh"
+    try:
+        _el_request("PATCH", f"/v1/convai/tools/{save_tool_id}", {
+            "tool_config": {
+                **save_tool,
+                "name": "save_paperwork_answers",
+                "description": save_tool["description"],
+                "api_schema": {
+                    **save_tool["api_schema"],
+                    "url": _tool_url("save_paperwork_answers"),
+                },
+            }
+        })
+        print("Updated save_paperwork_answers tool with underwriting & spouse fields")
+    except Exception as exc:
+        print("save_paperwork_answers tool patch skipped:", exc)
+
 
     if not skip_create:
         send_id = "tool_4401kjz6dcxxeyfbr37eesvvz6h4"
