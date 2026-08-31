@@ -504,6 +504,11 @@ function handleElevenLabsToolCall(e) {
                 return toolCheckInmateStatus(payload);
             case 'send_directions':
                 return toolSendDirections(payload);
+            case 'check_client_account':
+            case 'pull_court_dates':
+                return toolCheckClientAccount(payload);
+            case 'schedule_office_visit':
+                return toolScheduleOfficeVisit(payload);
             case 'send_sms':
                 return toolSendSMS(payload);
             case 'check_caller_history':
@@ -513,6 +518,7 @@ function handleElevenLabsToolCall(e) {
                     status: 'error', message: 'Unknown tool: ' + toolName
                 })).setMimeType(ContentService.MimeType.JSON);
         }
+
     } catch (err) {
         Logger.log('❌ Tool error: ' + err.message);
         return ContentService.createTextOutput(JSON.stringify({
@@ -1462,12 +1468,321 @@ function toolSendDirections(params) {
     }
 }
 
+
+/**
+ * Tool: check_client_account
+ * Customer Service Tool: Looks up balance, payment plans, court dates, and discharge status.
+ *
+ * Expected params: { "defendant_name": "...", "case_number": "...", "phone": "...", "caller_phone": "...", "query_type": "..." }
+ */
+function toolCheckClientAccount(params) {
+    params = params || {};
+    var defName = (params.defendant_name || params.caller_name || '').trim();
+    var caseNum = (params.case_number || '').trim();
+    var phone = (params.phone || params.caller_phone || '').replace(/\D/g, '').slice(-10);
+    var queryType = (params.query_type || 'all').toLowerCase();
+
+    if (!defName && !caseNum && !phone) {
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'not_found',
+            message: 'To look up the account details, please provide the defendant full name, case number, or phone number.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var ssId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+    if (!ssId) {
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'error',
+            message: 'Database connection currently unavailable. Please call us directly at 239-332-2245.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var ss = SpreadsheetApp.openById(ssId);
+    var accountData = {
+        defendant_name: defName,
+        case_number: caseNum,
+        court_date: null,
+        court_time: null,
+        court_location: null,
+        courtroom: null,
+        judge: null,
+        discharge_status: 'Active',
+        discharge_date: null,
+        total_bond: null,
+        premium: null,
+        amount_paid: null,
+        remaining_balance: null,
+        payment_link: 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
+    };
+
+    var found = false;
+
+    // 1. Search Upcoming Court Dates
+    try {
+        var cdSheet = ss.getSheetByName('Upcoming Court Dates') || ss.getSheetByName('CourtDates');
+        if (cdSheet && cdSheet.getLastRow() > 1) {
+            var cdValues = cdSheet.getDataRange().getValues();
+            var cdHdr = cdValues[0].map(function (h) { return String(h).toLowerCase().trim(); });
+            var nameCol = cdHdr.indexOf('defendant name') > -1 ? cdHdr.indexOf('defendant name') : cdHdr.indexOf('defname');
+            var dateCol = cdHdr.indexOf('court date') > -1 ? cdHdr.indexOf('court date') : cdHdr.indexOf('date');
+            var timeCol = cdHdr.indexOf('court time') > -1 ? cdHdr.indexOf('court time') : cdHdr.indexOf('time');
+            var locCol = cdHdr.indexOf('location') > -1 ? cdHdr.indexOf('location') : cdHdr.indexOf('courthouse');
+            var roomCol = cdHdr.indexOf('courtroom') > -1 ? cdHdr.indexOf('courtroom') : cdHdr.indexOf('room');
+            var judgeCol = cdHdr.indexOf('judge') > -1 ? cdHdr.indexOf('judge') : -1;
+            var caseCol = cdHdr.indexOf('case number') > -1 ? cdHdr.indexOf('case number') : cdHdr.indexOf('casenumber');
+
+            for (var r = cdValues.length - 1; r >= 1; r--) {
+                var row = cdValues[r];
+                var rowName = nameCol > -1 ? String(row[nameCol] || '').toLowerCase() : '';
+                var rowCase = caseCol > -1 ? String(row[caseCol] || '').toLowerCase() : '';
+
+                if ((defName && rowName && (rowName.indexOf(defName.toLowerCase()) > -1 || defName.toLowerCase().indexOf(rowName) > -1)) ||
+                    (caseNum && rowCase && rowCase.indexOf(caseNum.toLowerCase()) > -1)) {
+                    accountData.defendant_name = row[nameCol] || accountData.defendant_name;
+                    accountData.court_date = dateCol > -1 ? String(row[dateCol] || '') : '';
+                    accountData.court_time = timeCol > -1 ? String(row[timeCol] || '') : '';
+                    accountData.court_location = locCol > -1 ? String(row[locCol] || '') : 'Lee County Justice Center';
+                    accountData.courtroom = roomCol > -1 ? String(row[roomCol] || '') : '';
+                    accountData.judge = judgeCol > -1 ? String(row[judgeCol] || '') : '';
+                    accountData.case_number = caseCol > -1 ? String(row[caseCol] || '') : accountData.case_number;
+                    found = true;
+                    break;
+                }
+            }
+        }
+    } catch (e) {
+        Logger.log('Court date lookup error: ' + e.message);
+    }
+
+    // 2. Search Discharges tab
+    try {
+        var disSheet = ss.getSheetByName('Discharges');
+        if (disSheet && disSheet.getLastRow() > 1) {
+            var disValues = disSheet.getDataRange().getValues();
+            var disHdr = disValues[0].map(function (h) { return String(h).toLowerCase().trim(); });
+            var dNameCol = disHdr.indexOf('defendant name') > -1 ? disHdr.indexOf('defendant name') : 0;
+            var dDateCol = disHdr.indexOf('discharge date') > -1 ? disHdr.indexOf('discharge date') : 1;
+
+            for (var dr = disValues.length - 1; dr >= 1; dr--) {
+                var dRow = disValues[dr];
+                var dRowName = String(dRow[dNameCol] || '').toLowerCase();
+                if (defName && dRowName && (dRowName.indexOf(defName.toLowerCase()) > -1 || defName.toLowerCase().indexOf(dRowName) > -1)) {
+                    accountData.discharge_status = 'Discharged';
+                    accountData.discharge_date = String(dRow[dDateCol] || '');
+                    found = true;
+                    break;
+                }
+            }
+        }
+    } catch (e) {
+        Logger.log('Discharge lookup error: ' + e.message);
+    }
+
+    // 3. Search Payment_Plans / PaymentLog / IntakeQueue for Balance
+    try {
+        var paySheet = ss.getSheetByName('Payment_Plans') || ss.getSheetByName('PaymentLog') || ss.getSheetByName('IntakeQueue');
+        if (paySheet && paySheet.getLastRow() > 1) {
+            var payValues = paySheet.getDataRange().getValues();
+            var payHdr = payValues[0].map(function (h) { return String(h).toLowerCase().trim(); });
+            var pNameCol = payHdr.indexOf('defendant name') > -1 ? payHdr.indexOf('defendant name') : payHdr.indexOf('defname');
+            var pPhoneCol = payHdr.indexOf('phone') > -1 ? payHdr.indexOf('phone') : payHdr.indexOf('indphone');
+            var pBondCol = payHdr.indexOf('bond amount') > -1 ? payHdr.indexOf('bond amount') : payHdr.indexOf('bondamt');
+            var pPremCol = payHdr.indexOf('premium') > -1 ? payHdr.indexOf('premium') : -1;
+            var pPaidCol = payHdr.indexOf('amount paid') > -1 ? payHdr.indexOf('amount paid') : payHdr.indexOf('paid');
+            var pBalCol = payHdr.indexOf('balance') > -1 ? payHdr.indexOf('balance') : payHdr.indexOf('remaining');
+
+            for (var pr = payValues.length - 1; pr >= 1; pr--) {
+                var pRow = payValues[pr];
+                var pRowName = pNameCol > -1 ? String(pRow[pNameCol] || '').toLowerCase() : '';
+                var pRowPhone = pPhoneCol > -1 ? String(pRow[pPhoneCol] || '').replace(/\D/g, '').slice(-10) : '';
+
+                if ((defName && pRowName && (pRowName.indexOf(defName.toLowerCase()) > -1 || defName.toLowerCase().indexOf(pRowName) > -1)) ||
+                    (phone && pRowPhone && pRowPhone === phone)) {
+                    accountData.defendant_name = pRow[pNameCol] || accountData.defendant_name;
+                    accountData.total_bond = pBondCol > -1 ? String(pRow[pBondCol] || '') : '';
+                    accountData.premium = pPremCol > -1 ? String(pRow[pPremCol] || '') : '';
+                    accountData.amount_paid = pPaidCol > -1 ? String(pRow[pPaidCol] || '') : '';
+                    accountData.remaining_balance = pBalCol > -1 ? String(pRow[pBalCol] || '') : '';
+                    found = true;
+                    break;
+                }
+            }
+        }
+    } catch (e) {
+        Logger.log('Payment plan lookup error: ' + e.message);
+    }
+
+    // Build spoken response
+    var spoken = '';
+    if (accountData.discharge_status === 'Discharged') {
+        spoken = 'Good news! The bond file for ' + (accountData.defendant_name || 'this case') +
+            ' shows as officially discharged' + (accountData.discharge_date ? ' on ' + accountData.discharge_date : '') +
+            '. There are no further court appearances needed for this bond.';
+    } else if (accountData.court_date) {
+        spoken = 'I found the court appearance record for ' + (accountData.defendant_name || 'the defendant') +
+            '. The upcoming court date is ' + accountData.court_date +
+            (accountData.court_time ? ' at ' + accountData.court_time : '') +
+            ' at ' + (accountData.court_location || 'the courthouse') +
+            (accountData.courtroom ? ', Courtroom ' + accountData.courtroom : '') +
+            (accountData.judge ? ', before Judge ' + accountData.judge : '') + '.';
+    }
+
+    if (accountData.remaining_balance && parseFloat(accountData.remaining_balance.replace(/[^0-9.]/g, '')) > 0) {
+        var balMsg = ' The remaining balance on the premium is $' + accountData.remaining_balance + '.';
+        spoken += (spoken ? ' Also,' : '') + balMsg + ' Would you like me to text you a secure payment link so you can take care of that right on your phone?';
+    } else if (accountData.remaining_balance && parseFloat(accountData.remaining_balance.replace(/[^0-9.]/g, '')) === 0) {
+        spoken += (spoken ? ' ' : '') + 'The premium balance is completely paid in full.';
+    }
+
+    if (!spoken) {
+        spoken = 'I pulled up the file for ' + (accountData.defendant_name || defName) +
+            '. The bond is currently active. For exact minute-by-minute docket changes, our on-call bondsman can review the clerk docket with you anytime at 239-332-2245.';
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({
+        status: found ? 'found' : 'not_found',
+        account: accountData,
+        message: spoken
+    })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Tool: schedule_office_visit
+ * Schedules an in-person visit to our flagship Fort Myers office (1528 Broadway).
+ *
+ * Expected params: { "caller_name": "...", "caller_phone": "...", "defendant_name": "...", "preferred_date": "...", "preferred_time": "...", "purpose": "..." }
+ */
+function toolScheduleOfficeVisit(params) {
+    params = params || {};
+    var callerName = (params.caller_name || '').trim();
+    var callerPhone = (params.phone || params.caller_phone || '').trim();
+    var defName = (params.defendant_name || '').trim();
+    var preferredDate = (params.preferred_date || params.date || 'today').trim();
+    var preferredTime = (params.preferred_time || params.time || 'as soon as possible').trim();
+    var purpose = (params.purpose || 'in-person paperwork / consultation').trim();
+    var notes = (params.notes || '').trim();
+
+    if (!callerPhone && !callerName) {
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'error',
+            message: 'Please provide your name and phone number to schedule an office visit.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var apptRef = 'APPT-' + new Date().getTime().toString(36).toUpperCase();
+    var officeAddress = '1528 Broadway, Fort Myers, FL 33901';
+
+    // 1. Log to OfficeAppointments sheet
+    try {
+        var ssId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+        if (ssId) {
+            var ss = SpreadsheetApp.openById(ssId);
+            var sheet = ss.getSheetByName('OfficeAppointments');
+            if (!sheet) {
+                sheet = ss.insertSheet('OfficeAppointments');
+                sheet.appendRow(['Timestamp', 'Ref', 'Caller Name', 'Caller Phone', 'Defendant Name', 'Date', 'Time', 'Purpose', 'Notes', 'Status']);
+                sheet.getRange(1, 1, 1, 10)
+                    .setFontWeight('bold')
+                    .setBackground('#1a472a')
+                    .setFontColor('#ffffff');
+                sheet.setFrozenRows(1);
+            }
+            sheet.appendRow([
+                new Date(),
+                apptRef,
+                callerName || 'Walk-in Client',
+                callerPhone,
+                defName || 'N/A',
+                preferredDate,
+                preferredTime,
+                purpose,
+                notes,
+                'Scheduled'
+            ]);
+        }
+    } catch (sheetErr) {
+        Logger.log('OfficeAppointments sheet write failed (non-fatal): ' + sheetErr.message);
+    }
+
+    // 2. Add to Google Calendar
+    try {
+        var calId = PropertiesService.getScriptProperties().getProperty('COMPANY_CALENDAR_ID');
+        if (calId) {
+            var cal = CalendarApp.getCalendarById(calId);
+            if (cal) {
+                var title = '☘️ OFFICE VISIT: ' + (callerName || 'Client') + (defName ? (' (re: ' + defName + ')') : '');
+                var desc = 'Office appointment scheduled via Shannon Voice AI.\n\n' +
+                    '• Client: ' + callerName + ' (' + callerPhone + ')\n' +
+                    '• Defendant: ' + (defName || 'N/A') + '\n' +
+                    '• Purpose: ' + purpose + '\n' +
+                    '• Preferred Time: ' + preferredDate + ' ' + preferredTime + '\n' +
+                    '• Notes: ' + notes + '\n' +
+                    '• Ref: ' + apptRef;
+                cal.createEvent(title, new Date(), new Date(Date.now() + 3600000), {
+                    location: officeAddress,
+                    description: desc
+                });
+            }
+        }
+    } catch (calErr) {
+        Logger.log('Calendar event creation failed (non-fatal): ' + calErr.message);
+    }
+
+    // 3. Slack alert
+    try {
+        var config = getConfig();
+        var slackChannel = config.SLACK_WEBHOOK_SHAMROCK || config.SLACK_WEBHOOK_LEADS || config.SLACK_WEBHOOK_GENERAL;
+        if (slackChannel && typeof sendSlackMessage === 'function') {
+            sendSlackMessage(slackChannel,
+                '📅 *New Office Appointment Scheduled via Shannon*\n' +
+                '• Client: ' + (callerName || 'Client') + ' (' + callerPhone + ')\n' +
+                '• Defendant: ' + (defName || 'N/A') + '\n' +
+                '• Date & Time: ' + preferredDate + ' at ' + preferredTime + '\n' +
+                '• Purpose: ' + purpose + '\n' +
+                '• Office: 1528 Broadway, Fort Myers, FL 33901\n' +
+                '• Ref: `' + apptRef + '`',
+                null
+            );
+        }
+    } catch (slackErr) {
+        Logger.log('Slack appointment alert failed: ' + slackErr.message);
+    }
+
+    // 4. Send BlueBubbles confirmation text with address & Google Maps link
+    var smsBody = '☘️ Shamrock Bail Bonds — Office Appointment Confirmed!\n\n' +
+        'Hi ' + (callerName || 'there') + ',\n' +
+        'We have you scheduled to visit our Fort Myers flagship office on ' + preferredDate + ' at ' + preferredTime + '.\n\n' +
+        '📍 Address:\n1528 Broadway, Fort Myers, FL 33901\n' +
+        '🗺️ Directions: https://maps.google.com/?q=1528+Broadway+Fort+Myers+FL+33901\n\n' +
+        'Need to change times? Call us 24/7 at (239) 332-2245.';
+
+    if (callerPhone) {
+        if (typeof sendShannonText_ === 'function') {
+            sendShannonText_(callerPhone, smsBody);
+        }
+    }
+
+    var spokenMsg = 'I have you all set for an in-person visit to our Fort Myers office at 1528 Broadway on ' +
+        preferredDate + ' at ' + preferredTime +
+        '. I just texted the address and directions straight to your cell phone. We look forward to seeing you!';
+
+    return ContentService.createTextOutput(JSON.stringify({
+        status: 'scheduled',
+        reference: apptRef,
+        office_address: officeAddress,
+        date: preferredDate,
+        time: preferredTime,
+        message: spokenMsg
+    })).setMimeType(ContentService.MimeType.JSON);
+}
+
 /**
  * Tool: send_sms
  * Sends a custom text via BlueBubbles (iMessage/SMS relay). Never Twilio.
  *
  * Expected params: { "to_phone": "...", "message": "..." }
  */
+
 function toolSendSMS(params) {
     var toPhone = (params.to_phone || params.caller_phone || '').trim();
     var message = (params.message || '').trim();

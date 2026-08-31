@@ -708,6 +708,34 @@ def main() -> int:
         ["defendant_name", "indemnitor_name", "indemnitor_email"],
     )
 
+    account_tool = _webhook_tool(
+        "check_client_account",
+        "360-degree customer service tool. Look up defendant balance owed, payment plans, next court appearance date, courtroom, judge, and bond discharge / exoneration status.",
+        {
+            "defendant_name": _prop("defendant_name", "Defendant full name"),
+            "case_number": _prop("case_number", "Case or booking number if known"),
+            "phone": _prop("phone", "Caller or indemnitor phone number (e.g. 2397849365)"),
+            "caller_phone": _prop("caller_phone", "Fallback from {{caller_phone}}"),
+            "query_type": _prop("query_type", "all, balance, court_date, or discharge_status"),
+        },
+        [],
+    )
+    office_visit_tool = _webhook_tool(
+        "schedule_office_visit",
+        "Schedule an in-person visit to our flagship Fort Myers office at 1528 Broadway, Fort Myers, FL 33901 for paperwork, cash payment, or meeting a bondsman. Texts address to caller.",
+        {
+            "caller_name": _prop("caller_name", "Name of the person visiting"),
+            "phone": _prop("phone", "Mobile number to text directions and confirmation to"),
+            "caller_phone": _prop("caller_phone", "Fallback from {{caller_phone}}"),
+            "defendant_name": _prop("defendant_name", "Defendant full name if known"),
+            "preferred_date": _prop("preferred_date", "Date of visit (e.g. today, tomorrow, Tuesday)"),
+            "preferred_time": _prop("preferred_time", "Time of visit (e.g. 2:00 PM, morning, ASAP)"),
+            "purpose": _prop("purpose", "paperwork, cash_payment, consultation, or collateral_pickup"),
+            "notes": _prop("notes", "Any special instructions"),
+        },
+        ["caller_name"],
+    )
+
     # Create workspace tools then attach IDs
     existing = _el_request("GET", f"/v1/convai/agents/{agent_id}")
     prompt_cfg = ((existing.get("conversation_config") or {}).get("agent") or {}).get("prompt") or {}
@@ -804,6 +832,43 @@ def main() -> int:
     except Exception as exc:
         print("save_paperwork_answers tool patch skipped:", exc)
 
+    account_tool_id = "tool_2901kjzg5v2wf4yte23246t61h7d"
+    try:
+        _el_request("PATCH", f"/v1/convai/tools/{account_tool_id}", {
+            "tool_config": {
+                **account_tool,
+                "name": "check_client_account",
+                "description": account_tool["description"],
+                "api_schema": {
+                    **account_tool["api_schema"],
+                    "url": _tool_url("check_client_account"),
+                },
+            }
+        })
+        print("Updated check_client_account tool")
+        if account_tool_id not in tool_ids:
+            tool_ids.append(account_tool_id)
+    except Exception as exc:
+        print("check_client_account tool patch skipped:", exc)
+
+    office_visit_tool_id = "tool_4901kjzd9re2ery9tmkwjqhy8jn9"
+    try:
+        _el_request("PATCH", f"/v1/convai/tools/{office_visit_tool_id}", {
+            "tool_config": {
+                **office_visit_tool,
+                "name": "schedule_office_visit",
+                "description": office_visit_tool["description"],
+                "api_schema": {
+                    **office_visit_tool["api_schema"],
+                    "url": _tool_url("schedule_office_visit"),
+                },
+            }
+        })
+        print("Updated schedule_office_visit tool")
+        if office_visit_tool_id not in tool_ids:
+            tool_ids.append(office_visit_tool_id)
+    except Exception as exc:
+        print("schedule_office_visit tool patch skipped:", exc)
 
     if not skip_create:
         send_id = "tool_4401kjz6dcxxeyfbr37eesvvz6h4"
@@ -822,6 +887,7 @@ def main() -> int:
             print("Updated send_paperwork tool to email DocuSeal + payment")
         except Exception as exc:
             print("send_paperwork tool patch skipped:", exc)
+
 
 
     existing_tts = dict(((existing.get("conversation_config") or {}).get("tts") or {}))
