@@ -785,8 +785,8 @@ function toolCreateIntake(params) {
  * Expected params: { "bail_amount": "5000", "charge_count": "2", "county": "lee" }
  */
 function toolCalculatePremium(params) {
-    var bailAmount = parseFloat(params.bail_amount) || 0;
-    var chargeCount = parseInt(params.charge_count) || 1;
+    var bailAmount = parseFloat(params.bail_amount || params.bond_amount || 0) || 0;
+    var chargeCount = parseInt(params.charge_count || 1) || 1;
     var county = (params.county || '').trim();
 
     if (bailAmount <= 0) {
@@ -795,6 +795,7 @@ function toolCalculatePremium(params) {
             message: 'A valid bail amount is required to calculate the premium.'
         })).setMimeType(ContentService.MimeType.JSON);
     }
+
 
     // Reuse the existing premium calculator
     var result = calculatePremium(bailAmount, chargeCount, county);
