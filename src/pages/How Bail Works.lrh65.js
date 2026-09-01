@@ -27,19 +27,43 @@ function firstTable() {
     return null;
 }
 
-function firstChargesRepeater() {
-    return firstValid(['#amountsRepeater', '#comp-mtiridhe', '#comp-mtiridig']);
+function firstOffenseRepeater() {
+    return firstValid([
+        '#repeater1',
+        '#amountsRepeater',
+        '#offenseRepeater',
+        '#comp-mtirvxwp',
+        '#comp-mtiridhe',
+        '#comp-mtiridig'
+    ]);
+}
+
+function firstRangeRepeater() {
+    return firstValid([
+        '#repeater2',
+        '#rangeRepeater',
+        '#bailRangeRepeater',
+        '#comp-mtirx40l'
+    ]);
 }
 
 function firstFaqRepeater() {
-    const named = firstValid(['#faqRepeater', '#repeaterFAQ', '#listRepeater', '#repeater1', '#comp-mjxe7ggr']);
+    const named = firstValid(['#faqRepeater', '#repeaterFAQ', '#listRepeater', '#comp-mjxe7ggr']);
     if (named) return named;
     const skip = {
         bondsRepeater: true,
         typesRepeater: true,
         factorsRepeater: true,
         processRepeater: true,
-        amountsRepeater: true
+        amountsRepeater: true,
+        repeater1: true,
+        repeater2: true,
+        offenseRepeater: true,
+        rangeRepeater: true,
+        'comp-mtirvxwp': true,
+        'comp-mtirx40l': true,
+        'comp-mtiridhe': true,
+        'comp-mtiridig': true
     };
     try {
         const all = $w('Repeater');
@@ -259,61 +283,108 @@ async function setupCommonBailAmounts() {
         console.error('[X] CommonCharges query failed, using fallback:', err);
     }
 
-    const repeater = firstChargesRepeater();
-    if (repeater && (repeater.type === '$w.Repeater' || typeof repeater.onItemReady === 'function')) {
-        bindChargesRepeater(repeater, rows);
+    const offenseRepeater = firstOffenseRepeater();
+    const rangeRepeater = firstRangeRepeater();
+    const sameRepeater = offenseRepeater && rangeRepeater && String(offenseRepeater.id) === String(rangeRepeater.id);
+
+    if (offenseRepeater && rangeRepeater && !sameRepeater) {
+        bindChargesRepeater(offenseRepeater, rows, 'offense');
+        bindChargesRepeater(rangeRepeater, rows, 'range');
+        return;
+    }
+
+    if (offenseRepeater && (offenseRepeater.type === '$w.Repeater' || typeof offenseRepeater.onItemReady === 'function')) {
+        bindChargesRepeater(offenseRepeater, rows, 'both');
         return;
     }
 
     const element = firstTable();
     if (!element) {
-        console.error('[X] No #amountsRepeater Repeater or Table on page');
+        console.error('[X] No charges Repeater (#repeater1 / #repeater2) or Table on page');
         return;
     }
     console.log('[OK] Charges table id=', element.id, 'type=', element.type);
-    element.rows = rows;
+    try {
+        element.columns = [
+            { id: 'offense', dataPath: 'offense', label: 'Offense or Charge', type: 'string', width: 340, visible: true },
+            { id: 'range', dataPath: 'range', label: 'Typical Bail Range', type: 'string', width: 240, visible: true }
+        ];
+    } catch (e) {
+        console.warn('[charges] could not set table columns', e);
+    }
+    element.rows = rows.map((row) => ({
+        _id: row._id,
+        offense: row.offense,
+        range: row.range,
+        'Offense or Charge': row.offense,
+        'Typical Bail Range': row.range
+    }));
     console.log('[OK] Table rows set:', rows.length);
 }
 
-function bindChargesRepeater(repeater, rows) {
-    const pick = ($item, ids) => {
-        for (let i = 0; i < ids.length; i++) {
-            try {
-                const el = $item(ids[i]);
-                if (el && el.valid && typeof el.text !== 'undefined') return el;
-            } catch (e) { /* next */ }
+function firstItemText($item, ids) {
+    for (let i = 0; i < ids.length; i++) {
+        try {
+            const el = $item(ids[i]);
+            if (el && el.valid && typeof el.text !== 'undefined') return el;
+        } catch (e) { /* next */ }
+    }
+    try {
+        const texts = $item('Text');
+        if (texts && texts.valid && typeof texts.text !== 'undefined') return texts;
+        const idsCsv = String((texts && texts.id) || '').split(',').map((s) => s.trim()).filter(Boolean);
+        if (idsCsv.length) {
+            const el = $item('#' + idsCsv[0]);
+            if (el && typeof el.text !== 'undefined') return el;
         }
-        return null;
-    };
+    } catch (e) { /* no Text widgets in this item */ }
+    return null;
+}
+
+function bindChargesRepeater(repeater, rows, mode) {
+    const offenseIds = ['#offenseName', '#offense', '#textOffense', '#chargeName', '#text1', '#title'];
+    const rangeIds = ['#bailRange', '#range', '#textRange', '#bailAmount', '#text2', '#subtitle'];
 
     repeater.onItemReady(($item, itemData) => {
         const offense = itemData.offense || 'Unknown Offense';
         const range = itemData.range || 'Varies';
-        const offEl = pick($item, ['#offenseName', '#offense', '#textOffense', '#chargeName', '#text1', '#title']);
-        const rangeEl = pick($item, ['#bailRange', '#range', '#textRange', '#bailAmount', '#text2', '#subtitle']);
-        if (offEl) offEl.text = offense;
-        if (rangeEl) rangeEl.text = range;
-        if (offEl || rangeEl) return;
 
-        try {
-            const texts = $item('Text');
-            const ids = String((texts && texts.id) || '').split(',').map((s) => s.trim()).filter(Boolean);
-            if (ids.length >= 2) {
-                $item('#' + ids[0]).text = offense;
-                $item('#' + ids[1]).text = range;
+        if (mode === 'offense') {
+            const el = firstItemText($item, offenseIds);
+            if (el) {
+                el.text = offense;
                 return;
             }
-            if (texts && texts.valid) {
-                texts.text = offense + '  —  ' + range;
+            console.warn('[charges] #repeater1 item has no Text. Drop a Text inside the left repeater item and name it #offenseName.');
+            return;
+        }
+
+        if (mode === 'range') {
+            const el = firstItemText($item, rangeIds);
+            if (el) {
+                el.text = range;
                 return;
             }
-        } catch (e) { /* no Text widgets in this item */ }
+            console.warn('[charges] #repeater2 item has no Text. Drop a Text inside the right repeater item and name it #bailRange.');
+            return;
+        }
 
-        console.warn('[charges] #amountsRepeater item has no Text. Add #offenseName and #bailRange inside the repeater item.');
+        const offEl = firstItemText($item, offenseIds);
+        const rangeEl = firstItemText($item, rangeIds);
+        if (offEl && rangeEl && String(offEl.id) !== String(rangeEl.id)) {
+            offEl.text = offense;
+            rangeEl.text = range;
+            return;
+        }
+        if (offEl) {
+            offEl.text = offense + '  —  ' + range;
+            return;
+        }
+        console.warn('[charges] Repeater item has no Text. Add #offenseName and #bailRange inside the item.');
     });
 
     repeater.data = rows;
-    console.log('[OK] Charges repeater populated with', rows.length, 'items id=', repeater.id);
+    console.log('[OK] Charges repeater', mode, 'populated with', rows.length, 'items id=', repeater.id);
 }
 
 // --- 6. FAQ Section ---
