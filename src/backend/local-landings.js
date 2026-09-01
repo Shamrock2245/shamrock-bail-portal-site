@@ -155,17 +155,8 @@ export function buildLandingCopy(landing, parent = {}) {
  */
 export function buildCountyCitySections(countyName, cities, jailName, jailAddress) {
     if (!Array.isArray(cities) || cities.length === 0) return '';
-    const phone = PHONE_PRIMARY.display;
-    const jail = jailAddress ? `${jailName}, ${jailAddress}` : jailName;
-    const parts = cities.slice(0, 6).map((city) => {
-        const landing = getAllLocalLandings().find(
-            (l) => l.type === 'city' && l.name.toLowerCase() === String(city).toLowerCase()
-        );
-        const href = landing ? `${SITE_URL}/florida-bail-bonds/${landing.slug}` : '';
-        const link = href ? ` More: ${href}` : '';
-        return `${city} Bail Bonds. If the arrest was in ${city}, Shamrock posts the ${countyName} County bond at ${jail}. Call ${phone} 24/7.${link}`;
-    });
-    return `Cities we cover in ${countyName} County: ${cities.join(', ')}. ${parts.join(' ')}`;
+    const listed = cities.slice(0, 8).join(', ');
+    return `We cover ${countyName} County communities including ${listed}.`;
 }
 
 export function buildCountyJailBlock(countyName, geo) {

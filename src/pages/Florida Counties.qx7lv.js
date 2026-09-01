@@ -27,11 +27,18 @@ $w.onReady(async function () {
         return;
     }
 
-    // --- DATASET OVERRIDE (Legacy Support) ---
-    // Safely attempt to filter legacy dataset if present, but don't block execution
+    let generatedCounty = null;
     Select('#dynamicDataset').onReady(() => {
-        // console.log("Dataset Ready - Applying Filter...");
         Select('#dynamicDataset').setFilter(wixData.filter().eq('countySlug', countySlug))
+            .then(() => {
+                if (generatedCounty) {
+                    setRichText(
+                        ['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'],
+                        generatedCounty.content.about_county,
+                        generatedCounty.content.about_html
+                    );
+                }
+            })
             .catch(e => console.log("[!] Dataset filter failed:", e));
     });
 
@@ -59,6 +66,7 @@ $w.onReady(async function () {
         }
 
         const county = data;
+        generatedCounty = county;
 
         // 3. GENERATE SEO (Meta + Schema) - Critical for SEO
         setupSEO(county);
@@ -555,7 +563,9 @@ async function populateMainUI(county, currentSlug) {
     const safeGet = (scopedSelector, id) => {
         try {
             const el = scopedSelector(id);
-            return (el && el.uniqueId) ? el : null;
+            if (!el) return null;
+            if (el.valid === false) return null;
+            return el;
         } catch (e) {
             return null;
         }
@@ -678,47 +688,46 @@ async function populateMainUI(county, currentSlug) {
 
             faqRep.onItemReady(($item, itemData) => {
                 const question = itemData.question || itemData.title || 'Question';
-                const answer = itemData.answer || itemData.a || 'Answer';
+                const answer = itemData.answer || itemData.a || '';
 
-                // ========================================
-                // EXACT Wix Editor IDs (from Layers panel)
-                // ========================================
-                const qText = safeGet($item, '#textQuestion');
-                const aText = safeGet($item, '#textAnswer');
-                const answerGroup = safeGet($item, '#groupAnswer');
-                const toggleTrigger = safeGet($item, '#containerQuestion');
-                const arrow = safeGet($item, '#iconArrow');
+                const qIds = ['#textQuestion', '#faqQuestion', '#question', '#title', '#text1'];
+                const aIds = ['#textAnswer', '#faqAnswer', '#answer', '#text2', '#collapsibleText1', '#paragraph1'];
+                let qText = null;
+                let aText = null;
+                qIds.forEach((id) => { if (!qText) qText = safeGet($item, id); });
+                aIds.forEach((id) => { if (!aText) aText = safeGet($item, id); });
 
-                // Set question text
-                if (qText) {
-                    qText.text = question;
-                }
-
-                // Set answer text (handle CollapsibleText if present)
-                if (aText) {
+                if (!aText) {
                     try {
-                        if (typeof aText.collapseText === 'function') {
-                            aText.expandText();
-                        }
-                    } catch (e) { /* not a collapsible text */ }
+                        const ct = $item('CollapsibleText');
+                        if (ct && ct.valid !== false) aText = ct;
+                    } catch (e) { /* no collapsible in item */ }
+                }
+
+                if (qText && typeof qText.text !== 'undefined') qText.text = question;
+
+                if (aText && typeof aText.text !== 'undefined') {
+                    try {
+                        if (typeof aText.expandText === 'function') aText.expandText();
+                    } catch (e) { /* not collapsible */ }
                     aText.text = answer;
+                    try { if (aText.expand) aText.expand(); } catch (e) { /* already shown */ }
                 }
 
-                // Initialize state: answer collapsed, arrow pointing down
-                if (answerGroup) {
-                    answerGroup.collapse();
+                const answerGroup = safeGet($item, '#groupAnswer') || safeGet($item, '#boxAnswer') || safeGet($item, '#answerBox');
+                if (answerGroup && typeof answerGroup.expand === 'function') {
+                    answerGroup.expand();
                 }
 
-                // Click handler — toggle FAQ answer visibility
-                if (toggleTrigger && answerGroup) {
-                    toggleTrigger.onClick(() => {
-                        if (answerGroup.collapsed) {
-                            answerGroup.expand();
-                        } else {
-                            answerGroup.collapse();
-                        }
-                    });
-                }
+                const toggle = () => {
+                    if (!answerGroup || typeof answerGroup.expand !== 'function') return;
+                    if (answerGroup.collapsed) answerGroup.expand();
+                    else answerGroup.collapse();
+                };
+                ['#containerQuestion', '#textQuestion', '#iconArrow', '#vectorImage1', '#btnToggle'].forEach((id) => {
+                    const el = safeGet($item, id);
+                    if (el && typeof el.onClick === 'function') el.onClick(toggle);
+                });
             });
 
             // Set data with guaranteed unique IDs

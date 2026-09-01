@@ -214,9 +214,11 @@ function transformCountyData(county, landing = null) {
 
   const generatedAbout = generateAboutCounty(countyName, cities, countySeat, circuitNumber, circuitFull, population);
   const cmsAbout = stripHtml(county.serviceAreaCopy);
+  const cmsLooksStuffed = /More:\s*https?:\/\//i.test(cmsAbout || '') ||
+    ((cmsAbout || '').match(/Bail Bonds\./g) || []).length > 2;
   const baseAbout = isPlaceLanding
     ? landingCopy.about
-    : (cmsAbout && cmsAbout.length > 280 ? cmsAbout : generatedAbout);
+    : (cmsAbout && cmsAbout.length > 120 && !cmsLooksStuffed ? cmsAbout : generatedAbout);
   const citySections = isPlaceLanding
     ? ''
     : buildCountyCitySections(countyName, cities, jailName, jailAddress);
@@ -401,14 +403,13 @@ function buildAboutHtml(displayName, countyName, aboutText, cities, landing) {
   const heading = landing
     ? `About Bail Bonds in ${escapeHtml(displayName)}`
     : `About Bail Bonds in ${escapeHtml(countyName)} County, Florida`;
-  const cityLinks = (!landing && Array.isArray(cities) ? cities : []).slice(0, 6).map((city) => {
-    const slug = String(city).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    return `<a href="/florida-bail-bonds/${slug}">${escapeHtml(city)} bail bonds</a>`;
-  });
-  const cityBlock = cityLinks.length
-    ? `<h3>${escapeHtml(countyName)} County cities we serve</h3><p>${cityLinks.join(' · ')}</p>`
-    : '';
-  return `<h2>${heading}</h2><p>${escapeHtml(aboutText)}</p>${cityBlock}`;
+  const paragraphs = String(aboutText || '')
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p>${escapeHtml(p)}</p>`)
+    .join('');
+  return `<h2>${heading}</h2>${paragraphs || `<p>${escapeHtml(aboutText)}</p>`}`;
 }
 
 // ─── UNIQUE CONTENT GENERATORS ────────────────────────────────────────
