@@ -8,12 +8,12 @@
  * 3. Returning Staff/Admin -> /portal-staff (No access-code theater)
  * 4. Returning Defendant with active case -> /portal-defendant
  * 5. Returning Indemnitor with active case -> /portal-indemnitor
- * 6. New User -> Instant Role Selection (Defendant / Indemnitor / Co-indemnitor) -> /portal-start
+ * 6. New User -> Instant Role Selection (Defendant / Indemnitor / Co-indemnitor) -> paperwork launchpad
  * 
  * Roles map:
- * - defendant -> /portal-start?role=defendant (Defendant fields + signature blocks)
- * - indemnitor -> /portal-start?role=indemnitor (Indemnitor/cosigner packet)
- * - coindemnitor -> /portal-start?role=coindemnitor (Same indemnitor packet, second-signer slots)
+ * - defendant -> paperwork launchpad?role=defendant
+ * - indemnitor -> paperwork launchpad?role=indemnitor
+ * - coindemnitor -> paperwork launchpad?role=coindemnitor
  * 
  * @version 3.0.0 (Wix Studio)
  */
@@ -31,6 +31,7 @@ import {
 import { getGoogleAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 import { initAIChat } from 'public/ai-concierge';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 
 // -----------------------------------------------------------------------------
 // PAGE INIT
@@ -140,10 +141,11 @@ async function handleSessionTokenRedirect(token, countyParam) {
 }
 
 /**
- * Intelligent Router: Directs returning members to dashboards and new intakes to /portal-start
+ * Intelligent Router: Directs returning members to dashboards and new intakes to the paperwork launchpad
  */
 function routeAuthenticatedUser(role, sessionToken, isNewUser, countyParam) {
     const cleanRole = (role || '').toLowerCase().trim();
+    const county = String(countyParam || '').replace(/^&?county=/i, '');
 
     // 1. Staff / Admin -> Instant Staff Queue (No access code theater)
     if (cleanRole === 'staff' || cleanRole === 'admin' || cleanRole === 'superadmin') {
@@ -166,9 +168,14 @@ function routeAuthenticatedUser(role, sessionToken, isNewUser, countyParam) {
         return;
     }
 
-    // 4. If role is explicitly known on fresh session -> Direct to /portal-start
+    // 4. If role is explicitly known on fresh session -> paperwork launchpad
     if (cleanRole === 'defendant' || cleanRole === 'indemnitor' || cleanRole === 'coindemnitor') {
-        const dest = `/portal-start?role=${cleanRole}&st=${encodeURIComponent(sessionToken)}${countyParam}`;
+        const dest = buildPaperworkLaunchpadUrl({
+            role: cleanRole,
+            st: sessionToken,
+            county,
+            source: 'wix-portal-landing'
+        });
         console.log(`🚀 Routing new user directly to intake launchpad: ${dest}`);
         wixLocation.to(dest);
         return;
@@ -201,7 +208,12 @@ function setupRoleSelectionCards(countyParam) {
             if (el && typeof el.onClick === 'function') {
                 el.onClick(() => {
                     const token = getSessionToken() || '';
-                    const dest = `/portal-start?role=${role}&st=${encodeURIComponent(token)}${countyParam}`;
+                    const dest = buildPaperworkLaunchpadUrl({
+                        role,
+                        st: token,
+                        county: String(countyParam || '').replace(/^&?county=/i, ''),
+                        source: 'wix-portal-landing'
+                    });
                     console.log(`🎯 Role selected [${role}] -> Navigating to ${dest}`);
                     wixLocation.to(dest);
                 });
@@ -221,10 +233,20 @@ function revealRolePicker(sessionToken, countyParam) {
             roleBox.show();
         } else {
             // Fallback: Default to indemnitor launchpad if no role UI box in DOM
-            wixLocation.to(`/portal-start?role=indemnitor&st=${encodeURIComponent(sessionToken)}${countyParam}`);
+            wixLocation.to(buildPaperworkLaunchpadUrl({
+                role: 'indemnitor',
+                st: sessionToken,
+                county: String(countyParam || '').replace(/^&?county=/i, ''),
+                source: 'wix-portal-landing'
+            }));
         }
     } catch (e) {
-        wixLocation.to(`/portal-start?role=indemnitor&st=${encodeURIComponent(sessionToken)}${countyParam}`);
+        wixLocation.to(buildPaperworkLaunchpadUrl({
+            role: 'indemnitor',
+            st: sessionToken,
+            county: String(countyParam || '').replace(/^&?county=/i, ''),
+            source: 'wix-portal-landing'
+        }));
     }
 }
 

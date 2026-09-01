@@ -12,6 +12,7 @@
 
 import { submitContactForm } from 'backend/contact-api';
 import { getCounties } from 'public/countyUtils';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import wixSeo from 'wix-seo';
 import wixLocation from 'wix-location';
 
@@ -39,11 +40,11 @@ function setupActionPaths() {
 
     // 2. Start Paperwork Online (Self-Service Path)
     safeOnClick('#btnStartPaperwork', () => {
-        wixLocation.to('/portal-start');
+        wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-contact' }));
     });
 
     safeOnClick('#btnGetSomeoneOut', () => {
-        wixLocation.to('/portal-start');
+        wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-contact' }));
     });
 
     // 3. Telegram Bot & Shannon Voice AI Alternate Channels
@@ -76,7 +77,7 @@ function fixPlaceholderHeadings() {
 
 function updatePageSEO() {
     const pageTitle = "Contact Shamrock Bail Bonds | 24/7 Emergency Dispatch Fort Myers FL";
-    const pageDesc = "Need immediate bail bond help? Call or text Shamrock Bail Bonds 24/7 at (239) 332-2245, start paperwork online at /portal-start, or visit 1528 Broadway, Fort Myers, FL 33901.";
+    const pageDesc = "Need immediate bail bond help? Call or text Shamrock Bail Bonds 24/7 at (239) 332-2245, start paperwork online at paperwork.shamrockbailbonds.biz, or visit 1528 Broadway, Fort Myers, FL 33901.";
     const pageUrl = "https://www.shamrockbailbonds.biz/contact";
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
@@ -146,7 +147,7 @@ function updatePageSEO() {
                     "name": "What is the fastest way to get someone out of jail?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "If you have an ID and 2 minutes, start online at shamrockbailbonds.biz/portal-start to scan your license and sign paperwork instantly. For phone assistance, call Shannon or our live dispatchers 24/7 at (239) 332-2245."
+                        "text": "If you have an ID and 2 minutes, start online at paperwork.shamrockbailbonds.biz to scan your license and sign paperwork instantly. For phone assistance, call Shannon or our live dispatchers 24/7 at (239) 332-2245."
                     }
                 },
                 {

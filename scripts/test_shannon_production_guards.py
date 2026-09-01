@@ -86,6 +86,14 @@ def test_premium_accepts_bond_amount_alias():
     assert "resolveCountyDirectoryEntry_(params.county)" in WEBHOOK
 
 
+def test_send_sms_uses_e164_and_blocks_727():
+    fn = WEBHOOK.split("function toolSendSMS")[1].split("function ")[0]
+    assert "shannonNormalizePhone10_" in fn
+    assert "shannonE164_" in fn
+    assert "727 office line" in fn
+    assert "sendShannonText_(toPhone, message)" in fn
+
+
 if __name__ == "__main__":
     test_prompt_never_sends_callers_to_727()
     test_prompt_does_not_invent_account_or_office_times()
@@ -96,4 +104,5 @@ if __name__ == "__main__":
     test_county_resolver_lives_in_helpers()
     test_code_js_still_gates_tool_secret()
     test_premium_accepts_bond_amount_alias()
+    test_send_sms_uses_e164_and_blocks_727()
     print("ok")

@@ -11,7 +11,7 @@ var SHANNON_PAPERWORK_SHEET = 'ShannonPaperwork';
 var SHANNON_PAYMENT_LINK = 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
 var SHANNON_PORTAL_URL = 'https://paperwork.shamrockbailbonds.biz';
 var SHANNON_LEADS_URL = 'https://leads.shamrockbailbonds.biz';
-var SHANNON_ID_UPLOAD_URL = 'https://www.shamrockbailbonds.biz/portal-start';
+var SHANNON_ID_UPLOAD_URL = 'https://paperwork.shamrockbailbonds.biz/';
 var SHANNON_ID_INBOX = 'admin@shamrockbailbonds.biz';
 
 function shannonPaperworkSheet_() {
@@ -572,7 +572,7 @@ function toolRequestIdPhoto(params) {
       if (linkBody.packet_id) caseRef = String(linkBody.packet_id);
     }
   } catch (linkErr) {
-    Logger.log('Shannon ID link CRM miss, using portal-start: ' + linkErr.message);
+    Logger.log('Shannon ID link CRM miss, using paperwork launchpad: ' + linkErr.message);
   }
 
   var sentText = false;

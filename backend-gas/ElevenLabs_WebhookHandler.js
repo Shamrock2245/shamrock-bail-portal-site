@@ -1836,13 +1836,15 @@ function toolScheduleOfficeVisit(params) {
  */
 
 function toolSendSMS(params) {
-    var toPhone = (params.to_phone || params.caller_phone || '').trim();
-    var message = (params.message || '').trim();
+    params = params || {};
+    var toPhone10 = shannonNormalizePhone10_(params.to_phone || params.caller_phone || params.phone);
+    var toPhone = shannonE164_(toPhone10);
+    var message = shannonTruncate_(params.message || '', SHANNON_MAX_SMS);
 
     if (!toPhone) {
         return ContentService.createTextOutput(JSON.stringify({
             status: 'error',
-            message: 'A phone number is required to send a text message.'
+            message: 'I need a ten-digit mobile number to text. I cannot text the 727 office line.'
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -1851,11 +1853,6 @@ function toolSendSMS(params) {
             status: 'error',
             message: 'A message body is required.'
         })).setMimeType(ContentService.MimeType.JSON);
-    }
-
-    // Safety: cap message length and add branding
-    if (message.length > 1500) {
-        message = message.substring(0, 1500) + '...';
     }
 
     // Prepend branding if not already present

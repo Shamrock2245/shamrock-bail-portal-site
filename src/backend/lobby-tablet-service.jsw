@@ -16,6 +16,7 @@ import { COLLECTIONS } from 'public/collectionIds';
 import { callGasAction, notifyGASOfNewIntake } from 'backend/gasIntegration';
 import { persistCanonicalCaseToCms } from 'backend/canonical-sync-service';
 import { createCanonicalCase, createCanonicalPerson } from 'public/canonical-paperwork-mapper';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 
 /**
  * Creates or attaches a walk-in intake on the lobby tablet
@@ -79,7 +80,12 @@ export async function startWalkInPacket(params) {
             console.warn('Walk-in GAS notify non-fatal:', gasErr.message);
         }
 
-        const handoffUrl = `/portal-start?caseId=${caseId}&role=${role}&kiosk=1`;
+        const handoffUrl = buildPaperworkLaunchpadUrl({
+            caseId,
+            role,
+            kiosk: true,
+            source: 'wix-lobby-tablet'
+        });
 
         return {
             success: true,

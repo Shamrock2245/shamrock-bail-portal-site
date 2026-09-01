@@ -18,11 +18,49 @@
 export const API_BASE_URL = 'https://api.shamrockbailbonds.biz/api/v1';
 
 /**
- * Netlify-hosted indemnitor/defendant paperwork popup
- * (PIN → ID/selfie → remaining fields → DocuSeal).
+ * Live paperwork launchpad (PIN → ID/selfie → remaining fields → DocuSeal).
+ * Custom domain for paperwork.shamrockbailbonds.biz. Netlify origin is fallback only.
  * @constant {string}
  */
-export const PAPERWORK_APP_URL = 'https://shamrock-telegram.netlify.app/paperwork/';
+export const PAPERWORK_APP_URL = 'https://paperwork.shamrockbailbonds.biz/';
+export const PAPERWORK_APP_URL_NETLIFY = 'https://shamrock-telegram.netlify.app/paperwork/';
+
+/**
+ * Build a launchpad URL. Replaces retired /portal-start (live 404).
+ * @param {object} [opts]
+ * @returns {string}
+ */
+export function buildPaperworkLaunchpadUrl(opts) {
+    const o = opts || {};
+    const params = new URLSearchParams();
+    const role = o.role;
+    const county = o.county;
+    const caseId = o.caseId || o.case || o.packetId;
+    const st = o.st || o.sessionToken;
+    const mode = o.mode;
+    const source = o.source;
+    const phone = o.phone;
+    const link = o.link || o.signUrl;
+
+    if (role) params.set('role', String(role));
+    if (county) {
+        let c = String(county).replace(/^&?county=/i, '');
+        try { c = decodeURIComponent(c); } catch (e) { /* keep raw */ }
+        if (c) params.set('county', c);
+    }
+    if (caseId) params.set('case', String(caseId));
+    if (st) params.set('st', String(st));
+    if (mode) params.set('mode', String(mode));
+    if (source) params.set('source', String(source));
+    if (o.embed) params.set('embed', '1');
+    if (o.kiosk) params.set('kiosk', '1');
+    if (phone) params.set('phone', String(phone).replace(/\D/g, ''));
+    if (link) params.set('link', String(link));
+
+    const base = String(PAPERWORK_APP_URL).replace(/\/?$/, '/');
+    const q = params.toString();
+    return q ? `${base}?${q}` : base;
+}
 
 /**
  * Super CRM (brain). Staff issue DocuSeal packets here — never from Wix.

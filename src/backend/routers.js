@@ -15,6 +15,7 @@
 
 import { redirect } from 'wix-router';
 import { validateCustomSession } from 'backend/portal-auth';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { routeCountyPage } from 'backend/bail-bonds-router';
 import { routeMultiStatePage } from 'backend/multi-state-router';
 import { first_appearance_Router as faRouter } from 'backend/first-appearance-router';
@@ -95,7 +96,14 @@ export async function portal_Router(request) {
         return redirectWithQuery('/portal-landing');
 
       case 'start':
-        return redirectWithQuery('/portal-start');
+        return redirect(buildPaperworkLaunchpadUrl({
+            role: query.role,
+            county: query.county,
+            caseId: query.caseId || query.case,
+            st: query.st,
+            mode: query.mode,
+            source: 'wix-portal-router'
+        }));
 
       case undefined:
       case '':

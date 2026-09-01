@@ -16,7 +16,7 @@
  */
 
 import wixWindow from 'wix-window';
-import { PAPERWORK_APP_URL } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import {
     validateSigningSession,
     requestFreshSigningLink,
@@ -29,20 +29,16 @@ let totalSignaturesRequired = 5;
 let isCompleted = false;
 
 function buildPaperworkUrl(ctx) {
-    const params = new URLSearchParams({ embed: '1' });
     const member = (ctx && ctx.memberData) || {};
-    const phone = member.phone || ctx.phone || '';
-    const token = ctx.sessionToken || ctx.st || '';
-    const packet = ctx.packetId || ctx.caseId || '';
-    const role = member.role || ctx.role || 'indemnitor';
-
-    if (phone) params.set('phone', String(phone).replace(/\D/g, ''));
-    if (token) params.set('st', token);
-    if (packet) params.set('case', String(packet));
-    if (ctx.signUrl) params.set('link', ctx.signUrl);
-    if (role) params.set('role', String(role));
-
-    return `${PAPERWORK_APP_URL}?${params.toString()}`;
+    return buildPaperworkLaunchpadUrl({
+        embed: true,
+        phone: member.phone || ctx.phone || '',
+        st: ctx.sessionToken || ctx.st || '',
+        caseId: ctx.packetId || ctx.caseId || '',
+        role: member.role || ctx.role || 'indemnitor',
+        link: ctx.signUrl,
+        source: 'wix-signing-lightbox'
+    });
 }
 
 $w.onReady(async () => {

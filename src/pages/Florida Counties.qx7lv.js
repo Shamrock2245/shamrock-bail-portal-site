@@ -5,6 +5,7 @@ import wixWindow from 'wix-window';
 import wixSeo from 'wix-seo';
 import wixData from 'wix-data';
 import { generateCountyPage } from 'backend/county-generator';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 // replaced public/countyUtils with optimized backend
 // import { getCountiesByRegion } from 'backend/counties'; // Moved to dynamic import
 
@@ -516,7 +517,10 @@ async function populateMainUI(county, currentSlug) {
     setLink(['#heroCallButton', '#callShamrockBtn', '#callCountiesBtn', '#btnEmergencyCall'], primaryPhoneLink, county.content.hero_cta_primary || "Call (239) 332-2245");
 
     // 2. Get Someone Out / Start Online Release (Prefilled County)
-    const getOutUrl = `/portal-start?county=${encodeURIComponent(activeCountySlug)}`;
+    const getOutUrl = buildPaperworkLaunchpadUrl({
+        county: activeCountySlug,
+        source: 'wix-county'
+    });
     setLink(
         ['#heroStartButton', '#startBailBtn', '#getSomeoneOutBtn', '#btnGetOut', '#startOnlineBtn', '#btnGetSomeoneOut'],
         getOutUrl,

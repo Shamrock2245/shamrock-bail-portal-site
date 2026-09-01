@@ -31,6 +31,7 @@
 import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import {
     getFirstAppearanceSchedules,
     trackFirstAppearanceAction,
@@ -381,8 +382,10 @@ async function handleCtaClick(msg) {
 
         // Educational CTA Hook: "Scan your ID and we’ll fill the forms."
         if (msg.action === 'online' || msg.action === 'paperwork' || msg.action === 'start') {
-            const countyParam = msg.county ? `?county=${encodeURIComponent(msg.county)}` : '';
-            wixLocation.to(`/portal-start${countyParam}`);
+            wixLocation.to(buildPaperworkLaunchpadUrl({
+                county: msg.county || '',
+                source: 'wix-first-appearance'
+            }));
         } else if (msg.action === 'phone') {
             wixLocation.to('tel:+12393322245');
         }

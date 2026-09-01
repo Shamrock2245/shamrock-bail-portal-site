@@ -11,7 +11,7 @@
  * 5. "Add Another Charge / Bond" (Fast add-on bond intake without duplicate paperwork)
  * 6. Persistent "Continue Paperwork" Banner: Displayed ONLY if packet is incomplete.
  * 
- * Note: Initial ID scanning & intake occurs on /portal-start.
+ * Note: Initial ID scanning & intake occurs on the paperwork launchpad.
  * 
  * @version 3.0.0
  * @updated 2026-08-21
@@ -24,6 +24,7 @@ import { validateCustomSession, getDefendantDetails } from 'backend/portal-auth'
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
 
@@ -125,7 +126,11 @@ function evaluatePaperworkCompletion(data) {
         
         safeOnClick('#btnContinuePaperwork', () => {
             const caseId = data?.caseNumber || currentSession?.caseId || '';
-            wixLocation.to(`/portal-start?caseId=${caseId}&role=defendant`);
+            wixLocation.to(buildPaperworkLaunchpadUrl({
+                caseId,
+                role: 'defendant',
+                source: 'wix-defendant'
+            }));
         });
     }
 }
@@ -153,7 +158,12 @@ function setupActionHandlers() {
     // 2. Add Another Charge / Bond
     safeOnClick('#btnAddAnotherBond', () => {
         const caseId = defendantData?.caseNumber || '';
-        wixLocation.to(`/portal-start?caseId=${caseId}&role=defendant&mode=additional-bond`);
+        wixLocation.to(buildPaperworkLaunchpadUrl({
+            caseId,
+            role: 'defendant',
+            mode: 'additional-bond',
+            source: 'wix-defendant'
+        }));
     });
 
     // 3. Make Payment

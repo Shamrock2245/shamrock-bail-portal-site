@@ -2,6 +2,7 @@ import wixLocation from 'wix-location';
 import wixData from 'wix-data';
 import wixSeo from 'wix-seo';
 import { COLLECTIONS } from 'public/collectionIds';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 
 $w.onReady(function () {
     console.log(" How Bail Works Page Loading...");
@@ -16,10 +17,10 @@ $w.onReady(function () {
 
     // 2. Setup Buttons
     const startBtn = $w('#startBailProcessBtn');
-    if (startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal-start'));
+    if (startBtn.valid) startBtn.onClick(() => wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-how-bail-works' })));
 
     const bottomOnline = $w('#bottomOnlineBtn');
-    if (bottomOnline.valid) bottomOnline.onClick(() => wixLocation.to('/portal-start'));
+    if (bottomOnline.valid) bottomOnline.onClick(() => wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-how-bail-works' })));
 
     const bottomCall = $w('#bottomCallBtn');
     if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:+12393322245'));

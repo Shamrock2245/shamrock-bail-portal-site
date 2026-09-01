@@ -6,11 +6,11 @@
  * 1. Contingent Liabilities & Bond Status (Active liability sum, release status)
  * 2. Payment Plan Manager (Installment schedule, balance, 1-tap SwipeSimple pay)
  * 3. Case Documents (Download signed Indemnity Agreement, Receipts, Receipts)
- * 4. "Add Co-Indemnitor" (Invite second cosigner via SMS magic link to /portal-start)
+ * 4. "Add Co-Indemnitor" (Invite second cosigner via SMS magic link to the paperwork launchpad)
  * 5. "Upload Extra ID / Collateral" (Upload vehicle title, deed, collateral docs)
  * 6. Persistent "Continue Paperwork" Banner: Displayed ONLY if packet is incomplete.
  * 
- * Note: Initial ID scanning & intake occurs on /portal-start.
+ * Note: Initial ID scanning & intake occurs on the paperwork launchpad.
  * 
  * @version 3.0.0
  * @updated 2026-08-21
@@ -23,6 +23,7 @@ import { validateCustomSession, getIndemnitorDetails } from 'backend/portal-auth
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 
 let currentSession = null;
 let indemnitorData = null;
@@ -115,7 +116,11 @@ function evaluatePaperworkCompletion(data) {
         
         safeOnClick('#btnContinuePaperwork', () => {
             const caseId = data?.caseNumber || currentSession?.caseId || '';
-            wixLocation.to(`/portal-start?caseId=${caseId}&role=indemnitor`);
+            wixLocation.to(buildPaperworkLaunchpadUrl({
+                caseId,
+                role: 'indemnitor',
+                source: 'wix-indemnitor'
+            }));
         });
     }
 }
@@ -127,7 +132,12 @@ function setupActionHandlers() {
     // 1. Add Co-Indemnitor (Second Cosigner)
     safeOnClick('#btnAddCoIndemnitor', () => {
         const caseId = indemnitorData?.caseNumber || '';
-        wixLocation.to(`/portal-start?caseId=${caseId}&role=coindemnitor&mode=add-cosigner`);
+        wixLocation.to(buildPaperworkLaunchpadUrl({
+            caseId,
+            role: 'coindemnitor',
+            mode: 'add-cosigner',
+            source: 'wix-indemnitor'
+        }));
     });
 
     // 2. Upload Extra ID or Collateral
