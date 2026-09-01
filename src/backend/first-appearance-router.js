@@ -5,13 +5,17 @@
  * (code: first-appearance.h4fpl.js + #firstAppearanceEmbed Netlify UI).
  *
  * County URLs (/first-appearance/lee, etc.) must load that SAME page and pass
- * the slug so the embed can focus/search that county. Returning a missing
- * "first-appearance-page" caused blank white pages (and GSC 500 titles).
+ * the slug so the embed can focus/search that county. ok() must use the
+ * registered page id (h4fpl); a missing name produces GSC 500 titles.
  */
 
 import { ok } from 'wix-router';
 
+// Live router pages map is { "<uuid>": "h4fpl" } with title "first-appearance".
+// ok("first-appearance") 500s when request.pages is empty/object-shaped.
 const HUB_PAGE = 'first-appearance';
+const HUB_PAGE_ID = 'h4fpl';
+const HUB_PAGE_CANDIDATES = [HUB_PAGE_ID, HUB_PAGE, 'First Appearance', 'first-appearance-hub'];
 export const FA_HUB_PATH = '/first-appearance';
 
 const COUNTY_SLUGS = [
@@ -33,12 +37,34 @@ function normalizeSlug(raw) {
         .replace(/-county$/i, '');
 }
 
-/** Prefer Editor-registered page name; never invent a missing second template. */
+function listRouterPageNames_(request) {
+    const raw = request && request.pages;
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+        return raw.map(String).filter(Boolean);
+    }
+    if (typeof raw === 'object') {
+        return Object.keys(raw).map((key) => {
+            const value = raw[key];
+            if (value && typeof value === 'object') {
+                return String(value.id || value.title || value.pageName || '');
+            }
+            return String(value || '');
+        }).filter(Boolean);
+    }
+    return [String(raw)];
+}
+
+/** Prefer the Editor-registered router page; live id is h4fpl. */
 function resolveHubPageName(request) {
-    const pages = Array.isArray(request && request.pages) ? request.pages : [];
-    if (pages.includes(HUB_PAGE)) return HUB_PAGE;
-    if (pages.length) return pages[0];
-    return HUB_PAGE;
+    const names = listRouterPageNames_(request);
+    for (let i = 0; i < HUB_PAGE_CANDIDATES.length; i++) {
+        if (names.indexOf(HUB_PAGE_CANDIDATES[i]) !== -1) {
+            return HUB_PAGE_CANDIDATES[i];
+        }
+    }
+    if (names.length) return names[0];
+    return HUB_PAGE_ID;
 }
 
 export function first_appearance_Router(request) {

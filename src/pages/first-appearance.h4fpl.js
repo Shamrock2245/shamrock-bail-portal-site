@@ -19,10 +19,9 @@
  *    trackFirstAppearancePageView(data)
  *
  *  Router note (backend/first-appearance-router.js):
- *    Bare /first-appearance MUST return ok(<hub page name>) so THIS page runs.
+ *    Bare /first-appearance MUST return ok() for this page (id h4fpl).
  *    If ok() name is not a page ON the router, Wix title becomes "500 | …"
- *    and Google refuses indexing. County paths → first-appearance-page.nmw1v.js
- *    (that page must also be added under the same First-appearance router).
+ *    and Google refuses indexing. County paths reuse this same hub page.
  *
  * postMessage from embed:
  *    setHeight | RESIZE | CTA_CLICK | FAQ_EXPAND | COUNTY_SEARCH | SCROLL_DEPTH
@@ -180,12 +179,33 @@ function resolveFocusSlug() {
 
 // ─── HTML EMBED SETUP ─────────────────────────────────────────────────────────
 
-function getEmbed() {
-    try {
-        return $w(EMBED_ID);
-    } catch (_) {
-        return null;
+function firstValid(ids) {
+    for (let i = 0; i < ids.length; i++) {
+        try {
+            const el = $w(ids[i]);
+            if (el && el.valid !== false && typeof el.src !== 'undefined') return el;
+        } catch (e) { /* next */ }
     }
+    return null;
+}
+
+function getEmbed() {
+    const named = firstValid([
+        EMBED_ID,
+        '#html1',
+        '#html2',
+        '#htmlComponent1',
+        '#htmlEmbed'
+    ]);
+    if (named) return named;
+    try {
+        const html = $w('HtmlComponent');
+        if (html && html.valid !== false && typeof html.src !== 'undefined') {
+            console.log('[firstAppearanceEmbed] Bound via HtmlComponent id=', html.id);
+            return html;
+        }
+    } catch (_) { /* no HtmlComponent on page */ }
+    return null;
 }
 
 function setupEmbed(focusSlug) {
