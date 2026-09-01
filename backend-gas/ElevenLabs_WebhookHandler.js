@@ -1350,7 +1350,7 @@ function toolCheckInmateStatus(params) {
     // 2. Get county-specific info from directory
     var countyInfo = null;
     if (county) {
-        countyInfo = getCountyDirectory_()[county] || null;
+        countyInfo = resolveCountyDirectoryEntry_(county);
     }
 
     // Build response
@@ -1393,7 +1393,7 @@ function toolCheckInmateStatus(params) {
  * Expected params: { "county": "...", "destination_type": "jail"|"courthouse", "caller_phone": "..." }
  */
 function toolSendDirections(params) {
-    var county = (params.county || '').trim().toLowerCase().replace(' county', '');
+    var county = (params.county || '').trim();
     var destType = (params.destination_type || 'jail').trim().toLowerCase();
     var callerPhone = (params.caller_phone || '').trim();
 
@@ -1411,7 +1411,7 @@ function toolSendDirections(params) {
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    var countyInfo = getCountyDirectory_()[county];
+    var countyInfo = resolveCountyDirectoryEntry_(county);
 
     if (!countyInfo) {
         return ContentService.createTextOutput(JSON.stringify({
@@ -1420,6 +1420,7 @@ function toolSendDirections(params) {
                 'Call us at 239-332-2245 and an agent can provide directions.'
         })).setMimeType(ContentService.MimeType.JSON);
     }
+
 
     var address = '';
     var label = '';
@@ -2243,3 +2244,38 @@ function getCountyDirectory_() {
         }
     };
 }
+
+/**
+ * Robust county resolver for Shannon Voice AI lookups.
+ * Handles hyphens, spaces, dots, "county" suffix, and Saint/St variants.
+ */
+function resolveCountyDirectoryEntry_(rawCounty) {
+    if (!rawCounty) return null;
+    var dir = getCountyDirectory_();
+    var raw = String(rawCounty).toLowerCase().trim();
+
+    if (dir[raw]) return dir[raw];
+
+    var clean = raw
+        .replace(/ county$/i, '')
+        .replace(/^county of /i, '')
+        .trim();
+
+    if (dir[clean]) return dir[clean];
+
+    var alphaOnly = clean.replace(/[^a-z0-9]/g, '');
+
+    for (var k in dir) {
+        if (dir.hasOwnProperty(k)) {
+            var kAlpha = k.replace(/[^a-z0-9]/g, '');
+            if (kAlpha === alphaOnly) return dir[k];
+            if (kAlpha === alphaOnly.replace(/^saint/, 'st') || kAlpha.replace(/^saint/, 'st') === alphaOnly) {
+                return dir[k];
+            }
+        }
+    }
+
+    return null;
+}
+
+
