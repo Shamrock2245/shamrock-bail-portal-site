@@ -32,8 +32,8 @@ async function debugCMS() {
     console.log(" STARTING CMS DIAGNOSTIC CHECK...");
 
     const collectionsToCheck = [
-        'Import22', 'Faqs', // Potential FAQ IDs (Import22 is the correct collection ID)
-        'CommonCharges', 'Common Charges'
+        COLLECTIONS.FAQS,
+        COLLECTIONS.COMMON_CHARGES
     ];
 
     for (const colId of collectionsToCheck) {
@@ -56,6 +56,16 @@ function setupBailProcess() {
         { _id: "4", title: "4. Bond Posted & Release", text: "Shamrock posts the appearance bond directly with the jail desk. Processing time ranges from 2 to 6 hours depending on facility." },
         { _id: "5", title: "5. Court Appearances", text: "The defendant is released with mandatory scheduled court dates. Shamrock provides automated reminders to keep them in compliance." }
     ];
+    const rep = $w('#processRepeater');
+    if (rep && rep.valid) {
+        rep.onItemReady(($item, itemData) => {
+            const titleEl = $item('#processTitle');
+            const bodyEl = $item('#processBody');
+            if (titleEl && titleEl.valid) titleEl.text = itemData.title;
+            if (bodyEl && bodyEl.valid) bodyEl.text = itemData.text;
+        });
+        rep.data = data;
+    }
 }
 
 // --- 2. Bail Bonds Explained ---
@@ -156,109 +166,64 @@ function setupBailAmounts() {
 // --- 5. Common Bail Amounts (Table) ---
 // Connects to CMS collection: "CommonCharges" (Common Charges)
 // CMS Fields: Offense (text), Bail Range (text)
+function mapChargeRow(item, index) {
+    const offense = item.offense || item.Offense || item.title || item.charge || 'Unknown Offense';
+    const range = item.range || item.bailRange || item['Bail Range'] || item.amount || 'Varies';
+    return {
+        _id: String(item._id || index + 1),
+        offense,
+        range
+    };
+}
+
 async function setupCommonBailAmounts() {
     const fallbackData = [
-        { _id: "1", offense: "DUI (First Offense)", bailRange: "$500 - $2,500" },
-        { _id: "2", offense: "Domestic Violence", bailRange: "$2,500 - $10,000" },
-        { _id: "3", offense: "Drug Possession", bailRange: "$1,000 - $25,000" },
-        { _id: "4", offense: "Assault", bailRange: "$5,000 - $25,000" },
-        { _id: "5", offense: "Burglary", bailRange: "$10,000 - $50,000" }
+        { _id: '1', offense: 'DUI (First Offense)', range: '$500 - $2,500' },
+        { _id: '2', offense: 'Domestic Violence', range: '$2,500 - $10,000' },
+        { _id: '3', offense: 'Drug Possession', range: '$1,000 - $25,000' },
+        { _id: '4', offense: 'Assault', range: '$5,000 - $25,000' },
+        { _id: '5', offense: 'Burglary', range: '$10,000 - $50,000' }
     ];
 
-    let data = fallbackData;
-
+    let rows = fallbackData;
     try {
-        // Query CommonCharges OR Common Charges
-        let result;
-
-        try {
-            result = await wixData.query('CommonCharges').ascending('sortOrder').limit(50).find();
-        } catch (e) {
-            console.warn("CommonCharges failed, trying 'Common Charges'...");
-            result = await wixData.query('Common Charges').ascending('sortOrder').limit(50).find();
-        }
-
+        const result = await wixData.query(COLLECTIONS.COMMON_CHARGES).limit(50).find();
         if (result && result.items.length > 0) {
-            console.log(`[OK] Loaded ${result.items.length} Common Charges from CMS.`);
-            data = result.items;
+            rows = result.items.map(mapChargeRow);
+            console.log('[OK] Loaded', rows.length, 'CommonCharges rows');
         } else {
-            // Second try specifically if first returned empty (not error, but empty)
-            const result2 = await wixData.query('Common Charges').ascending('sortOrder').limit(50).find();
-            if (result2.items.length > 0) {
-                console.log(`[OK] Loaded ${result2.items.length} from 'Common Charges'.`);
-                data = result2.items;
-            } else {
-                console.warn("[!] No Common Charges in CMS (checked both aliases), using fallback data.");
-            }
+            console.warn('[!] CommonCharges empty, using fallback rows');
         }
     } catch (err) {
-        console.error("[X] Failed to load Common Charges from CMS:", err);
+        console.error('[X] CommonCharges query failed, using fallback:', err);
     }
 
-    // Use the correct ID from Wix Editor: #amountsRepeater
     const element = $w('#amountsRepeater');
-
-    if (element) {
-        console.log('[OK] Found #amountsRepeater element, type:', element.type);
-
-        // DETECT ELEMENT TYPE: Check if it's a Table or a Repeater
-        if (element.type === 'Table' || element.type === '$w.Table') {
-            console.log(" Found Table element:", element.id);
-
-            // Map CMS fields to table columns - BE ROBUST
-            // The table likely expects columns 'offense' and 'range' OR 'bailRange'
-            // We should inspect the first item keys to be sure, but we can't see the table config from here.
-            // Best approach: Send comprehensive object.
-            const tableRows = data.map(item => {
-                // Find best candidates for Offense
-                const offenseVal = item.offense || item.Offense || item.title || item['Charge'] || item['charge'] || "Unknown Offense";
-                // Find best candidates for Range
-                const rangeVal = item.bailRange || item['Bail Range'] || item.range || item['Bail Amount'] || item['amount'] || "Varies";
-
-                return {
-                    // Standard keys
-                    offense: offenseVal,
-                    range: rangeVal,
-                    bailRange: rangeVal, // Duplicate for safety
-                    // Fallback keys in case table columns are named differently
-                    title: offenseVal,
-                    amount: rangeVal,
-                    // Pass original just in case
-                    ...item
-                };
-            });
-
-            element.rows = tableRows;
-            console.log("[OK] Table rows set:", tableRows.length, "rows");
-
-        } else {
-            // It's a Repeater
-            console.log(" Found Repeater element:", element.id);
-
-            element.onItemReady(($item, itemData) => {
-                // Map CMS field names (may have spaces or different casing)
-                const offense = itemData.offense || itemData.Offense || itemData.title || itemData.offenseName || itemData.charge || "Unknown Offense";
-                const range = itemData.bailRange || itemData['Bail Range'] || itemData.range || itemData.amount || "Varies";
-
-                // Try multiple possible element IDs for flexibility
-                const offenseEl = $item('#offenseName') || $item('#offense') || $item('#textOffense') || $item('#chargeName') || $item('#text1');
-                const rangeEl = $item('#bailRange') || $item('#range') || $item('#textRange') || $item('#bailAmount') || $item('#text2');
-
-                if (offenseEl && offenseEl.valid) {
-                    offenseEl.text = offense;
-                    offenseEl.expand();
-                }
-                if (rangeEl && rangeEl.valid) {
-                    rangeEl.text = range;
-                    rangeEl.expand();
-                }
-            });
-
-            element.data = data;
-        }
-    } else {
-        console.error('[X] #amountsRepeater element NOT found on page');
+    if (!element || !element.valid) {
+        console.error('[X] #amountsRepeater not found');
+        return;
     }
+
+    const isTable = element.type === '$w.Table' || element.type === 'Table' || typeof element.rows !== 'undefined';
+    if (isTable) {
+        element.rows = rows;
+        console.log('[OK] Table rows set:', rows.length);
+        return;
+    }
+
+    element.onItemReady(($item, itemData) => {
+        const offense = itemData.offense || 'Unknown Offense';
+        const range = itemData.range || 'Varies';
+        ['#offenseName', '#offense', '#textOffense', '#chargeName', '#text1'].forEach((id) => {
+            const el = $item(id);
+            if (el && el.valid && typeof el.text !== 'undefined') el.text = offense;
+        });
+        ['#bailRange', '#range', '#textRange', '#bailAmount', '#text2'].forEach((id) => {
+            const el = $item(id);
+            if (el && el.valid && typeof el.text !== 'undefined') el.text = range;
+        });
+    });
+    element.data = rows;
 }
 
 // --- 6. FAQ Section ---
@@ -331,91 +296,56 @@ async function setupFAQ() {
     let data = fallbackData;
 
     try {
-        // Query Import 22 OR Faqs
-        let result;
-        const pagePath = '/how-bail-works';
-
-        // 1. Try 'Import22' (Correct Collection ID - no space)
-        // STRATEGY: Try specific first, then broad (removing active/page filters)
-        try {
-            console.log("Checking Import22 (Faqs collection)...");
-            // Attempt 1: Strict (Active + Page)
-            result = await wixData.query('Import22').eq('isActive', true).contains('relatedPage', pagePath).ascending('sortOrder').limit(20).find();
-
-            // Attempt 2: Active only
-            if (result.items.length === 0) {
-                console.log("...Strict search empty. Trying active items...");
-                result = await wixData.query('Import22').eq('isActive', true).limit(20).find();
-            }
-
-            // Attempt 3: ANYTHING (Just to get data on screen)
-            if (result.items.length === 0) {
-                console.log("...Active search empty. Fetching ANY items from Import22...");
-                result = await wixData.query('Import22').limit(20).find();
-            }
-
-        } catch (e) {
-            console.warn("Import22 query failed, trying 'Faqs' display name...", e);
+        let result = await wixData.query(COLLECTIONS.FAQS)
+            .eq('relatedPage', '/how-bail-works')
+            .eq('isActive', true)
+            .ascending('sortOrder')
+            .limit(20)
+            .find();
+        if (!result.items.length) {
+            result = await wixData.query(COLLECTIONS.FAQS)
+                .eq('relatedPage', '/how-bail-works')
+                .limit(20)
+                .find();
         }
-
-        // 2. Try 'Faqs' display name if Import22 failed
-        if (!result || result.items.length === 0) {
-            try {
-                // Same fallback strategy
-                result = await wixData.query('Faqs').eq('isActive', true).contains('relatedPage', pagePath).ascending('sortOrder').limit(20).find();
-                if (result.items.length === 0) {
-                    result = await wixData.query('Faqs').limit(10).find();
-                }
-            } catch (e) { console.warn("Faqs query failed."); }
-        }
-
         if (result && result.items.length > 0) {
-            console.log(`[OK] Loaded ${result.items.length} FAQs from CMS.`);
+            console.log('[OK] Loaded', result.items.length, 'How Bail Works FAQs from Import22');
             data = result.items;
         } else {
-            console.warn("[!] No FAQs found in either Import22 or Faqs collections.");
+            console.warn('[!] No Import22 FAQs tagged /how-bail-works, using fallback copy');
         }
-
     } catch (err) {
-        console.error("[X] Failed to load FAQs from CMS (All attempts failed):", err);
+        console.error('[X] FAQ query failed, using fallback:', err);
     }
 
-    // Bind data to the FAQ repeater
-    // Use the correct ID from Wix Editor: #faqRepeater
     const rep = $w('#faqRepeater');
-    if (rep) {
-        console.log('[OK] Found #faqRepeater element');
+    if (rep && rep.valid) {
+        const setFirstText = ($item, ids, value) => {
+            for (let i = 0; i < ids.length; i++) {
+                const el = $item(ids[i]);
+                if (el && el.valid && typeof el.text !== 'undefined') {
+                    if (typeof el.expandText === 'function') {
+                        try { el.expandText(); } catch (e) {}
+                        el.text = value;
+                        try { el.collapseText(); } catch (e) {}
+                    } else {
+                        el.text = value;
+                    }
+                    return true;
+                }
+            }
+            return false;
+        };
 
         rep.onItemReady(($item, itemData) => {
-            console.log("Rendering FAQ Item:", itemData);
-
-            // Map CMS fields
-            const question = itemData.title || itemData.question || itemData.q || "No Question";
-            const answerText = itemData.answer || itemData.a || "No Answer";
-
-            // Get elements - IDs confirmed from Wix Editor Layers panel
-            const questionEl = $item('#faqQuestion');
-            const answerEl = $item('#faqAnswer');
-            const container = $item('#faqContainer');
-            const box = $item('#box4');
-
-            // Set question text
-            if (questionEl) {
-                questionEl.text = question;
-            }
-
-            // Set answer text on CollapsibleText element
-            if (answerEl) {
-                // Expand first, set text, then collapse
-                answerEl.expandText();
-                answerEl.text = answerText;
-                answerEl.collapseText();
-                // Note: readMoreActionType must be configured in Wix Editor (read-only property)
-            }
+            const question = itemData.title || itemData.question || itemData.q || '';
+            const answerText = itemData.answer || itemData.a || '';
+            setFirstText($item, ['#faqQuestion', '#classicTitle', '#title', '#text1', '#question'], question);
+            setFirstText($item, ['#faqAnswer', '#faqAnswerText', '#collapsibleText1', '#text2', '#answer', '#paragraph1'], answerText);
         });
 
         rep.data = data;
-        console.log(`[OK] FAQ Repeater populated with ${data.length} items.`);
+        console.log('[OK] FAQ Repeater populated with', data.length, 'items');
     } else {
         console.error('[X] #faqRepeater not found on page');
     }

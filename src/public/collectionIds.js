@@ -37,7 +37,7 @@ export const COLLECTIONS = {
   // Financial
   FINANCIAL_OBLIGATIONS: 'Financial Obligations', // Financial tracking (space in name!)
   PAYMENT_PLANS: 'Payment Plans',              // Payment plan records (space in name!)
-  COMMON_CHARGES: 'Common Charges',            // Common charges and bond amounts (space in name!)
+  COMMON_CHARGES: 'CommonCharges',             // Common charges and typical bail ranges
 
   // Location & County Data
   FLORIDA_COUNTIES: 'FloridaCounties',         // Florida county data (Verified: No space in ID)
