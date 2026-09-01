@@ -4,6 +4,54 @@ import wixSeo from 'wix-seo';
 import { COLLECTIONS } from 'public/collectionIds';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 
+function firstValid(ids) {
+    for (let i = 0; i < ids.length; i++) {
+        try {
+            const el = $w(ids[i]);
+            if (el && el.valid) return el;
+        } catch (e) { /* skip */ }
+    }
+    return null;
+}
+
+function firstTable() {
+    const named = firstValid(['#amountsRepeater', '#chargesTable', '#table1', '#table2', '#comp-mjvk9syv']);
+    if (named) return named;
+    try {
+        const tables = $w('Table');
+        if (tables && tables.valid) {
+            console.log('[OK] Bound charges via $w("Table") id=', tables.id);
+            return tables;
+        }
+    } catch (e) { /* no table type */ }
+    return null;
+}
+
+function firstFaqRepeater() {
+    const named = firstValid(['#faqRepeater', '#repeaterFAQ', '#listRepeater', '#repeater1', '#comp-mjxe7ggr']);
+    if (named) return named;
+    const skip = {
+        bondsRepeater: true,
+        typesRepeater: true,
+        factorsRepeater: true,
+        processRepeater: true
+    };
+    try {
+        const all = $w('Repeater');
+        const ids = String((all && all.id) || '').split(',').map((s) => s.trim()).filter(Boolean);
+        for (let i = 0; i < ids.length; i++) {
+            const nick = ids[i].replace(/^#/, '');
+            if (skip[nick]) continue;
+            const el = $w('#' + nick);
+            if (el && el.valid) {
+                console.log('[OK] Bound FAQs via Repeater id=', nick);
+                return el;
+            }
+        }
+    } catch (e) { /* no repeater type */ }
+    return null;
+}
+
 $w.onReady(function () {
     console.log(" How Bail Works Page Loading...");
 
@@ -43,6 +91,14 @@ async function debugCMS() {
         } catch (e) {
             console.warn(`[X] Collection '${colId}': Query failed (might not exist). Error: ${e.message}`);
         }
+    }
+    try {
+        const tables = $w('Table');
+        const reps = $w('Repeater');
+        console.log('Tables on page:', tables && tables.id, 'valid=', tables && tables.valid);
+        console.log('Repeaters on page:', reps && reps.id, 'valid=', reps && reps.valid);
+    } catch (e) {
+        console.warn('Could not list Table/Repeater types:', e.message);
     }
     console.log(" DIAGNOSTIC CHECK COMPLETE.");
 }
@@ -198,11 +254,12 @@ async function setupCommonBailAmounts() {
         console.error('[X] CommonCharges query failed, using fallback:', err);
     }
 
-    const element = $w('#amountsRepeater');
-    if (!element || !element.valid) {
-        console.error('[X] #amountsRepeater not found');
+    const element = firstTable();
+    if (!element) {
+        console.error('[X] No Table on page (tried #amountsRepeater and $w("Table"))');
         return;
     }
+    console.log('[OK] Charges table id=', element.id, 'type=', element.type);
 
     const isTable = element.type === '$w.Table' || element.type === 'Table' || typeof element.rows !== 'undefined';
     if (isTable) {
@@ -318,21 +375,22 @@ async function setupFAQ() {
         console.error('[X] FAQ query failed, using fallback:', err);
     }
 
-    const rep = $w('#faqRepeater');
-    if (rep && rep.valid) {
+    const rep = firstFaqRepeater();
+    if (rep) {
         const setFirstText = ($item, ids, value) => {
             for (let i = 0; i < ids.length; i++) {
-                const el = $item(ids[i]);
-                if (el && el.valid && typeof el.text !== 'undefined') {
-                    if (typeof el.expandText === 'function') {
-                        try { el.expandText(); } catch (e) {}
-                        el.text = value;
-                        try { el.collapseText(); } catch (e) {}
-                    } else {
-                        el.text = value;
+                try {
+                    const el = $item(ids[i]);
+                    if (el && el.valid && typeof el.text !== 'undefined') {
+                        if (typeof el.expandText === 'function') {
+                            try { el.expandText(); } catch (e) {}
+                            el.text = value;
+                        } else {
+                            el.text = value;
+                        }
+                        return true;
                     }
-                    return true;
-                }
+                } catch (e) { /* try next id */ }
             }
             return false;
         };
@@ -340,14 +398,26 @@ async function setupFAQ() {
         rep.onItemReady(($item, itemData) => {
             const question = itemData.title || itemData.question || itemData.q || '';
             const answerText = itemData.answer || itemData.a || '';
-            setFirstText($item, ['#faqQuestion', '#classicTitle', '#title', '#text1', '#question'], question);
-            setFirstText($item, ['#faqAnswer', '#faqAnswerText', '#collapsibleText1', '#text2', '#answer', '#paragraph1'], answerText);
+            const qOk = setFirstText($item, ['#faqQuestion', '#comp-mjxe8oln', '#classicTitle', '#title', '#text1', '#question'], question);
+            let aOk = setFirstText($item, ['#faqAnswer', '#comp-mjxea4my', '#faqAnswerText', '#collapsibleText1', '#text2', '#answer', '#paragraph1'], answerText);
+            if (!aOk) {
+                try {
+                    const ct = $item('CollapsibleText');
+                    if (ct && ct.valid) {
+                        try { ct.expandText(); } catch (e) {}
+                        ct.text = answerText;
+                        aOk = true;
+                    }
+                } catch (e) { /* no collapsible */ }
+            }
+            if (!qOk) console.warn('[FAQ] question element missing in repeater item');
+            if (!aOk) console.warn('[FAQ] answer element missing in repeater item');
         });
 
         rep.data = data;
-        console.log('[OK] FAQ Repeater populated with', data.length, 'items');
+        console.log('[OK] FAQ Repeater populated with', data.length, 'items id=', rep.id);
     } else {
-        console.error('[X] #faqRepeater not found on page');
+        console.error('[X] FAQ repeater not found (tried #faqRepeater and $w("Repeater"))');
     }
 
     // Trigger SEO Update with FAQ structured data
