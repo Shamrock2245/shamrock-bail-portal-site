@@ -252,7 +252,7 @@ function doGet(e) {
   //        email_paperwork_to_indemnitor/send_paperwork, request_id_photo,
   //        calculate_premium, send_payment_link, schedule_callback,
   //        transfer_to_bondsman, check_inmate_status, send_directions,
-  //        send_sms, check_caller_history
+  //        send_sms, check_caller_history, check_client_account, schedule_office_visit
   if (e.parameter && e.parameter.source === 'elevenlabs_tool') {
     if (!verifyElevenLabsToolSecret_(e)) {
       return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unauthorized' }))

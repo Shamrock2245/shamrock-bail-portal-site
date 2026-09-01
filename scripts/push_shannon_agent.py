@@ -710,7 +710,7 @@ def main() -> int:
 
     account_tool = _webhook_tool(
         "check_client_account",
-        "360-degree customer service tool. Look up defendant balance owed, payment plans, next court appearance date, courtroom, judge, and bond discharge / exoneration status.",
+        "Look up a Shamrock file by defendant first and last name, case number, or file phone. Returns balances, court date, and discharge status. If status is not_found, do not say the bond is active.",
         {
             "defendant_name": _prop("defendant_name", "Defendant full name"),
             "case_number": _prop("case_number", "Case or booking number if known"),
@@ -722,10 +722,10 @@ def main() -> int:
     )
     office_visit_tool = _webhook_tool(
         "schedule_office_visit",
-        "Schedule an in-person visit to our flagship Fort Myers office at 1528 Broadway, Fort Myers, FL 33901 for paperwork, cash payment, or meeting a bondsman. Texts address to caller.",
+        "Request an in-person visit at 1528 Broadway, Fort Myers, FL 33901. Requires caller_name and a 10-digit mobile (phone or caller_phone). status scheduled means the time parsed; status requested means staff will confirm. Do not say the visit is locked unless status is scheduled.",
         {
             "caller_name": _prop("caller_name", "Name of the person visiting"),
-            "phone": _prop("phone", "Mobile number to text directions and confirmation to"),
+            "phone": _prop("phone", "10-digit mobile number to text directions and confirmation to"),
             "caller_phone": _prop("caller_phone", "Fallback from {{caller_phone}}"),
             "defendant_name": _prop("defendant_name", "Defendant full name if known"),
             "preferred_date": _prop("preferred_date", "Date of visit (e.g. today, tomorrow, Tuesday)"),

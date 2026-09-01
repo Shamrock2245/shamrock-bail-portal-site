@@ -438,18 +438,24 @@ function saveMem0Memory_(phone, facts) {
  * Must return JSON — the agent reads the response to continue the conversation.
  */
 function handleElevenLabsToolCall(e) {
-    var toolName = e.parameter.tool || 'unknown';
+    var toolName = (e && e.parameter && e.parameter.tool) || 'unknown';
 
     var payload;
     try {
-        payload = JSON.parse(e.postData.contents);
+        var rawBody = (e && e.postData && e.postData.contents) || '';
+        if (!String(rawBody).trim()) {
+            return ContentService.createTextOutput(JSON.stringify({
+                status: 'error', message: shannonSafeToolMessage_()
+            })).setMimeType(ContentService.MimeType.JSON);
+        }
+        payload = shannonUnwrapToolPayload_(JSON.parse(rawBody));
     } catch (err) {
         return ContentService.createTextOutput(JSON.stringify({
-            status: 'error', message: 'Invalid JSON'
+            status: 'error', message: 'I did not catch that. Please say the name or number again.'
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    Logger.log('🔧 ElevenLabs Tool Call: ' + toolName + ' | Params: ' + JSON.stringify(payload));
+    Logger.log('ElevenLabs Tool Call: ' + toolName);
 
     // Idempotency only for outbound contact tools. Paperwork saves and lookups
     // must be allowed repeatedly during a Shannon interview.
@@ -459,7 +465,8 @@ function handleElevenLabsToolCall(e) {
         send_directions: true,
         email_paperwork_to_indemnitor: true,
         send_paperwork: true,
-        request_id_photo: true
+        request_id_photo: true,
+        schedule_office_visit: true
     };
     if (outboundTools[toolName] && typeof IdempotencyGuard !== 'undefined') {
         var toolPhone = payload.caller_phone || payload.phone_number || payload.phone || payload.indemnitor_email || '';
@@ -520,9 +527,9 @@ function handleElevenLabsToolCall(e) {
         }
 
     } catch (err) {
-        Logger.log('❌ Tool error: ' + err.message);
+        Logger.log('Tool error [' + toolName + ']: ' + err.message);
         return ContentService.createTextOutput(JSON.stringify({
-            status: 'error', message: err.message
+            status: 'error', message: shannonSafeToolMessage_()
         })).setMimeType(ContentService.MimeType.JSON);
     }
 }
@@ -535,8 +542,10 @@ function handleElevenLabsToolCall(e) {
  * Expected params: { "defendant_name": "John Smith" } or { "booking_number": "25001234" }
  */
 function toolLookupDefendant(params) {
+    params = params || {};
     var name = (params.defendant_name || '').trim().toLowerCase();
-    var bookingNum = (params.booking_number || '').trim();
+    var bookingNum = (params.booking_number || params.case_number || '').trim();
+    var callerPhone = params.caller_phone || params.phone || '';
 
     if (!name && !bookingNum) {
         return ContentService.createTextOutput(JSON.stringify({
@@ -571,9 +580,8 @@ function toolLookupDefendant(params) {
             var defName = getValue(['DefName', 'Def Name', 'defname', 'Defendant Name']).toLowerCase();
             var caseNum = getValue(['CaseNumber', 'Case Number', 'casenumber']);
 
-            // Match by name (fuzzy) or booking number (exact)
-            var nameMatch = name && defName && (defName.indexOf(name) > -1 || name.indexOf(defName) > -1);
-            var bookingMatch = bookingNum && caseNum && caseNum.indexOf(bookingNum) > -1;
+            var nameMatch = name && defName && shannonPersonNamesMatch_(name, defName);
+            var bookingMatch = bookingNum && caseNum && shannonCaseNumbersMatch_(bookingNum, caseNum);
 
             if (nameMatch || bookingMatch) {
                 match = {
@@ -597,7 +605,7 @@ function toolLookupDefendant(params) {
             status: 'found',
             source: 'intake_queue',
             is_prior_client: false,
-            defendant: match
+            defendant: shannonRedactDefendantForVoice_(match, callerPhone)
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -628,15 +636,9 @@ function toolLookupDefendant(params) {
                     var hLast = hGetVal(['last name', 'last_name', 'lastname']).toLowerCase();
                     var hFull = (hFirst + ' ' + hLast).trim();
 
-                    // Match: full name contains search OR search contains full name
-                    var histNameMatch = false;
-                    if (hFull && name) {
-                        histNameMatch = (hFull.indexOf(name) > -1 || name.indexOf(hFull) > -1);
-                    }
-                    // Also try last name + first name partial
+                    var histNameMatch = shannonPersonNamesMatch_(name, hFull);
                     if (!histNameMatch && nameParts.length >= 2 && hLast && hFirst) {
-                        histNameMatch = nameParts.some(function (p) { return p === hLast; }) &&
-                            nameParts.some(function (p) { return p === hFirst || hFirst.indexOf(p) === 0; });
+                        histNameMatch = shannonPersonNamesMatch_(name, hFirst + ' ' + hLast);
                     }
 
                     if (histNameMatch) {
@@ -656,11 +658,12 @@ function toolLookupDefendant(params) {
                 }
 
                 if (match) {
+                    match.is_prior_client = true;
                     return ContentService.createTextOutput(JSON.stringify({
                         status: 'found',
                         source: 'historical_bond_reports',
                         is_prior_client: true,
-                        defendant: match,
+                        defendant: shannonRedactDefendantForVoice_(match, callerPhone),
                         message: 'This person is a prior client. We have handled a bond for them previously.'
                     })).setMimeType(ContentService.MimeType.JSON);
                 }
@@ -785,9 +788,11 @@ function toolCreateIntake(params) {
  * Expected params: { "bail_amount": "5000", "charge_count": "2", "county": "lee" }
  */
 function toolCalculatePremium(params) {
-    var bailAmount = parseFloat(params.bail_amount || params.bond_amount || 0) || 0;
-    var chargeCount = parseInt(params.charge_count || 1) || 1;
-    var county = (params.county || '').trim();
+    params = params || {};
+    var bailAmount = shannonParseMoney_(params.bail_amount || params.bond_amount);
+    var chargeCount = shannonParseChargeCount_(params.charge_count);
+    var countyEntry = resolveCountyDirectoryEntry_(params.county);
+    var county = countyEntry ? countyEntry.key : String(params.county || '').trim();
 
     if (bailAmount <= 0) {
         return ContentService.createTextOutput(JSON.stringify({
@@ -1323,8 +1328,9 @@ function toolTransferToBondsman(params) {
  * Expected params: { "defendant_name": "...", "county": "..." }
  */
 function toolCheckInmateStatus(params) {
+    params = params || {};
     var defName = (params.defendant_name || '').trim();
-    var county = (params.county || '').trim().toLowerCase().replace(' county', '');
+    var county = (params.county || '').trim();
 
     if (!defName && !county) {
         return ContentService.createTextOutput(JSON.stringify({
@@ -1337,7 +1343,10 @@ function toolCheckInmateStatus(params) {
     var systemResult = null;
     if (defName) {
         try {
-            var lookupResponse = toolLookupDefendant({ defendant_name: defName });
+            var lookupResponse = toolLookupDefendant({
+                defendant_name: defName,
+                caller_phone: params.caller_phone || params.phone || ''
+            });
             var lookupData = JSON.parse(lookupResponse.getContent());
             if (lookupData.status === 'found') {
                 systemResult = lookupData.defendant;
@@ -1377,7 +1386,10 @@ function toolCheckInmateStatus(params) {
         responseData.message += ' For ' + countyInfo.name + ' County: ';
         if (countyInfo.jail_phone) responseData.message += 'The jail phone number is ' + countyInfo.jail_phone + '. ';
         if (countyInfo.booking_search) responseData.message += 'You can also search their online booking portal. ';
-        if (countyInfo.tips) responseData.message += countyInfo.tips;
+        if (countyInfo.first_appearance) responseData.message += countyInfo.first_appearance + ' ';
+        if (countyInfo.tips && (!countyInfo.first_appearance || countyInfo.tips !== countyInfo.first_appearance)) {
+            responseData.message += countyInfo.tips;
+        }
     } else if (county) {
         responseData.message += 'We cover all 67 Florida counties. You can call the jail directly or check their online booking portal for current inmate information. Our main number is 239-332-2245.';
     }
@@ -1393,9 +1405,10 @@ function toolCheckInmateStatus(params) {
  * Expected params: { "county": "...", "destination_type": "jail"|"courthouse", "caller_phone": "..." }
  */
 function toolSendDirections(params) {
+    params = params || {};
     var county = (params.county || '').trim();
     var destType = (params.destination_type || 'jail').trim().toLowerCase();
-    var callerPhone = (params.caller_phone || '').trim();
+    var callerPhone = shannonNormalizePhone10_(params.caller_phone || params.phone || '');
 
     if (!county) {
         return ContentService.createTextOutput(JSON.stringify({
@@ -1407,7 +1420,7 @@ function toolSendDirections(params) {
     if (!callerPhone) {
         return ContentService.createTextOutput(JSON.stringify({
             status: 'error',
-            message: 'A phone number is required to send directions.'
+            message: 'I need a ten-digit mobile number to text directions.'
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -1424,31 +1437,42 @@ function toolSendDirections(params) {
 
     var address = '';
     var label = '';
-    if (destType === 'courthouse' && countyInfo.courthouse) {
-        address = countyInfo.courthouse;
-        label = countyInfo.name + ' County Courthouse';
+    if (destType === 'courthouse') {
+        if (countyInfo.courthouse) {
+            address = countyInfo.courthouse;
+            label = countyInfo.name + ' County Courthouse';
+        } else {
+            return ContentService.createTextOutput(JSON.stringify({
+                status: 'address_not_available',
+                first_appearance: countyInfo.first_appearance || '',
+                message: 'I do not have the courthouse street address for ' + countyInfo.name +
+                    ' County on file. ' + (countyInfo.first_appearance || '') +
+                    ' Call 239-332-2245 and a bondsman can give you the courtroom door.'
+            })).setMimeType(ContentService.MimeType.JSON);
+        }
     } else if (countyInfo.jail_address) {
         address = countyInfo.jail_address;
         label = countyInfo.name + ' County Jail';
     } else {
         return ContentService.createTextOutput(JSON.stringify({
             status: 'address_not_available',
-            message: 'I don\'t have the ' + destType + ' address for ' + countyInfo.name + ' County on file. ' +
+            message: 'I don\'t have the jail address for ' + countyInfo.name + ' County on file. ' +
                 (countyInfo.jail_phone ? 'You can call the jail at ' + countyInfo.jail_phone + ' for directions.' : 'Call us at 239-332-2245 for help.')
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
     var mapsLink = 'https://maps.google.com/?q=' + encodeURIComponent(address);
 
-    var smsBody = '📍 Shamrock Bail Bonds — Directions\n\n' +
+    var smsBody = 'Shamrock Bail Bonds — Directions\n\n' +
         label + '\n' +
         address + '\n\n' +
-        'Google Maps: ' + mapsLink + '\n\n' +
+        'Google Maps: ' + mapsLink + '\n' +
+        (destType === 'courthouse' && countyInfo.first_appearance ? countyInfo.first_appearance + '\n' : '') +
         (countyInfo.jail_phone ? 'Jail Phone: ' + countyInfo.jail_phone + '\n' : '') +
         'Questions? Call (239) 332-2245';
 
     var smsResult = (typeof sendShannonText_ === 'function')
-        ? sendShannonText_(callerPhone, smsBody)
+        ? sendShannonText_(shannonE164_(callerPhone) || callerPhone, smsBody)
         : { success: false, error: 'BlueBubbles text helper not loaded' };
 
     if (smsResult && smsResult.success) {
@@ -1456,8 +1480,10 @@ function toolSendDirections(params) {
             status: 'sent',
             address: address,
             google_maps_link: mapsLink,
+            first_appearance: countyInfo.first_appearance || '',
             message: 'I just texted you the address and a Google Maps link for the ' + label + '. ' +
-                'The address is ' + address + '.'
+                'The address is ' + address + '.' +
+                (destType === 'courthouse' && countyInfo.first_appearance ? ' ' + countyInfo.first_appearance : '')
         })).setMimeType(ContentService.MimeType.JSON);
     } else {
         return ContentService.createTextOutput(JSON.stringify({
@@ -1479,15 +1505,22 @@ function toolSendDirections(params) {
  */
 function toolCheckClientAccount(params) {
     params = params || {};
-    var defName = (params.defendant_name || params.caller_name || '').trim();
-    var caseNum = (params.case_number || '').trim();
-    var phone = (params.phone || params.caller_phone || '').replace(/\D/g, '').slice(-10);
-    var queryType = (params.query_type || 'all').toLowerCase();
+    var defName = (params.defendant_name || '').trim();
+    var caseNum = (params.case_number || params.booking_number || '').trim();
+    var phone = shannonNormalizePhone10_(params.phone || params.caller_phone || '');
+    var queryType = String(params.query_type || 'all').toLowerCase();
 
     if (!defName && !caseNum && !phone) {
         return ContentService.createTextOutput(JSON.stringify({
             status: 'not_found',
-            message: 'To look up the account details, please provide the defendant full name, case number, or phone number.'
+            message: 'To look up the account, I need the defendant full name, a case number, or the phone number on the file.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (defName && shannonNameTokens_(defName).length < 2 && !caseNum && !phone) {
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'not_found',
+            message: 'Please give me the defendant first and last name so I pull the right file.'
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -1495,9 +1528,14 @@ function toolCheckClientAccount(params) {
     if (!ssId) {
         return ContentService.createTextOutput(JSON.stringify({
             status: 'error',
-            message: 'Database connection currently unavailable. Please call us directly at 239-332-2245.'
+            message: 'I cannot reach the file system right now. Please call us at 239-332-2245.'
         })).setMimeType(ContentService.MimeType.JSON);
     }
+
+    var paymentLink = SHANNON_DEFAULT_PAYMENT_LINK;
+    try {
+        paymentLink = shannonPaymentLinkFromConfig_(getConfig());
+    } catch (_) {}
 
     var ss = SpreadsheetApp.openById(ssId);
     var accountData = {
@@ -1508,45 +1546,49 @@ function toolCheckClientAccount(params) {
         court_location: null,
         courtroom: null,
         judge: null,
-        discharge_status: 'Active',
+        discharge_status: null,
         discharge_date: null,
         total_bond: null,
         premium: null,
         amount_paid: null,
         remaining_balance: null,
-        payment_link: 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
+        payment_link: paymentLink
     };
 
     var found = false;
+
+    function rowMatchesPerson_(rowName, rowCase, rowPhone) {
+        if (defName && rowName && shannonPersonNamesMatch_(defName, rowName)) return true;
+        if (caseNum && rowCase && shannonCaseNumbersMatch_(caseNum, rowCase)) return true;
+        if (phone && rowPhone && shannonNormalizePhone10_(rowPhone) === phone) return true;
+        return false;
+    }
 
     // 1. Search Upcoming Court Dates
     try {
         var cdSheet = ss.getSheetByName('Upcoming Court Dates') || ss.getSheetByName('CourtDates');
         if (cdSheet && cdSheet.getLastRow() > 1) {
             var cdValues = cdSheet.getDataRange().getValues();
-            var cdHdr = cdValues[0].map(function (h) { return String(h).toLowerCase().trim(); });
-            var nameCol = cdHdr.indexOf('defendant name') > -1 ? cdHdr.indexOf('defendant name') : cdHdr.indexOf('defname');
-            var dateCol = cdHdr.indexOf('court date') > -1 ? cdHdr.indexOf('court date') : cdHdr.indexOf('date');
-            var timeCol = cdHdr.indexOf('court time') > -1 ? cdHdr.indexOf('court time') : cdHdr.indexOf('time');
-            var locCol = cdHdr.indexOf('location') > -1 ? cdHdr.indexOf('location') : cdHdr.indexOf('courthouse');
-            var roomCol = cdHdr.indexOf('courtroom') > -1 ? cdHdr.indexOf('courtroom') : cdHdr.indexOf('room');
-            var judgeCol = cdHdr.indexOf('judge') > -1 ? cdHdr.indexOf('judge') : -1;
-            var caseCol = cdHdr.indexOf('case number') > -1 ? cdHdr.indexOf('case number') : cdHdr.indexOf('casenumber');
+            var nameCol = shannonFindHeaderIndex_(cdValues[0], ['defendant name', 'defname', 'def name']);
+            var dateCol = shannonFindHeaderIndex_(cdValues[0], ['court date', 'date']);
+            var timeCol = shannonFindHeaderIndex_(cdValues[0], ['court time', 'time']);
+            var locCol = shannonFindHeaderIndex_(cdValues[0], ['location', 'courthouse']);
+            var roomCol = shannonFindHeaderIndex_(cdValues[0], ['courtroom', 'room']);
+            var judgeCol = shannonFindHeaderIndex_(cdValues[0], ['judge']);
+            var caseCol = shannonFindHeaderIndex_(cdValues[0], ['case number', 'casenumber', 'case']);
 
-            for (var r = cdValues.length - 1; r >= 1; r--) {
+            for (var r = cdValues.length - 1; r >= shannonSheetScanStart_(cdValues.length); r--) {
                 var row = cdValues[r];
-                var rowName = nameCol > -1 ? String(row[nameCol] || '').toLowerCase() : '';
-                var rowCase = caseCol > -1 ? String(row[caseCol] || '').toLowerCase() : '';
-
-                if ((defName && rowName && (rowName.indexOf(defName.toLowerCase()) > -1 || defName.toLowerCase().indexOf(rowName) > -1)) ||
-                    (caseNum && rowCase && rowCase.indexOf(caseNum.toLowerCase()) > -1)) {
-                    accountData.defendant_name = row[nameCol] || accountData.defendant_name;
+                var rowName = nameCol > -1 ? String(row[nameCol] || '') : '';
+                var rowCase = caseCol > -1 ? String(row[caseCol] || '') : '';
+                if (rowMatchesPerson_(rowName, rowCase, '')) {
+                    accountData.defendant_name = rowName || accountData.defendant_name;
                     accountData.court_date = dateCol > -1 ? String(row[dateCol] || '') : '';
                     accountData.court_time = timeCol > -1 ? String(row[timeCol] || '') : '';
-                    accountData.court_location = locCol > -1 ? String(row[locCol] || '') : 'Lee County Justice Center';
+                    accountData.court_location = locCol > -1 ? String(row[locCol] || '') : '';
                     accountData.courtroom = roomCol > -1 ? String(row[roomCol] || '') : '';
                     accountData.judge = judgeCol > -1 ? String(row[judgeCol] || '') : '';
-                    accountData.case_number = caseCol > -1 ? String(row[caseCol] || '') : accountData.case_number;
+                    accountData.case_number = rowCase || accountData.case_number;
                     found = true;
                     break;
                 }
@@ -1561,18 +1603,22 @@ function toolCheckClientAccount(params) {
         var disSheet = ss.getSheetByName('Discharges');
         if (disSheet && disSheet.getLastRow() > 1) {
             var disValues = disSheet.getDataRange().getValues();
-            var disHdr = disValues[0].map(function (h) { return String(h).toLowerCase().trim(); });
-            var dNameCol = disHdr.indexOf('defendant name') > -1 ? disHdr.indexOf('defendant name') : 0;
-            var dDateCol = disHdr.indexOf('discharge date') > -1 ? disHdr.indexOf('discharge date') : 1;
+            var dNameCol = shannonFindHeaderIndex_(disValues[0], ['defendant name', 'defname', 'def name']);
+            var dDateCol = shannonFindHeaderIndex_(disValues[0], ['discharge date', 'discharged', 'date']);
+            var dCaseCol = shannonFindHeaderIndex_(disValues[0], ['case number', 'casenumber', 'case']);
 
-            for (var dr = disValues.length - 1; dr >= 1; dr--) {
-                var dRow = disValues[dr];
-                var dRowName = String(dRow[dNameCol] || '').toLowerCase();
-                if (defName && dRowName && (dRowName.indexOf(defName.toLowerCase()) > -1 || defName.toLowerCase().indexOf(dRowName) > -1)) {
-                    accountData.discharge_status = 'Discharged';
-                    accountData.discharge_date = String(dRow[dDateCol] || '');
-                    found = true;
-                    break;
+            if (dNameCol > -1) {
+                for (var dr = disValues.length - 1; dr >= shannonSheetScanStart_(disValues.length); dr--) {
+                    var dRow = disValues[dr];
+                    var dRowName = String(dRow[dNameCol] || '');
+                    var dRowCase = dCaseCol > -1 ? String(dRow[dCaseCol] || '') : '';
+                    if (rowMatchesPerson_(dRowName, dRowCase, '')) {
+                        accountData.discharge_status = 'Discharged';
+                        accountData.discharge_date = dDateCol > -1 ? String(dRow[dDateCol] || '') : '';
+                        accountData.defendant_name = dRowName || accountData.defendant_name;
+                        found = true;
+                        break;
+                    }
                 }
             }
         }
@@ -1585,22 +1631,21 @@ function toolCheckClientAccount(params) {
         var paySheet = ss.getSheetByName('Payment_Plans') || ss.getSheetByName('PaymentLog') || ss.getSheetByName('IntakeQueue');
         if (paySheet && paySheet.getLastRow() > 1) {
             var payValues = paySheet.getDataRange().getValues();
-            var payHdr = payValues[0].map(function (h) { return String(h).toLowerCase().trim(); });
-            var pNameCol = payHdr.indexOf('defendant name') > -1 ? payHdr.indexOf('defendant name') : payHdr.indexOf('defname');
-            var pPhoneCol = payHdr.indexOf('phone') > -1 ? payHdr.indexOf('phone') : payHdr.indexOf('indphone');
-            var pBondCol = payHdr.indexOf('bond amount') > -1 ? payHdr.indexOf('bond amount') : payHdr.indexOf('bondamt');
-            var pPremCol = payHdr.indexOf('premium') > -1 ? payHdr.indexOf('premium') : -1;
-            var pPaidCol = payHdr.indexOf('amount paid') > -1 ? payHdr.indexOf('amount paid') : payHdr.indexOf('paid');
-            var pBalCol = payHdr.indexOf('balance') > -1 ? payHdr.indexOf('balance') : payHdr.indexOf('remaining');
+            var pNameCol = shannonFindHeaderIndex_(payValues[0], ['defendant name', 'defname', 'def name']);
+            var pPhoneCol = shannonFindHeaderIndex_(payValues[0], ['indphone', 'indemnitor phone', 'phone']);
+            var pBondCol = shannonFindHeaderIndex_(payValues[0], ['bond amount', 'bondamt', 'bond']);
+            var pPremCol = shannonFindHeaderIndex_(payValues[0], ['premium']);
+            var pPaidCol = shannonFindHeaderIndex_(payValues[0], ['amount paid', 'paid']);
+            var pBalCol = shannonFindHeaderIndex_(payValues[0], ['remaining', 'balance']);
+            var pCaseCol = shannonFindHeaderIndex_(payValues[0], ['case number', 'casenumber', 'case']);
 
-            for (var pr = payValues.length - 1; pr >= 1; pr--) {
+            for (var pr = payValues.length - 1; pr >= shannonSheetScanStart_(payValues.length); pr--) {
                 var pRow = payValues[pr];
-                var pRowName = pNameCol > -1 ? String(pRow[pNameCol] || '').toLowerCase() : '';
-                var pRowPhone = pPhoneCol > -1 ? String(pRow[pPhoneCol] || '').replace(/\D/g, '').slice(-10) : '';
-
-                if ((defName && pRowName && (pRowName.indexOf(defName.toLowerCase()) > -1 || defName.toLowerCase().indexOf(pRowName) > -1)) ||
-                    (phone && pRowPhone && pRowPhone === phone)) {
-                    accountData.defendant_name = pRow[pNameCol] || accountData.defendant_name;
+                var pRowName = pNameCol > -1 ? String(pRow[pNameCol] || '') : '';
+                var pRowPhone = pPhoneCol > -1 ? String(pRow[pPhoneCol] || '') : '';
+                var pRowCase = pCaseCol > -1 ? String(pRow[pCaseCol] || '') : '';
+                if (rowMatchesPerson_(pRowName, pRowCase, pRowPhone)) {
+                    accountData.defendant_name = pRowName || accountData.defendant_name;
                     accountData.total_bond = pBondCol > -1 ? String(pRow[pBondCol] || '') : '';
                     accountData.premium = pPremCol > -1 ? String(pRow[pPremCol] || '') : '';
                     accountData.amount_paid = pPaidCol > -1 ? String(pRow[pPaidCol] || '') : '';
@@ -1614,67 +1659,54 @@ function toolCheckClientAccount(params) {
         Logger.log('Payment plan lookup error: ' + e.message);
     }
 
-    // Build spoken response
-    var spoken = '';
-    if (accountData.discharge_status === 'Discharged') {
-        spoken = 'Good news! The bond file for ' + (accountData.defendant_name || 'this case') +
-            ' shows as officially discharged' + (accountData.discharge_date ? ' on ' + accountData.discharge_date : '') +
-            '. There are no further court appearances needed for this bond.';
-    } else if (accountData.court_date) {
-        spoken = 'I found the court appearance record for ' + (accountData.defendant_name || 'the defendant') +
-            '. The upcoming court date is ' + accountData.court_date +
-            (accountData.court_time ? ' at ' + accountData.court_time : '') +
-            ' at ' + (accountData.court_location || 'the courthouse') +
-            (accountData.courtroom ? ', Courtroom ' + accountData.courtroom : '') +
-            (accountData.judge ? ', before Judge ' + accountData.judge : '') + '.';
-    }
-
-    if (accountData.remaining_balance && parseFloat(accountData.remaining_balance.replace(/[^0-9.]/g, '')) > 0) {
-        var balMsg = ' The remaining balance on the premium is $' + accountData.remaining_balance + '.';
-        spoken += (spoken ? ' Also,' : '') + balMsg + ' Would you like me to text you a secure payment link so you can take care of that right on your phone?';
-    } else if (accountData.remaining_balance && parseFloat(accountData.remaining_balance.replace(/[^0-9.]/g, '')) === 0) {
-        spoken += (spoken ? ' ' : '') + 'The premium balance is completely paid in full.';
-    }
-
-    if (!spoken) {
-        spoken = 'I pulled up the file for ' + (accountData.defendant_name || defName) +
-            '. The bond is currently active. For exact minute-by-minute docket changes, our on-call bondsman can review the clerk docket with you anytime at 239-332-2245.';
-    }
+    var spoken = shannonBuildAccountSpoken_(found, accountData, queryType, defName);
 
     return ContentService.createTextOutput(JSON.stringify({
         status: found ? 'found' : 'not_found',
-        account: accountData,
+        account: found ? accountData : { payment_link: paymentLink },
         message: spoken
     })).setMimeType(ContentService.MimeType.JSON);
 }
 
 /**
  * Tool: schedule_office_visit
- * Schedules an in-person visit to our flagship Fort Myers office (1528 Broadway).
+ * Logs an in-person visit request for 1528 Broadway. Confirms on the calendar
+ * only when date and time parse; otherwise staff confirms.
  *
  * Expected params: { "caller_name": "...", "caller_phone": "...", "defendant_name": "...", "preferred_date": "...", "preferred_time": "...", "purpose": "..." }
  */
 function toolScheduleOfficeVisit(params) {
     params = params || {};
-    var callerName = (params.caller_name || '').trim();
-    var callerPhone = (params.phone || params.caller_phone || '').trim();
-    var defName = (params.defendant_name || '').trim();
-    var preferredDate = (params.preferred_date || params.date || 'today').trim();
-    var preferredTime = (params.preferred_time || params.time || 'as soon as possible').trim();
-    var purpose = (params.purpose || 'in-person paperwork / consultation').trim();
-    var notes = (params.notes || '').trim();
+    var callerName = shannonTruncate_(params.caller_name || '', 80);
+    var callerPhoneRaw = params.phone || params.caller_phone || '';
+    var callerPhone10 = shannonNormalizePhone10_(callerPhoneRaw);
+    var defName = shannonTruncate_(params.defendant_name || '', 80);
+    var preferredDate = shannonTruncate_(params.preferred_date || params.date || 'today', 40);
+    var preferredTime = shannonTruncate_(params.preferred_time || params.time || 'as soon as possible', 40);
+    var purpose = shannonTruncate_(params.purpose || 'in-person paperwork / consultation', 80);
+    var notes = shannonTruncate_(params.notes || '', SHANNON_MAX_NOTE);
 
-    if (!callerPhone && !callerName) {
+    if (!callerName) {
         return ContentService.createTextOutput(JSON.stringify({
             status: 'error',
-            message: 'Please provide your name and phone number to schedule an office visit.'
+            message: 'I need your name to put the office visit on the board.'
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (!callerPhone10) {
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'error',
+            message: 'I need a ten-digit mobile number so I can text the Fort Myers address and our bondsman can confirm the time.'
         })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    var when = shannonParseOfficeVisitWhen_(preferredDate, preferredTime, new Date());
+    var statusLabel = when.parsed ? 'Scheduled' : 'Requested';
     var apptRef = 'APPT-' + new Date().getTime().toString(36).toUpperCase();
-    var officeAddress = '1528 Broadway, Fort Myers, FL 33901';
+    var officeAddress = SHANNON_OFFICE_ADDRESS;
+    var sheetOk = false;
+    var calOk = false;
+    var smsOk = false;
 
-    // 1. Log to OfficeAppointments sheet
     try {
         var ssId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
         if (ssId) {
@@ -1692,56 +1724,58 @@ function toolScheduleOfficeVisit(params) {
             sheet.appendRow([
                 new Date(),
                 apptRef,
-                callerName || 'Walk-in Client',
-                callerPhone,
+                callerName,
+                callerPhone10,
                 defName || 'N/A',
                 preferredDate,
                 preferredTime,
                 purpose,
                 notes,
-                'Scheduled'
+                statusLabel
             ]);
+            sheetOk = true;
         }
     } catch (sheetErr) {
         Logger.log('OfficeAppointments sheet write failed (non-fatal): ' + sheetErr.message);
     }
 
-    // 2. Add to Google Calendar
-    try {
-        var calId = PropertiesService.getScriptProperties().getProperty('COMPANY_CALENDAR_ID');
-        if (calId) {
-            var cal = CalendarApp.getCalendarById(calId);
-            if (cal) {
-                var title = '☘️ OFFICE VISIT: ' + (callerName || 'Client') + (defName ? (' (re: ' + defName + ')') : '');
-                var desc = 'Office appointment scheduled via Shannon Voice AI.\n\n' +
-                    '• Client: ' + callerName + ' (' + callerPhone + ')\n' +
-                    '• Defendant: ' + (defName || 'N/A') + '\n' +
-                    '• Purpose: ' + purpose + '\n' +
-                    '• Preferred Time: ' + preferredDate + ' ' + preferredTime + '\n' +
-                    '• Notes: ' + notes + '\n' +
-                    '• Ref: ' + apptRef;
-                cal.createEvent(title, new Date(), new Date(Date.now() + 3600000), {
-                    location: officeAddress,
-                    description: desc
-                });
+    if (when.parsed) {
+        try {
+            var calId = PropertiesService.getScriptProperties().getProperty('COMPANY_CALENDAR_ID');
+            if (calId) {
+                var cal = CalendarApp.getCalendarById(calId);
+                if (cal) {
+                    var title = 'OFFICE VISIT: ' + callerName + (defName ? (' (re: ' + defName + ')') : '');
+                    var desc = 'Office appointment via Shannon Voice AI.\n\n' +
+                        'Client: ' + callerName + ' (' + callerPhone10 + ')\n' +
+                        'Defendant: ' + (defName || 'N/A') + '\n' +
+                        'Purpose: ' + purpose + '\n' +
+                        'Preferred: ' + when.label + '\n' +
+                        'Notes: ' + notes + '\n' +
+                        'Ref: ' + apptRef;
+                    cal.createEvent(title, when.start, when.end, {
+                        location: officeAddress,
+                        description: desc
+                    });
+                    calOk = true;
+                }
             }
+        } catch (calErr) {
+            Logger.log('Calendar event creation failed (non-fatal): ' + calErr.message);
         }
-    } catch (calErr) {
-        Logger.log('Calendar event creation failed (non-fatal): ' + calErr.message);
     }
 
-    // 3. Slack alert
     try {
         var config = getConfig();
         var slackChannel = config.SLACK_WEBHOOK_SHAMROCK || config.SLACK_WEBHOOK_LEADS || config.SLACK_WEBHOOK_GENERAL;
         if (slackChannel && typeof sendSlackMessage === 'function') {
             sendSlackMessage(slackChannel,
-                '📅 *New Office Appointment Scheduled via Shannon*\n' +
-                '• Client: ' + (callerName || 'Client') + ' (' + callerPhone + ')\n' +
+                '*Office visit ' + statusLabel.toLowerCase() + ' via Shannon*\n' +
+                '• Client: ' + callerName + ' (' + callerPhone10 + ')\n' +
                 '• Defendant: ' + (defName || 'N/A') + '\n' +
-                '• Date & Time: ' + preferredDate + ' at ' + preferredTime + '\n' +
+                '• When: ' + when.label + '\n' +
                 '• Purpose: ' + purpose + '\n' +
-                '• Office: 1528 Broadway, Fort Myers, FL 33901\n' +
+                '• Office: ' + officeAddress + '\n' +
                 '• Ref: `' + apptRef + '`',
                 null
             );
@@ -1750,30 +1784,46 @@ function toolScheduleOfficeVisit(params) {
         Logger.log('Slack appointment alert failed: ' + slackErr.message);
     }
 
-    // 4. Send BlueBubbles confirmation text with address & Google Maps link
-    var smsBody = '☘️ Shamrock Bail Bonds — Office Appointment Confirmed!\n\n' +
-        'Hi ' + (callerName || 'there') + ',\n' +
-        'We have you scheduled to visit our Fort Myers flagship office on ' + preferredDate + ' at ' + preferredTime + '.\n\n' +
-        '📍 Address:\n1528 Broadway, Fort Myers, FL 33901\n' +
-        '🗺️ Directions: https://maps.google.com/?q=1528+Broadway+Fort+Myers+FL+33901\n\n' +
-        'Need to change times? Call us 24/7 at (239) 332-2245.';
+    var smsHeadline = when.parsed
+        ? 'Office visit set for ' + when.label + '.'
+        : 'We have your office visit request for ' + when.label + '. A bondsman will confirm the time.';
+    var smsBody = 'Shamrock Bail Bonds — ' + smsHeadline + '\n\n' +
+        'Hi ' + callerName + ',\n' +
+        'Fort Myers office: ' + officeAddress + '\n' +
+        'Directions: https://maps.google.com/?q=1528+Broadway+Fort+Myers+FL+33901\n\n' +
+        'Need to change times? Call (239) 332-2245.';
 
-    if (callerPhone) {
-        if (typeof sendShannonText_ === 'function') {
-            sendShannonText_(callerPhone, smsBody);
+    if (typeof sendShannonText_ === 'function') {
+        try {
+            var smsResult = sendShannonText_(shannonE164_(callerPhone10), smsBody);
+            smsOk = !!(smsResult && smsResult.success);
+        } catch (smsErr) {
+            Logger.log('Office visit text failed (non-fatal): ' + smsErr.message);
         }
     }
 
-    var spokenMsg = 'I have you all set for an in-person visit to our Fort Myers office at 1528 Broadway on ' +
-        preferredDate + ' at ' + preferredTime +
-        '. I just texted the address and directions straight to your cell phone. We look forward to seeing you!';
+    var spokenMsg;
+    if (when.parsed) {
+        spokenMsg = 'I have you down for an in-person visit at 1528 Broadway in Fort Myers on ' + when.label + '.';
+    } else {
+        spokenMsg = 'I logged your office visit request for ' + when.label +
+            ' at 1528 Broadway in Fort Myers. A bondsman will confirm the exact time.';
+    }
+    if (smsOk) {
+        spokenMsg += ' I texted the address and directions to your phone.';
+    } else {
+        spokenMsg += ' The address is 1528 Broadway, Fort Myers. If the text does not come through, call 239-332-2245.';
+    }
 
     return ContentService.createTextOutput(JSON.stringify({
-        status: 'scheduled',
+        status: when.parsed ? 'scheduled' : 'requested',
         reference: apptRef,
         office_address: officeAddress,
         date: preferredDate,
         time: preferredTime,
+        calendar_written: calOk,
+        sheet_written: sheetOk,
+        text_sent: smsOk,
         message: spokenMsg
     })).setMimeType(ContentService.MimeType.JSON);
 }
@@ -2243,39 +2293,6 @@ function getCountyDirectory_() {
             courthouse: null, booking_search: 'https://www.wcso.us', tips: null
         }
     };
-}
-
-/**
- * Robust county resolver for Shannon Voice AI lookups.
- * Handles hyphens, spaces, dots, "county" suffix, and Saint/St variants.
- */
-function resolveCountyDirectoryEntry_(rawCounty) {
-    if (!rawCounty) return null;
-    var dir = getCountyDirectory_();
-    var raw = String(rawCounty).toLowerCase().trim();
-
-    if (dir[raw]) return dir[raw];
-
-    var clean = raw
-        .replace(/ county$/i, '')
-        .replace(/^county of /i, '')
-        .trim();
-
-    if (dir[clean]) return dir[clean];
-
-    var alphaOnly = clean.replace(/[^a-z0-9]/g, '');
-
-    for (var k in dir) {
-        if (dir.hasOwnProperty(k)) {
-            var kAlpha = k.replace(/[^a-z0-9]/g, '');
-            if (kAlpha === alphaOnly) return dir[k];
-            if (kAlpha === alphaOnly.replace(/^saint/, 'st') || kAlpha.replace(/^saint/, 'st') === alphaOnly) {
-                return dir[k];
-            }
-        }
-    }
-
-    return null;
 }
 
 
