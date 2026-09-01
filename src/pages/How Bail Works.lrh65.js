@@ -15,7 +15,7 @@ function firstValid(ids) {
 }
 
 function firstTable() {
-    const named = firstValid(['#amountsRepeater', '#chargesTable', '#table1', '#table2', '#comp-mjvk9syv']);
+    const named = firstValid(['#chargesTable', '#table1', '#table2', '#comp-mjvk9syv']);
     if (named) return named;
     try {
         const tables = $w('Table');
@@ -27,6 +27,10 @@ function firstTable() {
     return null;
 }
 
+function firstChargesRepeater() {
+    return firstValid(['#amountsRepeater', '#comp-mtiridhe', '#comp-mtiridig']);
+}
+
 function firstFaqRepeater() {
     const named = firstValid(['#faqRepeater', '#repeaterFAQ', '#listRepeater', '#repeater1', '#comp-mjxe7ggr']);
     if (named) return named;
@@ -34,7 +38,8 @@ function firstFaqRepeater() {
         bondsRepeater: true,
         typesRepeater: true,
         factorsRepeater: true,
-        processRepeater: true
+        processRepeater: true,
+        amountsRepeater: true
     };
     try {
         const all = $w('Repeater');
@@ -254,33 +259,61 @@ async function setupCommonBailAmounts() {
         console.error('[X] CommonCharges query failed, using fallback:', err);
     }
 
+    const repeater = firstChargesRepeater();
+    if (repeater && (repeater.type === '$w.Repeater' || typeof repeater.onItemReady === 'function')) {
+        bindChargesRepeater(repeater, rows);
+        return;
+    }
+
     const element = firstTable();
     if (!element) {
-        console.error('[X] No Table on page (tried #amountsRepeater and $w("Table"))');
+        console.error('[X] No #amountsRepeater Repeater or Table on page');
         return;
     }
     console.log('[OK] Charges table id=', element.id, 'type=', element.type);
+    element.rows = rows;
+    console.log('[OK] Table rows set:', rows.length);
+}
 
-    const isTable = element.type === '$w.Table' || element.type === 'Table' || typeof element.rows !== 'undefined';
-    if (isTable) {
-        element.rows = rows;
-        console.log('[OK] Table rows set:', rows.length);
-        return;
-    }
+function bindChargesRepeater(repeater, rows) {
+    const pick = ($item, ids) => {
+        for (let i = 0; i < ids.length; i++) {
+            try {
+                const el = $item(ids[i]);
+                if (el && el.valid && typeof el.text !== 'undefined') return el;
+            } catch (e) { /* next */ }
+        }
+        return null;
+    };
 
-    element.onItemReady(($item, itemData) => {
+    repeater.onItemReady(($item, itemData) => {
         const offense = itemData.offense || 'Unknown Offense';
         const range = itemData.range || 'Varies';
-        ['#offenseName', '#offense', '#textOffense', '#chargeName', '#text1'].forEach((id) => {
-            const el = $item(id);
-            if (el && el.valid && typeof el.text !== 'undefined') el.text = offense;
-        });
-        ['#bailRange', '#range', '#textRange', '#bailAmount', '#text2'].forEach((id) => {
-            const el = $item(id);
-            if (el && el.valid && typeof el.text !== 'undefined') el.text = range;
-        });
+        const offEl = pick($item, ['#offenseName', '#offense', '#textOffense', '#chargeName', '#text1', '#title']);
+        const rangeEl = pick($item, ['#bailRange', '#range', '#textRange', '#bailAmount', '#text2', '#subtitle']);
+        if (offEl) offEl.text = offense;
+        if (rangeEl) rangeEl.text = range;
+        if (offEl || rangeEl) return;
+
+        try {
+            const texts = $item('Text');
+            const ids = String((texts && texts.id) || '').split(',').map((s) => s.trim()).filter(Boolean);
+            if (ids.length >= 2) {
+                $item('#' + ids[0]).text = offense;
+                $item('#' + ids[1]).text = range;
+                return;
+            }
+            if (texts && texts.valid) {
+                texts.text = offense + '  —  ' + range;
+                return;
+            }
+        } catch (e) { /* no Text widgets in this item */ }
+
+        console.warn('[charges] #amountsRepeater item has no Text. Add #offenseName and #bailRange inside the repeater item.');
     });
-    element.data = rows;
+
+    repeater.data = rows;
+    console.log('[OK] Charges repeater populated with', rows.length, 'items id=', repeater.id);
 }
 
 // --- 6. FAQ Section ---
