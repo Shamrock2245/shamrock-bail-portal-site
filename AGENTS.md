@@ -9,6 +9,7 @@
 - **Keep the GAS `/exec` URL stable.** Push code and re-deploy the **existing** deployment only (`clasp deploy -i <ID>` from `.gas-config.json`).
 - **Never** create a new Web App deployment that changes the URL without an explicit human order.
 - **Signing Boundary**: DocuSeal is the sole active signing provider. Packets are created and issued strictly by authorized staff inside Super CRM (`shamrock-leads`). Wix, GAS, and Telegram act as secure launchpads and NEVER create DocuSeal submissions directly.
+- **Verbatim Charge Integrity (CRITICAL LAW)**: On all legal paperwork, Appearance Bonds, and court filings, **CHARGES MUST APPEAR EXACTLY AS WRITTEN BY THE COUNTY / SHERIFF / CLERK SOURCE**. NEVER abbreviate, paraphrase, shorten, or "clean up" charge text. The exact verbatim text string from the jail roster/RMS is required so jail and court clerks can process the bond without rejection.
 
 ---
 

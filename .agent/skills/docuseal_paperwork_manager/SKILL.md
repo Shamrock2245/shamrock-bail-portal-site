@@ -23,7 +23,13 @@ Use this skill when implementing, maintaining, or auditing legal paperwork workf
 
 ---
 
-## 2. Canonical Schema Mapping (`canonical-paperwork-mapper.js`)
+## 2. Verbatim Charge Text Integrity (MANDATORY LAW)
+
+On all legal paperwork, Appearance Bonds, power-of-attorney forms, and court filings:
+- **CHARGES MUST APPEAR EXACTLY AS WRITTEN BY THE COUNTY / SHERIFF / CLERK SOURCE**.
+- **NEVER** abbreviate, paraphrase, reword, shorten, or attempt to "clean up" statutory text.
+- Jail intake booking clerks and court clerks match bonds strictly against the exact text in their RMS system. Any discrepancy or "prettying up" leads to immediate rejection of the bond at the facility desk.
+- If the county writes: `New Charge: 893.135 1f1 - Amphetamine - Trafficking More Than 14 Grams (LEV:F DEG:F 3756) (Principal - P)`, that exact verbatim string must be preserved on the Appearance Bond.
 
 To prevent frontend UI from binding to a single surety carrier's 14-page PDF layout, all data is standardized into canonical models:
 
