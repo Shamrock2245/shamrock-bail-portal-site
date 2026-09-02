@@ -18,7 +18,10 @@ import { validateCustomSession } from 'backend/portal-auth';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { routeCountyPage } from 'backend/bail-bonds-router';
 import { routeMultiStatePage } from 'backend/multi-state-router';
-import { first_appearance_Router as faRouter } from 'backend/first-appearance-router';
+import {
+  first_appearance_Router as faRouter,
+  first_appearance_SiteMap as faSiteMap
+} from 'backend/first-appearance-router';
 
 const ROLES = {
   DEFENDANT: 'defendant',
@@ -146,5 +149,21 @@ export async function florida_bail_bonds_Router(request) {
 }
 
 // First Appearance hub + county sub-pages: /first-appearance[/{county-slug}]
-export { faRouter as first_appearance_Router };
-export { first_appearance_SiteMap } from 'backend/first-appearance-router';
+export async function first_appearance_Router(request) {
+  try {
+    return await faRouter(request);
+  } catch (err) {
+    console.error('[Router] Error in first_appearance_Router:', err);
+    return redirect('/first-appearance-hub');
+  }
+}
+
+export function first_appearance_SiteMap(request) {
+  try {
+    return faSiteMap(request);
+  } catch (err) {
+    console.error('[Router] Error in first_appearance_SiteMap:', err);
+    return [];
+  }
+}
+

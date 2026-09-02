@@ -9,7 +9,7 @@
  * registered page id (h4fpl); a missing name produces GSC 500 titles.
  */
 
-import { ok } from 'wix-router';
+import { ok, redirect } from 'wix-router';
 
 // Live router pages map is { "<uuid>": "h4fpl" } with title "first-appearance".
 // ok("first-appearance") 500s when request.pages is empty/object-shaped.
@@ -68,37 +68,42 @@ function resolveHubPageName(request) {
 }
 
 export function first_appearance_Router(request) {
-    const rawSlug = (request.path && request.path[0]) || '';
-    const countySlug = normalizeSlug(rawSlug);
-    const pageName = resolveHubPageName(request);
+    try {
+        const rawSlug = (request.path && request.path[0]) || '';
+        const countySlug = normalizeSlug(rawSlug);
+        const pageName = resolveHubPageName(request);
 
-    console.log(
-        `[FA Router] path=${(request.path || []).join('/')} slug=${countySlug || '(hub)'} page=${pageName}`
-    );
+        console.log(
+            `[FA Router] path=${(request.path || []).join('/')} slug=${countySlug || '(hub)'} page=${pageName}`
+        );
 
-    // Always the hub template (embed with all 67 counties).
-    // When slug is set, page code focuses that county in the embed.
-    if (!countySlug) {
+        // Always the hub template (embed with all 67 counties).
+        // When slug is set, page code focuses that county in the embed.
+        if (!countySlug) {
+            return ok(pageName, {
+                title: 'First Appearance Hearing in Florida | Live Court Schedules | Shamrock Bail Bonds',
+                description:
+                    'Find First Appearance schedules for every Florida county. Live streams when available; courthouse info when not. Shamrock Bail Bonds 24/7.',
+                slug: '',
+                isHub: true
+            });
+        }
+
+        const name = countySlug
+            .split('-')
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ');
+
         return ok(pageName, {
-            title: 'First Appearance Hearing in Florida | Live Court Schedules | Shamrock Bail Bonds',
-            description:
-                'Find First Appearance schedules for every Florida county. Live streams when available; courthouse info when not. Shamrock Bail Bonds 24/7.',
-            slug: '',
-            isHub: true
+            title: `First Appearance Hearing in ${name} County, FL | Shamrock Bail Bonds`,
+            description: `${name} County First Appearance schedule, location, and live feed if available. Call Shamrock 24/7 at (239) 332-2245.`,
+            slug: countySlug,
+            isHub: false
         });
+    } catch (err) {
+        console.error('[FA Router] Unhandled error, redirecting to hub:', err);
+        return redirect('/first-appearance-hub');
     }
-
-    const name = countySlug
-        .split('-')
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
-
-    return ok(pageName, {
-        title: `First Appearance Hearing in ${name} County, FL | Shamrock Bail Bonds`,
-        description: `${name} County First Appearance schedule, location, and live feed if available. Call Shamrock 24/7 at (239) 332-2245.`,
-        slug: countySlug,
-        isHub: false
-    });
 }
 
 export function first_appearance_SiteMap() {
