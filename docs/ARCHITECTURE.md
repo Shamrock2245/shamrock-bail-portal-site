@@ -34,7 +34,7 @@ graph TD
     subgraph "Backend Intelligence (GAS)"
         CODE["Code.js<br/>doPost() / doGet()<br/>Single Entry Point"]
         AI_AGENTS["AI Agents<br/>Clerk, Analyst, Investigator,<br/>Concierge, Closer"]
-        SIGNNOW_INT["SignNow Integration<br/>14-doc packet generation"]
+        DOCUSEAL_INT["DocuSeal Integration<br/>staff-gated packet issuance"]
         TG_FLOW["Telegram Flows<br/>Intake, OCR, Notifications"]
         NR_HANDLERS["NodeRedHandlers.js<br/>17+ data endpoints"]
         MONGO_LOG["MongoLogger.gs<br/>Event persistence"]
@@ -60,7 +60,7 @@ graph TD
     end
 
     subgraph "External Services"
-        SIGNNOW[SignNow]
+        DOCUSEAL[DocuSeal]
         TWILIO[Twilio SMS/WhatsApp]
         SLACK["Slack (12+ channels)"]
         OPENAI[OpenAI GPT-4o]
@@ -74,7 +74,7 @@ graph TD
     PHONE --> EDGE_TV --> CODE
 
     CODE --> AI_AGENTS
-    CODE --> SIGNNOW_INT
+    CODE --> DOCUSEAL_INT
     CODE --> TG_FLOW
     CODE --> NR_HANDLERS
     CODE --> MONGO_LOG
@@ -94,7 +94,7 @@ graph TD
     MONGO_LOG --> MONGODB
     CODE --> GDRIVE
 
-    SIGNNOW_INT --> SIGNNOW
+    DOCUSEAL_INT --> DOCUSEAL
     CODE --> TWILIO
     CODE --> SLACK
     AI_AGENTS --> OPENAI
@@ -114,7 +114,7 @@ Single entry point via `Code.js` → `doPost()` (50+ action routes) and `doGet()
 | **Core Router** | `Code.js` | Routes all webhooks, exposes GET endpoints for Node-RED |
 | **Telegram** | `Telegram_Webhook.js`, `Telegram_IntakeFlow.js`, `Telegram_API.js`, `Telegram_Notifications.js`, `Telegram_Auth.js`, `Telegram_OCR.js`, `Telegram_InlineQuote.js`, `Telegram_Analytics.js` | Bot message routing, conversational intake (30+ steps), OTP auth, DL OCR, inline quotes, 4-touch court reminders |
 | **AI Agents** | `AI_BookingParser.js`, `AI_FlightRisk.js`, `AI_Investigator.js`, `AIConcierge.js`, `TheCloser.js`, `Manus_Brain.js` | Booking parsing, risk scoring (0-100), background checks, chat, drip campaigns, Telegram AI routing |
-| **SignNow** | `SignNow_SendPaperwork.js`, `Telegram_Documents.js`, `Server_DocumentLogic.js`, `SOC2_WebhookHandler.js` | 14-doc packet generation, field hydration, embedded signing, webhook verification |
+| **DocuSeal (sole active signing)** | Super CRM (`shamrock-leads`) staff issuance; legacy GAS SignNow senders remain fail-closed | Staff-gated packet after Match/BondCase/surety/POA; SignNow routes retired |
 | **Document Processing** | `PDF_Processor.js`, `DriveFilingService.gs` | Post-signing pipeline (merge, watermark), ID verification flow, Drive case folders |
 | **Scrapers (Internal)** | `ArrestScraper_Lee.js`, `ArrestScraper_Collier.js` | GAS-native scrapers for Lee and Collier counties |
 | **Lead Management** | `LeadScoringSystem.js`, `LeadScoringConfig.js` | Urgency × bond amount × county scoring, auto-prioritization |
@@ -128,11 +128,11 @@ Mobile-first frontend. Collects data but does NOT own heavy logic.
 
 | File | Responsibility |
 |------|----------------|
-| `http-functions.js` | Public webhook endpoint — forwards Telegram/SignNow payloads to GAS |
+| `http-functions.js` | Public webhook endpoint — forwards Telegram / legacy webhook payloads to GAS |
 | `portal-auth.jsw` | Magic link authentication, session management |
 | `ai-service.jsw` | AI Concierge chat bridge (Wix → GAS) |
 | `portal-defendant.js` | Defendant dashboard — appearance app, check-ins, court dates |
-| `portal-indemnitor.js` | Indemnitor dashboard — financial forms, ID upload, SignNow signing |
+| `portal-indemnitor.js` | Indemnitor dashboard — financial forms, ID upload, DocuSeal handoff (staff-issued) |
 | `Dashboard.html` (GAS) | Staff intake queue, case management, packet generation |
 
 ### 3.3 Node-RED (`shamrock-node-red/`) — "Operations Hub"
@@ -156,7 +156,7 @@ Dockerized at `localhost:1880`. Premium glassmorphism UI. Static ngrok domain fo
 | Hub | `/` | Central navigation |
 | Intake | `/intake/` | 5-step bail intake form |
 | Defendant | `/defendant/` | Self-service portal |
-| Documents | `/documents/` | View + sign docs (SignNow) |
+| Documents | `/documents/` | View docs + DocuSeal staff-review status |
 | Payment | `/payment/` | Payments + GPS/selfie check-in |
 | Status | `/status/` | Case lookup from GAS data |
 | Updates | `/updates/` | Contact changes, tips, extensions |
@@ -190,33 +190,28 @@ Dockerized at `localhost:1880`. Premium glassmorphism UI. Static ngrok domain fo
 
 ---
 
-## 4. Document Signing Pipeline (V2 — Multi-Indemnitor)
+## 4. Document Signing Pipeline (DocuSeal — sole active provider)
 
-SignNow is the **single source of truth** for all 14 document templates (Team Templates folder).
+**DocuSeal is the sole active signing provider.** SignNow is retired. See [`CURRENT_PAPERWORK_ARCHITECTURE.md`](./CURRENT_PAPERWORK_ARCHITECTURE.md) for the authoritative flow.
+
+Staff in Super CRM (`shamrock-leads`) reconcile Match → BondCase → surety → POA, then issue a DocuSeal submission. Wix / Telegram / Shannon never create DocuSeal packets. Legacy GAS SignNow senders remain fail-closed (`DIRECT_PAPERWORK_RETIRED` / equivalent).
 
 ```mermaid
 graph LR
-    A[Dashboard] -->|collectFormData| B(server_getPacketManifest);
-    B -->|calls| C(handleGetPacketManifest);
-    C -->|uses| D[DOC_GENERATION_RULES];
-    C -->|builds| E[Manifest Array];
-    E -->|for each doc| F(server_getSigningUrl);
-    F -->|calls| G(handleTelegramGetSigningUrl);
-    G -->|creates copy from| H[SignNow Template];
-    G -->|pre-fills| I[Document Copy];
-    G -->|returns| J[Signing URL];
-    J -->|displayed in| A;
+    A[Client intake<br/>Wix / Telegram / Netlify] -->|deferred intake| B[Super CRM staff];
+    B -->|Match BondCase surety POA| C[Approve packet];
+    C -->|issue| D[DocuSeal submission];
+    D -->|signing URL| E[Authenticated launchpad];
 ```
 
 | Rule | Behavior | Example |
 |------|----------|---------|
-| `static` | One copy per bond, agent signs | Appearance Bond |
-| `shared` | One copy, all parties sign | Disclosure Form, Promissory Note |
-| `per-indemnitor` | One copy per indemnitor | Indemnity Agreement |
-| `per-person` | One copy per person (defendant + each indemnitor) | SSA Release |
-| `print-only` | Not sent to SignNow | FAQ sheets |
+| Staff-gated | Only Super CRM issues DocuSeal after case validation | Final indemnity / surety packet |
+| Deferred intake | Client may complete ID + delta fields before bond exists | `/portal-start`, Telegram `/paperwork/` |
+| Print-only | Not sent to DocuSeal | Appearance Bond (wet signature), FAQ sheets |
+| Historical SignNow | Read-only compatibility fields only | `signNowDocumentId` in CMS schemas |
 
-**Tracking:** `DocSigningTracker` spreadsheet with composite key `docId:signer-N`.
+**Tracking:** DocuSeal submission/submitter state in Super CRM; historical `DocSigningTracker` / SignNow fields remain read-only.
 
 ---
 
@@ -235,7 +230,7 @@ graph LR
 | GAS → Twilio | `UrlFetchApp` | SMS confirmations, court reminders |
 | Scrapers → Sheets + MongoDB | `SheetsWriter` / Cloud Functions proxy | 39-column arrest records |
 | Scrapers → Slack | Direct webhook | Hot lead alerts, health reports |
-| SignNow → GAS | Webhook `document.complete` | Triggers post-signing pipeline |
+| DocuSeal → Super CRM / GAS | Submission complete webhooks | Staff-reviewed completion; legacy SignNow webhooks retired |
 
 ---
 
@@ -254,9 +249,9 @@ graph LR
 
 1. **GAS as Single Backend:** All business logic routes through `Code.js`. Node-RED, Wix, and Telegram are consumers — not logic owners.
 
-2. **Manifest-Driven Signing:** Individual SignNow template copies per document, per signer. Enables per-person tracking and multi-indemnitor multiplication.
+2. **Staff-Gated DocuSeal Issuance:** Super CRM issues DocuSeal after Match/BondCase/surety/POA. Multi-indemnitor support lives in Super CRM, not browser/Wix packet factories.
 
-3. **Closed-Loop Signing:** `document.complete` webhook → `PDF_Processor` post-signing pipeline → merged/watermarked PDFs → sent to client → ID upload request. Fully automated.
+3. **Closed-Loop Signing:** DocuSeal completion → Super CRM / ops sync → case folder filing. Legacy SignNow `document.complete` paths are retired.
 
 4. **MongoDB for Events, Sheets for Operations:** Sheets remain the operational source of truth (staff reads Sheets). MongoDB stores the event audit trail and analytics layer.
 
@@ -268,4 +263,4 @@ graph LR
 
 ---
 
-*Last Updated: April 24, 2026*
+*Last Updated: September 22, 2026*
