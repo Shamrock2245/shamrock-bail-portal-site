@@ -70,7 +70,7 @@ Secure area for indemnitors and defendants.
 | :--- | :--- |
 | `#geolocationConsent` | GPS location consent toggle/button. |
 | `#termsConsent` | Terms of Service checkbox. |
-| `#startPaperworkBtn` | **THE TRIGGER**. Initiates SignNow handoff. |
+| `#startPaperworkBtn` | **THE TRIGGER**. Opens paperwork launchpad / DocuSeal handoff (staff-issued; never creates a SignNow packet). |
 | `#pendingDocsRepeater` | List of unsigned documents. |
 | `#requiredDocsRepeater` | List of completed/required uploads. |
 | `#errorMessage` | Universal error feedback text. |

@@ -1,6 +1,6 @@
 # 🚨 Error Catalog
 
-> **Last Updated:** April 16, 2026
+> **Last Updated:** September 22, 2026
 
 Known error patterns and their fixes. Check here first before debugging.
 
@@ -44,7 +44,7 @@ Known error patterns and their fixes. Check here first before debugging.
 **Cause:** A required Script Property (API key, Sheet ID) is not set.
 **Fix:** Check `PropertiesService.getScriptProperties().getProperty('KEY_NAME')`. Re-set via GAS Script Editor → Project Settings → Script Properties.
 
-### ERR-012: SignNow Webhook Duplicate Fire
+### ERR-012: Legacy SignNow Webhook Duplicate Fire (historical)
 **Symptoms:** Case status updated twice, double Slack notifications.
 **Cause:** SignNow fires `document.complete` multiple times (retries on timeout).
 **Fix:** All webhook handlers must be idempotent. Check `if (status === 'completed') return;` before processing.
@@ -56,17 +56,19 @@ Known error patterns and their fixes. Check here first before debugging.
 
 ---
 
-## SignNow Integration
+## SignNow Integration — RETIRED (historical)
+
+> **DocuSeal is the sole active signing provider.** The errors below apply only to historical SignNow records / fail-closed legacy code. Do not treat them as live signing runbooks.
 
 ### ERR-020: Template Copy Fails
 **Symptoms:** `SignNow_SendPaperwork.js` returns error on template copy.
 **Cause:** Template ID changed (SignNow periodically rotates IDs) or API token expired.
-**Fix:** Re-authenticate via `SignNow_Auth.js`. Verify template IDs in Script Properties match the actual SignNow dashboard.
+**Fix:** Do not revive SignNow. Use Super CRM DocuSeal issuance. Historical fields remain read-only.
 
 ### ERR-021: Embedded Signing Link Expired
 **Symptoms:** Client clicks signing link → "Document not found" error.
-**Cause:** SignNow embedded invite links expire after 45 minutes.
-**Fix:** Generate a new invite link. Consider using the `freeform_invite` endpoint for longer-lived links.
+**Cause:** Legacy SignNow embedded invite links expire after 45 minutes.
+**Fix:** Staff re-issues via DocuSeal / Super CRM — do not generate new SignNow invites.
 
 ---
 
@@ -89,7 +91,7 @@ Known error patterns and their fixes. Check here first before debugging.
 ### ERR-040: ElevenLabs Webhook Fails
 **Symptoms:** Shannon can't create intakes or send paperwork during calls.
 **Cause:** Netlify Edge Function → GAS proxy chain broken. Usually GAS deployment URL changed.
-**Fix:** Update `GAS_WEBHOOK_URL` in Netlify environment variables. Redeploy Edge Functions.
+**Fix:** Update `GAS_WEBHOOK_URL` in Netlify environment variables **only to match** portal `.gas-config.json` (do not mint a new deployment). Redeploy Edge Functions.
 
 ### ERR-041: High Latency During Calls
 **Symptoms:** Shannon has long pauses (>5 seconds) after client speaks.
@@ -103,7 +105,7 @@ Known error patterns and their fixes. Check here first before debugging.
 ### ERR-050: GAS Bridge Returns HTML
 **Symptoms:** Node-RED dashboard shows "undefined" or raw HTML in data fields.
 **Cause:** GAS URL is stale (post-deployment URL changed).
-**Fix:** Update `GAS_DISPATCH_URL` in Node-RED global environment variables. Restart flows.
+**Fix:** Update `GAS_DISPATCH_URL` only to match `.gas-config.json`. Restart flows. Do not mint new deployments.
 
 ### ERR-051: Cron Not Firing
 **Symptoms:** Scheduled task doesn't execute.
@@ -132,7 +134,7 @@ Known error patterns and their fixes. Check here first before debugging.
 |-------------|--------|
 | ERR-001 — ERR-009 | Wix Velo Runtime |
 | ERR-010 — ERR-019 | GAS Backend |
-| ERR-020 — ERR-029 | SignNow |
+| ERR-020 — ERR-029 | SignNow (retired / historical) |
 | ERR-030 — ERR-039 | Telegram Bot |
 | ERR-040 — ERR-049 | Shannon (Voice AI) |
 | ERR-050 — ERR-059 | Node-RED |

@@ -1,6 +1,6 @@
 # 📖 Glossary
 
-> **Last Updated:** April 16, 2026
+> **Last Updated:** September 22, 2026
 
 | Term | Definition |
 |------|-----------|
@@ -8,7 +8,7 @@
 | **ArrestRecord** | The base data object with 34 columns for a single booking. See `SCHEMAS.md`. |
 | **Billboard** | Our vision for the website: a living, breathing, dynamic ad visible statewide. |
 | **Booking Number** | Unique arrest identifier. Primary dedup key (with County) across all systems. |
-| **Case ID** | Cross-platform tracking key (e.g., `CASE-2026-001234`) linking Wix → GAS → SignNow. |
+| **Case ID** | Cross-platform tracking key (e.g., `CASE-2026-001234`) linking Wix → GAS → Super CRM / DocuSeal. |
 | **County Slug** | Lowercase hyphenated county name for URLs (e.g., `palm-beach`). |
 | **GAS** | Google Apps Script — "The Factory." Central backend for all business logic. |
 | **Hot Lead** | Prospect with Lead Score ≥ 70. Requires immediate follow-up. |
@@ -25,7 +25,7 @@
 | **Qualified Arrest** | Arrest record that passes lead scoring (score ≥ 70, not released, bond > $0). |
 | **Router** | Wix dynamic page system (e.g., `/florida-bail-bonds/{county-slug}`). |
 | **Shannon** | ElevenLabs voice AI paperwork assistant. Answers when `SHANNON_LIVE` is on, walks any role through bond packet fields, and emails the indemnitor DocuSeal signing + payment links. |
-| **SignNow Packet** | The 14-document signing package generated for each bail bond case. |
+| **DocuSeal Packet** | Staff-issued signing package from Super CRM (DocuSeal is the sole active provider). SignNow packets are retired/historical only. |
 | **The Clerk** | AI agent that parses booking data into structured JSON. |
 | **The Closer** | AI agent that runs abandoned intake SMS/WhatsApp drip campaigns. |
 | **The Concierge** | AI agent for 24/7 client support across web, SMS, and Telegram. |
