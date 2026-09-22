@@ -375,14 +375,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="cc-timestamp" id="ts-conditions"></div>
     </div>
 
-    <!-- 5. Electronic Signature -->
+    <!-- 5. Electronic Signature (DocuSeal is sole active provider; SignNow retired. This wizard collects consent only — staff issue DocuSeal packets in Super CRM.) -->
     <div class="consent-card" id="card-esign">
       <div class="cc-header">
         <span class="cc-icon">✍️</span>
         <span class="cc-title">Electronic Signature Consent</span>
         <span class="cc-badge pending" id="badge-esign">Pending</span>
       </div>
-      <div class="cc-body">By typing your name above and checking this box, you consent to use your typed name as your electronic signature on this Application for Appearance Bond and any related documents sent via SignNow.</div>
+      <div class="cc-body">By typing your name above and checking this box, you consent to use your typed name as your electronic signature on this Application for Appearance Bond and any related bond paperwork issued for electronic signature through DocuSeal after a Shamrock agent reviews your case. This intake is not the final bond contract; staff issue DocuSeal signing links only after case verification.</div>
       <label class="cc-action"><input type="checkbox" id="consent-esign" onchange="W.updateConsent('esign')"><span>I agree that my typed name constitutes my legal electronic signature.</span></label>
       <div class="cc-timestamp" id="ts-esign"></div>
     </div>
@@ -398,7 +398,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <!-- Success Overlay -->
 <div id="success">
   <h2>☘️ Application Submitted</h2>
-  <p>Your application has been received. A Shamrock agent will review your information and contact you shortly.</p>
+  <p>Your application has been received. A Shamrock agent will review your information and contact you shortly. Final bond paperwork is signed via DocuSeal after staff approval—this intake does not create a signing packet by itself.</p>
 </div>
 
 <!-- Toast -->
