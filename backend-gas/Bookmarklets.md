@@ -4,60 +4,34 @@
 
 These bookmarklets extract arrest data from county websites and populate the Shamrock Bail Bonds booking form automatically. Click the bookmarklet while viewing an arrest detail page to instantly open a pre-filled form.
 
-**Important**: Replace `AKfycbxdKuWmcBo7Cu0RXsBgongINERqFoPE8CmfcdxtLdnJoM3SxuqBHGJY-pIrMbRi72_rnQ` with your actual Apps Script web app deployment ID.
+**Canonical GAS factory (source of truth):** see repo-root [`.gas-config.json`](../.gas-config.json). County bookmarklets below already use that deployment ID — do **not** mint a new deployment or re-point these URLs without Brendan.
 
+### Runtime secrets policy
 
----
-
-## 🚀 Universal AI Bookmarklet (Recommended)
-
-This single bookmarklet works on **ANY** Sheriff's website or arrest page. It sends the URL to the Shamrock Portal, where "The Clerk" AI Agent will automatically parse it.
-
-**Why use this?**
-- Works on every county (Lee, Collier, Charlotte, etc.)
-- No need to install different buttons for every county.
-- Uses Gemini AI for smarter extraction.
-
-### Installation
-1. Create a new bookmark named **"Shamrock AI Import"**.
-2. Paste the code below as the URL.
-3. Replace `YOUR_DEPLOYMENT_ID` with your actual ID.
-
-```javascript
-javascript:(function(){
-  const deploymentId = 'AKfycbybvb6EpI6Aop5RSDvweHceD1LQpjMoomEHro5zH9fNbR_-OVCqISX5lTa4lMuNR6EXYw'; // UPDATE THIS IF DEPLOYMENT CHANGES
-  const portalUrl = `https://script.google.com/macros/s/${deploymentId}/exec`;
-  window.open(`${portalUrl}?agent=clerk&url=${encodeURIComponent(window.location.href)}`, 'ShamrockPortal');
-})();
-```
+- Runtime / Wix / Netlify secrets that reference the GAS web app **must match** `.gas-config.json` only.
+- Do **not** rotate GAS deployment IDs, web app URLs, or related secrets without Brendan approval.
+- Canonical factory deployment ID: `AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z`
+- Canonical factory URL: `https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec`
+- School uses a **separate** deployment (documented in `.gas-config.json` as `schoolDeploymentId`) — leave it alone.
 
 ---
 
-## Legacy Site-Specific Bookmarklets
-*(Use these only if the Universal one fails)*
+## ⛔ RETIRED — Universal AI Bookmarklet
+
+**Status: RETIRED / REMOVED (deployments 404).** Do not install or use.
+
+| Variant | Historical dead deployment ID (do not revive) |
+|---|---|
+| Universal AI (“Shamrock AI Import”) | `AKfycbybvb6EpI6Aop5RSDvweHceD1LQpjMoomEHro5zH9fNbR_-OVCqISX5lTa4lMuNR6EXYw` |
+| UniversalBookmarklet_Minified | `AKfycbxdKuWmcBo7Cu0RXsBgongINERqFoPE8CmfcdxtLdnJoM3SxuqBHGJY-pIrMbRi72_rnQ` |
+
+Staff should use the **county/canonical bookmarklets** in this file only (they already point at the canonical factory ID). Do **not** re-point these dead Universal variants at the factory ID — that would be a forbidden GAS URL change in retired bookmarklets.
 
 ---
 
+## County Site-Specific Bookmarklets
 
-1. **Get your deployment ID:**
-   - Open Apps Script project
-   - Click "Deploy" → "New deployment"
-   - Select "Web app"
-   - Set access to "Anyone"
-   - Copy the deployment URL
-   - Extract the ID from the URL (between `/s/` and `/exec`)
-
-2. **Create bookmarklets:**
-   - Create a new bookmark in your browser
-   - Name it (e.g., "Lee County → Booking Form")
-   - Paste the JavaScript code into the URL field
-   - Replace `AKfycbxdKuWmcBo7Cu0RXsBgongINERqFoPE8CmfcdxtLdnJoM3SxuqBHGJY-pIrMbRi72_rnQ` with your actual ID
-
-3. **Use bookmarklets:**
-   - Navigate to an arrest detail page
-   - Click the bookmarklet in your toolbar
-   - Form opens with pre-filled data
-   - Review and submit
+*(Preferred path — use these.)*
 
 ---
 
@@ -443,33 +417,21 @@ If a county website changes its structure:
 
 ---
 
-## Deployment ID Setup
+## Deployment ID (canonical — do not mint)
 
-### Get Your Deployment ID
+Source of truth: repo-root [`.gas-config.json`](../.gas-config.json).
 
-1. Open Apps Script: https://script.google.com/u/0/home/projects/12BRRdYuyVJpQODJq2-OpUhQdZ9YLt4bbAFWmOUyJPWM_EcazKTiu3dYo/edit
-2. Click "Deploy" → "New deployment"
-3. Select type: "Web app"
-4. Description: "Booking Form Web App"
-5. Execute as: "Me"
-6. Who has access: "Anyone"
-7. Click "Deploy"
-8. Copy the web app URL
-9. Extract the ID between `/s/` and `/exec`
-
-**Example URL:**
+**Canonical factory URL:**
 ```
 https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec
 ```
 
-**Deployment ID:**
+**Canonical factory deployment ID:**
 ```
-AKfycbzXYZ123ABC456DEF789
+AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z
 ```
 
-### Update All Bookmarklets
-
-Replace `YOUR_DEPLOYMENT_ID` in all bookmarklets with your actual deployment ID.
+Do **not** create a "New deployment" for bookmarklets. County bookmarklets above already use this ID. If a surface mismatches `.gas-config.json`, document it and escalate to Brendan — do not rotate secrets or re-point dead Universal IDs.
 
 ---
 
@@ -495,9 +457,7 @@ Replace `YOUR_DEPLOYMENT_ID` in all bookmarklets with your actual deployment ID.
 
 ## Next Steps
 
-1. Deploy Form_Enhanced.html as web app
-2. Get deployment ID
-3. Update all bookmarklets with deployment ID
-4. Install bookmarklets in browser
-5. Test with each county
-6. Train staff on dual workflow (bookmarklet + menu button)
+1. Install **county** bookmarklets from this file (canonical factory ID already embedded)
+2. Do **not** install retired Universal AI / UniversalBookmarklet_Minified variants
+3. Test with each county
+4. Train staff on dual workflow (county bookmarklet + menu button)
