@@ -1,5 +1,8 @@
 # 🔐 Secrets Rotation Guide
 
+> **Signing doctrine (current):** DocuSeal only at `https://sign.shamrockbailbonds.biz`. SignNow is **permanently retired**. Content below that describes SignNow as active is **historical / read-only** — do not configure SignNow for new work; do not mint GAS Web App URLs.
+
+
 > ⚠️ **CRITICAL SECURITY ACTION REQUIRED**
 Because some API keys were previously committed to the git repository, they are considered **compromised**. You must rotate (regenerate) them immediately to ensure the security of your platform.
 
@@ -131,7 +134,7 @@ SETUP_MissingProperties('wix-webhook-hmac-secret');
 Local Node tests:
 
 ```bash
-export GAS_API_KEY='...'   # or scripts/testing/.env (gitignored)
+export GAS_API_KEY='...'   // or scripts/testing/.env (gitignored)
 node scripts/testing/test_gas_email.mjs
 ```
 
@@ -140,7 +143,7 @@ node scripts/testing/test_gas_email.mjs
 ## ✅ Final Verification
 
 After rotating all keys:
-1. Run a test flow (e.g., "Start Bail Paperwork") to ensure SignNow and Twilio still work.
+1. Run a test flow (e.g., staff DocuSeal packet smoke in Super CRM) to ensure DocuSeal and Twilio still work. (SignNow is retired — do not reconfigure it.)
 2. Check the Dashboard map to ensure it loads without errors.
 3. Trigger a manual Wix deploy to confirm `WIX_CLI_API_KEY` is valid and auto-deploy works.
 4. Confirm `GAS_API_KEY` in Wix Secrets Manager matches GAS Script Properties (no fallback defaults).
