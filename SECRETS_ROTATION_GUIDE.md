@@ -5,23 +5,12 @@ Because some API keys were previously committed to the git repository, they are 
 
 ---
 
-## 1. SignNow API Token
+## 1. SignNow API Token — RETIRED
 
-**Impact:** Unauthorized access to creating and viewing legal documents.
+**SignNow is retired.** DocuSeal is the sole active signing provider (see `docs/CURRENT_PAPERWORK_ARCHITECTURE.md`).
 
-1. Log in to your **SignNow** account.
-2. Navigate to **API** settings (usually under Integrations or Developer Console).
-3. Revoke the old token starting with `0c35...`.
-4. Generate a **new** Basic Authorization Token.
-5. **Action (Programmatic Update Required):**
-    * *Note: Your GAS Project properties are "Read-Only" in the UI because there are >50 items.*
-    * Open your Google Apps Script Editor in the browser.
-    * Open `backend-gas/SetProperties.gs` (file may be named `SetProperties`).
-    * **Temporarily** paste your NEW token into the code, replacing `'REPLACE_WITH_SIGNNOW_TOKEN'`.
-    * Select `ADMIN_UpdateAllProperties` from the toolbar and click **Run**.
-    * **CRITICAL:** After it runs, **UNDO** your changes (Cmd+Z) in the browser to remove the secret from the file. The property is now saved in the system; you don't need it in the code anymore.
+Do **not** rotate or refresh SignNow API tokens for live paperwork. Historical Script Properties / CMS fields may remain for read-only compatibility. Any signing-secret work goes through **DocuSeal / Super CRM** with Brendan approval — not SignNow revival.
 
----
 
 ## 2. Twilio Auth Token
 
@@ -140,7 +129,7 @@ node scripts/testing/test_gas_email.mjs
 ## ✅ Final Verification
 
 After rotating all keys:
-1. Run a test flow (e.g., "Start Bail Paperwork") to ensure SignNow and Twilio still work.
+1. Run a test flow (e.g., staff-gated DocuSeal issuance in Super CRM + Twilio SMS) to ensure DocuSeal and Twilio still work. Do not revive SignNow.
 2. Check the Dashboard map to ensure it loads without errors.
 3. Trigger a manual Wix deploy to confirm `WIX_CLI_API_KEY` is valid and auto-deploy works.
 4. Confirm `GAS_API_KEY` in Wix Secrets Manager matches GAS Script Properties (no fallback defaults).
