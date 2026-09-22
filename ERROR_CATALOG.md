@@ -1,5 +1,8 @@
 # 🚨 Error Catalog
 
+> **Signing doctrine (current):** DocuSeal only at `https://sign.shamrockbailbonds.biz`. SignNow is **permanently retired**. Content below that describes SignNow as active is **historical / read-only** — do not configure SignNow for new work; do not mint GAS Web App URLs.
+
+
 > **Last Updated:** April 16, 2026
 
 Known error patterns and their fixes. Check here first before debugging.
@@ -44,7 +47,7 @@ Known error patterns and their fixes. Check here first before debugging.
 **Cause:** A required Script Property (API key, Sheet ID) is not set.
 **Fix:** Check `PropertiesService.getScriptProperties().getProperty('KEY_NAME')`. Re-set via GAS Script Editor → Project Settings → Script Properties.
 
-### ERR-012: SignNow Webhook Duplicate Fire
+### ERR-012: SignNow Webhook Duplicate Fire *(retired provider — historical)*
 **Symptoms:** Case status updated twice, double Slack notifications.
 **Cause:** SignNow fires `document.complete` multiple times (retries on timeout).
 **Fix:** All webhook handlers must be idempotent. Check `if (status === 'completed') return;` before processing.
@@ -56,7 +59,7 @@ Known error patterns and their fixes. Check here first before debugging.
 
 ---
 
-## SignNow Integration
+## SignNow Integration *(retired — DocuSeal is sole active provider)*
 
 ### ERR-020: Template Copy Fails
 **Symptoms:** `SignNow_SendPaperwork.js` returns error on template copy.
@@ -132,7 +135,7 @@ Known error patterns and their fixes. Check here first before debugging.
 |-------------|--------|
 | ERR-001 — ERR-009 | Wix Velo Runtime |
 | ERR-010 — ERR-019 | GAS Backend |
-| ERR-020 — ERR-029 | SignNow |
+| ERR-020 — ERR-029 | SignNow (retired / historical) |
 | ERR-030 — ERR-039 | Telegram Bot |
 | ERR-040 — ERR-049 | Shannon (Voice AI) |
 | ERR-050 — ERR-059 | Node-RED |
