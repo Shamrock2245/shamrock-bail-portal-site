@@ -34,7 +34,7 @@ graph TD
     subgraph "Backend Intelligence (GAS)"
         CODE["Code.js<br/>doPost() / doGet()<br/>Single Entry Point"]
         AI_AGENTS["AI Agents<br/>Clerk, Analyst, Investigator,<br/>Concierge, Closer"]
-        SIGNNOW_INT["SignNow Integration<br/>14-doc packet generation"]
+        DOCUSEAL_INT["DocuSeal Integration<br/>staff-issued packets"]
         TG_FLOW["Telegram Flows<br/>Intake, OCR, Notifications"]
         NR_HANDLERS["NodeRedHandlers.js<br/>17+ data endpoints"]
         MONGO_LOG["MongoLogger.gs<br/>Event persistence"]
@@ -60,7 +60,7 @@ graph TD
     end
 
     subgraph "External Services"
-        SIGNNOW[SignNow]
+        DOCUSEAL[DocuSeal]
         TWILIO[Twilio SMS/WhatsApp]
         SLACK["Slack (12+ channels)"]
         OPENAI[OpenAI GPT-4o]
@@ -74,7 +74,7 @@ graph TD
     PHONE --> EDGE_TV --> CODE
 
     CODE --> AI_AGENTS
-    CODE --> SIGNNOW_INT
+    CODE --> DOCUSEAL_INT
     CODE --> TG_FLOW
     CODE --> NR_HANDLERS
     CODE --> MONGO_LOG
@@ -94,7 +94,7 @@ graph TD
     MONGO_LOG --> MONGODB
     CODE --> GDRIVE
 
-    SIGNNOW_INT --> SIGNNOW
+    DOCUSEAL_INT --> DOCUSEAL
     CODE --> TWILIO
     CODE --> SLACK
     AI_AGENTS --> OPENAI
@@ -114,7 +114,7 @@ Single entry point via `Code.js` → `doPost()` (50+ action routes) and `doGet()
 | **Core Router** | `Code.js` | Routes all webhooks, exposes GET endpoints for Node-RED |
 | **Telegram** | `Telegram_Webhook.js`, `Telegram_IntakeFlow.js`, `Telegram_API.js`, `Telegram_Notifications.js`, `Telegram_Auth.js`, `Telegram_OCR.js`, `Telegram_InlineQuote.js`, `Telegram_Analytics.js` | Bot message routing, conversational intake (30+ steps), OTP auth, DL OCR, inline quotes, 4-touch court reminders |
 | **AI Agents** | `AI_BookingParser.js`, `AI_FlightRisk.js`, `AI_Investigator.js`, `AIConcierge.js`, `TheCloser.js`, `Manus_Brain.js` | Booking parsing, risk scoring (0-100), background checks, chat, drip campaigns, Telegram AI routing |
-| **SignNow** | `SignNow_SendPaperwork.js`, `Telegram_Documents.js`, `Server_DocumentLogic.js`, `SOC2_WebhookHandler.js` | 14-doc packet generation, field hydration, embedded signing, webhook verification |
+| **DocuSeal** | Super CRM paperwork finalize + Netlify signing launchpad (legacy `SignNow_*` GAS files retired) | Staff-issued packets at `https://sign.shamrockbailbonds.biz`; Wix never creates submissions |
 | **Document Processing** | `PDF_Processor.js`, `DriveFilingService.gs` | Post-signing pipeline (merge, watermark), ID verification flow, Drive case folders |
 | **Scrapers (Internal)** | `ArrestScraper_Lee.js`, `ArrestScraper_Collier.js` | GAS-native scrapers for Lee and Collier counties |
 | **Lead Management** | `LeadScoringSystem.js`, `LeadScoringConfig.js` | Urgency × bond amount × county scoring, auto-prioritization |
@@ -128,11 +128,11 @@ Mobile-first frontend. Collects data but does NOT own heavy logic.
 
 | File | Responsibility |
 |------|----------------|
-| `http-functions.js` | Public webhook endpoint — forwards Telegram/SignNow payloads to GAS |
+| `http-functions.js` | Public webhook endpoint — forwards Telegram / paperwork payloads to GAS |
 | `portal-auth.jsw` | Magic link authentication, session management |
 | `ai-service.jsw` | AI Concierge chat bridge (Wix → GAS) |
 | `portal-defendant.js` | Defendant dashboard — appearance app, check-ins, court dates |
-| `portal-indemnitor.js` | Indemnitor dashboard — financial forms, ID upload, SignNow signing |
+| `portal-indemnitor.js` | Indemnitor dashboard — financial forms, ID upload, DocuSeal signing launchpad |
 | `Dashboard.html` (GAS) | Staff intake queue, case management, packet generation |
 
 ### 3.3 Node-RED (`shamrock-node-red/`) — "Operations Hub"
@@ -156,7 +156,7 @@ Dockerized at `localhost:1880`. Premium glassmorphism UI. Static ngrok domain fo
 | Hub | `/` | Central navigation |
 | Intake | `/intake/` | 5-step bail intake form |
 | Defendant | `/defendant/` | Self-service portal |
-| Documents | `/documents/` | View + sign docs (SignNow) |
+| Documents | `/documents/` | View + sign docs (DocuSeal staff-issued session) |
 | Payment | `/payment/` | Payments + GPS/selfie check-in |
 | Status | `/status/` | Case lookup from GAS data |
 | Updates | `/updates/` | Contact changes, tips, extensions |
@@ -192,7 +192,7 @@ Dockerized at `localhost:1880`. Premium glassmorphism UI. Static ngrok domain fo
 
 ## 4. Document Signing Pipeline (V2 — Multi-Indemnitor)
 
-SignNow is the **single source of truth** for all 14 document templates (Team Templates folder).
+**DocuSeal** (`https://sign.shamrockbailbonds.biz`) is the sole active signing provider and source of truth for live templates. SignNow is permanently retired; historical SignNow fields remain read-only.
 
 ```mermaid
 graph LR
@@ -202,7 +202,7 @@ graph LR
     C -->|builds| E[Manifest Array];
     E -->|for each doc| F(server_getSigningUrl);
     F -->|calls| G(handleTelegramGetSigningUrl);
-    G -->|creates copy from| H[SignNow Template];
+    G -->|creates submission from| H[DocuSeal Template];
     G -->|pre-fills| I[Document Copy];
     G -->|returns| J[Signing URL];
     J -->|displayed in| A;
@@ -214,7 +214,7 @@ graph LR
 | `shared` | One copy, all parties sign | Disclosure Form, Promissory Note |
 | `per-indemnitor` | One copy per indemnitor | Indemnity Agreement |
 | `per-person` | One copy per person (defendant + each indemnitor) | SSA Release |
-| `print-only` | Not sent to SignNow | FAQ sheets |
+| `print-only` | Not sent to DocuSeal | FAQ sheets / wet-ink appearance bonds |
 
 **Tracking:** `DocSigningTracker` spreadsheet with composite key `docId:signer-N`.
 
@@ -235,7 +235,7 @@ graph LR
 | GAS → Twilio | `UrlFetchApp` | SMS confirmations, court reminders |
 | Scrapers → Sheets + MongoDB | `SheetsWriter` / Cloud Functions proxy | 39-column arrest records |
 | Scrapers → Slack | Direct webhook | Hot lead alerts, health reports |
-| SignNow → GAS | Webhook `document.complete` | Triggers post-signing pipeline |
+| DocuSeal → Super CRM / GAS | Webhook / poller completion | Updates packet state; triggers post-signing pipeline |
 
 ---
 
@@ -254,7 +254,7 @@ graph LR
 
 1. **GAS as Single Backend:** All business logic routes through `Code.js`. Node-RED, Wix, and Telegram are consumers — not logic owners.
 
-2. **Manifest-Driven Signing:** Individual SignNow template copies per document, per signer. Enables per-person tracking and multi-indemnitor multiplication.
+2. **Staff-Gated DocuSeal Signing:** Packets are issued only from Super CRM after Match → BondCase → surety → POA. Multi-party submitters get role-specific DocuSeal links.
 
 3. **Closed-Loop Signing:** `document.complete` webhook → `PDF_Processor` post-signing pipeline → merged/watermarked PDFs → sent to client → ID upload request. Fully automated.
 
