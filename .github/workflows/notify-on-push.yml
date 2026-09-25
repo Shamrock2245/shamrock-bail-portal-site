@@ -9,10 +9,10 @@ jobs:
     name: Slack Push Notification
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Send Slack Notification
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v3.0.5
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}
