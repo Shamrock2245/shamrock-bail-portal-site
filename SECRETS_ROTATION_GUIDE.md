@@ -1,5 +1,8 @@
 # 🔐 Secrets Rotation Guide
 
+> **Signing doctrine (current):** DocuSeal only at `https://sign.shamrockbailbonds.biz`. SignNow is **permanently retired**. Content below that describes SignNow as active is **historical / read-only** — do not configure SignNow for new work; do not mint GAS Web App URLs.
+
+
 > ⚠️ **CRITICAL SECURITY ACTION REQUIRED**
 Because some API keys were previously committed to the git repository, they are considered **compromised**. You must rotate (regenerate) them immediately to ensure the security of your platform.
 

@@ -1,5 +1,8 @@
 # Shamrock Bail Bonds - SignNow + Wix Integration Summary
 
+> **Signing doctrine (current):** DocuSeal only at `https://sign.shamrockbailbonds.biz`. SignNow is **permanently retired**. Content below that describes SignNow as active is **historical / read-only** — do not configure SignNow for new work; do not mint GAS Web App URLs.
+
+
 ## Overview
 
 This document summarizes the complete integration between your Dashboard.html/GAS workflow, SignNow for document signing, and your Wix site (shamrockbailbonds.biz) for the client portal.

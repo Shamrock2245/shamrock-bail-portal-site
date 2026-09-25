@@ -57,3 +57,5 @@
 - **Ops Hub & Scheduler:** `shamrock-node-red`
 - **Bail School LMS:** `shamrock-bail-school`
 - **Telegram Mini-Apps:** `shamrock-telegram-app`
+- **Bond Tracker (private):** [`Shamrock2245/shamrock-bond-tracker`](https://github.com/Shamrock2245/shamrock-bond-tracker) — GPS/IP check-in geolocation; private repo (not missing)
+- **Staff Auto-CRM URL:** `https://leads.shamrockbailbonds.biz` (canonical; not raw Hetzner `:8088`)
