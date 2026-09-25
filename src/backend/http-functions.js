@@ -933,9 +933,10 @@ export async function get_sitemap(request) {
 
     // County bail pages
     try {
-        const results = await wixData.query('FloridaCounties').limit(100).find();
+        const results = await wixData.query('FloridaCounties').limit(1000).find();
         if (results.items && results.items.length) {
             results.items.forEach((county) => {
+                if (county.active === false) return; // hidden duplicates / blank items
                 const slug = canonicalCountySlug(county);
                 if (slug) {
                     addUrl(`/florida-bail-bonds/${encodeURIComponent(slug)}`, '0.85', 'weekly', LAST_MOD);
