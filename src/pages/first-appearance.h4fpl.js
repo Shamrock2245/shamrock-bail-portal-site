@@ -115,7 +115,7 @@ const FAQ_DATA = [
     {
         question: 'How quickly can Shamrock Bail Bonds post bail after First Appearance?',
         answer:
-            'Shamrock Bail Bonds can begin the bail process immediately after the bond amount is set at First Appearance — even while the hearing is still in progress. Our office at 1528 Broadway, Fort Myers is steps from the Lee County Justice Center. Most bonds are posted within 1 to 2 hours of receiving the paperwork.'
+            'Shamrock Bail Bonds can begin the bail process immediately after the bond amount is set at First Appearance — even while the hearing is still in progress. Our office at 1528 Broadway, Fort Myers is steps from the Lee County Justice Center. We post the bond as soon as the paperwork and payment are complete.'
     },
     {
         question: 'What happens if someone misses their First Appearance?',
@@ -125,7 +125,7 @@ const FAQ_DATA = [
     {
         question: 'Does Shamrock Bail Bonds handle all Florida counties?',
         answer:
-            "Yes. Shamrock Bail Bonds serves all 67 Florida counties. Our Fort Myers office specializes in Southwest Florida (Lee, Collier, Charlotte, Hendry, DeSoto, Sarasota, Manatee), but we process bonds statewide — including Orange, Hillsborough, Palm Beach, Broward, and Miami-Dade. A $125 transfer fee applies for counties outside Lee and Charlotte, waived for bonds over $25,000."
+            "Yes. Shamrock Bail Bonds serves all 67 Florida counties. Our Fort Myers office specializes in Southwest Florida (Lee, Collier, Charlotte, Hendry, DeSoto, Sarasota, Manatee), but we process bonds statewide — including Orange, Hillsborough, Palm Beach, Broward, and Miami-Dade. A $100 transfer fee applies for counties outside Lee and Charlotte; it may be waived on most bonds over $25,000, at our discretion."
     }
 ];
 

@@ -1118,7 +1118,7 @@ export async function getDefendantDetails(sessionToken) {
                 email: '',
                 caseNumber: 'Pending',
                 bondAmount: '$0.00',
-                nextCourtDate: 'TBD',
+                nextCourtDate: 'Not yet scheduled',
                 caseStatus: 'Pending',
                 paperworkStatus: 'Not Started',
                 signingStatus: 'Incomplete'
@@ -1126,7 +1126,7 @@ export async function getDefendantDetails(sessionToken) {
         }
 
         // Format court date
-        let nextCourtDate = 'TBD';
+        let nextCourtDate = 'Not yet scheduled';
         if (caseData.courtDate) {
             const date = new Date(caseData.courtDate);
             nextCourtDate = date.toLocaleDateString('en-US', {
@@ -1281,7 +1281,7 @@ export async function getIndemnitorDetails(sessionToken) {
             // Defendant status fields
             defendantStatus: caseData.defendantStatus || 'In Custody',
             lastCheckIn: caseData.lastCheckIn ? new Date(caseData.lastCheckIn).toLocaleDateString() : 'Never',
-            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD'
+            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'Not yet scheduled'
         };
 
     } catch (error) {
@@ -1381,7 +1381,7 @@ export async function getIndemnitorLinkedCases(sessionToken) {
             bondAmount: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
             county: caseData.county || '',
             arrestDate: caseData.arrestDate ? new Date(caseData.arrestDate).toLocaleDateString() : 'N/A',
-            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD',
+            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'Not yet scheduled',
             paperworkStatus: caseData.paperworkStatus || 'Pending',
             signingStatus: caseData.indemnitorSigningStatus || 'Incomplete',
             charges: caseData.charges || '',
@@ -1456,7 +1456,7 @@ export async function getDefendantLinkedCases(sessionToken) {
             bondAmount: caseData.bondAmount ? '$' + Number(caseData.bondAmount).toLocaleString() : '$0.00',
             county: caseData.county || '',
             arrestDate: caseData.arrestDate ? new Date(caseData.arrestDate).toLocaleDateString() : 'N/A',
-            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'TBD',
+            nextCourtDate: caseData.nextCourtDate ? new Date(caseData.nextCourtDate).toLocaleDateString() : 'Not yet scheduled',
             paperworkStatus: caseData.paperworkStatus || 'Pending',
             signingStatus: caseData.defendantSigningStatus || 'Incomplete',
             charges: caseData.charges || '',

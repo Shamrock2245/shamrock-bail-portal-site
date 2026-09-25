@@ -33,7 +33,7 @@ If a bail bond agency offers you a rate below 10%, they are operating illegally.
 ### Section 648.44 — Transfer Fee
 A **$125 transfer fee** may be charged for surety bonds in counties outside the home county of the surety insurer (the insurance company backing the bond). This fee:
 - **Does NOT apply** to bonds in Lee County or Charlotte County for Shamrock
-- **IS waived** for bonds over $25,000 (regardless of county)
+- **May be waived** by Shamrock on most bonds over $25,000, at our discretion (not guaranteed)
 - **Applies** to most other Florida counties
 
 ---

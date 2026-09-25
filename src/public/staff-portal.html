@@ -559,7 +559,7 @@ var SP = {
     var premium = Math.max(total * 0.10, chargeCount * 100);
     var transfer = 0;
     if (total < 25000 && county && county !== 'Lee' && county !== 'Charlotte') {
-      transfer = 125;
+      transfer = 100;
     }
     var paid = parseFloat((document.getElementById('fin-paid').value || '0').replace(/[^0-9.]/g, '')) || 0;
     var totalDue = premium + transfer - paid;

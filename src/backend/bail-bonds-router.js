@@ -37,7 +37,7 @@ export async function routeCountyPage(request) {
     // The page code (Florida Counties.qx7lv.js) reads wixLocation.path to get the slug.
     return ok(COUNTY_PAGE_NAME, {
         title: `${pretty} Bail Bonds | 24/7 Florida Jail Release | Shamrock`,
-        description: `24/7 bail bonds for ${pretty}. Licensed Florida agents, payment plans, fast jail release. Call (239) 332-2245.`,
+        description: `24/7 bail bonds for ${pretty}. Licensed Florida agents and payment plans. Call (239) 332-2245.`,
         slug: countySlug
     });
 }

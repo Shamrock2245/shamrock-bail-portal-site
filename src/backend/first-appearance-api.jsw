@@ -320,8 +320,8 @@ function generateFABailInfo(name, circuitNum) {
         + `This premium is non-refundable and is the same at every licensed bail bond agency in the state. `
         + `We offer flexible payment plans for qualified clients to make bail more affordable. `
         + `Most paperwork can be completed electronically from your phone — you don't even need to visit our office. `
-        + `Release from the ${name} County Jail typically occurs within 2-8 hours after bail is posted, `
-        + `though delays may occur depending on jail processing volume and court-imposed conditions.`;
+        + `Release timing after bail is posted depends on the ${name} County jail's processing, `
+        + `including booking volume and any court-imposed conditions.`;
 }
 
 function generateFACountyFAQs(name, circuitNum, cities, countySeat, phone) {
@@ -339,7 +339,7 @@ function generateFACountyFAQs(name, circuitNum, cities, countySeat, phone) {
         },
         {
             question: `How quickly can I bail someone out after First Appearance in ${name} County?`,
-            answer: `Shamrock Bail Bonds can begin the bail process immediately after the judge sets the bond amount — even while the hearing is still in progress. We process bonds electronically so you can complete paperwork from your phone. Most bonds are posted within 1-2 hours of receiving the paperwork.`
+            answer: `Shamrock Bail Bonds can begin the bail process immediately after the judge sets the bond amount — even while the hearing is still in progress. We process bonds electronically so you can complete paperwork from your phone. We post the bond as soon as the paperwork and payment are complete.`
         },
         {
             question: `How much does bail cost in ${name} County, Florida?`,

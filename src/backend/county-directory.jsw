@@ -150,7 +150,7 @@ export async function getCountyDirectory() {
       // SEO data for the hub page
       hubSeo: {
         title: 'Florida Bail Bonds - All 67 Counties | Shamrock Bail Bonds',
-        description: 'Shamrock Bail Bonds serves all 67 Florida counties. Find bail bond services in your county — 24/7 fast release, bilingual support, payment plans available. Call (239) 332-2245.',
+        description: 'Shamrock Bail Bonds serves all 67 Florida counties. Find bail bond services in your county — 24/7 service, bilingual support, payment plans available. Call (239) 332-2245.',
         keywords: [
           'florida bail bonds', 'bail bonds florida', 'bail bondsman near me florida',
           '24/7 bail bonds florida', 'florida bail bond company', 'bail bonds all counties florida',

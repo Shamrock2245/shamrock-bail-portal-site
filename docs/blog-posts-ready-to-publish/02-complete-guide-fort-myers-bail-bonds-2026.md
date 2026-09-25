@@ -88,7 +88,7 @@ Florida law sets the bail bond premium at **10% of the total bail amount**, with
 
 ### Shamrock's Pricing
 
-At Shamrock Bail Bonds, the premium is exactly the Florida-regulated 10%. We do not charge hidden fees for Lee County bonds. A **$125 transfer fee** applies for bonds in counties outside Lee and Charlotte County (waived for bonds over $25,000).
+At Shamrock Bail Bonds, the premium is exactly the Florida-regulated 10%. We do not charge hidden fees for Lee County bonds. A **$100 transfer fee** applies for bonds in counties outside Lee and Charlotte County (it may be waived on most bonds over $25,000, at our discretion).
 
 ### Payment Options
 

@@ -1992,7 +1992,7 @@ function getCountyDirectory_() {
             jail_address: '3347 Tamiami Trail East, Naples, Florida 34112',
             courthouse: '3315 Tamiami Trail E, Naples, FL 34112',
             booking_search: 'https://www2.colliersheriff.org',
-            tips: 'Collier accepts Remote Posting (E-Bond). Releases usually 1-2 hours.'
+            tips: 'Collier accepts Remote Posting (E-Bond). Release timing depends on the jail\'s processing.'
         },
         'columbia': {
             name: 'Columbia', facility: 'Columbia County Jail', jail_phone: '386.755.7000',
@@ -2120,7 +2120,7 @@ function getCountyDirectory_() {
             jail_address: '14750 Six Mile Cypress Parkway, Fort Myers, Florida 33912',
             courthouse: '1700 Monroe St, Fort Myers, FL 33901',
             booking_search: 'https://www.sheriffleefl.org',
-            tips: 'Wait times can be 2-4 hours after bond is posted. First Appearance daily at 9 AM.'
+            tips: 'Release timing after bond is posted depends on the jail\'s processing. First Appearance daily at 9 AM.'
         },
         'leon': {
             name: 'Leon', facility: 'Leon County Jail', jail_phone: '850.606.3500',
@@ -2187,7 +2187,7 @@ function getCountyDirectory_() {
             jail_address: '3723 Vision Boulevard, Orlando, Florida 32839',
             courthouse: '425 N Orange Ave, Orlando, FL 32801',
             booking_search: 'https://netapps.ocfl.net',
-            tips: 'Must present Power of Attorney physically. Release is slow (6-10 hours).'
+            tips: 'Must present Power of Attorney physically. Release timing depends on the jail\'s processing.'
         },
         'osceola': {
             name: 'Osceola', facility: 'Osceola County Jail', jail_phone: '407.742.4444',
@@ -2242,7 +2242,7 @@ function getCountyDirectory_() {
             name: 'Sarasota', facility: 'Sarasota County Jail', jail_phone: '941.861.4165',
             jail_address: '2020 Main Street, Sarasota, Florida 34237',
             courthouse: null, booking_search: 'https://www.sarasotasheriff.org',
-            tips: 'E-Bonds accepted for low-level offenses. Releases take 4-6 hours.'
+            tips: 'E-Bonds accepted for low-level offenses. Release timing depends on the jail\'s processing.'
         },
         'seminole': {
             name: 'Seminole', facility: 'Seminole County Jail', jail_phone: '407.665.1200',
