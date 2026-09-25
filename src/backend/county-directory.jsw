@@ -76,11 +76,12 @@ export async function getCountyDirectory() {
     // Query all counties from CMS
     const results = await wixData.query(COLLECTIONS.FLORIDA_COUNTIES)
       .ascending('countyName')
-      .fields('countySlug', 'countyName', 'isPrimaryCounty', 'region', 'primaryPhone', 'jailName')
-      .limit(100)
+      .fields('countySlug', 'countyName', 'isPrimaryCounty', 'region', 'primaryPhone', 'jailName', 'active')
+      .limit(1000)
       .find({ suppressAuth: true });
 
-    const cmsCounties = results.items || [];
+    // Hidden duplicates (palmbeach, stjohns, stlucie, 'santa rosa', blank item) have active=false
+    const cmsCounties = (results.items || []).filter(c => c.active !== false && c.countySlug);
 
     // Build directory grouped by region
     const regions = {};

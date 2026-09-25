@@ -77,7 +77,7 @@ $w.onReady(async function () {
         // 5. DEFER NON-CRITICAL (Nearby Counties)
         const isMobile = wixWindow.formFactor === 'Mobile';
         setTimeout(() => {
-            loadNearbyCounties(county.region, countySlug);
+            loadNearbyCounties(county.region, countySlug, (county.links && county.links.neighbor_counties) || []);
         }, isMobile ? 3000 : 500);
 
         // Hide loader / Show content
@@ -144,241 +144,174 @@ function setupSEO(county) {
     try { wixSeo.setLinks([{ "rel": "canonical", "href": canonUrl }]); } catch (e) { }
 
     // ─── STRUCTURED DATA (JSON-LD) ───
-    const schemas = [];
+    // Exactly one LocalBusiness + one BreadcrumbList here; one FAQPage is added in
+    // populateMainUI() from the FAQs actually rendered on the page. No HowTo, no
+    // Service/Organization/Place duplicates, no rating or review markup.
+    const schemas = [
+        buildBreadcrumbSchema(county, { cn, displayName, isPlaceLanding, canonUrl }),
+        buildLocalBusinessSchema(county, cn)
+    ];
 
-    // A. Breadcrumbs — 3-level deep for strong hierarchy signal
-    schemas.push({
+    // Store schemas; FAQPage will be appended in populateMainUI
+    county._seoSchemas = schemas;
+}
+
+const SITE_URL = 'https://www.shamrockbailbonds.biz';
+
+function buildBreadcrumbSchema(county, { cn, displayName, isPlaceLanding, canonUrl }) {
+    const items = [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE_URL}/` },
+        { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": `${SITE_URL}/florida-bail-bonds` }
+    ];
+    const hub = county.links && county.links.county_hub;
+    if (isPlaceLanding && hub && hub.url) {
+        items.push({ "@type": "ListItem", "position": 3, "name": hub.name, "item": `${SITE_URL}${hub.url}` });
+        items.push({ "@type": "ListItem", "position": 4, "name": `${displayName} Bail Bonds`, "item": canonUrl });
+    } else {
+        items.push({ "@type": "ListItem", "position": 3, "name": `${cn} County`, "item": canonUrl });
+    }
+    return {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
-        "itemListElement": [
-            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
-            { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": "https://www.shamrockbailbonds.biz/florida-bail-bonds" },
-            { "@type": "ListItem", "position": 3, "name": isPlaceLanding ? `${displayName} Bail Bonds` : `${cn} County Bail Bonds`, "item": canonUrl }
-        ]
-    });
+        "itemListElement": items
+    };
+}
 
-    // B. LocalBusiness — Enhanced with aggregateRating, speakable, GeoCircle, and offerCatalog
-    schemas.push({
+/**
+ * Single LocalBusiness block. Address is always the Fort Myers office (never a
+ * jail or courthouse); only areaServed changes per county.
+ */
+function buildLocalBusinessSchema(county, cn) {
+    const facts = county.facts || {};
+    const cities = (facts.major_cities && facts.major_cities.length ? facts.major_cities : (county.cities || []))
+        .filter(Boolean)
+        .slice(0, 2);
+    return {
         "@context": "https://schema.org",
         "@type": ["LocalBusiness", "ProfessionalService"],
-        "additionalType": "https://schema.org/ProfessionalService",
-        "@id": `${canonUrl}#localbusiness`,
-        "name": isPlaceLanding ? `Shamrock Bail Bonds — ${displayName}` : `Shamrock Bail Bonds - ${cn} County`,
-        "description": county.seo.meta_description,
-        "url": canonUrl,
+        "@id": `${SITE_URL}/#business`,
+        "name": "Shamrock Bail Bonds",
+        "url": `${SITE_URL}/`,
         "telephone": "+1-239-332-2245",
-        "image": "https://www.shamrockbailbonds.biz/logo.png",
-        "logo": "https://www.shamrockbailbonds.biz/logo.png",
-        "foundingDate": "2012-03-15",
-        "sameAs": [
-            "https://www.facebook.com/ShamrockBail",
-            "https://www.instagram.com/shamrock_bail_bonds",
-            "https://www.youtube.com/@ShamrockBailBonds_FL",
-            "https://www.tiktok.com/@shamrockbailbonds",
-            "https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers",
-            "https://t.me/Shamrock_Bail_Bonds",
-            "https://www.shamrockbailbonds.biz"
-        ],
+        "image": `${SITE_URL}/logo.png`,
         "address": {
             "@type": "PostalAddress",
-            "streetAddress": "1528 Broadway",
+            "streetAddress": "The Colquitt Building, 1528 Broadway",
             "addressLocality": "Fort Myers",
             "addressRegion": "FL",
             "postalCode": "33901",
             "addressCountry": "US"
         },
-        "geo": {
-            "@type": "GeoCoordinates",
-            "latitude": "26.6406",
-            "longitude": "-81.8723"
-        },
-        "contactPoint": [
-            {
-                "@type": "ContactPoint",
-                "telephone": "+1-239-332-2245",
-                "contactType": "Customer Service",
-                "areaServed": "US-FL",
-                "availableLanguage": ["English", "Spanish"],
-                "hoursAvailable": { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"], "opens": "00:00", "closes": "23:59" }
-            },
-            {
-                "@type": "ContactPoint",
-                "telephone": "+1-239-955-0301",
-                "contactType": "Customer Service",
-                "areaServed": "US-FL",
-                "availableLanguage": "Spanish"
-            }
-        ],
-        "areaServed": [
-            {
-                "@type": "AdministrativeArea",
-                "name": `${cn} County, Florida`
-            },
-            {
-                "@type": "State",
-                "name": "Florida"
-            },
-            {
-                "@type": "GeoCircle",
-                "geoMidpoint": { "@type": "GeoCoordinates", "latitude": "26.6406", "longitude": "-81.8723" },
-                "geoRadius": "250 mi"
-            },
-            // Add specific cities as served areas for local SEO
-            ...((county.cities || []).slice(0, 4).map(city => ({
-                "@type": "City",
-                "name": `${city}, Florida`
-            })))
-        ],
         "openingHoursSpecification": {
             "@type": "OpeningHoursSpecification",
             "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
             "opens": "00:00",
             "closes": "23:59"
         },
-        "priceRange": "$$",
-        "paymentAccepted": "Cash, Credit Card, Debit Card, Payment Plans",
-        "currenciesAccepted": "USD",
-        "hasOfferCatalog": {
-            "@type": "OfferCatalog",
-            "name": `Bail Bond Services in ${cn} County`,
-            "itemListElement": [
-                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County Misdemeanor Bail Bonds` } },
-                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County Felony Bail Bonds` } },
-                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County DUI Bail Bonds` } },
-                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County Domestic Violence Bail Bonds` } },
-                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County Warrant Surrender Assistance` } },
-                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": `${cn} County Immigration Bail Bonds` } }
-            ]
-        },
-        "speakable": {
-            "@type": "SpeakableSpecification",
-            "cssSelector": ["h1", "h2", ".hero-subtitle", ".about-section"]
-        }
-    });
-
-    // C. FAQPage — Deferred to populateMainUI() where CMS FAQs are loaded
-
-    // D. Service Schema (County-Specific, with full details)
-    schemas.push({
-        "@context": "https://schema.org",
-        "@type": "Service",
-        "@id": `${canonUrl}#service`,
-        "serviceType": "Bail Bonds",
-        "name": `Bail Bonds in ${cn} County, Florida`,
-        "description": `24/7 professional bail bond services in ${cn} County. Are you searching for bail near me? Fast, confidential, and reliable bail bonds with bilingual support. Licensed by the State of Florida. #shamrockbailbonds`,
-        "provider": {
-            "@type": "Organization",
-            "name": "Shamrock Bail Bonds",
-            "telephone": "+1-239-332-2245",
-            "url": "https://www.shamrockbailbonds.biz",
-            "address": {
-                "@type": "PostalAddress",
-                "streetAddress": "1528 Broadway",
-                "addressLocality": "Fort Myers",
-                "addressRegion": "FL",
-                "postalCode": "33901",
-                "addressCountry": "US"
-            }
-        },
         "areaServed": [
             { "@type": "AdministrativeArea", "name": `${cn} County, Florida` },
-            { "@type": "State", "name": "Florida" }
-        ],
-        "availableChannel": [
-            {
-                "@type": "ServiceChannel",
-                "name": "Phone",
-                "servicePhone": { "@type": "ContactPoint", "telephone": "+1-239-332-2245", "availableLanguage": ["English", "Spanish"] },
-                "serviceUrl": canonUrl
-            },
-            {
-                "@type": "ServiceChannel",
-                "name": "Online Portal",
-                "serviceUrl": "https://www.shamrockbailbonds.biz/portal-landing"
-            },
-            {
-                "@type": "ServiceChannel",
-                "name": "Telegram Bot",
-                "serviceUrl": "https://t.me/ShamrockBail_bot"
-            }
-        ],
-        "hoursAvailable": {
-            "@type": "OpeningHoursSpecification",
-            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-            "opens": "00:00",
-            "closes": "23:59"
-        },
-        "offers": {
-            "@type": "Offer",
-            "availability": "https://schema.org/InStock",
-            "priceCurrency": "USD",
-            "description": "Florida statutory rate: 10% of bail amount (minimum $100 per charge)"
-        },
-        "termsOfService": "https://www.shamrockbailbonds.biz/terms-of-service"
-    });
-
-    // E. Organization Schema — Statewide authority signal
-    schemas.push({
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "@id": "https://www.shamrockbailbonds.biz/#organization",
-        "name": "Shamrock Bail Bonds",
-        "url": "https://www.shamrockbailbonds.biz",
-        "logo": "https://www.shamrockbailbonds.biz/logo.png",
-        "telephone": "+1-239-332-2245",
-        "foundingDate": "2012-03-15",
-        "areaServed": { "@type": "State", "name": "Florida" },
-        "sameAs": [
-            "https://www.facebook.com/ShamrockBail",
-            "https://www.instagram.com/shamrock_bail_bonds",
-            "https://t.me/ShamrockBail_bot"
-        ],
-        "knowsAbout": [
-            "Bail Bonds", "Florida Criminal Justice", "Jail Release Process",
-            "Surety Bonds", "Warrant Surrender", "Court Appearances"
+            ...cities.map((city) => ({ "@type": "City", "name": `${city}, FL` }))
         ]
+    };
+}
+
+/** Collapse an element (and optional label elements) when there is nothing real to show. */
+function setTextOrCollapse(selectors, value, labelSelectors = []) {
+    const text = cleanDisplay(value);
+    const all = [...selectors, ...labelSelectors];
+    if (!text) {
+        all.forEach((id) => { try { $w(id).collapse(); } catch (e) { /* element not on this page */ } });
+        return false;
+    }
+    setText(selectors, text);
+    labelSelectors.forEach((id) => { try { $w(id).expand(); } catch (e) { /* optional */ } });
+    return true;
+}
+
+/** Empty, null and "TBD…" values are never rendered. */
+function cleanDisplay(value) {
+    if (value === null || value === undefined) return '';
+    const text = String(value).trim();
+    if (!text || /^tbd\b/i.test(text)) return '';
+    return text;
+}
+
+function escapeHtmlText(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+/** Render a list of internal links into the first matching Text element (via .html). */
+function setLinkList(selectors, links, intro) {
+    const list = (links || []).filter((l) => l && l.url && l.name);
+    for (const selector of selectors) {
+        try {
+            const el = $w(selector);
+            if (!el || el.type !== '$w.Text') continue;
+            if (list.length === 0) { el.collapse(); continue; }
+            const anchors = list.map((l) => `<a href="${escapeHtmlText(l.url)}">${escapeHtmlText(l.name)}</a>`).join(', ');
+            el.html = `<p>${intro ? `${escapeHtmlText(intro)} ` : ''}${anchors}</p>`;
+            el.expand();
+        } catch (e) { /* element not on this page */ }
+    }
+}
+
+/**
+ * Verified facts block. Only sets elements that already exist on the page; any
+ * row without a verified value is collapsed.
+ */
+function populateFactsBlock(county) {
+    const facts = county.facts || {};
+    const courthouse = [cleanDisplay(facts.courthouse_name), cleanDisplay(facts.courthouse_address)].filter(Boolean).join(', ');
+    const cities = (facts.major_cities || []).filter(Boolean).join(', ');
+    const rows = [
+        { ids: ['#factCountySeat', '#factsCountySeat'], value: facts.county_seat, label: 'County seat' },
+        { ids: ['#factCircuit', '#factsCircuit'], value: facts.circuit, label: 'Court circuit' },
+        { ids: ['#factJailName', '#factsJailName'], value: facts.jail_name, label: 'Jail' },
+        { ids: ['#factJailAddress', '#factsJailAddress'], value: facts.jail_address, label: 'Jail address' },
+        { ids: ['#factCourthouse', '#factsCourthouse'], value: courthouse, label: 'Main courthouse' },
+        { ids: ['#factFirstAppearance', '#factsFirstAppearance'], value: facts.first_appearance_note, label: 'First appearance' },
+        { ids: ['#factMajorCities', '#factsMajorCities'], value: cities, label: 'Major cities' }
+    ];
+    let shown = 0;
+    rows.forEach((row) => {
+        const text = cleanDisplay(row.value);
+        if (setTextOrCollapse(row.ids, text ? `${row.label}: ${text}` : '')) shown++;
     });
-
-    // F. HowTo Schema — Targets "how to bail someone out of {county} county jail" searches
-    const howToSteps = county.content && county.content.how_it_works_steps;
-    if (howToSteps && howToSteps.length > 0) {
-        schemas.push({
-            "@context": "https://schema.org",
-            "@type": "HowTo",
-            "name": `How to Bail Someone Out of ${cn} County Jail`,
-            "description": `Step-by-step guide to posting bail in ${cn} County, Florida. Shamrock Bail Bonds is available 24/7 to help.`,
-            "totalTime": "PT4H",
-            "estimatedCost": {
-                "@type": "MonetaryAmount",
-                "currency": "USD",
-                "value": "100"
-            },
-            "step": howToSteps.map((step, i) => ({
-                "@type": "HowToStep",
-                "position": i + 1,
-                "name": step.name,
-                "text": step.text
-            })),
-            "tool": [
-                { "@type": "HowToTool", "name": "Phone" },
-                { "@type": "HowToTool", "name": "Valid ID" },
-                { "@type": "HowToTool", "name": "Payment method (cash, credit card, or payment plan)" }
-            ]
-        });
+    if (facts.inmate_search_url) {
+        setLink(['#factInmateSearchBtn', '#findSomeoneInJailBtn', '#btnFindInJail'], facts.inmate_search_url, 'Find someone in jail');
+        shown++;
+    } else {
+        setLink(['#factInmateSearchBtn', '#findSomeoneInJailBtn', '#btnFindInJail'], '', '');
     }
+    setTextOrCollapse(['#factsLastVerified', '#textFactsLastVerified'],
+        facts.last_verified ? `Last verified: ${facts.last_verified}` : '');
+    ['#factsBox', '#factsSection', '#boxFacts'].forEach((id) => {
+        try { if (shown > 0) $w(id).expand(); else $w(id).collapse(); } catch (e) { /* optional container */ }
+    });
+}
 
-    if (county.jail && county.jail.name) {
-        schemas.push({
-            "@context": "https://schema.org",
-            "@type": "Place",
-            "@id": `${canonUrl}#jail`,
-            "name": county.jail.name,
-            "address": county.jail.address || `${cn} County, Florida`
-        });
+/** County hub, city pages and jail page links from CMS references. */
+function populateReferenceLinks(county) {
+    const links = county.links || {};
+    const hub = links.county_hub;
+    if (hub && hub.url) {
+        setLink(['#countyHubBtn', '#btnCountyGuide', '#countyGuideLink'], hub.url, `See the full ${hub.name} guide`);
+        try { $w('#countyHubBtn').target = '_self'; } catch (e) { /* optional */ }
+    } else {
+        setLink(['#countyHubBtn', '#btnCountyGuide', '#countyGuideLink'], '', '');
     }
-
-    // Store schemas; FAQPage will be appended in populateMainUI
-    county._seoSchemas = schemas;
+    setLinkList(['#cityPagesText', '#textCityPages', '#communitiesLinks'], links.city_pages,
+        `Bail help in ${county.parent_county_name || county.county_name} County communities:`);
+    if (links.jail_page && links.jail_page.url) {
+        setLink(['#jailPageBtn', '#btnJailPage', '#jailPageLink'], links.jail_page.url, `${links.jail_page.name} bail bonds`);
+        try { $w('#jailPageBtn').target = '_self'; } catch (e) { /* optional */ }
+    } else {
+        setLink(['#jailPageBtn', '#btnJailPage', '#jailPageLink'], '', '');
+    }
 }
 
 // --- HELPER UI FUNCTIONS ---
@@ -473,43 +406,36 @@ async function populateMainUI(county, currentSlug) {
     // Service Areas (new — includes city names)
     setText(['#serviceAreasText', '#textServiceAreas', '#serviceAreas'], county.content.service_areas);
 
-    // County Seat & Judicial Circuit (new enriched data)
-    if (county.county_seat) {
-        setText(['#countySeatText', '#textCountySeat'], `County Seat: ${county.county_seat}`);
-    }
-    if (county.judicial_circuit_number) {
-        setText(['#judicialCircuitText', '#textCircuit'], `${county.judicial_circuit_number} Judicial Circuit of Florida`);
-    }
+    // County Seat & Judicial Circuit (verified CMS values first, JSON enrichment as fallback)
+    const factsData = county.facts || {};
+    const seat = cleanDisplay(factsData.county_seat) || cleanDisplay(county.county_seat);
+    setTextOrCollapse(['#countySeatText', '#textCountySeat'], seat ? `County Seat: ${seat}` : '');
+    const circuitText = cleanDisplay(county.judicial_circuit_label);
+    setTextOrCollapse(['#judicialCircuitText', '#textCircuit'], circuitText ? `${circuitText} of Florida` : '');
 
-    // Inmate Search CTA (new — prominent resource link)
-    if (county.resources && county.resources.inmate_search_url) {
-        setLink(['#inmateSearchBtn', '#btnInmateSearch', '#searchInmatesBtn'],
-            county.resources.inmate_search_url,
-            `Search ${county.county_name} County Inmates`);
-    }
+    // Verified facts block + CMS reference links (only elements that exist on the page)
+    populateFactsBlock(county);
+    populateReferenceLinks(county);
     if (county.resources && county.resources.court_records_url) {
         setLink(['#courtRecordsBtn', '#btnCourtRecords'],
             county.resources.court_records_url,
             `${county.county_name} County Court Records`);
     }
 
-    // Contact Info (Jail/Clerk)
+    // Contact Info (Jail/Clerk) — rows with no real value are collapsed, never shown as placeholders
     // Jail Name & Phone
-    setText(['#jailName', '#jailTitle', '#textJailName'], county.jail.name);
-    setText(['#sheriffPhone', '#jailPhone', '#textJailPhone'], county.jail.booking_phone);
-    if (county.jail && county.jail.address) {
-        setText(['#jailAddress', '#textJailAddress', '#jailLocation'], county.jail.address);
-        try { $w('#jailAddress').expand(); } catch (e) { /* optional */ }
-    }
+    setTextOrCollapse(['#jailName', '#jailTitle', '#textJailName'], county.jail.name, ['#jailNameLabel']);
+    setTextOrCollapse(['#sheriffPhone', '#jailPhone', '#textJailPhone'], county.jail.booking_phone, ['#jailPhoneLabel']);
+    setTextOrCollapse(['#jailAddress', '#textJailAddress', '#jailLocation'], county.jail.address, ['#jailAddressLabel']);
 
-    // Clerk Name & Phone (Added Clerk Name mapping)
-    setText(['#clerkName', '#clerkTitle', '#textClerkName'], "Clerk of Court"); // Fixed Label or data if available
-    setText(['#clerkPhone', '#clerkContact', '#textClerkPhone'], county.clerk.phone);
+    // Clerk Name & Phone: CMS clerkName only (no "Clerk of Court" placeholder)
+    setTextOrCollapse(['#clerkName', '#clerkTitle', '#textClerkName'], county.clerk.display_name, ['#clerkNameLabel']);
+    setTextOrCollapse(['#clerkPhone', '#clerkContact', '#textClerkPhone'], county.clerk.phone, ['#clerkPhoneLabel']);
 
-    // Sheriff Name & Phone (Added Sheriff Name mapping)
-    setText(['#sheriffName', '#sheriffTitle', '#textSheriffName'], "Sheriff's Office");
+    // Sheriff Name & Phone: CMS sheriffName only (no "Sheriff's Office" placeholder)
+    setTextOrCollapse(['#sheriffName', '#sheriffTitle', '#textSheriffName'], county.sheriff.display_name, ['#sheriffNameLabel']);
     // Reuse booking phone or specific sheriff phone if available
-    setText(['#sheriffContactPhone', '#textSheriffPhone'], county.jail.booking_phone);
+    setTextOrCollapse(['#sheriffContactPhone', '#textSheriffPhone'], county.jail.booking_phone, ['#sheriffPhoneLabel']);
 
     // Links / Buttons (Sheriff/Clerk)
     setLink(['#callSheriffBtn', '#btnCallJail'], county.jail.booking_url, "Jail / Sheriff Website");
@@ -535,14 +461,13 @@ async function populateMainUI(county, currentSlug) {
         "Get Someone Out"
     );
 
-    // 3. Locate / Inmate Lookup (Direct County Booking Search or Prefilled /locate)
-    const locateUrl = (county.resources && county.resources.inmate_search_url)
-        ? county.resources.inmate_search_url
-        : `/locate?county=${encodeURIComponent(activeCountySlug)}`;
+    // 3. Locate / Inmate Lookup: official county inmate search when verified, else prefilled /locate
+    const officialSearch = county.resources && county.resources.inmate_search_url;
+    const locateUrl = officialSearch || `/locate?county=${encodeURIComponent(activeCountySlug)}`;
     setLink(
         ['#inmateSearchBtn', '#btnInmateSearch', '#searchInmatesBtn', '#locateInmateBtn', '#btnLocate'],
         locateUrl,
-        `Locate ${county.county_name} Inmate`
+        officialSearch ? 'Find someone in jail' : `Locate ${county.county_name} Inmate`
     );
 
     // 4. First Appearance Court Calendar (County Prefilled)
@@ -609,11 +534,13 @@ async function populateMainUI(county, currentSlug) {
             } catch (e2) { /* no-op */ }
         }
 
-        // 3. Fallback: Generic (non-county-specific) FAQs from Import22
+        // 3. Fallback: Generic (non-county-specific) FAQs from Import22.
+        //    Only untagged items, so Lee-specific answers are never rewritten for other counties.
         if (cmsItems.length === 0) {
             try {
                 const result = await wixData.query('Import22')
                     .eq('isActive', true)
+                    .isEmpty('relatedCounty')
                     .ascending('sortOrder')
                     .limit(10)
                     .find();
@@ -654,28 +581,26 @@ async function populateMainUI(county, currentSlug) {
         faqs = (county.content && county.content.faq) || [];
     }
 
-    // Inject final structured data (base schemas + FAQPage + ItemList for internal links) in a single call
-    if (faqs.length > 0) {
-        try {
-            const baseSchemas = county._seoSchemas || [];
-            const faqSchema = {
+    // Inject final structured data in a single call: LocalBusiness + BreadcrumbList
+    // (from setupSEO) + one FAQPage that mirrors the FAQs rendered in the repeater.
+    try {
+        const baseSchemas = county._seoSchemas || [];
+        const visibleFaqs = faqRep ? faqs.filter(f => f && f.question && f.answer) : [];
+        const finalSchemas = [...baseSchemas];
+        if (visibleFaqs.length > 0) {
+            finalSchemas.push({
                 "@context": "https://schema.org",
                 "@type": "FAQPage",
-                "mainEntity": faqs.map(f => ({
+                "mainEntity": visibleFaqs.map(f => ({
                     "@type": "Question",
                     "name": f.question,
                     "acceptedAnswer": { "@type": "Answer", "text": f.answer }
-                })),
-                "speakable": {
-                    "@type": "SpeakableSpecification",
-                    "cssSelector": [".faq-question", ".faq-answer", "h1", "h2"]
-                }
-            };
-            // Single consolidated call — replaces the early call in setupSEO
-            wixSeo.setStructuredData([...baseSchemas, faqSchema]).catch(e => { });
-        } catch (seoErr) {
-            console.warn('FAQPage schema injection failed:', seoErr);
+                }))
+            });
         }
+        wixSeo.setStructuredData(finalSchemas).catch(e => { console.warn('setStructuredData failed:', e); });
+    } catch (seoErr) {
+        console.warn('Structured data injection failed:', seoErr);
     }
 
     // --- INTERNAL LINKING STRATEGY ---
@@ -845,9 +770,26 @@ function setTextElement(ids, text) {
     }
 }
 
-async function loadNearbyCounties(region, currentSlug) {
+async function loadNearbyCounties(region, currentSlug, cmsNeighbors = []) {
     const nearbyRep = Select('#nearbyCountiesRepeater');
     if (!nearbyRep || nearbyRep.length === 0) return;
+
+    // Preferred: adjacent counties from the CMS neighborCounties reference (Census adjacency)
+    if (Array.isArray(cmsNeighbors) && cmsNeighbors.length > 0) {
+        try {
+            nearbyRep.onItemReady(($item, itemData) => {
+                try { $item('#neighborName').text = itemData.name; } catch (e) { }
+                try {
+                    $item('#neighborContainer').onClick(() => wixLocation.to(itemData.url));
+                } catch (e) { }
+            });
+            nearbyRep.data = cmsNeighbors.map((n, i) => ({ ...n, _id: `neighbor-${n.slug || i}` }));
+            nearbyRep.expand();
+            return;
+        } catch (e) {
+            console.warn('CMS neighbor counties failed, falling back to geo proximity', e);
+        }
+    }
 
     try {
         // Dynamic import for code-splitting performance
