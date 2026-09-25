@@ -26,6 +26,7 @@
 | **Router** | Wix dynamic page system (e.g., `/florida-bail-bonds/{county-slug}`). |
 | **Shannon** | ElevenLabs voice AI paperwork assistant. Answers when `SHANNON_LIVE` is on, walks any role through bond packet fields, and emails the indemnitor DocuSeal signing + payment links. |
 | **DocuSeal Packet** | Staff-issued signing package from Super CRM (DocuSeal is the sole active provider). SignNow packets are retired/historical only. |
+| **SignNow Packet** *(retired)* | Historical term for the old 14-document SignNow package; SignNow is permanently retired — fields remain read-only on old records. |
 | **The Clerk** | AI agent that parses booking data into structured JSON. |
 | **The Closer** | AI agent that runs abandoned intake SMS/WhatsApp drip campaigns. |
 | **The Concierge** | AI agent for 24/7 client support across web, SMS, and Telegram. |

@@ -1,5 +1,8 @@
 # GAS Backend — File Map
 
+> **Signing doctrine (current):** DocuSeal only at `https://sign.shamrockbailbonds.biz`. SignNow is **permanently retired**. Content below that describes SignNow as active is **historical / read-only** — do not configure SignNow for new work; do not mint GAS Web App URLs.
+
+
 > **Last Updated:** April 17, 2026
 > **Total Files:** 152 JS/GS + 8 MD + 4 HTML
 > **Environment:** Google Apps Script (server-side V8 runtime)
@@ -121,7 +124,7 @@
 
 ---
 
-## SignNow & Documents
+## Documents (legacy SignNow files — retired)
 
 | File | Purpose |
 |------|---------|
@@ -132,7 +135,7 @@
 | `SOC2_WebhookHandler.js` | `document.complete` webhook handler |
 | `PDF_Mappings.js` | JSON field → PDF coordinate mappings |
 | `PDF_Processor.js` | PDF generation & processing |
-| `PDFService.js` | Low-level PDF service utilities (deprecated — SignNow is source of truth) |
+| `PDFService.js` | Low-level PDF service utilities (legacy — DocuSeal is source of truth; SignNow retired) |
 | `AdobeDataMapping.js` | Adobe PDF data field mapping |
 | `AdobePDFService.js` | Adobe PDF services integration |
 | `DocFiller.js` | Document template field hydration |

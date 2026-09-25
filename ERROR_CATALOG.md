@@ -1,5 +1,8 @@
 # 🚨 Error Catalog
 
+> **Signing doctrine (current):** DocuSeal only at `https://sign.shamrockbailbonds.biz`. SignNow is **permanently retired**. Content below that describes SignNow as active is **historical / read-only** — do not configure SignNow for new work; do not mint GAS Web App URLs.
+
+
 > **Last Updated:** September 22, 2026
 
 Known error patterns and their fixes. Check here first before debugging.
