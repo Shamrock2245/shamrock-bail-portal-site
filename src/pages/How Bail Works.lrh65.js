@@ -135,10 +135,10 @@ async function debugCMS() {
 // --- 1. The Arrest Process ---
 function setupBailProcess() {
     const data = [
-        { _id: "1", title: "1. Booking & Charges", text: "After arrest, the defendant is booked at the county jail. Fingerprints, photo, and charges are filed into the court roster (2-4 hours)." },
+        { _id: "1", title: "1. Booking & Charges", text: "After arrest, the defendant is booked at the county jail. Fingerprints, photo, and charges are filed into the court roster. Booking time depends on the jail." },
         { _id: "2", title: "2. Bail & First Appearance", text: "Bail is set by county bond schedule or at First Appearance within 24 hours. Florida law mandates 10% premium with a $100 minimum per charge." },
         { _id: "3", title: "3. Scan ID & Prepare Forms", text: "Instead of filling out 14 legal documents by hand, scan your ID in 60 seconds. Our system hydrates the paperwork automatically." },
-        { _id: "4", title: "4. Bond Posted & Release", text: "Shamrock posts the appearance bond directly with the jail desk. Processing time ranges from 2 to 6 hours depending on facility." },
+        { _id: "4", title: "4. Bond Posted & Release", text: "Shamrock posts the appearance bond directly with the jail desk. Release timing depends on the jail's processing." },
         { _id: "5", title: "5. Court Appearances", text: "The defendant is released with mandatory scheduled court dates. Shamrock provides automated reminders to keep them in compliance." }
     ];
     const rep = $w('#processRepeater');
@@ -395,12 +395,12 @@ async function setupFAQ() {
         {
             _id: "1",
             title: "How fast can you get someone out of jail?",
-            answer: "Shamrock Bail Bonds can begin the release process within minutes of your call — 24 hours a day, 7 days a week. Once the bond is posted, Lee County Jail typically releases defendants within 4 to 8 hours. Larger facilities like Hillsborough or Miami-Dade may take 6 to 12 hours. Call (239) 332-2245 any time to start the clock."
+            answer: "Shamrock Bail Bonds can begin the release process within minutes of your call — 24 hours a day, 7 days a week. Once the bond is posted, release timing depends on the jail's processing, which varies by facility and time of day. Call (239) 332-2245 any time to get started."
         },
         {
             _id: "2",
             title: "How much does a bail bond cost in Florida?",
-            answer: "A Florida bail bond costs 10% of the total bail amount, with a $100 minimum per charge. This premium is regulated by the Florida Department of Financial Services and is non-negotiable. For example, a $10,000 bail requires a $1,000 premium. A $125 transfer fee applies for counties outside Lee and Charlotte County."
+            answer: "A Florida bail bond costs 10% of the total bail amount, with a $100 minimum per charge. This premium is regulated by the Florida Department of Financial Services and is non-negotiable. For example, a $10,000 bail requires a $1,000 premium. A $100 transfer fee applies for counties outside Lee and Charlotte County."
         },
         {
             _id: "3",
@@ -618,7 +618,7 @@ function updatePageSEO(faqItems) {
                 "@type": "HowToStep",
                 "position": 5,
                 "name": "Await Release",
-                "text": "The bond is posted at the jail. Release times vary by facility (typically 4-12 hours).",
+                "text": "The bond is posted at the jail. Release timing depends on the jail's processing.",
                 "url": "https://www.shamrockbailbonds.biz/how-bail-works"
             }
         ],

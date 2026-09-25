@@ -17,7 +17,7 @@ const RAG_KNOWLEDGE_BASE = {
         jail_location: "2501 Ortiz Ave, Fort Myers, FL 33905",
         court_location: "1700 Monroe St, Fort Myers, FL 33901",
         tips: [
-            "Wait times at Ortiz can be 2-4 hours after bond is posted.",
+            "Release timing after bond is posted depends on the jail's processing.",
             "Parking is free at the jail but paid at the court.",
             "Inmates are released 24/7, but shift change is 6PM-7PM (expect delays)."
         ],
@@ -28,10 +28,10 @@ const RAG_KNOWLEDGE_BASE = {
     'collier': {
         name: "Collier County",
         process: "Collier County accepts 'Remote Posting' (E-Bond). We can email the bond paperwork directly to the booking desk. You do not need to come to the jail physically.",
-        jail_location: "3315 Tamiami Trail E, Naples, FL 34112",
+        jail_location: "3347 Tamiami Trail E, Naples, FL 34112 (Naples Jail Center); Immokalee Jail Center: 302 Stockade Rd, Immokalee, FL 34142",
         court_location: "3315 Tamiami Trail E, Naples, FL 34112 (Same Complex)",
         tips: [
-            "Collier usually processes releases very quickly (1-2 hours).",
+            "Release timing after bond is posted depends on the jail's processing.",
             "Ensure the Defendant has a ride; taxis are scarce at night.",
             "Video visitation is available in the lobby."
         ],
@@ -423,7 +423,7 @@ const RAG_KNOWLEDGE_BASE = {
         jail_location: "3723 Vision Blvd, Orlando, FL 32839",
         court_location: "425 N Orange Ave, Orlando, FL 32801",
         tips: [
-            "Release process is very slow (6-10 hours).",
+            "Release timing depends on the jail's processing and can be slow at busy times.",
             "Do not park in the tow-away zones across the street."
         ],
         resources: { fallback_search: "https://netapps.ocfl.net/BestJail/Home/Inmates" }
@@ -520,7 +520,7 @@ const RAG_KNOWLEDGE_BASE = {
         court_location: "2000 Main St, Sarasota, FL 34237",
         tips: [
             "Parking garage is adjacent to the jail.",
-            "Releases take longer (4-6 hours) due to medical screening."
+            "Release timing depends on the jail's processing, including medical screening."
         ],
         resources: { fallback_search: "https://www.sarasotasheriff.org/corrections/whos_in_jail/arrest-reports/index.php" }
     },
@@ -567,7 +567,7 @@ const RAG_KNOWLEDGE_BASE = {
     'volusia': {
         name: "Volusia County",
         process: "Volusia County (Daytona Beach) jail is near the interstate. Physical posting required.",
-        jail_location: "1354 Indian Lake Rd, Daytona Beach, FL 32124",
+        jail_location: "1300 Red John Dr, Daytona Beach, FL 32124",
         court_location: "101 N Alabama Ave, DeLand, FL 32724",
         tips: ["DeLand is the county seat, though Daytona is larger."],
         resources: { fallback_search: "http://www.volusiamug.vcgov.org/" }

@@ -18,7 +18,7 @@ export function generateGeoSchema(countySlug, countyName) {
         "name": `${BUSINESS_SHORT_NAME} - ${countyName} County`,
         "url": `${SITE_URL}/florida-bail-bonds/${countySlug}`,
         "telephone": PHONE_PRIMARY.e164,
-        "description": `24/7 Bail Bonds in ${countyName} County, Florida. Fast release, serving ${geoData.jurisdiction}.`,
+        "description": `24/7 Bail Bonds in ${countyName} County, Florida. Serving ${geoData.jurisdiction}.`,
         "address": {
             "@type": "PostalAddress",
             "streetAddress": ADDRESS.streetAddress,

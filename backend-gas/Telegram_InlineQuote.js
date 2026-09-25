@@ -12,8 +12,8 @@
  *   - $100 minimum premium per charge
  *   - 10% of bail face amount if bail ≥ $1,000
  *   - Whichever is GREATER applies
- *   - Transfer fee: $125 for bonds outside Lee/Charlotte County
- *   - Transfer fee waived on bonds > $25,000 (company policy)
+ *   - Transfer fee: $100 for bonds outside Lee/Charlotte County
+ *   - Transfer fee MAY be waived on most bonds > $25,000, at Shamrock's discretion (never guaranteed)
  *   - Lee & Charlotte County: NEVER a transfer fee (home counties)
  * 
  * DEPENDS ON:
@@ -57,11 +57,9 @@ function calculatePremium(bailAmount, chargeCount, county) {
     var isHomeCounty = homeCounties.indexOf(county) !== -1;
 
     if (!isHomeCounty) {
-        // Standard transfer fee applies UNLESS bond > $25,000
-        if (bailAmount <= 25000) {
-            transferFee = 125;
-        }
-        // Bonds over $25,000: transfer fee waived (Shamrock policy)
+        // Standard transfer fee applies. On most bonds over $25,000 it MAY be
+        // waived at Shamrock's discretion, so the estimate still includes it.
+        transferFee = 100;
     }
     // Lee & Charlotte: NEVER a transfer fee
 
@@ -76,8 +74,9 @@ function calculatePremium(bailAmount, chargeCount, county) {
     }
     if (transferFee > 0) {
         breakdown.push('Transfer Fee: $' + _formatMoney(transferFee));
-    } else if (!isHomeCounty && bailAmount > 25000) {
-        breakdown.push('Transfer Fee: WAIVED (bond > $25,000)');
+        if (bailAmount > 25000) {
+            breakdown.push('(Transfer fee may be waived on most bonds over $25,000, at our discretion.)');
+        }
     }
     breakdown.push('Total Due: $' + _formatMoney(totalDue));
 
@@ -151,7 +150,7 @@ function handleInlineQuery(inlineQuery) {
     var title = '💰 Premium: $' + _formatMoney(result.totalDue) + countyLabel;
     var description = 'Bond: $' + _formatMoney(bailAmount) + ' | ' + chargeCount + ' charge' + (chargeCount > 1 ? 's' : '');
     if (result.transferFee > 0) {
-        description += ' | +$125 transfer';
+        description += ' | +$' + _formatMoney(result.transferFee) + ' transfer';
     }
 
     var messageText = '🍀 *Shamrock Bail Bonds — Quote Estimate*\n\n'

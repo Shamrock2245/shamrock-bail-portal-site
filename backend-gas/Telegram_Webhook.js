@@ -646,8 +646,8 @@ function _handleMenuGeneralQuestions(data) {
     'them to be released while awaiting trial. You pay 10% (the premium) to us, ' +
     'and we post the full bond with the court.\n\n' +
     '*How long does it take?*\n' +
-    'Once paperwork is signed and payment is received, most releases happen ' +
-    'within 2–6 hours depending on the jail\'s processing time.\n\n' +
+    'Once paperwork is signed and payment is received, we post the bond right away. ' +
+    'Release timing depends on the jail\'s processing.\n\n' +
     '*What do I need to get started?*\n' +
     '• Defendant\'s full name and date of birth\n' +
     '• The jail or county where they\'re held\n' +

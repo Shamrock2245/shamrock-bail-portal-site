@@ -956,7 +956,7 @@ ${signer.signingLink}
 This takes about 3-5 minutes and works on any device (iPhone, Android, tablet, or computer).`;
 
   const urgency = role === 'indemnitor'
-    ? `\n\n⏰ **Important:** Please sign ASAP so we can process the bond and get ${defendantName} released quickly.`
+    ? `\n\n⏰ **Important:** Please sign ASAP so we can process the bond for ${defendantName} without delay.`
     : `\n\n⏰ Please complete this within 24 hours.`;
 
   const support = `\n\nQuestions? Just reply to this message! I'm here to help. 😊`;

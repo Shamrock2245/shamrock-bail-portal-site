@@ -142,7 +142,7 @@ function setTrustBadges() {
     if ($w('#badge1')) $w('#badge1').text = 'v Licensed & Insured';
     if ($w('#badge2')) $w('#badge2').text = 'v 24/7 Availability';
     if ($w('#badge3')) $w('#badge3').text = 'v All Florida Counties';
-    if ($w('#badge4')) $w('#badge4').text = 'v Fast Release';
+    if ($w('#badge4')) $w('#badge4').text = 'v Payment Plans';
 }
 
 /**

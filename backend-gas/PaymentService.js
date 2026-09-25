@@ -137,7 +137,7 @@ ${paymentLink}
 ✓ Apple Pay
 ✓ Google Pay
 
-Once payment clears, ${caseData.defendantName || 'the defendant'} can be released within 1-2 hours.
+Once payment clears, ${caseData.defendantName || 'the defendant'} can be released once the jail completes its processing (timing varies by jail).
 
 ⏰ This link expires in 48 hours.
 
