@@ -6,6 +6,29 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-09-25 — v2.8.7 — County pages SEO: verified jail data, CMS-first copy, clean structured data
+
+**Heads-up:** merging to `main` auto-publishes the live site via `.github/workflows/wix-deploy.yml`.
+
+**Data (`src/backend/data`):**
+- Collier: Naples Jail Center, 3347 Tamiami Trail E. (was 3301), plus Immokalee Jail Center, 302 Stockade Road, Immokalee, FL 34142 (`jails` / `jailSites`).
+- Lee: two jail sites, Downtown Jail (2115 Dr Martin Luther King Jr Blvd) and Core (2501 Ortiz Ave). Fort Myers landing no longer names FMPD as the holding facility.
+- Corrected addresses that conflicted with verified county data: Escambia (2935 North L Street), Orange (Booking and Release Center, 3855 South John Young Parkway), Volusia (1300 Red John Drive), Hendry (101 S Bridge St), plus verified facility names (Hillsborough, Leon, Manatee, Duval, Alachua and others). TBD/unverified values were left as-is.
+
+**County page code:**
+- Meta description uses CMS `seoDescription` (falls back to generated copy). City/jail landings prefer their own CMS item (`seoTitle`, `seoDescription`, `h1Headline`, `serviceAreaCopy`, `jailName`) unless it contains a known-wrong address.
+- Fixed the doubled "held at X and then booked at X" sentence; multi-site counties list every jail.
+- New optional facts block, set only when the element exists and the value is verified (never empty/TBD): `#factsBox`, `#factCountySeat`, `#factCircuit`, `#factJailName`, `#factJailAddress`, `#factCourthouse`, `#factFirstAppearance`, `#factMajorCities`, `#factsLastVerified`, `#factInmateSearchBtn` / `#findSomeoneInJailBtn` ("Find someone in jail"), `#countyHubBtn`, `#cityPagesText`, `#jailPageBtn`. Nearby counties use CMS `neighborCounties` first.
+- Sheriff/Clerk rows show CMS names only; the "Sheriff's Office" / "Clerk of Court" placeholders are gone (rows collapse when empty).
+- Structured data is now one BreadcrumbList, one LocalBusiness (Fort Myers office, The Colquitt Building, 1528 Broadway) and one FAQPage built from the visible FAQs. HowTo/Service/Organization/Place blocks removed; no rating markup.
+- Removed release-time claims ("2-8 hours", "fast release" in jail meta descriptions). Transfer fee copy is $100 (was $125).
+
+**Lists / sync:**
+- Sitemap, county directory and tier lists skip `active=false` items.
+- `syncCountiesToCms` / `seedCityAndJailLandings` now fill empty fields only and never re-activate items, so they cannot overwrite the verified CMS data.
+
+**Still Editor-only:** single H1 bound to `h1Headline`, facts block layout (create the IDs above), qx7lv SEO title pattern, noindex for the r1yb8/becrn/bh0r4 pages.
+
 ### 2026-08-28 — v2.8.6 — Staff prompt lightbox
 
 - Added `StaffPromptLightbox` Velo file, `<shamrock-staff-prompt>` custom element, and an in-iframe modal in `staff-portal.html`.
