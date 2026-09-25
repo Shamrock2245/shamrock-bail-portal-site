@@ -25,6 +25,28 @@ import {
 } from 'backend/local-landings';
 
 /**
+ * Merge a generated sync record into an existing CMS item WITHOUT overwriting
+ * editorial or verified values. Since 2026-09-25 the FloridaCounties CMS holds
+ * owner-approved, source-verified copy and facts (seoTitle, seoDescription,
+ * h1Headline, serviceAreaCopy, jail/clerk/sheriff fields, fact fields) and the
+ * `active` flag that hides duplicate items. The sync may only fill fields that
+ * are empty on the existing item; it never flips `active` back to true.
+ */
+function mergeSyncRecord(existing, record) {
+    const merged = { ...existing };
+    for (const [key, value] of Object.entries(record || {})) {
+        if (key === 'active') continue; // never un-hide an item
+        if (key === 'lastSynced') { merged.lastSynced = value; continue; }
+        const current = existing ? existing[key] : undefined;
+        const isEmpty = current === undefined || current === null || (typeof current === 'string' && current.trim() === '');
+        if (isEmpty && value !== undefined && value !== null && value !== '') {
+            merged[key] = value;
+        }
+    }
+    return merged;
+}
+
+/**
  * Syncs the 'routing.counties' from tenant.json AND 'allFloridaCounties.json' 
  * to the 'FloridaCounties' collection.
  * 
@@ -32,9 +54,10 @@ import {
  * 1. Operational Config (Phone numbers, default addresses) from tenant.json
  * 2. Rich Data (Jail URLs, Clerk Links, SEO) from allFloridaCounties.json
  * 
- * Strategy: 
- * - Config wins for operational fields (phones/addresses).
- * - JSON wins for static rich data (URLs).
+ * Strategy:
+ * - New items: full record from Config + JSON.
+ * - Existing items: fill EMPTY fields only (see mergeSyncRecord). Verified CMS
+ *   values and active=false are never overwritten (2026-09-25).
  * - Upsert based on 'countySlug'.
  */
 export async function syncCountiesToCms() {
@@ -159,8 +182,8 @@ export async function syncCountiesToCms() {
                     .find({ suppressAuth: true });
 
                 if (existing.items.length > 0) {
-                    // Update existing
-                    const itemToUpdate = { ...existing.items[0], ...record };
+                    // Update existing: fill empty fields only (verified CMS values win)
+                    const itemToUpdate = mergeSyncRecord(existing.items[0], record);
                     await wixData.update('FloridaCounties', itemToUpdate, { suppressAuth: true });
                     updated++;
                 } else {
@@ -233,9 +256,10 @@ export async function seedCityAndJailLandings({ brandName, phone, richDataMap = 
                 .find({ suppressAuth: true });
 
             if (existing.items.length > 0) {
+                // Fill empty fields only (verified CMS values and active=false win)
                 await wixData.update(
                     'FloridaCounties',
-                    { ...existing.items[0], ...record },
+                    mergeSyncRecord(existing.items[0], record),
                     { suppressAuth: true }
                 );
                 updated++;
