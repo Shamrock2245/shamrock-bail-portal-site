@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      # ── 1. Checkout ────────────────────────────────────────────────────────────
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v7
 
