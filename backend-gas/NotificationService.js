@@ -98,7 +98,7 @@ var NotificationService = (function() {
           else if (ch === '#drive' || ch.includes('drive')) webhookKey = 'SLACK_WEBHOOK_DRIVE';
           else if (ch === '#calendar' || ch.includes('calendar')) webhookKey = 'SLACK_WEBHOOK_CALENDAR';
           else if (ch === 'shamrock bail bonds' || ch.includes('shamrock')) webhookKey = 'SLACK_WEBHOOK_SHAMROCK';
-          else if (ch === '#alerts' || ch.includes('alert')) webhookKey = 'SLACK_WEBHOOK_GENERAL';
+          else if (ch === '#alerts' || ch.includes('alert')) webhookKey = 'SLACK_WEBHOOK_ALERTS';
           else if (ch === '#ops' || ch.includes('ops')) webhookKey = 'SLACK_WEBHOOK_GENERAL';
           else if (ch === '#after-hours' || ch.includes('after-hours') || ch.includes('afterhours')) webhookKey = 'SLACK_WEBHOOK_INTAKE';
           else if (ch === '#leads' || ch.includes('lead')) webhookKey = 'SLACK_WEBHOOK_NEW_CASES';

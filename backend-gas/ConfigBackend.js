@@ -26,6 +26,7 @@ function getConfigForUI() {
         'SLACK_WEBHOOK_COURT_DATES',
         'SLACK_WEBHOOK_FORFEITURES',
         'SLACK_WEBHOOK_DISCHARGES',
+        'SLACK_WEBHOOK_ALERTS',
         'SLACK_WEBHOOK_GENERAL',
         // Twilio
         'TWILIO_ACCOUNT_SID',
