@@ -50,24 +50,24 @@ var CLOSER_CONFIG = {
 
 var CLOSER_MESSAGES = {
     '1h': {
-        sms: '🍀 Hi {name}, this is Shamrock Bail Bonds. We noticed you started a bail application but didn\'t finish. We\'re standing by 24/7 to help you get your loved one home. Reply or call us: (239) 955-0178',
-        telegram: '🍀 Hi {name}!\n\nThis is Shamrock Bail Bonds. We noticed you started a bail application but didn\'t finish.\n\nWe\'re standing by 24/7 — just tap the button below to pick up where you left off.\n\n📞 (239) 955-0178',
+        sms: '🍀 Hi {name}, this is Shamrock Bail Bonds. We noticed you started a bail application but didn\'t finish. We\'re standing by 24/7 to help you get your loved one home. Reply here, call (239) 332-2245, or text (239) 955-0178',
+        telegram: '🍀 Hi {name}!\n\nThis is Shamrock Bail Bonds. We noticed you started a bail application but didn\'t finish.\n\nWe\'re standing by 24/7 — just tap the button below to pick up where you left off.\n\n📞 Call (239) 332-2245 · 💬 Text (239) 955-0178',
         subject: '1-Hour Follow-Up'
     },
     '24h': {
-        sms: '🍀 {name}, Shamrock Bail Bonds here. Your bail application is still waiting. Time matters — the sooner we start, the sooner they\'re home. Questions? Text back or call: (239) 955-0178',
-        telegram: '🍀 {name}, your bail application is still waiting.\n\nEvery hour matters when someone you love is in custody. We\'re ready to move the moment you are.\n\nTap below to continue — or call us anytime:\n📞 (239) 955-0178',
+        sms: '🍀 {name}, Shamrock Bail Bonds here. Your bail application is still waiting. Time matters — the sooner we start, the sooner they\'re home. Questions? Text back at (239) 955-0178 or call (239) 332-2245',
+        telegram: '🍀 {name}, your bail application is still waiting.\n\nEvery hour matters when someone you love is in custody. We\'re ready to move the moment you are.\n\nTap below to continue — or call us anytime:\n📞 (239) 332-2245\n💬 Text: (239) 955-0178',
         subject: '24-Hour Follow-Up'
     },
     '72h': {
-        sms: '🍀 {name}, it\'s been a few days since you started your bail application with Shamrock Bail Bonds. If you still need help, we\'re here. If not, no worries — we wish you the best. Call anytime: (239) 955-0178',
-        telegram: '🍀 {name}, we\'re still here if you need us.\n\nYour bail application was started a few days ago. If your situation has changed, no worries — we understand.\n\nIf you still need help getting your loved one home, we\'re one tap away:\n📞 (239) 955-0178',
+        sms: '🍀 {name}, it\'s been a few days since you started your bail application with Shamrock Bail Bonds. If you still need help, we\'re here. If not, no worries — we wish you the best. Call anytime: (239) 332-2245 or text (239) 955-0178',
+        telegram: '🍀 {name}, we\'re still here if you need us.\n\nYour bail application was started a few days ago. If your situation has changed, no worries — we understand.\n\nIf you still need help getting your loved one home, we\'re one tap away:\n📞 Call (239) 332-2245 · 💬 Text (239) 955-0178',
         subject: '72-Hour Final Follow-Up (The Closer)'
     },
     // Shannon AI Agent follow-up — tailored for callers who spoke to the voice AI
     'shannon': {
-        sms: '🍀 Hi {name}, this is Shamrock Bail Bonds. You spoke with our agent Shannon earlier about a bail bond. We want to make sure you have everything you need. Ready to move forward? Reply here or call: (239) 955-0178',
-        telegram: '🍀 Hi {name}!\n\nYou recently spoke with Shannon, our bail bond assistant. We\'re ready to help get your loved one home.\n\nTap below to continue — or call us:\n📞 (239) 955-0178',
+        sms: '🍀 Hi {name}, this is Shamrock Bail Bonds. You spoke with our agent Shannon earlier about a bail bond. We want to make sure you have everything you need. Ready to move forward? Reply here, call (239) 332-2245, or text (239) 955-0178',
+        telegram: '🍀 Hi {name}!\n\nYou recently spoke with Shannon, our bail bond assistant. We\'re ready to help get your loved one home.\n\nTap below to continue — or call us:\n📞 (239) 332-2245\n💬 Text: (239) 955-0178',
         subject: 'Shannon AI Intake Follow-Up'
     }
 };

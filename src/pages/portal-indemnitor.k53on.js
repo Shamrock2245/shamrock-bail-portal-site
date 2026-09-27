@@ -23,7 +23,7 @@ import { validateCustomSession, getIndemnitorDetails } from 'backend/portal-auth
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, BOND_PAYMENT_LINK } from 'public/portal-config';
 import { callGasAction } from 'backend/gasIntegration';
 
 let currentSession = null;
@@ -169,8 +169,8 @@ function setupActionHandlers() {
     safeOnClick(['#btnPayInstallment', '#makePaymentBtn'], () => {
         // PrivacyLightbox is the privacy-policy lightbox, not a payment screen, and /payment 404s (audit 2026-09-27).
         // Open the case payment link when the backend provides one; otherwise call the office.
-        const payUrl = indemnitorData?.paymentUrl || '';
-        wixLocation.to(payUrl || OFFICE_TEL);
+        // Case-specific SwipeSimple invoice link first, else the general SwipeSimple payment page.
+        wixLocation.to(indemnitorData?.paymentUrl || BOND_PAYMENT_LINK);
     });
 
     // Call the office

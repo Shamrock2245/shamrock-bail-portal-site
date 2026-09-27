@@ -450,6 +450,14 @@ export const INPUT_MASKS = {
 // ============================================================================
 
 /**
+ * General SwipeSimple bond-payment page ("SHAMROCK BAIL LLC Payment").
+ * Same link as backend/config/tenant.json paymentLink and shamrock-leads SWIPESIMPLE_BOND_PAYMENT_LINK.
+ * Per-bond invoices (exact premium, invoice # = booking #) are issued by shamrock-leads
+ * (swipesimple_invoice_service); prefer a case's own paymentUrl when the backend returns one.
+ */
+export const BOND_PAYMENT_LINK = 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
+
+/**
  * Accepted payment methods
  * @constant {Array<string>}
  */

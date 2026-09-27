@@ -24,7 +24,7 @@ import { validateCustomSession, getDefendantDetails } from 'backend/portal-auth'
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, BOND_PAYMENT_LINK } from 'public/portal-config';
 import { callGasAction } from 'backend/gasIntegration';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
@@ -38,7 +38,7 @@ $w.onReady(async function () {
     console.log("🛡️ [Defendant Dashboard] Loading After-Care Portal...");
 
     LightboxController.init($w);
-    setupWizardBridge('#defendantWizard', 'shamrock-defendant-submitted', 'submitDefendantApplication', (msg) => msg.payload);
+    setupWizardBridge('#defendantWizard', 'shamrock-defendant-submitted', 'submitDefendantApplication', (msg) => msg.payload || msg.data);
     setupActionHandlers();
 
     try {
@@ -170,8 +170,9 @@ function setupActionHandlers() {
 
     // 3. Make Payment
     safeOnClick('#btnMakePayment', () => {
-        const payUrl = defendantData?.paymentUrl || ''; // /payment returns 404 live (audit 2026-09-27); no fallback
-        wixWindow.openLightbox('PrivacyLightbox', { paymentUrl: payUrl });
+        // PrivacyLightbox is the privacy-policy lightbox and /payment 404s (audit 2026-09-27).
+        // Case-specific SwipeSimple invoice link first, else the general SwipeSimple payment page.
+        wixLocation.to(defendantData?.paymentUrl || BOND_PAYMENT_LINK);
     });
 
     // 4. View / Download Documents

@@ -106,7 +106,7 @@ export function generateLocalBusinessSchema(options = {}) {
             {
                 "@type": "ContactPoint",
                 "telephone": "+1-239-955-0178",
-                "contactType": "Customer Support",
+                "contactType": "Text messages (SMS/iMessage only, no voice calls)",
                 "contactOption": "HearingImpairedSupported",
                 "areaServed": "FL",
                 "availableLanguage": ["English", "Spanish"],

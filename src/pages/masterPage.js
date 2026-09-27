@@ -25,6 +25,7 @@
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import { session } from 'wix-storage';
+import { BOND_PAYMENT_LINK } from 'public/portal-config';
 
 // ---------------------------------------------------------------------------
 // Inline county coordinates for Find My Jail geolocation
@@ -216,6 +217,8 @@ function setupFooterPaymentLink() {
     try {
         const link = $w('#footerPaymentLink');
         if (link && link.id) {
+            // Had no destination at all (audit 2026-09-27)
+            try { link.link = BOND_PAYMENT_LINK; link.target = '_blank'; } catch (e) { /* non-fatal */ }
             link.onClick(function() {
                 trackEvent('payment_link_clicked', { location: 'footer' });
             });
