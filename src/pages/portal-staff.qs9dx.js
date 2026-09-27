@@ -1,3 +1,11 @@
+/**
+ * ⚠️ RETIRED 2026-09-27 (owner decision): the Shamrock CRM
+ * (https://leads.shamrockbailbonds.biz) is the ONLY staff tool. This Wix Staff
+ * Portal page and its Lobby Tablet walk-in engine are retired. The page is
+ * kept (not deleted) so nothing 404s; on load it sends staff to the CRM.
+ * Editor removals needed: see docs/STAFF-PORTAL-RETIREMENT.md.
+ * To roll back, set STAFF_PORTAL_RETIRED = false.
+ */
 import wixData from 'wix-data';
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
@@ -28,9 +36,19 @@ function safeSetText(id, text) {
     } catch (e) {}
 }
 
+const STAFF_PORTAL_RETIRED = true;
+const CRM_URL = 'https://leads.shamrockbailbonds.biz/';
+
 $w.onReady(async function () {
     // SEO: Prevent Indexing (Protected Page)
     wixSeo.setMetaTags([{ "name": "robots", "content": "noindex, nofollow" }]);
+
+    if (STAFF_PORTAL_RETIRED) {
+        safeSetText('#welcomeText', 'Staff tools moved to the Shamrock CRM — redirecting…');
+        try { clearSessionToken(); } catch (e) { }
+        wixLocation.to(CRM_URL);
+        return;
+    }
 
     try {
         if ($w('#welcomeText').type) {
@@ -160,7 +178,8 @@ $w.onReady(async function () {
     setupBondTrackerButton();   // Setup "Open Bond Tracker" -> Telegram Intake Sheet
     setupStartPaperworkButton(); // Setup "Start Paperwork" button (CRITICAL)
     setupStaffPortalIframe();   // Setup Command Center iframe bridge
-    setupLobbyTabletWalkInLauncher(); // Setup 15-Second Lobby Tablet Walk-In Engine
+    // Lobby Tablet walk-in engine RETIRED 2026-09-27 — CRM kiosk mode replaces it
+    // (leads /sign/{packet}/{role}?mode=kiosk). setupLobbyTabletWalkInLauncher() is no longer called.
 
     try {
         if ($w('#searchBar').type) {

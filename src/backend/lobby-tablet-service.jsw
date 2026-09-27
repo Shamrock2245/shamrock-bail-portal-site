@@ -1,4 +1,10 @@
 /**
+ * ⚠️ RETIRED 2026-09-27 (owner decision): the Lobby Tablet flow on the Wix
+ * Staff Portal is retired; the CRM is the only staff tool and in-office
+ * tablets use the CRM kiosk mode (leads /sign/{packet}/{role}?mode=kiosk,
+ * 3-minute idle reset, /kiosk home). Every export below returns
+ * {success:false, retired:true}. Code kept for reference / rollback.
+ *
  * Lobby Tablet Service Module
  * File: backend/lobby-tablet-service.jsw
  * 
@@ -12,6 +18,11 @@
  */
 
 import wixData from 'wix-data';
+
+const LOBBY_TABLET_RETIRED = true;
+function retired() {
+    return { success: false, retired: true, error: 'Lobby Tablet is retired. Use the Shamrock CRM (leads.shamrockbailbonds.biz) kiosk mode.' };
+}
 import { COLLECTIONS } from 'public/collectionIds';
 import { callGasAction, notifyGASOfNewIntake } from 'backend/gasIntegration';
 import { persistCanonicalCaseToCms } from 'backend/canonical-sync-service';
@@ -29,6 +40,7 @@ import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
  * @returns {Promise<Object>} Created case details & handoff URL
  */
 export async function startWalkInPacket(params) {
+    if (LOBBY_TABLET_RETIRED) return retired();
     const { role = 'indemnitor', leadId, staffEmail = 'staff@shamrockbailbonds.biz', personData, caseFacts } = params;
 
     try {
@@ -108,6 +120,7 @@ export async function startWalkInPacket(params) {
  * @returns {Promise<{success: boolean, message: string}>}
  */
 export async function markReadyForSuperCrm(params) {
+    if (LOBBY_TABLET_RETIRED) return retired();
     const { caseId, staffEmail = 'staff@shamrockbailbonds.biz' } = params;
 
     try {
@@ -153,6 +166,7 @@ export async function markReadyForSuperCrm(params) {
  * @returns {Promise<Array>} List of open lead matches
  */
 export async function searchOpenLeadsForTablet(query = '') {
+    if (LOBBY_TABLET_RETIRED) return retired();
     try {
         const result = await callGasAction('searchArrestLeads', { query });
         if (result && result.success && Array.isArray(result.leads)) {
