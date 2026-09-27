@@ -1684,6 +1684,8 @@ function handleAction(data) {
   // 1.7 SYSTEM
   if (action === 'getSystemStatus') return client_getSystemStatus();
   if (action === 'logWixEvent') return handleWixLogEvent(data);
+  // CRM → Sheets reporting copy of saved intakes (shamrock-leads intake_fanout, 2026-09-27)
+  if (action === 'appendIntakeLedger') return appendIntakeLedger_(data);
 
   // New action to handle PDF template requests
   if (action === 'getPDFTemplates') return getPDFTemplates(data);
