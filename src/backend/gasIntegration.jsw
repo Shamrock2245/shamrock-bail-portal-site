@@ -356,6 +356,7 @@ export async function getIntakeByCaseId(caseId) {
 const ALLOWED_GAS_ACTIONS = new Set([
     'portalClientMessage',
     'submitDefendantApplication',
+    'submitIndemnitorForm', // indemnitor wizard bridge (audit 2026-09-27)
     'staffLookupBooking',
     'staffGetActiveCases',
     'staffGetArrestsFeed',

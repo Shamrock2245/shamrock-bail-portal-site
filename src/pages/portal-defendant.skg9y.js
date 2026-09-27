@@ -25,6 +25,7 @@ import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { callGasAction } from 'backend/gasIntegration';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
 
@@ -37,6 +38,7 @@ $w.onReady(async function () {
     console.log("🛡️ [Defendant Dashboard] Loading After-Care Portal...");
 
     LightboxController.init($w);
+    setupWizardBridge('#defendantWizard', 'shamrock-defendant-submitted', 'submitDefendantApplication', (msg) => msg.payload);
     setupActionHandlers();
 
     try {
@@ -168,7 +170,7 @@ function setupActionHandlers() {
 
     // 3. Make Payment
     safeOnClick('#btnMakePayment', () => {
-        const payUrl = defendantData?.paymentUrl || 'https://shamrockbailbonds.biz/payment';
+        const payUrl = defendantData?.paymentUrl || ''; // /payment returns 404 live (audit 2026-09-27); no fallback
         wixWindow.openLightbox('PrivacyLightbox', { paymentUrl: payUrl });
     });
 
@@ -218,4 +220,30 @@ function safeOnClick(id, handler) {
         const el = $w(id);
         if (el && typeof el.onClick === 'function') el.onClick(handler);
     } catch (e) {}
+}
+
+/**
+ * Wizard submit bridge (audit 2026-09-27).
+ * The live wizard embed POSTed straight to GAS with mode:'no-cors' and no API key, so
+ * doPost rejected it while the UI still showed "success". The embed now posts a message
+ * here; we call GAS server-side (with the key) and send back a real ack.
+ */
+function setupWizardBridge(elementId, messageType, gasAction, getPayload) {
+    let el;
+    try { el = $w(elementId); } catch (e) { return; }
+    if (!el || typeof el.onMessage !== 'function') return;
+    el.onMessage(async (event) => {
+        const msg = event && event.data;
+        if (!msg || msg.type !== messageType) return;
+        let ok = false;
+        let error = '';
+        try {
+            const result = await callGasAction(gasAction, { payload: getPayload(msg), source: 'wix-portal' });
+            ok = !!(result && result.success !== false);
+            if (!ok) error = (result && (result.error || result.message)) || 'Submission was not accepted';
+        } catch (err) {
+            error = (err && err.message) || String(err);
+        }
+        try { el.postMessage({ type: 'shamrock-submit-ack', ok, error }); } catch (e) { }
+    });
 }

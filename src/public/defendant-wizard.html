@@ -648,6 +648,27 @@ var W = {
     document.getElementById('review-content').innerHTML = html;
   },
 
+  // Wait for the Wix page to confirm the backend accepted the submission (audit 2026-09-27).
+  // Without this the wizard showed "success" even when GAS rejected the request.
+  waitForSubmitAck(timeoutMs) {
+    return new Promise(function(resolve, reject) {
+      var done = false;
+      function onMsg(e) {
+        var d = e && e.data;
+        if (!d || d.type !== 'shamrock-submit-ack') return;
+        done = true;
+        window.removeEventListener('message', onMsg);
+        if (d.ok) resolve(d); else reject(new Error(d.error || 'Submission was not accepted'));
+      }
+      window.addEventListener('message', onMsg);
+      setTimeout(function() {
+        if (done) return;
+        window.removeEventListener('message', onMsg);
+        reject(new Error('No confirmation from server'));
+      }, timeoutMs || 30000);
+    });
+  },
+
   async submit() {
     if (!this.validate()) return;
     var btn = document.getElementById('btn-next');
@@ -658,21 +679,16 @@ var W = {
       if (window.parent !== window) {
         // PRIMARY PATH: Use postMessage bridge — goes through Wix page with API key
         // Parent (portal-defendant.skg9y.js) handles the GAS call via callGasAction
+        var ack = this.waitForSubmitAck(30000);
         window.parent.postMessage({
           type: 'shamrock-defendant-submitted',
           action: 'submitDefendantApplication',
           payload: data
         }, '*');
+        await ack;
       } else {
-        // FALLBACK: Standalone mode (e.g. direct URL access) — use production GAS URL from context
-        // The context URL is injected by parent via postMessage on load (window.GAS_URL)
-        var gasUrl = window.GAS_URL || 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
-        await fetch(gasUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'submitDefendantApplication', payload: data }),
-          mode: 'no-cors'
-        });
+        // Standalone mode can't authenticate to GAS (no API key in the browser); never fake success.
+        throw new Error('Online submission is only available inside the Shamrock portal');
       }
       this.clearDraft();
       document.getElementById('success').classList.add('show');

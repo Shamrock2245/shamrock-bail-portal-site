@@ -477,9 +477,13 @@ function setupFindJailButton() {
  * Handle "Find My Jail" click.
  *
  * Uses wixWindow.getCurrentGeolocation() and inline COUNTY_COORDS table
- * to find the nearest Florida county. Falls back to /florida-bail-bonds
+ * to find the nearest Florida county. Falls back to FIND_JAIL_FALLBACK
  * if geolocation is denied or unavailable.
  */
+// /florida-bail-bonds (the bare prefix) returns 404 live (audit 2026-09-27).
+// Until a county directory page exists in the Editor, fall back to the flagship hub.
+const FIND_JAIL_FALLBACK = '/florida-bail-bonds/lee';
+
 function handleFindJailClick(btn) {
     const originalLabel = (btn && btn.label) || 'Find My Jail';
 
@@ -495,7 +499,7 @@ function handleFindJailClick(btn) {
             const lon = parseFloat(cachedLon);
             const nearestSlug = findNearestCounty(lat, lon);
             console.log('[FindMyJail] Using cached geo coords → instant response');
-            wixLocation.to(nearestSlug ? '/florida-bail-bonds/' + nearestSlug : '/florida-bail-bonds');
+            wixLocation.to(nearestSlug ? '/florida-bail-bonds/' + nearestSlug : FIND_JAIL_FALLBACK);
             return; // Done — no GPS wait
         }
     } catch (e) { /* cache read non-fatal, fall through to live call */ }
@@ -521,14 +525,14 @@ function handleFindJailClick(btn) {
             if (nearestSlug) {
                 wixLocation.to('/florida-bail-bonds/' + nearestSlug);
             } else {
-                wixLocation.to('/florida-bail-bonds');
+                wixLocation.to(FIND_JAIL_FALLBACK);
             }
         })
         .catch(function(error) {
             try { if (btn) btn.label = originalLabel; } catch (e) { /* non-fatal */ }
             const errMsg = (error && error.message) || String(error);
             console.warn('[FindMyJail] Geolocation failed:', errMsg);
-            wixLocation.to('/florida-bail-bonds');
+            wixLocation.to(FIND_JAIL_FALLBACK);
         });
 }
 

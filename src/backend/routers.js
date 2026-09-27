@@ -154,7 +154,7 @@ export async function first_appearance_Router(request) {
     return await faRouter(request);
   } catch (err) {
     console.error('[Router] Error in first_appearance_Router:', err);
-    return redirect('/first-appearance-hub');
+    return redirect('/first-appearance');
   }
 }
 

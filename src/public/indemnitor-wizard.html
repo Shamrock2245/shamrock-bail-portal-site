@@ -617,6 +617,27 @@ const W = {
     document.getElementById('review-container').innerHTML = html;
   },
 
+  // Wait for the Wix page to confirm the backend accepted the submission (audit 2026-09-27).
+  // Without this the wizard showed "success" even when GAS rejected the request.
+  waitForSubmitAck: function(timeoutMs) {
+    return new Promise(function(resolve, reject) {
+      var done = false;
+      function onMsg(e) {
+        var d = e && e.data;
+        if (!d || d.type !== 'shamrock-submit-ack') return;
+        done = true;
+        window.removeEventListener('message', onMsg);
+        if (d.ok) resolve(d); else reject(new Error(d.error || 'Submission was not accepted'));
+      }
+      window.addEventListener('message', onMsg);
+      setTimeout(function() {
+        if (done) return;
+        window.removeEventListener('message', onMsg);
+        reject(new Error('No confirmation from server'));
+      }, timeoutMs || 30000);
+    });
+  },
+
   submit: async function() {
     if (!this.validate(6)) return;
     var btn = document.getElementById('btn-next');
@@ -660,6 +681,7 @@ const W = {
     try {
       if (window.parent !== window) {
         // Use postMessage bridge (goes through Wix page with API key)
+        var ack = this.waitForSubmitAck(30000);
         window.parent.postMessage({
           type: 'indemnitor-submit-phase1',
           formData: formData,
@@ -667,15 +689,10 @@ const W = {
           signerEmail: data.indemnitor.email,
           signerName: [data.indemnitor.firstName, data.indemnitor.lastName].filter(Boolean).join(' ')
         }, '*');
+        await ack;
       } else {
-        // Fallback: direct GAS call (standalone mode)
-        var GAS_URL = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
-        await fetch(GAS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'submitIndemnitorPhase1', formData: formData, signerEmail: data.indemnitor.email, signerName: [data.indemnitor.firstName, data.indemnitor.lastName].filter(Boolean).join(' ') }),
-          mode: 'no-cors'
-        });
+        // Standalone mode can't authenticate to GAS (no API key in the browser); never fake success.
+        throw new Error('Online submission is only available inside the Shamrock portal');
       }
       // Show success — signing link arrives via email
       this.clearDraft();
