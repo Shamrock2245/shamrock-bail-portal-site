@@ -105,12 +105,6 @@ function updatePageSEO() {
                     "https://www.instagram.com/shamrock_bail_bonds",
                     "https://t.me/ShamrockBail_bot"
                 ],
-                "aggregateRating": {
-                    "@type": "AggregateRating",
-                    "ratingValue": "4.9",
-                    "bestRating": "5",
-                    "reviewCount": "150"
-                },
                 "hasOfferCatalog": {
                     "@type": "OfferCatalog",
                     "name": "Bail Bond Services",

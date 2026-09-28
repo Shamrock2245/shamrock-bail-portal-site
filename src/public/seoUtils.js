@@ -400,13 +400,6 @@ export function initGlobalSEO() {
                 },
                 {
                     "@type": "ContactPoint",
-                    "telephone": "+1-239-332-5245",
-                    "contactType": "Emergency",
-                    "areaServed": "US-FL",
-                    "availableLanguage": ["English", "Spanish"]
-                },
-                {
-                    "@type": "ContactPoint",
                     "telephone": "+1-239-955-0301",
                     "contactType": "Customer Service",
                     "areaServed": "US-FL",

@@ -736,12 +736,6 @@ function buildLocalBusinessSchema() {
             'https://www.facebook.com/ShamrockBail',
             'https://www.instagram.com/shamrock_bail_bonds',
             'https://t.me/ShamrockBail_bot'
-        ],
-        aggregateRating: {
-            '@type': 'AggregateRating',
-            ratingValue: '4.9',
-            bestRating: '5',
-            reviewCount: '150'
-        }
+        ]
     };
 }

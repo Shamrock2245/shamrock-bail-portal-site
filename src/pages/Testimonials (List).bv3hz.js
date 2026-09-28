@@ -1,5 +1,4 @@
 import wixSeo from 'wix-seo';
-import wixData from 'wix-data';
 
 $w.onReady(async function () {
     updatePageSEO();
@@ -7,7 +6,7 @@ $w.onReady(async function () {
 
 async function updatePageSEO() {
     const pageTitle = "Client Reviews & Testimonials | Shamrock Bail Bonds Fort Myers";
-    const pageDesc = "See why Shamrock Bail Bonds is rated 4.9/5 stars. Read real client reviews about our 24/7 bail bond service in Fort Myers, Naples, and across all 67 Florida counties.";
+    const pageDesc = "Read real client reviews about our 24/7 bail bond service in Fort Myers, Naples, and across all 67 Florida counties.";
     const pageUrl = "https://www.shamrockbailbonds.biz/testimonials";
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
@@ -32,32 +31,9 @@ async function updatePageSEO() {
         { "rel": "canonical", "href": pageUrl }
     ]);
 
-    // 2. Fetch Review Data for Schema
-    let reviews = [];
-    try {
-        const result = await wixData.query("Testimonials").limit(10).find();
-        reviews = result.items.map(item => ({
-            "@type": "Review",
-            "author": { "@type": "Person", "name": item.name || "Verified Client" },
-            "datePublished": item._createdDate ? item._createdDate.toISOString().split('T')[0] : `${new Date().getFullYear()}-01-01`,
-            "reviewBody": item.quote || item.text || "Great service!",
-            "reviewRating": {
-                "@type": "Rating",
-                "ratingValue": item.rating || "5",
-                "bestRating": "5"
-            }
-        }));
-    } catch (e) {
-        console.warn("[Testimonials SEO] Could not fetch reviews:", e.message);
-        reviews = [
-            { "@type": "Review", "author": { "@type": "Person", "name": "Sarah M." }, "reviewBody": "Fast and professional. Got my brother out in 4 hours.", "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" } },
-            { "@type": "Review", "author": { "@type": "Person", "name": "John D." }, "reviewBody": "Called at 3am and they answered immediately. Lifesavers.", "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" } }
-        ];
-    }
-
     // 3. Structured Data
     wixSeo.setStructuredData([
-        // CollectionPage with ItemList of reviews
+        // CollectionPage
         {
             "@context": "https://schema.org",
             "@type": "CollectionPage",
@@ -67,18 +43,9 @@ async function updatePageSEO() {
             "speakable": {
                 "@type": "SpeakableSpecification",
                 "cssSelector": ["h1", "h2", ".testimonial-text", "[data-hook='review-body']"]
-            },
-            "mainEntity": {
-                "@type": "ItemList",
-                "numberOfItems": reviews.length,
-                "itemListElement": reviews.map((r, i) => ({
-                    "@type": "ListItem",
-                    "position": i + 1,
-                    "item": r
-                }))
             }
         },
-        // LocalBusiness with AggregateRating (star snippet eligibility)
+        // LocalBusiness (no self-serving rating/review markup)
         {
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
@@ -112,16 +79,7 @@ async function updatePageSEO() {
                 "https://www.facebook.com/ShamrockBail",
                 "https://www.instagram.com/shamrock_bail_bonds",
                 "https://t.me/ShamrockBail_bot"
-            ],
-            "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "4.9",
-                "bestRating": "5",
-                "worstRating": "1",
-                "reviewCount": reviews.length > 2 ? String(reviews.length) : "150",
-                "ratingCount": "150"
-            },
-            "review": reviews.slice(0, 5)
+            ]
         },
         // Breadcrumb
         {
