@@ -273,7 +273,7 @@ RULES:
     
     messages.push({ role: 'user', content: data.message });
 
-    const response = callGrok(messages, systemPrompt, {
+    const response = callGrok(systemPrompt, messages, {
       useKnowledgeBase: true,
       temperature: 0.7
     });

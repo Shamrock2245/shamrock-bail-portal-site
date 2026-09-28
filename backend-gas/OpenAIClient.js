@@ -24,7 +24,9 @@ function callOpenAI(systemPrompt, userContent, options = {}) {
     try {
         const apiKey = PropertiesService.getScriptProperties().getProperty('OPENAI_API_KEY');
         if (!apiKey) {
-            console.error("⛔ OpenAIClient: OPENAI_API_KEY is missing in Script Properties.");
+            console.warn("⚠️ OpenAIClient: OPENAI_API_KEY is missing in Script Properties.");
+            const fallback = failoverToGrok_(systemPrompt, userContent, options);
+            if (fallback !== null) return fallback;
             console.error("   Run setupOpenAIKey() to configure it.");
             return null;
         }
@@ -44,10 +46,8 @@ function callOpenAI(systemPrompt, userContent, options = {}) {
         ];
 
         // Handle different content types
-        // Handle different content types
         if (Array.isArray(userContent)) {
             // Multi-modal (Multiple Images + optional text)
-            // Expect userContent to be array of objects: { mimeType, data }
             const contentArray = [{ type: "text", text: "Extract structured data from these booking images. Combine information if spread across multiple pages/images." }];
 
             userContent.forEach(img => {
@@ -127,6 +127,8 @@ function callOpenAI(systemPrompt, userContent, options = {}) {
             console.error(`⛔ OpenAI API Error: ${json.error.message}`);
             console.error(`   Error type: ${json.error.type}`);
             console.error(`   Full error: ${JSON.stringify(json.error)}`);
+            const fallback = failoverToGrok_(systemPrompt, userContent, options);
+            if (fallback !== null) return fallback;
             return null;
         }
 
@@ -136,13 +138,42 @@ function callOpenAI(systemPrompt, userContent, options = {}) {
         }
 
         console.error("⛔ OpenAI returned no choices");
+        const fallbackChoice = failoverToGrok_(systemPrompt, userContent, options);
+        if (fallbackChoice !== null) return fallbackChoice;
         return null;
 
     } catch (e) {
         console.error("⛔ OpenAIClient Exception: " + e.toString());
         console.error("   Stack: " + e.stack);
+        const fallback = failoverToGrok_(systemPrompt, userContent, options);
+        if (fallback !== null) return fallback;
         return null;
     }
+}
+
+/**
+ * Automated failover to xAI Grok when OpenAI is unavailable or errors
+ * @private
+ */
+function failoverToGrok_(systemPrompt, userContent, options) {
+    if (options && options._isFallback) return null; // Prevent circular failover
+    if (typeof callGrok === 'function') {
+        console.log("🔄 OpenAI unavailable or error. Seamlessly failing over to Grok (xAI)...");
+        try {
+            const grokOptions = Object.assign({}, options, { _isFallback: true });
+            // If userContent is an image/multimodal array, Grok text API might need string fallback
+            let grokContent = userContent;
+            if (Array.isArray(userContent)) {
+                grokContent = "Extract booking and arrest details from documents.";
+            } else if (typeof userContent === 'object' && userContent !== null && userContent.data) {
+                grokContent = "Extract booking and arrest details from image.";
+            }
+            return callGrok(systemPrompt, grokContent, grokOptions);
+        } catch (grokErr) {
+            console.error("⛔ Grok failover also failed: " + grokErr.toString());
+        }
+    }
+    return null;
 }
 
 /**

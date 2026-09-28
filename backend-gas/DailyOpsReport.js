@@ -82,7 +82,10 @@ function sendDailyOpsReport() {
  * @returns {string} - Formatted Telegram message
  */
 function _buildOpsReport() {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = SpreadsheetApp.getActiveSpreadsheet() || (function() {
+        var id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E';
+        return SpreadsheetApp.openById(id);
+    })();
     var now = new Date();
     var lookbackMs = OPS_CONFIG.LOOKBACK_HOURS * 60 * 60 * 1000;
     var since = new Date(now.getTime() - lookbackMs);

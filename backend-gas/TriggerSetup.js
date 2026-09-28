@@ -15,15 +15,22 @@
 // ====================================================================
 
 var TRIGGER_REGISTRY = [
-  { id: 1, name: 'Lee County Scraper',    fn: 'runLeeArrestsNow',               type: 'hours',   interval: 1,  desc: 'Scrapes Lee County jail roster' },
-  { id: 2, name: 'The Scout (Multi)',      fn: 'runAllCountyScrapers',           type: 'hours',   interval: 6,  desc: 'Charlotte, Collier, Hendry, Sarasota' },
-  { id: 3, name: 'The Closer',            fn: 'runTheCloser',                   type: 'minutes', interval: 30, desc: 'Abandoned intake drip campaign' },
-  { id: 4, name: 'Court Email Processor',  fn: 'processCourtDateEmails',         type: 'minutes', interval: 15, desc: 'Parses court date notification emails' },
-  { id: 5, name: 'TG Court Reminders',    fn: 'TG_processCourtDateReminders',   type: 'minutes', interval: 30, desc: 'Sends Telegram court date reminders' },
-  { id: 6, name: 'TG Weekly Payments',    fn: 'TG_processWeeklyPaymentProgress', type: 'weekly',  day: 'MONDAY', hour: 10, desc: 'Monday payment progress via Telegram' },
-  { id: 7, name: 'Social Auto-Posting',   fn: 'runAutoPostingEngine',           type: 'minutes', interval: 5,  desc: 'Social media auto-posting engine' },
-  { id: 8, name: 'Daily Slack Summary',   fn: 'sendDailySummaryToSlack',        type: 'daily',   hour: 17,     desc: 'End-of-day ops summary to Slack' },
-  { id: 9, name: 'GSC Sitemap Submit',    fn: 'runSitemapSubmission',           type: 'daily',   hour: 6,      desc: 'Submit Wix sitemaps to Google + IndexNow/Bing' }
+  { id: 1,  name: 'Lee County Scraper',       fn: 'runLeeArrestsNow',                type: 'hours',   interval: 1,  desc: 'Scrapes Lee County jail roster' },
+  { id: 2,  name: 'The Scout (Multi)',        fn: 'runAllCountyScrapers',            type: 'hours',   interval: 6,  desc: 'Charlotte, Collier, Hendry, Sarasota' },
+  { id: 3,  name: 'The Closer',               fn: 'runTheCloser',                    type: 'minutes', interval: 30, desc: 'Abandoned intake drip campaign' },
+  { id: 4,  name: 'Court Email Processor',    fn: 'processCourtDateEmails',          type: 'minutes', interval: 15, desc: 'Parses court date notification emails' },
+  { id: 5,  name: 'TG Court Reminders',       fn: 'TG_processCourtDateReminders',    type: 'minutes', interval: 30, desc: 'Sends Telegram court date reminders' },
+  { id: 6,  name: 'TG Weekly Payments',       fn: 'TG_processWeeklyPaymentProgress',  type: 'weekly',  day: 'MONDAY', hour: 10, desc: 'Monday payment progress via Telegram' },
+  { id: 7,  name: 'Social Auto-Posting',      fn: 'runAutoPostingEngine',            type: 'minutes', interval: 5,  desc: 'Social media auto-posting engine' },
+  { id: 8,  name: 'Daily Slack Summary',      fn: 'sendDailySummaryToSlack',         type: 'daily',   hour: 17,     desc: 'End-of-day ops summary to Slack' },
+  { id: 9,  name: 'GSC Sitemap Submit',       fn: 'runSitemapSubmission',            type: 'daily',   hour: 6,      desc: 'Submit Wix sitemaps to Google + IndexNow/Bing' },
+  { id: 10, name: 'The Concierge Queue',      fn: 'processConciergeQueue',           type: 'minutes', interval: 5,  desc: 'Engages qualified leads, AI flight risk review & SMS intro' },
+  { id: 11, name: 'Client Check-Ins',         fn: 'sendAutomatedCheckIns',           type: 'hours',   interval: 4,  desc: 'Automated check-in requests with GPS & selfie verification' },
+  { id: 12, name: 'Court Reminders (SMS)',    fn: 'processDailyCourtReminders',      type: 'daily',   hour: 8,      desc: '4-touch court reminders (7d, 3d, 1d, morning-of)' },
+  { id: 13, name: 'Payment Plan Reconciler',  fn: 'reconcilePaymentPlans',           type: 'daily',   hour: 9,      desc: 'SwipeSimple payment plan reconciliation & delinquency flagging' },
+  { id: 14, name: 'Risk Intelligence Loop',   fn: 'runRiskIntelligenceLoop',         type: 'hours',   interval: 2,  desc: 'Monitors active defendants for flight risk shifts & warrants' },
+  { id: 15, name: 'Repeat Offender Scan',     fn: 'runDailyRepeatOffenderScan',      type: 'daily',   hour: 7,      desc: 'Scans new arrests against historical bonds for high-value repeat leads' },
+  { id: 16, name: 'Token Refresh Service',    fn: 'refreshGoogleTokens',             type: 'hours',   interval: 6,  desc: 'Refreshes OAuth and API credentials before expiration' }
 ];
 
 

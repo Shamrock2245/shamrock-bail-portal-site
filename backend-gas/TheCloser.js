@@ -93,8 +93,11 @@ function runTheCloser() {
         return { skipped: true, reason: 'outside_business_hours' };
     }
 
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var intakeSheet = ss.getSheetByName(CLOSER_CONFIG.INTAKE_SHEET);
+    var ss = SpreadsheetApp.getActiveSpreadsheet() || (function() {
+        var id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E';
+        return SpreadsheetApp.openById(id);
+    })();
+    var intakeSheet = ss ? ss.getSheetByName(CLOSER_CONFIG.INTAKE_SHEET) : null;
 
     if (!intakeSheet || intakeSheet.getLastRow() <= 1) {
         Logger.log('ℹ️ No intake data found.');
