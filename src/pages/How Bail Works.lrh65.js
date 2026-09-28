@@ -699,13 +699,6 @@ function updatePageSEO(faqItems) {
             "opens": "00:00",
             "closes": "23:59"
         },
-        "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "bestRating": "5",
-            "worstRating": "1",
-            "reviewCount": "150"
-        },
         "sameAs": [
             "https://www.facebook.com/ShamrockBail",
             "https://www.instagram.com/shamrock_bail_bonds",
