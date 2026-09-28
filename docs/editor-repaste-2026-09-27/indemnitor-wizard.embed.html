@@ -247,23 +247,29 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   <div class="step-title"><span class="icon">&#x1f4c4;</span> Document Uploads</div>
   <div class="step-subtitle">Upload your ID and any supporting documents. Use your phone camera or choose a file.</div>
 
-  <label style="font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block">Driver's License / Government ID <span style="color:var(--accent)">*</span></label>
+  <label style="font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block">Driver's License / Government ID <span style="color:var(--muted)">(Camera Scan or Upload)</span></label>
   <div class="upload-row">
     <div class="upload-zone" id="zone-dl-front" onclick="this.querySelector('input').click()">
       <div class="upload-icon">&#x1f4f8;</div>
       <div class="upload-label">Front of ID</div>
-      <div class="upload-hint">Tap to capture or upload</div>
+      <div class="upload-hint">Tap to capture with camera or upload</div>
       <input type="file" accept="image/*" capture="environment" onchange="W.handleUpload(this,'dl-front')">
     </div>
     <div class="upload-zone" id="zone-dl-back" onclick="this.querySelector('input').click()">
       <div class="upload-icon">&#x1f504;</div>
       <div class="upload-label">Back of ID</div>
-      <div class="upload-hint">Tap to capture or upload</div>
+      <div class="upload-hint">Tap to capture with camera or upload</div>
       <input type="file" accept="image/*" capture="environment" onchange="W.handleUpload(this,'dl-back')">
     </div>
   </div>
+  <div style="margin-top:12px;text-align:center;">
+    <button type="button" onclick="W.skipIdUpload()" style="font-size:13px;padding:8px 16px;background:transparent;border:1px solid var(--border);color:var(--text-2);cursor:pointer;border-radius:8px;">
+      Don't have ID card? Continue with manual entry &rarr;
+    </button>
+  </div>
 
   <label style="font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block">Supporting Documents <span style="color:var(--muted)">(Optional)</span></label>
+
   <div class="upload-row">
     <div class="upload-zone" id="zone-paystub" onclick="this.querySelector('input').click()">
       <div class="upload-icon">&#x1f4b0;</div>
@@ -482,9 +488,10 @@ const W = {
       }
     }
     if (stepIdx === 3 && !this.uploads['dl-front']) {
-      document.getElementById('zone-dl-front').style.borderColor = 'var(--error)';
-      this.toast('Please upload the front of your ID');
-      valid = false;
+      // ID upload is optional; manual DL details were entered in step 2
+      if (!this.idUploadSkipped) {
+        this.toast('ID photo is optional. Staff will verify your ID at signing.');
+      }
     }
     if (stepIdx === 6) {
       if (!document.getElementById('consent-1').checked || !document.getElementById('consent-2').checked) {
@@ -497,6 +504,12 @@ const W = {
       this.toast('Please fill in all required fields');
     }
     return valid;
+  },
+
+  skipIdUpload() {
+    this.idUploadSkipped = true;
+    this.toast('ID upload skipped. Staff will verify your ID at signing.');
+    this.next();
   },
 
   next() { if (this.validate(this.step) && this.step < this.totalSteps - 1) { this.step++; this.updateUI(); this.saveDraft(); } },
