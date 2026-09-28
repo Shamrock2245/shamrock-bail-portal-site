@@ -223,8 +223,8 @@ function demoteExtraHeadings() {
         try {
             const el = $w(id);
             if (!el || !el.valid || typeof el.html !== 'string' || !el.html) return;
-            if (!/<h1/i.test(el.html)) return;
-            el.html = el.html.replace(/<h1/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
+            if (!/<h1\b/i.test(el.html)) return;
+            el.html = el.html.replace(/<h1\b/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
             console.log('[SEO] Demoted H1→H2 on', id);
         } catch (e) { /* optional element */ }
     });
