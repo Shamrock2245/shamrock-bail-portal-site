@@ -78,7 +78,7 @@ function callOpenAI(systemPrompt, userContent, options = {}) {
 
 
         const payload = {
-            model: OPENAI_CONFIG.MODEL,
+            model: options.model || OPENAI_CONFIG.MODEL,
             messages: messages,
             temperature: options.temperature || 0.4,
             max_tokens: options.maxTokens || 1000

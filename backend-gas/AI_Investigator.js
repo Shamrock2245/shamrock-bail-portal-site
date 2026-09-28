@@ -1,16 +1,19 @@
 /**
- * AI_Investigator.gs
+ * AI_Investigator.js
  * 
  * " The Investigator "
  * 
  * Analyzes comprehensive background reports (IRB, TLO, iDiCore) for deep vetting.
  * Cross-references Defendant vs Indemnitor data.
- * specialized in detecting hidden risks, asset stability, and relationship verification.
+ * Specialized in detecting hidden risks, asset stability, and relationship verification.
+ * 
+ * Agent Doctrine (AGENTS.md):
+ * Model: gpt-4o | Channel: On-demand | Output: Vetting Assessment -> Slack alert if high-risk flags detected
  */
 
 /**
  * deepAnalyzeReports
- * @param {Object} payload - { defendantReport: string, indemnitorReport: string }
+ * @param {Object} payload - { defendantReport: string, indemnitorReport: string, defendantName?: string, indemnitorName?: string }
  * @returns {Object} JSON Analysis
  */
 function AI_deepAnalyzeReports(payload) {
@@ -19,8 +22,8 @@ function AI_deepAnalyzeReports(payload) {
     const defReport = payload.defendantReport || "NO RECORD PROVIDED";
     const indReport = payload.indemnitorReport || "NO RECORD PROVIDED";
 
-    // Truncate if insanely large to avoid context limits (Gemini 1.5 Flash has ~1M tokens, so we are likely safe, but let's be sane)
-    const MAX_CHARS = 300000; // ~75k tokens
+    // Truncate to avoid exceeding OpenAI 128k token context window (~37.5k tokens / 150k chars each)
+    const MAX_CHARS = 150000;
     const defSafe = defReport.length > MAX_CHARS ? defReport.substring(0, MAX_CHARS) + "...[TRUNCATED]" : defReport;
     const indSafe = indReport.length > MAX_CHARS ? indReport.substring(0, MAX_CHARS) + "...[TRUNCATED]" : indReport;
 
@@ -69,7 +72,12 @@ function AI_deepAnalyzeReports(payload) {
     ${indSafe}
     `;
 
-    const result = callOpenAI(systemPrompt, userContent, { jsonMode: true, useKnowledgeBase: true });
+    const result = callOpenAI(systemPrompt, userContent, { 
+        model: 'gpt-4o', 
+        maxTokens: 2500, 
+        jsonMode: true, 
+        useKnowledgeBase: true 
+    });
 
     if (!result) {
         console.warn("🕵️ Investigator failed to generate. Returning fallback safe object.");
@@ -85,7 +93,68 @@ function AI_deepAnalyzeReports(payload) {
         };
     }
 
+    // AGENTS.md Doctrine: Send Slack alert to #leads if high-risk flags detected
+    const isHighRisk = result.recommendation === "DECLINE" ||
+        result.recommendation === "REQUIRE COLLATERAL" ||
+        (typeof result.flightRiskScore === 'number' && result.flightRiskScore < 50) ||
+        (typeof result.indemnitorStabilityScore === 'number' && result.indemnitorStabilityScore < 50) ||
+        (Array.isArray(result.redFlags) && result.redFlags.length > 0);
+
+    if (isHighRisk) {
+        sendInvestigatorSlackAlert_(payload, result);
+    }
+
     return result;
+}
+
+/**
+ * Send Slack Alert for High-Risk Background Investigation Findings
+ * @private
+ */
+function sendInvestigatorSlackAlert_(payload, analysis) {
+    try {
+        if (typeof NotificationService === 'undefined' || !NotificationService.notifySlack) {
+            console.warn("NotificationService not available for Investigator Slack alert.");
+            return;
+        }
+
+        const isDecline = analysis.recommendation === 'DECLINE';
+        const color = isDecline ? '#ff0000' : '#ffa500';
+        const defName = payload.defendantName || payload.name || "Defendant";
+        const indName = payload.indemnitorName || "Indemnitor";
+
+        const fields = [
+            { title: "Recommendation", value: `*${analysis.recommendation}*`, short: true },
+            { title: "Relationship Verified", value: analysis.relationshipVerified ? "✅ Yes" : "❌ No", short: true },
+            { title: "Flight Risk Score", value: `${analysis.flightRiskScore}/100`, short: true },
+            { title: "Indemnitor Stability", value: `${analysis.indemnitorStabilityScore}/100`, short: true },
+            { title: "Subjects", value: `Defendant: ${defName}\nIndemnitor: ${indName}`, short: false },
+            { title: "Flight Rationale", value: analysis.flightRiskRationale || "N/A", short: false },
+            { title: "Indemnitor Rationale", value: analysis.indemnitorRationale || "N/A", short: false }
+        ];
+
+        if (Array.isArray(analysis.redFlags) && analysis.redFlags.length > 0) {
+            fields.push({
+                title: "⚠️ Red Flags",
+                value: analysis.redFlags.map(rf => `• ${rf}`).join("\n"),
+                short: false
+            });
+        }
+
+        const slackPayload = {
+            attachments: [{
+                color: color,
+                pretext: `🕵️ *Investigator Vetting Alert: ${analysis.recommendation}*`,
+                fields: fields,
+                footer: "Shamrock Digital Workforce — The Investigator (gpt-4o)"
+            }]
+        };
+
+        NotificationService.notifySlack('SLACK_WEBHOOK_LEADS', slackPayload);
+        console.log("🕵️ Sent Investigator Vetting Alert to Slack (#leads).");
+    } catch (err) {
+        console.warn("Failed to send Investigator Slack alert: " + err.message);
+    }
 }
 
 // NOTE: client_runInvestigator lives in Code.js (includes isUserAllowed auth check).
