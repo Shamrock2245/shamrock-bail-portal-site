@@ -470,7 +470,8 @@ class ShamrockIntakeWizard extends HTMLElement {
 
                 <div class="btn-row">
                     <button class="btn-secondary" id="btnBack">← Back</button>
-                    <button class="btn-primary" id="btnStep1Next" ${!s.ocrFrontDone ? 'disabled style="opacity:0.5"' : ''}>Review Info →</button>
+                    <button class="btn-secondary" id="btnSkipScan" style="margin: 0 4px;">Enter details manually →</button>
+                    <button class="btn-primary" id="btnStep1Next">Review Info →</button>
                 </div>
                 `;
 
@@ -662,6 +663,9 @@ class ShamrockIntakeWizard extends HTMLElement {
         // Navigation Next Buttons
         const btnStep1Next = root.querySelector('#btnStep1Next');
         if (btnStep1Next) btnStep1Next.addEventListener('click', () => this.goToStep(2));
+
+        const btnSkipScan = root.querySelector('#btnSkipScan');
+        if (btnSkipScan) btnSkipScan.addEventListener('click', () => this.goToStep(2));
 
         const btnStep2Next = root.querySelector('#btnStep2Next');
         if (btnStep2Next) {

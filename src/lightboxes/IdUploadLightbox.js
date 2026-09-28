@@ -110,6 +110,22 @@ function setupEventHandlers() {
         checkFormReadiness();
     });
 
+    // Support manual input listeners so workflow is never blocked on scanner
+    ['#inputFullName', '#inputDlNumber'].forEach(sel => {
+        try {
+            const el = $w(sel);
+            if (el && typeof el.onInput === 'function') {
+                el.onInput(() => checkFormReadiness());
+            }
+        } catch (e) {}
+    });
+
+    safeOnClick('#skipScanBtn', () => {
+        safeEnable('#submitBtn');
+        safeSetText('#submitBtn', 'Confirm Manual Details');
+        updateStatus('Manual entry enabled. Please enter your name and DL# below.', 'info');
+    });
+
     // Submit Button (Confirmation)
     safeOnClick('#submitBtn', handleSubmit);
 
@@ -235,9 +251,11 @@ function showPreview(selectors, previewUrl) {
 
 function checkFormReadiness() {
     const hasFront = !!frontFile || !!frontPreviewUrl;
-    if (hasFront) {
+    const hasManualName = (safeGetValue('#inputFullName') || '').length >= 2;
+    const hasManualDl = (safeGetValue('#inputDlNumber') || '').length >= 3;
+    if (hasFront || (hasManualName && hasManualDl)) {
         safeEnable('#submitBtn');
-        safeSetText('#submitBtn', 'Confirm & Continue');
+        safeSetText('#submitBtn', hasFront ? 'Confirm & Continue' : 'Confirm Manual Details');
     }
 }
 
