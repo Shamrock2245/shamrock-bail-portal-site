@@ -92,6 +92,9 @@ $w.onReady(function () {
     setupCommonBailAmounts();
     setupFAQ();
 
+    // Bing SEO: keep one H1; demote section Heading-1s to H2
+    demoteExtraHeadings();
+
     // 2. Setup Buttons
     const startBtn = $w('#startBailProcessBtn');
     if (startBtn.valid) startBtn.onClick(() => wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-how-bail-works' })));
@@ -699,13 +702,6 @@ function updatePageSEO(faqItems) {
             "opens": "00:00",
             "closes": "23:59"
         },
-        "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "bestRating": "5",
-            "worstRating": "1",
-            "reviewCount": "150"
-        },
         "sameAs": [
             "https://www.facebook.com/ShamrockBail",
             "https://www.instagram.com/shamrock_bail_bonds",
@@ -716,4 +712,25 @@ function updatePageSEO(faqItems) {
     wixSeo.setStructuredData([faqSchema, howToSchema, breadcrumbSchema, localBusinessSchema])
         .then(() => console.log("SEO: Structured Data Set Successfully"))
         .catch(err => console.error("SEO: Failed to set structured data", err));
+}
+
+/**
+ * Bing SEO: keep "How Bail Works in Florida" as the sole content H1.
+ * Demote section titles that the Editor set as Heading 1.
+ * IDs confirmed from live DOM 2026-09-28.
+ */
+function demoteExtraHeadings() {
+    const demoteIds = [
+        '#comp-mjuyzxh4', // Types of Bail in Florida
+        '#comp-mjxe4kkl'  // Frequently Asked Questions
+    ];
+    demoteIds.forEach(function (id) {
+        try {
+            const el = $w(id);
+            if (!el || !el.valid || typeof el.html !== 'string' || !el.html) return;
+            if (!/<h1\b/i.test(el.html)) return;
+            el.html = el.html.replace(/<h1\b/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
+            console.log('[SEO] Demoted H1→H2 on', id);
+        } catch (e) { /* optional */ }
+    });
 }

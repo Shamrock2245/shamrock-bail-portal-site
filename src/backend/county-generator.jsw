@@ -484,16 +484,15 @@ function escapeHtml(value) {
 }
 
 function buildAboutHtml(displayName, countyName, aboutText, cities, landing) {
-  const heading = landing
-    ? `About Bail Bonds in ${escapeHtml(displayName)}`
-    : `About Bail Bonds in ${escapeHtml(countyName)} County, Florida`;
+  // Heading lives on the dedicated About title element (demoted to H2 in page code).
+  // Keep about_html as body paragraphs only to avoid duplicate headings.
   const paragraphs = String(aboutText || '')
     .split(/\n+/)
     .map((p) => p.trim())
     .filter(Boolean)
     .map((p) => `<p>${escapeHtml(p)}</p>`)
     .join('');
-  return `<h2>${heading}</h2>${paragraphs || `<p>${escapeHtml(aboutText)}</p>`}`;
+  return paragraphs || `<p>${escapeHtml(aboutText)}</p>`;
 }
 
 // ─── UNIQUE CONTENT GENERATORS ────────────────────────────────────────

@@ -3,12 +3,12 @@
  * File: portal-landing.bagfn.js
  * 
  * Flow:
- * 1. Phone or email -> Magic link / OTP via portal-auth.jsw
- * 2. Auto-detect returning vs new user
- * 3. Returning Staff/Admin -> /portal-staff (No access-code theater)
+ * 1. Role-first Who are you? (family/helper vs person in jail) -> paperwork launchpad
+ * 2. Secondary: phone/email magic link for returning clients (portal-auth.jsw)
+ * 3. Returning Staff/Admin -> /portal-staff
  * 4. Returning Defendant with active case -> /portal-defendant
  * 5. Returning Indemnitor with active case -> /portal-indemnitor
- * 6. New User -> Instant Role Selection (Defendant / Indemnitor / Co-indemnitor) -> paperwork launchpad
+ * 6. New authenticated user without role -> role picker then launchpad
  * 
  * Roles map:
  * - defendant -> paperwork launchpad?role=defendant
@@ -84,8 +84,11 @@ $w.onReady(async function () {
         return;
     }
 
-    setupLoginForm(countyParam);
+    // Role-first for first-time bond seekers; login is secondary ("returning").
     setupRoleSelectionCards(countyParam);
+    prioritizeRolePicker(countyParam);
+    setupLoginForm(countyParam);
+    softenLoginChrome();
     setupTelegramWidget(countyParam);
     setupAIConcierge();
 });
@@ -191,13 +194,20 @@ function routeAuthenticatedUser(role, sessionToken, isNewUser, countyParam) {
 // ROLE SELECTION (FOR NEW INTAKES)
 // -----------------------------------------------------------------------------
 
+/** Plain-language role labels — avoid "indemnitor" jargon on first paint. */
+const ROLE_LABELS = {
+    defendant: "I'm the person in jail",
+    indemnitor: "I'm family / helping someone out",
+    coindemnitor: "I'm a second cosigner"
+};
+
 function setupRoleSelectionCards(countyParam) {
-    // Role Buttons / Cards
+    // Family/cosigner first (most common emergency caller), then defendant, then 2nd cosigner.
     const roles = [
-        { id: '#btnRoleDefendant', role: 'defendant' },
-        { id: '#cardRoleDefendant', role: 'defendant' },
         { id: '#btnRoleIndemnitor', role: 'indemnitor' },
         { id: '#cardRoleIndemnitor', role: 'indemnitor' },
+        { id: '#btnRoleDefendant', role: 'defendant' },
+        { id: '#cardRoleDefendant', role: 'defendant' },
         { id: '#btnRoleCoIndemnitor', role: 'coindemnitor' },
         { id: '#cardRoleCoIndemnitor', role: 'coindemnitor' }
     ];
@@ -205,7 +215,18 @@ function setupRoleSelectionCards(countyParam) {
     roles.forEach(({ id, role }) => {
         try {
             const el = $w(id);
-            if (el && typeof el.onClick === 'function') {
+            if (!el) return;
+            try {
+                if (typeof el.label === 'string' || el.label === '') {
+                    el.label = ROLE_LABELS[role] || el.label;
+                }
+            } catch (e) { /* text/button variance */ }
+            try {
+                if (typeof el.text === 'string') {
+                    el.text = ROLE_LABELS[role] || el.text;
+                }
+            } catch (e) { /* non-fatal */ }
+            if (typeof el.onClick === 'function') {
                 el.onClick(() => {
                     const token = getSessionToken() || '';
                     const dest = buildPaperworkLaunchpadUrl({
@@ -220,6 +241,56 @@ function setupRoleSelectionCards(countyParam) {
             }
         } catch (e) { /* non-fatal */ }
     });
+}
+
+/**
+ * First-time seekers see Who are you? before magic-link login.
+ * Returning clients still get the phone/email link form below.
+ */
+function prioritizeRolePicker(countyParam) {
+    try {
+        const roleBox = $w('#boxRoleSelection') || $w('#rolePickerContainer');
+        if (roleBox) {
+            try { if (typeof roleBox.expand === 'function') roleBox.expand(); } catch (e) {}
+            try { if (typeof roleBox.show === 'function') roleBox.show(); } catch (e) {}
+        }
+        const headingIds = ['#textRoleHeading', '#rolePickerTitle', '#portalHeroTitle', '#textPortalTitle'];
+        headingIds.forEach(function (id) {
+            try {
+                const el = $w(id);
+                if (el && typeof el.text === 'string') {
+                    el.text = 'Who are you? Pick one to start — no password needed.';
+                }
+            } catch (e) { /* optional */ }
+        });
+        const subIds = ['#textRoleSubhead', '#rolePickerSubtitle', '#portalHeroSubtitle'];
+        subIds.forEach(function (id) {
+            try {
+                const el = $w(id);
+                if (el && typeof el.text === 'string') {
+                    el.text = 'Most people helping a loved one tap Family. Already have a case? Send yourself a link below.';
+                }
+            } catch (e) { /* optional */ }
+        });
+    } catch (e) { /* non-fatal */ }
+}
+
+function softenLoginChrome() {
+    try {
+        const loginHeadingIds = ['#textLoginHeading', '#loginTitle', '#textLoginTitle'];
+        loginHeadingIds.forEach(function (id) {
+            try {
+                const el = $w(id);
+                if (el && typeof el.text === 'string') {
+                    el.text = 'Already started? Get your secure link';
+                }
+            } catch (e) {}
+        });
+        const btn = $w('#getStartedBtn') || $w('#btnLogin');
+        if (btn) {
+            try { btn.label = 'Send my link'; } catch (e) {}
+        }
+    } catch (e) { /* non-fatal */ }
 }
 
 function revealRolePicker(sessionToken, countyParam) {
@@ -349,14 +420,14 @@ async function showConsentIfNeeded() {
 
 function showConsentRequiredState(countyParam) {
     try {
-        showMessage("⚠️ Electronic & SMS consent is required to access bail paperwork and portal services.", "error");
+        showMessage("Please accept text/email consent so we can send your secure link.", "error");
         const button = $w('#getStartedBtn') || $w('#btnLogin');
         if (button) {
             button.label = "Review & Accept Consent";
             button.onClick(async () => {
                 const granted = await showConsentIfNeeded();
                 if (granted || local.getItem('shamrock_sms_consent') === 'true') {
-                    button.label = "Get Started →";
+                    button.label = "Send my link";
                     showMessage("✓ Consent recorded. You may now continue.", "success");
                     setupLoginForm(countyParam);
                     setupRoleSelectionCards(countyParam);
@@ -459,9 +530,9 @@ function isValidEmailOrPhone(input) {
 }
 
 function updatePageSEO() {
-    wixSeo.setTitle("Client Portal Login | Shamrock Bail Bonds");
+    wixSeo.setTitle("Start Bail Paperwork | Shamrock Bail Bonds");
     wixSeo.setMetaTags([
-        { name: "description", content: "Fast, secure client portal for Shamrock Bail Bonds. Start paperwork, check in, and view case status." },
+        { name: "description", content: "Start bail paperwork in minutes. Choose family/helper or person in jail — no password. Shamrock Bail Bonds, Fort Myers." },
         { name: "robots", content: "noindex, nofollow" }
     ]);
 }

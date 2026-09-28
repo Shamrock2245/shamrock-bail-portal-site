@@ -84,7 +84,7 @@ function populateDashboardUI(data) {
 
     const name = data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : "Cosigner";
     safeSetText(['#textUserWelcome', '#welcomeText'], `Welcome, ${name}`);
-    safeSetText(['#textDefendantName', '#defendantNameText'], data.defendantName || "Defendant in Custody");
+    safeSetText(['#textDefendantName', '#defendantNameText'], data.defendantName || "Person you are helping");
     safeSetText('#textCaseNumber', data.caseNumber || "Case Pending");
 
     // Liabilities & Bond Amounts
@@ -127,8 +127,12 @@ function evaluatePaperworkCompletion(data) {
     } else {
         // Show persistent "Continue Paperwork" banner
         safeShow('#bannerIncompletePaperwork');
-        safeSetText('#textPaperworkBanner', '⚠️ Your cosigner paperwork is incomplete. Complete signature to secure release.');
+        safeSetText('#textPaperworkBanner', 'Almost done — tap Continue to finish cosigner paperwork.');
         
+        try {
+            const cont = $w('#btnContinuePaperwork');
+            if (cont) { try { cont.label = 'Continue paperwork'; } catch (e) {} }
+        } catch (e) {}
         safeOnClick(['#btnContinuePaperwork', '#btnResumeBond'], () => {
             const caseId = data?.caseNumber || currentSession?.caseId || '';
             wixLocation.to(buildPaperworkLaunchpadUrl({

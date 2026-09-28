@@ -124,8 +124,12 @@ function evaluatePaperworkCompletion(data) {
     } else {
         // Show persistent "Continue Paperwork" banner
         safeShow('#bannerIncompletePaperwork');
-        safeSetText('#textPaperworkBanner', '⚠️ Your bail paperwork is incomplete. Complete signature to prevent delays.');
+        safeSetText('#textPaperworkBanner', 'Almost done — tap Continue to finish your signature.');
         
+        try {
+            const cont = $w('#btnContinuePaperwork');
+            if (cont) { try { cont.label = 'Continue paperwork'; } catch (e) {} }
+        } catch (e) {}
         safeOnClick('#btnContinuePaperwork', () => {
             const caseId = data?.caseNumber || currentSession?.caseId || '';
             wixLocation.to(buildPaperworkLaunchpadUrl({

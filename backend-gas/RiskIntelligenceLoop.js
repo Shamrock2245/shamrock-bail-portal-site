@@ -28,8 +28,11 @@
 function runRiskIntelligenceLoop() {
     console.log('🧠 RiskIntelligenceLoop: Starting daily analysis...');
 
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('Active_Defendants') || ss.getSheetByName('IntakeQueue') || ss.getSheetByName('Intake_Queue');
+    var ss = SpreadsheetApp.getActiveSpreadsheet() || (function() {
+        var id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || '121z5R6Hpqur54GNPC8L26ccfDPLHTJc3_LU6G7IV_0E';
+        return SpreadsheetApp.openById(id);
+    })();
+    var sheet = ss ? (ss.getSheetByName('Active_Defendants') || ss.getSheetByName('IntakeQueue') || ss.getSheetByName('Intake_Queue')) : null;
 
     if (!sheet) {
         console.error('RiskIntelligenceLoop: No defendant tracking sheet found.');

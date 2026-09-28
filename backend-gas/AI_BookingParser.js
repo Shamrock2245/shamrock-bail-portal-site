@@ -56,7 +56,8 @@ function AI_parseBookingSheet(inputData) {
     1. **Combines Pages**: If multiple images are provided, treat them as pages of the SAME booking event. Combine charges and information into a single record.
     2. **OCR Focus**: IGNORE browser tabs, taskbars, and surrounding UI. Focus ONLY on the booking data.
     3. **Address**: Extract the defendant's FULL home address. If it spans multiple lines, combine them.
-    4. **Charges**: Extract ALL charges found. 
+    4. **Charges (Verbatim Charge Integrity)**: Extract ALL charges found. 
+       - CRITICAL: Charges MUST appear EXACTLY as written by the county/sheriff/jail source. NEVER abbreviate, paraphrase, shorten, or clean up charge description text. The exact verbatim text string is required by court clerks.
        - If a bond amount is listed as $5000.00, return generic number 5000.
     5. **Jail/Facility**: Look for "Housing", "Facility", "Jail", or "Custody" location.
     6. **Court/County**: Look for "Court", "County", or "Jurisdiction" (e.g. "Lee", "Collier", "Orange", "Charlotte", "Manatee", "Sarasota", "Hendry", "Pinellas", "Glades").

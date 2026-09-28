@@ -106,6 +106,10 @@ const COUNTY_COORDS = {
 // ---------------------------------------------------------------------------
 const FIND_JAIL_IDS = ['#comp-ml15h39u', '#navFindJail', '#findMyJailBtn'];
 
+// Header brand wordmark — confirmed live DOM 2026-09-28 (comp-mjimunqt).
+// Editor set this Rich Text to <h1>, which creates a second H1 on every page.
+const SITE_LOGO_TEXT_IDS = ['#comp-mjimunqt', '#siteLogoText', '#headerBrandText'];
+
 // Header "Bail School" nav button — RETIRED 2026-04-22
 // Link now set directly in the Wix Editor nav menu. JS override no longer needed.
 const BAIL_SCHOOL_NAV_IDS = ['#navBailSchool', '#headerBailSchoolBtn', '#bailSchoolNavLink'];
@@ -146,6 +150,8 @@ $w.onReady(function () {
 
 function initCriticalUI() {
     try { setupStickyHeader(); } catch (e) { /* non-fatal */ }
+    try { demoteSiteLogoHeading(); } catch (e) { /* non-fatal */ }
+    try { fillEmptyImageAlts(); } catch (e) { /* non-fatal */ }
     setupPortalModeHeaderFooter();
     setupEmergencyCallButton();
     setupStickyMobileCallBar();
@@ -153,6 +159,7 @@ function initCriticalUI() {
     setupBailSchoolNavLink();
     setupFirstAppearanceNavLink();
     checkAuthStatus();
+    softenMarketingLoginButton();
     setupFooterPaymentLink();
     setupBailSchoolRegistrationBtn();
     setupMobilePaymentBtn();
@@ -577,6 +584,33 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 // Auth check
 // ---------------------------------------------------------------------------
 
+/**
+ * De-emphasize Login on marketing pages for first-time bond seekers.
+ * Returning clients still see a quiet "Client login" entry — never remove it.
+ * Does not touch logo H1 demote or empty-alt fillers from the Bing SEO pass.
+ */
+function softenMarketingLoginButton() {
+    try {
+        const path = (wixLocation.path || []).join('/').toLowerCase();
+        const isPortal = path.startsWith('portal') || path.startsWith('sign') || path.startsWith('members');
+        if (isPortal) return;
+
+        const loginIds = ['#loginButton', '#loginBtn', '#headerLoginBtn', '#btnLogin'];
+        loginIds.forEach(function (id) {
+            try {
+                const btn = $w(id);
+                if (!btn || !btn.id) return;
+                try { btn.label = 'Client login'; } catch (e) { /* may be text link */ }
+                try {
+                    if (typeof btn.text === 'string' && /login/i.test(btn.text)) {
+                        btn.text = 'Client login';
+                    }
+                } catch (e) { /* non-fatal */ }
+            } catch (e) { /* optional id */ }
+        });
+    } catch (e) { /* non-fatal */ }
+}
+
 function checkAuthStatus() {
     try {
         const isLoggedIn = session.getItem('isLoggedIn');
@@ -687,4 +721,75 @@ function trackEvent(eventName, eventData) {
     } catch (e) {
         // Fail silently to not impact user
     }
+}
+
+/**
+ * Bing SEO: site header brand text must not be an <h1> when the page already
+ * has a content H1. Keep existing link/copy; demote <h1> → <p> via RichText .html.
+ * Confirmed element: #comp-mjimunqt ("Shamrock Bail Bonds", 17px).
+ * If the logo is the only H1 (embed-only pages), leave it so the page is not H1-less.
+ */
+function demoteSiteLogoHeading() {
+    let logoEl = null;
+    let logoHtml = '';
+    for (let i = 0; i < SITE_LOGO_TEXT_IDS.length; i++) {
+        try {
+            const el = $w(SITE_LOGO_TEXT_IDS[i]);
+            if (!el || !el.valid) continue;
+            if (typeof el.html !== 'string' || !el.html) continue;
+            if (!/<h1\b/i.test(el.html)) continue;
+            logoEl = el;
+            logoHtml = el.html;
+            break;
+        } catch (e) { /* try next id */ }
+    }
+    if (!logoEl) return;
+
+    // Count other H1-bearing Rich Text on the page (exclude the logo itself).
+    let otherH1 = 0;
+    try {
+        const texts = $w('Text');
+        const list = texts && typeof texts.forEach === 'function' ? texts : (texts && texts.valid ? [texts] : []);
+        if (typeof list.forEach === 'function') {
+            list.forEach(function (el) {
+                try {
+                    if (!el || !el.valid || typeof el.html !== 'string' || !el.html) return;
+                    if (el.id && SITE_LOGO_TEXT_IDS.indexOf('#' + el.id) !== -1) return;
+                    if (/<h1\b/i.test(el.html)) otherH1 += 1;
+                } catch (e) { /* skip */ }
+            });
+        }
+    } catch (e) { /* Text selector unavailable */ }
+
+    if (otherH1 < 1) {
+        console.log('[SEO] Keeping logo H1 — no other content H1 found on page');
+        return;
+    }
+
+    logoEl.html = logoHtml
+        .replace(/<h1\b/gi, '<p')
+        .replace(/<\/h1>/gi, '</p>');
+    console.log('[SEO] Demoted site logo heading to <p> (other H1 count=' + otherH1 + ')');
+}
+
+/**
+ * Bing SEO: fill empty alt on Wix Image components (content images).
+ * Page-background <img alt=""> is Editor-managed and is not an Image component —
+ * that remains an Editor/page-background setting.
+ */
+function fillEmptyImageAlts() {
+    const fallbackAlt = 'Shamrock Bail Bonds — Fort Myers, Florida bail bonds office';
+    try {
+        const images = $w('Image');
+        if (!images || typeof images.forEach !== 'function') return;
+        images.forEach(function (img) {
+            try {
+                if (!img || !img.valid) return;
+                const current = typeof img.alt === 'string' ? img.alt.trim() : '';
+                if (!current) {
+                    img.alt = fallbackAlt;
+                }
+            } catch (e) { /* non-fatal per image */ }
+        });
+    } catch (e) { /* $w("Image") unavailable */ }
 }
