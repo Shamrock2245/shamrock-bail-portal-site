@@ -715,25 +715,55 @@ function updatePageSEO(faqItems) {
 }
 
 /**
- * Bing SEO: keep "How Bail Works in Florida" as the sole content H1.
- * Demote section titles that the Editor set as Heading 1.
- * Page source only bound the broken #comp- stubs (no nickname on those
- * headings). Live diagnosis nicknames: #text68 (Types of Bail) and
- * #faqHeader (FAQ). Do not demote the page H1.
+ * Bing SEO: keep "How Bail Works in Florida" (#pageTitle) as the sole content H1.
+ * Demote Editor Heading-1 rich text by Velo nickname.
+ * Live nicknames (page features, 2026-09-28):
+ *   #text68 Types of Bail, #faqHeader FAQ,
+ *   #step5Text the #processRepeater body (booking, schedule, cash vs bond,
+ *   release, court appearance — five items, one nickname).
+ * Do not $w('#comp-…'): Thunderbolt stubs have no .html.
  * Thunderbolt: el.valid is undefined, so gate only on a non-empty html string.
+ * #step5Text is repeated. A page-level .html read returns the first item and a
+ * write copies that string onto every item, so each item is demoted on its own.
  */
 function demoteExtraHeadings() {
     const demoteIds = [
-        '#text68',    // Types of Bail in Florida
-        '#faqHeader'  // Frequently Asked Questions
+        '#text68',     // Types of Bail in Florida
+        '#faqHeader',  // Frequently Asked Questions
+        '#step5Text'   // process repeater body (5 H1s)
     ];
+    // Repeated nicknames → parent repeater. Not selected at page scope.
+    const repeaterByItemId = {
+        '#step5Text': '#processRepeater'
+    };
+
     demoteIds.forEach(function (id) {
         try {
-            const el = $w(id);
-            if (!el || typeof el.html !== 'string' || !el.html) return;
-            if (!/<h1\b/i.test(el.html)) return;
-            el.html = el.html.replace(/<h1\b/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
-            console.log('[SEO] Demoted H1→H2 on', id);
+            const repeaterId = repeaterByItemId[id];
+            if (repeaterId) {
+                demoteRepeaterItemHeadings(repeaterId, id);
+                return;
+            }
+            demoteHeadingIfH1($w(id), id);
         } catch (e) { /* optional */ }
     });
+}
+
+function demoteRepeaterItemHeadings(repeaterId, itemId) {
+    const rep = $w(repeaterId);
+    if (!rep || typeof rep.forEachItem !== 'function') return;
+    rep.forEachItem(function ($item) {
+        try {
+            demoteHeadingIfH1($item(itemId), itemId);
+        } catch (e) { /* optional item */ }
+    });
+}
+
+function demoteHeadingIfH1(el, id) {
+    if (!el || typeof el.html !== 'string' || !el.html) return;
+    if (!/<h1\b/i.test(el.html)) return;
+    // Page title stays the only H1 even if a selector is wider than intended.
+    if (/How Bail Works in Florida/i.test(el.html)) return;
+    el.html = el.html.replace(/<h1\b/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
+    console.log('[SEO] Demoted H1→H2 on', id);
 }
