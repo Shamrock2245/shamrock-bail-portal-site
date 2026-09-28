@@ -315,6 +315,30 @@ function populateReferenceLinks(county) {
 }
 
 // --- HELPER UI FUNCTIONS ---
+
+
+/** Demote/promote heading tags inside Rich Text .html without changing visible copy. */
+function demoteHeadingTag(selectorOrArray, fromTag, toTag) {
+    const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
+    const openFrom = new RegExp('<' + fromTag + '\\b', 'gi');
+    const closeFrom = new RegExp('</' + fromTag + '>', 'gi');
+    for (const selector of selectors) {
+        try {
+            const el = $w(selector);
+            if (!el || !el.valid || typeof el.html !== 'string' || !el.html) continue;
+            if (!openFrom.test(el.html)) continue;
+            openFrom.lastIndex = 0;
+            el.html = el.html.replace(openFrom, '<' + toTag).replace(closeFrom, '</' + toTag + '>');
+        } catch (e) { /* try next */ }
+    }
+}
+
+/** Remove a leading <h1>/<h2>…</h1/h2> from CMS about_html to avoid duplicate titles. */
+function stripLeadingHeading(html) {
+    if (!html || typeof html !== 'string') return html;
+    return html.replace(/^\s*<h[12]\b[^>]*>[\s\S]*?<\/h[12]>\s*/i, '');
+}
+
 function setRichText(selectorOrArray, plain, html) {
     const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
     for (const selector of selectors) {
@@ -393,10 +417,19 @@ async function populateMainUI(county, currentSlug) {
         ? `About Bail Bonds in ${county.display_name || county.county_name}`
         : `About Bail Bonds in ${county.parent_county_name || county.county_name} County, Florida`;
     setText(['#aboutHeader', '#aboutTitle', '#textAboutCounty', '#aboutSectionTitle', '#textAboutTitle'], aboutTitle);
+    // Bing SEO: About section title is an Editor H1; demote to H2 (keep hero as sole H1).
+    demoteHeadingTag(
+        ['#aboutHeader', '#aboutTitle', '#textAboutCounty', '#aboutSectionTitle', '#textAboutTitle'],
+        'h1',
+        'h2'
+    );
+    // about_html already includes an <h2> of the same title — use body paragraphs only
+    // to avoid a duplicate heading next to the dedicated title element.
+    const aboutHtmlBody = stripLeadingHeading(county.content.about_html);
     setRichText(
         ['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'],
         county.content.about_county,
-        county.content.about_html
+        aboutHtmlBody || county.content.about_html
     );
 
     // Why Choose Us

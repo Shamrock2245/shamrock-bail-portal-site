@@ -16,6 +16,7 @@ const SCHOOL_REGISTER_URL = 'https://school.shamrockbailbonds.biz/schedule#regis
 $w.onReady(function () {
     wireNavButtons();
     setupPageMeta();
+    demoteExtraHeadings();
     setTimeout(() => { setupStructuredData(); }, 0);
 });
 
@@ -203,4 +204,28 @@ function setupStructuredData() {
             ]
         }
     ]).catch(function(e) { console.error('[SEO] Bail School schema error:', e); });
+}
+
+
+/**
+ * Bing SEO: keep one true H1 ("How to become a bondsman in Florida").
+ * Demote the other Editor Heading-1 Rich Text blocks to H2 without changing copy.
+ * Element IDs confirmed from live DOM 2026-09-28.
+ */
+function demoteExtraHeadings() {
+    // Keep #comp-mjn08m2j ("How to become a bondsman in Florida") as the sole content H1.
+    const demoteIds = [
+        '#comp-mjrcajln1', // Start your Career as a Bail Bondsman
+        '#comp-mjyswrpg',  // Shamrock Bail School
+        '#comp-mjn5qe1e'   // Interested in Becoming a Bail Bondsman?
+    ];
+    demoteIds.forEach(function (id) {
+        try {
+            const el = $w(id);
+            if (!el || !el.valid || typeof el.html !== 'string' || !el.html) return;
+            if (!/<h1/i.test(el.html)) return;
+            el.html = el.html.replace(/<h1/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
+            console.log('[SEO] Demoted H1→H2 on', id);
+        } catch (e) { /* optional element */ }
+    });
 }
