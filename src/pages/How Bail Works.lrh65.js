@@ -717,17 +717,20 @@ function updatePageSEO(faqItems) {
 /**
  * Bing SEO: keep "How Bail Works in Florida" as the sole content H1.
  * Demote section titles that the Editor set as Heading 1.
- * IDs confirmed from live DOM 2026-09-28.
+ * Page source only bound the broken #comp- stubs (no nickname on those
+ * headings). Live diagnosis nicknames: #text68 (Types of Bail) and
+ * #faqHeader (FAQ). Do not demote the page H1.
+ * Thunderbolt: el.valid is undefined, so gate only on a non-empty html string.
  */
 function demoteExtraHeadings() {
     const demoteIds = [
-        '#comp-mjuyzxh4', // Types of Bail in Florida
-        '#comp-mjxe4kkl'  // Frequently Asked Questions
+        '#text68',    // Types of Bail in Florida
+        '#faqHeader'  // Frequently Asked Questions
     ];
     demoteIds.forEach(function (id) {
         try {
             const el = $w(id);
-            if (!el || !el.valid || typeof el.html !== 'string' || !el.html) return;
+            if (!el || typeof el.html !== 'string' || !el.html) return;
             if (!/<h1\b/i.test(el.html)) return;
             el.html = el.html.replace(/<h1\b/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
             console.log('[SEO] Demoted H1→H2 on', id);
