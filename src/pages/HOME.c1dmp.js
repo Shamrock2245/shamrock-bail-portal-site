@@ -229,7 +229,10 @@ function setupCTAButtons() {
 
     // Other common homepage CTAs
     safeOnClick('#startOnlineBtn', function () {
-        goTo(DEST.portal, 'start_online_clicked', { location: 'home' });
+        let county = '';
+        try { county = session.getItem('last_county_slug') || ''; } catch (e) {}
+        const q = county ? ('?county=' + encodeURIComponent(county)) : '';
+        goTo(DEST.portal + q, 'start_online_clicked', { location: 'home', county: county || null });
     });
     safeOnClick('#howBailWorksBtn', function () {
         goTo(DEST.howBailWorks, 'how_bail_works_clicked', { location: 'home' });
@@ -332,18 +335,30 @@ function loadCountyDropdown() {
 
         // Combine SWFL Priority First + All 67 FL Counties
         dropdown.options = swflOptions.concat(otherOptions);
-        dropdown.placeholder = 'Select Your County (Lee, Collier, Charlotte...)';
+        dropdown.placeholder = 'Select your county to get started';
 
         // Wire onChange handler
         dropdown.onChange(function() { handleCountySelection(dropdown); });
 
-        // Wire Get Started / Get Them Out button
+        // One primary CTA: county → county page (then Get Someone Out / Call).
+        // Keep label action-oriented; Editor heading can stay "Select Your County…".
         const getStartedBtn = resolveElement(GET_STARTED_IDS);
         if (getStartedBtn) {
             try { getStartedBtn.label = 'Get Them Out'; } catch (e) {}
             getStartedBtn.onClick(function() { handleGetStarted(dropdown); });
         } else {
             console.warn('[County Dropdown] Get Started button not found. Tried: ' + GET_STARTED_IDS.join(', '));
+        }
+
+        // Secondary bond-start control (if present on canvas) → portal role picker
+        const startBond = resolveElement(['#startBondButton', '#startBondBtn', '#btnStartBond']);
+        if (startBond && typeof startBond.onClick === 'function') {
+            try { startBond.label = 'Start online'; } catch (e) {}
+            startBond.onClick(function () {
+                const selected = dropdown.value || '';
+                const q = selected ? ('?county=' + encodeURIComponent(selected)) : '';
+                goTo(DEST.portal + q, 'start_bond_clicked', { location: 'home', county: selected || null });
+            });
         }
 
     } catch (error) {

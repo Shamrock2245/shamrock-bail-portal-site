@@ -158,6 +158,7 @@ function initCriticalUI() {
     setupBailSchoolNavLink();
     setupFirstAppearanceNavLink();
     checkAuthStatus();
+    softenMarketingLoginButton();
     setupFooterPaymentLink();
     setupBailSchoolRegistrationBtn();
     setupMobilePaymentBtn();
@@ -575,6 +576,33 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 // ---------------------------------------------------------------------------
 // Auth check
 // ---------------------------------------------------------------------------
+
+/**
+ * De-emphasize Login on marketing pages for first-time bond seekers.
+ * Returning clients still see a quiet "Client login" entry — never remove it.
+ * Does not touch logo H1 demote or empty-alt fillers from the Bing SEO pass.
+ */
+function softenMarketingLoginButton() {
+    try {
+        const path = (wixLocation.path || []).join('/').toLowerCase();
+        const isPortal = path.startsWith('portal') || path.startsWith('sign') || path.startsWith('members');
+        if (isPortal) return;
+
+        const loginIds = ['#loginButton', '#loginBtn', '#headerLoginBtn', '#btnLogin'];
+        loginIds.forEach(function (id) {
+            try {
+                const btn = $w(id);
+                if (!btn || !btn.id) return;
+                try { btn.label = 'Client login'; } catch (e) { /* may be text link */ }
+                try {
+                    if (typeof btn.text === 'string' && /login/i.test(btn.text)) {
+                        btn.text = 'Client login';
+                    }
+                } catch (e) { /* non-fatal */ }
+            } catch (e) { /* optional id */ }
+        });
+    } catch (e) { /* non-fatal */ }
+}
 
 function checkAuthStatus() {
     try {
