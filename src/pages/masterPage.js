@@ -105,9 +105,10 @@ const COUNTY_COORDS = {
 // ---------------------------------------------------------------------------
 const FIND_JAIL_IDS = ['#comp-ml15h39u', '#navFindJail', '#findMyJailBtn'];
 
-// Header brand wordmark — confirmed live DOM 2026-09-28 (comp-mjimunqt).
-// Editor set this Rich Text to <h1>, which creates a second H1 on every page.
-const SITE_LOGO_TEXT_IDS = ['#comp-mjimunqt', '#siteLogoText', '#headerBrandText'];
+// Header brand wordmark. Prefer the Velo nickname; #comp- and older IDs are
+// fallbacks. Editor set this Rich Text to <h1>, which creates a second H1
+// on every page. $w('#comp-…') is a Thunderbolt stub without .html.
+const SITE_LOGO_TEXT_IDS = ['#headerTxtShamrock', '#comp-mjimunqt', '#siteLogoText', '#headerBrandText'];
 
 // Header "Bail School" nav button — RETIRED 2026-04-22
 // Link now set directly in the Wix Editor nav menu. JS override no longer needed.
@@ -719,7 +720,10 @@ function trackEvent(eventName, eventData) {
 /**
  * Bing SEO: site header brand text must not be an <h1> when the page already
  * has a content H1. Keep existing link/copy; demote <h1> → <p> via RichText .html.
- * Confirmed element: #comp-mjimunqt ("Shamrock Bail Bonds", 17px).
+ * Prefer #headerTxtShamrock ("Shamrock Bail Bonds"). #comp-mjimunqt and the
+ * other SITE_LOGO_TEXT_IDS stay as fallbacks.
+ * Thunderbolt: el.valid is undefined, so a .valid gate always skips the logo.
+ * Gate on typeof el.html === 'string' instead.
  * If the logo is the only H1 (embed-only pages), leave it so the page is not H1-less.
  */
 function demoteSiteLogoHeading() {
@@ -728,8 +732,7 @@ function demoteSiteLogoHeading() {
     for (let i = 0; i < SITE_LOGO_TEXT_IDS.length; i++) {
         try {
             const el = $w(SITE_LOGO_TEXT_IDS[i]);
-            if (!el || !el.valid) continue;
-            if (typeof el.html !== 'string' || !el.html) continue;
+            if (!el || typeof el.html !== 'string' || !el.html) continue;
             if (!/<h1\b/i.test(el.html)) continue;
             logoEl = el;
             logoHtml = el.html;
@@ -742,11 +745,13 @@ function demoteSiteLogoHeading() {
     let otherH1 = 0;
     try {
         const texts = $w('Text');
-        const list = texts && typeof texts.forEach === 'function' ? texts : (texts && texts.valid ? [texts] : []);
+        const list = texts && typeof texts.forEach === 'function'
+            ? texts
+            : (texts && typeof texts.html === 'string' ? [texts] : []);
         if (typeof list.forEach === 'function') {
             list.forEach(function (el) {
                 try {
-                    if (!el || !el.valid || typeof el.html !== 'string' || !el.html) return;
+                    if (!el || typeof el.html !== 'string' || !el.html) return;
                     if (el.id && SITE_LOGO_TEXT_IDS.indexOf('#' + el.id) !== -1) return;
                     if (/<h1\b/i.test(el.html)) otherH1 += 1;
                 } catch (e) { /* skip */ }
