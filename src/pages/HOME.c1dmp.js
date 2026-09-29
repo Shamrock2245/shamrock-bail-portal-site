@@ -144,7 +144,7 @@ const DEST = {
 $w.onReady(function () {
     const isMobile = wixWindow.formFactor === 'Mobile';
 
-    // SEO meta — synchronous on the server render (see setupHomepageMeta).
+    // SEO meta -- synchronous, required for correct crawling
     try { setupHomepageMeta(); } catch (e) { console.warn('[SEO] setupHomepageMeta failed:', e); }
     // Defer schema to yield to first paint
     setTimeout(() => {
@@ -466,17 +466,9 @@ function loadTestimonials() {
 // SEO
 // ---------------------------------------------------------------------------
 
-// Owner-locked. 124 characters. Do not shorten or swap in Cape Coral / Naples.
-// Called synchronously at the top of $w.onReady (not inside setTimeout, not
-// gated on rendering.env === 'browser'). Wix runs onReady during SSR, and
-// wixSeo.setMetaTags overwrites Editor SEO tags in that HTML. The live
-// 269-character "Legal Community" description is the Editor panel value;
-// this call is what replaces it for crawlers after publish.
-const HOME_META_DESCRIPTION = '24/7 Fort Myers & Florida bail bonds. Fast Lee County Jail release, payment plans, licensed since 2012. Call (239) 332-2245.';
-
 function setupHomepageMeta() {
     const title = 'Fort Myers Bail Bonds | Cape Coral & Lee County | Shamrock';
-    const description = HOME_META_DESCRIPTION;
+    const description = '24/7 Fort Myers & Florida bail bonds. Fast Lee County Jail release, payment plans, licensed since 2012. Call (239) 332-2245.';
     const url = 'https://www.shamrockbailbonds.biz';
 
     wixSeo.setTitle(title);
