@@ -317,7 +317,10 @@ function populateReferenceLinks(county) {
 // --- HELPER UI FUNCTIONS ---
 
 
-/** Demote/promote heading tags inside Rich Text .html without changing visible copy. */
+/** Demote/promote heading tags inside Rich Text .html without changing visible copy.
+ * Thunderbolt leaves el.valid undefined, so a .valid gate always skips the element.
+ * Gate only on a non-empty html string.
+ */
 function demoteHeadingTag(selectorOrArray, fromTag, toTag) {
     const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
     const openFrom = new RegExp('<' + fromTag + '\\b', 'gi');
@@ -325,10 +328,11 @@ function demoteHeadingTag(selectorOrArray, fromTag, toTag) {
     for (const selector of selectors) {
         try {
             const el = $w(selector);
-            if (!el || !el.valid || typeof el.html !== 'string' || !el.html) continue;
+            if (!el || typeof el.html !== 'string' || !el.html) continue;
             if (!openFrom.test(el.html)) continue;
             openFrom.lastIndex = 0;
             el.html = el.html.replace(openFrom, '<' + toTag).replace(closeFrom, '</' + toTag + '>');
+            console.log('[SEO] Demoted H1→H2 on', selector);
         } catch (e) { /* try next */ }
     }
 }
