@@ -26,6 +26,7 @@ import {
     isSameFacility
 } from 'backend/local-landings';
 import { PHONE_PRIMARY } from 'backend/seoConfig';
+import { formatCityHeroHeadline } from 'public/cityHeroHeadline';
 
 /**
  * Generate complete county page data
@@ -367,11 +368,15 @@ function transformCountyData(county, landing = null, landingCms = null) {
 
     // Content — unique per county, city, or jail landing
     content: {
-      hero_headline: isPlaceLanding
-        ? (cleanValue(cmsPlace.h1Headline) || landingCopy.heroHeadline)
-        : (county.h1Headline && /bail/i.test(county.h1Headline)
-          ? county.h1Headline
-          : `${countyName} County Bail Bonds — 24/7 Fast Release`),
+      // City H1 is the approved pattern, not the CMS "24/7 Fast Release" string.
+      // Jail landings still prefer their CMS headline. County H1s are unchanged.
+      hero_headline: landing && landing.type === 'city'
+        ? (formatCityHeroHeadline(displayName, countyName) || (landingCopy && landingCopy.heroHeadline))
+        : isPlaceLanding
+          ? (cleanValue(cmsPlace.h1Headline) || (landingCopy && landingCopy.heroHeadline))
+          : (county.h1Headline && /bail/i.test(county.h1Headline)
+            ? county.h1Headline
+            : `${countyName} County Bail Bonds — 24/7 Fast Release`),
       hero_subheadline: isPlaceLanding
         ? landingCopy.heroSub
         : `Licensed, trusted, and ready to help. Get your loved one home fast from ${jailName}.`,

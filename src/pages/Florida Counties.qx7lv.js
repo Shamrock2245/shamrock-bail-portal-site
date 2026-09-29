@@ -6,6 +6,7 @@ import wixSeo from 'wix-seo';
 import wixData from 'wix-data';
 import { generateCountyPage } from 'backend/county-generator';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { resolvePrimaryHeroH1 } from 'public/cityHeroHeadline';
 // replaced public/countyUtils with optimized backend
 // import { getCountiesByRegion } from 'backend/counties'; // Moved to dynamic import
 
@@ -32,6 +33,11 @@ $w.onReady(async function () {
         Select('#dynamicDataset').setFilter(wixData.filter().eq('countySlug', countySlug))
             .then(() => {
                 if (generatedCounty) {
+                    // Dataset refresh can restore a CMS-bound H1. Re-apply the hero after it.
+                    setText(
+                        ['#countyName', '#countyNameHeadline', '#dynamicHeader'],
+                        resolvePrimaryHeroH1(generatedCounty)
+                    );
                     setRichText(
                         ['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'],
                         generatedCounty.content.about_county,
@@ -409,9 +415,8 @@ async function populateMainUI(county, currentSlug) {
     // Header & Hero (Support both old and new IDs from Screenshot)
     // Old: #countyName, #dynamicHeader, #heroSubtitle
     // New: #countyNameHeadline, #aboutCountyText (Maybe hero text?), #heroCallButton
-    const heroH1 = (county.content && county.content.hero_headline)
-        || `${county.county_name_full || county.county_name} Bail Bonds — 24/7 Fast Release`;
-    setText(['#countyName', '#countyNameHeadline', '#dynamicHeader'], heroH1);
+    // City landings: "{City} Bail Bonds ({County} County)". County/jail headlines stay as generated.
+    setText(['#countyName', '#countyNameHeadline', '#dynamicHeader'], resolvePrimaryHeroH1(county));
 
     // Subtitle / About Text in Hero
     setText(['#heroSubtitle', '#aboutCountyText', '#heroDescription'], county.content.hero_subheadline);
