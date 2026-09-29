@@ -104,9 +104,54 @@ $w.onReady(function () {
 
     const bottomCall = $w('#bottomCallBtn');
     if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:+12393322245'));
+
+    // Hero "Call Now" is an Editor link, not the #bottomCallBtn handler above.
+    // Live href is the Spanish line tel:+12399550301 (239-955-0301), not the
+    // SMS line 239-955-0178. Point it at the main office, same tel form.
+    pointHeroCallAtMainOffice();
+
     // 3. DEBUG CMS (User Request)
     debugCMS();
 });
+
+const MAIN_OFFICE_TEL = 'tel:+12393322245';
+
+function pointHeroCallAtMainOffice() {
+    ['#comp-mjk457nv', '#heroCallBtn', '#heroCallButton', '#heroCallLink'].forEach(function (id) {
+        try {
+            applyMainOfficeTel($w(id));
+        } catch (e) { /* nickname not on this page */ }
+    });
+
+    ['Button', 'StylableButton'].forEach(function (type) {
+        try {
+            const all = $w(type);
+            const ids = String((all && all.id) || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+            ids.forEach(function (id) {
+                try {
+                    const el = $w('#' + id.replace(/^#/, ''));
+                    const link = el && el.link != null ? String(el.link) : '';
+                    if (link.indexOf('2399550301') !== -1) applyMainOfficeTel(el);
+                } catch (e) { /* skip */ }
+            });
+        } catch (e) { /* type not on this page */ }
+    });
+}
+
+const mainOfficeTelApplied = {};
+
+function applyMainOfficeTel(el) {
+    if (!el || el.valid === false) return;
+    const id = String(el.id || '');
+    if (id && mainOfficeTelApplied[id]) return;
+    if (id) mainOfficeTelApplied[id] = true;
+    try {
+        el.link = MAIN_OFFICE_TEL;
+    } catch (e) { /* link may be read-only */ }
+    if (typeof el.onClick === 'function') {
+        el.onClick(function () { wixLocation.to(MAIN_OFFICE_TEL); });
+    }
+}
 
 async function debugCMS() {
     console.log(" STARTING CMS DIAGNOSTIC CHECK...");
