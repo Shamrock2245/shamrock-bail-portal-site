@@ -367,29 +367,7 @@ function batchSaveToWixPortal_Server(documents) {
   return sendToWixWithRetry(config.endpoints.addDocumentsBatch, payload);
 }
 
-/**
- * Fetch Indemnitor Profile from Wix by Email
- * Called from Dashboard.html via Code.js anchor
- */
-function fetchIndemnitorProfile(email) {
-  const config = getWixPortalConfig();
-  if (!config.apiKey) return { success: false, message: 'Wix API key missing' };
-
-  const url = config.baseUrl + '/getIndemnitorProfile?email=' + encodeURIComponent(email);
-  const params = {
-    method: 'GET',
-    headers: { 'api-key': config.apiKey },
-    muteHttpExceptions: true
-  };
-
-  try {
-    const response = UrlFetchApp.fetch(url, params);
-    const result = JSON.parse(response.getContentText());
-    return result;
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-}
+// fetchIndemnitorProfile(email, includeDocs) is consolidated below at line 780+
 
 const WIX_SITE_ID = 'a00e3857-675a-493b-91d8-a1dbc5e7c499';
 const WIX_API_BASE = 'https://www.wixapis.com/v2';

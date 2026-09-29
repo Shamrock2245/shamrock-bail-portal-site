@@ -6,6 +6,7 @@ import wixSeo from 'wix-seo';
 import wixData from 'wix-data';
 import { generateCountyPage } from 'backend/county-generator';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { resolvePrimaryHeroH1 } from 'public/cityHeroHeadline';
 // replaced public/countyUtils with optimized backend
 // import { getCountiesByRegion } from 'backend/counties'; // Moved to dynamic import
 
@@ -32,6 +33,11 @@ $w.onReady(async function () {
         Select('#dynamicDataset').setFilter(wixData.filter().eq('countySlug', countySlug))
             .then(() => {
                 if (generatedCounty) {
+                    // Dataset refresh can restore a CMS-bound H1. Re-apply the hero after it.
+                    setText(
+                        ['#countyName', '#countyNameHeadline', '#dynamicHeader'],
+                        resolvePrimaryHeroH1(generatedCounty)
+                    );
                     setRichText(
                         ['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'],
                         generatedCounty.content.about_county,
@@ -318,7 +324,10 @@ function populateReferenceLinks(county) {
 // --- HELPER UI FUNCTIONS ---
 
 
-/** Demote/promote heading tags inside Rich Text .html without changing visible copy. */
+/** Demote/promote heading tags inside Rich Text .html without changing visible copy.
+ * Thunderbolt leaves el.valid undefined, so a .valid gate always skips the element.
+ * Gate only on a non-empty html string.
+ */
 function demoteHeadingTag(selectorOrArray, fromTag, toTag) {
     const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
     const openFrom = new RegExp('<' + fromTag + '\\b', 'gi');
@@ -326,10 +335,11 @@ function demoteHeadingTag(selectorOrArray, fromTag, toTag) {
     for (const selector of selectors) {
         try {
             const el = $w(selector);
-            if (!el || !el.valid || typeof el.html !== 'string' || !el.html) continue;
+            if (!el || typeof el.html !== 'string' || !el.html) continue;
             if (!openFrom.test(el.html)) continue;
             openFrom.lastIndex = 0;
             el.html = el.html.replace(openFrom, '<' + toTag).replace(closeFrom, '</' + toTag + '>');
+            console.log('[SEO] Demoted H1→H2 on', selector);
         } catch (e) { /* try next */ }
     }
 }
@@ -407,9 +417,8 @@ async function populateMainUI(county, currentSlug) {
     // Header & Hero (Support both old and new IDs from Screenshot)
     // Old: #countyName, #dynamicHeader, #heroSubtitle
     // New: #countyNameHeadline, #aboutCountyText (Maybe hero text?), #heroCallButton
-    const heroH1 = (county.content && county.content.hero_headline)
-        || `${county.county_name_full || county.county_name} Bail Bonds: 24/7 Help for Families`;
-    setText(['#countyName', '#countyNameHeadline', '#dynamicHeader'], heroH1);
+    // City landings: "{City} Bail Bonds ({County} County)". County/jail headlines stay as generated.
+    setText(['#countyName', '#countyNameHeadline', '#dynamicHeader'], resolvePrimaryHeroH1(county));
 
     // Subtitle / About Text in Hero
     setText(['#heroSubtitle', '#aboutCountyText', '#heroDescription'], county.content.hero_subheadline);

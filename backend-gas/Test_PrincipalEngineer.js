@@ -220,12 +220,12 @@ function TEST_TelegramAuth() {
 }
 
 // =============================================================================
-// MASTER TEST — Run all Principal Engineer tests
+// CORE TEST — Run core Principal Engineer tests
 // =============================================================================
 
-function TEST_PRINCIPAL_ENGINEER_ALL() {
+function TEST_PRINCIPAL_ENGINEER_CORE() {
     Logger.log('╔═══════════════════════════════════════════════╗');
-    Logger.log('║  PRINCIPAL ENGINEER — FULL TEST SUITE         ║');
+    Logger.log('║  PRINCIPAL ENGINEER — CORE TEST SUITE         ║');
     Logger.log('╚═══════════════════════════════════════════════╝');
     Logger.log('');
 
@@ -239,7 +239,7 @@ function TEST_PRINCIPAL_ENGINEER_ALL() {
 
     Logger.log('');
     Logger.log('════════════════════════════════════════════════');
-    Logger.log('  All Principal Engineer tests executed.');
+    Logger.log('  Core Principal Engineer tests executed.');
     Logger.log('  Review logs above for ✅/❌ results.');
     Logger.log('════════════════════════════════════════════════');
 }

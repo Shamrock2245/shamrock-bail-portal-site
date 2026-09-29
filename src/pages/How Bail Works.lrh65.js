@@ -104,9 +104,54 @@ $w.onReady(function () {
 
     const bottomCall = $w('#bottomCallBtn');
     if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:+12393322245'));
+
+    // Hero "Call Now" is an Editor link, not the #bottomCallBtn handler above.
+    // Live href is the Spanish line tel:+12399550301 (239-955-0301), not the
+    // SMS line 239-955-0178. Point it at the main office, same tel form.
+    pointHeroCallAtMainOffice();
+
     // 3. DEBUG CMS (User Request)
     debugCMS();
 });
+
+const MAIN_OFFICE_TEL = 'tel:+12393322245';
+
+function pointHeroCallAtMainOffice() {
+    ['#comp-mjk457nv', '#heroCallBtn', '#heroCallButton', '#heroCallLink'].forEach(function (id) {
+        try {
+            applyMainOfficeTel($w(id));
+        } catch (e) { /* nickname not on this page */ }
+    });
+
+    ['Button', 'StylableButton'].forEach(function (type) {
+        try {
+            const all = $w(type);
+            const ids = String((all && all.id) || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+            ids.forEach(function (id) {
+                try {
+                    const el = $w('#' + id.replace(/^#/, ''));
+                    const link = el && el.link != null ? String(el.link) : '';
+                    if (link.indexOf('2399550301') !== -1) applyMainOfficeTel(el);
+                } catch (e) { /* skip */ }
+            });
+        } catch (e) { /* type not on this page */ }
+    });
+}
+
+const mainOfficeTelApplied = {};
+
+function applyMainOfficeTel(el) {
+    if (!el || el.valid === false) return;
+    const id = String(el.id || '');
+    if (id && mainOfficeTelApplied[id]) return;
+    if (id) mainOfficeTelApplied[id] = true;
+    try {
+        el.link = MAIN_OFFICE_TEL;
+    } catch (e) { /* link may be read-only */ }
+    if (typeof el.onClick === 'function') {
+        el.onClick(function () { wixLocation.to(MAIN_OFFICE_TEL); });
+    }
+}
 
 async function debugCMS() {
     console.log(" STARTING CMS DIAGNOSTIC CHECK...");
@@ -715,22 +760,55 @@ function updatePageSEO(faqItems) {
 }
 
 /**
- * Bing SEO: keep "How Bail Works in Florida" as the sole content H1.
- * Demote section titles that the Editor set as Heading 1.
- * IDs confirmed from live DOM 2026-09-28.
+ * Bing SEO: keep "How Bail Works in Florida" (#pageTitle) as the sole content H1.
+ * Demote Editor Heading-1 rich text by Velo nickname.
+ * Live nicknames (page features, 2026-09-28):
+ *   #text68 Types of Bail, #faqHeader FAQ,
+ *   #step5Text the #processRepeater body (booking, schedule, cash vs bond,
+ *   release, court appearance — five items, one nickname).
+ * Do not $w('#comp-…'): Thunderbolt stubs have no .html.
+ * Thunderbolt: el.valid is undefined, so gate only on a non-empty html string.
+ * #step5Text is repeated. A page-level .html read returns the first item and a
+ * write copies that string onto every item, so each item is demoted on its own.
  */
 function demoteExtraHeadings() {
     const demoteIds = [
-        '#comp-mjuyzxh4', // Types of Bail in Florida
-        '#comp-mjxe4kkl'  // Frequently Asked Questions
+        '#text68',     // Types of Bail in Florida
+        '#faqHeader',  // Frequently Asked Questions
+        '#step5Text'   // process repeater body (5 H1s)
     ];
+    // Repeated nicknames → parent repeater. Not selected at page scope.
+    const repeaterByItemId = {
+        '#step5Text': '#processRepeater'
+    };
+
     demoteIds.forEach(function (id) {
         try {
-            const el = $w(id);
-            if (!el || !el.valid || typeof el.html !== 'string' || !el.html) return;
-            if (!/<h1\b/i.test(el.html)) return;
-            el.html = el.html.replace(/<h1\b/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
-            console.log('[SEO] Demoted H1→H2 on', id);
+            const repeaterId = repeaterByItemId[id];
+            if (repeaterId) {
+                demoteRepeaterItemHeadings(repeaterId, id);
+                return;
+            }
+            demoteHeadingIfH1($w(id), id);
         } catch (e) { /* optional */ }
     });
+}
+
+function demoteRepeaterItemHeadings(repeaterId, itemId) {
+    const rep = $w(repeaterId);
+    if (!rep || typeof rep.forEachItem !== 'function') return;
+    rep.forEachItem(function ($item) {
+        try {
+            demoteHeadingIfH1($item(itemId), itemId);
+        } catch (e) { /* optional item */ }
+    });
+}
+
+function demoteHeadingIfH1(el, id) {
+    if (!el || typeof el.html !== 'string' || !el.html) return;
+    if (!/<h1\b/i.test(el.html)) return;
+    // Page title stays the only H1 even if a selector is wider than intended.
+    if (/How Bail Works in Florida/i.test(el.html)) return;
+    el.html = el.html.replace(/<h1\b/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
+    console.log('[SEO] Demoted H1→H2 on', id);
 }

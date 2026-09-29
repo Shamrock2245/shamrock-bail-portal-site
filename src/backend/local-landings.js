@@ -8,6 +8,7 @@
 import cityLandings from 'backend/data/florida-city-landings.json';
 import localGeo from 'backend/data/florida-local-geo.json';
 import { PHONE_PRIMARY, ADDRESS, SITE_URL } from 'backend/seoConfig';
+import { formatCityHeroHeadline } from 'public/cityHeroHeadline';
 
 export function normalizeLandingSlug(raw) {
     return String(raw || '')
@@ -154,7 +155,10 @@ export function buildLandingCopy(landing, parent = {}) {
         ? `If the arrest happened in ${name}, the defendant is typically booked at ${jail}.`
         : `If the arrest happened in ${name}, the defendant is typically held at ${holding} (${holdingAddr}) and then booked at ${jail}.`;
 
-    const heroHeadline = `${name} Bail Bonds — 24/7 Fast Release`;
+    // Cities: "{City} Bail Bonds ({County} County)". Jails keep the release headline.
+    const heroHeadline = isJail
+        ? `${name} Bail Bonds — 24/7 Fast Release`
+        : formatCityHeroHeadline(name, county);
 
     const heroSub = isJail
         ? `Licensed Florida agents post bond at ${name}. Call ${phone} any time.`

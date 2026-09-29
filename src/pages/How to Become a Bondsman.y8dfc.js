@@ -210,21 +210,23 @@ function setupStructuredData() {
 /**
  * Bing SEO: keep one true H1 ("How to become a bondsman in Florida").
  * Demote the other Editor Heading-1 Rich Text blocks to H2 without changing copy.
- * Element IDs confirmed from live DOM 2026-09-28.
+ * Thunderbolt: $w('#comp-…') returns a stub without .html, and el.valid is
+ * undefined, so a .valid gate always early-returns. Select by Velo nickname
+ * and gate only on a non-empty html string.
  */
 function demoteExtraHeadings() {
-    // Keep #comp-mjn08m2j ("How to become a bondsman in Florida") as the sole content H1.
+    // Keep bondsmanHeroTitle / #comp-mjn08m2j ("How to become a bondsman in Florida").
     const demoteIds = [
-        '#comp-mjrcajln1', // Start your Career as a Bail Bondsman
-        '#comp-mjyswrpg',  // Shamrock Bail School
-        '#comp-mjn5qe1e'   // Interested in Becoming a Bail Bondsman?
+        '#heroTitle',         // Start your Career as a Bail Bondsman
+        '#text138',           // Shamrock Bail School
+        '#bailSchoolCtaTitle' // Interested in Becoming a Bail Bondsman?
     ];
     demoteIds.forEach(function (id) {
         try {
             const el = $w(id);
-            if (!el || !el.valid || typeof el.html !== 'string' || !el.html) return;
-            if (!/<h1/i.test(el.html)) return;
-            el.html = el.html.replace(/<h1/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
+            if (!el || typeof el.html !== 'string' || !el.html) return;
+            if (!/<h1\b/i.test(el.html)) return;
+            el.html = el.html.replace(/<h1\b/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
             console.log('[SEO] Demoted H1→H2 on', id);
         } catch (e) { /* optional element */ }
     });
