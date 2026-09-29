@@ -468,7 +468,7 @@ function loadTestimonials() {
 
 function setupHomepageMeta() {
     const title = 'Fort Myers Bail Bonds | Cape Coral & Lee County | Shamrock';
-    const description = '24/7 bail bonds in Fort Myers, Cape Coral, Naples, and all 67 Florida counties. Fast Lee County Jail release, payment plans, licensed since 2012. Call (239) 332-2245.';
+    const description = '24/7 Fort Myers & Florida bail bonds. Fast Lee County Jail release, payment plans, licensed since 2012. Call (239) 332-2245.';
     const url = 'https://www.shamrockbailbonds.biz';
 
     wixSeo.setTitle(title);
