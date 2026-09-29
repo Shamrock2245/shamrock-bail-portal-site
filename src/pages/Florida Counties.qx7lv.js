@@ -6,7 +6,7 @@ import wixSeo from 'wix-seo';
 import wixData from 'wix-data';
 import { generateCountyPage } from 'backend/county-generator';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
-import { resolvePrimaryHeroH1 } from 'public/cityHeroHeadline';
+import { resolvePrimaryHeroH1, heroH1FromCmsItem, rewriteRichTextH1Html } from 'public/cityHeroHeadline';
 // replaced public/countyUtils with optimized backend
 // import { getCountiesByRegion } from 'backend/counties'; // Moved to dynamic import
 
@@ -28,25 +28,17 @@ $w.onReady(async function () {
         return;
     }
 
-    let generatedCounty = null;
-    Select('#dynamicDataset').onReady(() => {
-        Select('#dynamicDataset').setFilter(wixData.filter().eq('countySlug', countySlug))
-            .then(() => {
-                if (generatedCounty) {
-                    // Dataset refresh can restore a CMS-bound H1. Re-apply the hero after it.
-                    setText(
-                        ['#countyName', '#countyNameHeadline', '#dynamicHeader'],
-                        resolvePrimaryHeroH1(generatedCounty)
-                    );
-                    setRichText(
-                        ['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'],
-                        generatedCounty.content.about_county,
-                        generatedCounty.content.about_html
-                    );
-                }
-            })
-            .catch(e => console.log("[!] Dataset filter failed:", e));
-    });
+    let dataset = null;
+    try { dataset = Select('#dynamicDataset'); } catch (e) { dataset = null; }
+
+    // SSR floor, before any await. The dataset item is already the dynamic
+    // page record. Its display field is h1Headline (Editor item title).
+    // The hero Rich Text still shows countyName until we write over it.
+    try {
+        if (dataset && typeof dataset.getCurrentItem === 'function') {
+            applyPrimaryHeroH1(heroH1FromCmsItem(dataset.getCurrentItem()));
+        }
+    } catch (e) { /* dataset not ready */ }
 
     try {
         // Show loading state if element exists
@@ -72,7 +64,6 @@ $w.onReady(async function () {
         }
 
         const county = data;
-        generatedCounty = county;
 
         // 3. GENERATE SEO (Meta + Schema) - Critical for SEO
         setupSEO(county);
@@ -80,15 +71,20 @@ $w.onReady(async function () {
         // 4. POPULATE UI + inject final schema (including FAQs)
         await populateMainUI(county, countySlug);
 
+        // Show the page before the dataset refresh. The refresh is still awaited
+        // below so SSR includes the corrected H1.
+        try { Select('#loadingIndicator').hide(); } catch (e) { }
+        try { Select('#countyContent').expand(); } catch (e) { }
+
+        // Dataset setFilter restores CMS-connected text (countyName on the hero
+        // Rich Text). Re-apply h1Headline / the city pattern after that.
+        await reapplyHeroAfterDatasetFilter(dataset, countySlug, county);
+
         // 5. DEFER NON-CRITICAL (Nearby Counties)
         const isMobile = wixWindow.formFactor === 'Mobile';
         setTimeout(() => {
             loadNearbyCounties(county.region, countySlug, (county.links && county.links.neighbor_counties) || []);
         }, isMobile ? 3000 : 500);
-
-        // Hide loader / Show content
-        try { Select('#loadingIndicator').hide(); } catch (e) { }
-        try { Select('#countyContent').expand(); } catch (e) { }
 
     } catch (err) {
         console.error("CRITICAL ERROR in Florida Counties Page:", err);
@@ -389,6 +385,95 @@ function setText(selectorOrArray, value) {
     }
 }
 
+/**
+ * Write the primary H1 onto Text nicknames and the live Rich Text hero.
+ * `#comp-mkzw2dj2` is the SSR <h1> Bingbot reads. $w('#comp-…') is often a
+ * Thunderbolt stub without .html, so also walk $w('Text') and match by id.
+ * Skips the site logo and any "About Bail Bonds…" heading.
+ */
+function applyPrimaryHeroH1(headline) {
+    const text = cleanDisplay(headline);
+    if (!text) return;
+
+    const writeRich = (el) => {
+        if (!el || typeof el.html !== 'string' || !el.html) return;
+        if (!/<h1\b/i.test(el.html)) return;
+        const visible = el.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (/^about bail bonds/i.test(visible)) return;
+        if (/^shamrock\b/i.test(visible)) return;
+        const next = rewriteRichTextH1Html(el.html, text);
+        if (next) el.html = next;
+    };
+
+    try {
+        const texts = $w('Text');
+        if (texts && typeof texts.forEach === 'function') {
+            texts.forEach((el) => {
+                try {
+                    const id = el && el.id ? String(el.id) : '';
+                    const visible = el && typeof el.html === 'string'
+                        ? el.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+                        : '';
+                    const knownHero = id === 'comp-mkzw2dj2'
+                        || id === 'countyHeroH1'
+                        || id === 'heroHeadline'
+                        || id === 'countyNameHeadline'
+                        || id === 'dynamicHeader'
+                        || id === 'countyName';
+                    const barePlace = visible && visible.length <= 48 && !/bail bonds/i.test(visible);
+                    const alreadyHeadline = /bail bonds/i.test(visible) && !/^about bail bonds/i.test(visible);
+                    if (knownHero || barePlace || alreadyHeadline) writeRich(el);
+                } catch (e) { /* try next */ }
+            });
+        }
+    } catch (e) { /* $w('Text') unavailable */ }
+
+    ['#comp-mkzw2dj2', '#countyHeroH1', '#heroHeadline', '#countyNameHeadline', '#dynamicHeader', '#countyName']
+        .forEach((selector) => {
+            try { writeRich(Select(selector)); } catch (e) { /* id not on this page */ }
+        });
+
+    setText(['#countyName', '#countyNameHeadline', '#dynamicHeader'], text);
+}
+
+function whenDatasetReady(ds) {
+    return new Promise((resolve) => {
+        let settled = false;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+        };
+        try {
+            if (ds && typeof ds.onReady === 'function') ds.onReady(finish);
+            else finish();
+        } catch (e) {
+            finish();
+            return;
+        }
+        setTimeout(finish, 400);
+    });
+}
+
+async function reapplyHeroAfterDatasetFilter(ds, countySlug, county) {
+    if (!county) return;
+    if (ds) {
+        try {
+            await whenDatasetReady(ds);
+            await ds.setFilter(wixData.filter().eq('countySlug', countySlug));
+        } catch (e) {
+            console.log("[!] Dataset filter failed:", e);
+        }
+    }
+    // Filter restores the connected countyName. Put the real H1 back.
+    applyPrimaryHeroH1(resolvePrimaryHeroH1(county));
+    setRichText(
+        ['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'],
+        county.content.about_county,
+        county.content.about_html
+    );
+}
+
 function setLink(selectorOrArray, url, label) {
     const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
     for (const selector of selectors) {
@@ -416,7 +501,9 @@ async function populateMainUI(county, currentSlug) {
     // Old: #countyName, #dynamicHeader, #heroSubtitle
     // New: #countyNameHeadline, #aboutCountyText (Maybe hero text?), #heroCallButton
     // City landings: "{City} Bail Bonds ({County} County)". County/jail headlines stay as generated.
-    setText(['#countyName', '#countyNameHeadline', '#dynamicHeader'], resolvePrimaryHeroH1(county));
+    // Live SSR H1 is Rich Text #comp-mkzw2dj2 (no nickname), bound to the short
+    // countyName. h1Headline is the collection display field / Editor item title.
+    applyPrimaryHeroH1(resolvePrimaryHeroH1(county));
 
     // Subtitle / About Text in Hero
     setText(['#heroSubtitle', '#aboutCountyText', '#heroDescription'], county.content.hero_subheadline);
