@@ -269,11 +269,11 @@ export function buildCmsLandingRecord(landing, parent = {}, brandName = 'Shamroc
     const displayPhone = phone || PHONE_PRIMARY.display;
     return {
         countySlug: landing.slug,
-        // Live Bingbot SSR binds hero rich text #comp-mkzw2dj2 to this field
-        // (Lee → "Lee", Fort Myers → "Fort Myers", Lee County Jail → "Lee County Jail").
-        // The same binding is interpolated as "from {countyName} County Jail".
-        // Keep the short place label. The full city H1 is h1Headline/title below.
-        // Do not copy the headline into countyName; rebind the H1 to h1Headline.
+        // Bingbot SSR H1 is rich text #comp-mkzw2dj2, dataset-bound to this
+        // short-name field (not h1Headline, not onReady). Fort Myers live value
+        // is "Fort Myers". Recommended published CMS value for that item:
+        // Fort Myers Bail Bonds (Lee County)
+        // Set it in the Editor/CMS. Do not Deploy setupHomepageMeta for this.
         countyName: landing.name,
         active: true,
         title: copy.heroHeadline,
