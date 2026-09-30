@@ -643,26 +643,6 @@ const SHAMROCK_FIELD_MAPPINGS = {
             "Check Box16": "CollateralReturnOther"
         },
 
-        "shamrock-premium-finance-notice.pdf": {
-            "defendant-full-name": "DefName",
-            "indemnitor-full-name": "IndName",
-            "date-of-bond": "Date",
-            "numeric-bond-amount": "TotalBond",
-            "numeric-premium-amount": "Premium",
-            "down-payment-on-premium": "PremiumPaid",
-            "balance-financed": "BalanceDue",
-            "payment-number": "PaymentCount",
-            "payment-amounts": "PaymentAmount",
-            "due-date-first-payment": "DueDate1",
-            "due-date-final-payment": "DueDateFinal",
-            "Due Date 1": "DueDate1",
-            "Due Date 2": "DueDate2",
-            "Due Date 3": "DueDate3",
-            "Due Date 4": "DueDate4",
-            "Date": "Date",
-            "Date_2": "DateSigned2"
-        },
-
         "shamrock-ssa-release.pdf": {
             "FullName": "DefName",
             "Social": "DefSSN",
