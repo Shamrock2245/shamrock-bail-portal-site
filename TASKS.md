@@ -1,7 +1,7 @@
 # 📋 Project Tasks
 
 > **Mission:** Build the "Uber of Bail Bonds" — Fast. Frictionless. Everywhere.  
-> **Last Updated:** 2026-08-21  
+> **Last Updated:** 2026-09-30  
 > **Authoritative Runtime Status:** [`STATUS.md`](./STATUS.md)
 
 ---
@@ -16,6 +16,10 @@ Editor is the live public surface. Studio canvas is deferred — do not block pr
 - [x] Staff finalize no longer depends on a missing `#lightbox1`
 - [x] Staff prompt lightbox (iframe modal + `StaffPromptLightbox.js` + `<shamrock-staff-prompt>`)
 - [x] D2 iMessage smoke (Brendan confirmed 2026-08-28)
+- [x] GAS global scope deduplication: 25 top-level duplicate functions/variables resolved across 162 backend files (2026-09-30)
+- [x] Florida Bail Bonds statewide landing page (`/florida-bail-bonds`) live (uiVersion 2775)
+- [x] County page SEO audit & verified jail data integration (v2.8.7)
+- [x] Code gap audit & test suite green (ESLint 0 errors, 162 GAS files vm.Script ok, 29 pytest passed)
 - [ ] B3 write-bond → paperwork on a **real** BondCase
 - [ ] B5 one staff-approved DocuSeal packet (OSI + Palmetto templates)
 - [ ] C3 secret rotation (owner-deferred; not a formal blocker)

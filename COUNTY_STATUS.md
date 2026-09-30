@@ -1,6 +1,6 @@
 # 🗺 Florida Counties Roadmap & Scraper Status
 
-> **Last Updated:** April 24, 2026
+> **Last Updated:** September 30, 2026
 > **Active Counties:** 20 | **Backlog:** 47
 > **Infrastructure:** `shamrock-leads` repo on Hetzner VPS (Docker)
 

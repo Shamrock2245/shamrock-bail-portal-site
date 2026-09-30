@@ -4,7 +4,7 @@
  * 
  * USAGE:
  * 1. Open this file in the GAS Editor.
- * 2. Select 'runSystemDiagnostics' to check connections.
+ * 2. Select 'runHealthCheckDiagnostics' to check connections.
  * 3. Select 'runEndToEndTestWorkflow' to simulate a full transaction (creates real artifacts).
  */
 
@@ -12,7 +12,7 @@
 // 1. SAFE DIAGNOSTICS (Connection Checks)
 // =============================================================================
 
-function runSystemDiagnostics() {
+function runHealthCheckDiagnostics() {
     Logger.log('🔍 STARTING SYSTEM DIAGNOSTICS...');
 
     const results = {

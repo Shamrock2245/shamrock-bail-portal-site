@@ -61,7 +61,7 @@ function extractClientData(row, rowNumber) {
  * Gets a sheet by name, or creates it with a header row if it doesn't exist.
  * Assumes getArrestsHeader_() defines the header.
  */
-function getOrCreateSheet_(ss, name) {
+function getOrCreateArrestsSheet_(ss, name) {
   let sh = ss.getSheetByName(name);
   if (!sh) {
     sh = ss.insertSheet(name);
@@ -88,7 +88,7 @@ function getArrestsHeader_() {
 /**
  * Reads a specific column and returns a Map of existing keys (for deduplication).
  */
-function getExistingKeys_(sheet, keyColIndex) {
+function getExistingArrestsKeys_(sheet, keyColIndex) {
   const last = sheet.getLastRow();
   const set = new Map(); // Using Map for potential future use (storing row number)
   if (last < 2) return set;

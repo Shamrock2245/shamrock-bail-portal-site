@@ -114,7 +114,7 @@ function handleSaveDocumentToDrive(document) {
     }
 
     const blob = response.getBlob();
-    const fileName = `${documentType}_${documentName || 'document'}.${getFileExtension(blob.getContentType())}`;
+    const fileName = `${documentType}_${documentName || 'document'}.${getWebhookFileExtension(blob.getContentType())}`;
 
     const file = memberFolder.createFile(blob.setName(fileName));
 
@@ -165,7 +165,7 @@ function handleSyncIdUpload(upload) {
     }
 
     const blob = response.getBlob();
-    const fileName = `ID_${side || 'photo'}_${memberName || memberEmail}.${getFileExtension(blob.getContentType())}`;
+    const fileName = `ID_${side || 'photo'}_${memberName || memberEmail}.${getWebhookFileExtension(blob.getContentType())}`;
 
     const file = idsFolder.createFile(blob.setName(fileName));
 
@@ -220,7 +220,7 @@ function extractDefendantName(documentName) {
 /**
  * Get file extension from MIME type
  */
-function getFileExtension(mimeType) {
+function getWebhookFileExtension(mimeType) {
   const extensions = {
     'application/pdf': 'pdf',
     'image/jpeg': 'jpg',

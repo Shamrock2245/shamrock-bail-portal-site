@@ -156,7 +156,7 @@ function _buildArrestsSection(ss, since) {
         var newArrests = [];
         for (var r = 1; r < data.length; r++) {
             var row = data[r];
-            var timestamp = _getVal(row, colIdx, ['timestamp', 'date', 'created', 'arrest date']);
+            var timestamp = _dorGetVal(row, colIdx, ['timestamp', 'date', 'created', 'arrest date']);
             if (!timestamp) continue;
 
             var arrestDate;
@@ -166,11 +166,11 @@ function _buildArrestsSection(ss, since) {
             } catch (e) { continue; }
 
             if (arrestDate.getTime() >= since.getTime()) {
-                var bondAmt = parseFloat(String(_getVal(row, colIdx, ['bond', 'bond amount', 'bail', 'bail amount']) || '0').replace(/[^0-9.]/g, '')) || 0;
+                var bondAmt = parseFloat(String(_dorGetVal(row, colIdx, ['bond', 'bond amount', 'bail', 'bail amount']) || '0').replace(/[^0-9.]/g, '')) || 0;
                 newArrests.push({
-                    name: _getVal(row, colIdx, ['name', 'defendant name', 'defname']) || 'Unknown',
-                    county: _getVal(row, colIdx, ['county']) || 'Unknown',
-                    charge: _getVal(row, colIdx, ['charge', 'charges', 'offense']) || 'Unknown',
+                    name: _dorGetVal(row, colIdx, ['name', 'defendant name', 'defname']) || 'Unknown',
+                    county: _dorGetVal(row, colIdx, ['county']) || 'Unknown',
+                    charge: _dorGetVal(row, colIdx, ['charge', 'charges', 'offense']) || 'Unknown',
                     bondAmount: bondAmt,
                     timestamp: arrestDate
                 });
@@ -186,7 +186,7 @@ function _buildArrestsSection(ss, since) {
             lines.push('  Top ' + Math.min(OPS_CONFIG.MAX_ARRESTS_LISTED, newArrests.length) + ' by bond:');
             for (var i = 0; i < Math.min(OPS_CONFIG.MAX_ARRESTS_LISTED, newArrests.length); i++) {
                 var a = newArrests[i];
-                lines.push('  • ' + a.name + ' — ' + a.county + ' — $' + _formatMoney(a.bondAmount));
+                lines.push('  • ' + a.name + ' — ' + a.county + ' — $' + _dorFormatMoney(a.bondAmount));
             }
         }
 
@@ -222,18 +222,18 @@ function _buildIntakesSection(ss, since) {
 
         for (var r = 1; r < data.length; r++) {
             var row = data[r];
-            var status = String(_getVal(row, colIdx, ['status']) || '').toLowerCase().trim();
+            var status = String(_dorGetVal(row, colIdx, ['status']) || '').toLowerCase().trim();
             if (['completed', 'signed', 'active', 'posted', 'declined', 'closed', 'processed'].indexOf(status) !== -1) continue;
 
-            var timestamp = _getVal(row, colIdx, ['timestamp', 'date', 'created']);
+            var timestamp = _dorGetVal(row, colIdx, ['timestamp', 'date', 'created']);
             var intakeDate;
             try {
                 intakeDate = new Date(timestamp);
             } catch (e) { intakeDate = null; }
 
-            var name = _getVal(row, colIdx, ['indname', 'ind name', 'name']) || 'Unknown';
-            var phone = _getVal(row, colIdx, ['indphone', 'ind phone', 'phone']) || '';
-            var defName = _getVal(row, colIdx, ['defname', 'def name', 'defendant']) || 'Unknown';
+            var name = _dorGetVal(row, colIdx, ['indname', 'ind name', 'name']) || 'Unknown';
+            var phone = _dorGetVal(row, colIdx, ['indphone', 'ind phone', 'phone']) || '';
+            var defName = _dorGetVal(row, colIdx, ['defname', 'def name', 'defendant']) || 'Unknown';
 
             pending.push({
                 name: name,
@@ -298,21 +298,21 @@ function _buildCourtDatesSection(ss, now) {
 
         for (var r = 1; r < data.length; r++) {
             var row = data[r];
-            var courtDate = _getVal(row, colIdx, ['court date', 'courtdate', 'date', 'hearing date']);
+            var courtDate = _dorGetVal(row, colIdx, ['court date', 'courtdate', 'date', 'hearing date']);
             if (!courtDate) continue;
 
             var dateStr = _formatDateShort(new Date(courtDate));
             if (dateStr !== todayStr) continue;
 
-            var status = String(_getVal(row, colIdx, ['status']) || '').toLowerCase();
+            var status = String(_dorGetVal(row, colIdx, ['status']) || '').toLowerCase();
             if (['appeared', 'dismissed', 'closed'].indexOf(status) !== -1) continue;
 
             todayDates.push({
-                name: _getVal(row, colIdx, ['defendant', 'name', 'defname']) || 'Unknown',
-                caseNumber: _getVal(row, colIdx, ['case number', 'casenumber', 'case#']) || '',
-                time: _getVal(row, colIdx, ['time', 'court time']) || '',
-                courtroom: _getVal(row, colIdx, ['courtroom', 'location', 'court']) || '',
-                county: _getVal(row, colIdx, ['county']) || ''
+                name: _dorGetVal(row, colIdx, ['defendant', 'name', 'defname']) || 'Unknown',
+                caseNumber: _dorGetVal(row, colIdx, ['case number', 'casenumber', 'case#']) || '',
+                time: _dorGetVal(row, colIdx, ['time', 'court time']) || '',
+                courtroom: _dorGetVal(row, colIdx, ['courtroom', 'location', 'court']) || '',
+                county: _dorGetVal(row, colIdx, ['county']) || ''
             });
         }
 
@@ -364,10 +364,10 @@ function _buildPaymentsSection(ss, now) {
 
         for (var r = 1; r < data.length; r++) {
             var row = data[r];
-            var status = String(_getVal(row, colIdx, ['status']) || '').toLowerCase();
+            var status = String(_dorGetVal(row, colIdx, ['status']) || '').toLowerCase();
             if (['paid', 'closed', 'cancelled'].indexOf(status) !== -1) continue;
 
-            var dueDate = _getVal(row, colIdx, ['next due date', 'nextduedate', 'due date', 'duedate']);
+            var dueDate = _dorGetVal(row, colIdx, ['next due date', 'nextduedate', 'due date', 'duedate']);
             if (!dueDate) continue;
 
             var dueDateObj;
@@ -376,8 +376,8 @@ function _buildPaymentsSection(ss, now) {
                 if (isNaN(dueDateObj.getTime())) continue;
             } catch (e) { continue; }
 
-            var name = _getVal(row, colIdx, ['name', 'client name', 'indemnitor']) || 'Unknown';
-            var amount = parseFloat(String(_getVal(row, colIdx, ['next due amount', 'nextdueamount', 'amount']) || '0').replace(/[^0-9.]/g, '')) || 0;
+            var name = _dorGetVal(row, colIdx, ['name', 'client name', 'indemnitor']) || 'Unknown';
+            var amount = parseFloat(String(_dorGetVal(row, colIdx, ['next due amount', 'nextdueamount', 'amount']) || '0').replace(/[^0-9.]/g, '')) || 0;
 
             if (dueDateObj.getTime() < now.getTime()) {
                 overdue.push({ name: name, amount: amount, dueDate: dueDateObj });
@@ -392,13 +392,13 @@ function _buildPaymentsSection(ss, now) {
             if (overdue.length > 0) {
                 lines.push('  🔴 *Overdue:* ' + overdue.length);
                 for (var i = 0; i < Math.min(3, overdue.length); i++) {
-                    lines.push('  • ' + overdue[i].name + ' — $' + _formatMoney(overdue[i].amount) + ' (was ' + _formatDateShort(overdue[i].dueDate) + ')');
+                    lines.push('  • ' + overdue[i].name + ' — $' + _dorFormatMoney(overdue[i].amount) + ' (was ' + _formatDateShort(overdue[i].dueDate) + ')');
                 }
             }
             if (dueSoon.length > 0) {
                 lines.push('  🟡 *Due this week:* ' + dueSoon.length);
                 for (var i = 0; i < Math.min(OPS_CONFIG.MAX_PAYMENTS_LISTED, dueSoon.length); i++) {
-                    lines.push('  • ' + dueSoon[i].name + ' — $' + _formatMoney(dueSoon[i].amount) + ' on ' + _formatDateShort(dueSoon[i].dueDate));
+                    lines.push('  • ' + dueSoon[i].name + ' — $' + _dorFormatMoney(dueSoon[i].amount) + ' on ' + _formatDateShort(dueSoon[i].dueDate));
                 }
             }
         }
@@ -459,13 +459,13 @@ function _buildAnalyticsSection(since, now) {
                 var intakesCompleted = 0;
 
                 for (var r = 1; r < data.length; r++) {
-                    var ts = _getVal(data[r], colIdx, ['timestamp', 'date']);
+                    var ts = _dorGetVal(data[r], colIdx, ['timestamp', 'date']);
                     if (!ts) continue;
                     var tsDate;
                     try { tsDate = new Date(ts); } catch (e) { continue; }
                     if (tsDate.getTime() < since.getTime()) continue;
 
-                    var eventType = String(_getVal(data[r], colIdx, ['event', 'event type', 'eventtype']) || '').toLowerCase();
+                    var eventType = String(_dorGetVal(data[r], colIdx, ['event', 'event type', 'eventtype']) || '').toLowerCase();
                     if (eventType === 'session_start' || eventType === 'message') sessions++;
                     if (eventType === 'intake_start') intakesStarted++;
                     if (eventType === 'intake_complete') intakesCompleted++;
@@ -511,18 +511,18 @@ function _buildActiveBondsSection(ss) {
 
         for (var r = 1; r < data.length; r++) {
             var row = data[r];
-            var status = String(_getVal(row, colIdx, ['status']) || '').toLowerCase();
+            var status = String(_dorGetVal(row, colIdx, ['status']) || '').toLowerCase();
             if (['closed', 'discharged', 'forfeited', 'cancelled'].indexOf(status) !== -1) continue;
 
-            var county = String(_getVal(row, colIdx, ['county']) || 'Unknown');
-            var premium = parseFloat(String(_getVal(row, colIdx, ['premium', 'bond premium', 'amount']) || '0').replace(/[^0-9.]/g, '')) || 0;
+            var county = String(_dorGetVal(row, colIdx, ['county']) || 'Unknown');
+            var premium = parseFloat(String(_dorGetVal(row, colIdx, ['premium', 'bond premium', 'amount']) || '0').replace(/[^0-9.]/g, '')) || 0;
 
             countByCounty[county] = (countByCounty[county] || 0) + 1;
             totalActive++;
             totalPremium += premium;
         }
 
-        lines.push('  Total active: *' + totalActive + '* | Premium: *$' + _formatMoney(totalPremium) + '*');
+        lines.push('  Total active: *' + totalActive + '* | Premium: *$' + _dorFormatMoney(totalPremium) + '*');
 
         // County breakdown
         var counties = Object.keys(countByCounty).sort(function (a, b) {
@@ -560,7 +560,7 @@ function _sendReportToStaff(reportText) {
             return false;
         }
 
-        var staffChatId = _getConfigSafe(OPS_CONFIG.STAFF_CHANNEL_PROP);
+        var staffChatId = _dorGetConfigSafe(OPS_CONFIG.STAFF_CHANNEL_PROP);
         if (!staffChatId) {
             Logger.log('⚠️ STAFF_TELEGRAM_CHAT_ID not set in Script Properties');
             return false;
@@ -607,7 +607,7 @@ function setupDailyOpsReportTrigger() {
     Logger.log('✅ Daily Ops Report trigger installed');
     Logger.log('   Function: sendDailyOpsReport()');
     Logger.log('   Schedule: Daily at 7 AM ET');
-    Logger.log('   Staff Channel: ' + (_getConfigSafe(OPS_CONFIG.STAFF_CHANNEL_PROP) || 'NOT SET — add STAFF_TELEGRAM_CHAT_ID to Script Properties'));
+    Logger.log('   Staff Channel: ' + (_dorGetConfigSafe(OPS_CONFIG.STAFF_CHANNEL_PROP) || 'NOT SET — add STAFF_TELEGRAM_CHAT_ID to Script Properties'));
 
     return { success: true, schedule: 'Daily at 7 AM ET' };
 }
@@ -630,7 +630,7 @@ function _buildColIdx(headers) {
     return idx;
 }
 
-function _getVal(row, colIdx, keys) {
+function _dorGetVal(row, colIdx, keys) {
     for (var k = 0; k < keys.length; k++) {
         var i = colIdx[keys[k].toLowerCase()];
         if (i !== undefined && row[i] !== undefined && row[i] !== '') return row[i];
@@ -649,12 +649,12 @@ function _formatDateShort(date) {
     return (date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear();
 }
 
-function _formatMoney(amount) {
+function _dorFormatMoney(amount) {
     if (!amount && amount !== 0) return '0';
     return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-function _getConfigSafe(key) {
+function _dorGetConfigSafe(key) {
     try {
         if (typeof getConfig === 'function') {
             var cfg = getConfig();

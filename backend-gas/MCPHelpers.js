@@ -216,12 +216,12 @@ function searchCaseByBookingNumber(bookingNumber, county) {
 /**
  * Maps sheet data to Dashboard form format
  */
-function mapSheetDataToForm_(sheetData) {
+function mapSheetObjectToForm_(sheetData) {
   return {
     defendantFullName: sheetData['Full_Name'] || '',
     defendantFirstName: sheetData['First_Name'] || '',
     defendantLastName: sheetData['Last_Name'] || '',
-    defendantDOB: formatDate_(sheetData['DOB']),
+    defendantDOB: formatMCPDate_(sheetData['DOB']),
     defendantSex: sheetData['Sex'] || '',
     defendantRace: sheetData['Race'] || '',
     defendantBookingNumber: sheetData['Booking_Number'] || '',
@@ -229,7 +229,7 @@ function mapSheetDataToForm_(sheetData) {
     defendantCity: sheetData['City'] || '',
     defendantState: sheetData['State'] || 'FL',
     defendantZip: sheetData['Zipcode'] || '',
-    charges: parseChargesFromSheet_(sheetData),
+    charges: parseChargesFromSheetObject_(sheetData),
     bondAmount: sheetData['Bond_Amount'] || '',
     county: sheetData['County'] || '',
     leadScore: sheetData['Lead_Score'] || '',
@@ -237,7 +237,7 @@ function mapSheetDataToForm_(sheetData) {
   };
 }
 
-function parseChargesFromSheet_(sheetData) {
+function parseChargesFromSheetObject_(sheetData) {
   const charges = [];
   const chargesField = sheetData['Charges'] || '';
 
@@ -263,7 +263,7 @@ function parseChargesFromSheet_(sheetData) {
   return charges;
 }
 
-function formatDate_(dateValue) {
+function formatMCPDate_(dateValue) {
   if (!dateValue) return '';
   if (dateValue instanceof Date) {
     return Utilities.formatDate(dateValue, Session.getScriptTimeZone(), 'MM/dd/yyyy');
@@ -294,7 +294,7 @@ function getSlackWebhookForChannel(channel) {
 /**
  * Posts a message to Slack
  */
-function postToSlack(webhookUrl, payload) {
+function postToSlackWebhook(webhookUrl, payload) {
   try {
     if (!webhookUrl) {
       throw new Error('Slack webhook URL not configured');

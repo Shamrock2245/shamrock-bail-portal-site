@@ -22,7 +22,7 @@ function apiRoutePost(e) {
         // Route based on action
         switch (action) {
             case 'sendForSignature':
-                output = handleSendForSignature(payload);
+                output = handleSendForSignature_APIMock(payload);
                 break;
 
             case 'createEmbeddedLink':
@@ -51,9 +51,9 @@ function apiRoutePost(e) {
 }
 
 /**
- * Handler for 'sendForSignature'
+ * Handler for 'sendForSignature' (API Mock)
  */
-function handleSendForSignature(data) {
+function handleSendForSignature_APIMock(data) {
     // Delegate to SignNowIntegration or similar logic
     // Assuming sendToSignNow exists in SignNowIntegration.js
     // We need to map the generic payload to what sendToSignNow expects

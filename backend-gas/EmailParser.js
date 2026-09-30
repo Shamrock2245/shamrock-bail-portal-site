@@ -39,7 +39,7 @@ function parseCourtDateEmail(thread) {
   attachments.forEach(function(attachment) {
     if (attachment.getContentType() === 'application/pdf') {
       Logger.log('Extracting text from PDF: ' + attachment.getName());
-      pdfText += extractTextFromPDF(attachment);
+      pdfText += extractTextFromPDF_EmailParser(attachment);
     }
   });
   
@@ -182,7 +182,7 @@ function normalizeDateFormat(dateString) {
  * @param {GmailAttachment} attachment - The PDF file
  * @return {String} Extracted text
  */
-function extractTextFromPDF(attachment) {
+function extractTextFromPDF_EmailParser(attachment) {
   try {
     // Step 1: Get the temp folder from Drive
     var folderId = getScriptProperty('TEMP_PDF_FOLDER_ID');

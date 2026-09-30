@@ -3,7 +3,7 @@
  * Version: 3.5.0 (Aligned with Code.gs & WixPortalIntegration.gs)
  * 
  * Utility functions for setting up and validating the Shamrock Bail Bonds integration.
- * Run `runSystemDiagnostics()` to verify your environment is correctly configured.
+ * Run `runSetupSystemDiagnostics()` to verify your environment is correctly configured.
  */
 
 // =============================================================================
@@ -14,7 +14,7 @@
  * Runs a full health check on the system configuration and connections.
  * Verifies Script Properties, Google Drive access, SignNow API, and Wix API.
  */
-function runSystemDiagnostics() {
+function runSetupSystemDiagnostics() {
   const ui = console; // Use console for logging
   ui.log('='.repeat(60));
   ui.log('🔍 SHAMROCK BAIL BONDS - SYSTEM DIAGNOSTICS (v3.5.1)');
@@ -150,7 +150,7 @@ function setupScriptProperties() {
     console.log('   Run `setWebhookUrl("YOUR_DEPLOYED_WEB_APP_URL")` to fix.');
   }
 
-  console.log('✅ Configuration Update Complete. Run `runSystemDiagnostics()` to verify.');
+  console.log('✅ Configuration Update Complete. Run `runSetupSystemDiagnostics()` to verify.');
 }
 
 /**
@@ -405,7 +405,7 @@ function SETUP_MissingProperties(wixWebhookSecret) {
     console.warn('⚠️ WIX_WEBHOOK_SECRET not set. Re-run with: SETUP_MissingProperties("your-secret")');
   }
 
-  console.log('\n🎯 Done! Run runSystemDiagnostics() to verify green status.');
+  console.log('\n🎯 Done! Run runSetupSystemDiagnostics() to verify green status.');
 }
 
 /**
@@ -449,7 +449,7 @@ function SETUP_ElevenLabsProperties() {
 
   console.log('='.repeat(50));
   console.log('\n🎯 Done! Agent phone: +1 727-295-2245');
-  console.log('   Run runSystemDiagnostics() to verify full system health.');
+  console.log('   Run runSetupSystemDiagnostics() to verify full system health.');
 }
 
 /**

@@ -6,6 +6,50 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-09-30 — v2.8.8 — GAS deduplication audit, documentation synchronization, zero code gaps
+
+**Google Apps Script (`backend-gas/`):**
+- Resolved 25 duplicate global function and variable declarations across 162 backend files. Because Google Apps Script executes with a single flat global scope, top-level functions with matching names in separate files silently overwrite each other, and duplicate `const`/`let` statements cause runtime initialization errors.
+- Consolidated `getConfig`: removed duplicate fallback stub in `Code.js:37` and centralized in `CONFIG.js:301` with script properties caching via `_CONFIG_CACHE`.
+- Disambiguated duplicate handlers and helpers:
+  - `handleSendForSignature`: API mock in `API.js:56` renamed to `handleSendForSignature_APIMock`, preserving strict security boundary in `Code.js`.
+  - `mapIntakeDataToDefendantApplication`: basic mapping in `AdobePDFService.js:264` renamed to `mapIntakeDataToDefendantApplication_Basic` and delegated to `AdobeDataMapping.js`.
+  - `getExistingBookingNumbers`: renamed to `getExistingQualifiedBookingKeys` in `QualifiedArrestsSync.js:238`.
+  - `safeString_`: renamed to `safeCharlotteString_` in `ArrestScraper_CharlotteCounty.js:468`.
+  - `runCollierArrestsNow`: removed redundant wrapper in `Code.js:1366`; canonical function preserved in `ArrestScraper_CollierCounty.js:22`.
+  - `formatDate_`: renamed file-scoped helpers in `ArrestScraper_LeeCounty.js` (`formatLeeDate_`), `MCPHelpers.js` (`formatMCPDate_`), and `MenuHelpers.js` (`formatMenuDate_`), keeping canonical general-purpose helper in `Utilities.js:66`.
+  - `sendSlackMessage`: renamed direct sender in `SlackIntegration.js:13` to `sendSlackDirect_`; canonical entry point remains in `Code.js:2689` delegating to `NotificationService`.
+  - `saveBookingData`: renamed internal storage in `FormDataHandler.js:74` to `FDH_saveBookingData`; canonical `saveBookingData` for Dashboard.html remains in `Code.js:3268`.
+  - `handleNewIntake`: renamed in `WixPortalIntegration.js:571` to `handleWixPortalNewIntake`; canonical routing remains in `Code.js:3373`.
+  - `generateAndSendWithWixPortal_Safe`: scoped in `Code_Helpers.js` and `ComplianceControls.js`; canonical entry remains in `Code.js`.
+  - `extractTextFromPDF`: renamed in `EmailParser.js:185` to `extractTextFromPDF_EmailParser`; canonical Drive v3 OCR remains in `CourtEmailProcessor.js:618`.
+  - `postToSlack`: renamed in `SlackNotifier.js:17` to `postCourtSlackMessage` and in `MCPHelpers.js:297` to `postToSlackWebhook`; canonical remains in `CourtEmailProcessor.js:850`.
+  - `_getVal`, `_formatMoney`, `_getConfigSafe`: scoped in `DailyOpsReport.js` (`_dor*`) and `TheCloser.js` (`_closer*`).
+  - `extractDefendantName`: renamed in `DriveFilingService.js:157` to `extractDefendantName_DriveService`; canonical remains in `WebhookHandler.js:197`.
+  - `calculatePremium`: renamed basic single-charge calculator in `FormController.js:86` to `calculateBasicChargePremium`; full statutory multi-charge calculator remains in `Telegram_InlineQuote.js:36`.
+  - `getOrCreateSheet_`: scoped in `LeadScoringSystem.js`, `QualifiedTabRouter.js`, and `SheetsManager.js`; canonical array helper remains in `Utilities.js:126`.
+  - `mapSheetDataToForm_` & `parseChargesFromSheet_`: scoped in `MCPHelpers.js` and `MenuHelpers.js`; canonical array mappers remain in `Utilities.js`.
+  - `getExistingKeys_`: scoped in `QualifiedTabRouter.js` and `SheetsManager.js`.
+  - `logProcessingEvent`: renamed in `SecurityLogger.js:28` to `logSecurityProcessingEvent`; canonical remains in `Utilities.js:420`.
+  - `runSystemDiagnostics`: scoped in `SetupUtilities.js` and `SystemHealthCheck.js`; canonical remains in `Utilities.js:348`.
+  - `getFileExtension`: renamed in `WebhookHandler.js:223` to `getWebhookFileExtension`; canonical dot-prefixed version remains in `Utilities.js:32`.
+- Confirmed exactly 0 duplicate functions and 0 duplicate variables across all 162 backend files.
+
+**Runtime Truth & Documentation Audit:**
+- Updated `STATUS.md`, `TASKS.md`, `OPERATIONS.md`, `README.md`, and `COUNTY_STATUS.md` to reflect runtime truth:
+  - Active GAS deployment version: `@508` (Dual OpenAI/Grok failover, trigger resilience, full 16-trigger registry per `.gas-config.json`).
+  - Wix Editor UI version: `2775`, including statewide Florida Bail Bonds landing page (`/florida-bail-bonds`).
+  - DocuSeal is sole active signing provider; staff-gated issuance strictly inside Super CRM (`shamrock-leads`).
+  - BlueBubbles iMessage bridge (`239-955-0178`) is active messaging provider; Twilio retained for voice and SMS inbound fallback.
+
+**Test & Verification Suite:**
+- Node syntax / `vm.Script` check across all 162 GAS files: 0 errors.
+- ESLint lint check across `src/`: 0 errors.
+- 29 Python pytest test suites in `scripts/`: 29 passed.
+- City hero H1 check: 33 cities, 4 jails passed.
+
+---
+
 ### 2026-09-25 — v2.8.7 — County pages SEO: verified jail data, CMS-first copy, clean structured data
 
 **Heads-up:** merging to `main` auto-publishes the live site via `.github/workflows/wix-deploy.yml`.

@@ -83,7 +83,7 @@ function getArrestDataForForm(bookingNumber, rowIndex) {
  * Calculates premium for a single charge
  * Florida law: Greater of $100 or 10% of bond amount
  */
-function calculatePremium(bondAmount) {
+function calculateBasicChargePremium(bondAmount) {
   var amount = parseFloat(bondAmount);
   if (isNaN(amount) || amount <= 0) {
     return 0;
@@ -109,7 +109,7 @@ function calculateTotalPremium(bondAmount, numberOfCharges) {
   }
   
   var bondPerCharge = total / count;
-  var premiumPerCharge = calculatePremium(bondPerCharge);
+  var premiumPerCharge = calculateBasicChargePremium(bondPerCharge);
   var totalPremium = premiumPerCharge * count;
   
   return {

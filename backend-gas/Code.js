@@ -32,43 +32,8 @@ var SecurityLogger = this.SecurityLogger;
 var ComplianceControls = this.ComplianceControls;
 // SOC2_WebhookHandler is global
 
-// Cache config in memory for this execution
+// Global config cache (hydrated by CONFIG.js getConfig())
 let _CONFIG_CACHE = null;
-function getConfig() {
-  if (_CONFIG_CACHE) return _CONFIG_CACHE;
-  const props = PropertiesService.getScriptProperties();
-  _CONFIG_CACHE = {
-    SIGNNOW_ACCESS_TOKEN: props.getProperty('SIGNNOW_API_TOKEN') || '',
-    SIGNNOW_FOLDER_ID: props.getProperty('SIGNNOW_FOLDER_ID') || '79a05a382b38460b95a78d94a6d79a5ad55e89e6',
-    SIGNNOW_TEMPLATE_ID: props.getProperty('SIGNNOW_TEMPLATE_ID') || '',
-
-    // Twilio Config
-    TWILIO_ACCOUNT_SID: props.getProperty('TWILIO_ACCOUNT_SID') || '',
-    TWILIO_AUTH_TOKEN: props.getProperty('TWILIO_AUTH_TOKEN') || '',
-    TWILIO_PHONE_NUMBER: props.getProperty('TWILIO_PHONE_NUMBER') || '',
-    GOOGLE_DRIVE_FOLDER_ID: props.getProperty('GOOGLE_DRIVE_FOLDER_ID') || '1ZyTCodt67UAxEbFdGqE3VNua-9TlblR3',
-    GOOGLE_DRIVE_OUTPUT_FOLDER_ID: props.getProperty('GOOGLE_DRIVE_OUTPUT_FOLDER_ID') || '1WnjwtxoaoXVW8_B6s-0ftdCPf_5WfKgs',
-    CURRENT_RECEIPT_NUMBER: parseInt(props.getProperty('CURRENT_RECEIPT_NUMBER') || '201204'),
-    GOOGLE_DOC_TEMPLATE_ID: props.getProperty('GOOGLE_DOC_TEMPLATE_ID') || '',
-    WIX_API_KEY: props.getProperty('GAS_API_KEY') || '',
-    WIX_SITE_URL: props.getProperty('WIX_SITE_URL') || 'https://www.shamrockbailbonds.biz',
-    WEBHOOK_URL: props.getProperty('WEBHOOK_URL') || '',
-    // Slack Webhooks — all channels from Shamrock Bail Bonds Slack workspace
-    SLACK_WEBHOOK_NEW_CASES: props.getProperty('SLACK_WEBHOOK_NEW_CASES') || '',
-    SLACK_WEBHOOK_COURT_DATES: props.getProperty('SLACK_WEBHOOK_COURT_DATES') || '',
-    SLACK_WEBHOOK_FORFEITURES: props.getProperty('SLACK_WEBHOOK_FORFEITURES') || '',
-    SLACK_WEBHOOK_DISCHARGES: props.getProperty('SLACK_WEBHOOK_DISCHARGES') || '',
-    SLACK_WEBHOOK_GENERAL: props.getProperty('SLACK_WEBHOOK_GENERAL') || '',
-    SLACK_WEBHOOK_SIGNING_ERRORS: props.getProperty('SLACK_WEBHOOK_SIGNING_ERRORS') || '',
-    SLACK_WEBHOOK_INTAKE: props.getProperty('SLACK_WEBHOOK_INTAKE') || '',
-    SLACK_WEBHOOK_NEW_ARRESTS_LEE_COUNTY: props.getProperty('SLACK_WEBHOOK_NEW_ARRESTS_LEE_COUNTY') || '',
-    SLACK_WEBHOOK_SHAMROCK: props.getProperty('SLACK_WEBHOOK_SHAMROCK') || '',
-    SLACK_WEBHOOK_DRIVE: props.getProperty('SLACK_WEBHOOK_DRIVE') || '',
-    SLACK_WEBHOOK_CALENDAR: props.getProperty('SLACK_WEBHOOK_CALENDAR') || '',
-    PAYMENT_LINK: 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd'
-  };
-  return _CONFIG_CACHE;
-}
 // ============================================================================
 // WEB APP HANDLERS
 // ============================================================================
@@ -1398,15 +1363,7 @@ function getPendingIntakes() {
 
 
 
-function runCollierArrestsNow() {
-  // Wrapper for the new Collier Scraper module
-  if (typeof ArrestScraper_CollierCounty !== 'undefined' && ArrestScraper_CollierCounty.runCollierArrestsNow) {
-    return ArrestScraper_CollierCounty.runCollierArrestsNow();
-  } else {
-    // If mapped globally by the GAS runtime
-    return runCollierArrestsNow();
-  }
-}
+// runCollierArrestsNow() is defined globally in ArrestScraper_CollierCounty.js
 
 /**
  * CENTRAL ACTION DISPATCHER

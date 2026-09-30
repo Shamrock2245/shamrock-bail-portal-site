@@ -71,7 +71,7 @@ const FDH_HEADER_ALIASES = {
 // PUBLIC API (called from Code.gs)
 // ============================================================================
 
-function saveBookingData(payload) {
+function FDH_saveBookingData(payload) {
   const lock = LockService.getDocumentLock();
   try {
     lock.waitLock(30000);
@@ -98,7 +98,7 @@ function saveBookingData(payload) {
 
     return { success: true, message: "Saved (row " + rowNumber + ")", bookingNumber: bookingNumber || "N/A", row: rowNumber, timestamp: ts.toISOString() };
   } catch (err) {
-    Logger.log("[saveBookingData] Error: " + err);
+    Logger.log("[FDH_saveBookingData] Error: " + err);
     return { success: false, message: "Failed: " + err.message, error: String(err) };
   } finally {
     try { lock.releaseLock(); } catch (e) {}

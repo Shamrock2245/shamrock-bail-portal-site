@@ -70,7 +70,7 @@ function sendSelectedRowToForm() {
     if (header) data[header.toString().trim()] = rowData[index];
   });
 
-  var formData = mapSheetDataToForm_(data);
+  var formData = mapMenuSheetDataToForm_(data);
   var props = PropertiesService.getScriptProperties();
   props.setProperty('FORM_PREFILL_DATA', JSON.stringify(formData));
 
@@ -84,12 +84,12 @@ function sendSelectedRowToForm() {
   showToast_('✅ Data sent to form. Opening in new tab...', 'Success');
 }
 
-function mapSheetDataToForm_(sheetData) {
+function mapMenuSheetDataToForm_(sheetData) {
   return {
     defendantFullName: sheetData['DefendantName'] || sheetData['Full_Name'] || '',
     defendantFirstName: sheetData['First_Name'] || '',
     defendantLastName: sheetData['Last_Name'] || '',
-    defendantDOB: formatDate_(sheetData['DOB']),
+    defendantDOB: formatMenuDate_(sheetData['DOB']),
     defendantSex: sheetData['Sex'] || '',
     defendantRace: sheetData['Race'] || '',
     defendantHeight: sheetData['Height'] || '',
@@ -106,7 +106,7 @@ function mapSheetDataToForm_(sheetData) {
     indemnitorPhone: sheetData['IndemnitorPhone'] || sheetData['Phone'] || '',
     indemnitorAddress: sheetData['Address'] || '',
     role: sheetData['Role'] || '',
-    charges: parseChargesFromSheet_(sheetData),
+    charges: parseMenuChargesFromSheet_(sheetData),
     source: sheetData['County'] || 'spreadsheet',
     scrapedAt: new Date().toISOString(),
     leadScore: sheetData['Lead_Score'] || '',
@@ -114,7 +114,7 @@ function mapSheetDataToForm_(sheetData) {
   };
 }
 
-function parseChargesFromSheet_(sheetData) {
+function parseMenuChargesFromSheet_(sheetData) {
   var charges = [];
   var chargesField = sheetData['Charges'] || '';
 
@@ -132,7 +132,7 @@ function parseChargesFromSheet_(sheetData) {
         bondType: sheetData['Bond_Type'] || '',
         caseNumber: sheetData['Case_Number'] || '',
         courtLocation: sheetData['Court_Location'] || '',
-        courtDate: formatDate_(sheetData['Court_Date'])
+        courtDate: formatMenuDate_(sheetData['Court_Date'])
       });
     });
   }
@@ -144,14 +144,14 @@ function parseChargesFromSheet_(sheetData) {
       bondType: sheetData['Bond_Type'] || '',
       caseNumber: sheetData['Case_Number'] || '',
       courtLocation: sheetData['Court_Location'] || '',
-      courtDate: formatDate_(sheetData['Court_Date'])
+      courtDate: formatMenuDate_(sheetData['Court_Date'])
     });
   }
 
   return charges;
 }
 
-function formatDate_(dateValue) {
+function formatMenuDate_(dateValue) {
   if (!dateValue) return '';
   try {
     var date;
