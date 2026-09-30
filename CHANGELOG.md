@@ -33,7 +33,8 @@ Format: **[Date] — [Version] — [Category] — [Change]**
   - `logProcessingEvent`: renamed in `SecurityLogger.js:28` to `logSecurityProcessingEvent`; canonical remains in `Utilities.js:420`.
   - `runSystemDiagnostics`: scoped in `SetupUtilities.js` and `SystemHealthCheck.js`; canonical remains in `Utilities.js:348`.
   - `getFileExtension`: renamed in `WebhookHandler.js:223` to `getWebhookFileExtension`; canonical dot-prefixed version remains in `Utilities.js:32`.
-- Confirmed exactly 0 duplicate functions and 0 duplicate variables across all 162 backend files.
+- Deduplicated object mapping keys in `PDF_Mappings.js`: eliminated duplicate `"shamrock-premium-finance-notice.pdf"` entry that was shadowing signatures (`Defendant Signature`, `Indemnitor Signature`) and payment schedule fields.
+- Confirmed exactly 0 duplicate functions, 0 duplicate variables, and 0 duplicate object keys across all 162 backend files.
 
 **Runtime Truth & Documentation Audit:**
 - Updated `STATUS.md`, `TASKS.md`, `OPERATIONS.md`, `README.md`, and `COUNTY_STATUS.md` to reflect runtime truth:
