@@ -261,7 +261,10 @@ function fillPdfForm(templatePdfBlob, formData) {
  * @param {object} intakeData - Intake data from Dashboard.html
  * @returns {object} Mapped form data
  */
-function mapIntakeDataToDefendantApplication(intakeData) {
+function mapIntakeDataToDefendantApplication_Basic(intakeData) {
+  if (typeof mapIntakeDataToDefendantApplication === 'function' && mapIntakeDataToDefendantApplication !== mapIntakeDataToDefendantApplication_Basic) {
+    return mapIntakeDataToDefendantApplication(intakeData);
+  }
   return {
     // Case Info
     'TotalBond': intakeData.bondAmount || '',
@@ -351,5 +354,5 @@ function testAdobePdfFilling() {
 // Export for other files
 var AdobePDFService = {
   fillPdfForm: fillPdfForm,
-  mapIntakeDataToDefendantApplication: mapIntakeDataToDefendantApplication
+  mapIntakeDataToDefendantApplication: (typeof mapIntakeDataToDefendantApplication === 'function' ? mapIntakeDataToDefendantApplication : mapIntakeDataToDefendantApplication_Basic)
 };

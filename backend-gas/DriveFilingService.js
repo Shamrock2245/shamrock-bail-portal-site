@@ -154,7 +154,7 @@ function saveCompletedBondToDrive(params) {
  * @returns {object} Result with success status
  */
 
-function extractDefendantName(documentName) {
+function extractDefendantName_DriveService(documentName) {
   if (!documentName) return null;
   // e.g., "Bail_Packet_John_Doe_2024-01-15"
   const patterns = [

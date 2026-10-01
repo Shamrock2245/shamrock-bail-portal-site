@@ -127,7 +127,7 @@ function updateSchemaTo34Columns() {
   // Ensure destination Qualified tab has schema too
   try {
     const target = SpreadsheetApp.openById(TARGET_SPREADSHEET_ID);
-    const q = getOrCreateSheet_(target, TARGET_QUALIFIED_TAB_NAME);
+    const q = getOrCreateLeadScoringSheet_(target, TARGET_QUALIFIED_TAB_NAME);
     ensureSheetSchema_(q);
     results.success.push(`[TARGET] ${TARGET_QUALIFIED_TAB_NAME}`);
   } catch (e) {
@@ -386,7 +386,7 @@ function scoreAndRouteAllSheets() {
     const results = { scored: 0, qualifiedRouted: 0, perCounty: [], errors: [] };
 
     const targetSS = SpreadsheetApp.openById(TARGET_SPREADSHEET_ID);
-    const qualifiedSheet = getOrCreateSheet_(targetSS, TARGET_QUALIFIED_TAB_NAME);
+    const qualifiedSheet = getOrCreateLeadScoringSheet_(targetSS, TARGET_QUALIFIED_TAB_NAME);
     ensureSheetSchema_(qualifiedSheet);
 
     const existingKeys = buildQualifiedKeySet_(qualifiedSheet);
@@ -422,7 +422,7 @@ function routeQualifiedAllSheets() {
     const results = { qualifiedRouted: 0, perCounty: [], errors: [] };
 
     const targetSS = SpreadsheetApp.openById(TARGET_SPREADSHEET_ID);
-    const qualifiedSheet = getOrCreateSheet_(targetSS, TARGET_QUALIFIED_TAB_NAME);
+    const qualifiedSheet = getOrCreateLeadScoringSheet_(targetSS, TARGET_QUALIFIED_TAB_NAME);
     ensureSheetSchema_(qualifiedSheet);
 
     const existingKeys = buildQualifiedKeySet_(qualifiedSheet);
@@ -701,7 +701,7 @@ function clamp_(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
-function getOrCreateSheet_(ss, name) {
+function getOrCreateLeadScoringSheet_(ss, name) {
   let sh = ss.getSheetByName(name);
   if (!sh) sh = ss.insertSheet(name);
   return sh;

@@ -121,16 +121,16 @@ function runTheCloser() {
         var row = rows[r];
 
         // Extract key fields
-        var status = String(_getVal(row, colIdx, ['status']) || '').toLowerCase().trim();
-        var phone = String(_getVal(row, colIdx, ['indphone', 'ind phone', 'phone']) || '');
-        var name = String(_getVal(row, colIdx, ['indname', 'ind name', 'name']) || '');
-        var timestamp = _getVal(row, colIdx, ['timestamp', 'date', 'created']);
-        var source = String(_getVal(row, colIdx, ['source', 'intakesource']) || '').toLowerCase().trim();
+        var status = String(_closerGetVal(row, colIdx, ['status']) || '').toLowerCase().trim();
+        var phone = String(_closerGetVal(row, colIdx, ['indphone', 'ind phone', 'phone']) || '');
+        var name = String(_closerGetVal(row, colIdx, ['indname', 'ind name', 'name']) || '');
+        var timestamp = _closerGetVal(row, colIdx, ['timestamp', 'date', 'created']);
+        var source = String(_closerGetVal(row, colIdx, ['source', 'intakesource']) || '').toLowerCase().trim();
 
         // ── Respect opt-out / do-not-contact flags ────────────────────────────
         // These columns may be set by the Communication Preferences portal page
         // or by an inbound STOP reply handler. Check both camelCase and snake_case.
-        var doNotContact = _getVal(row, colIdx, ['donotcontact', 'do_not_contact', 'optout', 'opt_out']);
+        var doNotContact = _closerGetVal(row, colIdx, ['donotcontact', 'do_not_contact', 'optout', 'opt_out']);
         if (doNotContact === true || String(doNotContact).toLowerCase() === 'true') {
             Logger.log('🚫 Skipping ' + (name || phone.slice(-4)) + ' — doNotContact flag set.');
             continue;
@@ -209,7 +209,7 @@ function runTheCloser() {
     // Slack summary (if any were sent)
     if (sent > 0) {
         try {
-            var slackUrl = _getConfigSafe('SLACK_WEBHOOK_SHAMROCK');
+            var slackUrl = _closerGetConfigSafe('SLACK_WEBHOOK_SHAMROCK');
             if (slackUrl && typeof sendSlackMessage === 'function') {
                 sendSlackMessage(slackUrl,
                     '🔐 The Closer sent ' + sent + ' follow-up(s) for abandoned intakes.',
@@ -423,7 +423,7 @@ function testTheCloser() {
 // HELPERS
 // =============================================================================
 
-function _getVal(row, colIdx, keys) {
+function _closerGetVal(row, colIdx, keys) {
     for (var k = 0; k < keys.length; k++) {
         var idx = colIdx[keys[k].toLowerCase()];
         if (idx !== undefined && row[idx] !== undefined && row[idx] !== '') return row[idx];
@@ -446,7 +446,7 @@ function _getETHour(date) {
     }
 }
 
-function _getConfigSafe(key) {
+function _closerGetConfigSafe(key) {
     try {
         if (typeof getConfig === 'function') return getConfig()[key];
         return PropertiesService.getScriptProperties().getProperty(key);

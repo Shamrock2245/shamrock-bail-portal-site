@@ -74,8 +74,8 @@ function scoreAndSyncQualifiedRows() {
   var ss = SpreadsheetApp.openById(QUAL_ROUTER_CONFIG.SPREADSHEET_ID);
 
   // 1. Ensure Target Tabs Exist & Have Headers
-  var masterSheet = getOrCreateSheet_(ss, QUAL_ROUTER_CONFIG.MASTER_TAB_NAME);
-  var exceptionSheet = getOrCreateSheet_(ss, QUAL_ROUTER_CONFIG.EXCEPTION_TAB_NAME);
+  var masterSheet = getOrCreateQualifiedSheet_(ss, QUAL_ROUTER_CONFIG.MASTER_TAB_NAME);
+  var exceptionSheet = getOrCreateQualifiedSheet_(ss, QUAL_ROUTER_CONFIG.EXCEPTION_TAB_NAME);
 
   // 2. Score Source Tabs (Lead_Score/Status)
   // Note: We use the existing scoring logic (LeadScoringSystem logic embedded in router or external)
@@ -99,8 +99,8 @@ function scoreAndSyncQualifiedRows() {
  * Syncs qualified rows from source tabs to Master or Exception tab
  */
 function syncQualifiedRows_(ss, masterSheet, exceptionSheet) {
-  var masterKeys = getExistingKeys_(masterSheet);
-  var exceptionKeys = getExistingKeys_(exceptionSheet);
+  var masterKeys = getExistingQualifiedKeys_(masterSheet);
+  var exceptionKeys = getExistingQualifiedKeys_(exceptionSheet);
 
   var masterAppends = [];
   var exceptionAppends = [];
@@ -244,8 +244,8 @@ function setDashboardHeaders() {
 function forceFullCleanup() {
   var ss = SpreadsheetApp.openById(QUAL_ROUTER_CONFIG.SPREADSHEET_ID);
 
-  var master = getOrCreateSheet_(ss, QUAL_ROUTER_CONFIG.MASTER_TAB_NAME);
-  var except = getOrCreateSheet_(ss, QUAL_ROUTER_CONFIG.EXCEPTION_TAB_NAME);
+  var master = getOrCreateQualifiedSheet_(ss, QUAL_ROUTER_CONFIG.MASTER_TAB_NAME);
+  var except = getOrCreateQualifiedSheet_(ss, QUAL_ROUTER_CONFIG.EXCEPTION_TAB_NAME);
 
   // Clear Data (Keep Headers)
   if (master.getLastRow() > 1) {
@@ -411,7 +411,7 @@ function buildActionLink_(baseUrl, record) {
 
 /** === SHEET HELPERS === */
 
-function getOrCreateSheet_(ss, name) {
+function getOrCreateQualifiedSheet_(ss, name) {
   var sh = ss.getSheetByName(name);
   if (!sh) {
     sh = ss.insertSheet(name);
@@ -431,7 +431,7 @@ function getOrCreateSheet_(ss, name) {
   return sh;
 }
 
-function getExistingKeys_(sheet) {
+function getExistingQualifiedKeys_(sheet) {
   var keys = new Set();
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return keys;

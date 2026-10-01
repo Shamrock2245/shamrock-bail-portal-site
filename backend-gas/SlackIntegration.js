@@ -4,13 +4,13 @@
  */
 
 /**
- * Sends a message to a Slack channel.
+ * Sends a message to a Slack channel directly via Slack Web API.
  * @param {string} channel - Channel ID or name (e.g., '#alerts')
  * @param {string} text - Main message text
  * @param {Array} blocks - Optional Block Kit blocks
  * @returns {Object} Slack response
  */
-function sendSlackMessage(channel, text, blocks = null) {
+function sendSlackDirect_(channel, text, blocks = null) {
     const props = PropertiesService.getScriptProperties();
     const token = props.getProperty('SLACK_BOT_TOKEN');
 

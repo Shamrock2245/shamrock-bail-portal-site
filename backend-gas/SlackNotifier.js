@@ -14,7 +14,7 @@
  * @param {String} message - The message to send
  * @param {Boolean} isError - true for error messages, false for normal
  */
-function postToSlack(channel, message, isError) {
+function postCourtSlackMessage(channel, message, isError) {
   
   try {
     // Get webhook URL from Script Properties
@@ -102,7 +102,7 @@ function sendDailySummaryToSlack() {
                     '✅ Court dates processed today: ' + todayCount + '\n' +
                     '📧 Reminders sent today: (tracked separately)';
     
-    postToSlack(CONFIG.SLACK_CHANNELS.COURT_DATES, summaryMsg, false);
+    postCourtSlackMessage(CONFIG.SLACK_CHANNELS.COURT_DATES, summaryMsg, false);
     
   } catch (error) {
     Logger.log('❌ Error sending daily summary: ' + error.message);

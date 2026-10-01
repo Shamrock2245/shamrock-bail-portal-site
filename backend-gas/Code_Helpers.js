@@ -1,9 +1,9 @@
 /**
- * SOC II COMPLIANT WRAPPER for Wix Portal Generation
+ * SOC II COMPLIANT WRAPPER for Wix Portal Generation (Code_Helpers)
  * Logs access, checks consent, and verifies payload before execution.
  * @param {object} payload The data sent from the Wix portal.
  */
-function generateAndSendWithWixPortal_Safe(payload) {
+function generateAndSendWithWixPortal_Helpers_Safe(payload) {
     return blockLegacyDirectPaperwork_('helpers_generate_and_send_with_wix_portal_safe');
     const userId = payload.userId || (payload.formData ? payload.formData.email : 'unknown');
     const caseId = payload.caseId || payload.caseNumber || 'pending';

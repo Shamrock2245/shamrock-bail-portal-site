@@ -25,7 +25,7 @@ function logSecurityEvent(eventType, details) {
  * @param {string} eventType The type of event (e.g., DOCUMENT_GENERATED, PDF_DOWNLOADED).
  * @param {object} details Additional event details.
  */
-function logProcessingEvent(eventType, details) {
+function logSecurityProcessingEvent(eventType, details) {
   _logToSheet(
     getSecureCredential("AUDIT_LOG_SHEET_ID"),
     "ProcessingEvents",

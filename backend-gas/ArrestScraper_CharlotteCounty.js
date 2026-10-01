@@ -465,7 +465,7 @@ function sendSlackNotifications_(arrests) {
 }
 
 // ========== UTILITIES ==========
-function safeString_(v) {
+function safeCharlotteString_(v) {
   return (v == null || v === undefined) ? '' : String(v).trim();
 }
 

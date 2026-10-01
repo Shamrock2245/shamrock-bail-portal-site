@@ -189,7 +189,7 @@ function purgeOldFiles(cutoffDate) {
  * @param {object} formData - The booking/form data to process.
  * @returns {object} The result of the operation.
  */
-function generateAndSendWithWixPortal_Safe(formData) {
+function generateAndSendWithWixPortal_Compliance_Safe(formData) {
   return blockLegacyDirectPaperwork_('compliance_generate_and_send_with_wix_portal_safe');
   const user = Session.getActiveUser() ? Session.getActiveUser().getEmail() : 'anonymous';
   const caseId = formData.caseNumber || formData['case-number'] || 'UNKNOWN_CASE';

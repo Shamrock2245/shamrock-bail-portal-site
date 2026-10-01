@@ -60,7 +60,7 @@ function syncCountyQualifiedArrests(countyName, sheetId, tabName) {
     }
     
     // Get existing booking numbers in qualified sheet
-    var existingBookings = getExistingBookingNumbers(destSheet);
+    var existingBookings = getExistingQualifiedBookingKeys(destSheet);
     
     // Filter out arrests that are already in qualified sheet (by county + booking number)
     var newQualified = qualifiedArrests.filter(function(arrest) {
@@ -235,7 +235,7 @@ function getQualifiedArrests(sourceSheet) {
 /**
  * Get existing booking numbers from qualified sheet
  */
-function getExistingBookingNumbers(sheet) {
+function getExistingQualifiedBookingKeys(sheet) {
   var data = sheet.getDataRange().getValues();
   var bookingNumbers = new Set();
   

@@ -1,6 +1,6 @@
 # 📖 Operations Handbook
 
-> **Last Updated:** August 27, 2026
+> **Last Updated:** September 30, 2026
 > **Status:** 🟢 All Systems Operational
 
 This document consolidates all operational runbooks: voice AI tuning, compliance, health monitoring, integrations, analytics, and scraping protocols.

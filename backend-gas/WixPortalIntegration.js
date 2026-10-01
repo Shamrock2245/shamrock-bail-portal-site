@@ -566,9 +566,9 @@ function markWixIntakeAsSynced(caseId) {
 }
 
 /**
- * Handle New Intake Webhook
+ * Handle New Intake Webhook (Wix Portal Specific)
  */
-function handleNewIntake(caseId, intakeData) {
+function handleWixPortalNewIntake(caseId, intakeData) {
   try {
     Logger.log('New intake received:', caseId);
     storeIntakeInQueue(caseId, intakeData);
