@@ -1,7 +1,7 @@
 /**
  * Shamrock Bail Bonds — First Appearance Page (FULL page code)
  * File: first-appearance.h4fpl.js
- * URL:  /first-appearance  (router hub) and /first-appearance-hub (static alias if set)
+ * URL:  /first-appearance  (router hub). /first-appearance-hub is a 404 alias.
  *
  * County pSEO pages: /first-appearance/{county-slug} (router → first-appearance-page)
  *
@@ -19,9 +19,9 @@
  *    trackFirstAppearancePageView(data)
  *
  *  Router note (backend/first-appearance-router.js):
- *    Bare /first-appearance MUST return ok() for this page (id h4fpl).
- *    If ok() name is not a page ON the router, Wix title becomes "500 | …"
- *    and Google refuses indexing. County paths reuse this same hub page.
+ *    Bare /first-appearance and /first-appearance/{county} MUST ok("h4fpl").
+ *    The title "first-appearance" and SEO slug "first-appearance-hub" are not
+ *    valid ok() names on the live pages map and produce title "500 | …".
  *
  * postMessage from embed:
  *    setHeight | RESIZE | CTA_CLICK | FAQ_EXPAND | COUNTY_SEARCH | SCROLL_DEPTH
@@ -55,10 +55,8 @@ const PAGE_TITLE = 'First Appearance Hearing in Florida | Live Court Schedules |
 const PAGE_DESC =
     'Your loved one has a court date in 24 hours. Learn what happens at a First Appearance hearing in Florida, watch live court streams, and get bail help fast. Serving all 67 Florida counties 24/7. Call (239) 332-2245.';
 /**
- * Canonical public hub URL.
- * Router serves this page at /first-appearance. If the Editor page SEO slug
- * is set to first-appearance-hub, both paths can work; prefer the router path
- * for reliability after publish.
+ * Canonical public hub URL. The Editor SEO slug first-appearance-hub is not
+ * a public route; /first-appearance-hub 404s outside this router prefix.
  */
 const PAGE_URL = 'https://www.shamrockbailbonds.biz/first-appearance';
 const LOGO_URL = 'https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png';

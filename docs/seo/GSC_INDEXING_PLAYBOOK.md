@@ -15,7 +15,7 @@
 | **Blog** | 105 posts in blog sitemap ✅ | Discoverable |
 | **Wix `pages-sitemap.xml`** | Only **13** static URLs | Incomplete for static set |
 | **Private pages in sitemap** | `/portal-landing`, `/communication-preferences`, `/data-deletion` listed | Inflates “Excluded / noindex / crawled not indexed” |
-| **`/first-appearance`** | Live title was **`500 \| Shamrock Bail Bonds`** | **Critical** — custom router page name mismatch; hub page code is **`first-appearance.h4fpl.js`** (full file). Wrong `ok('…')` name → 500 and h4fpl never runs |
+| **`/first-appearance`** | Live title was **`500 \| Shamrock Bail Bonds`** | **Critical** — `ok()` must be page id **`h4fpl`** (the only routers `pages` value). Titles `first-appearance` / `First Appearance` and SEO slug `first-appearance-hub` 500. County template `first-appearance-page` is not on the router. |
 | **Custom sitemap** | `/_functions/sitemap` works but was **Disallowed** by `robots.txt` | Google ignored supplemental sitemap |
 | **Googlebot** | Not blocked by `User-agent: *` | OK |
 
@@ -78,12 +78,12 @@ After CMS/county edits: **SEO Tools → Sitemap** → regenerate if available. C
 - County dynamic sitemap still has ~67–70 URLs  
 
 ### 3.6 First Appearance router pages
-In **Site Structure → Routers → first-appearance → Pages**, confirm page **names** are exactly:
+Live routers config has **one** page: id **`h4fpl`**, title `first-appearance`, SEO slug `first-appearance-hub`.
 
-- Hub: `first-appearance`  
-- County template: `first-appearance-page`  
-
-(Code now matches these live titles.)
+- Do **not** add a second county template (`first-appearance-page`). County URLs reuse `h4fpl`.
+- `ok()` and sitemap `pageName` must be **`h4fpl`**, not the title or the SEO slug.
+- `/first-appearance-hub` is outside the prefix and 404s. Do not list it in sitemaps. Optional Editor step (not Classic Publish): SEO → URL Redirect Manager, 301 `/first-appearance-hub` → `/first-appearance`.
+- Clearing the live `500 |` title requires a **Velo code deploy** of this router. Do **not** bump `wix.config.json` `uiVersion` and do **not** Classic Publish while the home meta pin is on HOLD.
 
 ---
 
@@ -134,8 +134,10 @@ curl -sL https://www.shamrockbailbonds.biz/robots.txt | head -40
 curl -sL https://www.shamrockbailbonds.biz/sitemap.xml
 curl -sL https://www.shamrockbailbonds.biz/pages-sitemap.xml | grep -c '<loc>'
 
-# first-appearance must NOT title "500"
+# first-appearance hub + county must NOT title "500" or "404"
+# (HEAD is often 200; judge the <title>, not the status line)
 curl -sL https://www.shamrockbailbonds.biz/first-appearance | grep -o '<title>[^<]*'
+curl -sL https://www.shamrockbailbonds.biz/first-appearance/lee | grep -o '<title>[^<]*'
 
 # county sample
 curl -sL https://www.shamrockbailbonds.biz/florida-bail-bonds/lee | grep -i 'name="robots"'
