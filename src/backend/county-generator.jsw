@@ -315,7 +315,7 @@ function transformCountyData(county, landing = null, landingCms = null) {
         : jailName,
       address: isPlaceLanding ? placeJailAddress : jailAddress,
       booking_url: bookingUrl,
-      booking_phone: county.jailPhone || sheriffPhone || phone
+      booking_phone: county.jailPhone || sheriffPhone || '' // never fall back to Shamrock's own number under "Jail Phone"
     },
 
     // Verified facts block (CMS fields added 2026-09-25). Empty strings = hide the row.
@@ -376,10 +376,10 @@ function transformCountyData(county, landing = null, landingCms = null) {
           ? (cleanValue(cmsPlace.h1Headline) || (landingCopy && landingCopy.heroHeadline))
           : (county.h1Headline && /bail/i.test(county.h1Headline)
             ? county.h1Headline
-            : `${countyName} County Bail Bonds — 24/7 Fast Release`),
+            : `${countyName} County Bail Bonds: 24/7 Help for Families`),
       hero_subheadline: isPlaceLanding
         ? landingCopy.heroSub
-        : `Licensed, trusted, and ready to help. Get your loved one home fast from ${jailName}.`,
+        : `Licensed, trusted, and ready to help families with ${jailName}. Call, text, or start online.`,
       hero_cta_primary: `Call Now: ${phoneDisplay}`,
       hero_cta_secondary: 'Start Bail Process Online',
 

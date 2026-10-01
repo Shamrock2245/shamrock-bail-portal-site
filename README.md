@@ -57,6 +57,14 @@ sequenceDiagram
 
 ---
 
+## 📥 Website applications (2026-09-27)
+Applications from the Wix wizards go to the **CRM first** (shamrock-leads,
+Mongo `intake_queue` = source of truth), then the CRM copies them to the Sheets
+"Intake Ledger" and Slack (non-blocking, retried). See
+[`docs/WIX-TO-CRM-INTAKE.md`](docs/WIX-TO-CRM-INTAKE.md). The Wix Staff Portal
+and Lobby Tablet are retired in favour of the CRM
+([`docs/STAFF-PORTAL-RETIREMENT.md`](docs/STAFF-PORTAL-RETIREMENT.md)).
+
 ## 🛠 Tech Stack & Ecosystem
 
 | System | Role | Technology |

@@ -224,7 +224,7 @@ export async function sendIntakeConfirmationSms(phone, indemnitorName, intakeId,
         `Hi ${firstName}, this is Shamrock Bail Bonds.`,
         `We received your bail bond inquiry for ${defendantName || 'your loved one'}.`,
         `Your reference number is: ${intakeId}`,
-        `An agent will contact you shortly. For immediate assistance call: (239) 955-0178`,
+        `An agent will contact you shortly. For immediate assistance call (239) 332-2245 or text (239) 955-0178`,
         `-- Shamrock Bail Bonds`
     ].join('\n');
     return sendSms(phone, body);
@@ -273,7 +273,7 @@ export async function sendCourtDateReminderSms(phone, recipientName, defendantNa
         `IMPORTANT REMINDER: ${defendantName || 'Your defendant'} has a court appearance:`,
         `Date: ${courtDate}`,
         `Location: ${courtLocation || 'See your paperwork for location'}`,
-        `Failure to appear will result in bond forfeiture. Call us: (239) 955-0178`,
+        `Failure to appear will result in bond forfeiture. Call us: (239) 332-2245 or text (239) 955-0178`,
         `-- Shamrock Bail Bonds`
     ].join('\n');
     return sendSms(phone, body);
@@ -294,7 +294,7 @@ export async function sendDischargeNotificationSms(phone, indemnitorName, defend
         `Hi ${firstName}, great news from Shamrock Bail Bonds!`,
         `The bond for ${defendantName || 'your defendant'} has been discharged.`,
         `Your obligations as co-signer are now complete.`,
-        `Thank you for trusting Shamrock Bail Bonds. Call us anytime: (239) 955-0178`,
+        `Thank you for trusting Shamrock Bail Bonds. Call us anytime: (239) 332-2245 or text (239) 955-0178`,
         `-- Shamrock Bail Bonds`
     ].join('\n');
     return sendSms(phone, body);
@@ -316,7 +316,7 @@ export async function sendForfeitureWarningSms(phone, indemnitorName, defendantN
         `URGENT -- Shamrock Bail Bonds`,
         `Hi ${firstName}, ${defendantName || 'your defendant'} missed their court date on ${missedDate || 'a recent date'}.`,
         `The bond is at risk of forfeiture. You must contact us IMMEDIATELY.`,
-        `Call now: (239) 955-0178`,
+        `Call now: (239) 332-2245 (or text (239) 955-0178)`,
         `-- Shamrock Bail Bonds`
     ].join('\n');
     return sendSms(phone, body);

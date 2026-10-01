@@ -9,7 +9,7 @@
  * registered page id (h4fpl); a missing name produces GSC 500 titles.
  */
 
-import { ok, redirect } from 'wix-router';
+import { ok, redirect, notFound } from 'wix-router';
 
 // Live router pages map is { "<uuid>": "h4fpl" } with title "first-appearance".
 // ok("first-appearance") 500s when request.pages is empty/object-shaped.
@@ -89,6 +89,14 @@ export function first_appearance_Router(request) {
             });
         }
 
+        // Unknown slugs used to return 200 with the hub (indexable soft 404, audit 2026-09-27).
+        if (COUNTY_SLUGS.indexOf(countySlug) === -1) {
+            const compact = countySlug.replace(/[^a-z]/g, '');
+            const match = COUNTY_SLUGS.find((s) => s.replace(/-/g, '') === compact);
+            if (match) return redirect(`${FA_HUB_PATH}/${match}`, '301');
+            return notFound();
+        }
+
         const name = countySlug
             .split('-')
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -102,7 +110,8 @@ export function first_appearance_Router(request) {
         });
     } catch (err) {
         console.error('[FA Router] Unhandled error, redirecting to hub:', err);
-        return redirect('/first-appearance-hub');
+        // /first-appearance-hub is a stray page titled "404"; send people to the real hub
+        return redirect(FA_HUB_PATH);
     }
 }
 

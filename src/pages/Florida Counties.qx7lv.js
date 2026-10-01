@@ -167,14 +167,15 @@ const SITE_URL = 'https://www.shamrockbailbonds.biz';
 function buildBreadcrumbSchema(county, { cn, displayName, isPlaceLanding, canonUrl }) {
     const items = [
         { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE_URL}/` },
-        { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": `${SITE_URL}/florida-bail-bonds` }
-    ];
+            ];
+    // Position 2 used to be /florida-bail-bonds, which returns 404 live (audit 2026-09-27).
+    // Re-add it only after a real county directory page exists at that URL.
     const hub = county.links && county.links.county_hub;
     if (isPlaceLanding && hub && hub.url) {
-        items.push({ "@type": "ListItem", "position": 3, "name": hub.name, "item": `${SITE_URL}${hub.url}` });
-        items.push({ "@type": "ListItem", "position": 4, "name": `${displayName} Bail Bonds`, "item": canonUrl });
+        items.push({ "@type": "ListItem", "position": 2, "name": hub.name, "item": `${SITE_URL}${hub.url}` });
+        items.push({ "@type": "ListItem", "position": 3, "name": `${displayName} Bail Bonds`, "item": canonUrl });
     } else {
-        items.push({ "@type": "ListItem", "position": 3, "name": `${cn} County`, "item": canonUrl });
+        items.push({ "@type": "ListItem", "position": 2, "name": `${cn} County`, "item": canonUrl });
     }
     return {
         "@context": "https://schema.org",
@@ -398,7 +399,8 @@ function setLink(selectorOrArray, url, label) {
                 if (el.type === '$w.Button') {
                     el.label = label || el.label;
                     el.link = url;
-                    el.target = "_blank";
+                    // tel:/sms:/on-site links open in the same tab; only external sites open a new tab
+                    el.target = /^https?:\/\//i.test(url) && !/shamrockbailbonds\.biz/i.test(url) ? "_blank" : "_self";
                 } else if (el.type === '$w.Text') {
                     // If it's text, we can't link it easily without HTML, skip
                     el.text = label || el.text;
@@ -477,20 +479,29 @@ async function populateMainUI(county, currentSlug) {
     // Sheriff Name & Phone: CMS sheriffName only (no "Sheriff's Office" placeholder)
     setTextOrCollapse(['#sheriffName', '#sheriffTitle', '#textSheriffName'], county.sheriff.display_name, ['#sheriffNameLabel']);
     // Reuse booking phone or specific sheriff phone if available
-    setTextOrCollapse(['#sheriffContactPhone', '#textSheriffPhone'], county.jail.booking_phone, ['#sheriffPhoneLabel']);
+    setTextOrCollapse(['#sheriffContactPhone', '#textSheriffPhone'], county.sheriff.phone || county.jail.booking_phone, ['#sheriffPhoneLabel']);
 
     // Links / Buttons (Sheriff/Clerk)
     setLink(['#callSheriffBtn', '#btnCallJail'], county.jail.booking_url, "Jail / Sheriff Website");
     setLink(['#sheriffWebsite', '#btnJailWeb'], county.jail.booking_url, "Jail / Sheriff Website");
 
     setLink(['#callClerkBtn', '#btnCallClerk'], county.clerk.website, "Clerk of Court");
+
+    // Live Editor buttons (audit 2026-09-27): these rendered with no link at all
+    const jailSearchUrl = (county.resources && county.resources.inmate_search_url) || county.jail.booking_url || '';
+    setLink(['#btnJailLink'], jailSearchUrl, 'Inmate Search');
+    setLink(['#btnClerkLink'], county.clerk.records_url || county.clerk.website || '', 'Records Search');
+    setLink(['#btnSheriffLink'], county.sheriff.website || '', "Sheriff's Website");
     // ─── 3-LAYER WIRE: Locate + Get Someone Out + First Appearance (County Prefilled) ───
     const activeCountySlug = county.slug || county.countySlug || currentSlug;
     const isSwflCore = ['lee', 'collier', 'charlotte', 'hendry', 'glades'].indexOf(activeCountySlug) !== -1;
 
     // 1. Hero Primary Call Button — voice line, not the iMessage text line
     const primaryPhoneLink = 'tel:+12393322245';
-    setLink(['#heroCallButton', '#callShamrockBtn', '#callCountiesBtn', '#btnEmergencyCall'], primaryPhoneLink, county.content.hero_cta_primary || "Call (239) 332-2245");
+    setLink(['#heroCallButton', '#callShamrockBtn', '#callCountiesBtn', '#btnEmergencyCall', '#ctaCallOfficeBtn'], primaryPhoneLink, county.content.hero_cta_primary || "Call (239) 332-2245");
+    // Owner's three primary CTAs: office call, automated line, text. Wired only if the Editor elements exist.
+    setLink(['#ctaCallAutoBtn', '#heroAutoLineButton'], 'tel:+17272952245', 'Automated line: (727) 295-2245');
+    setLink(['#ctaTextBtn', '#heroTextButton'], 'sms:+12399550178', 'Text (239) 955-0178');
 
     // 2. Get Someone Out / Start Online Release (Prefilled County)
     const getOutUrl = buildPaperworkLaunchpadUrl({
@@ -505,7 +516,8 @@ async function populateMainUI(county, currentSlug) {
 
     // 3. Locate / Inmate Lookup: official county inmate search when verified, else prefilled /locate
     const officialSearch = county.resources && county.resources.inmate_search_url;
-    const locateUrl = officialSearch || `/locate?county=${encodeURIComponent(activeCountySlug)}`;
+    // /locate returns 404 live (audit 2026-09-27): hide the button when there's no official search URL
+    const locateUrl = officialSearch || '';
     setLink(
         ['#inmateSearchBtn', '#btnInmateSearch', '#searchInmatesBtn', '#locateInmateBtn', '#btnLocate'],
         locateUrl,
@@ -522,7 +534,7 @@ async function populateMainUI(county, currentSlug) {
     // 5. Layer A — SWFL Core Flagship Badge
     if (isSwflCore) {
         setText(['#flagshipBadge', '#swflCoreCallout', '#localDispatchNotice'],
-            `⭐ SWFL Flagship Hub: 24/7 bail service from 1528 Broadway, Fort Myers. Under 20 minutes to ${county.jail.name || 'the jail desk'} in Southwest Florida (Mon–Fri, 8 AM–6 PM).`);
+            `⭐ SWFL Flagship Hub: 24/7 bail service from 1528 Broadway, Fort Myers. Under 20 minutes in Southwest Florida (Mon–Fri, 8 AM–6 PM).`);
     }
 
     // POPULATE FAQs (Repeater) - Now pulls from CMS Faqs collection
@@ -737,7 +749,8 @@ function populateInternalLinks(county, currentSlug) {
         .replace(/\s+/g, '-');
 
     // Cross-link to Florida Directory hub page (critical for crawlability)
-    setLinkElement(['#directoryLinkBtn', '#floridaDirectoryBtn', '#btnAllCounties'], '/florida-bail-bonds');
+    // /florida-bail-bonds returns 404 live (audit 2026-09-27); no directory link until that page exists
+    setLinkElement(['#directoryLinkBtn', '#floridaDirectoryBtn', '#btnAllCounties'], '');
     setTextElement(['#directoryLink', '#floridaDirectoryLink'], 'View All 67 Florida Counties');
 
     // First Appearance — county page + statewide hub (pre-focused on this county)
@@ -792,7 +805,11 @@ function setLinkElement(ids, href) {
         try {
             const el = $w(id);
             if (el && el.id) {
-                el.link = href;
+                if (href) {
+                    el.link = href;
+                } else if (typeof el.collapse === 'function') {
+                    el.collapse(); // never leave a button pointing nowhere
+                }
             }
         } catch (e) { /* element doesn't exist in this page variant — skip */ }
     }

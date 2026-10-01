@@ -155,7 +155,7 @@ async function notifyStaffOfNewIntake(intakeRecord) {
                             "text": "View in Dashboard",
                             "emoji": true
                         },
-                        "url": `${config.brand.domain}/staff-portal`,  // Use config.brand.domain
+                        "url": "https://leads.shamrockbailbonds.biz/",  // CRM is the only staff tool (2026-09-27)
                         "style": "primary"
                     }
                 ]

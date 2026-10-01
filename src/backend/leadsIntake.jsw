@@ -1,0 +1,116 @@
+/**
+ * leadsIntake.jsw — website wizard applications → Shamrock CRM (shamrock-leads).
+ *
+ * Owner decision (2026-09-27): Wix applications go to the CRM FIRST. MongoDB
+ * `intake_queue` on leads.shamrockbailbonds.biz is the source of truth. After
+ * a successful save the CRM itself copies the intake to Google Sheets (daily
+ * "Intake Ledger" row) and posts a Slack notice — non-blocking, retried.
+ * So this module talks ONLY to the CRM; there is no second GAS call here.
+ *
+ *   POST https://leads.shamrockbailbonds.biz/api/webhooks/wix-intake
+ *   Header: X-Wix-Webhook-Secret: <Wix Secrets Manager "WIX_WEBHOOK_SECRET">
+ *   Body:   { formType, role, source, clientNonce, pageUrl, payload: <wizard data> }
+ *   Reply:  { success, intake_id, duplicate, payment_link }
+ *
+ * The secret value must equal WIX_WEBHOOK_SECRET in the leads VPS .env.
+ * Server-side only (.jsw) — the secret never reaches the browser.
+ */
+import { fetch } from 'wix-fetch';
+import { getSecret } from 'wix-secrets-backend';
+
+const LEADS_BASE = 'https://leads.shamrockbailbonds.biz';
+const INTAKE_PATH = '/api/webhooks/wix-intake';
+const SECRET_NAME = 'WIX_WEBHOOK_SECRET';
+const TIMEOUT_MS = 20000;
+const MAX_PAYLOAD_CHARS = 400000; // uploads are not sent through this path
+
+/** Website fallback pay-by-card link (same rule as leads payment_links.py; also public/portal-config.js BOND_PAYMENT_LINK). */
+const WEBSITE_PAYMENT_LINK = 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
+
+function normalizeFormType(formType) {
+    const v = String(formType || '').toLowerCase();
+    if (v.indexOf('indemnitor') !== -1 || v.indexOf('cosign') !== -1) return 'indemnitor';
+    if (v.indexOf('defendant') !== -1) return 'defendant';
+    return '';
+}
+
+function stripUploads(payload) {
+    if (!payload || typeof payload !== 'object') return {};
+    const copy = Object.assign({}, payload);
+    delete copy.uploadData;   // base64 files — not sent to the CRM from here
+    delete copy.documents;
+    return copy;
+}
+
+function withTimeout(promise, ms) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+    ]);
+}
+
+/**
+ * Submit a website wizard application to the CRM.
+ * @param {object} payload   wizard collectData() output (nested defendant / indemnitor)
+ * @param {string} formType  'defendant' | 'indemnitor'
+ * @param {object} [meta]    { clientNonce, pageUrl }
+ * @returns {Promise<{success: boolean, intakeId?: string, duplicate?: boolean, paymentLink?: string, error?: string}>}
+ */
+export async function submitWizardToLeads(payload, formType, meta) {
+    const role = normalizeFormType(formType);
+    if (!role) return { success: false, error: 'Unknown form type.' };
+    if (!payload || typeof payload !== 'object') return { success: false, error: 'Empty application.' };
+
+    let secret = '';
+    try {
+        secret = await getSecret(SECRET_NAME);
+    } catch (e) {
+        secret = '';
+    }
+    if (!secret) {
+        console.error('[leadsIntake] Wix secret WIX_WEBHOOK_SECRET is not set');
+        return { success: false, error: 'Online applications are temporarily unavailable. Please call (239) 332-2245.' };
+    }
+
+    const body = {
+        formType: role,
+        role: role,
+        source: `wix_${role}_wizard`,
+        clientNonce: String((meta && meta.clientNonce) || '').slice(0, 128),
+        pageUrl: String((meta && meta.pageUrl) || '').slice(0, 300),
+        payload: stripUploads(payload)
+    };
+    const json = JSON.stringify(body);
+    if (json.length > MAX_PAYLOAD_CHARS) {
+        return { success: false, error: 'Application is too large. Please call (239) 332-2245.' };
+    }
+
+    // One retry on network errors / 5xx. Same clientNonce → the CRM de-duplicates.
+    let lastError = '';
+    for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+            const res = await withTimeout(fetch(`${LEADS_BASE}${INTAKE_PATH}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Wix-Webhook-Secret': secret },
+                body: json
+            }), TIMEOUT_MS);
+            const text = await res.text();
+            let data = {};
+            try { data = JSON.parse(text); } catch (e) { data = {}; }
+            if (res.ok && data && data.success === true) {
+                return {
+                    success: true,
+                    intakeId: data.intake_id || '',
+                    duplicate: !!data.duplicate,
+                    paymentLink: data.payment_link || WEBSITE_PAYMENT_LINK
+                };
+            }
+            lastError = (data && data.error) || `HTTP ${res.status}`;
+            if (res.status < 500) break; // auth / validation errors are not retried
+        } catch (err) {
+            lastError = (err && err.message) || String(err);
+        }
+    }
+    console.warn('[leadsIntake] CRM intake failed:', lastError);
+    return { success: false, error: 'We could not submit your application. Please try again or call (239) 332-2245.' };
+}

@@ -24,7 +24,8 @@ import { validateCustomSession, getDefendantDetails } from 'backend/portal-auth'
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, BOND_PAYMENT_LINK } from 'public/portal-config';
+import { submitWizardToLeads } from 'backend/leadsIntake';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
 
@@ -37,6 +38,7 @@ $w.onReady(async function () {
     console.log("🛡️ [Defendant Dashboard] Loading After-Care Portal...");
 
     LightboxController.init($w);
+    setupWizardBridge('#defendantWizard', 'shamrock-defendant-submitted', 'defendant', (msg) => msg.payload || msg.data);
     setupActionHandlers();
 
     try {
@@ -172,8 +174,9 @@ function setupActionHandlers() {
 
     // 3. Make Payment
     safeOnClick('#btnMakePayment', () => {
-        const payUrl = defendantData?.paymentUrl || 'https://shamrockbailbonds.biz/payment';
-        wixWindow.openLightbox('PrivacyLightbox', { paymentUrl: payUrl });
+        // PrivacyLightbox is the privacy-policy lightbox and /payment 404s (audit 2026-09-27).
+        // Case-specific SwipeSimple invoice link first, else the general SwipeSimple payment page.
+        wixLocation.to(defendantData?.paymentUrl || BOND_PAYMENT_LINK);
     });
 
     // 4. View / Download Documents
@@ -222,4 +225,37 @@ function safeOnClick(id, handler) {
         const el = $w(id);
         if (el && typeof el.onClick === 'function') el.onClick(handler);
     } catch (e) {}
+}
+
+/**
+ * Wizard submit bridge (2026-09-27).
+ * The embed posts its data here; page code calls backend/leadsIntake.jsw, which
+ * posts server-side to the CRM (/api/webhooks/wix-intake, secret from Wix
+ * Secrets Manager). MongoDB intake_queue is the source of truth; the CRM then
+ * copies to Google Sheets + Slack itself. The embed shows success ONLY when the
+ * CRM answered success:true (ack.ok), and gets the pay-by-card link back.
+ */
+function setupWizardBridge(elementId, messageType, formType, getPayload) {
+    let el;
+    try { el = $w(elementId); } catch (e) { return; }
+    if (!el || typeof el.onMessage !== 'function') return;
+    el.onMessage(async (event) => {
+        const msg = event && event.data;
+        if (!msg || msg.type !== messageType) return;
+        let ack = { type: 'shamrock-submit-ack', ok: false, error: '' };
+        try {
+            const result = await submitWizardToLeads(getPayload(msg), formType, {
+                clientNonce: msg.clientNonce || '',
+                pageUrl: (typeof wixLocation !== 'undefined' && wixLocation.url) || ''
+            });
+            if (result && result.success === true) {
+                ack = { type: 'shamrock-submit-ack', ok: true, intakeId: result.intakeId || '', paymentLink: result.paymentLink || '' };
+            } else {
+                ack.error = (result && result.error) || 'Submission was not accepted';
+            }
+        } catch (err) {
+            ack.error = 'We could not submit your application. Please call (239) 332-2245.';
+        }
+        try { el.postMessage(ack); } catch (e) { }
+    });
 }
