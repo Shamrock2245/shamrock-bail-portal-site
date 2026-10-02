@@ -369,7 +369,7 @@ function setupBailSchoolNavLink() {
 
 /**
  * Force First Appearance nav targets to the working hub URL.
- * Canonical hub is /first-appearance (router → h4fpl). /first-appearance-hub
+ * Canonical hub is /first-appearance (router page name "first-appearance"). /first-appearance-hub
  * is an alias that should redirect; keep links pointed at the live hub.
  */
 const FA_HUB_PATH = '/first-appearance';
