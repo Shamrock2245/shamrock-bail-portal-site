@@ -3,7 +3,7 @@
  * File: first-appearance.h4fpl.js
  * URL:  /first-appearance  (router hub). /first-appearance-hub is a 404 alias.
  *
- * County pSEO pages: /first-appearance/{county-slug} (router → first-appearance-page)
+ * County pSEO pages: /first-appearance/{county-slug} (same page, slug in router data)
  *
  * This is the complete Velo page for the First Appearance hub.
  * UI is an HtmlComponent embed; this file owns routing of the embed,
@@ -19,9 +19,9 @@
  *    trackFirstAppearancePageView(data)
  *
  *  Router note (backend/first-appearance-router.js):
- *    Bare /first-appearance and /first-appearance/{county} MUST ok("h4fpl").
- *    The title "first-appearance" and SEO slug "first-appearance-hub" are not
- *    valid ok() names on the live pages map and produce title "500 | …".
+ *    Bare /first-appearance and /first-appearance/{county} ok("first-appearance", data).
+ *    The thunderbolt id "h4fpl" and a third HeadOptions argument both
+ *    UserCodeError on the live dispatcher (PR #39). Page code sets the title.
  *
  * postMessage from embed:
  *    setHeight | RESIZE | CTA_CLICK | FAQ_EXPAND | COUNTY_SEARCH | SCROLL_DEPTH

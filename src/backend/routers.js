@@ -13,7 +13,7 @@
  * @module routers
  */
 
-import { redirect } from 'wix-router';
+import { notFound, redirect } from 'wix-router';
 import { validateCustomSession } from 'backend/portal-auth';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { routeCountyPage } from 'backend/bail-bonds-router';
@@ -154,7 +154,8 @@ export async function first_appearance_Router(request) {
     return await faRouter(request);
   } catch (err) {
     console.error('[Router] Error in first_appearance_Router:', err);
-    return redirect('/first-appearance');
+    // Do not redirect back onto this prefix — that re-enters the router.
+    return notFound();
   }
 }
 

@@ -1,100 +1,73 @@
 #!/usr/bin/env node
 /**
- * Guards for /first-appearance router page-name resolution.
+ * Guards for /first-appearance ok() shape.
  *
- * Live Wix routers config (shamrockbailbonds.biz, 2026-10-01):
- *   pages: { "<role-uuid>": "h4fpl" }
- *   title: "first-appearance"
+ * Live Wix routers config (shamrockbailbonds.biz, after PR #39 deploy):
+ *   pages: { "<role-uuid>": "h4fpl" }   // thunderbolt id, not an ok() argument
+ *   title: "first-appearance"            // code-sidebar page name
  *   pageUriSEO: "first-appearance-hub"
  *
- * ok("first-appearance") / ok("First Appearance") does not match that map
- * and the document title becomes "500 | Shamrock Bail Bonds".
- * Every alias must resolve to the page id h4fpl.
+ * ok('h4fpl', data, head) was deployed and the public dispatcher still
+ * returned UserCodeError. The working county router calls
+ * ok('Florida Counties', data) with two arguments. Match that:
+ *   ok('first-appearance', data)
+ * Sitemap pageName is the same page name. No HeadOptions. No self-redirect
+ * back onto /first-appearance when ok() throws.
  *
  * After a Velo deploy (not Classic Publish; uiVersion stays pinned), verify:
- *   curl -sL https://www.shamrockbailbonds.biz/first-appearance | grep -o '<title>[^<]*'
- *   curl -sL https://www.shamrockbailbonds.biz/first-appearance/lee | grep -o '<title>[^<]*'
- * Titles must not be "500 |" or "404 |". HTTP status is often 200 either way.
+ *   curl -sL 'https://www.shamrockbailbonds.biz/first-appearance?cb=1' | grep -o '<title>[^<]*'
+ *   curl -sL 'https://www.shamrockbailbonds.biz/first-appearance/lee?cb=1' | grep -o '<title>[^<]*'
+ * Titles must start with "First Appearance Hearing", not "500 |" or "404 |".
+ * HTTP status is often 200 either way. Cache-bust the query so Cloudflare
+ * does not replay the previous 500 HTML.
  */
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
 const src = fs.readFileSync(
     path.join(ROOT, 'src/backend/first-appearance-router.js'),
     'utf8'
 );
-
-function extractNamedFunction(name) {
-    const start = src.indexOf('function ' + name + '(');
-    if (start < 0) throw new Error('Missing function ' + name);
-    let i = src.indexOf('{', start);
-    let depth = 0;
-    for (; i < src.length; i++) {
-        if (src[i] === '{') depth++;
-        else if (src[i] === '}') {
-            depth--;
-            if (depth === 0) return src.slice(start, i + 1);
-        }
-    }
-    throw new Error('Unclosed function ' + name);
-}
-
-const ctx = {
-    HUB_PAGE: 'first-appearance',
-    HUB_PAGE_ID: 'h4fpl'
-};
-vm.createContext(ctx);
-vm.runInContext(
-    extractNamedFunction('listRouterPageNames_') + '\n' +
-    extractNamedFunction('resolveHubPageName'),
-    ctx
-);
+const routers = fs.readFileSync(path.join(ROOT, 'src/backend/routers.js'), 'utf8');
 
 function assert(cond, msg) {
     if (!cond) throw new Error(msg);
 }
 
-assert(src.indexOf('HUB_PAGE_ID = \'h4fpl\'') > -1, 'router must default to live page id h4fpl');
-assert(src.indexOf('first-appearance-page') > -1, 'alias list must still recognize the retired template name');
-assert(src.indexOf('ok(COUNTY_PAGE') === -1 && src.indexOf('ok(\'first-appearance\'') === -1, 'router must not hard-code a title into ok()');
-assert(src.indexOf('pageName: HUB_PAGE_ID') > -1, 'sitemap pageName must be the page id');
-assert(src.indexOf('pageName: HUB_PAGE,') === -1, 'sitemap must not use the title as pageName');
-assert(src.indexOf('buildHead(') > -1, 'ok() must pass head options so the HTML title is set');
+assert(src.indexOf("const HUB_PAGE = 'first-appearance'") > -1, 'page name constant must be first-appearance');
+assert(src.indexOf('ok(HUB_PAGE,') > -1, 'ok() must receive the code-sidebar page name and data');
+assert(src.indexOf("ok('h4fpl'") === -1, 'ok() must not receive the thunderbolt page id');
+assert(src.indexOf('ok(HUB_PAGE_ID') === -1, 'ok() must not receive HUB_PAGE_ID');
+assert(src.indexOf('HUB_PAGE_ID') === -1, 'do not keep an id constant that can be passed to ok()');
+assert(src.indexOf('buildHead(') === -1, 'do not pass HeadOptions; page code sets the HTML title');
+assert(src.indexOf('pageName: HUB_PAGE,') > -1, 'sitemap pageName must be the page name');
+assert(src.indexOf('pageName: HUB_PAGE_ID') === -1, 'sitemap must not use the page id');
+assert(src.indexOf('return redirect(FA_HUB_PATH)') === -1, 'catch must not self-redirect onto this prefix');
+assert(src.indexOf('return notFound()') > -1, 'router catch returns notFound');
 
-const livePages = { pages: { 'dd6a7207-8621-460c-aaad-3abfff7d9668': 'h4fpl' } };
-assert(ctx.resolveHubPageName(livePages) === 'h4fpl', 'object pages map must resolve h4fpl');
-assert(ctx.resolveHubPageName({}) === 'h4fpl', 'empty request must ok(h4fpl)');
-assert(ctx.resolveHubPageName({ pages: ['first-appearance'] }) === 'h4fpl', 'title array must not be passed to ok()');
-assert(ctx.resolveHubPageName({ pages: ['First Appearance'] }) === 'h4fpl', 'legacy title must map to h4fpl');
-assert(ctx.resolveHubPageName({ pages: ['first-appearance-hub'] }) === 'h4fpl', 'SEO slug must map to h4fpl');
-assert(ctx.resolveHubPageName({ pages: ['First Appearance County'] }) === 'h4fpl', 'retired county page name must map to h4fpl');
-assert(ctx.resolveHubPageName({ pages: ['h4fpl'] }) === 'h4fpl', 'array id must resolve');
+const countyCount = (src.match(/'alachua'/) || []).length;
+assert(countyCount === 1, 'county slug list must stay in the router');
+assert(src.indexOf("'lee'") > -1 && src.indexOf("'miami-dade'") > -1, 'canonical county slugs must remain');
+
 assert(
-    ctx.resolveHubPageName({
-        pages: {
-            abc: { id: 'h4fpl', title: 'first-appearance', pageUriSEO: 'first-appearance-hub' }
-        }
-    }) === 'h4fpl',
-    'nested page role must use id'
+    routers.indexOf("return redirect('/first-appearance')") === -1,
+    'routers.js wrapper must not self-redirect onto /first-appearance'
 );
-assert(
-    ctx.resolveHubPageName({ pages: { abc: { title: 'first-appearance' } } }) === 'h4fpl',
-    'title-only role must still ok(h4fpl)'
-);
-assert(
-    ctx.resolveHubPageName({ pages: ['editor-page-id'] }) === 'editor-page-id',
-    'a single unknown id is kept if the Editor page id changes'
-);
+assert(routers.indexOf('return notFound()') > -1, 'routers.js wrapper catch returns notFound');
+assert(routers.indexOf('notFound') > -1 && routers.indexOf("from 'wix-router'") > -1, 'notFound must be imported from wix-router');
 
 const page = fs.readFileSync(path.join(ROOT, 'src/pages/first-appearance.h4fpl.js'), 'utf8');
-assert(page.indexOf('$w(\'HtmlComponent\')') > -1, 'hub must bind HtmlComponent by type if nickname is missing');
+assert(page.indexOf("$w('HtmlComponent')") > -1, 'hub must bind HtmlComponent by type if nickname is missing');
 assert(page.indexOf('first-appearance-page.nmw1v.js') === -1, 'stale county-template comment must be gone');
+assert(page.indexOf('MUST ok("h4fpl")') === -1, 'page comment must not instruct ok(h4fpl)');
 
 const http = fs.readFileSync(path.join(ROOT, 'src/backend/http-functions.js'), 'utf8');
 assert(http.indexOf("'/first-appearance-hub'") === -1, 'custom sitemap must not advertise the 404 alias');
+
+const config = fs.readFileSync(path.join(ROOT, 'wix.config.json'), 'utf8');
+assert(config.indexOf('"uiVersion": "2775"') > -1, 'uiVersion pin must stay 2775');
 
 console.log('ok');
