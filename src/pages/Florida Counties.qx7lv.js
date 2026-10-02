@@ -418,6 +418,9 @@ async function populateMainUI(county, currentSlug) {
     // Old: #countyName, #dynamicHeader, #heroSubtitle
     // New: #countyNameHeadline, #aboutCountyText (Maybe hero text?), #heroCallButton
     // City landings: "{City} Bail Bonds ({County} County)". County/jail headlines stay as generated.
+    // SSR note: Bingbot still sees the dataset-bound H1 HTML (Fort Myers = bare
+    // city name on comp-mkzw2dj2). This setText only runs client-side after onReady;
+    // #dynamicDataset.onReady can also restore a CMS-bound H1 — re-apply below.
     setText(['#countyName', '#countyNameHeadline', '#dynamicHeader'], resolvePrimaryHeroH1(county));
 
     // Subtitle / About Text in Hero

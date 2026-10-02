@@ -144,7 +144,9 @@ const DEST = {
 $w.onReady(function () {
     const isMobile = wixWindow.formFactor === 'Mobile';
 
-    // SEO meta -- synchronous, required for correct crawling
+    // SEO meta via wix-seo (browser $w.onReady only — NOT Bingbot/Googlebot SSR HTML).
+    // Owner-approved 124-char description is set below; live SSR still comes from
+    // published STATIC_PAGE / Editor Item SEO until that store matches.
     try { setupHomepageMeta(); } catch (e) { console.warn('[SEO] setupHomepageMeta failed:', e); }
     // Defer schema to yield to first paint
     setTimeout(() => {
@@ -466,13 +468,29 @@ function loadTestimonials() {
 // SEO
 // ---------------------------------------------------------------------------
 
+/**
+ * Homepage title + meta description for client-side browsers.
+ *
+ * IMPORTANT — SSR vs client:
+ *   wixSeo.setTitle / setMetaTags / setLinks run only after $w.onReady in the
+ *   visitor browser. They do NOT rewrite the HTML Bingbot/Googlebot receive.
+ *   Confirmed 2026-09-29: Editor Publish can show the 124-char description in
+ *   the SEO panel while live Bingbot SSR still serves the legacy 269-char
+ *   "Legal Community" STATIC_PAGE description. Logo H1→P and util noindex
+ *   Editor changes do stick in SSR; Item SEO description did not.
+ *
+ * Owner-approved meta description (exact, 124 chars) — keep in sync with any
+ * future STATIC_PAGE / Editor Item SEO update that actually ships to SSR:
+ */
 function setupHomepageMeta() {
     const title = 'Fort Myers Bail Bonds | Cape Coral & Lee County | Shamrock';
+    // Exact owner string (124 chars). Do not lengthen — SERP snippet budget.
     const description = '24/7 Fort Myers & Florida bail bonds. Fast Lee County Jail release, payment plans, licensed since 2012. Call (239) 332-2245.';
     const url = 'https://www.shamrockbailbonds.biz';
 
     wixSeo.setTitle(title);
     wixSeo.setLinks([{ rel: 'canonical', href: url }]);
+    // Client-only: crawlers that skip JS keep the published Item SEO tags.
     wixSeo.setMetaTags([
         { name: 'description', content: description },
         { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' },
