@@ -269,6 +269,11 @@ export function buildCmsLandingRecord(landing, parent = {}, brandName = 'Shamroc
     const displayPhone = phone || PHONE_PRIMARY.display;
     return {
         countySlug: landing.slug,
+        // Bingbot SSR H1 is rich text #comp-mkzw2dj2, dataset-bound to this
+        // short-name field (not h1Headline, not onReady). Fort Myers live value
+        // is "Fort Myers". Recommended published CMS value for that item:
+        // Fort Myers Bail Bonds (Lee County)
+        // Set it in the Editor/CMS. Do not Deploy setupHomepageMeta for this.
         countyName: landing.name,
         active: true,
         title: copy.heroHeadline,

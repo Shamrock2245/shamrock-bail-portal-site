@@ -100,6 +100,11 @@ assert.match(generator, /county\.h1Headline && \/bail\/i\.test\(county\.h1Headli
 const landingsSource = readFileSync(join(root, 'src/backend/local-landings.js'), 'utf8');
 assert.match(landingsSource, /formatCityHeroHeadline\(name, county\)/);
 assert.match(landingsSource, /\$\{name\} Bail Bonds — 24\/7 Fast Release/);
+assert.match(landingsSource, /countyName: landing\.name/);
+assert.match(landingsSource, /h1Headline: copy\.heroHeadline/);
+assert.match(landingsSource, /#comp-mkzw2dj2/);
+assert.match(landingsSource, /Fort Myers Bail Bonds \(Lee County\)/);
+assert.equal(landingsSource.includes('countyName: copy.heroHeadline'), false);
 
 const page = readFileSync(join(root, 'src/pages/Florida Counties.qx7lv.js'), 'utf8');
 assert.match(page, /resolvePrimaryHeroH1\(county\)/);
