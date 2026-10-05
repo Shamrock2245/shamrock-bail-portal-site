@@ -38,14 +38,14 @@
 
 ---
 
-## 2a. Pending on branch `fix/wix-to-leads-intake` (2026-09-27, not merged)
+## 2a. Website Applications → CRM Intake (Merged in PR #24)
 
 | Area | Status |
 |---|---|
-| **Website applications → CRM** | 🟡 Built locally. Wizards submit via `backend/leadsIntake.jsw` → CRM `/api/webhooks/wix-intake` (Mongo `intake_queue` first), success only on `success:true`, Pay-by-card on success. See `docs/WIX-TO-CRM-INTAKE.md`. |
-| **Sheets Intake Ledger** | 🟡 `backend-gas/IntakeLedger.js` (`appendIntakeLedger`), called by the CRM fan-out after the Mongo save. Needs clasp deploy. |
-| **Staff Portal / Lobby Tablet** | 🟡 Retired in code (redirect to CRM / fail closed). Editor removals: `docs/STAFF-PORTAL-RETIREMENT.md`. |
-| **Wizard embeds** | 🟡 Must be re-pasted in the Editor: `docs/editor-repaste-2026-09-27/`. |
+| **Website applications → CRM** | ✅ **Merged on `main` (PR #24)** — Wizards submit via `backend/leadsIntake.jsw` → CRM `/api/webhooks/wix-intake` (Mongo `intake_queue` first), success only on `success:true`, Pay-by-card on success. See `docs/WIX-TO-CRM-INTAKE.md`. |
+| **Sheets Intake Ledger** | ✅ **Merged on `main`** — `backend-gas/IntakeLedger.js` (`appendIntakeLedger`), called by the CRM fan-out after Mongo save. Deploys with next GAS versioned push. |
+| **Staff Portal / Lobby Tablet** | ✅ **Retired in code** — Redirects to CRM / fails closed. Wix Editor visual removals: `docs/STAFF-PORTAL-RETIREMENT.md`. |
+| **Wizard embeds** | 📋 Ready for Wix Editor embed paste: `docs/editor-repaste-2026-09-27/`. |
 
 ---
 
