@@ -667,8 +667,9 @@ const W = {
     btn.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block">&#x2699;&#65039;</span> Submitting...';
 
     var data = this.collectData();
-    data.uploadData = {};
-    for (var key in this.uploads) { data.uploadData[key] = this.uploads[key]; }
+    // ID photos stay on this device. The CRM intake path does not accept
+    // uploads, and a base64 photo can exceed the Wix HTML-component message
+    // limit so the whole application never arrives.
 
     // Build Dashboard-format formData for SignNow prefill compatibility
     var formData = {
