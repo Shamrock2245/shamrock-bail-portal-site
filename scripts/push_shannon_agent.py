@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push Shannon prompt, duration, and paperwork tools to ElevenLabs.
+"""Push Brendan prompt, duration, and paperwork tools to ElevenLabs.
 
 Reads ELEVENLABS_API_KEY / ELEVENLABS_AGENT_ID / ELEVENLABS_TOOL_SECRET
 from the environment or shamrock-leads/.env. Does not print secrets.
@@ -98,7 +98,7 @@ DESK_E164 = "+12399550301"
 NAP_E164 = "+12393322245"
 OFFICE_E164 = NAP_E164
 
-# Blocking + retry: rewrite the turn. Do not transfer. Shannon's Twilio
+# Blocking + retry: rewrite the turn. Do not transfer. Brendan's Twilio
 # register-call path cannot use transfer_to_number (external calls).
 _GUARDRAIL_CONTINUE_FEEDBACK = (
     "Your previous response was blocked. Blocked text: '{{agent_message}}'. "
@@ -129,7 +129,7 @@ def _custom_guardrail(name: str, prompt: str) -> dict:
 SHANNON_CUSTOM_GUARDRAILS = [
     _custom_guardrail(
         "No legal advice",
-        "Block only if Shannon tells the caller what to plead, predicts what a judge or "
+        "Block only if Brendan tells the caller what to plead, predicts what a judge or "
         "prosecutor will do, says a charge will be dropped or dismissed, or recommends a "
         "specific attorney. Never block paperwork. Always allow starting the packet, asking "
         "for the name on the driver license, saying legal name, email, ID photos, county, "
@@ -139,23 +139,23 @@ SHANNON_CUSTOM_GUARDRAILS = [
     ),
     _custom_guardrail(
         "Never send them to 727",
-        "Block only if Shannon tells the caller to dial, redial, or call back 727-295-2245. "
+        "Block only if Brendan tells the caller to dial, redial, or call back 727-295-2245. "
         "Allow 239-955-0301 and 239-332-2245. Never 727-295-2245.",
     ),
     _custom_guardrail(
         "No promised release",
-        "Block only if Shannon promises they will be released, names a release time, or "
+        "Block only if Brendan promises they will be released, names a release time, or "
         "guarantees a court outcome. Allow Florida premium estimates that are clearly estimates, "
         "jail or court directions, and inmate status from tools.",
     ),
     _custom_guardrail(
         "No fee rebating or unauthorized discounts",
-        "Block only if Shannon offers or agrees to premium discounts below Florida statutory 10% rate, "
+        "Block only if Brendan offers or agrees to premium discounts below Florida statutory 10% rate, "
         "or offers illegal rebates. Allow explaining statutory 10% rate and 0% interest payment plans.",
     ),
     _custom_guardrail(
         "No P2P payments",
-        "Block only if Shannon accepts or suggests CashApp, Venmo, Zelle, PayPal, or crypto. "
+        "Block only if Brendan accepts or suggests CashApp, Venmo, Zelle, PayPal, or crypto. "
         "Allow SwipeSimple card link and in-person payment at 1528 Broadway.",
     ),
 ]
@@ -186,7 +186,7 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
     edges = wf.setdefault("edges", {})
     if "n_greet" in nodes:
         nodes["n_greet"]["additional_prompt"] = (
-            "The opening is already spoken: Shamrock Bail Bonds, this is Shannon, then a short how-can-I-help. No hey. Keep that energy. Answer what they just said. Do not wait on a tool."
+            "The opening is already spoken: Shamrock Bail Bonds, this is Brendan, then a short how-can-I-help. No hey. Keep that energy. Answer what they just said. Do not wait on a tool."
         )
     # Mem0 is already injected at ring. Do not block the first reply on history.
     if "e02" in edges and "n_personalize" in nodes:
@@ -952,10 +952,10 @@ def main() -> int:
         prompt_patch["built_in_tools"] = built_in
 
     patch = {
-        "name": "Shannon — Shamrock Paperwork Assistant",
+        "name": "Brendan — Shamrock Paperwork Assistant",
         "conversation_config": {
             "agent": {
-                "first_message": "Shamrock Bail Bonds! This is Shannon. How can I help today?",
+                "first_message": "Shamrock Bail Bonds! This is Brendan. How can I help today?",
                 "language": "en",
                 "dynamic_variables": {
                     "dynamic_variable_placeholders": {
@@ -1039,11 +1039,11 @@ def main() -> int:
         email_tid = existing_names.get("email_paperwork_to_indemnitor") or EMAIL_TOOL_ID
         id_tid = existing_names.get("request_id_photo") or ID_TOOL_ID
         patch["workflow"] = _tune_workflow(wf, email_tid, id_tid, check_tid or "")
-        print("Tuned Shannon workflow nodes")
+        print("Tuned Brendan workflow nodes")
     except Exception as exc:
         print("Workflow tune skipped:", exc)
     _el_request("PATCH", f"/v1/convai/agents/{agent_id}", patch)
-    print("Patched Shannon agent", agent_id)
+    print("Patched Brendan agent", agent_id)
     return 0
 
 

@@ -390,7 +390,7 @@ function saveMem0Memory_(phone, facts) {
     if (!normalizedPhone || normalizedPhone.length < 7) return;
 
     // Build a natural-language memory string Mem0 can index
-    var memoryText = 'Caller called Shamrock Bail Bonds on ' + facts.call_date + ' and spoke with AI Agent Shannon. ';
+    var memoryText = 'Caller called Shamrock Bail Bonds on ' + facts.call_date + ' and spoke with AI Agent Brendan. ';
     if (facts.defendant_name) memoryText += 'Regarding: ' + facts.defendant_name + '. ';
     if (facts.outcome) memoryText += 'Outcome: ' + facts.outcome + '. ';
     if (facts.call_summary) memoryText += 'Summary: ' + facts.call_summary.slice(0, 400) + '. ';
@@ -985,7 +985,7 @@ function handleElevenLabsConversationInit(e) {
             type: 'conversation_initiation_client_data',
             dynamic_variables: { caller_name: '', has_existing_case: 'no' },
             conversation_config_override: {
-                agent: { first_message: 'Shamrock Bail Bonds! This is Shannon. How can I help today?' }
+                agent: { first_message: 'Shamrock Bail Bonds! This is Brendan. How can I help today?' }
             }
         })).setMimeType(ContentService.MimeType.JSON);
     }
@@ -1037,7 +1037,7 @@ function _doConversationInit(e) {
         "I'm here, how can I help?",
         'What can I help you with?'
     ];
-    var firstMessage = 'Shamrock Bail Bonds! This is Shannon. ' +
+    var firstMessage = 'Shamrock Bail Bonds! This is Brendan. ' +
         firstTails[Math.floor(Math.random() * firstTails.length)];
 
     // TODO: Re-enable personalized lookup once we add CacheService or a warm-keep trigger.
