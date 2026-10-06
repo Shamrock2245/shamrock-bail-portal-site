@@ -895,7 +895,8 @@ def main() -> int:
     existing_tts["agent_output_audio_format"] = "ulaw_8000"
     existing_tts["text_normalisation_type"] = "elevenlabs"
     existing_tts["expressive_mode"] = True
-    existing_tts["model_id"] = "eleven_turbo_v2"
+    # English agents cannot use eleven_flash_v2_5 — the API rejects it.
+    existing_tts["model_id"] = "eleven_flash_v2"
     existing_tts["optimize_streaming_latency"] = 4
     existing_tts["stability"] = 0.42
     existing_tts["speed"] = 0.94

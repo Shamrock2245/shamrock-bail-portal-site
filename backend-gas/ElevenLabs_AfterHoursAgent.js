@@ -159,8 +159,8 @@ var AFTER_HOURS_AGENT_CONFIG = {
         "If they cannot finish: save what you have, create_intake, notify_bondsman or schedule_callback."
     ].join('\n'),
 
-    // Voice: Jessica — warm, bright, playful American female (Shannon's voice)
-    voiceId: 'cgSgspJ2msm6clMCkdW9', // Jessica (ElevenLabs premade) — DO NOT change to a male voice
+    // Voice: Brendan Instant clone for phone + voiceovers; voice_id 2cx6OnG1GDLOtE8L9l9O
+    voiceId: '2cx6OnG1GDLOtE8L9l9O', // Brendan - Shamrock phone Instant clone
 
     // Live Agent ID (created 2026-03-03)
     // agent_2001kjth4na5ftqvdf1pp3gfb1cb
@@ -172,6 +172,8 @@ var AFTER_HOURS_AGENT_CONFIG = {
     maxDurationSeconds: 900, // paperwork interviews need 10-15 minutes
 
     // TTS settings (optimized 2026-05-15)
+    // English agents cannot use eleven_flash_v2_5 — the API rejects it.
+    modelId: 'eleven_flash_v2',
     similarityBoost: 0.75,        // Slightly reduced from 0.8 to prevent phone-quality artifacts
     streamingLatency: 4,          // Max optimization for lowest TTFB on phone calls
     silenceEndCallTimeout: 45     // Stressed callers pause; do not hang up at 30s
@@ -214,7 +216,8 @@ function createAfterHoursAgent() {
                 language: config.language
             },
             tts: {
-                voice_id: config.voiceId
+                voice_id: config.voiceId,
+                model_id: config.modelId
             }
         },
         name: config.name,
