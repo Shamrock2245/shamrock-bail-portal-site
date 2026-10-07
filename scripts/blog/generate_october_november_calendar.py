@@ -91,11 +91,11 @@ MEDIA = {
         "filename": "charlotte-county-courthouse-bail-bonds.jpg"
     },
     "legal_justice": {
-        "id": "4e4d4a_372861e6c7ea4ee489eb170ba35c0234~mv2.jpg",
-        "url": "https://static.wixstatic.com/media/4e4d4a_372861e6c7ea4ee489eb170ba35c0234~mv2.jpg",
+        "id": "4e4d4a_3f7de6a0e59b4f0497dddce837166c34~mv2.jpg",
+        "url": "https://static.wixstatic.com/media/4e4d4a_3f7de6a0e59b4f0497dddce837166c34~mv2.jpg",
         "height": 675,
         "width": 1200,
-        "filename": "courthouse-justice-scale-florida.jpg"
+        "filename": "charlotte-county-courthouse-bail-bonds.jpg"
     },
     "release_steps": {
         "id": "4e4d4a_4c7f35182d1b4a91ac37723ccf173464~mv2.png",

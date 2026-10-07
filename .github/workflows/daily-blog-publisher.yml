@@ -1,0 +1,82 @@
+name: Daily Blog Publisher
+
+on:
+  schedule:
+    # Run every day at 13:00 UTC (9:00 AM Eastern Time)
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: 'Optional date override (YYYY-MM-DD)'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Dry run only (do not publish)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: daily-blog-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish-daily-post:
+    name: Publish Due Blog Post
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      # ── 2. Python Setup ──────────────────────────────────────────────────────
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ── 3. Node & Wix CLI Login ──────────────────────────────────────────────
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Wix CLI & Authenticate
+        run: |
+          npm install -g @wix/cli@latest
+          wix login --api-key "${{ secrets.WIX_CLI_API_KEY }}"
+        env:
+          WIX_CLI_API_KEY: ${{ secrets.WIX_CLI_API_KEY }}
+
+      # ── 4. Execute Due Posts Publisher ───────────────────────────────────────
+      - name: Run publish_due_posts.py
+        run: |
+          CMD="python3 scripts/blog/publish_due_posts.py"
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            CMD="$CMD --dry-run"
+          fi
+          if [ -n "${{ github.event.inputs.target_date }}" ]; then
+            CMD="$CMD --date ${{ github.event.inputs.target_date }}"
+          fi
+          echo "Executing: $CMD"
+          $CMD
+        env:
+          WIX_CLI_API_KEY: ${{ secrets.WIX_CLI_API_KEY }}
+
+      # ── 5. Commit Updated Calendar ───────────────────────────────────────────
+      - name: Commit and push calendar updates
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/blog-posts-ready-to-publish/2026-10-october-november-calendar/
+          if git diff --staged --quiet; then
+            echo "No calendar changes to commit."
+          else
+            git commit -m "chore(blog): publish scheduled post for $(date +'%Y-%m-%d') [skip ci]"
+            git push origin main
+          fi

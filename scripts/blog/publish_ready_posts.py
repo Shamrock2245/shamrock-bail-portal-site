@@ -125,6 +125,27 @@ CTA = (
 
 
 def load_token() -> str:
+    # 1. Environment variable overrides (for GitHub Actions, Node-RED, or Hetzner VPS)
+    env_token = os.environ.get("WIX_ACCESS_TOKEN") or os.environ.get("WIX_TOKEN")
+    if env_token:
+        return env_token
+
+    env_refresh = os.environ.get("WIX_REFRESH_TOKEN")
+    if env_refresh:
+        body = {
+            "clientId": CLIENT_ID,
+            "grantType": "refresh_token",
+            "refreshToken": env_refresh,
+            "siteId": SITE_ID,
+        }
+        resp = http_json("https://manage.wix.com/oauth2/token", body, extra_headers={
+            "X-XSRF-TOKEN": "nocheck",
+            "Cookie": "XSRF-TOKEN=nocheck",
+            "User-Agent": "wix-cli",
+        }, auth=None)
+        return resp["access_token"]
+
+    # 2. Local CLI credentials
     path = Path.home() / f".wix/auth/{SITE_ID}.json"
     data = json.loads(path.read_text())
     issued = data.get("issuedAt") or 0

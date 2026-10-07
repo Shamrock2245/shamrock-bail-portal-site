@@ -175,17 +175,18 @@ function initEditorialUI() {
     // 1. Topic Taxonomy Filter Buttons (Category Selection)
     const categoryButtons = [
         { id: "#btnCatAll", filter: null },
-        { id: "#btnCatStatutes", filter: "Florida Legal Updates" },
-        { id: "#btnCatHowBailWorks", filter: "How Bail Bonds Work" },
-        { id: "#btnCatCountySpotlight", filter: "County Spotlight" },
-        { id: "#btnCatBailTips", filter: "Bail Bond Tips" }
+        { id: "#btnCatStatutes", filter: "Florida Legal Updates", catId: "cd48b96c-f242-4c5b-b4b4-11ef15731e80" },
+        { id: "#btnCatHowBailWorks", filter: "How Bail Bonds Work", catId: "174b07df-f139-470d-8cda-b3b9df88a045" },
+        { id: "#btnCatCountySpotlight", filter: "County Spotlight", catId: "1ddbc7ab-5518-43a3-a914-f902e02c7820" },
+        { id: "#btnCatBailTips", filter: "Bail Bond Tips", catId: "95332c04-dc15-4127-8a66-029c411047d6" }
     ];
 
-    categoryButtons.forEach(({ id, filter }) => {
+    categoryButtons.forEach(({ id, filter, catId }) => {
         const btn = getEl(id);
         if (btn && typeof btn.onClick === 'function') {
             btn.onClick(() => {
-                filterNewsroomByCategory(filter);
+                highlightActiveCategory(categoryButtons, id);
+                filterNewsroomByCategory(filter, catId);
             });
         }
     });
@@ -203,20 +204,26 @@ function initEditorialUI() {
         });
     }
 
-    // 3. Emergency 24/7 Hotline Buttons
-    const callHotlineBtn = getEl("#btnNewsroomEmergencyCall");
-    if (callHotlineBtn && typeof callHotlineBtn.onClick === 'function') {
-        callHotlineBtn.onClick(() => {
-            wixLocation.to('tel:+12393322245');
-        });
-    }
+    // 3. Emergency 24/7 Hotline & Intake Buttons
+    const callHotlineIds = ["#btnNewsroomEmergencyCall", "#btnNewsroomCallDesk", "#btnNewsroomPhone"];
+    callHotlineIds.forEach(id => {
+        const btn = getEl(id);
+        if (btn && typeof btn.onClick === 'function') {
+            btn.onClick(() => {
+                wixLocation.to('tel:+12393322245');
+            });
+        }
+    });
 
-    const startPortalBtn = getEl("#btnNewsroomStartPaperwork");
-    if (startPortalBtn && typeof startPortalBtn.onClick === 'function') {
-        startPortalBtn.onClick(() => {
-            wixLocation.to('/portal-landing');
-        });
-    }
+    const startPortalIds = ["#btnNewsroomStartPaperwork", "#btnNewsroomStartIntake", "#btnStartIntakeBlog"];
+    startPortalIds.forEach(id => {
+        const btn = getEl(id);
+        if (btn && typeof btn.onClick === 'function') {
+            btn.onClick(() => {
+                wixLocation.to('/portal-landing');
+            });
+        }
+    });
 
     // 4. Newsletter / Advisory Alert Subscription Hook
     const subscribeBtn = getEl("#btnSubscribeLegalAlerts");
@@ -240,16 +247,43 @@ function initEditorialUI() {
 }
 
 /**
- * Filter blog dataset by category if a custom dataset or repeater is present.
+ * Visual feedback for active category filter
  */
-function filterNewsroomByCategory(categoryName) {
+function highlightActiveCategory(buttons, activeId) {
+    buttons.forEach(({ id }) => {
+        try {
+            const btn = $w(id);
+            if (btn) {
+                if (id === activeId) {
+                    try { btn.disable(); } catch (e) {}
+                } else {
+                    try { btn.enable(); } catch (e) {}
+                }
+            }
+        } catch (e) {}
+    });
+}
+
+/**
+ * Filter blog dataset by category if a custom dataset or repeater is present.
+ * Robustly matches categoryId, category array, and category name.
+ */
+function filterNewsroomByCategory(categoryName, categoryId) {
     try {
         const dataset = $w("#dynamicDataset") || $w("#datasetBlog");
         if (dataset && typeof dataset.setFilter === 'function') {
             if (!categoryName) {
                 dataset.setFilter(wixData.filter());
             } else {
-                dataset.setFilter(wixData.filter().eq("category", categoryName));
+                let filter = wixData.filter();
+                if (categoryId) {
+                    filter = filter.hasSome("categoryIds", [categoryId])
+                        .or(filter.hasSome("categories", [categoryId]))
+                        .or(filter.eq("category", categoryName));
+                } else {
+                    filter = filter.eq("category", categoryName);
+                }
+                dataset.setFilter(filter);
             }
         }
     } catch (e) {

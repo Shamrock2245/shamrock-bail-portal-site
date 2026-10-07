@@ -25,7 +25,9 @@
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import { session } from 'wix-storage';
-import { BOND_PAYMENT_LINK } from 'public/portal-config';
+
+// Inlined payment link to comply with strict zero-public-import rule in masterPage AMD scope
+const BOND_PAYMENT_LINK = 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
 
 // ---------------------------------------------------------------------------
 // Inline county coordinates for Find My Jail geolocation

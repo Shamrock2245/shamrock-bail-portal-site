@@ -227,7 +227,7 @@ function initArticleUI(post) {
         reviewBadgeTxt.text = "Reviewed for Florida Statutory Compliance (F.S. Ch. 648 & 903)";
     }
 
-    // 2. Share Actions
+    // 2. Share Actions (Multi-Channel + Fallback)
     const shareBtn = getEl("#btnArticleShare");
     if (shareBtn && typeof shareBtn.onClick === 'function') {
         shareBtn.onClick(() => {
@@ -238,31 +238,96 @@ function initArticleUI(post) {
                     url: post.postUrl
                 }).catch(() => {});
             } else {
-                // Fallback: Copy link
-                if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                    navigator.clipboard.writeText(post.postUrl);
-                    const toast = getEl("#txtShareFeedback");
-                    if (toast) {
-                        toast.text = "Article link copied to clipboard!";
-                        if (typeof toast.show === 'function') toast.show();
-                    }
-                }
+                copyPostLinkToClipboard(post.postUrl);
             }
         });
     }
 
-    // 3. Contextual Emergency Bail Hotline & Portal Navigation
-    const callHotlineBtn = getEl("#btnPostEmergencyCall");
-    if (callHotlineBtn && typeof callHotlineBtn.onClick === 'function') {
-        callHotlineBtn.onClick(() => {
-            wixLocation.to('tel:+12393322245');
+    // Direct Copy Link Button
+    const copyLinkBtn = getEl("#btnShareCopyLink") || getEl("#btnCopyArticleLink");
+    if (copyLinkBtn && typeof copyLinkBtn.onClick === 'function') {
+        copyLinkBtn.onClick(() => {
+            copyPostLinkToClipboard(post.postUrl);
         });
     }
 
-    const startPortalBtn = getEl("#btnPostStartPaperwork");
-    if (startPortalBtn && typeof startPortalBtn.onClick === 'function') {
-        startPortalBtn.onClick(() => {
-            wixLocation.to('/portal-landing');
+    // WhatsApp Direct Share
+    const whatsAppBtn = getEl("#btnShareWhatsApp");
+    if (whatsAppBtn && typeof whatsAppBtn.onClick === 'function') {
+        whatsAppBtn.onClick(() => {
+            const shareText = encodeURIComponent(`${post.title}\n${post.postUrl}`);
+            wixLocation.to(`https://api.whatsapp.com/send?text=${shareText}`);
         });
+    }
+
+    // SMS Direct Share
+    const smsBtn = getEl("#btnShareSMS") || getEl("#btnShareText");
+    if (smsBtn && typeof smsBtn.onClick === 'function') {
+        smsBtn.onClick(() => {
+            const shareBody = encodeURIComponent(`Florida Bail Bonds Guide: ${post.title} ${post.postUrl}`);
+            wixLocation.to(`sms:?&body=${shareBody}`);
+        });
+    }
+
+    // Facebook Share
+    const fbBtn = getEl("#btnShareFacebook");
+    if (fbBtn && typeof fbBtn.onClick === 'function') {
+        fbBtn.onClick(() => {
+            wixLocation.to(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(post.postUrl)}`);
+        });
+    }
+
+    // 3. Contextual Emergency Bail Hotline & Portal Navigation
+    const callHotlineIds = ["#btnPostEmergencyCall", "#btnCallHotline", "#btnPostCallDesk", "#btnPostPhone"];
+    callHotlineIds.forEach(id => {
+        const btn = getEl(id);
+        if (btn && typeof btn.onClick === 'function') {
+            btn.onClick(() => {
+                wixLocation.to('tel:+12393322245');
+            });
+        }
+    });
+
+    const startPortalIds = ["#btnPostStartPaperwork", "#btnPostStartIntake", "#btnStartPaperworkPost"];
+    startPortalIds.forEach(id => {
+        const btn = getEl(id);
+        if (btn && typeof btn.onClick === 'function') {
+            btn.onClick(() => {
+                wixLocation.to('/portal-landing');
+            });
+        }
+    });
+}
+
+/**
+ * Safely copy link to clipboard with feedback toast
+ */
+function copyPostLinkToClipboard(url) {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+            showFeedbackToast("Article link copied to clipboard!");
+        }).catch(() => {
+            showFeedbackToast("Link ready: " + url);
+        });
+    } else {
+        showFeedbackToast("Link: " + url);
+    }
+}
+
+/**
+ * Display toast message feedback safely
+ */
+function showFeedbackToast(msg) {
+    try {
+        const toast = $w("#txtShareFeedback") || $w("#txtToastMsg");
+        if (toast) {
+            toast.text = msg;
+            if (typeof toast.show === 'function') toast.show();
+            setTimeout(() => {
+                try { if (typeof toast.hide === 'function') toast.hide(); } catch (e) {}
+            }, 3500);
+        }
+    } catch (e) {
+        // Safe no-op
     }
 }
