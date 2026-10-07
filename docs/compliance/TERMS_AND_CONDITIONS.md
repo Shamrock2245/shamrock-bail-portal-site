@@ -3,7 +3,7 @@
 **Effective Date:** March 3, 2026
 **Last Updated:** March 3, 2026
 
-Welcome to Shamrock Bail Bonds. These Terms and Conditions ("Terms") govern your use of our website located at shamrockbail.com (the "Site"), our client portal, and any related services provided by Shamrock Bail Bonds ("we," "us," or "our"). By accessing or using our Site and services, you agree to be bound by these Terms.
+Welcome to Shamrock Bail Bonds. These Terms and Conditions ("Terms") govern your use of our website located at https://www.shamrockbailbonds.biz (the "Site"), our client portal, and any related services provided by Shamrock Bail Bonds ("we," "us," or "our"). By accessing or using our Site and services, you agree to be bound by these Terms.
 
 ## 1. Acceptance of Terms
 
@@ -143,8 +143,8 @@ If you have questions about these Terms, please contact us at:
 
 **Shamrock Bail Bonds**
 The Calipott Building
-1520 Broadway
+1528 Broadway
 Fort Myers, FL 33901
 Phone: (239) 332-2245
 Email: admin@shamrockbailbonds.biz
-Website: https://shamrockbail.com
+Website: https://www.shamrockbailbonds.biz

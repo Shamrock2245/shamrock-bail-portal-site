@@ -1,0 +1,33 @@
+name: PR CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Velo syntax and JSON
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax-check Velo page and backend code
+        run: node scripts/ci/check-velo-syntax.mjs
+
+      - name: Validate JSON files
+        run: node scripts/ci/check-json.mjs

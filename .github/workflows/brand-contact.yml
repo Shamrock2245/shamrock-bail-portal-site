@@ -1,0 +1,30 @@
+name: Brand contact
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brand-contact-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Canonical contact details
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Fail on wrong domains, street, or Shamrock phones
+        run: node scripts/ci/check-brand-contact.mjs

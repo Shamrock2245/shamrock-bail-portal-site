@@ -7,7 +7,7 @@
  * REQUIRED SCRIPT PROPERTIES (File > Project Properties > Script Properties):
  * - SIGNNOW_API_TOKEN: Your SignNow API Bearer Token
  * - WIX_API_KEY: The same key stored in Wix Secrets as GAS_API_KEY
- * - WIX_SITE_URL: The URL of your Wix site (e.g., https://www.shamrockbailbonds.com)
+ * - WIX_SITE_URL: The URL of your Wix site (e.g., https://www.shamrockbailbonds.biz)
  */
 
 function doPost(e) {

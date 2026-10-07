@@ -1,0 +1,72 @@
+name: Weekly Lighthouse
+
+on:
+  schedule:
+    # Monday 14:17 UTC. Odd minute, and not one of the uptime slots.
+    - cron: '17 14 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: lighthouse-home
+  cancel-in-progress: false
+
+jobs:
+  lighthouse:
+    name: Homepage budget
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Locate Chrome
+        run: |
+          set -euo pipefail
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || true)"
+          if [ -z "$CHROME" ]; then
+            sudo apt-get update
+            wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+            sudo apt-get install -y /tmp/chrome.deb
+            CHROME="$(command -v google-chrome || command -v google-chrome-stable)"
+          fi
+          echo "CHROME_PATH=$CHROME" >> "$GITHUB_ENV"
+          "$CHROME" --version
+
+      - name: Collect homepage and assert budget
+        id: lhci
+        run: |
+          set -euo pipefail
+          npx --yes @lhci/cli@0.14.0 collect \
+            --url=https://www.shamrockbailbonds.biz/ \
+            --numberOfRuns=1 \
+            --chromePath="$CHROME_PATH" \
+            --settings.chromeFlags="--no-sandbox"
+          npx --yes @lhci/cli@0.14.0 assert --config=.github/lighthouse-budget.json
+
+      - name: Close perf-regression issue
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/ci/github-issue.mjs close perf-regression
+
+      - name: Open or dedupe perf-regression issue
+        if: failure() && steps.lhci.outcome == 'failure'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_TITLE: 'Perf regression: homepage missed the Lighthouse budget'
+          ISSUE_BODY: |
+            Homepage Lighthouse assertions in .github/lighthouse-budget.json failed for https://www.shamrockbailbonds.biz/.
+            Performance is a warning at 0.5. Accessibility and SEO are errors at 0.9. Best practices is a warning at 0.9.
+            See the workflow log for the assertion output.
+        run: node scripts/ci/github-issue.mjs open perf-regression
