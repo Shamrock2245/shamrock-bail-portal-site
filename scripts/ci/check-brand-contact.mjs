@@ -10,10 +10,11 @@
  * Fails on:
  *   - banned domains (built below so this file does not contain them whole)
  *   - the retired street name (Breton + Cir) anywhere, including docs/archive
+ *   - the old street number (1520 + Broadway) anywhere, including docs/archive
  *   - a Shamrock DID-prefix phone (239-332, 727-295, 239-955) that is not
  *     canonical and not in the acknowledged operational set
  *
- * docs/archive is historical and is scanned for the retired street name only.
+ * docs/archive is historical and is scanned for the retired street name and the old street number only.
  * Operational numbers that are real Shamrock lines, but not the three
  * public NAP phones, are acknowledged so this check stays green. They are
  * listed in the pull request; a new prefix number still fails.
@@ -53,6 +54,7 @@ const BANNED_DOMAINS = [
 ]
 
 const BRETON = 'Breton' + ' Cir'
+const OLD_STREET = '1520' + ' Broadway'
 const ARCHIVE_PREFIX = `docs${path.sep}archive${path.sep}`
 const MAX_BYTES = 2_000_000
 
@@ -99,9 +101,13 @@ for (const file of files) {
   const archive = rel.startsWith(ARCHIVE_PREFIX) || rel.startsWith('docs/archive/')
 
   const bretonRe = new RegExp(BRETON.replace(' ', '\\s+'), 'gi')
+  const oldStreetRe = new RegExp(OLD_STREET.replace(' ', '\\s+'), 'gi')
   let match
   while ((match = bretonRe.exec(text)) !== null) {
     add(rel, lineNumber(text, match.index), `old office street "${BRETON}"`)
+  }
+  while ((match = oldStreetRe.exec(text)) !== null) {
+    add(rel, lineNumber(text, match.index), `old office street number "${OLD_STREET}"`)
   }
 
   if (archive) continue

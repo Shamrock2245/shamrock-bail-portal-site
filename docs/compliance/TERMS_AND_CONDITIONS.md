@@ -143,7 +143,7 @@ If you have questions about these Terms, please contact us at:
 
 **Shamrock Bail Bonds**
 The Calipott Building
-1520 Broadway
+1528 Broadway
 Fort Myers, FL 33901
 Phone: (239) 332-2245
 Email: admin@shamrockbailbonds.biz
