@@ -1,0 +1,50 @@
+name: Live site uptime
+
+on:
+  schedule:
+    # Every 15 minutes, offset onto odd minutes: 01, 16, 31, 46.
+    - cron: '1,16,31,46 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: live-site-uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Critical path
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: GET home, bond-start, portal, and contact
+        id: uptime
+        run: node scripts/ci/check-live-site.mjs
+
+      - name: Close site-down issue
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/ci/github-issue.mjs close site-down
+
+      - name: Open or dedupe site-down issue
+        if: failure() && steps.uptime.outcome == 'failure'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_TITLE: 'Site down: critical path check failed'
+          ISSUE_BODY: 'Critical-path check failed. See the workflow log for the URL and status.'
+          ISSUE_BODY_FILE: uptime-failure.txt
+        run: node scripts/ci/github-issue.mjs open site-down
