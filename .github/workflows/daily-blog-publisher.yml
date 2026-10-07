@@ -73,7 +73,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/blog-posts-ready-to-publish/2026-10-october-november-calendar/
+          git add docs/blog-posts-ready-to-publish/
           if git diff --staged --quiet; then
             echo "No calendar changes to commit."
           else

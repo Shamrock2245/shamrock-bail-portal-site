@@ -49,6 +49,10 @@ CALENDAR_JSON = CALENDAR_DIR / "publish-calendar.json"
 CALENDAR_MD = CALENDAR_DIR / "PUBLISH_CALENDAR.md"
 
 
+ANNUAL_DIR = ROOT / "docs" / "blog-posts-ready-to-publish" / "annual-editorial-calendar-2026-2027"
+ANNUAL_JSON = ANNUAL_DIR / "annual-calendar.json"
+
+
 def get_calendar_status() -> dict:
     """Read and return current calendar statistics."""
     if not CALENDAR_JSON.exists():
@@ -60,21 +64,37 @@ def get_calendar_status() -> dict:
 
 
 def print_status_report():
-    """Print formatted terminal report of editorial calendar."""
+    """Print formatted terminal report of all editorial calendars."""
     stat = get_calendar_status()
-    print("\n☘️ Shamrock Bail Bonds — 30-Day Florida Statewide Editorial Calendar")
-    print("=" * 70)
-    print(f"Total Articles:      {stat['total']}")
-    print(f"Published Live:     {stat['live']} 🟢")
-    print(f"Scheduled Drafts:   {stat['scheduled']} ⏳")
+    print("\n☘️ Shamrock Bail Bonds — Florida Statewide Editorial Systems")
+    print("=" * 75)
+    print("📅 Month 1 Editorial Calendar (Oct 7 - Nov 5, 2026):")
+    print(f"   Total Articles:    {stat['total']}")
+    print(f"   Published Live:    {stat['live']} 🟢")
+    print(f"   Scheduled Drafts:  {stat['scheduled']} ⏳")
     if stat["items"]:
-        print(f"Calendar Window:    {stat['items'][0]['date']} to {stat['items'][-1]['date']}")
-        print(f"Manifest Location:  {CALENDAR_JSON}")
-        print("-" * 70)
-        for item in stat["items"]:
-            badge = "🟢 LIVE     " if item.get("status") == "PUBLISHED_LIVE" else "⏳ SCHEDULED"
-            print(f"[{item['date']}] {badge} Day {item['day']:02d}: {item['title'][:50]}")
-    print("=" * 70 + "\n")
+        print(f"   Active Window:     {stat['items'][0]['date']} to {stat['items'][-1]['date']}")
+
+    if ANNUAL_JSON.exists():
+        try:
+            annual_items = json.loads(ANNUAL_JSON.read_text(encoding="utf-8"))
+            ann_live = sum(1 for i in annual_items if i.get("status") == "PUBLISHED_LIVE")
+            ann_sched = sum(1 for i in annual_items if i.get("status") == "DRAFT_SCHEDULED")
+            print("\n📅 1-Year Annual Editorial Calendar (Nov 6, 2026 - Oct 6, 2027):")
+            print(f"   Total Articles:    {len(annual_items)}")
+            print(f"   Published Live:    {ann_live} 🟢")
+            print(f"   Scheduled Drafts:  {ann_sched} ⏳")
+            if annual_items:
+                print(f"   Active Window:     {annual_items[0]['date']} to {annual_items[-1]['date']}")
+
+            grand_total = stat['total'] + len(annual_items)
+            grand_live = stat['live'] + ann_live
+            grand_sched = stat['scheduled'] + ann_sched
+            print("-" * 75)
+            print(f"GRAND TOTAL (1-Year Horizon): {grand_total} Posts | {grand_live} Live | {grand_sched} Scheduled Drafts")
+        except Exception as e:
+            print(f"Could not load annual calendar: {e}")
+    print("=" * 75 + "\n")
 
 
 def generate_local_markdown(start_date: date) -> list[dict]:
@@ -215,8 +235,10 @@ def main():
     parser.add_argument("--publish-due", action="store_true", help="Publish any drafts due on or before today")
     parser.add_argument("--dry-run", action="store_true", help="Preview operations without making API changes")
     parser.add_argument("--generate-markdown-only", action="store_true", help="Generate/regenerate local Markdown articles only")
-    parser.add_argument("--sync-wix", action="store_true", help="Generate articles and sync to Wix Blog (create drafts + publish Day 1)")
+    parser.add_argument("--sync-wix", action="store_true", help="Generate articles and sync Month 1 to Wix Blog (create drafts + publish Day 1)")
     parser.add_argument("--start-date", type=str, default="2026-10-07", help="Start date YYYY-MM-DD (defaults to 2026-10-07)")
+    parser.add_argument("--annual-sync", action="store_true", help="Sync 1-Year Annual Calendar drafts (Nov 2026 - Oct 2027) to Wix")
+    parser.add_argument("--annual-markdown", action="store_true", help="Generate all 130 1-Year Annual Calendar markdown articles")
     args = parser.parse_args()
 
     if args.status:
@@ -224,13 +246,24 @@ def main():
         return
 
     if args.publish_due:
-        # Run publish_due_posts routine
-        print("\n☘️ Running Due Posts Publisher...")
+        # Run publish_due_posts routine across all calendars
+        print("\n☘️ Running Due Posts Publisher across all editorial calendars...")
         if args.dry_run:
             sys.argv = ["publish_due_posts.py", "--dry-run"]
         else:
             sys.argv = ["publish_due_posts.py"]
         publish_due_posts.main()
+        return
+
+    if args.annual_markdown:
+        import generate_annual_calendar
+        generate_annual_calendar.generate_full_annual_curriculum(dry_run=args.dry_run)
+        return
+
+    if args.annual_sync:
+        import generate_annual_calendar
+        articles = generate_annual_calendar.generate_full_annual_curriculum(dry_run=args.dry_run)
+        generate_annual_calendar.sync_annual_calendar_to_wix(articles, dry_run=args.dry_run)
         return
 
     start_d = date.fromisoformat(args.start_date)
@@ -246,7 +279,7 @@ def main():
 
     # Default action: show status and help hint
     print_status_report()
-    print("Hint: Use --publish-due to publish scheduled posts, or --sync-wix to regenerate the calendar.")
+    print("Hint: Use --publish-due to publish scheduled posts, --annual-sync to sync annual drafts, or --status to view.")
 
 
 if __name__ == "__main__":
