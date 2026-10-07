@@ -29,6 +29,9 @@ const SKIP_DIRS = new Set(['.git', 'node_modules', '.netlify', 'venv', '.wix', '
 const TEXT_EXT = new Set([
   '.js', '.jsw', '.mjs', '.cjs', '.json', '.html', '.htm', '.md',
   '.yml', '.yaml', '.txt', '.css', '.xml', '.py', '.toml',
+  // Apps Script (.gs) and retired Apps Script copies (*.js.legacy).
+  // HtmlService templates are .html / .htm, including *.embed.html.
+  '.gs', '.legacy',
 ])
 
 const CANONICAL = new Set([
@@ -58,7 +61,8 @@ const OLD_STREET = '1520' + ' Broadway'
 const ARCHIVE_PREFIX = `docs${path.sep}archive${path.sep}`
 const MAX_BYTES = 2_000_000
 
-const FORMATTED_PHONE = /(?<!\d)(?:\+?1[\s.\-]?)?\(?([2-9]\d{2})\)?[\s.\-]+(\d{3})[\s.\-]+(\d{4})(?!\d)/g
+// A closing parenthesis alone counts as the area-code separator.
+const FORMATTED_PHONE = /(?<!\d)(?:\+?1[\s.\-]?)?\(?([2-9]\d{2})\)?[\s.\-]*(\d{3})[\s.\-]+(\d{4})(?!\d)/g
 const COMPACT_PHONE = /(?<!\d)\+?1?([2-9]\d{9})(?!\d)/g
 
 function walk(dir, out) {
@@ -77,6 +81,62 @@ function lineNumber(text, index) {
   }
   return line
 }
+
+function phoneMatches(text) {
+  const found = []
+  for (const re of [FORMATTED_PHONE, COMPACT_PHONE]) {
+    re.lastIndex = 0
+    let match
+    while ((match = re.exec(text)) !== null) {
+      const digits = re === FORMATTED_PHONE ? `${match[1]}${match[2]}${match[3]}` : match[1]
+      found.push({ digits, index: match.index })
+    }
+  }
+  return found
+}
+
+function isFlaggedPhone(digits) {
+  if (!SHAMROCK_PREFIXES.some((prefix) => digits.startsWith(prefix))) return false
+  return !CANONICAL.has(digits) && !ACKNOWLEDGED.has(digits)
+}
+
+function selfTest() {
+  const badDigits = '239332' + '9999'
+  const badParen = '(239)' + '332-9999'
+  const cases = [
+    { name: 'paren with no space', text: badParen, digits: badDigits, flagged: true },
+    { name: 'paren with space still flagged', text: '(239) ' + '332-9999', digits: badDigits, flagged: true },
+    { name: 'canonical office with space', text: '(239) 332-2245', digits: '2393322245', flagged: false },
+    { name: 'canonical office dashed', text: '239-332-2245', digits: '2393322245', flagged: false },
+    { name: 'canonical tampa no space', text: '(727)' + '295-2245', digits: '7272952245', flagged: false },
+    { name: 'canonical sms no space', text: '(239)' + '955-0178', digits: '2399550178', flagged: false },
+    { name: 'acknowledged spanish no space', text: '(239)' + '955-0301', digits: '2399550301', flagged: false },
+    { name: 'other 239 prefix', text: '(239)' + '555-1234', digits: '2395551234', flagged: false },
+  ]
+  const failures = []
+  for (const item of cases) {
+    const matches = phoneMatches(item.text).filter((phone) => phone.digits === item.digits)
+    if (matches.length === 0) failures.push(`${item.name}: did not extract ${item.digits} from ${item.text}`)
+    const flagged = matches.some((phone) => isFlaggedPhone(phone.digits))
+    if (flagged !== item.flagged) {
+      failures.push(`${item.name}: flagged=${flagged}, expected ${item.flagged}`)
+    }
+  }
+  const oldStreet = '1520' + ' Broadway'
+  if (!new RegExp(OLD_STREET.replace(' ', '\\s+'), 'i').test(oldStreet)) {
+    failures.push('old street number was not detected')
+  }
+  if (new RegExp(OLD_STREET.replace(' ', '\\s+'), 'i').test('1528 Broadway')) {
+    failures.push('canonical 1528 Broadway was flagged as the old number')
+  }
+  if (failures.length > 0) {
+    for (const failure of failures) console.error(`self-test: ${failure}`)
+    process.exit(1)
+  }
+  console.log(`Brand contact self-test passed (${cases.length} phone cases)`)
+}
+
+selfTest()
 
 const files = []
 walk(ROOT, files)
@@ -119,18 +179,8 @@ for (const file of files) {
     }
   }
 
-  const phones = []
-  for (const re of [FORMATTED_PHONE, COMPACT_PHONE]) {
-    re.lastIndex = 0
-    while ((match = re.exec(text)) !== null) {
-      const digits = re === FORMATTED_PHONE ? `${match[1]}${match[2]}${match[3]}` : match[1]
-      phones.push({ digits, index: match.index })
-    }
-  }
-
-  for (const phone of phones) {
-    if (!SHAMROCK_PREFIXES.some((prefix) => phone.digits.startsWith(prefix))) continue
-    if (CANONICAL.has(phone.digits) || ACKNOWLEDGED.has(phone.digits)) continue
+  for (const phone of phoneMatches(text)) {
+    if (!isFlaggedPhone(phone.digits)) continue
     const pretty = `${phone.digits.slice(0, 3)}-${phone.digits.slice(3, 6)}-${phone.digits.slice(6)}`
     add(rel, lineNumber(text, phone.index), `Shamrock-looking phone ${pretty} is not a canonical number`)
   }
