@@ -50,7 +50,7 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
         } = extraData;
 
         // 1. Get Last Location (for risk/velocity)
-        const lastLocation = await getLastLocation(personId);
+        const lastLocation = await findLastLocationForSession(personId);
 
         // 2. Risk Analysis
         const { riskLevel, riskFactors } = analyzeLocationRisk(latitude, longitude, lastLocation);
@@ -132,23 +132,45 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
         };
 
         // 4. Save to UserLocations
-        await wixData.insert('UserLocations', locationData);
+        // Portal users sign in with a custom session, not Wix Members, so the
+        // caller is an anonymous visitor. UserLocations only lets site members
+        // insert, so the write runs with suppressAuth after the session check above.
+        await wixData.insert('UserLocations', locationData, { suppressAuth: true });
 
         // 5. Sync to GAS
+        // GAS doPost rejects any request without a valid apiKey. The key is read
+        // here on the server from Wix Secrets and never returned to the browser.
         try {
             const gasUrl = await getGasWebAppUrl();
-            if (gasUrl) {
-                await fetchWithRetry(gasUrl, {
+            const gasApiKey = await getSecret('GAS_API_KEY');
+            if (!gasUrl) {
+                console.error('LocationBackend: GAS sync skipped, GAS_WEB_APP_URL missing');
+            } else if (!gasApiKey) {
+                console.error('LocationBackend: GAS sync skipped, GAS_API_KEY missing from Secrets Manager');
+            } else {
+                const gasResponse = await fetchWithRetry(gasUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'logDefendantLocation',
+                        apiKey: gasApiKey,
                         data: {
                             ...locationData,
                             timestamp: locationData.timestamp.toISOString()
                         }
                     })
                 });
+                // GAS answers HTTP 200 even when it refuses the call, so read the body.
+                let gasResult = null;
+                try {
+                    gasResult = gasResponse && typeof gasResponse.json === 'function' ? await gasResponse.json() : null;
+                } catch (parseError) {
+                    gasResult = null;
+                }
+                if (gasResult && gasResult.success === false) {
+                    const reason = (gasResult.error && gasResult.error.message) || gasResult.error || gasResult.message || '';
+                    console.error('LocationBackend: GAS refused check-in sync', reason);
+                }
             }
         } catch (gasError) {
             console.error('LocationBackend: GAS sync failed', gasError);
@@ -164,6 +186,28 @@ export async function saveUserLocation(latitude, longitude, notes = "", imageUrl
     } catch (error) {
         console.error('LocationBackend: Critical Error', error);
         return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Last stored location for the person behind an already-validated session.
+ * Not exported, so the browser cannot call it with someone else's ID.
+ * Uses suppressAuth because UserLocations is admin-read and portal users are
+ * anonymous visitors to Wix.
+ * @param {string} personId - personId from validateCustomSession
+ * @returns {Promise<Object|null>}
+ */
+async function findLastLocationForSession(personId) {
+    try {
+        const results = await wixData.query('UserLocations')
+            .eq('memberId', String(personId || ''))
+            .descending('timestamp')
+            .limit(1)
+            .find({ suppressAuth: true });
+        return results.items.length > 0 ? results.items[0] : null;
+    } catch (error) {
+        console.error('Error getting last location:', error);
+        return null;
     }
 }
 

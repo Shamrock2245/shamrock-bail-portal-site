@@ -37,3 +37,6 @@ jobs:
 
       - name: Mongo proxy named-action checks
         run: node --test scripts/test_mongo_proxy_named_actions.mjs
+
+      - name: Portal check-in GAS sync checks
+        run: node scripts/test_checkin_gas_sync.mjs
