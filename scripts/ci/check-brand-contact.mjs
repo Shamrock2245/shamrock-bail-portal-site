@@ -2,7 +2,7 @@
  * Fail if source or content files carry the wrong Shamrock contact details.
  *
  * Canonical public NAP:
- *   phones 239-332-2245, 727-295-2245, 239-955-0178
+ *   phones 239-332-2245, 727-295-2245 (also Se habla español), 239-955-0178
  *   email  admin@shamrockbailbonds.biz
  *   site   https://www.shamrockbailbonds.biz
  *   office 1528 Broadway, Fort Myers, FL
@@ -42,7 +42,7 @@ const CANONICAL = new Set([
 
 /** Real lines already in the product. Not public NAP, not typos. */
 const ACKNOWLEDGED = new Set([
-  '2399550301', // live-person desk; not the public Spanish line
+  '2399550301', // live-person overflow ring only; public Spanish line is canonical 727-295-2245
   '2399550314', // spare DID, marked not NAP in llms-txt-builder.js
   '2397849365', // staff desk
   '2393197008', // staff desk
@@ -109,6 +109,7 @@ function selfTest() {
     { name: 'canonical office with space', text: '(239) 332-2245', digits: '2393322245', flagged: false },
     { name: 'canonical office dashed', text: '239-332-2245', digits: '2393322245', flagged: false },
     { name: 'canonical tampa no space', text: '(727)' + '295-2245', digits: '7272952245', flagged: false },
+    { name: 'spanish line is 727', text: 'Se habla español: 727-295-2245', digits: '7272952245', flagged: false },
     { name: 'canonical sms no space', text: '(239)' + '955-0178', digits: '2399550178', flagged: false },
     { name: 'acknowledged desk no space', text: '(239)' + '955' + '-0301', digits: '2399550301', flagged: false },
     { name: 'other 239 prefix', text: '(239)' + '555-1234', digits: '2395551234', flagged: false },

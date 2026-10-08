@@ -257,7 +257,9 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
     if "n_c_general" in nodes:
         nodes["n_c_general"]["additional_prompt"] = (
             "Answer using the knowledge base. Never recommend a specific attorney. "
-            "Never give legal advice. Office landline is 239-332-2245. Transfer rings that line and 239-955-0301 together. Never 727-295-2245."
+            "Never give legal advice. Office landline is 239-332-2245. Transfer rings that line and 239-955-0301 together. "
+            "239-955-0301 is the live-transfer ring, not the Spanish line. "
+            "Se habla español is 727-295-2245, which is this call. Never tell them to redial 727-295-2245."
         )
     if "n_a_conf_p" in nodes:
         nodes["n_a_conf_p"]["additional_prompt"] = (

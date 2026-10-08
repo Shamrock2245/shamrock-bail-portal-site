@@ -754,8 +754,8 @@ export async function post_twilioInbound(request) {
         const fromNumber = escapeXml(params.get('From'));
         const messageBody = escapeXml(params.get('Body'));
 
-        // Office Phones to forward to
-        const FORWARD_TO = ['+12399550178', '+12399550301'];
+        // SMS copy of inbound replies. Public Spanish line is 727-295-2245 and is not forwarded here.
+        const FORWARD_TO = ['+12399550178'];
 
         // Construct TwiML
         let twiml = '<?xml version="1.0" encoding="UTF-8"?>';
