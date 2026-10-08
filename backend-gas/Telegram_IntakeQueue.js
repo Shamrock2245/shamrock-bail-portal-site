@@ -105,6 +105,7 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
+    // --- Ensure IntakeQueue sheet exists (same as handleNewIntake) ---
     let sheet = ss.getSheetByName('IntakeQueue');
     if (!sheet) {
       sheet = ss.insertSheet('IntakeQueue');
@@ -120,6 +121,7 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
 
     const timestamp = new Date();
 
+    // --- Build References array (matches handleNewIntake schema) ---
     const references = [];
     if (intakeData.Ref1Name) {
       references.push({
@@ -138,6 +140,7 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
       });
     }
 
+    // --- Build EmployerInfo object (matches handleNewIntake schema) ---
     const employerInfo = {
       employer: intakeData.IndEmployer || '',
       jobTitle: intakeData.IndJobTitle || '',
@@ -147,6 +150,7 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
       supervisor: intakeData.IndSupervisor || ''
     };
 
+    // --- Run AI Flight Risk Analysis (same as handleNewIntake) ---
     let aiRisk = '', aiRationale = '', aiScore = '';
     try {
       if (typeof AI_analyzeFlightRisk === 'function') {
@@ -167,185 +171,30 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
       console.warn('AI analysis skipped for Telegram intake:', aiErr.message);
     }
 
+    // --- Build the row (EXACT same column order as handleNewIntake) ---
+    // Columns: Timestamp | IntakeID | Role | Email | Phone | FullName |
+    //          DefendantName | DefendantPhone | CaseNumber | Status |
+    //          References | EmployerInfo | ResidenceType | ProcessedAt |
+    //          AI_Risk | AI_Rationale | AI_Score
     const row = [
       timestamp,
       intakeId,
-      'indemnitor',
-      intakeData.IndEmail || '',
-      intakeData.IndPhone || telegramUserId.toString(),
-      intakeData.IndName || '',
-      intakeData.DefName || '',
-      intakeData.DefPhone || '',
-      '',
-      'pending',
-      JSON.stringify(references),
-      JSON.stringify(employerInfo),
-      '',
-      '',
+      'indemnitor',                                          // Role
+      intakeData.IndEmail || '',                          // Email
+      intakeData.IndPhone || telegramUserId.toString(),   // Phone
+      intakeData.IndName || '',                          // FullName (Indemnitor)
+      intakeData.DefName || '',                          // DefendantName
+      intakeData.DefPhone || '',                          // DefendantPhone
+      '',                                                    // CaseNumber (assigned by agent)
+      'pending',                                             // Status
+      JSON.stringify(references),                            // References (JSON)
+      JSON.stringify(employerInfo),                          // EmployerInfo (JSON)
+      '',                                                    // ResidenceType (not collected via bot)
+      '',                                                    // ProcessedAt (empty until processed)
       aiRisk,
       aiRationale,
       aiScore,
-      intakeData.surety_id || 'osi'
+      intakeData.surety_id || 'osi'                           // SuretyID (osi or palmetto)
     ];
 
     sheet.appendRow(row);
-    const lastRow = sheet.getLastRow();
-    _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId);
-
-    try {
-      if (typeof getWixPortalConfig === 'function' && typeof sendToWixWithRetry === 'function') {
-        const wixConfig = getWixPortalConfig();
-        const wixMappedData = {
-          source: 'telegram',
-          consentGiven: intakeData.consent || intakeData.consentGiven || false,
-          consentTimestamp: intakeData.timestamp ? new Date(intakeData.timestamp) : (intakeData.consentTimestamp ? new Date(intakeData.consentTimestamp) : null),
-          notes: 'Submitted via Telegram Mini App.',
-          caseId: intakeId,
-          defendantName: intakeData.DefName || '',
-          defendantPhone: intakeData.DefPhone || '',
-          defendantEmail: intakeData.DefEmail || '',
-          county: intakeData.DefCounty || '',
-          charges: intakeData.DefCharges || '',
-          bondAmount: intakeData.DefBondAmount || '',
-          indemnitorName: intakeData.IndName || '',
-          indemnitorPhone: intakeData.IndPhone || telegramUserId.toString(),
-          indemnitorEmail: intakeData.IndEmail || '',
-          indemnitorRelation: intakeData.IndRelation || '',
-          indemnitorStreetAddress: intakeData.IndAddress || '',
-          indemnitorCity: intakeData.IndCity || '',
-          indemnitorState: intakeData.IndState || '',
-          indemnitorZipCode: intakeData.IndZip || '',
-          reference1Name: intakeData.Ref1Name || '',
-          reference1Phone: intakeData.Ref1Phone || '',
-          reference1Relation: intakeData.Ref1Relation || '',
-          reference1Address: intakeData.Ref1Address || '',
-          reference2Name: intakeData.Ref2Name || '',
-          reference2Phone: intakeData.Ref2Phone || '',
-          reference2Relation: intakeData.Ref2Relation || '',
-          reference2Address: intakeData.Ref2Address || '',
-          docIdFront: intakeData.Doc_ID_Front || null,
-          surety_id: intakeData.surety_id || 'osi'
-        };
-        const payload = { apiKey: wixConfig.apiKey, intakeData: wixMappedData };
-        const wixResult = sendToWixWithRetry('/telegramIntake', payload);
-        if (wixResult && wixResult.success) {
-          console.log('Telegram intake synced to Wix CMS IntakeQueue: ' + (wixResult.caseId || intakeId));
-        } else {
-          console.warn('Telegram intake saved locally, but Wix CMS sync failed:', wixResult);
-        }
-      }
-    } catch (wixErr) {
-      console.error('Error piping Telegram intake to Wix CMS:', wixErr);
-    }
-
-    console.log('Telegram intake saved to queue: ' + intakeId);
-    try {
-      NotificationService.sendNewIntakeAlert({
-        intakeId: intakeId,
-        defendantName: intakeData.DefName || 'Unknown',
-        facility: intakeData.DefFacility || 'Unknown',
-        county: intakeData.DefCounty || '',
-        indemnitorName: intakeData.IndName || 'Unknown',
-        indemnitorPhone: intakeData.IndPhone || '',
-        indemnitorRelation: intakeData.IndRelation || '',
-        source: 'telegram',
-        aiRisk: aiRisk
-      });
-    } catch (slackErr) {
-      console.warn('Slack alert failed (non-critical):', slackErr.message);
-    }
-    _sendAdminEmailAlert(intakeData, intakeId, aiRisk);
-    return { success: true, intakeId: intakeId, row: lastRow };
-  } catch (e) {
-    console.error('saveTelegramIntakeToQueue failed:', e.message);
-    return { success: false, error: e.message };
-  } finally {
-    try { lock.releaseLock(); } catch (le) { }
-  }
-}
-
-function _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId) {
-  try {
-    let sheet = ss.getSheetByName('TelegramIntakeData');
-    if (!sheet) {
-      sheet = ss.insertSheet('TelegramIntakeData');
-      sheet.appendRow(['Timestamp', 'IntakeID', 'TelegramUserID', 'Source', 'DefName', 'IndName', 'RawJSON']);
-      sheet.setFrozenRows(1);
-    }
-    sheet.appendRow([new Date(), intakeId, telegramUserId || '', 'telegram_bot_v2', intakeData.DefName || '', intakeData.IndName || '', JSON.stringify(intakeData)]);
-  } catch (e) {
-    console.warn('_saveTelegramFullData failed (non-critical):', e.message);
-  }
-}
-
-function getTelegramIntakeFullData(intakeId) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName('TelegramIntakeData');
-    if (!sheet) return null;
-    const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const idxIntakeId = headers.indexOf('IntakeID');
-    const idxRawJson = headers.indexOf('RawJSON');
-    if (idxIntakeId === -1) return null;
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][idxIntakeId] === intakeId && idxRawJson !== -1 && data[i][idxRawJson]) {
-        return JSON.parse(data[i][idxRawJson]);
-      }
-    }
-    return null;
-  } catch (e) {
-    console.error('getTelegramIntakeFullData failed:', e.message);
-    return null;
-  }
-}
-
-function markTelegramIntakeProcessed(intakeId) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName('IntakeQueue');
-    if (!sheet) return false;
-    const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const idxIntakeId = headers.indexOf('IntakeID');
-    const idxStatus = headers.indexOf('Status');
-    const idxProcessedAt = headers.indexOf('ProcessedAt');
-    if (idxIntakeId === -1 || idxStatus === -1) return false;
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][idxIntakeId] === intakeId) {
-        const rowNum = i + 1;
-        sheet.getRange(rowNum, idxStatus + 1).setValue('processed');
-        if (idxProcessedAt !== -1) sheet.getRange(rowNum, idxProcessedAt + 1).setValue(new Date());
-        return true;
-      }
-    }
-    return false;
-  } catch (e) {
-    console.error('markTelegramIntakeProcessed failed:', e.message);
-    return false;
-  }
-}
-
-function _mapCanonicalToDashboardFormat(data, intakeId) {
-  return {
-    IntakeID: intakeId,
-    source: 'telegram',
-    defendantName: data.DefName || '',
-    indemnitorFullName: data.IndName || '',
-    indemnitorPhone: data.IndPhone || '',
-    indemnitorEmail: data.IndEmail || '',
-    surety_id: data.surety_id || data.SuretyID || 'osi'
-  };
-}
-
-function _sendAdminEmailAlert(intakeData, intakeId, aiRisk) {
-  try {
-    MailApp.sendEmail({
-      to: 'admin@shamrockbailbonds.biz',
-      subject: 'New Telegram Intake: ' + (intakeData.DefName || 'Unknown Defendant'),
-      body: 'Intake ' + intakeId + ' for ' + (intakeData.DefName || '') + '. Office 239-332-2245.'
-    });
-  } catch (e) {
-    console.warn('Admin email alert failed (non-critical):', e.message);
-  }
-}
