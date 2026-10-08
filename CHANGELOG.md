@@ -13,6 +13,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 - Helpers: `slackMaskName_`, `slackMaskPhone_` in `Code.js`.
 - Test: `scripts/test_telegram_slack_mask.mjs` (vm sandbox doPost with a spy Slack), in PR CI.
 
+### 2026-10-08 — v2.8.14 — GAS `caller_context` requires the API key
+
+**Google Apps Script (`backend-gas/`):**
+- `doPost ?source=caller_context&phone=` returned the caller's name, defendant name and court date for any phone with no auth. It now requires `GAS_API_KEY` as `?apiKey=` (`requireGasApiKey_`, fails closed when the Script Property is unset). A missing or wrong key returns `{"success":false,"message":"Unauthorized"}`, logs `UNAUTHORIZED_API_ACCESS`, and reads no cache or sheet.
+- Callers: none today. The only caller was the Netlify edge function `elevenlabs-init.js` in shamrock-telegram-app, which dropped this call on 2026-08-26 (`aff4d85`, "one Mem0 path at ring via Super CRM"). No repo, ElevenLabs agent config (Brendan Paperwork Assistant, Eric, Sofia) or Node-RED flow references it. If it is ever revived, the server caller must send `apiKey` = `GAS_API_KEY` (the edge functions already have that env name).
+- Test: `scripts/test_gas_caller_context_auth.mjs` (vm sandbox doPost), in PR CI.
+
 ### 2026-10-08 — v2.8.12 — GAS doPost risk actions require the API key
 
 **Google Apps Script (`backend-gas/`):**
