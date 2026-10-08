@@ -2196,7 +2196,7 @@ function handleAction(data) {
           gasBackend: 'operational',
           signNow: props.getProperty('SIGNNOW_API_TOKEN') ? 'configured' : 'missing',
           twilio: props.getProperty('TWILIO_ACCOUNT_SID') ? 'configured' : 'missing',
-          mongoProxy: props.getProperty('MONGO_PROXY_URL') ? 'configured' : 'missing'
+          mongoProxy: props.getProperty('MONGO_PROXY_V2_URL') ? 'configured' : 'missing'
         }
       };
     } catch (hErr) { return { success: false, error: hErr.message }; }

@@ -9,15 +9,25 @@ import wixSecretsBackend from 'wix-secrets-backend';
  * cloud-functions/mongo-proxy/named-actions.js (db + collection hardcoded there).
  */
 
+// The named-action proxy is the mongo-proxy-v2 Cloud Function. Its URL lives in its own
+// Wix Secret, MONGO_PROXY_V2_URL, with NO fallback to the old MONGO_PROXY_URL secret:
+// the old secret keeps pointing at the old generic function (which rejects named actions)
+// until the soak is done, so this code switches to v2 exactly when it is published, and
+// reverting the publish switches back.
 async function getMongoConfig() {
+    let proxyUrl;
+    let apiKey;
     try {
-        const proxyUrl = await wixSecretsBackend.getSecret('MONGO_PROXY_URL');
-        const apiKey = await wixSecretsBackend.getSecret('PROXY_API_KEY');
-        return { proxyUrl, apiKey };
+        proxyUrl = await wixSecretsBackend.getSecret('MONGO_PROXY_V2_URL');
+        apiKey = await wixSecretsBackend.getSecret('PROXY_API_KEY');
     } catch (error) {
         console.error('Error retrieving MongoDB Proxy secrets', error);
         throw new Error('MongoDB Proxy configuration missing.');
     }
+    if (!proxyUrl || !apiKey) {
+        throw new Error('MongoDB Proxy configuration missing.');
+    }
+    return { proxyUrl, apiKey };
 }
 
 /**

@@ -7,7 +7,9 @@
  *
  * All credentials are stored in GAS Script Properties — NEVER hardcoded.
  * Required Script Properties:
- *   MONGO_PROXY_URL  — Cloud Function URL
+ *   MONGO_PROXY_V2_URL — URL of the mongo-proxy-v2 Cloud Function (named actions). There is
+ *                        deliberately NO fallback to the old MONGO_PROXY_URL property, which
+ *                        keeps pointing at the old generic function until the soak is done.
  *   PROXY_API_KEY    — Shared secret (must match Cloud Function env var)
  *
  * Public API (MongoDbService object):
@@ -30,11 +32,11 @@ var MONGO_RETRY_DELAY_MS = 1500; // ms; multiplied by attempt# for back-off
 // ── Config Loader ──────────────────────────────────────────────────────────────
 function getMongoConfig_() {
   var props    = PropertiesService.getScriptProperties();
-  var proxyUrl = props.getProperty('MONGO_PROXY_URL');
+  var proxyUrl = props.getProperty('MONGO_PROXY_V2_URL');
   var proxyKey = props.getProperty('PROXY_API_KEY');
   if (!proxyUrl || !proxyKey) {
     throw new Error(
-      '[MongoDbService] MONGO_PROXY_URL or PROXY_API_KEY missing from Script Properties. ' +
+      '[MongoDbService] MONGO_PROXY_V2_URL or PROXY_API_KEY missing from Script Properties. ' +
       'Run setupMongoDBProperties() once from the GAS IDE.'
     );
   }
