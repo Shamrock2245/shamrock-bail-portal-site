@@ -50,6 +50,9 @@ jobs:
       - name: GAS Telegram Slack alerts mask client name and phone
         run: node scripts/test_telegram_slack_mask.mjs
 
+      - name: GAS Shannon transfer ring is four lines
+        run: node scripts/test_gas_transfer_ring.mjs
+
       - name: GAS Telegram Mini App actions require the API key
         run: node scripts/test_gas_miniapp_actions_auth.mjs
 
