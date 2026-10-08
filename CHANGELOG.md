@@ -6,6 +6,15 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-10-08 — v2.8.13 — GAS Telegram Mini App actions require the API key
+
+**Google Apps Script (`backend-gas/`):**
+- The 8 Telegram Mini App `doPost` actions are added to `GAS_KEYED_DOPOST_ACTIONS_`: `telegram_mini_app_intake`, `telegram_mini_app_upload`, `telegram_payment_log`, `telegram_payment_lookup`, `telegram_checkin_log`, `telegram_client_update`, `telegram_status_lookup`, `telegram_document_lookup`. A missing or wrong key returns `Unauthorized: Invalid API Key`, logs `UNAUTHORIZED_API_ACCESS`, and touches no sheet, Drive folder, Slack channel or Mongo log.
+- Before this change, anyone with the /exec URL could look up any client's case status, payments or documents by phone number, and could write intakes, uploads, check-ins and payment logs.
+- Caller: shamrock-telegram-app #17 moves the Mini App pages onto `/api/miniapp`. That proxy verifies Telegram initData, requires a Telegram-verified phone for lookups, and adds `GAS_API_KEY` server-side. #17 must be deployed (and old cached pages given time to refresh) **before** this ships with `clasp push`, in the same push as v2.8.11/v2.8.12.
+- `bail_school_upload` shares the upload route but is a separate action and is unchanged.
+- Test: `scripts/test_gas_miniapp_actions_auth.mjs` runs `doPost` in a vm with spy Sheets, Drive, Slack, Mongo and UrlFetch. It runs in PR CI. `scripts/test_gas_dopost_risk_actions_auth.mjs` no longer expects the Mini App intake to work without a key.
+
 ### 2026-10-08 — v2.8.12 — GAS doPost risk actions require the API key
 
 **Google Apps Script (`backend-gas/`):**

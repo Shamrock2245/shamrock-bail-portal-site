@@ -142,18 +142,11 @@ check('real handler path: send_court_reminders with the key texts through Notifi
   if (!h.side.includes('NotificationService.sendSms')) throw new Error('expected the SMS spy to be called once authorized: ' + JSON.stringify(h.side))
 })
 
-check('browser mini-app action telegram_mini_app_intake still works without a key (not gated yet)', () => {
-  const h = harness()
-  const r = h.post({ action: 'telegram_mini_app_intake', DefName: 'Test Person' })
-  if (r.error && r.error.code === 'UNAUTHORIZED') throw new Error('mini-app intake must not be gated in this change')
-  eq(h.handled, ['telegram_mini_app_intake'])
-})
-
-check('keyed list in Code.js matches this test (no silent additions or removals)', () => {
+check('every risk action is in the keyed list in Code.js (Mini App actions: test_gas_miniapp_actions_auth.mjs)', () => {
   const src = gas('Code.js')
   const block = src.slice(src.indexOf('var GAS_KEYED_DOPOST_ACTIONS_ = {'), src.indexOf('};', src.indexOf('var GAS_KEYED_DOPOST_ACTIONS_ = {')))
-  const listed = [...block.matchAll(/^\s+([a-z_]+): true/gm)].map((m) => m[1]).sort()
-  eq(listed, Object.keys(KEYED).sort())
+  const listed = [...block.matchAll(/^\s+([a-z_]+): true/gm)].map((m) => m[1])
+  eq(Object.keys(KEYED).filter((a) => !listed.includes(a)), [], 'risk actions missing from the keyed list')
 })
 
 if (failed) { console.log(`${failed} failed`); process.exit(1) }
