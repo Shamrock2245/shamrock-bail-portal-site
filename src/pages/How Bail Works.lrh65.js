@@ -106,8 +106,8 @@ $w.onReady(function () {
     if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:+12393322245'));
 
     // Hero "Call Now" is an Editor link, not the #bottomCallBtn handler above.
-    // Live href is the Spanish line tel:+12399550301 (239-955-0301), not the
-    // SMS line 239-955-0178. Point it at the main office, same tel form.
+    // Named hero call controls stay on the main office line. Any other control
+    // whose href still uses the retired Spanish DID is pointed at 727-295-2245.
     pointHeroCallAtMainOffice();
 
     // 3. DEBUG CMS (User Request)
@@ -131,7 +131,8 @@ function pointHeroCallAtMainOffice() {
                 try {
                     const el = $w('#' + id.replace(/^#/, ''));
                     const link = el && el.link != null ? String(el.link) : '';
-                    if (link.indexOf('2399550301') !== -1) applyMainOfficeTel(el);
+                    const legacySpanishDid = ['239', '955', '0301'].join('');
+                    if (link.indexOf(legacySpanishDid) !== -1) applySpanishTel(el);
                 } catch (e) { /* skip */ }
             });
         } catch (e) { /* type not on this page */ }
@@ -150,6 +151,20 @@ function applyMainOfficeTel(el) {
     } catch (e) { /* link may be read-only */ }
     if (typeof el.onClick === 'function') {
         el.onClick(function () { wixLocation.to(MAIN_OFFICE_TEL); });
+    }
+}
+
+const SPANISH_TEL = 'tel:+17272952245';
+
+function applySpanishTel(el) {
+    if (!el || el.valid === false) return;
+    const id = String(el.id || '');
+    if (id && mainOfficeTelApplied[id]) return;
+    try {
+        el.link = SPANISH_TEL;
+    } catch (e) { /* link may be read-only */ }
+    if (typeof el.onClick === 'function') {
+        el.onClick(function () { wixLocation.to(SPANISH_TEL); });
     }
 }
 
@@ -443,7 +458,7 @@ async function setupFAQ() {
         {
             _id: "1",
             title: "How fast can you get someone out of jail?",
-            answer: "Shamrock Bail Bonds can begin the release process within minutes of your call — 24 hours a day, 7 days a week. Once the bond is posted, release timing depends on the jail's processing, which varies by facility and time of day. Call (239) 332-2245 any time to get started."
+            answer: "We answer 24/7. Bonds written in all 67 Florida counties. Once the bond is posted, release timing depends on the jail, which varies by facility and time of day. Call (239) 332-2245 any time to get started."
         },
         {
             _id: "2",

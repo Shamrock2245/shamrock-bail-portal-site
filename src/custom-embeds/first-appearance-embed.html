@@ -26,7 +26,7 @@
       {"@type":"Question","name":"How long after arrest is the First Appearance held?","acceptedAnswer":{"@type":"Answer","text":"Under Florida Rule of Criminal Procedure 3.130, the First Appearance must be held within 24 hours of arrest."}},
       {"@type":"Question","name":"Can I attend my loved one's First Appearance?","acceptedAnswer":{"@type":"Answer","text":"Many Florida counties now broadcast First Appearance hearings live via Zoom or online streaming."}},
       {"@type":"Question","name":"What should the defendant say at First Appearance?","acceptedAnswer":{"@type":"Answer","text":"Very little. The defendant should confirm their name and that they understand their rights. They should NOT explain the facts of the case."}},
-      {"@type":"Question","name":"What if the judge sets a high bond amount?","acceptedAnswer":{"@type":"Answer","text":"Call Shamrock Bail Bonds immediately at 239-332-2245. We only require 10% of the bond amount."}},
+      {"@type":"Question","name":"What if the judge sets a high bond amount?","acceptedAnswer":{"@type":"Answer","text":"Call Shamrock Bail Bonds at 239-332-2245. We only require 10% of the bond amount. We answer 24/7. Bonds written in all 67 Florida counties."}},
       {"@type":"Question","name":"What is the difference between First Appearance and Arraignment?","acceptedAnswer":{"@type":"Answer","text":"First Appearance happens within 24 hours and focuses on bail. Arraignment is a separate, later hearing where the defendant enters a plea."}},
       {"@type":"Question","name":"What if there is no probable cause?","acceptedAnswer":{"@type":"Answer","text":"If the judge finds no probable cause, the defendant must be released immediately."}},
       {"@type":"Question","name":"Can the bond amount be changed after First Appearance?","acceptedAnswer":{"@type":"Answer","text":"Yes. An attorney can file a motion to reduce or modify the bond at a later hearing."}}
@@ -153,7 +153,7 @@
       justify-content: center;
       gap: 8px;
       font-family: 'Poppins', sans-serif;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 600;
       padding: 14px 28px;
       border-radius: var(--radius-sm);
@@ -192,7 +192,7 @@
       background: var(--blue-bright);
       color: var(--white);
       width: 100%;
-      font-size: 14px;
+      font-size: 16px;
       padding: 14px 20px;
     }
     .btn--primary:hover {
@@ -209,8 +209,9 @@
       background: transparent;
       color: var(--blue-bright);
       border: 2px solid var(--blue-bright);
-      font-size: 14px;
+      font-size: 16px;
       padding: 12px 24px;
+      min-height: 44px;
     }
     .btn--outline:hover {
       background: rgba(13,110,253,0.05);
@@ -439,6 +440,7 @@
       outline: none;
       /* Prevent iOS zoom */
       font-size: 16px;
+      min-height: 44px;
     }
     .search-bar input:focus {
       border-color: var(--blue-bright);
@@ -463,16 +465,17 @@
       align-items: center;
       gap: 6px;
       font-family: 'Poppins', sans-serif;
-      font-size: 13px;
+      font-size: 16px;
       font-weight: 600;
-      padding: 8px 14px;
+      padding: 10px 16px;
       border-radius: 999px;
       border: 1.5px solid var(--border);
       background: var(--white);
       color: var(--navy);
       cursor: pointer;
       transition: var(--transition);
-      min-height: 40px;
+      min-height: 44px;
+      min-width: 44px;
     }
     .filter-chip:hover {
       border-color: var(--blue-bright);
@@ -500,6 +503,23 @@
       gap: 16px;
       max-width: 1000px;
       margin: 0 auto;
+    }
+
+    .county-grid .shamrock-skeleton-card {
+      height: 180px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(90deg, #E9ECEF 0%, #F8F9FA 45%, #E9ECEF 90%);
+      background-size: 200% 100%;
+      animation: shamrock-skeleton-shimmer 1.2s ease-in-out infinite;
+    }
+
+    @keyframes shamrock-skeleton-shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .county-grid .shamrock-skeleton-card { animation: none; }
     }
 
     .county-card {
@@ -655,7 +675,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 0;
+      padding: 12px 0;
       cursor: pointer;
       gap: 16px;
       background: none;
@@ -663,7 +683,8 @@
       width: 100%;
       text-align: left;
       font-family: 'Poppins', sans-serif;
-      font-size: 15px;
+      font-size: 16px;
+      min-height: 44px;
       font-weight: 600;
       color: var(--navy);
       line-height: 1.4;
@@ -674,9 +695,9 @@
     }
 
     .faq-toggle {
-      width: 32px;
-      height: 32px;
-      min-width: 32px;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
       background: var(--light-grey);
       border-radius: 50%;
       display: flex;
@@ -969,8 +990,10 @@
 
       <div class="county-status" id="countyStatus" aria-live="polite"></div>
 
-      <div class="county-grid" id="countyGrid">
-        <!-- Rendered by JS -->
+      <div class="county-grid" id="countyGrid" aria-busy="true">
+        <div class="shamrock-skeleton-card" aria-hidden="true"></div>
+        <div class="shamrock-skeleton-card" aria-hidden="true"></div>
+        <div class="shamrock-skeleton-card" aria-hidden="true"></div>
       </div>
 
       <div class="no-results" id="noResults">
@@ -1005,7 +1028,7 @@
   <section class="bottom-cta">
     <div class="container reveal">
       <h2>Ready to Get Your Loved One Home?</h2>
-      <p>Our bondsmen are standing by 24/7. We can start the process in minutes.</p>
+      <p>We answer 24/7. Bonds written in all 67 Florida counties.</p>
       <div class="bottom-btns">
         <a href="tel:12393322245" class="btn btn--bottom-call" id="bottomCallBtn">
           <i class="ph ph-phone"></i> Call 239-332-2245
@@ -1033,7 +1056,7 @@
       { q: "How long after arrest is the First Appearance held?", a: "Under Florida Rule of Criminal Procedure 3.130, the First Appearance must be held within 24 hours of arrest. If it is not, the defendant may be entitled to release." },
       { q: "Can I attend my loved one's First Appearance?", a: "Many Florida counties broadcast First Appearance hearings live via Zoom or online streaming. Use the county cards below for links when available. Some courtrooms are primarily in-person." },
       { q: "What should the defendant say at First Appearance?", a: "Very little. Confirm name and that you understand your rights. Do NOT explain the facts of the case or argue with the judge. Everything said in court is recorded." },
-      { q: "What if the judge sets a high bond amount?", a: "Call Shamrock Bail Bonds immediately at 239-332-2245. We only require 10% of the bond amount (the Florida-regulated premium) and can begin the process the moment the bond is set." },
+      { q: "What if the judge sets a high bond amount?", a: "Call Shamrock Bail Bonds at 239-332-2245. We only require 10% of the bond amount (the Florida-regulated premium). We answer 24/7. Bonds written in all 67 Florida counties." },
       { q: "What is the difference between First Appearance and Arraignment?", a: "First Appearance happens within 24 hours of arrest and focuses on bail. Arraignment is a later hearing where the defendant formally enters a plea." },
       { q: "What if there is no probable cause at First Appearance?", a: "If the judge finds no probable cause, the defendant must be released immediately. This is uncommon but does happen when the arrest report is incomplete." },
       { q: "Can the bond amount be changed after First Appearance?", a: "Yes. An attorney can file a motion to reduce or modify the bond. The fastest path to release is usually posting the bond set at First Appearance, then working with counsel." },
@@ -1115,6 +1138,7 @@
       const data = getFiltered();
       const grid = document.getElementById('countyGrid');
       const noResults = document.getElementById('noResults');
+      if (grid) grid.setAttribute('aria-busy', 'false');
       updateStatus(data.length);
 
       if (!data.length) {
@@ -1163,9 +1187,9 @@
             '<div style="display:flex;flex-direction:column;gap:8px;">' +
               '<a href="' + escapeHtml(c.liveUrl) + '" target="_blank" rel="noopener" class="btn btn--primary" data-action="' + escapeHtml(c.accessType) + '" data-county="' + escapeHtml(c.name) + '">' +
                 '<i class="ph ' + btn.icon + '"></i> ' + btn.text +
-                ' <i class="ph ph-arrow-square-out" style="font-size:14px;"></i>' +
+                ' <i class="ph ph-arrow-square-out" style="font-size:16px;"></i>' +
               '</a>' +
-              '<a href="' + detailUrl + '" class="btn btn--outline" style="width:100%;font-size:13px;" data-action="county_page" data-county="' + escapeHtml(c.name) + '">' +
+              '<a href="' + detailUrl + '" class="btn btn--outline" style="width:100%;font-size:16px;" data-action="county_page" data-county="' + escapeHtml(c.name) + '">' +
                 '<i class="ph ph-info"></i> ' + escapeHtml((c.name || '').replace(/ County$/i, '')) + ' FA details' +
               '</a>' +
             '</div>' +

@@ -171,7 +171,7 @@ Yes. We are licensed to serve all 67 Florida counties, fully remotely.
 
 **Office:** 1528 Broadway, Fort Myers, FL 33901  
 **Phone:** [(239) 332-2245](tel:12393322245)  
-**Spanish Line:** [(239) 955-0301](tel:12399550301)  
+**Se habla español:** [727-295-2245](tel:+17272952245)  
 **Online:** [shamrockbailbonds.biz](https://www.shamrockbailbonds.biz)  
 **Hours:** Open 24/7, 365 days a year  
 **Location:** Directly across from the Lee County Justice Center
