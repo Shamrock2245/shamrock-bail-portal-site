@@ -43,3 +43,6 @@ jobs:
 
       - name: GAS doPost risk actions require the API key
         run: node scripts/test_gas_dopost_risk_actions_auth.mjs
+
+      - name: GAS caller_context requires the API key
+        run: node scripts/test_gas_caller_context_auth.mjs
