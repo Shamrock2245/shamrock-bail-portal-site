@@ -1264,11 +1264,18 @@ function redirectLiveCallToOffice_(callSid, callerPhone) {
     }
 }
 
+// Live-person transfer ring. First pickup wins. Spoken office number stays
+// 239-332-2245. Never 727-295-2245. 239-955-0178 is the BlueBubbles line and
+// may not accept voice; Brendan kept it on this ring.
+var SHANNON_TRANSFER_RING_LABEL = '239-332-2245, 239-955-0301, 239-955-0178, and 239-955-0314';
+
 /**
  * Tool: transfer_to_bondsman
- * Redirects the live Twilio call to 239-332-2245 and 239-955-0301 at the
- * same time (first staff pickup wins), then Slack + BlueBubbles. Native
- * ElevenLabs transfer_to_number does not work on the register-call path.
+ * Names the ring group in Slack and the desk text: SHANNON_TRANSFER_RING_LABEL
+ * (239-332-2245, 239-955-0301, 239-955-0178, and 239-955-0314). The live Dial
+ * is still POST https://shamrock-telegram.netlify.app/api/twilio-transfer-office
+ * — this function does not build TwiML. Native ElevenLabs transfer_to_number
+ * does not work on the register-call path.
  *
  * Expected params: { "caller_phone": "...", "reason": "...", "call_sid": "CA..." }
  */
@@ -1288,6 +1295,7 @@ function toolTransferToBondsman(params) {
                 '🚨 *URGENT — Live Transfer Request*\n' +
                 '• Caller: ' + (callerPhone || 'Unknown') + '\n' +
                 '• Reason: ' + reason + '\n' +
+                '• Ringing: ' + SHANNON_TRANSFER_RING_LABEL + ' (first pickup wins).\n' +
                 '• Action: Call this person back IMMEDIATELY.\n' +
                 '• Source: Shannon voice paperwork assistant',
                 null
@@ -1300,7 +1308,7 @@ function toolTransferToBondsman(params) {
     try {
         notifyShannonStaffDesk_(
             '🚨 Shannon LIVE TRANSFER. Caller ' + (callerPhone || 'unknown') +
-            '. ' + reason + '. Ringing 239-332-2245 and 239-955-0301. Call them back if it misses.',
+            '. ' + reason + '. Ringing ' + SHANNON_TRANSFER_RING_LABEL + '. Call them back if it misses.',
             callerPhone
         );
     } catch (deskErr) {
