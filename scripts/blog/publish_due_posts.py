@@ -73,10 +73,7 @@ def save_calendar_manifest(cal_entry: dict):
     # Filter out internal helper keys before dumping to json
     clean_items = []
     for it in items:
-        c = dict(it)
-        c.pop("_cal_name", None)
-        c.pop("_cal_json", None)
-        c.pop("_cal_md", None)
+        c = {k: v for k, v in it.items() if not k.startswith("_")}
         clean_items.append(c)
 
     json_path.write_text(json.dumps(clean_items, indent=2), encoding="utf-8")
