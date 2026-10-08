@@ -198,3 +198,203 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
     ];
 
     sheet.appendRow(row);
+    const lastRow = sheet.getLastRow();
+
+    // --- Store the FULL intake data in a separate "TelegramIntakeData" sheet ---
+    // This preserves all fields (DOB, address, DL, physical description, etc.)
+    // that don't fit in the main IntakeQueue columns, so the agent can see
+    // everything when they click "Process" in the Dashboard.
+    _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId);
+
+    // --- PIPING TO WIX CMS INTAKEQUEUE ---
+    // User requested to send the Telegram bot data directly into Wix CMS IntakeQueue
+    try {
+      if (typeof getWixPortalConfig === 'function' && typeof sendToWixWithRetry === 'function') {
+        const wixConfig = getWixPortalConfig();
+
+        // Map Telegram fields (e.g., IndName) to Wix CMS fields (e.g., indemnitorName)
+        const wixMappedData = {
+          // System & Consent
+          source: 'telegram',
+          consentGiven: intakeData.consent || intakeData.consentGiven || false,
+          consentTimestamp: intakeData.timestamp ? new Date(intakeData.timestamp) : (intakeData.consentTimestamp ? new Date(intakeData.consentTimestamp) : null),
+          notes: 'Submitted via Telegram Mini App.',
+
+          // Case & Defendant
+          caseId: intakeId,
+          defendantName: intakeData.DefName || '',
+          defendantPhone: intakeData.DefPhone || '',
+          defendantEmail: intakeData.DefEmail || '',
+          county: intakeData.DefCounty || '',
+          charges: intakeData.DefCharges || '',
+          bondAmount: intakeData.DefBondAmount || '',
+
+          // Indemnitor
+          indemnitorName: intakeData.IndName || '',
+          indemnitorPhone: intakeData.IndPhone || telegramUserId.toString(),
+          indemnitorEmail: intakeData.IndEmail || '',
+          indemnitorRelation: intakeData.IndRelation || '',
+          indemnitorStreetAddress: intakeData.IndAddress || '',
+          indemnitorCity: intakeData.IndCity || '',
+          indemnitorState: intakeData.IndState || '',
+          indemnitorZipCode: intakeData.IndZip || '',
+
+          // References
+          reference1Name: intakeData.Ref1Name || '',
+          reference1Phone: intakeData.Ref1Phone || '',
+          reference1Relation: intakeData.Ref1Relation || '',
+          reference1Address: intakeData.Ref1Address || '',
+          reference2Name: intakeData.Ref2Name || '',
+          reference2Phone: intakeData.Ref2Phone || '',
+          reference2Relation: intakeData.Ref2Relation || '',
+          reference2Address: intakeData.Ref2Address || '',
+
+          // Documents
+          docIdFront: intakeData.Doc_ID_Front || null,
+
+          // Surety routing — osi (default) or palmetto
+          surety_id: intakeData.surety_id || 'osi'
+        };
+
+        const payload = {
+          apiKey: wixConfig.apiKey,
+          intakeData: wixMappedData
+        };
+        const wixResult = sendToWixWithRetry('/telegramIntake', payload);
+        if (wixResult && wixResult.success) {
+          console.log('✅ Telegram intake synced cleanly to Wix CMS IntakeQueue: ' + (wixResult.caseId || intakeId));
+        } else {
+          console.warn('⚠️ Telegram intake saved locally, but Wix CMS sync failed:', wixResult);
+        }
+      } else {
+        console.warn('⚠️ WixPortalIntegration functions not found. Skipping Wix CMS sync.');
+      }
+    } catch (wixErr) {
+      console.error('❌ Error piping Telegram intake to Wix CMS:', wixErr);
+    }
+    // -------------------------------------
+
+    console.log('✅ Telegram intake saved to queue: ' + intakeId);
+
+    // --- Notify Slack (all relevant channels simultaneously) ---
+    try {
+      NotificationService.sendNewIntakeAlert({
+        intakeId: intakeId,
+        defendantName: intakeData.DefName || 'Unknown',
+        facility: intakeData.DefFacility || 'Unknown',
+        county: intakeData.DefCounty || '',
+        indemnitorName: intakeData.IndName || 'Unknown',
+        indemnitorPhone: intakeData.IndPhone || '',
+        indemnitorRelation: intakeData.IndRelation || '',
+        source: 'telegram',
+        aiRisk: aiRisk
+      });
+    } catch (slackErr) {
+      console.warn('Slack alert failed (non-critical):', slackErr.message);
+    }
+
+    // --- Email Alert to Admin ---
+    _sendAdminEmailAlert(intakeData, intakeId, aiRisk);
+
+    // --- Notify the Telegram user that their intake was received ---
+    return {
+      success: true,
+      intakeId: intakeId,
+      row: lastRow
+    };
+
+  } catch (e) {
+    console.error('saveTelegramIntakeToQueue failed:', e.message);
+    return { success: false, error: e.message };
+  } finally {
+    try { lock.releaseLock(); } catch (le) { }
+  }
+}
+
+// =============================================================================
+// FULL DATA STORE: Preserves all bot-collected fields for the agent
+// =============================================================================
+
+/**
+ * Saves the complete, unabridged intake data to a "TelegramIntakeData" sheet.
+ * This is a supplementary record so agents can see every field the bot collected
+ * when they click "Process" in the Dashboard.
+ *
+ * The Dashboard's Queue.process() function will look for this data when
+ * hydrating the form fields.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss
+ * @param {string} intakeId
+ * @param {object} intakeData
+ * @param {string} telegramUserId
+ */
+function _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId) {
+  try {
+    let sheet = ss.getSheetByName('TelegramIntakeData');
+    if (!sheet) {
+      sheet = ss.insertSheet('TelegramIntakeData');
+      sheet.appendRow([
+        'Timestamp', 'IntakeID', 'TelegramUserID', 'Source',
+        // Defendant
+        'DefName', 'DefFirstName', 'DefLastName', 'DefDOB',
+        'DefPhone', 'DefEmail', 'DefAddress', 'DefCity', 'DefState', 'DefZip',
+        'DefDL', 'DefFacility', 'DefCounty', 'DefPhysical',
+        'DefCharges', 'DefBondAmount',
+        // Indemnitor
+        'IndName', 'IndFirstName', 'IndLastName', 'IndRelation',
+        'IndPhone', 'IndEmail', 'IndAddress', 'IndCity', 'IndState', 'IndZip',
+        'IndDOB', 'IndEmployer', 'IndJobTitle', 'IndIncome',
+        // References
+        'Ref1Name', 'Ref1Phone', 'Ref1Relation', 'Ref1Address',
+        'Ref2Name', 'Ref2Phone', 'Ref2Relation', 'Ref2Address',
+        // Location & Consent
+        'GPSLatitude', 'GPSLongitude', 'ManualLocation',
+        'ConsentGiven', 'ConsentTimestamp',
+        // Surety
+        'SuretyID',
+        // Metadata
+        'RawJSON'
+      ]);
+      sheet.setFrozenRows(1);
+    }
+
+    sheet.appendRow([
+      new Date(),
+      intakeId,
+      telegramUserId || '',
+      'telegram_bot_v2',
+      // Defendant
+      intakeData.DefName || '',
+      intakeData.DefFirstName || '',
+      intakeData.DefLastName || '',
+      intakeData.DefDOB || '',
+      intakeData.DefPhone || '',
+      intakeData.DefEmail || '',
+      intakeData.DefAddress || '',
+      intakeData.DefCity || '',
+      intakeData.DefState || 'FL',
+      intakeData.DefZip || '',
+      intakeData.DefDL || '',
+      intakeData.DefFacility || '',
+      intakeData.DefCounty || '',
+      intakeData.DefPhysical || '',
+      intakeData.DefCharges || '',
+      intakeData.DefBondAmount || '',
+      // Indemnitor
+      intakeData.IndName || '',
+      intakeData.IndFirstName || '',
+      intakeData.IndLastName || '',
+      intakeData.IndRelation || '',
+      intakeData.IndPhone || telegramUserId.toString(),
+      intakeData.IndEmail || '',
+      intakeData.IndAddress || '',
+      intakeData.IndCity || '',
+      intakeData.IndState || 'FL',
+      intakeData.IndZip || '',
+      intakeData.IndDOB || '',
+      intakeData.IndEmployer || '',
+      intakeData.IndJobTitle || '',
+      intakeData.IndIncome || '',
+      // References
+      intakeData.Ref1Name || '',
+      intakeData.Ref1Phone || '',
