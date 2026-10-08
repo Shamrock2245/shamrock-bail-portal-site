@@ -43,7 +43,7 @@ Our streamlined digital process makes paperwork fast and easy. Sign documents se
 
 ### Step 3
 **Fast Release**
-Once paperwork is complete, we post bail immediately. Most releases happen within hours.
+Once paperwork is complete, we post bail immediately. We answer 24/7.
 
 ---
 
@@ -56,7 +56,7 @@ Once paperwork is complete, we post bail immediately. Most releases happen withi
 We answer calls day and night, weekends and holidays. Arrests don't wait, and neither do we.
 
 ### Feature 2: Fast Processing
-Our digital paperwork system means faster processing. Start the bail process from your phone in minutes.
+Our digital paperwork system means faster processing. Start the bail process from your phone. We answer 24/7.
 
 ### Feature 3: Flexible Payment Plans
 We work with your budget. Affordable payment plans available with no hidden fees.
@@ -142,7 +142,7 @@ Bail bonds in Florida typically cost 10% of the total bail amount. This premium 
 You'll need the defendant's full legal name, date of birth, the jail they're being held at, and their booking number if available.
 
 ### Q3: How long does the bail process take?
-Once paperwork is complete, we post bail immediately. Release times vary by facility but typically range from 2-8 hours.
+Once paperwork is complete, we post bail immediately. Release times vary by facility. We answer 24/7.
 
 ### Link
 **View All FAQs →**
