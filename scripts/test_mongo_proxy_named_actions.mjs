@@ -19,6 +19,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const NA_PATH = path.join(ROOT, 'cloud-functions/mongo-proxy/named-actions.js');
 const KEY = 'test-proxy-key';
+// Callers must use the v2 URL; the old URL is present in the fakes to prove it is never used.
+const OLD_URL = 'https://old.test/mongo-proxy';
+const V2_URL = 'https://proxy.test/mongo-proxy-v2';
 const T0 = Date.UTC(2026, 9, 8, 12, 0, 0);
 
 function loadNamedActions() {
@@ -157,13 +160,13 @@ test('bail school named actions keep the old query shapes', async () => {
 });
 
 // ── GAS callers ─────────────────────────────────────────────────────
-function loadGas() {
+function loadGas(props = { MONGO_PROXY_URL: OLD_URL, MONGO_PROXY_V2_URL: V2_URL, PROXY_API_KEY: KEY }) {
   const requests = [];
   const ctx = {
     console,
     Logger: { log() {} },
     Utilities: { sleep() {} },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => ({ MONGO_PROXY_URL: 'https://proxy.test/mongo-proxy', PROXY_API_KEY: KEY })[k] || null }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => props[k] || null }) },
     UrlFetchApp: {
       fetch(url, opts) {
         requests.push({ url, opts, body: JSON.parse(opts.payload) });
@@ -193,7 +196,7 @@ test('GAS MongoLogger sends named actions only (no database/collection/rawPayloa
     'logActivity', 'logIntake', 'logSignNowEvent', 'logPayment', 'logCourtDate', 'logCheckIn', 'logCommunication', 'logLeadScore',
   ]);
   for (const r of requests) {
-    assert.equal(r.url, 'https://proxy.test/mongo-proxy');
+    assert.equal(r.url, V2_URL);
     assert.equal(r.opts.headers['x-api-key'], KEY);
     for (const k of ['database', 'collection', 'dataSource', 'rawPayload']) assert.ok(!(k in r.body), k + ' in ' + r.body.action);
   }
@@ -234,7 +237,7 @@ test('portal check-in end-to-end: GAS logDefendantLocation log → proxy → Che
 });
 
 // ── Velo caller ─────────────────────────────────────────────────────
-async function loadVelo(fetchImpl) {
+async function loadVelo(fetchImpl, secrets = { MONGO_PROXY_URL: OLD_URL, MONGO_PROXY_V2_URL: V2_URL, PROXY_API_KEY: KEY, GAS_WEBHOOK_URL: '' }) {
   let src = fs.readFileSync(path.join(ROOT, 'src/backend/bailSchoolMongo.jsw'), 'utf8');
   src = src
     .replace("import { fetch } from 'wix-fetch';", 'const { fetch } = globalThis.__veloMocks.wixFetch;')
@@ -242,7 +245,7 @@ async function loadVelo(fetchImpl) {
   assert.doesNotMatch(src, /^import /m, 'unexpected import in bailSchoolMongo.jsw');
   globalThis.__veloMocks = {
     wixFetch: { fetch: fetchImpl },
-    secrets: { getSecret: async (k) => ({ MONGO_PROXY_URL: 'https://proxy.test/mongo-proxy', PROXY_API_KEY: KEY, GAS_WEBHOOK_URL: '' })[k] },
+    secrets: { getSecret: async (k) => secrets[k] },
   };
   const tmp = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'velo-')), 'bailSchoolMongo.mjs');
   fs.writeFileSync(tmp, src);
@@ -252,8 +255,10 @@ async function loadVelo(fetchImpl) {
 test('Velo bailSchoolMongo uses named actions end-to-end and never sends database/collection', async () => {
   const db = fakeDb({ CourseLessons: [{ _id: 'L1' }], StudentEnrollments: [{ studentId: 's' }], AuditLogs: [], Courses: [{ _id: 'C1' }] });
   const sent = [];
+  const urls = new Set();
   const mod = await loadVelo(async (url, init) => {
     const body = JSON.parse(init.body);
+    urls.add(url);
     sent.push(body);
     const { out } = await call(body, { db, key: init.headers['x-api-key'] });
     return { ok: out.status === 200, status: out.status, json: async () => out.body, text: async () => JSON.stringify(out.body) };
@@ -271,6 +276,7 @@ test('Velo bailSchoolMongo uses named actions end-to-end and never sends databas
     'logStudentAction', 'listStudentAuditLogs', 'logStudentAction', 'markLessonComplete',
   ]);
   for (const b of sent) for (const k of ['database', 'collection', 'dataSource']) assert.ok(!(k in b), k);
+  assert.deepEqual([...urls], [V2_URL]);
   const audit = db.calls.find((c) => c.op === 'insertOne' && c.doc.action === 'VIDEO_PROGRESS');
   assert.equal(audit.coll, 'AuditLogs');
   assert.equal(audit.doc.time, 12.5);
@@ -285,8 +291,80 @@ test('no Velo/GAS source still builds a generic proxy body', () => {
   ].filter((f) => fs.statSync(f).isFile());
   for (const f of files) {
     const src = fs.readFileSync(f, 'utf8');
-    if (!/MONGO_PROXY_URL|getMongoProxyUrl/.test(src)) continue;
+    if (!/MONGO_PROXY(_V2)?_URL|getMongoProxyUrl/.test(src)) continue;
     assert.doesNotMatch(src, /database:\s*['"A-Z_]/, path.relative(ROOT, f));
     assert.doesNotMatch(src, /callMongoProxy\(\s*'(find|findOne|insertOne|updateOne)'/, path.relative(ROOT, f));
   }
+});
+
+// ── v2 cutover: callers read MONGO_PROXY_V2_URL only (no fallback to MONGO_PROXY_URL) ──
+// The old MONGO_PROXY_URL secret/property keeps pointing at the old generic function until the
+// soak is done. New code must never read it, so it switches to v2 exactly when it ships.
+const OLD_ONLY = { MONGO_PROXY_URL: OLD_URL, PROXY_API_KEY: KEY, GAS_WEBHOOK_URL: '' };
+
+test('GAS MongoDbService reads MONGO_PROXY_V2_URL and fails closed without it (no old-URL fallback)', () => {
+  const { ctx, requests } = loadGas(OLD_ONLY);
+  const r = vm.runInContext('MongoDbService', ctx).ping();
+  assert.equal(r.success, false);
+  assert.match(r.error, /MONGO_PROXY_V2_URL/);
+  assert.equal(requests.length, 0, 'must not call the old URL');
+  // MongoLogger stays fire-and-forget: no throw, no request.
+  vm.runInContext('MongoLogger', ctx).logCheckIn({ latitude: 1, longitude: 2 }, 'web');
+  assert.equal(requests.length, 0);
+});
+
+test('Velo bailSchoolMongo reads MONGO_PROXY_V2_URL and fails closed without it (no old-URL fallback)', async () => {
+  const urls = [];
+  const mod = await loadVelo(async (url) => { urls.push(url); return { ok: true, status: 200, json: async () => ({}), text: async () => '{}' }; }, OLD_ONLY);
+  await assert.rejects(mod.getCourse('C1'), /configuration missing/);
+  assert.deepEqual(urls, [], 'must not call the old URL');
+});
+
+async function loadSecretsManager(secrets) {
+  let src = fs.readFileSync(path.join(ROOT, 'src/backend/secretsManager.jsw'), 'utf8');
+  src = src.replace("import { getSecret } from 'wix-secrets-backend';", 'const { getSecret } = globalThis.__smMocks;');
+  assert.doesNotMatch(src, /^import /m, 'unexpected import in secretsManager.jsw');
+  globalThis.__smMocks = { getSecret: async (k) => secrets[k] };
+  const tmp = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'sm-')), 'secretsManager.mjs');
+  fs.writeFileSync(tmp, src);
+  return import(pathToFileURL(tmp).href);
+}
+
+test('secretsManager.getMongoProxyUrl (intakeQueue /wix-intake) reads MONGO_PROXY_V2_URL only', async () => {
+  const origErr = console.error;
+  console.error = () => {};
+  try {
+    const v2 = await loadSecretsManager({ MONGO_PROXY_URL: OLD_URL, MONGO_PROXY_V2_URL: V2_URL });
+    assert.equal(await v2.getMongoProxyUrl(), V2_URL);
+    const oldOnly = await loadSecretsManager({ MONGO_PROXY_URL: OLD_URL });
+    await assert.rejects(oldOnly.getMongoProxyUrl(), /Internal Configuration Error/);
+  } finally {
+    console.error = origErr;
+  }
+  const iq = fs.readFileSync(path.join(ROOT, 'src/backend/intakeQueue.jsw'), 'utf8');
+  assert.match(iq, /getMongoProxyUrl\(\)/);
+});
+
+test('Manual_Setup_MongoDB sets MONGO_PROXY_V2_URL to mongo-proxy-v2 and leaves MONGO_PROXY_URL alone', () => {
+  const set = {};
+  const ctx = {
+    console: { log() {} },
+    Logger: { log() {} },
+    PropertiesService: { getScriptProperties: () => ({ setProperty: (k, v) => { set[k] = v; }, getProperty: (k) => set[k] || null }) },
+  };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'backend-gas/Manual_Setup_MongoDB.js'), 'utf8'), ctx);
+  vm.runInContext('setupMongoDBProperties()', ctx);
+  assert.equal(set.MONGO_PROXY_V2_URL, 'https://us-east1-swfl-arrest-scrapers.cloudfunctions.net/mongo-proxy-v2');
+  assert.ok(!('MONGO_PROXY_URL' in set), 'must not overwrite the old MONGO_PROXY_URL property');
+});
+
+test('no Velo or GAS source reads or writes the old MONGO_PROXY_URL name', () => {
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(d, e.name);
+    return e.isDirectory() ? (e.name === 'node_modules' ? [] : walk(p)) : [p];
+  });
+  const files = [...walk(path.join(ROOT, 'src')), ...walk(path.join(ROOT, 'backend-gas'))].filter((f) => /\.(js|jsw|mjs)$/.test(f));
+  const OLD = /(getSecret|getSecureSecret|getProperty|setProperty)\(\s*['"]MONGO_PROXY_URL['"]/;
+  for (const f of files) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), OLD, path.relative(ROOT, f));
 });

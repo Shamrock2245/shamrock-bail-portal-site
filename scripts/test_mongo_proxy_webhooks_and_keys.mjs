@@ -283,10 +283,10 @@ function loadGas(props) {
 }
 
 test('GAS MongoDbService sends PROXY_API_KEY_GAS, falling back to legacy PROXY_API_KEY', () => {
-  let g = loadGas({ MONGO_PROXY_URL: 'https://p.test', PROXY_API_KEY_GAS: GAS_KEY, PROXY_API_KEY: LEGACY_KEY });
+  let g = loadGas({ MONGO_PROXY_V2_URL: 'https://p.test', PROXY_API_KEY_GAS: GAS_KEY, PROXY_API_KEY: LEGACY_KEY });
   g.S.ping();
   assert.equal(g.requests[0].opts.headers['x-api-key'], GAS_KEY);
-  g = loadGas({ MONGO_PROXY_URL: 'https://p.test', PROXY_API_KEY: LEGACY_KEY });
+  g = loadGas({ MONGO_PROXY_V2_URL: 'https://p.test', PROXY_API_KEY: LEGACY_KEY });
   g.S.ping();
   assert.equal(g.requests[0].opts.headers['x-api-key'], LEGACY_KEY);
   const setup = fs.readFileSync(path.join(ROOT, 'backend-gas/Manual_Setup_MongoDB.js'), 'utf8');
@@ -309,8 +309,8 @@ function secretsFrom(map) {
 
 test('Velo bailSchoolMongo sends PROXY_API_KEY_VELO, falling back to legacy PROXY_API_KEY', async () => {
   for (const [secrets, expected] of [
-    [{ MONGO_PROXY_URL: 'https://p.test', PROXY_API_KEY_VELO: VELO_KEY, PROXY_API_KEY: LEGACY_KEY }, VELO_KEY],
-    [{ MONGO_PROXY_URL: 'https://p.test', PROXY_API_KEY: LEGACY_KEY }, LEGACY_KEY],
+    [{ MONGO_PROXY_V2_URL: 'https://p.test', PROXY_API_KEY_VELO: VELO_KEY, PROXY_API_KEY: LEGACY_KEY }, VELO_KEY],
+    [{ MONGO_PROXY_V2_URL: 'https://p.test', PROXY_API_KEY: LEGACY_KEY }, LEGACY_KEY],
   ]) {
     const sent = [];
     const mod = await loadVeloModule('bailSchoolMongo.jsw', [
