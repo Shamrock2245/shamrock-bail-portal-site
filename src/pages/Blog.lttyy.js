@@ -28,7 +28,7 @@ $w.onReady(function () {
  */
 async function initBlogSEO() {
     const pageTitle = "Florida Bail Bond Legal Newsroom & Statutory Insights | Shamrock Bail Bonds";
-    const pageDesc = "Institutional legal insights, Florida bail statutes analysis (F.S. Ch. 903 & 648), county jail release guides, and cosigner defense protocols. Published by licensed Florida bail professionals.";
+    const pageDesc = "Institutional legal insights, Florida bail statutes analysis (F.S. Ch. 903 & 648), county jail release guides, and cosigner defense protocols. Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. Writing bonds in all 67 Florida counties. We answer 24/7.";
     const pageUrl = "https://www.shamrockbailbonds.biz/blog";
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
@@ -158,6 +158,20 @@ async function initBlogSEO() {
     wixSeo.setStructuredData(schemas);
 }
 
+/** Verified author chrome. Do not add license numbers, years-of-experience, review counts, or awards. */
+const AUTHOR_CHROME = "Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. Writing bonds in all 67 Florida counties. We answer 24/7.";
+
+function applyAuthorChrome(getEl) {
+    ["#txtBlogAuthor", "#txtAuthorChrome", "#authorBio", "#blogAuthorBio", "#txtAuthorByline"].forEach(function (id) {
+        const el = getEl(id);
+        if (!el) return;
+        try {
+            if (typeof el.text === "string") el.text = AUTHOR_CHROME;
+            else if (typeof el.html === "string") el.html = "<p>" + AUTHOR_CHROME + "</p>";
+        } catch (e) { /* optional element */ }
+    });
+}
+
 /**
  * Initializes interactive UI widgets, category filters, search input,
  * and emergency hotline hooks with defensive element checks.
@@ -171,6 +185,8 @@ function initEditorialUI() {
             return null;
         }
     };
+
+    applyAuthorChrome(getEl);
 
     // 1. Topic Taxonomy Filter Buttons (Category Selection)
     const categoryButtons = [

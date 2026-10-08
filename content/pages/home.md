@@ -15,11 +15,10 @@
 ### Subheadline
 24/7 Professional Bail Bond Services Across Florida. Fast, Confidential, and Compassionate.
 
-### Primary CTA Button
-**Call Now: (239) 332-2245**
-
-### Secondary CTA Button
-**Start Bail Process Online →**
+### Primary CTA Buttons
+- **Start a Bond**
+- **Call 24/7** — dials (239) 332-2245 only (`tel:+12393322245`)
+- **Find an Inmate**
 
 ### Trust Badge Text
 - ✓ Licensed & Insured
@@ -127,7 +126,7 @@ Don't wait. Every minute matters when a loved one is in jail. Call us now for im
 **(239) 332-2245**
 
 ### Button
-**Start Online Now →**
+**Start a Bond**
 
 ---
 
@@ -156,4 +155,4 @@ Once paperwork is complete, we post bail immediately. Release times vary by faci
 Ready to bring your loved one home?
 
 ### Button
-**Call (239) 332-2245**
+**Call 24/7** — (239) 332-2245

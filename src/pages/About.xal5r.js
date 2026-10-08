@@ -9,12 +9,20 @@ $w.onReady(function () {
     const startBtn = $w('#startBailProcessBtn');
     if (startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal-landing'));
 
+    const authorChrome = "Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. Writing bonds in all 67 Florida counties. We answer 24/7.";
+    ['#txtAboutAuthor', '#txtAuthorChrome', '#authorBio', '#aboutAuthorBio'].forEach(function (id) {
+        try {
+            const el = $w(id);
+            if (el && typeof el.text === 'string') el.text = authorChrome;
+        } catch (e) { /* optional */ }
+    });
+
     updatePageSEO();
 });
 
 function updatePageSEO() {
     const pageTitle = "About Shamrock Bail Bonds | Licensed Florida Bail Bond Agency";
-    const pageDesc = "Shamrock Bail Bonds is Southwest Florida's most trusted bail bond agency. Licensed, available 24/7, serving all 67 Florida counties from Fort Myers. Fast jail release with digital paperwork.";
+    const pageDesc = "Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. Writing bonds in all 67 Florida counties. We answer 24/7.";
     const pageUrl = "https://www.shamrockbailbonds.biz/about";
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
@@ -171,7 +179,7 @@ function updatePageSEO() {
                     "name": "Does Shamrock Bail Bonds offer bilingual service?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Yes. Shamrock Bail Bonds provides full bilingual service in English and Spanish. Our Spanish-language line is (239) 955-0301. Our website, digital paperwork, and AI assistant all support Spanish-speaking clients."
+                        "text": "Yes. Shamrock Bail Bonds provides full bilingual service in English and Spanish. Our Spanish-language line is (727) 295-2245. Our website, digital paperwork, and AI assistant all support Spanish-speaking clients."
                     }
                 }
             ]
