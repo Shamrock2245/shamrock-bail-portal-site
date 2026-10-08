@@ -64,6 +64,7 @@ const TELEPHONY_UNTOUCHED = new Set([
   'scripts/push_shannon_agent.py',
   'scripts/test_shannon_staff_desk.py',
   'scripts/test_tune_workflow.py',
+  'scripts/test_gas_transfer_ring.mjs',
   'OPERATIONS.md',
   'AGENTS.md',
   'docs/shannon-knowledge-base.txt',
