@@ -6,6 +6,22 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-10-08 — v2.8.10 — Shannon notify and repeat-save fixes
+
+**Google Apps Script (`backend-gas/`):**
+- `notify_bondsman` always schedules the callback and texts the staff desk. Slack runs only when the CRM submit misses. The CRM payload reuses the call's case reference instead of minting a second intake.
+- `save_paperwork_answers` writes the ShannonPaperwork row first, then makes one CRM submit. `create_intake` no longer does the id-status lookup on the voice turn.
+- Drafts that store `indemnitor` and `defendant` objects are read for name, phone, and email. A flat stated field still wins.
+- The Telegram mini-app Slack post runs only when `saveTelegramIntakeToQueue` did not land the lead in the CRM.
+
+### 2026-10-07 — v2.8.9 — CRM intake for Telegram and Shannon
+
+**Google Apps Script (`backend-gas/`):**
+- Telegram bot intakes (`saveTelegramIntakeToQueue`) and Shannon voice (`create_intake`, `save_paperwork_answers`, `notify_bondsman`) now open the lead with `POST /api/intake/submit`. Source tags are `telegram`, `telegram_miniapp`, and `shannon_voice`.
+- An ID scan, when one is already on the case or uploaded in the bot, seeds the identity. The stated name, address, phone, and best email then fill it. Bond amounts and booking keys are sent only when the person gave a real one.
+- The IntakeQueue sheet, Wix copy, Slack ping, and Shannon staff-desk text run only when that CRM call fails. The ShannonPaperwork sheet still stores the in-call draft later tools read. Failures are logged as `CRM INTAKE FAILED`.
+- Auth uses the existing script properties `GAS_API_KEY` or `LEADS_INTERNAL_TOKEN`. The base URL is the existing `LEADS_API_URL` or `SHANNON_LEADS_URL`.
+
 ### 2026-09-30 — v2.8.8 — GAS deduplication audit, documentation synchronization, zero code gaps
 
 **Google Apps Script (`backend-gas/`):**

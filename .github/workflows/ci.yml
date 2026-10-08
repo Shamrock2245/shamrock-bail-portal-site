@@ -31,3 +31,6 @@ jobs:
 
       - name: Validate JSON files
         run: node scripts/ci/check-json.mjs
+
+      - name: CRM intake client checks
+        run: node scripts/test_crm_intake_client.js

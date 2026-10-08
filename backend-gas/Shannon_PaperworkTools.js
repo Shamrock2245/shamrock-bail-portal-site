@@ -73,6 +73,9 @@ function toolSavePaperworkAnswers(params) {
   var merged = shannonMerge_(existing.payload, params);
   merged.case_reference = caseRef;
   merged.updated_at = new Date().toISOString();
+  // Write the draft the rest of the call reads before the CRM round-trip.
+  // One submit, with no id-status lookup, so a slow CRM cannot drop the sheet
+  // row or add a second blocking fetch inside the voice turn.
   var sheet = shannonPaperworkSheet_();
   var row = [
     new Date(),
@@ -88,6 +91,12 @@ function toolSavePaperworkAnswers(params) {
     sheet.getRange(existing.row, 1, 1, row.length).setValues([row]);
   } else {
     sheet.appendRow(row);
+  }
+  try {
+    shannonSyncIntakeToCrm_(merged, { skipIdScan: true });
+  } catch (crmErr) {
+    Logger.log('CRM INTAKE FAILED source=shannon_voice error=' + crmErr.message + ' — keeping ShannonPaperwork draft');
+    console.error('CRM INTAKE FAILED source=shannon_voice error=' + crmErr.message);
   }
   return ContentService.createTextOutput(JSON.stringify({
     status: 'saved',
@@ -187,34 +196,48 @@ function sendShannonText_(to, body) {
   }
 }
 
-function shannonSyncIntakeToCrm_(params) {
-  var url = SHANNON_LEADS_URL + '/api/intake/submit';
-  var res = UrlFetchApp.fetch(url, {
-    method: 'post',
-    headers: shannonLeadsHeaders_(),
-    payload: JSON.stringify({
-      source: 'elevenlabs_voice',
-      intakeId: params.case_reference || '',
-      caseId: params.case_reference || '',
-      defendantName: params.defendant_name || '',
-      county: params.county || '',
-      charges: params.charges || '',
-      bondAmount: params.bond_amount || '',
-      facility: params.facility || '',
-      indemnitorName: params.indemnitor_name || params.caller_name || '',
-      indemnitorPhone: params.indemnitor_phone || params.caller_phone || '',
-      indemnitorEmail: params.indemnitor_email || '',
-      notes: (params.notes || '') + ' | role=' + (params.caller_role || ''),
-      skip_match: true
-    }),
-    muteHttpExceptions: true,
-    followRedirects: true
-  });
-  var code = res.getResponseCode();
-  if (code < 200 || code >= 300) {
-    Logger.log('Shannon CRM intake ' + code + ': ' + String(res.getContentText() || '').substring(0, 180));
+function shannonLoadIdScan_(caseRef) {
+  if (!caseRef) return {};
+  try {
+    var res = UrlFetchApp.fetch(SHANNON_LEADS_URL + '/api/paperwork/shannon/id-status', {
+      method: 'post',
+      headers: shannonLeadsHeaders_(),
+      payload: JSON.stringify({ packet_id: caseRef, case_reference: caseRef }),
+      muteHttpExceptions: true,
+      followRedirects: true
+    });
+    if (res.getResponseCode() < 200 || res.getResponseCode() >= 300) {
+      Logger.log('CRM INTAKE ID SCAN FAILED source=shannon_voice status=' + res.getResponseCode());
+      return {};
+    }
+    var body = {};
+    try { body = JSON.parse(res.getContentText() || '{}'); } catch (e) { body = {}; }
+    return body.ocr || {};
+  } catch (err) {
+    Logger.log('CRM INTAKE ID SCAN FAILED source=shannon_voice error=' + err.message);
+    return {};
   }
-  return code;
+}
+
+function shannonSyncIntakeToCrm_(params, opts) {
+  params = params || {};
+  opts = opts || {};
+  var caseRef = params.case_reference || params.intakeId || params.packet_id || '';
+  var ocr = params.id_ocr || null;
+  if (!opts.skipIdScan && (!ocr || typeof ocr !== 'object' || !Object.keys(ocr).length)) {
+    ocr = shannonLoadIdScan_(caseRef);
+  }
+  if (typeof crmIntakeFromShannon_ !== 'function') {
+    Logger.log('CRM INTAKE FAILED source=shannon_voice status=0 error=crmIntakeFromShannon_missing');
+    console.error('CRM INTAKE FAILED source=shannon_voice status=0 error=crmIntakeFromShannon_missing');
+    return 0;
+  }
+  var result = crmIntakeFromShannon_(params, { ocr: ocr });
+  if (!result || !result.ok) {
+    Logger.log('CRM INTAKE FAILED source=shannon_voice status=' + ((result && result.status) || 0) +
+      ' error=' + ((result && result.error) || 'unknown') + ' — voice draft remains the fallback');
+  }
+  return (result && result.status) || 0;
 }
 
 function handleShannonNotifyBondsman(params) {
@@ -225,7 +248,37 @@ function handleShannonNotifyBondsman(params) {
   var county = String(params.county || '').trim();
   var notes = String(params.notes || '').trim();
   var preferredTime = String(params.preferred_time || 'ASAP').trim();
+  var caseRef = shannonCaseKey_(params);
+  var reply = {
+    success: true,
+    status: 'notified',
+    case_reference: caseRef,
+    message: 'You can reach our office at 239-332-2245. I also notified a bondsman who can call you back ' +
+      (preferredTime && preferredTime !== 'ASAP' ? 'around ' + preferredTime : 'as soon as possible') + '.'
+  };
 
+  var crmOk = false;
+  try {
+    if (typeof shannonSyncIntakeToCrm_ === 'function') {
+      var crmCode = shannonSyncIntakeToCrm_({
+        case_reference: caseRef,
+        caller_name: callerName,
+        caller_phone: callerPhone,
+        indemnitor_name: callerName,
+        indemnitor_phone: callerPhone,
+        defendant_name: defName,
+        county: county,
+        notes: notes
+      }, { skipIdScan: true });
+      crmOk = crmCode >= 200 && crmCode < 300;
+    }
+  } catch (crmErr) {
+    Logger.log('CRM INTAKE FAILED source=shannon_voice error=' + crmErr.message);
+    console.error('CRM INTAKE FAILED source=shannon_voice error=' + crmErr.message);
+  }
+
+  // The callback time and the staff-desk text always run. Slack is only the
+  // CRM-miss path, so a successful submit does not post a second alert.
   try {
     if (typeof toolScheduleCallback === 'function' && callerPhone) {
       toolScheduleCallback({
@@ -240,19 +293,23 @@ function handleShannonNotifyBondsman(params) {
     Logger.log('Shannon notify callback non-fatal: ' + cbErr.message);
   }
 
-  try {
-    if (typeof sendSlackMessage === 'function') {
-      sendSlackMessage('#intake-alerts',
-        '📞 *Shannon asked a bondsman to follow up*\n' +
-        '• Caller: ' + (callerName || 'Unknown') + '\n' +
-        '• Phone: ' + (callerPhone || 'none') + '\n' +
-        '• Defendant: ' + (defName || 'TBD') + '\n' +
-        '• County: ' + (county || 'TBD') + '\n' +
-        '• Notes: ' + (notes || 'None'),
-        null
-      );
-    }
-  } catch (slackErr) {}
+  if (!crmOk) {
+    Logger.log('CRM INTAKE FAILED source=shannon_voice — notify_bondsman falling back to Slack');
+    console.error('CRM INTAKE FAILED source=shannon_voice error=notify_bondsman_fallback');
+    try {
+      if (typeof sendSlackMessage === 'function') {
+        sendSlackMessage('#intake-alerts',
+          '📞 *Shannon asked a bondsman to follow up*\n' +
+          '• Caller: ' + (callerName || 'Unknown') + '\n' +
+          '• Phone: ' + (callerPhone || 'none') + '\n' +
+          '• Defendant: ' + (defName || 'TBD') + '\n' +
+          '• County: ' + (county || 'TBD') + '\n' +
+          '• Notes: ' + (notes || 'None'),
+          null
+        );
+      }
+    } catch (slackErr) {}
+  }
 
   try {
     notifyShannonStaffDesk_(
@@ -267,12 +324,8 @@ function handleShannonNotifyBondsman(params) {
     Logger.log('Shannon staff desk text failed (non-fatal): ' + deskErr.message);
   }
 
-  return {
-    success: true,
-    status: 'notified',
-    message: 'You can reach our office at 239-332-2245. I also notified a bondsman who can call you back ' +
-      (preferredTime && preferredTime !== 'ASAP' ? 'around ' + preferredTime : 'as soon as possible') + '.'
-  };
+  reply.via = crmOk ? 'crm' : 'fallback';
+  return reply;
 }
 
 function shannonCreateDocusealViaCrm_(payload) {

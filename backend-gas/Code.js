@@ -619,17 +619,20 @@ function doPost(e) {
         }
         Logger.log('📱 Telegram Mini App intake received');
         const result = saveTelegramIntakeToQueue(data, data.telegramUserId || 'mini_app_unknown');
-        // Send Slack notification
-        try {
-          const slackChannel = getConfig().SLACK_WEBHOOK_INTAKE || getConfig().SLACK_WEBHOOK_SHAMROCK;
-          if (slackChannel) {
-            sendSlackMessage(slackChannel,
-              `📱 New Telegram Mini App Intake: ${data.DefName || 'Unknown'} | Facility: ${data.DefFacility || 'N/A'} | Indemnitor: ${data.IndName || 'N/A'} | Phone: ${data.IndPhone || 'N/A'}`,
-              null
-            );
+        // Slack only when the CRM did not take the lead. A CRM success already
+        // records the intake, and posting here would duplicate that alert.
+        if (!(result && result.via === 'crm')) {
+          try {
+            const slackChannel = getConfig().SLACK_WEBHOOK_INTAKE || getConfig().SLACK_WEBHOOK_SHAMROCK;
+            if (slackChannel) {
+              sendSlackMessage(slackChannel,
+                `📱 New Telegram Mini App Intake: ${data.DefName || 'Unknown'} | Facility: ${data.DefFacility || 'N/A'} | Indemnitor: ${data.IndName || 'N/A'} | Phone: ${data.IndPhone || 'N/A'}`,
+                null
+              );
+            }
+          } catch (slackErr) {
+            Logger.log('Slack notification failed (non-fatal): ' + slackErr.message);
           }
-        } catch (slackErr) {
-          Logger.log('Slack notification failed (non-fatal): ' + slackErr.message);
         }
         return createResponse(result);
       } catch (intakeErr) {

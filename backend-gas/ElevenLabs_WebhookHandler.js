@@ -732,35 +732,35 @@ function toolCreateIntake(params) {
                 indemnitor_name: params.indemnitor_name || callerName,
                 indemnitor_email: params.indemnitor_email || params.caller_email || '',
                 indemnitor_phone: params.indemnitor_phone || callerPhone,
-                notes: params.notes || '',
-                skip_match: true
-            });
+                booking_number: params.booking_number || '',
+                notes: params.notes || ''
+            }, { skipIdScan: true });
             crmOk = crmCode >= 200 && crmCode < 300;
         }
     } catch (crmSyncErr) {
-        Logger.log('⚠️ Super CRM intake sync error (non-fatal): ' + crmSyncErr.message);
-    }
-
-    try {
-        var config = getConfig();
-        var slackChannel = config.SLACK_WEBHOOK_INTAKE || config.SLACK_WEBHOOK_SHAMROCK;
-        if (slackChannel && typeof sendSlackMessage === 'function') {
-            sendSlackMessage(slackChannel,
-                '🎙 *Shannon intake created*\n' +
-                '• Defendant: ' + defName + '\n' +
-                '• Charges: ' + (params.charges || 'TBD') + '\n' +
-                '• Facility: ' + (params.facility || 'TBD') + '\n' +
-                '• Caller: ' + (callerName || 'Unknown') + ' ' + (callerPhone || '') + '\n' +
-                '• Ref: `' + caseRef + '`\n' +
-                '• CRM: ' + (crmOk ? 'saved' : 'miss — staff check Super CRM'),
-                null
-            );
-        }
-    } catch (slackErr) {
-        Logger.log('Slack alert failed (non-fatal): ' + slackErr.message);
+        Logger.log('CRM INTAKE FAILED source=shannon_voice error=' + crmSyncErr.message);
+        console.error('CRM INTAKE FAILED source=shannon_voice error=' + crmSyncErr.message);
     }
 
     if (!crmOk) {
+        try {
+            var config = getConfig();
+            var slackChannel = config.SLACK_WEBHOOK_INTAKE || config.SLACK_WEBHOOK_SHAMROCK;
+            if (slackChannel && typeof sendSlackMessage === 'function') {
+                sendSlackMessage(slackChannel,
+                    '🎙 *Shannon intake CRM miss*\n' +
+                    '• Defendant: ' + defName + '\n' +
+                    '• Charges: ' + (params.charges || 'TBD') + '\n' +
+                    '• Facility: ' + (params.facility || 'TBD') + '\n' +
+                    '• Caller: ' + (callerName || 'Unknown') + ' ' + (callerPhone || '') + '\n' +
+                    '• Ref: `' + caseRef + '`\n' +
+                    '• CRM: miss — staff check Super CRM',
+                    null
+                );
+            }
+        } catch (slackErr) {
+            Logger.log('Slack alert failed (non-fatal): ' + slackErr.message);
+        }
         try {
             notifyShannonStaffDesk_(
                 '⚠️ Shannon intake CRM miss. ' + defName +

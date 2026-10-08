@@ -47,7 +47,58 @@
  * @param {string} telegramUserId - The Telegram chat ID (used as a unique key).
  * @returns {object} - { success: boolean, intakeId: string, row: number }
  */
+function telegramIdScanForIntake_(intakeData) {
+  var b64 = (intakeData && intakeData.id_image_b64) || '';
+  if (!b64 && intakeData && intakeData.Doc_ID_Front) {
+    var match = String(intakeData.Doc_ID_Front).match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && typeof DriveApp !== 'undefined') {
+      try {
+        var blob = DriveApp.getFileById(match[1]).getBlob();
+        b64 = Utilities.base64Encode(blob.getBytes());
+      } catch (driveErr) {
+        console.error('CRM INTAKE ID SCAN FAILED source=telegram error=' + driveErr.message);
+      }
+    }
+  }
+  if (!b64 || typeof crmScanIdImage_ !== 'function') return {};
+  return crmScanIdImage_(b64, (intakeData && intakeData.id_filename) || 'id.jpg') || {};
+}
+
 function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
+  intakeData = intakeData || {};
+  const intakeId = intakeData.intakeId || intakeData.intake_id ||
+    ('TG-' + Date.now() + '-' + (telegramUserId || 'unknown'));
+  intakeData.intakeId = intakeId;
+
+  var scan = {};
+  try {
+    scan = telegramIdScanForIntake_(intakeData) || {};
+  } catch (scanErr) {
+    console.error('CRM INTAKE ID SCAN FAILED source=telegram error=' + scanErr.message);
+  }
+
+  var crmResult = { ok: false, error: 'not_attempted' };
+  try {
+    if (typeof crmIntakeFromTelegram_ === 'function') {
+      crmResult = crmIntakeFromTelegram_(intakeData, { scan: scan }) || crmResult;
+    } else {
+      console.error('CRM INTAKE FAILED source=telegram status=0 error=crmIntakeFromTelegram_missing');
+    }
+  } catch (crmErr) {
+    console.error('CRM INTAKE FAILED source=telegram status=0 error=' + crmErr.message);
+    crmResult = { ok: false, error: crmErr.message };
+  }
+
+  if (crmResult.ok) {
+    console.log('CRM intake saved ' + (crmResult.intake_id || intakeId) + ' source=' + (crmResult.source || ''));
+    return { success: true, intakeId: crmResult.intake_id || intakeId, via: 'crm' };
+  }
+
+  console.error('CRM INTAKE FAILED — falling back to IntakeQueue sheet. source=' +
+    (crmResult.source || intakeData.source || 'telegram') +
+    ' status=' + (crmResult.status || 0) +
+    ' error=' + (crmResult.error || 'unknown'));
+
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
@@ -69,9 +120,6 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
     }
 
     const timestamp = new Date();
-
-    // --- Generate a unique Intake ID (prefixed TG- to distinguish source) ---
-    const intakeId = 'TG-' + timestamp.getTime() + '-' + (telegramUserId || 'unknown');
 
     // --- Build References array (matches handleNewIntake schema) ---
     const references = [];
