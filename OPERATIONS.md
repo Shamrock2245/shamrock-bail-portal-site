@@ -29,6 +29,8 @@ Set in Netlify site `shamrock-telegram` → Environment variables (production). 
 
 Do not call-forward 239-332-2245 back to 727-295-2245 (loop). Jail/sheriff callers to 727 still ring 332-2245.
 
+Public Spanish line (website / NAP, not this transfer ring): Se habla español: 727-295-2245.
+
 Twilio Console for **(727) 295-2245** (set 2026-08-26):
 - Primary voice URL: `https://shamrock-telegram.netlify.app/api/twilio-voice`
 - Fallback URL: `https://shamrock-telegram.netlify.app/api/twilio-voice-fallback` — rings 239-332-2245 and 239-955-0301 together from +17272952245.
@@ -85,7 +87,7 @@ When Shannon calls a webhook (e.g., `lookup_defendant`, `calculate_premium`):
 
 ### Fallback & Handoff
 If the user asks for a human, a lawyer, or gets excessively angry:
-- Immediately trigger `transfer_to_bondsman` tool (3 numbers: primary, secondary, Spanish line).
+- Immediately trigger `transfer_to_bondsman`. That tool still rings 239-332-2245 and 239-955-0301 together. It is not the public Spanish line. Se habla español: 727-295-2245.
 - **Fallback Sentence**: "It sounds like you need to speak with our on-call bondsman right away. Please hold while I transfer you."
 
 ---

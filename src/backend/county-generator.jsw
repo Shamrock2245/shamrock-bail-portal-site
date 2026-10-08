@@ -514,7 +514,7 @@ function generateAboutCounty(name, cities, countySeat, circuitNum, circuitFull, 
   text += ` We work directly with the ${name} County Jail to secure fast and reliable release for our clients.`;
   text += circuitStr;
   text += ` ${popStr} is one of the communities we are committed to serving with professionalism and compassion.`;
-  text += ` Our licensed bail agents are available 24 hours a day to answer questions, explain the bail process, and begin release immediately.`;
+  text += ` Our licensed bail agents answer 24/7. Bonds written in all 67 Florida counties.`;
   text += ` If your loved one has been arrested in ${name} County, don't wait. Call Shamrock Bail Bonds now for fast, confidential help.`;
 
   return text;
@@ -527,7 +527,7 @@ function generateWhyChooseUs(name, cities, circuitNum, countySeat) {
   return `Shamrock Bail Bonds has extensive experience with the ${name} County justice system${circuitStr}. `
     + `Our team understands the booking procedures at the ${name} County Jail${seatStr}, the bond schedules set by local judges, and how to navigate the release process efficiently. `
     + `We are a licensed and insured Florida bail bond agency, and we treat every client with dignity and respect during what is often one of the most stressful times in their life. `
-    + `Available 24 hours a day, 7 days a week, we can start the bail process within minutes of your call. `
+    + `We answer 24/7. Bonds written in all 67 Florida counties. `
     + `Most paperwork can be completed electronically from your phone — you don't even need to visit our office. `
     + `We also offer flexible payment plans for qualified clients to make bail more affordable.`;
 }
@@ -538,7 +538,7 @@ function generateHowItWorks(name, circuitNum) {
   return `When someone is arrested in ${name} County, they are transported to the ${name} County Jail for booking and processing. `
     + `This includes fingerprinting, photographing, and a background check. `
     + `A judge${circuitStr} will set the bail amount based on the charges and the defendant's history. `
-    + `Once bail is set, Shamrock Bail Bonds can immediately begin the release process. `
+    + `Once bail is set, Shamrock Bail Bonds can post the bond. `
     + `We prepare the bond paperwork, post it with the ${name} County Clerk of Court, and coordinate with jail staff. `
     + `The jail then processes the release. Release timing is controlled by the jail, and we keep you updated along the way.`;
 }
@@ -557,7 +557,7 @@ function generateFAQs(name, circuitNum, circuitFull, cities, countySeat, phoneDi
     },
     {
       question: `Who offers 24/7 bail bond services in ${name} County?`,
-      answer: `Shamrock Bail Bonds offers 24/7 bail bond services throughout ${name} County. Arrests happen at all hours, and our licensed Florida agents are always available to help secure release as quickly as possible.`
+      answer: `Shamrock Bail Bonds answers 24/7 throughout ${name} County. Bonds written in all 67 Florida counties. Arrests happen at all hours, and our licensed Florida agents are available to help.`
     },
     {
       question: `How does the bail bond process work in ${name} County?`,
@@ -619,7 +619,7 @@ function generateFAQs(name, circuitNum, circuitFull, cities, countySeat, phoneDi
     },
     {
       question: `Can you help with an active warrant in ${name} County?`,
-      answer: `Yes, we can assist with active warrants in ${name} County. We can help arrange a self-surrender with the court, which often results in a smoother process and faster release. Call us confidentially to discuss your situation.`
+      answer: `Yes, we can assist with active warrants in ${name} County. We can help arrange a self-surrender with the court, which often results in a smoother process. Call us confidentially to discuss your situation.`
     }
   ];
 }

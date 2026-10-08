@@ -111,7 +111,7 @@ Reads detailed background reports (TLO/IRB/iDiCore) for both Defendant and Indem
 
 **Platform:** ElevenLabs Conversational AI · **Agent ID:** `agent_2001kjth4na5ftqvdf1pp3gfb1cb`
 
-**Availability:** `SHANNON_LIVE=true` — Shannon answers `(727) 295-2245`. Callers who need a person are sent to `(239) 955-0301`, then `(239) 332-2245` if nobody answers. Jail/sheriff callers to 727 ring 332-2245.
+**Availability:** `SHANNON_LIVE=true` — Shannon answers `(727) 295-2245`. Callers who need a person are sent to `(239) 955-0301`, then `(239) 332-2245` if nobody answers. Jail/sheriff callers to 727 ring 332-2245. Public Spanish line: Se habla español: 727-295-2245. That is this 727 line, not the live-person ring.
 
 **Opening:** "Shamrock Bail Bonds. How may I help you today?" Then listen.
 
