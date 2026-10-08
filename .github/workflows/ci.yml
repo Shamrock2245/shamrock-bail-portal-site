@@ -40,3 +40,6 @@ jobs:
 
       - name: GAS post_slack_message requires the API key
         run: node scripts/test_gas_post_slack_message_auth.mjs
+
+      - name: GAS doPost risk actions require the API key
+        run: node scripts/test_gas_dopost_risk_actions_auth.mjs

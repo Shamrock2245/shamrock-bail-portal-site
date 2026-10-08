@@ -6,6 +6,18 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-10-08 — v2.8.12 — GAS doPost risk actions require the API key
+
+**Google Apps Script (`backend-gas/`):**
+- `doPost` now requires the GAS API key on every server-called action that sends messages or returns client PII. The key is `data.apiKey` or `?apiKey=`, checked with `requireGasApiKey_` before any handler runs. The list is `GAS_KEYED_DOPOST_ACTIONS_` in `Code.js`:
+  - Risk mitigation: `send_court_reminders`, `escalate_to_cosigner`, `get_recent_client_messages`, `get_upcoming_court_dates`, `get_unacknowledged_reminders`, `get_forfeiture_cases`, `get_daily_stats`, `flag_high_stress_case`, `post_slack_message`.
+  - Telegram sends and signing data: `schedule_court_date`, `send_signing_link`, `telegram_get_signing_url`, `telegram_document_status`, `get_packet_manifest`.
+  - Check-in relay: `twilio_check_in`.
+  - Before this change, anyone with the /exec URL could text any number, text co-signers, send Telegram messages, or read client messages, court dates and forfeiture cases. A missing or wrong key now returns `Unauthorized: Invalid API Key` and logs `UNAUTHORIZED_API_ACCESS`. Nothing is sent, read or written.
+- Callers: the scheduled Netlify functions in `shamrock-telegram-app` (`court-reminder`, `engagement-watchdog`, `sentiment-watchdog`, `daily-briefing`) send `GAS_API_KEY` as of shamrock-telegram-app #15. That change must deploy **before** this ships with `clasp push`. The other listed actions have no caller in any Shamrock2245 repo. Time-based triggers call functions directly and are unaffected.
+- Not gated yet: the browser mini-app actions (`telegram_mini_app_intake`, `telegram_mini_app_upload`, `telegram_payment_log`, `telegram_payment_lookup`, `telegram_checkin_log`, `telegram_client_update`, `telegram_status_lookup`, `telegram_document_lookup`), because a browser cannot hold the key. They need Telegram initData verification first.
+- Test: `scripts/test_gas_dopost_risk_actions_auth.mjs` runs `doPost` in a vm with spy SMS, Slack, Telegram, Sheets and UrlFetch. For each action it checks that a missing, wrong or unconfigured key is rejected with zero side effects and that a valid key reaches the handler. It runs in PR CI.
+
 ### 2026-10-08 — v2.8.11 — GAS `post_slack_message` requires the API key
 
 **Google Apps Script (`backend-gas/`):**
