@@ -6,9 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
-### 2026-10-08 — v2.8.12 — Mongo proxy: deploy keeps all secrets
+### 2026-10-08 — v2.8.12 — Mongo proxy: deploy as mongo-proxy-v2 and keep all secrets
 
-**Cloud Function (`cloud-functions/mongo-proxy/`):** stacks on #45/#46. `npm run deploy` now uses `--update-secrets` instead of `--set-secrets`. It names `MONGO_URI`, `PROXY_API_KEY`, `PROXY_API_KEY_GAS`, `PROXY_API_KEY_VELO`, `TWILIO_AUTH_TOKEN` and `TELEGRAM_WEBHOOK_SECRET` as `NAME=NAME:latest` Secret Manager references. A redeploy no longer drops the per-caller keys, the webhook secrets, or the `TWILIO_WEBHOOK_URL` env var. A test checks the names, the reference format, and that no literal values appear.
+**Cloud Function (`cloud-functions/mongo-proxy/`):** stacks on #45/#46.
+- `npm run deploy` now deploys **`mongo-proxy-v2`** beside the old `mongo-proxy`, so callers can move without downtime.
+- It uses `--update-secrets` instead of `--set-secrets`, naming `MONGO_URI`, `PROXY_API_KEY`, `PROXY_API_KEY_GAS`, `PROXY_API_KEY_VELO`, `TWILIO_AUTH_TOKEN` and `TELEGRAM_WEBHOOK_SECRET` as `NAME=NAME:latest` Secret Manager references.
+- It sets `TWILIO_WEBHOOK_URL` to the v2 `/twilio` URL with `--update-env-vars`.
+- A test checks the function name, the project, the secret names, the reference format, the env URL, and that no literal values appear.
 
 ### 2026-10-08 — v2.8.11 — Mongo proxy: signed webhooks and per-caller keys
 

@@ -358,6 +358,13 @@ test('keys never leave the server: no page/public file references proxy key name
 test('npm run deploy keeps every proxy secret by Secret Manager name and never wipes env or secrets', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(FN_DIR, 'package.json'), 'utf8'));
   const deploy = pkg.scripts.deploy;
+  // Zero-downtime cutover: the hardened proxy deploys beside the old `mongo-proxy`, never over it.
+  assert.match(deploy, /^gcloud functions deploy mongo-proxy-v2 --gen2 /);
+  assert.match(deploy, /--project=swfl-arrest-scrapers(\s|$)/);
+  // The only plain env var is the public /twilio URL of this function, matching the URL Twilio signs.
+  const envMatch = deploy.match(/--update-env-vars=(\S+)/);
+  assert.ok(envMatch, 'deploy must set TWILIO_WEBHOOK_URL with --update-env-vars');
+  assert.equal(envMatch[1], 'TWILIO_WEBHOOK_URL=' + PUBLIC_URL.replace('/mongo-proxy/', '/mongo-proxy-v2/'));
   // --set-secrets / --set-env-vars / --clear-* replace the whole set and would drop
   // TWILIO_WEBHOOK_URL or a secret added in the console.
   assert.doesNotMatch(deploy, /--set-secrets|--set-env-vars|--clear-secrets|--clear-env-vars|--remove-secrets|--env-vars-file/);

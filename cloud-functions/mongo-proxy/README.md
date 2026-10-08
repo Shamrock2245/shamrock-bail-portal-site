@@ -29,9 +29,10 @@ Each caller sends its own `x-api-key` and may only use its own actions. A key us
 
 ## Deploy (`npm run deploy`)
 
-- `--update-secrets` maps each Secret Manager secret to the env var of the same name at `:latest`: `MONGO_URI`, `PROXY_API_KEY` (legacy), `PROXY_API_KEY_GAS`, `PROXY_API_KEY_VELO`, `TWILIO_AUTH_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`. Every secret must exist in Secret Manager in `swfl-arrest-scrapers` before the deploy. The function's service account also needs Secret Accessor on each one.
-- `--update-secrets` keeps secrets that are already set. The script sets no env vars, so a redeploy keeps `TWILIO_WEBHOOK_URL`. Set that value once to the exact Twilio console URL, for example with `gcloud functions deploy mongo-proxy ... --update-env-vars=TWILIO_WEBHOOK_URL=<exact URL>` or in the Cloud Run console.
-- A name cannot be a plain env var and a secret at the same time. If any of these names is currently set as a plain env var, remove it with `--remove-env-vars` before the first deploy.
+- The script deploys **`mongo-proxy-v2`** next to the old `mongo-proxy` and leaves the old function alone. Callers switch by URL, and the old function is deleted only after they have moved. The full ordered steps are in the PR that added this section.
+- `--update-secrets` maps each Secret Manager secret to the env var of the same name at `:latest`: `MONGO_URI`, `PROXY_API_KEY` (legacy), `PROXY_API_KEY_GAS`, `PROXY_API_KEY_VELO`, `TWILIO_AUTH_TOKEN` and `TELEGRAM_WEBHOOK_SECRET`. Each secret must exist in `swfl-arrest-scrapers` before the deploy, and the function's runtime service account needs `roles/secretmanager.secretAccessor` on each one. Secrets that are already set are kept.
+- `--update-env-vars` sets only `TWILIO_WEBHOOK_URL=https://us-east1-swfl-arrest-scrapers.cloudfunctions.net/mongo-proxy-v2/twilio`, the public `/twilio` URL of this function. If Twilio is ever pointed at a different URL for this function, change this value to that exact URL. Other env vars are kept.
+- A name cannot be a plain env var and a secret at the same time.
 
 ## Webhooks (fail-closed, no write on rejection)
 
