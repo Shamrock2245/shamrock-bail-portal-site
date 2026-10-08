@@ -1,0 +1,32 @@
+name: apply-intake-fix
+on:
+  push:
+    branches: [cursor/crm-intake-callers-24c1]
+    paths: ['.github/workflows/apply-intake-fix.yml']
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cursor/crm-intake-callers-24c1
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: false
+      - name: Apply verified patch and remove this helper
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/fix.patch "https://raw.githubusercontent.com/Shamrock2245/shamrock-telegram-app/b98f554b02986264116a5912fe8290fb8f652a74/ops/review-patches/portal.patch"
+          git apply --whitespace=nowarn /tmp/fix.patch
+          test "$(git hash-object CHANGELOG.md)" = "7cfa21dfab5509ea67f9a0d2e2628b6a1593d73a"
+          test "$(git hash-object backend-gas/Code.js)" = "7a4853e6728c0c0478aeafa6dde1a7bfd93e1054"
+          test "$(git hash-object backend-gas/CrmIntakeClient.js)" = "ea3a0dcb43d418c379a6af5dc80b1c6c4b42e162"
+          test "$(git hash-object backend-gas/ElevenLabs_WebhookHandler.js)" = "96d6101e1b3b332e06ddee686eb317af804834b9"
+          test "$(git hash-object backend-gas/Shannon_PaperworkTools.js)" = "7e49f820f5900e03880485a56ddd8e3a3c506504"
+          test "$(git hash-object scripts/test_crm_intake_client.js)" = "2d3f186fa7e48b9c0bedd0d6a3960e4c29d2dc4a"
+          git add CHANGELOG.md backend-gas/Code.js backend-gas/CrmIntakeClient.js backend-gas/ElevenLabs_WebhookHandler.js backend-gas/Shannon_PaperworkTools.js scripts/test_crm_intake_client.js
+          git rm -f .github/workflows/apply-intake-fix.yml
+          git -c user.email="41898282+github-actions[bot]@users.noreply.github.com" -c user.name="github-actions[bot]" commit -m "Keep Shannon callbacks and stop voice intake from duplicating or stalling."
+          git push origin HEAD:cursor/crm-intake-callers-24c1
