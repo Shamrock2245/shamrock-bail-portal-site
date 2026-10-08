@@ -1145,8 +1145,15 @@ function doPost(e) {
     }
 
     // ─── RISK MITIGATION & NETLIFY FUNCTION ACTIONS ───
-    // These actions are called by Netlify serverless functions (no API key)
+    // These actions are called by Netlify serverless functions.
+    // post_slack_message requires the GAS API key (data.apiKey, or ?apiKey= merged above), checked
+    // with requireGasApiKey_ like the other keyed routes. Without it, anyone holding the /exec URL
+    // could post arbitrary text into Shamrock's Slack. Netlify sends GAS_API_KEY server-side.
     if (data.action === 'post_slack_message') {
+      if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(data.apiKey)) {
+        if (typeof logSecurityEvent === 'function') logSecurityEvent('UNAUTHORIZED_API_ACCESS', { error: 'Invalid API Key', action: data.action });
+        return createErrorResponse('Unauthorized: Invalid API Key', ERROR_CODES.UNAUTHORIZED);
+      }
       return createResponse(handlePostSlackMessage(data));
     }
     if (data.action === 'get_upcoming_court_dates') {

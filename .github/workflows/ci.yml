@@ -37,3 +37,6 @@ jobs:
 
       - name: Portal check-in GAS sync checks
         run: node scripts/test_checkin_gas_sync.mjs
+
+      - name: GAS post_slack_message requires the API key
+        run: node scripts/test_gas_post_slack_message_auth.mjs

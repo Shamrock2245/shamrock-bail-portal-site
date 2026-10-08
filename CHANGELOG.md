@@ -6,6 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-10-08 — v2.8.11 — GAS `post_slack_message` requires the API key
+
+**Google Apps Script (`backend-gas/`):**
+- `doPost` action `post_slack_message` now requires the GAS API key: `data.apiKey`, or `?apiKey=`, checked with `requireGasApiKey_` against the `GAS_API_KEY` script property. It used to run before any key check, so anyone with the /exec URL could post text into Shamrock's Slack. A missing or wrong key now returns `Unauthorized: Invalid API Key` and logs `UNAUTHORIZED_API_ACCESS`; nothing is posted.
+- The only callers are four Netlify functions in `shamrock-telegram-app` (`checkin-geo-alert`, `sentiment-watchdog`, `daily-briefing`, `compliance-digest`). They send `GAS_API_KEY` as of shamrock-telegram-app #14. That change must deploy **before** this ships with `clasp push`.
+- Test: `scripts/test_gas_post_slack_message_auth.mjs`, which runs `doPost` in a vm with stubbed Apps Script services. It runs in PR CI.
+
 ### 2026-10-08 — v2.8.10 — Shannon notify and repeat-save fixes
 
 **Google Apps Script (`backend-gas/`):**
