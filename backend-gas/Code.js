@@ -431,6 +431,35 @@ function getCountyStatistics(refresh = false) {
   return stats;
 }
 
+/**
+ * doPost actions that send messages (SMS, Telegram, Slack) or return client PII and that are
+ * called only from servers. doPost requires the GAS API key on these before any handler runs.
+ * Callers: telegram-app scheduled functions (court-reminder, engagement-watchdog,
+ * sentiment-watchdog, daily-briefing, checkin-geo-alert, compliance-digest) send GAS_API_KEY.
+ * The rest have no caller in any Shamrock2245 repo. Time-based triggers call GAS functions
+ * directly, not through doPost, so they are unaffected.
+ */
+var GAS_KEYED_DOPOST_ACTIONS_ = {
+  // Risk mitigation (RiskMitigationActions.js)
+  post_slack_message: true,
+  get_upcoming_court_dates: true,
+  send_court_reminders: true,
+  get_daily_stats: true,
+  get_unacknowledged_reminders: true,
+  escalate_to_cosigner: true,
+  get_forfeiture_cases: true,
+  get_recent_client_messages: true,
+  flag_high_stress_case: true,
+  // Telegram sends and document/signing data (no repo caller)
+  schedule_court_date: true,
+  send_signing_link: true,
+  telegram_get_signing_url: true,
+  telegram_document_status: true,
+  get_packet_manifest: true,
+  // Check-in SMS relay: Slack alerts with the client phone (no repo caller; Twilio uses the webhook path)
+  twilio_check_in: true
+};
+
 function doPost(e) {
   // 1. Log Incoming Request (Access Control)
   try {
@@ -471,6 +500,22 @@ function doPost(e) {
     // Allows passing apiKey/action in URL when body structure is fixed
     if (e.parameter && e.parameter.apiKey && !data.apiKey) data.apiKey = e.parameter.apiKey;
     if (e.parameter && e.parameter.action && !data.action) data.action = e.parameter.action;
+
+    // --- GAS API KEY ON RISK ACTIONS (sends messages or returns client PII) ---
+    // These actions used to run without a key, so anyone holding the /exec URL could text any
+    // number (court reminders, co-signer escalation), send Telegram messages, or read client
+    // messages, court dates and forfeiture cases. They now need the GAS API key (data.apiKey, or
+    // ?apiKey= merged above), checked with requireGasApiKey_ BEFORE any handler runs.
+    // Server-side callers send it (telegram-app scheduled functions send GAS_API_KEY).
+    // Browser mini-app actions (telegram_mini_app_*, telegram_payment_*, telegram_checkin_log,
+    // telegram_client_update, telegram_status_lookup, telegram_document_lookup) are NOT listed:
+    // a browser cannot hold the key. They need Telegram initData verification first.
+    if (data.action && Object.prototype.hasOwnProperty.call(GAS_KEYED_DOPOST_ACTIONS_, data.action)) {
+      if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(data.apiKey)) {
+        if (typeof logSecurityEvent === 'function') logSecurityEvent('UNAUTHORIZED_API_ACCESS', { error: 'Invalid API Key', action: data.action });
+        return createErrorResponse('Unauthorized: Invalid API Key', ERROR_CODES.UNAUTHORIZED);
+      }
+    }
 
 
 
