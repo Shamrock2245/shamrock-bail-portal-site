@@ -14,7 +14,7 @@
         body {
             font-family: 'Outfit', sans-serif;
             background: transparent;
-            color: #e2e8f0;
+            color: #1e293b;
             min-height: 100vh;
             padding: 0;
         }
@@ -34,14 +34,14 @@
         .page-header h1 {
             font-size: 1.65rem;
             font-weight: 700;
-            color: #ffffff;
+            color: #0f172a;
             margin-bottom: 6px;
             letter-spacing: -0.02em;
         }
 
         .page-header p {
             font-size: 0.88rem;
-            color: #94a3b8;
+            color: #334155;
             line-height: 1.4;
         }
 
@@ -51,7 +51,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: #64748b;
+            color: #334155;
             margin-bottom: 12px;
         }
 
@@ -72,31 +72,31 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            color: #cbd5e1;
+            color: #1e293b;
             margin-bottom: 5px;
         }
 
         .field-group label .optional {
             font-weight: 400;
             text-transform: none;
-            color: #64748b;
+            color: #475569;
             font-size: 0.72rem;
         }
 
         .field-group label .required {
-            color: #f59e0b;
+            color: #b45309;
         }
 
         .field-group input {
             width: 100%;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: #1e293b;
+            border: 1px solid #64748b;
             border-radius: 10px;
             padding: 12px 14px;
             font-family: 'Outfit', sans-serif;
             font-size: 16px;
             min-height: 44px;
-            color: #e2e8f0;
+            color: #f8fafc;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
 
@@ -107,7 +107,7 @@
         }
 
         .field-group input::placeholder {
-            color: #475569;
+            color: #cbd5e1;
         }
 
         /* ── Divider ──────────────────────────────────── */
@@ -129,8 +129,8 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(148, 163, 184, 0.12);
+            background: #1e293b;
+            border: 1px solid #334155;
             border-radius: 12px;
             padding: 14px 16px;
             transition: border-color 0.2s, background 0.2s;
@@ -140,13 +140,17 @@
         }
 
         .consent-card:hover {
-            border-color: rgba(34, 211, 238, 0.3);
-            background: rgba(15, 23, 42, 0.7);
+            border-color: #22d3ee;
+            background: #0f172a;
         }
 
         .consent-card.checked {
-            border-color: rgba(34, 211, 238, 0.4);
-            background: rgba(34, 211, 238, 0.06);
+            border-color: #0891b2;
+            background: #ecfeff;
+        }
+
+        .consent-card.checked:hover {
+            background: #cffafe;
         }
 
         .consent-card .icon {
@@ -161,7 +165,6 @@
         }
 
         .consent-card .icon.sms    { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
-        .consent-card .icon.wa     { background: rgba(37, 211, 102, 0.15); color: #25d366; }
         .consent-card .icon.tg     { background: rgba(0, 136, 204, 0.15); color: #0088cc; }
         .consent-card .icon.email  { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
 
@@ -172,13 +175,21 @@
         .consent-card .info .channel-name {
             font-size: 0.92rem;
             font-weight: 600;
-            color: #f1f5f9;
+            color: #f8fafc;
         }
 
         .consent-card .info .channel-desc {
             font-size: 0.76rem;
-            color: #64748b;
+            color: #cbd5e1;
             margin-top: 1px;
+        }
+
+        .consent-card.checked .info .channel-name {
+            color: #0f172a;
+        }
+
+        .consent-card.checked .info .channel-desc {
+            color: #334155;
         }
 
         /* ── Custom Toggle ────────────────────────────── */
@@ -235,17 +246,17 @@
         /* ── Compliance Disclaimer ────────────────────── */
         .disclaimer {
             font-size: 0.72rem;
-            color: #475569;
+            color: #334155;
             line-height: 1.6;
             margin-bottom: 24px;
             padding: 12px 14px;
-            background: rgba(15, 23, 42, 0.4);
+            background: #f8fafc;
             border-radius: 8px;
-            border-left: 3px solid rgba(245, 158, 11, 0.4);
+            border-left: 3px solid #b45309;
         }
 
         .disclaimer strong {
-            color: #94a3b8;
+            color: #0f172a;
         }
 
         /* ── Save Button ──────────────────────────────── */
@@ -482,19 +493,6 @@
                 </div>
             </label>
 
-            <!-- WhatsApp -->
-            <label class="consent-card checked" data-channel="whatsapp">
-                <div class="icon wa">📱</div>
-                <div class="info">
-                    <div class="channel-name">WhatsApp</div>
-                    <div class="channel-desc">Messaging via WhatsApp for updates &amp; reminders</div>
-                </div>
-                <div class="toggle-wrap">
-                    <input type="checkbox" id="toggleWhatsapp" checked>
-                    <span class="toggle-slider"></span>
-                </div>
-            </label>
-
             <!-- Telegram -->
             <label class="consent-card" data-channel="telegram">
                 <div class="icon tg">✈️</div>
@@ -559,7 +557,8 @@
                 email:        document.getElementById('email').value.trim(),
                 caseNumber:   document.getElementById('caseNumber').value.trim(),
                 smsOptIn:     document.getElementById('toggleSms').checked,
-                whatsappOptIn:document.getElementById('toggleWhatsapp').checked,
+                // Fail closed. WhatsApp is not offered; never record consent for a channel we do not send.
+                whatsappOptIn: false,
                 telegramOptIn:document.getElementById('toggleTelegram').checked,
                 emailOptIn:   document.getElementById('toggleEmail').checked
             };
@@ -573,7 +572,7 @@
             if (data.email)      document.getElementById('email').value = data.email;
             if (data.caseNumber) document.getElementById('caseNumber').value = data.caseNumber;
 
-            ['sms', 'whatsapp', 'telegram', 'email'].forEach(ch => {
+            ['sms', 'telegram', 'email'].forEach(ch => {
                 const key = ch + 'OptIn';
                 const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
                 const card = toggle.closest('.consent-card');
@@ -593,7 +592,7 @@
             const d = getFormData();
             if (!d.firstName || !d.lastName) return 'First name and last name are required.';
             if (!d.phone)                    return 'Phone number is required.';
-            if (!d.smsOptIn && !d.whatsappOptIn && !d.telegramOptIn && !d.emailOptIn) {
+            if (!d.smsOptIn && !d.telegramOptIn && !d.emailOptIn) {
                 return 'Please select at least one communication channel.';
             }
             return null;
