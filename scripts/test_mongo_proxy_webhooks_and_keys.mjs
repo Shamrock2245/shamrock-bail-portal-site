@@ -354,3 +354,28 @@ test('keys never leave the server: no page/public file references proxy key name
     assert.doesNotMatch(fs.readFileSync(f, 'utf8'), /PROXY_API_KEY_VELO/, path.relative(ROOT, f));
   }
 });
+
+test('npm run deploy keeps every proxy secret by Secret Manager name and never wipes env or secrets', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(FN_DIR, 'package.json'), 'utf8'));
+  const deploy = pkg.scripts.deploy;
+  // --set-secrets / --set-env-vars / --clear-* replace the whole set and would drop
+  // TWILIO_WEBHOOK_URL or a secret added in the console.
+  assert.doesNotMatch(deploy, /--set-secrets|--set-env-vars|--clear-secrets|--clear-env-vars|--remove-secrets|--env-vars-file/);
+  const match = deploy.match(/--update-secrets=(\S+)/);
+  assert.ok(match, 'deploy must use --update-secrets');
+  const pairs = match[1].split(',');
+  for (const pair of pairs) {
+    assert.match(pair, /^([A-Z][A-Z0-9_]*)=\1:latest$/, `secret must be NAME=NAME:latest, got ${pair}`);
+  }
+  const names = pairs.map((p) => p.split('=')[0]).sort();
+  assert.deepEqual(names, [
+    'MONGO_URI',
+    'PROXY_API_KEY',
+    'PROXY_API_KEY_GAS',
+    'PROXY_API_KEY_VELO',
+    'TELEGRAM_WEBHOOK_SECRET',
+    'TWILIO_AUTH_TOKEN',
+  ]);
+  // No literal values: no connection strings, URLs with credentials, or token-shaped strings.
+  assert.doesNotMatch(deploy, /mongodb(\+srv)?:\/\/|:\/\/[^\s/]*@|\b[A-Za-z0-9_\-]{32,}\b/);
+});
