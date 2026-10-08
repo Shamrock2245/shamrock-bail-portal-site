@@ -15,7 +15,11 @@
  *   LeadScoring     — AI risk scores and lead evaluations
  *   ActivityLog     — lightweight audit trail of every doPost action
  *
- * Version: 1.0.0
+ * Each call is a NAMED proxy action (logActivity, logIntake, logSignNowEvent, logPayment,
+ * logCourtDate, logCheckIn, logCommunication, logLeadScore). The proxy hardcodes the
+ * database + collection and stores only whitelisted fields; rawPayload is no longer sent.
+ *
+ * Version: 2.0.0
  */
 
 // ── Safe Wrapper ───────────────────────────────────────────────────────────────
@@ -36,7 +40,7 @@ var MongoLogger = {
    */
   logActivity: function(action, source) {
     _mongoSafe(function() {
-      MongoDbService.insertOne('ActivityLog', {
+      MongoDbService.callAction('logActivity', {
         action:    action || 'unknown',
         source:    source || 'gas_doPost',
         timestamp: new Date().toISOString()
@@ -51,7 +55,7 @@ var MongoLogger = {
    */
   logIntake: function(data, channel) {
     _mongoSafe(function() {
-      MongoDbService.insertOne('Intakes', {
+      MongoDbService.callAction('logIntake', {
         channel:          channel || data.source || 'unknown',
         caseId:           data.caseId || data.case_id || '',
         defendantName:    data.defendantName || data.defendant_name || '',
@@ -63,7 +67,6 @@ var MongoLogger = {
         bookingNumber:    data.bookingNumber || data.booking_number || '',
         charges:          data.charges || '',
         status:           'submitted',
-        rawPayload:       data,
         submittedAt:      new Date().toISOString()
       });
     });
@@ -76,7 +79,7 @@ var MongoLogger = {
    */
   logSignNow: function(eventType, data) {
     _mongoSafe(function() {
-      MongoDbService.insertOne('SignNowEvents', {
+      MongoDbService.callAction('logSignNowEvent', {
         eventType:    eventType,
         caseId:       data.caseId || data.case_id || '',
         documentId:   data.documentId || data.document_id || '',
@@ -84,7 +87,6 @@ var MongoLogger = {
         recipientPhone: data.phone || data.recipientPhone || '',
         recipientEmail: data.email || data.recipientEmail || '',
         signingUrl:   data.signingUrl || data.signingLink || '',
-        rawPayload:   data,
         eventAt:      new Date().toISOString()
       });
     });
@@ -96,14 +98,13 @@ var MongoLogger = {
    */
   logPayment: function(data) {
     _mongoSafe(function() {
-      MongoDbService.insertOne('Payments', {
+      MongoDbService.callAction('logPayment', {
         caseId:       data.caseId || data.case_id || '',
         amount:       data.amount || data.paymentAmount || 0,
         method:       data.method || data.paymentMethod || 'unknown',
         platform:     data.platform || 'telegram',
         telegramId:   data.telegramUserId || data.telegram_user_id || '',
         receiptUrl:   data.receiptUrl || '',
-        rawPayload:   data,
         loggedAt:     new Date().toISOString()
       });
     });
@@ -116,7 +117,7 @@ var MongoLogger = {
    */
   logCourtDate: function(data, eventType) {
     _mongoSafe(function() {
-      MongoDbService.insertOne('CourtDates', {
+      MongoDbService.callAction('logCourtDate', {
         eventType:      eventType || 'scheduled',
         caseId:         data.caseId || data.case_id || '',
         defendantName:  data.defendantName || data.defendant_name || '',
@@ -124,7 +125,6 @@ var MongoLogger = {
         courtLocation:  data.courtLocation || data.location || '',
         caseNumber:     data.caseNumber || data.case_number || '',
         remindersSent:  data.remindersSent || 0,
-        rawPayload:     data,
         loggedAt:       new Date().toISOString()
       });
     });
@@ -137,7 +137,7 @@ var MongoLogger = {
    */
   logCheckIn: function(data, source) {
     _mongoSafe(function() {
-      MongoDbService.insertOne('CheckIns', {
+      MongoDbService.callAction('logCheckIn', {
         source:         source || data.source || 'unknown',
         caseId:         data.caseId || data.case_id || '',
         defendantName:  data.defendantName || data.defendant_name || '',
@@ -146,7 +146,6 @@ var MongoLogger = {
         latitude:       data.latitude || data.lat || null,
         longitude:      data.longitude || data.lng || null,
         selfieUrl:      data.selfieUrl || data.selfie_url || '',
-        rawPayload:     data,
         checkedInAt:    new Date().toISOString()
       });
     });
@@ -159,14 +158,12 @@ var MongoLogger = {
    */
   logComm: function(data, platform) {
     _mongoSafe(function() {
-      MongoDbService.insertOne('Communications', {
-        direction:  'outbound',
+      MongoDbService.callAction('logCommunication', {
         platform:   platform || data.platform || 'portal',
         to:         data.to || data.phone || data.email || data.recipientPhone || '',
         from:       data.from || 'shamrock_gas',
         body:       data.body || data.message || data.text || '',
         caseId:     data.caseId || data.case_id || '',
-        rawPayload: data,
         sentAt:     new Date().toISOString()
       });
     });
@@ -179,14 +176,13 @@ var MongoLogger = {
    */
   logLeadScore: function(data, agentName) {
     _mongoSafe(function() {
-      MongoDbService.insertOne('LeadScoring', {
+      MongoDbService.callAction('logLeadScore', {
         agentName:      agentName || 'TheAnalyst',
         defendantName:  data.defendantName || data.name || '',
         bondAmount:     data.bondAmount || data.bond_amount || 0,
         county:         data.county || '',
         riskScore:      data.riskScore || data.score || null,
         recommendation: data.recommendation || '',
-        rawPayload:     data,
         scoredAt:       new Date().toISOString()
       });
     });

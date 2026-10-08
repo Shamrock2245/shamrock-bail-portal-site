@@ -6,6 +6,30 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-10-08 — v2.8.12 — Mongo proxy: deploy as mongo-proxy-v2 and keep all secrets
+
+**Cloud Function (`cloud-functions/mongo-proxy/`):** stacks on #45/#46.
+- `npm run deploy` now deploys **`mongo-proxy-v2`** beside the old `mongo-proxy`, so callers can move without downtime.
+- It uses `--update-secrets` instead of `--set-secrets`, naming `MONGO_URI`, `PROXY_API_KEY`, `PROXY_API_KEY_GAS`, `PROXY_API_KEY_VELO`, `TWILIO_AUTH_TOKEN` and `TELEGRAM_WEBHOOK_SECRET` as `NAME=NAME:latest` Secret Manager references.
+- It sets `TWILIO_WEBHOOK_URL` to the v2 `/twilio` URL with `--update-env-vars`.
+- A test checks the function name, the project, the secret names, the reference format, the env URL, and that no literal values appear.
+
+### 2026-10-08 — v2.8.11 — Mongo proxy: signed webhooks and per-caller keys
+
+**Cloud Function (`cloud-functions/mongo-proxy/`):** stacks on the named-actions change (PR #45). Nothing is active until Brendan rotates and deploys.
+- `/twilio` verifies `X-Twilio-Signature`: HMAC-SHA1 over `TWILIO_WEBHOOK_URL` plus the sorted raw POST params, keyed with `TWILIO_AUTH_TOKEN`, with a constant-time compare. The public URL comes from env because the URL the gen2 function sees is not the URL Twilio signed.
+- `/telegram` verifies `X-Telegram-Bot-Api-Secret-Token` against `TELEGRAM_WEBHOOK_SECRET`, also with a constant-time compare.
+- Both webhooks fail closed: 503 when the env is unset, 403/401 on a bad signature, and no write in either case. They now store a whitelisted `Communications` doc instead of `rawPayload`.
+- Each caller now has its own key. `PROXY_API_KEY_GAS` covers ping and the log actions. `PROXY_API_KEY_VELO` covers the Bail School actions and `/wix-intake`. Using a key for another caller's action returns 403.
+- The legacy `PROXY_API_KEY` is still accepted for every action until it is removed from the function.
+- `/wix-intake` was fail-open when no key was set and is now fail-closed.
+
+**Callers:**
+- GAS `MongoDbService` sends script property `PROXY_API_KEY_GAS`, falling back to `PROXY_API_KEY`.
+- Velo `bailSchoolMongo.jsw` and `secretsManager.getMongoProxyApiKey` (`/wix-intake`) send Wix Secret `PROXY_API_KEY_VELO`, falling back to `PROXY_API_KEY`.
+
+**Tests:** `scripts/test_mongo_proxy_webhooks_and_keys.mjs` loads the real `index.js` with stubbed functions-framework and mongodb.
+
 ### 2026-10-08 — v2.8.10 — Shannon notify and repeat-save fixes
 
 **Google Apps Script (`backend-gas/`):**
