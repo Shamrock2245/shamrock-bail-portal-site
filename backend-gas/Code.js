@@ -460,6 +460,25 @@ var GAS_KEYED_DOPOST_ACTIONS_ = {
   twilio_check_in: true
 };
 
+/**
+ * Slack-safe client name: first name + last initial ("Jane D."). The name is client-typed
+ * in the Mini App, so Slack shows only enough for staff to match the row in the sheet.
+ */
+function slackMaskName_(name) {
+  var parts = String(name || '').trim().split(/\s+/).filter(function (p) { return p; });
+  if (!parts.length) return 'Unknown';
+  var first = parts[0];
+  if (parts.length === 1) return first;
+  return first + ' ' + parts[parts.length - 1].charAt(0).toUpperCase() + '.';
+}
+
+/** Slack-safe phone: last 4 digits only ("…1234"), or "N/A". */
+function slackMaskPhone_(phone) {
+  var digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length < 4) return 'N/A';
+  return '\u2026' + digits.slice(-4);
+}
+
 function doPost(e) {
   // 1. Log Incoming Request (Access Control)
   try {
@@ -738,7 +757,7 @@ function doPost(e) {
           const slackChannel = getConfig().SLACK_WEBHOOK_INTAKE || getConfig().SLACK_WEBHOOK_SHAMROCK;
           if (slackChannel) {
             sendSlackMessage(slackChannel,
-              `💳 Payment initiated via Telegram: ${data.name || 'Unknown'} | $${data.amount || '?'} | ${data.paymentType || 'unknown'} | Ref: ${data.referenceId || 'N/A'}`,
+              `💳 Payment initiated via Telegram: ${slackMaskName_(data.name)} | Ph ${slackMaskPhone_(data.phone)} | $${data.amount || '?'} | ${data.paymentType || 'unknown'} | Ref: ${data.referenceId || 'N/A'}`,
               null
             );
           }
@@ -862,7 +881,7 @@ function doPost(e) {
               ? data.latitude.toFixed(4) + ', ' + data.longitude.toFixed(4)
               : 'Not provided';
             sendSlackMessage(slackChannel,
-              '📍 Check-in via Telegram: ' + (data.name || 'Unknown') + ' | Location: ' + locationStr + ' | Selfie: ' + (data.hasSelfie ? '✅' : '❌') + ' | Ref: ' + (data.referenceId || 'N/A'),
+              '📍 Check-in via Telegram: ' + slackMaskName_(data.name) + ' | Ph ' + slackMaskPhone_(data.phone) + ' | Location: ' + locationStr + ' | Selfie: ' + (data.hasSelfie ? '✅' : '❌') + ' | Ref: ' + (data.referenceId || 'N/A'),
               null
             );
           }
