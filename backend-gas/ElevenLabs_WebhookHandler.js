@@ -268,7 +268,8 @@ function handleCallInitiationFailure(payload) {
 
 /**
  * GAS route handler for ?source=caller_context&phone=<digits>
- * Called by the Netlify edge function (elevenlabs-init.js) at call start.
+ * Auth: SOC2_WebhookHandler requires GAS_API_KEY (?apiKey=) first. Former caller:
+ * Netlify edge elevenlabs-init.js (removed Aug 2026); no live caller today.
  * Returns a flat JSON object with case context for this caller.
  */
 function handleCallerContextLookup(e) {
