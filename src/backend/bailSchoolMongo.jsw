@@ -9,10 +9,21 @@ import wixSecretsBackend from 'wix-secrets-backend';
  * cloud-functions/mongo-proxy/named-actions.js (db + collection hardcoded there).
  */
 
+// Velo sends its own proxy key (Wix Secret PROXY_API_KEY_VELO). The legacy shared
+// PROXY_API_KEY secret is a transitional fallback only; delete it after the rotation.
+async function getOptionalSecret(name) {
+    try {
+        return (await wixSecretsBackend.getSecret(name)) || '';
+    } catch (e) {
+        return '';
+    }
+}
+
 async function getMongoConfig() {
     try {
         const proxyUrl = await wixSecretsBackend.getSecret('MONGO_PROXY_URL');
-        const apiKey = await wixSecretsBackend.getSecret('PROXY_API_KEY');
+        const apiKey = (await getOptionalSecret('PROXY_API_KEY_VELO')) || (await wixSecretsBackend.getSecret('PROXY_API_KEY'));
+        if (!proxyUrl || !apiKey) throw new Error('empty secret');
         return { proxyUrl, apiKey };
     } catch (error) {
         console.error('Error retrieving MongoDB Proxy secrets', error);

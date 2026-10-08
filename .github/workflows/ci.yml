@@ -36,4 +36,4 @@ jobs:
         run: node scripts/test_crm_intake_client.js
 
       - name: Mongo proxy named-action checks
-        run: node --test scripts/test_mongo_proxy_named_actions.mjs
+        run: node --test scripts/test_mongo_proxy_named_actions.mjs scripts/test_mongo_proxy_webhooks_and_keys.mjs

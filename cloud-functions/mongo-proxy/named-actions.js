@@ -11,10 +11,19 @@
  *   - copies only whitelisted fields into documents, coerced to scalars and length-capped;
  *   - only accepts plain string values in filters (no operator objects such as {$ne: null}).
  *
+ * Callers authenticate with their OWN key (x-api-key) and may only call their own actions:
+ *   - PROXY_API_KEY_GAS  → GAS actions (ping + the insert-only log actions)
+ *   - PROXY_API_KEY_VELO → Velo actions (Bail School) and the /wix-intake webhook
+ *   - PROXY_API_KEY      → LEGACY shared key, all actions. Transitional only: remove it
+ *                          from the function once both callers send their own key.
+ * The check fails closed (503) when no key is configured.
+ *
  * Pure module: no Mongo driver or functions-framework import, so it can be unit-tested
- * with a fake db (see test/named-actions.test.js).
+ * with a fake db (see scripts/test_mongo_proxy_named_actions.mjs).
  */
 'use strict';
+
+const crypto = require('crypto');
 
 const DB_NAME = 'ShamrockBailDB';
 
@@ -250,29 +259,85 @@ for (const [name, spec] of Object.entries(LOG_ACTIONS)) {
     NAMED_ACTIONS[name] = makeLogAction(spec);
 }
 
+// Constant-time string compare (hash first so lengths never leak or throw).
 function timingSafeEqualStr(a, b) {
-    if (typeof a !== 'string' || typeof b !== 'string') return false;
-    let diff = a.length ^ b.length;
-    const n = Math.max(a.length, b.length);
-    for (let i = 0; i < n; i++) diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
-    return diff === 0;
+    if (typeof a !== 'string' || typeof b !== 'string' || !a || !b) return false;
+    const ha = crypto.createHash('sha256').update(a, 'utf8').digest();
+    const hb = crypto.createHash('sha256').update(b, 'utf8').digest();
+    return crypto.timingSafeEqual(ha, hb);
+}
+
+// ── Per-caller keys and scopes ──────────────────────────────────────
+const GAS_ACTIONS = ['ping', ...Object.keys(LOG_ACTIONS)];
+const VELO_ACTIONS = [
+    'getCourse', 'listCourseLessons', 'getStudentEnrollment', 'listStudentEnrollments',
+    'logStudentAction', 'listStudentAuditLogs', 'markLessonComplete',
+];
+// Non-action routes a caller may use (index.js webhook paths).
+const CALLER_SCOPES = {
+    gas: { env: 'PROXY_API_KEY_GAS', actions: GAS_ACTIONS, routes: [] },
+    velo: { env: 'PROXY_API_KEY_VELO', actions: VELO_ACTIONS, routes: ['wix-intake'] },
+};
+const LEGACY_KEY_ENV = 'PROXY_API_KEY';
+let legacyWarned = false;
+
+/** Read the caller keys from an env object (process.env in production). */
+function keysFromEnv(env) {
+    env = env || {};
+    const clean = (v) => (typeof v === 'string' && v.trim() ? v.trim() : '');
+    return {
+        gas: clean(env[CALLER_SCOPES.gas.env]),
+        velo: clean(env[CALLER_SCOPES.velo.env]),
+        legacy: clean(env[LEGACY_KEY_ENV]),
+    };
+}
+
+/**
+ * Identify the caller from the x-api-key header.
+ * @returns {{status: number, error?: string, caller?: 'gas'|'velo'|'legacy'}}
+ */
+function authenticateCaller(headers, keys) {
+    keys = keys || {};
+    const configured = ['gas', 'velo', 'legacy'].filter((k) => keys[k]);
+    if (!configured.length) {
+        return { status: 503, error: 'Proxy not configured (PROXY_API_KEY_GAS / PROXY_API_KEY_VELO missing)' };
+    }
+    if (keys.gas && keys.velo && keys.gas === keys.velo) {
+        console.error('❌ PROXY_API_KEY_GAS and PROXY_API_KEY_VELO must be different keys');
+        return { status: 503, error: 'Proxy misconfigured (caller keys must differ)' };
+    }
+    const provided = String((headers && (headers['x-api-key'] || headers['X-Api-Key'])) || '');
+    let caller = null;
+    // Compare against every configured key (no early exit).
+    for (const k of configured) {
+        if (timingSafeEqualStr(provided, keys[k]) && !caller) caller = k;
+    }
+    if (!caller) return { status: 401, error: 'Unauthorized — invalid x-api-key' };
+    if (caller === 'legacy' && !legacyWarned) {
+        legacyWarned = true; // once per instance, not per call
+        console.warn('⚠️ mongo-proxy call authenticated with the LEGACY PROXY_API_KEY; switch the caller to its own key');
+    }
+    return { status: 200, caller };
+}
+
+function callerMayUse(caller, kind, name) {
+    if (caller === 'legacy') return true;
+    const scope = CALLER_SCOPES[caller];
+    if (!scope) return false;
+    return (kind === 'route' ? scope.routes : scope.actions).includes(name);
 }
 
 /**
  * Handle a database request (webhook paths are routed before this in index.js).
  * @param {{method: string, headers: object, body: any}} req
- * @param {{getDb: (name: string) => Promise<object>, apiKey: string|undefined, clock?: () => number}} deps
+ * @param {{getDb: (name: string) => Promise<object>, keys?: {gas?: string, velo?: string, legacy?: string},
+ *          apiKey?: string, clock?: () => number}} deps  (apiKey = legacy key, kept for older callers/tests)
  * @returns {Promise<{status: number, body: any}>}
  */
 async function handleNamedAction(req, deps) {
-    const expectedKey = deps.apiKey;
-    if (!expectedKey) {
-        return { status: 503, body: { error: 'Proxy not configured (PROXY_API_KEY missing)' } };
-    }
-    const providedKey = (req.headers && (req.headers['x-api-key'] || req.headers['X-Api-Key'])) || '';
-    if (!timingSafeEqualStr(String(providedKey), expectedKey)) {
-        return { status: 401, body: { error: 'Unauthorized — invalid x-api-key' } };
-    }
+    const keys = deps.keys || { legacy: deps.apiKey };
+    const auth = authenticateCaller(req.headers, keys);
+    if (auth.status !== 200) return { status: auth.status, body: { error: auth.error } };
     if (req.method !== 'POST') {
         return { status: 405, body: { error: 'Only POST requests allowed' } };
     }
@@ -290,6 +355,9 @@ async function handleNamedAction(req, deps) {
     if (!Object.prototype.hasOwnProperty.call(NAMED_ACTIONS, action)) {
         return { status: 404, body: { error: `Unknown action: ${action}` } };
     }
+    if (!callerMayUse(auth.caller, 'action', action)) {
+        return { status: 403, body: { error: `Action ${action} is not allowed for this caller key` } };
+    }
     try {
         // Database is fixed. body.database / dataSource / db / collection / tenant are ignored.
         // Input is validated before the connection is opened (ctx.db() is lazy).
@@ -303,4 +371,7 @@ async function handleNamedAction(req, deps) {
     }
 }
 
-module.exports = { DB_NAME, NAMED_ACTIONS, LOG_ACTIONS, LEGACY_GENERIC_ACTIONS, handleNamedAction };
+module.exports = {
+    DB_NAME, NAMED_ACTIONS, LOG_ACTIONS, LEGACY_GENERIC_ACTIONS, CALLER_SCOPES, LEGACY_KEY_ENV,
+    TYPES, timingSafeEqualStr, keysFromEnv, authenticateCaller, callerMayUse, handleNamedAction,
+};
