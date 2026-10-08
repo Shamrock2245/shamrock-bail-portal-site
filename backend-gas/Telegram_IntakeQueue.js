@@ -47,7 +47,58 @@
  * @param {string} telegramUserId - The Telegram chat ID (used as a unique key).
  * @returns {object} - { success: boolean, intakeId: string, row: number }
  */
+function telegramIdScanForIntake_(intakeData) {
+  var b64 = (intakeData && intakeData.id_image_b64) || '';
+  if (!b64 && intakeData && intakeData.Doc_ID_Front) {
+    var match = String(intakeData.Doc_ID_Front).match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && typeof DriveApp !== 'undefined') {
+      try {
+        var blob = DriveApp.getFileById(match[1]).getBlob();
+        b64 = Utilities.base64Encode(blob.getBytes());
+      } catch (driveErr) {
+        console.error('CRM INTAKE ID SCAN FAILED source=telegram error=' + driveErr.message);
+      }
+    }
+  }
+  if (!b64 || typeof crmScanIdImage_ !== 'function') return {};
+  return crmScanIdImage_(b64, (intakeData && intakeData.id_filename) || 'id.jpg') || {};
+}
+
 function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
+  intakeData = intakeData || {};
+  const intakeId = intakeData.intakeId || intakeData.intake_id ||
+    ('TG-' + Date.now() + '-' + (telegramUserId || 'unknown'));
+  intakeData.intakeId = intakeId;
+
+  var scan = {};
+  try {
+    scan = telegramIdScanForIntake_(intakeData) || {};
+  } catch (scanErr) {
+    console.error('CRM INTAKE ID SCAN FAILED source=telegram error=' + scanErr.message);
+  }
+
+  var crmResult = { ok: false, error: 'not_attempted' };
+  try {
+    if (typeof crmIntakeFromTelegram_ === 'function') {
+      crmResult = crmIntakeFromTelegram_(intakeData, { scan: scan }) || crmResult;
+    } else {
+      console.error('CRM INTAKE FAILED source=telegram status=0 error=crmIntakeFromTelegram_missing');
+    }
+  } catch (crmErr) {
+    console.error('CRM INTAKE FAILED source=telegram status=0 error=' + crmErr.message);
+    crmResult = { ok: false, error: crmErr.message };
+  }
+
+  if (crmResult.ok) {
+    console.log('CRM intake saved ' + (crmResult.intake_id || intakeId) + ' source=' + (crmResult.source || ''));
+    return { success: true, intakeId: crmResult.intake_id || intakeId, via: 'crm' };
+  }
+
+  console.error('CRM INTAKE FAILED \u2014 falling back to IntakeQueue sheet. source=' +
+    (crmResult.source || intakeData.source || 'telegram') +
+    ' status=' + (crmResult.status || 0) +
+    ' error=' + (crmResult.error || 'unknown'));
+
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
@@ -69,9 +120,6 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
     }
 
     const timestamp = new Date();
-
-    // --- Generate a unique Intake ID (prefixed TG- to distinguish source) ---
-    const intakeId = 'TG-' + timestamp.getTime() + '-' + (telegramUserId || 'unknown');
 
     // --- Build References array (matches handleNewIntake schema) ---
     const references = [];
@@ -214,19 +262,19 @@ function saveTelegramIntakeToQueue(intakeData, telegramUserId) {
         };
         const wixResult = sendToWixWithRetry('/telegramIntake', payload);
         if (wixResult && wixResult.success) {
-          console.log('✅ Telegram intake synced cleanly to Wix CMS IntakeQueue: ' + (wixResult.caseId || intakeId));
+          console.log('\u2705 Telegram intake synced cleanly to Wix CMS IntakeQueue: ' + (wixResult.caseId || intakeId));
         } else {
-          console.warn('⚠️ Telegram intake saved locally, but Wix CMS sync failed:', wixResult);
+          console.warn('\u26a0\ufe0f Telegram intake saved locally, but Wix CMS sync failed:', wixResult);
         }
       } else {
-        console.warn('⚠️ WixPortalIntegration functions not found. Skipping Wix CMS sync.');
+        console.warn('\u26a0\ufe0f WixPortalIntegration functions not found. Skipping Wix CMS sync.');
       }
     } catch (wixErr) {
-      console.error('❌ Error piping Telegram intake to Wix CMS:', wixErr);
+      console.error('\u274c Error piping Telegram intake to Wix CMS:', wixErr);
     }
     // -------------------------------------
 
-    console.log('✅ Telegram intake saved to queue: ' + intakeId);
+    console.log('\u2705 Telegram intake saved to queue: ' + intakeId);
 
     // --- Notify Slack (all relevant channels simultaneously) ---
     try {
@@ -368,7 +416,7 @@ function _saveTelegramFullData(ss, intakeId, intakeData, telegramUserId) {
       JSON.stringify(intakeData)
     ]);
 
-    console.log('✅ Full Telegram intake data saved: ' + intakeId);
+    console.log('\u2705 Full Telegram intake data saved: ' + intakeId);
   } catch (e) {
     console.warn('_saveTelegramFullData failed (non-critical):', e.message);
   }
@@ -588,8 +636,8 @@ function _sendAdminEmailAlert(intakeData, intakeId, aiRisk) {
     const riskLabel = aiRisk || 'Pending';
     const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
 
-    const subject = '📱 New Telegram Intake: ' + (intakeData.DefName || 'Unknown Defendant') +
-      ' — ' + (intakeData.DefFacility || 'Unknown Facility');
+    const subject = '\ud83d\udcf1 New Telegram Intake: ' + (intakeData.DefName || 'Unknown Defendant') +
+      ' \u2014 ' + (intakeData.DefFacility || 'Unknown Facility');
 
     const plainBody = [
       'A new bail bond intake was submitted via the Telegram bot.',
@@ -599,28 +647,28 @@ function _sendAdminEmailAlert(intakeData, intakeId, aiRisk) {
       'AI RISK:   ' + riskLabel,
       '',
       '--- DEFENDANT ---',
-      'Name:     ' + (intakeData.DefName || '—'),
-      'DOB:      ' + (intakeData.DefDOB || '—'),
-      'Facility: ' + (intakeData.DefFacility || '—'),
-      'County:   ' + (intakeData.DefCounty || '—'),
-      'Phone:    ' + (intakeData.DefPhone || '—'),
-      'Email:    ' + (intakeData.DefEmail || '—'),
+      'Name:     ' + (intakeData.DefName || '\u2014'),
+      'DOB:      ' + (intakeData.DefDOB || '\u2014'),
+      'Facility: ' + (intakeData.DefFacility || '\u2014'),
+      'County:   ' + (intakeData.DefCounty || '\u2014'),
+      'Phone:    ' + (intakeData.DefPhone || '\u2014'),
+      'Email:    ' + (intakeData.DefEmail || '\u2014'),
       '',
       '--- CO-SIGNER (INDEMNITOR) ---',
-      'Name:         ' + (intakeData.IndName || '—'),
-      'DOB:          ' + (intakeData.IndDOB || '—'),
-      'Relationship: ' + (intakeData.IndRelation || '—'),
-      'Phone:        ' + (intakeData.IndPhone || '—'),
-      'Email:        ' + (intakeData.IndEmail || '—'),
-      'Address:      ' + (intakeData.IndAddress || '—'),
-      'Employer:     ' + (intakeData.IndEmployer || '—'),
+      'Name:         ' + (intakeData.IndName || '\u2014'),
+      'DOB:          ' + (intakeData.IndDOB || '\u2014'),
+      'Relationship: ' + (intakeData.IndRelation || '\u2014'),
+      'Phone:        ' + (intakeData.IndPhone || '\u2014'),
+      'Email:        ' + (intakeData.IndEmail || '\u2014'),
+      'Address:      ' + (intakeData.IndAddress || '\u2014'),
+      'Employer:     ' + (intakeData.IndEmployer || '\u2014'),
       '',
       '--- REFERENCES ---',
-      'Ref 1: ' + (intakeData.Ref1Name || '—') + ' | ' + (intakeData.Ref1Phone || '—') + ' | ' + (intakeData.Ref1Relation || '—'),
-      'Ref 2: ' + (intakeData.Ref2Name || '—') + ' | ' + (intakeData.Ref2Phone || '—') + ' | ' + (intakeData.Ref2Relation || '—'),
+      'Ref 1: ' + (intakeData.Ref1Name || '\u2014') + ' | ' + (intakeData.Ref1Phone || '\u2014') + ' | ' + (intakeData.Ref1Relation || '\u2014'),
+      'Ref 2: ' + (intakeData.Ref2Name || '\u2014') + ' | ' + (intakeData.Ref2Phone || '\u2014') + ' | ' + (intakeData.Ref2Relation || '\u2014'),
       '',
       '--- ACTION REQUIRED ---',
-      'Open the Dashboard → Queue tab → find Intake ID ' + intakeId + ' → click Process.',
+      'Open the Dashboard \u2192 Queue tab \u2192 find Intake ID ' + intakeId + ' \u2192 click Process.',
       '',
       'Shamrock Bail Bonds | Automated Alert System'
     ].join('\n');
@@ -628,38 +676,38 @@ function _sendAdminEmailAlert(intakeData, intakeId, aiRisk) {
     const htmlBody = `
       <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;">
         <div style="background:#0f172a;color:#fff;padding:20px 28px;border-radius:8px 8px 0 0;">
-          <h2 style="margin:0;font-size:20px;">📱 New Telegram Intake</h2>
-          <p style="margin:4px 0 0;opacity:.75;font-size:13px;">Received ${timestamp} — AI Risk: <strong>${riskLabel}</strong></p>
+          <h2 style="margin:0;font-size:20px;">\ud83d\udcf1 New Telegram Intake</h2>
+          <p style="margin:4px 0 0;opacity:.75;font-size:13px;">Received ${timestamp} \u2014 AI Risk: <strong>${riskLabel}</strong></p>
         </div>
         <div style="background:#f8f9fc;padding:24px 28px;border:1px solid #e2e8f0;">
           <table style="width:100%;border-collapse:collapse;font-size:14px;">
             <tr style="background:#fff;">
               <td colspan="2" style="padding:8px 12px;font-weight:700;color:#0f172a;border-bottom:2px solid #e2e8f0;">DEFENDANT</td>
             </tr>
-            <tr><td style="padding:6px 12px;color:#64748b;width:140px;">Name</td><td style="padding:6px 12px;">${intakeData.DefName || '—'}</td></tr>
-            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">DOB</td><td style="padding:6px 12px;">${intakeData.DefDOB || '—'}</td></tr>
-            <tr><td style="padding:6px 12px;color:#64748b;">Facility</td><td style="padding:6px 12px;">${intakeData.DefFacility || '—'}${intakeData.DefCounty ? ' (' + intakeData.DefCounty + ' County)' : ''}</td></tr>
-            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">Phone</td><td style="padding:6px 12px;">${intakeData.DefPhone || '—'}</td></tr>
-            <tr><td style="padding:6px 12px;color:#64748b;">Email</td><td style="padding:6px 12px;">${intakeData.DefEmail || '—'}</td></tr>
+            <tr><td style="padding:6px 12px;color:#64748b;width:140px;">Name</td><td style="padding:6px 12px;">${intakeData.DefName || '\u2014'}</td></tr>
+            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">DOB</td><td style="padding:6px 12px;">${intakeData.DefDOB || '\u2014'}</td></tr>
+            <tr><td style="padding:6px 12px;color:#64748b;">Facility</td><td style="padding:6px 12px;">${intakeData.DefFacility || '\u2014'}${intakeData.DefCounty ? ' (' + intakeData.DefCounty + ' County)' : ''}</td></tr>
+            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">Phone</td><td style="padding:6px 12px;">${intakeData.DefPhone || '\u2014'}</td></tr>
+            <tr><td style="padding:6px 12px;color:#64748b;">Email</td><td style="padding:6px 12px;">${intakeData.DefEmail || '\u2014'}</td></tr>
             <tr style="background:#fff;">
               <td colspan="2" style="padding:12px 12px 8px;font-weight:700;color:#0f172a;border-bottom:2px solid #e2e8f0;border-top:2px solid #e2e8f0;">CO-SIGNER (INDEMNITOR)</td>
             </tr>
-            <tr><td style="padding:6px 12px;color:#64748b;">Name</td><td style="padding:6px 12px;">${intakeData.IndName || '—'}</td></tr>
-            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">DOB</td><td style="padding:6px 12px;">${intakeData.IndDOB || '—'}</td></tr>
-            <tr><td style="padding:6px 12px;color:#64748b;">Relationship</td><td style="padding:6px 12px;">${intakeData.IndRelation || '—'}</td></tr>
-            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">Phone</td><td style="padding:6px 12px;">${intakeData.IndPhone || '—'}</td></tr>
-            <tr><td style="padding:6px 12px;color:#64748b;">Email</td><td style="padding:6px 12px;">${intakeData.IndEmail || '—'}</td></tr>
-            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">Address</td><td style="padding:6px 12px;">${intakeData.IndAddress || '—'}</td></tr>
-            <tr><td style="padding:6px 12px;color:#64748b;">Employer</td><td style="padding:6px 12px;">${intakeData.IndEmployer || '—'}${intakeData.IndJobTitle ? ' / ' + intakeData.IndJobTitle : ''}</td></tr>
+            <tr><td style="padding:6px 12px;color:#64748b;">Name</td><td style="padding:6px 12px;">${intakeData.IndName || '\u2014'}</td></tr>
+            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">DOB</td><td style="padding:6px 12px;">${intakeData.IndDOB || '\u2014'}</td></tr>
+            <tr><td style="padding:6px 12px;color:#64748b;">Relationship</td><td style="padding:6px 12px;">${intakeData.IndRelation || '\u2014'}</td></tr>
+            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">Phone</td><td style="padding:6px 12px;">${intakeData.IndPhone || '\u2014'}</td></tr>
+            <tr><td style="padding:6px 12px;color:#64748b;">Email</td><td style="padding:6px 12px;">${intakeData.IndEmail || '\u2014'}</td></tr>
+            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">Address</td><td style="padding:6px 12px;">${intakeData.IndAddress || '\u2014'}</td></tr>
+            <tr><td style="padding:6px 12px;color:#64748b;">Employer</td><td style="padding:6px 12px;">${intakeData.IndEmployer || '\u2014'}${intakeData.IndJobTitle ? ' / ' + intakeData.IndJobTitle : ''}</td></tr>
             <tr style="background:#fff;">
               <td colspan="2" style="padding:12px 12px 8px;font-weight:700;color:#0f172a;border-bottom:2px solid #e2e8f0;border-top:2px solid #e2e8f0;">REFERENCES</td>
             </tr>
-            <tr><td style="padding:6px 12px;color:#64748b;">Reference 1</td><td style="padding:6px 12px;">${intakeData.Ref1Name || '—'} &mdash; ${intakeData.Ref1Phone || '—'} &mdash; ${intakeData.Ref1Relation || '—'}</td></tr>
-            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">Reference 2</td><td style="padding:6px 12px;">${intakeData.Ref2Name || '—'} &mdash; ${intakeData.Ref2Phone || '—'} &mdash; ${intakeData.Ref2Relation || '—'}</td></tr>
+            <tr><td style="padding:6px 12px;color:#64748b;">Reference 1</td><td style="padding:6px 12px;">${intakeData.Ref1Name || '\u2014'} &mdash; ${intakeData.Ref1Phone || '\u2014'} &mdash; ${intakeData.Ref1Relation || '\u2014'}</td></tr>
+            <tr style="background:#f1f5f9;"><td style="padding:6px 12px;color:#64748b;">Reference 2</td><td style="padding:6px 12px;">${intakeData.Ref2Name || '\u2014'} &mdash; ${intakeData.Ref2Phone || '\u2014'} &mdash; ${intakeData.Ref2Relation || '\u2014'}</td></tr>
           </table>
           <div style="margin-top:20px;background:#d4af37;padding:14px 20px;border-radius:6px;">
             <strong style="font-size:14px;">Action Required:</strong>
-            Open the Dashboard → Queue tab → find Intake ID <code>${intakeId}</code> → click ⬇️ Process
+            Open the Dashboard \u2192 Queue tab \u2192 find Intake ID <code>${intakeId}</code> \u2192 click \u2b07\ufe0f Process
           </div>
           <p style="margin-top:16px;font-size:11px;color:#94a3b8;">Intake ID: ${intakeId} &bull; Source: Telegram Bot &bull; Shamrock Bail Bonds Automated Alert</p>
         </div>
@@ -671,12 +719,12 @@ function _sendAdminEmailAlert(intakeData, intakeId, aiRisk) {
       body: plainBody,
       htmlBody: htmlBody
     });
-    console.log('✉️ Admin email alert sent for intake: ' + intakeId);
+    console.log('\u2709\ufe0f Admin email alert sent for intake: ' + intakeId);
   } catch (e) {
     console.warn('Admin email alert failed (non-critical):', e.message);
   }
 }
 
 // =============================================================================
-// EXPORTS (GAS — functions are global, no explicit exports needed)
+// EXPORTS (GAS \u2014 functions are global, no explicit exports needed)
 // =============================================================================
