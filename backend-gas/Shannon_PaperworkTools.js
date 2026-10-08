@@ -73,12 +73,9 @@ function toolSavePaperworkAnswers(params) {
   var merged = shannonMerge_(existing.payload, params);
   merged.case_reference = caseRef;
   merged.updated_at = new Date().toISOString();
-  try {
-    shannonSyncIntakeToCrm_(merged);
-  } catch (crmErr) {
-    Logger.log('CRM INTAKE FAILED source=shannon_voice error=' + crmErr.message + ' — keeping ShannonPaperwork draft');
-    console.error('CRM INTAKE FAILED source=shannon_voice error=' + crmErr.message);
-  }
+  // Write the draft the rest of the call reads before the CRM round-trip.
+  // One submit, with no id-status lookup, so a slow CRM cannot drop the sheet
+  // row or add a second blocking fetch inside the voice turn.
   var sheet = shannonPaperworkSheet_();
   var row = [
     new Date(),
@@ -94,6 +91,12 @@ function toolSavePaperworkAnswers(params) {
     sheet.getRange(existing.row, 1, 1, row.length).setValues([row]);
   } else {
     sheet.appendRow(row);
+  }
+  try {
+    shannonSyncIntakeToCrm_(merged, { skipIdScan: true });
+  } catch (crmErr) {
+    Logger.log('CRM INTAKE FAILED source=shannon_voice error=' + crmErr.message + ' — keeping ShannonPaperwork draft');
+    console.error('CRM INTAKE FAILED source=shannon_voice error=' + crmErr.message);
   }
   return ContentService.createTextOutput(JSON.stringify({
     status: 'saved',
@@ -216,11 +219,12 @@ function shannonLoadIdScan_(caseRef) {
   }
 }
 
-function shannonSyncIntakeToCrm_(params) {
+function shannonSyncIntakeToCrm_(params, opts) {
   params = params || {};
+  opts = opts || {};
   var caseRef = params.case_reference || params.intakeId || params.packet_id || '';
   var ocr = params.id_ocr || null;
-  if (!ocr || typeof ocr !== 'object' || !Object.keys(ocr).length) {
+  if (!opts.skipIdScan && (!ocr || typeof ocr !== 'object' || !Object.keys(ocr).length)) {
     ocr = shannonLoadIdScan_(caseRef);
   }
   if (typeof crmIntakeFromShannon_ !== 'function') {
@@ -244,9 +248,11 @@ function handleShannonNotifyBondsman(params) {
   var county = String(params.county || '').trim();
   var notes = String(params.notes || '').trim();
   var preferredTime = String(params.preferred_time || 'ASAP').trim();
+  var caseRef = shannonCaseKey_(params);
   var reply = {
     success: true,
     status: 'notified',
+    case_reference: caseRef,
     message: 'You can reach our office at 239-332-2245. I also notified a bondsman who can call you back ' +
       (preferredTime && preferredTime !== 'ASAP' ? 'around ' + preferredTime : 'as soon as possible') + '.'
   };
@@ -255,6 +261,7 @@ function handleShannonNotifyBondsman(params) {
   try {
     if (typeof shannonSyncIntakeToCrm_ === 'function') {
       var crmCode = shannonSyncIntakeToCrm_({
+        case_reference: caseRef,
         caller_name: callerName,
         caller_phone: callerPhone,
         indemnitor_name: callerName,
@@ -262,21 +269,16 @@ function handleShannonNotifyBondsman(params) {
         defendant_name: defName,
         county: county,
         notes: notes
-      });
+      }, { skipIdScan: true });
       crmOk = crmCode >= 200 && crmCode < 300;
     }
   } catch (crmErr) {
     Logger.log('CRM INTAKE FAILED source=shannon_voice error=' + crmErr.message);
     console.error('CRM INTAKE FAILED source=shannon_voice error=' + crmErr.message);
   }
-  if (crmOk) {
-    reply.via = 'crm';
-    return reply;
-  }
 
-  Logger.log('CRM INTAKE FAILED source=shannon_voice — notify_bondsman falling back to callback sheet and Slack');
-  console.error('CRM INTAKE FAILED source=shannon_voice error=notify_bondsman_fallback');
-
+  // The callback time and the staff-desk text always run. Slack is only the
+  // CRM-miss path, so a successful submit does not post a second alert.
   try {
     if (typeof toolScheduleCallback === 'function' && callerPhone) {
       toolScheduleCallback({
@@ -291,19 +293,23 @@ function handleShannonNotifyBondsman(params) {
     Logger.log('Shannon notify callback non-fatal: ' + cbErr.message);
   }
 
-  try {
-    if (typeof sendSlackMessage === 'function') {
-      sendSlackMessage('#intake-alerts',
-        '📞 *Shannon asked a bondsman to follow up*\n' +
-        '• Caller: ' + (callerName || 'Unknown') + '\n' +
-        '• Phone: ' + (callerPhone || 'none') + '\n' +
-        '• Defendant: ' + (defName || 'TBD') + '\n' +
-        '• County: ' + (county || 'TBD') + '\n' +
-        '• Notes: ' + (notes || 'None'),
-        null
-      );
-    }
-  } catch (slackErr) {}
+  if (!crmOk) {
+    Logger.log('CRM INTAKE FAILED source=shannon_voice — notify_bondsman falling back to Slack');
+    console.error('CRM INTAKE FAILED source=shannon_voice error=notify_bondsman_fallback');
+    try {
+      if (typeof sendSlackMessage === 'function') {
+        sendSlackMessage('#intake-alerts',
+          '📞 *Shannon asked a bondsman to follow up*\n' +
+          '• Caller: ' + (callerName || 'Unknown') + '\n' +
+          '• Phone: ' + (callerPhone || 'none') + '\n' +
+          '• Defendant: ' + (defName || 'TBD') + '\n' +
+          '• County: ' + (county || 'TBD') + '\n' +
+          '• Notes: ' + (notes || 'None'),
+          null
+        );
+      }
+    } catch (slackErr) {}
+  }
 
   try {
     notifyShannonStaffDesk_(
@@ -318,7 +324,7 @@ function handleShannonNotifyBondsman(params) {
     Logger.log('Shannon staff desk text failed (non-fatal): ' + deskErr.message);
   }
 
-  reply.via = 'fallback';
+  reply.via = crmOk ? 'crm' : 'fallback';
   return reply;
 }
 

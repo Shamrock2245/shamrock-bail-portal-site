@@ -142,12 +142,16 @@ function crmBuildIntakePayload_(source, input) {
   var defDob = scanOnDefendant ? (scanDob || crmClean_(ocr.defendant_dob)) : crmClean_(ocr.defendant_dob || ocr.DefDOB);
   var defDl = scanOnDefendant ? (scanDl || crmClean_(ocr.defendant_dl)) : crmClean_(ocr.defendant_dl);
 
+  var nestedInd = (form.indemnitor && typeof form.indemnitor === 'object') ? form.indemnitor : {};
+  var nestedDef = (form.defendant && typeof form.defendant === 'object') ? form.defendant : {};
   var saidIndName = crmClean_(
     form.IndName || form.indemnitorName || form.indemnitor_name || form.IndemnitorName
+    || nestedInd.name || nestedInd.full_name
     || (role === 'indemnitor' ? (form.caller_name || form.callerName) : '')
   );
   var saidDefName = crmClean_(
     form.DefName || form.defendantName || form.defendant_name
+    || nestedDef.name || nestedDef.full_name
     || (role === 'defendant' ? (form.caller_name || form.callerName) : '')
   );
   if (saidIndName) indName = saidIndName;
@@ -181,7 +185,7 @@ function crmBuildIntakePayload_(source, input) {
   if (saidDefDl) defDl = saidDefDl;
 
   var indPhone = crmStatedPhone_(
-    form.IndPhone || form.indemnitorPhone || form.indemnitor_phone
+    form.IndPhone || form.indemnitorPhone || form.indemnitor_phone || nestedInd.phone
     || (role === 'indemnitor' ? (form.caller_phone || form.callerPhone || form.phone) : ''),
     chatId
   );
@@ -191,8 +195,9 @@ function crmBuildIntakePayload_(source, input) {
     chatId
   );
   var email = crmBestEmail_([
-    form.IndEmail, form.indemnitorEmail, form.indemnitor_email, form.caller_email, form.email,
-    form.DefEmail, form.defendantEmail, form.defendant_email
+    form.IndEmail, form.indemnitorEmail, form.indemnitor_email, nestedInd.email,
+    form.caller_email, form.email,
+    form.DefEmail, form.defendantEmail, form.defendant_email, nestedDef.email
   ]);
 
   var intakeId = crmClean_(input.intakeId || form.intakeId || form.intake_id || form.case_reference || form.caseId);

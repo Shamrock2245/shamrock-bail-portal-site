@@ -6,6 +6,14 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-10-08 — v2.8.10 — Shannon notify and repeat-save fixes
+
+**Google Apps Script (`backend-gas/`):**
+- `notify_bondsman` always schedules the callback and texts the staff desk. Slack runs only when the CRM submit misses. The CRM payload reuses the call's case reference instead of minting a second intake.
+- `save_paperwork_answers` writes the ShannonPaperwork row first, then makes one CRM submit. `create_intake` no longer does the id-status lookup on the voice turn.
+- Drafts that store `indemnitor` and `defendant` objects are read for name, phone, and email. A flat stated field still wins.
+- The Telegram mini-app Slack post runs only when `saveTelegramIntakeToQueue` did not land the lead in the CRM.
+
 ### 2026-10-07 — v2.8.9 — CRM intake for Telegram and Shannon
 
 **Google Apps Script (`backend-gas/`):**

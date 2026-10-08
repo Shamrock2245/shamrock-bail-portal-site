@@ -734,7 +734,7 @@ function toolCreateIntake(params) {
                 indemnitor_phone: params.indemnitor_phone || callerPhone,
                 booking_number: params.booking_number || '',
                 notes: params.notes || ''
-            });
+            }, { skipIdScan: true });
             crmOk = crmCode >= 200 && crmCode < 300;
         }
     } catch (crmSyncErr) {

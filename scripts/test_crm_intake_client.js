@@ -169,9 +169,160 @@ const missing = ctx.crmSubmitIntake_({ source: 'telegram' }, {
 });
 assert(missing.ok === false && missing.error === 'missing_machine_key', 'missing key');
 
+const nested = ctx.crmBuildIntakePayload_('shannon_voice', {
+  form: {
+    indemnitor: { name: 'Amy Nested', email: 'amy.nested@example.com', phone: '2395550188' },
+    defendant: { name: 'Bob Nested', email: 'bob.nested@example.com' }
+  }
+});
+assert(nested.IndName === 'Amy Nested', 'nested indemnitor name');
+assert(nested.IndPhone === '2395550188', 'nested indemnitor phone');
+assert(nested.IndEmail === 'amy.nested@example.com', 'nested indemnitor email');
+assert(nested.DefName === 'Bob Nested', 'nested defendant name');
+
+const nestedDefEmail = ctx.crmBuildIntakePayload_('shannon_voice', {
+  form: { defendant: { name: 'Bob Nested', email: 'bob.nested@example.com' } }
+});
+assert(nestedDefEmail.IndEmail === 'bob.nested@example.com', 'nested defendant email');
+
+const flatWins = ctx.crmBuildIntakePayload_('shannon_voice', {
+  form: {
+    indemnitor_name: 'Flat Amy',
+    indemnitor_email: 'flat@example.com',
+    defendant_name: 'Flat Bob',
+    indemnitor: { name: 'Nested Amy', email: 'nested@example.com', phone: '2395550188' },
+    defendant: { name: 'Nested Bob', email: 'bob.nested@example.com' }
+  }
+});
+assert(flatWins.IndName === 'Flat Amy', 'flat indemnitor name wins');
+assert(flatWins.DefName === 'Flat Bob', 'flat defendant name wins');
+assert(flatWins.IndEmail === 'flat@example.com', 'flat email wins');
+assert(flatWins.IndPhone === '2395550188', 'nested phone fills a blank flat phone');
+
 const shannonFile = fs.readFileSync(path.join(__dirname, '../backend-gas/Shannon_PaperworkTools.js'), 'utf8');
 assert(shannonFile.indexOf('skip_match') === -1, 'Shannon no longer skips match');
 assert(shannonFile.indexOf("source: 'elevenlabs_voice'") === -1, 'Shannon no longer tags elevenlabs_voice');
 assert(shannonFile.indexOf('crmIntakeFromShannon_') !== -1, 'Shannon uses the CRM client');
+
+const webhookFile = fs.readFileSync(path.join(__dirname, '../backend-gas/ElevenLabs_WebhookHandler.js'), 'utf8');
+const createStart = webhookFile.indexOf('function toolCreateIntake');
+const createEnd = webhookFile.indexOf('\nfunction ', createStart + 10);
+const createBody = webhookFile.slice(createStart, createEnd);
+assert(createBody.indexOf('skipIdScan: true') !== -1, 'create_intake skips the id-status lookup');
+assert(createBody.indexOf('shannonLoadIdScan_') === -1, 'create_intake does not load an id scan');
+assert(createBody.indexOf('id-status') === -1, 'create_intake has no id-status call');
+
+const codeFile = fs.readFileSync(path.join(__dirname, '../backend-gas/Code.js'), 'utf8');
+const miniStart = codeFile.indexOf("data.action === 'telegram_mini_app_intake'");
+const miniSlice = codeFile.slice(miniStart, miniStart + 1800);
+assert(miniSlice.indexOf("result.via === 'crm'") !== -1, 'mini-app Slack is gated on a CRM miss');
+const slackAt = miniSlice.indexOf('sendSlackMessage');
+const gateAt = miniSlice.indexOf("result.via === 'crm'");
+assert(gateAt !== -1 && slackAt > gateAt, 'Slack post sits inside the CRM-miss guard');
+
+const events = [];
+const fetches = [];
+const shannonCtx = {
+  console: console,
+  Logger: { log: function () {} },
+  ContentService: {
+    MimeType: { JSON: 'application/json' },
+    createTextOutput: function (text) {
+      return { text: text, setMimeType: function () { return this; } };
+    }
+  },
+  PropertiesService: {
+    getScriptProperties: function () {
+      return { getProperty: function () { return ''; } };
+    }
+  },
+  UrlFetchApp: {
+    fetch: function (url) {
+      fetches.push(String(url));
+      return {
+        getResponseCode: function () { return 200; },
+        getContentText: function () { return '{}'; }
+      };
+    }
+  },
+  SpreadsheetApp: {
+    getActiveSpreadsheet: function () {
+      const rows = [['UpdatedAt', 'CaseRef', 'CallerPhone', 'CallerRole', 'DefendantName', 'IndemnitorEmail', 'Status', 'PayloadJson']];
+      const sheet = {
+        getDataRange: function () {
+          return { getValues: function () { return rows.map(function (row) { return row.slice(); }); } };
+        },
+        appendRow: function (row) {
+          events.push('sheet');
+          rows.push(row);
+        },
+        getRange: function () {
+          return { setValues: function () { events.push('sheet'); } };
+        }
+      };
+      return {
+        getSheetByName: function () { return sheet; },
+        insertSheet: function () { return sheet; }
+      };
+    }
+  }
+};
+vm.createContext(shannonCtx);
+vm.runInContext(shannonFile, shannonCtx);
+shannonCtx.crmIntakeFromShannon_ = function (params) {
+  events.push('crm:' + (params.case_reference || ''));
+  return { ok: true, status: 200 };
+};
+shannonCtx.toolScheduleCallback = function (params) { events.push('callback:' + params.preferred_time); };
+shannonCtx.sendSlackMessage = function () { events.push('slack'); };
+shannonCtx.sendShannonText_ = function () { events.push('desk'); return { success: true }; };
+
+const saved = JSON.parse(shannonCtx.toolSavePaperworkAnswers({
+  case_reference: 'SH-2395550101-BOB-ROE',
+  caller_phone: '2395550101',
+  defendant_name: 'Bob Roe',
+  indemnitor: { email: 'amy@example.com' }
+}).text);
+assert(saved.status === 'saved', 'paperwork saved');
+assert(events[0] === 'sheet', 'sheet write happens before the CRM call');
+assert(events[1] === 'crm:SH-2395550101-BOB-ROE', 'CRM sync reuses the case reference');
+assert(fetches.length === 0, 'paperwork save does not call id-status');
+
+fetches.length = 0;
+shannonCtx.shannonSyncIntakeToCrm_({ case_reference: 'SH-2395550101-BOB-ROE', caller_name: 'Amy' });
+assert(fetches.some(function (url) { return url.indexOf('/api/paperwork/shannon/id-status') !== -1; }), 'id-status still runs when not skipped');
+fetches.length = 0;
+shannonCtx.shannonSyncIntakeToCrm_({ case_reference: 'SH-2395550101-BOB-ROE' }, { skipIdScan: true });
+assert(fetches.length === 0, 'skipIdScan keeps the voice path to one CRM call');
+
+events.length = 0;
+const notified = shannonCtx.handleShannonNotifyBondsman({
+  case_reference: 'SH-2395550101-BOB-ROE',
+  caller_name: 'Amy Roe',
+  caller_phone: '2395550101',
+  defendant_name: 'Bob Roe',
+  county: 'Lee',
+  preferred_time: '3pm'
+});
+assert(notified.via === 'crm', 'notify CRM success');
+assert(notified.case_reference === 'SH-2395550101-BOB-ROE', 'notify reuses the case reference');
+assert(events.indexOf('callback:3pm') !== -1, 'callback still runs after CRM success');
+assert(events.indexOf('desk') !== -1, 'staff desk text still runs after CRM success');
+assert(events.indexOf('slack') === -1, 'Slack is skipped when CRM accepts');
+assert(events.indexOf('crm:SH-2395550101-BOB-ROE') !== -1, 'notify CRM payload carries the case reference');
+
+shannonCtx.crmIntakeFromShannon_ = function () { return { ok: false, status: 503, error: 'down' }; };
+events.length = 0;
+const missed = shannonCtx.handleShannonNotifyBondsman({
+  caller_name: 'Amy Roe',
+  caller_phone: '2395550101',
+  defendant_name: 'Bob Roe',
+  preferred_time: 'ASAP'
+});
+assert(missed.via === 'fallback', 'notify CRM miss');
+assert(missed.case_reference.indexOf('SH-2395550101-BOB-ROE') === 0, 'miss path still builds the same case key');
+assert(events.indexOf('callback:ASAP') !== -1, 'callback runs on a CRM miss');
+assert(events.indexOf('slack') !== -1, 'Slack runs only on a CRM miss');
+assert(events.indexOf('desk') !== -1, 'staff desk text runs on a CRM miss');
 
 console.log('crm intake client checks passed');
