@@ -7,6 +7,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { execSync } from 'node:child_process'
+
 const ROOT = process.cwd()
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.netlify', 'venv', '.wix', '__pycache__'])
 
@@ -19,8 +21,13 @@ function walk(dir, out) {
   }
 }
 
-const files = []
-walk(ROOT, files)
+let files = []
+try {
+  const tracked = execSync('git ls-files "*.json"', { encoding: 'utf8' })
+  files = tracked.trim().split('\n').filter(Boolean).map(f => path.join(ROOT, f))
+} catch {
+  walk(ROOT, files)
+}
 files.sort()
 
 let failed = 0
