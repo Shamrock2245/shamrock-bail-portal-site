@@ -23,6 +23,8 @@ The following data represents the single source of truth for Shamrock Bail Bonds
 | **Secondary Phone** | (727) 295-2245 | Use for Tampa Bay/St. Pete and After-Hours/AI Agent |
 | **Primary Email** | admin@shamrockbailbonds.biz | General contact |
 | **Website URL** | https://www.shamrockbailbonds.biz | Always include `https://www.` |
+| **Office walk-in hours** | Monday–Friday, 9:00 AM–5:00 PM | `openingHoursSpecification` only. Do not mark the office or walk-ins as 24/7. |
+| **Phone availability** | 24/7 at (239) 332-2245 | `ContactPoint.hoursAvailable` and phone/dispatch copy. Phones are answered around the clock; the office is not. |
 
 ## 3. Implementation Rules
 
