@@ -6,6 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-10-08 — v2.8.15 — Mask client name and phone in Mini App Slack alerts
+
+**Google Apps Script (`backend-gas/`):**
+- `telegram_payment_log` and `telegram_checkin_log` Slack messages now show a masked name (first name + last initial, e.g. `Jane D.`) and masked phone (last 4 digits, e.g. `…0001`). The full client-typed values stay in the PaymentLog / CheckInLog sheets for staff.
+- Helpers: `slackMaskName_`, `slackMaskPhone_` in `Code.js`.
+- Test: `scripts/test_telegram_slack_mask.mjs` (vm sandbox doPost with a spy Slack), in PR CI.
+
 ### 2026-10-08 — v2.8.12 — GAS doPost risk actions require the API key
 
 **Google Apps Script (`backend-gas/`):**

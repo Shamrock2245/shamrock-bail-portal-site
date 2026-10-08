@@ -43,3 +43,6 @@ jobs:
 
       - name: GAS doPost risk actions require the API key
         run: node scripts/test_gas_dopost_risk_actions_auth.mjs
+
+      - name: GAS Telegram Slack alerts mask client name and phone
+        run: node scripts/test_telegram_slack_mask.mjs
