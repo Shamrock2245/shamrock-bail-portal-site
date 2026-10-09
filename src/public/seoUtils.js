@@ -400,10 +400,11 @@ export function initGlobalSEO() {
                 },
                 {
                     "@type": "ContactPoint",
-                    "telephone": "+1-239-955-0301",
+                    "telephone": "+1-727-295-2245",
                     "contactType": "Customer Service",
                     "areaServed": "US-FL",
-                    "availableLanguage": "Spanish"
+                    "availableLanguage": "Spanish",
+                    "description": "Se habla español"
                 },
                 {
                     "@type": "ContactPoint",

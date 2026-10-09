@@ -1,0 +1,88 @@
+{
+  "lee": {
+    "serviceAreaCopy": "Shamrock Bail Bonds posts surety bonds in Lee County, Florida, 24 hours a day. If your loved one was arrested in Fort Myers, Cape Coral, Bonita Springs, Estero, Lehigh Acres, or Fort Myers Beach, they are booked at Lee County Jail on Ortiz Avenue. Florida regulates the premium: 10% of the bail amount, with a $100 minimum per charge. Call (239) 332-2245 and we will confirm the booking, explain payment options, and send the paperwork to your phone. You do not have to come to our Fort Myers office unless you want to.",
+    "majorCities": ["Cape Coral", "Fort Myers", "Bonita Springs", "Estero"],
+    "circuitNumber": "20th",
+    "circuitFull": "Twentieth Judicial Circuit",
+    "countySeat": "Fort Myers",
+    "phone": "(239) 332-2245",
+    "bookingUrl": "https://www.sheriffleefl.org/arrest-search/",
+    "faqs": [
+      {
+        "question": "Where can I find bail bonds in Lee County Florida?",
+        "answer": "Shamrock Bail Bonds is a trusted local bail bond agency serving Lee County under the 20th Judicial Circuit of Florida. We provide fast, confidential bail bond services for individuals arrested in Lee County and surrounding areas. Our office address is 1528 Broadway Ft. Myers, FL 33901 and you can reach us at 239-332-2245"
+      },
+      {
+        "question": "Who offers 24/7 bail bond services in Lee County?",
+        "answer": "Shamrock Bail Bonds offers 24/7 bail bond services throughout Lee County. Arrests happen at all hours, and our licensed Florida agents are always available to help secure release as quickly as possible."
+      },
+      {
+        "question": "How does the bail bond process work in Lee County?",
+        "answer": "In Lee County, the bail bond process begins after booking and bond setting by a judge in the 20th Judicial Circuit. You may post a cash bond with the court or use a licensed surety agent like Shamrock Bail Bonds by paying the state-mandated 10% premium."
+      },
+      {
+        "question": "How long does it take to get out of jail in Lee County?",
+        "answer": "Release time varies based on booking, court requirements, and bond conditions. Once Shamrock Bail Bonds posts bail, release from the Lee County Jail typically occurs within several hours, though delays may occur due to First Appearance or court holds."
+      },
+      {
+        "question": "How much does a bail bond cost in Lee County Florida?",
+        "answer": "Florida law requires a bail bond premium of 10% of the total bond amount, with a $100 minimum per charge. This fee is non-refundable and applies to all licensed bail bond agents, including Shamrock Bail Bonds."
+      },
+      {
+        "question": "What is 10% of a $5,000 bond in Lee County?",
+        "answer": "Ten percent of a $5,000 bond is $500. This is the state-mandated, non-refundable premium when using a licensed bail bond agent like Shamrock Bail Bonds in Lee County."
+      },
+      {
+        "question": "Do I have to pay the full bail amount in Lee County?",
+        "answer": "Only if you post a cash bond directly with the court. When using Shamrock Bail Bonds, you pay only the 10% premium and we guarantee the full bond amount to the Lee County court."
+      },
+      {
+        "question": "What is the difference between cash bail and surety bail in Lee County?",
+        "answer": "Cash bail requires paying 100% of the bond to the court. Surety bail allows you to pay 10% to a licensed agent like Shamrock Bail Bonds, who posts the bond on your behalf under Florida law."
+      },
+      {
+        "question": "Can I pay for a Lee County bail bond with a credit card?",
+        "answer": "Yes. Shamrock Bail Bonds accepts credit cards and other payment options for Lee County bail bonds, subject to approval and bond conditions."
+      },
+      {
+        "question": "Is the bail bond premium refundable in Florida?",
+        "answer": "No. Florida law states that the 10% bail bond premium is earned upon posting and is non-refundable, regardless of the case outcome."
+      },
+      {
+        "question": "What happens if someone misses court in Lee County?",
+        "answer": "Missing a court date in Lee County may result in a bench warrant and bond forfeiture. If Shamrock Bail Bonds posted the bond, immediate contact is critical to address the situation."
+      },
+      {
+        "question": "What is a First Appearance hearing in Lee County?",
+        "answer": "A First Appearance is when a judge in the 20th Judicial Circuit reviews charges, bond eligibility, and conditions shortly after arrest. This hearing can affect bond timing and release."
+      },
+      {
+        "question": "Does Lee County require collateral for bail bonds?",
+        "answer": "Collateral may be required depending on bond amount, charges, and risk factors. Shamrock Bail Bonds evaluates collateral on a case-by-case basis in compliance with Florida law."
+      },
+      {
+        "question": "What types of collateral are accepted in Lee County?",
+        "answer": "Accepted collateral may include real estate, vehicles, or other assets, depending on the bond. Shamrock Bail Bonds clearly explains collateral requirements before posting bail."
+      },
+      {
+        "question": "What is a Nebbia hearing in Lee County?",
+        "answer": "A Nebbia hearing may be ordered for higher bond amounts to verify the source of funds. Shamrock Bail Bonds assists clients through the Nebbia process when required by the 20th Judicial Circuit."
+      }
+    ]
+  },
+  "collier": {
+    "serviceAreaCopy": "Shamrock Bail Bonds posts surety bonds in Collier County, Florida, 24 hours a day. If your loved one was arrested here, they are typically booked at the Naples Jail Center, 3347 Tamiami Trail E., Naples, FL 34112. Florida regulates the premium: 10% of the bail amount, with a $100 minimum per charge. Call (239) 332-2245 and we will confirm the booking, explain payment options, and send the paperwork to your phone. Collier County also operates the Immokalee Jail Center, 302 Stockade Rd, Immokalee, FL 34142.",
+    "majorCities": ["Naples", "Marco Island", "Everglades"],
+    "circuitNumber": "20th",
+    "circuitFull": "Twentieth Judicial Circuit",
+    "countySeat": "Naples",
+    "phone": "(239) 332-2245",
+    "bookingUrl": "https://www.colliersheriff.org/how-do-i/find-out-who-s-in-jail",
+    "faqs": [
+      {
+        "question": "How do I bail someone out of jail in Collier County, Florida?",
+        "answer": "Collier County arrests are processed through the Naples Jail Center. To post a bail bond, contact Shamrock Bail Bonds. We will confirm the defendant's booking information, prepare the bond documents, and post the bond with the Collier County Clerk. Shamrock Bail Bonds has extensive experience with Collier County jail procedures and can expedite the release process."
+      }
+    ]
+  }
+}

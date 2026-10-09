@@ -29,6 +29,12 @@ jobs:
       - name: Syntax-check Velo page and backend code
         run: node scripts/ci/check-velo-syntax.mjs
 
+      - name: Fail if 955-0301 appears in src
+        run: node scripts/ci/check-src-no-955.mjs
+
+      - name: Lee and Collier county overrides
+        run: node scripts/test_county_overrides.mjs
+
       - name: Validate JSON files
         run: node scripts/ci/check-json.mjs
 
