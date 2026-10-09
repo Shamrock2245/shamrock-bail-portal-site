@@ -5,6 +5,13 @@ import wixWindow from 'wix-window';
 import wixSeo from 'wix-seo';
 import wixData from 'wix-data';
 import { generateCountyPage } from 'backend/county-generator';
+import {
+    applyCountyContentOverride,
+    getCountyOverrideFaqs,
+    buildFaqPageSchema,
+    isHttpUrl,
+    SPANISH_LINE_LABEL
+} from 'backend/county-overrides';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { resolvePrimaryHeroH1 } from 'public/cityHeroHeadline';
 // replaced public/countyUtils with optimized backend
@@ -71,7 +78,8 @@ $w.onReady(async function () {
             return;
         }
 
-        const county = data;
+        // Lee/Collier copy is a runtime override. CMS items are not written.
+        const county = applyCountyContentOverride(data);
         generatedCounty = county;
 
         // 3. GENERATE SEO (Meta + Schema) - Critical for SEO
@@ -390,6 +398,39 @@ function setText(selectorOrArray, value) {
     }
 }
 
+/**
+ * #callClerkBtn is a template-wide Editor button. Show it only when CMS
+ * clerkWebsite is a non-empty http(s) URL. Missing elements are ignored.
+ */
+function bindClerkWebsiteButton(county) {
+    const raw = county && county.clerk ? county.clerk.website : '';
+    const url = isHttpUrl(raw) ? String(raw).trim() : '';
+    ['#callClerkBtn', '#btnCallClerk'].forEach((id) => {
+        let el;
+        try {
+            el = $w(id);
+        } catch (e) {
+            return;
+        }
+        if (!el) return;
+        try {
+            if (!url) {
+                if (typeof el.hide === 'function') el.hide();
+                if (typeof el.collapse === 'function') el.collapse();
+                return;
+            }
+            if (el.type === '$w.Button' || 'link' in el) {
+                el.link = url;
+                if ('target' in el) {
+                    el.target = /shamrockbailbonds\.biz/i.test(url) ? '_self' : '_blank';
+                }
+            }
+            if (typeof el.show === 'function') el.show();
+            if (typeof el.expand === 'function') el.expand();
+        } catch (e) { /* element missing or not linkable */ }
+    });
+}
+
 function setLink(selectorOrArray, url, label) {
     const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
     for (const selector of selectors) {
@@ -485,7 +526,7 @@ async function populateMainUI(county, currentSlug) {
     setLink(['#callSheriffBtn', '#btnCallJail'], county.jail.booking_url, "Jail / Sheriff Website");
     setLink(['#sheriffWebsite', '#btnJailWeb'], county.jail.booking_url, "Jail / Sheriff Website");
 
-    setLink(['#callClerkBtn', '#btnCallClerk'], county.clerk.website, "Clerk of Court");
+    bindClerkWebsiteButton(county);
 
     // Live Editor buttons (audit 2026-09-27): these rendered with no link at all
     const jailSearchUrl = (county.resources && county.resources.inmate_search_url) || county.jail.booking_url || '';
@@ -493,14 +534,13 @@ async function populateMainUI(county, currentSlug) {
     setLink(['#btnClerkLink'], county.clerk.records_url || county.clerk.website || '', 'Records Search');
     setLink(['#btnSheriffLink'], county.sheriff.website || '', "Sheriff's Website");
     // ─── 3-LAYER WIRE: Locate + Get Someone Out + First Appearance (County Prefilled) ───
-    const activeCountySlug = county.slug || county.countySlug || currentSlug;
-    const isSwflCore = ['lee', 'collier', 'charlotte', 'hendry', 'glades'].indexOf(activeCountySlug) !== -1;
+    const activeCountySlug = county.county_slug || county.slug || county.countySlug || currentSlug;
 
     // 1. Hero Primary Call Button — voice line, not the iMessage text line
     const primaryPhoneLink = 'tel:+12393322245';
     setLink(['#heroCallButton', '#callShamrockBtn', '#callCountiesBtn', '#btnEmergencyCall', '#ctaCallOfficeBtn'], primaryPhoneLink, county.content.hero_cta_primary || "Call (239) 332-2245");
     // Owner's three primary CTAs: office call, automated line, text. Wired only if the Editor elements exist.
-    setLink(['#ctaCallAutoBtn', '#heroAutoLineButton'], 'tel:+17272952245', 'Automated line: (727) 295-2245');
+    setLink(['#ctaCallAutoBtn', '#heroAutoLineButton'], 'tel:+17272952245', SPANISH_LINE_LABEL);
     setLink(['#ctaTextBtn', '#heroTextButton'], 'sms:+12399550178', 'Text (239) 955-0178');
 
     // 2. Get Someone Out / Start Online Release (Prefilled County)
@@ -531,12 +571,6 @@ async function populateMainUI(county, currentSlug) {
         `View ${county.county_name} Court Times`
     );
 
-    // 5. Layer A — SWFL Core Flagship Badge
-    if (isSwflCore) {
-        setText(['#flagshipBadge', '#swflCoreCallout', '#localDispatchNotice'],
-            `⭐ SWFL Flagship Hub: 24/7 bail service from 1528 Broadway, Fort Myers. Under 20 minutes in Southwest Florida (Mon–Fri, 8 AM–6 PM).`);
-    }
-
     // POPULATE FAQs (Repeater) - Now pulls from CMS Faqs collection
     // Safe element getter — prevents crashes from accessing non-existent Wix elements
     const safeGet = (scopedSelector, id) => {
@@ -556,8 +590,14 @@ async function populateMainUI(county, currentSlug) {
     const countyName = county.name || county.countyName || county.county_name || "Unknown County";
     const countyShort = countyName.replace(/ County$/i, '').trim();
     const countyFull = countyShort + ' County';
+    // Lee and Collier use the curated list only, so Import22 speed-claim
+    // items (including ones past the 15 cap) cannot render or enter JSON-LD.
+    const overrideFaqs = getCountyOverrideFaqs(county.county_slug || activeCountySlug);
 
-    try {
+    if (overrideFaqs) {
+        faqs = overrideFaqs;
+        console.log(`[FAQ] Using ${faqs.length} override FAQs for ${countyFull}`);
+    } else try {
         let cmsItems = [];
 
         // 1. Try Import22 collection — county-specific FAQs
@@ -641,17 +681,8 @@ async function populateMainUI(county, currentSlug) {
         const baseSchemas = county._seoSchemas || [];
         const visibleFaqs = faqRep ? faqs.filter(f => f && f.question && f.answer) : [];
         const finalSchemas = [...baseSchemas];
-        if (visibleFaqs.length > 0) {
-            finalSchemas.push({
-                "@context": "https://schema.org",
-                "@type": "FAQPage",
-                "mainEntity": visibleFaqs.map(f => ({
-                    "@type": "Question",
-                    "name": f.question,
-                    "acceptedAnswer": { "@type": "Answer", "text": f.answer }
-                }))
-            });
-        }
+        const faqSchema = buildFaqPageSchema(visibleFaqs);
+        if (faqSchema) finalSchemas.push(faqSchema);
         wixSeo.setStructuredData(finalSchemas).catch(e => { console.warn('setStructuredData failed:', e); });
     } catch (seoErr) {
         console.warn('Structured data injection failed:', seoErr);

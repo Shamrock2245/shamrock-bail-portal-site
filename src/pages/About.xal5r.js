@@ -171,7 +171,7 @@ function updatePageSEO() {
                     "name": "Does Shamrock Bail Bonds offer bilingual service?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Yes. Shamrock Bail Bonds provides full bilingual service in English and Spanish. Our Spanish-language line is (239) 955-0301. Our website, digital paperwork, and AI assistant all support Spanish-speaking clients."
+                        "text": "Yes. Shamrock Bail Bonds provides full bilingual service in English and Spanish. Se habla español: 727-295-2245. Our website, digital paperwork, and AI assistant all support Spanish-speaking clients."
                     }
                 }
             ]

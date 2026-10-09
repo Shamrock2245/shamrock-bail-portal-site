@@ -54,10 +54,10 @@ export const PHONE_SECONDARY = {
 };
 
 export const PHONE_SPANISH = {
-    display:  '(239) 955-0301',
-    e164:     '+12399550301',
-    tel:      'tel:+12399550301',
-    note:     'Spanish / bilingual line',
+    display:  '727-295-2245',
+    e164:     '+17272952245',
+    tel:      'tel:+17272952245',
+    note:     'Se habla español',
 };
 
 export const EMAIL_PRIMARY = 'admin@shamrockbailbonds.biz';
