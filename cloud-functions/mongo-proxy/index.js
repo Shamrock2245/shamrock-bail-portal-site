@@ -1,9 +1,11 @@
 /**
  * @fileoverview Shamrock MongoDB Proxy — Google Cloud Function (Gen 2)
  * 
- * Replaces the deprecated Atlas Data API. Accepts REST commands from
- * Google Apps Script and executes them against MongoDB Atlas via the
- * Node.js driver.
+ * Replaces the deprecated Atlas Data API. Exposes FIXED, NAMED actions only
+ * (see named-actions.js) for Google Apps Script and the Wix Velo backend.
+ * The generic database/collection/filter handler was removed: calls with the
+ * old generic actions (find, insertOne, updateOne, ...) get 410 Gone, and any
+ * database / collection fields in the body are ignored.
  * 
  * Environment Variables (set via GCP Secret Manager):
  *   MONGO_URI    — mongodb+srv://... connection string
@@ -14,7 +16,8 @@
  */
 
 const functions = require("@google-cloud/functions-framework");
-const { MongoClient, ObjectId } = require("mongodb");
+const { MongoClient } = require("mongodb");
+const { handleNamedAction } = require("./named-actions");
 
 // ── Connection Pool (reused across invocations in Gen 2) ────────────
 let cachedClient = null;
@@ -50,64 +53,6 @@ async function getClient() {
         throw err;
     }
 }
-
-// ── Supported Actions ───────────────────────────────────────────────
-const ACTIONS = {
-    findOne: async (coll, payload) => {
-        return coll.findOne(payload.filter || {}, { projection: payload.projection });
-    },
-    find: async (coll, payload) => {
-        const cursor = coll.find(payload.filter || {}, { projection: payload.projection });
-        if (payload.sort) cursor.sort(payload.sort);
-        if (payload.skip) cursor.skip(payload.skip);
-        const limit = payload.limit || 100;
-        cursor.limit(limit);
-        return { documents: await cursor.toArray() };
-    },
-    insertOne: async (coll, payload) => {
-        const result = await coll.insertOne(payload.document);
-        return { insertedId: result.insertedId.toString() };
-    },
-    insertMany: async (coll, payload) => {
-        const result = await coll.insertMany(payload.documents);
-        return { insertedIds: Object.values(result.insertedIds).map(id => id.toString()) };
-    },
-    updateOne: async (coll, payload) => {
-        const opts = {};
-        if (payload.upsert) opts.upsert = true;
-        const result = await coll.updateOne(payload.filter || {}, payload.update, opts);
-        return {
-            matchedCount: result.matchedCount,
-            modifiedCount: result.modifiedCount,
-            upsertedId: result.upsertedId ? result.upsertedId.toString() : null
-        };
-    },
-    updateMany: async (coll, payload) => {
-        const opts = {};
-        if (payload.upsert) opts.upsert = true;
-        const result = await coll.updateMany(payload.filter || {}, payload.update, opts);
-        return {
-            matchedCount: result.matchedCount,
-            modifiedCount: result.modifiedCount,
-        };
-    },
-    deleteOne: async (coll, payload) => {
-        const result = await coll.deleteOne(payload.filter || {});
-        return { deletedCount: result.deletedCount };
-    },
-    deleteMany: async (coll, payload) => {
-        const result = await coll.deleteMany(payload.filter || {});
-        return { deletedCount: result.deletedCount };
-    },
-    aggregate: async (coll, payload) => {
-        const docs = await coll.aggregate(payload.pipeline).toArray();
-        return { documents: docs };
-    },
-    countDocuments: async (coll, payload) => {
-        const count = await coll.countDocuments(payload.filter || {});
-        return { count };
-    }
-};
 
 // ── Webhook Handlers ────────────────────────────────────────────────
 async function handleTwilioWebhook(req, res) {
@@ -241,43 +186,13 @@ functions.http("mongoProxy", async (req, res) => {
         return handleWixWebhook(req, res);
     }
 
-    // Auth: check API key for database operations
-    const expectedKey = process.env.PROXY_API_KEY;
-    const providedKey = req.headers["x-api-key"];
-    if (expectedKey && providedKey !== expectedKey) {
-        return res.status(401).json({ error: "Unauthorized — invalid x-api-key" });
-    }
-
-    // Validate method
-    if (req.method !== "POST") {
-        return res.status(405).json({ error: "Only POST requests allowed" });
-    }
-
-    try {
-        const { action, dataSource, database, collection, ...payload } = req.body;
-
-        if (!action || !database || !collection) {
-            return res.status(400).json({
-                error: "Missing required fields: action, database, collection"
-            });
+    // Database operations: fixed named actions only (named-actions.js).
+    const out = await handleNamedAction(
+        { method: req.method, headers: req.headers || {}, body: req.body },
+        {
+            apiKey: process.env.PROXY_API_KEY,
+            getDb: async (name) => (await getClient()).db(name),
         }
-
-        const handler = ACTIONS[action];
-        if (!handler) {
-            return res.status(400).json({
-                error: `Unknown action: ${action}. Supported: ${Object.keys(ACTIONS).join(", ")}`
-            });
-        }
-
-        const client = await getClient();
-        const db = client.db(database);
-        const coll = db.collection(collection);
-
-        const result = await handler(coll, payload);
-        return res.status(200).json(result);
-
-    } catch (err) {
-        console.error("❌ Proxy error:", err);
-        return res.status(500).json({ error: err.message });
-    }
+    );
+    return res.status(out.status).json(out.body);
 });

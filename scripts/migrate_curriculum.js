@@ -102,6 +102,14 @@ async function migrate() {
     console.log("Note: Actual media files (PPTX, PDF) must be uploaded to Wix Media Manager or Google Drive manually, and the videoUrls updated in MongoDB.");
 }
 
+// RETIRED: this one-off script used the generic mongo-proxy (updateOne on Courses /
+// CourseLessons with caller-supplied database + collection). The generic handler was
+// removed (named actions only; generic calls return 410). If the curriculum ever needs
+// re-seeding, add dedicated named actions or run it with a direct, least-privilege
+// Mongo connection — do not re-open a generic proxy.
+console.error("migrate_curriculum.js is retired: the generic mongo-proxy it used was removed (see cloud-functions/mongo-proxy/README.md).");
+process.exit(1);
+
 if (!PROXY_URL || !API_KEY) {
     console.error("Please set MONGO_PROXY_URL and PROXY_API_KEY environment variables.");
     process.exit(1);
