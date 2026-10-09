@@ -433,7 +433,11 @@ def polish_markdown(raw: str, publish_label: str) -> tuple[str, str, str]:
     body = "\n".join(cleaned).strip()
 
     # Enterprise Institutional Meta Block
-    meta = f"**Published:** {publish_label} | **Editorial Board:** Shamrock Legal Intelligence | **Regulatory Review:** Licensed Florida Bail Specialist (F.S. Ch. 648)"
+    meta = (
+        f"**Published:** {publish_label} | "
+        "Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. "
+        "Writing bonds in all 67 Florida counties. We answer 24/7."
+    )
     if not body.startswith("**Published:**"):
         body = meta + "\n\n---\n\n" + body
 

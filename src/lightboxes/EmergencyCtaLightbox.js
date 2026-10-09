@@ -18,8 +18,7 @@
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 
-// Phone number
-const PHONE_NUMBER = '239-332-2245';
+// Office line only. Call 24/7 must not dial any other number.
 const PHONE_TEL = 'tel:+12393322245';
 
 $w.onReady(function () {
@@ -41,9 +40,9 @@ function initializeLightbox() {
         Call us now or start the bail process online - we'll guide you every step of the way.
     `;
 
-    // Set button labels
-    $w('#callNowBtn').label = ` Call Now: ${PHONE_NUMBER}`;
-    $w('#startOnlineBtn').label = ' Start Bail Online';
+    // Set button labels — exact CoS wording. Call uses the office line only.
+    $w('#callNowBtn').label = 'Call 24/7';
+    $w('#startOnlineBtn').label = 'Start a Bond';
 
     // Populate county dropdown
     populateCountyDropdown();

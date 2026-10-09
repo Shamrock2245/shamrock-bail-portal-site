@@ -540,7 +540,7 @@ def generate_county_article(c_data, publish_date_str):
     title = f"Bail Bonds in {county}: Complete 2026 Jail & Release Guide"
     slug_file = f"{county.lower().replace(' ', '-').replace('.', '')}-bail-bonds-guide.md"
 
-    body = f"""**Published:** {publish_date_str} | **Editorial Board:** Shamrock Legal Intelligence | **Regulatory Review:** Licensed Florida Bail Specialist (F.S. Ch. 648 & 903)
+    body = f"""**Published:** {publish_date_str} | Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. Writing bonds in all 67 Florida counties. We answer 24/7.
 
 ---
 
@@ -661,7 +661,7 @@ def generate_legal_article(l_data, publish_date_str):
         faqs_md.append(f"### {q}\n\n{a}")
     faqs_block = "\n\n".join(faqs_md)
 
-    body = f"""**Published:** {publish_date_str} | **Editorial Board:** Shamrock Legal Intelligence | **Regulatory Review:** Licensed Florida Bail Specialist (F.S. Ch. 648 & 903)
+    body = f"""**Published:** {publish_date_str} | Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. Writing bonds in all 67 Florida counties. We answer 24/7.
 
 ---
 
