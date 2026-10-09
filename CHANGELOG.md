@@ -6,7 +6,7 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
-### 2026-10-08 — v2.8.11 — Mongo proxy: signed webhooks and per-caller keys
+### 2026-10-08 — v2.8.17 — Mongo proxy: signed webhooks and per-caller keys
 
 **Cloud Function (`cloud-functions/mongo-proxy/`):** stacks on the named-actions change (PR #45). Nothing is active until Brendan rotates and deploys.
 - `/twilio` verifies `X-Twilio-Signature`: HMAC-SHA1 over `TWILIO_WEBHOOK_URL` plus the sorted raw POST params, keyed with `TWILIO_AUTH_TOKEN`, with a constant-time compare. The public URL comes from env because the URL the gen2 function sees is not the URL Twilio signed.
@@ -21,6 +21,48 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 - Velo `bailSchoolMongo.jsw` and `secretsManager.getMongoProxyApiKey` (`/wix-intake`) send Wix Secret `PROXY_API_KEY_VELO`, falling back to `PROXY_API_KEY`.
 
 **Tests:** `scripts/test_mongo_proxy_webhooks_and_keys.mjs` loads the real `index.js` with stubbed functions-framework and mongodb.
+
+### 2026-10-08 — v2.8.16 — GAS Telegram Mini App actions require the API key
+
+**Google Apps Script (`backend-gas/`):**
+- The 8 Telegram Mini App `doPost` actions are added to `GAS_KEYED_DOPOST_ACTIONS_`: `telegram_mini_app_intake`, `telegram_mini_app_upload`, `telegram_payment_log`, `telegram_payment_lookup`, `telegram_checkin_log`, `telegram_client_update`, `telegram_status_lookup`, `telegram_document_lookup`. A missing or wrong key returns `Unauthorized: Invalid API Key`, logs `UNAUTHORIZED_API_ACCESS`, and touches no sheet, Drive folder, Slack channel or Mongo log.
+- Before this change, anyone with the /exec URL could look up any client's case status, payments or documents by phone number, and could write intakes, uploads, check-ins and payment logs.
+- Caller: shamrock-telegram-app moves the Mini App pages onto `/api/miniapp`. That proxy verifies Telegram initData, requires a Telegram-verified phone for lookups, and adds `GAS_API_KEY` server-side.
+- `bail_school_upload` shares the upload route but is a separate action and is unchanged.
+- Test: `scripts/test_gas_miniapp_actions_auth.mjs` runs `doPost` in a vm with spy Sheets, Drive, Slack, Mongo and UrlFetch. It runs in PR CI. `scripts/test_gas_dopost_risk_actions_auth.mjs` no longer expects the Mini App intake to work without a key.
+
+### 2026-10-08 — v2.8.15 — Mask client name and phone in Mini App Slack alerts
+
+**Google Apps Script (`backend-gas/`):**
+- `telegram_payment_log` and `telegram_checkin_log` Slack messages now show a masked name (first name + last initial, e.g. `Jane D.`) and masked phone (last 4 digits, e.g. `…0001`). The full client-typed values stay in the PaymentLog / CheckInLog sheets for staff.
+- Helpers: `slackMaskName_`, `slackMaskPhone_` in `Code.js`.
+- Test: `scripts/test_telegram_slack_mask.mjs` (vm sandbox doPost with a spy Slack), in PR CI.
+
+### 2026-10-08 — v2.8.14 — GAS `caller_context` requires the API key
+
+**Google Apps Script (`backend-gas/`):**
+- `doPost ?source=caller_context&phone=` returned the caller's name, defendant name and court date for any phone with no auth. It now requires `GAS_API_KEY` as `?apiKey=` (`requireGasApiKey_`, fails closed when the Script Property is unset). A missing or wrong key returns `{"success":false,"message":"Unauthorized"}`, logs `UNAUTHORIZED_API_ACCESS`, and reads no cache or sheet.
+- Callers: none today. The only caller was the Netlify edge function `elevenlabs-init.js` in shamrock-telegram-app, which dropped this call on 2026-08-26 (`aff4d85`, "one Mem0 path at ring via Super CRM"). No repo, ElevenLabs agent config (Brendan Paperwork Assistant, Eric, Sofia) or Node-RED flow references it. If it is ever revived, the server caller must send `apiKey` = `GAS_API_KEY` (the edge functions already have that env name).
+- Test: `scripts/test_gas_caller_context_auth.mjs` (vm sandbox doPost), in PR CI.
+
+### 2026-10-08 — v2.8.12 — GAS doPost risk actions require the API key
+
+**Google Apps Script (`backend-gas/`):**
+- `doPost` now requires the GAS API key on every server-called action that sends messages or returns client PII. The key is `data.apiKey` or `?apiKey=`, checked with `requireGasApiKey_` before any handler runs. The list is `GAS_KEYED_DOPOST_ACTIONS_` in `Code.js`:
+  - Risk mitigation: `send_court_reminders`, `escalate_to_cosigner`, `get_recent_client_messages`, `get_upcoming_court_dates`, `get_unacknowledged_reminders`, `get_forfeiture_cases`, `get_daily_stats`, `flag_high_stress_case`, `post_slack_message`.
+  - Telegram sends and signing data: `schedule_court_date`, `send_signing_link`, `telegram_get_signing_url`, `telegram_document_status`, `get_packet_manifest`.
+  - Check-in relay: `twilio_check_in`.
+  - Before this change, anyone with the /exec URL could text any number, text co-signers, send Telegram messages, or read client messages, court dates and forfeiture cases. A missing or wrong key now returns `Unauthorized: Invalid API Key` and logs `UNAUTHORIZED_API_ACCESS`. Nothing is sent, read or written.
+- Callers: the scheduled Netlify functions in `shamrock-telegram-app` (`court-reminder`, `engagement-watchdog`, `sentiment-watchdog`, `daily-briefing`) send `GAS_API_KEY` as of shamrock-telegram-app #15. That change must deploy **before** this ships with `clasp push`. The other listed actions have no caller in any Shamrock2245 repo. Time-based triggers call functions directly and are unaffected.
+- Not gated yet: the browser mini-app actions (`telegram_mini_app_intake`, `telegram_mini_app_upload`, `telegram_payment_log`, `telegram_payment_lookup`, `telegram_checkin_log`, `telegram_client_update`, `telegram_status_lookup`, `telegram_document_lookup`), because a browser cannot hold the key. They need Telegram initData verification first.
+- Test: `scripts/test_gas_dopost_risk_actions_auth.mjs` runs `doPost` in a vm with spy SMS, Slack, Telegram, Sheets and UrlFetch. For each action it checks that a missing, wrong or unconfigured key is rejected with zero side effects and that a valid key reaches the handler. It runs in PR CI.
+
+### 2026-10-08 — v2.8.11 — GAS `post_slack_message` requires the API key
+
+**Google Apps Script (`backend-gas/`):**
+- `doPost` action `post_slack_message` now requires the GAS API key: `data.apiKey`, or `?apiKey=`, checked with `requireGasApiKey_` against the `GAS_API_KEY` script property. It used to run before any key check, so anyone with the /exec URL could post text into Shamrock's Slack. A missing or wrong key now returns `Unauthorized: Invalid API Key` and logs `UNAUTHORIZED_API_ACCESS`; nothing is posted.
+- The only callers are four Netlify functions in `shamrock-telegram-app` (`checkin-geo-alert`, `sentiment-watchdog`, `daily-briefing`, `compliance-digest`). They send `GAS_API_KEY` as of shamrock-telegram-app #14. That change must deploy **before** this ships with `clasp push`.
+- Test: `scripts/test_gas_post_slack_message_auth.mjs`, which runs `doPost` in a vm with stubbed Apps Script services. It runs in PR CI.
 
 ### 2026-10-08 — v2.8.10 — Shannon notify and repeat-save fixes
 
