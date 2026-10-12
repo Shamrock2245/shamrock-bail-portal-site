@@ -68,8 +68,14 @@ function handleSOC2Webhook(e) {
                 }
                 return handleElevenLabsConversationInit(e);
             case "caller_context":
-                // Called by Netlify edge function at call start — no auth needed (read-only, no PII written)
-                // Returns caller case context for Shannon's personalized greeting
+                // Returns caller name, defendant name and court date by phone, so it needs a key.
+                // Its only caller was our Netlify edge function elevenlabs-init (removed Aug 2026),
+                // a server, so it uses GAS_API_KEY via ?apiKey= (fails closed when unset).
+                if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(e.parameter && e.parameter.apiKey)) {
+                    logSecurityEvent('UNAUTHORIZED_API_ACCESS', { source: 'caller_context' });
+                    return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Unauthorized' }))
+                        .setMimeType(ContentService.MimeType.JSON);
+                }
                 return handleCallerContextLookup(e);
             case "slack":
             case "Slack":
