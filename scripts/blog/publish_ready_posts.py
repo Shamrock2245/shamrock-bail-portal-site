@@ -174,13 +174,10 @@ def load_token() -> str:
         return resp["access_token"]
 
     # 3. Local Wix CLI login (dev machines). Runners do not have this file.
-    #    Checked before WIX_API_KEY so a GAS shared key of that name cannot
-    #    override a local CLI session. WIX_API_KEY is not an Actions secret here.
+    #    Do not read WIX_API_KEY: in this repo that name is the GAS shared
+    #    secret, not a Wix account API key.
     path = Path.home() / ".wix" / "auth" / f"{SITE_ID}.json"
     if not path.is_file():
-        alias = _nonempty_env("WIX_API_KEY")
-        if alias:
-            return alias
         _missing_wix_auth(path)
     data = json.loads(path.read_text())
     issued = data.get("issuedAt") or 0
