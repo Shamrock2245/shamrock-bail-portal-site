@@ -155,22 +155,56 @@ def publish_draft(draft_id: str, token: str) -> dict:
 
 
 def classify_publish_failure(err: str, draft_id: str) -> str | None:
-    """Return an idempotent outcome, or None when the failure must be retried later.
+    """Classify a publish error.
 
-    Wix's publish endpoint updates an already-published draft in place (HTTP 200,
-    same post) rather than creating a second post. A retry can still fail closed:
-    the body says the draft was already published, or the draft id is gone (HTTP 404).
-    Both mean there is nothing left to publish, so the calendar can be marked live.
+    ``already_published`` is explicit evidence the draft is live. ``missing_draft``
+    only means this draft id 404'd. Wix updates an already-published draft with
+    HTTP 200, so a 404 is not proof a public post exists and must be checked
+    with GET /blog/v3/posts/{id} before the calendar is marked live.
     """
     low = err.lower()
     if "already published" in low or "already_published" in low:
         return "already_published"
     publish_path = f"/blog/v3/draft-posts/{draft_id.lower()}/publish"
     # http_json prefixes "HTTP {code} {url}". Require that publish URL so a
-    # 404 from some other call cannot mark an unrelated draft as live.
+    # 404 from some other call is not mistaken for a missing draft.
     if publish_path in low and ("http 404" in low or "not_found" in low):
         return "missing_draft"
     return None
+
+
+def live_post_id_from_get_response(res: object) -> str | None:
+    """Return a post id only when Get Post returned a published post."""
+    if not isinstance(res, dict):
+        return None
+    post = res.get("post")
+    if not isinstance(post, dict):
+        return None
+    post_id = post.get("id")
+    if not isinstance(post_id, str) or not post_id.strip():
+        return None
+    # Get Post serves published posts and includes firstPublishedDate.
+    if not post.get("firstPublishedDate"):
+        return None
+    return post_id
+
+
+def lookup_live_post_id(draft_id: str, token: str) -> str | None:
+    """Return the published post id for this draft id, or None when Wix has no such post.
+
+    A 404 on the posts endpoint means the id was never published. Any other
+    lookup failure is raised so the caller leaves the calendar row scheduled.
+    """
+    url = f"https://www.wixapis.com/blog/v3/posts/{draft_id}"
+    try:
+        res = http_json(url, method="GET", auth=token)
+    except Exception as e:
+        err = str(e).lower()
+        posts_path = f"/blog/v3/posts/{draft_id.lower()}"
+        if posts_path in err and ("http 404" in err or "not_found" in err):
+            return None
+        raise
+    return live_post_id_from_get_response(res)
 
 
 def mark_published(post: dict, post_id: str) -> None:
@@ -270,18 +304,41 @@ def main():
         modified_calendars.add(post.get("_cal_name"))
         print(detail)
 
-    def accept_idempotent(post: dict, draft_id: str, outcome: str) -> None:
+    def record_verified_publish(post: dict, draft_id: str, outcome: str | None) -> bool:
+        """Mark the row live only when publication is confirmed.
+
+        Returns True when the failure is fully handled. Returns False when the
+        caller should keep the row scheduled and record the publish error.
+        """
         if outcome == "already_published":
-            detail = (
+            accept(
+                post,
+                draft_id,
                 f"  ✅ ALREADY PUBLISHED: draft {draft_id} is already live. "
-                "Marked PUBLISHED_LIVE in the calendar."
+                "Marked PUBLISHED_LIVE in the calendar.",
             )
-        else:
-            detail = (
-                f"  ✅ DRAFT MISSING: no draft at {draft_id}. "
-                "Marked PUBLISHED_LIVE in the calendar."
-            )
-        accept(post, draft_id, detail)
+            return True
+        if outcome != "missing_draft":
+            return False
+        print(f"  ℹ️ Publish returned not-found for draft {draft_id}. Checking for a live post.")
+        try:
+            live_id = lookup_live_post_id(draft_id, token)
+        except Exception as lookup_err:
+            lookup_msg = str(lookup_err)
+            print(f"  ❌ Live-post lookup failed: {lookup_msg}")
+            post["publish_error"] = lookup_msg[:300]
+            errors.append((draft_id, lookup_msg))
+            return True
+        if not live_id:
+            print(f"  ❌ No published post for {draft_id}. Leaving the calendar row scheduled.")
+            return False
+        accept(
+            post,
+            live_id,
+            f"  ✅ DRAFT MISSING: GET /blog/v3/posts/{live_id} confirmed a published post. "
+            "Marked PUBLISHED_LIVE.",
+        )
+        return True
 
     for post in due_posts:
         draft_id = post["draft_id"]
@@ -301,9 +358,7 @@ def main():
         except Exception as e:
             err_msg = str(e)
             outcome = classify_publish_failure(err_msg, draft_id)
-            if outcome:
-                print(f"  ℹ️ Publish call did not create a new post ({outcome}): {err_msg}")
-                accept_idempotent(post, draft_id, outcome)
+            if record_verified_publish(post, draft_id, outcome):
                 continue
             print(f"  ❌ FAILED: {err_msg}")
             # Refresh token once on auth error and retry
@@ -322,12 +377,10 @@ def main():
                 except Exception as retry_err:
                     retry_msg = str(retry_err)
                     retry_outcome = classify_publish_failure(retry_msg, draft_id)
-                    if retry_outcome:
-                        print(f"  ℹ️ Retry did not create a new post ({retry_outcome}): {retry_msg}")
-                        accept_idempotent(post, draft_id, retry_outcome)
-                    else:
-                        post["publish_error"] = retry_msg[:300]
-                        errors.append((draft_id, retry_msg))
+                    if record_verified_publish(post, draft_id, retry_outcome):
+                        continue
+                    post["publish_error"] = retry_msg[:300]
+                    errors.append((draft_id, retry_msg))
             else:
                 post["publish_error"] = err_msg[:300]
                 errors.append((draft_id, err_msg))
