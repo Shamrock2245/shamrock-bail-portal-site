@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -125,13 +126,39 @@ CTA = (
 )
 
 
+def _nonempty_env(*names: str) -> str:
+    """First non-blank env value. Callers must not print the result."""
+    for name in names:
+        value = os.environ.get(name)
+        if value and value.strip():
+            return value.strip()
+    return ""
+
+
+def _missing_wix_auth(path: Path) -> None:
+    print(
+        "Wix credentials are missing. Set WIX_CLI_API_KEY "
+        "(GitHub Actions secret WIX_CLI_API_KEY, mapped on the Daily Blog Publisher job) "
+        "or sign in locally with the Wix CLI so "
+        f"{path} exists.",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+
+
 def load_token() -> str:
-    # 1. Environment variable overrides (for GitHub Actions, Node-RED, or Hetzner VPS)
-    env_token = os.environ.get("WIX_ACCESS_TOKEN") or os.environ.get("WIX_TOKEN")
+    # 1. Wix account API key. http_json sends it as Authorization and adds wix-site-id.
+    #    WIX_CLI_API_KEY is the secret already used by this repo's workflows.
+    api_key = _nonempty_env("WIX_CLI_API_KEY")
+    if api_key:
+        return api_key
+
+    # 2. Short-lived OAuth access token (local overrides, Node-RED, VPS)
+    env_token = _nonempty_env("WIX_ACCESS_TOKEN", "WIX_TOKEN")
     if env_token:
         return env_token
 
-    env_refresh = os.environ.get("WIX_REFRESH_TOKEN")
+    env_refresh = _nonempty_env("WIX_REFRESH_TOKEN")
     if env_refresh:
         body = {
             "clientId": CLIENT_ID,
@@ -146,8 +173,15 @@ def load_token() -> str:
         }, auth=None)
         return resp["access_token"]
 
-    # 2. Local CLI credentials
-    path = Path.home() / f".wix/auth/{SITE_ID}.json"
+    # 3. Local Wix CLI login (dev machines). Runners do not have this file.
+    #    Checked before WIX_API_KEY so a GAS shared key of that name cannot
+    #    override a local CLI session. WIX_API_KEY is not an Actions secret here.
+    path = Path.home() / ".wix" / "auth" / f"{SITE_ID}.json"
+    if not path.is_file():
+        alias = _nonempty_env("WIX_API_KEY")
+        if alias:
+            return alias
+        _missing_wix_auth(path)
     data = json.loads(path.read_text())
     issued = data.get("issuedAt") or 0
     expires = data.get("expiresIn") or 0
