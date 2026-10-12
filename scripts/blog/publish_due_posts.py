@@ -154,6 +154,32 @@ def publish_draft(draft_id: str, token: str) -> dict:
     return http_json(url, {}, method="POST", auth=token)
 
 
+def classify_publish_failure(err: str, draft_id: str) -> str | None:
+    """Return an idempotent outcome, or None when the failure must be retried later.
+
+    Wix's publish endpoint updates an already-published draft in place (HTTP 200,
+    same post) rather than creating a second post. A retry can still fail closed:
+    the body says the draft was already published, or the draft id is gone (HTTP 404).
+    Both mean there is nothing left to publish, so the calendar can be marked live.
+    """
+    low = err.lower()
+    if "already published" in low or "already_published" in low:
+        return "already_published"
+    publish_path = f"/blog/v3/draft-posts/{draft_id.lower()}/publish"
+    # http_json prefixes "HTTP {code} {url}". Require that publish URL so a
+    # 404 from some other call cannot mark an unrelated draft as live.
+    if publish_path in low and ("http 404" in low or "not_found" in low):
+        return "missing_draft"
+    return None
+
+
+def mark_published(post: dict, post_id: str) -> None:
+    post["status"] = "PUBLISHED_LIVE"
+    post["post_id"] = post_id
+    post["published_at"] = datetime.now(timezone.utc).isoformat()
+    post.pop("publish_error", None)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Publish due scheduled blog drafts to Wix across all editorial calendars")
     parser.add_argument("--dry-run", action="store_true", help="Preview due posts without making API changes")
@@ -237,6 +263,26 @@ def main():
     errors = []
     modified_calendars = set()
 
+    def accept(post: dict, post_id: str, detail: str) -> None:
+        nonlocal published_count
+        mark_published(post, post_id)
+        published_count += 1
+        modified_calendars.add(post.get("_cal_name"))
+        print(detail)
+
+    def accept_idempotent(post: dict, draft_id: str, outcome: str) -> None:
+        if outcome == "already_published":
+            detail = (
+                f"  ✅ ALREADY PUBLISHED: draft {draft_id} is already live. "
+                "Marked PUBLISHED_LIVE in the calendar."
+            )
+        else:
+            detail = (
+                f"  ✅ DRAFT MISSING: no draft at {draft_id}. "
+                "Marked PUBLISHED_LIVE in the calendar."
+            )
+        accept(post, draft_id, detail)
+
     for post in due_posts:
         draft_id = post["draft_id"]
         title = post["title"]
@@ -244,16 +290,21 @@ def main():
         print(f"\nPublishing #{num:02d}: '{title}' (draft: {draft_id})...")
         try:
             res = publish_draft(draft_id, token)
-            post_id = res.get("postId") or draft_id
-            post["status"] = "PUBLISHED_LIVE"
-            post["post_id"] = post_id
-            post["published_at"] = datetime.now(timezone.utc).isoformat()
-            published_count += 1
-            modified_calendars.add(post.get("_cal_name"))
-            print(f"  ✅ SUCCESS: Published live as post ID {post_id}")
+            api_post_id = res.get("postId")
+            post_id = api_post_id or draft_id
+            accept(
+                post,
+                post_id,
+                f"  ✅ SUCCESS: publish API postId={api_post_id!r}; recorded post ID {post_id}",
+            )
             time.sleep(1.0)
         except Exception as e:
             err_msg = str(e)
+            outcome = classify_publish_failure(err_msg, draft_id)
+            if outcome:
+                print(f"  ℹ️ Publish call did not create a new post ({outcome}): {err_msg}")
+                accept_idempotent(post, draft_id, outcome)
+                continue
             print(f"  ❌ FAILED: {err_msg}")
             # Refresh token once on auth error and retry
             if "401" in err_msg or "403" in err_msg:
@@ -261,16 +312,22 @@ def main():
                 token = load_token()
                 try:
                     res = publish_draft(draft_id, token)
-                    post_id = res.get("postId") or draft_id
-                    post["status"] = "PUBLISHED_LIVE"
-                    post["post_id"] = post_id
-                    post["published_at"] = datetime.now(timezone.utc).isoformat()
-                    published_count += 1
-                    modified_calendars.add(post.get("_cal_name"))
-                    print(f"  ✅ SUCCESS on retry: Published live as post ID {post_id}")
+                    api_post_id = res.get("postId")
+                    post_id = api_post_id or draft_id
+                    accept(
+                        post,
+                        post_id,
+                        f"  ✅ SUCCESS on retry: publish API postId={api_post_id!r}; recorded post ID {post_id}",
+                    )
                 except Exception as retry_err:
-                    post["publish_error"] = str(retry_err)[:300]
-                    errors.append((draft_id, str(retry_err)))
+                    retry_msg = str(retry_err)
+                    retry_outcome = classify_publish_failure(retry_msg, draft_id)
+                    if retry_outcome:
+                        print(f"  ℹ️ Retry did not create a new post ({retry_outcome}): {retry_msg}")
+                        accept_idempotent(post, draft_id, retry_outcome)
+                    else:
+                        post["publish_error"] = retry_msg[:300]
+                        errors.append((draft_id, retry_msg))
             else:
                 post["publish_error"] = err_msg[:300]
                 errors.append((draft_id, err_msg))
