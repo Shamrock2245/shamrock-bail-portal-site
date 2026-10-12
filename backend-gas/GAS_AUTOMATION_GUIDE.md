@@ -36,22 +36,22 @@ These bypass API key verification for specific trusted sources:
 | Action | Handler | Source | Notes |
 |--------|---------|--------|-------|
 | `telegram_inbound_message` | `Telegram_Webhook.js` | Telegram Bot API | Webhook signature verified separately |
-| `telegram_mini_app_intake` | `Telegram_IntakeFlow.js` | Telegram Mini-App | initData validated |
-| `telegram_mini_app_upload` | `Telegram_OCR.js` | Telegram Mini-App | Photo/doc uploads |
-| `telegram_payment_log` | `PaymentService.js` | Telegram Mini-App | Payment logging |
-| `telegram_payment_lookup` | `PaymentService.js` | Telegram Mini-App | Payment status |
-| `telegram_checkin_log` | `ClientCheckInSystem.js` | Telegram Mini-App | GPS + selfie check-in |
+| `telegram_mini_app_intake` | `Telegram_IntakeFlow.js` | Telegram Mini-App | **API key required** (v2.8.13): called via telegram-app `/api/miniapp`, which verifies initData |
+| `telegram_mini_app_upload` | `Telegram_OCR.js` | Telegram Mini-App | **API key required** (v2.8.13): called via telegram-app `/api/miniapp`, which verifies initData |
+| `telegram_payment_log` | `PaymentService.js` | Telegram Mini-App | **API key required** (v2.8.13): called via telegram-app `/api/miniapp`, which verifies initData |
+| `telegram_payment_lookup` | `PaymentService.js` | Telegram Mini-App | **API key required** (v2.8.13): called via telegram-app `/api/miniapp`, which verifies initData |
+| `telegram_checkin_log` | `ClientCheckInSystem.js` | Telegram Mini-App | **API key required** (v2.8.13): called via telegram-app `/api/miniapp`, which verifies initData |
 | `get_bot_analytics` | `Telegram_Analytics.js` | Telegram Mini-App | Bot metrics |
 | `twilio_check_in` | `ClientCheckInSystem.js` | Twilio webhook | SMS check-in response |
 | `schedule_court_date` | `CourtDateAutomation.js` | Multi-source | Court date creation |
 | `send_signing_link` | `SignNow_SendPaperwork.js` | Shannon / Portal | Send SignNow link |
 | `calculate_premium` | `Telegram_InlineQuote.js` | Shannon / Telegram | Premium calculator |
-| `telegram_status_lookup` | `Telegram_IntakeQueue.js` | Telegram | Case status |
-| `telegram_document_lookup` | `Telegram_Documents.js` | Telegram | Document search |
+| `telegram_status_lookup` | `Telegram_IntakeQueue.js` | Telegram | **API key required** (v2.8.13): called via telegram-app `/api/miniapp`, which verifies initData |
+| `telegram_document_lookup` | `Telegram_Documents.js` | Telegram | **API key required** (v2.8.13): called via telegram-app `/api/miniapp`, which verifies initData |
 | `telegram_get_signing_url` | `SignNow_Workflow.js` | Telegram | Signing URL |
 | `get_packet_manifest` | `SignNow_SendPaperwork.js` | Internal | Packet doc list |
 | `telegram_document_status` | `Telegram_Documents.js` | Telegram | Doc status |
-| `telegram_client_update` | `Telegram_IntakeQueue.js` | Telegram | Client info update |
+| `telegram_client_update` | `Telegram_IntakeQueue.js` | Telegram | **API key required** (v2.8.13): called via telegram-app `/api/miniapp`, which verifies initData |
 | `post_slack_message` | `SlackIntegration.js` | Netlify | Proxy Slack post |
 | `get_upcoming_court_dates` | `CourtDateAutomation.js` | Netlify | Court date feed |
 | `send_court_reminders` | `CourtReminderSystem.js` | Netlify | Trigger reminders |

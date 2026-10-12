@@ -431,6 +431,65 @@ function getCountyStatistics(refresh = false) {
   return stats;
 }
 
+/**
+ * doPost actions that send messages (SMS, Telegram, Slack) or return client PII and that are
+ * called only from servers. doPost requires the GAS API key on these before any handler runs.
+ * Callers: telegram-app scheduled functions (court-reminder, engagement-watchdog,
+ * sentiment-watchdog, daily-briefing, checkin-geo-alert, compliance-digest) send GAS_API_KEY.
+ * The rest have no caller in any Shamrock2245 repo. Time-based triggers call GAS functions
+ * directly, not through doPost, so they are unaffected.
+ */
+var GAS_KEYED_DOPOST_ACTIONS_ = {
+  // Risk mitigation (RiskMitigationActions.js)
+  post_slack_message: true,
+  get_upcoming_court_dates: true,
+  send_court_reminders: true,
+  get_daily_stats: true,
+  get_unacknowledged_reminders: true,
+  escalate_to_cosigner: true,
+  get_forfeiture_cases: true,
+  get_recent_client_messages: true,
+  flag_high_stress_case: true,
+  // Telegram sends and document/signing data (no repo caller)
+  schedule_court_date: true,
+  send_signing_link: true,
+  telegram_get_signing_url: true,
+  telegram_document_status: true,
+  get_packet_manifest: true,
+  // Check-in SMS relay: Slack alerts with the client phone (no repo caller; Twilio uses the webhook path)
+  twilio_check_in: true,
+  // Telegram Mini App actions. The pages call shamrock-telegram-app /api/miniapp, which verifies
+  // Telegram initData (and, for lookups, the Telegram-verified phone) and adds GAS_API_KEY.
+  // (bail_school_upload shares the upload route but is a separate action and is not listed.)
+  telegram_mini_app_intake: true,
+  telegram_mini_app_upload: true,
+  telegram_payment_log: true,
+  telegram_payment_lookup: true,
+  telegram_checkin_log: true,
+  telegram_client_update: true,
+  telegram_status_lookup: true,
+  telegram_document_lookup: true
+};
+
+/**
+ * Slack-safe client name: first name + last initial ("Jane D."). The name is client-typed
+ * in the Mini App, so Slack shows only enough for staff to match the row in the sheet.
+ */
+function slackMaskName_(name) {
+  var parts = String(name || '').trim().split(/\s+/).filter(function (p) { return p; });
+  if (!parts.length) return 'Unknown';
+  var first = parts[0];
+  if (parts.length === 1) return first;
+  return first + ' ' + parts[parts.length - 1].charAt(0).toUpperCase() + '.';
+}
+
+/** Slack-safe phone: last 4 digits only ("…1234"), or "N/A". */
+function slackMaskPhone_(phone) {
+  var digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length < 4) return 'N/A';
+  return '\u2026' + digits.slice(-4);
+}
+
 function doPost(e) {
   // 1. Log Incoming Request (Access Control)
   try {
@@ -471,6 +530,21 @@ function doPost(e) {
     // Allows passing apiKey/action in URL when body structure is fixed
     if (e.parameter && e.parameter.apiKey && !data.apiKey) data.apiKey = e.parameter.apiKey;
     if (e.parameter && e.parameter.action && !data.action) data.action = e.parameter.action;
+
+    // --- GAS API KEY ON RISK ACTIONS (sends messages or returns client PII) ---
+    // These actions used to run without a key, so anyone holding the /exec URL could text any
+    // number (court reminders, co-signer escalation), send Telegram messages, or read client
+    // messages, court dates and forfeiture cases. They now need the GAS API key (data.apiKey, or
+    // ?apiKey= merged above), checked with requireGasApiKey_ BEFORE any handler runs.
+    // Server-side callers send it (telegram-app scheduled functions send GAS_API_KEY).
+    // Mini App actions are listed too: the pages no longer call GAS directly; they call
+    // telegram-app /api/miniapp, which verifies Telegram initData and adds the key server-side.
+    if (data.action && Object.prototype.hasOwnProperty.call(GAS_KEYED_DOPOST_ACTIONS_, data.action)) {
+      if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(data.apiKey)) {
+        if (typeof logSecurityEvent === 'function') logSecurityEvent('UNAUTHORIZED_API_ACCESS', { error: 'Invalid API Key', action: data.action });
+        return createErrorResponse('Unauthorized: Invalid API Key', ERROR_CODES.UNAUTHORIZED);
+      }
+    }
 
 
 
@@ -604,10 +678,10 @@ function doPost(e) {
       }
     }
 
-    // --- TELEGRAM MINI APP (no-cors — cannot send API key) ---
-    // These actions bypass API key verification because the Mini App
-    // uses fetch({ mode: 'no-cors' }) which cannot read responses or
-    // send custom headers reliably. Security is via Telegram initData.
+    // --- TELEGRAM MINI APP ---
+    // These actions require the GAS API key (GAS_KEYED_DOPOST_ACTIONS_ gate above). The pages
+    // call telegram-app /api/miniapp, which verifies Telegram initData (and the Telegram-verified
+    // phone for lookups) and forwards with the key. telegramUserId is set by that proxy.
     if (data.action === 'telegram_mini_app_intake') {
       try {
         var intakeActor = data.telegramUserId || data.telegramChatId || 'mini_app_unknown';
@@ -693,7 +767,7 @@ function doPost(e) {
           const slackChannel = getConfig().SLACK_WEBHOOK_INTAKE || getConfig().SLACK_WEBHOOK_SHAMROCK;
           if (slackChannel) {
             sendSlackMessage(slackChannel,
-              `💳 Payment initiated via Telegram: ${data.name || 'Unknown'} | $${data.amount || '?'} | ${data.paymentType || 'unknown'} | Ref: ${data.referenceId || 'N/A'}`,
+              `💳 Payment initiated via Telegram: ${slackMaskName_(data.name)} | Ph ${slackMaskPhone_(data.phone)} | $${data.amount || '?'} | ${data.paymentType || 'unknown'} | Ref: ${data.referenceId || 'N/A'}`,
               null
             );
           }
@@ -817,7 +891,7 @@ function doPost(e) {
               ? data.latitude.toFixed(4) + ', ' + data.longitude.toFixed(4)
               : 'Not provided';
             sendSlackMessage(slackChannel,
-              '📍 Check-in via Telegram: ' + (data.name || 'Unknown') + ' | Location: ' + locationStr + ' | Selfie: ' + (data.hasSelfie ? '✅' : '❌') + ' | Ref: ' + (data.referenceId || 'N/A'),
+              '📍 Check-in via Telegram: ' + slackMaskName_(data.name) + ' | Ph ' + slackMaskPhone_(data.phone) + ' | Location: ' + locationStr + ' | Selfie: ' + (data.hasSelfie ? '✅' : '❌') + ' | Ref: ' + (data.referenceId || 'N/A'),
               null
             );
           }
@@ -1145,8 +1219,15 @@ function doPost(e) {
     }
 
     // ─── RISK MITIGATION & NETLIFY FUNCTION ACTIONS ───
-    // These actions are called by Netlify serverless functions (no API key)
+    // These actions are called by Netlify serverless functions.
+    // post_slack_message requires the GAS API key (data.apiKey, or ?apiKey= merged above), checked
+    // with requireGasApiKey_ like the other keyed routes. Without it, anyone holding the /exec URL
+    // could post arbitrary text into Shamrock's Slack. Netlify sends GAS_API_KEY server-side.
     if (data.action === 'post_slack_message') {
+      if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(data.apiKey)) {
+        if (typeof logSecurityEvent === 'function') logSecurityEvent('UNAUTHORIZED_API_ACCESS', { error: 'Invalid API Key', action: data.action });
+        return createErrorResponse('Unauthorized: Invalid API Key', ERROR_CODES.UNAUTHORIZED);
+      }
       return createResponse(handlePostSlackMessage(data));
     }
     if (data.action === 'get_upcoming_court_dates') {
