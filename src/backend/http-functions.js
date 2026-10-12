@@ -846,6 +846,14 @@ export async function get_indexnow(request) {
     });
 }
 
+/**
+ * GET /_functions/a00e3857675a493b91d8a1dbc5e7c499
+ * Standard IndexNow key filename endpoint fallback.
+ */
+export async function get_a00e3857675a493b91d8a1dbc5e7c499(request) {
+    return get_indexnow(request);
+}
+
 export async function get_sitemap(request) {
     const SITE_URL = 'https://www.shamrockbailbonds.biz';
     const LAST_MOD = new Date().toISOString().split('T')[0];

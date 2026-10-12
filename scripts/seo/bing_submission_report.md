@@ -1,6 +1,6 @@
 # 📡 Microsoft Bing & IndexNow Submission Report
 
-- **Generated:** `2026-10-12T21:23:46Z`
+- **Generated:** `2026-10-12T21:31:39Z`
 - **Site:** `https://www.shamrockbailbonds.biz`
 - **Mode:** `🟢 LIVE`
 - **Total URLs:** `237`
@@ -23,18 +23,18 @@
 ### Sample URLs Submitted
 
 - `https://www.shamrockbailbonds.biz/`
-- `https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-highlands-county-your-complete-sebring-avon-park-and-lake-placid-guide`
-- `https://www.shamrockbailbonds.biz/single-post/understanding-bail-bonds-in-charlotte-county-your-port-charlotte-and-punta-gorda-guide`
 - `https://www.shamrockbailbonds.biz/single-post/7-common-bail-bond-myths-that-could-cost-you-time-and-money`
-- `https://www.shamrockbailbonds.biz/single-post/bail-bonds-and-probation-violations-in-florida-what-you-need-to-know`
-- `https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-manatee-county-your-bradenton-and-palmetto-resource`
-- `https://www.shamrockbailbonds.biz/single-post/lee-county-vs-collier-county-bail-bonds-jail-timing-cost`
+- `https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-a-complete-guide-for-florida-families`
+- `https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-sarasota-county-your-complete-2026-guide-to-getting-someone-out-of-jail-fast`
+- `https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-a-clear-explanation`
+- `https://www.shamrockbailbonds.biz/single-post/what-should-i-know-about-bail-bonds-in-fort-myers-a-complete-2026-guide`
 - `https://www.shamrockbailbonds.biz/single-post/how-bail-bonds-work-for-assault-and-battery-charges-in-florida`
-- `https://www.shamrockbailbonds.biz/single-post/bail-bond-premium-explained-what-you-need-to-know`
-- `https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-broward-county-complete-2026-jail-release-guide`
-- `https://www.shamrockbailbonds.biz/single-post/how-to-get-a-bond-reduced-in-florida-emergency-bond-hearings-explained`
-- `https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-highlands-county-your-complete-sebring-and-avon-park-guide`
-- `https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-a-complete-guide-for-sarasota-and-manatee-county-families`
-- `https://www.shamrockbailbonds.biz/single-post/understanding-florida-s-bail-bond-laws-what-you-need-to-know-in-2026`
-- `https://www.shamrockbailbonds.biz/single-post/what-happens-to-your-bail-money-after-a-case-is-dismissed-in-florida`
+- `https://www.shamrockbailbonds.biz/single-post/how-to-afford-a-bail-bond-in-florida-payment-plans-collateral-and-financial-options`
+- `https://www.shamrockbailbonds.biz/single-post/the-shamrock-bail-school-training-the-next-generation-of-florida-bondsmen`
+- `https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-hillsborough-county-complete-2026-jail-release-guide`
+- `https://www.shamrockbailbonds.biz/single-post/what-happens-to-your-bail-money-after-a-case-is-dismissed-in-florida-1`
+- `https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-fort-myers-for-domestic-violence-charges`
+- `https://www.shamrockbailbonds.biz/single-post/what-to-expect-at-a-bail-bond-hearing-in-florida`
+- `https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-sarasota-county-complete-guide-to-the-sarasota-county-jail-1`
+- `https://www.shamrockbailbonds.biz/single-post/understanding-bail-bond-conditions-and-restrictions-in-florida`
 - ... and 222 more
