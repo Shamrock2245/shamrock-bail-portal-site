@@ -56,3 +56,9 @@ jobs:
       - name: GAS Telegram Mini App actions require the API key
         run: node scripts/test_gas_miniapp_actions_auth.mjs
 
+      - name: First appearance router checks
+        run: node scripts/test_first_appearance_router.js
+
+      - name: Shannon helper unit tests
+        run: node scripts/test_shannon_helpers.js
+
