@@ -474,6 +474,7 @@ function setupHomepageMeta() {
     wixSeo.setTitle(title);
     wixSeo.setLinks([{ rel: 'canonical', href: url }]);
     wixSeo.setMetaTags([
+        { name: 'msvalidate.01', content: '784C373B3B1BCC116419BA40DA6FB208' },
         { name: 'description', content: description },
         { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' },
         { property: 'og:title', content: title },
