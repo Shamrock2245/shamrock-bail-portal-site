@@ -828,7 +828,7 @@ export function get_health(request) {
  *
  * Public pages only — never include portal/*, lightboxes, or utility pages.
  */
-const INDEXNOW_KEY = 'a7c3e91b4d2f48c0a1e65f0b9c4d8e21';
+const INDEXNOW_KEY = 'a00e3857-675a-493b-91d8-a1dbc5e7c499';
 
 /**
  * GET /_functions/indexnow

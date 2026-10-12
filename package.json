@@ -22,6 +22,7 @@
     "postinstall": "wix sync-types",
     "dev": "wix dev",
     "lint": "eslint .",
-    "test": "node scripts/ci/check-velo-syntax.mjs && node scripts/ci/check-json.mjs && node --test scripts/test_*.mjs scripts/test_*.js"
+    "test": "node scripts/ci/check-velo-syntax.mjs && node scripts/ci/check-json.mjs && node --test scripts/test_*.mjs scripts/test_*.js",
+    "seo:submit:bing": "python3 scripts/seo/bing_url_submitter.py"
   }
 }
