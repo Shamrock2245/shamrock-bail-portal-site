@@ -17,7 +17,7 @@
 **Usage:** OAuth 2.0 client identification
 
 ### 4. SIGNNOW_BASIC_TOKEN (Optional - for OAuth if needed)
-**Value:** `M2I0ZGQ1MWUwYTA3NTU3ZTViMGU2YjQyNDE1NzU5ZGI6YjQ2MzNiZmU3ZjkwNDgzYWJjZjQ4MDE2MjBhZWRjNTk=`  
+**Value:** `<SIGNNOW_BASIC_TOKEN — stored in Wix Secrets Manager>`  
 **Usage:** Basic authorization for generating access tokens
 
 ## How to Update in Wix

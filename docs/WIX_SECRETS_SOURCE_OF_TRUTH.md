@@ -17,7 +17,7 @@ The shared authentication secret between the Wix website application wizards (De
 2. Navigate to **Developer Tools** → **Secrets Manager**.
 3. Click **Store Secret**.
 4. Set **Name**: `LEADS_WEBHOOK_SECRET` (case-sensitive, exact).
-5. Set **Value**: `48ac04b0aeae45346ebb7526a16ba04911ff3c0b1841af5de1f097d11da3859a`
+5. Set **Value**: the current `WIX_WEBHOOK_SECRET` value from the leads VPS `.env` (paste it; never commit it)
 6. Set **Description** (optional): `Shared secret for Wix website wizard to ShamrockLeads CRM intake webhook`
 7. Click **Save**.
 
@@ -38,7 +38,7 @@ If `LEADS_WEBHOOK_SECRET` is not in Wix Secrets Manager, `getSecret()` returns e
 - **Hetzner VPS (`leads.shamrockbailbonds.biz`):** Already configured in `/opt/shamrock-leads/.env`.
 - Live HTTP probe to `https://leads.shamrockbailbonds.biz/api/webhooks/wix-intake`:
   - With bad secret: `401 {"success":false,"error":"Unauthorized"}`
-  - With `48ac04b0aeae45346ebb7526a16ba04911ff3c0b1841af5de1f097d11da3859a`: `400 {"success":false,"error":"Empty or invalid JSON body"}` (successfully passed authentication).
+  - With `<LEADS_WEBHOOK_SECRET in Wix Secrets Manager>`: `400 {"success":false,"error":"Empty or invalid JSON body"}` (successfully passed authentication).
 - CRM Readiness probe at `https://leads.shamrockbailbonds.biz/api/crm/health`:
   - Reports `"wix_webhook_auth": true`.
 
@@ -49,7 +49,7 @@ If `LEADS_WEBHOOK_SECRET` is not in Wix Secrets Manager, `getSecret()` returns e
 | Secret Name | Consuming File(s) in `src/` | Authoritative Source / Value | Purpose |
 |---|---|---|---|
 | `LEADS_WEBHOOK_SECRET` (Wix) / `WIX_WEBHOOK_SECRET` (VPS) | `src/backend/leadsIntake.jsw` | Same value as VPS `.env` `WIX_WEBHOOK_SECRET` (never commit values) | Auth header `X-Wix-Webhook-Secret` for website intake forms to ShamrockLeads CRM |
-| `GAS_API_KEY` | `src/backend/utils.js`, `healthCheck.jsw`, `bluebubbles.jsw`, `wixApi.jsw`, `location-tracker.jsw` | `shamrock_live_auth_v555` (VPS `.env` / GAS Properties) | Machine auth for Wix-to-GAS and fallback for CRM endpoints |
+| `GAS_API_KEY` | `src/backend/utils.js`, `healthCheck.jsw`, `bluebubbles.jsw`, `wixApi.jsw`, `location-tracker.jsw` | `<GAS_API_KEY in Wix Secrets Manager>` (VPS `.env` / GAS Properties) | Machine auth for Wix-to-GAS and fallback for CRM endpoints |
 | `GAS_WEB_APP_URL` | `src/backend/utils.js`, `healthCheck.jsw` | `https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec` | Canonical GAS `/exec` URL from [`.gas-config.json`](../.gas-config.json) |
 | `GOOGLE_MAPS_API_KEY` | `src/backend/location-enhanced.jsw`, `geocoding.jsw`, `googleMaps.jsw` | GCP Console (`shamrock-bail-bonds`) | Maps API for geocoding and frontend map components |
 | `TELEGRAM_WEBHOOK_SECRET` | `src/backend/telegram-webhook.jsw` | GAS Script Properties | HMAC verification for incoming Telegram bot webhooks |

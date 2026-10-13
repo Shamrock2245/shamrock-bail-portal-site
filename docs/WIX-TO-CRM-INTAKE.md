@@ -50,7 +50,7 @@ See [WIX_SECRETS_SOURCE_OF_TRUTH.md](./WIX_SECRETS_SOURCE_OF_TRUTH.md) for full 
 |---|---|---|
 | Wix Secrets Manager | `LEADS_WEBHOOK_SECRET` (Wix rejects names starting with "wix") | (value in VPS `.env`; never commit) (Must be added via Wix Developer Tools → Secrets Manager) |
 | leads VPS `.env` | `WIX_WEBHOOK_SECRET` | (value in VPS `.env`; never commit) (✅ Verified present on live VPS) |
-| leads VPS `.env` | `GAS_WEB_APP_URL`, `GAS_API_KEY` | `GAS_API_KEY=shamrock_live_auth_v555` (✅ Verified present on live VPS) |
+| leads VPS `.env` | `GAS_WEB_APP_URL`, `GAS_API_KEY` | `GAS_API_KEY=<GAS_API_KEY — VPS .env / Wix Secrets Manager>` (✅ Verified present on live VPS) |
 | leads VPS `.env` | `SLACK_WEBHOOK_INTAKE` (optional) | Slack incoming webhook for the intake channel; falls back to `SLACK_WEBHOOK_LEADS` |
 | GAS Script Properties | `INTAKE_LEDGER_SHEET_ID` (optional) | spreadsheet for the ledger; defaults to `CONFIG.SHEET_ID` |
 
