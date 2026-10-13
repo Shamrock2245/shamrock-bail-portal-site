@@ -443,8 +443,8 @@ async function setupFAQ() {
     const fallbackData = [
         {
             _id: "1",
-            title: "How fast can you get someone out of jail?",
-            answer: "Shamrock Bail Bonds can begin the release process within minutes of your call — 24 hours a day, 7 days a week. Once the bond is posted, release timing depends on the jail's processing, which varies by facility and time of day. Call (239) 332-2245 any time to get started."
+            title: "How long does it take to get someone out of jail?",
+            answer: "Shamrock Bail Bonds starts the release process right away when you call — 24 hours a day, 7 days a week. Once the bond is posted, release timing depends on the jail's processing, which varies by facility and time of day. Call (239) 332-2245 any time to get started."
         },
         {
             _id: "2",

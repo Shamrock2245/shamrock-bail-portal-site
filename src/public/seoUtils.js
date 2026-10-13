@@ -138,7 +138,7 @@ export function generateCountyPageSchema(county) {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
         "name": `${SITE_NAME} - ${county.name} County`,
-        "description": `Bail bond services in ${county.name} County, Florida. Fast jail release in ${county.countySeat} and surrounding areas. Call ${PHONE}.`,
+        "description": `Bail bond services in ${county.name} County, Florida. 24/7 bail help in ${county.countySeat} and surrounding areas. Call ${PHONE}.`,
         "url": `${SITE_URL}/florida-bail-bonds/${county.slug}`,
         "telephone": PHONE_FORMATTED,
         "areaServed": {
@@ -319,7 +319,7 @@ export function initGlobalSEO() {
 
     // 3. COMPREHENSIVE META TAGS (OG + Twitter + Geo)
     const pageTitle = `Shamrock Bail Bonds | ${formatPageName(currentPath)}`;
-    const defaultDescription = '24/7 bail bond services across all 67 Florida counties. Fast, confidential, bilingual support. Call (239) 332-2245 for immediate release.';
+    const defaultDescription = '24/7 bail bond services across all 67 Florida counties. Confidential, bilingual support. Call (239) 332-2245 any time.';
 
     wixSeo.setMetaTags([
         // Open Graph

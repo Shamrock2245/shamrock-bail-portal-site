@@ -41,7 +41,7 @@ export async function routeMultiStatePage(request) {
 
       return ok(MULTI_STATE_PAGE, {
         title: `${stateInfo.name} Bail Bonds | 24/7 Jail Release | Shamrock`,
-        description: `Licensed 24/7 bail bond services in ${stateInfo.name}. Instant phone consult, payment plans, and fast jail dispatch. Call (239) 332-2245.`,
+        description: `Licensed 24/7 bail bond services in ${stateInfo.name}. Phone consultations, payment plans, and jail release help. Call (239) 332-2245.`,
         state: stateInfo.code,
         stateName: stateInfo.name,
         slug: stateInfo.slug,
@@ -60,7 +60,7 @@ export async function routeMultiStatePage(request) {
     const cleanCountySlug = raw.replace(/-county$/i, '');
     return ok(MULTI_STATE_PAGE, {
       title: `${cleanCountySlug.toUpperCase()} Bail Bonds | Florida Jail Release | Shamrock`,
-      description: `24/7 bail bonds for ${cleanCountySlug} County. Licensed Florida agents, fast jail release. Call (239) 332-2245.`,
+      description: `24/7 bail bonds for ${cleanCountySlug} County. Licensed Florida agents, jail release help. Call (239) 332-2245.`,
       slug: cleanCountySlug,
       state: 'FL',
       stateName: 'Florida'

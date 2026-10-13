@@ -194,7 +194,7 @@ function updatePageSEO() {
                             "itemOffered": {
                                 "@type": "Service",
                                 "name": "Traffic & DWLSR Bail Bonds",
-                                "description": "Fast release for criminal traffic citations and driving while license suspended charges."
+                                "description": "Jail release help for criminal traffic citations and driving while license suspended charges."
                             }
                         },
                         {
@@ -202,7 +202,7 @@ function updatePageSEO() {
                             "itemOffered": {
                                 "@type": "Service",
                                 "name": "Online & Mobile Digital Bail Bonds",
-                                "description": "100% paperless mobile bail process with instant DL scan and DocuSeal digital signing."
+                                "description": "100% paperless mobile bail process with mobile DL scan and DocuSeal digital signing."
                             }
                         },
                         {

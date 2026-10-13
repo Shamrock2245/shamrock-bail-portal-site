@@ -144,10 +144,10 @@ function updatePageSEO() {
                 },
                 {
                     "@type": "Question",
-                    "name": "What is the fastest way to get someone out of jail?",
+                    "name": "What is the easiest way to start the bail process?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "If you have an ID and 2 minutes, start online at paperwork.shamrockbailbonds.biz to scan your license and sign paperwork instantly. For phone assistance, call Shannon or our live dispatchers 24/7 at (239) 332-2245."
+                        "text": "If you have an ID, you can start online at paperwork.shamrockbailbonds.biz to scan your license and sign paperwork electronically. For phone assistance, call Shannon or our live dispatchers 24/7 at (239) 332-2245."
                     }
                 },
                 {
@@ -155,7 +155,7 @@ function updatePageSEO() {
                     "name": "Can I use Telegram to post bail?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Yes. Search @ShamrockBail_bot on Telegram for instant conversational intake, ID scan, quote calculator, and automated paperwork links."
+                        "text": "Yes. Search @ShamrockBail_bot on Telegram for conversational intake, ID scan, quote calculator, and automated paperwork links."
                     }
                 }
             ]
