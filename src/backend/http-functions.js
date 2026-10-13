@@ -1829,7 +1829,7 @@ The documents for *${defendantName}* are ready to sign.
 *Step 2 -- Pay the premium:*
  [Tap here to pay](${paymentLink})
 
-Once both are complete, we post the bond immediately. 
+Once both are complete, we post the bond. 
 
 Questions? Reply here or call *(239) 332-2245*`;
 
