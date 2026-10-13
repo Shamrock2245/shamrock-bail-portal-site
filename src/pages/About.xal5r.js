@@ -14,7 +14,7 @@ $w.onReady(function () {
 
 function updatePageSEO() {
     const pageTitle = "About Shamrock Bail Bonds | Licensed Florida Bail Bond Agency";
-    const pageDesc = "Shamrock Bail Bonds is Southwest Florida's most trusted bail bond agency. Licensed, available 24/7, serving all 67 Florida counties from Fort Myers. Fast jail release with digital paperwork.";
+    const pageDesc = "Shamrock Bail Bonds is Southwest Florida's most trusted bail bond agency. Licensed, available 24/7, serving all 67 Florida counties from Fort Myers. Jail release help with digital paperwork.";
     const pageUrl = "https://www.shamrockbailbonds.biz/about";
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
@@ -146,7 +146,7 @@ function updatePageSEO() {
                             "itemOffered": {
                                 "@type": "Service",
                                 "name": "Misdemeanor Bail Bonds",
-                                "description": "Expedited booking clearance and release for misdemeanor charges across Southwest Florida jails."
+                                "description": "Booking clearance and release for misdemeanor charges across Southwest Florida jails."
                             }
                         },
                         {
@@ -162,7 +162,7 @@ function updatePageSEO() {
                             "itemOffered": {
                                 "@type": "Service",
                                 "name": "Domestic Violence Bail Bonds",
-                                "description": "First Appearance court representation and immediate posting following bond setting."
+                                "description": "First Appearance court representation and bond posting following bond setting."
                             }
                         },
                         {
@@ -194,7 +194,7 @@ function updatePageSEO() {
                             "itemOffered": {
                                 "@type": "Service",
                                 "name": "Traffic & DWLSR Bail Bonds",
-                                "description": "Fast release for criminal traffic citations and driving while license suspended charges."
+                                "description": "Jail release help for criminal traffic citations and driving while license suspended charges."
                             }
                         },
                         {
@@ -202,7 +202,7 @@ function updatePageSEO() {
                             "itemOffered": {
                                 "@type": "Service",
                                 "name": "Online & Mobile Digital Bail Bonds",
-                                "description": "100% paperless mobile bail process with instant DL scan and DocuSeal digital signing."
+                                "description": "100% paperless mobile bail process with mobile DL scan and DocuSeal digital signing."
                             }
                         },
                         {
@@ -233,8 +233,8 @@ function updatePageSEO() {
                             "@type": "Offer",
                             "itemOffered": {
                                 "@type": "Service",
-                                "name": "Lee County Jail (Ortiz Ave) Express Release Dispatch",
-                                "description": "Rapid 24/7 jail release dispatch to Lee County Main Jail at 2501 Ortiz Ave, Fort Myers."
+                                "name": "Lee County Jail (Ortiz Ave) Release Dispatch",
+                                "description": "24/7 jail release dispatch to Lee County Main Jail at 2501 Ortiz Ave, Fort Myers."
                             }
                         },
                         {
@@ -250,7 +250,7 @@ function updatePageSEO() {
                             "itemOffered": {
                                 "@type": "Service",
                                 "name": "Confidential Florida Warrant Check & Verification",
-                                "description": "Confidential arrest warrant and capias lookup with immediate bail arrangement to avoid surprise arrests."
+                                "description": "Confidential arrest warrant and capias lookup with bail arrangement to avoid surprise arrests."
                             }
                         },
                         {
@@ -315,7 +315,7 @@ function updatePageSEO() {
                     "name": "Is Shamrock Bail Bonds available 24/7?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Yes. Shamrock Bail Bonds operates 24 hours a day, 7 days a week, 365 days a year — including holidays. Call (239) 332-2245 any time. After hours, our AI assistant Shannon can start your paperwork immediately, or you can use our online portal or Telegram bot for instant service."
+                        "text": "Yes. Shamrock Bail Bonds operates 24 hours a day, 7 days a week, 365 days a year — including holidays. Call (239) 332-2245 any time. After hours, our AI assistant Shannon can start your paperwork, or you can use our online portal or Telegram bot any time."
                     }
                 },
                 {

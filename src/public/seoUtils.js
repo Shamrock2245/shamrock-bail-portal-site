@@ -138,7 +138,7 @@ export function generateCountyPageSchema(county) {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
         "name": `${SITE_NAME} - ${county.name} County`,
-        "description": `Bail bond services in ${county.name} County, Florida. Fast jail release in ${county.countySeat} and surrounding areas. Call ${PHONE}.`,
+        "description": `Bail bond services in ${county.name} County, Florida. 24/7 bail help in ${county.countySeat} and surrounding areas. Call ${PHONE}.`,
         "url": `${SITE_URL}/florida-bail-bonds/${county.slug}`,
         "telephone": PHONE_FORMATTED,
         "areaServed": {
@@ -319,7 +319,7 @@ export function initGlobalSEO() {
 
     // 3. COMPREHENSIVE META TAGS (OG + Twitter + Geo)
     const pageTitle = `Shamrock Bail Bonds | ${formatPageName(currentPath)}`;
-    const defaultDescription = '24/7 bail bond services across all 67 Florida counties. Fast, confidential, bilingual support. Call (239) 332-2245 for immediate release.';
+    const defaultDescription = '24/7 bail bond services across all 67 Florida counties. Confidential, bilingual support. Call (239) 332-2245 any time.';
 
     wixSeo.setMetaTags([
         // Open Graph
@@ -438,7 +438,7 @@ export function initGlobalSEO() {
             "telephone": PHONE_FORMATTED,
             "image": `${SITE_URL}/logo.png`,
             "priceRange": "$$",
-            "description": "Are you searching for bail near me? We are a licensed bail bond agency serving all 67 Florida counties. Available 24 hours a day, 7 days a week with bilingual English and Spanish support. Fast jail release, payment plans available.",
+            "description": "Are you searching for bail near me? We are a licensed bail bond agency serving all 67 Florida counties. Available 24 hours a day, 7 days a week with bilingual English and Spanish support. Jail release help, payment plans available.",
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "1528 Broadway",
@@ -502,7 +502,7 @@ export function initGlobalSEO() {
                         "itemOffered": {
                             "@type": "Service",
                             "name": "Emergency After-Hours Bail Bonds",
-                            "description": "24/7 emergency bail bond posting for immediate jail release, nights, weekends, and holidays."
+                            "description": "24/7 emergency bail bond posting for jail release, nights, weekends, and holidays."
                         }
                     },
                     {
