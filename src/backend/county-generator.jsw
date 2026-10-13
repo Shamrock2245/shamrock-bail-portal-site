@@ -28,6 +28,7 @@ import {
 import { PHONE_PRIMARY } from 'backend/seoConfig';
 import { formatCityHeroHeadline } from 'public/cityHeroHeadline';
 import { sanitizeFastReleaseText } from 'public/sanitizeLandingCopy';
+import { applyIndexedCountyLocal } from 'backend/gsc-county-local';
 
 /**
  * Generate complete county page data
@@ -285,7 +286,7 @@ function transformCountyData(county, landing = null, landingCms = null) {
     ? placeJailSites.map((site) => `${site.name}: ${site.address}`).join('; ')
     : ((landing && landing.holdingAddress) || jailAddress);
 
-  return {
+  const page = {
     // Basic info
     landing_type: landing ? landing.type : 'county',
     display_name: displayName,
@@ -445,6 +446,7 @@ function transformCountyData(county, landing = null, landingCms = null) {
         : `/florida-bail-bonds/${normalizeLandingSlug(county.countySlug || countyName)}`
     }
   };
+  return applyIndexedCountyLocal(page);
 }
 
 // ─── ENRICHMENT HELPERS ───────────────────────────────────────────────

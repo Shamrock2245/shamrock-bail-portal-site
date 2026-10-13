@@ -156,7 +156,10 @@ $w.onReady(function () {
     setupCTAButtons();
     setupBailSchoolButtons();
 
-    // Load county dropdown immediately -- data is inline, no async needed
+    // Load county dropdown immediately -- data is inline, no async needed.
+    // All 67 counties stay in this dropdown. Do not paint an equal-weight
+    // anchor list here; that flattens SWFL homepage priority. Crawlable
+    // anchors live on the Florida county hub and county pages.
     loadCountyDropdown();
 
     // Testimonials: register viewport trigger; data loads on scroll, not on page load

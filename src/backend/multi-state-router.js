@@ -14,6 +14,7 @@
 import { ok, redirect } from 'wix-router';
 import { EXPANSION_STATES } from 'public/portal-config';
 import { isStateLive } from 'backend/service-areas';
+import { floridaCountyCanonicalPath } from 'backend/seo-redirects';
 
 const MULTI_STATE_PAGE = 'Florida Counties'; // Uses the dynamic location template
 
@@ -46,6 +47,13 @@ export async function routeMultiStatePage(request) {
         slug: stateInfo.slug,
         isStateDirectory: true
       });
+    }
+
+    // Florida county aliases 301 to the canonical county URL. State codes
+    // above are unchanged. Unknown single segments still render below.
+    const countyTarget = floridaCountyCanonicalPath(raw);
+    if (countyTarget) {
+      return redirect(countyTarget, '301');
     }
 
     // Default to Florida county slug fallback if it's a FL county name
