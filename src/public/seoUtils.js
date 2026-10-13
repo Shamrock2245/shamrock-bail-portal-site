@@ -502,7 +502,7 @@ export function initGlobalSEO() {
                         "itemOffered": {
                             "@type": "Service",
                             "name": "Emergency After-Hours Bail Bonds",
-                            "description": "24/7 emergency bail bond posting for immediate jail release, nights, weekends, and holidays."
+                            "description": "24/7 emergency bail bond posting for jail release, nights, weekends, and holidays."
                         }
                     },
                     {
