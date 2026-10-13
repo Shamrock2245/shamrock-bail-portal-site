@@ -59,6 +59,9 @@ jobs:
       - name: First appearance router checks
         run: node scripts/test_first_appearance_router.js
 
+      - name: Search Console county redirects and local facts
+        run: node scripts/test_gsc_search_console.mjs
+
       - name: Shannon helper unit tests
         run: node scripts/test_shannon_helpers.js
 

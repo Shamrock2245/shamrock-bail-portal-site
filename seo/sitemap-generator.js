@@ -40,7 +40,7 @@ const staticPages = [
     { url: '/blog', priority: '0.7', changefreq: 'weekly' },
     { url: '/testimonials', priority: '0.7', changefreq: 'monthly' },
     { url: '/privacy-policy', priority: '0.3', changefreq: 'yearly' },
-    { url: '/terms-of-service', priority: '0.3', changefreq: 'yearly' }
+    { url: '/terms-and-conditions', priority: '0.3', changefreq: 'yearly' }
 ];
 
 /**
