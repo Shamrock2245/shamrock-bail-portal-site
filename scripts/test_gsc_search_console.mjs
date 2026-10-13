@@ -124,7 +124,8 @@ assert.equal(home.includes('renderCrawlableCountyLinks'), false, 'homepage must 
 assert.equal(home.includes('aria-label="Florida county bail bonds"'), false);
 
 const hub = readFileSync(join(root, 'src/pages/Florida Bail Bonds.liggp.js'), 'utf8');
-assert.match(hub, /buildFloridaCountyDirectoryHtml/);
+assert.match(hub, /buildHubCountyDirectoryHtml/);
+assert.match(hub, /HUB_COUNTY_DIRECTORY_ELEMENT_ID/);
 
 const countyPage = readFileSync(join(root, 'src/pages/Florida Counties.qx7lv.js'), 'utf8');
 assert.match(countyPage, /aboutHtmlWithDirectory/);

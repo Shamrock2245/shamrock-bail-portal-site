@@ -62,6 +62,9 @@ jobs:
       - name: Search Console county redirects and local facts
         run: node scripts/test_gsc_search_console.mjs
 
+      - name: Florida hub county anchor list
+        run: node scripts/test_hub_county_anchors.mjs
+
       - name: Shannon helper unit tests
         run: node scripts/test_shannon_helpers.js
 
