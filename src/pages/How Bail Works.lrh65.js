@@ -186,7 +186,7 @@ function setupBailProcess() {
     const data = [
         { _id: "1", title: "1. Booking & Charges", text: "After arrest, the defendant is booked at the county jail. Fingerprints, photo, and charges are filed into the court roster. Booking time depends on the jail." },
         { _id: "2", title: "2. Bail & First Appearance", text: "Bail is set by county bond schedule or at First Appearance within 24 hours. Florida law mandates 10% premium with a $100 minimum per charge." },
-        { _id: "3", title: "3. Scan ID & Prepare Forms", text: "Instead of filling out 14 legal documents by hand, scan your ID in 60 seconds. Our system hydrates the paperwork automatically." },
+        { _id: "3", title: "3. Scan ID & Prepare Forms", text: "Instead of filling out 14 legal documents by hand, scan your ID with your phone. Our system hydrates the paperwork automatically." },
         { _id: "4", title: "4. Bond Posted & Release", text: "Shamrock posts the appearance bond directly with the jail desk. Release timing depends on the jail's processing." },
         { _id: "5", title: "5. Court Appearances", text: "The defendant is released with mandatory scheduled court dates. Shamrock provides automated reminders to keep them in compliance." }
     ];
