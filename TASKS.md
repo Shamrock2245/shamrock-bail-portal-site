@@ -1,6 +1,6 @@
 # 📋 Project Tasks
 
-> **Mission:** Build the "Uber of Bail Bonds" — Fast. Frictionless. Everywhere.  
+> **Mission:** Build the "Uber of Bail Bonds" — Simple. Secure. Everywhere.  
 > **Last Updated:** 2026-09-30  
 > **Authoritative Runtime Status:** [`STATUS.md`](./STATUS.md)
 
