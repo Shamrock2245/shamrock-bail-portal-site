@@ -223,7 +223,7 @@ function setupBailBondsExplained() {
         { 
             _id: "4", 
             title: "Scan Your ID & Fill The Forms", 
-            body: "Ready to get started? Have 2 minutes and a license? Scan your ID on your phone and our system fills the paperwork automatically so you don't type from scratch." 
+            body: "Ready to get started? Have your license handy? Scan your ID on your phone and our system fills the paperwork automatically so you don't type from scratch." 
         }
     ];
 
