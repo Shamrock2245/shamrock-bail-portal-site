@@ -544,7 +544,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "State Surety Appearance Bail Bonds",
-                "description": "Standard 10% statutory surety bail bonds for misdemeanor and felony cases in all 67 Florida county and circuit courts. Fast jail release with full statutory compliance pursuant to Florida Statute § 648.24.",
+                "description": "Standard 10% statutory surety bail bonds for misdemeanor and felony cases in all 67 Florida county and circuit courts. Jail release help with full statutory compliance pursuant to Florida Statute § 648.24.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount ($100 minimum per charge pursuant to Florida Statute § 648.24)",
@@ -582,7 +582,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "Misdemeanor Bail Bonds",
-                "description": "Fast-track jail release for 1st and 2nd-degree misdemeanor charges including petty theft, disorderly conduct, simple battery, trespassing, and municipal ordinance violations. Fastest turnaround times across Southwest Florida jails.",
+                "description": "Jail release help for 1st and 2nd-degree misdemeanor charges including petty theft, disorderly conduct, simple battery, trespassing, and municipal ordinance violations.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount ($100 minimum per charge)",
@@ -658,7 +658,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "Transfer Bail Bonds (Statewide & Nationwide)",
-                "description": "Post bail locally at our Fort Myers office for defendants arrested and detained in any other Florida county jail or out-of-state facility. Fast electronic bond transfer without traveling.",
+                "description": "Post bail locally at our Fort Myers office for defendants arrested and detained in any other Florida county jail or out-of-state facility. Electronic bond transfer without traveling.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount plus standard statutory transfer fee",
@@ -726,7 +726,7 @@ function setupOrganizationSchema() {
                     "@type": "Service",
                     "name": "Online & Mobile Bail Bonds",
                     "serviceType": "Digital Bail Bonds",
-                    "description": "Zero-contact digital bail bond platform featuring instant mobile ID verification, electronic indemnity agreements, and remote posting.",
+                    "description": "Zero-contact digital bail bond platform featuring mobile ID verification, electronic indemnity agreements, and remote posting.",
                     "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
                     "areaServed": { "@type": "State", "name": "Florida" }
                 }
@@ -943,7 +943,7 @@ function setupOrganizationSchema() {
             "logo": "https://www.shamrockbailbonds.biz/logo.png",
             "foundingDate": "2012",
             "description": "Professional 24/7 bail bond services throughout Florida since 2012. Specializing in high-dollar bail underwriting, Nebbia packets, felony and misdemeanor release, transfer bonds, and flexible payment plans.",
-            "slogan": "Fort Myers Since 2012 — Fast. Frictionless. Everywhere.",
+            "slogan": "Fort Myers Since 2012 — Simple. Secure. Everywhere.",
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "1528 Broadway",
