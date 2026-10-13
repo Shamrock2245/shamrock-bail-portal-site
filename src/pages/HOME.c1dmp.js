@@ -471,7 +471,7 @@ function loadTestimonials() {
 
 function setupHomepageMeta() {
     const title = 'Fort Myers Bail Bonds | Cape Coral & Lee County | Shamrock';
-    const description = '24/7 Fort Myers & Florida bail bonds. Fast Lee County Jail release, payment plans, licensed since 2012. Call (239) 332-2245.';
+    const description = '24/7 Fort Myers & Florida bail bonds. Lee County Jail bonds, payment plans, licensed since 2012. Call (239) 332-2245.';
     const url = 'https://www.shamrockbailbonds.biz';
 
     wixSeo.setTitle(title);
@@ -501,7 +501,7 @@ function setupOrganizationSchema() {
     const BAIL_OFFER_CATALOG = {
         "@type": "OfferCatalog",
         "name": "Comprehensive Florida Bail Bond Services",
-        "description": "Licensed 24/7 bail bond solutions across Southwest Florida and all 67 Florida counties pursuant to Florida Statutes Chapters 648 and 903. High-dollar bail underwriting, Nebbia packet preparation, rapid jail release, paperless mobile intake, and flexible financing.",
+        "description": "Licensed 24/7 bail bond solutions across Southwest Florida and all 67 Florida counties pursuant to Florida Statutes Chapters 648 and 903. High-dollar bail underwriting, Nebbia packet preparation, jail release help, paperless mobile intake, and flexible financing.",
         "itemListElement": [
             {
                 "@type": "Offer",
@@ -525,7 +525,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "High-Value & Capital Felony Bail Underwriting",
-                "description": "Specialized underwriting and rapid collateral solutions for bonds exceeding $50,000, $100,000, and $500,000+. Direct corporate surety access, real estate lien processing, and executive confidentiality.",
+                "description": "Specialized underwriting and collateral solutions for bonds exceeding $50,000, $100,000, and $500,000+. Direct corporate surety access, real estate lien processing, and executive confidentiality.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount (Statutory rate per FL Stat. § 648.24)",
@@ -544,7 +544,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "State Surety Appearance Bail Bonds",
-                "description": "Standard 10% statutory surety bail bonds for misdemeanor and felony cases in all 67 Florida county and circuit courts. Fast jail release with full statutory compliance pursuant to Florida Statute § 648.24.",
+                "description": "Standard 10% statutory surety bail bonds for misdemeanor and felony cases in all 67 Florida county and circuit courts. Jail release help with full statutory compliance pursuant to Florida Statute § 648.24.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount ($100 minimum per charge pursuant to Florida Statute § 648.24)",
@@ -555,7 +555,7 @@ function setupOrganizationSchema() {
                     "@type": "Service",
                     "name": "State Surety Appearance Bail Bonds",
                     "serviceType": "Surety Bail Bonds",
-                    "description": "Standard appearance surety bail bonds for misdemeanor and felony cases in all 67 Florida county and circuit courts. Rapid release and 24/7 court appearance bond posting.",
+                    "description": "Standard appearance surety bail bonds for misdemeanor and felony cases in all 67 Florida county and circuit courts. 24/7 court appearance bond posting.",
                     "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
                     "areaServed": { "@type": "State", "name": "Florida" }
                 }
@@ -563,7 +563,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "Felony Bail Bonds",
-                "description": "Immediate emergency bail bond posting for 1st, 2nd, and 3rd-degree felony arrests throughout Florida, including burglary, grand theft, drug offenses, and violent charges. Large bond underwriting and rapid jail dispatch.",
+                "description": "24/7 emergency bail bond posting for 1st, 2nd, and 3rd-degree felony arrests throughout Florida, including burglary, grand theft, drug offenses, and violent charges. Large bond underwriting and jail dispatch.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount ($100 minimum per charge)",
@@ -582,7 +582,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "Misdemeanor Bail Bonds",
-                "description": "Fast-track jail release for 1st and 2nd-degree misdemeanor charges including petty theft, disorderly conduct, simple battery, trespassing, and municipal ordinance violations. Fastest turnaround times across Southwest Florida jails.",
+                "description": "Jail release help for 1st and 2nd-degree misdemeanor charges including petty theft, disorderly conduct, simple battery, trespassing, and municipal ordinance violations.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount ($100 minimum per charge)",
@@ -593,7 +593,7 @@ function setupOrganizationSchema() {
                     "@type": "Service",
                     "name": "Misdemeanor Bail Bonds",
                     "serviceType": "Misdemeanor Bail Bonds",
-                    "description": "Expedited booking clearance and bail bond posting for misdemeanor charges throughout Lee, Collier, Charlotte, and all Florida counties.",
+                    "description": "Booking clearance and bail bond posting for misdemeanor charges throughout Lee, Collier, Charlotte, and all Florida counties.",
                     "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
                     "areaServed": { "@type": "State", "name": "Florida" }
                 }
@@ -601,7 +601,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "DUI & BUI Bail Bonds",
-                "description": "Specialized bail bond processing for Driving Under the Influence (DUI) and Boating Under the Influence (BUI) arrests. Direct coordination with jail booking staff throughout Florida's mandatory 8-hour statutory sobriety hold for immediate release upon clearance.",
+                "description": "Specialized bail bond processing for Driving Under the Influence (DUI) and Boating Under the Influence (BUI) arrests. Direct coordination with jail booking staff throughout Florida's mandatory 8-hour statutory sobriety hold and release upon clearance.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount ($100 minimum per charge)",
@@ -612,7 +612,7 @@ function setupOrganizationSchema() {
                     "@type": "Service",
                     "name": "DUI & BUI Bail Bonds",
                     "serviceType": "DUI Bail Bonds",
-                    "description": "Specialized DUI bail bond processing, 8-hour statutory hold monitoring, vehicle impound information assistance, and rapid release coordination.",
+                    "description": "Specialized DUI bail bond processing, 8-hour statutory hold monitoring, vehicle impound information assistance, and release coordination.",
                     "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
                     "areaServed": { "@type": "State", "name": "Florida" }
                 }
@@ -620,7 +620,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "Domestic Violence Bail Bonds & Hearing Coordination",
-                "description": "First Appearance hearing monitoring and immediate bond posting for domestic violence charges, no-contact order verification, and rapid release coordination in full compliance with Florida court requirements.",
+                "description": "First Appearance hearing monitoring and bond posting for domestic violence charges, no-contact order verification, and release coordination in full compliance with Florida court requirements.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount ($100 minimum per charge)",
@@ -639,7 +639,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "Warrant Walk-Through Service",
-                "description": "Clear active arrest warrants, bench warrants, and failure to appear (FTA) summons with pre-arranged bail bonding. Enables defendants to process and get released immediately without holding cell confinement.",
+                "description": "Clear active arrest warrants, bench warrants, and failure to appear (FTA) summons with pre-arranged bail bonding. Enables defendants to process and be released without holding cell confinement.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of warrant bond amount ($100 minimum per charge)",
@@ -658,7 +658,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "Transfer Bail Bonds (Statewide & Nationwide)",
-                "description": "Post bail locally at our Fort Myers office for defendants arrested and detained in any other Florida county jail or out-of-state facility. Fast electronic bond transfer without traveling.",
+                "description": "Post bail locally at our Fort Myers office for defendants arrested and detained in any other Florida county jail or out-of-state facility. Electronic bond transfer without traveling.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount plus standard statutory transfer fee",
@@ -696,7 +696,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "Traffic Criminal & DWLSR Bail Bonds",
-                "description": "Rapid bail bonds for criminal traffic charges including Driving While License Suspended or Revoked (DWLSR), reckless driving, DUI with property damage, and fleeing/eluding law enforcement.",
+                "description": "Bail bonds for criminal traffic charges including Driving While License Suspended or Revoked (DWLSR), reckless driving, DUI with property damage, and fleeing/eluding law enforcement.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount ($100 minimum per charge)",
@@ -707,7 +707,7 @@ function setupOrganizationSchema() {
                     "@type": "Service",
                     "name": "Traffic & License Suspension Bail Bonds",
                     "serviceType": "Traffic Bail Bonds",
-                    "description": "Expedited bonding for criminal traffic offenses and FTA traffic summonses across Southwest Florida county jails.",
+                    "description": "Bonding for criminal traffic offenses and FTA traffic summonses across Southwest Florida county jails.",
                     "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
                     "areaServed": { "@type": "State", "name": "Florida" }
                 }
@@ -726,7 +726,7 @@ function setupOrganizationSchema() {
                     "@type": "Service",
                     "name": "Online & Mobile Bail Bonds",
                     "serviceType": "Digital Bail Bonds",
-                    "description": "Zero-contact digital bail bond platform featuring instant mobile ID verification, electronic indemnity agreements, and remote posting.",
+                    "description": "Zero-contact digital bail bond platform featuring mobile ID verification, electronic indemnity agreements, and remote posting.",
                     "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
                     "areaServed": { "@type": "State", "name": "Florida" }
                 }
@@ -745,7 +745,7 @@ function setupOrganizationSchema() {
                     "@type": "Service",
                     "name": "Bail Bond Payment Plans",
                     "serviceType": "Bail Bond Financing",
-                    "description": "Customizable payment plans and flexible financing for Florida bail bonds, allowing families to secure immediate release without paying the full premium upfront.",
+                    "description": "Customizable payment plans and flexible financing for Florida bail bonds, allowing families to secure release without paying the full premium upfront.",
                     "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
                     "areaServed": { "@type": "State", "name": "Florida" }
                 }
@@ -772,7 +772,7 @@ function setupOrganizationSchema() {
             {
                 "@type": "Offer",
                 "name": "24/7 Mobile Agent Jail Dispatch & Court Filings",
-                "description": "Immediate 24-hour physical and electronic bond delivery to Lee County Jail, CoreCivic, Collier County Jail, Charlotte County Jail, Hendry County Jail, and all Florida correctional facilities.",
+                "description": "24-hour physical and electronic bond delivery to Lee County Jail, CoreCivic, Collier County Jail, Charlotte County Jail, Hendry County Jail, and all Florida correctional facilities.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "Included with 10% statutory bond premium",
@@ -783,7 +783,7 @@ function setupOrganizationSchema() {
                     "@type": "Service",
                     "name": "24/7 Emergency Jail Dispatch",
                     "serviceType": "Emergency Bail Dispatch",
-                    "description": "Rapid-response physical and electronic bail dispatch to county detention facilities across Southwest Florida and statewide.",
+                    "description": "Physical and electronic bail dispatch to county detention facilities across Southwest Florida and statewide.",
                     "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
                     "areaServed": [
                         { "@type": "AdministrativeArea", "name": "Lee County, Florida" },
@@ -798,8 +798,8 @@ function setupOrganizationSchema() {
             },
             {
                 "@type": "Offer",
-                "name": "Lee County Jail (Ortiz Ave) Express Release Dispatch",
-                "description": "Express 24/7 direct bail bond delivery to the Lee County Main Jail (2501 Ortiz Ave, Fort Myers, FL 33905) and downtown CoreCivic facility. Minutes from booking desk with immediate turn-around to minimize holding cell time.",
+                "name": "Lee County Jail (Ortiz Ave) Release Dispatch",
+                "description": "24/7 direct bail bond delivery to the Lee County Main Jail (2501 Ortiz Ave, Fort Myers, FL 33905) and downtown CoreCivic facility.",
                 "priceSpecification": {
                     "@type": "PriceSpecification",
                     "price": "Statutory 10% rate ($100 minimum per charge)",
@@ -810,7 +810,7 @@ function setupOrganizationSchema() {
                     "@type": "Service",
                     "name": "Lee County Jail Ortiz Ave Dispatch",
                     "serviceType": "Jail Release Service",
-                    "description": "Rapid 24/7 jail release dispatch to Lee County Main Jail at 2501 Ortiz Ave, Fort Myers.",
+                    "description": "24/7 jail release dispatch to Lee County Main Jail at 2501 Ortiz Ave, Fort Myers.",
                     "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
                     "areaServed": { "@type": "AdministrativeArea", "name": "Lee County, Florida" }
                 }
@@ -848,7 +848,7 @@ function setupOrganizationSchema() {
                     "@type": "Service",
                     "name": "Warrant Search & Verification",
                     "serviceType": "Warrant Check Service",
-                    "description": "Confidential arrest warrant and capias lookup with immediate bail arrangement to avoid surprise arrests.",
+                    "description": "Confidential arrest warrant and capias lookup with bail arrangement to avoid surprise arrests.",
                     "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
                     "areaServed": { "@type": "State", "name": "Florida" }
                 }
@@ -943,7 +943,7 @@ function setupOrganizationSchema() {
             "logo": "https://www.shamrockbailbonds.biz/logo.png",
             "foundingDate": "2012",
             "description": "Professional 24/7 bail bond services throughout Florida since 2012. Specializing in high-dollar bail underwriting, Nebbia packets, felony and misdemeanor release, transfer bonds, and flexible payment plans.",
-            "slogan": "Fort Myers Since 2012 — Fast. Frictionless. Everywhere.",
+            "slogan": "Fort Myers Since 2012 — Simple. Secure. Everywhere.",
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "1528 Broadway",
@@ -995,7 +995,7 @@ function setupOrganizationSchema() {
             "name": "Comprehensive Florida Bail Bond Services",
             "serviceType": "Bail Bond Services",
             "provider": { "@id": "https://www.shamrockbailbonds.biz/#organization" },
-            "description": "Licensed 24/7 bail bond agency serving Southwest Florida (Lee, Collier, Charlotte, Hendry, DeSoto, Sarasota, Manatee) and all 67 Florida counties. Rapid release, 10% statutory rates pursuant to FL Stat. § 648, Nebbia packet support, paperless mobile intake, and flexible payment plans.",
+            "description": "Licensed 24/7 bail bond agency serving Southwest Florida (Lee, Collier, Charlotte, Hendry, DeSoto, Sarasota, Manatee) and all 67 Florida counties. 24/7 release help, 10% statutory rates pursuant to FL Stat. § 648, Nebbia packet support, paperless mobile intake, and flexible payment plans.",
             "areaServed": [
                 { "@type": "State", "name": "Florida", "@id": "https://en.wikipedia.org/wiki/Florida" },
                 { "@type": "AdministrativeArea", "name": "Lee County, Florida" },
