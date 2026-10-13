@@ -17,7 +17,7 @@ The shared authentication secret between the Wix website application wizards (De
 2. Navigate to **Developer Tools** → **Secrets Manager**.
 3. Click **Store Secret**.
 4. Set **Name**: `LEADS_WEBHOOK_SECRET` (case-sensitive, exact).
-5. Set **Value**: `<LEADS_WEBHOOK_SECRET in Wix Secrets Manager>`
+5. Set **Value**: the current `WIX_WEBHOOK_SECRET` value from the leads VPS `.env` (paste it; never commit it)
 6. Set **Description** (optional): `Shared secret for Wix website wizard to ShamrockLeads CRM intake webhook`
 7. Click **Save**.
 
