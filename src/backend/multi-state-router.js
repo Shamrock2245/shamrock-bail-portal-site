@@ -86,7 +86,7 @@ export async function routeMultiStatePage(request) {
 
     return ok(MULTI_STATE_PAGE, {
       title: `${countyDisplay} County Bail Bonds, ${stateInfo.code} | 24/7 Jail Release | Shamrock`,
-      description: `24/7 bail bonds in ${countyDisplay} County, ${stateInfo.name}. Rapid dispatch, licensed agents, online paperwork. Call (239) 332-2245.`,
+      description: `24/7 bail bonds in ${countyDisplay} County, ${stateInfo.name}. Licensed agents, online paperwork. Call (239) 332-2245.`,
       countyName: `${countyDisplay} County`,
       slug: countySlug,
       state: stateInfo.code,

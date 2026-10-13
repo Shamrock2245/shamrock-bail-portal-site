@@ -438,7 +438,7 @@ export function initGlobalSEO() {
             "telephone": PHONE_FORMATTED,
             "image": `${SITE_URL}/logo.png`,
             "priceRange": "$$",
-            "description": "Are you searching for bail near me? We are a licensed bail bond agency serving all 67 Florida counties. Available 24 hours a day, 7 days a week with bilingual English and Spanish support. Fast jail release, payment plans available.",
+            "description": "Are you searching for bail near me? We are a licensed bail bond agency serving all 67 Florida counties. Available 24 hours a day, 7 days a week with bilingual English and Spanish support. Jail release help, payment plans available.",
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "1528 Broadway",
