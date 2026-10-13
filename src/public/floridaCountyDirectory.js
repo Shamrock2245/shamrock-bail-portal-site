@@ -1,7 +1,8 @@
 /**
  * Crawlable county directory. Anchor hrefs, not dropdown values.
- * Used by the Florida county hub and county pages. The homepage keeps the
- * same 67 slugs in #countyDropdown only, so SWFL stays the visual priority.
+ * The hub appends these onto #comp-mumy2zct. County pages append the
+ * alphabetical list onto about copy. The homepage keeps the same 67 slugs
+ * in #countyDropdown only, so SWFL stays the visual priority there.
  */
 
 export const FLORIDA_COUNTY_DIRECTORY = [
@@ -82,14 +83,60 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;');
 }
 
-/** One anchor per county, pointing at the canonical Florida county URL. */
-export function buildFloridaCountyDirectoryHtml() {
-    const anchors = FLORIDA_COUNTY_DIRECTORY.map(function (county) {
+/** Southwest Florida first on the hub. Matches the homepage county dropdown. */
+export const SWFL_HUB_SLUGS = ['lee', 'collier', 'charlotte', 'hendry', 'glades'];
+
+/**
+ * Existing body rich text on the Florida Bail Bonds hub.
+ * Live copy is "SWFL County & Jail Directory". Not the page H1.
+ */
+export const HUB_COUNTY_DIRECTORY_ELEMENT_ID = '#comp-mumy2zct';
+
+function directoryHtml(counties) {
+    const anchors = counties.map(function (county) {
         const href = '/florida-bail-bonds/' + county.slug;
         const label = county.name + ' County bail bonds';
         return '<a href="' + href + '">' + escapeHtml(label) + '</a>';
     });
     return '<nav aria-label="Florida county bail bonds">' + anchors.join(' ') + '</nav>';
+}
+
+/** One anchor per county, alphabetical, for county pages. */
+export function buildFloridaCountyDirectoryHtml() {
+    return directoryHtml(FLORIDA_COUNTY_DIRECTORY);
+}
+
+/** Same 67 anchors, with Lee, Collier, Charlotte, Hendry, and Glades first. */
+export function hubCountiesSwflFirst() {
+    const bySlug = {};
+    FLORIDA_COUNTY_DIRECTORY.forEach(function (county) {
+        bySlug[county.slug] = county;
+    });
+    const swfl = [];
+    SWFL_HUB_SLUGS.forEach(function (slug) {
+        if (bySlug[slug]) swfl.push(bySlug[slug]);
+    });
+    const rest = FLORIDA_COUNTY_DIRECTORY.filter(function (county) {
+        return SWFL_HUB_SLUGS.indexOf(county.slug) === -1;
+    });
+    return swfl.concat(rest);
+}
+
+export function buildHubCountyDirectoryHtml() {
+    return directoryHtml(hubCountiesSwflFirst());
+}
+
+/**
+ * Keep the Editor copy already in the hub rich text, then add the 67 anchors.
+ * A second call leaves the string unchanged.
+ */
+export function appendHubCountyDirectory(currentHtml, directoryHtml) {
+    const directory = directoryHtml || buildHubCountyDirectoryHtml();
+    const body = typeof currentHtml === 'string' ? currentHtml : '';
+    if (!directory) return body;
+    if (body.indexOf('aria-label="Florida county bail bonds"') !== -1) return body;
+    if (!body) return directory;
+    return body + directory;
 }
 
 export const COUNTY_DIRECTORY_ELEMENT_IDS = [
