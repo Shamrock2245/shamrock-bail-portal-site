@@ -532,7 +532,7 @@ function isValidEmailOrPhone(input) {
 function updatePageSEO() {
     wixSeo.setTitle("Start Bail Paperwork | Shamrock Bail Bonds");
     wixSeo.setMetaTags([
-        { name: "description", content: "Start bail paperwork in minutes. Choose family/helper or person in jail — no password. Shamrock Bail Bonds, Fort Myers." },
+        { name: "description", content: "Start bail paperwork online. Choose family/helper or person in jail — no password. Shamrock Bail Bonds, Fort Myers." },
         { name: "robots", content: "noindex, nofollow" }
     ]);
 }

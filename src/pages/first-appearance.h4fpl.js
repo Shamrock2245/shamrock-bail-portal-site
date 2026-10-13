@@ -73,7 +73,7 @@ const FAQ_DATA = [
     {
         question: "Can I attend my loved one's First Appearance hearing?",
         answer:
-            'Yes. First Appearance hearings are public court proceedings. Many Florida counties — including Lee, Collier, and Hillsborough — now broadcast them live via Zoom or online streaming. Family members are encouraged to watch so they know the bond amount immediately and can call Shamrock at (239) 332-2245.'
+            'Yes. First Appearance hearings are public court proceedings. Many Florida counties — including Lee, Collier, and Hillsborough — now broadcast them live via Zoom or online streaming. Family members are encouraged to watch so they know the bond amount and can call Shamrock at (239) 332-2245.'
     },
     {
         question: 'What should the defendant say at First Appearance?',
@@ -108,7 +108,7 @@ const FAQ_DATA = [
     {
         question: "How do I find out if my loved one has a First Appearance scheduled?",
         answer:
-            "Call the county jail directly where your loved one is being held — they can confirm if a First Appearance is scheduled and when. You can also search the county clerk's online docket. Shamrock Bail Bonds can look up your loved one's booking record instantly — call (239) 332-2245 with their name and county."
+            "Call the county jail directly where your loved one is being held — they can confirm if a First Appearance is scheduled and when. You can also search the county clerk's online docket. Shamrock Bail Bonds can look up your loved one's booking record — call (239) 332-2245 with their name and county."
     },
     {
         question: 'How quickly can Shamrock Bail Bonds post bail after First Appearance?',
