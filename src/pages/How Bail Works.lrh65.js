@@ -444,7 +444,7 @@ async function setupFAQ() {
         {
             _id: "1",
             title: "How long does it take to get someone out of jail?",
-            answer: "Shamrock Bail Bonds starts the release process right away when you call — 24 hours a day, 7 days a week. Once the bond is posted, release timing depends on the jail's processing, which varies by facility and time of day. Call (239) 332-2245 any time to get started."
+            answer: "Shamrock Bail Bonds is available to help with the release process when you call — 24 hours a day, 7 days a week. Once the bond is posted, release timing depends on the jail's processing, which varies by facility and time of day. Call (239) 332-2245 any time to get started."
         },
         {
             _id: "2",

@@ -1089,7 +1089,7 @@ function setupOrganizationSchema() {
                 "name": "How long does release take at the Lee County Jail on Ortiz Ave?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Release timing at the Lee County Main Jail (2501 Ortiz Ave, Fort Myers) depends on the jail's processing after bail is posted, including intake volume and shift changes. Shamrock Bail Bonds is available 24/7 and starts on your bond right away once paperwork is complete."
+                    "text": "Release timing at the Lee County Main Jail (2501 Ortiz Ave, Fort Myers) depends on the jail's processing after bail is posted, including intake volume and shift changes. Shamrock Bail Bonds is available 24/7 to help you post the bond once paperwork is complete."
                 }
             },
             {
