@@ -62,3 +62,9 @@ jobs:
       - name: Shannon helper unit tests
         run: node scripts/test_shannon_helpers.js
 
+      - name: City landing H1 pattern
+        run: node --import ./scripts/testing/register-extensionless.mjs scripts/testing/test-city-hero-h1.mjs
+
+      - name: Landing copy strips Fast Release
+        run: node --import ./scripts/testing/register-extensionless.mjs scripts/testing/test-landing-fast-release.mjs
+

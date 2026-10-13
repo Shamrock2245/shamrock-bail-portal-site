@@ -110,7 +110,7 @@ const GET_STARTED_IDS = ['#comp-mjip0apd', '#getStartedButton', '#getStartedBtn'
 /** Canonical destinations — keep labels and URLs honest. */
 const DEST = {
     phone: 'tel:+12393322245',
-    phoneSpanish: 'tel:+12399550301',
+    phoneSpanish: 'tel:+17272952245',
     /** Open bot INSIDE Telegram (Mini Apps launch from the bot menu, not the public web). */
     telegramBot: 'https://t.me/ShamrockBail_bot',
     telegramStart: function (payload) {
@@ -965,8 +965,7 @@ function setupOrganizationSchema() {
                     }
                 },
                 { "@type": "ContactPoint", "telephone": "+1-239-955-0178", "contactType": "Text messages (SMS/iMessage only, no voice calls)", "contactOption": "HearingImpairedSupported", "areaServed": "FL", "availableLanguage": ["English", "Spanish"], "description": "24/7 SMS & iMessage Support" },
-                { "@type": "ContactPoint", "telephone": "+1-239-955-0301", "contactType": "Customer Service (Spanish line)", "areaServed": "FL", "availableLanguage": ["Spanish", "English"] },
-                { "@type": "ContactPoint", "telephone": "+1-727-295-2245", "contactType": "Customer Service", "areaServed": ["Tampa Bay Area", "St. Petersburg", "FL"], "availableLanguage": ["English", "Spanish"], "description": "24/7 automated line (English & Spanish)" }
+                { "@type": "ContactPoint", "telephone": "+1-727-295-2245", "contactType": "Customer Service (Spanish line)", "areaServed": "FL", "availableLanguage": ["Spanish"] }
             ],
             "areaServed": { "@type": "State", "name": "Florida", "@id": "https://en.wikipedia.org/wiki/Florida" },
             "openingHoursSpecification": {
@@ -1127,7 +1126,7 @@ function setupOrganizationSchema() {
                 "name": "¿Ofrece Shamrock Bail Bonds servicio de fianzas en español las 24 horas?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Sí. Ofrecemos asistencia completa en español las 24 horas del día, los 7 días de la semana. Contamos con una línea directa de atención en español al (239) 955-0301 o a nuestra línea principal al (239) 332-2245 para ayudar a las familias durante todo el proceso de fianza con agentes hispanohablantes licenciados."
+                    "text": "Sí. Ofrecemos asistencia completa en español las 24 horas del día, los 7 días de la semana. Contamos con una línea directa de atención en español al (727) 295-2245 o a nuestra línea principal al (239) 332-2245 para ayudar a las familias durante todo el proceso de fianza con agentes hispanohablantes licenciados."
                 }
             },
             {

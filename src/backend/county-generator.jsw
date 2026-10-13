@@ -27,6 +27,7 @@ import {
 } from 'backend/local-landings';
 import { PHONE_PRIMARY } from 'backend/seoConfig';
 import { formatCityHeroHeadline } from 'public/cityHeroHeadline';
+import { sanitizeFastReleaseText } from 'public/sanitizeLandingCopy';
 
 /**
  * Generate complete county page data
@@ -368,15 +369,15 @@ function transformCountyData(county, landing = null, landingCms = null) {
 
     // Content — unique per county, city, or jail landing
     content: {
-      // City H1 is the approved pattern, not the CMS "24/7 Fast Release" string.
-      // Jail landings still prefer their CMS headline. County H1s are unchanged.
-      hero_headline: landing && landing.type === 'city'
+      // City H1 is the approved pattern. Jail and county headlines keep CMS copy
+      // after "24/7 Fast Release" is rewritten to "24/7 Bail Help".
+      hero_headline: sanitizeFastReleaseText(landing && landing.type === 'city'
         ? (formatCityHeroHeadline(displayName, countyName) || (landingCopy && landingCopy.heroHeadline))
         : isPlaceLanding
           ? (cleanValue(cmsPlace.h1Headline) || (landingCopy && landingCopy.heroHeadline))
           : (county.h1Headline && /bail/i.test(county.h1Headline)
             ? county.h1Headline
-            : `${countyName} County Bail Bonds: 24/7 Help for Families`),
+            : `${countyName} County Bail Bonds: 24/7 Help for Families`)),
       hero_subheadline: isPlaceLanding
         ? landingCopy.heroSub
         : `Licensed, trusted, and ready to help families with ${jailName}. Call, text, or start online.`,
@@ -427,11 +428,11 @@ function transformCountyData(county, landing = null, landingCms = null) {
 
     // SEO — Enhanced with city-specific long-tails
     seo: {
-      meta_title: isPlaceLanding
+      meta_title: sanitizeFastReleaseText(isPlaceLanding
         ? (cleanValue(cmsPlace.seoTitle) || landingCopy.metaTitle)
         : (county.seoTitle && /\|/.test(county.seoTitle) && county.seoTitle.length <= 60
           ? county.seoTitle
-          : defaultTitle),
+          : defaultTitle)),
       // CMS seoDescription first; generated text only when the CMS value is empty (or stale)
       meta_description: isPlaceLanding
         ? (landingText(cmsPlace.seoDescription) || landingCopy.metaDescription)
@@ -769,7 +770,7 @@ export async function getAllCountiesByTier() {
       const countyInfo = {
         slug: county.countySlug,
         name: county.countyName,
-        title: county.title
+        title: typeof county.title === 'string' ? sanitizeFastReleaseText(county.title) : county.title
       };
 
       if (county.isPrimaryCounty) {

@@ -157,7 +157,7 @@ export function buildLandingCopy(landing, parent = {}) {
 
     // Cities: "{City} Bail Bonds ({County} County)". Jails keep the release headline.
     const heroHeadline = isJail
-        ? `${name} Bail Bonds — 24/7 Fast Release`
+        ? `${name} Bail Bonds — 24/7 Bail Help`
         : formatCityHeroHeadline(name, county);
 
     const heroSub = isJail

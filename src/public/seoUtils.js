@@ -400,18 +400,10 @@ export function initGlobalSEO() {
                 },
                 {
                     "@type": "ContactPoint",
-                    "telephone": "+1-239-955-0301",
-                    "contactType": "Customer Service",
-                    "areaServed": "US-FL",
-                    "availableLanguage": "Spanish"
-                },
-                {
-                    "@type": "ContactPoint",
                     "telephone": "+1-727-295-2245",
-                    "contactType": "Customer Service",
-                    "areaServed": ["Tampa Bay Area", "St. Petersburg", "US-FL"],
-                    "availableLanguage": ["English", "Spanish"],
-                    "description": "After-Hours & AI Agent Line"
+                    "contactType": "Customer Service (Spanish line)",
+                    "areaServed": "US-FL",
+                    "availableLanguage": ["Spanish"]
                 }
             ],
             // Semantic relevance signals for AI/GEO

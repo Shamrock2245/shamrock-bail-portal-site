@@ -106,8 +106,9 @@ $w.onReady(function () {
     if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:+12393322245'));
 
     // Hero "Call Now" is an Editor link, not the #bottomCallBtn handler above.
-    // Live href is the Spanish line tel:+12399550301 (239-955-0301), not the
-    // SMS line 239-955-0178. Point it at the main office, same tel form.
+    // Older Editor hrefs still use tel:+12399550301 (239-955-0301), the
+    // live-person desk, not the public Spanish line. Point those at the main
+    // office. Do not publish 955-0301 as the Spanish number.
     pointHeroCallAtMainOffice();
 
     // 3. DEBUG CMS (User Request)

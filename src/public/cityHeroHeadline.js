@@ -1,8 +1,10 @@
 /**
  * Primary H1 for city landings on the Florida county template.
  * Pattern (Brendan-approved): "{City} Bail Bonds ({County} County)".
- * Jail and county pages keep their existing headlines.
+ * Jail and county pages keep their CMS headlines after Fast Release is rewritten.
  */
+
+import { sanitizeFastReleaseText } from './sanitizeLandingCopy';
 
 /**
  * @param {string} cityName
@@ -17,9 +19,9 @@ export function formatCityHeroHeadline(cityName, countyName) {
 }
 
 /**
- * Visible hero H1. City landings always use the city pattern, even when
- * CMS `h1Headline` still has the older "24/7 Fast Release" string.
- * County and jail landings return the generated/CMS headline unchanged.
+ * Visible hero H1. City landings always use the city pattern.
+ * County and jail landings return the CMS headline after sanitizeFastReleaseText.
+ * The empty fallback is "24/7 Bail Help".
  * @param {object} county Page payload from generateCountyPage
  * @returns {string}
  */
@@ -33,7 +35,7 @@ export function resolvePrimaryHeroH1(county) {
         if (cityH1) return cityH1;
     }
     const fromContent = county.content && county.content.hero_headline;
-    if (fromContent) return fromContent;
+    if (fromContent) return sanitizeFastReleaseText(fromContent);
     const label = county.county_name_full || county.county_name || '';
-    return label ? `${label} Bail Bonds — 24/7 Fast Release` : '';
+    return label ? `${label} Bail Bonds — 24/7 Bail Help` : '';
 }
