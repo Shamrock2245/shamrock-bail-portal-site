@@ -537,7 +537,7 @@ async function populateMainUI(county, currentSlug) {
     // 5. Layer A — SWFL Core Flagship Badge
     if (isSwflCore) {
         setText(['#flagshipBadge', '#swflCoreCallout', '#localDispatchNotice'],
-            `⭐ SWFL Flagship Hub: 24/7 bail service from 1528 Broadway, Fort Myers. Under 20 minutes in Southwest Florida (Mon–Fri, 8 AM–6 PM).`);
+            `⭐ SWFL Flagship Hub: 24/7 bail service from 1528 Broadway, Fort Myers, serving all of Southwest Florida.`);
     }
 
     // POPULATE FAQs (Repeater) - Now pulls from CMS Faqs collection
