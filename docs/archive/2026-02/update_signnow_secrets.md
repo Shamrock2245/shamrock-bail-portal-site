@@ -13,7 +13,7 @@
 **Format:** Secret key for cryptographic validation
 
 ### 3. SIGNNOW_CLIENT_ID (Optional - for OAuth if needed)
-**Value:** `3b4dd51e0a07557e5b0e6b42415759db`  
+**Value:** `<redacted — name only>`  
 **Usage:** OAuth 2.0 client identification
 
 ### 4. SIGNNOW_BASIC_TOKEN (Optional - for OAuth if needed)
