@@ -5,7 +5,9 @@
 
 ---
 
-## 1. Critical Immediate Secret: `WIX_WEBHOOK_SECRET`
+## 1. Critical Immediate Secret: `LEADS_WEBHOOK_SECRET`
+
+> Wix Secrets Manager rejects names beginning with "wix" (any case), so the Wix-side name is `LEADS_WEBHOOK_SECRET`. The VPS `.env` keeps `WIX_WEBHOOK_SECRET`; the values must match.
 
 ### What is it?
 The shared authentication secret between the Wix website application wizards (Defendant and Indemnitor portals) and the ShamrockLeads Super CRM on the Hetzner VPS (`https://leads.shamrockbailbonds.biz/api/webhooks/wix-intake`).
@@ -14,7 +16,7 @@ The shared authentication secret between the Wix website application wizards (De
 1. Open the [Wix Studio Dashboard](https://manage.wix.com) for Shamrock Bail Bonds.
 2. Navigate to **Developer Tools** → **Secrets Manager**.
 3. Click **Store Secret**.
-4. Set **Name**: `WIX_WEBHOOK_SECRET` (case-sensitive, exact).
+4. Set **Name**: `LEADS_WEBHOOK_SECRET` (case-sensitive, exact).
 5. Set **Value**: `48ac04b0aeae45346ebb7526a16ba04911ff3c0b1841af5de1f097d11da3859a`
 6. Set **Description** (optional): `Shared secret for Wix website wizard to ShamrockLeads CRM intake webhook`
 7. Click **Save**.
@@ -22,15 +24,15 @@ The shared authentication secret between the Wix website application wizards (De
 ### Why was it failing?
 In `src/backend/leadsIntake.jsw`:
 ```javascript
-const SECRET_NAME = 'WIX_WEBHOOK_SECRET';
+const SECRET_NAME = 'LEADS_WEBHOOK_SECRET';
 ...
 secret = await getSecret(SECRET_NAME);
 if (!secret) {
-    console.error('[leadsIntake] Wix secret WIX_WEBHOOK_SECRET is not set');
+    console.error('[leadsIntake] Wix secret LEADS_WEBHOOK_SECRET is not set');
     return { success: false, error: 'Online applications are temporarily unavailable. Please call (239) 332-2245.' };
 }
 ```
-If `WIX_WEBHOOK_SECRET` is not in Wix Secrets Manager, `getSecret()` returns empty and the online application immediately fails closed with the above error message *before* any HTTP request leaves Wix.
+If `LEADS_WEBHOOK_SECRET` is not in Wix Secrets Manager, `getSecret()` returns empty and the online application immediately fails closed with the above error message *before* any HTTP request leaves Wix.
 
 ### Live Production Verification
 - **Hetzner VPS (`leads.shamrockbailbonds.biz`):** Already configured in `/opt/shamrock-leads/.env`.
