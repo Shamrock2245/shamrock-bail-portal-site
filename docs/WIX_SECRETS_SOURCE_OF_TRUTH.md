@@ -48,7 +48,7 @@ If `LEADS_WEBHOOK_SECRET` is not in Wix Secrets Manager, `getSecret()` returns e
 
 | Secret Name | Consuming File(s) in `src/` | Authoritative Source / Value | Purpose |
 |---|---|---|---|
-| `WIX_WEBHOOK_SECRET` | `src/backend/leadsIntake.jsw` | `48ac04b0aeae45346ebb7526a16ba04911ff3c0b1841af5de1f097d11da3859a` (VPS `.env`) | Auth header `X-Wix-Webhook-Secret` for website intake forms to ShamrockLeads CRM |
+| `LEADS_WEBHOOK_SECRET` (Wix) / `WIX_WEBHOOK_SECRET` (VPS) | `src/backend/leadsIntake.jsw` | Same value as VPS `.env` `WIX_WEBHOOK_SECRET` (never commit values) | Auth header `X-Wix-Webhook-Secret` for website intake forms to ShamrockLeads CRM |
 | `GAS_API_KEY` | `src/backend/utils.js`, `healthCheck.jsw`, `bluebubbles.jsw`, `wixApi.jsw`, `location-tracker.jsw` | `shamrock_live_auth_v555` (VPS `.env` / GAS Properties) | Machine auth for Wix-to-GAS and fallback for CRM endpoints |
 | `GAS_WEB_APP_URL` | `src/backend/utils.js`, `healthCheck.jsw` | `https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec` | Canonical GAS `/exec` URL from [`.gas-config.json`](../.gas-config.json) |
 | `GOOGLE_MAPS_API_KEY` | `src/backend/location-enhanced.jsw`, `geocoding.jsw`, `googleMaps.jsw` | GCP Console (`shamrock-bail-bonds`) | Maps API for geocoding and frontend map components |
@@ -64,7 +64,7 @@ If `LEADS_WEBHOOK_SECRET` is not in Wix Secrets Manager, `getSecret()` returns e
 ┌─────────────────────────────────┐
 │     Wix Studio Dashboard        │
 │    Developer Tools → Secrets    │
-│  • WIX_WEBHOOK_SECRET           │
+│  • LEADS_WEBHOOK_SECRET         │
 │  • GAS_API_KEY                  │
 │  • GAS_WEB_APP_URL              │
 └──────────────┬──────────────────┘
@@ -96,7 +96,7 @@ If `LEADS_WEBHOOK_SECRET` is not in Wix Secrets Manager, `getSecret()` returns e
 ## 4. Troubleshooting Checklist for Future Agents
 
 1. **Website intake displays "Online applications are temporarily unavailable":**
-   - Check if `WIX_WEBHOOK_SECRET` is defined in Wix Secrets Manager.
+   - Check if `LEADS_WEBHOOK_SECRET` is defined in Wix Secrets Manager.
    - Verify that the value matches `WIX_WEBHOOK_SECRET` in `/opt/shamrock-leads/.env`.
 2. **CRM returns 401 Unauthorized:**
    - The value sent in header `X-Wix-Webhook-Secret` does not match the server's `WIX_WEBHOOK_SECRET` (or fallback `GAS_API_KEY`).
