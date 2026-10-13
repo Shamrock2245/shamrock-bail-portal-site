@@ -18,8 +18,8 @@
 ### Current Credentials
 
 **Application Details:**
-- Application ID: `60910f0631c84a94b842a0d8a13233039a848b9e`
-- Client ID: `3b4dd51e0a07557e5b0e6b42415759db`
+- Application ID: `<SIGNNOW_APPLICATION_ID>`
+- Client ID: `<SIGNNOW_CLIENT_ID>`
 - Basic Authorization Token: `<SIGNNOW_BASIC_TOKEN — stored in Wix Secrets Manager>`
 - Secret Key: `REDACTED_SIGNNOW_WEBHOOK_SECRET`
 
