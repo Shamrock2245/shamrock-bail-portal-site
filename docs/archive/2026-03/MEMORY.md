@@ -1,7 +1,7 @@
 # Memory & State Variables
 
 The AI must operate with a continuous understanding of the agency's primary mission:
-> **"The Uber of Bail Bonds" - Simple. Secure. Everywhere.**
+> **"The Uber of Bail Bonds" - Fast. Frictionless. Everywhere.**
 
 ## Strategic Operations (Growth Engines)
 The system actively expands across specific geographic targets and communication channels:
