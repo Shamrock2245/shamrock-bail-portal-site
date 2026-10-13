@@ -1,7 +1,7 @@
 /**
  * Crawlable county directory. Anchor hrefs, not dropdown values.
- * Homepage page code cannot import this module (public imports crash that page),
- * so HOME.c1dmp.js keeps a matching inline list. CI compares the two.
+ * Used by the Florida county hub and county pages. The homepage keeps the
+ * same 67 slugs in #countyDropdown only, so SWFL stays the visual priority.
  */
 
 export const FLORIDA_COUNTY_DIRECTORY = [

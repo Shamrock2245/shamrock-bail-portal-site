@@ -119,9 +119,9 @@ const home = readFileSync(join(root, 'src/pages/HOME.c1dmp.js'), 'utf8');
 const homeList = home.slice(home.indexOf('const FLORIDA_COUNTIES = ['), home.indexOf('];', home.indexOf('const FLORIDA_COUNTIES = [')));
 const homeSlugs = [...homeList.matchAll(/slug: '([^']+)'/g)].map((m) => m[1]);
 assert.deepEqual(homeSlugs, FLORIDA_COUNTY_DIRECTORY.map((c) => c.slug));
-assert.match(home, /<a href="\/florida-bail-bonds\/' \+ county\.slug \+ '">/);
-assert.match(home, /renderCrawlableCountyLinks\(\)/);
 assert.match(home, /#countyDropdown/);
+assert.equal(home.includes('renderCrawlableCountyLinks'), false, 'homepage must not paint an equal-weight 67-county link list');
+assert.equal(home.includes('aria-label="Florida county bail bonds"'), false);
 
 const hub = readFileSync(join(root, 'src/pages/Florida Bail Bonds.liggp.js'), 'utf8');
 assert.match(hub, /buildFloridaCountyDirectoryHtml/);

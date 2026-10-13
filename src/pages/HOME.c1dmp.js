@@ -156,10 +156,11 @@ $w.onReady(function () {
     setupCTAButtons();
     setupBailSchoolButtons();
 
-    // Load county dropdown immediately -- data is inline, no async needed
+    // Load county dropdown immediately -- data is inline, no async needed.
+    // All 67 counties stay in this dropdown. Do not paint an equal-weight
+    // anchor list here; that flattens SWFL homepage priority. Crawlable
+    // anchors live on the Florida county hub and county pages.
     loadCountyDropdown();
-    // Dropdown options are not anchors. Paint a real <a href> list for all 67.
-    renderCrawlableCountyLinks();
 
     // Testimonials: register viewport trigger; data loads on scroll, not on page load
     setTimeout(() => { initTestimonials(); }, isMobile ? 1500 : 800);
@@ -366,28 +367,6 @@ function loadCountyDropdown() {
     } catch (error) {
         console.error('[County Dropdown] Setup error:', error);
         try { dropdown.placeholder = 'Call (239) 332-2245 for help'; } catch (e) { /* non-fatal */ }
-    }
-}
-
-/**
- * Crawlable county list beside #countyDropdown. Select options are not links.
- * Homepage code cannot import public modules, so this list is inline and must
- * stay aligned with public/floridaCountyDirectory.js (CI checks both).
- */
-function renderCrawlableCountyLinks() {
-    const html = '<nav aria-label="Florida county bail bonds">' +
-        FLORIDA_COUNTIES.map(function (county) {
-            return '<a href="/florida-bail-bonds/' + county.slug + '">' + county.name + ' County bail bonds</a>';
-        }).join(' ') +
-        '</nav>';
-    const ids = ['#countyLinkList', '#countyDirectory', '#countyList', '#textCountyLinks', '#seoCountyLinks', '#countyDropdownLinks'];
-    for (let i = 0; i < ids.length; i++) {
-        try {
-            const el = $w(ids[i]);
-            if (!el || typeof el.html !== 'string') continue;
-            el.html = html;
-            if (typeof el.expand === 'function') el.expand();
-        } catch (e) { /* element not on this page */ }
     }
 }
 
