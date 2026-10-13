@@ -35,7 +35,10 @@ assert.equal(new Set(hubSlugs).size, 67);
 assert.deepEqual(hubSlugs.slice(0, 5), SWFL_HUB_SLUGS);
 assert.equal(hubSlugs[5], 'alachua');
 assert.deepEqual(new Set(hubSlugs), new Set(FLORIDA_COUNTY_DIRECTORY.map((county) => county.slug)));
-assert.match(hubHtml, /<nav aria-label="Florida county bail bonds">/);
+assert.match(hubHtml, /^<ul><li><a href="\/florida-bail-bonds\/lee">Lee County bail bonds<\/a><\/li>/);
+assert.equal(hubHtml.includes('<nav'), false);
+assert.equal(hubHtml.includes('aria-label'), false);
+assert.match(buildFloridaCountyDirectoryHtml(), /^<ul><li><a href="\/florida-bail-bonds\/alachua">/);
 
 const existing = '<p>SWFL County &amp; Jail Directory</p>'
     + '<p><a href="https://www.shamrockbailbonds.biz/florida-bail-bonds/lee">Lee</a></p>'

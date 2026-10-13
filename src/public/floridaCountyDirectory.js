@@ -93,12 +93,14 @@ export const SWFL_HUB_SLUGS = ['lee', 'collier', 'charlotte', 'hendry', 'glades'
 export const HUB_COUNTY_DIRECTORY_ELEMENT_ID = '#comp-mumy2zct';
 
 function directoryHtml(counties) {
-    const anchors = counties.map(function (county) {
+    // Wix Text .html accepts p, headings, a, span, lists, and br. A <nav>
+    // wrapper is rejected and the assignment throws, so the anchors never paint.
+    const items = counties.map(function (county) {
         const href = '/florida-bail-bonds/' + county.slug;
         const label = county.name + ' County bail bonds';
-        return '<a href="' + href + '">' + escapeHtml(label) + '</a>';
+        return '<li><a href="' + href + '">' + escapeHtml(label) + '</a></li>';
     });
-    return '<nav aria-label="Florida county bail bonds">' + anchors.join(' ') + '</nav>';
+    return '<ul>' + items.join('') + '</ul>';
 }
 
 /** One anchor per county, alphabetical, for county pages. */
@@ -134,7 +136,7 @@ export function appendHubCountyDirectory(currentHtml, directoryHtml) {
     const directory = directoryHtml || buildHubCountyDirectoryHtml();
     const body = typeof currentHtml === 'string' ? currentHtml : '';
     if (!directory) return body;
-    if (body.indexOf('aria-label="Florida county bail bonds"') !== -1) return body;
+    if (body.indexOf('Lee County bail bonds') !== -1) return body;
     if (!body) return directory;
     return body + directory;
 }
