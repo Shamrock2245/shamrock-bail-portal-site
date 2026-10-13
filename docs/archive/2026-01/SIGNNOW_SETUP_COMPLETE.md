@@ -16,7 +16,7 @@ Updated the following properties:
 'SIGNNOW_API_TOKEN': 'REDACTED_SIGNNOW_API_KEY'
 'SIGNNOW_WEBHOOK_SECRET': 'REDACTED_SIGNNOW_WEBHOOK_SECRET'
 'SIGNNOW_CLIENT_ID': '3b4dd51e0a07557e5b0e6b42415759db'
-'SIGNNOW_BASIC_TOKEN': '<SIGNNOW_BASIC_AUTH_TOKEN — stored in Wix Secrets Manager>'
+'SIGNNOW_BASIC_TOKEN': '<SIGNNOW_BASIC_TOKEN — stored in Wix Secrets Manager>'
 ```
 
 **Action Required:** Run `ADMIN_UpdateAllProperties()` in Apps Script Editor to apply changes.

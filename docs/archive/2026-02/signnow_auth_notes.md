@@ -20,7 +20,7 @@
 **Application Details:**
 - Application ID: `60910f0631c84a94b842a0d8a13233039a848b9e`
 - Client ID: `3b4dd51e0a07557e5b0e6b42415759db`
-- Basic Authorization Token: `<SIGNNOW_BASIC_AUTH_TOKEN — stored in Wix Secrets Manager>`
+- Basic Authorization Token: `<SIGNNOW_BASIC_TOKEN — stored in Wix Secrets Manager>`
 - Secret Key: `REDACTED_SIGNNOW_WEBHOOK_SECRET`
 
 **API Key (Primary):**
@@ -45,7 +45,7 @@ curl --request POST \
 # Step 1: Generate access token
 curl --request POST \
   --url https://api.signnow.com/oauth2/token \
-  --header 'Authorization: Basic <SIGNNOW_BASIC_AUTH_TOKEN — stored in Wix Secrets Manager>' \
+  --header 'Authorization: Basic <SIGNNOW_BASIC_TOKEN — stored in Wix Secrets Manager>' \
   --header 'Content-Type: application/x-www-form-urlencoded' \
   --data-urlencode 'username=admin@shamrockbailbonds.biz' \
   --data-urlencode 'password=<SIGNNOW_ACCOUNT_PASSWORD — stored in password manager>' \
