@@ -4,12 +4,14 @@
 > **Status:** 🟢 9 Digital Employees Operational  
 > **Doctrine:** The website is the clipboard. The backend is the brain.
 
-### Ecosystem non-negotiable — GAS Web App URL & DocuSeal Boundary
+### Ecosystem non-negotiables — GAS Web App URL, DocuSeal Boundary & Wix Secrets
 
 - **Keep the GAS `/exec` URL stable.** Push code and re-deploy the **existing** deployment only (`clasp deploy -i <ID>` from `.gas-config.json`).
 - **Never** create a new Web App deployment that changes the URL without an explicit human order.
+- **Wix Secrets Manager Invariant**: Website wizard applications (`leadsIntake.jsw`) POST directly to ShamrockLeads CRM (`/api/webhooks/wix-intake`) authenticated via `X-Wix-Webhook-Secret`. The secret `WIX_WEBHOOK_SECRET` must exist in Wix Developer Tools → Secrets Manager and match the VPS `.env` (`48ac04b0...`). See [WIX_SECRETS_SOURCE_OF_TRUTH.md](docs/WIX_SECRETS_SOURCE_OF_TRUTH.md).
 - **Signing Boundary**: DocuSeal is the sole active signing provider. Packets are created and issued strictly by authorized staff inside Super CRM (`shamrock-leads`). Wix, GAS, and Telegram act as secure launchpads and NEVER create DocuSeal submissions directly.
 - **Verbatim Charge Integrity (CRITICAL LAW)**: On all legal paperwork, Appearance Bonds, and court filings, **CHARGES MUST APPEAR EXACTLY AS WRITTEN BY THE COUNTY / SHERIFF / CLERK SOURCE**. NEVER abbreviate, paraphrase, shorten, or "clean up" charge text. The exact verbatim text string from the jail roster/RMS is required so jail and court clerks can process the bond without rejection.
+
 
 ---
 

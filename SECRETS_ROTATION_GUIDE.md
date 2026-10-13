@@ -101,7 +101,7 @@ Rotate them even if production currently works.
 
 | Secret | Where it lived | Rotate in |
 |--------|----------------|-----------|
-| `WIX_WEBHOOK_SECRET` | `SetupUtilities.js` (scrubbed) | GAS Script Properties + any Wix/HMAC verifier |
+| `WIX_WEBHOOK_SECRET` | Active bridge secret | Wix Secrets Manager + Super CRM VPS `.env` (`docs/WIX_SECRETS_SOURCE_OF_TRUTH.md`) |
 | `ELEVENLABS_WEBHOOK_SECRET` | `SetupUtilities.js` (scrubbed) | GAS + ElevenLabs console signing secret |
 | `ELEVENLABS_TOOL_SECRET` | `Test_PrincipalEngineer.js` (scrubbed) | GAS + Netlify env + ElevenLabs tool URLs |
 | `TELEGRAM_WEBHOOK_SECRET` | `Test_PrincipalEngineer.js` (scrubbed) | GAS + Wix Secrets + relay proxies |

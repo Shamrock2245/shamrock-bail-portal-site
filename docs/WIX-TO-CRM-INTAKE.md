@@ -44,10 +44,13 @@ the pinned UI version (or save/publish the Editor first) so Editor work is not
 rolled back.
 
 ## Secrets / config
-| Where | Name | Value |
+See [WIX_SECRETS_SOURCE_OF_TRUTH.md](./WIX_SECRETS_SOURCE_OF_TRUTH.md) for full context and instructions.
+
+| Where | Name | Value / Status |
 |---|---|---|
-| Wix Secrets Manager | `WIX_WEBHOOK_SECRET` | same value as the leads VPS env var |
-| leads VPS `.env` | `WIX_WEBHOOK_SECRET` | shared secret (new, random, ≥32 chars) |
-| leads VPS `.env` | `GAS_WEB_APP_URL`, `GAS_API_KEY` | already used by leads |
+| Wix Secrets Manager | `WIX_WEBHOOK_SECRET` | `48ac04b0aeae45346ebb7526a16ba04911ff3c0b1841af5de1f097d11da3859a` (Must be added via Wix Developer Tools → Secrets Manager) |
+| leads VPS `.env` | `WIX_WEBHOOK_SECRET` | `48ac04b0aeae45346ebb7526a16ba04911ff3c0b1841af5de1f097d11da3859a` (✅ Verified present on live VPS) |
+| leads VPS `.env` | `GAS_WEB_APP_URL`, `GAS_API_KEY` | `GAS_API_KEY=shamrock_live_auth_v555` (✅ Verified present on live VPS) |
 | leads VPS `.env` | `SLACK_WEBHOOK_INTAKE` (optional) | Slack incoming webhook for the intake channel; falls back to `SLACK_WEBHOOK_LEADS` |
 | GAS Script Properties | `INTAKE_LEDGER_SHEET_ID` (optional) | spreadsheet for the ledger; defaults to `CONFIG.SHEET_ID` |
+
