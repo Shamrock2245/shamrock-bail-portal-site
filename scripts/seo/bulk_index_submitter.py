@@ -42,8 +42,9 @@ SITE_URL = "https://www.shamrockbailbonds.biz"
 SITE_HOST = "www.shamrockbailbonds.biz"
 LAST_MOD = datetime.now().strftime("%Y-%m-%d")
 
-# IndexNow key (we'll generate one if needed)
-INDEXNOW_KEY = None  # Will be auto-generated
+# Verified Wix-native IndexNow key
+INDEXNOW_KEY = "a00e3857-675a-493b-91d8-a1dbc5e7c499"
+INDEXNOW_KEY_LOCATION = f"{SITE_URL}/indexnow"
 
 # All 67 Florida counties (matching actual live URL slugs)
 FLORIDA_COUNTY_SLUGS = [
@@ -212,26 +213,25 @@ def ping_bing_sitemap(dry_run=False):
 
 def submit_indexnow(urls, dry_run=False):
     """Submit URLs via IndexNow API (Bing, Yandex, Naver, etc.)."""
-    # Generate a key if not set
-    global INDEXNOW_KEY
-    if not INDEXNOW_KEY:
-        INDEXNOW_KEY = hashlib.sha256(SITE_URL.encode()).hexdigest()[:32]
-
     url_list = [u["url"] for u in urls]
 
     payload = {
         "host": SITE_HOST,
         "key": INDEXNOW_KEY,
-        "keyLocation": f"{SITE_URL}/{INDEXNOW_KEY}.txt",
+        "keyLocation": INDEXNOW_KEY_LOCATION,
         "urlList": url_list
     }
 
     if dry_run:
         return "DRY_RUN", f"Would submit {len(url_list)} URLs via IndexNow", INDEXNOW_KEY
 
-    # Submit to IndexNow (shared across Bing, Yandex, etc.)
-    status, body = http_post_json("https://api.indexnow.org/indexnow", payload)
-    return status, body, INDEXNOW_KEY
+    # Submit to both IndexNow and Bing directly
+    status_in, body_in = http_post_json("https://api.indexnow.org/indexnow", payload)
+    status_bing, body_bing = http_post_json("https://www.bing.com/indexnow", payload)
+    
+    combined_status = f"IndexNow: {status_in}, Bing: {status_bing}"
+    combined_body = f"IndexNow: {body_in or 'OK'} | Bing: {body_bing or 'OK'}"
+    return combined_status, combined_body, INDEXNOW_KEY
 
 
 # ─── Report Generator ────────────────────────────────────────────────────────

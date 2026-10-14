@@ -19,7 +19,7 @@ Value: [REDACTED_LEGACY_API_KEY]
 ### Secret 2: GAS_WEB_APP_URL
 ```
 Name: GAS_WEB_APP_URL
-Value: https://script.google.com/macros/s/AKfycbw6rv8C3vDSSESiIUrJJ7Db8vAhKfuyoMNug7kdx_a37stdiqA5GPVWQwf5hFA5FzuRmg/exec
+Value: <GAS_WEB_APP_URL>
 ```
 
 ---
@@ -59,7 +59,7 @@ Value: https://script.google.com/macros/s/AKfycbw6rv8C3vDSSESiIUrJJ7Db8vAhKfuyoM
 
 4. Find **GAS_WEB_APP_URL**:
    - Click the **Edit** (pencil) icon
-   - Update value to: `https://script.google.com/macros/s/AKfycbw6rv8C3vDSSESiIUrJJ7Db8vAhKfuyoMNug7kdx_a37stdiqA5GPVWQwf5hFA5FzuRmg/exec`
+   - Update value to: `<GAS_WEB_APP_URL>`
    - Click **Save**
 
 ### Option B: Delete and Recreate (Recommended)
@@ -81,7 +81,7 @@ Value: https://script.google.com/macros/s/AKfycbw6rv8C3vDSSESiIUrJJ7Db8vAhKfuyoM
 5. Create second secret:
    - Click **+ New Secret**
    - Name: `GAS_WEB_APP_URL`
-   - Value: `https://script.google.com/macros/s/AKfycbw6rv8C3vDSSESiIUrJJ7Db8vAhKfuyoMNug7kdx_a37stdiqA5GPVWQwf5hFA5FzuRmg/exec`
+   - Value: `<GAS_WEB_APP_URL>`
    - Click **Add**
 
 6. **CRITICAL:** Click **Publish** to deploy changes

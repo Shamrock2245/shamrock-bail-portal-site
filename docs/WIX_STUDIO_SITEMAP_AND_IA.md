@@ -1,6 +1,6 @@
 # 🗺 Wix Studio Sitemap & Information Architecture
 
-> **Brand:** Shamrock Bail Bonds — *"The Uber of Bail Bonds: Fast. Frictionless. Everywhere."*  
+> **Brand:** Shamrock Bail Bonds — *"The Uber of Bail Bonds: Simple. Secure. Everywhere."*  
 > **HQ / Primary NAP:** 1528 Broadway, Fort Myers, FL 33901 · (239) 332-2245 · admin@shamrockbailbonds.biz  
 > **Effective Date:** 2026-08-21  
 > **Doctrine:** *The website is the clipboard. The backend is the brain.*

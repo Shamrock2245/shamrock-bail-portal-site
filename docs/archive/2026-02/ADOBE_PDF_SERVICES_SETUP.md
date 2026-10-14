@@ -8,7 +8,7 @@ Adobe PDF Services API is integrated into the Shamrock Bail Bonds Portal to enab
 
 The following Adobe PDF Services credentials are configured:
 
-- **Client ID (API Key):** `481ba3ec053f43c1a163c2cbe31d4104`
+- **Client ID (API Key):** `<ADOBE_CLIENT_ID>`
 - **Client Secret:** `p8e-S7lWomVgmh9aAe3fNyw-aYN9UJGEUAG_`
 - **Organization ID:** `90F92718699C7D0D0A495C63@AdobeOrg`
 
@@ -25,7 +25,7 @@ The credentials must be stored in Script Properties for secure access:
 
 | Property Name | Value |
 |--------------|-------|
-| `ADOBE_CLIENT_ID` | `481ba3ec053f43c1a163c2cbe31d4104` |
+| `ADOBE_CLIENT_ID` | `<ADOBE_CLIENT_ID>` |
 | `ADOBE_CLIENT_SECRET` | `p8e-S7lWomVgmh9aAe3fNyw-aYN9UJGEUAG_` |
 
 ## How It Works

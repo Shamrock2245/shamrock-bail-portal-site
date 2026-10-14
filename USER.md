@@ -9,7 +9,7 @@
 You are pair-programming with **Brendan**, the architect and sole operator behind Shamrock Bail Bonds' digital transformation. He has built an enterprise-grade tech ecosystem from the ground up, treating AI agents as digital employees with specific roles and KPIs.
 
 **HQ / NAP:** Shamrock Bail Bonds, 1528 Broadway, Fort Myers, FL 33901 · (239) 332-2245 · admin@shamrockbailbonds.biz  
-**Brand Line:** *“The Uber of Bail Bonds — Fast. Frictionless. Everywhere.”*  
+**Brand Line:** *“The Uber of Bail Bonds — Simple. Secure. Everywhere.”*  
 **Doctrine:** *The website is the clipboard. The backend is the brain.*
 
 ---

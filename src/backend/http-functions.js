@@ -828,7 +828,7 @@ export function get_health(request) {
  *
  * Public pages only — never include portal/*, lightboxes, or utility pages.
  */
-const INDEXNOW_KEY = 'a7c3e91b4d2f48c0a1e65f0b9c4d8e21';
+const INDEXNOW_KEY = 'a00e3857-675a-493b-91d8-a1dbc5e7c499';
 
 /**
  * GET /_functions/indexnow
@@ -844,6 +844,14 @@ export async function get_indexnow(request) {
         },
         body: INDEXNOW_KEY
     });
+}
+
+/**
+ * GET /_functions/a00e3857675a493b91d8a1dbc5e7c499
+ * Standard IndexNow key filename endpoint fallback.
+ */
+export async function get_a00e3857675a493b91d8a1dbc5e7c499(request) {
+    return get_indexnow(request);
 }
 
 export async function get_sitemap(request) {
@@ -1821,7 +1829,7 @@ The documents for *${defendantName}* are ready to sign.
 *Step 2 -- Pay the premium:*
  [Tap here to pay](${paymentLink})
 
-Once both are complete, we post the bond immediately. 
+Once both are complete, we post the bond. 
 
 Questions? Reply here or call *(239) 332-2245*`;
 
