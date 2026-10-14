@@ -2,6 +2,7 @@ import wixData from 'wix-data';
 import { sendMemberNotification, sendAdminNotification, NOTIFICATION_TYPES } from 'backend/notificationService.jsw';
 import { COLLECTIONS } from 'public/collectionIds';
 import { notifyGASOfNewIntake } from 'backend/gasIntegration.jsw';
+import { sanitizeLandingItem } from 'public/sanitizeLandingCopy';
 
 /**
  * Hook: Cases - After Insert
@@ -167,4 +168,17 @@ export async function Signing_Sessions_afterUpdate(item, context) {
     }
 
     return item;
+}
+
+/**
+ * FloridaCounties reads (homepage dataset, dynamic county/city/jail pages).
+ * Rewrite title, h1Headline, and seoTitle before the item is rendered.
+ * Does not write the CMS row.
+ */
+export function FloridaCounties_afterQuery(item) {
+    return sanitizeLandingItem(item);
+}
+
+export function FloridaCounties_afterGet(item) {
+    return sanitizeLandingItem(item);
 }

@@ -409,6 +409,36 @@ function SETUP_MissingProperties(wixWebhookSecret) {
 }
 
 /**
+ * Programmatically set the rotated core bridge keys in Script Properties.
+ * Run this from the Apps Script editor to bypass the crowded Project Settings UI.
+ *
+ * @param {string} [gasKey] - Optional: GAS / Wix API key
+ * @param {string} [wixSecret] - Optional: Wix webhook secret
+ */
+function SETUP_RotatedKeys(gasKey, wixSecret) {
+  const props = PropertiesService.getScriptProperties();
+
+  if (gasKey && String(gasKey).trim()) {
+    const key = String(gasKey).trim();
+    props.setProperty('GAS_API_KEY', key);
+    props.setProperty('WIX_API_KEY', key);
+    console.log('✅ Updated GAS_API_KEY and WIX_API_KEY = [' + key.substring(0, 8) + '...]');
+  }
+
+  if (wixSecret && String(wixSecret).trim()) {
+    const secret = String(wixSecret).trim();
+    props.setProperty('WIX_WEBHOOK_SECRET', secret);
+    console.log('✅ Updated WIX_WEBHOOK_SECRET = [' + secret.substring(0, 8) + '...]');
+  }
+
+  console.log('Current Script Properties:');
+  console.log('   GAS_API_KEY configured: ' + Boolean(props.getProperty('GAS_API_KEY')));
+  console.log('   WIX_API_KEY configured: ' + Boolean(props.getProperty('WIX_API_KEY')));
+  console.log('   WIX_WEBHOOK_SECRET configured: ' + Boolean(props.getProperty('WIX_WEBHOOK_SECRET')));
+}
+
+
+/**
  * Sets ElevenLabs integration Script Properties.
  * Agent: Shamrock After-Hours Intake (created 2026-03-03)
  * Phone: +1 727-295-2245 (imported into ElevenLabs via Twilio connector)

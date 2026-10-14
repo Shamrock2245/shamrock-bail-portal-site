@@ -77,7 +77,7 @@ function fixPlaceholderHeadings() {
 
 function updatePageSEO() {
     const pageTitle = "Contact Shamrock Bail Bonds | 24/7 Emergency Dispatch Fort Myers FL";
-    const pageDesc = "Need immediate bail bond help? Call or text Shamrock Bail Bonds 24/7 at (239) 332-2245, start paperwork online at paperwork.shamrockbailbonds.biz, or visit 1528 Broadway, Fort Myers, FL 33901.";
+    const pageDesc = "Need bail bond help? Call or text Shamrock Bail Bonds 24/7 at (239) 332-2245, start paperwork online at paperwork.shamrockbailbonds.biz, or visit 1528 Broadway, Fort Myers, FL 33901.";
     const pageUrl = "https://www.shamrockbailbonds.biz/contact";
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
@@ -144,10 +144,10 @@ function updatePageSEO() {
                 },
                 {
                     "@type": "Question",
-                    "name": "What is the fastest way to get someone out of jail?",
+                    "name": "What is the easiest way to start the bail process?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "If you have an ID and 2 minutes, start online at paperwork.shamrockbailbonds.biz to scan your license and sign paperwork instantly. For phone assistance, call Shannon or our live dispatchers 24/7 at (239) 332-2245."
+                        "text": "If you have an ID, you can start online at paperwork.shamrockbailbonds.biz to scan your license and sign paperwork electronically. For phone assistance, call Shannon or our live dispatchers 24/7 at (239) 332-2245."
                     }
                 },
                 {
@@ -155,7 +155,7 @@ function updatePageSEO() {
                     "name": "Can I use Telegram to post bail?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Yes. Search @ShamrockBail_bot on Telegram for instant conversational intake, ID scan, quote calculator, and automated paperwork links."
+                        "text": "Yes. Search @ShamrockBail_bot on Telegram for conversational intake, ID scan, quote calculator, and automated paperwork links."
                     }
                 }
             ]
@@ -214,14 +214,14 @@ async function handleSubmit() {
     try {
         const res = await submitContactForm(formData);
         if (res && res.success) {
-            safeSetText('#textSuccess', "Thank you. A bondsman will call you immediately. Need instant paperwork? Tap 'Start Paperwork Online'.");
+            safeSetText('#textSuccess', "Thank you. A bondsman will call you back. Ready to start paperwork? Tap 'Start Paperwork Online'.");
             safeShow('#textSuccess');
             safeSetText('#btnSubmit', "Message Sent ✅");
         } else {
             throw new Error(res?.message || "Failed to submit");
         }
     } catch (e) {
-        safeSetText('#textError', "Error submitting form. Call (239) 332-2245 for immediate help.");
+        safeSetText('#textError', "Error submitting form. Call (239) 332-2245 for help.");
         safeShow('#textError');
         safeEnable('#btnSubmit');
         safeSetText('#btnSubmit', "Send Message");

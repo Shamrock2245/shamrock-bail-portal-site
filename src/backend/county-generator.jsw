@@ -27,6 +27,8 @@ import {
 } from 'backend/local-landings';
 import { PHONE_PRIMARY } from 'backend/seoConfig';
 import { formatCityHeroHeadline } from 'public/cityHeroHeadline';
+import { sanitizeFastReleaseText } from 'public/sanitizeLandingCopy';
+import { applyIndexedCountyLocal } from 'backend/gsc-county-local';
 
 /**
  * Generate complete county page data
@@ -284,7 +286,7 @@ function transformCountyData(county, landing = null, landingCms = null) {
     ? placeJailSites.map((site) => `${site.name}: ${site.address}`).join('; ')
     : ((landing && landing.holdingAddress) || jailAddress);
 
-  return {
+  const page = {
     // Basic info
     landing_type: landing ? landing.type : 'county',
     display_name: displayName,
@@ -368,15 +370,15 @@ function transformCountyData(county, landing = null, landingCms = null) {
 
     // Content — unique per county, city, or jail landing
     content: {
-      // City H1 is the approved pattern, not the CMS "24/7 Fast Release" string.
-      // Jail landings still prefer their CMS headline. County H1s are unchanged.
-      hero_headline: landing && landing.type === 'city'
+      // City H1 is the approved pattern. Jail and county headlines keep CMS copy
+      // after "24/7 Fast Release" is rewritten to "24/7 Bail Help".
+      hero_headline: sanitizeFastReleaseText(landing && landing.type === 'city'
         ? (formatCityHeroHeadline(displayName, countyName) || (landingCopy && landingCopy.heroHeadline))
         : isPlaceLanding
           ? (cleanValue(cmsPlace.h1Headline) || (landingCopy && landingCopy.heroHeadline))
           : (county.h1Headline && /bail/i.test(county.h1Headline)
             ? county.h1Headline
-            : `${countyName} County Bail Bonds: 24/7 Help for Families`),
+            : `${countyName} County Bail Bonds: 24/7 Help for Families`)),
       hero_subheadline: isPlaceLanding
         ? landingCopy.heroSub
         : `Licensed, trusted, and ready to help families with ${jailName}. Call, text, or start online.`,
@@ -427,11 +429,11 @@ function transformCountyData(county, landing = null, landingCms = null) {
 
     // SEO — Enhanced with city-specific long-tails
     seo: {
-      meta_title: isPlaceLanding
+      meta_title: sanitizeFastReleaseText(isPlaceLanding
         ? (cleanValue(cmsPlace.seoTitle) || landingCopy.metaTitle)
         : (county.seoTitle && /\|/.test(county.seoTitle) && county.seoTitle.length <= 60
           ? county.seoTitle
-          : defaultTitle),
+          : defaultTitle)),
       // CMS seoDescription first; generated text only when the CMS value is empty (or stale)
       meta_description: isPlaceLanding
         ? (landingText(cmsPlace.seoDescription) || landingCopy.metaDescription)
@@ -444,6 +446,7 @@ function transformCountyData(county, landing = null, landingCms = null) {
         : `/florida-bail-bonds/${normalizeLandingSlug(county.countySlug || countyName)}`
     }
   };
+  return applyIndexedCountyLocal(page);
 }
 
 // ─── ENRICHMENT HELPERS ───────────────────────────────────────────────
@@ -511,11 +514,11 @@ function generateAboutCounty(name, cities, countySeat, circuitNum, circuitFull, 
   let text = `Shamrock Bail Bonds proudly serves ${name} County, Florida`;
   if (cityStr) text += `, including ${cityStr}`;
   text += ` and surrounding areas.${seatStr}`;
-  text += ` We work directly with the ${name} County Jail to secure fast and reliable release for our clients.`;
+  text += ` We work directly with the ${name} County Jail to help secure release for our clients.`;
   text += circuitStr;
   text += ` ${popStr} is one of the communities we are committed to serving with professionalism and compassion.`;
-  text += ` Our licensed bail agents are available 24 hours a day to answer questions, explain the bail process, and begin release immediately.`;
-  text += ` If your loved one has been arrested in ${name} County, don't wait. Call Shamrock Bail Bonds now for fast, confidential help.`;
+  text += ` Our licensed bail agents are available 24 hours a day to answer questions, explain the bail process, and begin the release process.`;
+  text += ` If your loved one has been arrested in ${name} County, don't wait. Call Shamrock Bail Bonds now for confidential help.`;
 
   return text;
 }
@@ -527,7 +530,7 @@ function generateWhyChooseUs(name, cities, circuitNum, countySeat) {
   return `Shamrock Bail Bonds has extensive experience with the ${name} County justice system${circuitStr}. `
     + `Our team understands the booking procedures at the ${name} County Jail${seatStr}, the bond schedules set by local judges, and how to navigate the release process efficiently. `
     + `We are a licensed and insured Florida bail bond agency, and we treat every client with dignity and respect during what is often one of the most stressful times in their life. `
-    + `Available 24 hours a day, 7 days a week, we can start the bail process within minutes of your call. `
+    + `Available 24 hours a day, 7 days a week, we can start the bail process as soon as you call. `
     + `Most paperwork can be completed electronically from your phone — you don't even need to visit our office. `
     + `We also offer flexible payment plans for qualified clients to make bail more affordable.`;
 }
@@ -538,7 +541,7 @@ function generateHowItWorks(name, circuitNum) {
   return `When someone is arrested in ${name} County, they are transported to the ${name} County Jail for booking and processing. `
     + `This includes fingerprinting, photographing, and a background check. `
     + `A judge${circuitStr} will set the bail amount based on the charges and the defendant's history. `
-    + `Once bail is set, Shamrock Bail Bonds can immediately begin the release process. `
+    + `Once bail is set, Shamrock Bail Bonds can begin the release process. `
     + `We prepare the bond paperwork, post it with the ${name} County Clerk of Court, and coordinate with jail staff. `
     + `The jail then processes the release. Release timing is controlled by the jail, and we keep you updated along the way.`;
 }
@@ -553,11 +556,11 @@ function generateFAQs(name, circuitNum, circuitFull, cities, countySeat, phoneDi
   return [
     {
       question: `Where can I find bail bonds in ${name} County, Florida?`,
-      answer: `Shamrock Bail Bonds is a trusted local bail bond agency serving ${name} County${circuitStr} of Florida. We provide fast, confidential bail bond services for individuals arrested in ${name} County and surrounding areas. Our office address is 1528 Broadway, Fort Myers, FL 33901, and you can reach us at ${phoneDisplay}.`
+      answer: `Shamrock Bail Bonds is a trusted local bail bond agency serving ${name} County${circuitStr} of Florida. We provide professional, confidential bail bond services for individuals arrested in ${name} County and surrounding areas. Our office address is 1528 Broadway, Fort Myers, FL 33901, and you can reach us at ${phoneDisplay}.`
     },
     {
       question: `Who offers 24/7 bail bond services in ${name} County?`,
-      answer: `Shamrock Bail Bonds offers 24/7 bail bond services throughout ${name} County. Arrests happen at all hours, and our licensed Florida agents are always available to help secure release as quickly as possible.`
+      answer: `Shamrock Bail Bonds offers 24/7 bail bond services throughout ${name} County. Arrests happen at all hours, and our licensed Florida agents are always available to help secure release.`
     },
     {
       question: `How does the bail bond process work in ${name} County?`,
@@ -619,7 +622,7 @@ function generateFAQs(name, circuitNum, circuitFull, cities, countySeat, phoneDi
     },
     {
       question: `Can you help with an active warrant in ${name} County?`,
-      answer: `Yes, we can assist with active warrants in ${name} County. We can help arrange a self-surrender with the court, which often results in a smoother process and faster release. Call us confidentially to discuss your situation.`
+      answer: `Yes, we can assist with active warrants in ${name} County. We can help arrange a self-surrender with the court, which often results in a smoother process. Call us confidentially to discuss your situation.`
     }
   ];
 }
@@ -769,7 +772,7 @@ export async function getAllCountiesByTier() {
       const countyInfo = {
         slug: county.countySlug,
         name: county.countyName,
-        title: county.title
+        title: typeof county.title === 'string' ? sanitizeFastReleaseText(county.title) : county.title
       };
 
       if (county.isPrimaryCounty) {

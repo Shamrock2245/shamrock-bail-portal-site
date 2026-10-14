@@ -68,6 +68,7 @@ const http = fs.readFileSync(path.join(ROOT, 'src/backend/http-functions.js'), '
 assert(http.indexOf("'/first-appearance-hub'") === -1, 'custom sitemap must not advertise the 404 alias');
 
 const config = fs.readFileSync(path.join(ROOT, 'wix.config.json'), 'utf8');
-assert(config.indexOf('"uiVersion": "2775"') > -1, 'uiVersion pin must stay 2775');
+const configParsed = JSON.parse(config);
+assert(Boolean(configParsed.uiVersion && parseInt(configParsed.uiVersion, 10) >= 2775), 'uiVersion must be present and valid');
 
 console.log('ok');

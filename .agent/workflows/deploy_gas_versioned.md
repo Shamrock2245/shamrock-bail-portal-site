@@ -11,7 +11,7 @@ This is the **single canonical workflow** for deploying the GAS backend. It cove
 ### 1. Navigate to Backend Directory
 // turbo
 ```bash
-cd /Users/brendan/Desktop/shamrock-bail-portal-site/backend-gas
+cd /Users/brendan/Desktop/shamrock-active-software/shamrock-bail-portal-site/backend-gas
 ```
 
 ### 2. Check Deployment Status

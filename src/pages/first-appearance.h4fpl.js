@@ -53,7 +53,7 @@ function buildEmbedUrl(focusSlug) {
 
 const PAGE_TITLE = 'First Appearance Hearing in Florida | Live Court Schedules | Shamrock Bail Bonds';
 const PAGE_DESC =
-    'Your loved one has a court date in 24 hours. Learn what happens at a First Appearance hearing in Florida, watch live court streams, and get bail help fast. Serving all 67 Florida counties 24/7. Call (239) 332-2245.';
+    'Your loved one has a court date in 24 hours. Learn what happens at a First Appearance hearing in Florida, watch live court streams, and get 24/7 bail help. Serving all 67 Florida counties 24/7. Call (239) 332-2245.';
 /**
  * Canonical public hub URL. The Editor SEO slug first-appearance-hub is not
  * a public route; /first-appearance-hub 404s outside this router prefix.
@@ -73,7 +73,7 @@ const FAQ_DATA = [
     {
         question: "Can I attend my loved one's First Appearance hearing?",
         answer:
-            'Yes. First Appearance hearings are public court proceedings. Many Florida counties — including Lee, Collier, and Hillsborough — now broadcast them live via Zoom or online streaming. Family members are encouraged to watch so they know the bond amount immediately and can call Shamrock at (239) 332-2245.'
+            'Yes. First Appearance hearings are public court proceedings. Many Florida counties — including Lee, Collier, and Hillsborough — now broadcast them live via Zoom or online streaming. Family members are encouraged to watch so they know the bond amount and can call Shamrock at (239) 332-2245.'
     },
     {
         question: 'What should the defendant say at First Appearance?',
@@ -88,7 +88,7 @@ const FAQ_DATA = [
     {
         question: 'What if the judge sets a high bond amount at First Appearance?',
         answer:
-            'Call Shamrock Bail Bonds immediately at (239) 332-2245 the moment the bond amount is set. We only require 10% of the bond amount to post bail. Our bondsmen are available 24/7 and can begin the paperwork process while you are still watching the First Appearance hearing.'
+            'Call Shamrock Bail Bonds at (239) 332-2245 once the bond amount is set. We only require 10% of the bond amount to post bail. Our bondsmen are available 24/7 and can begin the paperwork process while you are still watching the First Appearance hearing.'
     },
     {
         question: 'What is the difference between First Appearance and Arraignment?',
@@ -108,12 +108,12 @@ const FAQ_DATA = [
     {
         question: "How do I find out if my loved one has a First Appearance scheduled?",
         answer:
-            "Call the county jail directly where your loved one is being held — they can confirm if a First Appearance is scheduled and when. You can also search the county clerk's online docket. Shamrock Bail Bonds can look up your loved one's booking record instantly — call (239) 332-2245 with their name and county."
+            "Call the county jail directly where your loved one is being held — they can confirm if a First Appearance is scheduled and when. You can also search the county clerk's online docket. Shamrock Bail Bonds can look up your loved one's booking record — call (239) 332-2245 with their name and county."
     },
     {
         question: 'How quickly can Shamrock Bail Bonds post bail after First Appearance?',
         answer:
-            'Shamrock Bail Bonds can begin the bail process immediately after the bond amount is set at First Appearance — even while the hearing is still in progress. Our office at 1528 Broadway, Fort Myers is steps from the Lee County Justice Center. We post the bond as soon as the paperwork and payment are complete.'
+            'Shamrock Bail Bonds can help with the bail process after the bond amount is set at First Appearance — even while the hearing is still in progress. Our office at 1528 Broadway, Fort Myers is steps from the Lee County Justice Center. We post the bond once the paperwork and payment are complete.'
     },
     {
         question: 'What happens if someone misses their First Appearance?',
@@ -590,7 +590,7 @@ function buildArticleSchema() {
         '@type': 'Article',
         headline: 'Florida First Appearance Hearing Guide: What Families Need to Know',
         description:
-            'A complete guide to First Appearance hearings in Florida — what happens, how bail is set, and how to get your loved one released fast. Includes live court stream links for multiple counties.',
+            'A complete guide to First Appearance hearings in Florida — what happens, how bail is set, and how to help get your loved one released. Includes live court stream links for multiple counties.',
         url: PAGE_URL,
         datePublished: '2024-01-15',
         dateModified: '2026-08-06',
@@ -665,7 +665,7 @@ function buildLegalServiceSchema() {
                         '@type': 'Service',
                         name: 'Surety Bail Bonds at First Appearance',
                         description:
-                            'Post bail immediately after the judge sets the bond amount at First Appearance. 10% premium, payment plans available.'
+                            'Post bail after the judge sets the bond amount at First Appearance. 10% premium, payment plans available.'
                     }
                 },
                 {
