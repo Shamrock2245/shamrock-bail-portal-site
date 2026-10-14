@@ -7,6 +7,7 @@ import wixData from 'wix-data';
 import { generateCountyPage } from 'backend/county-generator';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { resolvePrimaryHeroH1 } from 'public/cityHeroHeadline';
+import { buildFloridaCountyDirectoryHtml, COUNTY_DIRECTORY_ELEMENT_IDS } from 'public/floridaCountyDirectory';
 // replaced public/countyUtils with optimized backend
 // import { getCountiesByRegion } from 'backend/counties'; // Moved to dynamic import
 
@@ -47,6 +48,8 @@ $w.onReady(async function () {
     console.log(` Frontend detected slug: "${countySlug}"`);
 
     if (!countySlug) {
+        // Bare /florida-bail-bonds hub: still expose all 67 county anchors.
+        paintCountyDirectory();
         console.error("[X] No slug found in URL path:", path);
         return;
     }
@@ -64,7 +67,7 @@ $w.onReady(async function () {
                     setRichText(
                         ['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'],
                         generatedCounty.content.about_county,
-                        generatedCounty.content.about_html
+                        aboutHtmlWithDirectory(generatedCounty.content.about_html)
                     );
                 }
             })
@@ -463,7 +466,7 @@ async function populateMainUI(county, currentSlug) {
     setRichText(
         ['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'],
         county.content.about_county,
-        aboutHtmlBody || county.content.about_html
+        aboutHtmlWithDirectory(aboutHtmlBody || county.content.about_html)
     );
 
     // Why Choose Us
@@ -557,7 +560,7 @@ async function populateMainUI(county, currentSlug) {
     // 5. Layer A — SWFL Core Flagship Badge
     if (isSwflCore) {
         setText(['#flagshipBadge', '#swflCoreCallout', '#localDispatchNotice'],
-            `⭐ SWFL Flagship Hub: 24/7 bail service from 1528 Broadway, Fort Myers. Under 20 minutes in Southwest Florida (Mon–Fri, 8 AM–6 PM).`);
+            `⭐ SWFL Flagship Hub: 24/7 bail service from 1528 Broadway, Fort Myers, serving all of Southwest Florida.`);
     }
 
     // POPULATE FAQs (Repeater) - Now pulls from CMS Faqs collection
@@ -816,7 +819,32 @@ function populateInternalLinks(county, currentSlug) {
     // Cross-link to Blog
     setLinkElement(['#blogLink', '#btnBlog'], '/blog');
 
+    paintCountyDirectory();
     console.log(`[Internal Links] Cross-links populated for ${countyName} County`);
+}
+
+/** About copy plus one crawlable anchor for each of the 67 counties. */
+function aboutHtmlWithDirectory(html) {
+    const body = html || '';
+    let directory = '';
+    try { directory = buildFloridaCountyDirectoryHtml(); } catch (e) { return body; }
+    if (!directory || body.indexOf('/florida-bail-bonds/bradford') !== -1) return body;
+    return body + directory;
+}
+
+/** All 67 county anchors, including the eight thin pages Google had not indexed. */
+function paintCountyDirectory() {
+    let html = '';
+    try { html = buildFloridaCountyDirectoryHtml(); } catch (e) { return; }
+    if (!html) return;
+    COUNTY_DIRECTORY_ELEMENT_IDS.forEach(function (id) {
+        try {
+            const el = $w(id);
+            if (!el || typeof el.html !== 'string') return;
+            el.html = html;
+            if (typeof el.expand === 'function') el.expand();
+        } catch (e) { /* element not on this page */ }
+    });
 }
 
 /**

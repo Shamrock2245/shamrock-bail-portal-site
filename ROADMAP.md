@@ -1,6 +1,6 @@
 # 🗺 Technical Roadmap & Milestones
 
-> **"The Uber of Bail Bonds" — Fast. Frictionless. Everywhere.**  
+> **"The Uber of Bail Bonds" — Simple. Secure. Everywhere.**  
 > **Last Updated:** 2026-08-21 · Authoritative runtime truth: [`STATUS.md`](./STATUS.md)
 
 ---

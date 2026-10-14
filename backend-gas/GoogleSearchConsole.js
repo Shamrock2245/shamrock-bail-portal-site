@@ -12,8 +12,8 @@
 
 var GSC_SITE_URL = 'https://www.shamrockbailbonds.biz/';
 var GSC_SITEMAP_INDEX = 'https://www.shamrockbailbonds.biz/sitemap.xml';
-var INDEXNOW_KEY = 'a7c3e91b4d2f48c0a1e65f0b9c4d8e21';
-var INDEXNOW_KEY_LOCATION = 'https://www.shamrockbailbonds.biz/_functions/indexnow';
+var INDEXNOW_KEY = 'a00e3857-675a-493b-91d8-a1dbc5e7c499';
+var INDEXNOW_KEY_LOCATION = 'https://www.shamrockbailbonds.biz/indexnow';
 var GSC_SITES_API = 'https://www.googleapis.com/webmasters/v3/sites';
 var GSC_INSPECT_API = 'https://searchconsole.googleapis.com/v1/urlInspection/index:inspect';
 var GSC_PROP_RESOLVED = 'GSC_RESOLVED_SITE_URL';

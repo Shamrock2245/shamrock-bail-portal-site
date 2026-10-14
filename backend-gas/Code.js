@@ -457,7 +457,18 @@ var GAS_KEYED_DOPOST_ACTIONS_ = {
   telegram_document_status: true,
   get_packet_manifest: true,
   // Check-in SMS relay: Slack alerts with the client phone (no repo caller; Twilio uses the webhook path)
-  twilio_check_in: true
+  twilio_check_in: true,
+  // Telegram Mini App actions. The pages call shamrock-telegram-app /api/miniapp, which verifies
+  // Telegram initData (and, for lookups, the Telegram-verified phone) and adds GAS_API_KEY.
+  // (bail_school_upload shares the upload route but is a separate action and is not listed.)
+  telegram_mini_app_intake: true,
+  telegram_mini_app_upload: true,
+  telegram_payment_log: true,
+  telegram_payment_lookup: true,
+  telegram_checkin_log: true,
+  telegram_client_update: true,
+  telegram_status_lookup: true,
+  telegram_document_lookup: true
 };
 
 /**
@@ -526,9 +537,8 @@ function doPost(e) {
     // messages, court dates and forfeiture cases. They now need the GAS API key (data.apiKey, or
     // ?apiKey= merged above), checked with requireGasApiKey_ BEFORE any handler runs.
     // Server-side callers send it (telegram-app scheduled functions send GAS_API_KEY).
-    // Browser mini-app actions (telegram_mini_app_*, telegram_payment_*, telegram_checkin_log,
-    // telegram_client_update, telegram_status_lookup, telegram_document_lookup) are NOT listed:
-    // a browser cannot hold the key. They need Telegram initData verification first.
+    // Mini App actions are listed too: the pages no longer call GAS directly; they call
+    // telegram-app /api/miniapp, which verifies Telegram initData and adds the key server-side.
     if (data.action && Object.prototype.hasOwnProperty.call(GAS_KEYED_DOPOST_ACTIONS_, data.action)) {
       if (typeof requireGasApiKey_ !== 'function' || !requireGasApiKey_(data.apiKey)) {
         if (typeof logSecurityEvent === 'function') logSecurityEvent('UNAUTHORIZED_API_ACCESS', { error: 'Invalid API Key', action: data.action });
@@ -668,10 +678,10 @@ function doPost(e) {
       }
     }
 
-    // --- TELEGRAM MINI APP (no-cors — cannot send API key) ---
-    // These actions bypass API key verification because the Mini App
-    // uses fetch({ mode: 'no-cors' }) which cannot read responses or
-    // send custom headers reliably. Security is via Telegram initData.
+    // --- TELEGRAM MINI APP ---
+    // These actions require the GAS API key (GAS_KEYED_DOPOST_ACTIONS_ gate above). The pages
+    // call telegram-app /api/miniapp, which verifies Telegram initData (and the Telegram-verified
+    // phone for lookups) and forwards with the key. telegramUserId is set by that proxy.
     if (data.action === 'telegram_mini_app_intake') {
       try {
         var intakeActor = data.telegramUserId || data.telegramChatId || 'mini_app_unknown';

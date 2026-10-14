@@ -24,6 +24,10 @@ jobs:
     name: Publish Due Blog Post
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      WIX_CLI_API_KEY: ${{ secrets.WIX_CLI_API_KEY }}
 
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────────

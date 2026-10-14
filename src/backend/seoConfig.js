@@ -54,10 +54,10 @@ export const PHONE_SECONDARY = {
 };
 
 export const PHONE_SPANISH = {
-    display:  '727-295-2245',
+    display:  '(727) 295-2245',
     e164:     '+17272952245',
     tel:      'tel:+17272952245',
-    note:     'Se habla español',
+    note:     'Spanish line — switches to a Spanish-speaking agent',
 };
 
 export const EMAIL_PRIMARY = 'admin@shamrockbailbonds.biz';
@@ -111,16 +111,8 @@ export const CONTACT_POINTS = [
     },
     {
         '@type':           'ContactPoint',
-        telephone:         PHONE_SECONDARY.e164,
-        contactType:       'Customer Service',
-        areaServed:        ['Tampa Bay Area', 'St. Petersburg', 'US-FL'],
-        availableLanguage: LANGUAGES,
-        description:       PHONE_SECONDARY.note,
-    },
-    {
-        '@type':           'ContactPoint',
         telephone:         PHONE_SPANISH.e164,
-        contactType:       'Customer Service',
+        contactType:       'Customer Service (Spanish line)',
         areaServed:        'US-FL',
         availableLanguage: ['Spanish'],
         description:       PHONE_SPANISH.note,

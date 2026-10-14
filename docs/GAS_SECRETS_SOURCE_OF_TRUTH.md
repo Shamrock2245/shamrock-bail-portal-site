@@ -10,14 +10,14 @@ Do **not** rotate deployment IDs, mint new web-app deployments, or change live G
 |---|---|
 | `deploymentId` (factory / portal / leads) | `AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z` |
 | `gasWebAppUrl` | `https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec` |
-| `schoolDeploymentId` (bail school — separate) | `AKfycbyV48043q007TwWikAIFfyma5TNKjOF6nHDaza-hRMefEVmMM3xKamujQeKFBkZQa_DMg` |
-| `schoolGasWebAppUrl` | `https://script.google.com/macros/s/AKfycbyV48043q007TwWikAIFfyma5TNKjOF6nHDaza-hRMefEVmMM3xKamujQeKFBkZQa_DMg/exec` |
+| `schoolDeploymentId` (bail school — separate) | `<GAS_SCHOOL_DEPLOYMENT_ID>` |
+| `schoolGasWebAppUrl` | `<GAS_SCHOOL_WEB_APP_URL>` |
 
 If a surface still points at a different ID, treat it as a **documented mismatch** — fix only with Brendan (do not silently rotate).
 
 Retired Universal bookmarklet IDs that 404 (historical only — do not revive):
 
-- Universal AI: `AKfycbybvb6EpI6Aop5RSDvweHceD1LQpjMoomEHro5zH9fNbR_-OVCqISX5lTa4lMuNR6EXYw`
-- UniversalBookmarklet_Minified: `AKfycbxdKuWmcBo7Cu0RXsBgongINERqFoPE8CmfcdxtLdnJoM3SxuqBHGJY-pIrMbRi72_rnQ`
+- Universal AI: `<GAS_SCRIPT_ID>`
+- UniversalBookmarklet_Minified: `<GAS_SCRIPT_ID>`
 
 See also: `backend-gas/Bookmarklets.md`, `shamrock-leads/docs/policies/gas-url-policy.md`.
