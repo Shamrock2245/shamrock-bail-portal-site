@@ -31,7 +31,7 @@ These files are byte-identical copies of `src/public/defendant-wizard.html` and
 ## Order of operations (owner approval needed for each)
 1. Leads: deploy branch `fix/kiosk-and-wix-intake` to the Hetzner VPS; set
    `WIX_WEBHOOK_SECRET` in the VPS `.env`.
-2. Wix Secrets Manager: create `WIX_WEBHOOK_SECRET` with the **same** value.
+2. Wix Secrets Manager: create `LEADS_WEBHOOK_SECRET` with the **same** value (Wix rejects names starting with "wix").
 3. Merge this branch → Wix auto-publishes page code (see the wix.config.json
    warning in docs/WIX-TO-CRM-INTAKE.md).
 4. In the Editor, paste the two embeds above into `#defendantWizard` /

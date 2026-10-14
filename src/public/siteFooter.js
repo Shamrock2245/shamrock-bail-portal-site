@@ -140,7 +140,7 @@ function setupFooterNav() {
     // Legal Links
     const legalLinks = [
         { selector: '#footerLinkPrivacy', path: '/privacy-policy', label: 'Privacy Policy' },
-        { selector: '#footerLinkTerms', path: '/terms-of-service', label: 'Terms of Service' },
+        { selector: '#footerLinkTerms', path: '/terms-and-conditions', label: 'Terms and Conditions' },
         { selector: '#footerLinkDisclaimer', path: '/disclaimer', label: 'Disclaimer' }
     ];
 

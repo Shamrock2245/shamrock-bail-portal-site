@@ -225,7 +225,7 @@ export async function generateFirstAppearanceCountyPage(countySlug) {
             // Content
             content: {
                 hero_headline: `First Appearance Hearing in ${countyName} County, Florida`,
-                hero_subheadline: `Know the schedule. Watch the hearing. Get bail posted fast.`,
+                hero_subheadline: `Know the schedule. Watch the hearing. Get 24/7 bail help.`,
 
                 about: generateFAAboutCounty(countyName, cities, countySeat, circuitNumber, population),
                 what_to_expect: generateFAWhatToExpect(countyName, circuitNumber),
@@ -248,7 +248,7 @@ export async function generateFirstAppearanceCountyPage(countySlug) {
             // SEO
             seo: {
                 meta_title: `First Appearance Hearing ${countyName} County FL | Court Schedule & Bail Help`,
-                meta_description: `${countyName} County First Appearance hearing schedule, courthouse info, and live court access. Get bail posted immediately — call Shamrock Bail Bonds 24/7 at ${phone}.`,
+                meta_description: `${countyName} County First Appearance hearing schedule, courthouse info, and live court access. Get bail help — call Shamrock Bail Bonds 24/7 at ${phone}.`,
                 canonical_url: `/first-appearance/${normalized}`,
                 keywords: generateFAKeywords(countyName, cities, countySeat)
             }
@@ -311,11 +311,11 @@ function generateFAWhatToExpect(name, circuitNum) {
         + `(4) appoint a public defender if the defendant cannot afford an attorney. `
         + `The defendant does NOT enter a plea at First Appearance — that happens at a later arraignment hearing. `
         + `Family members are encouraged to watch the hearing (many ${name} County courts offer livestreaming) `
-        + `so they know the bond amount immediately and can call Shamrock Bail Bonds to begin the release process.`;
+        + `so they know the bond amount and can call Shamrock Bail Bonds to begin the release process.`;
 }
 
 function generateFABailInfo(name, circuitNum) {
-    return `Once the judge sets bail at First Appearance in ${name} County, Shamrock Bail Bonds can begin posting the bond immediately. `
+    return `Once the judge sets bail at First Appearance in ${name} County, Shamrock Bail Bonds can begin posting the bond once it is set. `
         + `Florida law requires a bail bond premium of 10% of the total bond amount, with a $100 minimum per charge. `
         + `This premium is non-refundable and is the same at every licensed bail bond agency in the state. `
         + `We offer flexible payment plans for qualified clients to make bail more affordable. `
@@ -339,7 +339,7 @@ function generateFACountyFAQs(name, circuitNum, cities, countySeat, phone) {
         },
         {
             question: `How quickly can I bail someone out after First Appearance in ${name} County?`,
-            answer: `Shamrock Bail Bonds can begin the bail process immediately after the judge sets the bond amount — even while the hearing is still in progress. We process bonds electronically so you can complete paperwork from your phone. We post the bond as soon as the paperwork and payment are complete.`
+            answer: `Shamrock Bail Bonds can begin the bail process after the judge sets the bond amount — even while the hearing is still in progress. We process bonds electronically so you can complete paperwork from your phone. We post the bond once the paperwork and payment are complete.`
         },
         {
             question: `How much does bail cost in ${name} County, Florida?`,
@@ -352,12 +352,12 @@ function generateFACountyFAQs(name, circuitNum, cities, countySeat, phone) {
         {
             question: `Does Shamrock Bail Bonds serve ${name} County?`,
             answer: cityStr
-                ? `Yes. Shamrock Bail Bonds serves all of ${name} County, including ${cityStr}, and surrounding areas. We are a licensed and insured Florida bail bond agency with 24/7 availability. Call ${phone} for immediate assistance.`
-                : `Yes. Shamrock Bail Bonds serves all of ${name} County and surrounding areas. We are a licensed and insured Florida bail bond agency available 24/7. Call ${phone} for immediate help.`
+                ? `Yes. Shamrock Bail Bonds serves all of ${name} County, including ${cityStr}, and surrounding areas. We are a licensed and insured Florida bail bond agency with 24/7 availability. Call ${phone} for assistance.`
+                : `Yes. Shamrock Bail Bonds serves all of ${name} County and surrounding areas. We are a licensed and insured Florida bail bond agency available 24/7. Call ${phone} for help.`
         },
         {
             question: `What should family members do during a First Appearance hearing in ${name} County?`,
-            answer: `Watch or attend the hearing to learn the bond amount immediately. Do NOT try to communicate with the defendant during the hearing. Write down the bond amount and any conditions the judge sets. Then call Shamrock Bail Bonds at ${phone} immediately — we can start the paperwork while you're still in the courtroom.`
+            answer: `Watch or attend the hearing to learn the bond amount. Do NOT try to communicate with the defendant during the hearing. Write down the bond amount and any conditions the judge sets. Then call Shamrock Bail Bonds at ${phone} — we can start the paperwork while you're still in the courtroom.`
         },
         {
             question: `Can I post bail before First Appearance in ${name} County?`,
