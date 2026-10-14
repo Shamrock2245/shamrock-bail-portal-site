@@ -960,6 +960,10 @@ function toolCheckCallerHistory(payload) {
 // CONVERSATION INITIATION CLIENT DATA WEBHOOK
 // ============================================================================
 
+// Spoken greeting. Conversation-init overrides the agent first_message, so
+// this must match the live agent exactly.
+var SHANNON_FIRST_MESSAGE = "Hi, this is Brendan's assistant at Shamrock Bail Bonds. How can I help?";
+
 /**
  * handleElevenLabsConversationInit
  * Fires at the START of every inbound call. ElevenLabs sends:
@@ -986,7 +990,7 @@ function handleElevenLabsConversationInit(e) {
             type: 'conversation_initiation_client_data',
             dynamic_variables: { caller_name: '', has_existing_case: 'no' },
             conversation_config_override: {
-                agent: { first_message: 'Shamrock Bail Bonds! This is Brendan. How can I help today?' }
+                agent: { first_message: SHANNON_FIRST_MESSAGE }
             }
         })).setMimeType(ContentService.MimeType.JSON);
     }
@@ -1030,16 +1034,7 @@ function _doConversationInit(e) {
         call_sid: callSid
     };
 
-    var firstTails = [
-        'How can I help today?',
-        'How can I help you today?',
-        'What can I do for you?',
-        'How can I help?',
-        "I'm here, how can I help?",
-        'What can I help you with?'
-    ];
-    var firstMessage = 'Shamrock Bail Bonds! This is Brendan. ' +
-        firstTails[Math.floor(Math.random() * firstTails.length)];
+    var firstMessage = SHANNON_FIRST_MESSAGE;
 
     // TODO: Re-enable personalized lookup once we add CacheService or a warm-keep trigger.
     // SpreadsheetApp.openById() takes 3-7s cold start, which exceeds ElevenLabs timeout.
@@ -1264,16 +1259,19 @@ function redirectLiveCallToOffice_(callSid, callerPhone) {
     }
 }
 
-// Live-person transfer ring. First pickup wins. Spoken office number stays
-// 239-332-2245. Never 727-295-2245. 239-955-0178 is the BlueBubbles line and
-// may not accept voice; Brendan kept it on this ring.
+// transfer_to_bondsman parallel-rings these four numbers. The first to
+// answer takes the call. Tell callers the office is 239-332-2245.
+// Never tell them to call 727-295-2245.
+var SHANNON_TRANSFER_RING_E164 = ['+12393322245', '+12399550301', '+12399550178', '+12399550314'];
 var SHANNON_TRANSFER_RING_LABEL = '239-332-2245, 239-955-0301, 239-955-0178, and 239-955-0314';
 
 /**
  * Tool: transfer_to_bondsman
- * Names the ring group in Slack and the desk text: SHANNON_TRANSFER_RING_LABEL
- * (239-332-2245, 239-955-0301, 239-955-0178, and 239-955-0314). The live Dial
- * is still POST https://shamrock-telegram.netlify.app/api/twilio-transfer-office
+ * Names the ring group in Slack and the desk text. Parallel-rings
+ * SHANNON_TRANSFER_RING_E164 (+12393322245, +12399550301, +12399550178,
+ * +12399550314). The first to answer takes the call. Tell callers the
+ * office is 239-332-2245. Never tell them to call 727-295-2245.
+ * The live Dial is still POST https://shamrock-telegram.netlify.app/api/twilio-transfer-office
  * — this function does not build TwiML. Native ElevenLabs transfer_to_number
  * does not work on the register-call path.
  *
@@ -1295,7 +1293,7 @@ function toolTransferToBondsman(params) {
                 '🚨 *URGENT — Live Transfer Request*\n' +
                 '• Caller: ' + (callerPhone || 'Unknown') + '\n' +
                 '• Reason: ' + reason + '\n' +
-                '• Ringing: ' + SHANNON_TRANSFER_RING_LABEL + ' (first pickup wins).\n' +
+                '• Ringing: ' + SHANNON_TRANSFER_RING_E164.join(', ') + ' (' + SHANNON_TRANSFER_RING_LABEL + '). The first to answer takes the call. Tell the caller the office is 239-332-2245.\n' +
                 '• Action: Call this person back IMMEDIATELY.\n' +
                 '• Source: Shannon voice paperwork assistant',
                 null
@@ -1308,7 +1306,8 @@ function toolTransferToBondsman(params) {
     try {
         notifyShannonStaffDesk_(
             '🚨 Shannon LIVE TRANSFER. Caller ' + (callerPhone || 'unknown') +
-            '. ' + reason + '. Ringing ' + SHANNON_TRANSFER_RING_LABEL + '. Call them back if it misses.',
+            '. ' + reason + '. Parallel-ringing ' + SHANNON_TRANSFER_RING_E164.join(', ') +
+            ' (' + SHANNON_TRANSFER_RING_LABEL + '). The first to answer takes the call. Office 239-332-2245. Call them back if it misses.',
             callerPhone
         );
     } catch (deskErr) {

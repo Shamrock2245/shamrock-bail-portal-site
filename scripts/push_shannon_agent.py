@@ -97,6 +97,29 @@ TRANSFER_TOOL_ID = "tool_6201kjw9k6xff9p9qa8qtbjr8ya4"
 DESK_E164 = "+12399550301"
 NAP_E164 = "+12393322245"
 OFFICE_E164 = NAP_E164
+OFFICE_SPOKEN = "239-332-2245"
+# Spoken greeting and the Brendan Instant clone. Do not swap the voice or model.
+FIRST_MESSAGE = "Hi, this is Brendan's assistant at Shamrock Bail Bonds. How can I help?"
+VOICE_ID = "2cx6OnG1GDLOtE8L9l9O"
+TTS_MODEL_ID = "eleven_flash_v2"
+# transfer_to_bondsman parallel-rings these four. The first to answer takes the call.
+TRANSFER_RING_E164 = (
+    "+12393322245",
+    "+12399550301",
+    "+12399550178",
+    "+12399550314",
+)
+N_GREET_PROMPT = (
+    "The opening is already spoken. You are Brendan's assistant at Shamrock Bail Bonds, "
+    "not Brendan himself. How can I help? No hey. Keep that energy. Answer what they just said. "
+    "Do not wait on a tool."
+)
+
+
+def _transfer_ring_phrase() -> str:
+    """E.164 list spoken as 'a, b, c, and d' for tool and workflow copy."""
+    nums = TRANSFER_RING_E164
+    return ", ".join(nums[:-1]) + ", and " + nums[-1]
 
 # Blocking + retry: rewrite the turn. Do not transfer. Brendan's Twilio
 # register-call path cannot use transfer_to_number (external calls).
@@ -185,9 +208,7 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
     nodes = wf["nodes"]
     edges = wf.setdefault("edges", {})
     if "n_greet" in nodes:
-        nodes["n_greet"]["additional_prompt"] = (
-            "The opening is already spoken: Shamrock Bail Bonds, this is Brendan, then a short how-can-I-help. No hey. Keep that energy. Answer what they just said. Do not wait on a tool."
-        )
+        nodes["n_greet"]["additional_prompt"] = N_GREET_PROMPT
     # Mem0 is already injected at ring. Do not block the first reply on history.
     if "e02" in edges and "n_personalize" in nodes:
         edges["e02"]["target"] = "n_personalize"
@@ -257,7 +278,9 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
     if "n_c_general" in nodes:
         nodes["n_c_general"]["additional_prompt"] = (
             "Answer using the knowledge base. Never recommend a specific attorney. "
-            "Never give legal advice. Office landline is 239-332-2245. Transfer rings that line and 239-955-0301 together. Never 727-295-2245."
+            "Never give legal advice. Office landline is 239-332-2245. "
+            f"transfer_to_bondsman parallel-rings {_transfer_ring_phrase()}. "
+            "The first to answer takes the call. Tell callers the office is 239-332-2245. Never 727-295-2245."
         )
     if "n_a_conf_p" in nodes:
         nodes["n_a_conf_p"]["additional_prompt"] = (
@@ -283,6 +306,9 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
             "condition": "The caller explicitly asked for a person, a bondsman, or to be transferred. Starting paperwork is not a transfer.",
         }
     if "n_transfer" in nodes:
+        # Native phone node is a single destination and is not the live path.
+        # transfer_to_bondsman parallel-rings TRANSFER_RING_E164. The first
+        # to answer takes the call. Callers hear the office number only.
         nodes["n_transfer"]["transfer_destination"] = {
             "type": "phone",
             "phone_number": OFFICE_E164,
@@ -591,7 +617,10 @@ def _ensure_transfer_tool() -> None:
     schema["required"] = ["reason"]
     cfg["api_schema"]["request_body_schema"] = schema
     cfg["description"] = (
-        "Connect this live phone call to the Shamrock office. It rings 239-332-2245 and 239-955-0301 together. Tell the caller 239-332-2245. "
+        "Connect this live phone call to the Shamrock office. It parallel-rings "
+        f"{_transfer_ring_phrase()}. "
+        "The first to answer takes the call. Tell the caller the office is 239-332-2245. "
+        "Never tell them to call 727-295-2245. "
         "Use only when the caller asked for a person or a bondsman. Do not use "
         "for starting paperwork. call_sid and caller_phone are filled from the live call."
     )
@@ -895,8 +924,10 @@ def main() -> int:
     existing_tts["agent_output_audio_format"] = "ulaw_8000"
     existing_tts["text_normalisation_type"] = "elevenlabs"
     existing_tts["expressive_mode"] = True
+    # Leave the Brendan Instant clone and English flash model unchanged.
     # English agents cannot use eleven_flash_v2_5 — the API rejects it.
-    existing_tts["model_id"] = "eleven_flash_v2"
+    existing_tts["voice_id"] = VOICE_ID
+    existing_tts["model_id"] = TTS_MODEL_ID
     existing_tts["optimize_streaming_latency"] = 4
     existing_tts["stability"] = 0.42
     existing_tts["speed"] = 0.94
@@ -930,7 +961,9 @@ def main() -> int:
 
     built_in = json.loads(json.dumps(prompt_cfg.get("built_in_tools") or {}))
     # Native transfer_to_number fails on register-call. Live transfer is
-    # transfer_to_bondsman → simultaneous Dial 239-332-2245 and 239-955-0301.
+    # transfer_to_bondsman, which parallel-rings TRANSFER_RING_E164.
+    # The first to answer takes the call. Tell callers the office is 239-332-2245.
+    # Never tell them to call 727-295-2245.
     built_in["transfer_to_number"] = None
 
     prompt_patch = {
@@ -955,7 +988,7 @@ def main() -> int:
         "name": "Brendan — Shamrock Paperwork Assistant",
         "conversation_config": {
             "agent": {
-                "first_message": "Shamrock Bail Bonds! This is Brendan. How can I help today?",
+                "first_message": FIRST_MESSAGE,
                 "language": "en",
                 "dynamic_variables": {
                     "dynamic_variable_placeholders": {
