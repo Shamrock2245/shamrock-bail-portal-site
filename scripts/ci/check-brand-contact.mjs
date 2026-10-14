@@ -42,7 +42,7 @@ const CANONICAL = new Set([
 
 /** Real lines already in the product. Not public NAP, not typos. */
 const ACKNOWLEDGED = new Set([
-  '2399550301', // Spanish line and live-person desk
+  '2399550301', // live-person desk; public Spanish line is 727-295-2245
   '2399550314', // spare DID, marked not NAP in llms-txt-builder.js
   '2397849365', // staff desk
   '2393197008', // staff desk

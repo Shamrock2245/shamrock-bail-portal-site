@@ -14,6 +14,7 @@
 import { ok, redirect } from 'wix-router';
 import { EXPANSION_STATES } from 'public/portal-config';
 import { isStateLive } from 'backend/service-areas';
+import { floridaCountyCanonicalPath } from 'backend/seo-redirects';
 
 const MULTI_STATE_PAGE = 'Florida Counties'; // Uses the dynamic location template
 
@@ -40,7 +41,7 @@ export async function routeMultiStatePage(request) {
 
       return ok(MULTI_STATE_PAGE, {
         title: `${stateInfo.name} Bail Bonds | 24/7 Jail Release | Shamrock`,
-        description: `Licensed 24/7 bail bond services in ${stateInfo.name}. Instant phone consult, payment plans, and fast jail dispatch. Call (239) 332-2245.`,
+        description: `Licensed 24/7 bail bond services in ${stateInfo.name}. Phone consultations, payment plans, and jail release help. Call (239) 332-2245.`,
         state: stateInfo.code,
         stateName: stateInfo.name,
         slug: stateInfo.slug,
@@ -48,11 +49,18 @@ export async function routeMultiStatePage(request) {
       });
     }
 
+    // Florida county aliases 301 to the canonical county URL. State codes
+    // above are unchanged. Unknown single segments still render below.
+    const countyTarget = floridaCountyCanonicalPath(raw);
+    if (countyTarget) {
+      return redirect(countyTarget, '301');
+    }
+
     // Default to Florida county slug fallback if it's a FL county name
     const cleanCountySlug = raw.replace(/-county$/i, '');
     return ok(MULTI_STATE_PAGE, {
       title: `${cleanCountySlug.toUpperCase()} Bail Bonds | Florida Jail Release | Shamrock`,
-      description: `24/7 bail bonds for ${cleanCountySlug} County. Licensed Florida agents, fast jail release. Call (239) 332-2245.`,
+      description: `24/7 bail bonds for ${cleanCountySlug} County. Licensed Florida agents, jail release help. Call (239) 332-2245.`,
       slug: cleanCountySlug,
       state: 'FL',
       stateName: 'Florida'
@@ -78,7 +86,7 @@ export async function routeMultiStatePage(request) {
 
     return ok(MULTI_STATE_PAGE, {
       title: `${countyDisplay} County Bail Bonds, ${stateInfo.code} | 24/7 Jail Release | Shamrock`,
-      description: `24/7 bail bonds in ${countyDisplay} County, ${stateInfo.name}. Rapid dispatch, licensed agents, online paperwork. Call (239) 332-2245.`,
+      description: `24/7 bail bonds in ${countyDisplay} County, ${stateInfo.name}. Licensed agents, online paperwork. Call (239) 332-2245.`,
       countyName: `${countyDisplay} County`,
       slug: countySlug,
       state: stateInfo.code,
