@@ -6,6 +6,14 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-10-08 — v2.8.18 — Mongo proxy: deploy as mongo-proxy-v2 and keep all secrets
+
+**Cloud Function (`cloud-functions/mongo-proxy/`):** stacks on #45/#46.
+- `npm run deploy` now deploys **`mongo-proxy-v2`** beside the old `mongo-proxy`, so callers can move without downtime.
+- It uses `--update-secrets` instead of `--set-secrets`, naming `MONGO_URI`, `PROXY_API_KEY`, `PROXY_API_KEY_GAS`, `PROXY_API_KEY_VELO`, `TWILIO_AUTH_TOKEN` and `TELEGRAM_WEBHOOK_SECRET` as `NAME=NAME:latest` Secret Manager references.
+- It sets `TWILIO_WEBHOOK_URL` to the v2 `/twilio` URL with `--update-env-vars`.
+- A test checks the function name, the project, the secret names, the reference format, the env URL, and that no literal values appear.
+
 ### 2026-10-08 — v2.8.17 — Mongo proxy: signed webhooks and per-caller keys
 
 **Cloud Function (`cloud-functions/mongo-proxy/`):** stacks on the named-actions change (PR #45). Nothing is active until Brendan rotates and deploys.
