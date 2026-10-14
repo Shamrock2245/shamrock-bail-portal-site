@@ -1,30 +1,49 @@
 import { fetch } from 'wix-fetch';
 import wixSecretsBackend from 'wix-secrets-backend';
 
-// Helper to get the MongoDB Proxy URL and API Key
+/**
+ * Bail School Mongo access via the Shamrock mongo-proxy NAMED actions.
+ *
+ * The proxy no longer accepts caller-supplied database / collection / filter.
+ * Each call below maps 1:1 to a fixed action in
+ * cloud-functions/mongo-proxy/named-actions.js (db + collection hardcoded there).
+ */
+
+// The named-action proxy is the mongo-proxy-v2 Cloud Function. Its URL lives in its own
+// Wix Secret, MONGO_PROXY_V2_URL, with NO fallback to the old MONGO_PROXY_URL secret:
+// the old secret keeps pointing at the old generic function (which rejects named actions)
+// until the soak is done, so this code switches to v2 exactly when it is published, and
+// reverting the publish switches back.
 async function getMongoConfig() {
+    let proxyUrl;
+    let apiKey;
     try {
-        const proxyUrl = await wixSecretsBackend.getSecret('MONGO_PROXY_URL');
-        const apiKey = await wixSecretsBackend.getSecret('PROXY_API_KEY');
-        return { proxyUrl, apiKey };
+        proxyUrl = await wixSecretsBackend.getSecret('MONGO_PROXY_V2_URL');
+        apiKey = await wixSecretsBackend.getSecret('PROXY_API_KEY');
     } catch (error) {
-        console.error("Error retrieving MongoDB Proxy secrets", error);
-        throw new Error("MongoDB Proxy configuration missing.");
+        console.error('Error retrieving MongoDB Proxy secrets', error);
+        throw new Error('MongoDB Proxy configuration missing.');
     }
+    if (!proxyUrl || !apiKey) {
+        throw new Error('MongoDB Proxy configuration missing.');
+    }
+    return { proxyUrl, apiKey };
 }
 
 /**
- * Generic function to call the MongoDB Cloud Function Proxy
+ * Call a named proxy action. Never sends database or collection.
+ * @param {string} action
+ * @param {Object} params
  */
-async function callMongoProxy(action, collection, payload = {}) {
+async function callNamedAction(action, params = {}) {
     const config = await getMongoConfig();
-    
-    const body = {
-        action,
-        database: 'ShamrockBailDB', // The primary DB we use
-        collection,
-        ...payload
-    };
+    const body = { ...params, action };
+    // Defense in depth: drop any accidental db/collection keys.
+    delete body.database;
+    delete body.collection;
+    delete body.dataSource;
+    delete body.db;
+    delete body.tenant;
 
     const response = await fetch(config.proxyUrl, {
         method: 'POST',
@@ -43,95 +62,48 @@ async function callMongoProxy(action, collection, payload = {}) {
     return await response.json();
 }
 
-// ---------------------------------------------------------------------------
-// Bail School Specific Operations
-// ---------------------------------------------------------------------------
-
-/**
- * Fetch a course by its ID
- */
 export async function getCourse(courseId) {
-    const result = await callMongoProxy('findOne', 'Courses', {
-        filter: { _id: courseId } // Assuming we use standard MongoDB ObjectIds or custom string IDs
-    });
-    return result;
+    return callNamedAction('getCourse', { courseId });
 }
 
-/**
- * Fetch all lessons for a specific course, ordered by the `order` field
- */
 export async function getCourseLessons(courseId) {
-    const result = await callMongoProxy('find', 'CourseLessons', {
-        filter: { courseId: courseId },
-        sort: { order: 1 },
-        limit: 100
-    });
+    const result = await callNamedAction('listCourseLessons', { courseId });
     return result.documents;
 }
 
-/**
- * Get a student's enrollment record for a specific course
- */
 export async function getStudentEnrollment(studentId, courseId) {
-    const result = await callMongoProxy('findOne', 'StudentEnrollments', {
-        filter: { studentId, courseId }
-    });
-    return result;
+    return callNamedAction('getStudentEnrollment', { studentId, courseId });
 }
 
-/**
- * Get all enrollments for a specific student
- */
 export async function getStudentEnrollments(studentId) {
-    const result = await callMongoProxy('find', 'StudentEnrollments', {
-        filter: { studentId },
-        limit: 10
-    });
+    const result = await callNamedAction('listStudentEnrollments', { studentId });
     return result.documents || [];
 }
 
-/**
- * Log a student's progress or action (Audit Log)
- * Crucial for FLDFS compliance.
- */
-export async function logStudentAction(studentId, lessonId, action, ipAddress = "Unknown", extraData = {}) {
-    const logEntry = {
+export async function logStudentAction(studentId, lessonId, action, ipAddress = 'Unknown', extraData = {}) {
+    const params = {
         studentId,
         lessonId,
-        action, // STARTED_VIDEO, COMPLETED_LESSON, FAILED_QUIZ, SELFIE_CAPTURED
-        timestamp: new Date().toISOString(),
-        ipAddress,
-        ...extraData
+        studentAction: action,
+        ipAddress
     };
-
-    const result = await callMongoProxy('insertOne', 'AuditLogs', {
-        document: logEntry
-    });
-    
+    if (extraData && typeof extraData.score === 'number') params.score = extraData.score;
+    if (extraData && typeof extraData.time === 'number') params.time = extraData.time;
+    const result = await callNamedAction('logStudentAction', params);
     return result.insertedId;
 }
 
-/**
- * Fetch Audit Logs for a specific student (Used by the Auditor Dashboard)
- */
 export async function getStudentAuditLogs(studentId) {
-    const result = await callMongoProxy('find', 'AuditLogs', {
-        filter: { studentId },
-        sort: { timestamp: -1 }, // Newest first
-        limit: 500
-    });
+    const result = await callNamedAction('listStudentAuditLogs', { studentId });
     return result.documents;
 }
 
-/**
- * Save quiz results natively and enforce 80% passing grade logic.
- */
 export async function saveQuizResult(studentId, courseId, lessonId, userAnswers, questions) {
     let correctCount = 0;
     questions.forEach((q, idx) => {
         if (userAnswers[idx] === q.correctAnswerIndex.toString()) correctCount++;
     });
-    
+
     const score = Math.round((correctCount / questions.length) * 100);
     const passed = score >= 80;
 
@@ -143,49 +115,32 @@ export async function saveQuizResult(studentId, courseId, lessonId, userAnswers,
         passed,
         timestamp: new Date().toISOString()
     };
-    
-    // Log the result
-    await logStudentAction(studentId, lessonId, passed ? 'PASSED_QUIZ' : 'FAILED_QUIZ', "Internal", { score });
-    
-    // Update enrollment progress if passed
+
+    await logStudentAction(studentId, lessonId, passed ? 'PASSED_QUIZ' : 'FAILED_QUIZ', 'Internal', { score });
+
     if (passed) {
-        // Logic to update progress
-        await callMongoProxy('updateOne', 'StudentEnrollments', {
-            filter: { studentId, courseId },
-            update: {
-                $addToSet: { completedLessons: lessonId },
-                $set: { lastActive: new Date().toISOString(), progress: 100 }
-            },
-            upsert: false
-        });
-        
-        // Final Exam passed -> trigger certificate generation
+        await callNamedAction('markLessonComplete', { studentId, courseId, lessonId });
         if (lessonId === 'FINAL_EXAM') {
             await notifyGASOfCompletion(studentId, courseId);
         }
     }
-    
+
     return { score, passed, doc };
 }
 
-/**
- * Triggers GAS to generate a PDF certificate and email the student
- */
 export async function notifyGASOfCompletion(studentId, courseId) {
     const gasUrl = await wixSecretsBackend.getSecret('GAS_WEBHOOK_URL');
     if (!gasUrl) return false;
-    
-    // In a real scenario, we'd fetch the student's name and course title from the DB
-    // For this demonstration, we use placeholder/fetched variables.
+
     const payload = {
         action: 'generateCertificate',
-        studentId: studentId, // Usually email or phone
-        studentName: 'Student Name', // Should be fetched from Wix CRM or StudentEnrollment
+        studentId: studentId,
+        studentName: 'Student Name',
         courseId: courseId,
         courseName: courseId,
         completionDate: new Date().toISOString().split('T')[0]
     };
-    
+
     try {
         const response = await fetch(gasUrl, {
             method: 'POST',
@@ -193,28 +148,16 @@ export async function notifyGASOfCompletion(studentId, courseId) {
             body: JSON.stringify(payload)
         });
         return response.ok;
-    } catch(e) {
-        console.error("Failed to notify GAS of completion: ", e);
+    } catch (e) {
+        console.error('Failed to notify GAS of completion: ', e);
         return false;
     }
 }
 
-/**
- * Upload Selfie to Drive (using GAS API via webhook or directly if Drive API is integrated)
- * For simplicity in Velo, we usually pass this back to GAS since GAS has native DriveApp.
- * We'll mock the call to our GAS Webhook here.
- */
 export async function uploadSelfieToDrive(studentId, base64Data, checkType) {
-    const config = await getMongoConfig();
-    // Assuming the GAS webhook URL is stored in secrets or we use a similar fetch to GAS
-    // For now, we'll route it through the MongoProxy which might have a Drive hook, 
-    // or we just return a mock URL for the sake of the structural outline.
-    // In reality, this would hit the GAS Code.js `telegram_mini_app_upload` or a new `bail_school_upload` action.
-    
-    // We'll call the GAS Webhook (we'll need the GAS URL, let's assume it's in a secret or we mock it)
     const gasUrl = await wixSecretsBackend.getSecret('GAS_WEBHOOK_URL');
-    if (!gasUrl) return "https://drive.google.com/mock-url-placeholder";
-    
+    if (!gasUrl) return 'https://drive.google.com/mock-url-placeholder';
+
     const response = await fetch(gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -225,11 +168,11 @@ export async function uploadSelfieToDrive(studentId, base64Data, checkType) {
             base64Data: base64Data
         })
     });
-    
+
     if (response.ok) {
         const json = await response.json();
-        return json.fileUrl || "https://drive.google.com/mock-url-placeholder";
+        return json.fileUrl || 'https://drive.google.com/mock-url-placeholder';
     }
-    
-    return "https://drive.google.com/mock-url-placeholder";
+
+    return 'https://drive.google.com/mock-url-placeholder';
 }
