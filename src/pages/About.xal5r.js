@@ -14,7 +14,7 @@ $w.onReady(function () {
 
 function updatePageSEO() {
     const pageTitle = "About Shamrock Bail Bonds | Licensed Florida Bail Bond Agency";
-    const pageDesc = "Shamrock Bail Bonds is Southwest Florida's most trusted bail bond agency. Licensed, available 24/7, serving all 67 Florida counties from Fort Myers. Fast jail release with digital paperwork.";
+    const pageDesc = "Shamrock Bail Bonds is Southwest Florida's most trusted bail bond agency. Licensed, available 24/7, serving all 67 Florida counties from Fort Myers. Jail release help with digital paperwork.";
     const pageUrl = "https://www.shamrockbailbonds.biz/about";
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
@@ -107,14 +107,78 @@ function updatePageSEO() {
                 ],
                 "hasOfferCatalog": {
                     "@type": "OfferCatalog",
-                    "name": "Bail Bond Services",
+                    "name": "Comprehensive Florida Bail Bond Services",
                     "itemListElement": [
                         {
                             "@type": "Offer",
                             "itemOffered": {
                                 "@type": "Service",
-                                "name": "Surety Bail Bonds",
-                                "description": "10% premium bail bonds for all Florida counties"
+                                "name": "Nebbia Packet Preparation & Source of Funds Defense",
+                                "description": "Preparation of Florida Nebbia packets, financial tracing, and attorney collaboration pursuant to FL Stat. § 903.046."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "High-Value & Capital Felony Bail Underwriting",
+                                "description": "Large-scale bail underwriting and corporate surety issuance for bonds exceeding $50K, $100K, and $500K+."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "State Surety Appearance Bail Bonds",
+                                "description": "10% statutory appearance bonds for all Florida counties per FL Stat. § 648.24."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Felony Bail Bonds",
+                                "description": "24/7 emergency bail bond posting for 1st, 2nd, and 3rd-degree felony arrests."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Misdemeanor Bail Bonds",
+                                "description": "Booking clearance and release for misdemeanor charges across Southwest Florida jails."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "DUI & BUI Bail Bonds",
+                                "description": "Specialized DUI bail processing and monitoring through Florida mandatory 8-hour sobriety holds."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Domestic Violence Bail Bonds",
+                                "description": "First Appearance court representation and bond posting following bond setting."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Warrant Walk-Through Service",
+                                "description": "Pre-scheduled warrant clearance and self-surrender bond execution without cell confinement."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Transfer Bail Bonds",
+                                "description": "Post bail locally in Fort Myers for defendants detained in any Florida county or nationwide."
                             }
                         },
                         {
@@ -122,15 +186,103 @@ function updatePageSEO() {
                             "itemOffered": {
                                 "@type": "Service",
                                 "name": "Federal Bail Bonds",
-                                "description": "Specialized federal bail bond services"
+                                "description": "Corporate surety appearance bonds for U.S. District Court Middle and Southern Districts of Florida."
                             }
                         },
                         {
                             "@type": "Offer",
                             "itemOffered": {
                                 "@type": "Service",
-                                "name": "Immigration Bail Bonds",
-                                "description": "Detention and immigration bond services"
+                                "name": "Traffic & DWLSR Bail Bonds",
+                                "description": "Jail release help for criminal traffic citations and driving while license suspended charges."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Online & Mobile Digital Bail Bonds",
+                                "description": "100% paperless mobile bail process with mobile DL scan and DocuSeal digital signing."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Bail Bond Payment Plans",
+                                "description": "Flexible low down payment financing and zero-interest payment arrangements for qualifying cosigners."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Immigration Detention Bonds",
+                                "description": "Detention and immigration surety bond services across Florida facilities."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "24/7 Mobile Agent Jail Dispatch",
+                                "description": "Around-the-clock physical agent response to Lee, Collier, Charlotte, and all Florida jails."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Lee County Jail (Ortiz Ave) Release Dispatch",
+                                "description": "24/7 jail release dispatch to Lee County Main Jail at 2501 Ortiz Ave, Fort Myers."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Free 24/7 Inmate Search & Booking Information",
+                                "description": "24/7 confidential inmate lookup, charge analysis, and bond amount verification across Florida jail facilities."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Confidential Florida Warrant Check & Verification",
+                                "description": "Confidential arrest warrant and capias lookup with bail arrangement to avoid surprise arrests."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Long-Distance & Out-of-State Bail Processing",
+                                "description": "Remote paperwork and credit card bail processing for family members living in other Florida cities or out of state."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Bond Reinstatement & Forfeiture Resolution Assistance",
+                                "description": "Consent of Surety documentation and attorney collaboration to cure bond estreatures and set aside warrants after missed court dates."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Cash Bail Assistance & Court Deposit Guidance",
+                                "description": "Guidance on court cash deposits, clerk refund procedures, and cash-to-surety bond transitions."
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": "Servicio de Fianzas en Español 24/7",
+                                "description": "Agentes bilingües dedicados para tramitar fianzas y asistencia 24/7 para la comunidad hispana en Florida."
                             }
                         }
                     ]
@@ -163,7 +315,7 @@ function updatePageSEO() {
                     "name": "Is Shamrock Bail Bonds available 24/7?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Yes. Shamrock Bail Bonds operates 24 hours a day, 7 days a week, 365 days a year — including holidays. Call (239) 332-2245 any time. After hours, our AI assistant Shannon can start your paperwork immediately, or you can use our online portal or Telegram bot for instant service."
+                        "text": "Yes. Shamrock Bail Bonds operates 24 hours a day, 7 days a week, 365 days a year — including holidays. Call (239) 332-2245 any time. After hours, our AI assistant Shannon can start your paperwork, or you can use our online portal or Telegram bot any time."
                     }
                 },
                 {
@@ -171,7 +323,7 @@ function updatePageSEO() {
                     "name": "Does Shamrock Bail Bonds offer bilingual service?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Yes. Shamrock Bail Bonds provides full bilingual service in English and Spanish. Se habla español: 727-295-2245. Our website, digital paperwork, and AI assistant all support Spanish-speaking clients."
+                        "text": "Yes. Shamrock Bail Bonds provides full bilingual service in English and Spanish. Our Spanish-language line is (727) 295-2245. Our website, digital paperwork, and AI assistant all support Spanish-speaking clients."
                     }
                 }
             ]

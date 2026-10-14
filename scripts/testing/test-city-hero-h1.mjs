@@ -1,6 +1,7 @@
 /**
  * City landing H1 pattern: "{City} Bail Bonds ({County} County)".
- * County and jail headlines stay on their existing strings.
+ * County and jail headlines keep CMS copy, with "24/7 Fast Release"
+ * rewritten to "24/7 Bail Help". Empty fallbacks use that phrase.
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -78,7 +79,7 @@ for (const jail of jails) {
             parent_county_name: jail.countyName,
             content: { hero_headline: jailH1 }
         }),
-        jailH1
+        `${jail.name} Bail Bonds — 24/7 Bail Help`
     );
 }
 
@@ -89,7 +90,7 @@ assert.equal(
         county_name_full: 'Collier County',
         content: {}
     }),
-    'Collier County Bail Bonds — 24/7 Fast Release'
+    'Collier County Bail Bonds — 24/7 Bail Help'
 );
 
 const generator = readFileSync(join(root, 'src/backend/county-generator.jsw'), 'utf8');
@@ -99,11 +100,11 @@ assert.match(generator, /county\.h1Headline && \/bail\/i\.test\(county\.h1Headli
 
 const landingsSource = readFileSync(join(root, 'src/backend/local-landings.js'), 'utf8');
 assert.match(landingsSource, /formatCityHeroHeadline\(name, county\)/);
-assert.match(landingsSource, /\$\{name\} Bail Bonds — 24\/7 Fast Release/);
+assert.match(landingsSource, /\$\{name\} Bail Bonds — 24\/7 Bail Help/);
 
 const page = readFileSync(join(root, 'src/pages/Florida Counties.qx7lv.js'), 'utf8');
 assert.match(page, /resolvePrimaryHeroH1\(county\)/);
 assert.match(page, /resolvePrimaryHeroH1\(generatedCounty\)/);
 assert.match(page, /demoteHeadingTag\(/);
 
-console.log(`city H1 pattern ok (${cities.length} cities, ${jails.length} jails unchanged)`);
+console.log(`city H1 pattern ok (${cities.length} cities, ${jails.length} jails)`);

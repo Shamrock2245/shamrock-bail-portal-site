@@ -87,7 +87,7 @@ function showSystemStatusDashboard() {
   html += countyRows;
   html += '</table></div>';
 
-  html += '<div class="footer">Shamrock Bail Bonds — Fast. Frictionless. Everywhere.</div>';
+  html += '<div class="footer">Shamrock Bail Bonds — Simple. Secure. Everywhere.</div>';
   html += '</body></html>';
 
   var output = HtmlService.createHtmlOutput(html).setWidth(420).setHeight(520);
@@ -253,7 +253,7 @@ function showAboutDialog() {
 
   html += '<div class="section">';
   html += '<div class="section-title">The Digital Bail Agency</div>';
-  html += '<div class="row"><span class="label">Mission</span><span class="value" style="color:#4CAF50">Fast. Frictionless. Everywhere.</span></div>';
+  html += '<div class="row"><span class="label">Mission</span><span class="value" style="color:#4CAF50">Simple. Secure. Everywhere.</span></div>';
   html += '<div class="row"><span class="label">Active Triggers</span><span class="value">' + triggers.length + '</span></div>';
   html += '<div class="row"><span class="label">AI Agents</span><span class="value">9 Digital Employees</span></div>';
   html += '<div class="row"><span class="label">Counties Covered</span><span class="value">24+ Active</span></div>';

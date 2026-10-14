@@ -106,7 +106,9 @@ $w.onReady(function () {
     if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:+12393322245'));
 
     // Hero "Call Now" is an Editor link, not the #bottomCallBtn handler above.
-    // Named hero call controls stay on the main office line.
+    // Older Editor hrefs still use tel:+12399550301 (239-955-0301), the
+    // live-person desk, not the public Spanish line. Point those at the main
+    // office. Do not publish 955-0301 as the Spanish number.
     pointHeroCallAtMainOffice();
 
     // 3. DEBUG CMS (User Request)
@@ -170,7 +172,7 @@ function setupBailProcess() {
     const data = [
         { _id: "1", title: "1. Booking & Charges", text: "After arrest, the defendant is booked at the county jail. Fingerprints, photo, and charges are filed into the court roster. Booking time depends on the jail." },
         { _id: "2", title: "2. Bail & First Appearance", text: "Bail is set by county bond schedule or at First Appearance within 24 hours. Florida law mandates 10% premium with a $100 minimum per charge." },
-        { _id: "3", title: "3. Scan ID & Prepare Forms", text: "Instead of filling out 14 legal documents by hand, scan your ID in 60 seconds. Our system hydrates the paperwork automatically." },
+        { _id: "3", title: "3. Scan ID & Prepare Forms", text: "Instead of filling out 14 legal documents by hand, scan your ID with your phone. Our system hydrates the paperwork automatically." },
         { _id: "4", title: "4. Bond Posted & Release", text: "Shamrock posts the appearance bond directly with the jail desk. Release timing depends on the jail's processing." },
         { _id: "5", title: "5. Court Appearances", text: "The defendant is released with mandatory scheduled court dates. Shamrock provides automated reminders to keep them in compliance." }
     ];
@@ -207,7 +209,7 @@ function setupBailBondsExplained() {
         { 
             _id: "4", 
             title: "Scan Your ID & Fill The Forms", 
-            body: "Ready to get started? Have 2 minutes and a license? Scan your ID on your phone and our system fills the paperwork automatically so you don't type from scratch." 
+            body: "Ready to get started? Have your license handy? Scan your ID on your phone and our system fills the paperwork automatically so you don't type from scratch." 
         }
     ];
 
@@ -427,8 +429,8 @@ async function setupFAQ() {
     const fallbackData = [
         {
             _id: "1",
-            title: "How fast can you get someone out of jail?",
-            answer: "Shamrock Bail Bonds can begin the release process within minutes of your call — 24 hours a day, 7 days a week. Once the bond is posted, release timing depends on the jail's processing, which varies by facility and time of day. Call (239) 332-2245 any time to get started."
+            title: "How long does it take to get someone out of jail?",
+            answer: "Shamrock Bail Bonds is available to help with the release process when you call — 24 hours a day, 7 days a week. Once the bond is posted, release timing depends on the jail's processing, which varies by facility and time of day. Call (239) 332-2245 any time to get started."
         },
         {
             _id: "2",

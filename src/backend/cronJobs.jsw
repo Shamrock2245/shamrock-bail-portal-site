@@ -164,10 +164,10 @@ export async function syncCountiesToCms() {
                 // SEO / Content
                 seoTitle: primaryCity
                     ? `${countyName} County Bail Bonds | ${primaryCity} 24/7 | Shamrock`
-                    : `${countyName} County Bail Bonds | 24/7 Fast Release | Shamrock`,
+                    : `${countyName} County Bail Bonds | 24/7 Bail Help | Shamrock`,
                 seoDescription: `24/7 bail bonds in ${countyName} County, FL${primaryCity ? `, including ${primaryCity}` : ''}. We post at ${jailName}. Licensed since 2012. Call ${brandPhone}.`,
 
-                h1Headline: `${countyName} County Bail Bonds — 24/7 Fast Release`,
+                h1Headline: `${countyName} County Bail Bonds — 24/7 Bail Help`,
                 serviceAreaCopy: uniqueAbout,
 
                 // Metadata

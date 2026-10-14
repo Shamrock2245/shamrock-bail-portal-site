@@ -60,7 +60,7 @@ Your GAS project already has these properties configured:
 
 | Property | Your Value | Description |
 |----------|------------|-------------|
-| `SIGNNOW_ACCESS_TOKEN` | `0c35edbbf6823555a8434624aaec4830fd44...` | SignNow API token |
+| `SIGNNOW_ACCESS_TOKEN` | `<SIGNNOW_ACCESS_TOKEN — redacted, SignNow retired>` | SignNow API token |
 | `SIGNNOW_API_BASE_URL` | `https://api.signnow.com` | SignNow API base URL |
 | `SIGNNOW_SENDER_EMAIL` | `admin@shamrockbailbonds.biz` | Email shown as sender |
 | `SIGNNOW_MASTER_TEMPLATE_ID` | `e01325b536d34f718f707cfb5f63f4e202013` | Master template ID |

@@ -5,7 +5,7 @@ import { getGasWebAppUrl } from 'backend/secretsManager';
 
 import { sendSms } from 'backend/twilio-client';
 
-const INDEXNOW_KEY = 'a7c3e91b4d2f48c0a1e65f0b9c4d8e21';
+const INDEXNOW_KEY = 'a00e3857-675a-493b-91d8-a1dbc5e7c499';
 const SITE_HOST = 'www.shamrockbailbonds.biz';
 const SITEMAP_INDEX = 'https://www.shamrockbailbonds.biz/sitemap.xml';
 
@@ -44,7 +44,7 @@ export async function notifySearchEngines() {
         const body = JSON.stringify({
             host: SITE_HOST,
             key: INDEXNOW_KEY,
-            keyLocation: 'https://www.shamrockbailbonds.biz/_functions/indexnow',
+            keyLocation: 'https://www.shamrockbailbonds.biz/indexnow',
             urlList: urls.slice(0, 10000)
         });
         const endpoints = [

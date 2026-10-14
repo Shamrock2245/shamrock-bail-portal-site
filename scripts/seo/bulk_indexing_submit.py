@@ -2,44 +2,27 @@
 """
 Shamrock Bail Bonds — Google Indexing API Bulk Submission Script
 ================================================================
-This script submits all site URLs to the Google Indexing API in bulk.
-The Indexing API signals Google to crawl and re-index pages immediately.
+Submits all site URLs to the Google Indexing API in bulk.
+Signals Google to crawl and re-index pages immediately with priority.
 
-IMPORTANT: This script requires a Google Cloud service account JSON key.
-See SETUP INSTRUCTIONS below before running.
+Features:
+  - Dynamically discovers all canonical URLs from the live sitemap index
+  - Prioritizes high-impact pages (Home, About, Services, SWFL Core, All 67 Counties)
+  - Auto-resolves service_account.json key path
+  - Handles daily rate limiting (default limit: 200 URLs/day per Google quota)
+  - Saves detailed JSON and Markdown reports
 
-SETUP INSTRUCTIONS:
--------------------
-1. Go to: https://console.cloud.google.com/
-2. Create a new project (or use existing)
-3. Enable "Web Search Indexing API" in the API Library
-4. Go to IAM & Admin > Service Accounts > Create Service Account
-5. Grant role: "Owner" (for Indexing API access)
-6. Create a JSON key and download it
-7. In Google Search Console (search.google.com/search-console):
-   - Go to Settings > Users and permissions
-   - Add the service account email as an OWNER
-8. Place the downloaded JSON key file as: service_account.json
-   in the same directory as this script
-9. Run: python3 bulk_indexing_submit.py
-
-QUOTA:
-------
-Default: 200 URLs/day
-All 119 URLs fit within a single day's quota.
-Rate limit: ~60 requests/minute (script throttles automatically)
-
-WHAT THIS DOES:
----------------
-- Sends a "URL_UPDATED" notification to Google for each URL
-- Google will crawl and re-index each URL within hours to days
-- This is the FASTEST way to get pages indexed without manual clicking
+Usage:
+  python3 scripts/seo/bulk_indexing_submit.py [--dry-run] [--limit N]
 """
 
 import json
 import time
 import sys
 import os
+import re
+import urllib.request
+import urllib.error
 from datetime import datetime
 from pathlib import Path
 
@@ -51,157 +34,163 @@ try:
     import requests as req_lib
 except ImportError:
     print("Installing required packages...")
-    os.system("sudo pip3 install google-auth google-auth-httplib2 google-api-python-client requests -q")
+    os.system("pip3 install google-auth google-auth-httplib2 google-api-python-client requests -q")
     import google.auth
     import google.auth.transport.requests
     from google.oauth2 import service_account
     import requests as req_lib
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-SERVICE_ACCOUNT_FILE = "service_account.json"  # Path to your downloaded JSON key
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent.parent
+
+# Search candidates for service_account.json
+KEY_CANDIDATES = [
+    SCRIPT_DIR / "service_account.json",
+    REPO_ROOT / "service_account.json",
+    Path("service_account.json"),
+    Path(os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "")) if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") else None
+]
+
 INDEXING_API_ENDPOINT = "https://indexing.googleapis.com/v3/urlNotifications:publish"
 SCOPES = ["https://www.googleapis.com/auth/indexing"]
 
-# All 119 live URLs from Shamrock Bail Bonds sitemap
-# Generated from: shamrockbailbonds.biz sitemap.xml (Feb 2026)
-URLS = [
-    # ── Static Pages (9) ──────────────────────────────────────────────────────
-    "https://www.shamrockbailbonds.biz/",
-    "https://www.shamrockbailbonds.biz/about",
-    "https://www.shamrockbailbonds.biz/contact",
-    "https://www.shamrockbailbonds.biz/how-bail-works",
-    "https://www.shamrockbailbonds.biz/how-to-become-a-bondsman",
-    "https://www.shamrockbailbonds.biz/portal-landing",
-    "https://www.shamrockbailbonds.biz/testimonials",
-    "https://www.shamrockbailbonds.biz/terms-of-service",
-    "https://www.shamrockbailbonds.biz/privacy-policy",
+SITE_URL = "https://www.shamrockbailbonds.biz"
+SITEMAP_INDEX = f"{SITE_URL}/sitemap.xml"
+USER_AGENT = "Mozilla/5.0 (compatible; ShamrockBailGoogleSubmitter/2.0; +https://www.shamrockbailbonds.biz)"
 
-    # ── Blog Index & Categories (6) ───────────────────────────────────────────
-    "https://www.shamrockbailbonds.biz/blog",
-    "https://www.shamrockbailbonds.biz/blog/categories/bail-bonds",
-    "https://www.shamrockbailbonds.biz/blog/categories/bail-bond-tips",
-    "https://www.shamrockbailbonds.biz/blog/categories/county-spotlight",
-    "https://www.shamrockbailbonds.biz/blog/categories/florida-legal-updates",
-    "https://www.shamrockbailbonds.biz/blog/categories/how-bail-bonds-work",
-
-    # ── Blog Posts (36) ───────────────────────────────────────────────────────
-    "https://www.shamrockbailbonds.biz/single-post/what-happens-after-you-post-bail-your-complete-guide-to-the-next-steps",
-    "https://www.shamrockbailbonds.biz/single-post/__bail_explained",
-    "https://www.shamrockbailbonds.biz/single-post/the-role-of-a-bail-bondsman",
-    "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-sarasota-county-complete-guide-to-the-sarasota-county-jail",
-    "https://www.shamrockbailbonds.biz/single-post/locked-up-in-lee-county-shamrock-bail-bonds-is-your-key-to-freedom-in-fort-myers",
-    "https://www.shamrockbailbonds.biz/single-post/community-resources-for-legal-assistance",
-    "https://www.shamrockbailbonds.biz/single-post/why-shamrock-bail-bonds-outshines-the-rest-in-the-sunshine-state",
-    "https://www.shamrockbailbonds.biz/single-post/how-to-choose-a-reliable-bail-bondsman-in-southwest-florida",
-    "https://www.shamrockbailbonds.biz/single-post/what-florida-s-new-2026-statewide-bond-schedule-means-for-you",
-    "https://www.shamrockbailbonds.biz/single-post/understanding-bail-bonds-in-charlotte-county-your-port-charlotte-and-punta-gorda-guide",
-    "https://www.shamrockbailbonds.biz/single-post/technology-in-the-bail-bond-industry",
-    "https://www.shamrockbailbonds.biz/single-post/what-happens-if-you-miss-your-court-date-while-out-on-bail",
-    "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-manatee-county-your-bradenton-and-palmetto-resource",
-    "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-and-can-you-get-it-back-1",
-    "https://www.shamrockbailbonds.biz/single-post/financial-assistance-for-bail-bonds",
-    "https://www.shamrockbailbonds.biz/single-post/common-myths-about-bail-bonds",
-    "https://www.shamrockbailbonds.biz/single-post/understanding-bail-bonds-in-charlotte-county-your-port-charlotte-and-punta-gorda-guide-1",
-    "https://www.shamrockbailbonds.biz/single-post/how-to-choose-a-reliable-bail-bondsman-in-southwest-florida-1",
-    "https://www.shamrockbailbonds.biz/single-post/customer-testimonial-how-shamrock-bail-bonds-helped-me",
-    "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-collier-county-everything-you-need-to-know-about-the-naples-jail",
-    "https://www.shamrockbailbonds.biz/single-post/bail-bonds-vs-cash-bail-which-is-better",
-    "https://www.shamrockbailbonds.biz/single-post/the-role-of-a-bail-bondsman-1",
-    "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-and-can-you-get-it-back",
-    "https://www.shamrockbailbonds.biz/single-post/understanding-the-bail-bond-process-a-step-by-step-guide",
-    "https://www.shamrockbailbonds.biz/single-post/how-to-find-a-reliable-bail-bondsman",
-    "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-florida-what-you-need-to-know",
-    "https://www.shamrockbailbonds.biz/single-post/what-to-expect-when-someone-you-love-is-arrested",
-    "https://www.shamrockbailbonds.biz/single-post/the-importance-of-showing-up-to-court",
-    "https://www.shamrockbailbonds.biz/single-post/how-bail-bonds-work-in-florida",
-    "https://www.shamrockbailbonds.biz/single-post/rights-of-the-accused-in-florida",
-    "https://www.shamrockbailbonds.biz/single-post/what-is-a-surety-bond",
-    "https://www.shamrockbailbonds.biz/single-post/navigating-the-criminal-justice-system",
-    "https://www.shamrockbailbonds.biz/single-post/bail-bond-payment-options",
-    "https://www.shamrockbailbonds.biz/single-post/what-happens-if-you-cant-afford-bail",
-    "https://www.shamrockbailbonds.biz/single-post/understanding-pre-trial-release",
-    "https://www.shamrockbailbonds.biz/single-post/how-to-support-a-loved-one-through-the-bail-process",
-
-    # ── Florida County Pages (67) ─────────────────────────────────────────────
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/alachua",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/baker",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/bay",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/bradford",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/brevard",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/broward",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/calhoun",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/citrus",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/clay",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/collier",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/columbia",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/desoto",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/dixie",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/duval",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/escambia",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/flagler",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/franklin",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/gadsden",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/gilchrist",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/glades",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/gulf",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/hamilton",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/hardee",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/hendry",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/hernando",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/highlands",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/hillsborough",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/holmes",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/indian-river",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/jackson",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/jefferson",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/lafayette",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/lake",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/lee",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/leon",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/levy",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/liberty",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/madison",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/manatee",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/marion",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/martin",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/miami-dade",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/monroe",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/nassau",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/okaloosa",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/okeechobee",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/orange",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/osceola",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/palm-beach",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/pasco",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/pinellas",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/polk",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/putnam",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/santa-rosa",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/sarasota",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/seminole",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/st-johns",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/st-lucie",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/sumter",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/suwannee",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/taylor",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/union",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/volusia",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/wakulla",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/walton",
-    "https://www.shamrockbailbonds.biz/florida-bail-bonds/washington",
+DISALLOWED_PATTERNS = [
+    re.compile(r"/portal-", re.IGNORECASE),
+    re.compile(r"/communication-preferences", re.IGNORECASE),
+    re.compile(r"/data-deletion", re.IGNORECASE),
+    re.compile(r"/_functions", re.IGNORECASE),
+    re.compile(r"/_api", re.IGNORECASE),
+    re.compile(r"sitemap\.xml$", re.IGNORECASE),
+    re.compile(r"\?", re.IGNORECASE),
+    re.compile(r"#", re.IGNORECASE)
 ]
 
+# Static high-priority seed URLs
+CORE_PAGES = [
+    f"{SITE_URL}/",
+    f"{SITE_URL}/about",
+    f"{SITE_URL}/contact",
+    f"{SITE_URL}/how-bail-works",
+    f"{SITE_URL}/first-appearance",
+    f"{SITE_URL}/bail-school",
+    f"{SITE_URL}/how-to-become-a-bondsman",
+    f"{SITE_URL}/testimonials",
+    f"{SITE_URL}/blog",
+    f"{SITE_URL}/terms-and-conditions",
+    f"{SITE_URL}/terms-of-service",
+    f"{SITE_URL}/privacy-policy"
+]
 
-def get_access_token():
-    """Authenticate using service account and return a valid access token."""
-    if not Path(SERVICE_ACCOUNT_FILE).exists():
-        print(f"\n❌ ERROR: '{SERVICE_ACCOUNT_FILE}' not found.")
-        print("   Please follow the SETUP INSTRUCTIONS at the top of this file.")
+SWFL_COUNTIES = ["lee", "collier", "charlotte", "hendry", "desoto", "sarasota", "manatee"]
+
+
+def find_service_account_path() -> Path:
+    for candidate in KEY_CANDIDATES:
+        if candidate and candidate.exists():
+            return candidate
+    return SCRIPT_DIR / "service_account.json"
+
+
+def fetch_url_text(url: str, timeout: int = 20) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8")
+
+
+def normalize_url(url: str) -> str:
+    url = url.strip()
+    if url == f"{SITE_URL}/" or url == SITE_URL:
+        return f"{SITE_URL}/"
+    return url.rstrip("/")
+
+
+def discover_all_urls(verbose: bool = False):
+    urls = []
+    seen = set()
+
+    for p in CORE_PAGES:
+        norm = normalize_url(p)
+        if norm not in seen:
+            urls.append(norm)
+            seen.add(norm)
+
+    child_sitemaps = []
+    try:
+        index_xml = fetch_url_text(SITEMAP_INDEX)
+        locs = re.findall(r"<loc>\s*([^<]+)\s*</loc>", index_xml)
+        for loc in locs:
+            loc = loc.strip()
+            if loc.endswith(".xml") and loc not in child_sitemaps:
+                child_sitemaps.append(loc)
+    except Exception as e:
+        if verbose:
+            print(f"⚠️ Sitemap fetch fallback: {e}")
+
+    if not child_sitemaps:
+        child_sitemaps = [
+            f"{SITE_URL}/pages-sitemap.xml",
+            f"{SITE_URL}/dynamic-florida-bail-bonds_p_e7cdf976_0d00_4377_927c_fa4cc08037be_0_5000-sitemap.xml",
+            f"{SITE_URL}/blog-posts-sitemap.xml",
+            f"{SITE_URL}/blog-categories-sitemap.xml"
+        ]
+
+    for sm_url in child_sitemaps:
+        try:
+            xml_text = fetch_url_text(sm_url)
+            locs = re.findall(r"<loc>\s*([^<]+)\s*</loc>", xml_text)
+            for loc in locs:
+                loc = loc.strip()
+                if not loc.startswith(SITE_URL):
+                    continue
+                if any(pat.search(loc) for pat in DISALLOWED_PATTERNS):
+                    continue
+                norm = normalize_url(loc)
+                if norm not in seen:
+                    seen.add(norm)
+                    urls.append(norm)
+        except Exception as e:
+            if verbose:
+                print(f"⚠️ Skipped {sm_url}: {e}")
+
+    # Prioritization scoring:
+    # 0 = Homepage
+    # 1 = About & Core Static
+    # 2 = SWFL Core Counties
+    # 3 = Other FL Counties
+    # 4 = City Landings / First Appearance County Hubs
+    # 5 = Blog Posts
+    # 6 = Categories & Legal
+    def priority_score(u: str) -> int:
+        if u == f"{SITE_URL}/" or u == SITE_URL:
+            return 0
+        if any(u.endswith(x) for x in ["/about", "/contact", "/how-bail-works", "/first-appearance"]):
+            return 1
+        for c in SWFL_COUNTIES:
+            if f"/florida-bail-bonds/{c}" in u:
+                return 2
+        if "/florida-bail-bonds/" in u:
+            return 3
+        if "/single-post/" in u:
+            return 5
+        return 4
+
+    urls.sort(key=priority_score)
+    return urls
+
+
+def get_access_token(key_path: Path):
+    if not key_path.exists():
+        print(f"\n❌ ERROR: Service account key not found at: {key_path}")
+        print("   Please ensure service_account.json exists in scripts/seo/")
         sys.exit(1)
 
     credentials = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE,
+        str(key_path),
         scopes=SCOPES
     )
     auth_req = google.auth.transport.requests.Request()
@@ -210,7 +199,6 @@ def get_access_token():
 
 
 def submit_url(url: str, token: str, notification_type: str = "URL_UPDATED") -> dict:
-    """Submit a single URL to the Google Indexing API."""
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {token}",
@@ -228,80 +216,120 @@ def submit_url(url: str, token: str, notification_type: str = "URL_UPDATED") -> 
     }
 
 
-def run_bulk_submission(dry_run: bool = False):
-    """Main function to bulk-submit all URLs."""
+def run_bulk_submission(dry_run: bool = False, limit: int = 200):
     print("=" * 70)
-    print("  Shamrock Bail Bonds — Google Indexing API Bulk Submission")
-    print(f"  Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  Total URLs: {len(URLS)}")
-    print(f"  Mode: {'DRY RUN (no actual submissions)' if dry_run else 'LIVE'}")
+    print("🚀 Shamrock Bail Bonds — Google Indexing API Bulk Submitter")
+    print(f"   Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"   Mode: {'DRY RUN (no requests)' if dry_run else 'LIVE'}")
+    print(f"   Max URL Limit: {limit}")
     print("=" * 70)
 
+    key_path = find_service_account_path()
     if not dry_run:
-        print("\n🔑 Authenticating with Google...")
-        token = get_access_token()
+        print(f"🔑 Using Service Account Key: {key_path}")
+        token = get_access_token(key_path)
         print("   ✅ Authentication successful.\n")
     else:
         token = "DRY_RUN_TOKEN"
 
+    print("📡 Discovering live URLs from sitemap index...")
+    all_urls = discover_all_urls()
+    print(f"✅ Discovered {len(all_urls)} canonical URLs.")
+
+    urls_to_submit = all_urls[:limit]
+    print(f"🎯 Submitting top {len(urls_to_submit)} prioritized URLs (Quota Cap: {limit})...\n")
+
     results = []
     success_count = 0
     error_count = 0
+    quota_exceeded = False
 
-    for i, url in enumerate(URLS, 1):
-        print(f"[{i:3d}/{len(URLS)}] Submitting: {url[:80]}...", end="", flush=True)
+    for i, url in enumerate(urls_to_submit, 1):
+        print(f"[{i:3d}/{len(urls_to_submit)}] Submitting: {url[:75]:<75} ... ", end="", flush=True)
 
         if dry_run:
             result = {"url": url, "status_code": 200, "response": {}, "success": True}
-            print(" ✅ (dry run)")
+            print("✅ DRY RUN")
+            success_count += 1
         else:
             try:
                 result = submit_url(url, token)
                 if result["success"]:
-                    print(f" ✅ 200 OK")
+                    print("✅ 200 OK")
                     success_count += 1
+                elif result["status_code"] == 429:
+                    print("⚠️ 429 Quota Exceeded (stopping batch)")
+                    error_count += 1
+                    quota_exceeded = True
+                    results.append(result)
+                    break
                 else:
-                    print(f" ❌ {result['status_code']} — {result['response'].get('error', {}).get('message', 'Unknown error')}")
+                    err_msg = result["response"].get("error", {}).get("message", "Unknown error")
+                    print(f"❌ {result['status_code']} — {err_msg[:60]}")
                     error_count += 1
             except Exception as e:
                 result = {"url": url, "status_code": 0, "response": {"error": str(e)}, "success": False}
-                print(f" ❌ Exception: {e}")
+                print(f"❌ Error: {e}")
                 error_count += 1
 
-            # Throttle: 1 request per second to stay well within rate limits
-            # (API allows ~60/min but we stay conservative)
-            time.sleep(1.1)
+            # Throttle to stay within Google rate limits (~60/min)
+            time.sleep(1.05)
 
         results.append(result)
 
-    # ── Summary Report ─────────────────────────────────────────────────────────
+    # ── Reports ────────────────────────────────────────────────────────────────
     print("\n" + "=" * 70)
-    print("  SUBMISSION COMPLETE")
-    print(f"  ✅ Successful: {success_count if not dry_run else len(URLS)} / {len(URLS)}")
-    if not dry_run:
-        print(f"  ❌ Errors:     {error_count} / {len(URLS)}")
+    print("  SUBMISSION RESULTS")
+    print(f"  ✅ Successful: {success_count} / {len(urls_to_submit)}")
+    if error_count > 0:
+        print(f"  ❌ Errors:     {error_count} / {len(urls_to_submit)}")
+    if quota_exceeded:
+        print("  ℹ️  Daily Google Indexing API quota limit (200/day) reached. Remaining URLs can be submitted tomorrow.")
     print("=" * 70)
 
-    # Save results to JSON
-    report_file = f"indexing_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    with open(report_file, "w") as f:
-        json.dump({
-            "submitted_at": datetime.now().isoformat(),
-            "total_urls": len(URLS),
-            "successful": success_count,
-            "errors": error_count,
-            "results": results,
-        }, f, indent=2)
-    print(f"\n📄 Full report saved to: {report_file}")
-    print("\n⏳ Next steps:")
-    print("   1. Wait 24-72 hours for Google to crawl the submitted URLs")
-    print("   2. Check Google Search Console > Coverage to see indexing progress")
-    print("   3. Re-run this script after making significant content updates")
+    # Save JSON Report
+    report_json = SCRIPT_DIR / "gsc_submission_report.json"
+    report_data = {
+        "submitted_at": datetime.now().isoformat(),
+        "total_discovered": len(all_urls),
+        "submitted_count": len(results),
+        "successful": success_count,
+        "errors": error_count,
+        "quota_exceeded": quota_exceeded,
+        "results": results
+    }
+    with open(report_json, "w") as f:
+        json.dump(report_data, f, indent=2)
+
+    # Save Markdown Report
+    report_md = SCRIPT_DIR / "gsc_submission_report.md"
+    with open(report_md, "w") as f:
+        f.write("# Google Indexing API Submission Report\n\n")
+        f.write(f"- **Submitted At**: {report_data['submitted_at']}\n")
+        f.write(f"- **Total Discovered**: {len(all_urls)}\n")
+        f.write(f"- **Processed**: {len(results)}\n")
+        f.write(f"- **Successful (200 OK)**: {success_count}\n")
+        f.write(f"- **Errors**: {error_count}\n")
+        f.write(f"- **Quota Exceeded**: {'Yes' if quota_exceeded else 'No'}\n\n")
+        f.write("### Submitted URLs Sample\n\n")
+        for r in results[:25]:
+            status = "✅ 200 OK" if r["success"] else f"❌ {r['status_code']}"
+            f.write(f"- `{r['url']}`: {status}\n")
+
+    print(f"\n📄 Reports saved:")
+    print(f"   ↳ {report_json}")
+    print(f"   ↳ {report_md}")
 
     return results
 
 
 if __name__ == "__main__":
-    # Set dry_run=True to test without actually submitting
     dry_run_mode = "--dry-run" in sys.argv
-    run_bulk_submission(dry_run=dry_run_mode)
+    limit_val = 200
+    for idx, arg in enumerate(sys.argv):
+        if arg == "--limit" and idx + 1 < len(sys.argv):
+            try:
+                limit_val = int(sys.argv[idx + 1])
+            except ValueError:
+                pass
+    run_bulk_submission(dry_run=dry_run_mode, limit=limit_val)
