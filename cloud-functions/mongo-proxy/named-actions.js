@@ -36,6 +36,8 @@ const LEGACY_GENERIC_ACTIONS = [
 const MAX_STR = 500;
 const MAX_TEXT = 5000;
 const MAX_ID = 200;
+// Charges are stored losslessly: strings untouched, arrays/objects as JSON text.
+const MAX_CHARGES = 100000;
 
 class ActionError extends Error {
     constructor(status, message) {
@@ -58,6 +60,18 @@ function toStr(v, max) {
 const TYPES = {
     str: (v) => toStr(v, MAX_STR),
     text: (v) => toStr(v, MAX_TEXT),
+    // Lossless charge payload (Codex P1 on #46): no coercion of objects, no
+    // ", " re-joining, no silent truncation. Oversize values are rejected, not cut.
+    charges: (v) => {
+        if (v === null || v === undefined) return undefined;
+        let out;
+        if (typeof v === 'string') out = v;
+        else if (typeof v === 'number' || typeof v === 'boolean') out = String(v);
+        else if (typeof v === 'object') {
+            try { out = JSON.stringify(v); } catch (e) { return undefined; }
+        } else return undefined;
+        return out.length <= MAX_CHARGES ? out : undefined;
+    },
     // number, numeric string, or empty string (MongoLogger sends '' when unknown)
     amount: (v) => {
         if (typeof v === 'number' && Number.isFinite(v)) return v;
@@ -108,7 +122,7 @@ const LOG_ACTIONS = {
         fields: {
             channel: 'str', caseId: 'str', defendantName: 'str', indemnitorName: 'str',
             indemnitorPhone: 'str', indemnitorEmail: 'str', bondAmount: 'amount', county: 'str',
-            bookingNumber: 'str', charges: 'text', status: 'str', submittedAt: 'str',
+            bookingNumber: 'str', charges: 'charges', status: 'str', submittedAt: 'str',
         },
     },
     logSignNowEvent: {

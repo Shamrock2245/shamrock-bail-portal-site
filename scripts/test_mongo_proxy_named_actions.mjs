@@ -117,7 +117,7 @@ test('log actions store only whitelisted, scalar, capped fields', async () => {
   });
   const doc = db.calls[0].doc;
   assert.deepEqual(Object.keys(doc).sort(), ['bondAmount', 'caseId', 'charges', 'county', 'createdAt', 'status']);
-  assert.equal(doc.charges, 'DUI, BATTERY');
+  assert.equal(doc.charges, JSON.stringify(['DUI', 'BATTERY']));
   assert.equal(doc.status.length, 500);
   const comm = (await call({ action: 'logCommunication', direction: 'inbound', body: 'hi' })).db.calls[0].doc;
   assert.equal(comm.direction, 'outbound');
@@ -367,4 +367,13 @@ test('no Velo or GAS source reads or writes the old MONGO_PROXY_URL name', () =>
   const files = [...walk(path.join(ROOT, 'src')), ...walk(path.join(ROOT, 'backend-gas'))].filter((f) => /\.(js|jsw|mjs)$/.test(f));
   const OLD = /(getSecret|getSecureSecret|getProperty|setProperty)\(\s*['"]MONGO_PROXY_URL['"]/;
   for (const f of files) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), OLD, path.relative(ROOT, f));
+});
+
+test('logIntake charges are stored losslessly (objects, arrays, long strings)', async () => {
+  const { TYPES } = await import('../cloud-functions/mongo-proxy/named-actions.js');
+  const objs = [{ charge: 'DUI', statute: '316.193', degree: 'M2' }];
+  assert.equal(TYPES.charges(objs), JSON.stringify(objs));
+  const long = 'x'.repeat(6000);
+  assert.equal(TYPES.charges(long), long);
+  assert.equal(TYPES.charges('A; B'), 'A; B');
 });
