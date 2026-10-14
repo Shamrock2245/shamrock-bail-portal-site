@@ -1,0 +1,2028 @@
+{
+  "submitted_at": "2026-10-12T17:35:59.607296",
+  "total_discovered": 239,
+  "submitted_count": 199,
+  "successful": 198,
+  "errors": 1,
+  "quota_exceeded": true,
+  "results": [
+    {
+      "url": "https://www.shamrockbailbonds.biz/",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/about",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/about"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/contact",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/contact"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/how-bail-works",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/how-bail-works"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/first-appearance",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/first-appearance"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte-county-jail",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte-county-jail"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/collier-county-jail",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/collier-county-jail"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lee-county-jail",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lee-county-jail"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/collier",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/collier"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/desoto",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/desoto"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/hendry",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/hendry"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lee",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lee"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/manatee",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/manatee"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/sarasota",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/sarasota"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/cape-coral-pd",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/cape-coral-pd"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lakeland",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lakeland"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/daytona-beach",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/daytona-beach"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/gainesville",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/gainesville"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/pensacola",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/pensacola"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/tallahassee",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/tallahassee"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/west-palm-beach",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/west-palm-beach"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/fort-lauderdale",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/fort-lauderdale"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/miami",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/miami"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/jacksonville",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/jacksonville"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/orlando",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/orlando"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/clearwater",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/clearwater"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/st-petersburg",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/st-petersburg"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/tampa",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/tampa"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/bradenton",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/bradenton"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/north-port",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/north-port"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/venice",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/venice"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/clewiston",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/clewiston"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/labelle",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/labelle"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/englewood",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/englewood"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/port-charlotte",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/port-charlotte"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/punta-gorda",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/punta-gorda"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/immokalee",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/immokalee"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/marco-island",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/marco-island"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/naples",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/naples"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/fort-myers-beach",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/fort-myers-beach"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/sanibel",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/sanibel"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/estero",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/estero"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/bonita-springs",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/bonita-springs"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lehigh-acres",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lehigh-acres"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/north-fort-myers",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/north-fort-myers"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/fort-myers",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/fort-myers"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/cape-coral",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/cape-coral"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/st-lucie",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/st-lucie"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/st-johns",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/st-johns"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/santa-rosa",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/santa-rosa"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/palm-beach",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/palm-beach"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/indian-river",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/indian-river"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/alachua",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/alachua"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/baker",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/baker"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/bay",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/bay"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/bradford",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/bradford"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/brevard",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/brevard"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/broward",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/broward"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/calhoun",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/calhoun"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/citrus",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/citrus"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/clay",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/clay"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/columbia",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/columbia"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/dixie",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/dixie"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/duval",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/duval"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/escambia",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/escambia"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/flagler",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/flagler"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/franklin",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/franklin"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/gadsden",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/gadsden"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/gilchrist",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/gilchrist"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/glades",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/glades"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/gulf",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/gulf"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/hamilton",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/hamilton"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/hardee",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/hardee"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/hernando",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/hernando"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/highlands",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/highlands"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/hillsborough",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/hillsborough"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/holmes",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/holmes"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/jackson",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/jackson"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/jefferson",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/jefferson"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lafayette",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lafayette"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lake",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/lake"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/leon",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/leon"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/levy",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/levy"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/liberty",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/liberty"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/madison",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/madison"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/marion",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/marion"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/martin",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/martin"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/miami-dade",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/miami-dade"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/monroe",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/monroe"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/nassau",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/nassau"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/okaloosa",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/okaloosa"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/okeechobee",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/okeechobee"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/orange",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/orange"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/osceola",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/osceola"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/pasco",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/pasco"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/pinellas",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/pinellas"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/polk",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/polk"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/putnam",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/putnam"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/seminole",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/seminole"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/sumter",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/sumter"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/suwannee",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/suwannee"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/taylor",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/taylor"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/union",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/union"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/volusia",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/volusia"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/wakulla",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/wakulla"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/walton",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/walton"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/washington",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/washington"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/bail-school",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/bail-school"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/how-to-become-a-bondsman",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/how-to-become-a-bondsman"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/testimonials",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/testimonials"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/blog",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/blog"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/terms-and-conditions",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/terms-and-conditions"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/terms-of-service",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/terms-of-service"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/privacy-policy",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/privacy-policy"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/blog/categories/bail-bonds",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/blog/categories/bail-bonds"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/blog/categories/florida-legal-updates",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/blog/categories/florida-legal-updates"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/blog/categories/bail-bond-tips",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/blog/categories/bail-bond-tips"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/blog/categories/how-bail-bonds-work",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/blog/categories/how-bail-bonds-work"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/blog/categories/county-spotlight",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/blog/categories/county-spotlight"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds-1",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds-1"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/7-common-bail-bond-myths-that-could-cost-you-time-and-money",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/7-common-bail-bond-myths-that-could-cost-you-time-and-money"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-a-complete-guide-for-florida-families",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-a-complete-guide-for-florida-families"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-sarasota-county-your-complete-2026-guide-to-getting-someone-out-of-jail-fast",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-sarasota-county-your-complete-2026-guide-to-getting-someone-out-of-jail-fast"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-a-clear-explanation",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-a-clear-explanation"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-should-i-know-about-bail-bonds-in-fort-myers-a-complete-2026-guide",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-should-i-know-about-bail-bonds-in-fort-myers-a-complete-2026-guide"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/how-bail-bonds-work-for-assault-and-battery-charges-in-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/how-bail-bonds-work-for-assault-and-battery-charges-in-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/how-to-afford-a-bail-bond-in-florida-payment-plans-collateral-and-financial-options",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/how-to-afford-a-bail-bond-in-florida-payment-plans-collateral-and-financial-options"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/the-shamrock-bail-school-training-the-next-generation-of-florida-bondsmen",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/the-shamrock-bail-school-training-the-next-generation-of-florida-bondsmen"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-hillsborough-county-complete-2026-jail-release-guide",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-hillsborough-county-complete-2026-jail-release-guide"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-to-your-bail-money-after-a-case-is-dismissed-in-florida-1",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-to-your-bail-money-after-a-case-is-dismissed-in-florida-1"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-fort-myers-for-domestic-violence-charges",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-fort-myers-for-domestic-violence-charges"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-to-expect-at-a-bail-bond-hearing-in-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-to-expect-at-a-bail-bond-hearing-in-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-sarasota-county-complete-guide-to-the-sarasota-county-jail-1",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-sarasota-county-complete-guide-to-the-sarasota-county-jail-1"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/understanding-bail-bond-conditions-and-restrictions-in-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/understanding-bail-bond-conditions-and-restrictions-in-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bond-collateral-in-florida-what-shamrock-accepts",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bond-collateral-in-florida-what-shamrock-accepts"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/co-signing-a-bail-bond-responsibilities-risks-and-what-you-should-know",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/co-signing-a-bail-bond-responsibilities-risks-and-what-you-should-know"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bond-tips-for-first-time-offenders-in-florida-what-you-need-to-know",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bond-tips-for-first-time-offenders-in-florida-what-you-need-to-know"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-and-can-you-get-it-back-3",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-and-can-you-get-it-back-3"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-if-your-bond-is-revoked-in-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-if-your-bond-is-revoked-in-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/lee-county-vs-collier-county-bail-bonds-jail-timing-cost",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/lee-county-vs-collier-county-bail-bonds-jail-timing-cost"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/how-fast-can-shamrock-bail-bonds-get-someone-out-of-jail-in-fort-myers-1",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/how-fast-can-shamrock-bail-bonds-get-someone-out-of-jail-in-fort-myers-1"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-highlands-county-your-complete-sebring-avon-park-and-lake-placid-guide",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-highlands-county-your-complete-sebring-avon-park-and-lake-placid-guide"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-if-you-miss-your-court-date-while-out-on-bail",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-if-you-miss-your-court-date-while-out-on-bail"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/how-long-does-it-take-to-get-out-of-jail-on-a-bail-bond-in-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/how-long-does-it-take-to-get-out-of-jail-on-a-bail-bond-in-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-pinellas-county-complete-2026-jail-release-guide",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-pinellas-county-complete-2026-jail-release-guide"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/lee-county-jail-bail-bonds-a-step-by-step-guide-for-families",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/lee-county-jail-bail-bonds-a-step-by-step-guide-for-families"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-after-you-post-bail-your-complete-guide-to-the-next-steps",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-after-you-post-bail-your-complete-guide-to-the-next-steps"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/domestic-violence-bail-bonds-in-florida-holds-orders-release",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/domestic-violence-bail-bonds-in-florida-holds-orders-release"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-a-no-bond-hold-means-in-florida-and-your-next-steps",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-a-no-bond-hold-means-in-florida-and-your-next-steps"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-and-can-you-get-it-back-1",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-and-can-you-get-it-back-1"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-and-can-you-get-it-back",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-and-can-you-get-it-back"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-understanding-the-10-fee-in-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-understanding-the-10-fee-in-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/how-to-choose-the-right-bail-bondsman-in-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/how-to-choose-the-right-bail-bondsman-in-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/understanding-bail-bond-premiums-what-you-re-actually-paying-for",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/understanding-bail-bond-premiums-what-you-re-actually-paying-for"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-collier-county-everything-you-need-to-know-about-the-naples-jail",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-collier-county-everything-you-need-to-know-about-the-naples-jail"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-to-your-bail-money-after-a-case-is-dismissed-in-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-to-your-bail-money-after-a-case-is-dismissed-in-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/understanding-bail-bonds-in-charlotte-county-your-port-charlotte-and-punta-gorda-guide",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/understanding-bail-bonds-in-charlotte-county-your-port-charlotte-and-punta-gorda-guide"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/immigration-bonds-in-florida-ice-detention-delivery-bonds-release",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/immigration-bonds-in-florida-ice-detention-delivery-bonds-release"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-for-felony-charges-in-florida-costs-and-expectations",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-for-felony-charges-in-florida-costs-and-expectations"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/outstanding-warrants-and-bail-bonds-in-florida-what-you-need-to-know",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/outstanding-warrants-and-bail-bonds-in-florida-what-you-need-to-know"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-understanding-the-costs",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-understanding-the-costs"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-sarasota-county-complete-guide-to-the-sarasota-county-jail",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-sarasota-county-complete-guide-to-the-sarasota-county-jail"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/the-bail-bond-process-in-florida-a-step-by-step-guide-from-arrest-to-release",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/the-bail-bond-process-in-florida-a-step-by-step-guide-from-arrest-to-release"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bond-payment-plans-in-florida-securing-release-with-no-money-down",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bond-payment-plans-in-florida-securing-release-with-no-money-down"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/downtown-fort-myers-bail-bonds-fast-service-near-the-lee-county-jail",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/downtown-fort-myers-bail-bonds-fast-service-near-the-lee-county-jail"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bond-premium-explained-what-you-are-actually-paying-for",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bond-premium-explained-what-you-are-actually-paying-for"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-indemnitor-your-responsibilities-explained",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-indemnitor-your-responsibilities-explained"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/how-to-become-a-bail-bondsman-in-florida-2026-guide-requirements",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/how-to-become-a-bail-bondsman-in-florida-2026-guide-requirements"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-everything-you-need-to-know-2",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-everything-you-need-to-know-2"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-and-probation-violations-in-florida-what-you-need-to-know",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-and-probation-violations-in-florida-what-you-need-to-know"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-if-you-miss-your-court-date-while-out-on-bail-2",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-if-you-miss-your-court-date-while-out-on-bail-2"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-palm-beach-county-complete-2026-jail-release-guide",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-palm-beach-county-complete-2026-jail-release-guide"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/how-bail-bonds-work-for-juvenile-cases-in-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/how-bail-bonds-work-for-juvenile-cases-in-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-fort-myers-for-dui-arrests-what-you-need-to-know",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-fort-myers-for-dui-arrests-what-you-need-to-know"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/how-to-get-a-bond-reduced-in-florida-emergency-bond-hearings-explained",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/how-to-get-a-bond-reduced-in-florida-emergency-bond-hearings-explained"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-if-you-miss-your-court-date-while-out-on-bail-1",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-if-you-miss-your-court-date-while-out-on-bail-1"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-vs-bond-in-florida-understanding-the-critical-differences",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-vs-bond-in-florida-understanding-the-critical-differences"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-everything-you-need-to-know",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-everything-you-need-to-know"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/can-you-bail-someone-out-of-jail-at-night-in-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/can-you-bail-someone-out-of-jail-at-night-in-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-at-a-first-appearance-hearing-in-lee-county-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-happens-at-a-first-appearance-hearing-in-lee-county-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/how-much-does-a-bail-bond-cost-in-fort-myers-the-10-rule-explained",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/how-much-does-a-bail-bond-cost-in-fort-myers-the-10-rule-explained"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/understanding-bail-bond-collateral-in-florida-what-can-be-used-and-how-it-works",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/understanding-bail-bond-collateral-in-florida-what-can-be-used-and-how-it-works"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bond-premium-explained-what-you-need-to-know",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bond-premium-explained-what-you-need-to-know"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-for-federal-charges-in-fort-myers-what-is-different",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-for-federal-charges-in-fort-myers-what-is-different"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/how-to-choose-a-reliable-bail-bondsman-in-southwest-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/how-to-choose-a-reliable-bail-bondsman-in-southwest-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-highlands-county-your-complete-sebring-and-avon-park-guide",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-highlands-county-your-complete-sebring-and-avon-park-guide"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-hendry-county-your-complete-labelle-and-clewiston-guide",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-hendry-county-your-complete-labelle-and-clewiston-guide"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-for-out-of-state-warrants-in-florida-what-you-need-to-know",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-for-out-of-state-warrants-in-florida-what-you-need-to-know"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-should-i-know-about-bail-bonds-in-fort-myers-a-complete-2026-guide-1",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-should-i-know-about-bail-bonds-in-fort-myers-a-complete-2026-guide-1"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/cash-bond-vs-surety-bond-making-the-right-choice-for-your-situation",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/cash-bond-vs-surety-bond-making-the-right-choice-for-your-situation"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/no-collateral-bail-bonds-in-florida-how-local-residents-can-qualify",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/no-collateral-bail-bonds-in-florida-how-local-residents-can-qualify"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-and-can-you-get-it-back-2",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-and-can-you-get-it-back-2"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-orange-county-complete-2026-jail-release-guide",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/bail-bonds-in-orange-county-complete-2026-jail-release-guide"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-a-complete-guide-for-sarasota-and-manatee-county-families",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-a-complete-guide-for-sarasota-and-manatee-county-families"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/can-i-get-a-bail-bond-with-no-money-down-in-fort-myers",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/can-i-get-a-bail-bond-with-no-money-down-in-fort-myers"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/lee-county-bail-bonds-your-complete-2026-guide-to-getting-someone-out-of-jail-fast",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/lee-county-bail-bonds-your-complete-2026-guide-to-getting-someone-out-of-jail-fast"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/how-bail-bonds-work-for-domestic-violence-cases-in-florida",
+      "status_code": 200,
+      "response": {
+        "urlNotificationMetadata": {
+          "url": "https://www.shamrockbailbonds.biz/single-post/how-bail-bonds-work-for-domestic-violence-cases-in-florida"
+        }
+      },
+      "success": true
+    },
+    {
+      "url": "https://www.shamrockbailbonds.biz/single-post/what-is-a-bail-bond-premium-understanding-the-costs-in-florida",
+      "status_code": 429,
+      "response": {
+        "error": {
+          "code": 429,
+          "message": "Quota exceeded for quota metric 'Publish requests' and limit 'Publish requests per day' of service 'indexing.googleapis.com' for consumer 'project_number:842958500569'.",
+          "status": "RESOURCE_EXHAUSTED",
+          "details": [
+            {
+              "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+              "reason": "RATE_LIMIT_EXCEEDED",
+              "domain": "googleapis.com",
+              "metadata": {
+                "quota_limit_value": "200",
+                "quota_metric": "indexing.googleapis.com/v3_publish_requests",
+                "window_start_time": "1791788400",
+                "quota_unit": "1/d/{project}",
+                "consumer": "projects/842958500569",
+                "service": "indexing.googleapis.com",
+                "quota_limit": "DefaultPublishRequestsPerDayPerProject",
+                "quota_location": "global"
+              }
+            },
+            {
+              "@type": "type.googleapis.com/google.rpc.Help",
+              "links": [
+                {
+                  "description": "Request a higher quota limit.",
+                  "url": "https://cloud.google.com/docs/quotas/help/request_increase"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "success": false
+    }
+  ]
+}

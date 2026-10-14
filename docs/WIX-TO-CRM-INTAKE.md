@@ -15,7 +15,7 @@ Page code portal-defendant / portal-indemnitor  (setupWizardBridge)
    │ submitWizardToLeads(payload, formType, {clientNonce})
    ▼
 backend/leadsIntake.jsw  ── POST /api/webhooks/wix-intake
-   │                        X-Wix-Webhook-Secret: <Secrets Manager WIX_WEBHOOK_SECRET>
+   │                        X-Wix-Webhook-Secret: <Secrets Manager LEADS_WEBHOOK_SECRET>
    ▼
 shamrock-leads  →  adapter (nested → flat, role, form_type)  →  Mongo intake_queue  ✅ source of truth
                    → auto-match → reply {success:true, intake_id, payment_link}
@@ -44,10 +44,13 @@ the pinned UI version (or save/publish the Editor first) so Editor work is not
 rolled back.
 
 ## Secrets / config
-| Where | Name | Value |
+See [WIX_SECRETS_SOURCE_OF_TRUTH.md](./WIX_SECRETS_SOURCE_OF_TRUTH.md) for full context and instructions.
+
+| Where | Name | Value / Status |
 |---|---|---|
-| Wix Secrets Manager | `WIX_WEBHOOK_SECRET` | same value as the leads VPS env var |
-| leads VPS `.env` | `WIX_WEBHOOK_SECRET` | shared secret (new, random, ≥32 chars) |
-| leads VPS `.env` | `GAS_WEB_APP_URL`, `GAS_API_KEY` | already used by leads |
+| Wix Secrets Manager | `LEADS_WEBHOOK_SECRET` (Wix rejects names starting with "wix") | (value in VPS `.env`; never commit) (Must be added via Wix Developer Tools → Secrets Manager) |
+| leads VPS `.env` | `WIX_WEBHOOK_SECRET` | (value in VPS `.env`; never commit) (✅ Verified present on live VPS) |
+| leads VPS `.env` | `GAS_WEB_APP_URL`, `GAS_API_KEY` | `GAS_API_KEY=<GAS_API_KEY — VPS .env / Wix Secrets Manager>` (✅ Verified present on live VPS) |
 | leads VPS `.env` | `SLACK_WEBHOOK_INTAKE` (optional) | Slack incoming webhook for the intake channel; falls back to `SLACK_WEBHOOK_LEADS` |
 | GAS Script Properties | `INTAKE_LEDGER_SHEET_ID` (optional) | spreadsheet for the ledger; defaults to `CONFIG.SHEET_ID` |
+

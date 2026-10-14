@@ -8,19 +8,20 @@
  * So this module talks ONLY to the CRM; there is no second GAS call here.
  *
  *   POST https://leads.shamrockbailbonds.biz/api/webhooks/wix-intake
- *   Header: X-Wix-Webhook-Secret: <Wix Secrets Manager "WIX_WEBHOOK_SECRET">
+ *   Header: X-Wix-Webhook-Secret: <Wix Secrets Manager "LEADS_WEBHOOK_SECRET">
  *   Body:   { formType, role, source, clientNonce, pageUrl, payload: <wizard data> }
  *   Reply:  { success, intake_id, duplicate, payment_link }
  *
- * The secret value must equal WIX_WEBHOOK_SECRET in the leads VPS .env.
+ * The Wix secret LEADS_WEBHOOK_SECRET must hold the same value as WIX_WEBHOOK_SECRET in the leads VPS .env
+ * (Wix rejects secret names that start with "wix", so the Wix-side name differs).
  * Server-side only (.jsw) — the secret never reaches the browser.
  */
 import { fetch } from 'wix-fetch';
-import { getSecret } from 'wix-secrets-backend';
+import { getSecureSecret } from 'backend/secretsManager';
 
 const LEADS_BASE = 'https://leads.shamrockbailbonds.biz';
 const INTAKE_PATH = '/api/webhooks/wix-intake';
-const SECRET_NAME = 'WIX_WEBHOOK_SECRET';
+const SECRET_NAME = 'LEADS_WEBHOOK_SECRET';
 const TIMEOUT_MS = 20000;
 const MAX_PAYLOAD_CHARS = 400000; // uploads are not sent through this path
 
@@ -63,12 +64,12 @@ export async function submitWizardToLeads(payload, formType, meta) {
 
     let secret = '';
     try {
-        secret = await getSecret(SECRET_NAME);
+        secret = await getSecureSecret(SECRET_NAME);
     } catch (e) {
         secret = '';
     }
     if (!secret) {
-        console.error('[leadsIntake] Wix secret WIX_WEBHOOK_SECRET is not set');
+        console.error('[leadsIntake] Wix secret LEADS_WEBHOOK_SECRET is not set');
         return { success: false, error: 'Online applications are temporarily unavailable. Please call (239) 332-2245.' };
     }
 

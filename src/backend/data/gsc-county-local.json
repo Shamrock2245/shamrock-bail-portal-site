@@ -1,0 +1,114 @@
+{
+  "comment": "Verified local facts for Florida county pages Google crawled and did not index. Static code content only. Sources are public sheriff, clerk, and court pages.",
+  "counties": {
+    "bradford": {
+      "jailName": "Bradford County Jail",
+      "jailAddress": "945-A N. Temple Avenue, Starke, FL 32091",
+      "courthouseName": "Bradford County Clerk of the Circuit Court & Comptroller",
+      "courthouseAddress": "945 N. Temple Avenue, Starke, FL 32091",
+      "clerkName": "Bradford County Clerk of the Circuit Court & Comptroller",
+      "cities": ["Starke", "Lawtey", "Hampton", "Brooker"],
+      "paragraph": "Bradford County Jail books people at 945-A N. Temple Avenue, Starke, FL 32091. The Bradford County Clerk of the Circuit Court & Comptroller keeps the court file at 945 N. Temple Avenue, Starke, FL 32091. Shamrock Bail Bonds covers Starke, Lawtey, Hampton, and Brooker from the Fort Myers office at 1528 Broadway. Call (239) 332-2245.",
+      "sources": [
+        "https://www.bradfordsheriff.org/department-directory/jail/",
+        "https://bradfordclerk.com/contact-us/"
+      ]
+    },
+    "escambia": {
+      "jailName": "Escambia County Main Jail",
+      "jailAddress": "2935 North L Street, Pensacola, FL 32501",
+      "courthouseName": "M.C. Blanchard Judicial Building",
+      "courthouseAddress": "190 W. Government Street, Pensacola, FL 32502",
+      "clerkName": "Escambia County Clerk of Court and Comptroller",
+      "cities": ["Pensacola", "Cantonment", "Century", "Molino"],
+      "paragraph": "Escambia County Main Jail is at 2935 North L Street, Pensacola, FL 32501. Criminal court is held at the M.C. Blanchard Judicial Building, 190 W. Government Street, Pensacola, FL 32502, where the Escambia County Clerk of Court and Comptroller keeps the court file. Shamrock handles Pensacola, Cantonment, Century, and Molino cases. Call the Fort Myers office at (239) 332-2245.",
+      "sources": [
+        "https://www.escambiajail.org/",
+        "https://www.escambiaclerk.com/Facilities",
+        "https://www.firstjudicialcircuit.org/public/court-locations/m-c-blanchard-judicial-building/"
+      ]
+    },
+    "franklin": {
+      "jailName": "Franklin County Jail",
+      "jailAddress": "270 State Road 65, Eastpoint, FL 32328",
+      "courthouseName": "Franklin County Courthouse",
+      "courthouseAddress": "33 Market Street, Suite 203, Apalachicola, FL 32320",
+      "clerkName": "Franklin County Clerk of the Circuit Court & Comptroller",
+      "cities": ["Apalachicola", "Carrabelle", "Eastpoint"],
+      "paragraph": "Franklin County Jail shares the sheriff's complex at 270 State Road 65, Eastpoint, FL 32328. The Franklin County Courthouse and the Clerk of the Circuit Court & Comptroller are at 33 Market Street, Suite 203, Apalachicola, FL 32320. Shamrock serves Apalachicola, Carrabelle, and Eastpoint on this Gulf coast. The Fort Myers office number is (239) 332-2245.",
+      "sources": [
+        "https://www.franklincountyflorida.com/constitutional-and-other-offices/sheriffs-office/",
+        "https://www.franklinclerk.com/contact/office-locations/"
+      ]
+    },
+    "levy": {
+      "jailName": "Levy County Jail",
+      "jailAddress": "9150 NE 80th Avenue, Bronson, FL 32621",
+      "courthouseName": "Levy County Courthouse",
+      "courthouseAddress": "355 South Court Street, Bronson, FL 32621",
+      "clerkName": "Levy County Clerk of the Circuit Court",
+      "cities": ["Bronson", "Williston", "Chiefland", "Cedar Key"],
+      "paragraph": "The Levy County Sheriff's Office Detention Bureau books defendants at the Levy County Jail, 9150 NE 80th Avenue, Bronson, FL 32621. The court file is kept by the Levy County Clerk of the Circuit Court at the Levy County Courthouse, 355 South Court Street, Bronson, FL 32621. Coverage includes Bronson, Williston, Chiefland, and Cedar Key. The agency office is 1528 Broadway, Fort Myers, and the phone line is (239) 332-2245.",
+      "sources": [
+        "https://levyso.com/detention-bureau/",
+        "https://levyclerk.com/contact-us/"
+      ]
+    },
+    "martin": {
+      "jailName": "Martin County Jail",
+      "jailAddress": "800 SE Monterey Road, Stuart, FL 34997",
+      "courthouseName": "Martin County Courthouse, Stuart Office",
+      "courthouseAddress": "100 SE Ocean Boulevard, Stuart, FL 34994",
+      "clerkName": "Martin County Clerk of the Circuit Court",
+      "cities": ["Stuart", "Jensen Beach", "Palm City", "Indiantown", "Hobe Sound"],
+      "paragraph": "Arrests in Martin County are booked at the Martin County Jail, 800 SE Monterey Road, Stuart, FL 34997, at the Holt Law Enforcement Center on the south side of Monterey Road. Bond paperwork is filed with the Martin County Clerk of the Circuit Court at the Stuart courthouse, 100 SE Ocean Boulevard, Stuart, FL 34994. Shamrock Bail Bonds handles Martin County cases for families in Stuart, Jensen Beach, Palm City, Indiantown, and Hobe Sound from the Fort Myers office at 1528 Broadway. Call (239) 332-2245.",
+      "sources": [
+        "https://www.mcsofl.org/226/General-Information",
+        "https://www.martinclerk.com/"
+      ]
+    },
+    "nassau": {
+      "jailName": "Nassau County Jail & Detention Center",
+      "jailAddress": "76212 Nicholas Cutinha Road, Yulee, FL 32097",
+      "courthouseName": "Nassau County Historic Courthouse",
+      "courthouseAddress": "416 Centre Street, Fernandina Beach, FL 32034",
+      "clerkName": "Nassau County Clerk of the Circuit Court and Comptroller",
+      "cities": ["Fernandina Beach", "Yulee", "Callahan", "Hilliard"],
+      "paragraph": "Nassau County Jail & Detention Center stands at 76212 Nicholas Cutinha Road, Yulee, FL 32097. The Clerk of the Circuit Court and Comptroller's full-service office is at 76347 Veterans Way, Yulee, FL 32097, and the historic courthouse office is at 416 Centre Street, Fernandina Beach, FL 32034. Shamrock posts Nassau bonds for Fernandina Beach, Yulee, Callahan, and Hilliard. Reach the Fort Myers office at (239) 332-2245.",
+      "sources": [
+        "https://nassauso.com/contact-us/",
+        "https://www.nassauclerk.com/166/1722/Contact-Us"
+      ]
+    },
+    "okeechobee": {
+      "jailName": "Okeechobee County Jail",
+      "jailAddress": "504 NW 4th Street, Okeechobee, FL 34972",
+      "courthouseName": "Okeechobee County Courthouse",
+      "courthouseAddress": "312 NW 3rd Street, Okeechobee, FL 34972",
+      "clerkName": "Okeechobee County Clerk of the Circuit Court & Comptroller",
+      "cities": ["Okeechobee", "Taylor Creek", "Cypress Quarters", "Basinger"],
+      "paragraph": "The Okeechobee County Jail is the Sheriff's Office Corrections Division; inmate mail and the sheriff's published street address are 504 NW 4th Street, Okeechobee, FL 34972. That building is the county jail, separate from the state prison on NE 168th Street. The Okeechobee County Courthouse and the Clerk of the Circuit Court & Comptroller are at 312 NW 3rd Street, Okeechobee, FL 34972. Nearby communities include Okeechobee, Taylor Creek, Cypress Quarters, and Basinger. Shamrock's office line is (239) 332-2245.",
+      "sources": [
+        "https://www.okeesheriff.org/inmate-phone-mail",
+        "https://www.okeesheriff.org/",
+        "https://www.circuit19.org/okeechobee-courthouse/",
+        "https://myokeeclerk.com/",
+        "https://en.wikipedia.org/wiki/Okeechobee_County,_Florida"
+      ]
+    },
+    "orange": {
+      "jailName": "Orange County Corrections Booking and Release Center",
+      "jailAddress": "3855 South John Young Parkway, Orlando, FL 32839",
+      "courthouseName": "Orange County Courthouse",
+      "courthouseAddress": "425 N. Orange Avenue, Orlando, FL 32801",
+      "clerkName": "Orange County Clerk of Courts",
+      "cities": ["Orlando", "Winter Park", "Apopka", "Ocoee", "Winter Garden"],
+      "paragraph": "Orange County Corrections books new arrests at the Orange County Corrections Booking and Release Center, 3855 South John Young Parkway, Orlando, FL 32839. The Orange County Clerk of Courts is in the Orange County Courthouse at 425 N. Orange Avenue, Orlando, FL 32801. Shamrock works Orange County bonds for Orlando, Winter Park, Apopka, Ocoee, and Winter Garden, with the agency office at 1528 Broadway in Fort Myers. Call (239) 332-2245.",
+      "sources": [
+        "https://newsroom.ocfl.net/directory/corrections-department/",
+        "https://netapps.ocfl.net/BestJail/Home/BondingOut",
+        "https://www.myorangeclerk.com/Misc-Pages/Branch-Locations-Page"
+      ]
+    }
+  }
+}

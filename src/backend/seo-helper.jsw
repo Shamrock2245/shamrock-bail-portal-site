@@ -24,7 +24,7 @@ import {
  */
 export function generateCountySEOTags(county) {
     const title       = `${county.name} Bail Bonds | 24/7 Jail Release | ${BUSINESS_SHORT_NAME}`;
-    const description = `24/7 bail bonds in ${county.name}, Florida. Fast jail release and payment plans. Call ${PHONE_PRIMARY.display}.`;
+    const description = `24/7 bail bonds in ${county.name}, Florida. Jail release help and payment plans. Call ${PHONE_PRIMARY.display}.`;
     const canonicalUrl = countyPageUrl(county.slug);
 
     return [
@@ -53,7 +53,7 @@ export function generateCountySchemas(county, faqs = []) {
         '@type':    'LocalBusiness',
         '@id':      `${pageUrl}#localbusiness`,
         name:        countyBusinessName(county.name),
-        description: `24/7 bail bond services in ${county.name}, Florida. Fast, confidential jail release. Call ${PHONE_PRIMARY.display}.`,
+        description: `24/7 bail bond services in ${county.name}, Florida. Confidential jail release help. Call ${PHONE_PRIMARY.display}.`,
         url:         pageUrl,
         telephone:   PHONE_PRIMARY.e164,
         priceRange:  '$$',

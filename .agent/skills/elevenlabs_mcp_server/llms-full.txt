@@ -88606,7 +88606,7 @@ func main() {
 
 	req, _ := http.NewRequest("GET", url, payload)
 
-	req.Header.Add("xi-api-key", "sk-4f8b7c9d2e3a4b5c9d0e1f2a3b4c5d6e")
+	req.Header.Add("xi-api-key", "<ELEVENLABS_API_KEY>")
 	req.Header.Add("Content-Type", "application/json")
 
 	res, _ := http.DefaultClient.Do(req)
@@ -88630,7 +88630,7 @@ http = Net::HTTP.new(url.host, url.port)
 http.use_ssl = true
 
 request = Net::HTTP::Get.new(url)
-request["xi-api-key"] = 'sk-4f8b7c9d2e3a4b5c9d0e1f2a3b4c5d6e'
+request["xi-api-key"] = '<ELEVENLABS_API_KEY>'
 request["Content-Type"] = 'application/json'
 request.body = "{}"
 
@@ -88643,7 +88643,7 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 
 HttpResponse<String> response = Unirest.get("https://api.elevenlabs.io/v1/convai/conversations/21m00Tcm4TlvDq8ikWAM/audio")
-  .header("xi-api-key", "sk-4f8b7c9d2e3a4b5c9d0e1f2a3b4c5d6e")
+  .header("xi-api-key", "<ELEVENLABS_API_KEY>")
   .header("Content-Type", "application/json")
   .body("{}")
   .asString();
@@ -88659,7 +88659,7 @@ $response = $client->request('GET', 'https://api.elevenlabs.io/v1/convai/convers
   'body' => '{}',
   'headers' => [
     'Content-Type' => 'application/json',
-    'xi-api-key' => 'sk-4f8b7c9d2e3a4b5c9d0e1f2a3b4c5d6e',
+    'xi-api-key' => '<ELEVENLABS_API_KEY>',
   ],
 ]);
 
@@ -88671,7 +88671,7 @@ using RestSharp;
 
 var client = new RestClient("https://api.elevenlabs.io/v1/convai/conversations/21m00Tcm4TlvDq8ikWAM/audio");
 var request = new RestRequest(Method.GET);
-request.AddHeader("xi-api-key", "sk-4f8b7c9d2e3a4b5c9d0e1f2a3b4c5d6e");
+request.AddHeader("xi-api-key", "<ELEVENLABS_API_KEY>");
 request.AddHeader("Content-Type", "application/json");
 request.AddParameter("application/json", "{}", ParameterType.RequestBody);
 IRestResponse response = client.Execute(request);
@@ -88681,7 +88681,7 @@ IRestResponse response = client.Execute(request);
 import Foundation
 
 let headers = [
-  "xi-api-key": "sk-4f8b7c9d2e3a4b5c9d0e1f2a3b4c5d6e",
+  "xi-api-key": "<ELEVENLABS_API_KEY>",
   "Content-Type": "application/json"
 ]
 let parameters = [] as [String : Any]
