@@ -14,7 +14,7 @@ export const VERIFIED_SHAMROCK_PHONES = Object.freeze([
     { display: '(239) 955-0314', digits: '2399550314', e164: '+12399550314', notes: 'Spare DID / failover. Not NAP, not iMessage, not Shannon public.' },
     { display: '(239) 784-9365', digits: '2397849365', e164: '+12397849365', notes: 'Staff desk / Shannon human-ack texts' },
     { display: '(239) 319-7008', digits: '2393197008', e164: '+12393197008', notes: 'Staff desk / Shannon human-ack texts' },
-    { display: '(727) 295-2245', digits: '7272952245', e164: '+17272952245', notes: 'Public Spanish line (Spanish-speaking agent) and Tampa Bay / after-hours line' }
+    { display: '727-295-2245', digits: '7272952245', e164: '+17272952245', notes: 'Se habla español' }
 ]);
 
 const COUNTY_SLUGS = [
@@ -210,7 +210,7 @@ export function buildLlmsTxt(opts = {}) {
 - **Brand:** Shamrock Bail Bonds
 - **Website:** https://www.shamrockbailbonds.biz/
 - **24/7 phone:** (239) 332-2245 · tel:+12393322245
-- **Spanish line:** (727) 295-2245 · tel:+17272952245
+- **Se habla español:** 727-295-2245 · tel:+17272952245
 - **Office:** 1528 Broadway, Fort Myers, FL 33901
 - **Service area:** Florida, including all 67 counties
 - **Published:** ${generatedAt}

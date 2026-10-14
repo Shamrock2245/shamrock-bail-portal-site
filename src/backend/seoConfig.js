@@ -54,10 +54,10 @@ export const PHONE_SECONDARY = {
 };
 
 export const PHONE_SPANISH = {
-    display:  '(727) 295-2245',
+    display:  '727-295-2245',
     e164:     '+17272952245',
     tel:      'tel:+17272952245',
-    note:     'Spanish line — switches to a Spanish-speaking agent',
+    note:     'Se habla español',
 };
 
 export const EMAIL_PRIMARY = 'admin@shamrockbailbonds.biz';
