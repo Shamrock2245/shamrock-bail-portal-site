@@ -14,12 +14,23 @@ import wixSecretsBackend from 'wix-secrets-backend';
 // the old secret keeps pointing at the old generic function (which rejects named actions)
 // until the soak is done, so this code switches to v2 exactly when it is published, and
 // reverting the publish switches back.
+//
+// Velo sends its own proxy key (Wix Secret PROXY_API_KEY_VELO). The legacy shared
+// PROXY_API_KEY secret is a transitional fallback only; delete it after the rotation.
+async function getOptionalSecret(name) {
+    try {
+        return (await wixSecretsBackend.getSecret(name)) || '';
+    } catch (e) {
+        return '';
+    }
+}
+
 async function getMongoConfig() {
     let proxyUrl;
     let apiKey;
     try {
         proxyUrl = await wixSecretsBackend.getSecret('MONGO_PROXY_V2_URL');
-        apiKey = await wixSecretsBackend.getSecret('PROXY_API_KEY');
+        apiKey = (await getOptionalSecret('PROXY_API_KEY_VELO')) || (await wixSecretsBackend.getSecret('PROXY_API_KEY'));
     } catch (error) {
         console.error('Error retrieving MongoDB Proxy secrets', error);
         throw new Error('MongoDB Proxy configuration missing.');

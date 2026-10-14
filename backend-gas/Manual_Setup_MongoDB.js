@@ -14,9 +14,10 @@ function setupMongoDBProperties() {
     //    it stays on the old function until the soak is done, then gets deleted.
     props.setProperty('MONGO_PROXY_V2_URL', 'https://us-east1-swfl-arrest-scrapers.cloudfunctions.net/mongo-proxy-v2');
 
-    // 2. The proxy API key used to secure the Cloud Function
-    //    Must match PROXY_API_KEY in the Cloud Function environment
-    props.setProperty('PROXY_API_KEY', '<SET_YOUR_PROXY_API_KEY_HERE>'); // ⚠️  Replace with your actual key — NEVER commit real secrets
+    // 2. GAS's own proxy key (x-api-key). Must match PROXY_API_KEY_GAS in the Cloud Function
+    //    environment. Do not reuse the Velo key. The legacy shared PROXY_API_KEY property is
+    //    only a transitional fallback; delete it after the rotation.
+    props.setProperty('PROXY_API_KEY_GAS', '<SET_YOUR_PROXY_API_KEY_GAS_HERE>'); // ⚠️  Replace with your actual key — NEVER commit real secrets
 
     // 3. Cluster & DB names (for reference)
     props.setProperty('MONGO_CLUSTER', 'Shamrock');
@@ -24,7 +25,7 @@ function setupMongoDBProperties() {
 
     // ── Verify ──────────────────────────────────────────────────────────
     console.log('✅ MONGO_PROXY_V2_URL set to: ' + props.getProperty('MONGO_PROXY_V2_URL'));
-    console.log('✅ PROXY_API_KEY set.');
+    console.log('✅ PROXY_API_KEY_GAS set.');
     console.log('✅ MONGO_CLUSTER set to: ' + props.getProperty('MONGO_CLUSTER'));
     console.log('✅ MONGO_DB set to: ' + props.getProperty('MONGO_DB'));
 
