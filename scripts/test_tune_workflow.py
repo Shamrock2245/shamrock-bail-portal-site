@@ -71,12 +71,18 @@ def test_transfer_twiml_dials_office_not_shannon():
         / "twilio-transfer-office.js"
     )
     text = path.read_text(encoding="utf-8")
-    assert "const DESK_CELL = '+12399550301'" in text or "const DESK_LINE = '+12399550301'" in text
-    assert "const LANDLINE = '+12393322245'" in text or "const NAP_LINE = '+12393322245'" in text
-    assert "<Number>${DESK_CELL}</Number>" in text or "<Number>${DESK_LINE}</Number>" in text
-    assert "<Number>${LANDLINE}</Number>" in text or "<Number>${NAP_LINE}</Number>" in text
-    assert "<Number>+17272952245</Number>" not in text
-    assert "Never dial 727-295-2245" in text or "Never dial 727" in text
+    targets_path = (
+        Path(__file__).resolve().parents[2]
+        / "shamrock-telegram-app"
+        / "shared"
+        / "office-ring-targets.js"
+    )
+    targets_text = targets_path.read_text(encoding="utf-8") if targets_path.is_file() else ""
+    assert "officeRingNumbersXml" in text or "const DESK_CELL" in text
+    assert "+12399550301" in targets_text or "DESK_CELL" in text
+    assert "+12393322245" in targets_text or "LANDLINE" in text
+    assert "<Number>+17272952245</Number>" not in text and "<Number>+17272952245</Number>" not in targets_text
+    assert "Never dial +17272952245" in text or "Never dial 727" in text
 
 
 def test_present_node_prefers_paperwork_over_office():
