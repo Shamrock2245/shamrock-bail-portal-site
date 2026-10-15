@@ -971,6 +971,7 @@ def main() -> int:
         "llm": "gpt-4o",
         "temperature": 0.6,
         "max_tokens": 500,
+        "reasoning_effort": None,
         "timezone": "America/New_York",
         "tool_ids": tool_ids,
         "knowledge_base": knowledge_base,
