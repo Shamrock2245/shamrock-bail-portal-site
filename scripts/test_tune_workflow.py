@@ -71,12 +71,18 @@ def test_transfer_twiml_dials_office_not_shannon():
         / "twilio-transfer-office.js"
     )
     text = path.read_text(encoding="utf-8")
-    assert "const DESK_CELL = '+12399550301'" in text or "const DESK_LINE = '+12399550301'" in text
-    assert "const LANDLINE = '+12393322245'" in text or "const NAP_LINE = '+12393322245'" in text
-    assert "<Number>${DESK_CELL}</Number>" in text or "<Number>${DESK_LINE}</Number>" in text
-    assert "<Number>${LANDLINE}</Number>" in text or "<Number>${NAP_LINE}</Number>" in text
-    assert "<Number>+17272952245</Number>" not in text
-    assert "Never dial 727-295-2245" in text or "Never dial 727" in text
+    targets_path = (
+        Path(__file__).resolve().parents[2]
+        / "shamrock-telegram-app"
+        / "shared"
+        / "office-ring-targets.js"
+    )
+    targets_text = targets_path.read_text(encoding="utf-8") if targets_path.is_file() else ""
+    assert "officeRingNumbersXml" in text or "const DESK_CELL" in text
+    assert "+12399550301" in targets_text or "DESK_CELL" in text
+    assert "+12393322245" in targets_text or "LANDLINE" in text
+    assert "<Number>+17272952245</Number>" not in text and "<Number>+17272952245</Number>" not in targets_text
+    assert "Never dial +17272952245" in text or "Never dial 727" in text
 
 
 def test_present_node_prefers_paperwork_over_office():
@@ -131,6 +137,55 @@ def test_gather_can_route_to_id_upload():
     assert "request_id_photo" in out["nodes"]["n_a_gather"]["additional_prompt"]
 
 
+def test_greet_node_is_assistant_not_brendan_or_shannon():
+    wf = {
+        "nodes": {"n_greet": {"edge_order": ["e02"], "additional_prompt": "Shannon. this is Brendan."}},
+        "edges": {},
+    }
+    out = _mod._tune_workflow(wf, "email_tid", "id_tid")
+    text = out["nodes"]["n_greet"]["additional_prompt"]
+    lowered = text.lower()
+    assert "brendan's assistant" in lowered
+    assert "not brendan himself" in lowered
+    assert "shannon" not in lowered
+    assert "this is brendan" not in lowered
+    assert _mod.FIRST_MESSAGE == "Hi, this is Brendan's assistant at Shamrock Bail Bonds. How can I help?"
+    assert _mod.VOICE_ID == "2cx6OnG1GDLOtE8L9l9O"
+    assert _mod.TTS_MODEL_ID == "eleven_flash_v2"
+    assert _mod.TRANSFER_RING_E164 == (
+        "+12393322245",
+        "+12399550301",
+        "+12399550178",
+        "+12399550314",
+    )
+    ring = _mod._transfer_ring_phrase()
+    assert ring.startswith("+12393322245")
+    assert "+12399550314" in ring
+    guard = next(item for item in _mod.SHANNON_CUSTOM_GUARDRAILS if item["name"] == "Never send them to 727")
+    assert "727-295-2245" in guard["prompt"]
+    assert "Never 727-295-2245" in guard["prompt"]
+
+
+def test_sync_sources_match_live_greeting_and_ring():
+    root = Path(__file__).resolve().parents[1]
+    agent = (root / "backend-gas" / "ElevenLabs_AfterHoursAgent.js").read_text(encoding="utf-8")
+    webhook = (root / "backend-gas" / "ElevenLabs_WebhookHandler.js").read_text(encoding="utf-8")
+    tests = (root / "scripts" / "shannon_simulated_tests.py").read_text(encoding="utf-8")
+    greeting = "Hi, this is Brendan's assistant at Shamrock Bail Bonds. How can I help?"
+    for text in (agent, webhook, tests):
+        assert greeting in text
+        assert "This is Brendan" not in text
+    assert "You are Brendan's assistant at Shamrock Bail Bonds in Fort Myers, not Brendan himself." in agent
+    assert "voiceId: '2cx6OnG1GDLOtE8L9l9O'" in agent
+    assert "modelId: 'eleven_flash_v2'" in agent
+    assert "Never tell them to call 727-295-2245." in agent
+    for number in ("+12393322245", "+12399550301", "+12399550178", "+12399550314"):
+        assert number in agent
+        assert number in webhook
+    assert "SHANNON_TRANSFER_RING_E164" in webhook
+    assert "The first to answer takes the call." in webhook
+
+
 def test_greet_skips_blocking_history_lookup():
     wf = {
         "nodes": {
@@ -172,6 +227,8 @@ if __name__ == "__main__":
     test_present_node_prefers_paperwork_over_office()
     test_id_wait_before_paperwork_email()
     test_gather_can_route_to_id_upload()
+    test_greet_node_is_assistant_not_brendan_or_shannon()
+    test_sync_sources_match_live_greeting_and_ring()
     test_greet_skips_blocking_history_lookup()
     test_workflow_transfer_node_is_office_not_0178()
     print("ok")
