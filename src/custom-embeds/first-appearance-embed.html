@@ -153,7 +153,7 @@
       justify-content: center;
       gap: 8px;
       font-family: 'Poppins', sans-serif;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 600;
       padding: 14px 28px;
       border-radius: var(--radius-sm);
@@ -192,7 +192,7 @@
       background: var(--blue-bright);
       color: var(--white);
       width: 100%;
-      font-size: 14px;
+      font-size: 16px;
       padding: 14px 20px;
     }
     .btn--primary:hover {
@@ -209,8 +209,9 @@
       background: transparent;
       color: var(--blue-bright);
       border: 2px solid var(--blue-bright);
-      font-size: 14px;
+      font-size: 16px;
       padding: 12px 24px;
+      min-height: 44px;
     }
     .btn--outline:hover {
       background: rgba(13,110,253,0.05);
@@ -439,6 +440,7 @@
       outline: none;
       /* Prevent iOS zoom */
       font-size: 16px;
+      min-height: 44px;
     }
     .search-bar input:focus {
       border-color: var(--blue-bright);
@@ -463,16 +465,17 @@
       align-items: center;
       gap: 6px;
       font-family: 'Poppins', sans-serif;
-      font-size: 13px;
+      font-size: 16px;
       font-weight: 600;
-      padding: 8px 14px;
+      padding: 10px 16px;
       border-radius: 999px;
       border: 1.5px solid var(--border);
       background: var(--white);
       color: var(--navy);
       cursor: pointer;
       transition: var(--transition);
-      min-height: 40px;
+      min-height: 44px;
+      min-width: 44px;
     }
     .filter-chip:hover {
       border-color: var(--blue-bright);
@@ -500,6 +503,23 @@
       gap: 16px;
       max-width: 1000px;
       margin: 0 auto;
+    }
+
+    .county-grid .shamrock-skeleton-card {
+      height: 180px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(90deg, #E9ECEF 0%, #F8F9FA 45%, #E9ECEF 90%);
+      background-size: 200% 100%;
+      animation: shamrock-skeleton-shimmer 1.2s ease-in-out infinite;
+    }
+
+    @keyframes shamrock-skeleton-shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .county-grid .shamrock-skeleton-card { animation: none; }
     }
 
     .county-card {
@@ -655,7 +675,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 0;
+      padding: 12px 0;
       cursor: pointer;
       gap: 16px;
       background: none;
@@ -663,7 +683,8 @@
       width: 100%;
       text-align: left;
       font-family: 'Poppins', sans-serif;
-      font-size: 15px;
+      font-size: 16px;
+      min-height: 44px;
       font-weight: 600;
       color: var(--navy);
       line-height: 1.4;
@@ -674,9 +695,9 @@
     }
 
     .faq-toggle {
-      width: 32px;
-      height: 32px;
-      min-width: 32px;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
       background: var(--light-grey);
       border-radius: 50%;
       display: flex;
@@ -833,7 +854,7 @@
           <i class="ph ph-phone"></i> Call 239-332-2245 Now
         </a>
         <a href="https://www.shamrockbailbonds.biz/portal-landing" class="btn btn--online" id="heroOnlineBtn">
-          Start the Bail Process Online
+          Start a Bond
         </a>
       </div>
     </div>
@@ -969,8 +990,10 @@
 
       <div class="county-status" id="countyStatus" aria-live="polite"></div>
 
-      <div class="county-grid" id="countyGrid">
-        <!-- Rendered by JS -->
+      <div class="county-grid" id="countyGrid" aria-busy="true">
+        <div class="shamrock-skeleton-card" aria-hidden="true"></div>
+        <div class="shamrock-skeleton-card" aria-hidden="true"></div>
+        <div class="shamrock-skeleton-card" aria-hidden="true"></div>
       </div>
 
       <div class="no-results" id="noResults">
@@ -1011,7 +1034,7 @@
           <i class="ph ph-phone"></i> Call 239-332-2245
         </a>
         <a href="https://www.shamrockbailbonds.biz/portal-landing" class="btn btn--online" id="bottomOnlineBtn">
-          Start Online
+          Start a Bond
         </a>
       </div>
     </div>
@@ -1115,6 +1138,7 @@
       const data = getFiltered();
       const grid = document.getElementById('countyGrid');
       const noResults = document.getElementById('noResults');
+      if (grid) grid.setAttribute('aria-busy', 'false');
       updateStatus(data.length);
 
       if (!data.length) {
@@ -1163,9 +1187,9 @@
             '<div style="display:flex;flex-direction:column;gap:8px;">' +
               '<a href="' + escapeHtml(c.liveUrl) + '" target="_blank" rel="noopener" class="btn btn--primary" data-action="' + escapeHtml(c.accessType) + '" data-county="' + escapeHtml(c.name) + '">' +
                 '<i class="ph ' + btn.icon + '"></i> ' + btn.text +
-                ' <i class="ph ph-arrow-square-out" style="font-size:14px;"></i>' +
+                ' <i class="ph ph-arrow-square-out" style="font-size:16px;"></i>' +
               '</a>' +
-              '<a href="' + detailUrl + '" class="btn btn--outline" style="width:100%;font-size:13px;" data-action="county_page" data-county="' + escapeHtml(c.name) + '">' +
+              '<a href="' + detailUrl + '" class="btn btn--outline" style="width:100%;font-size:16px;" data-action="county_page" data-county="' + escapeHtml(c.name) + '">' +
                 '<i class="ph ph-info"></i> ' + escapeHtml((c.name || '').replace(/ County$/i, '')) + ' FA details' +
               '</a>' +
             '</div>' +

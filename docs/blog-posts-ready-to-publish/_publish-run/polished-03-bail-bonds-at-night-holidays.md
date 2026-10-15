@@ -36,9 +36,9 @@ Florida courts do not typically hold **First Appearance hearings** on federal ho
 1. The defendant was arrested on the holiday
 2. A bond amount has **not yet been set** by a judge
 
-However, most misdemeanor offenses in Florida are eligible for **pre-set schedule bail** — meaning a bond amount is automatically assigned upon booking and a First Appearance hearing is not required to post bail. In these cases, we can post the bond immediately regardless of holiday schedules.
+However, most misdemeanor offenses in Florida are eligible for **pre-set schedule bail** — meaning a bond amount is automatically assigned upon booking and a First Appearance hearing is not required to post bail. In these cases, we can post the bond on a holiday when a schedule amount is already set.
 
-For felony charges or arrests where bail has not yet been set, we prepare all paperwork in advance so the bond is posted **within minutes of the First Appearance hearing** the following day.
+For felony charges or arrests where bail has not yet been set, we prepare the paperwork in advance so the bond can be posted after the First Appearance hearing.
 
 ---
 
@@ -55,7 +55,7 @@ Once a bond is posted, here's what to expect for release processing time:
 | DeSoto County (Arcadia) | 2–4 hours | 3–6 hours |
 | Hillsborough (Tampa) | 6–8 hours | 8–12 hours |
 
-Overnight and holiday processing can be slightly longer due to reduced jail staffing, but **posting the bond immediately** — rather than waiting until morning — still results in earlier releases.
+Overnight and holiday processing can take longer when jail staffing is reduced. Release timing is controlled by the jail.
 
 ---
 
@@ -63,14 +63,14 @@ Overnight and holiday processing can be slightly longer due to reduced jail staf
 
 When you call Shamrock at 2 AM, here's what happens on our end:
 
-1. **Call answered immediately** — live bondsman, no delay
-2. **Booking record pulled** within 5 minutes from county jail system
-3. **Digital paperwork sent to your phone** — signed in minutes
+1. **We answer 24/7**
+2. **Booking record looked up** from the county jail roster
+3. **Digital paperwork sent to your phone**
 4. **Payment processed** by phone
 5. **Bond posted remotely** or in person at the jail (Lee County)
 6. **You receive text updates** throughout the release process
 
-We also deploy **Shannon**, our AI after-hours phone agent, to capture information during peak late-night call volume. Shannon collects the essential information and triggers an immediate callback from a live bondsman. No family waits more than 10 minutes for a real person.
+We also use **Shannon**, our after-hours phone agent, to collect information on late-night calls. Bonds written in all 67 Florida counties.
 
 ---
 
@@ -110,7 +110,7 @@ Yes. Shamrock is licensed for all 67 Florida counties and processes bonds remote
 **(239) 332-2245** — 24 hours a day, every day of the year.
 
 **Shamrock Bail Bonds | 1528 Broadway, Fort Myers, FL 33901**  
-Spanish: (239) 955-0301 | [shamrockbailbonds.biz](https://www.shamrockbailbonds.biz)
+Se habla español: 727-295-2245 | [shamrockbailbonds.biz](https://www.shamrockbailbonds.biz)
 
 ---
 

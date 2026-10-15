@@ -101,12 +101,12 @@ Shamrock Bail Bonds is licensed for all 67 Florida counties. Whether your loved 
 
 ## Which County Was the Arrest In?
 
-Not sure? Call us with the defendant's name and date of birth. We search all Florida county jail rosters simultaneously and locate the booking record within minutes.
+Not sure? Call us with the defendant's name and date of birth. We search Florida county jail rosters for the booking record.
 
 **Call (239) 332-2245** — Available 24/7.
 
 **Shamrock Bail Bonds | 1528 Broadway, Fort Myers, FL 33901**  
-[shamrockbailbonds.biz](https://www.shamrockbailbonds.biz) | Spanish: (239) 955-0301
+[shamrockbailbonds.biz](https://www.shamrockbailbonds.biz) | Se habla español: 727-295-2245
 
 ---
 

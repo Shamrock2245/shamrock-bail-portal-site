@@ -15,6 +15,29 @@ import { buildFloridaCountyDirectoryHtml, COUNTY_DIRECTORY_ELEMENT_IDS } from 'p
 // cast to any to allow any string
 const Select = (selector) => /** @type {any} */($w)(selector);
 
+const COUNTY_SKELETON_HTML = [
+    '<div class="shamrock-skeleton-list" aria-busy="true">',
+    '<div class="shamrock-skeleton-line shamrock-skeleton-line--medium"></div>',
+    '<div class="shamrock-skeleton-line"></div>',
+    '<div class="shamrock-skeleton-block"></div>',
+    '<div class="shamrock-skeleton-line shamrock-skeleton-line--short"></div>',
+    '</div>'
+].join('');
+
+function showPageSkeleton() {
+    try {
+        const el = Select('#loadingIndicator');
+        try {
+            if (el && ('html' in el)) el.html = COUNTY_SKELETON_HTML;
+        } catch (htmlErr) { /* indicator is not an HTML component */ }
+        el.show();
+    } catch (e) { }
+}
+
+function hidePageSkeleton() {
+    try { Select('#loadingIndicator').hide(); } catch (e) { }
+}
+
 $w.onReady(async function () {
     console.log(" Dynamic County Page Loading... (Optimized v2)");
 
@@ -52,8 +75,8 @@ $w.onReady(async function () {
     });
 
     try {
-        // Show loading state if element exists
-        try { Select('#loadingIndicator').show(); } catch (e) { }
+        // Skeleton placeholder while the county record loads. No new Editor element.
+        showPageSkeleton();
 
         // 2. FETCH MAIN DATA (Critical Path)
         const pageResult = await generateCountyPage(countySlug.toLowerCase());
@@ -62,7 +85,7 @@ $w.onReady(async function () {
 
         if (!success || !data) {
             console.warn(`[!] County data not found for slug: ${countySlug}.`);
-            try { Select('#loadingIndicator').hide(); } catch (e) { }
+            hidePageSkeleton();
             try {
                 Select('#countyName').text = "County Not Found";
                 Select('#countyName').expand();
@@ -90,13 +113,13 @@ $w.onReady(async function () {
         }, isMobile ? 3000 : 500);
 
         // Hide loader / Show content
-        try { Select('#loadingIndicator').hide(); } catch (e) { }
+        hidePageSkeleton();
         try { Select('#countyContent').expand(); } catch (e) { }
 
     } catch (err) {
         console.error("CRITICAL ERROR in Florida Counties Page:", err);
         $w('#countyName').text = "Bail Bonds in Florida";
-        try { Select('#loadingIndicator').hide(); } catch (e) { }
+        hidePageSkeleton();
     }
 });
 
