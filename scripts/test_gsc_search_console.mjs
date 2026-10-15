@@ -42,10 +42,17 @@ assert.equal(floridaCountyCanonicalPath('texas'), '');
 assert.equal(floridaCountyCanonicalPath('florida'), '');
 assert.equal(floridaCountyCanonicalPath(''), '');
 
-assert.deepEqual(DASHBOARD_URL_REDIRECTS, [
+assert.deepEqual(DASHBOARD_URL_REDIRECTS.slice(0, 2), [
     { from: '/terms-of-service', to: '/terms-and-conditions', status: 301 },
     { from: '/first-appearance-hub', to: '/first-appearance', status: 301 }
 ]);
+assert.equal(DASHBOARD_URL_REDIRECTS.length, 69);
+for (const slug of FLORIDA_COUNTY_SLUGS) {
+    const row = DASHBOARD_URL_REDIRECTS.find((item) => item.from === '/bail-bonds/' + slug + '-county');
+    assert.ok(row, slug + ' -county redirect missing');
+    assert.equal(row.to, '/florida-bail-bonds/' + slug);
+    assert.equal(row.status, 301);
+}
 
 const router = readFileSync(join(root, 'src/backend/multi-state-router.js'), 'utf8');
 assert.match(router, /floridaCountyCanonicalPath\(raw\)/);

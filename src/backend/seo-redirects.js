@@ -2,10 +2,10 @@
  * Public URL redirects for Search Console.
  *
  * /bail-bonds/{florida-county} is a Velo router prefix, so the multi-state
- * router can answer it with a real 301. /terms-of-service and
- * /first-appearance-hub are ordinary Wix pages, outside every router prefix.
- * Router code cannot change their HTTP status. Those two belong in the Wix
- * dashboard URL Redirect Manager (see DASHBOARD_URL_REDIRECTS).
+ * router can answer an exact published slug with a real 301. /bail-bonds/{slug}-county
+ * 404s before that code runs. /terms-of-service and /first-appearance-hub are
+ * ordinary Wix pages, outside every router prefix. Those URLs belong in the
+ * Wix dashboard URL Redirect Manager (see DASHBOARD_URL_REDIRECTS).
  */
 
 export const FLORIDA_COUNTY_SLUGS = [
@@ -21,13 +21,24 @@ export const FLORIDA_COUNTY_SLUGS = [
 ];
 
 /**
- * Pages that are not under a registered router prefix. A 301 for these
- * has to be saved in the Wix Editor: Settings → SEO → URL Redirect Manager.
+ * Pages the Velo router never receives.
+ * /bail-bonds/lee 301s in the router. /bail-bonds/lee-county 404s at the
+ * Wix platform before that code runs (same for any segment that is not an
+ * exact published slug). A 301 for these has to be saved in the Wix Editor:
+ * Settings → SEO → URL Redirect Manager.
  */
+export function countySuffixRedirects() {
+    return FLORIDA_COUNTY_SLUGS.map((slug) => ({
+        from: '/bail-bonds/' + slug + '-county',
+        to: floridaCountyCanonicalPath(slug),
+        status: 301
+    }));
+}
+
 export const DASHBOARD_URL_REDIRECTS = [
     { from: '/terms-of-service', to: '/terms-and-conditions', status: 301 },
     { from: '/first-appearance-hub', to: '/first-appearance', status: 301 }
-];
+].concat(countySuffixRedirects());
 
 export function normalizeCountySlug(raw) {
     return String(raw || '')
