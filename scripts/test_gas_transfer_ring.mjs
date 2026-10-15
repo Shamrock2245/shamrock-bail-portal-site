@@ -14,6 +14,7 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.join(here, '..')
 const gasDir = path.join(root, 'backend-gas')
 const RING = ['239-332-2245', '239-955-0301', '239-955-0178', '239-955-0314']
+const RING_E164 = ['+12393322245', '+12399550301', '+12399550178', '+12399550314']
 const LABEL = '239-332-2245, 239-955-0301, 239-955-0178, and 239-955-0314'
 const OLD_TWO = '239-332-2245 and 239-955-0301'
 const TRANSFER_URL = 'https://shamrock-telegram.netlify.app/api/twilio-transfer-office'
@@ -91,15 +92,23 @@ check('backend-gas no longer hardcodes the two-number transfer list', () => {
 
 check('prompt names all four ring lines and still speaks only the office number', () => {
   const prompt = promptText()
-  for (const n of RING) assert(prompt.includes(n), 'prompt missing ' + n)
-  assert(prompt.includes(LABEL), 'prompt missing full ring label')
-  assert(prompt.includes('which rings ' + LABEL + ' together'), 'environment ring sentence')
-  assert(prompt.includes('connect this live call to ' + LABEL + ' at the same time'), 'tool ring sentence')
-  assert(prompt.includes('First pickup wins.'), 'first pickup wins')
-  assert(prompt.includes('First staff member to pick up wins.'), 'first staff pickup')
-  assert(prompt.includes('Say 239-332-2245.'), 'spoken office')
+  for (const n of RING_E164) assert(prompt.includes(n), 'prompt missing ' + n)
+  assert(
+    prompt.includes('parallel-rings +12393322245, +12399550301, +12399550178, and +12399550314'),
+    'environment ring sentence'
+  )
+  assert(
+    prompt.includes('parallel-ring +12393322245, +12399550301, +12399550178, and +12399550314'),
+    'tool ring sentence'
+  )
+  assert(prompt.includes('The first to answer takes the call.'), 'first to answer')
+  assert(prompt.includes('Tell them the office is 239-332-2245.'), 'spoken office')
+  assert(prompt.includes('Tell the caller the office is 239-332-2245.'), 'tool spoken office')
   assert(prompt.includes('Never say 727-295-2245'), 'never speak 727')
   assert(prompt.includes('Never tell them to call 727-295-2245'), 'never give 727')
+  assert(!prompt.includes('You are Brendan, a licensed'), 'assistant is not Brendan')
+  assert(!prompt.includes('This is Brendan'), 'opening is not Brendan')
+  assert(prompt.includes("You are Brendan's assistant at Shamrock Bail Bonds in Fort Myers, not Brendan himself."), 'assistant identity')
   assert(!prompt.includes(OLD_TWO), 'prompt still has two-number list')
   assert(!prompt.includes('727-295-2245 and'), '727 must not be a ring target')
 })
@@ -121,11 +130,16 @@ check('transfer tool dials twilio-transfer-office and names the four-line ring',
   assert(payload.reason === 'shannon_transfer', 'reason')
   assert(webhookSrc.includes("var url = '" + TRANSFER_URL + "'"), 'URL literal')
   assert(h.slack.length === 1, 'slack alert')
-  assert(h.slack[0].message.includes('Ringing: ' + LABEL), 'slack ring label')
+  assert(h.slack[0].message.includes('Ringing: ' + RING_E164.join(', ')), 'slack ring e164')
+  assert(h.slack[0].message.includes('(' + LABEL + ')'), 'slack ring label')
+  assert(h.slack[0].message.includes('The first to answer takes the call.'), 'slack first to answer')
   for (const n of RING) assert(h.slack[0].message.includes(n), 'slack missing ' + n)
+  for (const n of RING_E164) assert(h.slack[0].message.includes(n), 'slack missing ' + n)
   assert(!h.slack[0].message.includes('727'), 'slack must not name 727')
   assert(h.desk.length === 1, 'desk text')
-  assert(h.desk[0].message.includes('Ringing ' + LABEL), 'desk ring label')
+  assert(h.desk[0].message.includes('Parallel-ringing ' + RING_E164.join(', ')), 'desk ring e164')
+  assert(h.desk[0].message.includes('(' + LABEL + ')'), 'desk ring label')
+  assert(h.desk[0].message.includes('Office 239-332-2245.'), 'desk spoken office')
   assert(h.desk[0].phone === CALLER, 'desk skip phone')
   assert(body.status === 'connecting', 'status')
   assert(body.message.includes('239-332-2245'), 'spoken office')
