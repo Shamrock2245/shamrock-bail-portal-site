@@ -82,9 +82,22 @@ function generateUrlEntry(url, priority, changefreq) {
 }
 
 /**
+ * Child sitemaps that sitemap.xml must list.
+ * blog-posts and blog-categories were missing from the index after the
+ * PR #64 sitemap-generator edit (the only sitemap change in PRs #63–#71).
+ * Wix still serves those two files; the index has to point at them.
+ */
+const SITEMAP_INDEX_CHILDREN = [
+    'blog-posts-sitemap.xml',
+    'blog-categories-sitemap.xml',
+    'dynamic-florida-bail-bonds_p_e7cdf976_0d00_4377_927c_fa4cc08037be_0_5000-sitemap.xml',
+    'pages-sitemap.xml'
+];
+
+/**
  * Generate sitemap index for large sites
  */
-function generateSitemapIndex(sitemaps) {
+function generateSitemapIndex(sitemaps = SITEMAP_INDEX_CHILDREN) {
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
@@ -100,14 +113,20 @@ function generateSitemapIndex(sitemaps) {
     return xml;
 }
 
-// Generate and output sitemap
-try {
-    const sitemap = generateSitemap();
-    console.log(sitemap);
-} catch (error) {
-    console.error("CRITICAL ERROR Generating Sitemap:", error);
-    process.exit(1);
-}
-
 // Export for use in other scripts
-module.exports = { generateSitemap, generateSitemapIndex, floridaCounties, staticPages };
+module.exports = {
+    generateSitemap,
+    generateSitemapIndex,
+    floridaCounties,
+    staticPages,
+    SITEMAP_INDEX_CHILDREN
+};
+
+if (require.main === module) {
+    try {
+        console.log(generateSitemapIndex());
+    } catch (error) {
+        console.error("CRITICAL ERROR Generating Sitemap:", error);
+        process.exit(1);
+    }
+}
