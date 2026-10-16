@@ -1,6 +1,6 @@
 # Florida First Appearance Hearings (Rule 3.131): What Happens in 24 Hours
 
-**Published:** November 01, 2026 | **Editorial Board:** Shamrock Legal Intelligence | **Regulatory Review:** Licensed Florida Bail Specialist (F.S. Ch. 648 & 903)
+**Published:** November 01, 2026 | Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. Writing bonds in all 67 Florida counties. We answer 24/7.
 
 ---
 

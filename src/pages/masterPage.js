@@ -482,6 +482,7 @@ function setupFindJailButton() {
 
     // Override any static Editor link so our onClick is the sole handler
     try { btn.link = ''; } catch (e) { /* read-only in some contexts */ }
+    try { btn.label = 'Find an Inmate'; } catch (e) { /* non-fatal */ }
 
     btn.onClick(function() { handleFindJailClick(btn); });
 }
@@ -498,7 +499,7 @@ function setupFindJailButton() {
 const FIND_JAIL_FALLBACK = '/florida-bail-bonds/lee';
 
 function handleFindJailClick(btn) {
-    const originalLabel = (btn && btn.label) || 'Find My Jail';
+    const originalLabel = (btn && btn.label) || 'Find an Inmate';
 
     // --- Try the pre-warmed session cache first (set by initGeolocation) ---
     try {

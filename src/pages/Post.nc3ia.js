@@ -72,7 +72,7 @@ async function updatePostSEO() {
             { "property": "og:site_name", "content": "Shamrock Bail Bonds Legal Newsroom" },
             { "property": "article:published_time", "content": publishDate },
             { "property": "article:modified_time", "content": modifiedDate },
-            { "property": "article:author", "content": "Shamrock Bail Bonds Editorial Board" },
+            { "property": "article:author", "content": "Brendan O'Neal" },
             { "property": "article:section", "content": "Florida Bail Statutes & Criminal Justice" },
             { "name": "twitter:card", "content": "summary_large_image" },
             { "name": "twitter:title", "content": postTitle },
@@ -101,21 +101,21 @@ async function updatePostSEO() {
                 "isAccessibleForFree": true,
                 "articleSection": "Florida Bail Law & Procedure",
                 "author": {
-                    "@type": "Organization",
-                    "name": "Shamrock Bail Bonds Editorial Board",
-                    "url": "https://www.shamrockbailbonds.biz/about",
-                    "logo": {
-                        "@type": "ImageObject",
-                        "url": logoUrl
-                    }
-                },
-                "reviewedBy": {
                     "@type": "Person",
-                    "name": "Licensed Florida Bail Bond Agent (F.S. Ch. 648)",
-                    "jobTitle": "Compliance & Legal Review Officer",
+                    "name": "Brendan O'Neal",
+                    "description": "Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. Writing bonds in all 67 Florida counties. We answer 24/7.",
+                    "url": "https://www.shamrockbailbonds.biz/about",
                     "worksFor": {
                         "@type": "Organization",
-                        "name": "Shamrock Bail Bonds, LLC"
+                        "name": "Shamrock Bail Bonds, LLC",
+                        "address": {
+                            "@type": "PostalAddress",
+                            "streetAddress": "1528 Broadway",
+                            "addressLocality": "Fort Myers",
+                            "addressRegion": "FL",
+                            "postalCode": "33901",
+                            "addressCountry": "US"
+                        }
                     }
                 },
                 "publisher": {
@@ -216,16 +216,19 @@ function initArticleUI(post) {
         }
     };
 
-    // 1. Reading Time & Word Count Badge
+    const authorChrome = "Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. Writing bonds in all 67 Florida counties. We answer 24/7.";
+
+    // 1. Reading time stays a reading time. Credential chrome is the verified byline only.
     const readTimeTxt = getEl("#txtArticleReadTime");
     if (readTimeTxt) {
-        readTimeTxt.text = `${post.readTimeMinutes} min read · Fact-Checked`;
+        readTimeTxt.text = `${post.readTimeMinutes} min read`;
     }
 
-    const reviewBadgeTxt = getEl("#txtArticleReviewer");
-    if (reviewBadgeTxt) {
-        reviewBadgeTxt.text = "Reviewed for Florida Statutory Compliance (F.S. Ch. 648 & 903)";
-    }
+    ["#txtArticleReviewer", "#txtPostAuthor", "#txtAuthorChrome", "#authorBio", "#postAuthorBio"].forEach(function (id) {
+        const el = getEl(id);
+        if (!el) return;
+        try { el.text = authorChrome; } catch (e) { /* optional */ }
+    });
 
     // 2. Share Actions (Multi-Channel + Fallback)
     const shareBtn = getEl("#btnArticleShare");
