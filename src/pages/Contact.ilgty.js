@@ -124,9 +124,9 @@ function updatePageSEO() {
                 },
                 "openingHoursSpecification": {
                     "@type": "OpeningHoursSpecification",
-                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                    "opens": "00:00",
-                    "closes": "23:59"
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                    "opens": "09:00",
+                    "closes": "17:00"
                 }
             }
         },
@@ -139,7 +139,7 @@ function updatePageSEO() {
                     "name": "Where is Shamrock Bail Bonds located?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Shamrock Bail Bonds is located at 1528 Broadway, Fort Myers, FL 33901 — directly across the street from the Lee County Justice Center and steps from the Ortiz Ave Core Facility. Walk-ins welcome 24/7."
+                        "text": "Shamrock Bail Bonds is located at 1528 Broadway, Fort Myers, FL 33901 — directly across the street from the Lee County Justice Center and steps from the Ortiz Ave Core Facility. Walk-ins are welcome Monday–Friday, 9 AM–5 PM. Phones are answered 24/7 at (239) 332-2245."
                     }
                 },
                 {

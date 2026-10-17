@@ -72,6 +72,7 @@ export function generateCountySchemas(county, faqs = []) {
         },
         openingHoursSpecification: {
             '@type':     'OpeningHoursSpecification',
+            // Office walk-in hours (Mon–Fri 09:00–17:00). Phone 24/7 stays on ContactPoint.
             dayOfWeek:   HOURS.dayOfWeek,
             opens:       HOURS.opens,
             closes:      HOURS.closes,
