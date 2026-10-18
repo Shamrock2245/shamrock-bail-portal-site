@@ -17,7 +17,7 @@
 | 9 | 2026-10-15 | Bail Bonds in Seminole County: Complete 2026  | 🟢 LIVE | `82c82612-4728-4d4c-821f-de43a165b9f9` | sarasota-county-jail-bail-bo |
 | 10 | 2026-10-16 | Bail Bonds in Brevard County: Complete 2026 J | 🟢 LIVE | `61a732d0-25b3-4ccb-a280-218ca5cb98c5` | charlotte-county-courthouse- |
 | 11 | 2026-10-17 | Bail Bonds in Volusia County: Complete 2026 J | 🟢 LIVE | `15f474d8-acfa-4d63-a843-55654a948e7b` | sarasota-county-jail-bail-bo |
-| 12 | 2026-10-18 | Bail Bonds in Duval County: Complete 2026 Jai | ⏳ SCHEDULED | `0b359a15-b4c6-4fc5-917b-f469fef91f49` | charlotte-county-courthouse- |
+| 12 | 2026-10-18 | Bail Bonds in Duval County: Complete 2026 Jai | 🟢 LIVE | `0b359a15-b4c6-4fc5-917b-f469fef91f49` | charlotte-county-courthouse- |
 | 13 | 2026-10-19 | Bail Bonds in Pasco County: Complete 2026 Jai | ⏳ SCHEDULED | `82dea44c-47fb-438e-bab1-84e4a7f9d3da` | sarasota-county-jail-bail-bo |
 | 14 | 2026-10-20 | Bail Bonds in Alachua County: Complete 2026 J | ⏳ SCHEDULED | `4a1477b4-f90b-4e30-a1f0-79bbe9da4e0f` | missed-court-date-bail-flori |
 | 15 | 2026-10-21 | Bail Bonds in Marion County: Complete 2026 Ja | ⏳ SCHEDULED | `4dbb44ed-6dce-414c-a957-39d7e63a0be9` | charlotte-county-courthouse- |
@@ -37,5 +37,5 @@
 | 29 | 2026-11-04 | Commercial Bail Bonds vs. Pretrial Supervised | ⏳ SCHEDULED | `4fb2f262-0159-48f4-9696-cc33aafdd272` | bail-premium-payment-plans-f |
 | 30 | 2026-11-05 | Fast-Track Digital Bail in Florida: Smartphon | ⏳ SCHEDULED | `29b7b21d-2130-4374-997d-f8dabcf102f9` | after-posting-bail-florida-g |
 
-**Progress**: 11/30 Published Live · 19 Scheduled Drafts Remaining
-*Last updated: 2026-10-17 16:17:52 UTC*
+**Progress**: 12/30 Published Live · 18 Scheduled Drafts Remaining
+*Last updated: 2026-10-18 16:26:47 UTC*
