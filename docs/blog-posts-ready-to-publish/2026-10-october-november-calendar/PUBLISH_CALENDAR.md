@@ -20,8 +20,8 @@
 | 12 | 2026-10-18 | Bail Bonds in Duval County: Complete 2026 Jai | 🟢 LIVE | `0b359a15-b4c6-4fc5-917b-f469fef91f49` | charlotte-county-courthouse- |
 | 13 | 2026-10-19 | Bail Bonds in Pasco County: Complete 2026 Jai | 🟢 LIVE | `82dea44c-47fb-438e-bab1-84e4a7f9d3da` | sarasota-county-jail-bail-bo |
 | 14 | 2026-10-20 | Bail Bonds in Alachua County: Complete 2026 J | 🟢 LIVE | `4a1477b4-f90b-4e30-a1f0-79bbe9da4e0f` | missed-court-date-bail-flori |
-| 15 | 2026-10-21 | Bail Bonds in Marion County: Complete 2026 Ja | ⏳ SCHEDULED | `4dbb44ed-6dce-414c-a957-39d7e63a0be9` | charlotte-county-courthouse- |
-| 16 | 2026-10-22 | Bail Bonds in Leon County: Complete 2026 Jail | ⏳ SCHEDULED | `bab62358-1b5b-475b-957f-4e9943dd49e9` | courthouse-justice-scale-flo |
+| 15 | 2026-10-21 | Bail Bonds in Marion County: Complete 2026 Ja | 🟢 LIVE | `4dbb44ed-6dce-414c-a957-39d7e63a0be9` | charlotte-county-courthouse- |
+| 16 | 2026-10-22 | Bail Bonds in Leon County: Complete 2026 Jail | 🟢 LIVE | `bab62358-1b5b-475b-957f-4e9943dd49e9` | courthouse-justice-scale-flo |
 | 17 | 2026-10-23 | Bail Bonds in Escambia County: Complete 2026  | ⏳ SCHEDULED | `5105c61e-d846-417f-8eae-f976e9fae093` | charlotte-county-courthouse- |
 | 18 | 2026-10-24 | Bail Bonds in St. Johns County: Complete 2026 | ⏳ SCHEDULED | `22e0b7ea-a950-469f-a405-a94cf612b5cb` | sarasota-county-jail-bail-bo |
 | 19 | 2026-10-25 | Bail Bonds in Lake County: Complete 2026 Jail | ⏳ SCHEDULED | `b0217cd1-38d3-4d3d-926e-8ffcd8b92a9e` | charlotte-county-courthouse- |
@@ -37,5 +37,5 @@
 | 29 | 2026-11-04 | Commercial Bail Bonds vs. Pretrial Supervised | ⏳ SCHEDULED | `4fb2f262-0159-48f4-9696-cc33aafdd272` | bail-premium-payment-plans-f |
 | 30 | 2026-11-05 | Fast-Track Digital Bail in Florida: Smartphon | ⏳ SCHEDULED | `29b7b21d-2130-4374-997d-f8dabcf102f9` | after-posting-bail-florida-g |
 
-**Progress**: 14/30 Published Live · 16 Scheduled Drafts Remaining
-*Last updated: 2026-10-20 17:53:36 UTC*
+**Progress**: 16/30 Published Live · 14 Scheduled Drafts Remaining
+*Last updated: 2026-10-22 18:49:26 UTC*

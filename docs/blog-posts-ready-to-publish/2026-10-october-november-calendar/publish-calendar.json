@@ -188,7 +188,9 @@
     "hero_image": "charlotte-county-courthouse-bail-bonds.jpg",
     "seo_title": "Marion County Bail Bonds | 2026 Jail & Release Guide",
     "draft_id": "4dbb44ed-6dce-414c-a957-39d7e63a0be9",
-    "status": "DRAFT_SCHEDULED"
+    "status": "PUBLISHED_LIVE",
+    "post_id": "4dbb44ed-6dce-414c-a957-39d7e63a0be9",
+    "published_at": "2026-10-22T18:49:23.664661+00:00"
   },
   {
     "day": 16,
@@ -198,8 +200,10 @@
     "category": "County Spotlight",
     "hero_image": "courthouse-justice-scale-florida.jpg",
     "seo_title": "Leon County Bail Bonds | 2026 Jail & Release Guide",
-    "status": "DRAFT_SCHEDULED",
-    "draft_id": "bab62358-1b5b-475b-957f-4e9943dd49e9"
+    "status": "PUBLISHED_LIVE",
+    "draft_id": "bab62358-1b5b-475b-957f-4e9943dd49e9",
+    "post_id": "bab62358-1b5b-475b-957f-4e9943dd49e9",
+    "published_at": "2026-10-22T18:49:25.056587+00:00"
   },
   {
     "day": 17,
