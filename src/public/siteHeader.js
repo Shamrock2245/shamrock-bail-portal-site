@@ -104,7 +104,7 @@ function findNearestJail() {
 
             // Reset button label
             if ($w('#navFindJail').valid) {
-                $w('#navFindJail').label = "Find My Jail";
+                $w('#navFindJail').label = "Find an Inmate";
             }
         })
         .catch((error) => {
@@ -120,7 +120,7 @@ function findNearestJail() {
 
             // Reset button label
             if ($w('#navFindJail').valid) {
-                $w('#navFindJail').label = "Find My Jail";
+                $w('#navFindJail').label = "Find an Inmate";
             }
         });
 }

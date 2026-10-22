@@ -1,6 +1,6 @@
 # How Fast Can Shamrock Bail Bonds Get Someone Out of Jail?
 
-**Published:** August 06, 2026 | **Editorial Board:** Shamrock Legal Intelligence | **Regulatory Review:** Licensed Florida Bail Specialist (F.S. Ch. 648)
+**Published:** August 06, 2026 | Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. Writing bonds in all 67 Florida counties. We answer 24/7.
 
 ---
 ## Executive Summary & Key Takeaways

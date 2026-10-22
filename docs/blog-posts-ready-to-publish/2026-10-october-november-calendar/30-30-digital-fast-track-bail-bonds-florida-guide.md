@@ -1,6 +1,6 @@
 # Fast-Track Digital Bail in Florida: Smartphone ID Scanning & 15-Minute Paperwork
 
-**Published:** November 05, 2026 | **Editorial Board:** Shamrock Legal Intelligence | **Regulatory Review:** Licensed Florida Bail Specialist (F.S. Ch. 648 & 903)
+**Published:** November 05, 2026 | Brendan O'Neal, owner of Shamrock Bail Bonds since 2012, 1528 Broadway, Fort Myers. Writing bonds in all 67 Florida counties. We answer 24/7.
 
 ---
 

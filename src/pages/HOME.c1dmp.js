@@ -110,6 +110,7 @@ const GET_STARTED_IDS = ['#comp-mjip0apd', '#getStartedButton', '#getStartedBtn'
 /** Canonical destinations — keep labels and URLs honest. */
 const DEST = {
     phone: 'tel:+12393322245',
+    /** Public Spanish line is the automated number, not the live-person desk. */
     phoneSpanish: 'tel:+17272952245',
     /** Open bot INSIDE Telegram (Mini Apps launch from the bot menu, not the public web). */
     telegramBot: 'https://t.me/ShamrockBail_bot',
@@ -198,6 +199,24 @@ function goTo(url, eventName, eventData) {
 // Hero + CTA
 // ---------------------------------------------------------------------------
 
+/** CoS-approved home primary CTA labels. Exact wording. */
+const HOME_CTA = {
+    startBond: 'Start a Bond',
+    call: 'Call 24/7',
+    findInmate: 'Find an Inmate'
+};
+
+function applyButtonLabel(selector, label) {
+    try {
+        const el = $w(selector);
+        if (!el || !el.id) return false;
+        try { el.label = label; } catch (e) {}
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 function setupHeroSection() {
     // Hero primary CTA: start county selection (conversion funnel)
     if (!safeOnClick('#heroCallBtn', function () {
@@ -205,18 +224,40 @@ function setupHeroSection() {
         scrollToCountySelector();
     })) { /* optional */ }
 
-    // Explicit phone CTAs (IDs that mean "call")
-    ['#callNowBtn', '#heroPhoneBtn', '#headerCallBtn', '#stickyCallBtn', '#phoneCtaBtn'].forEach(function (id) {
+    // Call 24/7 dials the office line only. comp-mjhsrl5o5 is the live home "Call Now" button.
+    ['#comp-mjhsrl5o5', '#callNowBtn', '#heroPhoneBtn', '#headerCallBtn', '#stickyCallBtn', '#phoneCtaBtn'].forEach(function (id) {
+        applyButtonLabel(id, HOME_CTA.call);
+        try {
+            const el = $w(id);
+            if (el && el.id) {
+                try { el.link = DEST.phone; } catch (e) {}
+                try { el.target = '_self'; } catch (e) {}
+            }
+        } catch (e) {}
         safeOnClick(id, function () {
             goTo(DEST.phone, 'phone_click', { location: 'home', selector: id });
         });
     });
+
+    // Find an Inmate — same control as masterPage Find My Jail (comp-ml15h39u).
+    ['#comp-ml15h39u', '#navFindJail', '#findMyJailBtn', '#findInmateBtn', '#inmateSearchBtn'].forEach(function (id) {
+        applyButtonLabel(id, HOME_CTA.findInmate);
+    });
 }
 
 function setupCTAButtons() {
-    // Spanish line
-    safeOnClick('#callNowSpanishBtn', function () {
-        goTo(DEST.phoneSpanish, 'spanish_call_clicked', { location: 'hero_section' });
+    // Spanish line — public number is 727-295-2245. comp-mk41rluh is the live home button.
+    ['#comp-mk41rluh', '#callNowSpanishBtn'].forEach(function (id) {
+        try {
+            const el = $w(id);
+            if (el && el.id) {
+                try { el.link = DEST.phoneSpanish; } catch (e) {}
+                try { el.target = '_self'; } catch (e) {}
+            }
+        } catch (e) {}
+        safeOnClick(id, function () {
+            goTo(DEST.phoneSpanish, 'spanish_call_clicked', { location: 'hero_section' });
+        });
     });
 
     // Telegram bot — MUST open Telegram (Mini Apps live only inside the bot)
@@ -231,6 +272,7 @@ function setupCTAButtons() {
     });
 
     // Other common homepage CTAs
+    applyButtonLabel('#startOnlineBtn', HOME_CTA.startBond);
     safeOnClick('#startOnlineBtn', function () {
         let county = '';
         try { county = session.getItem('last_county_slug') || ''; } catch (e) {}
@@ -343,11 +385,11 @@ function loadCountyDropdown() {
         // Wire onChange handler
         dropdown.onChange(function() { handleCountySelection(dropdown); });
 
-        // One primary CTA: county → county page (then Get Someone Out / Call).
-        // Keep label action-oriented; Editor heading can stay "Select Your County…".
+        // One primary CTA: county → county page. Label matches the approved county CTA.
+        // Editor heading can stay "Select Your County…".
         const getStartedBtn = resolveElement(GET_STARTED_IDS);
         if (getStartedBtn) {
-            try { getStartedBtn.label = 'Get Them Out'; } catch (e) {}
+            try { getStartedBtn.label = HOME_CTA.startBond; } catch (e) {}
             getStartedBtn.onClick(function() { handleGetStarted(dropdown); });
         } else {
             console.warn('[County Dropdown] Get Started button not found. Tried: ' + GET_STARTED_IDS.join(', '));
@@ -356,7 +398,7 @@ function loadCountyDropdown() {
         // Secondary bond-start control (if present on canvas) → portal role picker
         const startBond = resolveElement(['#startBondButton', '#startBondBtn', '#btnStartBond']);
         if (startBond && typeof startBond.onClick === 'function') {
-            try { startBond.label = 'Start online'; } catch (e) {}
+            try { startBond.label = HOME_CTA.startBond; } catch (e) {}
             startBond.onClick(function () {
                 const selected = dropdown.value || '';
                 const q = selected ? ('?county=' + encodeURIComponent(selected)) : '';
