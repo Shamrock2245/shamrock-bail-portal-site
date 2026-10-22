@@ -19,5 +19,6 @@ jobs:
           payload: |
             {
               "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
-              "text": "🚀 *New Push to Main*\n*Author:* ${{ github.actor }}\n*Message:* ${{ github.event.head_commit.message }}\n*Link:* ${{ github.event.head_commit.url }}"
+              "text": ${{ toJSON(format('🚀 *New Push to Main*\n*Author:* {0}\n*Message:* {1}\n*Link:* {2}', github.actor, github.event.head_commit.message, github.event.head_commit.url)) }}
             }
+        continue-on-error: true

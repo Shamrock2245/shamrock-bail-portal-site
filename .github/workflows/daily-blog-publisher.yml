@@ -51,7 +51,7 @@ jobs:
 
       - name: Install Wix CLI & Authenticate
         run: |
-          npm install -g @wix/cli@latest
+          npm install -g @wix/cli@1.1.268
           wix login --api-key "${{ secrets.WIX_CLI_API_KEY }}"
         env:
           WIX_CLI_API_KEY: ${{ secrets.WIX_CLI_API_KEY }}

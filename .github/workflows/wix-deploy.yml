@@ -36,7 +36,7 @@ jobs:
 
       # ── 3. Install Wix CLI ───────────────────────────────────────────────────
       - name: Install Wix CLI
-        run: npm install -g @wix/cli@latest
+        run: npm install -g @wix/cli@1.1.268
 
       # ── 4. Authenticate with Wix ─────────────────────────────────────────────
       - name: Authenticate Wix CLI
