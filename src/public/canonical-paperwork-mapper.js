@@ -6,7 +6,8 @@
  * from `PDF_Mappings.js` and `shamrock_field_mappings.json`.
  * 
  * Standardizes client intake data into a single canonical person/case/packet model.
- * Maps canonical data onto existing OSI, Accredited, Bankers, and Palmetto template sets.
+ * Maps canonical data onto active surety template sets: OSI and Palmetto.
+ * Note: Accredited, Bankers, Lexington National, Roche Surety, and Universal remain inactive/future options.
  * 
  * Doctrine: "The Website is the Clipboard. The Backend is the Brain."
  * 
@@ -163,7 +164,7 @@ export function hydratePersonFromOcr(person, ocrData = {}) {
  * (Preserves exact field names from PDF_Mappings.js and shamrock_field_mappings.json)
  * 
  * @param {Object} canonicalCase - Canonical Case instance
- * @param {'OSI'|'Palmetto'|'Accredited'|'Bankers'} [surety='OSI']
+ * @param {'OSI'|'Palmetto'} [surety='OSI'] - Active sureties: OSI, Palmetto. (Accredited, Bankers, Lexington National, Roche, Universal are inactive/future options).
  * @returns {Object} Exact template-ready field dictionary
  */
 export function mapToSuretyPacket(canonicalCase, surety = 'OSI') {

@@ -32,13 +32,12 @@
 
 | Milestone | Scope | Key Deliverables | Status |
 |---|---|---|---|
-| **A. Studio Visual System & Public IA** | Translation of live Wix Editor to modern Wix Studio | Full visual system, fluid responsive breakpoints, SWFL hero dominance, 67-county directory, killing stock templates | 🎨 Backend Wired / Canvas Next |
-| **B. Portal & Launchpad Translation** | Port member dashboards & launchpads | `portal-landing`, `portal-defendant`, `portal-indemnitor`, `portal-staff`, `SigningLightbox` with DocuSeal boundary | 🔒 Backend Wired / Canvas Next |
-| **C. `/portal-start` Autopilot Wizard** | Mobile/tablet intake wizard | Role → ID scan → OCR Hydrate → Delta fields → Plain preview → Signing shell | ⚡ Backend Wired / Canvas Next |
-| **D. Staff Lobby-Tablet Handoff** | In-person tablet intake workflow | Instant QR/PIN tablet handoff for clients in office or jail lobby | 📱 Backend Wired / Canvas Next |
-| **E. `ServiceAreas` Multi-State CMS** | Non-FL expansion directory | Multi-state routing (`/bail-bonds/:state/:county`) without altering FL homepage | 🗺️ Backend Wired / Canvas Next |
+| **A. Studio Visual System & Public IA** | Translation of live Wix Editor to modern Wix Studio | Full visual system, fluid responsive breakpoints, SWFL hero dominance, 67-county directory, killing stock templates | 🎨 Backend Wired / Canvas Active |
+| **B. Portal & Launchpad Translation** | Port member dashboards & launchpads | `portal-landing`, `portal-defendant`, `portal-indemnitor`, `SigningLightbox` with DocuSeal boundary (Note: staff portal retired; shamrock-leads CRM is staff tool) | 🔒 Backend Wired / Canvas Active |
+| **C. `/portal-start` Autopilot Wizard** | Mobile intake wizard | Role → ID scan → OCR Hydrate → Delta fields → Plain preview → Signing shell | ⚡ Backend Wired / Canvas Active |
+| **D. `ServiceAreas` Multi-State CMS** | Non-FL expansion directory | Multi-state routing (`/bail-bonds/:state/:county`) without altering FL homepage | 🗺️ Backend Wired / Canvas Next |
 
-*Success Metric for C:* A panicked indemnitor on an iPhone can scan a FL Driver's License and reach a correct signature pad without retyping identity fields.
+*Success Metric for C:* A panicked indemnitor on an iPhone can scan a FL Driver's License and reach a correct signature pad without retyping identity fields. (Note: Staff kiosk/lobby tablet retired; all staff intake is managed in shamrock-leads CRM).
 
 ---
 
