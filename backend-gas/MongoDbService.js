@@ -7,35 +7,39 @@
  *
  * All credentials are stored in GAS Script Properties — NEVER hardcoded.
  * Required Script Properties:
- *   MONGO_PROXY_URL  — Cloud Function URL
- *   PROXY_API_KEY    — Shared secret (must match Cloud Function env var)
+ *   MONGO_PROXY_V2_URL — URL of the mongo-proxy-v2 Cloud Function (named actions). There is
+ *                        deliberately NO fallback to the old MONGO_PROXY_URL property, which
+ *                        keeps pointing at the old generic function until the soak is done.
+ *   PROXY_API_KEY_GAS — GAS's own proxy key (must match PROXY_API_KEY_GAS on the Cloud Function)
+ *   PROXY_API_KEY     — LEGACY shared key, used only while PROXY_API_KEY_GAS is not set.
+ *                       Delete it after the rotation (see cloud-functions/mongo-proxy/README.md).
  *
  * Public API (MongoDbService object):
- *   findOne(collection, filter)
- *   find(collection, filter, limit, skip)
- *   insertOne(collection, document)
- *   updateOne(collection, filter, updateMsg, upsert)
- *   updateMany(collection, filter, updateMsg, upsert)
- *   deleteOne(collection, filter)              ← NEW in v2.1
- *   ping()
+ *   callAction(action, params)   — POST a NAMED proxy action (see cloud-functions/mongo-proxy/named-actions.js)
+ *   insertHistoricalBond(doc)    — action insertHistoricalBond (HistoricalBonds)
+ *   ping()                       — action ping
  *
- * Version: 2.1.0 — Added retry logic, deleteOne, hardened error handling.
+ * The proxy no longer accepts generic database/collection/filter calls
+ * (findOne/find/insertOne/updateOne/... return 410). Each named action hardcodes
+ * its database and collection server-side and whitelists fields, so this client
+ * never sends database or collection.
+ *
+ * Version: 3.0.0 — Named actions only (generic proxy removed).
  */
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-var MONGO_CLUSTER        = 'Shamrock';
-var MONGO_DB             = 'ShamrockBailDB';
 var MONGO_MAX_RETRIES    = 3;
 var MONGO_RETRY_DELAY_MS = 1500; // ms; multiplied by attempt# for back-off
 
 // ── Config Loader ──────────────────────────────────────────────────────────────
 function getMongoConfig_() {
   var props    = PropertiesService.getScriptProperties();
-  var proxyUrl = props.getProperty('MONGO_PROXY_URL');
-  var proxyKey = props.getProperty('PROXY_API_KEY');
+  var proxyUrl = props.getProperty('MONGO_PROXY_V2_URL');
+  // GAS sends its own key; the legacy shared key is a transitional fallback only.
+  var proxyKey = props.getProperty('PROXY_API_KEY_GAS') || props.getProperty('PROXY_API_KEY');
   if (!proxyUrl || !proxyKey) {
     throw new Error(
-      '[MongoDbService] MONGO_PROXY_URL or PROXY_API_KEY missing from Script Properties. ' +
+      '[MongoDbService] MONGO_PROXY_V2_URL or PROXY_API_KEY_GAS missing from Script Properties. ' +
       'Run setupMongoDBProperties() once from the GAS IDE.'
     );
   }
@@ -43,21 +47,18 @@ function getMongoConfig_() {
 }
 
 // ── Core Fetch with Exponential Back-off Retry ─────────────────────────────────
-function callMongoDataApi_(action, collection, payload) {
-  payload = payload || {};
+function callMongoNamedAction_(action, params) {
+  params = params || {};
   var config = getMongoConfig_();
 
-  // Build request body
-  var requestBody = {
-    action:     action,
-    dataSource: MONGO_CLUSTER,
-    database:   MONGO_DB,
-    collection: collection
-  };
-  var pKeys = Object.keys(payload);
+  // Build request body: action + the action's own params. Never database/collection.
+  var requestBody = {};
+  var pKeys = Object.keys(params);
   for (var i = 0; i < pKeys.length; i++) {
-    requestBody[pKeys[i]] = payload[pKeys[i]];
+    if (pKeys[i] === 'database' || pKeys[i] === 'collection' || pKeys[i] === 'dataSource') continue;
+    requestBody[pKeys[i]] = params[pKeys[i]];
   }
+  requestBody.action = action;
 
   var options = {
     method:             'post',
@@ -80,7 +81,7 @@ function callMongoDataApi_(action, collection, payload) {
 
       // 4xx = client error; do NOT retry
       if (responseCode >= 400 && responseCode < 500) {
-        Logger.log('[MongoDbService] Client error ' + responseCode + ' on ' + action + '/' + collection + ': ' + responseText);
+        Logger.log('[MongoDbService] Client error ' + responseCode + ' on ' + action + ': ' + responseText);
         throw new Error('MongoDB Proxy Client Error (' + responseCode + '): ' + responseText);
       }
 
@@ -103,66 +104,34 @@ function callMongoDataApi_(action, collection, payload) {
   }
 
   throw new Error('[MongoDbService] All ' + MONGO_MAX_RETRIES + ' retries failed for ' +
-                  action + '/' + collection + '. Last: ' + (lastError ? lastError.message : 'unknown'));
+                  action + '. Last: ' + (lastError ? lastError.message : 'unknown'));
 }
 
 // ── Public Service Object ──────────────────────────────────────────────────────
 var MongoDbService = {
 
-  findOne: function(collection, filter) {
-    filter = filter || {};
-    Logger.log('[MongoDbService] findOne → ' + collection);
-    return callMongoDataApi_('findOne', collection, { filter: filter });
-  },
-
-  find: function(collection, filter, limit, skip) {
-    filter = filter || {};
-    limit  = (typeof limit === 'number') ? limit : 100;
-    skip   = (typeof skip  === 'number') ? skip  : 0;
-    Logger.log('[MongoDbService] find → ' + collection + ' (limit=' + limit + ')');
-    return callMongoDataApi_('find', collection, { filter: filter, limit: limit, skip: skip });
-  },
-
-  insertOne: function(collection, document) {
-    document = document || {};
-    document.createdAt = new Date().toISOString();
-    Logger.log('[MongoDbService] insertOne → ' + collection);
-    return callMongoDataApi_('insertOne', collection, { document: document });
-  },
-
-  updateOne: function(collection, filter, updateMsg, upsert) {
-    upsert = (upsert === true);
-    updateMsg = updateMsg || {};
-    if (!updateMsg.$set) updateMsg.$set = {};
-    updateMsg.$set.updatedAt = new Date().toISOString();
-    Logger.log('[MongoDbService] updateOne → ' + collection);
-    return callMongoDataApi_('updateOne', collection, { filter: filter, update: updateMsg, upsert: upsert });
-  },
-
-  updateMany: function(collection, filter, updateMsg, upsert) {
-    upsert = (upsert === true);
-    updateMsg = updateMsg || {};
-    if (!updateMsg.$set) updateMsg.$set = {};
-    updateMsg.$set.updatedAt = new Date().toISOString();
-    Logger.log('[MongoDbService] updateMany → ' + collection);
-    return callMongoDataApi_('updateMany', collection, { filter: filter, update: updateMsg, upsert: upsert });
+  /**
+   * Call a named proxy action (e.g. 'logCheckIn', 'logIntake', 'insertHistoricalBond').
+   * @param {string} action
+   * @param {Object} params — whitelisted fields for that action
+   */
+  callAction: function(action, params) {
+    Logger.log('[MongoDbService] action → ' + action);
+    return callMongoNamedAction_(action, params);
   },
 
   /**
-   * Delete a single document matching the filter.
-   * @param {string} collection
-   * @param {Object} filter
-   * @returns {{ deletedCount: number }}
+   * Insert an OCR-parsed historical bond (HistoricalBonds). Only whitelisted fields are stored.
+   * @param {Object} doc
+   * @returns {{ insertedId: string }}
    */
-  deleteOne: function(collection, filter) {
-    filter = filter || {};
-    Logger.log('[MongoDbService] deleteOne → ' + collection);
-    return callMongoDataApi_('deleteOne', collection, { filter: filter });
+  insertHistoricalBond: function(doc) {
+    return this.callAction('insertHistoricalBond', doc || {});
   },
 
   ping: function() {
     try {
-      var result = this.findOne('HistoricalBonds', { _id: 'ping' });
+      var result = this.callAction('ping', {});
       Logger.log('[MongoDbService] ping OK');
       return { success: true, result: result };
     } catch (e) {
