@@ -52,7 +52,7 @@ function processHistoricalBondsBatch() {
                 parsedData.SourceFile_Name = file.getName();
 
                 // Push to MongoDB
-                const result = MongoDbService.insertOne('HistoricalBonds', parsedData);
+                const result = MongoDbService.insertHistoricalBond(parsedData);
                 if (result && !result.error) {
                     console.log(`✅ Passed to MongoDB: ${parsedData.FirstName} ${parsedData.LastName}`);
                     file.moveTo(processed); // Move to processed folder
