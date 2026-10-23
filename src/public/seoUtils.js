@@ -401,6 +401,14 @@ export function initGlobalSEO() {
                 {
                     "@type": "ContactPoint",
                     "telephone": "+1-727-295-2245",
+                    "contactType": "Customer Service",
+                    "areaServed": "US-FL",
+                    "availableLanguage": "Spanish",
+                    "description": "Se habla español"
+                },
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-727-295-2245",
                     "contactType": "Customer Service (Spanish line)",
                     "areaServed": "US-FL",
                     "availableLanguage": ["Spanish"]
