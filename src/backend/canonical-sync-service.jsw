@@ -46,7 +46,7 @@ export async function persistCanonicalCaseToCms(canonicalCase) {
             totalBond: canonicalCase.totalBond || 0,
             premiumEstimate: canonicalCase.premiumEstimate || 0,
             transferFee: canonicalCase.transferFee || 0,
-            suretyCode: canonicalCase.suretyCode || 'ACCREDITED',
+            suretyCode: canonicalCase.suretyCode || 'OSI',
             chargesJson: JSON.stringify(canonicalCase.charges || []),
             courtDatesJson: JSON.stringify(canonicalCase.courtDates || []),
             status: canonicalCase.packet?.status || 'pending_review',

@@ -556,7 +556,7 @@ function generateFAQs(name, circuitNum, circuitFull, cities, countySeat, phoneDi
   return [
     {
       question: `Where can I find bail bonds in ${name} County, Florida?`,
-      answer: `Shamrock Bail Bonds is a trusted local bail bond agency serving ${name} County${circuitStr} of Florida. We provide professional, confidential bail bond services for individuals arrested in ${name} County and surrounding areas. Our office address is 1528 Broadway, Fort Myers, FL 33901, and you can reach us at ${phoneDisplay}.`
+      answer: `Shamrock Bail Bonds is a trusted local bail bond agency serving ${name} County${circuitStr} of Florida. We provide ${name === 'Lee' ? 'confidential, 24/7' : 'professional, confidential'} bail bond services for individuals arrested in ${name} County and surrounding areas. Our office address is 1528 Broadway, Fort Myers, FL 33901, and you can reach us at ${phoneDisplay}.`
     },
     {
       question: `Who offers 24/7 bail bond services in ${name} County?`,

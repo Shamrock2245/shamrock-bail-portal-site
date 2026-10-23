@@ -101,7 +101,26 @@ export function generateLocalBusinessSchema(options = {}) {
                 "telephone": "+1-239-332-2245",
                 "contactType": "Emergency Bail Dispatch",
                 "areaServed": "FL",
-                "availableLanguage": ["English", "Spanish"]
+                "availableLanguage": ["English", "Spanish"],
+                "hoursAvailable": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                }
+            },
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-727-295-2245",
+                "contactType": "Customer Service (Spanish line)",
+                "areaServed": "FL",
+                "availableLanguage": ["Spanish"],
+                "hoursAvailable": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                }
             },
             {
                 "@type": "ContactPoint",
@@ -115,9 +134,9 @@ export function generateLocalBusinessSchema(options = {}) {
         ],
         "openingHoursSpecification": {
             "@type": "OpeningHoursSpecification",
-            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-            "opens": "00:00",
-            "closes": "23:59"
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+            "opens": "09:00",
+            "closes": "17:00"
         },
         "areaServed": options.areaServed || {
             "@type": "State",
@@ -145,11 +164,39 @@ export function generateCountyPageSchema(county) {
             "@type": "AdministrativeArea",
             "name": `${county.name} County, Florida`
         },
+        "contactPoint": [
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-239-332-2245",
+                "contactType": "Customer Service",
+                "areaServed": "FL",
+                "availableLanguage": ["English", "Spanish"],
+                "hoursAvailable": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                }
+            },
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-727-295-2245",
+                "contactType": "Customer Service (Spanish line)",
+                "areaServed": "FL",
+                "availableLanguage": ["Spanish"],
+                "hoursAvailable": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                }
+            }
+        ],
         "openingHoursSpecification": {
             "@type": "OpeningHoursSpecification",
-            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-            "opens": "00:00",
-            "closes": "23:59"
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+            "opens": "09:00",
+            "closes": "17:00"
         }
     };
 }
@@ -403,7 +450,13 @@ export function initGlobalSEO() {
                     "telephone": "+1-727-295-2245",
                     "contactType": "Customer Service (Spanish line)",
                     "areaServed": "US-FL",
-                    "availableLanguage": ["Spanish"]
+                    "availableLanguage": ["Spanish"],
+                    "hoursAvailable": {
+                        "@type": "OpeningHoursSpecification",
+                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                        "opens": "00:00",
+                        "closes": "23:59"
+                    }
                 }
             ],
             // Semantic relevance signals for AI/GEO
@@ -454,9 +507,9 @@ export function initGlobalSEO() {
             },
             "openingHoursSpecification": {
                 "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                "opens": "00:00",
-                "closes": "23:59"
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                "opens": "09:00",
+                "closes": "17:00"
             },
             "paymentAccepted": ["Cash", "Credit Card", "Debit Card", "Payment Plan"],
             "currenciesAccepted": "USD",

@@ -85,7 +85,7 @@ When Shannon calls a webhook (e.g., `lookup_defendant`, `calculate_premium`):
 
 ### Fallback & Handoff
 If the user asks for a human, a lawyer, or gets excessively angry:
-- Immediately trigger `transfer_to_bondsman` tool (3 numbers: primary, secondary, Spanish line).
+- Immediately trigger `transfer_to_bondsman` tool (4 numbers in transfer ring: 239-332-2245, 239-955-0301, 239-955-0178, and 239-955-0314. Note: 239-955-0301 is an internal transfer desk line, not the public Spanish line 727-295-2245).
 - **Fallback Sentence**: "It sounds like you need to speak with our on-call bondsman right away. Please hold while I transfer you."
 
 ---

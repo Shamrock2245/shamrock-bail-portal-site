@@ -37,7 +37,7 @@ Editor is the live public surface. Studio canvas is deferred — do not block pr
   - [x] Enforce clipboard vs brain boundary (no DocuSeal packet creation in Wix)
   - [x] Update `SigningLightbox` and `portal-config.js` for Netlify paperwork launchpad
   - [x] Build backend signing session service & BlueBubbles 1-tap link recovery (`signing-session-service.jsw`)
-  - [ ] Port `portal-landing`, `portal-defendant`, `portal-indemnitor`, `portal-staff` to Studio visual canvas
+  - [ ] Port `portal-landing`, `portal-defendant`, `portal-indemnitor` to Studio visual canvas (Note: `portal-staff` retired)
 
 - [ ] **Milestone C: `/portal-start` Autopilot Wizard**
   - [x] Create Canonical Schema Mapper (`src/public/canonical-paperwork-mapper.js`)
@@ -45,12 +45,10 @@ Editor is the live public surface. Studio canvas is deferred — do not block pr
   - [x] Create Case Facts Hydrator with $100 min/charge calculation (`src/backend/case-facts-hydrator.jsw`)
   - [x] Create Cross-Device Wizard Draft Persistence (`src/backend/wizard-draft-service.jsw`)
   - [x] Create Human Paperwork Preview & DocuSeal launchpad bridge (`paperwork-preview-studio.js`)
-  - [ ] Build Studio visual wizard canvas (Role selector, Camera viewfinder layout, 2-col tablet layout)
+  - [ ] Build Studio visual wizard canvas (Role selector, Camera viewfinder layout, mobile-first responsive layout)
 
-- [ ] **Milestone D: Staff Lobby-Tablet Handoff**
-  - [x] Build Lobby Tablet backend engine (`src/backend/lobby-tablet-service.jsw`)
-  - [x] Connect unposted scraper lead attachment and "Ready for Super CRM" status bridge
-  - [ ] Build Studio visual staff kiosk interface
+- [x] **Milestone D: Staff Kiosk / Lobby-Tablet (RETIRED)**
+  - Note: Staff kiosk and lobby tablet retired; all staff intake, matching, and case operations are centralized in shamrock-leads Auto-CRM. See `docs/STAFF-PORTAL-RETIREMENT.md`.
 
 - [ ] **Milestone E: `ServiceAreas` Multi-State CMS**
   - [x] Configure `EXPANSION_STATES` registry in `portal-config.js` and `collectionIds.js`
