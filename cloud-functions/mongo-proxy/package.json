@@ -8,7 +8,7 @@
     },
     "scripts": {
         "start": "functions-framework --target=mongoProxy",
-        "deploy": "gcloud functions deploy mongo-proxy --gen2 --runtime=nodejs20 --region=us-east1 --trigger-http --allow-unauthenticated --entry-point=mongoProxy --set-secrets=MONGO_URI=MONGO_URI:latest,PROXY_API_KEY=PROXY_API_KEY:latest --memory=256MB --timeout=60s --max-instances=10 --project=swfl-arrest-scrapers"
+        "deploy": "gcloud functions deploy mongo-proxy-v2 --gen2 --runtime=nodejs20 --region=us-east1 --trigger-http --allow-unauthenticated --entry-point=mongoProxy --update-secrets=MONGO_URI=MONGO_URI:latest,PROXY_API_KEY=PROXY_API_KEY:latest,PROXY_API_KEY_GAS=PROXY_API_KEY_GAS:latest,PROXY_API_KEY_VELO=PROXY_API_KEY_VELO:latest,TWILIO_AUTH_TOKEN=TWILIO_AUTH_TOKEN:latest,TELEGRAM_WEBHOOK_SECRET=TELEGRAM_WEBHOOK_SECRET:latest --update-env-vars=TWILIO_WEBHOOK_URL=https://us-east1-swfl-arrest-scrapers.cloudfunctions.net/mongo-proxy-v2/twilio --memory=256MB --timeout=60s --max-instances=10 --project=swfl-arrest-scrapers"
     },
     "dependencies": {
         "@google-cloud/functions-framework": "^3.3.0",
