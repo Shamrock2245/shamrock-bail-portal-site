@@ -43,6 +43,8 @@ backend-gas/deployment_output*.txt
 
 # Data files - too large for version control
 *.csv
+!docs/*.csv
+!docs/**/*.csv
 *_analysis.json
 
 # Fetched external docs (re-fetch as needed)

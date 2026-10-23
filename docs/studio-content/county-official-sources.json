@@ -1,0 +1,1835 @@
+[
+  {
+    "name": "Alachua",
+    "slug": "alachua",
+    "jailName": "Alachua County Jail",
+    "jailAddress": "TODO-VERIFY (Alachua County Sheriff Detention)",
+    "jailPhone": "(352) 367-4000",
+    "inmateSearchUrl": "https://acso.us/inmate-search/",
+    "courthouseName": "Alachua County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Alachua County Court)",
+    "clerkName": "Alachua County Clerk of Court",
+    "clerkPhone": "(352) 374-3636",
+    "clerkWebsite": "https://www.alachuacounty.us/Depts/Clerk/Pages/Clerk.aspx",
+    "courtRecordsUrl": "https://www.alachuaclerk.org/court_records/index.cfm?section=login&r=331568",
+    "firstAppearance": "First appearance hearings for Alachua County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Gainesville",
+      "Newberry",
+      "Archer",
+      "High Springs",
+      "Alachua"
+    ],
+    "officialSources": [
+      "https://acso.us/inmate-search/",
+      "https://www.alachuacounty.us/Depts/Clerk/Pages/Clerk.aspx",
+      "https://www.alachuaclerk.org/court_records/index.cfm?section=login&r=331568"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Alachua County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Baker",
+    "slug": "baker",
+    "jailName": "Baker County Jail",
+    "jailAddress": "TODO-VERIFY (Baker County Sheriff Detention)",
+    "jailPhone": "(904) 259-2231",
+    "inmateSearchUrl": "https://www.bakercountysheriffsoffice.com/",
+    "courthouseName": "Baker County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Baker County Court)",
+    "clerkName": "Baker County Clerk of Court",
+    "clerkPhone": "(904) 259-8113",
+    "clerkWebsite": "http://www.bakerclerk.com/",
+    "courtRecordsUrl": "https://www.civitekflorida.com/ocrs/app/search.xhtml",
+    "firstAppearance": "First appearance hearings for Baker County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Macclenny",
+      "Glen St. Mary",
+      "Sanderson"
+    ],
+    "officialSources": [
+      "https://www.bakercountysheriffsoffice.com/",
+      "http://www.bakerclerk.com/",
+      "https://www.civitekflorida.com/ocrs/app/search.xhtml"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Baker County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Bay",
+    "slug": "bay",
+    "jailName": "Bay County Jail",
+    "jailAddress": "TODO-VERIFY (Bay County Sheriff Detention)",
+    "jailPhone": "(850) 785-5245",
+    "inmateSearchUrl": "https://www.baysomobile.org/is/",
+    "courthouseName": "Bay County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Bay County Court)",
+    "clerkName": "Bay County Clerk of Court",
+    "clerkPhone": "(850) 763-9061",
+    "clerkWebsite": "https://www.baycoclerk.com/",
+    "courtRecordsUrl": "https://records2.baycoclerk.com/",
+    "firstAppearance": "First appearance hearings for Bay County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Panama City",
+      "Panama City Beach",
+      "Lynn Haven",
+      "Springfield",
+      "Callaway"
+    ],
+    "officialSources": [
+      "https://www.baysomobile.org/is/",
+      "https://www.baycoclerk.com/",
+      "https://records2.baycoclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Bay County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Bradford",
+    "slug": "bradford",
+    "jailName": "Bradford County Jail",
+    "jailAddress": "945-A N. Temple Avenue, Starke, FL 32091",
+    "jailPhone": "(904) 966-2276",
+    "inmateSearchUrl": "http://smartweb.bradfordsheriff.org/smartwebclient/Jail.aspx",
+    "courthouseName": "Bradford County Clerk of the Circuit Court & Comptroller",
+    "courthouseAddress": "945 N. Temple Avenue, Starke, FL 32091",
+    "clerkName": "Bradford County Clerk of the Circuit Court & Comptroller",
+    "clerkPhone": "(904) 966-6280",
+    "clerkWebsite": "https://www.bradfordcountyclerk.com/",
+    "courtRecordsUrl": "https://www.bradfordcountyclerk.com/search.aspx",
+    "firstAppearance": "First appearance hearings for Bradford County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Starke",
+      "Lawtey",
+      "Hampton",
+      "Brooker"
+    ],
+    "officialSources": [
+      "https://www.bradfordsheriff.org/department-directory/jail/",
+      "https://bradfordclerk.com/contact-us/",
+      "http://smartweb.bradfordsheriff.org/smartwebclient/Jail.aspx",
+      "https://www.bradfordcountyclerk.com/",
+      "https://www.bradfordcountyclerk.com/search.aspx"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Bradford County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Brevard",
+    "slug": "brevard",
+    "jailName": "Brevard County Jail",
+    "jailAddress": "TODO-VERIFY (Brevard County Sheriff Detention)",
+    "jailPhone": "(321) 690-1500",
+    "inmateSearchUrl": "https://www.brevardsheriff.com/bookings/",
+    "courthouseName": "Brevard County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Brevard County Court)",
+    "clerkName": "Brevard County Clerk of Court",
+    "clerkPhone": "(321) 637-5413",
+    "clerkWebsite": "https://www.brevardclerk.us/",
+    "courtRecordsUrl": "https://vweb1.brevardclerk.us/",
+    "firstAppearance": "First appearance hearings for Brevard County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Melbourne",
+      "Palm Bay",
+      "Titusville",
+      "Cocoa",
+      "Rockledge",
+      "Merritt Island"
+    ],
+    "officialSources": [
+      "https://www.brevardsheriff.com/bookings/",
+      "https://www.brevardclerk.us/",
+      "https://vweb1.brevardclerk.us/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Brevard County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Broward",
+    "slug": "broward",
+    "jailName": "Broward County Jail",
+    "jailAddress": "TODO-VERIFY (Broward County Sheriff Detention)",
+    "jailPhone": "(954) 831-5900",
+    "inmateSearchUrl": "https://www.sheriff.org/DOD/Pages/ArrestSearch.aspx",
+    "courthouseName": "Broward County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Broward County Court)",
+    "clerkName": "Broward County Clerk of Court",
+    "clerkPhone": "(954) 831-6565",
+    "clerkWebsite": "https://www.browardclerk.org/",
+    "courtRecordsUrl": "https://www.browardclerk.org/Web2",
+    "firstAppearance": "First appearance hearings for Broward County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Fort Lauderdale",
+      "Hollywood",
+      "Pembroke Pines",
+      "Coral Springs",
+      "Miramar",
+      "Davie"
+    ],
+    "officialSources": [
+      "https://www.sheriff.org/DOD/Pages/ArrestSearch.aspx",
+      "https://www.browardclerk.org/",
+      "https://www.browardclerk.org/Web2"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Broward County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Calhoun",
+    "slug": "calhoun",
+    "jailName": "Calhoun County Jail",
+    "jailAddress": "TODO-VERIFY (Calhoun County Sheriff Detention)",
+    "jailPhone": "(850) 674-5049",
+    "inmateSearchUrl": "https://mws-hrs.com/calhounsheriff/calhounsheriff/JailRosterReport.pdf",
+    "courthouseName": "Calhoun County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Calhoun County Court)",
+    "clerkName": "Calhoun County Clerk of Court",
+    "clerkPhone": "(850) 674-4545",
+    "clerkWebsite": "https://www.calhounclerk.com/",
+    "courtRecordsUrl": "https://calhounclerk.com/official-records/",
+    "firstAppearance": "First appearance hearings for Calhoun County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Blountstown",
+      "Altha"
+    ],
+    "officialSources": [
+      "https://mws-hrs.com/calhounsheriff/calhounsheriff/JailRosterReport.pdf",
+      "https://www.calhounclerk.com/",
+      "https://calhounclerk.com/official-records/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Calhoun County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Charlotte",
+    "slug": "charlotte",
+    "jailName": "Charlotte County Jail",
+    "jailAddress": "TODO-VERIFY (Charlotte County Sheriff Detention)",
+    "jailPhone": "(941) 833-6356",
+    "inmateSearchUrl": "https://www.ccso.org/forms/arrestdb.cfm",
+    "courthouseName": "Charlotte County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Charlotte County Court)",
+    "clerkName": "Charlotte County Clerk of Court",
+    "clerkPhone": "(941) 637-2199",
+    "clerkWebsite": "https://www.charlotteclerk.com/",
+    "courtRecordsUrl": "https://records.charlotteclerk.com/records/",
+    "firstAppearance": "First appearance hearings for Charlotte County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Punta Gorda",
+      "Port Charlotte",
+      "Englewood",
+      "North Port"
+    ],
+    "officialSources": [
+      "https://www.ccso.org/forms/arrestdb.cfm",
+      "https://www.charlotteclerk.com/",
+      "https://records.charlotteclerk.com/records/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Charlotte County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Citrus",
+    "slug": "citrus",
+    "jailName": "Citrus County Jail",
+    "jailAddress": "TODO-VERIFY (Citrus County Sheriff Detention)",
+    "jailPhone": "(352) 527-3332",
+    "inmateSearchUrl": "https://www.sheriffcitrus.org/public_info/recent_arrest.php",
+    "courthouseName": "Citrus County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Citrus County Court)",
+    "clerkName": "Citrus County Clerk of Court",
+    "clerkPhone": "(352) 341-6424",
+    "clerkWebsite": "https://www.citrusclerk.org/",
+    "courtRecordsUrl": "https://officialrecords.citrusclerk.org/recordsearch/",
+    "firstAppearance": "First appearance hearings for Citrus County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Inverness",
+      "Crystal River",
+      "Homosassa",
+      "Lecanto"
+    ],
+    "officialSources": [
+      "https://www.sheriffcitrus.org/public_info/recent_arrest.php",
+      "https://www.citrusclerk.org/",
+      "https://officialrecords.citrusclerk.org/recordsearch/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Citrus County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Clay",
+    "slug": "clay",
+    "jailName": "Clay County Jail",
+    "jailAddress": "TODO-VERIFY (Clay County Sheriff Detention)",
+    "jailPhone": "(904) 529-5905",
+    "inmateSearchUrl": "https://claysheriff.policetocitizen.com/DailyBulletin",
+    "courthouseName": "Clay County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Clay County Court)",
+    "clerkName": "Clay County Clerk of Court",
+    "clerkPhone": "(904) 269-6302",
+    "clerkWebsite": "https://www.clayclerk.com/",
+    "courtRecordsUrl": "https://records.clayclerk.com/",
+    "firstAppearance": "First appearance hearings for Clay County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Green Cove Springs",
+      "Orange Park",
+      "Middleburg",
+      "Fleming Island",
+      "Keystone Heights"
+    ],
+    "officialSources": [
+      "https://claysheriff.policetocitizen.com/DailyBulletin",
+      "https://www.clayclerk.com/",
+      "https://records.clayclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Clay County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Collier",
+    "slug": "collier",
+    "jailName": "Collier County Jail",
+    "jailAddress": "TODO-VERIFY (Collier County Sheriff Detention)",
+    "jailPhone": "(239)252-9543",
+    "inmateSearchUrl": "https://www2.colliersheriff.org/arrestsearch/",
+    "courthouseName": "Collier County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Collier County Court)",
+    "clerkName": "Collier County Clerk of Court",
+    "clerkPhone": "(239) 252-2646",
+    "clerkWebsite": "https://www.collierclerk.com/",
+    "courtRecordsUrl": "https://collierclerk.com/records-search/",
+    "firstAppearance": "First appearance hearings for Collier County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Naples",
+      "Marco Island",
+      "Immokalee",
+      "Golden Gate",
+      "Everglades City"
+    ],
+    "officialSources": [
+      "https://www2.colliersheriff.org/arrestsearch/",
+      "https://www.collierclerk.com/",
+      "https://collierclerk.com/records-search/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Collier County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Columbia",
+    "slug": "columbia",
+    "jailName": "Columbia County Jail",
+    "jailAddress": "TODO-VERIFY (Columbia County Sheriff Detention)",
+    "jailPhone": "(386) 752-9512",
+    "inmateSearchUrl": "http://50.204.15.10/smartwebclient/jail.aspx",
+    "courthouseName": "Columbia County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Columbia County Court)",
+    "clerkName": "Columbia County Clerk of Court",
+    "clerkPhone": "(386) 758-1342",
+    "clerkWebsite": "https://www.columbiaclerk.com/",
+    "courtRecordsUrl": "https://columbiaclerk.com/official-records/",
+    "firstAppearance": "First appearance hearings for Columbia County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Lake City",
+      "Fort White"
+    ],
+    "officialSources": [
+      "http://50.204.15.10/smartwebclient/jail.aspx",
+      "https://www.columbiaclerk.com/",
+      "https://columbiaclerk.com/official-records/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Columbia County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "DeSoto",
+    "slug": "desoto",
+    "jailName": "DeSoto County Jail",
+    "jailAddress": "TODO-VERIFY (DeSoto County Sheriff Detention)",
+    "jailPhone": "(863) 993-4710",
+    "inmateSearchUrl": "https://jail.desotosheriff.org/DCN/",
+    "courthouseName": "DeSoto County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (DeSoto County Court)",
+    "clerkName": "DeSoto County Clerk of Court",
+    "clerkPhone": "(863) 993-4876",
+    "clerkWebsite": "https://www.desotoclerk.com/",
+    "courtRecordsUrl": "https://desotoclerk.com/official-records/",
+    "firstAppearance": "First appearance hearings for DeSoto County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Arcadia",
+      "Nocatee"
+    ],
+    "officialSources": [
+      "https://jail.desotosheriff.org/DCN/",
+      "https://www.desotoclerk.com/",
+      "https://desotoclerk.com/official-records/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with DeSoto County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Dixie",
+    "slug": "dixie",
+    "jailName": "Dixie County Jail",
+    "jailAddress": "TODO-VERIFY (Dixie County Sheriff Detention)",
+    "jailPhone": "(352) 498-1462",
+    "inmateSearchUrl": "https://dixiesheriff.org/detention-facility/",
+    "courthouseName": "Dixie County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Dixie County Court)",
+    "clerkName": "Dixie County Clerk of Court",
+    "clerkPhone": "(352) 498-1200",
+    "clerkWebsite": "https://www.dixieclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.dixieclerk.com/",
+    "firstAppearance": "First appearance hearings for Dixie County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Cross City",
+      "Old Town",
+      "Horseshoe Beach"
+    ],
+    "officialSources": [
+      "https://dixiesheriff.org/detention-facility/",
+      "https://www.dixieclerk.com/",
+      "https://officialrecords.dixieclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Dixie County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Duval",
+    "slug": "duval",
+    "jailName": "Duval County Jail",
+    "jailAddress": "TODO-VERIFY (Duval County Sheriff Detention)",
+    "jailPhone": "(904)630-5760",
+    "inmateSearchUrl": "https://inmatesearch.jaxsheriff.org/login",
+    "courthouseName": "Duval County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Duval County Court)",
+    "clerkName": "Duval County Clerk of Court",
+    "clerkPhone": "(904) 255-2000",
+    "clerkWebsite": "https://www.duvalclerk.com/",
+    "courtRecordsUrl": "https://core.duvalclerk.com/",
+    "firstAppearance": "First appearance hearings for Duval County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Jacksonville",
+      "Jacksonville Beach",
+      "Atlantic Beach",
+      "Neptune Beach",
+      "Baldwin"
+    ],
+    "officialSources": [
+      "https://inmatesearch.jaxsheriff.org/login",
+      "https://www.duvalclerk.com/",
+      "https://core.duvalclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Duval County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Escambia",
+    "slug": "escambia",
+    "jailName": "Escambia County Main Jail",
+    "jailAddress": "2935 North L Street, Pensacola, FL 32501",
+    "jailPhone": "(850) 436-9830",
+    "inmateSearchUrl": "https://inmatelookup.myescambia.com/smartwebclient/jail.aspx",
+    "courthouseName": "M.C. Blanchard Judicial Building",
+    "courthouseAddress": "190 W. Government Street, Pensacola, FL 32502",
+    "clerkName": "Escambia County Clerk of Court and Comptroller",
+    "clerkPhone": "(850) 595-4310",
+    "clerkWebsite": "https://www.escambiaclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.escambiaclerk.com/",
+    "firstAppearance": "First appearance hearings for Escambia County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Pensacola",
+      "Cantonment",
+      "Century",
+      "Molino"
+    ],
+    "officialSources": [
+      "https://www.escambiajail.org/",
+      "https://www.escambiaclerk.com/Facilities",
+      "https://www.firstjudicialcircuit.org/public/court-locations/m-c-blanchard-judicial-building/",
+      "https://inmatelookup.myescambia.com/smartwebclient/jail.aspx",
+      "https://www.escambiaclerk.com/",
+      "https://officialrecords.escambiaclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Escambia County Main Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Flagler",
+    "slug": "flagler",
+    "jailName": "Flagler County Jail",
+    "jailAddress": "TODO-VERIFY (Flagler County Sheriff Detention)",
+    "jailPhone": "(386)437-4116",
+    "inmateSearchUrl": "https://nwwebcad.fcpsn.org/NewWorld.InmateInquiry/FL0180000",
+    "courthouseName": "Flagler County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Flagler County Court)",
+    "clerkName": "Flagler County Clerk of Court",
+    "clerkPhone": "(386) 313-4360",
+    "clerkWebsite": "https://www.flaglerclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.flaglerclerk.com/",
+    "firstAppearance": "First appearance hearings for Flagler County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Palm Coast",
+      "Bunnell",
+      "Flagler Beach"
+    ],
+    "officialSources": [
+      "https://nwwebcad.fcpsn.org/NewWorld.InmateInquiry/FL0180000",
+      "https://www.flaglerclerk.com/",
+      "https://officialrecords.flaglerclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Flagler County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Franklin",
+    "slug": "franklin",
+    "jailName": "Franklin County Jail",
+    "jailAddress": "270 State Road 65, Eastpoint, FL 32328",
+    "jailPhone": "(850) 697-8500",
+    "inmateSearchUrl": "https://www.franklinsheriff.com/arrest-log/",
+    "courthouseName": "Franklin County Courthouse",
+    "courthouseAddress": "33 Market Street, Suite 203, Apalachicola, FL 32320",
+    "clerkName": "Franklin County Clerk of the Circuit Court & Comptroller",
+    "clerkPhone": "(850) 653-8861",
+    "clerkWebsite": "https://www.franklinclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.franklinclerk.com/",
+    "firstAppearance": "First appearance hearings for Franklin County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Apalachicola",
+      "Carrabelle",
+      "Eastpoint"
+    ],
+    "officialSources": [
+      "https://www.franklincountyflorida.com/constitutional-and-other-offices/sheriffs-office/",
+      "https://www.franklinclerk.com/contact/office-locations/",
+      "https://www.franklinsheriff.com/arrest-log/",
+      "https://www.franklinclerk.com/",
+      "https://officialrecords.franklinclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Franklin County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Gadsden",
+    "slug": "gadsden",
+    "jailName": "Gadsden County Jail",
+    "jailAddress": "TODO-VERIFY (Gadsden County Sheriff Detention)",
+    "jailPhone": "(850) 627-9233",
+    "inmateSearchUrl": "http://69.21.72.195/smartwebclient/",
+    "courthouseName": "Gadsden County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Gadsden County Court)",
+    "clerkName": "Gadsden County Clerk of Court",
+    "clerkPhone": "(850) 875-8601",
+    "clerkWebsite": "https://www.gadsdenclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.gadsdenclerk.com/",
+    "firstAppearance": "First appearance hearings for Gadsden County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Quincy",
+      "Havana",
+      "Chattahoochee",
+      "Midway"
+    ],
+    "officialSources": [
+      "http://69.21.72.195/smartwebclient/",
+      "https://www.gadsdenclerk.com/",
+      "https://officialrecords.gadsdenclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Gadsden County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Gilchrist",
+    "slug": "gilchrist",
+    "jailName": "Gilchrist County Jail",
+    "jailAddress": "TODO-VERIFY (Gilchrist County Sheriff Detention)",
+    "jailPhone": "(352) 463-3490",
+    "inmateSearchUrl": "https://www.gcso.us/contact-us/",
+    "courthouseName": "Gilchrist County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Gilchrist County Court)",
+    "clerkName": "Gilchrist County Clerk of Court",
+    "clerkPhone": "(352) 463-3170",
+    "clerkWebsite": "https://www.gilchristclerk.com/",
+    "courtRecordsUrl": "https://gilchristclerk.com/official-records/",
+    "firstAppearance": "First appearance hearings for Gilchrist County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Trenton",
+      "Bell",
+      "Fanning Springs"
+    ],
+    "officialSources": [
+      "https://www.gcso.us/contact-us/",
+      "https://www.gilchristclerk.com/",
+      "https://gilchristclerk.com/official-records/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Gilchrist County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Glades",
+    "slug": "glades",
+    "jailName": "Glades County Jail",
+    "jailAddress": "TODO-VERIFY (Glades County Sheriff Detention)",
+    "jailPhone": "(863) 946-1600",
+    "inmateSearchUrl": "https://smartweb.gladessheriff.org/smartwebclient/Jail.aspx",
+    "courthouseName": "Glades County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Glades County Court)",
+    "clerkName": "Glades County Clerk of Court",
+    "clerkPhone": "(863) 946-6010",
+    "clerkWebsite": "https://www.gladesclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.gladesclerk.com/",
+    "firstAppearance": "First appearance hearings for Glades County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Moore Haven",
+      "Palmdale"
+    ],
+    "officialSources": [
+      "https://smartweb.gladessheriff.org/smartwebclient/Jail.aspx",
+      "https://www.gladesclerk.com/",
+      "https://officialrecords.gladesclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Glades County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Gulf",
+    "slug": "gulf",
+    "jailName": "Gulf County Jail",
+    "jailAddress": "TODO-VERIFY (Gulf County Sheriff Detention)",
+    "jailPhone": "(850) 227-1115",
+    "inmateSearchUrl": "http://www.gulfsheriff.com/arrest-log.cfm",
+    "courthouseName": "Gulf County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Gulf County Court)",
+    "clerkName": "Gulf County Clerk of Court",
+    "clerkPhone": "(850) 229-6112",
+    "clerkWebsite": "https://www.gulfclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.gulfclerk.com/",
+    "firstAppearance": "First appearance hearings for Gulf County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Port St. Joe",
+      "Wewahitchka"
+    ],
+    "officialSources": [
+      "http://www.gulfsheriff.com/arrest-log.cfm",
+      "https://www.gulfclerk.com/",
+      "https://officialrecords.gulfclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Gulf County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Hamilton",
+    "slug": "hamilton",
+    "jailName": "Hamilton County Jail",
+    "jailAddress": "TODO-VERIFY (Hamilton County Sheriff Detention)",
+    "jailPhone": "(386) 792-7131",
+    "inmateSearchUrl": "http://inmate.hamiltonsheriff.com/smartwebclient/jail.aspx",
+    "courthouseName": "Hamilton County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Hamilton County Court)",
+    "clerkName": "Hamilton County Clerk of Court",
+    "clerkPhone": "(386) 792-1288",
+    "clerkWebsite": "https://www.hamiltonclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.hamiltonclerk.com/",
+    "firstAppearance": "First appearance hearings for Hamilton County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Jasper",
+      "White Springs",
+      "Jennings"
+    ],
+    "officialSources": [
+      "http://inmate.hamiltonsheriff.com/smartwebclient/jail.aspx",
+      "https://www.hamiltonclerk.com/",
+      "https://officialrecords.hamiltonclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Hamilton County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Hardee",
+    "slug": "hardee",
+    "jailName": "Hardee County Jail",
+    "jailAddress": "TODO-VERIFY (Hardee County Sheriff Detention)",
+    "jailPhone": "(863) 773-0304",
+    "inmateSearchUrl": "https://www.hardeeso.com/bureaus/inmate_search.php",
+    "courthouseName": "Hardee County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Hardee County Court)",
+    "clerkName": "Hardee County Clerk of Court",
+    "clerkPhone": "(863) 773-4174",
+    "clerkWebsite": "https://www.hardeecountyclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.hardeecountyclerk.com/",
+    "firstAppearance": "First appearance hearings for Hardee County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Wauchula",
+      "Bowling Green",
+      "Zolfo Springs"
+    ],
+    "officialSources": [
+      "https://www.hardeeso.com/bureaus/inmate_search.php",
+      "https://www.hardeecountyclerk.com/",
+      "https://officialrecords.hardeecountyclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Hardee County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Hendry",
+    "slug": "hendry",
+    "jailName": "Hendry County Jail",
+    "jailAddress": "TODO-VERIFY (Hendry County Sheriff Detention)",
+    "jailPhone": "(863)674-5600",
+    "inmateSearchUrl": "http://www.hendrysheriff.org/arrests_and_jail_info/arrest_and_inmate_search.php",
+    "courthouseName": "Hendry County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Hendry County Court)",
+    "clerkName": "Hendry County Clerk of Court",
+    "clerkPhone": "(863) 675-5217",
+    "clerkWebsite": "https://www.hendryclerk.org/",
+    "courtRecordsUrl": "https://officialrecords.hendryclerk.org/",
+    "firstAppearance": "First appearance hearings for Hendry County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "LaBelle",
+      "Clewiston"
+    ],
+    "officialSources": [
+      "http://www.hendrysheriff.org/arrests_and_jail_info/arrest_and_inmate_search.php",
+      "https://www.hendryclerk.org/",
+      "https://officialrecords.hendryclerk.org/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Hendry County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Hernando",
+    "slug": "hernando",
+    "jailName": "Hernando County Jail",
+    "jailAddress": "TODO-VERIFY (Hernando County Sheriff Detention)",
+    "jailPhone": "(352)797-3635",
+    "inmateSearchUrl": "https://www.hernandosheriff.org/applications/records/default.aspx",
+    "courthouseName": "Hernando County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Hernando County Court)",
+    "clerkName": "Hernando County Clerk of Court",
+    "clerkPhone": "(352) 754-4201",
+    "clerkWebsite": "https://www.hernandoclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.hernandoclerk.com/",
+    "firstAppearance": "First appearance hearings for Hernando County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Brooksville",
+      "Spring Hill",
+      "Weeki Wachee"
+    ],
+    "officialSources": [
+      "https://www.hernandosheriff.org/applications/records/default.aspx",
+      "https://www.hernandoclerk.com/",
+      "https://officialrecords.hernandoclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Hernando County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Highlands",
+    "slug": "highlands",
+    "jailName": "Highlands County Jail",
+    "jailAddress": "TODO-VERIFY (Highlands County Sheriff Detention)",
+    "jailPhone": "(863)402-7201",
+    "inmateSearchUrl": "https://www.highlandssheriff.org/inmateSearch",
+    "courthouseName": "Highlands County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Highlands County Court)",
+    "clerkName": "Highlands County Clerk of Court",
+    "clerkPhone": "(863) 402-6565",
+    "clerkWebsite": "https://www.highlandsclerk.org/",
+    "courtRecordsUrl": "https://officialrecords.highlandsclerk.org/",
+    "firstAppearance": "First appearance hearings for Highlands County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Sebring",
+      "Avon Park",
+      "Lake Placid"
+    ],
+    "officialSources": [
+      "https://www.highlandssheriff.org/inmateSearch",
+      "https://www.highlandsclerk.org/",
+      "https://officialrecords.highlandsclerk.org/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Highlands County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Hillsborough",
+    "slug": "hillsborough",
+    "jailName": "Hillsborough County Jail",
+    "jailAddress": "TODO-VERIFY (Hillsborough County Sheriff Detention)",
+    "jailPhone": "(813) 247-8300",
+    "inmateSearchUrl": "https://webapps.hcso.tampa.fl.us/ArrestInquiry",
+    "courthouseName": "Hillsborough County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Hillsborough County Court)",
+    "clerkName": "Hillsborough County Clerk of Court",
+    "clerkPhone": "(813) 276-8100",
+    "clerkWebsite": "https://www.hillsclerk.com/",
+    "courtRecordsUrl": "https://hover.hillsclerk.com/",
+    "firstAppearance": "First appearance hearings for Hillsborough County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Tampa",
+      "Brandon",
+      "Plant City",
+      "Temple Terrace",
+      "Riverview",
+      "Valrico"
+    ],
+    "officialSources": [
+      "https://webapps.hcso.tampa.fl.us/ArrestInquiry",
+      "https://www.hillsclerk.com/",
+      "https://hover.hillsclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Hillsborough County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Holmes",
+    "slug": "holmes",
+    "jailName": "Holmes County Jail",
+    "jailAddress": "TODO-VERIFY (Holmes County Sheriff Detention)",
+    "jailPhone": "(850)547-3681",
+    "inmateSearchUrl": "https://holmescosheriff.org/jail-division.html",
+    "courthouseName": "Holmes County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Holmes County Court)",
+    "clerkName": "Holmes County Clerk of Court",
+    "clerkPhone": "(850) 547-1100",
+    "clerkWebsite": "https://www.holmesclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.holmesclerk.com/",
+    "firstAppearance": "First appearance hearings for Holmes County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Bonifay",
+      "Westville",
+      "Ponce de Leon",
+      "Esto"
+    ],
+    "officialSources": [
+      "https://holmescosheriff.org/jail-division.html",
+      "https://www.holmesclerk.com/",
+      "https://officialrecords.holmesclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Holmes County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Indian River",
+    "slug": "indian-river",
+    "jailName": "Indian River County Jail",
+    "jailAddress": "TODO-VERIFY (Indian River County Sheriff Detention)",
+    "jailPhone": "(772)569-6700",
+    "inmateSearchUrl": "https://www.ircsheriff.org/inmate-search",
+    "courthouseName": "Indian River County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Indian River County Court)",
+    "clerkName": "Indian River County Clerk of Court",
+    "clerkPhone": "(772) 770-5185",
+    "clerkWebsite": "https://www.clerk.indian-river.org/",
+    "courtRecordsUrl": "https://ori.indian-river.org/",
+    "firstAppearance": "First appearance hearings for Indian River County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Vero Beach",
+      "Sebastian",
+      "Fellsmere"
+    ],
+    "officialSources": [
+      "https://www.ircsheriff.org/inmate-search",
+      "https://www.clerk.indian-river.org/",
+      "https://ori.indian-river.org/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Indian River County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Jackson",
+    "slug": "jackson",
+    "jailName": "Jackson County Jail",
+    "jailAddress": "TODO-VERIFY (Jackson County Sheriff Detention)",
+    "jailPhone": "(850)482-9651",
+    "inmateSearchUrl": "https://jacksoncountyfl.gov/services/correctional-facility/",
+    "courthouseName": "Jackson County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Jackson County Court)",
+    "clerkName": "Jackson County Clerk of Court",
+    "clerkPhone": "(850) 482-9552",
+    "clerkWebsite": "https://www.jacksonclerk.com/",
+    "courtRecordsUrl": "https://www.jacksonclerk.com/officialrecords/",
+    "firstAppearance": "First appearance hearings for Jackson County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Marianna",
+      "Graceville",
+      "Sneads",
+      "Cottondale"
+    ],
+    "officialSources": [
+      "https://jacksoncountyfl.gov/services/correctional-facility/",
+      "https://www.jacksonclerk.com/",
+      "https://www.jacksonclerk.com/officialrecords/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Jackson County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Jefferson",
+    "slug": "jefferson",
+    "jailName": "Jefferson County Jail",
+    "jailAddress": "TODO-VERIFY (Jefferson County Sheriff Detention)",
+    "jailPhone": "(850)997-2523",
+    "inmateSearchUrl": "https://www.jcso-fl.org/",
+    "courthouseName": "Jefferson County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Jefferson County Court)",
+    "clerkName": "Jefferson County Clerk of Court",
+    "clerkPhone": "(850) 342-0218",
+    "clerkWebsite": "https://www.jeffersonclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.jeffersonclerk.com/",
+    "firstAppearance": "First appearance hearings for Jefferson County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Monticello",
+      "Lamont"
+    ],
+    "officialSources": [
+      "https://www.jcso-fl.org/",
+      "https://www.jeffersonclerk.com/",
+      "https://officialrecords.jeffersonclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Jefferson County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Lafayette",
+    "slug": "lafayette",
+    "jailName": "Lafayette County Jail",
+    "jailAddress": "TODO-VERIFY (Lafayette County Sheriff Detention)",
+    "jailPhone": "(386) 294-4381",
+    "inmateSearchUrl": "https://www.lafayetteso.org/index.html",
+    "courthouseName": "Lafayette County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Lafayette County Court)",
+    "clerkName": "Lafayette County Clerk of Court",
+    "clerkPhone": "(386) 294-1600",
+    "clerkWebsite": "https://www.lafayetteclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.lafayetteclerk.com/",
+    "firstAppearance": "First appearance hearings for Lafayette County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Mayo"
+    ],
+    "officialSources": [
+      "https://www.lafayetteso.org/index.html",
+      "https://www.lafayetteclerk.com/",
+      "https://officialrecords.lafayetteclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Lafayette County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Lake",
+    "slug": "lake",
+    "jailName": "Lake County Jail",
+    "jailAddress": "TODO-VERIFY (Lake County Sheriff Detention)",
+    "jailPhone": "(352) 742-4024",
+    "inmateSearchUrl": "https://www.lcso.org/inmates/",
+    "courthouseName": "Lake County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Lake County Court)",
+    "clerkName": "Lake County Clerk of Court",
+    "clerkPhone": "(352) 742-4100",
+    "clerkWebsite": "https://www.lakecountyclerk.org/",
+    "courtRecordsUrl": "https://officialrecords.lakecountyclerk.org/",
+    "firstAppearance": "First appearance hearings for Lake County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Tavares",
+      "Leesburg",
+      "Clermont",
+      "Eustis",
+      "Mount Dora",
+      "Lady Lake"
+    ],
+    "officialSources": [
+      "https://www.lcso.org/inmates/",
+      "https://www.lakecountyclerk.org/",
+      "https://officialrecords.lakecountyclerk.org/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Lake County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Lee",
+    "slug": "lee",
+    "jailName": "Lee County Core Facility (Main Jail)",
+    "jailAddress": "2115 Martin Luther King Jr Blvd, Fort Myers, FL 33901",
+    "jailPhone": "(239) 477-1500",
+    "inmateSearchUrl": "https://www.sheriffleefl.org/inmate-search/",
+    "courthouseName": "Lee County Justice Center",
+    "courthouseAddress": "1700 Monroe Street, Fort Myers, FL 33901",
+    "clerkName": "Kevin Karnes, Lee County Clerk of the Circuit Court & Comptroller",
+    "clerkPhone": "(239) 533-5000",
+    "clerkWebsite": "https://www.leeclerk.org/",
+    "courtRecordsUrl": "https://matrix.leeclerk.org/",
+    "firstAppearance": "Monday through Friday at 9:30 AM; Weekends and Holidays at 9:00 AM in Courtroom 2A / Video Courtroom.",
+    "cities": [
+      "Fort Myers",
+      "Cape Coral",
+      "Bonita Springs",
+      "Estero",
+      "Lehigh Acres",
+      "North Fort Myers",
+      "Sanibel",
+      "Fort Myers Beach"
+    ],
+    "officialSources": [
+      "https://www.sheriffleefl.org/corrections-bureau/",
+      "https://www.sheriffleefl.org/inmate-search/",
+      "https://www.leeclerk.org/",
+      "https://matrix.leeclerk.org/",
+      "https://www.ca.cjis20.org/home/lee/lee.asp"
+    ],
+    "howToBond": "1. Call Shamrock at 239-332-2245. 2. Verify charges & bond at Lee County Core Facility. 3. Sign paperwork online or in person at 1528 Broadway, Fort Myers. 4. Agent posts bond directly with Lee County Sheriff Corrections."
+  },
+  {
+    "name": "Leon",
+    "slug": "leon",
+    "jailName": "Leon County Jail",
+    "jailAddress": "TODO-VERIFY (Leon County Sheriff Detention)",
+    "jailPhone": "(850) 606-3500",
+    "inmateSearchUrl": "https://www.leoncountyso.com/departments/detention-facility/inmate-search",
+    "courthouseName": "Leon County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Leon County Court)",
+    "clerkName": "Leon County Clerk of Court",
+    "clerkPhone": "(850) 606-4000",
+    "clerkWebsite": "https://www.clerk.leon.fl.us/",
+    "courtRecordsUrl": "https://oncore.leonclerk.com/",
+    "firstAppearance": "First appearance hearings for Leon County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Tallahassee",
+      "Woodville"
+    ],
+    "officialSources": [
+      "https://www.leoncountyso.com/departments/detention-facility/inmate-search",
+      "https://www.clerk.leon.fl.us/",
+      "https://oncore.leonclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Leon County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Levy",
+    "slug": "levy",
+    "jailName": "Levy County Jail",
+    "jailAddress": "9150 NE 80th Avenue, Bronson, FL 32621",
+    "jailPhone": "(352)486-5111",
+    "inmateSearchUrl": "https://levyso.com/detention-bureau/",
+    "courthouseName": "Levy County Courthouse",
+    "courthouseAddress": "355 South Court Street, Bronson, FL 32621",
+    "clerkName": "Levy County Clerk of the Circuit Court",
+    "clerkPhone": "(352) 486-5266",
+    "clerkWebsite": "https://www.levyclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.levyclerk.com/",
+    "firstAppearance": "First appearance hearings for Levy County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Bronson",
+      "Williston",
+      "Chiefland",
+      "Cedar Key"
+    ],
+    "officialSources": [
+      "https://levyso.com/detention-bureau/",
+      "https://levyclerk.com/contact-us/",
+      "https://www.levyclerk.com/",
+      "https://officialrecords.levyclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Levy County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Liberty",
+    "slug": "liberty",
+    "jailName": "Liberty County Jail",
+    "jailAddress": "TODO-VERIFY (Liberty County Sheriff Detention)",
+    "jailPhone": "(850) 643-2235",
+    "inmateSearchUrl": "https://libertycountysheriff.org/jail/",
+    "courthouseName": "Liberty County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Liberty County Court)",
+    "clerkName": "Liberty County Clerk of Court",
+    "clerkPhone": "(850) 643-2215",
+    "clerkWebsite": "https://www.libertyclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.libertyclerk.com/",
+    "firstAppearance": "First appearance hearings for Liberty County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Bristol",
+      "Hosford"
+    ],
+    "officialSources": [
+      "https://libertycountysheriff.org/jail/",
+      "https://www.libertyclerk.com/",
+      "https://officialrecords.libertyclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Liberty County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Madison",
+    "slug": "madison",
+    "jailName": "Madison County Jail",
+    "jailAddress": "TODO-VERIFY (Madison County Sheriff Detention)",
+    "jailPhone": "(850) 973-4002",
+    "inmateSearchUrl": "https://madisonjail.org/",
+    "courthouseName": "Madison County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Madison County Court)",
+    "clerkName": "Madison County Clerk of Court",
+    "clerkPhone": "(850) 973-1500",
+    "clerkWebsite": "https://www.madisonclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.madisonclerk.com/",
+    "firstAppearance": "First appearance hearings for Madison County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Madison",
+      "Lee",
+      "Greenville"
+    ],
+    "officialSources": [
+      "https://madisonjail.org/",
+      "https://www.madisonclerk.com/",
+      "https://officialrecords.madisonclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Madison County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Manatee",
+    "slug": "manatee",
+    "jailName": "Manatee County Jail",
+    "jailAddress": "TODO-VERIFY (Manatee County Sheriff Detention)",
+    "jailPhone": "(941) 723-5132",
+    "inmateSearchUrl": "https://www.manateesheriff.com/arrest_inquiries/",
+    "courthouseName": "Manatee County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Manatee County Court)",
+    "clerkName": "Manatee County Clerk of Court",
+    "clerkPhone": "(941) 749-1800",
+    "clerkWebsite": "https://www.manateeclerk.com/",
+    "courtRecordsUrl": "https://records.manateeclerk.com/",
+    "firstAppearance": "First appearance hearings for Manatee County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Bradenton",
+      "Palmetto",
+      "Lakewood Ranch",
+      "Ellenton",
+      "Anna Maria"
+    ],
+    "officialSources": [
+      "https://www.manateesheriff.com/arrest_inquiries/",
+      "https://www.manateeclerk.com/",
+      "https://records.manateeclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Manatee County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Marion",
+    "slug": "marion",
+    "jailName": "Marion County Jail",
+    "jailAddress": "TODO-VERIFY (Marion County Sheriff Detention)",
+    "jailPhone": "(352) 732-8181",
+    "inmateSearchUrl": "http://jail.marionso.com/",
+    "courthouseName": "Marion County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Marion County Court)",
+    "clerkName": "Marion County Clerk of Court",
+    "clerkPhone": "(352) 671-5604",
+    "clerkWebsite": "https://www.marioncountyclerk.org/",
+    "courtRecordsUrl": "https://officialrecords.marioncountyclerk.org/",
+    "firstAppearance": "First appearance hearings for Marion County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Ocala",
+      "Belleview",
+      "Dunnellon",
+      "Silver Springs"
+    ],
+    "officialSources": [
+      "http://jail.marionso.com/",
+      "https://www.marioncountyclerk.org/",
+      "https://officialrecords.marioncountyclerk.org/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Marion County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Martin",
+    "slug": "martin",
+    "jailName": "Martin County Jail",
+    "jailAddress": "800 SE Monterey Road, Stuart, FL 34997",
+    "jailPhone": "(772) 220-7200",
+    "inmateSearchUrl": "https://www.mcsofl.org/224/Recent-Bookings",
+    "courthouseName": "Martin County Courthouse, Stuart Office",
+    "courthouseAddress": "100 SE Ocean Boulevard, Stuart, FL 34994",
+    "clerkName": "Martin County Clerk of the Circuit Court",
+    "clerkPhone": "(772) 288-5576",
+    "clerkWebsite": "https://www.martinclerk.com/",
+    "courtRecordsUrl": "https://ori.martinclerk.com/",
+    "firstAppearance": "First appearance hearings for Martin County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Stuart",
+      "Jensen Beach",
+      "Palm City",
+      "Indiantown",
+      "Hobe Sound"
+    ],
+    "officialSources": [
+      "https://www.mcsofl.org/226/General-Information",
+      "https://www.martinclerk.com/",
+      "https://www.mcsofl.org/224/Recent-Bookings",
+      "https://ori.martinclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Martin County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Miami-Dade",
+    "slug": "miami-dade",
+    "jailName": "Miami-Dade County Jail",
+    "jailAddress": "TODO-VERIFY (Miami-Dade County Sheriff Detention)",
+    "jailPhone": "(786) 263-7000",
+    "inmateSearchUrl": "https://www.miamidade.gov/Apps/mdcr/inmateSearch/",
+    "courthouseName": "Miami-Dade County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Miami-Dade County Court)",
+    "clerkName": "Miami-Dade County Clerk of Court",
+    "clerkPhone": "(305) 275-1155",
+    "clerkWebsite": "https://www.miami-dadeclerk.com/",
+    "courtRecordsUrl": "https://www2.miami-dadeclerk.com/public-records/",
+    "firstAppearance": "First appearance hearings for Miami-Dade County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Miami",
+      "Hialeah",
+      "Miami Beach",
+      "Homestead",
+      "Coral Gables",
+      "Doral"
+    ],
+    "officialSources": [
+      "https://www.miamidade.gov/Apps/mdcr/inmateSearch/",
+      "https://www.miami-dadeclerk.com/",
+      "https://www2.miami-dadeclerk.com/public-records/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Miami-Dade County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Monroe",
+    "slug": "monroe",
+    "jailName": "Monroe County Jail",
+    "jailAddress": "TODO-VERIFY (Monroe County Sheriff Detention)",
+    "jailPhone": "(305) 289-2361",
+    "inmateSearchUrl": "https://www.keysso.net/arrests",
+    "courthouseName": "Monroe County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Monroe County Court)",
+    "clerkName": "Monroe County Clerk of Court",
+    "clerkPhone": "(305) 292-3550",
+    "clerkWebsite": "https://www.monroe-clerk.com/",
+    "courtRecordsUrl": "https://gov.kofiletech.us/FL-Monroe/",
+    "firstAppearance": "First appearance hearings for Monroe County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Key West",
+      "Marathon",
+      "Key Largo",
+      "Islamorada",
+      "Tavernier"
+    ],
+    "officialSources": [
+      "https://www.keysso.net/arrests",
+      "https://www.monroe-clerk.com/",
+      "https://gov.kofiletech.us/FL-Monroe/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Monroe County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Nassau",
+    "slug": "nassau",
+    "jailName": "Nassau County Jail & Detention Center",
+    "jailAddress": "76212 Nicholas Cutinha Road, Yulee, FL 32097",
+    "jailPhone": "(904) 225-5174",
+    "inmateSearchUrl": "https://dssinmate.nassauso.com/NewWorld.InmateInquiry/nassau",
+    "courthouseName": "Nassau County Historic Courthouse",
+    "courthouseAddress": "416 Centre Street, Fernandina Beach, FL 32034",
+    "clerkName": "Nassau County Clerk of the Circuit Court and Comptroller",
+    "clerkPhone": "(904) 548-4600",
+    "clerkWebsite": "https://www.nassauclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.nassauclerk.com/",
+    "firstAppearance": "First appearance hearings for Nassau County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Fernandina Beach",
+      "Yulee",
+      "Callahan",
+      "Hilliard"
+    ],
+    "officialSources": [
+      "https://nassauso.com/contact-us/",
+      "https://www.nassauclerk.com/166/1722/Contact-Us",
+      "https://dssinmate.nassauso.com/NewWorld.InmateInquiry/nassau",
+      "https://www.nassauclerk.com/",
+      "https://officialrecords.nassauclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Nassau County Jail & Detention Center. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Okaloosa",
+    "slug": "okaloosa",
+    "jailName": "Okaloosa County Jail",
+    "jailAddress": "TODO-VERIFY (Okaloosa County Sheriff Detention)",
+    "jailPhone": "(850) 651-7430",
+    "inmateSearchUrl": "https://www.sheriff-okaloosa.org/news/arrest-information/",
+    "courthouseName": "Okaloosa County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Okaloosa County Court)",
+    "clerkName": "Okaloosa County Clerk of Court",
+    "clerkPhone": "(850) 651-7200",
+    "clerkWebsite": "https://www.okaloosaclerk.com/",
+    "courtRecordsUrl": "https://officialrecords.okaloosaclerk.com/",
+    "firstAppearance": "First appearance hearings for Okaloosa County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Crestview",
+      "Fort Walton Beach",
+      "Niceville",
+      "Destin",
+      "Valparaiso"
+    ],
+    "officialSources": [
+      "https://www.sheriff-okaloosa.org/news/arrest-information/",
+      "https://www.okaloosaclerk.com/",
+      "https://officialrecords.okaloosaclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Okaloosa County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Okeechobee",
+    "slug": "okeechobee",
+    "jailName": "Okeechobee County Jail",
+    "jailAddress": "504 NW 4th Street, Okeechobee, FL 34972",
+    "jailPhone": "(863) 763-3117",
+    "inmateSearchUrl": "https://www.okeesheriff.org/inmate-search",
+    "courthouseName": "Okeechobee County Courthouse",
+    "courthouseAddress": "312 NW 3rd Street, Okeechobee, FL 34972",
+    "clerkName": "Okeechobee County Clerk of the Circuit Court & Comptroller",
+    "clerkPhone": "(863) 763-2131",
+    "clerkWebsite": "https://www.clerk.co.okeechobee.fl.us/",
+    "courtRecordsUrl": "https://ori.clerk.co.okeechobee.fl.us/",
+    "firstAppearance": "First appearance hearings for Okeechobee County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Okeechobee",
+      "Taylor Creek",
+      "Cypress Quarters",
+      "Basinger"
+    ],
+    "officialSources": [
+      "https://www.okeesheriff.org/inmate-phone-mail",
+      "https://www.okeesheriff.org/",
+      "https://www.circuit19.org/okeechobee-courthouse/",
+      "https://myokeeclerk.com/",
+      "https://en.wikipedia.org/wiki/Okeechobee_County,_Florida",
+      "https://www.okeesheriff.org/inmate-search",
+      "https://www.clerk.co.okeechobee.fl.us/",
+      "https://ori.clerk.co.okeechobee.fl.us/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Okeechobee County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Orange",
+    "slug": "orange",
+    "jailName": "Orange County Corrections Booking and Release Center",
+    "jailAddress": "3855 South John Young Parkway, Orlando, FL 32839",
+    "jailPhone": "(407) 836-3400",
+    "inmateSearchUrl": "https://netapps.ocfl.net/BestJail/Home/Inmates",
+    "courthouseName": "Orange County Courthouse",
+    "courthouseAddress": "425 N. Orange Avenue, Orlando, FL 32801",
+    "clerkName": "Orange County Clerk of Courts",
+    "clerkPhone": "(407) 836-2000",
+    "clerkWebsite": "https://www.myorangeclerk.com/",
+    "courtRecordsUrl": "https://myeclerk.myorangeclerk.com/",
+    "firstAppearance": "First appearance hearings for Orange County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Orlando",
+      "Winter Park",
+      "Apopka",
+      "Ocoee",
+      "Winter Garden"
+    ],
+    "officialSources": [
+      "https://newsroom.ocfl.net/directory/corrections-department/",
+      "https://netapps.ocfl.net/BestJail/Home/BondingOut",
+      "https://www.myorangeclerk.com/Misc-Pages/Branch-Locations-Page",
+      "https://netapps.ocfl.net/BestJail/Home/Inmates",
+      "https://www.myorangeclerk.com/",
+      "https://myeclerk.myorangeclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Orange County Corrections Booking and Release Center. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Osceola",
+    "slug": "osceola",
+    "jailName": "Osceola County Jail",
+    "jailAddress": "TODO-VERIFY (Osceola County Sheriff Detention)",
+    "jailPhone": "(407) 742-4444",
+    "inmateSearchUrl": "https://www.osceola.org/agencies-departments/corrections/corrections-reports.stml",
+    "courthouseName": "Osceola County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Osceola County Court)",
+    "clerkName": "Osceola County Clerk of Court",
+    "clerkPhone": "(407) 742-3500",
+    "clerkWebsite": "https://www.osceolaclerk.com/",
+    "courtRecordsUrl": "https://ori.osceolaclerk.com/",
+    "firstAppearance": "First appearance hearings for Osceola County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Kissimmee",
+      "St. Cloud",
+      "Celebration",
+      "Poinciana"
+    ],
+    "officialSources": [
+      "https://www.osceola.org/agencies-departments/corrections/corrections-reports.stml",
+      "https://www.osceolaclerk.com/",
+      "https://ori.osceolaclerk.com/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Osceola County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Palm Beach",
+    "slug": "palm-beach",
+    "jailName": "Palm Beach County Jail",
+    "jailAddress": "TODO-VERIFY (Palm Beach County Sheriff Detention)",
+    "jailPhone": "(561) 688-3000",
+    "inmateSearchUrl": "https://www.pbso.org/arrest-jail_menu",
+    "courthouseName": "Palm Beach County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Palm Beach County Court)",
+    "clerkName": "Palm Beach County Clerk of Court",
+    "clerkPhone": "(561) 355-2996",
+    "clerkWebsite": "https://www.mypalmbeachclerk.com/",
+    "courtRecordsUrl": "https://appsgp.mypalmbeachclerk.com/eCaseView/",
+    "firstAppearance": "First appearance hearings for Palm Beach County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "West Palm Beach",
+      "Boca Raton",
+      "Boynton Beach",
+      "Delray Beach",
+      "Jupiter",
+      "Palm Beach Gardens"
+    ],
+    "officialSources": [
+      "https://www.pbso.org/arrest-jail_menu",
+      "https://www.mypalmbeachclerk.com/",
+      "https://appsgp.mypalmbeachclerk.com/eCaseView/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Palm Beach County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Pasco",
+    "slug": "pasco",
+    "jailName": "Pasco County Jail",
+    "jailAddress": "TODO-VERIFY (Pasco County Sheriff Detention)",
+    "jailPhone": "(813) 996-6982",
+    "inmateSearchUrl": "https://jailinfo.pascocorrections.net/JMC/#/inCustody",
+    "courthouseName": "Pasco County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Pasco County Court)",
+    "clerkName": "Pasco County Clerk of Court",
+    "clerkPhone": "(727) 847-8962",
+    "clerkWebsite": "https://www.pascoclerk.com/",
+    "courtRecordsUrl": "https://www.pascoclerk.com/172/Search-Court-Records",
+    "firstAppearance": "First appearance hearings for Pasco County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Dade City",
+      "New Port Richey",
+      "Zephyrhills",
+      "Wesley Chapel",
+      "Land O' Lakes"
+    ],
+    "officialSources": [
+      "https://jailinfo.pascocorrections.net/JMC/#/inCustody",
+      "https://www.pascoclerk.com/",
+      "https://www.pascoclerk.com/172/Search-Court-Records"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Pasco County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Pinellas",
+    "slug": "pinellas",
+    "jailName": "Pinellas County Jail",
+    "jailAddress": "TODO-VERIFY (Pinellas County Sheriff Detention)",
+    "jailPhone": "(727)464-6415",
+    "inmateSearchUrl": "https://pcsoweb.com/InmateBooking",
+    "courthouseName": "Pinellas County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Pinellas County Court)",
+    "clerkName": "Pinellas County Clerk of Court",
+    "clerkPhone": "(727) 464-7000",
+    "clerkWebsite": "https://www.mypinellasclerk.gov/",
+    "courtRecordsUrl": "https://ccmspa.pinellascounty.org/PublicAccess/default.aspx",
+    "firstAppearance": "First appearance hearings for Pinellas County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Clearwater",
+      "St. Petersburg",
+      "Largo",
+      "Dunedin",
+      "Pinellas Park",
+      "Tarpon Springs"
+    ],
+    "officialSources": [
+      "https://pcsoweb.com/InmateBooking",
+      "https://www.mypinellasclerk.gov/",
+      "https://ccmspa.pinellascounty.org/PublicAccess/default.aspx"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Pinellas County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Polk",
+    "slug": "polk",
+    "jailName": "Polk County Jail",
+    "jailAddress": "TODO-VERIFY (Polk County Sheriff Detention)",
+    "jailPhone": "(863)292-3400",
+    "inmateSearchUrl": "https://www.polksheriff.org/detention/jail-inquiry",
+    "courthouseName": "Polk County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Polk County Court)",
+    "clerkName": "Polk County Clerk of Court",
+    "clerkPhone": "(863)534-4000",
+    "clerkWebsite": "https://www.polkcountyclerk.net/",
+    "courtRecordsUrl": "https://pro.polkcountyclerk.net/PRO",
+    "firstAppearance": "First appearance hearings for Polk County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Bartow",
+      "Lakeland",
+      "Winter Haven",
+      "Haines City",
+      "Lake Wales",
+      "Auburndale"
+    ],
+    "officialSources": [
+      "https://www.polksheriff.org/detention/jail-inquiry",
+      "https://www.polkcountyclerk.net/",
+      "https://pro.polkcountyclerk.net/PRO"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Polk County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Putnam",
+    "slug": "putnam",
+    "jailName": "Putnam County Jail",
+    "jailAddress": "TODO-VERIFY (Putnam County Sheriff Detention)",
+    "jailPhone": "(386) 329-0800",
+    "inmateSearchUrl": "http://smartweb.pcso.us/smartwebclient/jail.aspx",
+    "courthouseName": "Putnam County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Putnam County Court)",
+    "clerkName": "Putnam County Clerk of Court",
+    "clerkPhone": "(386) 326-7630",
+    "clerkWebsite": "https://putnamclerk.com/",
+    "courtRecordsUrl": "https://www.civitekflorida.com/ocrs/county/54/",
+    "firstAppearance": "First appearance hearings for Putnam County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Palatka",
+      "Crescent City",
+      "Interlachen",
+      "East Palatka"
+    ],
+    "officialSources": [
+      "http://smartweb.pcso.us/smartwebclient/jail.aspx",
+      "https://putnamclerk.com/",
+      "https://www.civitekflorida.com/ocrs/county/54/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Putnam County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Santa Rosa",
+    "slug": "santa-rosa",
+    "jailName": "Santa Rosa County Jail",
+    "jailAddress": "TODO-VERIFY (Santa Rosa County Sheriff Detention)",
+    "jailPhone": "(850) 983-1120",
+    "inmateSearchUrl": "https://santarosasheriff.org/jail-view/",
+    "courthouseName": "Santa Rosa County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Santa Rosa County Court)",
+    "clerkName": "Santa Rosa County Clerk of Court",
+    "clerkPhone": "(850)981-5554",
+    "clerkWebsite": "http://oncoreweb.srccol.com/srccol/formspage1.html",
+    "courtRecordsUrl": "https://www.civitekflorida.com/ocrs/county/57/",
+    "firstAppearance": "First appearance hearings for Santa Rosa County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Milton",
+      "Pace",
+      "Gulf Breeze",
+      "Navarre",
+      "Jay"
+    ],
+    "officialSources": [
+      "https://santarosasheriff.org/jail-view/",
+      "http://oncoreweb.srccol.com/srccol/formspage1.html",
+      "https://www.civitekflorida.com/ocrs/county/57/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Santa Rosa County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Sarasota",
+    "slug": "sarasota",
+    "jailName": "Sarasota County Jail",
+    "jailAddress": "TODO-VERIFY (Sarasota County Sheriff Detention)",
+    "jailPhone": "(941) 861-4601",
+    "inmateSearchUrl": "https://www.sarasotasheriff.org/arrest-reports/index.php",
+    "courthouseName": "Sarasota County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Sarasota County Court)",
+    "clerkName": "Sarasota County Clerk of Court",
+    "clerkPhone": "(941) 861-7400",
+    "clerkWebsite": "https://www.sarasotaclerk.com/",
+    "courtRecordsUrl": "https://secure.sarasotaclerk.com/Login.aspx?session=0",
+    "firstAppearance": "First appearance hearings for Sarasota County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Sarasota",
+      "Venice",
+      "North Port",
+      "Osprey",
+      "Nokomis",
+      "Englewood"
+    ],
+    "officialSources": [
+      "https://www.sarasotasheriff.org/arrest-reports/index.php",
+      "https://www.sarasotaclerk.com/",
+      "https://secure.sarasotaclerk.com/Login.aspx?session=0"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Sarasota County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Seminole",
+    "slug": "seminole",
+    "jailName": "Seminole County Jail",
+    "jailAddress": "TODO-VERIFY (Seminole County Sheriff Detention)",
+    "jailPhone": "(407) 665-1200",
+    "inmateSearchUrl": "https://www.seminolesheriff.org/WebBond/Inmates.aspx",
+    "courthouseName": "Seminole County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Seminole County Court)",
+    "clerkName": "Seminole County Clerk of Court",
+    "clerkPhone": "(407) 665-4300",
+    "clerkWebsite": "https://www.seminoleclerk.org/",
+    "courtRecordsUrl": "https://courtrecords.seminoleclerk.org/criminal/default.aspx",
+    "firstAppearance": "First appearance hearings for Seminole County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Sanford",
+      "Altamonte Springs",
+      "Casselberry",
+      "Oviedo",
+      "Lake Mary",
+      "Longwood"
+    ],
+    "officialSources": [
+      "https://www.seminolesheriff.org/WebBond/Inmates.aspx",
+      "https://www.seminoleclerk.org/",
+      "https://courtrecords.seminoleclerk.org/criminal/default.aspx"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Seminole County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "St. Johns",
+    "slug": "st.-johns",
+    "jailName": "St. Johns County Jail",
+    "jailAddress": "TODO-VERIFY (St. Johns County Sheriff Detention)",
+    "jailPhone": "(904) 209-3125",
+    "inmateSearchUrl": "https://www.sjso.org/detention-center/sj-inmate-search/",
+    "courthouseName": "St. Johns County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (St. Johns County Court)",
+    "clerkName": "St. Johns County Clerk of Court",
+    "clerkPhone": "(904) 819-3600",
+    "clerkWebsite": "https://stjohnsclerk.com/",
+    "courtRecordsUrl": "https://apps.stjohnsclerk.com/Benchmark/Home.aspx/Search",
+    "firstAppearance": "First appearance hearings for St. Johns County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "St. Augustine",
+      "Ponte Vedra Beach",
+      "St. Augustine Beach",
+      "Hastings"
+    ],
+    "officialSources": [
+      "https://www.sjso.org/detention-center/sj-inmate-search/",
+      "https://stjohnsclerk.com/",
+      "https://apps.stjohnsclerk.com/Benchmark/Home.aspx/Search"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with St. Johns County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "St. Lucie",
+    "slug": "st.-lucie",
+    "jailName": "St. Lucie County Jail",
+    "jailAddress": "TODO-VERIFY (St. Lucie County Sheriff Detention)",
+    "jailPhone": "(772)462-3450",
+    "inmateSearchUrl": "https://www.stluciesheriff.com/215/Inmate-Lookup",
+    "courthouseName": "St. Lucie County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (St. Lucie County Court)",
+    "clerkName": "St. Lucie County Clerk of Court",
+    "clerkPhone": "(772) 462-6900",
+    "clerkWebsite": "https://stlucieclerk.gov/",
+    "courtRecordsUrl": "https://stlucieclerk.gov/public-search-gen/search-court-cases",
+    "firstAppearance": "First appearance hearings for St. Lucie County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Fort Pierce",
+      "Port St. Lucie",
+      "Tradition"
+    ],
+    "officialSources": [
+      "https://www.stluciesheriff.com/215/Inmate-Lookup",
+      "https://stlucieclerk.gov/",
+      "https://stlucieclerk.gov/public-search-gen/search-court-cases"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with St. Lucie County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Sumter",
+    "slug": "sumter",
+    "jailName": "Sumter County Jail",
+    "jailAddress": "TODO-VERIFY (Sumter County Sheriff Detention)",
+    "jailPhone": "(352) 793-2621",
+    "inmateSearchUrl": "https://portal.sumtercountysheriff.org/smartwebclient/jail.aspx",
+    "courthouseName": "Sumter County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Sumter County Court)",
+    "clerkName": "Sumter County Clerk of Court",
+    "clerkPhone": "(352) 569-6600",
+    "clerkWebsite": "https://www.sumterclerk.com/",
+    "courtRecordsUrl": "https://www.civitekflorida.com/ocrs/county/60/",
+    "firstAppearance": "First appearance hearings for Sumter County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Bushnell",
+      "Wildwood",
+      "The Villages",
+      "Center Hill",
+      "Coleman"
+    ],
+    "officialSources": [
+      "https://portal.sumtercountysheriff.org/smartwebclient/jail.aspx",
+      "https://www.sumterclerk.com/",
+      "https://www.civitekflorida.com/ocrs/county/60/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Sumter County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Suwannee",
+    "slug": "suwannee",
+    "jailName": "Suwannee County Jail",
+    "jailAddress": "TODO-VERIFY (Suwannee County Sheriff Detention)",
+    "jailPhone": "(386) 364-3776",
+    "inmateSearchUrl": "https://smartcop.suwanneesheriff.com/smartwebclient/jail.aspx",
+    "courthouseName": "Suwannee County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Suwannee County Court)",
+    "clerkName": "Suwannee County Clerk of Court",
+    "clerkPhone": "(386) 362-0520",
+    "clerkWebsite": "https://www.suwgov.org/",
+    "courtRecordsUrl": "https://www.suwgov.org/county-recorder/",
+    "firstAppearance": "First appearance hearings for Suwannee County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Live Oak",
+      "Branford",
+      "Wellborn"
+    ],
+    "officialSources": [
+      "https://smartcop.suwanneesheriff.com/smartwebclient/jail.aspx",
+      "https://www.suwgov.org/",
+      "https://www.suwgov.org/county-recorder/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Suwannee County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Taylor",
+    "slug": "taylor",
+    "jailName": "Taylor County Jail",
+    "jailAddress": "TODO-VERIFY (Taylor County Sheriff Detention)",
+    "jailPhone": "(850) 584-4333",
+    "inmateSearchUrl": "http://smartcop.taylorsheriff.org:8989/SmartWEBClient/Jail.aspx",
+    "courthouseName": "Taylor County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Taylor County Court)",
+    "clerkName": "Taylor County Clerk of Court",
+    "clerkPhone": "(850) 838-3506",
+    "clerkWebsite": "https://taylorclerk.com/",
+    "courtRecordsUrl": "http://pubrecs.taylorclerk.com/PublicInquiry/Search.aspx?Type=Name",
+    "firstAppearance": "First appearance hearings for Taylor County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Perry",
+      "Steinhatchee"
+    ],
+    "officialSources": [
+      "http://smartcop.taylorsheriff.org:8989/SmartWEBClient/Jail.aspx",
+      "https://taylorclerk.com/",
+      "http://pubrecs.taylorclerk.com/PublicInquiry/Search.aspx?Type=Name"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Taylor County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Union",
+    "slug": "union",
+    "jailName": "Union County Jail",
+    "jailAddress": "TODO-VERIFY (Union County Sheriff Detention)",
+    "jailPhone": "(386) 496-2501",
+    "inmateSearchUrl": "http://www.unionsheriff.us/county-jail.php",
+    "courthouseName": "Union County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Union County Court)",
+    "clerkName": "Union County Clerk of Court",
+    "clerkPhone": "(386) 496-3711",
+    "clerkWebsite": "https://unionclerk.com/",
+    "courtRecordsUrl": "https://www.civitekflorida.com/ocrs/county/63/",
+    "firstAppearance": "First appearance hearings for Union County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Lake Butler",
+      "Raiford",
+      "Worthington Springs"
+    ],
+    "officialSources": [
+      "http://www.unionsheriff.us/county-jail.php",
+      "https://unionclerk.com/",
+      "https://www.civitekflorida.com/ocrs/county/63/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Union County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Volusia",
+    "slug": "volusia",
+    "jailName": "Volusia County Jail",
+    "jailAddress": "TODO-VERIFY (Volusia County Sheriff Detention)",
+    "jailPhone": "(386) 254-1555",
+    "inmateSearchUrl": "https://volusiamug.vcgov.org/",
+    "courthouseName": "Volusia County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Volusia County Court)",
+    "clerkName": "Volusia County Clerk of Court",
+    "clerkPhone": "(386) 736-5915",
+    "clerkWebsite": "https://www.clerk.org/",
+    "courtRecordsUrl": "https://ccms.clerk.org/",
+    "firstAppearance": "First appearance hearings for Volusia County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "DeLand",
+      "Daytona Beach",
+      "Ormond Beach",
+      "Port Orange",
+      "New Smyrna Beach",
+      "Deltona"
+    ],
+    "officialSources": [
+      "https://volusiamug.vcgov.org/",
+      "https://www.clerk.org/",
+      "https://ccms.clerk.org/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Volusia County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Wakulla",
+    "slug": "wakulla",
+    "jailName": "Wakulla County Jail",
+    "jailAddress": "TODO-VERIFY (Wakulla County Sheriff Detention)",
+    "jailPhone": "(850) 745-7100",
+    "inmateSearchUrl": "https://www.wcso.org/",
+    "courthouseName": "Wakulla County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Wakulla County Court)",
+    "clerkName": "Wakulla County Clerk of Court",
+    "clerkPhone": "(850) 926-0905",
+    "clerkWebsite": "https://www.wakullaclerk.com/",
+    "courtRecordsUrl": "https://www.civitekflorida.com/ocrs/county/65/",
+    "firstAppearance": "First appearance hearings for Wakulla County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Crawfordville",
+      "St. Marks",
+      "Sopchoppy",
+      "Panacea"
+    ],
+    "officialSources": [
+      "https://www.wcso.org/",
+      "https://www.wakullaclerk.com/",
+      "https://www.civitekflorida.com/ocrs/county/65/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Wakulla County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Walton",
+    "slug": "walton",
+    "jailName": "Walton County Jail",
+    "jailAddress": "TODO-VERIFY (Walton County Sheriff Detention)",
+    "jailPhone": "(850) 892-8196",
+    "inmateSearchUrl": "https://nwscorrections.waltonso.org/NewWorld.InMateInquiry/WaltonCounty",
+    "courthouseName": "Walton County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Walton County Court)",
+    "clerkName": "Walton County Clerk of Court",
+    "clerkPhone": "(850) 892 - 8115",
+    "clerkWebsite": "https://waltonclerk.com/",
+    "courtRecordsUrl": "https://waltonclerk.com/courtrecords",
+    "firstAppearance": "First appearance hearings for Walton County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "DeFuniak Springs",
+      "Freeport",
+      "Miramar Beach",
+      "Santa Rosa Beach",
+      "Inlet Beach"
+    ],
+    "officialSources": [
+      "https://nwscorrections.waltonso.org/NewWorld.InMateInquiry/WaltonCounty",
+      "https://waltonclerk.com/",
+      "https://waltonclerk.com/courtrecords"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Walton County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  },
+  {
+    "name": "Washington",
+    "slug": "washington",
+    "jailName": "Washington County Jail",
+    "jailAddress": "TODO-VERIFY (Washington County Sheriff Detention)",
+    "jailPhone": "(850) 638-6111",
+    "inmateSearchUrl": "https://www.wcso.us/inmateRoster",
+    "courthouseName": "Washington County Courthouse",
+    "courthouseAddress": "TODO-VERIFY (Washington County Court)",
+    "clerkName": "Washington County Clerk of Court",
+    "clerkPhone": "(850) 638-6285",
+    "clerkWebsite": "https://www.washingtonclerk.com/",
+    "courtRecordsUrl": "https://www.civitekflorida.com/ocrs/county/67/",
+    "firstAppearance": "First appearance hearings for Washington County are held within 24 hours of arrest pursuant to Fla. R. Crim. P. 3.130.",
+    "cities": [
+      "Chipley",
+      "Vernon",
+      "Caryville",
+      "Ebro"
+    ],
+    "officialSources": [
+      "https://www.wcso.us/inmateRoster",
+      "https://www.washingtonclerk.com/",
+      "https://www.civitekflorida.com/ocrs/county/67/"
+    ],
+    "howToBond": "1. Call Shamrock Bail Bonds at 239-332-2245. 2. Verify active booking with Washington County Jail. 3. Complete electronic indemnitor paperwork on your smartphone. 4. Bond posted by licensed Florida surety agent."
+  }
+]
