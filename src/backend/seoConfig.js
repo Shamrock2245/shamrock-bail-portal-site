@@ -11,7 +11,7 @@
  *     seoUtils.js, and all page-level Velo files.
  *   - Do NOT modify without updating docs/seo/NAP_GUIDE.md.
  *
- * Last updated: 2026-07-04
+ * Last updated: 2026-10-08
  */
 
 // ─── CANONICAL NAP ────────────────────────────────────────────────────────────
@@ -75,8 +75,21 @@ export const LANGUAGES         = ['English', 'Spanish'];
 export const PAYMENT_ACCEPTED  = ['Cash', 'Credit Card', 'Debit Card', 'Payment Plan'];
 export const CURRENCIES        = 'USD';
 
-/** Hours: 24/7 */
+/**
+ * Fort Myers office walk-in hours: Monday–Friday, 9:00 AM–5:00 PM.
+ * LocalBusiness openingHoursSpecification must use this, not phone coverage.
+ */
 export const HOURS = {
+    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    opens:     '09:00',
+    closes:    '17:00',
+};
+
+/**
+ * Telephone / dispatch availability. Not office walk-in hours.
+ * Used only on ContactPoint.hoursAvailable.
+ */
+const PHONE_HOURS = {
     dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
     opens:     '00:00',
     closes:    '23:59',
@@ -104,9 +117,9 @@ export const CONTACT_POINTS = [
         availableLanguage:   LANGUAGES,
         hoursAvailable: {
             '@type':     'OpeningHoursSpecification',
-            dayOfWeek:   HOURS.dayOfWeek,
-            opens:       HOURS.opens,
-            closes:      HOURS.closes,
+            dayOfWeek:   PHONE_HOURS.dayOfWeek,
+            opens:       PHONE_HOURS.opens,
+            closes:      PHONE_HOURS.closes,
         },
     },
     {

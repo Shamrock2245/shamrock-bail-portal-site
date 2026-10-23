@@ -194,8 +194,8 @@ function setupStructuredData() {
             "geo": { "@type": "GeoCoordinates", "latitude": "26.6406", "longitude": "-81.8723" },
             "openingHoursSpecification": {
                 "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                "opens": "00:00", "closes": "23:59"
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                "opens": "09:00", "closes": "17:00"
             },
             "sameAs": [
                 "https://www.facebook.com/ShamrockBail",
