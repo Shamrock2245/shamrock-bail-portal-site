@@ -968,13 +968,24 @@ function setupOrganizationSchema() {
                     }
                 },
                 { "@type": "ContactPoint", "telephone": "+1-239-955-0178", "contactType": "Text messages (SMS/iMessage only, no voice calls)", "contactOption": "HearingImpairedSupported", "areaServed": "FL", "availableLanguage": ["English", "Spanish"], "description": "24/7 SMS & iMessage Support" },
-                { "@type": "ContactPoint", "telephone": "+1-727-295-2245", "contactType": "Customer Service (Spanish line)", "areaServed": "FL", "availableLanguage": ["Spanish"] }
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-727-295-2245",
+                    "contactType": "Customer Service (Spanish line)",
+                    "areaServed": "FL",
+                    "availableLanguage": ["Spanish"],
+                    "hoursAvailable": {
+                        "@type": "OpeningHoursSpecification",
+                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                        "opens": "00:00", "closes": "23:59"
+                    }
+                }
             ],
             "areaServed": { "@type": "State", "name": "Florida", "@id": "https://en.wikipedia.org/wiki/Florida" },
             "openingHoursSpecification": {
                 "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                "opens": "00:00", "closes": "23:59"
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                "opens": "09:00", "closes": "17:00"
             },
             "priceRange": "$$",
             "paymentAccepted": "Cash, Credit Card, Debit Card",
@@ -1015,14 +1026,19 @@ function setupOrganizationSchema() {
             ],
             "availableChannel": {
                 "@type": "ServiceChannel",
-                "servicePhone": { "@type": "ContactPoint", "telephone": "+1-239-332-2245", "contactType": "Emergency Bail Dispatch", "availableLanguage": ["English", "Spanish"] },
+                "servicePhone": {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-239-332-2245",
+                    "contactType": "Emergency Bail Dispatch",
+                    "availableLanguage": ["English", "Spanish"],
+                    "hoursAvailable": {
+                        "@type": "OpeningHoursSpecification",
+                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                        "opens": "00:00", "closes": "23:59"
+                    }
+                },
                 "serviceSms": { "@type": "ContactPoint", "telephone": "+1-239-955-0178", "contactType": "24/7 SMS & iMessage Support" },
                 "serviceUrl": "https://www.shamrockbailbonds.biz"
-            },
-            "hoursAvailable": {
-                "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                "opens": "00:00", "closes": "23:59"
             },
             "hasOfferCatalog": BAIL_OFFER_CATALOG
         }

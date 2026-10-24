@@ -9,9 +9,40 @@ const REPLACEMENT = '24/7 Bail Help';
 const OTHER = /Fast Release/g;
 
 /**
+ * Lee County pages still render the old CMS sentence
+ * "fast, confidential". That becomes "confidential, 24/7".
+ * No release-speed or time-to-release claim is added.
  * @param {string} value
  * @returns {string}
  */
+export function softenLeeCountyCopy(value) {
+    if (typeof value !== 'string' || !/fast,\s*confidential/i.test(value)) return value;
+    return value.replace(/fast,\s*confidential/gi, 'confidential, 24/7');
+}
+
+/**
+ * @param {object} county generated county page
+ * @returns {object}
+ */
+export function softenLeeCountyPage(county) {
+    if (!county || typeof county !== 'object') return county;
+    const slug = String(county.county_slug || county.slug || '')
+        .toLowerCase()
+        .replace(/-county$/i, '');
+    if (slug !== 'lee') return county;
+    const walk = (value) => {
+        if (typeof value === 'string') return softenLeeCountyCopy(value);
+        if (Array.isArray(value)) return value.map(walk);
+        if (!value || typeof value !== 'object') return value;
+        const next = Array.isArray(value) ? [] : {};
+        Object.keys(value).forEach((key) => {
+            next[key] = walk(value[key]);
+        });
+        return next;
+    };
+    return walk(county);
+}
+
 export function sanitizeFastReleaseText(value) {
     if (typeof value !== 'string' || value.indexOf('Fast Release') === -1) return value;
     let text = value.split(PHRASE).join(REPLACEMENT);
