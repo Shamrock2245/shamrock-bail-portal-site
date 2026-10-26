@@ -1106,7 +1106,7 @@
   - [https://www.seminoleclerk.org/](https://www.seminoleclerk.org/)
   - [https://courtrecords.seminoleclerk.org/criminal/default.aspx](https://courtrecords.seminoleclerk.org/criminal/default.aspx)
 
-## St. Johns County (`/florida-bail-bonds/st.-johns`)
+## St. Johns County (`/florida-bail-bonds/st-johns`)
 
 - **Jail Name**: St. Johns County Jail
 - **Jail Address**: TODO-VERIFY (St. Johns County Sheriff Detention)
@@ -1125,7 +1125,7 @@
   - [https://stjohnsclerk.com/](https://stjohnsclerk.com/)
   - [https://apps.stjohnsclerk.com/Benchmark/Home.aspx/Search](https://apps.stjohnsclerk.com/Benchmark/Home.aspx/Search)
 
-## St. Lucie County (`/florida-bail-bonds/st.-lucie`)
+## St. Lucie County (`/florida-bail-bonds/st-lucie`)
 
 - **Jail Name**: St. Lucie County Jail
 - **Jail Address**: TODO-VERIFY (St. Lucie County Sheriff Detention)

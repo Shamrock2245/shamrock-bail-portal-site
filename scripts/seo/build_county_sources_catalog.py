@@ -19,7 +19,10 @@ OUT_JSON = "docs/studio-content/county-official-sources.json"
 OUT_MD = "docs/studio-content/county-official-sources.md"
 
 def slugify(name):
-    return name.lower().strip().replace(" ", "-").replace("'", "")
+    """Match live county routes. Periods in 'St. Johns' must not survive."""
+    slug = name.lower().strip().replace("'", "").replace(".", "")
+    slug = re.sub(r"[^a-z0-9]+", "-", slug)
+    return slug.strip("-")
 
 def main():
     os.makedirs("docs/studio-content", exist_ok=True)

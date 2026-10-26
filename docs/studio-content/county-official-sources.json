@@ -1565,7 +1565,7 @@
   },
   {
     "name": "St. Johns",
-    "slug": "st.-johns",
+    "slug": "st-johns",
     "jailName": "St. Johns County Jail",
     "jailAddress": "TODO-VERIFY (St. Johns County Sheriff Detention)",
     "jailPhone": "(904) 209-3125",
@@ -1592,7 +1592,7 @@
   },
   {
     "name": "St. Lucie",
-    "slug": "st.-lucie",
+    "slug": "st-lucie",
     "jailName": "St. Lucie County Jail",
     "jailAddress": "TODO-VERIFY (St. Lucie County Sheriff Detention)",
     "jailPhone": "(772)462-3450",
