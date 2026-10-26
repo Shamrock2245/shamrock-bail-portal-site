@@ -73,9 +73,18 @@ for i, row in enumerate(rows, 1):
 
     try:
         class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+            # Return the first response. The base class follows 303, 307, and 308
+            # even when 301 and 302 are overridden, because those names alias the
+            # original follow-redirect method.
             def http_error_301(self, req, fp, code, msg, headers):
                 return fp
             def http_error_302(self, req, fp, code, msg, headers):
+                return fp
+            def http_error_303(self, req, fp, code, msg, headers):
+                return fp
+            def http_error_307(self, req, fp, code, msg, headers):
+                return fp
+            def http_error_308(self, req, fp, code, msg, headers):
                 return fp
 
         opener = urllib.request.build_opener(NoRedirectHandler)
