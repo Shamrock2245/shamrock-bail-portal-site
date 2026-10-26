@@ -178,6 +178,14 @@ def enforce_canonical_facts(text):
     # Enforce sureties (OSI and Palmetto only)
     text = re.sub(r'\bAccredited\s*Surety\b', 'O\'Shaughnahill Surety & Insurance (OSI)', text, flags=re.IGNORECASE)
     text = re.sub(r'\bBankers\s*Insurance\b', 'Palmetto Surety Corporation', text, flags=re.IGNORECASE)
+
+    # DocuSeal is the only signing provider. Staff issue the packet in Super CRM.
+    text = re.sub(
+        r'[^.!\n]*\bSignNow\b[^.!\n]*[.!]?',
+        ' Staff in Super CRM issue the DocuSeal packet. The website does not start a signing session.',
+        text,
+        flags=re.IGNORECASE,
+    )
     
     # Clean up empty lines
     text = re.sub(r'\n{3,}', '\n\n', text)

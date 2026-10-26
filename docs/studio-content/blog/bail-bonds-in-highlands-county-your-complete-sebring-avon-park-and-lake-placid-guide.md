@@ -275,13 +275,13 @@ After an arrest in Sebring, Avon Park, or Lake Placid, the defendant is transpor
 Posting bail doesn't have to be complicated. Here is how the process works when you work with Shamrock Bail Bonds:
 
 - Contact Us Immediately: Call us 24/7. Have the defendant's full name, date of birth, and booking number (if available) ready.
-- Consultation and Paperwork: We will explain the bail amount, our fees (which are legally set at 10% for state bonds), and any necessary collateral. All paperwork can often be completed digitally via SignNow for your convenience.
+- Consultation and Paperwork: We will explain the bail amount, our fees (which are legally set at 10% for state bonds), and any necessary collateral. Staff in Super CRM issue the DocuSeal packet. The website does not start a signing session.
 - Posting the Bond: Once the paperwork is signed and the premium is paid, a licensed agent posts the bond at the Highlands County Jail. The jail controls release after that.
 - Release: The jail will process the bond and release your loved one. This step typically takes a few hours, depending on the facility's current workload.
 
 Contact Us Immediately: Call us 24/7. Have the defendant's full name, date of birth, and booking number (if available) ready.
 
-Consultation and Paperwork: We will explain the bail amount, our fees (which are legally set at 10% for state bonds), and any necessary collateral. All paperwork can often be completed digitally via SignNow for your convenience.
+Consultation and Paperwork: We will explain the bail amount, our fees (which are legally set at 10% for state bonds), and any necessary collateral. Staff in Super CRM issue the DocuSeal packet. The website does not start a signing session.
 
 Posting the Bond: Once the paperwork is signed and the premium is paid, a licensed agent posts the bond at the Highlands County Jail. The jail controls release after that.
 
