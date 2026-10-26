@@ -1,5 +1,6 @@
 /**
- * Statewide county hub (/florida-bail-bonds).
+ * Statewide county hub. The live page is /florida-bail-bonds-1.
+ * /florida-bail-bonds 301s there, so structured data uses the live route.
  * Appends one crawlable /florida-bail-bonds/{county} anchor for all 67
  * counties onto the body rich text already on this page. SWFL leads that
  * list. The Editor H1 is left as authored.
@@ -73,7 +74,7 @@ function setHubLocalBusiness() {
         '@type': 'LocalBusiness',
         '@id': 'https://www.shamrockbailbonds.biz/#business',
         name: 'Shamrock Bail Bonds',
-        url: 'https://www.shamrockbailbonds.biz/florida-bail-bonds',
+        url: 'https://www.shamrockbailbonds.biz/florida-bail-bonds-1',
         telephone: '+1-239-332-2245',
         image: 'https://www.shamrockbailbonds.biz/logo.png',
         address: {
