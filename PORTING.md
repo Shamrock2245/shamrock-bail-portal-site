@@ -23,7 +23,7 @@ Wix Studio branches created from templates initialize with clean default Velo fi
 | File Path in Repo | Purpose & Functions | Studio Code Panel Destination | Priority |
 |---|---|---|---|
 | `src/backend/http-functions.js` | Main external HTTP webhook router. Handles `/get_intake`, `/post_intake`, `/post_docuseal_webhook`, `/post_swipesimple_webhook`, `/get_active_cases`. | Backend → `http-functions.js` | 🔴 P0 Critical |
-| `src/backend/http-auth.js` | HMAC-SHA256 signature verification and API key validation for incoming webhooks (`WIX_WEBHOOK_SECRET`). | Backend → `http-auth.js` | 🔴 P0 Critical |
+| `src/backend/http-auth.js` | API key validation for incoming webhooks. Reads the Wix secret `GAS_API_KEY`. | Backend → `http-auth.js` | 🔴 P0 Critical |
 | `src/backend/data.js` | Wix CMS Data Hooks (`beforeInsert`, `beforeUpdate`, `afterInsert`) for collections: `IntakeQueue`, `Cases`, `MagicLinks`, `PortalSessions`. Normalizes phone numbers and logs audit events. | Backend → `data.js` | 🔴 P0 Critical |
 | `src/backend/jobs.config` | Scheduled cron job configuration for periodic tasks (cleanup expired magic links, sync court appearances). | Backend → `jobs.config` | 🟡 P1 |
 
@@ -153,11 +153,11 @@ Wix platform modules (`wix-location`, `wix-seo`, `wix-data`, `wix-window`, `wix-
 
 ## 3. Required Wix Secrets Manager Keys
 
-Ensure these keys are active in **Wix Studio → Settings → Secrets Manager**:
+Ensure these keys are active in **Wix Studio → Developer Tools → Secrets Manager**. Wix rejects secret names that start with `WIX`, so do not create a secret named `WIX_WEBHOOK_SECRET`.
 
 | Secret Key Name | Purpose | Value Source |
 |---|---|---|
-| `WIX_WEBHOOK_SECRET` | HMAC signature verification for CRM webhooks | Must match VPS `.env` |
+| `LEADS_WEBHOOK_SECRET` | Value passed as `X-Wix-Webhook-Secret` by `leadsIntake.jsw` (`getSecureSecret('LEADS_WEBHOOK_SECRET')`). Intake fails closed before it contacts the CRM if this secret is missing. | Must match `WIX_WEBHOOK_SECRET` in the leads VPS `.env`. The VPS variable keeps that name. Only the Wix Secrets Manager name is `LEADS_WEBHOOK_SECRET`. Do not commit the value. |
 | `CRM_INTAKE_WEBHOOK_URL` | Endpoint on Hetzner VPS (`https://leads.shamrockbailbonds.biz/api/webhooks/wix-intake`) | Hetzner VPS production |
 | `GAS_WEBAPP_URL` | Stable Google Apps Script deployment URL (`/macros/s/.../exec`) | `.gas-config.json` |
 | `GAS_API_KEY` | Secret bearer key for Apps Script authorization | GAS Script Properties |
