@@ -56,7 +56,7 @@ These files must be created under Backend → New File → (Name) in the Studio 
 2. `src/backend/data/florida-city-landings.json` — High-intent city landing records (Cape Coral, Fort Myers, Naples, Punta Gorda, etc.).
 3. `src/backend/data/phone-registry.json` — Dynamic phone number routing table (`239-332-2245` primary, `727-295-2245` Spanish, `239-955-0178` SMS).
 4. `src/backend/data/gsc-county-local.json` — Local fact enrichments for indexed Florida counties.
-5. `src/backend/data/bailSchoolCourses.json` — Curriculum descriptions and approved course hours.
+5. `src/backend/data/bailSchoolCourses.json` — Curriculum descriptions and course hour totals. Publish no course price. The 120-hour and 20-hour courses are pending course approval.
 
 ---
 

@@ -33,10 +33,10 @@ Everything you build must be **better than the live Wix Editor site** while stri
    - Do not state how long release takes, how fast processing is, or that Shamrock is faster than anyone else.
    - Do not use "guaranteed results" or a minute, hour, or same-day release promise.
    - The jail controls release after the bond is posted. Say that, and stop there.
-6. **No Dollar Pricing (Except Bail School 120-Hr):**
+6. **No Dollar Pricing:**
    - **Never state fixed dollar fees for bail** (Bail is strictly 10% under Florida Statute § 648 with a $100 minimum per charge).
-   - **Bail School 120-Hour Course:** `$649`.
-   - **Bail School 20-Hour Course:** Must display `"Pending course approval"` with `"#648-FL (pending course approval)"` and **NO dollar price**.
+   - **Bail School 120-Hour Course:** No dollar price. Label it pending course approval. Provider label: `FLDFS Provider #648-FL (pending course approval)`.
+   - **Bail School 20-Hour Course:** No dollar price. Label it pending course approval. Same provider label: `FLDFS Provider #648-FL (pending course approval)`.
 7. **Retired Surfaces:**
    - The Staff Portal (`/portal-staff`), Lobby Tablet, and Staff Kiosk are **permanently retired**. All staff operations occur in the `shamrock-leads` Super CRM. `/portal-staff` redirects to `/portal-landing`.
 
@@ -186,9 +186,9 @@ Everything you build must be **better than the live Wix Editor site** while stri
 ### 8. Bail School (`/bail-school`)
 - Content from `docs/studio-content/bail-school.md`.
 - H1: `Florida Bail Bond Pre-Licensing Education: Shamrock Bail School`
-- Pricing & Offer Structure:
-  - **120-Hour Qualification Course:** `$649` (Online self-paced course, state-approved pre-licensing curriculum).
-  - **20-Hour Course:** Display `"Pending course approval"` and `"#648-FL (pending course approval)"` with **NO dollar price**.
+- Course labels (no prices, no Offer price in structured data):
+  - **120-Hour Qualification Course:** Pending course approval. No dollar price. Provider label: `FLDFS Provider #648-FL (pending course approval)`.
+  - **20-Hour Course:** Pending course approval. No dollar price. Same provider label.
 - SEO Panel: Title `Florida Bail Bond School | 120-Hour Pre-Licensing | Shamrock`.
 
 ---

@@ -5,7 +5,7 @@
 > **Reading Level:** 8th Grade (plain English).  
 > **Canonical Brand Truths:** 1528 Broadway, Fort Myers, FL 33901 · Main line 239-332-2245 · Spanish public line 727-295-2245 · Text 239-955-0178 · Email admin@shamrockbailbonds.biz  
 > **Hours:** Office walk-in hours Mon–Fri 9 AM–5 PM. Phones answered 24/7. These are labeled separately.  
-> **Compliance Standards:** Course facts only. No license or job promise. No price on the pending 20-hour course.
+> **Compliance Standards:** Course facts only. No license or job promise. No price on the 120-hour or 20-hour course. Both are pending course approval.
 
 ---
 
@@ -17,13 +17,13 @@ This page is for people who want a Florida limited surety (bail bond) agent lice
 
 Florida requires pre-licensing education before you can apply for a limited surety agent license under Chapter 648. Shamrock Bail School teaches that coursework from the Fort Myers office.
 
-## 120-Hour Pre-Licensing Qualification Course ($649)
+## 120-Hour Pre-Licensing Qualification Course (Pending Course Approval)
 
-The 120-hour qualification course is $649. It is a self-paced pre-licensing course for people who are not yet licensed bail agents. The price is tuition for the course. It is not a bail premium.
+The 120-hour qualification course is pending course approval. It is a self-paced pre-licensing course for people who are not yet licensed bail agents. This page does not list a price. The provider label is FLDFS Provider #648-FL (pending course approval).
 
 ## 20-Hour Continuing Education Course (Pending Course Approval)
 
-The 20-hour course is listed as pending course approval. The approval number to show is #648-FL (pending course approval). Do not display a dollar price for the 20-hour course until approval is final.
+The 20-hour course is pending course approval. This page does not list a price. The provider label is FLDFS Provider #648-FL (pending course approval).
 
 ## Step-by-Step Path to Your Florida Limited Surety Agent License
 
@@ -41,7 +41,7 @@ The curriculum follows the subjects the state expects a new bail agent to know: 
 ## Bail School Frequently Asked Questions
 
 ### Is the 120-hour course the same as a bail bond premium?
-No. The $649 is tuition. A bail bond premium is 10% of a defendant's bond under Florida Statute § 648.24.
+No. Course tuition is not a bail bond premium. A bail bond premium is 10% of a defendant's bond under Florida Statute § 648.24. This page does not list a course price.
 
 ### Can I get a price for the 20-hour course?
-Not yet. That course is pending approval, so this page does not list a price.
+Not yet. The 20-hour course is pending course approval, so this page does not list a price.

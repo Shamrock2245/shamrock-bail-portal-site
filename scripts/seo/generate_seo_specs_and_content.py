@@ -107,7 +107,7 @@ def generate_seo_spec(page):
         },
         "bail-school": {
             "title": "Florida Bail Bond School | Shamrock Bail Bonds",
-            "desc": "State-approved pre-licensing bail bond education in Florida. Enroll in the 120-Hour Qualification Course ($649). Call 239-332-2245 to get started.",
+            "desc": "Florida bail bond pre-licensing is pending course approval. No price is listed for the 120-hour or 20-hour course. Call 239-332-2245 to start.",
             "h1": "Florida Bail Bond Pre-Licensing Education & Career Academy",
             "keywords": "Florida bail bond school, 120-hour bail bond course Florida, bail bondsman licensing Florida, pre-licensing bail agent education",
             "secondary": "how to become a bail bondsman in Florida, Florida Statute Chapter 648 course",
@@ -116,7 +116,7 @@ def generate_seo_spec(page):
             "page_type": "static",
             "h2s": [
                 "Launch Your Career in Florida Criminal Justice",
-                "120-Hour Pre-Licensing Qualification Course ($649)",
+                "120-Hour Pre-Licensing Qualification Course (Pending Course Approval)",
                 "20-Hour Continuing Education Course (Pending Course Approval)",
                 "Step-by-Step Path to Your Florida Limited Surety Agent License",
                 "Bail School Tuition, Enrollment & Curriculum",
@@ -667,13 +667,13 @@ This page is for people who want a Florida limited surety (bail bond) agent lice
 
 Florida requires pre-licensing education before you can apply for a limited surety agent license under Chapter 648. Shamrock Bail School teaches that coursework from the Fort Myers office.
 
-## 120-Hour Pre-Licensing Qualification Course ($649)
+## 120-Hour Pre-Licensing Qualification Course (Pending Course Approval)
 
-The 120-hour qualification course is $649. It is a self-paced pre-licensing course for people who are not yet licensed bail agents. The price is tuition for the course. It is not a bail premium.
+The 120-hour qualification course is pending course approval. It is a self-paced pre-licensing course for people who are not yet licensed bail agents. This page does not list a price. The provider label is FLDFS Provider #648-FL (pending course approval).
 
 ## 20-Hour Continuing Education Course (Pending Course Approval)
 
-The 20-hour course is listed as pending course approval. The approval number to show is #648-FL (pending course approval). Do not display a dollar price for the 20-hour course until approval is final.
+The 20-hour course is pending course approval. This page does not list a price. The provider label is FLDFS Provider #648-FL (pending course approval).
 
 ## Step-by-Step Path to Your Florida Limited Surety Agent License
 
@@ -691,10 +691,10 @@ The curriculum follows the subjects the state expects a new bail agent to know: 
 ## Bail School Frequently Asked Questions
 
 ### Is the 120-hour course the same as a bail bond premium?
-No. The $649 is tuition. A bail bond premium is 10% of a defendant's bond under Florida Statute § 648.24.
+No. Course tuition is not a bail bond premium. A bail bond premium is 10% of a defendant's bond under Florida Statute § 648.24. This page does not list a course price.
 
 ### Can I get a price for the 20-hour course?
-Not yet. That course is pending approval, so this page does not list a price.
+Not yet. The 20-hour course is pending course approval, so this page does not list a price.
 """,
         "first-appearance": f"""# {h1}
 
@@ -911,7 +911,7 @@ Call [239-332-2245](tel:+12393322245). Spanish: [727-295-2245](tel:+17272952245)
         "home": "A family in Southwest Florida who needs a bondsman.",
     }
     notes = {
-        "bail-school": "Course facts only. No license or job promise. No price on the pending 20-hour course.",
+        "bail-school": "Course facts only. No license or job promise. No price on the 120-hour or 20-hour course. Both are pending course approval.",
         "testimonials": "Do not invent quotes, names, or star ratings.",
         "portal-landing": "Login help. Not a sales page.",
         "portal-defendant": "Case dashboard. Not a sales page.",

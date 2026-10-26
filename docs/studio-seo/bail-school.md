@@ -12,12 +12,12 @@
 | Field | Value | Notes & Length |
 |---|---|---|
 | **Page Title** | `Florida Bail Bond School | Shamrock Bail Bonds` | 46 characters (target < 60) |
-| **Meta Description** | `State-approved pre-licensing bail bond education in Florida. Enroll in the 120-Hour Qualification Course ($649). Call 239-332-2245 to get started.` | 146 characters (target 140–160) |
+| **Meta Description** | `Florida bail bond pre-licensing is pending course approval. No price is listed for the 120-hour or 20-hour course. Call 239-332-2245 to start.` | 142 characters (target 140–160) |
 | **H1 Headline** | `Florida Bail Bond Pre-Licensing Education & Career Academy` | Exactly 1 per page |
 | **Robots** | `index, follow` | Public pages index; portal/retire noindex |
 | **Canonical URL** | `https://www.shamrockbailbonds.biz/bail-school` | Self-referencing |
 | **Open Graph Title** | `Florida Bail Bond School | Shamrock Bail Bonds` | Matches page title |
-| **Open Graph Description** | `State-approved pre-licensing bail bond education in Florida. Enroll in the 120-Hour Qualification Course ($649). Call 239-332-2245 to get started.` | Matches meta description |
+| **Open Graph Description** | `Florida bail bond pre-licensing is pending course approval. No price is listed for the 120-hour or 20-hour course. Call 239-332-2245 to start.` | Matches meta description |
 | **Open Graph Image** | `https://www.shamrockbailbonds.biz/logo.png` | 1200 x 630 WebP/PNG brand banner |
 | **Open Graph Type** | `website` | Standard open graph type |
 
@@ -36,7 +36,7 @@
 
 - **H1:** `Florida Bail Bond Pre-Licensing Education & Career Academy`
   - **H2:** `Launch Your Career in Florida Criminal Justice`
-  - **H2:** `120-Hour Pre-Licensing Qualification Course ($649)`
+  - **H2:** `120-Hour Pre-Licensing Qualification Course (Pending Course Approval)`
   - **H2:** `20-Hour Continuing Education Course (Pending Course Approval)`
   - **H2:** `Step-by-Step Path to Your Florida Limited Surety Agent License`
   - **H2:** `Bail School Tuition, Enrollment & Curriculum`
