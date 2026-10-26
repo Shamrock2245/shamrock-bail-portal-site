@@ -151,6 +151,27 @@ Wix platform modules (`wix-location`, `wix-seo`, `wix-data`, `wix-window`, `wix-
 
 ---
 
+### G. Dependency closure for the P0 HTTP entry point
+
+Section F is the mapped-page closure. `src/backend/http-functions.js` is a separate publish path. Copy every local module it imports, including dynamic `import()` calls, and every local module those files import. Wix platform modules (`wix-http-functions`, `wix-secrets-backend`, `wix-data`, `wix-fetch`, `crypto`) ship with Studio.
+
+These files are not listed in sections A–F. `http-functions.js` fails to publish without them:
+
+| Repo file | Required because |
+|---|---|
+| `src/backend/wixApi.jsw` | static import from `http-functions.js` (`addPendingDocument`, intake and document status helpers). It also dynamically imports `backend/http-auth`. |
+| `src/backend/logging.js` | static import `backend/logging` (`logSafe`) |
+| `src/backend/cronJobs.jsw` | static import `backend/cronJobs` (`syncCountiesToCms`) |
+| `src/backend/llmSitemapData.js` | static import from `http-functions.js` (`llmSitemapContent`) |
+| `src/backend/llms-txt-builder.js` | static import from `http-functions.js` (`buildLlmsTxt`, `fetchLiveBlogPosts`) |
+| `src/backend/signing-methods.jsw` | dynamic import from `http-functions.js` (`sendSigningLinkViaSms`) |
+| `src/backend/telegram-webhook.jsw` | dynamic import from `http-functions.js` (`handleTelegramWebhook`, `getTelegramWebhookInfo`, `setTelegramWebhook`) |
+| `src/backend/config/tenant.json` | imported by `config-loader.jsw`, which `portal-auth.jsw` and `cronJobs.jsw` load for this router |
+
+The rest of this router's closure is already named above. Copy those files too: `http-auth.js`, `gasIntegration.jsw`, `portal-auth.jsw`, `portal-url.jsw`, `local-landings.js`, `social-auth.jsw`, `twilio-client.jsw`, `intakeQueue.jsw`, `config-loader.jsw`, `secretsManager.jsw`, `normalization.js`, `utils.js`, `auth-utils.js`, `super-admin.js`, `seoConfig.js`, `location-tracker.jsw`, `data/allFloridaCounties.json`, `data/florida-city-landings.json`, `data/florida-local-geo.json`, `public/cityHeroHeadline.js`, and `public/collectionIds.js`.
+
+---
+
 ## 3. Required Wix Secrets Manager Keys
 
 Ensure these keys are active in **Wix Studio → Developer Tools → Secrets Manager**. Wix rejects secret names that start with `WIX`, so do not create a secret named `WIX_WEBHOOK_SECRET`.
