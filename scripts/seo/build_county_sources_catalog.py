@@ -18,6 +18,13 @@ GSC_LOCAL_JSON = "src/backend/data/gsc-county-local.json"
 OUT_JSON = "docs/studio-content/county-official-sources.json"
 OUT_MD = "docs/studio-content/county-official-sources.md"
 
+def sourced_address(value):
+    """Publish a street only when a source file has one. Never invent one."""
+    text = (value or "").strip()
+    if not text or text.upper().startswith("TODO-VERIFY"):
+        return ""
+    return text
+
 def slugify(name):
     """Match live county routes. Periods in 'St. Johns' must not survive."""
     slug = name.lower().strip().replace("'", "").replace(".", "")
@@ -124,12 +131,12 @@ def main():
             }
         else:
             j_name = loc_info.get("jailName") or f"{cname} County Jail"
-            j_addr = loc_info.get("jailAddress") or f"TODO-VERIFY ({cname} County Sheriff Detention)"
+            j_addr = sourced_address(loc_info.get("jailAddress"))
             j_phone = csv_info.get("bookingPhone") or back_info.get("sheriffPhone") or "TODO-VERIFY"
             b_url = csv_info.get("bookingUrl") or back_info.get("bookingUrl") or "TODO-VERIFY"
             
             c_court = loc_info.get("courthouseName") or f"{cname} County Courthouse"
-            c_addr = loc_info.get("courthouseAddress") or f"TODO-VERIFY ({cname} County Court)"
+            c_addr = sourced_address(loc_info.get("courthouseAddress"))
             clerk_name = loc_info.get("clerkName") or f"{cname} County Clerk of Court"
             clerk_phone = csv_info.get("clerkPhone") or back_info.get("clerkPhone") or "TODO-VERIFY"
             clerk_url = csv_info.get("clerkUrl") or back_info.get("clerkWebsite") or "TODO-VERIFY"
@@ -168,16 +175,16 @@ def main():
     # Generate Markdown guide
     with open(OUT_MD, "w", encoding="utf-8") as f:
         f.write("# Florida 67 Counties Official Sources & Data Catalog\n\n")
-        f.write("> **Source Standards:** Zero invented facts. All booking URLs, court websites, and telephone numbers come from official sheriff and clerk directories. Anything requiring additional clerk confirmation is marked `TODO-VERIFY`.\n\n")
+        f.write("> **Source Standards:** Zero invented facts. Booking URLs, court websites, and telephone numbers come from official sheriff and clerk directories. Street addresses are copied only from `src/backend/data/gsc-county-local.json` or the Lee County record in this script. An empty address is withheld on purpose. Do not type a placeholder street onto a public page.\n\n")
         
         for c in master_catalog:
             f.write(f"## {c['name']} County (`/florida-bail-bonds/{c['slug']}`)\n\n")
             f.write(f"- **Jail Name**: {c['jailName']}\n")
-            f.write(f"- **Jail Address**: {c['jailAddress']}\n")
+            f.write(f"- **Jail Address**: {c['jailAddress'] or 'Not published. No sourced street address is on file.'}\n")
             f.write(f"- **Jail / Booking Phone**: {c['jailPhone']}\n")
             f.write(f"- **Inmate Lookup URL**: {c['inmateSearchUrl']}\n")
             f.write(f"- **Courthouse**: {c['courthouseName']}\n")
-            f.write(f"- **Courthouse Address**: {c['courthouseAddress']}\n")
+            f.write(f"- **Courthouse Address**: {c['courthouseAddress'] or 'Not published. No sourced street address is on file.'}\n")
             f.write(f"- **Clerk of Court**: {c['clerkName']}\n")
             f.write(f"- **Clerk Phone**: {c['clerkPhone']}\n")
             f.write(f"- **Clerk Website**: {c['clerkWebsite']}\n")

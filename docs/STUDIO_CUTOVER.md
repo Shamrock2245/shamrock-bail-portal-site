@@ -3,7 +3,7 @@
 > **Site:** `shamrockbailbonds.biz` (`a00e3857-675a-493b-91d8-a1dbc5e7c499`)  
 > **Target Branch:** "Wix studio version" (`12e252e4-45a8-4bcc-840b-64d4edbdcaa4`)  
 > **Objective:** Execute seamless cutover from Editor to Wix Studio with ZERO search ranking loss, zero broken links, and zero redirect loops.  
-> **Status:** PRE-CUTOVER PREPARATION COMPLETE
+> **Status:** PRE-CUTOVER. Redirects, specs, and page drafts are prepared. A county street address is ready for the facility card only when `docs/studio-content/county-official-sources.json` has a sourced street. An empty address is not a placeholder to publish.
 
 ---
 

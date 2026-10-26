@@ -149,7 +149,7 @@ Everything you build must be **better than the live Wix Editor site** while stri
 - Dynamic Dataset Elements:
   - Dataset ID: `#countyDataset`
   - H1 Headline: `{County Name} County Bail Bonds — 24/7 Jail Release`
-  - Jail Facility Card: Jail name, street address, and phone number from verified official sources.
+  - Jail Facility Card: Jail name and phone from `county-official-sources.json`. Print `jailAddress` or `courthouseAddress` only when that field is a real street address. If it is empty, leave the street off the card. Do not invent an address and do not print a placeholder.
   - Button 1: `Search Inmate Roster` (`#inmateLookupBtn`) -> opens the CMS field `bookingWebsiteLink` in a new window.
   - Button 2: `Call Jail Facility` (`#callJailFacilityBtn`) -> calls the CMS field `bookingPhoneNumber`.
   - Button 3: `Clerk Court Records` (`#clerkWebsiteBtn`) -> opens the CMS field `countyClerkWebsitelink` in a new window.

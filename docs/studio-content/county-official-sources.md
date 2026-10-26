@@ -1,15 +1,15 @@
 # Florida 67 Counties Official Sources & Data Catalog
 
-> **Source Standards:** Zero invented facts. All booking URLs, court websites, and telephone numbers come from official sheriff and clerk directories. Anything requiring additional clerk confirmation is marked `TODO-VERIFY`.
+> **Source Standards:** Zero invented facts. Booking URLs, court websites, and telephone numbers come from official sheriff and clerk directories. Street addresses are copied only from `src/backend/data/gsc-county-local.json` or the Lee County record. An empty address is withheld on purpose. Do not type a placeholder street onto a public page.
 
 ## Alachua County (`/florida-bail-bonds/alachua`)
 
 - **Jail Name**: Alachua County Jail
-- **Jail Address**: TODO-VERIFY (Alachua County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (352) 367-4000
 - **Inmate Lookup URL**: https://acso.us/inmate-search/
 - **Courthouse**: Alachua County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Alachua County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Alachua County Clerk of Court
 - **Clerk Phone**: (352) 374-3636
 - **Clerk Website**: https://www.alachuacounty.us/Depts/Clerk/Pages/Clerk.aspx
@@ -24,11 +24,11 @@
 ## Baker County (`/florida-bail-bonds/baker`)
 
 - **Jail Name**: Baker County Jail
-- **Jail Address**: TODO-VERIFY (Baker County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (904) 259-2231
 - **Inmate Lookup URL**: https://www.bakercountysheriffsoffice.com/
 - **Courthouse**: Baker County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Baker County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Baker County Clerk of Court
 - **Clerk Phone**: (904) 259-8113
 - **Clerk Website**: http://www.bakerclerk.com/
@@ -43,11 +43,11 @@
 ## Bay County (`/florida-bail-bonds/bay`)
 
 - **Jail Name**: Bay County Jail
-- **Jail Address**: TODO-VERIFY (Bay County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 785-5245
 - **Inmate Lookup URL**: https://www.baysomobile.org/is/
 - **Courthouse**: Bay County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Bay County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Bay County Clerk of Court
 - **Clerk Phone**: (850) 763-9061
 - **Clerk Website**: https://www.baycoclerk.com/
@@ -83,11 +83,11 @@
 ## Brevard County (`/florida-bail-bonds/brevard`)
 
 - **Jail Name**: Brevard County Jail
-- **Jail Address**: TODO-VERIFY (Brevard County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (321) 690-1500
 - **Inmate Lookup URL**: https://www.brevardsheriff.com/bookings/
 - **Courthouse**: Brevard County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Brevard County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Brevard County Clerk of Court
 - **Clerk Phone**: (321) 637-5413
 - **Clerk Website**: https://www.brevardclerk.us/
@@ -102,11 +102,11 @@
 ## Broward County (`/florida-bail-bonds/broward`)
 
 - **Jail Name**: Broward County Jail
-- **Jail Address**: TODO-VERIFY (Broward County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (954) 831-5900
 - **Inmate Lookup URL**: https://www.sheriff.org/DOD/Pages/ArrestSearch.aspx
 - **Courthouse**: Broward County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Broward County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Broward County Clerk of Court
 - **Clerk Phone**: (954) 831-6565
 - **Clerk Website**: https://www.browardclerk.org/
@@ -121,11 +121,11 @@
 ## Calhoun County (`/florida-bail-bonds/calhoun`)
 
 - **Jail Name**: Calhoun County Jail
-- **Jail Address**: TODO-VERIFY (Calhoun County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 674-5049
 - **Inmate Lookup URL**: https://mws-hrs.com/calhounsheriff/calhounsheriff/JailRosterReport.pdf
 - **Courthouse**: Calhoun County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Calhoun County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Calhoun County Clerk of Court
 - **Clerk Phone**: (850) 674-4545
 - **Clerk Website**: https://www.calhounclerk.com/
@@ -140,11 +140,11 @@
 ## Charlotte County (`/florida-bail-bonds/charlotte`)
 
 - **Jail Name**: Charlotte County Jail
-- **Jail Address**: TODO-VERIFY (Charlotte County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (941) 833-6356
 - **Inmate Lookup URL**: https://www.ccso.org/forms/arrestdb.cfm
 - **Courthouse**: Charlotte County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Charlotte County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Charlotte County Clerk of Court
 - **Clerk Phone**: (941) 637-2199
 - **Clerk Website**: https://www.charlotteclerk.com/
@@ -159,11 +159,11 @@
 ## Citrus County (`/florida-bail-bonds/citrus`)
 
 - **Jail Name**: Citrus County Jail
-- **Jail Address**: TODO-VERIFY (Citrus County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (352) 527-3332
 - **Inmate Lookup URL**: https://www.sheriffcitrus.org/public_info/recent_arrest.php
 - **Courthouse**: Citrus County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Citrus County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Citrus County Clerk of Court
 - **Clerk Phone**: (352) 341-6424
 - **Clerk Website**: https://www.citrusclerk.org/
@@ -178,11 +178,11 @@
 ## Clay County (`/florida-bail-bonds/clay`)
 
 - **Jail Name**: Clay County Jail
-- **Jail Address**: TODO-VERIFY (Clay County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (904) 529-5905
 - **Inmate Lookup URL**: https://claysheriff.policetocitizen.com/DailyBulletin
 - **Courthouse**: Clay County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Clay County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Clay County Clerk of Court
 - **Clerk Phone**: (904) 269-6302
 - **Clerk Website**: https://www.clayclerk.com/
@@ -197,11 +197,11 @@
 ## Collier County (`/florida-bail-bonds/collier`)
 
 - **Jail Name**: Collier County Jail
-- **Jail Address**: TODO-VERIFY (Collier County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (239)252-9543
 - **Inmate Lookup URL**: https://www2.colliersheriff.org/arrestsearch/
 - **Courthouse**: Collier County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Collier County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Collier County Clerk of Court
 - **Clerk Phone**: (239) 252-2646
 - **Clerk Website**: https://www.collierclerk.com/
@@ -216,11 +216,11 @@
 ## Columbia County (`/florida-bail-bonds/columbia`)
 
 - **Jail Name**: Columbia County Jail
-- **Jail Address**: TODO-VERIFY (Columbia County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (386) 752-9512
 - **Inmate Lookup URL**: http://50.204.15.10/smartwebclient/jail.aspx
 - **Courthouse**: Columbia County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Columbia County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Columbia County Clerk of Court
 - **Clerk Phone**: (386) 758-1342
 - **Clerk Website**: https://www.columbiaclerk.com/
@@ -235,11 +235,11 @@
 ## DeSoto County (`/florida-bail-bonds/desoto`)
 
 - **Jail Name**: DeSoto County Jail
-- **Jail Address**: TODO-VERIFY (DeSoto County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (863) 993-4710
 - **Inmate Lookup URL**: https://jail.desotosheriff.org/DCN/
 - **Courthouse**: DeSoto County Courthouse
-- **Courthouse Address**: TODO-VERIFY (DeSoto County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: DeSoto County Clerk of Court
 - **Clerk Phone**: (863) 993-4876
 - **Clerk Website**: https://www.desotoclerk.com/
@@ -254,11 +254,11 @@
 ## Dixie County (`/florida-bail-bonds/dixie`)
 
 - **Jail Name**: Dixie County Jail
-- **Jail Address**: TODO-VERIFY (Dixie County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (352) 498-1462
 - **Inmate Lookup URL**: https://dixiesheriff.org/detention-facility/
 - **Courthouse**: Dixie County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Dixie County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Dixie County Clerk of Court
 - **Clerk Phone**: (352) 498-1200
 - **Clerk Website**: https://www.dixieclerk.com/
@@ -273,11 +273,11 @@
 ## Duval County (`/florida-bail-bonds/duval`)
 
 - **Jail Name**: Duval County Jail
-- **Jail Address**: TODO-VERIFY (Duval County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (904)630-5760
 - **Inmate Lookup URL**: https://inmatesearch.jaxsheriff.org/login
 - **Courthouse**: Duval County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Duval County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Duval County Clerk of Court
 - **Clerk Phone**: (904) 255-2000
 - **Clerk Website**: https://www.duvalclerk.com/
@@ -314,11 +314,11 @@
 ## Flagler County (`/florida-bail-bonds/flagler`)
 
 - **Jail Name**: Flagler County Jail
-- **Jail Address**: TODO-VERIFY (Flagler County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (386)437-4116
 - **Inmate Lookup URL**: https://nwwebcad.fcpsn.org/NewWorld.InmateInquiry/FL0180000
 - **Courthouse**: Flagler County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Flagler County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Flagler County Clerk of Court
 - **Clerk Phone**: (386) 313-4360
 - **Clerk Website**: https://www.flaglerclerk.com/
@@ -354,11 +354,11 @@
 ## Gadsden County (`/florida-bail-bonds/gadsden`)
 
 - **Jail Name**: Gadsden County Jail
-- **Jail Address**: TODO-VERIFY (Gadsden County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 627-9233
 - **Inmate Lookup URL**: http://69.21.72.195/smartwebclient/
 - **Courthouse**: Gadsden County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Gadsden County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Gadsden County Clerk of Court
 - **Clerk Phone**: (850) 875-8601
 - **Clerk Website**: https://www.gadsdenclerk.com/
@@ -373,11 +373,11 @@
 ## Gilchrist County (`/florida-bail-bonds/gilchrist`)
 
 - **Jail Name**: Gilchrist County Jail
-- **Jail Address**: TODO-VERIFY (Gilchrist County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (352) 463-3490
 - **Inmate Lookup URL**: https://www.gcso.us/contact-us/
 - **Courthouse**: Gilchrist County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Gilchrist County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Gilchrist County Clerk of Court
 - **Clerk Phone**: (352) 463-3170
 - **Clerk Website**: https://www.gilchristclerk.com/
@@ -392,11 +392,11 @@
 ## Glades County (`/florida-bail-bonds/glades`)
 
 - **Jail Name**: Glades County Jail
-- **Jail Address**: TODO-VERIFY (Glades County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (863) 946-1600
 - **Inmate Lookup URL**: https://smartweb.gladessheriff.org/smartwebclient/Jail.aspx
 - **Courthouse**: Glades County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Glades County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Glades County Clerk of Court
 - **Clerk Phone**: (863) 946-6010
 - **Clerk Website**: https://www.gladesclerk.com/
@@ -411,11 +411,11 @@
 ## Gulf County (`/florida-bail-bonds/gulf`)
 
 - **Jail Name**: Gulf County Jail
-- **Jail Address**: TODO-VERIFY (Gulf County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 227-1115
 - **Inmate Lookup URL**: http://www.gulfsheriff.com/arrest-log.cfm
 - **Courthouse**: Gulf County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Gulf County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Gulf County Clerk of Court
 - **Clerk Phone**: (850) 229-6112
 - **Clerk Website**: https://www.gulfclerk.com/
@@ -430,11 +430,11 @@
 ## Hamilton County (`/florida-bail-bonds/hamilton`)
 
 - **Jail Name**: Hamilton County Jail
-- **Jail Address**: TODO-VERIFY (Hamilton County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (386) 792-7131
 - **Inmate Lookup URL**: http://inmate.hamiltonsheriff.com/smartwebclient/jail.aspx
 - **Courthouse**: Hamilton County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Hamilton County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Hamilton County Clerk of Court
 - **Clerk Phone**: (386) 792-1288
 - **Clerk Website**: https://www.hamiltonclerk.com/
@@ -449,11 +449,11 @@
 ## Hardee County (`/florida-bail-bonds/hardee`)
 
 - **Jail Name**: Hardee County Jail
-- **Jail Address**: TODO-VERIFY (Hardee County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (863) 773-0304
 - **Inmate Lookup URL**: https://www.hardeeso.com/bureaus/inmate_search.php
 - **Courthouse**: Hardee County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Hardee County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Hardee County Clerk of Court
 - **Clerk Phone**: (863) 773-4174
 - **Clerk Website**: https://www.hardeecountyclerk.com/
@@ -468,11 +468,11 @@
 ## Hendry County (`/florida-bail-bonds/hendry`)
 
 - **Jail Name**: Hendry County Jail
-- **Jail Address**: TODO-VERIFY (Hendry County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (863)674-5600
 - **Inmate Lookup URL**: http://www.hendrysheriff.org/arrests_and_jail_info/arrest_and_inmate_search.php
 - **Courthouse**: Hendry County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Hendry County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Hendry County Clerk of Court
 - **Clerk Phone**: (863) 675-5217
 - **Clerk Website**: https://www.hendryclerk.org/
@@ -487,11 +487,11 @@
 ## Hernando County (`/florida-bail-bonds/hernando`)
 
 - **Jail Name**: Hernando County Jail
-- **Jail Address**: TODO-VERIFY (Hernando County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (352)797-3635
 - **Inmate Lookup URL**: https://www.hernandosheriff.org/applications/records/default.aspx
 - **Courthouse**: Hernando County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Hernando County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Hernando County Clerk of Court
 - **Clerk Phone**: (352) 754-4201
 - **Clerk Website**: https://www.hernandoclerk.com/
@@ -506,11 +506,11 @@
 ## Highlands County (`/florida-bail-bonds/highlands`)
 
 - **Jail Name**: Highlands County Jail
-- **Jail Address**: TODO-VERIFY (Highlands County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (863)402-7201
 - **Inmate Lookup URL**: https://www.highlandssheriff.org/inmateSearch
 - **Courthouse**: Highlands County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Highlands County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Highlands County Clerk of Court
 - **Clerk Phone**: (863) 402-6565
 - **Clerk Website**: https://www.highlandsclerk.org/
@@ -525,11 +525,11 @@
 ## Hillsborough County (`/florida-bail-bonds/hillsborough`)
 
 - **Jail Name**: Hillsborough County Jail
-- **Jail Address**: TODO-VERIFY (Hillsborough County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (813) 247-8300
 - **Inmate Lookup URL**: https://webapps.hcso.tampa.fl.us/ArrestInquiry
 - **Courthouse**: Hillsborough County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Hillsborough County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Hillsborough County Clerk of Court
 - **Clerk Phone**: (813) 276-8100
 - **Clerk Website**: https://www.hillsclerk.com/
@@ -544,11 +544,11 @@
 ## Holmes County (`/florida-bail-bonds/holmes`)
 
 - **Jail Name**: Holmes County Jail
-- **Jail Address**: TODO-VERIFY (Holmes County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850)547-3681
 - **Inmate Lookup URL**: https://holmescosheriff.org/jail-division.html
 - **Courthouse**: Holmes County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Holmes County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Holmes County Clerk of Court
 - **Clerk Phone**: (850) 547-1100
 - **Clerk Website**: https://www.holmesclerk.com/
@@ -563,11 +563,11 @@
 ## Indian River County (`/florida-bail-bonds/indian-river`)
 
 - **Jail Name**: Indian River County Jail
-- **Jail Address**: TODO-VERIFY (Indian River County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (772)569-6700
 - **Inmate Lookup URL**: https://www.ircsheriff.org/inmate-search
 - **Courthouse**: Indian River County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Indian River County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Indian River County Clerk of Court
 - **Clerk Phone**: (772) 770-5185
 - **Clerk Website**: https://www.clerk.indian-river.org/
@@ -582,11 +582,11 @@
 ## Jackson County (`/florida-bail-bonds/jackson`)
 
 - **Jail Name**: Jackson County Jail
-- **Jail Address**: TODO-VERIFY (Jackson County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850)482-9651
 - **Inmate Lookup URL**: https://jacksoncountyfl.gov/services/correctional-facility/
 - **Courthouse**: Jackson County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Jackson County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Jackson County Clerk of Court
 - **Clerk Phone**: (850) 482-9552
 - **Clerk Website**: https://www.jacksonclerk.com/
@@ -601,11 +601,11 @@
 ## Jefferson County (`/florida-bail-bonds/jefferson`)
 
 - **Jail Name**: Jefferson County Jail
-- **Jail Address**: TODO-VERIFY (Jefferson County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850)997-2523
 - **Inmate Lookup URL**: https://www.jcso-fl.org/
 - **Courthouse**: Jefferson County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Jefferson County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Jefferson County Clerk of Court
 - **Clerk Phone**: (850) 342-0218
 - **Clerk Website**: https://www.jeffersonclerk.com/
@@ -620,11 +620,11 @@
 ## Lafayette County (`/florida-bail-bonds/lafayette`)
 
 - **Jail Name**: Lafayette County Jail
-- **Jail Address**: TODO-VERIFY (Lafayette County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (386) 294-4381
 - **Inmate Lookup URL**: https://www.lafayetteso.org/index.html
 - **Courthouse**: Lafayette County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Lafayette County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Lafayette County Clerk of Court
 - **Clerk Phone**: (386) 294-1600
 - **Clerk Website**: https://www.lafayetteclerk.com/
@@ -639,11 +639,11 @@
 ## Lake County (`/florida-bail-bonds/lake`)
 
 - **Jail Name**: Lake County Jail
-- **Jail Address**: TODO-VERIFY (Lake County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (352) 742-4024
 - **Inmate Lookup URL**: https://www.lcso.org/inmates/
 - **Courthouse**: Lake County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Lake County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Lake County Clerk of Court
 - **Clerk Phone**: (352) 742-4100
 - **Clerk Website**: https://www.lakecountyclerk.org/
@@ -679,11 +679,11 @@
 ## Leon County (`/florida-bail-bonds/leon`)
 
 - **Jail Name**: Leon County Jail
-- **Jail Address**: TODO-VERIFY (Leon County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 606-3500
 - **Inmate Lookup URL**: https://www.leoncountyso.com/departments/detention-facility/inmate-search
 - **Courthouse**: Leon County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Leon County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Leon County Clerk of Court
 - **Clerk Phone**: (850) 606-4000
 - **Clerk Website**: https://www.clerk.leon.fl.us/
@@ -718,11 +718,11 @@
 ## Liberty County (`/florida-bail-bonds/liberty`)
 
 - **Jail Name**: Liberty County Jail
-- **Jail Address**: TODO-VERIFY (Liberty County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 643-2235
 - **Inmate Lookup URL**: https://libertycountysheriff.org/jail/
 - **Courthouse**: Liberty County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Liberty County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Liberty County Clerk of Court
 - **Clerk Phone**: (850) 643-2215
 - **Clerk Website**: https://www.libertyclerk.com/
@@ -737,11 +737,11 @@
 ## Madison County (`/florida-bail-bonds/madison`)
 
 - **Jail Name**: Madison County Jail
-- **Jail Address**: TODO-VERIFY (Madison County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 973-4002
 - **Inmate Lookup URL**: https://madisonjail.org/
 - **Courthouse**: Madison County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Madison County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Madison County Clerk of Court
 - **Clerk Phone**: (850) 973-1500
 - **Clerk Website**: https://www.madisonclerk.com/
@@ -756,11 +756,11 @@
 ## Manatee County (`/florida-bail-bonds/manatee`)
 
 - **Jail Name**: Manatee County Jail
-- **Jail Address**: TODO-VERIFY (Manatee County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (941) 723-5132
 - **Inmate Lookup URL**: https://www.manateesheriff.com/arrest_inquiries/
 - **Courthouse**: Manatee County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Manatee County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Manatee County Clerk of Court
 - **Clerk Phone**: (941) 749-1800
 - **Clerk Website**: https://www.manateeclerk.com/
@@ -775,11 +775,11 @@
 ## Marion County (`/florida-bail-bonds/marion`)
 
 - **Jail Name**: Marion County Jail
-- **Jail Address**: TODO-VERIFY (Marion County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (352) 732-8181
 - **Inmate Lookup URL**: http://jail.marionso.com/
 - **Courthouse**: Marion County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Marion County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Marion County Clerk of Court
 - **Clerk Phone**: (352) 671-5604
 - **Clerk Website**: https://www.marioncountyclerk.org/
@@ -814,11 +814,11 @@
 ## Miami-Dade County (`/florida-bail-bonds/miami-dade`)
 
 - **Jail Name**: Miami-Dade County Jail
-- **Jail Address**: TODO-VERIFY (Miami-Dade County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (786) 263-7000
 - **Inmate Lookup URL**: https://www.miamidade.gov/Apps/mdcr/inmateSearch/
 - **Courthouse**: Miami-Dade County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Miami-Dade County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Miami-Dade County Clerk of Court
 - **Clerk Phone**: (305) 275-1155
 - **Clerk Website**: https://www.miami-dadeclerk.com/
@@ -833,11 +833,11 @@
 ## Monroe County (`/florida-bail-bonds/monroe`)
 
 - **Jail Name**: Monroe County Jail
-- **Jail Address**: TODO-VERIFY (Monroe County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (305) 289-2361
 - **Inmate Lookup URL**: https://www.keysso.net/arrests
 - **Courthouse**: Monroe County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Monroe County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Monroe County Clerk of Court
 - **Clerk Phone**: (305) 292-3550
 - **Clerk Website**: https://www.monroe-clerk.com/
@@ -873,11 +873,11 @@
 ## Okaloosa County (`/florida-bail-bonds/okaloosa`)
 
 - **Jail Name**: Okaloosa County Jail
-- **Jail Address**: TODO-VERIFY (Okaloosa County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 651-7430
 - **Inmate Lookup URL**: https://www.sheriff-okaloosa.org/news/arrest-information/
 - **Courthouse**: Okaloosa County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Okaloosa County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Okaloosa County Clerk of Court
 - **Clerk Phone**: (850) 651-7200
 - **Clerk Website**: https://www.okaloosaclerk.com/
@@ -938,11 +938,11 @@
 ## Osceola County (`/florida-bail-bonds/osceola`)
 
 - **Jail Name**: Osceola County Jail
-- **Jail Address**: TODO-VERIFY (Osceola County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (407) 742-4444
 - **Inmate Lookup URL**: https://www.osceola.org/agencies-departments/corrections/corrections-reports.stml
 - **Courthouse**: Osceola County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Osceola County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Osceola County Clerk of Court
 - **Clerk Phone**: (407) 742-3500
 - **Clerk Website**: https://www.osceolaclerk.com/
@@ -957,11 +957,11 @@
 ## Palm Beach County (`/florida-bail-bonds/palm-beach`)
 
 - **Jail Name**: Palm Beach County Jail
-- **Jail Address**: TODO-VERIFY (Palm Beach County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (561) 688-3000
 - **Inmate Lookup URL**: https://www.pbso.org/arrest-jail_menu
 - **Courthouse**: Palm Beach County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Palm Beach County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Palm Beach County Clerk of Court
 - **Clerk Phone**: (561) 355-2996
 - **Clerk Website**: https://www.mypalmbeachclerk.com/
@@ -976,11 +976,11 @@
 ## Pasco County (`/florida-bail-bonds/pasco`)
 
 - **Jail Name**: Pasco County Jail
-- **Jail Address**: TODO-VERIFY (Pasco County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (813) 996-6982
 - **Inmate Lookup URL**: https://jailinfo.pascocorrections.net/JMC/#/inCustody
 - **Courthouse**: Pasco County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Pasco County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Pasco County Clerk of Court
 - **Clerk Phone**: (727) 847-8962
 - **Clerk Website**: https://www.pascoclerk.com/
@@ -995,11 +995,11 @@
 ## Pinellas County (`/florida-bail-bonds/pinellas`)
 
 - **Jail Name**: Pinellas County Jail
-- **Jail Address**: TODO-VERIFY (Pinellas County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (727)464-6415
 - **Inmate Lookup URL**: https://pcsoweb.com/InmateBooking
 - **Courthouse**: Pinellas County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Pinellas County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Pinellas County Clerk of Court
 - **Clerk Phone**: (727) 464-7000
 - **Clerk Website**: https://www.mypinellasclerk.gov/
@@ -1014,11 +1014,11 @@
 ## Polk County (`/florida-bail-bonds/polk`)
 
 - **Jail Name**: Polk County Jail
-- **Jail Address**: TODO-VERIFY (Polk County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (863)292-3400
 - **Inmate Lookup URL**: https://www.polksheriff.org/detention/jail-inquiry
 - **Courthouse**: Polk County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Polk County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Polk County Clerk of Court
 - **Clerk Phone**: (863)534-4000
 - **Clerk Website**: https://www.polkcountyclerk.net/
@@ -1033,11 +1033,11 @@
 ## Putnam County (`/florida-bail-bonds/putnam`)
 
 - **Jail Name**: Putnam County Jail
-- **Jail Address**: TODO-VERIFY (Putnam County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (386) 329-0800
 - **Inmate Lookup URL**: http://smartweb.pcso.us/smartwebclient/jail.aspx
 - **Courthouse**: Putnam County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Putnam County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Putnam County Clerk of Court
 - **Clerk Phone**: (386) 326-7630
 - **Clerk Website**: https://putnamclerk.com/
@@ -1052,11 +1052,11 @@
 ## Santa Rosa County (`/florida-bail-bonds/santa-rosa`)
 
 - **Jail Name**: Santa Rosa County Jail
-- **Jail Address**: TODO-VERIFY (Santa Rosa County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 983-1120
 - **Inmate Lookup URL**: https://santarosasheriff.org/jail-view/
 - **Courthouse**: Santa Rosa County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Santa Rosa County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Santa Rosa County Clerk of Court
 - **Clerk Phone**: (850)981-5554
 - **Clerk Website**: http://oncoreweb.srccol.com/srccol/formspage1.html
@@ -1071,11 +1071,11 @@
 ## Sarasota County (`/florida-bail-bonds/sarasota`)
 
 - **Jail Name**: Sarasota County Jail
-- **Jail Address**: TODO-VERIFY (Sarasota County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (941) 861-4601
 - **Inmate Lookup URL**: https://www.sarasotasheriff.org/arrest-reports/index.php
 - **Courthouse**: Sarasota County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Sarasota County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Sarasota County Clerk of Court
 - **Clerk Phone**: (941) 861-7400
 - **Clerk Website**: https://www.sarasotaclerk.com/
@@ -1090,11 +1090,11 @@
 ## Seminole County (`/florida-bail-bonds/seminole`)
 
 - **Jail Name**: Seminole County Jail
-- **Jail Address**: TODO-VERIFY (Seminole County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (407) 665-1200
 - **Inmate Lookup URL**: https://www.seminolesheriff.org/WebBond/Inmates.aspx
 - **Courthouse**: Seminole County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Seminole County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Seminole County Clerk of Court
 - **Clerk Phone**: (407) 665-4300
 - **Clerk Website**: https://www.seminoleclerk.org/
@@ -1109,11 +1109,11 @@
 ## St. Johns County (`/florida-bail-bonds/st-johns`)
 
 - **Jail Name**: St. Johns County Jail
-- **Jail Address**: TODO-VERIFY (St. Johns County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (904) 209-3125
 - **Inmate Lookup URL**: https://www.sjso.org/detention-center/sj-inmate-search/
 - **Courthouse**: St. Johns County Courthouse
-- **Courthouse Address**: TODO-VERIFY (St. Johns County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: St. Johns County Clerk of Court
 - **Clerk Phone**: (904) 819-3600
 - **Clerk Website**: https://stjohnsclerk.com/
@@ -1128,11 +1128,11 @@
 ## St. Lucie County (`/florida-bail-bonds/st-lucie`)
 
 - **Jail Name**: St. Lucie County Jail
-- **Jail Address**: TODO-VERIFY (St. Lucie County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (772)462-3450
 - **Inmate Lookup URL**: https://www.stluciesheriff.com/215/Inmate-Lookup
 - **Courthouse**: St. Lucie County Courthouse
-- **Courthouse Address**: TODO-VERIFY (St. Lucie County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: St. Lucie County Clerk of Court
 - **Clerk Phone**: (772) 462-6900
 - **Clerk Website**: https://stlucieclerk.gov/
@@ -1147,11 +1147,11 @@
 ## Sumter County (`/florida-bail-bonds/sumter`)
 
 - **Jail Name**: Sumter County Jail
-- **Jail Address**: TODO-VERIFY (Sumter County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (352) 793-2621
 - **Inmate Lookup URL**: https://portal.sumtercountysheriff.org/smartwebclient/jail.aspx
 - **Courthouse**: Sumter County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Sumter County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Sumter County Clerk of Court
 - **Clerk Phone**: (352) 569-6600
 - **Clerk Website**: https://www.sumterclerk.com/
@@ -1166,11 +1166,11 @@
 ## Suwannee County (`/florida-bail-bonds/suwannee`)
 
 - **Jail Name**: Suwannee County Jail
-- **Jail Address**: TODO-VERIFY (Suwannee County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (386) 364-3776
 - **Inmate Lookup URL**: https://smartcop.suwanneesheriff.com/smartwebclient/jail.aspx
 - **Courthouse**: Suwannee County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Suwannee County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Suwannee County Clerk of Court
 - **Clerk Phone**: (386) 362-0520
 - **Clerk Website**: https://www.suwgov.org/
@@ -1185,11 +1185,11 @@
 ## Taylor County (`/florida-bail-bonds/taylor`)
 
 - **Jail Name**: Taylor County Jail
-- **Jail Address**: TODO-VERIFY (Taylor County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 584-4333
 - **Inmate Lookup URL**: http://smartcop.taylorsheriff.org:8989/SmartWEBClient/Jail.aspx
 - **Courthouse**: Taylor County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Taylor County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Taylor County Clerk of Court
 - **Clerk Phone**: (850) 838-3506
 - **Clerk Website**: https://taylorclerk.com/
@@ -1204,11 +1204,11 @@
 ## Union County (`/florida-bail-bonds/union`)
 
 - **Jail Name**: Union County Jail
-- **Jail Address**: TODO-VERIFY (Union County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (386) 496-2501
 - **Inmate Lookup URL**: http://www.unionsheriff.us/county-jail.php
 - **Courthouse**: Union County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Union County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Union County Clerk of Court
 - **Clerk Phone**: (386) 496-3711
 - **Clerk Website**: https://unionclerk.com/
@@ -1223,11 +1223,11 @@
 ## Volusia County (`/florida-bail-bonds/volusia`)
 
 - **Jail Name**: Volusia County Jail
-- **Jail Address**: TODO-VERIFY (Volusia County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (386) 254-1555
 - **Inmate Lookup URL**: https://volusiamug.vcgov.org/
 - **Courthouse**: Volusia County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Volusia County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Volusia County Clerk of Court
 - **Clerk Phone**: (386) 736-5915
 - **Clerk Website**: https://www.clerk.org/
@@ -1242,11 +1242,11 @@
 ## Wakulla County (`/florida-bail-bonds/wakulla`)
 
 - **Jail Name**: Wakulla County Jail
-- **Jail Address**: TODO-VERIFY (Wakulla County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 745-7100
 - **Inmate Lookup URL**: https://www.wcso.org/
 - **Courthouse**: Wakulla County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Wakulla County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Wakulla County Clerk of Court
 - **Clerk Phone**: (850) 926-0905
 - **Clerk Website**: https://www.wakullaclerk.com/
@@ -1261,11 +1261,11 @@
 ## Walton County (`/florida-bail-bonds/walton`)
 
 - **Jail Name**: Walton County Jail
-- **Jail Address**: TODO-VERIFY (Walton County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 892-8196
 - **Inmate Lookup URL**: https://nwscorrections.waltonso.org/NewWorld.InMateInquiry/WaltonCounty
 - **Courthouse**: Walton County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Walton County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Walton County Clerk of Court
 - **Clerk Phone**: (850) 892 - 8115
 - **Clerk Website**: https://waltonclerk.com/
@@ -1280,11 +1280,11 @@
 ## Washington County (`/florida-bail-bonds/washington`)
 
 - **Jail Name**: Washington County Jail
-- **Jail Address**: TODO-VERIFY (Washington County Sheriff Detention)
+- **Jail Address**: Not published. No sourced street address is on file.
 - **Jail / Booking Phone**: (850) 638-6111
 - **Inmate Lookup URL**: https://www.wcso.us/inmateRoster
 - **Courthouse**: Washington County Courthouse
-- **Courthouse Address**: TODO-VERIFY (Washington County Court)
+- **Courthouse Address**: Not published. No sourced street address is on file.
 - **Clerk of Court**: Washington County Clerk of Court
 - **Clerk Phone**: (850) 638-6285
 - **Clerk Website**: https://www.washingtonclerk.com/
