@@ -12,6 +12,7 @@ import csv
 import json
 import time
 import urllib.request
+from difflib import SequenceMatcher
 from bs4 import BeautifulSoup
 
 OUTPUT_DIR = "docs/studio-content/blog"
@@ -207,112 +208,150 @@ def enforce_canonical_facts(text):
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-print("Starting blog merge processing...")
-csv_rows = []
+def normalize_heading(heading):
+    """Compare headings without quotes or punctuation."""
+    text = (heading or "").lower()
+    for mark in ('"', "'", "“", "”", "’", "`"):
+        text = text.replace(mark, "")
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
 
-for g in GROUPS:
-    group_id = g["id"]
-    can_url = g["canonical"]
-    slug = can_url.rstrip("/").split("/")[-1]
-    
-    print(f"\nProcessing Group {group_id}: {slug}")
-    can_data = fetch_post(can_url)
-    time.sleep(1)
-    
-    merged_sections = list(can_data.get("sections", []))
-    existing_headings = {h.lower().strip() for h, _ in merged_sections}
-    
-    for dup_url in g["duplicates"]:
-        dup_slug = dup_url.rstrip("/").split("/")[-1]
-        print(f"  Comparing duplicate: {dup_slug}")
-        dup_data = fetch_post(dup_url)
+def normalize_body(content):
+    text = (content or "").lower()
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+def find_matching_section(heading, content, merged_sections):
+    """Return the index of a near-duplicate section, or None.
+
+    Quote-only heading differences (Cash Bail vs "Cash Bail") and
+    lightly edited repeats of the same paragraph are the same section.
+    """
+    new_heading = normalize_heading(heading)
+    new_body = normalize_body(content)
+    for idx, (existing_heading, existing_content) in enumerate(merged_sections):
+        old_heading = normalize_heading(existing_heading)
+        heading_score = (
+            SequenceMatcher(None, new_heading, old_heading).ratio()
+            if new_heading and old_heading
+            else 0
+        )
+        old_body = normalize_body(existing_content)
+        body_score = (
+            SequenceMatcher(None, new_body, old_body).ratio()
+            if new_body and old_body
+            else 0
+        )
+        if heading_score >= 0.9 or body_score >= 0.85:
+            return idx
+    return None
+
+def main():
+    print("Starting blog merge processing...")
+    csv_rows = []
+
+    for g in GROUPS:
+        group_id = g["id"]
+        can_url = g["canonical"]
+        slug = can_url.rstrip("/").split("/")[-1]
+
+        print(f"\nProcessing Group {group_id}: {slug}")
+        can_data = fetch_post(can_url)
         time.sleep(1)
-        
-        unique_quotes = []
-        for h, content in dup_data.get("sections", []):
-            h_clean = h.lower().strip()
-            if h_clean not in existing_headings and len(content) > 60:
-                print(f"    + Found unique section to merge: {h}")
-                merged_sections.append((h, content))
-                existing_headings.add(h_clean)
-                unique_quotes.append(f"Section '{h}': {content[:120]}...")
-            elif h_clean in existing_headings:
-                # Check if duplicate section is significantly longer
-                for idx, (ch, ccontent) in enumerate(merged_sections):
-                    if ch.lower().strip() == h_clean and len(content) > len(ccontent) + 150:
-                        print(f"    + Updating section '{ch}' with richer version ({len(content)} vs {len(ccontent)} chars)")
-                        merged_sections[idx] = (ch, content)
+
+        merged_sections = list(can_data.get("sections", []))
+
+        for dup_url in g["duplicates"]:
+            dup_slug = dup_url.rstrip("/").split("/")[-1]
+            print(f"  Comparing duplicate: {dup_slug}")
+            dup_data = fetch_post(dup_url)
+            time.sleep(1)
+
+            unique_quotes = []
+            for h, content in dup_data.get("sections", []):
+                match_idx = find_matching_section(h, content, merged_sections)
+                if match_idx is None and len(content) > 60:
+                    print(f"    + Found unique section to merge: {h}")
+                    merged_sections.append((h, content))
+                    unique_quotes.append(f"Section '{h}': {content[:120]}...")
+                elif match_idx is not None:
+                    ch, ccontent = merged_sections[match_idx]
+                    if len(content) > len(ccontent) + 150:
+                        print(
+                            f"    + Updating section '{ch}' with richer version "
+                            f"({len(content)} vs {len(ccontent)} chars)"
+                        )
+                        merged_sections[match_idx] = (ch, content)
                         unique_quotes.append(f"Expanded '{ch}' ({len(content)} chars)")
-                        break
-                        
-        quote_summary = " | ".join(unique_quotes) if unique_quotes else "Identical body copy with slug suffix variation"
-        csv_rows.append({
-            "group_id": group_id,
-            "canonical_url": can_url,
-            "duplicate_url": dup_url,
-            "similarity": "1.00" if not unique_quotes else "0.92",
-            "clicks_each": "0 (pending GSC export)",
-            "unique_content_worth_merging": quote_summary,
-            "action": "Merge unique content into canonical; add 301; unpublish duplicate after 301 is active",
-            "canonical_title": can_data.get("title", slug),
-            "duplicate_title": dup_data.get("title", dup_slug)
-        })
-        
-    # Build complete Markdown file
-    md_lines = [
-        f"# {can_data.get('title', slug.replace('-', ' ').title())}",
-        "",
-        "**Published:** October 2026 | **Author:** Brendan O'Neal | **Firm:** Shamrock Bail Bonds",
-        "",
-        "---",
-        "",
-        "## Emergency Bail Assistance — Southwest Florida & Statewide",
-        "",
-        "- **Call (English):** [239-332-2245](tel:2393322245)",
-        "- **Línea en Español:** [727-295-2245](tel:7272952245)",
-        "- **Text Line:** [239-955-0178](sms:2399550178)",
-        "- **Start Online:** [shamrockbailbonds.biz/portal-landing](https://www.shamrockbailbonds.biz/portal-landing)",
-        "- **Office Address:** 1528 Broadway, Fort Myers, FL 33901",
-        "- **Hours:** Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7",
-        "",
-        "---",
-        ""
-    ]
-    
-    for h, content in merged_sections:
-        cleaned_content = enforce_canonical_facts(content)
-        if h != "Introduction":
-            md_lines.append(f"## {h}")
+
+            quote_summary = " | ".join(unique_quotes) if unique_quotes else "Identical body copy with slug suffix variation"
+            csv_rows.append({
+                "group_id": group_id,
+                "canonical_url": can_url,
+                "duplicate_url": dup_url,
+                "similarity": "1.00" if not unique_quotes else "0.92",
+                "clicks_each": "0 (pending GSC export)",
+                "unique_content_worth_merging": quote_summary,
+                "action": "Merge unique content into canonical; add 301; unpublish duplicate after 301 is active",
+                "canonical_title": can_data.get("title", slug),
+                "duplicate_title": dup_data.get("title", dup_slug)
+            })
+
+        md_lines = [
+            f"# {can_data.get('title', slug.replace('-', ' ').title())}",
+            "",
+            "**Published:** October 2026 | **Author:** Brendan O'Neal | **Firm:** Shamrock Bail Bonds",
+            "",
+            "---",
+            "",
+            "## Emergency Bail Assistance — Southwest Florida & Statewide",
+            "",
+            "- **Call (English):** [239-332-2245](tel:2393322245)",
+            "- **Línea en Español:** [727-295-2245](tel:7272952245)",
+            "- **Text Line:** [239-955-0178](sms:2399550178)",
+            "- **Start Online:** [shamrockbailbonds.biz/portal-landing](https://www.shamrockbailbonds.biz/portal-landing)",
+            "- **Office Address:** 1528 Broadway, Fort Myers, FL 33901",
+            "- **Hours:** Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7",
+            "",
+            "---",
+            ""
+        ]
+
+        for h, content in merged_sections:
+            cleaned_content = enforce_canonical_facts(content)
+            if h != "Introduction":
+                md_lines.append(f"## {h}")
+                md_lines.append("")
+            md_lines.append(cleaned_content)
             md_lines.append("")
-        md_lines.append(cleaned_content)
-        md_lines.append("")
-        
-    # Append canonical footer
-    md_lines.extend([
-        "---",
-        "",
-        "### About Shamrock Bail Bonds",
-        "",
-        "Founded in 2012 by licensed bondsman Brendan O'Neal, Shamrock Bail Bonds serves families across Lee County, Collier County, Charlotte County, Sarasota County, and all 67 Florida counties. Shamrock is backed by O'Shaughnahill Surety & Insurance (OSI) and Palmetto Surety Corporation. We offer transparent pricing, flexible payment plans, and zero-pressure consultations.",
-        "",
-        "**Legal Disclaimer:** This guide provides general informational guidance on the Florida bail process and Florida Statutes Chapter 648 and Chapter 903. It does not constitute formal legal counsel. For specific legal advice regarding criminal charges, consult a licensed Florida criminal defense attorney."
-    ])
-    
-    out_file = os.path.join(OUTPUT_DIR, f"{slug}.md")
-    with open(out_file, "w", encoding="utf-8") as f:
-        f.write("\n".join(md_lines) + "\n")
-    print(f"  Saved clean merged draft to: {out_file}")
 
-# Write updated blog-dedupe.csv
-csv_path = "docs/blog-dedupe.csv"
-fieldnames = [
-    "group_id", "canonical_url", "duplicate_url", "similarity",
-    "clicks_each", "unique_content_worth_merging", "action",
-    "canonical_title", "duplicate_title"
-]
-with open(csv_path, "w", newline="", encoding="utf-8") as f:
-    writer = csv.DictWriter(f, fieldnames=fieldnames)
-    writer.writeheader()
-    writer.writerows(csv_rows)
+        md_lines.extend([
+            "---",
+            "",
+            "### About Shamrock Bail Bonds",
+            "",
+            "Founded in 2012 by licensed bondsman Brendan O'Neal, Shamrock Bail Bonds serves families across Lee County, Collier County, Charlotte County, Sarasota County, and all 67 Florida counties. Shamrock is backed by O'Shaughnahill Surety & Insurance (OSI) and Palmetto Surety Corporation. We offer transparent pricing, flexible payment plans, and zero-pressure consultations.",
+            "",
+            "**Legal Disclaimer:** This guide provides general informational guidance on the Florida bail process and Florida Statutes Chapter 648 and Chapter 903. It does not constitute formal legal counsel. For specific legal advice regarding criminal charges, consult a licensed Florida criminal defense attorney."
+        ])
 
-print(f"\nUpdated {csv_path} with {len(csv_rows)} duplicate rows across {len(GROUPS)} groups.")
+        out_file = os.path.join(OUTPUT_DIR, f"{slug}.md")
+        with open(out_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(md_lines) + "\n")
+        print(f"  Saved clean merged draft to: {out_file}")
+
+    csv_path = "docs/blog-dedupe.csv"
+    fieldnames = [
+        "group_id", "canonical_url", "duplicate_url", "similarity",
+        "clicks_each", "unique_content_worth_merging", "action",
+        "canonical_title", "duplicate_title"
+    ]
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(csv_rows)
+
+    print(f"\nUpdated {csv_path} with {len(csv_rows)} duplicate rows across {len(GROUPS)} groups.")
+
+if __name__ == "__main__":
+    main()

@@ -66,24 +66,6 @@ If you have questions about the bail process, collateral returns, or how to secu
 - Bail Bond Tips
 - How Bail Bonds Work
 
-## Scenario 1: You Paid Cash Bail to the Court
-
-If you did not use a bail bondsman and instead went directly to the county clerk of court to pay the full bail amount in cash (e.g., you handed over $5,000 for a $5,000 bail), you are entitled to a refund.
-
-When criminal charges are dismissed, dropped by the prosecutor (nolle prosequi), or the defendant is found not guilty at trial, the court's need for a financial guarantee ends. The judge will issue a "bond exoneration" order, which releases the funds back to the person who posted them.
-
-However, there are a few caveats:
-
-- Court Fees: In Florida, courts are legally allowed to deduct outstanding court costs, fines, or administrative fees from the cash bail before issuing a refund.
-- Timeline: The refund is not instantaneous. It can take the clerk's office anywhere from two to six weeks to process the paperwork and mail a check to the address on file.
-- Who Gets the Check: The refund check is made out to the person whose name is on the original receipt. If you paid cash on behalf of a friend, make sure your name is clearly documented as the depositor.
-
-Court Fees: In Florida, courts are legally allowed to deduct outstanding court costs, fines, or administrative fees from the cash bail before issuing a refund.
-
-Timeline: The refund is not instantaneous. It can take the clerk's office anywhere from two to six weeks to process the paperwork and mail a check to the address on file.
-
-Who Gets the Check: The refund check is made out to the person whose name is on the original receipt. If you paid cash on behalf of a friend, make sure your name is clearly documented as the depositor.
-
 ---
 
 ### About Shamrock Bail Bonds
