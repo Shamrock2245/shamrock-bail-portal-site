@@ -17,6 +17,26 @@ from difflib import SequenceMatcher
 
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
+def missing_baseline_schema_types(baseline_field, post_types):
+    """Type names present before cutover and absent after it."""
+    baseline_types = set()
+    for part in (baseline_field or "").split(","):
+        name = part.strip()
+        if name:
+            baseline_types.add(name)
+    return sorted(baseline_types - set(post_types or []))
+
+def apply_schema_regression(row, missing_types):
+    if not missing_types:
+        row["schema_diff"] = ""
+        return row
+    row["schema_diff"] = "MISSING " + ", ".join(missing_types)
+    if row.get("risk_flag") in (None, "", "NONE"):
+        row["risk_flag"] = "SCHEMA_REGRESSION"
+    elif "SCHEMA_REGRESSION" not in row["risk_flag"]:
+        row["risk_flag"] = row["risk_flag"] + "|SCHEMA_REGRESSION"
+    return row
+
 def main():
     baseline_json = "docs/seo-baseline/live-2026-10-23.json"
     if not os.path.exists(baseline_json):
@@ -53,6 +73,7 @@ def main():
             "canonical_match": "MATCH",
             "baseline_json_ld": ", ".join(base.get("json_ld_types", [])),
             "post_json_ld": "",
+            "schema_diff": "",
             "risk_flag": "NONE"
         }
 
@@ -127,6 +148,12 @@ def main():
                     if row["risk_flag"] == "NONE":
                         row["risk_flag"] = "CHECK_TITLE_KEYWORD"
 
+            # Flag schema types the baseline had and the published page dropped.
+            apply_schema_regression(
+                row,
+                missing_baseline_schema_types(row["baseline_json_ld"], post_json_types),
+            )
+
         diff_rows.append(row)
 
     with open(diff_csv_path, "w", newline="", encoding="utf-8") as f:
@@ -136,7 +163,7 @@ def main():
             "baseline_h1", "post_h1", "h1_diff",
             "baseline_robots", "post_robots", "noindex_alert",
             "baseline_canonical", "post_canonical", "canonical_match",
-            "baseline_json_ld", "post_json_ld", "risk_flag"
+            "baseline_json_ld", "post_json_ld", "schema_diff", "risk_flag"
         ]
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
