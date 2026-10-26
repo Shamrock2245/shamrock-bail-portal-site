@@ -121,8 +121,10 @@ for i, row in enumerate(rows, 1):
                     print(f"❌ FAIL: {old_url} redirected to homepage catch-all instead of {parsed_expected}")
                     failures += 1
                 elif parsed_loc.rstrip("/") != parsed_expected.rstrip("/"):
-                    print(f"⚠️ WARN: {old_url} redirected to {parsed_loc}, expected {parsed_expected}")
-                    warnings += 1
+                    # A chain or a wrong target is a launch-gate failure, not a warning.
+                    shown = parsed_loc or "(no Location header)"
+                    print(f"❌ FAIL: {old_url} redirected to {shown}, expected {parsed_expected}")
+                    failures += 1
         elif expected_action in ["keep", "noindex"]:
             if code != 200:
                 print(f"❌ FAIL: Expected 200 for {old_url}, got HTTP {code}")
