@@ -117,6 +117,31 @@ function initFooter() {
 }
 
 /**
+ * Page-view and UTM capture. Wix Marketing Integrations still own the GA4 tag.
+ * This function has to exist because onReady calls it on every page.
+ */
+function initAnalytics() {
+    try {
+        const query = wixLocationFrontend.query || {};
+        if (wixWindowFrontend.trackEvent) {
+            wixWindowFrontend.trackEvent('CustomEvent', {
+                event: 'page_view',
+                eventCategory: 'Site',
+                eventAction: 'page_view',
+                eventLabel: wixLocationFrontend.url || '/',
+                utmSource: query.utm_source || '',
+                utmMedium: query.utm_medium || '',
+                utmCampaign: query.utm_campaign || '',
+                utmTerm: query.utm_term || '',
+                utmContent: query.utm_content || ''
+            });
+        }
+    } catch (err) {
+        console.warn('Analytics init suppressed:', err.message);
+    }
+}
+
+/**
  * Analytics and Event Dispatch
  */
 function trackContactEvent(action, location) {
