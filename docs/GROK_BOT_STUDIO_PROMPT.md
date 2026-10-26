@@ -118,7 +118,7 @@ Everything you build must be **better than the live Wix Editor site** while stri
 - **FAQ Accordion (`#faqToggle1` through `#faqToggle6`):**
   - Expandable answers for: How much does a bail bond cost? What is an indemnitor/cosigner? Can I pay with a payment plan? What happens after the bond is posted?
 - **SEO Panel Settings (from `docs/studio-seo/home.md`):**
-  - Title: `Fort Myers Bail Bonds | 24/7 Jail Release | Shamrock Bail Bonds`
+  - Title: `Fort Myers Bail Bonds | Shamrock Bail Bonds`
   - Meta Description: `24/7 Fort Myers & Florida bail bonds. Confidential help, payment plans & local agents since 2012. Call 239-332-2245 or text 239-955-0178.`
   - Canonical: `https://www.shamrockbailbonds.biz/`
 - **Velo Code to Paste:** `docs/studio-velo/home.js` into Home Page Code.
