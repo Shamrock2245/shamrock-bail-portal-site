@@ -45,6 +45,7 @@
     ```bash
     ./scripts/studio_cutover_smoke.sh
     ```
+  - The script restores `docs/seo-baseline/live-2026-10-23.json` and `.csv` when they are not in the working tree. That restore reads the preserved 2026-10-23 crawl from `origin/cursor/studio-cutover-crawl-snapshot-4fc0` (PR #76) or from commit `a15f039` on this branch. It does not crawl the live site again. Do not commit the restored files onto this SEO branch.
   - Verify 0 HTTP 4xx errors, 0 5xx errors, 0 redirect chains, and 0 catch-all redirects to `/`.
   - Inspect generated diff: `docs/seo-baseline/post-cutover-diff.csv`.
   - Confirm no accidental `noindex` flags on public pages.

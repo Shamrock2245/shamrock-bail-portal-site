@@ -10,6 +10,7 @@ import os
 import sys
 import json
 import csv
+import subprocess
 import urllib.request
 import urllib.error
 from bs4 import BeautifulSoup
@@ -44,6 +45,13 @@ def collect_json_ld_types(obj, into=None):
             collect_json_ld_types(element, into)
     return into
 
+def ensure_precapture_baseline(baseline_json):
+    """Restore the preserved 2026-10-23 crawl. Never re-crawls the live site."""
+    if os.path.exists(baseline_json):
+        return
+    script = os.path.join("scripts", "seo", "ensure_precapture_baseline.sh")
+    subprocess.check_call(["bash", script])
+
 def missing_baseline_schema_types(baseline_field, post_types):
     """Type names present before cutover and absent after it."""
     baseline_types = set()
@@ -66,8 +74,9 @@ def apply_schema_regression(row, missing_types):
 
 def main():
     baseline_json = "docs/seo-baseline/live-2026-10-23.json"
+    ensure_precapture_baseline(baseline_json)
     if not os.path.exists(baseline_json):
-        print(f"Error: {baseline_json} not found.")
+        print(f"Error: {baseline_json} not found after pre-cutover retrieval.")
         sys.exit(1)
 
     with open(baseline_json, "r", encoding="utf-8") as f:

@@ -54,6 +54,11 @@ scripts/seo/indexing_report_*.json
 # One-time setup docs
 slack_setup.md
 
+# Preserved 2026-10-23 crawl. Committed on cursor/studio-cutover-crawl-snapshot-4fc0.
+# scripts/seo/ensure_precapture_baseline.sh restores a working copy for the launch gate.
+docs/seo-baseline/live-2026-10-23.json
+docs/seo-baseline/live-2026-10-23.csv
+
 # OS / editor junk
 .DS_Store
 Thumbs.db

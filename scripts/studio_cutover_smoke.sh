@@ -26,8 +26,12 @@ echo "=================================================================="
 BASELINE_JSON="docs/seo-baseline/live-2026-10-23.json"
 URL_MAP_CSV="docs/studio-cutover-url-map.csv"
 
+# The crawl snapshot lives on the snapshot branch, not in this SEO branch.
+# Restore that preserved 2026-10-23 file before the launch gate. Do not re-crawl.
+bash "$SCRIPT_DIR/seo/ensure_precapture_baseline.sh"
+
 if [[ ! -f "$BASELINE_JSON" ]]; then
-    echo "❌ Error: Baseline JSON missing at $BASELINE_JSON"
+    echo "❌ Error: Baseline JSON missing at $BASELINE_JSON after pre-cutover retrieval"
     exit 1
 fi
 
