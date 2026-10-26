@@ -5,13 +5,13 @@
  * 
  * Handles:
  * 1. Immediate 24/7 direct dispatch links (English, Spanish, SMS)
- * 2. Emergency contact & intake form submission to backend/leadsIntake.jsw (CRM sync)
+ * 2. Emergency contact form submission through backend/contact-api.jsw submitContactForm
  * 3. Form validation, spinner loading states, and success/error handling
  * 4. Conversion telemetry tracking
  */
 
 import wixWindowFrontend from 'wix-window-frontend';
-import { submitWebsiteLead } from 'backend/leadsIntake.jsw';
+import { submitContactForm } from 'backend/contact-api.jsw';
 
 $w.onReady(function () {
     initContactForm();
@@ -39,8 +39,10 @@ function initContactForm() {
         const phone = $w('#inputPhone') ? $w('#inputPhone').value?.trim() : '';
         const email = $w('#inputEmail') ? $w('#inputEmail').value?.trim() : '';
         const county = $w('#dropdownCounty') ? $w('#dropdownCounty').value : 'Lee';
+        const jail = ($w('#dropdownJail') && $w('#dropdownJail').value) || county || '';
         const inmateName = $w('#inputInmateName') ? $w('#inputInmateName').value?.trim() : '';
         const message = $w('#inputMessage') ? $w('#inputMessage').value?.trim() : '';
+        const consent = $w('#checkboxConsent') ? $w('#checkboxConsent').checked === true : false;
 
         // Validation: Name and Phone are required for crisis dispatch
         if (!name) {
@@ -56,30 +58,45 @@ function initContactForm() {
             return;
         }
 
+        if (!inmateName) {
+            showError("Please enter the defendant's name.");
+            if ($w('#inputInmateName')) $w('#inputInmateName').focus();
+            return;
+        }
+
+        if (!jail) {
+            showError("Please choose the jail or county.");
+            return;
+        }
+
+        if (!consent) {
+            showError("Please confirm we may contact you about this inquiry.");
+            return;
+        }
+
         // Show loading spinner & disable button
         submitBtn.disable();
         if (spinner) spinner.show();
 
         try {
-            const payload = {
-                callerName: name,
-                callerPhone: phone,
-                callerEmail: email,
-                county: county || 'Lee',
+            // submitContactForm requires name, phone, defendantName, jail, and consent.
+            const result = await submitContactForm({
+                name: name,
+                phone: phone,
+                email: email,
                 defendantName: inmateName,
+                jail: jail,
                 notes: message,
-                leadSource: 'wix-studio-contact-page',
-                submittedAt: new Date().toISOString()
-            };
-
-            const result = await submitWebsiteLead(payload);
+                source: 'wix-studio-contact-page',
+                consent: true
+            });
 
             if (result && result.success) {
                 if (successBox) successBox.expand();
                 resetFormFields();
                 trackEvent('contact_form_submitted', county);
             } else {
-                const failReason = result?.message || "Could not transmit inquiry. Please call (239) 332-2245 directly.";
+                const failReason = result?.error || result?.message || "Could not transmit inquiry. Please call (239) 332-2245 directly.";
                 showError(failReason);
             }
         } catch (err) {

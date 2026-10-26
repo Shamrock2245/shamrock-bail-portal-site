@@ -13,7 +13,7 @@
 | `masterPage.js` | Global Master Page | Site-Wide | Header call/text tracking, mobile drawer, footer dynamic copyright & NAP, GA4 event dispatch. |
 | `home.js` | Home | `/` | Emergency hero CTAs, 67-county quick navigator dropdown, 10% Florida bail calculator, FAQ accordion. |
 | `county-page.js` | Florida Counties (Item) | `/florida-bail-bonds/{slug}` | Dynamic SEO metadata injection, LocalBusiness JSON-LD schema, official inmate booking & court link buttons. |
-| `contact.js` | Contact Us | `/contact` | Emergency intake form submitting to `backend/leadsIntake.jsw` (CRM webhook), spinner states, phone links. |
+| `contact.js` | Contact Us | `/contact` | Emergency intake form calling `submitContactForm` in `backend/contact-api.jsw`, spinner states, phone links. |
 | `first-appearance.js` | First Appearance Schedules | `/first-appearance` | 20 Florida Judicial Circuit schedule search filter, weekend/holiday times, Zoom court link modals. |
 | `portal-landing.js` | Member Portal Login | `/portal-landing` | Role selection (Defendant vs Indemnitor), passwordless Magic Link / SMS OTP access, CRM case session lookup. |
 
