@@ -92,6 +92,65 @@ When Grok Bot creates the visual pages in Studio, copy the logic from the reposi
 
 ---
 
+### F. Dependency closure for the mapped pages
+
+Sections A–D list selected modules. They are not sufficient for the copy-paste path. Each file below is imported by a mapped page in section E, or by something that page imports. Copy the whole closure into the Studio Code Panel or those pages fail at publish with unresolved imports. Examples that were missing from the earlier tables: `Contact.ilgty.js` needs `backend/contact-api.jsw` and `public/countyUtils.js`; `portal-landing.bagfn.js` needs `backend/social-auth.jsw`, `public/session-manager.js`, and `public/ai-concierge.js`.
+
+Wix platform modules (`wix-location`, `wix-seo`, `wix-data`, `wix-window`, `wix-storage`, `wix-users`) ship with Studio. Do not copy those.
+
+| Repo file | Required because |
+|---|---|
+| `src/backend/contact-api.jsw` | `Contact.ilgty.js` |
+| `src/backend/counties.jsw` | `Florida Counties.qx7lv.js` |
+| `src/backend/county-generator.jsw` | `Florida Counties.qx7lv.js` |
+| `src/backend/bailSchoolInterest.jsw` | `Bail School.sftg6.js` |
+| `src/backend/first-appearance-api.jsw` | `first-appearance.h4fpl.js` |
+| `src/backend/first-appearance-catalog.js` | imported by `first-appearance-api.jsw` and `county-generator.jsw` |
+| `src/backend/analytics.jsw` | imported by `first-appearance-api.jsw` and `bailSchoolInterest.jsw` |
+| `src/backend/documentUpload.jsw` | defendant and indemnitor dashboards |
+| `src/backend/leadsIntake.jsw` | defendant and indemnitor dashboards |
+| `src/backend/portal-auth.jsw` | portal landing and both dashboards |
+| `src/backend/social-auth.jsw` | `portal-landing.bagfn.js` |
+| `src/backend/auth-utils.js` | imported by `portal-auth.jsw` |
+| `src/backend/config-loader.jsw` | imported by `portal-auth.jsw` |
+| `src/backend/portal-url.jsw` | imported by `portal-auth.jsw` |
+| `src/backend/super-admin.js` | imported by `portal-auth.jsw` |
+| `src/backend/twilio-client.jsw` | imported by `portal-auth.jsw` |
+| `src/backend/utils.js` | imported by `portal-auth.jsw` |
+| `src/backend/gasIntegration.jsw` | imported by `analytics.jsw` |
+| `src/backend/normalization.js` | imported by `gasIntegration.jsw` |
+| `src/backend/notificationService.jsw` | imported by `contact-api.jsw` |
+| `src/backend/secretsManager.jsw` | imported by `leadsIntake.jsw` and `notificationService.jsw` |
+| `src/backend/ai-service.jsw` | imported by `public/ai-concierge.js` |
+| `src/backend/portal-api-client.jsw` | imported by `ai-service.jsw` |
+| `src/backend/geocoding.jsw` | imported by `public/geolocation-client.js` |
+| `src/backend/location.jsw` | imported by `public/location-tracker.js` |
+| `src/backend/location-tracker.jsw` | imported by `twilio-client.jsw` |
+| `src/backend/fraud-detection.jsw` | imported by `location.jsw` |
+| `src/backend/gsc-county-local.js` | imported by `county-generator.jsw` |
+| `src/backend/local-landings.js` | imported by `county-generator.jsw` |
+| `src/backend/seoConfig.js` | imported by `county-generator.jsw` |
+| `src/backend/data/allFloridaCounties.json` | imported by the county and first-appearance backends |
+| `src/backend/data/florida-city-landings.json` | imported by `local-landings.js` |
+| `src/backend/data/florida-county-boundaries.json` | imported by `geocoding.jsw` |
+| `src/backend/data/florida-local-geo.json` | imported by `local-landings.js` |
+| `src/backend/data/gsc-county-local.json` | imported by `gsc-county-local.js` |
+| `src/public/countyUtils.js` | `Contact.ilgty.js` |
+| `src/public/portal-config.js` | contact, how bail works, county, first appearance, and portal pages |
+| `src/public/collectionIds.js` | `How Bail Works.lrh65.js` |
+| `src/public/cityHeroHeadline.js` | `Florida Counties.qx7lv.js` |
+| `src/public/floridaCountyDirectory.js` | `Florida Counties.qx7lv.js` |
+| `src/public/sanitizeLandingCopy.js` | imported by `county-generator.jsw` |
+| `src/public/session-manager.js` | portal landing and both dashboards |
+| `src/public/ai-concierge.js` | `portal-landing.bagfn.js` |
+| `src/public/lightbox-controller.js` | defendant and indemnitor dashboards |
+| `src/public/geolocation-client.js` | `portal-defendant.skg9y.js` |
+| `src/public/location-tracker.js` | `portal-defendant.skg9y.js` |
+
+`HOME.c1dmp.js`, `About.xal5r.js`, and `masterPage.js` import only Wix platform modules. They still get copied from section E. They do not add files to this closure.
+
+---
+
 ## 3. Required Wix Secrets Manager Keys
 
 Ensure these keys are active in **Wix Studio → Settings → Secrets Manager**:
