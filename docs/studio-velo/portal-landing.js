@@ -11,7 +11,7 @@
  */
 
 import wixLocationFrontend from 'wix-location-frontend';
-import { requestMagicLink } from 'backend/portal-auth.jsw';
+import { sendMagicLinkSimplified } from 'backend/portal-auth.jsw';
 
 $w.onReady(function () {
     let currentRole = 'indemnitor'; // default
@@ -65,11 +65,11 @@ $w.onReady(function () {
             if (spinner) spinner.show();
 
             try {
-                const response = await requestMagicLink({
-                    phone: phone || '',
-                    email: email || '',
-                    role: currentRole
-                });
+                // sendMagicLinkSimplified takes one email or phone string.
+                // It looks up an existing case role, or creates an indemnitor
+                // login for a new contact. It does not accept a role object.
+                const contact = (email && email.includes('@')) ? email : phone;
+                const response = await sendMagicLinkSimplified(contact);
 
                 if (response && response.success) {
                     if (successBox) successBox.expand();
