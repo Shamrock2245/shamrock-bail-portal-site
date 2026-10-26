@@ -17,6 +17,33 @@ from difflib import SequenceMatcher
 
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
+def collect_json_ld_types(obj, into=None):
+    """Collect @type names from a JSON-LD document, including nested objects.
+
+    Matches scripts/seo/crawl_seo_baseline.py. Descending only @graph misses
+    PostalAddress, ContactPoint, and OpeningHoursSpecification nested on a
+    LocalBusiness, and the diff then reports a false SCHEMA_REGRESSION.
+    """
+    if into is None:
+        into = set()
+    if isinstance(obj, dict):
+        schema_type = obj.get("@type")
+        if isinstance(schema_type, list):
+            for name in schema_type:
+                if isinstance(name, str):
+                    into.add(name)
+        elif isinstance(schema_type, str):
+            into.add(schema_type)
+        if "@graph" in obj:
+            collect_json_ld_types(obj["@graph"], into)
+        for value in obj.values():
+            if isinstance(value, (dict, list)):
+                collect_json_ld_types(value, into)
+    elif isinstance(obj, list):
+        for element in obj:
+            collect_json_ld_types(element, into)
+    return into
+
 def missing_baseline_schema_types(baseline_field, post_types):
     """Type names present before cutover and absent after it."""
     baseline_types = set()
@@ -117,17 +144,7 @@ def main():
                 if not s.string: continue
                 try:
                     data = json.loads(s.string)
-                    def collect_types(obj):
-                        if isinstance(obj, dict):
-                            t = obj.get("@type")
-                            if isinstance(t, list):
-                                for x in t:
-                                    if isinstance(x, str): post_json_types.add(x)
-                            elif isinstance(t, str): post_json_types.add(t)
-                            if "@graph" in obj: collect_types(obj["@graph"])
-                        elif isinstance(obj, list):
-                            for el in obj: collect_types(el)
-                    collect_types(data)
+                    collect_json_ld_types(data, post_json_types)
                 except: pass
             row["post_json_ld"] = ", ".join(sorted(list(post_json_types)))
 
