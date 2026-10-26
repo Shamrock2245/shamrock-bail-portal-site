@@ -111,7 +111,7 @@ const FAQ_DATA = [
             "Call the county jail directly where your loved one is being held — they can confirm if a First Appearance is scheduled and when. You can also search the county clerk's online docket. Shamrock Bail Bonds can look up your loved one's booking record — call (239) 332-2245 with their name and county."
     },
     {
-        question: 'How quickly can Shamrock Bail Bonds post bail after First Appearance?',
+        question: 'When can Shamrock Bail Bonds post bail after First Appearance?',
         answer:
             'Shamrock Bail Bonds can help with the bail process after the bond amount is set at First Appearance — even while the hearing is still in progress. Our office at 1528 Broadway, Fort Myers is steps from the Lee County Justice Center. We post the bond once the paperwork and payment are complete.'
     },
@@ -465,7 +465,7 @@ function injectCrawlableCopy(focusSlug) {
         : 'Florida';
     const intro = focusSlug
         ? `${pretty} County First Appearance is held within 24 hours of arrest under Florida Rule of Criminal Procedure 3.130. Shamrock Bail Bonds posts the bond 24/7 at (239) 332-2245.`
-        : 'Florida First Appearance hearings must occur within 24 hours of arrest. Shamrock Bail Bonds covers all 67 counties. Call (239) 332-2245 as soon as bond is set.';
+        : 'Florida First Appearance hearings must occur within 24 hours of arrest. Shamrock Bail Bonds covers all 67 counties. Call (239) 332-2245 once bond is set. Phones are answered 24/7.';
     const faqText = FAQ_DATA.map((f) => `${f.question} ${f.answer}`).join(' ');
     const ids = ['#seoBody', '#crawlableCopy', '#faIntro', '#pageIntro', '#textSEO'];
     for (const id of ids) {
@@ -737,3 +737,167 @@ function buildLocalBusinessSchema() {
         ]
     };
 }
+
+// =============================================================================
+// WIX STUDIO LAYER (Oct 2026) — source: Studio cutover ready/velo/first-appearance.js
+// Element IDs from the Studio design. Every lookup is guarded (a missing ID skips
+// that feature), so this is inert on the current live layout and the code above
+// keeps running unchanged. Scoped in an IIFE so helper names never collide.
+// Copy rules: no release-time/speed claims; Spanish line (727) 295-2245;
+// "Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7".
+// =============================================================================
+(function studioLayer() {
+    /**
+     * first-appearance.js — First Appearance schedules (/first-appearance)
+     * Paste in Wix Studio: First Appearance page > Code panel > page code.
+     *
+     * Loads the statewide list from backend/first-appearance-api.jsw (unchanged).
+     * Changes: every lookup guarded; repeater _id values sanitized; the watch button gets a
+     * real link that opens in a new tab (openModal cannot open outside URLs); optional
+     * #scheduleSpinner shows while the list loads (spinner only, no loading text).
+     */
+
+
+    let scheduleRows = [];
+
+    // ─── Safe element helpers ($w throws on a missing ID; `if ($w('#x'))` does not protect) ──
+    function el(id) {
+        try {
+            const node = $w(id);
+            if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+            return node;
+        } catch (e) {
+            return null;
+        }
+    }
+    function itemEl($item, id) {
+        try {
+            const node = $item(id);
+            if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+            return node;
+        } catch (e) {
+            return null;
+        }
+    }
+    function on(id, event, handler) {
+        const node = typeof id === 'string' ? el(id) : id;
+        if (!node) return null;
+        try { node[event](handler); } catch (e) { /* element has no such event */ }
+        return node;
+    }
+    function setText(node, value) {
+        if (!node) return;
+        try { node.text = String(value == null ? '' : value); } catch (e) { /* not a text element */ }
+    }
+    function setLink(node, url, target) {
+        if (!node || !url) return false;
+        try {
+            node.link = url;
+            node.target = target || '_self';
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    function valueOf(id) {
+        const node = el(id);
+        if (!node) return '';
+        try { return typeof node.value === 'string' ? node.value.trim() : (node.value || ''); } catch (e) { return ''; }
+    }
+    function call(node, method) {
+        if (!node) return;
+        try { node[method](); } catch (e) { /* noop */ }
+    }
+
+    function safeId(value, index) {
+        const id = String(value || '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+        return id || `county-${index + 1}`;
+    }
+
+    function toRepeaterRow(county, index) {
+        const name = county.name || 'Florida county';
+        const circuit = county.circuit ? `${county.circuit} · ${name}` : name;
+        return {
+            _id: safeId(county.slug || name, index),
+            circuit: circuit,
+            counties: name,
+            weekdays: county.schedule || 'Call (239) 332-2245 for today’s courtroom time.',
+            weekends: 'Weekend and holiday times are listed when the court publishes them. Call (239) 332-2245 to confirm.',
+            location: county.location || '',
+            zoomLink: /^https?:\/\//i.test(county.liveUrl || '') ? county.liveUrl : '',
+            notes: county.notes || ''
+        };
+    }
+
+    $w.onReady(async function () {
+        const repeater = el('#repeaterSchedules');
+        const searchInput = el('#searchCountyInput');
+        const spinner = el('#scheduleSpinner');
+        if (!repeater) return;
+
+        call(spinner, 'show');
+        try {
+            const result = await getFirstAppearanceSchedules();
+            const counties = result && result.success && Array.isArray(result.counties) ? result.counties : [];
+            const seen = {};
+            scheduleRows = counties.map(toRepeaterRow).map((row) => {
+                // _id must be unique
+                if (seen[row._id]) row._id = `${row._id}-${++seen[row._id]}`; else seen[row._id] = 1;
+                return row;
+            });
+        } catch (err) {
+            console.error('First appearance list failed:', err);
+            scheduleRows = [];
+        } finally {
+            call(spinner, 'hide');
+        }
+
+        // onItemReady is registered once, before the first data assignment.
+        repeater.onItemReady(($item, itemData) => {
+            setText(itemEl($item, '#textCircuitTitle'), itemData.circuit);
+            setText(itemEl($item, '#textCountiesList'), itemData.counties);
+            setText(itemEl($item, '#textWeekdaysTime'), itemData.weekdays);
+            setText(itemEl($item, '#textWeekendsTime'), itemData.weekends);
+            setText(itemEl($item, '#textCourtLocation'), itemData.location);
+            setText(itemEl($item, '#textScheduleNotes'), itemData.notes);
+
+            const watchBtn = itemEl($item, '#btnOpenZoomLink');
+            if (watchBtn) {
+                if (itemData.zoomLink) {
+                    setLink(watchBtn, itemData.zoomLink, '_blank');
+                    call(watchBtn, 'expand');
+                } else {
+                    call(watchBtn, 'collapse');
+                }
+            }
+        });
+
+        function populateRepeater(data) {
+            try { repeater.data = data; } catch (e) { console.warn('Schedule repeater skipped:', e.message); }
+            const noResultsBox = el('#noResultsBox');
+            call(noResultsBox, data.length === 0 ? 'expand' : 'collapse');
+        }
+
+        populateRepeater(scheduleRows);
+
+        if (searchInput) {
+            on(searchInput, 'onInput', () => {
+                const query = String(searchInput.value || '').toLowerCase().trim();
+                if (!query) {
+                    populateRepeater(scheduleRows);
+                    return;
+                }
+                populateRepeater(scheduleRows.filter((item) =>
+                    item.circuit.toLowerCase().includes(query) ||
+                    item.counties.toLowerCase().includes(query) ||
+                    item.location.toLowerCase().includes(query) ||
+                    item.weekdays.toLowerCase().includes(query)
+                ));
+            });
+            on('#clearFilterBtn', 'onClick', () => {
+                try { searchInput.value = ''; } catch (e) { /* noop */ }
+                populateRepeater(scheduleRows);
+            });
+        }
+    });
+})();
