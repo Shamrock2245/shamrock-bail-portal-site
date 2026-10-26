@@ -47,6 +47,33 @@ TODO_ENTRIES = [
     {"from": "/spanish", "to": "TODO-VERIFY (/ or dedicated Spanish landing page)", "reason": "Awaiting Brendan decision: redirect to homepage vs Spanish landing"}
 ]
 
+def load_blog_dedupe_redirects(path="docs/blog-dedupe.csv"):
+    """301s for duplicate posts marked 'add 301' in the dedupe audit.
+
+    Unpublishing those URLs without a redirect would turn indexed posts into 404s.
+    """
+    entries = []
+    if not os.path.exists(path):
+        print(f"WARNING: {path} not found. Duplicate blog 301s will be missing.")
+        return entries
+    with open(path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            action = (row.get("action") or "").lower()
+            if "301" not in action:
+                continue
+            src = normalize_path(row.get("duplicate_url") or "")
+            dest = normalize_path(row.get("canonical_url") or "")
+            if not src or src == dest:
+                continue
+            group_id = (row.get("group_id") or "").strip()
+            entries.append({
+                "from": src,
+                "to": dest,
+                "reason": f"Blog dedupe {group_id}: 301 duplicate to canonical before unpublish".strip(),
+            })
+    return entries
+
 def normalize_path(path):
     if not path:
         return "/"
@@ -93,6 +120,12 @@ def main():
 
     for k in KNOWN_REDIRECT_ENTRIES:
         raw_redirect_map[normalize_path(k["from"])] = (normalize_path(k["to"]), k["reason"])
+
+    # Dedupe 301s win over a crawled "keep" so unpublishing a duplicate cannot 404 it.
+    blog_dedupe_redirects = load_blog_dedupe_redirects()
+    for k in blog_dedupe_redirects:
+        raw_redirect_map[k["from"]] = (k["to"], k["reason"])
+    print(f"Loaded {len(blog_dedupe_redirects)} blog-dedupe 301s.")
 
     # Resolve redirect chains and check loops
     resolved_redirects = {} # from_path -> (final_to_path, reason)
@@ -190,7 +223,11 @@ def main():
     # Write docs/studio-cutover-url-map.csv
     url_map_path = "docs/studio-cutover-url-map.csv"
     with open(url_map_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["old_url", "studio_url", "action", "reason", "protected", "clicks", "impressions"])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["old_url", "studio_url", "action", "reason", "protected", "clicks", "impressions"],
+            lineterminator="\n",
+        )
         writer.writeheader()
         for r in url_map_rows:
             writer.writerow(r)
@@ -201,7 +238,7 @@ def main():
     redirects_import_path = "docs/studio-cutover-redirects.csv"
     redirect_count = 0
     with open(redirects_import_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, lineterminator="\n")
         writer.writerow(["Old URL", "New URL"])
         for from_p, (to_p, reason) in sorted(resolved_redirects.items()):
             # Wix bulk import takes relative paths
