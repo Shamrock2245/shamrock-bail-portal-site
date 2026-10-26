@@ -307,7 +307,7 @@ function updatePageSEO() {
                     "name": "What counties does Shamrock Bail Bonds serve?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Shamrock Bail Bonds serves all 67 Florida counties. Our office is located in Fort Myers (Lee County), and we specialize in Southwest Florida counties including Lee, Collier, Charlotte, Hendry, DeSoto, Manatee, and Sarasota. We handle bonds statewide with a $100 transfer fee for counties outside Lee and Charlotte. The transfer fee may be waived on most bonds over $25,000, at our discretion."
+                        "text": "Shamrock Bail Bonds serves all 67 Florida counties. Our office is located in Fort Myers (Lee County), and we specialize in Southwest Florida counties including Lee, Collier, Charlotte, Hendry, DeSoto, Manatee, and Sarasota. We handle bonds statewide. A $100 transfer fee applies and may be waived at our discretion (counties outside Lee and Charlotte)."
                     }
                 },
                 {

@@ -664,7 +664,7 @@ function setupOrganizationSchema() {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount plus standard statutory transfer fee",
                     "priceCurrency": "USD",
-                    "description": "10% statutory bond premium. Standard $100 transfer fee for counties outside Lee and Charlotte; transfer fee may be waived on bonds over $25,000."
+                    "description": "10% statutory bond premium. A $100 transfer fee applies and may be waived at our discretion (counties outside Lee and Charlotte)."
                 },
                 "itemOffered": {
                     "@type": "Service",

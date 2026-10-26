@@ -179,7 +179,7 @@ export function buildLandingCopy(landing, parent = {}) {
           + `Payment plans are available on qualifying bonds. Call ${phone} now.`;
 
     const why = `Families in ${placeLabel} use Shamrock because we answer 24/7, we already know the ${county} County booking desk, and we do not require an office visit. `
-        + `Florida premium is 10% of the face amount (minimum $100 per charge). A $100 transfer fee applies outside Lee and Charlotte County; it may be waived on most bonds over $25,000, at our discretion. `
+        + `Florida premium is 10% of the face amount (minimum $100 per charge). A $100 transfer fee applies and may be waived at our discretion (counties outside Lee and Charlotte). `
         + `We write under licensed Florida limited surety authority (Ch. 648 / 903 F.S.).`;
 
     const how = `1. Call ${phone} and say the person is in ${name}. `
