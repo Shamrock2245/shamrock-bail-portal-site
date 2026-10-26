@@ -14,7 +14,7 @@
 | `home.js` | Home | `/` | Emergency hero CTAs, 67-county quick navigator dropdown, 10% Florida bail calculator, FAQ accordion. |
 | `county-page.js` | Florida Counties (Item) | `/florida-bail-bonds/{slug}` | Dynamic SEO metadata injection, LocalBusiness JSON-LD schema, official inmate booking & court link buttons. |
 | `contact.js` | Contact Us | `/contact` | Emergency intake form calling `submitContactForm` in `backend/contact-api.jsw`, spinner states, phone links. |
-| `first-appearance.js` | First Appearance Schedules | `/first-appearance` | 20 Florida Judicial Circuit schedule search filter, weekend/holiday times, Zoom court link modals. |
+| `first-appearance.js` | First Appearance Schedules | `/first-appearance` | Loads every county from `getFirstAppearanceSchedules` in `backend/first-appearance-api.jsw`. Search filter and court link button. |
 | `portal-landing.js` | Member Portal Login | `/portal-landing` | Role labels on the page, then `sendMagicLinkSimplified(emailOrPhone)` from `backend/portal-auth.jsw`. |
 
 ---
