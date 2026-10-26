@@ -6,14 +6,14 @@
 
   <!-- SEO META -->
   <title>Shamrock Bail School | Florida Pre-Licensing Courses (20-Hour &amp; 120-Hour)</title>
-  <meta name="description" content="Enroll in Shamrock Bail School: 20-Hour Correspondence Course ($199) and 120-Hour Pre-Licensing Course ($649) with State Exam Simulator bundle. FLDFS Provider #648-FL (pending approval)." />
+  <meta name="description" content="Enroll in Shamrock Bail School: 20-Hour Correspondence Course (pending course approval) and 120-Hour Pre-Licensing Course ($649) with State Exam Simulator bundle. FLDFS Provider #648-FL (pending approval)." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://www.shamrockbailbonds.biz/bail-school" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Shamrock Bail School | 20-Hour &amp; 120-Hour Florida Pre-Licensing" />
-  <meta property="og:description" content="Florida pre-licensing: 20-Hour Correspondence ($199) and 120-Hour Basic Certification Training ($649) with 1-year Exam Simulator &amp; Bail Mentor AI. Enroll today." />
+  <meta property="og:description" content="Florida pre-licensing: 20-Hour Correspondence (pending course approval) and 120-Hour Basic Certification Training ($649) with 1-year Exam Simulator &amp; Bail Mentor AI. Enroll today." />
   <meta property="og:url" content="https://www.shamrockbailbonds.biz/bail-school" />
   <meta property="og:site_name" content="Shamrock Bail Bonds" />
   <meta property="og:image" content="https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png" />
@@ -52,8 +52,7 @@
           "provider": { "@type": "Organization", "name": "Shamrock Bail School" },
           "timeRequired": "PT20H",
           "educationalLevel": "Beginner",
-          "isAccessibleForFree": false,
-          "offers": { "@type": "Offer", "price": "199", "priceCurrency": "USD", "url": "https://swipesimple.com/links/lnk_e7afc13b2c48a8f3a08ed7d8059b6a51" }
+          "isAccessibleForFree": false
         },
         {
           "@type": "Course",
@@ -84,7 +83,7 @@
       {"@type":"Question","name":"What is Shamrock Bail School?","acceptedAnswer":{"@type":"Answer","text":"Shamrock Bail School is the education division of Shamrock Bail Bonds. We offer Florida pre-licensing programs: a 20-Hour Correspondence Course and a 120-Hour Basic Certification Training with State Exam Simulator and Bail Mentor AI included."}},
       {"@type":"Question","name":"Do I need any prior experience?","acceptedAnswer":{"@type":"Answer","text":"No prior industry experience is required. Both programs are designed for new students. Florida licensure requirements still apply: age 18+, high school diploma or GED, U.S. citizenship or legal residency, and a clean background check."}},
       {"@type":"Question","name":"How much does the 120-hour course cost?","acceptedAnswer":{"@type":"Answer","text":"The 120-Hour Pre-Licensing Course is $649 (list $1,200) and includes a 1-year State Exam Simulator and Bail Mentor AI pass. Enroll via secure SwipeSimple checkout."}},
-      {"@type":"Question","name":"How much is the 20-Hour Correspondence Course?","acceptedAnswer":{"@type":"Answer","text":"The 20-Hour Correspondence Pre-Licensing Course is $199 (list $299). It is fully online and self-paced with automated FLDFS statutory time tracking."}},
+      {"@type":"Question","name":"How much is the 20-Hour Correspondence Course?","acceptedAnswer":{"@type":"Answer","text":"The 20-Hour Correspondence Pre-Licensing Course is pending course approval. Pricing will be posted once the course is approved. It will be fully online and self-paced with automated FLDFS statutory time tracking."}},
       {"@type":"Question","name":"Do I get a certificate?","acceptedAnswer":{"@type":"Answer","text":"Yes. Completing either pre-licensing course yields an official digital certificate. The 120-Hour program prepares you to sit for the Florida DFS state licensing exam."}},
       {"@type":"Question","name":"Can I take courses from anywhere in Florida?","acceptedAnswer":{"@type":"Answer","text":"Yes. The 20-Hour Correspondence Course is fully online and self-paced. The 120-Hour Course uses live interactive webinars and hybrid cohorts — join from anywhere with internet access. View the class calendar at school.shamrockbailbonds.biz/schedule."}},
       {"@type":"Question","name":"Is the State Exam Simulator included?","acceptedAnswer":{"@type":"Answer","text":"Yes. The 120-Hour Course includes a free 1-year Bail Mentor AI and State Exam Simulator pass. A standalone simulator pass is also available for $49 if you only need exam practice."}},
@@ -884,7 +883,7 @@
   <div class="bottom-bar">
     <div class="bottom-bar-text">
       <div class="bb-headline">Ready to enroll in Bail School?</div>
-      <div class="bb-sub">Call us now or enroll online — 20-Hour $199 · 120-Hour $649.</div>
+      <div class="bb-sub">Call us now or enroll online — 120-Hour $649 · 20-Hour pending course approval.</div>
     </div>
     <div class="bottom-bar-actions">
       <a href="tel:12393322245" class="bb-btn bb-btn--phone" id="bbPhoneBtn">
@@ -911,10 +910,11 @@
         id: '20hr',
         name: '20-Hour Correspondence Pre-Licensing',
         shortName: '20-Hour Course',
-        price: 199,
-        listPrice: 299,
+        price: null,
+        listPrice: null,
+        status: 'Pending course approval',
         dashboardPath: '/dashboard/correspondence',
-        paymentUrl: 'https://swipesimple.com/links/lnk_e7afc13b2c48a8f3a08ed7d8059b6a51'
+        paymentUrl: ''
       },
       '120hr': {
         id: '120hr',
@@ -993,7 +993,7 @@
         ],
         description: 'The mandatory self-paced prerequisite. 10 interactive modules covering Florida bail bond law, skip tracing, and office management — with automated FLDFS statutory time tracking, chapter quizzes (80% gate), a 50-question final exam, and an official digital certificate.',
         courseId: '20hr',
-        ctaText: 'Enroll — $199',
+        ctaText: 'Pending course approval',
         secondaryCta: { text: 'Student portal →', href: SCHOOL_ORIGIN + COURSES['20hr'].dashboardPath },
         curriculum: false
       },
@@ -1035,10 +1035,10 @@
        ✏️  FAQ DATA — keep in sync with Bail School.sftg6.js SEO FAQ
     ═══════════════════════════════════════════════════════════════ */
     const FAQ_DATA = [
-      { q: 'What is Shamrock Bail School?', a: 'Shamrock Bail School is the education division of Shamrock Bail Bonds. We offer Florida pre-licensing programs: a 20-Hour Correspondence Course ($199) and a 120-Hour Basic Certification Training ($649) that includes a 1-year State Exam Simulator and Bail Mentor AI pass.' },
+      { q: 'What is Shamrock Bail School?', a: 'Shamrock Bail School is the education division of Shamrock Bail Bonds. We offer Florida pre-licensing programs: a 20-Hour Correspondence Course (pending course approval) and a 120-Hour Basic Certification Training ($649) that includes a 1-year State Exam Simulator and Bail Mentor AI pass.' },
       { q: 'Do I need any prior experience?', a: 'No prior industry experience is required. Both programs are designed for new students. Florida licensure still requires you to be 18+, hold a high school diploma or GED, be a U.S. citizen or legal resident, and pass a background check.' },
       { q: 'How much does the 120-hour course cost?', a: 'The 120-Hour Pre-Licensing Course is $649 (list $1,200) via secure SwipeSimple checkout. Tuition includes 1-year access to the State Exam Simulator and Bail Mentor AI. View upcoming cohort dates at school.shamrockbailbonds.biz/schedule.' },
-      { q: 'How much is the 20-Hour Correspondence Course?', a: 'The 20-Hour Correspondence Pre-Licensing Course is $199 (list $299). It is fully online and self-paced with automated FLDFS statutory time tracking, quizzes, and a final exam.' },
+      { q: 'How much is the 20-Hour Correspondence Course?', a: 'The 20-Hour Correspondence Pre-Licensing Course is pending course approval. Pricing will be posted once the course is approved. It will be fully online and self-paced with automated FLDFS statutory time tracking, quizzes, and a final exam.' },
       { q: 'Do I get a certificate?', a: 'Yes. Completing either pre-licensing course provides an official digital certificate. The 120-Hour program prepares you to sit for the Florida DFS state licensing exam.' },
       { q: 'Can I take courses from anywhere in Florida?', a: 'Yes. The 20-Hour Correspondence Course is fully online and self-paced from anywhere. The 120-Hour Course uses live interactive webinars and hybrid cohorts — join from home with a laptop and internet connection.' },
       { q: 'Is the State Exam Simulator included?', a: 'Yes. The 120-Hour Course includes a free 1-year Bail Mentor AI and State Exam Simulator pass. A standalone simulator pass is also available for $49 if you only need exam practice and flashcards.' },
@@ -1056,7 +1056,9 @@
         if (!course) return '';
 
         const colorClass = p.color !== 'green' ? `${escapeHtml(p.color)}-card` : '';
-        const priceHtml = formatPriceHtml(course.price, course.listPrice);
+        const priceHtml = course.price == null
+          ? escapeHtml(course.status || 'Pending course approval')
+          : formatPriceHtml(course.price, course.listPrice);
         const tags = (p.tags || []).map(t =>
           `<span class="tag ${t.colored ? `tag--${escapeHtml(p.color)}` : 'tag--dark'}">${escapeHtml(t.label)}</span>`
         ).join('');

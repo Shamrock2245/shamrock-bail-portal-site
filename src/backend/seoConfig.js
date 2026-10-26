@@ -44,13 +44,13 @@ export const PHONE_PRIMARY = {
     areaCode: '239',
 };
 
-/** Secondary contact — Tampa Bay / St. Pete */
+/** Secondary contact — same number as PHONE_SPANISH (Español 24/7) */
 export const PHONE_SECONDARY = {
     display:  '(727) 295-2245',
     e164:     '+17272952245',
     tel:      'tel:+17272952245',
     areaCode: '727',
-    note:     'After-Hours & AI Agent Line',
+    note:     'Español 24/7 — Spanish line',
 };
 
 export const PHONE_SPANISH = {

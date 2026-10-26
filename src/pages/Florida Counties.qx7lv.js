@@ -516,7 +516,7 @@ async function populateMainUI(county, currentSlug) {
     const primaryPhoneLink = 'tel:+12393322245';
     setLink(['#heroCallButton', '#callShamrockBtn', '#callCountiesBtn', '#btnEmergencyCall', '#ctaCallOfficeBtn'], primaryPhoneLink, county.content.hero_cta_primary || "Call (239) 332-2245");
     // Owner's three primary CTAs: office call, automated line, text. Wired only if the Editor elements exist.
-    setLink(['#ctaCallAutoBtn', '#heroAutoLineButton'], 'tel:+17272952245', 'Automated line: (727) 295-2245');
+    setLink(['#ctaCallAutoBtn', '#heroAutoLineButton'], 'tel:+17272952245', 'Español 24/7 (727) 295-2245');
     setLink(['#ctaTextBtn', '#heroTextButton'], 'sms:+12399550178', 'Text (239) 955-0178');
 
     // 2. Get Someone Out / Start Online Release (Prefilled County)
