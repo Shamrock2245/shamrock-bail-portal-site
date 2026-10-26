@@ -35,7 +35,7 @@
 ## 3. Heading Structure & Content Outline
 
 - **H1:** `About Shamrock Bail Bonds: Local, Trusted & Experienced`
-  - **H2:** `Our Mission: Dignity, Speed & Absolute Clarity`
+  - **H2:** `Our Mission: Dignity, Clarity, and Care`
   - **H2:** `Local Roots in Downtown Fort Myers Since 2012`
   - **H2:** `Licensed & Regulated by the Florida Department of Financial Services`
   - **H2:** `Statewide Coverage & Nationwide Transfer Bonds`

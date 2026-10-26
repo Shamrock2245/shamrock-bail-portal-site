@@ -11,31 +11,28 @@
 - **Text Line:** [239-955-0178](sms:2399550178)
 - **Start Online:** [shamrockbailbonds.biz/portal-landing](https://www.shamrockbailbonds.biz/portal-landing)
 - **Office Address:** 1528 Broadway, Fort Myers, FL 33901
-- **Hours:** Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7
+- **Hours:** Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7
 
 ---
 
 Updated: Sep 28
 
-Shamrock Bail Bonds can process and approve your bail application using our 24/7 automated system. Once the bond is posted at the Lee County Jail — located just minutes from our downtown Fort Myers office at 1528 Broadway — the facility's release processing time varies by facility and time of day.
+Shamrock Bail Bonds can take your bail application by phone or through the secure online portal, including overnight. Once a licensed agent posts the bond at the Lee County Jail, the jail decides when the person is released. We do not quote a release time.
 
-When a loved one is arrested, speed is the most critical factor. Every minute spent in custody is stressful. At Shamrock Bail Bonds, we have engineered our entire process to be the fastest in Southwest Florida.
-
-Traditional bail bondsmen require you to drive to their office, fill out stacks of paperwork, and wait for manual approvals. We have eliminated this bottleneck. Using our secure Telegram bot (@ShamrockBail_bot), you can complete the entire intake process, sign documents digitally, and make your payment from your smartphone. This automated system processes applications and issues approvals 24 hours a day.
+When a loved one is arrested, you need a clear next step. Call 239-332-2245, or start paperwork from your phone if you cannot come to the office. You can review documents and pay the statutory premium without driving to the office first. Office walk-in hours are Monday through Friday, 9 AM to 5 PM. Phones are answered 24/7.
 
 The Lee County Jail Booking Process
-The actual release time depends on the Lee County Jail's processing speed. After we post the bond at the facility, the jail must complete their internal procedures. How long this takes varies by facility and time of day. 
+After the bond is posted, Lee County Jail completes its own booking steps. Shamrock does not control that part and does not promise when the jail will finish.
 
-Factors That Delay Release
-Several factors at the jail can affect this timeline:
-- Busy Weekends: High arrest volumes on Friday and Saturday nights can slow down processing.
-- Shift Changes: Jail staff shift changes can temporarily pause releases.
-- Facility Lockdowns: Routine security procedures or incidents within the jail can cause delays.
+What can affect the jail's process
+- Busy weekends, when the jail has more bookings.
+- Shift changes at the facility.
+- A lockdown or other security hold inside the jail.
 
-Why Proximity Matters
-Our physical location gives you a distinct advantage. We are located in the historic Colquitt Building at 1528 Broadway in downtown Fort Myers. Because we are just minutes from the Lee County Jail, our licensed agents can physically post the bond immediately after your digital approval. There is no waiting for an agent to drive across town.
+Where we post the bond
+Our office is in the Colquitt Building at 1528 Broadway in downtown Fort Myers. A licensed agent posts the bond with the jail after the paperwork and premium are in place.
 
-When you need fast, reliable bail bond service in Fort Myers, trust the speed and efficiency of Shamrock Bail Bonds.
+Call 239-332-2245 or text 239-955-0178. Spanish-speaking callers can use 727-295-2245.
 
 ---
 

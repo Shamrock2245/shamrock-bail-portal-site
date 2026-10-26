@@ -12,12 +12,12 @@
 | Field | Value | Notes & Length |
 |---|---|---|
 | **Page Title** | `Contact Our Bail Agents | Shamrock Bail Bonds` | 45 characters (target < 60) |
-| **Meta Description** | `Contact Shamrock Bail Bonds in Fort Myers, FL. 24/7 phone support, confidential office walk-ins & fast text help. Call 239-332-2245 or text 239-955-0178.` | 153 characters (target 140–160) |
+| **Meta Description** | `Contact Shamrock Bail Bonds in Fort Myers, FL. 24/7 phone support, confidential office walk-ins, and text help. Call 239-332-2245 or text 239-955-0178.` | 151 characters (target 140–160) |
 | **H1 Headline** | `Contact Shamrock Bail Bonds: 24/7 Direct Help` | Exactly 1 per page |
 | **Robots** | `index, follow` | Public pages index; portal/retire noindex |
 | **Canonical URL** | `https://www.shamrockbailbonds.biz/contact` | Self-referencing |
 | **Open Graph Title** | `Contact Our Bail Agents | Shamrock Bail Bonds` | Matches page title |
-| **Open Graph Description** | `Contact Shamrock Bail Bonds in Fort Myers, FL. 24/7 phone support, confidential office walk-ins & fast text help. Call 239-332-2245 or text 239-955-0178.` | Matches meta description |
+| **Open Graph Description** | `Contact Shamrock Bail Bonds in Fort Myers, FL. 24/7 phone support, confidential office walk-ins, and text help. Call 239-332-2245 or text 239-955-0178.` | Matches meta description |
 | **Open Graph Image** | `https://www.shamrockbailbonds.biz/logo.png` | 1200 x 630 WebP/PNG brand banner |
 | **Open Graph Type** | `website` | Standard open graph type |
 

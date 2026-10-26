@@ -73,7 +73,7 @@ def generate_seo_spec(page):
         },
         "contact": {
             "title": "Contact Our Bail Agents | Shamrock Bail Bonds",
-            "desc": "Contact Shamrock Bail Bonds in Fort Myers, FL. 24/7 phone support, confidential office walk-ins & fast text help. Call 239-332-2245 or text 239-955-0178.",
+            "desc": "Contact Shamrock Bail Bonds in Fort Myers, FL. 24/7 phone support, confidential office walk-ins, and text help. Call 239-332-2245 or text 239-955-0178.",
             "h1": "Contact Shamrock Bail Bonds: 24/7 Direct Help",
             "keywords": "contact bail bondsman Fort Myers, bail bonds phone number Fort Myers, bail bond office downtown Fort Myers",
             "secondary": "Lee County bail bonds contact, Spanish bail bonds Florida, text a bail agent",
@@ -98,7 +98,7 @@ def generate_seo_spec(page):
             "canonical": "https://www.shamrockbailbonds.biz/about",
             "page_type": "static",
             "h2s": [
-                "Our Mission: Dignity, Speed & Absolute Clarity",
+                "Our Mission: Dignity, Clarity, and Care",
                 "Local Roots in Downtown Fort Myers Since 2012",
                 "Licensed & Regulated by the Florida Department of Financial Services",
                 "Statewide Coverage & Nationwide Transfer Bonds",
@@ -137,7 +137,7 @@ def generate_seo_spec(page):
                 "When Do First Appearance Hearings Happen?",
                 "What Judges Consider When Setting Bail Amount",
                 "Southwest Florida County First Appearance Schedules",
-                "How to Post Bond Immediately After the Hearing",
+                "How to Post Bond After the Hearing",
                 "First Appearance Frequently Asked Questions"
             ]
         },
@@ -192,7 +192,7 @@ def generate_seo_spec(page):
         },
         "faq": {
             "title": "Florida Bail Bonds FAQ | Common Questions | Shamrock",
-            "desc": "Find answers to top Florida bail bond questions: costs, collateral, release times, cosigning & payment plans. Need help? Call 239-332-2245.",
+            "desc": "Find plain-English answers to Florida bail bond questions on costs, collateral, cosigning, court dates, and payment plans. Call 239-332-2245.",
             "h1": "Florida Bail Bonds Frequently Asked Questions",
             "keywords": "Florida bail bonds FAQ, bail bond questions answered, how much is bail in Florida, what is an indemnitor",
             "secondary": "bail bond collateral questions, payment plans for bail bonds Florida",
@@ -469,14 +469,14 @@ def write_specs_and_content():
 > 💬 **Text an Agent (24/7):** [239-955-0178](sms:+12399550178)  
 > 📱 **Start Paperwork Online:** [Open Mobile Intake](/portal-landing)
 >
-> *Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7*  
+> *Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7*  
 > *1528 Broadway, Fort Myers, FL 33901*
 
 ---
 
 # {spec['h1']}
 
-When a loved one is arrested, you are dealing with fear, confusion, and a dozen questions all at once. You want straightforward answers, someone who picks up the phone immediately, and a clear path forward without judgment.
+When a loved one is arrested, you are dealing with fear, confusion, and a dozen questions all at once. You want straightforward answers, someone who picks up the phone, and a clear path forward without judgment.
 
 Shamrock Bail Bonds has been serving families across Southwest Florida and all 67 Florida counties since 2012. We are owner-operated by Brendan O'Neal from our office in downtown Fort Myers. We handle misdemeanor bonds, felony bonds, warrant walk-throughs, and nationwide transfer bonds with complete confidentiality and care.
 
@@ -487,7 +487,7 @@ Shamrock Bail Bonds has been serving families across Southwest Florida and all 6
 ### 1. Speak with a Real Local Agent Right Now
 When you call [239-332-2245](tel:+12393322245), you speak directly with an experienced bail professional. We look up the arrest records, verify the exact charges and bond amounts with the jail, and explain your options in plain language. If you speak Spanish, our dedicated line is [727-295-2245](tel:+17272952245).
 
-### 2. Complete Paperwork in Minutes from Your Phone
+### 2. Complete Paperwork from Your Phone
 You do not have to leave your home or travel across town in the middle of the night. We send secure, mobile-friendly forms directly to your smartphone via text or email. You can review and sign from anywhere.
 
 ### 3. Transparent Costs & Flexible Financing

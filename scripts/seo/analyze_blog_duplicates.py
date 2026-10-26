@@ -61,7 +61,7 @@ def main():
         if "955-0301" in text_check or "9550301" in text_check:
             violations.append({"url": url, "issue": "Mentions 955-0301 in public copy"})
         if "breton" in text_check.lower():
-            violations.append({"url": url, "issue": "Mentions retired Breton Cir address"})
+            violations.append({"url": url, "issue": "Mentions the retired office street"})
         if "accredited" in text_check.lower() or "bankers" in text_check.lower():
             violations.append({"url": url, "issue": "Mentions retired surety (Accredited/Bankers)"})
         if "lobby tablet" in text_check.lower() or "staff kiosk" in text_check.lower():

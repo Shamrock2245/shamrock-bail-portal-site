@@ -12,12 +12,12 @@
 | Field | Value | Notes & Length |
 |---|---|---|
 | **Page Title** | `Florida Bail Bonds FAQ | Common Questions | Shamrock` | 52 characters (target < 60) |
-| **Meta Description** | `Find answers to top Florida bail bond questions: costs, collateral, release times, cosigning & payment plans. Need help? Call 239-332-2245.` | 139 characters (target 140–160) |
+| **Meta Description** | `Find plain-English answers to Florida bail bond questions on costs, collateral, cosigning, court dates, and payment plans. Call 239-332-2245.` | 141 characters (target 140–160) |
 | **H1 Headline** | `Florida Bail Bonds Frequently Asked Questions` | Exactly 1 per page |
 | **Robots** | `index, follow` | Public pages index; portal/retire noindex |
 | **Canonical URL** | `https://www.shamrockbailbonds.biz/how-bail-works#faq` | Self-referencing |
 | **Open Graph Title** | `Florida Bail Bonds FAQ | Common Questions | Shamrock` | Matches page title |
-| **Open Graph Description** | `Find answers to top Florida bail bond questions: costs, collateral, release times, cosigning & payment plans. Need help? Call 239-332-2245.` | Matches meta description |
+| **Open Graph Description** | `Find plain-English answers to Florida bail bond questions on costs, collateral, cosigning, court dates, and payment plans. Call 239-332-2245.` | Matches meta description |
 | **Open Graph Image** | `https://www.shamrockbailbonds.biz/logo.png` | 1200 x 630 WebP/PNG brand banner |
 | **Open Graph Type** | `website` | Standard open graph type |
 

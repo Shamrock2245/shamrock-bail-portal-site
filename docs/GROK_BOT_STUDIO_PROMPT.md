@@ -10,7 +10,7 @@
 ## 🎯 YOUR MISSION
 
 You are building the **Wix Studio visual canvas** for **Shamrock Bail Bonds** on the unpublished branch `"Wix studio version"`.
-Your goal is to build an interface that feels like **"The Uber of Bail Bonds"** — modern, high-tech, deeply trusted, and lightning fast. A scared family member reading on a cracked iPhone at 2:00 AM must instantly know what to do without scrolling through generic legal clutter.
+Your goal is to build an interface that feels clear and trustworthy. A scared family member reading on a cracked iPhone at 2:00 AM must instantly know what to do without scrolling through generic legal clutter.
 
 Everything you build must be **better than the live Wix Editor site** while strictly maintaining URL slugs and SEO field parity so that **zero search traffic or ranking is lost**.
 
@@ -26,11 +26,13 @@ Everything you build must be **better than the live Wix Editor site** while stri
    - **24/7 SMS & iMessage Support:** `(239) 955-0178` (`sms:2399550178`)
    - *CRITICAL:* `239-955-0301` is an internal office transfer ring number only. It must **NEVER** appear in customer-facing copy as the Spanish line.
 4. **Canonical Office & Hours:**
-   - **Address:** `1528 Broadway, Fort Myers, FL 33901` (Downtown Fort Myers, Colquitt Building). **Never use the retired Breton Cir address.**
-   - **Hours Line (Word-for-Word):** `"Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7"`
-5. **No Speed Promises / Results Wording:**
-   - **Banned:** "Get out in 30 minutes guaranteed", "Fastest release guaranteed", "Guaranteed results".
-   - **Approved:** "Release typically takes 4–8 hours once bond is posted, depending on jail facility processing."
+   - **Address:** `1528 Broadway, Fort Myers, FL 33901` (Downtown Fort Myers, Colquitt Building). This is the only office address. Do not publish a retired street.
+   - **Hours Line (Word-for-Word):** `"Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7"`
+   - Walk-in hours and phone coverage stay in separate labels. Do not describe the office as open 24/7.
+5. **No Speed or Release-Time Claims:**
+   - Do not state how long release takes, how fast processing is, or that Shamrock is faster than anyone else.
+   - Do not use "guaranteed results" or a minute, hour, or same-day release promise.
+   - The jail controls release after the bond is posted. Say that, and stop there.
 6. **No Dollar Pricing (Except Bail School 120-Hr):**
    - **Never state fixed dollar fees for bail** (Bail is strictly 10% under Florida Statute § 648 with a $100 minimum per charge).
    - **Bail School 120-Hour Course:** `$649`.
@@ -79,7 +81,7 @@ Everything you build must be **better than the live Wix Editor site** while stri
   - Large thumb-friendly links to: Home, How Bail Works, Florida Counties, First Appearance, Bail School, About, Contact, Portal Login.
 - **Global Footer:**
   - NAP: Shamrock Bail Bonds · 1528 Broadway, Fort Myers, FL 33901 · (239) 332-2245.
-  - Hours: `"Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7"`.
+  - Hours: `"Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7"`.
   - Quick links to Top SWFL Counties: Lee County (Fort Myers), Collier County (Naples), Charlotte County (Punta Gorda), Sarasota County.
   - Link to complete directory: `/florida-bail-bonds-1`.
   - Dynamic year text element (`#footerYear`).
@@ -90,7 +92,7 @@ Everything you build must be **better than the live Wix Editor site** while stri
 
 ### 2. Home Page (`/`)
 - **Hero Section (Crisis-First & Instant Action):**
-  - **H1 Headline:** `Southwest Florida Bail Bonds — Fast, Confidential, 24/7 Dispatch`
+  - **H1 Headline:** `Southwest Florida Bail Bonds — Confidential, 24/7 Dispatch`
   - Subheadline: `Licensed Florida bondsmen standing by 24 hours a day. We post bail in Lee, Collier, Charlotte, Sarasota, and all 67 Florida counties.`
   - Immediate Action Cluster:
     - Button 1 (Primary Emerald): `Start Bail Online Now` (`#heroStartOnline`)
@@ -101,9 +103,9 @@ Everything you build must be **better than the live Wix Editor site** while stri
   - Dropdown (`#countyDropdown`) pre-populated with all 67 Florida counties.
   - Button (`#countyGoBtn`): "Go to County Jail Page" -> routes to `/florida-bail-bonds/{selected-slug}`.
 - **3-Step "How Bail Works" Visual Cards:**
-  1. *Call or Start Online* — Tell us who was arrested and where. We look up booking and charges immediately.
-  2. *Sign from Your Phone* — Review and sign paperwork on your mobile device in minutes. No office visit required.
-  3. *We Post Bail* — Our licensed bondsman posts the bond directly at the jail facility for immediate release processing.
+  1. *Call or Start Online* — Tell us who was arrested and where. We look up the booking and the charges.
+  2. *Sign from Your Phone* — Review and sign paperwork on your phone. An office visit is not required.
+  3. *We Post Bail* — Our licensed bondsman posts the bond with the jail. The jail controls release after that. Do not state a release time.
 - **Transparent 10% Florida Bail Calculator (`#calcResultBox`):**
   - Currency input field (`#calcBailInput`).
   - "Calculate Premium" button (`#calcSubmitBtn`).
@@ -114,10 +116,10 @@ Everything you build must be **better than the live Wix Editor site** while stri
   - Backed by O'Shaughnahill Surety & Insurance (OSI) and Palmetto Surety Corporation.
   - Payment plans available, warrant checks, free notary services.
 - **FAQ Accordion (`#faqToggle1` through `#faqToggle6`):**
-  - Expandable answers for: How much does a bail bond cost? What is an indemnitor/cosigner? Can I pay with a payment plan? How long does release take?
+  - Expandable answers for: How much does a bail bond cost? What is an indemnitor/cosigner? Can I pay with a payment plan? What happens after the bond is posted?
 - **SEO Panel Settings (from `docs/studio-seo/home.md`):**
   - Title: `Fort Myers Bail Bonds | 24/7 Jail Release | Shamrock Bail Bonds`
-  - Meta Description: `Fast 24/7 bail bonds in Fort Myers, Lee County & all 67 Florida counties. Licensed bondsmen, payment plans, easy phone signing. Call 239-332-2245 now.`
+  - Meta Description: `24/7 Fort Myers & Florida bail bonds. Confidential help, payment plans & local agents since 2012. Call 239-332-2245 or text 239-955-0178.`
   - Canonical: `https://www.shamrockbailbonds.biz/`
 - **Velo Code to Paste:** `docs/studio-velo/home.js` into Home Page Code.
 

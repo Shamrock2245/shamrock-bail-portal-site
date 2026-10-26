@@ -17,14 +17,14 @@
 > 💬 **Text an Agent (24/7):** [239-955-0178](sms:+12399550178)  
 > 📱 **Start Paperwork Online:** [Open Mobile Intake](/portal-landing)
 >
-> *Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7*  
+> *Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7*  
 > *1528 Broadway, Fort Myers, FL 33901*
 
 ---
 
 # Data Deletion & Privacy Rights Request
 
-When a loved one is arrested, you are dealing with fear, confusion, and a dozen questions all at once. You want straightforward answers, someone who picks up the phone immediately, and a clear path forward without judgment.
+When a loved one is arrested, you are dealing with fear, confusion, and a dozen questions all at once. You want straightforward answers, someone who picks up the phone, and a clear path forward without judgment.
 
 Shamrock Bail Bonds has been serving families across Southwest Florida and all 67 Florida counties since 2012. We are owner-operated by Brendan O'Neal from our office in downtown Fort Myers. We handle misdemeanor bonds, felony bonds, warrant walk-throughs, and nationwide transfer bonds with complete confidentiality and care.
 
@@ -35,7 +35,7 @@ Shamrock Bail Bonds has been serving families across Southwest Florida and all 6
 ### 1. Speak with a Real Local Agent Right Now
 When you call [239-332-2245](tel:+12393322245), you speak directly with an experienced bail professional. We look up the arrest records, verify the exact charges and bond amounts with the jail, and explain your options in plain language. If you speak Spanish, our dedicated line is [727-295-2245](tel:+17272952245).
 
-### 2. Complete Paperwork in Minutes from Your Phone
+### 2. Complete Paperwork from Your Phone
 You do not have to leave your home or travel across town in the middle of the night. We send secure, mobile-friendly forms directly to your smartphone via text or email. You can review and sign from anywhere.
 
 ### 3. Transparent Costs & Flexible Financing

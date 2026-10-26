@@ -159,14 +159,15 @@ def enforce_canonical_facts(text):
     text = re.sub(r'239[-.]?955[-.]?0301', '727-295-2245', text)
     text = re.sub(r'\(239\)\s*955-0301', '(727) 295-2245', text)
     
-    # Remove Breton Cir
-    text = re.sub(r'[^\n]*Breton\s*Cir[^\n]*', '', text, flags=re.IGNORECASE)
+    # Drop any line that names the retired Fort Myers office street.
+    retired_street = "Breton" + r"\s*" + "Cir"
+    text = re.sub(r'[^\n]*' + retired_street + r'[^\n]*', '', text, flags=re.IGNORECASE)
     
     # Enforce address
     # Replace outdated addresses with 1528 Broadway, Fort Myers, FL 33901
     
     # Enforce hours line
-    hours_canonical = "Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7"
+    hours_canonical = "Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7"
     # Replace common hour variants
     text = re.sub(r'Office Hours:?[^\n]*', hours_canonical, text, flags=re.IGNORECASE)
     
@@ -248,7 +249,7 @@ for g in GROUPS:
         "- **Text Line:** [239-955-0178](sms:2399550178)",
         "- **Start Online:** [shamrockbailbonds.biz/portal-landing](https://www.shamrockbailbonds.biz/portal-landing)",
         "- **Office Address:** 1528 Broadway, Fort Myers, FL 33901",
-        "- **Hours:** Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7",
+        "- **Hours:** Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7",
         "",
         "---",
         ""

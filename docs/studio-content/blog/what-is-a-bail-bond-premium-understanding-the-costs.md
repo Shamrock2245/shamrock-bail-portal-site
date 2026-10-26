@@ -11,7 +11,7 @@
 - **Text Line:** [239-955-0178](sms:2399550178)
 - **Start Online:** [shamrockbailbonds.biz/portal-landing](https://www.shamrockbailbonds.biz/portal-landing)
 - **Office Address:** 1528 Broadway, Fort Myers, FL 33901
-- **Hours:** Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7
+- **Hours:** Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7
 
 ---
 
