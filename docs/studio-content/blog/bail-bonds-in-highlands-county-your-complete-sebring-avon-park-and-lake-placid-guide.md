@@ -268,7 +268,7 @@ Phone: (863) 402-7201
 
 Operation Hours: 24 hours a day, 7 days a week
 
-After an arrest in Sebring, Avon Park, or Lake Placid, the defendant is transported to this facility for booking. The booking process involves fingerprinting, photographing, and recording personal information. This process can take anywhere from two to six hours, depending on how busy the jail is at the time.
+After an arrest in Sebring, Avon Park, or Lake Placid, the defendant is transported to this facility for booking. The booking process involves fingerprinting, photographing, and recording personal information. The jail controls release after the bond is posted. Shamrock does not give a release time.
 
 ## The Bail Bond Process with Shamrock Bail Bonds
 
@@ -277,7 +277,7 @@ Posting bail doesn't have to be complicated. Here is how the process works when 
 - Contact Us Immediately: Call us 24/7. Have the defendant's full name, date of birth, and booking number (if available) ready.
 - Consultation and Paperwork: We will explain the bail amount, our fees (which are legally set at 10% for state bonds), and any necessary collateral. Staff in Super CRM issue the DocuSeal packet. The website does not start a signing session.
 - Posting the Bond: Once the paperwork is signed and the premium is paid, a licensed agent posts the bond at the Highlands County Jail. The jail controls release after that.
-- Release: The jail will process the bond and release your loved one. This step typically takes a few hours, depending on the facility's current workload.
+- Release: The jail will process the bond and release your loved one. The jail controls release after the bond is posted. Shamrock does not give a release time.
 
 Contact Us Immediately: Call us 24/7. Have the defendant's full name, date of birth, and booking number (if available) ready.
 
@@ -285,7 +285,7 @@ Consultation and Paperwork: We will explain the bail amount, our fees (which are
 
 Posting the Bond: Once the paperwork is signed and the premium is paid, a licensed agent posts the bond at the Highlands County Jail. The jail controls release after that.
 
-Release: The jail will process the bond and release your loved one. This step typically takes a few hours, depending on the facility's current workload.
+Release: The jail will process the bond and release your loved one. The jail controls release after the bond is posted. Shamrock does not give a release time.
 
 ## Why Choose Shamrock Bail Bonds?
 

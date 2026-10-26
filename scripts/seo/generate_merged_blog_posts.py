@@ -186,6 +186,22 @@ def enforce_canonical_facts(text):
         text,
         flags=re.IGNORECASE,
     )
+
+    # Jail workload controls release. Do not publish an hour estimate.
+    def replace_release_estimate(match):
+        sentence = match.group(0)
+        if re.search(r'\bweeks?\b', sentence, flags=re.IGNORECASE):
+            return sentence
+        if re.search(r'\bbook', sentence, flags=re.IGNORECASE):
+            return ' How long booking takes is up to the jail. Shamrock does not estimate it.'
+        return ' The jail controls release after the bond is posted. Shamrock does not give a release time.'
+
+    text = re.sub(
+        r'[^.!\n]*\b(?:a few hours|several hours|two to six hours|2 to 6 hours|few to several hours)\b[^.!\n]*[.!]?',
+        replace_release_estimate,
+        text,
+        flags=re.IGNORECASE,
+    )
     
     # Clean up empty lines
     text = re.sub(r'\n{3,}', '\n\n', text)

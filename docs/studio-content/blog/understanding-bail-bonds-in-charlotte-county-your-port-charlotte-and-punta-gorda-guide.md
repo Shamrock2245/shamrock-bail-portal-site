@@ -62,7 +62,7 @@ Securing a bail bond in Charlotte County is a straightforward process when you w
 - Complete Paperwork: The person responsible for the bond (the indemnitor or co-signer) will need to complete some paperwork. This can often be done electronically, making the process fast and convenient.
 - Pay the Premium: You will pay the non-refundable premium to the bail bond company. Most reputable companies accept various forms of payment.
 - Post the Bond: The bail agent will immediately go to the Charlotte County Jail to post the bond, which begins the release process.
-- Release: The release process at the jail can take anywhere from a few hours to several hours, depending on how busy the facility is. The defendant is then released with the condition that they attend all future court dates.
+ The jail controls release after the bond is posted. Shamrock does not give a release time. The defendant is then released with the condition that they attend all future court dates.
 
 Contact a Licensed Bondsman: The first step is to call a 24/7 bail bond agency like Shamrock Bail Bonds. You will need to provide the defendant's full name, date of birth, and the jail they are in (Charlotte County Jail).
 
@@ -74,7 +74,7 @@ Pay the Premium: You will pay the non-refundable premium to the bail bond compan
 
 Post the Bond: The bail agent will immediately go to the Charlotte County Jail to post the bond, which begins the release process.
 
-Release: The release process at the jail can take anywhere from a few hours to several hours, depending on how busy the facility is. The defendant is then released with the condition that they attend all future court dates.
+ The jail controls release after the bond is posted. Shamrock does not give a release time. The defendant is then released with the condition that they attend all future court dates.
 
 ## Why Choose a Professional Bail Bondsman?
 

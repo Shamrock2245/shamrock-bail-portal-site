@@ -59,7 +59,7 @@ Working with a bail bondsman in Sarasota County is a streamlined process designe
 - Simple Paperwork: The person financially responsible for the bond (the indemnitor) will need to complete some straightforward paperwork. Reputable agencies offer electronic options to complete this from the comfort of your home.
 - Premium Payment: You will pay the 10% non-refundable premium. Professional agencies accept various payment methods for your convenience.
 - Bond Is Posted: The licensed agent will immediately submit the bond to the Sarasota County Jail to secure the release.
-- Freedom: The release process at the jail can take a few hours, depending on the facility's workload. Once released, the defendant must comply with all court requirements, including attending all scheduled hearings.
+ The jail controls release after the bond is posted. Shamrock does not give a release time. Once released, the defendant must comply with all court requirements, including attending all scheduled hearings.
 
 Make the Call: Contact a 24/7 bail bond agency. Be prepared to provide the defendant’s full name and the jail location (Sarasota County Jail).
 
@@ -71,7 +71,7 @@ Premium Payment: You will pay the 10% non-refundable premium. Professional agenc
 
 Bond Is Posted: The licensed agent will immediately submit the bond to the Sarasota County Jail to secure the release.
 
-Freedom: The release process at the jail can take a few hours, depending on the facility's workload. Once released, the defendant must comply with all court requirements, including attending all scheduled hearings.
+ The jail controls release after the bond is posted. Shamrock does not give a release time. Once released, the defendant must comply with all court requirements, including attending all scheduled hearings.
 
 ## Why Use a Bail Bond Service?
 
