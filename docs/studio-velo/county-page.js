@@ -134,6 +134,17 @@ function countyActionTargets(item) {
 }
 
 /**
+ * openModal() accepts only HTTPS and ignores target. A button link opens the
+ * real URL, including http sheriff and clerk sites, in a new browser tab.
+ */
+function bindExternalResource(button, url) {
+    if (!button || !url || url.indexOf('http') !== 0) return false;
+    button.link = url;
+    button.target = '_blank';
+    return true;
+}
+
+/**
  * Binds UI Action Buttons to Official County Jail & Clerk Endpoints
  * @param {Object} item - Current Florida Counties collection record
  */
@@ -142,10 +153,9 @@ function bindCountyActions(item) {
 
     // Official Inmate Lookup Button
     if ($w('#inmateLookupBtn')) {
-        if (targets.inmateUrl) {
+        if (bindExternalResource($w('#inmateLookupBtn'), targets.inmateUrl)) {
             $w('#inmateLookupBtn').onClick(() => {
                 trackEvent('jail_inmate_lookup', item.countySlug);
-                wixWindowFrontend.openModal(targets.inmateUrl, { target: '_blank' });
             });
             $w('#inmateLookupBtn').enable();
         } else {
@@ -165,10 +175,9 @@ function bindCountyActions(item) {
     }
 
     // Official Clerk of Court Website
-    if ($w('#clerkWebsiteBtn') && targets.clerkUrl) {
+    if (bindExternalResource($w('#clerkWebsiteBtn'), targets.clerkUrl)) {
         $w('#clerkWebsiteBtn').onClick(() => {
             trackEvent('clerk_website_click', item.countySlug);
-            wixWindowFrontend.openModal(targets.clerkUrl, { target: '_blank' });
         });
     }
 
