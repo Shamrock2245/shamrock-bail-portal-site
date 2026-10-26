@@ -3,6 +3,8 @@ import wixData from 'wix-data';
 import wixSeo from 'wix-seo';
 import { COLLECTIONS } from 'public/collectionIds';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import wixLocationFrontend from 'wix-location-frontend';
+import wixWindowFrontend from 'wix-window-frontend';
 
 function firstValid(ids) {
     for (let i = 0; i < ids.length; i++) {
@@ -96,8 +98,9 @@ $w.onReady(function () {
     demoteExtraHeadings();
 
     // 2. Setup Buttons
-    const startBtn = $w('#startBailProcessBtn');
-    if (startBtn.valid) startBtn.onClick(() => wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-how-bail-works' })));
+    let startBtn = null;
+    try { startBtn = $w('#startBailProcessBtn'); } catch (e) { startBtn = null; }
+    if (startBtn && startBtn.valid) startBtn.onClick(() => wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-how-bail-works' })));
 
     const bottomOnline = $w('#bottomOnlineBtn');
     if (bottomOnline.valid) bottomOnline.onClick(() => wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-how-bail-works' })));
@@ -813,3 +816,112 @@ function demoteHeadingIfH1(el, id) {
     el.html = el.html.replace(/<h1\b/gi, '<h2').replace(/<\/h1>/gi, '</h2>');
     console.log('[SEO] Demoted H1→H2 on', id);
 }
+
+// =============================================================================
+// WIX STUDIO LAYER (Oct 2026) — source: Studio cutover ready/velo/how-bail-works.js
+// Element IDs from the Studio design. Every lookup is guarded (a missing ID skips
+// that feature), so this is inert on the current live layout and the code above
+// keeps running unchanged. Scoped in an IIFE so helper names never collide.
+// Copy rules: no release-time/speed claims; Spanish line (727) 295-2245;
+// "Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7".
+// =============================================================================
+(function studioLayer() {
+    /**
+     * how-bail-works.js — How Bail Works (/how-bail-works)  [new, minimal]
+     * Paste in Wix Studio: How Bail Works page > Code panel > page code.
+     * Only wires the call / text / Start Online buttons and analytics. All copy is static
+     * text in the editor (see ready/copy/how-bail-works.md). Missing IDs are skipped.
+     */
+
+
+    const PHONE_MAIN = 'tel:+12393322245';
+    const PHONE_SPANISH = 'tel:+17272952245';
+    const SMS_TEXT = 'sms:+12399550178';
+
+    $w.onReady(function () {
+        initCtas();
+    });
+
+    // ─── Safe element helpers ($w throws on a missing ID; `if ($w('#x'))` does not protect) ──
+    function el(id) {
+        try {
+            const node = $w(id);
+            if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+            return node;
+        } catch (e) {
+            return null;
+        }
+    }
+    function itemEl($item, id) {
+        try {
+            const node = $item(id);
+            if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+            return node;
+        } catch (e) {
+            return null;
+        }
+    }
+    function on(id, event, handler) {
+        const node = typeof id === 'string' ? el(id) : id;
+        if (!node) return null;
+        try { node[event](handler); } catch (e) { /* element has no such event */ }
+        return node;
+    }
+    function setText(node, value) {
+        if (!node) return;
+        try { node.text = String(value == null ? '' : value); } catch (e) { /* not a text element */ }
+    }
+    function setLink(node, url, target) {
+        if (!node || !url) return false;
+        try {
+            node.link = url;
+            node.target = target || '_self';
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    function valueOf(id) {
+        const node = el(id);
+        if (!node) return '';
+        try { return typeof node.value === 'string' ? node.value.trim() : (node.value || ''); } catch (e) { return ''; }
+    }
+    function call(node, method) {
+        if (!node) return;
+        try { node[method](); } catch (e) { /* noop */ }
+    }
+
+    function initCtas() {
+        const callEnglish = el('#hbwCallEnglish');
+        setLink(callEnglish, PHONE_MAIN, '_self');
+        on(callEnglish, 'onClick', () => trackEvent('call_english', 'how-bail-works'));
+
+        const callSpanish = el('#hbwCallSpanish');
+        setLink(callSpanish, PHONE_SPANISH, '_self');
+        on(callSpanish, 'onClick', () => trackEvent('call_spanish', 'how-bail-works'));
+
+        const textSms = el('#hbwTextSMS');
+        setLink(textSms, SMS_TEXT, '_self');
+        on(textSms, 'onClick', () => trackEvent('sms_click', 'how-bail-works'));
+
+        on('#hbwStartOnline', 'onClick', () => {
+            trackEvent('start_online_click', 'how-bail-works');
+            wixLocationFrontend.to('/portal-landing');
+        });
+    }
+
+    function trackEvent(action, label) {
+        try {
+            if (wixWindowFrontend.trackEvent) {
+                wixWindowFrontend.trackEvent('CustomEvent', {
+                    event: 'how_bail_works_interaction',
+                    eventCategory: 'User Engagement',
+                    eventAction: action,
+                    eventLabel: label
+                });
+            }
+        } catch (e) {
+            console.warn('Analytics suppressed:', e.message);
+        }
+    }
+})();

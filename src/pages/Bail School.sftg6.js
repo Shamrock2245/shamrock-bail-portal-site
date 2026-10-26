@@ -32,6 +32,8 @@
 
 import wixSeo from 'wix-seo';
 import { submitBailSchoolInterest } from 'backend/bailSchoolInterest';
+import wixLocationFrontend from 'wix-location-frontend';
+import wixWindowFrontend from 'wix-window-frontend';
 
 // ─── EMBED CONFIG ─────────────────────────────────────────────────────────────
 // Bump EMBED_VERSION after every Netlify redeploy of bail-school.html
@@ -485,3 +487,122 @@ function injectSeoSchema() {
 // Expose for debugging in Preview console if needed
 // eslint-disable-next-line no-unused-vars
 const _BAIL_SCHOOL_DEBUG = { COURSES, COURSE_PRICES, EMBED_URL, FAQ_DATA };
+
+// =============================================================================
+// WIX STUDIO LAYER (Oct 2026) — source: Studio cutover ready/velo/bail-school.js
+// Element IDs from the Studio design. Every lookup is guarded (a missing ID skips
+// that feature), so this is inert on the current live layout and the code above
+// keeps running unchanged. Scoped in an IIFE so helper names never collide.
+// Copy rules: no release-time/speed claims; Spanish line (727) 295-2245;
+// "Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7".
+// =============================================================================
+(function studioLayer() {
+    /**
+     * bail-school.js — Bail School (/bail-school)  [new, minimal]
+     * Paste in Wix Studio: Bail School page > Code panel > page code.
+     * Wires the call / text / Start Online buttons, sets the course price/status text,
+     * and adds Course JSON-LD (the 20-Hour course has no price/offer). Missing IDs are skipped.
+     * NOTE: setStructuredData replaces any structured data set in the page SEO panel.
+     */
+
+
+    const PHONE_MAIN = 'tel:+12393322245';
+    const PHONE_SPANISH = 'tel:+17272952245';
+    const SMS_TEXT = 'sms:+12399550178';
+
+    $w.onReady(function () {
+        initCtas();
+        initCourses();
+    });
+
+    // ─── Safe element helpers ($w throws on a missing ID; `if ($w('#x'))` does not protect) ──
+    function el(id) {
+        try {
+            const node = $w(id);
+            if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+            return node;
+        } catch (e) {
+            return null;
+        }
+    }
+    function itemEl($item, id) {
+        try {
+            const node = $item(id);
+            if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+            return node;
+        } catch (e) {
+            return null;
+        }
+    }
+    function on(id, event, handler) {
+        const node = typeof id === 'string' ? el(id) : id;
+        if (!node) return null;
+        try { node[event](handler); } catch (e) { /* element has no such event */ }
+        return node;
+    }
+    function setText(node, value) {
+        if (!node) return;
+        try { node.text = String(value == null ? '' : value); } catch (e) { /* not a text element */ }
+    }
+    function setLink(node, url, target) {
+        if (!node || !url) return false;
+        try {
+            node.link = url;
+            node.target = target || '_self';
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    function valueOf(id) {
+        const node = el(id);
+        if (!node) return '';
+        try { return typeof node.value === 'string' ? node.value.trim() : (node.value || ''); } catch (e) { return ''; }
+    }
+    function call(node, method) {
+        if (!node) return;
+        try { node[method](); } catch (e) { /* noop */ }
+    }
+
+    function initCtas() {
+        const callEnglish = el('#bsCallEnglish');
+        setLink(callEnglish, PHONE_MAIN, '_self');
+        on(callEnglish, 'onClick', () => trackEvent('call_english', 'bail-school'));
+
+        const callSpanish = el('#bsCallSpanish');
+        setLink(callSpanish, PHONE_SPANISH, '_self');
+        on(callSpanish, 'onClick', () => trackEvent('call_spanish', 'bail-school'));
+
+        const textSms = el('#bsTextSMS');
+        setLink(textSms, SMS_TEXT, '_self');
+        on(textSms, 'onClick', () => trackEvent('sms_click', 'bail-school'));
+
+        on('#bsStartOnline', 'onClick', () => {
+            trackEvent('start_online_click', 'bail-school');
+            wixLocationFrontend.to('/portal-landing');
+        });
+    }
+
+    // Course prices shown on the page. The 20-Hour course has no price until it is approved.
+    function initCourses() {
+        setText(el('#course120Price'), '$649');
+        setText(el('#course20Status'), 'Pending course approval');
+        on('#course120EnrollBtn', 'onClick', () => trackEvent('course_120_interest', 'bail-school'));
+        // Course JSON-LD comes from injectSeoSchema() above (single JSON-LD call per page).
+    }
+
+    function trackEvent(action, label) {
+        try {
+            if (wixWindowFrontend.trackEvent) {
+                wixWindowFrontend.trackEvent('CustomEvent', {
+                    event: 'bail_school_interaction',
+                    eventCategory: 'User Engagement',
+                    eventAction: action,
+                    eventLabel: label
+                });
+            }
+        } catch (e) {
+            console.warn('Analytics suppressed:', e.message);
+        }
+    }
+})();

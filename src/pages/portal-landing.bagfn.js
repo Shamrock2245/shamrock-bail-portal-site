@@ -390,7 +390,7 @@ async function handleGetStarted(countyParam) {
             button.enable();
         }
     } catch (err) {
-        showMessage("System error. Call (239) 332-2245 for immediate release.", "error");
+        showMessage("System error. Call (239) 332-2245. Phones are answered 24/7.", "error");
         button.label = originalLabel;
         button.enable();
     }
@@ -536,3 +536,138 @@ function updatePageSEO() {
         { name: "robots", content: "noindex, nofollow" }
     ]);
 }
+
+// =============================================================================
+// WIX STUDIO LAYER (Oct 2026) — source: Studio cutover ready/velo/portal-landing.js
+// Element IDs from the Studio design. Every lookup is guarded (a missing ID skips
+// that feature), so this is inert on the current live layout and the code above
+// keeps running unchanged. Scoped in an IIFE so helper names never collide.
+// Copy rules: no release-time/speed claims; Spanish line (727) 295-2245;
+// "Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7".
+// =============================================================================
+(function studioLayer() {
+    /**
+     * portal-landing.js — Portal sign-in (/portal-landing)
+     * Paste in Wix Studio: Portal Landing page > Code panel > page code.
+     *
+     * Same backend behavior as before: one email or phone string goes to the portal
+     * sign-in function in backend/portal-auth.jsw, which sends the secure sign-in link.
+     * Changes: every lookup guarded; spinner hidden on load; help button links to the phone.
+     */
+
+
+    const PHONE_MAIN = 'tel:+12393322245';
+
+    // ─── Safe element helpers ($w throws on a missing ID; `if ($w('#x'))` does not protect) ──
+    function el(id) {
+        try {
+            const node = $w(id);
+            if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+            return node;
+        } catch (e) {
+            return null;
+        }
+    }
+    function itemEl($item, id) {
+        try {
+            const node = $item(id);
+            if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+            return node;
+        } catch (e) {
+            return null;
+        }
+    }
+    function on(id, event, handler) {
+        const node = typeof id === 'string' ? el(id) : id;
+        if (!node) return null;
+        try { node[event](handler); } catch (e) { /* element has no such event */ }
+        return node;
+    }
+    function setText(node, value) {
+        if (!node) return;
+        try { node.text = String(value == null ? '' : value); } catch (e) { /* not a text element */ }
+    }
+    function setLink(node, url, target) {
+        if (!node || !url) return false;
+        try {
+            node.link = url;
+            node.target = target || '_self';
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    function valueOf(id) {
+        const node = el(id);
+        if (!node) return '';
+        try { return typeof node.value === 'string' ? node.value.trim() : (node.value || ''); } catch (e) { return ''; }
+    }
+    function call(node, method) {
+        if (!node) return;
+        try { node[method](); } catch (e) { /* noop */ }
+    }
+
+    $w.onReady(function () {
+        const defendantTab = el('#tabDefendant');
+        const indemnitorTab = el('#tabIndemnitor');
+        const submitBtn = el('#btnSendMagicLink');
+        const spinner = el('#loginSpinner');
+        const successBox = el('#loginSuccessBox');
+        const errorBox = el('#loginErrorBox');
+        const errorText = el('#loginErrorText');
+        call(spinner, 'hide');
+
+        setLink(el('#portalCallBtn'), PHONE_MAIN, '_self'); // optional "Need help? Call" button
+
+        function setActive(active, inactive, description) {
+            try { active.customClassList.add('active-tab'); } catch (e) { /* noop */ }
+            try { inactive.customClassList.remove('active-tab'); } catch (e) { /* noop */ }
+            setText(el('#roleDescriptionText'), description);
+        }
+
+        if (defendantTab && indemnitorTab) {
+            on(defendantTab, 'onClick', () => setActive(defendantTab, indemnitorTab,
+                'Defendant portal: check court dates, complete your check-in, and view bond status.'));
+            on(indemnitorTab, 'onClick', () => setActive(indemnitorTab, defendantTab,
+                'Cosigner / indemnitor portal: review paperwork, manage payment plans, and view receipts.'));
+        }
+
+        function showError(msg) {
+            setText(errorText, msg);
+            call(errorBox, 'expand');
+        }
+
+        if (!submitBtn) return;
+        submitBtn.onClick(async () => {
+            call(successBox, 'collapse');
+            call(errorBox, 'collapse');
+
+            const phone = valueOf('#inputLoginPhone');
+            const email = valueOf('#inputLoginEmail');
+            if (!phone && !email) {
+                showError('Please enter your mobile phone number or email address.');
+                return;
+            }
+
+            call(submitBtn, 'disable');
+            call(spinner, 'show');
+            try {
+                // The backend takes one email or phone string (not a role object).
+                const contact = (email && email.includes('@')) ? email : phone;
+                const response = await sendMagicLinkSimplified(contact);
+                if (response && response.success) {
+                    call(successBox, 'expand');
+                    setText(el('#successDetailText'), `We sent a secure sign-in link to ${phone || email}. Please check your messages.`);
+                } else {
+                    showError((response && response.message) || 'We could not find an active case for that contact. Please call (239) 332-2245.');
+                }
+            } catch (err) {
+                console.error('Login request error:', err);
+                showError('We could not verify access. Please call (239) 332-2245.');
+            } finally {
+                call(submitBtn, 'enable');
+                call(spinner, 'hide');
+            }
+        });
+    });
+})();
