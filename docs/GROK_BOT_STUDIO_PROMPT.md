@@ -150,9 +150,9 @@ Everything you build must be **better than the live Wix Editor site** while stri
   - Dataset ID: `#countyDataset`
   - H1 Headline: `{County Name} County Bail Bonds — 24/7 Jail Release`
   - Jail Facility Card: Jail name, street address, and phone number from verified official sources.
-  - Button 1: `Search Inmate Roster` (`#inmateLookupBtn`) -> opens `jailBookingUrl` in new window.
-  - Button 2: `Call Jail Facility` (`#callJailFacilityBtn`) -> calls `jailPhone`.
-  - Button 3: `Clerk Court Records` (`#clerkWebsiteBtn`) -> opens `clerkWebsite` in new window.
+  - Button 1: `Search Inmate Roster` (`#inmateLookupBtn`) -> opens the CMS field `bookingWebsiteLink` in a new window.
+  - Button 2: `Call Jail Facility` (`#callJailFacilityBtn`) -> calls the CMS field `bookingPhoneNumber`.
+  - Button 3: `Clerk Court Records` (`#clerkWebsiteBtn`) -> opens the CMS field `countyClerkWebsitelink` in a new window.
   - Emergency Bondsman CTAs: `#bondsmanCallBtn` (239-332-2245), `#spanishCallBtn` (727-295-2245), `#smsBondsmanBtn` (239-955-0178).
   - Localized copy: Connects to `serviceAreaCopy`.
 - **Velo Code to Paste:** `docs/studio-velo/county-page.js` into County Page Code (automatically handles dynamic SEO metadata & LocalBusiness JSON-LD injection).

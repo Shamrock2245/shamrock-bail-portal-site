@@ -112,16 +112,40 @@ function applyCountySEO(item) {
 }
 
 /**
+ * Florida Counties CMS uses bookingWebsiteLink, bookingPhoneNumber, and
+ * countyClerkWebsitelink. Older copies and the official-sources catalog use
+ * jailBookingUrl / inmateSearchUrl, jailPhone, and clerkWebsite.
+ */
+function firstCountyText(record, keys) {
+    const item = record || {};
+    for (let i = 0; i < keys.length; i++) {
+        const value = item[keys[i]];
+        if (typeof value === 'string' && value.trim()) return value.trim();
+    }
+    return '';
+}
+
+function countyActionTargets(item) {
+    return {
+        inmateUrl: firstCountyText(item, ['bookingWebsiteLink', 'jailBookingUrl', 'inmateSearchUrl']),
+        jailPhone: firstCountyText(item, ['bookingPhoneNumber', 'jailPhone']),
+        clerkUrl: firstCountyText(item, ['countyClerkWebsitelink', 'clerkWebsite'])
+    };
+}
+
+/**
  * Binds UI Action Buttons to Official County Jail & Clerk Endpoints
  * @param {Object} item - Current Florida Counties collection record
  */
 function bindCountyActions(item) {
+    const targets = countyActionTargets(item);
+
     // Official Inmate Lookup Button
     if ($w('#inmateLookupBtn')) {
-        if (item.jailBookingUrl) {
+        if (targets.inmateUrl) {
             $w('#inmateLookupBtn').onClick(() => {
                 trackEvent('jail_inmate_lookup', item.countySlug);
-                wixWindowFrontend.openModal(item.jailBookingUrl, { target: '_blank' });
+                wixWindowFrontend.openModal(targets.inmateUrl, { target: '_blank' });
             });
             $w('#inmateLookupBtn').enable();
         } else {
@@ -133,18 +157,18 @@ function bindCountyActions(item) {
     }
 
     // Call County Jail Facility
-    if ($w('#callJailFacilityBtn') && item.jailPhone) {
+    if ($w('#callJailFacilityBtn') && targets.jailPhone) {
         $w('#callJailFacilityBtn').onClick(() => {
             trackEvent('call_jail_facility', item.countySlug);
-            wixLocationFrontend.to(`tel:${item.jailPhone.replace(/[^0-9]/g, '')}`);
+            wixLocationFrontend.to(`tel:${targets.jailPhone.replace(/[^0-9]/g, '')}`);
         });
     }
 
     // Official Clerk of Court Website
-    if ($w('#clerkWebsiteBtn') && item.clerkWebsite) {
+    if ($w('#clerkWebsiteBtn') && targets.clerkUrl) {
         $w('#clerkWebsiteBtn').onClick(() => {
             trackEvent('clerk_website_click', item.countySlug);
-            wixWindowFrontend.openModal(item.clerkWebsite, { target: '_blank' });
+            wixWindowFrontend.openModal(targets.clerkUrl, { target: '_blank' });
         });
     }
 
