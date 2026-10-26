@@ -164,7 +164,9 @@ Everything you build must be **better than the live Wix Editor site** while stri
 - H1: `Contact Shamrock Bail Bonds: 24/7 Southwest Florida Dispatch`
 - Google Maps Embed: `1528 Broadway, Fort Myers, FL 33901`.
 - Emergency Intake Form:
-  - Input fields: `#inputName`, `#inputPhone`, `#inputEmail`, `#dropdownCounty`, `#inputInmateName`, `#inputMessage`.
+  - Input fields: `#inputName`, `#inputPhone`, `#inputEmail`, `#dropdownCounty`, `#dropdownJail`, `#inputInmateName`, `#inputMessage`.
+  - `#dropdownJail` is required. The contact handler reads it as the jail passed to `submitContactForm`. Place it on the canvas. Wix errors when page code selects an ID that is not on the page.
+  - `#checkboxConsent` is required. The visitor must check it before submit. Without this checkbox the handler cannot record consent and the inquiry cannot succeed.
   - Submit Button: `#submitContactBtn`.
   - Loading Spinner: `#submitSpinner` (hidden by default).
   - Feedback Boxes: `#successBox`, `#errorBox`, `#errorMsgText`.

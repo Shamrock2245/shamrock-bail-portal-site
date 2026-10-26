@@ -68,8 +68,10 @@ When building on the visual canvas in Wix Studio, **assign these exact element I
 - `#inputPhone` — Phone number text input
 - `#inputEmail` — Email address text input
 - `#dropdownCounty` — Florida county selection dropdown
+- `#dropdownJail` — Jail or facility dropdown. Required. `submitContactForm` rejects the inquiry when jail is empty. Selecting an ID that is not on the canvas throws in Wix, so this dropdown has to exist on the page.
 - `#inputInmateName` — Inmate full legal name input
 - `#inputMessage` — Situation / notes multiline input
+- `#checkboxConsent` — Checkbox the visitor must check before submit. The handler sends `consent: true` only when this box is checked. A missing checkbox can never succeed, and Wix errors if the page code selects an ID that is not on the canvas.
 - `#submitContactBtn` — "Submit Emergency Inquiry" button
 - `#submitSpinner` — Loading spinner indicator (hidden by default)
 - `#successBox` — Expandable confirmation container
