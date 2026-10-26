@@ -7,9 +7,10 @@
       "subtitle": "Florida Pre-Licensing Prerequisite",
       "duration": "20 hours",
       "format": "Online / Self-Paced / Correspondence",
-      "price": 199,
-      "listPrice": 299,
-      "priceLabel": "$199",
+      "price": null,
+      "listPrice": null,
+      "priceLabel": "Pending course approval",
+      "status": "Pending course approval",
       "level": "Beginner",
       "audience": "Aspiring Florida bail bond agents completing the correspondence pre-licensing prerequisite",
       "description": "The mandatory self-paced prerequisite. 10 interactive modules covering Florida bail bond law, skip tracing, and office management with automated FLDFS statutory time tracking.",
@@ -59,10 +60,10 @@
       "outcome": "Official digital certificate of completion for the 20-hour correspondence pre-licensing course",
       "icon": "📚",
       "color": "#22c55e",
-      "cta": "Enroll — $199",
-      "ctaUrl": "https://swipesimple.com/links/lnk_e7afc13b2c48a8f3a08ed7d8059b6a51",
+      "cta": "Pending course approval",
+      "ctaUrl": "",
       "dashboardPath": "/dashboard/correspondence",
-      "paymentUrl": "https://swipesimple.com/links/lnk_e7afc13b2c48a8f3a08ed7d8059b6a51",
+      "paymentUrl": "",
       "requirements": [
         "Must be at least 18 years old",
         "High school diploma or GED recommended",
@@ -182,7 +183,7 @@
   "faqs": [
     {
       "question": "What is Shamrock Bail School?",
-      "answer": "Shamrock Bail School is the education division of Shamrock Bail Bonds. We offer Florida pre-licensing programs: a 20-Hour Correspondence Course ($199) and a 120-Hour Basic Certification Training ($649) that includes a 1-year State Exam Simulator and Bail Mentor AI pass."
+      "answer": "Shamrock Bail School is the education division of Shamrock Bail Bonds. We offer Florida pre-licensing programs: a 20-Hour Correspondence Course (pending course approval) and a 120-Hour Basic Certification Training ($649) that includes a 1-year State Exam Simulator and Bail Mentor AI pass."
     },
     {
       "question": "Do I need any prior experience?",
@@ -194,7 +195,7 @@
     },
     {
       "question": "How much is the 20-Hour Correspondence Course?",
-      "answer": "The 20-Hour Correspondence Pre-Licensing Course is $199 (list $299). It is fully online and self-paced with automated FLDFS statutory time tracking."
+      "answer": "The 20-Hour Correspondence Pre-Licensing Course is pending course approval. Pricing will be posted once the course is approved. It will be fully online and self-paced with automated FLDFS statutory time tracking."
     },
     {
       "question": "Do I get a certificate?",

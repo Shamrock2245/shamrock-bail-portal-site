@@ -15,7 +15,7 @@ export const VERIFIED_SHAMROCK_PHONES = Object.freeze([
     { display: '(239) 955-0314', digits: '2399550314', e164: '+12399550314', notes: 'Spare DID / failover. Not NAP, not iMessage, not Shannon public.' },
     { display: '(239) 784-9365', digits: '2397849365', e164: '+12397849365', notes: 'Staff desk / Shannon human-ack texts' },
     { display: '(239) 319-7008', digits: '2393197008', e164: '+12393197008', notes: 'Staff desk / Shannon human-ack texts' },
-    { display: '(727) 295-2245', digits: '7272952245', e164: '+17272952245', notes: 'Public Spanish line (Spanish-speaking agent) and Tampa Bay / after-hours line' }
+    { display: '(727) 295-2245', digits: '7272952245', e164: '+17272952245', notes: 'Español 24/7 — public Spanish line (Spanish-speaking agent)' }
 ]);
 
 const COUNTY_SLUGS = [

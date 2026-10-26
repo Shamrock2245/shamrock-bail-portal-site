@@ -75,7 +75,7 @@ function safeOnClick(selector, handler) {
 function setupPageMeta() {
     const pageTitle = 'How to Become a Bail Bondsman in Florida | Shamrock Bail School';
     const pageDesc =
-        'Become a licensed Florida bail bond agent: 120-hour pre-licensing ($649), 20-hour correspondence ($199), state exam, fingerprinting & internship. View live class schedules at Shamrock Bail School.';
+        'Become a licensed Florida bail bond agent: 120-hour pre-licensing ($649), 20-hour correspondence (pending course approval), state exam, fingerprinting & internship. View live class schedules at Shamrock Bail School.';
     const pageUrl = 'https://www.shamrockbailbonds.biz/how-to-become-a-bondsman';
 
     wixSeo.setTitle(pageTitle);
