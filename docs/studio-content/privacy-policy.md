@@ -1,81 +1,70 @@
 # Studio Content Draft: Privacy Policy
 
 > **Target Studio Slug:** `/privacy-policy`  
-> **Audience:** A scared family member reading on a phone at 2 AM.  
-> **Reading Level:** 8th Grade (warm, direct, respectful, plain English).  
-> **Canonical Brand Truths:** 1528 Broadway, Fort Myers, FL 33901 · Phones: 239-332-2245 (English), 727-295-2245 (Spanish) · Text: 239-955-0178 · Owner-operated by Brendan O'Neal since 2012.  
-> **Compliance Standards:** Zero speed promises, zero guaranteed-release language, zero 'results' claims.
-
----
-
-## 🚨 Emergency Action Block (Top of Page)
-
-> **Someone in jail right now? Take a deep breath. We are here to help you get them home.**
->
-> 📞 **Call English (24/7):** [239-332-2245](tel:+12393322245)  
-> 📞 **Llame en Español (24/7):** [727-295-2245](tel:+17272952245)  
-> 💬 **Text an Agent (24/7):** [239-955-0178](sms:+12399550178)  
-> 📱 **Start Paperwork Online:** [Open Mobile Intake](/portal-landing)
->
-> *Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7*  
-> *1528 Broadway, Fort Myers, FL 33901*
+> **Audience:** Clients, indemnitors, and anyone whose information we hold.  
+> **Reading Level:** 8th Grade (plain English).  
+> **Canonical Brand Truths:** 1528 Broadway, Fort Myers, FL 33901 · Main line 239-332-2245 · Spanish public line 727-295-2245 · Text 239-955-0178 · Email admin@shamrockbailbonds.biz  
+> **Hours:** Office walk-in hours Mon–Fri 9 AM–5 PM. Phones answered 24/7. These are labeled separately.  
+> **Compliance Standards:** This is a policy page. It is not a sales page. No speed promises and no release-time claims.
 
 ---
 
 # Privacy Policy: How We Protect Your Information
 
-When a loved one is arrested, you are dealing with fear, confusion, and a dozen questions all at once. You want straightforward answers, someone who picks up the phone, and a clear path forward without judgment.
+This policy describes what Shamrock Bail Bonds, LLC collects, why we use it, who we share it with, how long we keep it, and how to ask a question about your information. It is the privacy notice for shamrockbailbonds.biz, our text messages, and our client portal.
 
-Shamrock Bail Bonds has been serving families across Southwest Florida and all 67 Florida counties since 2012. We are owner-operated by Brendan O'Neal from our office in downtown Fort Myers. We handle misdemeanor bonds, felony bonds, warrant walk-throughs, and nationwide transfer bonds with complete confidentiality and care.
+## Information We Collect During Bail Underwriting
 
----
+We collect information you give us and information we need to post a bond:
 
-## How We Help You Through This Tonight
+- Name, phone number, email address, and mailing address for the person calling and for the defendant.
+- Date of birth, government ID details, and the relationship between the indemnitor and the defendant.
+- Jail, county, booking number, and the charge text exactly as the jail or clerk wrote it.
+- Information the surety requires to decide whether to post the bond, including employment, residence, and collateral when collateral is part of the agreement.
+- Portal login contact (email or phone), signature records, and payment references. We do not store full payment-card numbers on the website.
 
-### 1. Speak with a Real Local Agent Right Now
-When you call [239-332-2245](tel:+12393322245), you speak directly with an experienced bail professional. We look up the arrest records, verify the exact charges and bond amounts with the jail, and explain your options in plain language. If you speak Spanish, our dedicated line is [727-295-2245](tel:+17272952245).
+If you do not provide information the surety requires, we may be unable to post the bond. You can still call us.
 
-### 2. Complete Paperwork from Your Phone
-You do not have to leave your home or travel across town in the middle of the night. We send secure, mobile-friendly forms directly to your smartphone via text or email. You can review and sign from anywhere.
+## How We Use Client Information
 
-### 3. Transparent Costs & Flexible Financing
-Florida bail bond premiums are set by state statute at 10% of the total bond amount ($100 minimum per charge). We explain all costs upfront with zero hidden fees. For qualifying families, we provide flexible, interest-free payment plans tailored to your budget.
+We use this information to:
 
-### 4. We Post the Bond with the Jail
-As soon as the paperwork and payment are arranged, our licensed agent posts the bond directly with the detention facility. We stay in touch with you throughout the release process so you know exactly what is happening.
+- Look up a booking, explain the bond, and prepare the indemnity agreement.
+- Post the bond with the jail and keep the surety informed of court dates.
+- Send the messages you agreed to receive, such as paperwork links and court reminders.
+- Protect the bond if a court date is missed, including contacting the indemnitor.
+- Meet recordkeeping duties that apply to Florida bail bond agents.
+- Answer a privacy, opt-out, or deletion request.
 
----
+We do not sell personal information. We do not use client lists for third-party advertising.
 
-## Why Florida Families Choose Shamrock Bail Bonds
+## 10DLC SMS Privacy & Strict Opt-In Policy
 
-- **Local & Accountable:** Our main office has been at 1528 Broadway in downtown Fort Myers since 2012. We are not an out-of-state call center.
-- **Respectful & Non-Judgmental:** Good people find themselves in tough situations every day. We treat you and your family with patience and dignity.
-- **All 67 Florida Counties:** While our home base is Lee, Collier, and Charlotte counties, our licensed surety network covers every jail in Florida and coordinates transfer bonds throughout the United States.
-- **Warrant Checks & Court Guidance:** Wondering if there is an active warrant? We can verify warrants discreetly and arrange smooth walk-throughs to minimize time in custody.
+Text messages are sent from 239-955-0178. Message frequency varies with the case. Message and data rates may apply.
 
----
+- We send texts only after you opt in on a form, on the phone, or in the client portal. Signing a bond is not by itself consent to marketing texts.
+- Bond and court messages include paperwork links, payment links you requested, court-date reminders, and check-in notices.
+- Reply STOP to cancel texts. Reply HELP for help. Consent to texts is not required to ask for a bond by phone.
+- We do not share text opt-in data with data brokers.
 
-## Frequently Asked Questions
+## Data Security Standards & Encryption
 
-### How much does a bail bond cost in Florida?
-In Florida, bail bond fees are strictly regulated by Florida Statute § 648.24. The fee is 10% of the total bond amount, with a minimum fee of $100 per charge. For example, a $5,000 bond requires a statutory premium of $500.
+The public site is served over HTTPS. Portal links are individual and expire. Staff access to case files is limited to people who work the bond. No method of storage is perfect. If we learn of a breach that creates a risk to you, we will notify you as required by law.
 
-### What information do I need when I call?
-It helps to have the person's full legal name, date of birth, and the county where they were arrested. If you do not have all of this information, do not worry—call us at [239-332-2245](tel:+12393322245) and we will help you find the booking details.
+## Third-Party Sharing Restrictions (No Marketing Sales)
 
-### What is an indemnitor (cosigner)?
-An indemnitor is a family member or friend who signs the bail agreement, guaranteeing that the defendant will attend all required court hearings. We walk you through every document before you sign.
+We share information only as needed to post and maintain the bond, or when the law requires it:
 
-### What are your office hours?
-Our physical office at 1528 Broadway in Fort Myers is open for walk-in clients Monday through Friday, 9:00 AM to 5:00 PM. Our phone lines and emergency dispatch operate 24 hours a day, 7 days a week, 365 days a year.
+- The jail, the clerk, and the court, so the bond can be posted and court dates can be tracked.
+- The surety company that backs the bond (O'Shaughnahill Surety & Insurance or Palmetto Surety Corporation, as matched to the case).
+- A payment processor when you choose to pay online.
+- DocuSeal, our signing provider, when a staff member issues a signing packet.
+- A lawyer you ask us to speak with, or a government agency that lawfully requests the record.
 
----
+We do not sell, rent, or trade your information for marketing.
 
-## Ready to Bring Your Loved One Home?
+## Contacting Our Privacy Officer
 
-Do not wait through the night wondering what comes next. Call our team now for clear, immediate guidance.
+Email admin@shamrockbailbonds.biz or call 239-332-2245. Spanish-speaking callers can use 727-295-2245. Mail: Shamrock Bail Bonds, 1528 Broadway, Fort Myers, FL 33901.
 
-- 📞 **Call (239) 332-2245**
-- 📞 **Línea en Español: (727) 295-2245**
-- 💬 **Text: (239) 955-0178**
-- 📍 **Visit Us:** 1528 Broadway, Fort Myers, FL 33901
+Office walk-in hours are Monday through Friday, 9 AM to 5 PM. Phones are answered 24/7. Those are different. The office is not open for walk-ins overnight.

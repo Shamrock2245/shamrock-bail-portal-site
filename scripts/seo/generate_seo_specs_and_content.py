@@ -327,6 +327,195 @@ def generate_seo_spec(page):
     }
     return specs.get(page)
 
+def legal_content_draft(page, spec):
+    """Policy text for compliance pages. Not the shared bail-marketing template."""
+    slug = spec["canonical"].replace("https://www.shamrockbailbonds.biz", "") or "/"
+    bodies = {
+        "privacy-policy": """
+# Privacy Policy: How We Protect Your Information
+
+This policy describes what Shamrock Bail Bonds, LLC collects, why we use it, who we share it with, how long we keep it, and how to ask a question about your information. It is the privacy notice for shamrockbailbonds.biz, our text messages, and our client portal.
+
+## Information We Collect During Bail Underwriting
+
+We collect information you give us and information we need to post a bond:
+
+- Name, phone number, email address, and mailing address for the person calling and for the defendant.
+- Date of birth, government ID details, and the relationship between the indemnitor and the defendant.
+- Jail, county, booking number, and the charge text exactly as the jail or clerk wrote it.
+- Information the surety requires to decide whether to post the bond, including employment, residence, and collateral when collateral is part of the agreement.
+- Portal login contact (email or phone), signature records, and payment references. We do not store full payment-card numbers on the website.
+
+If you do not provide information the surety requires, we may be unable to post the bond. You can still call us.
+
+## How We Use Client Information
+
+We use this information to:
+
+- Look up a booking, explain the bond, and prepare the indemnity agreement.
+- Post the bond with the jail and keep the surety informed of court dates.
+- Send the messages you agreed to receive, such as paperwork links and court reminders.
+- Protect the bond if a court date is missed, including contacting the indemnitor.
+- Meet recordkeeping duties that apply to Florida bail bond agents.
+- Answer a privacy, opt-out, or deletion request.
+
+We do not sell personal information. We do not use client lists for third-party advertising.
+
+## 10DLC SMS Privacy & Strict Opt-In Policy
+
+Text messages are sent from 239-955-0178. Message frequency varies with the case. Message and data rates may apply.
+
+- We send texts only after you opt in on a form, on the phone, or in the client portal. Signing a bond is not by itself consent to marketing texts.
+- Bond and court messages include paperwork links, payment links you requested, court-date reminders, and check-in notices.
+- Reply STOP to cancel texts. Reply HELP for help. Consent to texts is not required to ask for a bond by phone.
+- We do not share text opt-in data with data brokers.
+
+## Data Security Standards & Encryption
+
+The public site is served over HTTPS. Portal links are individual and expire. Staff access to case files is limited to people who work the bond. No method of storage is perfect. If we learn of a breach that creates a risk to you, we will notify you as required by law.
+
+## Third-Party Sharing Restrictions (No Marketing Sales)
+
+We share information only as needed to post and maintain the bond, or when the law requires it:
+
+- The jail, the clerk, and the court, so the bond can be posted and court dates can be tracked.
+- The surety company that backs the bond (O'Shaughnahill Surety & Insurance or Palmetto Surety Corporation, as matched to the case).
+- A payment processor when you choose to pay online.
+- DocuSeal, our signing provider, when a staff member issues a signing packet.
+- A lawyer you ask us to speak with, or a government agency that lawfully requests the record.
+
+We do not sell, rent, or trade your information for marketing.
+
+## Contacting Our Privacy Officer
+
+Email admin@shamrockbailbonds.biz or call 239-332-2245. Spanish-speaking callers can use 727-295-2245. Mail: Shamrock Bail Bonds, 1528 Broadway, Fort Myers, FL 33901.
+
+Office walk-in hours are Monday through Friday, 9 AM to 5 PM. Phones are answered 24/7. Those are different. The office is not open for walk-ins overnight.
+""",
+        "terms-and-conditions": """
+# Terms and Conditions of Service
+
+These terms cover use of shamrockbailbonds.biz, the client portal, and a request that Shamrock Bail Bonds, LLC write a Florida bail bond. The bond itself is a separate written contract. If the website and the signed bond disagree, the signed bond controls the bond.
+
+## Acceptance of Terms
+
+Using the website, the portal, or asking us to start a bond means you agree to these terms. If you do not agree, do not use the site. You can still call 239-332-2245 and ask for help. We do not give legal advice on this website. A criminal charge is a matter for a licensed Florida lawyer.
+
+## Florida Statutory Underwriting & Premium Requirements
+
+Florida sets the bail bond premium. The premium is 10% of the bond, with a minimum of $100 per charge, under the rate rules that apply to limited surety agents. The premium is earned when the bond is posted. It is not a deposit that comes back when the case ends. Collateral, if any, is different from the premium and is handled in the written collateral receipt.
+
+We do not quote a release time. After the bond is posted, the jail decides when the person leaves.
+
+## Indemnitor Responsibilities & Contractual Obligations
+
+An indemnitor (cosigner) promises the surety that the defendant will appear in court. If the defendant misses court, the indemnitor can owe the full bond amount and the costs of recovery, as the signed indemnity agreement states. Read that agreement before you sign. Ask us to explain any line you do not understand. We will not rush you past a document.
+
+## Digital Portal Access & Electronic Signatures
+
+The portal uses a one-time link sent to the email or phone on the case. Do not forward that link. You are responsible for activity from a link we sent to your contact until you tell us it was shared by mistake.
+
+Electronic signatures on a packet issued by staff are signatures. DocuSeal is the signing service. The website does not create a signing packet by itself. Staff match the surety and the power of attorney in Super CRM before a packet is issued.
+
+## Limitation of Liability & Disclaimers
+
+The website is a way to reach us and to read general information about Florida bail. It does not promise an outcome in court, a bond approval, or a time of release. To the extent Florida law allows, Shamrock Bail Bonds is not liable for a jail delay, a court decision, or a loss caused by information a visitor typed incorrectly. Nothing here limits a duty that Florida law does not allow us to limit.
+
+## Governing Law & Jurisdiction
+
+These terms are governed by the laws of the State of Florida. Venue for a dispute about the website, the portal, or a bond we write from this office is in the state courts of Lee County, Florida, except where a surety contract or a statute requires another forum.
+
+Questions: admin@shamrockbailbonds.biz or 239-332-2245. Office: 1528 Broadway, Fort Myers, FL. Walk-in hours Monday through Friday, 9 AM to 5 PM. Phones answered 24/7.
+""",
+        "communication-preferences": """
+# Communication Preferences & SMS Notifications
+
+This page explains which messages Shamrock Bail Bonds sends, how you agree to them, and how you stop them. It is the notice for our 10DLC text program.
+
+## Our Commitment to Compliant Messaging
+
+Texts come from 239-955-0178. Email comes from admin@shamrockbailbonds.biz. Phone calls for English use 239-332-2245. The public Spanish line is 727-295-2245. We do not publish any other number as a public or Spanish line.
+
+We only text people who opted in. A bond agreement is not automatic consent to marketing texts. You can ask for a bond by phone without agreeing to texts.
+
+## Types of SMS Notifications We Send
+
+- Paperwork and signing links that staff issued for your case.
+- A payment link, when you ask for one.
+- Court-date and check-in reminders for an open bond.
+- A reply to a text you sent us.
+
+We do not send third-party advertisements. Message frequency depends on the case. Message and data rates may apply.
+
+## How to Opt Out or Update Your Preferences
+
+- Text STOP to 239-955-0178 to stop texts. You will receive a confirmation. A STOP applies to the phone number that sent it.
+- Text HELP to 239-955-0178 for help, or call 239-332-2245.
+- To change the phone or email on a case, call the same number or email admin@shamrockbailbonds.biz so the file matches you.
+- Stopping texts does not cancel the bond and does not remove a duty in the indemnity agreement. Court notices from the clerk are separate from our texts.
+
+## Assistance with Communication Settings
+
+Office walk-in hours are Monday through Friday, 9 AM to 5 PM, at 1528 Broadway, Fort Myers, FL 33901. Phones are answered 24/7. If a text failed or you opted out by mistake, call 239-332-2245 and we will update the file. Spanish-speaking callers can use 727-295-2245.
+""",
+        "data-deletion": """
+# Data Deletion & Privacy Rights Request
+
+Use this page to ask Shamrock Bail Bonds what personal information we hold, to correct it, or to ask us to delete it. Some bond records cannot be deleted while the law or the surety contract requires us to keep them.
+
+## Your Privacy Rights
+
+You may ask us to:
+
+- Tell you the categories of personal information we have about you.
+- Correct a phone number, email, address, or name that is wrong.
+- Delete information we are not required to keep.
+- Stop marketing texts (see the communication preferences page; text STOP to 239-955-0178).
+
+These requests are free. We will not charge you to ask.
+
+## Statutory Record Retention Requirements Under Florida Law
+
+Florida bail bond agents and the sureties they represent have to keep bond records. That includes the application, the indemnity agreement, the power of attorney, premium and collateral receipts, and court-appearance history for an open bond.
+
+We cannot delete those records while the bond is open, while a forfeiture or a claim is unresolved, or during the period the surety and Florida bail-agent rules require the file to be kept. We also keep a record of a deletion request itself.
+
+Information that is only a website inquiry, and that never became a bond file, can be deleted after we confirm it is not needed for one of those duties.
+
+## Submitting a Data Deletion Request
+
+Email admin@shamrockbailbonds.biz with the subject "Data deletion request", or write to Shamrock Bail Bonds, 1528 Broadway, Fort Myers, FL 33901. Include:
+
+- Your full name and the phone or email we have on file.
+- Whether you are the defendant, the indemnitor, or someone else.
+- The defendant name and county, if a bond was posted.
+- What you want deleted or corrected.
+
+Do not send a photo of a driver license in the first email. We will tell you if we need a document to confirm who you are.
+
+## Verification and Timeline for Processing
+
+We confirm the request is from the person the record is about, or from someone that person authorized, before we change or delete it. We reply to a complete request within 45 days. If we must keep part of the file, we will say what we kept and why, and we will delete the rest that we are free to delete.
+
+Office walk-in hours are Monday through Friday, 9 AM to 5 PM. Phones are answered 24/7 at 239-332-2245. The public Spanish line is 727-295-2245. Text 239-955-0178.
+""",
+    }
+    body = bodies[page]
+    return f"""# Studio Content Draft: {page.replace('-', ' ').title()}
+
+> **Target Studio Slug:** `{slug}`  
+> **Audience:** Clients, indemnitors, and anyone whose information we hold.  
+> **Reading Level:** 8th Grade (plain English).  
+> **Canonical Brand Truths:** 1528 Broadway, Fort Myers, FL 33901 · Main line 239-332-2245 · Spanish public line 727-295-2245 · Text 239-955-0178 · Email admin@shamrockbailbonds.biz  
+> **Hours:** Office walk-in hours Mon–Fri 9 AM–5 PM. Phones answered 24/7. These are labeled separately.  
+> **Compliance Standards:** This is a policy page. It is not a sales page. No speed promises and no release-time claims.
+
+---
+
+{body.strip()}
+"""
+
+
 def write_specs_and_content():
     os.makedirs(SEO_DIR, exist_ok=True)
     os.makedirs(CONTENT_DIR, exist_ok=True)
@@ -366,7 +555,7 @@ def write_specs_and_content():
 
 - **Primary Target Keyword:** `{spec['keywords'].split(',')[0].strip()}`
 - **Secondary Terms:** `{spec['secondary']}`
-- **Search Intent:** Urgent crisis response, emergency jail release, and bail bond verification.
+- **Search Intent:** {("Compliance and account rights. This is not a sales page." if spec.get("page_type") == "legal" else "Urgent crisis response, emergency jail release, and bail bond verification.")}
 - **Why This Beats Live:** Preserves exact historical rankings while upgrading E-E-A-T signals, replacing outdated phone numbers, ensuring 100% brand consistency, and adding rich structured data.
 
 ---
@@ -532,6 +721,9 @@ Do not wait through the night wondering what comes next. Call our team now for c
 - 💬 **Text: (239) 955-0178**
 - 📍 **Visit Us:** 1528 Broadway, Fort Myers, FL 33901
 """
+        if spec.get("page_type") == "legal":
+            content_draft = legal_content_draft(p, spec)
+
         with open(os.path.join(CONTENT_DIR, f"{p}.md"), "w", encoding="utf-8") as f:
             f.write(content_draft)
 

@@ -27,7 +27,7 @@
 
 - **Primary Target Keyword:** `data deletion request Shamrock Bail Bonds`
 - **Secondary Terms:** `privacy rights request Florida bail agency`
-- **Search Intent:** Urgent crisis response, emergency jail release, and bail bond verification.
+- **Search Intent:** Compliance and account rights. This is not a sales page.
 - **Why This Beats Live:** Preserves exact historical rankings while upgrading E-E-A-T signals, replacing outdated phone numbers, ensuring 100% brand consistency, and adding rich structured data.
 
 ---
