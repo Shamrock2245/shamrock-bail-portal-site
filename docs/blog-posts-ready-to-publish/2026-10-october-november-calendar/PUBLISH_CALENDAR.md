@@ -25,7 +25,7 @@
 | 17 | 2026-10-23 | Bail Bonds in Escambia County: Complete 2026  | 🟢 LIVE | `5105c61e-d846-417f-8eae-f976e9fae093` | charlotte-county-courthouse- |
 | 18 | 2026-10-24 | Bail Bonds in St. Johns County: Complete 2026 | 🟢 LIVE | `22e0b7ea-a950-469f-a405-a94cf612b5cb` | sarasota-county-jail-bail-bo |
 | 19 | 2026-10-25 | Bail Bonds in Lake County: Complete 2026 Jail | 🟢 LIVE | `b0217cd1-38d3-4d3d-926e-8ffcd8b92a9e` | charlotte-county-courthouse- |
-| 20 | 2026-10-26 | Bail Bonds in Hernando County: Complete 2026  | ⏳ SCHEDULED | `be2de7bf-1285-4061-a5b2-2ffba6ed959e` | sarasota-county-jail-bail-bo |
+| 20 | 2026-10-26 | Bail Bonds in Hernando County: Complete 2026  | 🟢 LIVE | `be2de7bf-1285-4061-a5b2-2ffba6ed959e` | sarasota-county-jail-bail-bo |
 | 21 | 2026-10-27 | Bail Bonds in Citrus County: Complete 2026 Ja | ⏳ SCHEDULED | `605b3738-9d7d-4829-bd07-23860c0a9dca` | charlotte-county-courthouse- |
 | 22 | 2026-10-28 | Bail Bonds in St. Lucie County: Complete 2026 | ⏳ SCHEDULED | `4d84f02b-fad7-4fbd-b095-78a7d7918275` | sarasota-county-jail-bail-bo |
 | 23 | 2026-10-29 | Bail Bonds in Martin County: Complete 2026 Ja | ⏳ SCHEDULED | `39eec392-618d-4428-bf29-db24c0d0f059` | charlotte-county-courthouse- |
@@ -37,5 +37,5 @@
 | 29 | 2026-11-04 | Commercial Bail Bonds vs. Pretrial Supervised | ⏳ SCHEDULED | `4fb2f262-0159-48f4-9696-cc33aafdd272` | bail-premium-payment-plans-f |
 | 30 | 2026-11-05 | Fast-Track Digital Bail in Florida: Smartphon | ⏳ SCHEDULED | `29b7b21d-2130-4374-997d-f8dabcf102f9` | after-posting-bail-florida-g |
 
-**Progress**: 19/30 Published Live · 11 Scheduled Drafts Remaining
-*Last updated: 2026-10-25 17:01:21 UTC*
+**Progress**: 20/30 Published Live · 10 Scheduled Drafts Remaining
+*Last updated: 2026-10-26 19:09:12 UTC*
