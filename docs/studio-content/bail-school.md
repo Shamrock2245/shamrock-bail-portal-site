@@ -1,81 +1,47 @@
 # Studio Content Draft: Bail School
 
 > **Target Studio Slug:** `/bail-school`  
-> **Audience:** A scared family member reading on a phone at 2 AM.  
-> **Reading Level:** 8th Grade (warm, direct, respectful, plain English).  
-> **Canonical Brand Truths:** 1528 Broadway, Fort Myers, FL 33901 · Phones: 239-332-2245 (English), 727-295-2245 (Spanish) · Text: 239-955-0178 · Owner-operated by Brendan O'Neal since 2012.  
-> **Compliance Standards:** Zero speed promises, zero guaranteed-release language, zero 'results' claims.
-
----
-
-## 🚨 Emergency Action Block (Top of Page)
-
-> **Someone in jail right now? Take a deep breath. We are here to help you get them home.**
->
-> 📞 **Call English (24/7):** [239-332-2245](tel:+12393322245)  
-> 📞 **Llame en Español (24/7):** [727-295-2245](tel:+17272952245)  
-> 💬 **Text an Agent (24/7):** [239-955-0178](sms:+12399550178)  
-> 📱 **Start Paperwork Online:** [Open Mobile Intake](/portal-landing)
->
-> *Office walk-in hours Mon–Fri 9 AM–5 PM · Phones answered 24/7*  
-> *1528 Broadway, Fort Myers, FL 33901*
+> **Audience:** Someone studying for a Florida limited surety agent license.  
+> **Reading Level:** 8th Grade (plain English).  
+> **Canonical Brand Truths:** 1528 Broadway, Fort Myers, FL 33901 · Main line 239-332-2245 · Spanish public line 727-295-2245 · Text 239-955-0178 · Email admin@shamrockbailbonds.biz  
+> **Hours:** Office walk-in hours Mon–Fri 9 AM–5 PM. Phones answered 24/7. These are labeled separately.  
+> **Compliance Standards:** Course facts only. No license or job promise. No price on the pending 20-hour course.
 
 ---
 
 # Florida Bail Bond Pre-Licensing Education & Career Academy
 
-When a loved one is arrested, you are dealing with fear, confusion, and a dozen questions all at once. You want straightforward answers, someone who picks up the phone, and a clear path forward without judgment.
+This page is for people who want a Florida limited surety (bail bond) agent license. It is not the page for posting a bond tonight. Families who need a bond should call [239-332-2245](tel:+12393322245).
 
-Shamrock Bail Bonds has been serving families across Southwest Florida and all 67 Florida counties since 2012. We are owner-operated by Brendan O'Neal from our office in downtown Fort Myers. We handle misdemeanor bonds, felony bonds, warrant walk-throughs, and nationwide transfer bonds with complete confidentiality and care.
+## Launch Your Career in Florida Criminal Justice
 
----
+Florida requires pre-licensing education before you can apply for a limited surety agent license under Chapter 648. Shamrock Bail School teaches that coursework from the Fort Myers office.
 
-## How We Help You Through This Tonight
+## 120-Hour Pre-Licensing Qualification Course ($649)
 
-### 1. Speak with a Real Local Agent Right Now
-When you call [239-332-2245](tel:+12393322245), you speak directly with an experienced bail professional. We look up the arrest records, verify the exact charges and bond amounts with the jail, and explain your options in plain language. If you speak Spanish, our dedicated line is [727-295-2245](tel:+17272952245).
+The 120-hour qualification course is $649. It is a self-paced pre-licensing course for people who are not yet licensed bail agents. The price is tuition for the course. It is not a bail premium.
 
-### 2. Complete Paperwork from Your Phone
-You do not have to leave your home or travel across town in the middle of the night. We send secure, mobile-friendly forms directly to your smartphone via text or email. You can review and sign from anywhere.
+## 20-Hour Continuing Education Course (Pending Course Approval)
 
-### 3. Transparent Costs & Flexible Financing
-Florida bail bond premiums are set by state statute at 10% of the total bond amount ($100 minimum per charge). We explain all costs upfront with zero hidden fees. For qualifying families, we provide flexible, interest-free payment plans tailored to your budget.
+The 20-hour course is listed as pending course approval. The approval number to show is #648-FL (pending course approval). Do not display a dollar price for the 20-hour course until approval is final.
 
-### 4. We Post the Bond with the Jail
-As soon as the paperwork and payment are arranged, our licensed agent posts the bond directly with the detention facility. We stay in touch with you throughout the release process so you know exactly what is happening.
+## Step-by-Step Path to Your Florida Limited Surety Agent License
 
----
+1. Finish the required pre-licensing hours.
+2. Apply to the Florida Department of Financial Services for the limited surety license.
+3. Pass the state exam and complete the appointment with a surety company.
+4. Call the school at [239-332-2245](tel:+12393322245) if you want to talk through the order of those steps.
 
-## Why Florida Families Choose Shamrock Bail Bonds
+## Bail School Tuition, Enrollment & Curriculum
 
-- **Local & Accountable:** Our main office has been at 1528 Broadway in downtown Fort Myers since 2012. We are not an out-of-state call center.
-- **Respectful & Non-Judgmental:** Good people find themselves in tough situations every day. We treat you and your family with patience and dignity.
-- **All 67 Florida Counties:** While our home base is Lee, Collier, and Charlotte counties, our licensed surety network covers every jail in Florida and coordinates transfer bonds throughout the United States.
-- **Warrant Checks & Court Guidance:** Wondering if there is an active warrant? We can verify warrants discreetly and arrange smooth walk-throughs to minimize time in custody.
+Enroll by calling 239-332-2245 or emailing admin@shamrockbailbonds.biz. Classes and study materials are arranged from 1528 Broadway, Fort Myers, FL 33901. Walk-in hours for the office are Monday through Friday, 9 AM to 5 PM. The phone is answered 24/7.
 
----
+The curriculum follows the subjects the state expects a new bail agent to know: Florida bail statutes, the surety contract, collateral, forfeitures, and recordkeeping. We do not promise a license or a job.
 
-## Frequently Asked Questions
+## Bail School Frequently Asked Questions
 
-### How much does a bail bond cost in Florida?
-In Florida, bail bond fees are strictly regulated by Florida Statute § 648.24. The fee is 10% of the total bond amount, with a minimum fee of $100 per charge. For example, a $5,000 bond requires a statutory premium of $500.
+### Is the 120-hour course the same as a bail bond premium?
+No. The $649 is tuition. A bail bond premium is 10% of a defendant's bond under Florida Statute § 648.24.
 
-### What information do I need when I call?
-It helps to have the person's full legal name, date of birth, and the county where they were arrested. If you do not have all of this information, do not worry—call us at [239-332-2245](tel:+12393322245) and we will help you find the booking details.
-
-### What is an indemnitor (cosigner)?
-An indemnitor is a family member or friend who signs the bail agreement, guaranteeing that the defendant will attend all required court hearings. We walk you through every document before you sign.
-
-### What are your office hours?
-Our physical office at 1528 Broadway in Fort Myers is open for walk-in clients Monday through Friday, 9:00 AM to 5:00 PM. Our phone lines and emergency dispatch operate 24 hours a day, 7 days a week, 365 days a year.
-
----
-
-## Ready to Bring Your Loved One Home?
-
-Do not wait through the night wondering what comes next. Call our team now for clear, immediate guidance.
-
-- 📞 **Call (239) 332-2245**
-- 📞 **Línea en Español: (727) 295-2245**
-- 💬 **Text: (239) 955-0178**
-- 📍 **Visit Us:** 1528 Broadway, Fort Myers, FL 33901
+### Can I get a price for the 20-hour course?
+Not yet. That course is pending approval, so this page does not list a price.
