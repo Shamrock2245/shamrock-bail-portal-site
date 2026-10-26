@@ -17,7 +17,7 @@
 import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
 import { callGasAction, notifyGASOfNewIntake } from 'backend/gasIntegration';
-import { exportToLegacyPacketMap } from 'public/canonical-paperwork-mapper';
+import { enforceActiveSurety, exportToLegacyPacketMap } from 'public/canonical-paperwork-mapper';
 
 /**
  * Persists Canonical Case and associated Persons to Wix CMS collections
@@ -30,6 +30,7 @@ export async function persistCanonicalCaseToCms(canonicalCase) {
     }
 
     const caseId = canonicalCase.caseId;
+    const suretyCode = enforceActiveSurety(canonicalCase);
     const def = canonicalCase.defendant || {};
     const ind = canonicalCase.indemnitor || {};
     const coInd = canonicalCase.coIndemnitor || {};
@@ -46,7 +47,7 @@ export async function persistCanonicalCaseToCms(canonicalCase) {
             totalBond: canonicalCase.totalBond || 0,
             premiumEstimate: canonicalCase.premiumEstimate || 0,
             transferFee: canonicalCase.transferFee || 0,
-            suretyCode: canonicalCase.suretyCode || 'OSI',
+            suretyCode: suretyCode,
             chargesJson: JSON.stringify(canonicalCase.charges || []),
             courtDatesJson: JSON.stringify(canonicalCase.courtDates || []),
             status: canonicalCase.packet?.status || 'pending_review',
@@ -141,6 +142,9 @@ export async function persistCanonicalCaseToCms(canonicalCase) {
  */
 export async function syncCanonicalCaseToGas(canonicalCase) {
     try {
+        if (canonicalCase && typeof canonicalCase === 'object') {
+            enforceActiveSurety(canonicalCase);
+        }
         const legacyMap = exportToLegacyPacketMap(canonicalCase);
         
         console.log(`🔄 [GAS Sync] Forwarding canonical case ${canonicalCase.caseId} to GAS factory...`);

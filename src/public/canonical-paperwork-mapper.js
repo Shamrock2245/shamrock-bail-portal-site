@@ -15,6 +15,49 @@
  */
 
 /**
+ * Sureties Shamrock writes today. Lexington National, Roche Surety,
+ * Universal, Bankers Surety, and Accredited stay future options and are
+ * not stored or forwarded.
+ */
+export const ACTIVE_SURETY_CODES = Object.freeze({
+  OSI: 'OSI',
+  PALMETTO: 'Palmetto'
+});
+
+/**
+ * Map a caller-supplied surety onto OSI or Palmetto.
+ * Missing and retired codes become the fallback (OSI unless the caller
+ * already has an active code).
+ * @param {unknown} value
+ * @param {'OSI'|'Palmetto'} [fallback='OSI']
+ * @returns {'OSI'|'Palmetto'}
+ */
+export function coerceActiveSuretyCode(value, fallback = 'OSI') {
+  const normalized = String(value == null ? '' : value).trim().toUpperCase();
+  if (normalized === 'OSI') return ACTIVE_SURETY_CODES.OSI;
+  if (normalized === 'PALMETTO') return ACTIVE_SURETY_CODES.PALMETTO;
+  return fallback === ACTIVE_SURETY_CODES.PALMETTO
+    ? ACTIVE_SURETY_CODES.PALMETTO
+    : ACTIVE_SURETY_CODES.OSI;
+}
+
+/**
+ * Rewrite suretyCode and packet.surety before CMS or GAS persistence.
+ * A truthy retired value such as ACCREDITED or BANKERS must not survive.
+ * @param {Object} canonicalCase
+ * @returns {'OSI'|'Palmetto'}
+ */
+export function enforceActiveSurety(canonicalCase) {
+  if (!canonicalCase || typeof canonicalCase !== 'object') return ACTIVE_SURETY_CODES.OSI;
+  const code = coerceActiveSuretyCode(canonicalCase.suretyCode, ACTIVE_SURETY_CODES.OSI);
+  canonicalCase.suretyCode = code;
+  if (canonicalCase.packet && typeof canonicalCase.packet === 'object') {
+    canonicalCase.packet.surety = coerceActiveSuretyCode(canonicalCase.packet.surety, code);
+  }
+  return code;
+}
+
+/**
  * Standard Role Constants
  */
 export const ROLES = {
@@ -168,6 +211,7 @@ export function hydratePersonFromOcr(person, ocrData = {}) {
  * @returns {Object} Exact template-ready field dictionary
  */
 export function mapToSuretyPacket(canonicalCase, surety = 'OSI') {
+  const activeSurety = coerceActiveSuretyCode(surety, 'OSI');
   const masterData = exportToLegacyPacketMap(canonicalCase);
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-US');
@@ -255,7 +299,7 @@ export function mapToSuretyPacket(canonicalCase, surety = 'OSI') {
     "IndNameandDefName": `${masterData.IndName} & ${masterData.DefName}`
   };
 
-  if (surety.toUpperCase() === 'PALMETTO') {
+  if (activeSurety === 'Palmetto') {
     // Palmetto dialect maps onto the exact same canonical fields
     return {
       ...osiFields,
@@ -373,5 +417,7 @@ export default {
   createCanonicalCase,
   hydratePersonFromOcr,
   mapToSuretyPacket,
-  exportToLegacyPacketMap
+  exportToLegacyPacketMap,
+  coerceActiveSuretyCode,
+  enforceActiveSurety
 };
