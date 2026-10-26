@@ -61,6 +61,29 @@ def missing_baseline_schema_types(baseline_field, post_types):
             baseline_types.add(name)
     return sorted(baseline_types - set(post_types or []))
 
+def apply_h1_diff(row):
+    """Compare the published H1 with the pre-cutover H1."""
+    baseline_h1 = (row.get("baseline_h1") or "").strip()
+    post_h1 = (row.get("post_h1") or "").strip()
+    if baseline_h1 and not post_h1:
+        row["h1_diff"] = "MISSING_H1"
+        if row.get("risk_flag") in (None, "", "NONE"):
+            row["risk_flag"] = "CHECK_H1"
+        elif "CHECK_H1" not in row["risk_flag"]:
+            row["risk_flag"] = row["risk_flag"] + "|CHECK_H1"
+        return row
+    if baseline_h1 and post_h1:
+        similarity = SequenceMatcher(None, baseline_h1.lower(), post_h1.lower()).ratio()
+        if similarity < 0.6:
+            row["h1_diff"] = f"Significant H1 Change ({similarity:.2f})"
+            if row.get("risk_flag") in (None, "", "NONE"):
+                row["risk_flag"] = "CHECK_H1"
+            elif "CHECK_H1" not in row["risk_flag"]:
+                row["risk_flag"] = row["risk_flag"] + "|CHECK_H1"
+            return row
+    row["h1_diff"] = ""
+    return row
+
 def apply_schema_regression(row, missing_types):
     if not missing_types:
         row["schema_diff"] = ""
@@ -147,6 +170,7 @@ def main():
 
             h1_tags = [h.get_text(separator=" ", strip=True) for h in soup.find_all("h1")]
             row["post_h1"] = h1_tags[0] if h1_tags else ""
+            apply_h1_diff(row)
 
             post_json_types = set()
             for s in soup.find_all("script", type="application/ld+json"):
